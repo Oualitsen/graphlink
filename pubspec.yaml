@@ -38,6 +38,7 @@ dependencies:
   json_annotation: ^4.8.1
   build: ^2.4.0
   build_config: ^1.1.1
+  web_socket_client: ^0.1.0-dev.3
 
 dev_dependencies:
   flutter_test:

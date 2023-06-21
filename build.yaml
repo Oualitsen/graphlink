@@ -5,6 +5,7 @@ targets:
         enabled: True
         options:
           Long: int
+          path: "./lib/generated"
 
 builders:
   aggregatingBuilder:
@@ -12,7 +13,7 @@ builders:
     builder_factories: ['aggregatingBuilder']
     build_extensions:
       .graphql:
-        - .graphql.bak
+        - .merged.graphql
     build_to: source
     auto_apply: root_package
     
