@@ -8,9 +8,10 @@ import 'package:parser/graphql_parser/gq_grammar_data_mixin.dart';
 import 'package:parser/graphql_parser/model/gq_field.dart';
 import 'package:parser/graphql_parser/model/gq_interface.dart';
 import 'package:parser/graphql_parser/model/gq_type.dart';
-import 'package:parser/graphql_parser/model/gq_input_type.dart';
+import 'package:parser/graphql_parser/model/gq_input_type_definition.dart';
 import 'package:parser/graphql_parser/model/gq_fragment.dart';
 import 'package:parser/graphql_parser/model/gq_queries.dart';
+import 'package:parser/graphql_parser/model/gq_type_definition.dart';
 import 'package:parser/graphql_parser/model/gq_union.dart';
 import 'package:petitparser/petitparser.dart';
 

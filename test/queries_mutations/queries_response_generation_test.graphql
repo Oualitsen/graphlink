@@ -9,6 +9,13 @@ type Product {
   name: String!
   price: Float!
   wasPrice: Float
+  brand: Brand!
+}
+
+type Brand {
+  name: String!
+  country: String!
+  
 }
 
 input ProductInput {
@@ -73,5 +80,11 @@ mutation deleteProduct($id: ID!, $id2: Int) {
 
 scalar Long
 fragment ProductFragment on Product {
-  id name price
+  id name price brand {
+    ...BrandFragment
+  }
+}
+
+fragment BrandFragment on Brand {
+  name country
 }

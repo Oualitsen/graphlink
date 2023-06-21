@@ -252,13 +252,13 @@ const _$EnsurerRelationshipEnumMap = {
 };
 
 PageInfo _$PageInfoFromJson(Map<String, dynamic> json) => PageInfo(
+
       page: json['page'] as int,
-      size: json['size'] as int,
     );
 
-Map<String, dynamic> _$PageInfoToJson(PageInfo instance) => <String, dynamic>{
+Map<String, dynamic> _$PageIndexToJson(PageIndex instance) => <String, dynamic>{
+      'index': instance.index,
       'page': instance.page,
-      'size': instance.size,
     };
 
 MedicalStaffInput _$MedicalStaffInputFromJson(Map<String, dynamic> json) =>
@@ -269,17 +269,13 @@ MedicalStaffInput _$MedicalStaffInputFromJson(Map<String, dynamic> json) =>
           : PersonalInfoInput.fromJson(
               json['PersonalInfo'] as Map<String, dynamic>),
       rank: $enumDecodeNullable(_$RankEnumMap, json['rank']),
+
     );
 
-Map<String, dynamic> _$MedicalStaffInputToJson(MedicalStaffInput instance) =>
+Map<String, dynamic> _$ProductInputToJson(ProductInput instance) =>
     <String, dynamic>{
       'id': instance.id,
       'PersonalInfo': instance.PersonalInfo,
       'rank': _$RankEnumMap[instance.rank],
-    };
 
-const _$RankEnumMap = {
-  Rank.DOCTOR: 'DOCTOR',
-  Rank.NURSE: 'NURSE',
-  Rank.TECHNICIAN: 'TECHNICIAN',
-};
+    };

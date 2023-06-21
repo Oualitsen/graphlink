@@ -1,7 +1,7 @@
 import 'package:parser/graphql_parser/excpetions/parse_exception.dart';
 import 'package:parser/graphql_parser/model/gq_directive.dart';
-import 'package:parser/graphql_parser/model/gq_input_type.dart';
 import 'package:parser/graphql_parser/model/gq_token.dart';
+import 'package:parser/graphql_parser/model/gq_type_definition.dart';
 import 'package:parser/graphql_parser/utils.dart';
 
 class GQTypedFragment {

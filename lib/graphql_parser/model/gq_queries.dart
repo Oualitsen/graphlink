@@ -3,9 +3,9 @@ import 'package:parser/graphql_parser/model/gq_argument.dart';
 import 'package:parser/graphql_parser/model/gq_field.dart';
 import 'package:parser/graphql_parser/model/gq_fragment.dart';
 import 'package:parser/graphql_parser/excpetions/parse_exception.dart';
-import 'package:parser/graphql_parser/model/gq_input_type.dart';
 import 'package:parser/graphql_parser/model/gq_token.dart';
 import 'package:parser/graphql_parser/model/gq_type.dart';
+import 'package:parser/graphql_parser/model/gq_type_definition.dart';
 import 'package:parser/graphql_parser/utils.dart';
 
 enum GQQueryType { query, mutation, subscription }

@@ -23,11 +23,14 @@ Map<String, dynamic> _$HemodialysisGroup_designation_idToJson(
 Position_startTime _$Position_startTimeFromJson(Map<String, dynamic> json) =>
     Position_startTime(
       startTime: json['startTime'] as int?,
+
     );
 
-Map<String, dynamic> _$Position_startTimeToJson(Position_startTime instance) =>
+Map<String, dynamic> _$Brand_BrandFragmentToJson(
+        Brand_BrandFragment instance) =>
     <String, dynamic>{
-      'startTime': instance.startTime,
+      'name': instance.name,
+      'country': instance.country,
     };
 
 HemodialysisGroup_id _$HemodialysisGroup_idFromJson(
@@ -68,11 +71,13 @@ SavePositionResponse _$SavePositionResponseFromJson(
           ? null
           : HemodialysisGroup_id.fromJson(
               json['saveHemodialysisGroup'] as Map<String, dynamic>),
+
     );
 
-Map<String, dynamic> _$SavePositionResponseToJson(
-        SavePositionResponse instance) =>
+Map<String, dynamic> _$ProductFragment_on_ProductToJson(
+        ProductFragment_on_Product instance) =>
     <String, dynamic>{
       'savePosition': instance.savePosition,
       'saveHemodialysisGroup': instance.saveHemodialysisGroup,
+
     };

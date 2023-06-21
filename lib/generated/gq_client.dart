@@ -18,11 +18,13 @@ typedef GQHttpClientAdapter = Future<String> Function(String payload);
       {
       id  designation 
     }
+
       }
      $fragments
         """;
 
         var variables = {
+
           'pageInfo': pageInfo.toJson()
         };
         
@@ -34,7 +36,7 @@ typedef GQHttpClientAdapter = Future<String> Function(String payload);
       }
       var data = result["data"];
       return HemodialysisGroupListResponse.fromJson(data);
-      
+
     }).first;
         
       }
@@ -43,16 +45,19 @@ typedef GQHttpClientAdapter = Future<String> Function(String payload);
 class Mutations {
         final GQHttpClientAdapter adapter;
         Mutations(this.adapter);
+
         Future<SavePositionResponse> savePosition({required PositionInput input, required HemodialysisGroupInput ginput}) {
         var operationName = "savePosition";
         var fragments = """  """;
         var query = """
         mutation savePosition (\$input: PositionInput!, \$ginput: HemodialysisGroupInput!)  {
         savePosition (position: \$input) 
+
       {
-      startTime 
+      ... ProductFragment 
     }
-saveHemodialysisGroup (input: \$ginput) 
+
+saveHemodialysisGroup (input: \$ginput) 
       {
       id 
     }
@@ -71,7 +76,39 @@ class Mutations {
         throw result["errors"];
       }
       var data = result["data"];
-      return SavePositionResponse.fromJson(data);
+      return CreateProductResponse.fromJson(data);
+      
+    }).first;
+        
+      }
+Future<DeleteProductResponse> deleteProduct({required String id, required int? id2}) {
+        var operationName = "deleteProduct";
+        var fragments = """  """;
+        var query = """
+        mutation deleteProduct (\$id: ID!, \$id2: Int)  {
+        deleteProduct (id: \$id) 
+      {
+      id  name 
+    }
+
+deleteProduct2 (id: \$id2) 
+      
+      }
+     $fragments
+        """;
+
+        var variables = {
+          'id': id, 'id2': id2
+        };
+        
+        var payload = PayLoad(query: query, operationName: operationName, variables: variables);
+        return adapter(payload.toString()).asStream().map((response) {
+      Map<String, dynamic> result = jsonDecode(response);
+      if (result.containsKey("errors")) {
+        throw result["errors"];
+      }
+      var data = result["data"];
+      return DeleteProductResponse.fromJson(data);
       
     }).first;
         

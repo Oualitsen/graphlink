@@ -7,14 +7,15 @@ import 'package:parser/graphql_parser/model/gq_graphql_service.dart';
 import 'package:parser/graphql_parser/model/gq_schema.dart';
 import 'package:parser/graphql_parser/model/gq_enum_definition.dart';
 import 'package:parser/graphql_parser/model/gq_fragment.dart';
-import 'package:parser/graphql_parser/model/gq_input_type.dart';
+import 'package:parser/graphql_parser/model/gq_input_type_definition.dart';
 import 'package:parser/graphql_parser/model/gq_interface.dart';
 import 'package:parser/graphql_parser/model/gq_token.dart';
 import 'package:parser/graphql_parser/model/gq_type.dart';
+import 'package:parser/graphql_parser/model/gq_type_definition.dart';
 import 'package:parser/graphql_parser/model/gq_union.dart';
 import 'package:parser/graphql_parser/model/gq_queries.dart';
 
-const destFolder = "/home/ismahane/Desktop/typedGraphQLClient/lib/generated";
+const destFolder = "/Users/M1/personal/typedGraphQLClient/lib/generated";
 final String inputFileName = "inputs";
 final String enumsFileName = "enums";
 final String typesFileName = "types";
@@ -563,6 +564,11 @@ $data
         interfaceNames: onType.interfaceNames,
         directives: onType.directives);
 
+    print("type = ${name} fields = ${newType.fields.length}");
+    if (newType.fields.isEmpty) {
+      print("Empty field list found");
+    }
+
     projectedTypes[name] = newType;
     return newType;
   }
@@ -576,7 +582,6 @@ $data
         fields: applyProjection(onType.fields, fragment.block.projections),
         interfaceNames: onType.interfaceNames,
         directives: onType.directives);
-
     projectedTypes[name] = newType;
   }
 
@@ -616,12 +621,26 @@ $data
   }
 
   List<GQField> applyProjection(
-      List<GQField> src, Map<String, GQProjection> projections) {
+      List<GQField> src, Map<String, GQProjection> p) {
     var result = <GQField>[];
+    var projections = {...p};
+
+    p.values
+        .where((element) => element.isFragmentReference)
+        .map((e) => e.fragmentName!)
+        .map((fragName) => getFragment(fragName))
+        .forEach((fragment) {
+      print("Adding projections ### ${fragment.block.projections.keys}");
+      projections.addAll(fragment.block.projections);
+    });
+
     for (var field in src) {
       var projection = projections[field.name];
       if (projection != null) {
         result.add(applyProjectionToField(field, projection));
+      } else {
+        print(
+            "projection null for key ${field.name} projectionkeys = ${projections.keys}");
       }
     }
 
@@ -630,16 +649,8 @@ $data
 
   GQField applyProjectionToField(GQField field, GQProjection projection) {
     final String fieldName = projection.alias ?? field.name;
-    if (projection.isFragmentReference) {
-      print(
-          "######%%%%%%%%%%%%%%%%%%%%%%%%%%fragment reference fragment name is ${projection.fragmentName}");
-      /**
-       * @TODO we should first create another type using the fragment name before
-       */
-    }
 
     if (projection.block != null) {
-      print("Projection block is not null for field ${field.name}");
       //we should create another type here ...
       var generatedType = createProjectedTypeWithProjectionBlock(
           getType(field.type.token), projection.block!);

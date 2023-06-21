@@ -16,7 +16,6 @@ void main() async {
             .readAsStringSync();
     var parsed = parser.parse(text);
     expect(parsed.isSuccess, true);
-    print("q = ${g.service.toDart(g)}");
     g.saveToFiles(g);
   });
 }

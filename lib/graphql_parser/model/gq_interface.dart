@@ -1,6 +1,6 @@
 import 'package:parser/graphql_parser/gq_grammar.dart';
 import 'package:parser/graphql_parser/model/dart_serializable.dart';
-import 'package:parser/graphql_parser/model/gq_input_type.dart';
+import 'package:parser/graphql_parser/model/gq_type_definition.dart';
 
 class GQInterfaceDefinition extends GQTypeDefinition
     implements DartSerializable {
