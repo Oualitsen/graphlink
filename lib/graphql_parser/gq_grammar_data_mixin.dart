@@ -15,8 +15,8 @@ import 'package:parser/graphql_parser/model/gq_type_definition.dart';
 import 'package:parser/graphql_parser/model/gq_union.dart';
 import 'package:parser/graphql_parser/model/gq_queries.dart';
 
-const destFolder = "/Users/M1/personal/typedGraphQLClient/lib/generated";
 final String inputFileName = "inputs";
+final String allFieldsFragmentsFileName = "allFieldsFragments";
 final String enumsFileName = "enums";
 final String typesFileName = "types";
 final String gqClientFileName = "gq_client";
@@ -104,15 +104,26 @@ mixin GrammarDataMixin {
     queries[definition.token] = definition;
   }
 
-  void saveToFiles(GraphQlGrammar g) {
-    createFiles();
-    saveInputFile(g);
-    saveEnums(g);
-    saveTypesFile(g);
-    saveClientFile(g);
+  void saveToFiles(GraphQlGrammar g, String destFolder) {
+    createFiles(destFolder);
+    saveInputFile(g, destFolder);
+    saveEnums(g, destFolder);
+    saveTypesFile(g, destFolder);
+    saveClientFile(g, destFolder);
+    //   saveAllFieldsFragmentFile(destFolder);
   }
 
-  void saveEnums(GraphQlGrammar g) {
+  void saveAllFieldsFragmentFile(String destFolder) {
+    var file = File("$destFolder/$allFieldsFragmentsFileName.graphql");
+
+    var allFieldsFragmentsContent = allFieldsFragments.values
+        .toList()
+        .map((e) => e.fragment.serialize())
+        .join("\n");
+    file.writeAsStringSync(allFieldsFragmentsContent);
+  }
+
+  void saveEnums(GraphQlGrammar g, String destFolder) {
     var file = File("$destFolder/$enumsFileName.dart");
 
     var enums = this.enums.values.toList().map((e) => e.toDart(g)).join("\n");
@@ -121,7 +132,7 @@ $enums
 """);
   }
 
-  void createFiles() {
+  void createFiles(String destFolder) {
     var inputFile = File("$destFolder/$inputFileName.dart");
     if (!inputFile.existsSync()) {
       inputFile.createSync(recursive: true);
@@ -136,9 +147,15 @@ $enums
     if (!clientFile.existsSync()) {
       clientFile.createSync(recursive: true);
     }
+
+    var allFieldsFragmentsFile =
+        File("$destFolder/$allFieldsFragmentsFileName.graphql");
+    if (!allFieldsFragmentsFile.existsSync()) {
+      allFieldsFragmentsFile.createSync(recursive: true);
+    }
   }
 
-  void saveInputFile(GraphQlGrammar g) {
+  void saveInputFile(GraphQlGrammar g, String destFolder) {
     var file = File("$destFolder/$inputFileName.dart");
 
     var inputs = this.inputs.values.toList().map((e) => e.toDart(g)).join("\n");
@@ -151,7 +168,7 @@ $inputs
 """);
   }
 
-  void saveTypesFile(GraphQlGrammar g) {
+  void saveTypesFile(GraphQlGrammar g, String destFolder) {
     var file = File("$destFolder/$typesFileName.dart");
 
     var data =
@@ -170,7 +187,7 @@ $data2
 """);
   }
 
-  void saveClientFile(GraphQlGrammar g) {
+  void saveClientFile(GraphQlGrammar g, String destFolder) {
     var file = File("$destFolder/$gqClientFileName.dart");
 
     var data = service.toDart(g);
@@ -523,21 +540,23 @@ $data
 
   void createAllFieldsFragments() {
     types.forEach((key, value) {
-      allFieldsFragments[key] = GQTypedFragment(
-          GQFragmentDefinition(
-              key,
-              value.token,
-              GQFragmentBlockDefinition(value.fields
-                  .map((e) => GQProjection(
-                      fragmentName: null,
-                      token: e.name,
-                      alias: null,
-                      isFragmentReference: false,
-                      block: null,
-                      directives: []))
-                  .toList()),
-              []),
-          value);
+      if (![schema.mutation, schema.query, schema.subscription].contains(key)) {
+        allFieldsFragments[key] = GQTypedFragment(
+            GQFragmentDefinition(
+                key,
+                value.token,
+                GQFragmentBlockDefinition(value.fields
+                    .map((e) => GQProjection(
+                        fragmentName: null,
+                        token: e.name,
+                        alias: null,
+                        isFragmentReference: false,
+                        block: null,
+                        directives: []))
+                    .toList()),
+                []),
+            value);
+      }
     });
   }
 

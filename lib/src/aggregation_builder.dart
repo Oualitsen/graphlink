@@ -13,8 +13,8 @@ class AggregatingBuilder implements Builder {
 
   @override
   Map<String, List<String>> get buildExtensions {
-    /// '$lib$' is a synthetic input that is used to
-    /// force the builder to build only once.
+    // '$lib$' is a synthetic input that is used to
+    // force the builder to build only once.
     return const {
       '\$lib\$': ['all_files.merged.graphql']
     };
@@ -22,7 +22,8 @@ class AggregatingBuilder implements Builder {
 
   @override
   Future<void> build(BuildStep buildStep) async {
-    /// Do some operation on the files
+    String path = options.config["path"] ?? "./lib/generated";
+
     final files = <String>[];
     await for (final input in buildStep.findAssets(inputFiles)) {
       var contents = await buildStep.readAsString(input);
@@ -30,15 +31,13 @@ class AggregatingBuilder implements Builder {
     }
     String fileContent = files.join('\n');
 
-    /// Write to the file
-    final outputFile =
-        AssetId(buildStep.inputId.package, 'lib/all_files.merged.graphql');
-    print("options = ${options.config}");
     final GraphQlGrammar g = GraphQlGrammar();
     var parser = g.buildFrom(g.fullGrammar().end());
     parser.parse(fileContent);
-    g.saveToFiles(g);
+    g.saveToFiles(g, path);
 
+    final outputFile =
+        AssetId(buildStep.inputId.package, 'lib/all_files.merged.graphql');
     return buildStep.writeAsString(outputFile, fileContent);
   }
 }

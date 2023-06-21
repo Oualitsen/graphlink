@@ -1,0 +1,44 @@
+      fragment Agency on Agency  {
+      designation  cashierId  address  phones  email  webSite  id  creationDate  lastUpdate 
+    } 
+    
+      fragment Cashier on Cashier  {
+      code  designation  address  phones  emails  webSite  id  creationDate  lastUpdate 
+    } 
+    
+      fragment Patient on Patient  {
+      PersonalInfo  patientStatus  admissionDate  ensurer  assignment  id  creationDate  lastUpdate 
+    } 
+    
+      fragment HemodialysisGroup on HemodialysisGroup  {
+      code  designation  daysOfWeek  id  creationDate  lastUpdate 
+    } 
+    
+      fragment Position on Position  {
+      id  creationDate  lastUpdate  designation  startTime  endTime 
+    } 
+    
+      fragment MedicalStaff on MedicalStaff  {
+      PersonalInfo  rank  id  creationDate  lastUpdate 
+    } 
+    
+      fragment PayerCenter on PayerCenter  {
+      code  designation  address  phones  emails  webSite 
+    } 
+    
+      fragment PersonalInfo on PersonalInfo  {
+      firstName  lastName  gender  dateOfBirth  placeOfBirth  bloodGroup  image  address  phones  emails 
+    } 
+    
+      fragment Assignment on Assignment  {
+      medicalStaff  hemodialysisGroup  position  patientRoom  DateOfFirstIronTreatment  DateOfFirstEPOTreatment  DateOfTheFirstHemodialysisSession 
+    } 
+    
+      fragment PatientRoom on PatientRoom  {
+      code  name  designation 
+    } 
+    
+      fragment Ensurer on Ensurer  {
+      PersonalInfo  socialSecurityNumber  ensurerRelationship 
+    } 
+    
