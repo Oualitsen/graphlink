@@ -1,0 +1,20 @@
+targets:
+  parser:
+    builders:
+      parser|aggregatingBuilder:
+        enabled: True
+        options:
+          Long: int
+
+builders:
+  aggregatingBuilder:
+    import: 'package:parser/code_generators.dart'
+    builder_factories: ['aggregatingBuilder']
+    build_extensions:
+      .graphql:
+        - .graphql.bak
+    build_to: source
+    auto_apply: root_package
+    
+
+    

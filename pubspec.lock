@@ -42,7 +42,7 @@ packages:
     source: hosted
     version: "2.1.1"
   build:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: build
       sha256: "43865b79fbb78532e4bff7c33087aa43b1d488c4fdef014eaef568af6d8016dc"
@@ -50,7 +50,7 @@ packages:
     source: hosted
     version: "2.4.0"
   build_config:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: build_config
       sha256: bf80fcfb46a29945b423bd9aad884590fb1dc69b330a4d4700cac476af1708d1

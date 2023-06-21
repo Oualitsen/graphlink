@@ -9,23 +9,23 @@ typedef GQHttpClientAdapter = Future<String> Function(String payload);
     class Queries {
         final GQHttpClientAdapter adapter;
         Queries(this.adapter);
-        Future<GetProductsResponse> getProducts({required PageIndex pageIndex}) {
-        var operationName = "getProducts";
+        Future<HemodialysisGroupListResponse> hemodialysisGroupList({required PageInfo pageInfo}) {
+        var operationName = "hemodialysisGroupList";
         var fragments = """  """;
         var query = """
-        query getProducts (\$pageIndex: PageIndex!)  {
-        getProducts (pageIndex: \$pageIndex) 
+        query hemodialysisGroupList (\$pageInfo: PageInfo!)  {
+        hemodialysisGroupList (pageInfo: \$pageInfo) 
       {
-      id  name  price  wasPrice 
+      id  designation 
     }
-getCount  
-      
+
       }
      $fragments
         """;
 
         var variables = {
-          'pageIndex': pageIndex.toJson()
+
+          'pageInfo': pageInfo.toJson()
         };
         
         var payload = PayLoad(query: query, operationName: operationName, variables: variables);
@@ -35,37 +35,8 @@ typedef GQHttpClientAdapter = Future<String> Function(String payload);
         throw result["errors"];
       }
       var data = result["data"];
-      return GetProductsResponse.fromJson(data);
-      
-    }).first;
-        
-      }
-Future<GetAllProductsResponse> getAllProducts() {
-        var operationName = "getAllProducts";
-        var fragments = """  """;
-        var query = """
-        query getAllProducts   {
-        getAllProducts  
-      {
-      id  name 
-    }
-      }
-     $fragments
-        """;
+      return HemodialysisGroupListResponse.fromJson(data);
 
-        var variables = {
-          
-        };
-        
-        var payload = PayLoad(query: query, operationName: operationName, variables: variables);
-        return adapter(payload.toString()).asStream().map((response) {
-      Map<String, dynamic> result = jsonDecode(response);
-      if (result.containsKey("errors")) {
-        throw result["errors"];
-      }
-      var data = result["data"];
-      return GetAllProductsResponse.fromJson(data);
-      
     }).first;
         
       }
@@ -74,29 +45,28 @@ Future<GetAllProductsResponse> getAllProducts() {
 class Mutations {
         final GQHttpClientAdapter adapter;
         Mutations(this.adapter);
-        Future<CreateProductResponse> createProduct({required ProductInput input}) {
-        var operationName = "createProduct";
-        var fragments = """       fragment ProductFragment on Product  {
-      id  name  price  brand {
-      ... BrandFragment 
-    }
-    } 
-           fragment BrandFragment on Brand  {
-      name  country 
-    } 
-     """;
+
+        Future<SavePositionResponse> savePosition({required PositionInput input, required HemodialysisGroupInput ginput}) {
+        var operationName = "savePosition";
+        var fragments = """  """;
         var query = """
-        mutation createProduct (\$input: ProductInput!)  {
-        createProduct (input: \$input) 
+        mutation savePosition (\$input: PositionInput!, \$ginput: HemodialysisGroupInput!)  {
+        savePosition (position: \$input) 
+
       {
       ... ProductFragment 
+    }
+
+saveHemodialysisGroup (input: \$ginput) 
+      {
+      id 
     }
       }
      $fragments
         """;
 
         var variables = {
-          'input': input.toJson()
+          'input': input.toJson(), 'ginput': ginput.toJson()
         };
         
         var payload = PayLoad(query: query, operationName: operationName, variables: variables);
@@ -120,7 +90,8 @@ Future<DeleteProductResponse> deleteProduct({required String id, required int? i
       {
       id  name 
     }
-deleteProduct2 (id: \$id2) 
+
+deleteProduct2 (id: \$id2) 
       
       }
      $fragments
