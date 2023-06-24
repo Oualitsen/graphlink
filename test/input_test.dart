@@ -1,11 +1,10 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:parser/graphql_parser/gq_grammar.dart';
-import 'package:parser/graphql_parser/model/gq_field.dart';
+import 'package:test/test.dart';
+import 'package:retrofit_graphql/graphql_parser/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {
   test("Input  test", () {
-    final GraphQlGrammar g = GraphQlGrammar();
+    final GQGrammar g = GQGrammar();
 
     var parser = g.buildFrom(g.inputDefinition().end());
     var result = parser.parse('''
@@ -35,25 +34,22 @@ void main() {
   });
 
   test("Field test with init", () {
-    final GraphQlGrammar g = GraphQlGrammar();
+    final GQGrammar g = GQGrammar();
 
-    var parser = g.build(
-        start: () =>
-            g.field(canBeInitialized: true, acceptsArguments: false).end());
+    var parser = g.buildFrom(
+        g.field(canBeInitialized: true, acceptsArguments: false).end());
     var result = parser.parse('''
       fieldName: String! = "Azul fellawen" @skip(if: true)
-    ''') as Result<GQField>;
+    ''');
     expect(result.isSuccess, true);
     expect(result.value.type.nullable, false);
-    print("result.value = ${result.value}");
   });
 
   test("Field test without init", () {
-    final GraphQlGrammar g = GraphQlGrammar();
+    final GQGrammar g = GQGrammar();
 
-    var parser = g.build(
-        start: () =>
-            g.field(canBeInitialized: false, acceptsArguments: false).end());
+    var parser = g.buildFrom(
+        g.field(canBeInitialized: false, acceptsArguments: false).end());
     var result = parser.parse('''
       fieldName: String! = "Azul fellawen" @skip(if: true)
     ''');

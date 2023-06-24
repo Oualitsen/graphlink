@@ -1,23 +1,59 @@
-import 'package:parser/graphql_parser/excpetions/parse_exception.dart';
-import 'package:parser/graphql_parser/model/gq_enum_definition.dart';
-import 'package:parser/graphql_parser/model/gq_schema.dart';
-import 'package:parser/graphql_parser/model/gq_argument.dart';
-import 'package:parser/graphql_parser/model/gq_comment.dart';
-import 'package:parser/graphql_parser/model/gq_directive.dart';
-import 'package:parser/graphql_parser/gq_grammar_data_mixin.dart';
-import 'package:parser/graphql_parser/model/gq_field.dart';
-import 'package:parser/graphql_parser/model/gq_interface.dart';
-import 'package:parser/graphql_parser/model/gq_type.dart';
-import 'package:parser/graphql_parser/model/gq_input_type_definition.dart';
-import 'package:parser/graphql_parser/model/gq_fragment.dart';
-import 'package:parser/graphql_parser/model/gq_queries.dart';
-import 'package:parser/graphql_parser/model/gq_type_definition.dart';
-import 'package:parser/graphql_parser/model/gq_union.dart';
+import 'package:logger/logger.dart';
+import 'package:retrofit_graphql/graphql_parser/excpetions/parse_exception.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_enum_definition.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_graphql_service.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_schema.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_argument.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_comment.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_directive.dart';
+import 'package:retrofit_graphql/graphql_parser/gq_grammar_extension.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_field.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_interface.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_type.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_input_type_definition.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_fragment.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_queries.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_type_definition.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_union.dart';
 import 'package:petitparser/petitparser.dart';
 
-class GraphQlGrammar extends GrammarDefinition with GrammarDataMixin {
-  GraphQlGrammar({
-    typeMap = const {
+export 'package:retrofit_graphql/graphql_parser/gq_grammar_extension.dart';
+
+class GQGrammar extends GrammarDefinition {
+  var logger = Logger();
+  static const typename = "__typename";
+  final Set<String> scalars = {
+    "ID",
+    "Boolean",
+    "Int",
+    "Float",
+    "String",
+    "null"
+  };
+  final Map<String, GQFragmentDefinitionBase> fragments = {};
+  final Map<String, GQTypedFragment> typedFragments = {};
+
+  late final Map<String, String> typeMap;
+
+  ///
+  /// key is the type name
+  /// and value gives a fragment that has references of all fields
+  ///
+  final Map<String, GQTypedFragment> allFieldsFragments = {};
+  final Map<String, GQUnionDefinition> unions = {};
+  final Map<String, GQInputDefinition> inputs = {};
+  final Map<String, GQTypeDefinition> types = {};
+  final Map<String, GQInterfaceDefinition> interfaces = {};
+  final Map<String, GQQueryDefinition> queries = {};
+  final Map<String, GQEnumDefinition> enums = {};
+  final Map<String, GQTypeDefinition> projectedTypes = {};
+
+  GQSchema schema = GQSchema();
+  bool schemaInitialized = false;
+
+  late final GQGraphqlService service;
+  GQGrammar({
+    this.typeMap = const {
       "ID": "String",
       "String": "String",
       "Float": "double",
@@ -26,9 +62,7 @@ class GraphQlGrammar extends GrammarDefinition with GrammarDataMixin {
       "Null": "null",
       "Long": "int"
     },
-  }) {
-    this.typeMap = typeMap;
-  }
+  });
 
   @override
   Parser start() {

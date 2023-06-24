@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-import 'package:parser/graphql_parser/gq_grammar.dart';
-import 'package:parser/graphql_parser/model/dart_serializable.dart';
-import 'package:parser/graphql_parser/model/gq_argument.dart';
-import 'package:parser/graphql_parser/model/gq_queries.dart';
+import 'package:retrofit_graphql/graphql_parser/gq_grammar.dart';
+import 'package:retrofit_graphql/graphql_parser/model/dart_serializable.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_queries.dart';
+import 'package:retrofit_graphql/graphql_parser/utils.dart';
 
 class GQGraphqlService implements DartSerializable {
   final List<GQQueryDefinition> queries;
@@ -11,12 +11,12 @@ class GQGraphqlService implements DartSerializable {
   GQGraphqlService(this.queries);
 
   @override
-  String toDart(GraphQlGrammar grammar) {
+  String toDart(GQGrammar grammar) {
     return """
 import 'dart:convert';
-import 'package:parser/graphql_parser/model/gq_graphql_service.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_graphql_service.dart';
+import 'package:retrofit_graphql/graphql_parser/functions/function_definitions.dart';
 
-typedef GQHttpClientAdapter = Future<String> Function(String payload);
 
     ${GQQueryType.values.map((e) => generateQueriesClassByType(e, grammar)).join("\n")}
 
@@ -36,7 +36,7 @@ class GQClient {
         .trim();
   }
 
-  String generateQueriesClassByType(GQQueryType type, GraphQlGrammar g) {
+  String generateQueriesClassByType(GQQueryType type, GQGrammar g) {
     var queryList = queries.where((element) => element.type == type).toList();
 
     return """
@@ -62,13 +62,13 @@ class GQClient {
     }
   }
 
-  String queryToMethod(GQQueryDefinition def, GraphQlGrammar g) {
+  String queryToMethod(GQQueryDefinition def, GQGrammar g) {
     return """
       ${returnTypeByQueryType(def, g)} ${def.token}(${generateArgs(def, g)}) {
         var operationName = "${def.token}";
         var fragments = \"\"\" ${def.fragments.map((e) => e.serialize()).toList().join(" ")} \"\"\";
         var query = \"\"\"
-        ${def.serialize()} \$fragments
+        ${formatUnformattedGraphQL(def.serialize())} \$fragments
         \"\"\";
 
         var variables = {
@@ -82,7 +82,7 @@ class GQClient {
         throw result["errors"];
       }
       var data = result["data"];
-      return ${def.generate().token}.fromJson(data);
+      return ${def.getGeneratedTypeDefinition().token}.fromJson(data);
       
     }).first;
         
@@ -92,7 +92,7 @@ class GQClient {
   }
 
   String serializeArgumentValue(
-      GraphQlGrammar g, GQQueryDefinition def, String argName) {
+      GQGrammar g, GQQueryDefinition def, String argName) {
     var arg = def.findByName(argName);
     String result = arg.dartArgumentName;
     if (g.inputTypeRequiresProjection(arg.type)) {
@@ -102,7 +102,7 @@ class GQClient {
     }
   }
 
-  String generateArgs(GQQueryDefinition def, GraphQlGrammar g) {
+  String generateArgs(GQQueryDefinition def, GQGrammar g) {
     if (def.arguments.isEmpty) {
       return "";
     }
@@ -114,8 +114,8 @@ class GQClient {
     return "{$result}";
   }
 
-  String returnTypeByQueryType(GQQueryDefinition def, GraphQlGrammar g) {
-    var gen = def.generate();
+  String returnTypeByQueryType(GQQueryDefinition def, GQGrammar g) {
+    var gen = def.getGeneratedTypeDefinition();
 
     if (def.type == GQQueryType.subscription) {
       return "Stream<${gen.token}>";

@@ -1,6 +1,6 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:parser/graphql_parser/gq_grammar.dart';
-import 'package:parser/graphql_parser/model/gq_union.dart';
+import 'package:test/test.dart';
+import 'package:retrofit_graphql/graphql_parser/gq_grammar.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_union.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {
@@ -15,10 +15,9 @@ void main() {
   });
 
   test("Parse union", () {
-    final GraphQlGrammar g = GraphQlGrammar();
+    final GQGrammar g = GQGrammar();
 
-    var parser =
-        g.build<GQUnionDefinition>(start: () => g.unionDefinition().end());
+    var parser = g.buildFrom<GQUnionDefinition>(g.unionDefinition().end());
     var result = parser.parse('''
     union type = User | Client
     ''');
@@ -28,10 +27,9 @@ void main() {
   });
 
   test("Parse union", () {
-    final GraphQlGrammar g = GraphQlGrammar();
+    final GQGrammar g = GQGrammar();
 
-    var parser =
-        g.build<GQUnionDefinition>(start: () => g.unionDefinition().end());
+    var parser = g.buildFrom<GQUnionDefinition>(g.unionDefinition().end());
     var result = parser.parse('''
     union type = User
     ''');

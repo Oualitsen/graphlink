@@ -1,9 +1,9 @@
-import 'package:parser/graphql_parser/gq_grammar.dart';
-import 'package:parser/graphql_parser/model/dart_serializable.dart';
-import 'package:parser/graphql_parser/model/gq_directive.dart';
-import 'package:parser/graphql_parser/model/gq_field.dart';
-import 'package:parser/graphql_parser/model/gq_token.dart';
-import 'package:parser/graphql_parser/utils.dart';
+import 'package:retrofit_graphql/graphql_parser/gq_grammar.dart';
+import 'package:retrofit_graphql/graphql_parser/model/dart_serializable.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_directive.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_field.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_token.dart';
+import 'package:retrofit_graphql/graphql_parser/utils.dart';
 
 class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
   final Set<String> interfaceNames;
@@ -22,7 +22,7 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
   }
 
   @override
-  String toDart(GraphQlGrammar grammar) {
+  String toDart(GQGrammar grammar) {
     return """@JsonSerializable()
       class $token {
           ${serializeListText(fields.map((e) => e.toDart(grammar)).toList(), join: "\n\r          ", withParenthesis: false)}

@@ -1,19 +1,22 @@
 import 'dart:io';
 
-import 'package:flutter_test/flutter_test.dart';
-import 'package:parser/graphql_parser/gq_grammar.dart';
+import 'package:test/test.dart';
+import 'package:logger/logger.dart';
+import 'package:retrofit_graphql/graphql_parser/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() async {
   test("Input transformation", () {
-    final GraphQlGrammar g = GraphQlGrammar();
-    print("________________________________________init______________________");
+    var logger = Logger();
+    final GQGrammar g = GQGrammar();
+    logger.i(
+        "________________________________________init______________________");
 
     var parser = g.buildFrom(g.fullGrammar().end());
-    print("reading file");
+    logger.i("reading file");
 
     final text = File("test/input/input_schema.graphql").readAsStringSync();
-    print("file read $test");
+    logger.i("file read $test");
     var parsed = parser.parse(text);
     expect(parsed.isSuccess, true);
     expect(g.inputs.length, greaterThanOrEqualTo(1));

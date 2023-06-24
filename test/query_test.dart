@@ -1,11 +1,11 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:parser/graphql_parser/gq_grammar.dart';
-import 'package:parser/graphql_parser/model/gq_queries.dart';
+import 'package:test/test.dart';
+import 'package:retrofit_graphql/graphql_parser/gq_grammar.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_queries.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {
   test("Query  element", () {
-    final GraphQlGrammar g = GraphQlGrammar();
+    final GQGrammar g = GQGrammar();
 
     var parser = g.buildFrom(g.queryElement().end());
     var result = parser.parse(''' 
@@ -18,7 +18,7 @@ void main() {
   });
 
   test("Query definition test", () {
-    final GraphQlGrammar g = GraphQlGrammar();
+    final GQGrammar g = GQGrammar();
 
     var parser = g.buildFrom(g.queryDefinition(GQQueryType.query).end());
     var result = parser.parse('''
@@ -34,7 +34,7 @@ void main() {
   });
 
   test("Query definition test 2", () {
-    final GraphQlGrammar g = GraphQlGrammar();
+    final GQGrammar g = GQGrammar();
 
     var parser = g.buildFrom(g.queryDefinition(GQQueryType.mutation).end());
     var result = parser.parse('''
@@ -50,7 +50,7 @@ void main() {
   });
 
   test("Query definition test 3", () {
-    final GraphQlGrammar g = GraphQlGrammar();
+    final GQGrammar g = GQGrammar();
 
     var parser = g.buildFrom(g.queryDefinition(GQQueryType.query).end());
     var result = parser.parse('''
@@ -63,11 +63,10 @@ void main() {
     
     ''');
     expect(result.isSuccess, true);
-    print((result.value).serialize());
   });
 
   test("Query definition test 4", () {
-    final GraphQlGrammar g = GraphQlGrammar();
+    final GQGrammar g = GQGrammar();
 
     var parser = g.buildFrom(g.queryDefinition(GQQueryType.subscription).end());
     var result = parser.parse('''
@@ -79,11 +78,10 @@ void main() {
     
     ''');
     expect(result.isSuccess, true);
-    print((result.value).serialize());
   });
 
   test("subscription test", () {
-    final GraphQlGrammar g = GraphQlGrammar();
+    final GQGrammar g = GQGrammar();
 
     var parser = g.buildFrom(g.queryDefinition(GQQueryType.subscription).end());
     var result = parser.parse('''

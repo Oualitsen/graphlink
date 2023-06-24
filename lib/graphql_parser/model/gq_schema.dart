@@ -1,4 +1,4 @@
-import 'package:parser/graphql_parser/model/gq_queries.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_queries.dart';
 
 class GQSchema {
   final String query;

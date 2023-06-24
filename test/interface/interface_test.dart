@@ -1,12 +1,12 @@
 import 'dart:io';
 
-import 'package:flutter_test/flutter_test.dart';
-import 'package:parser/graphql_parser/gq_grammar.dart';
+import 'package:test/test.dart';
+import 'package:retrofit_graphql/graphql_parser/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() async {
   test("Input transformation", () {
-    final GraphQlGrammar g = GraphQlGrammar();
+    final GQGrammar g = GQGrammar();
     var parser = g.buildFrom(g.fullGrammar().end());
 
     final text =
@@ -23,8 +23,5 @@ void main() async {
     expect(i2.fieldNames,
         isNot(containsAll(["firstName1", "lastName1", "middleName1"])));
     expect(i2.parentNames, contains("UserInput1"));
-    g.interfaces.forEach((key, value) {
-      print("${value.toDart(g)}");
-    });
   });
 }

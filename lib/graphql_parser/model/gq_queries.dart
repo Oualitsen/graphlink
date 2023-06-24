@@ -1,12 +1,12 @@
-import 'package:parser/graphql_parser/model/gq_directive.dart';
-import 'package:parser/graphql_parser/model/gq_argument.dart';
-import 'package:parser/graphql_parser/model/gq_field.dart';
-import 'package:parser/graphql_parser/model/gq_fragment.dart';
-import 'package:parser/graphql_parser/excpetions/parse_exception.dart';
-import 'package:parser/graphql_parser/model/gq_token.dart';
-import 'package:parser/graphql_parser/model/gq_type.dart';
-import 'package:parser/graphql_parser/model/gq_type_definition.dart';
-import 'package:parser/graphql_parser/utils.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_directive.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_argument.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_field.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_fragment.dart';
+import 'package:retrofit_graphql/graphql_parser/excpetions/parse_exception.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_token.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_type.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_type_definition.dart';
+import 'package:retrofit_graphql/graphql_parser/utils.dart';
 
 enum GQQueryType { query, mutation, subscription }
 
@@ -15,6 +15,8 @@ class GQQueryDefinition extends GQToken {
   final List<GQArgumentDefinition> arguments;
   final List<GQQueryElement> elements;
   final GQQueryType type; //query|mutation|subscription
+
+  GQTypeDefinition? _gqTypeDefinition;
 
   Set<GQFragmentDefinitionBase> get fragments {
     return elements
@@ -64,13 +66,17 @@ class GQQueryDefinition extends GQToken {
     """;
   }
 
-  GQTypeDefinition generate() {
-    return GQTypeDefinition(
-      name: "${_capitilizedFirstLetterToken}Response",
-      fields: _generateFields(),
-      directives: directives,
-      interfaceNames: {},
-    );
+  GQTypeDefinition getGeneratedTypeDefinition() {
+    var gqDef = _gqTypeDefinition;
+    if (gqDef == null) {
+      _gqTypeDefinition = gqDef = GQTypeDefinition(
+        name: "${_capitilizedFirstLetterToken}Response",
+        fields: _generateFields(),
+        directives: directives,
+        interfaceNames: {},
+      );
+    }
+    return gqDef;
   }
 
   String get _capitilizedFirstLetterToken {

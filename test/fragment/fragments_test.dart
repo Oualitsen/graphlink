@@ -1,18 +1,18 @@
 import 'dart:io';
 
-import 'package:flutter_test/flutter_test.dart';
-import 'package:parser/graphql_parser/gq_grammar.dart';
-import 'package:parser/graphql_parser/model/gq_fragment.dart';
+import 'package:test/test.dart';
+import 'package:retrofit_graphql/graphql_parser/gq_grammar.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_fragment.dart';
 import 'package:petitparser/petitparser.dart';
 
-final GraphQlGrammar g = GraphQlGrammar();
+final GQGrammar g = GQGrammar();
 
 void main() async {
   group("bms grammar", () {
     test("bms geammar fragment dependecy", () {
       final text = File("test/schema.graphql").readAsStringSync();
 
-      final GraphQlGrammar g = GraphQlGrammar();
+      final GQGrammar g = GQGrammar();
       var parser = g.buildFrom(g.fullGrammar().end());
       var parsed = parser.parse(text);
 
@@ -21,26 +21,22 @@ void main() async {
       expect(
           frag.dependecies.map((e) => (e as GQFragmentDefinition).fragmentName),
           contains("beFrag"));
-      print("frag = ${frag.toString()}");
     });
   });
   group("Fragment tests", () {
     test("Fragments test", () async {
       final text = File("test/fragment/fragments.graphql").readAsStringSync();
-      final GraphQlGrammar g = GraphQlGrammar();
+      final GQGrammar g = GQGrammar();
       var parser = g.buildFrom(g.fullGrammar().end());
 
       var parsed = parser.parse(text);
 
       expect(parsed.isSuccess, true);
       expect(g.fragments.length, greaterThanOrEqualTo(4));
-      g.fragments.forEach((key, value) {
-        print(value);
-      });
     });
 
     test("Fragemnt Dependecies Test", () {
-      final GraphQlGrammar g = GraphQlGrammar();
+      final GQGrammar g = GQGrammar();
       var parser = g.buildFrom(g.fullGrammar().end());
 
       var parsed = parser.parse(

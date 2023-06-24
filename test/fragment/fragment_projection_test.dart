@@ -1,18 +1,18 @@
 import 'dart:io';
 
-import 'package:flutter_test/flutter_test.dart';
-import 'package:parser/graphql_parser/excpetions/parse_exception.dart';
-import 'package:parser/graphql_parser/gq_grammar.dart';
+import 'package:test/test.dart';
+import 'package:retrofit_graphql/graphql_parser/excpetions/parse_exception.dart';
+import 'package:retrofit_graphql/graphql_parser/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
-final GraphQlGrammar g = GraphQlGrammar();
+final GQGrammar g = GQGrammar();
 
 void main() async {
   test("fragment projection test", () {
     final text = File("test/fragment/fragment_projection_test.graphql")
         .readAsStringSync();
 
-    final GraphQlGrammar g = GraphQlGrammar();
+    final GQGrammar g = GQGrammar();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
@@ -24,7 +24,7 @@ void main() async {
         File("test/fragment/fragment_projection_mismatch_fragment_type.graphql")
             .readAsStringSync();
 
-    final GraphQlGrammar g = GraphQlGrammar();
+    final GQGrammar g = GQGrammar();
     var parser = g.buildFrom(g.fullGrammar().end());
     expect(() => parser.parse(text), throwsA(isA<ParseException>()));
   });

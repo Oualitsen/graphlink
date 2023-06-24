@@ -1,20 +1,22 @@
 import 'dart:io';
 
-import 'package:flutter_test/flutter_test.dart';
-import 'package:parser/graphql_parser/excpetions/parse_exception.dart';
-import 'package:parser/graphql_parser/gq_grammar.dart';
+import 'package:test/test.dart';
+import 'package:logger/logger.dart';
+import 'package:retrofit_graphql/graphql_parser/excpetions/parse_exception.dart';
+import 'package:retrofit_graphql/graphql_parser/gq_grammar.dart';
 
 void main() {
+  var logger = Logger();
   test("generate projection", () {
-    final GraphQlGrammar g = GraphQlGrammar();
+    final GQGrammar g = GQGrammar();
     var parser = g.buildFrom(g.start());
 
     var parsed = parser.parse(File(
             "test/types/genration/types_projection_generation_simple_case_schema.graphql")
         .readAsStringSync());
-    print("g.projectedTypes.length = ${g.projectedTypes.length}");
+    logger.i("g.projectedTypes.length = ${g.projectedTypes.length}");
     expect(parsed.isSuccess, true);
-    print("""
+    logger.i("""
     _______________ projected types _________________
     ${g.projectedTypes.values.map((e) => e.toDart(g)).toList()}
     _________________________________________________
@@ -28,15 +30,15 @@ void main() {
   });
 
   test("projection fragment reference", () {
-    final GraphQlGrammar g = GraphQlGrammar();
+    final GQGrammar g = GQGrammar();
     var parser = g.buildFrom(g.start());
 
     var parsed = parser.parse(File(
             "test/types/genration/types_projection_generation_frag_ref.graphql")
         .readAsStringSync());
-    print("g.projectedTypes.length = ${g.projectedTypes.length}");
+    logger.i("g.projectedTypes.length = ${g.projectedTypes.length}");
     expect(parsed.isSuccess, true);
-    print("""
+    logger.i("""
     _______________ projected types _________________
     ${g.projectedTypes.values.map((e) => e.toDart(g)).toList()}
     _________________________________________________
@@ -45,16 +47,16 @@ void main() {
   });
 
   test("All Fields fragment generation", () {
-    final GraphQlGrammar g = GraphQlGrammar();
+    final GQGrammar g = GQGrammar();
     var parser = g.buildFrom(g.start());
 
     var parsed = parser.parse(File(
             "test/types/genration/types_all_fields_fragments_generation.graphql")
         .readAsStringSync());
-    print("g.projectedTypes.length = ${g.projectedTypes.length}");
+    logger.i("g.projectedTypes.length = ${g.projectedTypes.length}");
     expect(parsed.isSuccess, true);
     expect(g.allFieldsFragments.isEmpty, false);
-    print("""
+    logger.i("""
     _______________ projected types _________________
     ${g.allFieldsFragments.values.map((e) => e.fragment.serialize()).toList()}
     _________________________________________________
@@ -63,7 +65,7 @@ void main() {
   });
 
   test("test add all fields fragments to fragment depencies", () {
-    final GraphQlGrammar g = GraphQlGrammar();
+    final GQGrammar g = GQGrammar();
     var parser = g.buildFrom(g.start());
 
     var parsed = parser.parse(File(
@@ -80,7 +82,7 @@ void main() {
   });
 
   test("test projection validation", () {
-    final GraphQlGrammar g = GraphQlGrammar();
+    final GQGrammar g = GQGrammar();
     var parser = g.buildFrom(g.start());
     expect(
         () => parser.parse(

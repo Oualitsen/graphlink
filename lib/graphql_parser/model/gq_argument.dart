@@ -1,5 +1,5 @@
-import 'package:parser/graphql_parser/model/gq_type.dart';
-import 'package:parser/graphql_parser/model/gq_token.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_type.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_token.dart';
 
 ///
 ///  some thing like function(if: Boolean = true, name: String! = "Ahmed" ...)

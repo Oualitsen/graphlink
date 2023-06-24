@@ -1,8 +1,8 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:parser/graphql_parser/gq_grammar.dart';
+import 'package:test/test.dart';
+import 'package:retrofit_graphql/graphql_parser/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
-final GraphQlGrammar g = GraphQlGrammar();
+final GQGrammar g = GQGrammar();
 
 void main() {
   test("Single quote String token", () {
@@ -27,7 +27,7 @@ void main() {
   });
 
   test("Boolean token test", () {
-    var g = GraphQlGrammar();
+    var g = GQGrammar();
     var parser = g.buildFrom(g.boolean().end());
     var result = parser.parse("true");
     expect(result.isSuccess, true);

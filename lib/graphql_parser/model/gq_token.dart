@@ -1,4 +1,4 @@
-import 'package:parser/graphql_parser/model/gq_field.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_field.dart';
 
 abstract class GQToken {
   final String token;

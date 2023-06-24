@@ -1,8 +1,8 @@
-import 'package:parser/graphql_parser/gq_grammar.dart';
-import 'package:parser/graphql_parser/model/gq_argument.dart';
-import 'package:parser/graphql_parser/model/dart_serializable.dart';
-import 'package:parser/graphql_parser/model/gq_directive.dart';
-import 'package:parser/graphql_parser/model/gq_type.dart';
+import 'package:retrofit_graphql/graphql_parser/gq_grammar.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_argument.dart';
+import 'package:retrofit_graphql/graphql_parser/model/dart_serializable.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_directive.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_type.dart';
 
 class GQField extends DartSerializable {
   final String name;
@@ -27,7 +27,7 @@ class GQField extends DartSerializable {
   }
 
   @override
-  String toDart(GraphQlGrammar g) {
-    return "final ${type.toDartType(g.typeMap)} $name;";
+  String toDart(GQGrammar grammar) {
+    return "final ${type.toDartType(grammar.typeMap)} $name;";
   }
 }

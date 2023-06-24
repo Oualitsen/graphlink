@@ -255,6 +255,7 @@ enum  PatientStatus{
     PERMANANTE
 }
 
+
 query hemodialysisGroupList($pageInfo: PageInfo!){
   hemodialysisGroupList(pageInfo: $pageInfo){
     id designation
@@ -262,9 +263,9 @@ query hemodialysisGroupList($pageInfo: PageInfo!){
 }
 mutation savePosition($input: PositionInput!, $ginput: HemodialysisGroupInput!){
   savePosition(position:$input){
-    startTime 
+    startTime endTime
   }
   saveHemodialysisGroup(input:$ginput) {
-    id
+    id 
   }
 }

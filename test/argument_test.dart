@@ -1,8 +1,8 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:parser/graphql_parser/gq_grammar.dart';
+import 'package:test/test.dart';
+import 'package:retrofit_graphql/graphql_parser/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
-final GraphQlGrammar g = GraphQlGrammar();
+final GQGrammar g = GQGrammar();
 
 void main() {
   test("Empty Array value test", () {
@@ -87,17 +87,16 @@ void main() {
   });
 
   test("Comment test", () {
-    var parser = g.build(start: g.singleLineComment);
+    var parser = g.buildFrom(g.singleLineComment());
     var result = parser.parse('''#Comment
     ''');
-    print("parser value = '${result.value}'");
+
     expect(result.isSuccess, true);
   });
 
   test("identifier test", () {
-    var parser = g.build(start: g.identifier);
+    var parser = g.buildFrom(g.identifier());
     var result = parser.parse(''' test12 ''');
-    print("parser value = '${result.value}'");
     expect(result.isSuccess, true);
     result = parser.parse(''' 1test ''');
     expect(result.isSuccess, false);

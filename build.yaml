@@ -1,21 +1,24 @@
 targets:
-  parser:
+  retrofit_graphql:
     builders:
-      parser|aggregatingBuilder:
-        enabled: True
+      retrofit_graphql|aggregatingBuilder:
+        enabled: true
+        generate_for:
+          include:
+            - lib/**/*.graphql
         options:
           Long: int
-          path: "./lib/generated"
+          ID: int
+         
 
 builders:
   aggregatingBuilder:
-    import: 'package:parser/code_generators.dart'
-    builder_factories: ['aggregatingBuilder']
+    import: 'package:retrofit_graphql/code_generators.dart'
+    builder_factories: ['retrofitGraphqlGeneratorBuilder']
     build_extensions:
       .graphql:
-        - .merged.graphql
+        - .gq.dart
+      
+     
     build_to: source
-    auto_apply: root_package
-    
-
-    
+    auto_apply: root_package 

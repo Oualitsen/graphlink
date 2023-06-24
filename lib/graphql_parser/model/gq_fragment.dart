@@ -1,8 +1,8 @@
-import 'package:parser/graphql_parser/excpetions/parse_exception.dart';
-import 'package:parser/graphql_parser/model/gq_directive.dart';
-import 'package:parser/graphql_parser/model/gq_token.dart';
-import 'package:parser/graphql_parser/model/gq_type_definition.dart';
-import 'package:parser/graphql_parser/utils.dart';
+import 'package:retrofit_graphql/graphql_parser/excpetions/parse_exception.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_directive.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_token.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_type_definition.dart';
+import 'package:retrofit_graphql/graphql_parser/utils.dart';
 
 class GQTypedFragment {
   final GQFragmentDefinitionBase fragment;
@@ -75,9 +75,10 @@ class GQFragmentDefinition extends GQFragmentDefinitionBase {
 
   @override
   String serialize() {
-    return """
+    String unformatted = """
       fragment $fragmentName on $onTypeName ${directives.map((e) => e.serialize()).join(" ")} ${block.serialize()} 
     """;
+    return formatUnformattedGraphQL(unformatted);
   }
 
   @override

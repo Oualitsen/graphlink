@@ -1,7 +1,7 @@
-library code_generators;
+library retrofit_graphql;
 
 import 'package:build/build.dart';
-import 'package:parser/src/aggregation_builder.dart';
+import 'package:retrofit_graphql/retrofit_graphql_generator_builder.dart';
 
-
-Builder aggregatingBuilder(BuilderOptions options) => AggregatingBuilder(options);
+Builder retrofitGraphqlGeneratorBuilder(BuilderOptions options) =>
+    RetrofitGraphqlGeneratorBuilder(options);

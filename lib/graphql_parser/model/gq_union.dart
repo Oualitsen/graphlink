@@ -1,5 +1,5 @@
-import 'package:parser/graphql_parser/model/gq_token.dart';
-import 'package:parser/graphql_parser/utils.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_token.dart';
+import 'package:retrofit_graphql/graphql_parser/utils.dart';
 
 class GQUnionDefinition extends GQToken {
   final List<String> typeNames;

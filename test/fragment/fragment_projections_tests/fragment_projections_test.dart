@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:flutter_test/flutter_test.dart';
-import 'package:parser/graphql_parser/gq_grammar.dart';
+import 'package:test/test.dart';
+import 'package:retrofit_graphql/graphql_parser/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() async {
@@ -9,7 +9,7 @@ void main() async {
     const folderPath = "test/fragment/fragment_projections_tests";
 
     test("Simple projection", () {
-      final GraphQlGrammar g = GraphQlGrammar();
+      final GQGrammar g = GQGrammar();
 
       final text = File("$folderPath/simple_projection_schema.graphql")
           .readAsStringSync();
@@ -28,7 +28,7 @@ void main() async {
     test("Block test", () {
       final text = File("$folderPath/block_schema.graphql").readAsStringSync();
 
-      final GraphQlGrammar g = GraphQlGrammar();
+      final GQGrammar g = GQGrammar();
       final parser = g.buildFrom(g.fullGrammar().end());
       final parsed = parser.parse(text);
       expect(parsed.isSuccess, true);
@@ -42,33 +42,26 @@ void main() async {
       final text = File("$folderPath/fragment_reference_schema.graphql")
           .readAsStringSync();
 
-      final GraphQlGrammar g = GraphQlGrammar();
+      final GQGrammar g = GQGrammar();
       final parser = g.buildFrom(g.fullGrammar().end());
       final parsed = parser.parse(text);
       expect(parsed.isSuccess, true);
-
-      g.types.forEach((key, value) {
-        print("######## key = $key ===> ${value.toDart(g)}");
-      });
     });
   });
   group("Fragment tests", () {
     test("Fragments test", () async {
       final text = File("test/fragment/fragments.graphql").readAsStringSync();
-      final GraphQlGrammar g = GraphQlGrammar();
+      final GQGrammar g = GQGrammar();
       var parser = g.buildFrom(g.fullGrammar().end());
 
       var parsed = parser.parse(text);
 
       expect(parsed.isSuccess, true);
       expect(g.fragments.length, greaterThanOrEqualTo(4));
-      g.fragments.forEach((key, value) {
-        print(value);
-      });
     });
 
     test("Fragemnt Dependecies Test", () {
-      final GraphQlGrammar g = GraphQlGrammar();
+      final GQGrammar g = GQGrammar();
       var parser = g.buildFrom(g.fullGrammar().end());
 
       var parsed = parser.parse(

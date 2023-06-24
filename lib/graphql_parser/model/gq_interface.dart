@@ -1,6 +1,6 @@
-import 'package:parser/graphql_parser/gq_grammar.dart';
-import 'package:parser/graphql_parser/model/dart_serializable.dart';
-import 'package:parser/graphql_parser/model/gq_type_definition.dart';
+import 'package:retrofit_graphql/graphql_parser/gq_grammar.dart';
+import 'package:retrofit_graphql/graphql_parser/model/dart_serializable.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_type_definition.dart';
 
 class GQInterfaceDefinition extends GQTypeDefinition
     implements DartSerializable {
@@ -26,7 +26,7 @@ class GQInterfaceDefinition extends GQTypeDefinition
   }
 
   @override
-  String toDart(GraphQlGrammar grammar) {
+  String toDart(GQGrammar grammar) {
     final buffer = StringBuffer();
 
     buffer.write("abstract class $token");
