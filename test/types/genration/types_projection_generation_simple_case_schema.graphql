@@ -48,7 +48,9 @@ fragment UserAddressFragment on UserAddress {
 
 fragment UserFragment on User {
     firstName address {
-        city state
+        city state {
+            name
+        }
     }
 }
 

@@ -51,7 +51,7 @@ query ProductService($id: ID!, $pageIndex: PageIndex!) {
 
 }
 
-query ProductService {
+query ProductService1 {
   
   getAllProducts {
     id name
@@ -59,7 +59,7 @@ query ProductService {
 
 }
 
-query ProductService($min: Float!, $max: Float!) {
+query ProductService2($min: Float!, $max: Float!) {
   
   getProductsByPriceRange(min: $min, max: $max) {
     ...ProductFragment
@@ -68,7 +68,7 @@ query ProductService($min: Float!, $max: Float!) {
 }
 
 
-mutation ProductService($id: ID!, $input: ProductInput!) {
+mutation ProductServiceMutation($id: ID!, $input: ProductInput!) {
   createProduct(input: $input) {
     ...ProductFragment
   }

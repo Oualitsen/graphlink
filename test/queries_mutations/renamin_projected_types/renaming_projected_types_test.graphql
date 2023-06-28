@@ -67,7 +67,7 @@ query getAllProducts @gqTypeName(name: "MyProductResp") {
 mutation createProduct($input: ProductInput!) @gqTypeName(name: "ProductCreationResponse") {
   createProduct(input: $input) @gqTypeName(name: "AhmedProduct") {
     id name   brand {
-      ...ProductFragment
+      ...BrandFragment
     }
   }
 }
