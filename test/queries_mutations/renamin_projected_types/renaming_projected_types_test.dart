@@ -15,7 +15,6 @@ void main() async {
         .readAsStringSync();
     var parsed = parser.parse(text);
     var types = g.generateTypes();
-    print(types);
     var file =
         File("./test/queries_mutations/renamin_projected_types/types.gq.dart");
     file.writeAsStringSync(types);

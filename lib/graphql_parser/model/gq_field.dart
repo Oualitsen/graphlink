@@ -28,6 +28,14 @@ class GQField extends DartSerializable {
 
   @override
   String toDart(GQGrammar grammar) {
-    return "final ${type.toDartType(grammar.typeMap)} $name;";
+    return "final ${type.toDartType(grammar.typeMap, _hasInculeOrSkipDiretives)} $name;";
   }
+
+  //check for inclue or skip directives
+  bool get _hasInculeOrSkipDiretives => directives
+      .where((d) => [
+            GQGrammar.includeDirectiveValueName,
+            GQGrammar.skipDirectiveValueName
+          ].contains(d.token))
+      .isNotEmpty;
 }

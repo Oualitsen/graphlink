@@ -1,5 +1,4 @@
 import 'package:retrofit_graphql/graphql_parser/excpetions/parse_exception.dart';
-import 'package:retrofit_graphql/graphql_parser/gq_grammar.dart';
 import 'package:retrofit_graphql/graphql_parser/model/gq_directive.dart';
 import 'package:retrofit_graphql/graphql_parser/model/gq_token.dart';
 import 'package:retrofit_graphql/graphql_parser/model/gq_type_definition.dart';

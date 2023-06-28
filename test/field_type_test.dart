@@ -12,7 +12,7 @@ void main() {
     ''');
     expect(result.isSuccess, true);
     expect(result.value.nullable, false);
-    expect(result.value.toDartType({}), "String");
+    expect(result.value.toDartType({}, false), "String");
   });
 
   test("nullable type test", () {
@@ -24,6 +24,6 @@ void main() {
     ''');
     expect(result.isSuccess, true);
     expect(result.value.nullable, true);
-    expect(result.value.toDartType({}), "String?");
+    expect(result.value.toDartType({}, false), "String?");
   });
 }

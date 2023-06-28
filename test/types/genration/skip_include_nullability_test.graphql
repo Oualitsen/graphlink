@@ -1,0 +1,21 @@
+
+type Product {
+    name: String!
+    
+    description: String!
+}
+
+type Query {
+    getProduct: Product!
+    getProductList: [Product!]!
+}
+
+query products {
+    getProduct {
+        name @skip(if: true) description
+    }
+
+    getProductList {
+        name description @include(if: true)
+    }
+}

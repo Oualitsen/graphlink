@@ -563,8 +563,6 @@ $data
     var projections = {...block.projections};
 
     var name = generateName(nonProjectedType.token, block, field.directives);
-    print(
-        "Generated a name for ${nonProjectedType.token} name = $name directives = ${field.directives} fieldName = ${field.name}");
     block.projections.values
         .where((element) => element.isFragmentReference)
         .map((e) => fragments[e.fragmentName!]!)
@@ -624,16 +622,16 @@ $data
   GQField applyProjectionToField(GQField field, GQProjection projection) {
     final String fieldName = projection.alias ?? field.name;
     var block = projection.block;
+
     if (block != null) {
       //we should create another type here ...
       var generatedType = createProjectedTypeWithProjectionBlock(
           field, getType(field.type.token), block);
-      print("Generated type name ====> ${generatedType.token}");
       return GQField(
         name: fieldName,
         type: GQType(generatedType.token, field.type.nullable, isScalar: false),
         arguments: field.arguments,
-        directives: field.directives,
+        directives: projection.directives,
       );
     }
 
@@ -641,7 +639,7 @@ $data
       name: fieldName,
       type: field.type,
       arguments: field.arguments,
-      directives: field.directives,
+      directives: projection.directives,
     );
   }
 

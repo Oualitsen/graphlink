@@ -16,8 +16,11 @@ class GQType extends GQToken {
     return serialize();
   }
 
-  String toDartType(Map<String, String> typeMapping) {
+  String toDartType(Map<String, String> typeMapping, bool forceNullable) {
     var dartTpe = typeMapping[token] ?? token;
+    if (forceNullable) {
+      return "$dartTpe?";
+    }
     return "$dartTpe$nullableTextDart";
   }
 
@@ -49,8 +52,11 @@ class GQListType extends GQType {
   }
 
   @override
-  String toDartType(Map<String, String> typeMapping) {
-    return "List<${type.toDartType(typeMapping)}>$nullableTextDart";
+  String toDartType(Map<String, String> typeMapping, bool forceNullable) {
+    if (forceNullable) {
+      return "List<${type.toDartType(typeMapping, false)}>?";
+    }
+    return "List<${type.toDartType(typeMapping, false)}>$nullableTextDart";
   }
 
   @override

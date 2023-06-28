@@ -25,6 +25,13 @@ class GQGrammar extends GrammarDefinition {
   static const typename = "__typename";
   static const gqTypeNameDirectiveValueName = "@gqTypeName";
   static const gqTypeNameDirectiveDefinitionName = "gqTypeName";
+
+  static const includeDirectiveValueName = "@include";
+  static const includeDirectiveDefinitionName = "include";
+
+  static const skipDirectiveValueName = "@skip";
+  static const skipDirectiveDefinitionName = "skip";
+
   static const gqTypeNameDirectiveArgumentName = "name";
   final Set<String> scalars = {
     "ID",
@@ -40,13 +47,13 @@ class GQGrammar extends GrammarDefinition {
   late final Map<String, String> typeMap;
 
   final Map<String, GQDirectiveDefinition> directives = {
-    "include": GQDirectiveDefinition(
-      "include",
+    includeDirectiveDefinitionName: GQDirectiveDefinition(
+      includeDirectiveDefinitionName,
       [GQArgumentDefinition("if", GQType("Boolean", false))],
       {GQDirectiveScope.FIELD},
     ),
-    "skip": GQDirectiveDefinition(
-      "if",
+    skipDirectiveDefinitionName: GQDirectiveDefinition(
+      skipDirectiveDefinitionName,
       [GQArgumentDefinition("if", GQType("Boolean", false))],
       {GQDirectiveScope.FIELD},
     ),
@@ -276,7 +283,6 @@ class GQGrammar extends GrammarDefinition {
       GQType type = value[acceptsArguments ? 4 : 3] as GQType;
       List<GQDirectiveValue>? directives =
           value.last as List<GQDirectiveValue>?;
-
       return GQField(
         name: name,
         type: type,
@@ -355,16 +361,16 @@ class GQGrammar extends GrammarDefinition {
       directiveValue().star();
 
   Parser<GQDirectiveValue> directiveValue() =>
-      (directiveName() & ref1(token, argumentValues()).optional())
-          .map((array) => GQDirectiveValue(array[0], [], array[1] ?? []));
+      seq2(directiveValueName(), argumentValues().optional())
+          .map2((name, args) => GQDirectiveValue(name, [], args ?? []));
 
-  Parser<String> directiveName() =>
+  Parser<String> directiveValueName() =>
       ref1(token, "@".toParser() & identifier()).flatten();
 
   Parser<GQDirectiveDefinition> directiveDefinition() => seq3(
       seq2(
         ref1(token, "directive"),
-        directiveName(),
+        directiveValueName(),
       ).map2((_, name) => name),
       arguments().optional(),
       seq2(ref1(token, "on"), ref1(token, directiveScopes()))

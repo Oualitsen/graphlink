@@ -107,7 +107,8 @@ class GQClient {
       return "";
     }
     var result = def.arguments
-        .map((e) => "${e.type.toDartType(g.typeMap)} ${e.dartArgumentName}")
+        .map((e) =>
+            "${e.type.toDartType(g.typeMap, false)} ${e.dartArgumentName}")
         .map((e) => "required $e")
         .toList()
         .join(", ");

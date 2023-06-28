@@ -14,7 +14,7 @@ void main() async {
         .readAsStringSync();
     var parsed = parser.parse(text);
     expect(parsed.isSuccess, true);
-    expect(g.queries["ProductQuery"]!.fragments.map((e) => e.token),
+    expect(g.queries["ProductQuery"]!.fragments(g).map((e) => e.token),
         contains("ProductFragment"));
   });
 }

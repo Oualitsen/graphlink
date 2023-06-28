@@ -4,7 +4,6 @@ import 'package:retrofit_graphql/graphql_parser/model/gq_argument.dart';
 import 'package:retrofit_graphql/graphql_parser/model/gq_field.dart';
 import 'package:retrofit_graphql/graphql_parser/model/gq_fragment.dart';
 import 'package:retrofit_graphql/graphql_parser/excpetions/parse_exception.dart';
-import 'package:retrofit_graphql/graphql_parser/model/gq_graphql_service.dart';
 import 'package:retrofit_graphql/graphql_parser/model/gq_token.dart';
 import 'package:retrofit_graphql/graphql_parser/model/gq_type.dart';
 import 'package:retrofit_graphql/graphql_parser/model/gq_type_definition.dart';
