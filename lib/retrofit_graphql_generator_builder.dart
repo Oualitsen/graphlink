@@ -43,10 +43,10 @@ class RetrofitGraphqlGeneratorBuilder implements Builder {
     var schema = await readSchema(buildStep);
     parser.parse(schema);
 
-    final inputs = g.generateInputs(g);
-    final enums = g.generateEnums(g);
-    final types = g.generateTypes(g);
-    final client = g.generateClient(g);
+    final inputs = g.generateInputs();
+    final enums = g.generateEnums();
+    final types = g.generateTypes();
+    final client = g.generateClient();
 
     var dir = Directory(outputDir);
     var exists = await dir.exists();

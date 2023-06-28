@@ -1,3 +1,5 @@
+import 'package:retrofit_graphql/graphql_parser/gq_grammar.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_directive.dart';
 import 'package:retrofit_graphql/graphql_parser/model/gq_token.dart';
 
 String serializeList(List<GQToken>? list,
@@ -44,4 +46,17 @@ String formatUnformattedGraphQL(String unformattedGraphQL) {
   }
 
   return formattedGraphQL.trim();
+}
+
+String? getNameValueFromDirectives(Iterable<GQDirectiveValue> directives) {
+  var dirs = directives.where(
+      (element) => element.token == GQGrammar.gqTypeNameDirectiveValueName);
+  if (dirs.isEmpty) {
+    return null;
+  }
+  var name = dirs.first.arguments
+      .firstWhere(
+          (arg) => arg.token == GQGrammar.gqTypeNameDirectiveArgumentName)
+      .value as String;
+  return name.replaceAll("\"", "");
 }

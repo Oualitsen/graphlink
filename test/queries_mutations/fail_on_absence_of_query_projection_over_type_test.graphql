@@ -1,0 +1,45 @@
+
+
+type Product {
+  id: ID!
+  name: String!
+  price: Float!
+  wasPrice: Float
+  brand: Brand!
+}
+
+type Brand {
+  brandName: String!
+  subBrand: SubBrand
+}
+
+type SubBrand {
+  id: String
+  name: String
+}
+
+
+type Query {
+  getProductById(id: ID!): Product!
+}
+
+query Product($id: ID!) {
+  getProductById(id: $id) {
+    id name ...ProductFragment
+  }
+}
+
+fragment ProductFragment on Product {
+  id name brand {
+      brandName subBrand {
+        ...SubBrandFragment
+      }
+    }
+}
+
+fragment SubBrandFragment on SubBrand {
+  id name
+}
+
+
+

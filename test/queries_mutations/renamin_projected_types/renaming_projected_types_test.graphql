@@ -1,0 +1,96 @@
+
+
+
+
+input PageIndex {
+  index: Int!
+  page: Int!
+}
+
+type Product {
+  id: ID!
+  name: String!
+  price: Float!
+  wasPrice: Float
+  brand: Brand!
+}
+
+type Brand {
+  name: String!
+  country: String!
+  
+}
+
+input ProductInput @gqTypeName(name: "MyProductInput"){
+  name: String!
+  price: Float!
+  wasPrice: Float
+}
+
+type Query {
+
+  getProducts(pageIndex: PageIndex): [Product!]!
+  getProductById(id: ID!): Product!
+
+  getAllProducts(): [Product!]!
+
+  getCount(): Int!
+
+  getCount2(): Long!
+
+}
+
+type Mutation {
+  createProduct(input: ProductInput!): Product!
+  deleteProduct(id: ID!): Product!
+
+  deleteProduct2(id: Int): Int 
+}
+
+query getProducts($pageIndex: PageIndex!) {
+
+  getProducts(pageIndex: $pageIndex) @gqTypeName(name: "MyProduct123")  {
+    id, name, price, wasPrice
+  }
+
+  getCount
+
+}
+
+query getAllProducts @gqTypeName(name: "MyProductResp") {
+  getAllProducts @gqTypeName(name: "MyProduct") {
+    id name 
+  }
+}
+
+
+mutation createProduct($input: ProductInput!) @gqTypeName(name: "ProductCreationResponse") {
+  createProduct(input: $input) @gqTypeName(name: "AhmedProduct") {
+    id name   brand {
+      ...ProductFragment
+    }
+  }
+}
+
+
+mutation deleteProduct($id: ID!, $id2: Int) {
+  deleteProduct(id: $id) {
+    id name
+  }
+
+  deleteProduct2(id: $id2)
+
+  
+}
+
+scalar Long
+
+fragment ProductFragment on Product {
+  price brand  @gqTypeName(name: "Tozzz") {
+    ...BrandFragment   
+  }
+}
+
+fragment BrandFragment on Brand {
+  name 
+}

@@ -4,11 +4,12 @@ import 'package:retrofit_graphql/graphql_parser/model/gq_token.dart';
 class GQDirectiveDefinition {
   final String name;
   final List<GQArgumentDefinition> arguments;
+  final Set<GQDirectiveScope> scopes;
 
-  GQDirectiveDefinition(this.name, this.arguments);
+  GQDirectiveDefinition(this.name, this.arguments, this.scopes);
 }
 
-enum GQDirectiveLocation {
+enum GQDirectiveScope {
 // ignore: constant_identifier_names
   QUERY,
   // ignore: constant_identifier_names
@@ -50,7 +51,7 @@ enum GQDirectiveLocation {
 }
 
 class GQDirectiveValue extends GQToken {
-  final List<GQDirectiveLocation> locations;
+  final List<GQDirectiveScope> locations;
   final List<GQArgumentValue> arguments;
 
   GQDirectiveValue(String name, this.locations, this.arguments) : super(name);

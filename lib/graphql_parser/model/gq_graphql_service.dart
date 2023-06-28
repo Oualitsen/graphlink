@@ -66,7 +66,7 @@ class GQClient {
     return """
       ${returnTypeByQueryType(def, g)} ${def.token}(${generateArgs(def, g)}) {
         var operationName = "${def.token}";
-        var fragments = \"\"\" ${def.fragments.map((e) => e.serialize()).toList().join(" ")} \"\"\";
+        var fragments = \"\"\" ${def.fragments(g).map((e) => e.serialize()).toList().join(" ")} \"\"\";
         var query = \"\"\"
         ${formatUnformattedGraphQL(def.serialize())} \$fragments
         \"\"\";

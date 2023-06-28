@@ -1,0 +1,13 @@
+fragment _all_types_User on User  {
+  firstName  lastName  middleName  address {
+    ... _all_types_Address
+  } username
+}
+fragment _all_types_Address on Address  {
+  street  state {
+    ... _all_types_State
+  } zipCode
+}
+fragment _all_types_State on State  {
+  id  name  localName
+}

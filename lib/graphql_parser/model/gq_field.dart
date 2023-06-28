@@ -10,7 +10,7 @@ class GQField extends DartSerializable {
   final Object? initialValue;
   final String? documentation;
   final List<GQArgumentDefinition> arguments;
-  final List<GQDirectiveValue>? directives;
+  final List<GQDirectiveValue> directives;
 
   GQField({
     required this.name,
@@ -18,7 +18,7 @@ class GQField extends DartSerializable {
     required this.arguments,
     this.initialValue,
     this.documentation,
-    this.directives,
+    required this.directives,
   });
 
   @override

@@ -1,0 +1,30 @@
+interface UserBase {
+    firstName: String!
+    lastName: String!
+    middleName: String
+    address: Address
+}
+
+type User implements UserBase {
+
+    firstName: String!
+    lastName: String!
+    middleName: String
+    address: Address
+
+    username: String
+}
+
+type Address {
+    street: String
+    state: State
+    zipCode: String
+}
+
+type State {
+    id: String!
+    name: String!
+    localName: String!
+}
+
+

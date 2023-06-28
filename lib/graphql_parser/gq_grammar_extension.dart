@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:retrofit_graphql/graphql_parser/excpetions/parse_exception.dart';
 import 'package:retrofit_graphql/graphql_parser/gq_grammar.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_directive.dart';
 import 'package:retrofit_graphql/graphql_parser/model/gq_field.dart';
 import 'package:retrofit_graphql/graphql_parser/model/gq_graphql_service.dart';
 import 'package:retrofit_graphql/graphql_parser/model/gq_schema.dart';
@@ -14,6 +15,7 @@ import 'package:retrofit_graphql/graphql_parser/model/gq_type.dart';
 import 'package:retrofit_graphql/graphql_parser/model/gq_type_definition.dart';
 import 'package:retrofit_graphql/graphql_parser/model/gq_union.dart';
 import 'package:retrofit_graphql/graphql_parser/model/gq_queries.dart';
+import 'package:retrofit_graphql/graphql_parser/utils.dart';
 
 const String inputsFileName = "inputs.gq";
 const String allFieldsFragmentsFileName = "allFieldsFragments";
@@ -82,12 +84,13 @@ extension GQGrammarExtension on GQGrammar {
     file.writeAsStringSync(allFieldsFragmentsContent);
   }
 
-  String generateEnums(GQGrammar g) {
-    return enums.values.toList().map((e) => e.toDart(g)).join("\n");
+  String generateEnums() {
+    return enums.values.toList().map((e) => e.toDart(this)).join("\n");
   }
 
-  String generateInputs(GQGrammar g) {
-    var inputs = this.inputs.values.toList().map((e) => e.toDart(g)).join("\n");
+  String generateInputs() {
+    var inputs =
+        this.inputs.values.toList().map((e) => e.toDart(this)).join("\n");
     return """
   import 'package:json_annotation/json_annotation.dart';
   import '$enumsFileName.dart';
@@ -97,12 +100,12 @@ $inputs
 """;
   }
 
-  String generateTypes(GQGrammar g) {
+  String generateTypes() {
     var data =
-        projectedTypes.values.toList().map((e) => e.toDart(g)).join("\n");
+        projectedTypes.values.toList().map((e) => e.toDart(this)).join("\n");
     var data2 = queries.values
         .toList()
-        .map((e) => e.getGeneratedTypeDefinition().toDart(g))
+        .map((e) => e.getGeneratedTypeDefinition().toDart(this))
         .join("\n");
     return """
  import 'package:json_annotation/json_annotation.dart';
@@ -116,8 +119,8 @@ $data2
 """;
   }
 
-  String generateClient(GQGrammar g) {
-    var data = service.toDart(g);
+  String generateClient() {
+    var data = service.toDart(this);
     return """
 import '$enumsFileName.dart';
 import '$inputsFileName.dart';
@@ -291,23 +294,7 @@ $data
     }
     block.projections.forEach((key, projection) {
       var inlineType = type.inlineType;
-      var declaredType = getType(inlineType.token);
-      if (projection.isFragmentReference) {
-        var fragment = getFragment(projection.token);
-
-        if (fragment.onTypeName != declaredType.token &&
-            !declaredType.interfaceNames.contains(fragment.onTypeName)) {
-          throw ParseException(
-              "Fragment ${fragment.token} cannot be applied to type ${type.token}");
-        }
-        element.fragmentReferences.add(fragment);
-      } else {
-        var list = declaredType.fields.where((f) => f.name == projection.token);
-        if (list.isEmpty) {
-          throw ParseException(
-              "Cannot find field '${projection.token}' in type '${inlineType.token}'");
-        }
-      }
+      validateProjection(projection, inlineType.token, null);
     });
   }
 
@@ -321,9 +308,10 @@ $data
 
   void validateProjection(
       GQProjection projection, String typeName, String? fragmentName) {
+    var type = getType(typeName);
     if (projection.isFragmentReference) {
       var fragment = getFragment(projection.token);
-      var type = getType(typeName);
+
       if (fragment.onTypeName != type.token &&
           !type.interfaceNames.contains(fragment.onTypeName)) {
         throw ParseException(
@@ -339,6 +327,12 @@ $data
       if (!requiresProjection && projection.block != null) {
         throw ParseException(
             "Field '${projection.token}' of type '$typeName' should not have a selection of subfields ${fragmentName == null ? "" : "Fragment: '$fragmentName'"}");
+      }
+    }
+    if (projection.block != null) {
+      var myType = getTypeFromFieldName(projection.actualName, typeName);
+      for (var p in projection.block!.projections.values) {
+        validateProjection(p, myType.token, null);
       }
     }
   }
@@ -403,9 +397,11 @@ $data
     if (filtered.isEmpty) {
       if (fieldName == GQGrammar.typename) {
         return GQField(
-            name: fieldName,
-            type: GQType(getLangType("String"), false),
-            arguments: []);
+          name: fieldName,
+          type: GQType(getLangType("String"), false),
+          arguments: [],
+          directives: [],
+        );
       } else {
         throw ParseException(
             "Could not find field '$fieldName' on type ${dataType.token}");
@@ -429,6 +425,13 @@ $data
   void updateFragmentDependencies() {
     fragments.forEach((key, value) {
       value.updateDepencies(fragments);
+    });
+    var fragMap = <String, GQFragmentDefinitionBase>{};
+    allFieldsFragments.forEach((key, value) {
+      fragMap[key] = value.fragment;
+    });
+    allFieldsFragments.forEach((key, value) {
+      value.fragment.updateDepencies(fragMap);
     });
   }
 
@@ -465,44 +468,72 @@ $data
   }
 
   void createAllFieldsFragments() {
-    types.forEach((key, value) {
+    types.forEach((key, typeDefinition) {
       if (![schema.mutation, schema.query, schema.subscription].contains(key)) {
-        allFieldsFragments[key] = GQTypedFragment(
+        allFieldsFragments[allTypeFragmentName(key)] = GQTypedFragment(
             GQFragmentDefinition(
-                key,
-                value.token,
-                GQFragmentBlockDefinition(value.fields
-                    .map((e) => GQProjection(
+                allTypeFragmentName(key),
+                typeDefinition.token,
+                GQFragmentBlockDefinition(typeDefinition.fields
+                    .map((field) => GQProjection(
                         fragmentName: null,
-                        token: e.name,
+                        token: field.name,
                         alias: null,
                         isFragmentReference: false,
-                        block: null,
+                        block: createAllFieldBlock(field),
                         directives: []))
                     .toList()),
                 []),
-            value);
+            typeDefinition);
       }
     });
   }
 
+  static String allTypeFragmentName(String token) {
+    return "_all_types_$token";
+  }
+
+  GQFragmentBlockDefinition? createAllFieldBlock(GQField field) {
+    if (!typeRequiresProjection(field.type)) {
+      return null;
+    }
+    return GQFragmentBlockDefinition([
+      GQProjection(
+          fragmentName: allTypeFragmentName(field.type.inlineType.token),
+          token: allTypeFragmentName(field.type.inlineType.token),
+          alias: null,
+          isFragmentReference: true,
+          block: null,
+          directives: [])
+    ]);
+  }
+
   void createProjectedTypes() {
     typedFragments.forEach((key, value) {
-      createProjectedType(value.fragment, value.onType);
+      //  createProjectedType(value.fragment, value.onType);
     });
 
     //create for queries, mutations and subscriptions
     getAllElements().where((e) => e.block != null).forEach((element) {
-      var newType =
-          createProjectedTypeForQuery(element.returnType, element.block!);
+      var newType = createProjectedTypeForQuery(element);
       element.projectedType = newType;
+    });
+
+    queries.forEach((key, value) {
+      var projectedType = value.getGeneratedTypeDefinition();
+      if (projectedTypes.containsKey(projectedType.token)) {
+        throw ParseException(
+            "Type ${projectedType.token} has already been defined, please rename it");
+      }
+      projectedTypes[projectedType.token] = projectedType;
     });
   }
 
-  GQTypeDefinition createProjectedTypeForQuery(
-      GQType type, GQFragmentBlockDefinition block) {
+  GQTypeDefinition createProjectedTypeForQuery(GQQueryElement element) {
+    var type = element.returnType;
+    var block = element.block!;
     var onType = getType(type.inlineType.token);
-    var name = generateName(onType.token, block);
+    var name = generateName(onType.token, block, element.directives);
     var newType = GQTypeDefinition(
         name: name,
         fields: applyProjection(onType.fields, block.projections),
@@ -515,7 +546,8 @@ $data
 
   void createProjectedType(
       GQFragmentDefinitionBase fragment, GQTypeDefinition onType) {
-    var name = "${fragment.token}_on_${onType.token}";
+    var name = getNameValueFromDirectives(fragment.directives) ??
+        "${fragment.token}_on_${onType.token}";
 
     var newType = GQTypeDefinition(
         name: name,
@@ -525,11 +557,14 @@ $data
     projectedTypes[name] = newType;
   }
 
-  GQTypeDefinition createProjectedTypeWithProjectionBlock(
+  GQTypeDefinition createProjectedTypeWithProjectionBlock(GQField field,
       GQTypeDefinition nonProjectedType, GQFragmentBlockDefinition block) {
     var fields = [...nonProjectedType.fields];
     var projections = {...block.projections};
-    var name = generateName(nonProjectedType.token, block);
+
+    var name = generateName(nonProjectedType.token, block, field.directives);
+    print(
+        "Generated a name for ${nonProjectedType.token} name = $name directives = ${field.directives} fieldName = ${field.name}");
     block.projections.values
         .where((element) => element.isFragmentReference)
         .map((e) => fragments[e.fragmentName!]!)
@@ -547,8 +582,11 @@ $data
     return result;
   }
 
-  String generateName(String originalName, GQFragmentBlockDefinition block) {
-    var name = "${originalName}_${block.uniqueName}";
+  String generateName(String originalName, GQFragmentBlockDefinition block,
+      List<GQDirectiveValue> directives) {
+    String name = getNameValueFromDirectives(directives) ??
+        "${originalName}_${block.uniqueName}";
+
     String? indexedName;
     int nameIndex = 0;
     if (projectedTypes.containsKey(name)) {
@@ -585,15 +623,17 @@ $data
 
   GQField applyProjectionToField(GQField field, GQProjection projection) {
     final String fieldName = projection.alias ?? field.name;
-
-    if (projection.block != null) {
+    var block = projection.block;
+    if (block != null) {
       //we should create another type here ...
       var generatedType = createProjectedTypeWithProjectionBlock(
-          getType(field.type.token), projection.block!);
+          field, getType(field.type.token), block);
+      print("Generated type name ====> ${generatedType.token}");
       return GQField(
         name: fieldName,
         type: GQType(generatedType.token, field.type.nullable, isScalar: false),
         arguments: field.arguments,
+        directives: field.directives,
       );
     }
 
@@ -601,6 +641,7 @@ $data
       name: fieldName,
       type: field.type,
       arguments: field.arguments,
+      directives: field.directives,
     );
   }
 

@@ -1,5 +1,5 @@
 name: retrofit_graphql
-description: A new Flutter project.
+description: GraphQL client generator
 
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -19,19 +19,11 @@ environment:
 dependencies:
   
   petitparser: ^5.4.0
-  http: ^1.0.0
-  json_annotation: ^4.8.1
-  build: ^2.4.0
-  build_config: ^1.1.1
-  web_socket_client: ^0.1.0-dev.3
   build_runner: ^2.1.4
   source_gen: ^1.0.0
-  json_serializable: ^6.7.0
   glob: ^2.1.2
   logger: ^1.4.0
 
 dev_dependencies:
   test:
-  
   flutter_lints: ^2.0.1
-

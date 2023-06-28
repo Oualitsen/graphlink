@@ -35,7 +35,7 @@ interface UserBase {
 """
 Documentation for union
 """
-union izan = Address | Admin
+union addressOrAdmin = Address | Admin
 
 
 type Address {

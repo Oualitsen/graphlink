@@ -1,8 +1,10 @@
+import 'package:retrofit_graphql/graphql_parser/gq_grammar.dart';
 import 'package:retrofit_graphql/graphql_parser/model/gq_directive.dart';
 import 'package:retrofit_graphql/graphql_parser/model/gq_argument.dart';
 import 'package:retrofit_graphql/graphql_parser/model/gq_field.dart';
 import 'package:retrofit_graphql/graphql_parser/model/gq_fragment.dart';
 import 'package:retrofit_graphql/graphql_parser/excpetions/parse_exception.dart';
+import 'package:retrofit_graphql/graphql_parser/model/gq_graphql_service.dart';
 import 'package:retrofit_graphql/graphql_parser/model/gq_token.dart';
 import 'package:retrofit_graphql/graphql_parser/model/gq_type.dart';
 import 'package:retrofit_graphql/graphql_parser/model/gq_type_definition.dart';
@@ -18,11 +20,13 @@ class GQQueryDefinition extends GQToken {
 
   GQTypeDefinition? _gqTypeDefinition;
 
-  Set<GQFragmentDefinitionBase> get fragments {
-    return elements
-        .expand((e) => e.fragmentReferences)
-        .expand((f) => {f, ...f.dependecies})
-        .toSet();
+  Set<String> get fragmentNames {
+    return elements.expand((e) => e.fragmentNames).toSet();
+  }
+
+  Set<GQFragmentDefinitionBase> fragments(GQGrammar g) {
+    var frags = fragmentNames.map((e) => g.getFragment(e)).toSet();
+    return {...frags, ...frags.expand((e) => e.dependecies)};
   }
 
   GQQueryDefinition(
@@ -70,13 +74,18 @@ class GQQueryDefinition extends GQToken {
     var gqDef = _gqTypeDefinition;
     if (gqDef == null) {
       _gqTypeDefinition = gqDef = GQTypeDefinition(
-        name: "${_capitilizedFirstLetterToken}Response",
+        name: _getGeneratedTypeName(),
         fields: _generateFields(),
         directives: directives,
         interfaceNames: {},
       );
     }
     return gqDef;
+  }
+
+  String _getGeneratedTypeName() {
+    return getNameValueFromDirectives(directives) ??
+        "${_capitilizedFirstLetterToken}Response";
   }
 
   String get _capitilizedFirstLetterToken {
@@ -88,8 +97,14 @@ class GQQueryDefinition extends GQToken {
 
   List<GQField> _generateFields() {
     return elements
-        .map((e) =>
-            GQField(name: e.token, type: e.returnProjectedType, arguments: []))
+        .map(
+          (e) => GQField(
+            name: e.token,
+            type: e.returnProjectedType,
+            arguments: [],
+            directives: e.directives,
+          ),
+        )
         .toList();
   }
 
@@ -112,7 +127,26 @@ class GQQueryElement extends GQToken {
   ///
   GQTypeDefinition? projectedType;
 
-  final Set<GQFragmentDefinitionBase> fragmentReferences = {};
+  Set<String> get fragmentNames {
+    if (block == null) {
+      return {};
+    }
+    return _getFragmentNamesByBlock(block!);
+  }
+
+  Set<String> _getFragmentNamesByBlock(GQFragmentBlockDefinition block) {
+    var set1 = block.projections.values
+        .where((element) => element.isFragmentReference)
+        .map((e) => e.fragmentName!)
+        .toSet();
+    var set2 = block.projections.values
+        .where(
+            (element) => !element.isFragmentReference && element.block != null)
+        .map((e) => e.block!)
+        .expand((element) => _getFragmentNamesByBlock(element))
+        .toSet();
+    return {...set1, ...set2};
+  }
 
   GQType _getReturnProjectedType(
       GQTypeDefinition? projectedType, GQType returnType) {

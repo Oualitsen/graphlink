@@ -16,12 +16,16 @@ import 'package:retrofit_graphql/graphql_parser/model/gq_queries.dart';
 import 'package:retrofit_graphql/graphql_parser/model/gq_type_definition.dart';
 import 'package:retrofit_graphql/graphql_parser/model/gq_union.dart';
 import 'package:petitparser/petitparser.dart';
+import 'package:retrofit_graphql/graphql_parser/utils.dart';
 
 export 'package:retrofit_graphql/graphql_parser/gq_grammar_extension.dart';
 
 class GQGrammar extends GrammarDefinition {
   var logger = Logger();
   static const typename = "__typename";
+  static const gqTypeNameDirectiveValueName = "@gqTypeName";
+  static const gqTypeNameDirectiveDefinitionName = "gqTypeName";
+  static const gqTypeNameDirectiveArgumentName = "name";
   final Set<String> scalars = {
     "ID",
     "Boolean",
@@ -34,6 +38,33 @@ class GQGrammar extends GrammarDefinition {
   final Map<String, GQTypedFragment> typedFragments = {};
 
   late final Map<String, String> typeMap;
+
+  final Map<String, GQDirectiveDefinition> directives = {
+    "include": GQDirectiveDefinition(
+      "include",
+      [GQArgumentDefinition("if", GQType("Boolean", false))],
+      {GQDirectiveScope.FIELD},
+    ),
+    "skip": GQDirectiveDefinition(
+      "if",
+      [GQArgumentDefinition("if", GQType("Boolean", false))],
+      {GQDirectiveScope.FIELD},
+    ),
+    gqTypeNameDirectiveDefinitionName: GQDirectiveDefinition(
+      gqTypeNameDirectiveDefinitionName,
+      [
+        GQArgumentDefinition(
+            gqTypeNameDirectiveArgumentName, GQType("String", false))
+      ],
+      {
+        GQDirectiveScope.INPUT_OBJECT,
+        GQDirectiveScope.FRAGMENT_DEFINITION,
+        GQDirectiveScope.QUERY,
+        GQDirectiveScope.MUTATION,
+        GQDirectiveScope.SUBSCRIPTION,
+      },
+    )
+  };
 
   ///
   /// key is the type name
@@ -93,15 +124,16 @@ class GQGrammar extends GrammarDefinition {
       });
 
   void _onDone() {
+    createAllFieldsFragments();
     checkFragmentRefs();
     updateInterfaceParents();
     fillQueryElementsReturnType();
     fillTypedFragments();
-    createAllFieldsFragments();
     validateProjections();
+    createProjectedTypes();
+
     updateFragmentDependencies();
     updateFragmentAllTypesDependecies();
-    createProjectedTypes();
     generateGQClient();
   }
 
@@ -206,7 +238,8 @@ class GQGrammar extends GrammarDefinition {
                     ref0(closeBrace))
                 .map3((p0, fieldList, p2) => fieldList))
         .map4((_, name, directives, fields) {
-      final input = GQInputDefinition(name: name, fields: fields);
+      var inputName = getNameValueFromDirectives(directives) ?? name;
+      final input = GQInputDefinition(name: inputName, fields: fields);
       addInputDefinition(input);
       return input;
     });
@@ -250,7 +283,7 @@ class GQGrammar extends GrammarDefinition {
         documentation: fieldDocumentation,
         arguments: fieldArguments ?? [],
         initialValue: initialValue,
-        directives: directives,
+        directives: directives ?? [],
       );
     });
   }
@@ -328,36 +361,31 @@ class GQGrammar extends GrammarDefinition {
   Parser<String> directiveName() =>
       ref1(token, "@".toParser() & identifier()).flatten();
 
-  Parser directiveDefinition() =>
-      ref1(token, "directive") &
-      directiveName() &
-      arguments().optional() &
-      ref1(token, "on") &
-      ref1(token, directiveScopes());
+  Parser<GQDirectiveDefinition> directiveDefinition() => seq3(
+      seq2(
+        ref1(token, "directive"),
+        directiveName(),
+      ).map2((_, name) => name),
+      arguments().optional(),
+      seq2(ref1(token, "on"), ref1(token, directiveScopes()))
+          .map2((_, scopes) => scopes)).map3(
+      (name, args, scopes) => GQDirectiveDefinition(name, args ?? [], scopes));
 
-  Parser directiveScope() =>
-      ref1(token, "QUERY") |
-      ref1(token, "MUTATION") |
-      ref1(token, "SUBSCRIPTION") |
-      ref1(token, "FIELD") |
-      ref1(token, "FRAGMENT_DEFINITION") |
-      ref1(token, "FRAGMENT_SPREAD") |
-      ref1(token, "INLINE_FRAGMENT") |
-      ref1(token, "SCALAR") |
-      ref1(token, "OBJECT") |
-      ref1(token, "FIELD_DEFINITION") |
-      ref1(token, "ARGUMENT_DEFINITION") |
-      ref1(token, "INTERFACE") |
-      ref1(token, "UNION") |
-      ref1(token, "ENUM") |
-      ref1(token, "ENUM_VALUE") |
-      ref1(token, "INPUT_OBJECT") |
-      ref1(token, "INPUT_FIELD_DEFINITION") |
-      ref1(token, "VARIABLE_DEFINITION") |
-      ref1(token, "SCHEMA");
+  Parser<GQDirectiveScope> directiveScope() {
+    return GQDirectiveScope.values
+        .map((e) => e.name)
+        .map((name) => ref1(token, name.toParser())
+            .map((value) => GQDirectiveScope.values.asNameMap()[value]!))
+        .toList()
+        .toChoiceParser();
+  }
 
-  Parser directiveScopes() =>
-      directiveScope() & (ref1(token, "|") & directiveScope()).star();
+  Parser<Set<GQDirectiveScope>> directiveScopes() => seq2(
+          directiveScope(),
+          seq2(ref1(token, "|"), directiveScope())
+              .map2((_, scope) => scope)
+              .star())
+      .map2((scope, scopeList) => {scope, ...scopeList});
 
   Parser<GQArgumentDefinition> oneArgumentDefinition(
           {bool parametrized = false}) =>
