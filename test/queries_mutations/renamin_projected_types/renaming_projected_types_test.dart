@@ -14,14 +14,12 @@ void main() async {
             "test/queries_mutations/renamin_projected_types/renaming_projected_types_test.graphql")
         .readAsStringSync();
     var parsed = parser.parse(text);
-    var types = g.generateTypes();
-    var file =
-        File("./test/queries_mutations/renamin_projected_types/types.gq.dart");
-    file.writeAsStringSync(types);
 
-    var inputsFile =
-        File("./test/queries_mutations/renamin_projected_types/inputs.gq.dart");
-    inputsFile.writeAsStringSync(g.generateInputs());
     expect(parsed.isSuccess, true);
+    //renamed product input
+    expect(g.inputs.keys, contains("MyProductInput"));
+    //renamed responses
+    expect(g.queries["getAllProducts"]!.getGeneratedTypeDefinition().token,
+        equals("MyProductResp"));
   });
 }

@@ -102,19 +102,14 @@ $inputs
 
   String generateTypes() {
     var data =
-        projectedTypes.values.toList().map((e) => e.toDart(this)).join("\n");
-    var data2 = queries.values
-        .toList()
-        .map((e) => e.getGeneratedTypeDefinition().toDart(this))
-        .join("\n");
+        projectedTypes.values.toSet().map((e) => e.toDart(this)).join("\n");
+
     return """
  import 'package:json_annotation/json_annotation.dart';
  import '$enumsFileName.dart';
   part '$typesFileName.g.dart';
 
 $data
-
-$data2  
 
 """;
   }
@@ -444,7 +439,7 @@ $data
   }
 
   GQFragmentDefinitionBase getFragment(String name) {
-    final fragment = fragments[name];
+    final fragment = fragments[name] ?? allFieldsFragments[name]?.fragment;
     if (fragment == null) {
       throw ParseException("Fragment '$name' was not found");
     }
@@ -470,9 +465,9 @@ $data
   void createAllFieldsFragments() {
     types.forEach((key, typeDefinition) {
       if (![schema.mutation, schema.query, schema.subscription].contains(key)) {
-        allFieldsFragments[allTypeFragmentName(key)] = GQTypedFragment(
+        allFieldsFragments[allFieldsFragmentName(key)] = GQTypedFragment(
             GQFragmentDefinition(
-                allTypeFragmentName(key),
+                allFieldsFragmentName(key),
                 typeDefinition.token,
                 GQFragmentBlockDefinition(typeDefinition.fields
                     .map((field) => GQProjection(
@@ -489,8 +484,8 @@ $data
     });
   }
 
-  static String allTypeFragmentName(String token) {
-    return "_all_types_$token";
+  static String allFieldsFragmentName(String token) {
+    return "_all_fields_$token";
   }
 
   GQFragmentBlockDefinition? createAllFieldBlock(GQField field) {
@@ -499,8 +494,8 @@ $data
     }
     return GQFragmentBlockDefinition([
       GQProjection(
-          fragmentName: allTypeFragmentName(field.type.inlineType.token),
-          token: allTypeFragmentName(field.type.inlineType.token),
+          fragmentName: allFieldsFragmentName(field.type.inlineType.token),
+          token: allFieldsFragmentName(field.type.inlineType.token),
           alias: null,
           isFragmentReference: true,
           block: null,
@@ -509,14 +504,17 @@ $data
   }
 
   void createProjectedTypes() {
-    typedFragments.forEach((key, value) {
-      //  createProjectedType(value.fragment, value.onType);
-    });
-
     //create for queries, mutations and subscriptions
     getAllElements().where((e) => e.block != null).forEach((element) {
       var newType = createProjectedTypeForQuery(element);
-      element.projectedType = newType;
+
+      element.projectedTypeKey = newType.token;
+    });
+
+    getAllElements()
+        .where((e) => e.projectedTypeKey != null)
+        .forEach((element) {
+      element.projectedType = projectedTypes[element.projectedTypeKey!]!;
     });
 
     queries.forEach((key, value) {
@@ -533,28 +531,16 @@ $data
     var type = element.returnType;
     var block = element.block!;
     var onType = getType(type.inlineType.token);
+
     var name = generateName(onType.token, block, element.directives);
+
     var newType = GQTypeDefinition(
-        name: name,
+        name: name.value,
+        nameDeclared: name.declared,
         fields: applyProjection(onType.fields, block.projections),
         interfaceNames: onType.interfaceNames,
         directives: onType.directives);
-
-    projectedTypes[name] = newType;
-    return newType;
-  }
-
-  void createProjectedType(
-      GQFragmentDefinitionBase fragment, GQTypeDefinition onType) {
-    var name = getNameValueFromDirectives(fragment.directives) ??
-        "${fragment.token}_on_${onType.token}";
-
-    var newType = GQTypeDefinition(
-        name: name,
-        fields: applyProjection(onType.fields, fragment.block.projections),
-        interfaceNames: onType.interfaceNames,
-        directives: onType.directives);
-    projectedTypes[name] = newType;
+    return addToProjectedType(newType);
   }
 
   GQTypeDefinition createProjectedTypeWithProjectionBlock(GQField field,
@@ -565,25 +551,69 @@ $data
     var name = generateName(nonProjectedType.token, block, field.directives);
     block.projections.values
         .where((element) => element.isFragmentReference)
-        .map((e) => fragments[e.fragmentName!]!)
+        .map((e) => (fragments[e.fragmentName!] ??
+            allFieldsFragments[e.fragmentName!]?.fragment)!)
         .forEach((frag) {
       projections.addAll(frag.block.projections);
     });
 
     var result = GQTypeDefinition(
-        name: name,
+        name: name.value,
+        nameDeclared: name.declared,
         fields: applyProjection(fields, projections),
         interfaceNames: {},
         directives: []);
 
-    projectedTypes[name] = result;
-    return result;
+    return addToProjectedType(result);
   }
 
-  String generateName(String originalName, GQFragmentBlockDefinition block,
-      List<GQDirectiveValue> directives) {
-    String name = getNameValueFromDirectives(directives) ??
-        "${originalName}_${block.uniqueName}";
+  GQTypeDefinition addToProjectedType(GQTypeDefinition definition) {
+    if (definition.nameDeclared) {
+      var type = projectedTypes[definition.token];
+      if (type == null) {
+        var similarDefinitions = findSimilarTo(definition);
+        if (similarDefinitions.isNotEmpty) {
+          similarDefinitions
+              .where((element) => !element.nameDeclared)
+              .forEach((e) {
+            print("e.token to update is ${e.token}");
+            projectedTypes[e.token] = definition;
+          });
+        }
+
+        projectedTypes[definition.token] = definition;
+        return definition;
+      } else {
+        if (type.isSimilarTo(definition, this)) {
+          return type;
+        } else {
+          throw ParseException(
+              "You have names two object the same name '${definition.token}' but have diffrent fields. ${definition.token}_1.fields are: [${type.serializeFields(this)}], ${definition.token}_2.fields are: [${definition.serializeFields(this)}]. Please consider renaming one of them");
+        }
+      }
+    }
+
+    var similarDeinitions = findSimilarTo(definition);
+    if (similarDeinitions.isNotEmpty) {
+      return similarDeinitions.first;
+    }
+    projectedTypes[definition.token] = definition;
+    return definition;
+  }
+
+  List<GQTypeDefinition> findSimilarTo(GQTypeDefinition definition) {
+    return projectedTypes.values
+        .where((element) => element.isSimilarTo(definition, this))
+        .toList();
+  }
+
+  GeneratedTypeName generateName(String originalName,
+      GQFragmentBlockDefinition block, List<GQDirectiveValue> directives) {
+    String? name = getNameValueFromDirectives(directives);
+    if (name != null) {
+      return GeneratedTypeName(name, true);
+    }
+    name = "${originalName}_${block.uniqueName}";
 
     String? indexedName;
     int nameIndex = 0;
@@ -593,7 +623,7 @@ $data
     while (projectedTypes.containsKey(indexedName)) {
       indexedName = "${name}_${++nameIndex}";
     }
-    return indexedName ?? name;
+    return GeneratedTypeName(indexedName ?? name, false);
   }
 
   List<GQField> applyProjection(
@@ -650,4 +680,13 @@ $data
     }
     return result;
   }
+}
+
+class GeneratedTypeName {
+  // the generated name value
+  final String value;
+  //true if the name has been declared using @gqTypeName directive
+  final bool declared;
+
+  GeneratedTypeName(this.value, this.declared);
 }

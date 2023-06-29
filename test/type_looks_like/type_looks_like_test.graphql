@@ -1,0 +1,22 @@
+type Product {
+    id: ID!
+    name: String!
+    price: Int!
+    wasPrice: Int
+    description: String
+}
+
+type Query {
+    getProduct: Product!
+    getProductById(id: ID!): Product!
+}
+
+query getProduct($id: ID!) {
+    getProduct @gqTypeName(name: "Prduct1") {
+        id name price
+    }   
+
+    getProductById(id: $id) @gqTypeName(name: "Prduct2") {
+        name price id
+    }
+}

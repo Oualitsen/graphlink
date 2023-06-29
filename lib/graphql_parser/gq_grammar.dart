@@ -221,6 +221,7 @@ class GQGrammar extends GrammarDefinition {
         .map4((name, interfaceNames, directives, fields) {
       final type = GQTypeDefinition(
         name: name,
+        nameDeclared: false,
         fields: fields,
         interfaceNames: interfaceNames ?? {},
         directives: directives,
@@ -328,6 +329,7 @@ class GQGrammar extends GrammarDefinition {
         .map4((name, parentNames, directives, fieldList) {
       var interface = GQInterfaceDefinition(
         name: name,
+        nameDeclared: false,
         fields: fieldList,
         parentNames: parentNames ?? {},
         directives: directives,

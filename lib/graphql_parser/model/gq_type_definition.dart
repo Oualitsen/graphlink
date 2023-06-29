@@ -8,13 +8,31 @@ import 'package:retrofit_graphql/graphql_parser/utils.dart';
 class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
   final Set<String> interfaceNames;
   final List<GQDirectiveValue> directives;
+  final bool nameDeclared;
+
+  String? _hash;
 
   GQTypeDefinition({
     required String name,
+    required this.nameDeclared,
     required List<GQField> fields,
     required this.interfaceNames,
     required this.directives,
-  }) : super(name, fields);
+  }) : super(name, fields) {
+    fields.sort((f1, f2) => f1.name.compareTo(f2.name));
+  }
+
+  ///
+  ///check is the two definitions will produce the same object structure
+  ///
+  bool isSimilarTo(GQTypeDefinition other, GQGrammar g) {
+    return getHash(g) == other.getHash(g);
+  }
+
+  String getHash(GQGrammar grammar) {
+    _hash ??= serializeFields(grammar);
+    return _hash!;
+  }
 
   @override
   String toString() {
@@ -37,6 +55,13 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
     """;
   }
 
+  String serializeFields(GQGrammar grammar) {
+    return serializeListText(
+        fields.map((e) => e.toDartNoFinal(grammar)).toList(),
+        join: " ",
+        withParenthesis: false);
+  }
+
   String serializeContructorArgs() {
     if (fields.isEmpty) {
       return "";
@@ -52,6 +77,7 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
   GQTypeDefinition clone(String newName) {
     return GQTypeDefinition(
       name: newName,
+      nameDeclared: nameDeclared,
       fields: fields.toList(),
       interfaceNames: interfaceNames,
       directives: [],

@@ -9,6 +9,7 @@ class GQInterfaceDefinition extends GQTypeDefinition
 
   GQInterfaceDefinition({
     required super.name,
+    required super.nameDeclared,
     required super.fields,
     required this.parentNames,
     required super.directives,

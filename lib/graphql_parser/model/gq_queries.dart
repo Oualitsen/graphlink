@@ -74,6 +74,7 @@ class GQQueryDefinition extends GQToken {
     if (gqDef == null) {
       _gqTypeDefinition = gqDef = GQTypeDefinition(
         name: _getGeneratedTypeName(),
+        nameDeclared: getNameValueFromDirectives(directives) != null,
         fields: _generateFields(),
         directives: directives,
         interfaceNames: {},
@@ -125,6 +126,8 @@ class GQQueryElement extends GQToken {
   ///This is unknown on parse time. It is filled on run time.
   ///
   GQTypeDefinition? projectedType;
+
+  String? projectedTypeKey;
 
   Set<String> get fragmentNames {
     if (block == null) {

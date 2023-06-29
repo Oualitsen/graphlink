@@ -12,6 +12,8 @@ class GQField extends DartSerializable {
   final List<GQArgumentDefinition> arguments;
   final List<GQDirectiveValue> directives;
 
+  bool? _containsSkipOrIncludeDirective;
+
   GQField({
     required this.name,
     required this.type,
@@ -31,11 +33,16 @@ class GQField extends DartSerializable {
     return "final ${type.toDartType(grammar.typeMap, _hasInculeOrSkipDiretives)} $name;";
   }
 
+  String toDartNoFinal(GQGrammar grammar) {
+    return "${type.toDartType(grammar.typeMap, _hasInculeOrSkipDiretives)} $name";
+  }
+
   //check for inclue or skip directives
-  bool get _hasInculeOrSkipDiretives => directives
-      .where((d) => [
-            GQGrammar.includeDirectiveValueName,
-            GQGrammar.skipDirectiveValueName
-          ].contains(d.token))
-      .isNotEmpty;
+  bool get _hasInculeOrSkipDiretives =>
+      _containsSkipOrIncludeDirective ??= directives
+          .where((d) => [
+                GQGrammar.includeDirectiveValueName,
+                GQGrammar.skipDirectiveValueName
+              ].contains(d.token))
+          .isNotEmpty;
 }
