@@ -1,6 +1,6 @@
 import 'package:test/test.dart';
-import 'package:retrofit_graphql/graphql_parser/model/gq_fragment.dart';
-import 'package:retrofit_graphql/graphql_parser/gq_grammar.dart';
+import 'package:retrofit_graphql/src/model/gq_fragment.dart';
+import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {

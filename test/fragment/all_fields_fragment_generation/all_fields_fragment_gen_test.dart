@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:test/test.dart';
-import 'package:retrofit_graphql/graphql_parser/gq_grammar.dart';
+import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() async {
@@ -17,13 +17,13 @@ void main() async {
     expect(parsed.isSuccess, true);
 
     var frag =
-        g.allFieldsFragments[GQGrammarExtension.allTypeFragmentName("User")]!;
+        g.allFieldsFragments[GQGrammarExtension.allFieldsFragmentName("User")]!;
 
     expect(
         frag.fragment.dependecies.map((e) => e.token),
         containsAll([
-          GQGrammarExtension.allTypeFragmentName("Address"),
-          GQGrammarExtension.allTypeFragmentName("State"),
+          GQGrammarExtension.allFieldsFragmentName("Address"),
+          GQGrammarExtension.allFieldsFragmentName("State"),
         ]));
   });
 }

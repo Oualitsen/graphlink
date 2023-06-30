@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:test/test.dart';
-import 'package:retrofit_graphql/graphql_parser/gq_grammar.dart';
+import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() async {
@@ -15,6 +15,5 @@ void main() async {
         .readAsStringSync();
     var parsed = parser.parse(text);
     expect(parsed.isSuccess, true);
-    print(g.queries["Product"]?.fragments(g).map((e) => e.token));
   });
 }

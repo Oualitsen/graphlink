@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:build/build.dart';
 import 'package:glob/glob.dart';
 import 'package:logger/logger.dart';
-import 'package:retrofit_graphql/graphql_parser/gq_grammar.dart';
+import 'package:retrofit_graphql/src/gq_grammar.dart';
 
 class RetrofitGraphqlGeneratorBuilder implements Builder {
   final BuilderOptions options;
