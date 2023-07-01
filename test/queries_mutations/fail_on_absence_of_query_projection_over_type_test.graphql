@@ -1,45 +1,20 @@
 
 
-type Product {
-  id: ID!
+type Driver {
   name: String!
-  price: Float!
-  wasPrice: Float
-  brand: Brand!
+  cars: [Car!]!
 }
 
-type Brand {
-  brandName: String!
-  subBrand: SubBrand
-}
-
-type SubBrand {
-  id: String
+type Car {
   name: String
 }
 
-
 type Query {
-  getProductById(id: ID!): Product!
+  getDriver: Driver!
 }
 
-query Product($id: ID!) {
-  getProductById(id: $id) {
-    id name ...ProductFragment
+query getDriver {
+  getDriver {
+    name cars 
   }
 }
-
-fragment ProductFragment on Product {
-  id name brand {
-      brandName subBrand {
-        ...SubBrandFragment
-      }
-    }
-}
-
-fragment SubBrandFragment on SubBrand {
-  id name
-}
-
-
-

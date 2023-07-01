@@ -39,7 +39,7 @@ class GQListType extends GQType {
   ///this could be an instance of GQListType
   final GQType type;
   GQListType(this.type, bool nullable)
-      : super("#List[${type.serialize()}]", nullable, isScalar: false);
+      : super(type.token, nullable, isScalar: false);
 
   @override
   String serialize() {

@@ -23,6 +23,12 @@ const String enumsFileName = "enums.gq";
 const String typesFileName = "types.gq";
 const String clientFileName = "client.gq";
 
+const fileHeadComment = """
+// GENERATED CODE - DO NOT MODIFY BY HAND.
+
+// ignore_for_file: camel_case_types, constant_identifier_names, unused_import, non_constant_identifier_names
+""";
+
 extension GQGrammarExtension on GQGrammar {
   bool isNonProjectableType(String token) {
     return scalars.contains(token) || enums.containsKey(token);
@@ -85,13 +91,17 @@ extension GQGrammarExtension on GQGrammar {
   }
 
   String generateEnums() {
-    return enums.values.toList().map((e) => e.toDart(this)).join("\n");
+    return """
+$fileHeadComment
+ ${enums.values.toList().map((e) => e.toDart(this)).join("\n")}
+ """;
   }
 
   String generateInputs() {
     var inputs =
         this.inputs.values.toList().map((e) => e.toDart(this)).join("\n");
     return """
+$fileHeadComment
   import 'package:json_annotation/json_annotation.dart';
   import '$enumsFileName.dart';
   part '$inputsFileName.g.dart';
@@ -105,6 +115,7 @@ $inputs
         projectedTypes.values.toSet().map((e) => e.toDart(this)).join("\n");
 
     return """
+$fileHeadComment
  import 'package:json_annotation/json_annotation.dart';
  import '$enumsFileName.dart';
   part '$typesFileName.g.dart';
@@ -117,6 +128,7 @@ $data
   String generateClient() {
     var data = service.toDart(this);
     return """
+$fileHeadComment
 import '$enumsFileName.dart';
 import '$inputsFileName.dart';
 import '$typesFileName.dart';
@@ -315,6 +327,7 @@ $data
     } else {
       var requiresProjection =
           fieldRequiresProjection(projection.token, typeName);
+
       if (requiresProjection && projection.block == null) {
         throw ParseException(
             "Field '${projection.token}' of type '$typeName' must have a selection of subfield ${fragmentName == null ? "" : "Fragment: '$fragmentName'"}");
@@ -340,7 +353,7 @@ $data
 
   bool typeRequiresProjection(GQType type) {
     try {
-      getType(type.token);
+      getType(type.inlineType.token);
       return true;
     } catch (_) {
       return false;
@@ -533,7 +546,6 @@ $data
     var onType = getType(type.inlineType.token);
 
     var name = generateName(onType.token, block, element.directives);
-
     var newType = GQTypeDefinition(
         name: name.value,
         nameDeclared: name.declared,
@@ -576,7 +588,6 @@ $data
           similarDefinitions
               .where((element) => !element.nameDeclared)
               .forEach((e) {
-            print("e.token to update is ${e.token}");
             projectedTypes[e.token] = definition;
           });
         }
@@ -657,9 +668,11 @@ $data
       //we should create another type here ...
       var generatedType = createProjectedTypeWithProjectionBlock(
           field, getType(field.type.token), block);
+      var fieldInlineType =
+          GQType(generatedType.token, field.type.nullable, isScalar: false);
       return GQField(
         name: fieldName,
-        type: GQType(generatedType.token, field.type.nullable, isScalar: false),
+        type: createTypeFrom(field.type, fieldInlineType),
         arguments: field.arguments,
         directives: projection.directives,
       );
@@ -671,6 +684,13 @@ $data
       arguments: field.arguments,
       directives: projection.directives,
     );
+  }
+
+  GQType createTypeFrom(GQType orig, GQType inline) {
+    if (orig is GQListType) {
+      return GQListType(createTypeFrom(orig.type, inline), orig.nullable);
+    }
+    return GQType(inline.token, inline.nullable, isScalar: inline.isScalar);
   }
 
   String getLangType(String typeName) {

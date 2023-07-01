@@ -1,7 +1,5 @@
 import 'dart:io';
 
-import 'package:retrofit_graphql/src/model/gq_field.dart';
-import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
 import 'package:test/test.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
