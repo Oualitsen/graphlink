@@ -1,0 +1,26 @@
+
+name: retrofit_graphql_example
+description: Examples on how to use retrofit_graphql for dart
+
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=2.19.0 <3.0.0"
+
+dependencies:
+  
+  web_socket_channel: ^2.4.0
+  json_annotation: ^4.8.1
+  http: ^1.1.0
+
+  retrofit_graphql:
+    path: ..
+
+dev_dependencies:
+  test:
+  flutter_lints: ^2.0.1
+  build_runner: ^2.4.6
+  json_serializable: ^6.7.1

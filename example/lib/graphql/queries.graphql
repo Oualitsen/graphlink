@@ -1,0 +1,14 @@
+
+query getDrivers($id: ID!) {
+    getDriverById(id: $id) {
+        ... DriverFragment
+    }
+
+   
+}
+
+fragment DriverFragment on Driver {
+    firstName lastName id cars {
+        year
+    }
+}

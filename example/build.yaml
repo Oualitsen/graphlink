@@ -1,0 +1,12 @@
+targets:
+  $default:
+    builders:
+      retrofit_graphql|aggregatingBuilder:
+        enabled: true
+        generate_for:
+          include:
+            - lib/**/*.graphql
+        options:
+        # following are going to be mappings between scalars and dart types
+          Long: int
+          ID: String
