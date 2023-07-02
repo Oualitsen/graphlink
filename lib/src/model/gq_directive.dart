@@ -58,6 +58,8 @@ class GQDirectiveValue extends GQToken {
 
   @override
   String serialize() {
+    //don't serialize the gqTypeName directive
+    if (token == "@gqTypeName") {}
     var args = arguments.isEmpty
         ? ""
         : "(${arguments.map((e) => e.serialize()).join(", ")})";
