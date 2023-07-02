@@ -556,11 +556,12 @@ $data
   }
 
   GQTypeDefinition createProjectedTypeWithProjectionBlock(GQField field,
-      GQTypeDefinition nonProjectedType, GQFragmentBlockDefinition block) {
+      GQTypeDefinition nonProjectedType, GQFragmentBlockDefinition block,
+      [List<GQDirectiveValue> fieldDirectives = const []]) {
     var fields = [...nonProjectedType.fields];
     var projections = {...block.projections};
-
-    var name = generateName(nonProjectedType.token, block, field.directives);
+    print("FieldDirectives = ${field.directives}");
+    var name = generateName(nonProjectedType.token, block, fieldDirectives);
     block.projections.values
         .where((element) => element.isFragmentReference)
         .map((e) => (fragments[e.fragmentName!] ??
@@ -653,23 +654,33 @@ $data
     for (var field in src) {
       var projection = projections[field.name];
       if (projection != null) {
-        result.add(applyProjectionToField(field, projection));
+        result.add(
+            applyProjectionToField(field, projection, projection.directives));
       }
     }
 
     return result;
   }
 
-  GQField applyProjectionToField(GQField field, GQProjection projection) {
+  GQField applyProjectionToField(GQField field, GQProjection projection,
+      [List<GQDirectiveValue> fieldDirectives = const []]) {
     final String fieldName = projection.alias ?? field.name;
     var block = projection.block;
+    var typeName = getNameValueFromDirectives(fieldDirectives);
 
     if (block != null) {
       //we should create another type here ...
+      print("########### typeName = ${typeName}");
       var generatedType = createProjectedTypeWithProjectionBlock(
-          field, getType(field.type.token), block);
+        field,
+        getType(field.type.token),
+        block,
+        fieldDirectives,
+      );
+      print("generated type name = ${generatedType.token}");
       var fieldInlineType =
           GQType(generatedType.token, field.type.nullable, isScalar: false);
+
       return GQField(
         name: fieldName,
         type: createTypeFrom(field.type, fieldInlineType),
@@ -680,7 +691,7 @@ $data
 
     return GQField(
       name: fieldName,
-      type: field.type,
+      type: createTypeFrom(field.type, field.type),
       arguments: field.arguments,
       directives: projection.directives,
     );

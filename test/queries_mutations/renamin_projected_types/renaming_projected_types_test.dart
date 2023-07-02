@@ -21,5 +21,8 @@ void main() async {
     //renamed responses
     expect(g.queries["getAllProducts"]!.getGeneratedTypeDefinition().token,
         equals("MyProductResp"));
+
+    File("test/queries_mutations/renamin_projected_types/gen.dart")
+        .writeAsStringSync(g.generateTypes());
   });
 }
