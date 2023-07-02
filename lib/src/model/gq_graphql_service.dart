@@ -100,7 +100,7 @@ ${def.fragments(g).map((e) => e.serialize()).toList().join("\n")}
     if (def.type == GQQueryType.subscription) {
       return """
       return _handler.handle(payload)
-        .map((e) => WatchDriverResponse.fromJson(e));
+        .map((e) => ${def.getGeneratedTypeDefinition().token}.fromJson(e));
     """;
     }
     return """

@@ -14,10 +14,7 @@ void main() async {
         File("test/queries_mutations/queries_response_generation_test.graphql")
             .readAsStringSync();
     var parsed = parser.parse(text);
-    var types = g.generateTypes();
-    print(types);
-    var file = File("./test/queries_mutations/genrated.dart");
-    file.writeAsString(types);
+
     expect(parsed.isSuccess, true);
   });
 }

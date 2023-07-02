@@ -28,7 +28,5 @@ void main() async {
             .where((element) => element != "ProductResponse")
             .toList(),
         hasLength(2));
-    File("test/queries_mutations/name_generation/gen.dart")
-        .writeAsStringSync(g.generateTypes());
   });
 }

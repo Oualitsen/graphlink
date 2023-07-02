@@ -25,7 +25,5 @@ fragment PersonFragment on Person {
     age user ... on Admin {
         username password firstName lastName
     }
-    ... on SubUser {
-        username password
-    }
+    
 }
