@@ -85,7 +85,7 @@ ${formatUnformattedGraphQL(def.serialize())}
 ${def.fragments(g).map((e) => e.serialize()).toList().join("\n")}
         \"\"\";
 
-        var variables = {
+        var variables = <String, dynamic>{
           ${def.arguments.map((e) => "'${e.dartArgumentName}': ${serializeArgumentValue(g, def, e.token)}").toList().join(", ")}
         };
         
