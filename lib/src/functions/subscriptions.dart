@@ -121,7 +121,6 @@ class SubscriptionHandler {
     var removed = _map.remove(uuid);
     removed?.close();
     if (_map.isEmpty) {
-      print("closing channel### ");
       adapter.close();
       ackStatus = _AckStatus.none;
       ack.close();

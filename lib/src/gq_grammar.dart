@@ -135,7 +135,6 @@ class GQGrammar extends GrammarDefinition {
     fillTypedFragments();
     validateProjections();
     createProjectedTypes();
-
     updateFragmentDependencies();
     updateFragmentAllTypesDependecies();
     generateGQClient();
@@ -596,13 +595,7 @@ class GQGrammar extends GrammarDefinition {
   }
 
   Parser<GQProjection> plainFragmentField() {
-    return seq4(
-            (seq2(
-              identifier(),
-              colon(),
-            ).map2((alias, _) => alias)).optional(),
-            identifier(),
-            directiveValueList(),
+    return seq4(alias().optional(), identifier(), directiveValueList(),
             ref0(fragmentBlock).optional())
         .map4((alias, token, directives, block) => GQProjection(
               token: token,
@@ -715,9 +708,16 @@ class GQGrammar extends GrammarDefinition {
   }
 
   Parser<GQQueryElement> queryElement() {
-    return seq4(identifier(), argumentValues().optional(), directiveValueList(),
-            fragmentBlock().optional())
-        .map4((name, args, directiveList, block) =>
-            GQQueryElement(name, directiveList, block, args ?? []));
+    return seq5(alias().optional(), identifier(), argumentValues().optional(),
+            directiveValueList(), fragmentBlock().optional())
+        .map5((alias, name, args, directiveList, block) => GQQueryElement(
+              name,
+              directiveList,
+              block,
+              args ?? [],
+              alias,
+            ));
   }
+
+  Parser<String> alias() => seq2(identifier(), colon()).map2((id, colon) => id);
 }

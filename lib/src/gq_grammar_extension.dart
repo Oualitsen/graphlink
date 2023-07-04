@@ -520,7 +520,6 @@ $data
     //create for queries, mutations and subscriptions
     getAllElements().where((e) => e.block != null).forEach((element) {
       var newType = createProjectedTypeForQuery(element);
-
       element.projectedTypeKey = newType.token;
     });
 
@@ -530,8 +529,8 @@ $data
       element.projectedType = projectedTypes[element.projectedTypeKey!]!;
     });
 
-    queries.forEach((key, value) {
-      var projectedType = value.getGeneratedTypeDefinition();
+    queries.forEach((key, query) {
+      var projectedType = query.getGeneratedTypeDefinition();
       if (projectedTypes.containsKey(projectedType.token)) {
         throw ParseException(
             "Type ${projectedType.token} has already been defined, please rename it");
@@ -560,7 +559,6 @@ $data
       [List<GQDirectiveValue> fieldDirectives = const []]) {
     var fields = [...nonProjectedType.fields];
     var projections = {...block.projections};
-    print("FieldDirectives = ${field.directives}");
     var name = generateName(nonProjectedType.token, block, fieldDirectives);
     block.projections.values
         .where((element) => element.isFragmentReference)
@@ -666,18 +664,14 @@ $data
       [List<GQDirectiveValue> fieldDirectives = const []]) {
     final String fieldName = projection.alias ?? field.name;
     var block = projection.block;
-    var typeName = getNameValueFromDirectives(fieldDirectives);
-
     if (block != null) {
       //we should create another type here ...
-      print("########### typeName = ${typeName}");
       var generatedType = createProjectedTypeWithProjectionBlock(
         field,
         getType(field.type.token),
         block,
         fieldDirectives,
       );
-      print("generated type name = ${generatedType.token}");
       var fieldInlineType =
           GQType(generatedType.token, field.type.nullable, isScalar: false);
 

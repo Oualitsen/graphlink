@@ -64,7 +64,7 @@ class GQQueryDefinition extends GQToken {
   @override
   String serialize() {
     return """${type.name} $token ${serializeList(arguments)} ${serializeList(directives)} {
-        ${serializeList(elements, join: "\n\r", withParenthesis: false)}
+        ${serializeList(elements, join: "\n", withParenthesis: false)}
       }
     """;
   }
@@ -99,7 +99,7 @@ class GQQueryDefinition extends GQToken {
     return elements
         .map(
           (e) => GQField(
-            name: e.token,
+            name: e.alias ?? e.token,
             type: e.returnProjectedType,
             arguments: [],
             directives: e.directives,
@@ -116,6 +116,7 @@ class GQQueryElement extends GQToken {
   final List<GQDirectiveValue> directives;
   final GQFragmentBlockDefinition? block;
   final List<GQArgumentValue> arguments;
+  final String? alias;
 
   ///
   ///This is unknown on parse time. It is filled on run time.
@@ -169,7 +170,8 @@ class GQQueryElement extends GQToken {
   GQType get returnProjectedType =>
       _getReturnProjectedType(projectedType, returnType);
 
-  GQQueryElement(super.token, this.directives, this.block, this.arguments);
+  GQQueryElement(
+      super.token, this.directives, this.block, this.arguments, this.alias);
 
   @override
   String serialize() {
@@ -177,5 +179,5 @@ class GQQueryElement extends GQToken {
       ${block != null ? block!.serialize() : ''}""";
   }
 
-  String get _escapedToken => token.replaceFirst("\$", "\\\$");
+  String get _escapedToken => (alias ?? token).replaceFirst("\$", "\\\$");
 }

@@ -72,7 +72,9 @@ class SubscriptionPayload {
 }
 
 enum SubscriptionMessageType {
+  // ignore: constant_identifier_names
   connection_init,
+  // ignore: constant_identifier_names
   connection_ack,
   subscribe,
   next,

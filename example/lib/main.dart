@@ -1,7 +1,6 @@
 import 'package:retrofit_graphql/retrofit_graphql.dart';
 import 'package:retrofit_graphql_example/generated/client.gq.dart';
 import 'package:http/http.dart' as http;
-import 'package:retrofit_graphql_example/generated/inputs.gq.dart';
 
 void main(List<String> args) {
   const wsUrl = "ws://localhost:8080/graphql";
