@@ -1,0 +1,20 @@
+
+
+type Driver {
+  name: String!
+  cars: [Car!]!
+}
+
+type Car {
+  name: String
+}
+
+type Query {
+  getDriver: Driver!
+}
+
+query getDriver @gqTypeName(name: "DriverResponse") {
+ driver: getDriver {
+    name cars {name}
+  }
+}
