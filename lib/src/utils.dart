@@ -49,8 +49,8 @@ String formatUnformattedGraphQL(String unformattedGraphQL) {
 }
 
 String? getNameValueFromDirectives(Iterable<GQDirectiveValue> directives) {
-  var dirs = directives.where(
-      (element) => element.token == GQGrammar.gqTypeNameDirectiveValueName);
+  var dirs = directives
+      .where((element) => element.token == GQGrammar.gqTypeNameDirective);
   if (dirs.isEmpty) {
     return null;
   }

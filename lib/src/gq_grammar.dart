@@ -23,14 +23,11 @@ export 'package:retrofit_graphql/src/gq_grammar_extension.dart';
 class GQGrammar extends GrammarDefinition {
   var logger = Logger();
   static const typename = "__typename";
-  static const gqTypeNameDirectiveValueName = "@gqTypeName";
-  static const gqTypeNameDirectiveDefinitionName = "gqTypeName";
+  static const gqTypeNameDirective = "@gqTypeName";
 
-  static const includeDirectiveValueName = "@include";
-  static const includeDirectiveDefinitionName = "include";
+  static const includeDirective = "@include";
 
-  static const skipDirectiveValueName = "@skip";
-  static const skipDirectiveDefinitionName = "skip";
+  static const skipDirective = "@skip";
 
   static const gqTypeNameDirectiveArgumentName = "name";
   final Set<String> scalars = {
@@ -47,18 +44,18 @@ class GQGrammar extends GrammarDefinition {
   late final Map<String, String> typeMap;
 
   final Map<String, GQDirectiveDefinition> directives = {
-    includeDirectiveDefinitionName: GQDirectiveDefinition(
-      includeDirectiveDefinitionName,
+    includeDirective: GQDirectiveDefinition(
+      includeDirective,
       [GQArgumentDefinition("if", GQType("Boolean", false))],
       {GQDirectiveScope.FIELD},
     ),
-    skipDirectiveDefinitionName: GQDirectiveDefinition(
-      skipDirectiveDefinitionName,
+    skipDirective: GQDirectiveDefinition(
+      skipDirective,
       [GQArgumentDefinition("if", GQType("Boolean", false))],
       {GQDirectiveScope.FIELD},
     ),
-    gqTypeNameDirectiveDefinitionName: GQDirectiveDefinition(
-      gqTypeNameDirectiveDefinitionName,
+    gqTypeNameDirective: GQDirectiveDefinition(
+      gqTypeNameDirective,
       [
         GQArgumentDefinition(
             gqTypeNameDirectiveArgumentName, GQType("String", false))

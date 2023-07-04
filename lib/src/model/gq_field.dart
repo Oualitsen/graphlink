@@ -40,9 +40,7 @@ class GQField extends DartSerializable {
   //check for inclue or skip directives
   bool get _hasInculeOrSkipDiretives =>
       _containsSkipOrIncludeDirective ??= directives
-          .where((d) => [
-                GQGrammar.includeDirectiveValueName,
-                GQGrammar.skipDirectiveValueName
-              ].contains(d.token))
+          .where((d) => [GQGrammar.includeDirective, GQGrammar.skipDirective]
+              .contains(d.token))
           .isNotEmpty;
 }

@@ -1,3 +1,4 @@
+import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_argument.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
 
@@ -59,7 +60,9 @@ class GQDirectiveValue extends GQToken {
   @override
   String serialize() {
     //don't serialize the gqTypeName directive
-    if (token == "@gqTypeName") {}
+    if (token == GQGrammar.gqTypeNameDirective) {
+      return "";
+    }
     var args = arguments.isEmpty
         ? ""
         : "(${arguments.map((e) => e.serialize()).join(", ")})";
