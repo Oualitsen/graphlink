@@ -2,12 +2,8 @@
 
 type Driver {
   name: String!
-  cars: [Car!]!
 }
 
-type Car {
-  name: String
-}
 
 type Query {
   getDriver: Driver!
@@ -15,6 +11,6 @@ type Query {
 
 query getDriver @gqTypeName(name: "DriverResponse") {
  driver: getDriver {
-    name cars {name}
+    name 
   }
 }

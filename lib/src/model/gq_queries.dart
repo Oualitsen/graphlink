@@ -179,5 +179,8 @@ class GQQueryElement extends GQToken {
       ${block != null ? block!.serialize() : ''}""";
   }
 
-  String get _escapedToken => (alias ?? token).replaceFirst("\$", "\\\$");
+  String get _escapedToken {
+    var aliasText = alias == null ? '' : "$alias:";
+    return "$aliasText$token".replaceFirst("\$", "\\\$");
+  }
 }
