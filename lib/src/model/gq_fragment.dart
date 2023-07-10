@@ -91,6 +91,7 @@ class GQProjection extends GQToken {
   ///
   ///This contains a reference to the fragment name containing this projection
   ///
+  ///
   final String? fragmentName;
 
   ///
@@ -157,7 +158,6 @@ class GQProjection extends GQToken {
     if (isFragmentReference) {
       if (block == null) {
         result.add(token);
-
         var frag = map[token];
         if (frag == null) {
           throw ParseException("Fragment $token is not defined");

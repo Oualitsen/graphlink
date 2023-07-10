@@ -85,6 +85,7 @@ class GQGrammar extends GrammarDefinition {
 
   GQSchema schema = GQSchema();
   bool schemaInitialized = false;
+  final bool generateAllFieldsFragments;
 
   late final GQGraphqlService service;
   GQGrammar({
@@ -97,6 +98,7 @@ class GQGrammar extends GrammarDefinition {
       "Null": "null",
       "Long": "int"
     },
+    this.generateAllFieldsFragments = false,
   });
 
   @override
@@ -128,7 +130,9 @@ class GQGrammar extends GrammarDefinition {
       });
 
   void _onDone() {
-    createAllFieldsFragments();
+    if (generateAllFieldsFragments) {
+      createAllFieldsFragments();
+    }
     checkFragmentRefs();
     updateInterfaceParents();
     fillQueryElementsReturnType();

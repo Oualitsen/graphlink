@@ -476,7 +476,9 @@ $data
   }
 
   void createAllFieldsFragments() {
-    types.forEach((key, typeDefinition) {
+    return;
+    var allTypes = {...interfaces, ...types};
+    allTypes.forEach((key, typeDefinition) {
       if (![schema.mutation, schema.query, schema.subscription].contains(key)) {
         allFieldsFragments[allFieldsFragmentName(key)] = GQTypedFragment(
             GQFragmentDefinition(
@@ -517,6 +519,8 @@ $data
   }
 
   void createProjectedTypes() {
+    print(
+        "Creating projected types ${getAllElements().where((e) => e.block != null).length}");
     //create for queries, mutations and subscriptions
     getAllElements().where((e) => e.block != null).forEach((element) {
       var newType = createProjectedTypeForQuery(element);

@@ -1,70 +1,1455 @@
-
-
+#*************************** SCALAR ***************************
 scalar Long
 
+#*************************** INTERFACE ***************************
 interface BasicEntity {
     id: ID!
     creationDate: Long!
     lastUpdate: Long!
 }
 
-interface BasicUser implements BasicEntity {
+interface BasicGeoShape{
+    type: String!
+}
 
+interface Preferences{
+    lang:String!
+    ratedOnPlayStore:Boolean!
+    keepScreenOn:Boolean!
+}
+
+interface BasicRequest implements  BasicEntity{
     id: ID!
     creationDate: Long!
     lastUpdate: Long!
-
-
-    firstName: String!
-    lastName: String!
-    middleName: String
-
-    gender: Gender!
-    dateOfBirth: Long!
-
+    promotionCode:String!
+    offer:GlobalOffer!
+    driverDistanceInfoList:[DriverDistanceInfo!]!
+    coordinates:Coordinates!
+    destCoordinates:Coordinates!
+    tripSummary:TripSummary!
+    client:Client!
+    trip:Trip!
+    when:Long!
+    tripSummaries:[TripSummary!]!
+    resend:Boolean!
+    notifyClient:Boolean!
+    status:RequestStatus!
+    driver:Driver!
+    driverDestinationId :String!
+    sendDate:Long!
+    targetDrivers:[String!]!
+    excludedDrivers:[String!]!
+    sentCount:Int!
+    remainingTime:Long!
+    deliveryStatus:RequestDeliveryStatus!
+    sentTime:Long!
+    appointmentPath:String!
+    destinationPath:String!
+    takenByAdmin:Admin!
+    canceledByAdmin:Admin!
+    estimations:[Estimation!]!
 }
 
-type Driver implements BasicUser & BasicEntity {
+interface UserBase implements BasicEntity{
     id: ID!
     creationDate: Long!
     lastUpdate: Long!
-
-
-    firstName: String!
-    lastName: String!
-    middleName: String
-
-    gender: Gender!
-    dateOfBirth: Long!
-
-    cars: [Car!]!
-    phoneNumber: String!
-    email: String
+    firstName:String!
+    lastName:String!
+    middleName:String
+    imageId:String
+    gender:Gender!
+    userType:UserType!
+    roles:[Role!]!
+    disabled:Boolean!
 
 }
 
-enum Gender {
-    MALE, FEMALE
+interface NormalUser implements UserBase & BasicEntity{
+    id: ID!
+    creationDate: Long!
+    lastUpdate: Long!
+    firstName:String!
+    lastName:String!
+    middleName:String
+    imageId:String
+    gender:Gender!
+    userType:UserType!
+    roles:[Role!]!
+    disabled:Boolean!
+    dateOfBirth:Long!
+    phoneNumber:PhoneNumber!
+    email:Email!
+    address:Address!
+    rate:Float!
+    rateCount:Int!
+    tripCount:Int!
+    stripeAccountId:String
 }
 
-type Car {
-    brand: String!
-    model: String!
-    year: Int!
-    imageUrl: String
+interface LoginResult {
+    token: String!
 }
 
-type Query {
-    getDriverById(id: ID!): Driver!
-    getDrivers(pageInfo: PageInfo): [Driver!]!
+#*************************** QUERY ***************************
+type Query{
+    #****************AdminController**************************************
+    getActiveTrips(pageInfo: PageInfo!, input: CurrentTripsInput!): [Trip!]!
+    getActiveTrip(id:String!) : Trip!
+    getDoc(id:String!) : FileDocument!
+    getDocuments(ownerId:String!, type:DocumentType! , objectId: String) : [DocumentCouple!]!
+    getEarnings(pageInfo: PageInfo!, startDate:Long, endDate:Long, search:String) : [Earning!]!
+    getDetails(driverId:String!, startDate: Long!, endDate:Long!, pageInfo: PageInfo): [Trip!]!
+    getAdmin(lastUpdate:Long!):Admin!
+    getTripsHistory(pageInfo: PageInfo!, input: CurrentTripsInput!): [Trip!]!
+    getTripHistory(id:String!):Trip!
+    getCurrentRequest(clientId:String!):TripRequest!
+    getCancelReasons(client:Boolean!):[CancelReason!]!
+    getCancelReason(id:String!):CancelReason!
+    getClientsByAdmin(pageInfo:PageInfo!, search:String): [Client!]!
+    getClientsCountByAdmin(search:String):Long!
+    getClientByAdmin(id:String!):Client!
+    getClientByPhoneNumberByAdmin(phoneNumber:String!):Client!
+    getDriversByAdmin(pageInfo:PageInfo!, state:DriverState, search:String, offerId:String):[Driver!]!
+    getDriversCountByAdmin(state:DriverState, search:String, offerId:String):Long!
+    getDriversVehiclesByAdmin(pageInfo:PageInfo!, search:String, offerId:String):DriverVehicle!
+    getDriverByAdmin(id:String!):Driver!
+    getCompanyDrivers(companyId:String):[Driver!]!
+    getFeedback(type:FeedbackType, userId:String, pageInfo:PageInfo!):[Feedback!]!
+    getSender(feedBackId:String!):UserBase!
+    getOffers(pageInfo:PageInfo!):[GlobalOffer!]!
+    getOfferByAdmin(id:String!):GlobalOffer!
+    getPromoCodesByAdmin(pageInfo:PageInfo!, code:String):[PromoCode!]!
+    getPromoCodeByAdmin(id:String!):PromoCode!
+    checkPromoCodeByAdmin(promoCode:String!):String
+    getTripRequestsByAdmin(status:ValidityStatus, clientId:String, driverId:String, immediate:Boolean):[Trip!]!
+    getTripByTripRequestByAdmin(id:String!):Trip!
+    getTripRequestByAdmin(requestId:String!):TripRequest!
+    getServerParameters:ServerParameters!
+    getClientCountByAdmin:Long!
+    getDriverCountByAdmin:Long!
+    getTripCountByAdmin:Long!
+    getDriverBasicInfoByAdmin(id:String!):Driver!
+    getClientBasicInfoByAdmin(id:String!):Client!
+    getVehiclesByAdmin(ownerId:String!):[Vehicle!]!
+    getVehicleOffersByAdmin(vehicleId:String!):[GlobalOffer!]!
+
+
+
+    #****************ClientControllerGQL********************************************
+    getBookingTripsHistoryByClient(pageInfo:PageInfo!):[Trip!]!
+    getTripByClient(tripId:String!):Trip!
+    getTripsByClient:[Trip!]!
+    canBook:Boolean!
+    getTripHistoryByClient(id:String!):Trip!
+    getTripsHistoryByClient(pageInfo:PageInfo!, startDate:Long, endDate:Long, tripCode:String, status:TripStatus):[Trip!]!
+    getCurrentClient(lastUpdate:Long!):Client!
+    getCurrentTripByClient:Trip!
+    getTripByIdForClient(id:String!):Trip!
+    canBookByClient(when:Long!):Boolean!
+    cancelableTripByClient(tripId:String!):Boolean!
+    cancelStatesByClient:[TripStatus!]!
+    getCancelResponseByClient:[CancelReason!]!
+    getVehicleByIdForClient(id:String!):Vehicle!
+    getRequestByClient(reqId:String!):TripRequest!
+    getRequestsByClient:[TripRequest!]!
+    getCurrentTripRequestByClient:TripRequest!
+    getDelayedActiveRequestsByClient:[Trip!]!
+
+    #****************DriverControllerGQL********************************************
+    getDocumentsByDriver(type:DocumentType!, objectId:String):[DocumentCouple!]!
+    getCurrentDriver:Driver!
+    getCurrentTripByDriver:Trip!
+    getTripByDriver(id:String!):Trip!
+    getTripsByDriver(pageInfo:PageInfo!, minDate:Long!, maxDate:Long!):[Trip!]!
+    getPendingByDriver:[Trip!]!
+    cancelableByDriver(tripId:String!):Boolean!
+    cancelStatesByDriver:[TripStatus!]!
+    getCancelResponseByDriver:[CancelReason!]!
+    getEarningsByDriver(startDates:String!, endDates:String!):[Earning!]!
+    getEarningTripsHistoryByDriver(startDate:Long!, endDate:Long!, pageInfo:PageInfo!):[Trip!]!
+    getTrpRequestsByDriver:[TripRequest!]!
+    getTripRequestByDriver(reqId:String!):TripRequest!
+    getTripHistoryByDriver(id:String!):Trip!
+    getTripsHistoryByDriver(pageInfo:PageInfo!, startDate:Long!, endDate:Long!, tripCode:String, status:TripStatus):[Trip!]!
+    getVehiclesByDriver:[Vehicle!]!
+    getVehicleByDriver(id:String!):Vehicle!
+    getVehicleOffersByDriver(vehicleId:String!):[GlobalOffer!]!
 }
 
-type Subscription {
-    watchDriver(id: ID!): Driver!
-    watchDriver2(id: ID!): Driver!
+#*************************** MUTATION ***************************
+type Mutation {
+    #****************DriverControllerGQL********************************************
+    addVehicleByDriver(vehicle:VehicleInput!):Vehicle!
+
+    cancelBookingTripByDriver(tripId:String!, cancelReason:CancelReasonInput!):Trip!
+    acceptBookingTripByDriver(tripId:String!):Trip!
+    arrivedBookingToClientByDriver(tripId:String!):Trip!
+    startBookingTripByDriver(tripId:String!):Trip!
+    endBookingTripByDriver(tripId:String!):Trip!
+    checkDriverPhoneByDriver(phone:PhoneNumberInput!):Boolean!
+    acceptTripByDriver(id:String!):Trip!
+    arriveTripByDriver(tripId:String!):Trip!
+    startTripByDriver(tripId:String!):Trip!
+    endTripByDriver(tripId:String!):Trip!
+    cancelTripByDriver(tripId:String!, cancelReason:CancelReasonInput!):Trip!
+    startTimeoutByDriver:Trip!
+    stopTimeoutByDriver:Trip!
+    acceptTripRequestByDriver(id:String!):TripRequest!
+    declineTripRequestByDriver(id:String!):TripRequest!
+
+    rateTripByDriver(tripId:String!, rate:RateInput!):Trip!
+
+
+    setDriverLangByDriver(lang:String!):Driver!
+    goOnlineByDriver(vehicleId:String!):Driver!
+    goOfflineByDriver:Driver!
+    setVehicleOffersByDriver(vehicleId:String!, offers:[String!]!):Vehicle!
+
+    updateCoordinatesByDriver(coordinates:CoordinatesInput!):Coordinates!
+    updateBicIbanByDriver(iban:BicIbanInput!):Driver!
+    completeDriverProfileByDriver(contactInfo:DriverContactInfo!):Driver!
+    updateDriverInfoByDriver(info:UserBasicInfoInput!):Driver!
+    updateDriverPrefsByDriver(preferences:DriverPreferencesInput!):Driver!
+    updateVehicleByDriver(vehicleInput:VehicleInput!):Vehicle!
+
+
+    deleteDocumentByDriver(docId:String!):String
+    deleteVehicleByDriver(id:String!):String
+    removeVehicleImageByDriver(vehicleId:String!, imageId:String!):Vehicle!
+
+
+
+    #****************ClientControllerGQL********************************************
+    isRegionCovered(coordinates:CoordinatesInput!):Boolean!
+    checkPromoCodeByClient(promoCode:String!):String
+    checkPhoneByClient(phone:PhoneNumberInput!):Boolean!
+    cancelTripByClient(cancelReason:CancelReasonInput!, tripId:String!):Trip!
+    clientTripRate(tripId:String!, rate:RateInput!):Trip!
+    getCloseDriversByClient(coordinates:CoordinatesInput!, offerId:String):[Driver!]!
+    sendRequestByClient(requestId:String!):TripRequest!
+
+    setClientLangByClient(lang:String!):Client!
+    setClientCurrentLocationByClient(coord:CoordinatesInput!):Client!
+
+    updateClientPrefsByClient(preferences:ClientPreferencesInput!):Client!
+    updateClientInfoByClient(info:UserBasicInfoInput!):Client!
+    completeClientProfileByClient(contactInfo:UserBasicInfoInput!):Client!
+
+    cancelTripRequestByClient(requestId:String!):TripRequest!
+
+    #****************AdminController*********************************************
+    adminLogin(loginObject:LoginObjectInput):AdminLoginResult!
+
+    addCancelReason(input: CancelReasonInput!):CancelReason!
+    newClientByAdmin(input:ClientInput!):Client!
+    completeClientProfileByAdmin(contactInfo:UserBasicInfoInput, clientId:String!):Client!
+    createClientByPhoneNumberByAdmin(phoneNumber:String!):Client!
+    createClientByAdmin(info:UserBasicInfoInput!, clientId:String):Client!
+    createDriver(info:UserBasicInfoInput!, driverId:String):Driver!
+    createOffer(input : GlobalOfferInput!):GlobalOffer!
+    createPromoCodeByAdmin(input:PromocodeInput!):PromoCode!
+    createTripRequestByAdmin(input:TripRequestInput!):TripRequest!
+    addVehicleByAdmin(input:VehicleType!, ownerId:String!):Vehicle!
+
+    mapTo(tripId: String!, driverId:String!): Trip!
+    checkClientPhoneByAdmin(phone:String!,id:String ):Boolean!
+    checkDriverPhone(phone:String!,id:String ):Boolean!
+
+    setDocumentValidity(validity: ValidityInput,docId:String! ): FileDocument!
+    setPaid(ids:[String!]!, val:Boolean!):[Trip!]!
+    setAdminLang(lang:String!):Admin!
+    setClientDisabledByAdmin(id:String!, disabled:Boolean!):Client!
+    setDriverDisable(id:String!, disabled:Boolean!):Driver!
+    setPathFormulas(offerId:String!, input: [PathFormulaInput!]!):GlobalOffer!
+    setDayFormulas(offerId:String!, input: [DayFormulaInput!]!):GlobalOffer!
+    setTimeRangeFormulas(offerId:String!, input: [TimeRangeFormulaInput!]!):GlobalOffer!
+    setOfferEnable(id:String!, enabled:Boolean!):GlobalOffer!
+    setPromoCodeValidityByAdmin(id:String!, validity:ValidityInput!):PromoCode!
+    setTripRequestPriceByAdmin(newPrice:Float!, requestId:String!):TripRequest!
+    setGeneralConfig(config:GeneralConfigInput!):ServerParameters!
+    setAuthConfig(authConfig:AuthConfigInput!):ServerParameters!
+    setExternalApiConfig(externalApiConfig:ExternalApiConfigInput!):ServerParameters!
+    setTripConfig(tripConfig:TripConfigInput!):ServerParameters!
+    setAppVersions(appVersions:AppVersionsInput!):ServerParameters!
+    setDocumentParams(documentParams:DocumentParamsInput!):ServerParameters!
+    setContact(contacts:[ContactInput!]!):ServerParameters!
+    setCancelParams(cancelParams:CancelParamsInput!):ServerParameters!
+    setActiveOffersForVehicleByAdmin(vehicleId:String!, enabledOfferIds: [String!]!):Vehicle!
+    setVehicleValidityByAdmin(vehicleId:String!, validity:ValidityInput!):Vehicle!
+    setVehicleOffersByAdmin(vehicleId:String!, offerIds:[String!]!):Vehicle!
+
+    updateDriverInfo(userInfo:UserBasicInfoInput!, id:String!):Driver!
+    updateDriver(userInfo:UserBasicInfoInput!, id:String!):Driver!
+    updateEmail(email:EmailInput!, id:String!):Driver!
+    updateDriverPhone(phoneNumber:PhoneNumberInput, id:String!):Driver!
+
+    cancelTrip(tripId:String!, cancelReason:CancelReasonInput):Trip!
+    arrive(tripId:String!):Trip!
+    archive(TripId:String!):Trip!
+    start(TripId:String!):Trip!
+    end(TripId:String!):Trip!
+    checkPromoCode(promoCode:String!):String
+    cancelBookingRequest(requestId:String!):TripRequest!
+    cancelTripRequestByAdmin(requestId:String!):String
+    sendTripRequestByAdmin(id:String!, driverId:String!):Trip!
+    dispatch(requestId:String!):String
+
+    deleteFileDocument(id:String!): FileDocument!
+    deleteCancelReason(id:String!):String
+    deleteClientByAdmin(id:String!):String
+    deleteDriver(id:String!):String
+    deleteFeedBack(id:String!):String
+    deleteOfferByAdmin(id:String!):String
+    removeOfferImage(offerId:String!, imageId:String!):GlobalOffer!
+    deletePromoCodeByAdmin(id:String!):String
+    deleteTripRequestByAdmin(id:String!):String
+    deleteVehicleByAdmin(is:String!):String
+    deleteVehicleImageByAdmin(vehicleId:String!, imageId:String!):Vehicle!
+    removeVehicleImageByAdmin(vehicleId:String!, imageId:String!):Vehicle!
+
+
+
+
+}
+
+#*************************** TYPE ***************************
+
+type Feedback implements  BasicEntity{
+    id: ID!
+    creationDate: Long!
+    lastUpdate: Long!
+    message:String!
+    sender:String!
+    type:FeedbackType!
+    userBase:UserBase!
+}
+
+type DriverVehicle{
+    driver:Driver!
+    vehicleCount:Long!
+}
+
+type PollObject{
+    id:ID!
+    destinationId:String!
+    trip:Trip!
+    driver:Driver!
+    client:Client!
+    notification:Notification!
+    tripRequest:TripRequest!
+    closeDriver:CloseDriver!
+    creationDate:Long!
+}
+
+type DocumentCouple {
+    request: DocumentRequest!
+    fileDocument: FileDocument!
+
+}
+
+type DocumentRequest implements  BasicEntity{
+    id: ID!
+    creationDate: Long!
+    lastUpdate: Long!
+    documentName: String!
+    description: String!
+}
+
+type FileDocument implements BasicEntity{
+    id: ID!
+    creationDate: Long!
+    lastUpdate: Long!
+    type : DocumentType!
+    ownerId:String!
+    objectId:String!
+    documentRequest:DocumentRequest!
+    validity:Validity!
+}
+
+type Earning {
+    driver : Driver
+    startDate: Long!
+    endDate: Long!
+    earnings: Float!
+    fee: Float!
+    currency: String!
+}
+
+type GeoPoint implements BasicGeoShape {
+    type: String!
+    coordinates: [Float!]!
+}
+
+type GeoPolygon implements BasicGeoShape {
+    type: String!
+    coordinates :[[[Float!]!]!]!
+}
+
+type BasicFormula{
+    minutePrice: Float!
+    kilometerPrice: Float!
+    minimumPrice: Float!
+}
+
+type DayFormula{
+    dayOfWeek : Int!
+    formula: IncreaseFormula!
+}
+
+type DistanceFormula{
+    formula: BasicFormula!
+    distanceRangeFormulaList : [DistanceRangeFormula!]!
+}
+
+type DistanceRangeFormula{
+    min: Float!
+    max: Float!
+    formula: IncreaseFormula!
+}
+
+type Fee{
+    feeValue: Float!
+    percentage: Boolean!
+}
+
+type GlobalOffer implements BasicEntity{
+    id: ID!
+    creationDate: Long!
+    lastUpdate: Long!
+    name:String!
+    description:String!
+    regions: [Region!]!
+    allRegions: Boolean!
+    rank:Int!
+    imageId:String
+    formula: DistanceFormula!
+    pathFormulas:[PathFormula!]!
+    dayFormulas:[DayFormula!]!
+    timeRangeFormulas:[TimeRangeFormula!]!
+    arriveWaitTime:WaitTime!
+    startWaitTime:WaitTime!
+    globalFee:Fee!
+    reservationFee:Fee!
+    cancelationFee:Fee!
+    enabled:Boolean!
+    onlinePaymentRequired:Boolean!
+}
+
+type IncreaseFormula{
+    formula: DistanceFormula!
+    increasePercentage: Float!
+}
+
+type PathFormula{
+    sourceId: String!
+    destId: String!
+    direction: PathDirection!
+    source: Region!
+    destination: Region!
+    formula: IncreaseFormula!
+
+}
+
+type TimeRangeFormula{
+    startHour: Int!
+    startMinute: Int!
+    endHour: Int!
+    endMinute: Int!
+    formula: IncreaseFormula!
+}
+
+type Discount {
+      value: Float!
+     percentage:Boolean!
+}
+
+type DistanceRangeOffer  {
+    min: Float!
+    max: Float!
+    percentage : Float!
+}
+
+type EstimatedOffer{
+    offer:GlobalOffer!
+    rateResult:RateResult!
+}
+
+type EstimationResult{
+    result: [EstimatedOffer!]!
+}
+
+type RateAndFee{
+    tripFee:Float!
+    fee:Float!
+    arriveWaitTimeFee:Float!
+    startWaitTimeFee:Float!
+    cancelationFee:Float!
+    reservationFee:Float!
+    discount:Float!
+    total:Float!
+}
+
+type RateResult{
+    clientCost: Float!
+    driverCost:Float!
+    commission:Float!
+    rateAndFee:RateAndFee!
+}
+
+type TripInfo{
+    offer:GlobalOffer!
+    when: Long!
+    distance:Long!
+    duration:Long!
+    status: TripStatus!
+    start:Coordinates!
+    end:Coordinates
+    arriveWaitTime:Long!
+    startWaitTime:Long!
+    promoCode:String!
+    discount:Discount!
+    client:Client!
+}
+
+type WaitTime{
+    freeWaitTimeInMinutes:Long!
+    fee:Fee!
+}
+
+type PromoCode implements BasicEntity {
+    id: ID!
+    creationDate: Long!
+    lastUpdate: Long!
+    code: String!
+    limit:Long!
+    exclusive:Boolean!
+    discount: Float!
+    lowerCaseCode:String!
+    expiryDate: Long!
+    regionInfoList:[RegionInfo!]!
+    userIds:[String!]
+}
+
+type RegionInfo{
+    region:Region
+    from:String!
+    to:String!
+}
+
+type DriverPreferences implements Preferences{
+    lang:String!
+    ratedOnPlayStore:Boolean!
+    keepScreenOn:Boolean!
+    vibrateOnNewTrip :Boolean!
+    ringOnNewTrip :Boolean!
+    online:Boolean!
+    startGeoOnAcceptTrip :Boolean!
+    startGeoOnStartTrip :Boolean!
+}
+
+type ClientPreferences implements Preferences{
+    lang:String!
+    ratedOnPlayStore:Boolean!
+    keepScreenOn:Boolean!
+    notifyOnArrive:Boolean!
+    notifyOnTripStarted:Boolean!
+    notifyOnTripEnded:Boolean!
+    notifyOnTripCanceled:Boolean!
+    statusBarEnabled:Boolean!
+
+}
+
+type DiskRegionInfo{
+    radius:Long!
+    center:GeoPoint!
+}
+
+type PolygonInfo{
+    corners:[GeoPoint!]!
+}
+
+type Region implements BasicEntity{
+    id: ID!
+    creationDate: Long!
+    lastUpdate: Long!
+    name:String!
+    polygonInfo:PolygonInfo!
+    parent:[Region!]!
+    diskRegionInfo:DiskRegionInfo!
+    type:RegionType!
+    paymentTypes:[PaymentType!]!
+
+}
+
+type RegistrationRequest implements BasicEntity{
+    id: ID!
+    creationDate: Long!
+    lastUpdate: Long!
+    phoneNumber:PhoneNumber!
+    type:UserType!
+    userId:String!
+    roles:[Role]!
+}
+
+type PhoneNumber{
+    region:String!
+    regionCode:Int!
+    national:String!
+    international:String!
+}
+
+type Estimation{
+    offer:GlobalOffer!
+    summary:TripSummary!
+}
+
+type TripRequest implements BasicRequest & BasicEntity{
+    id: ID!
+    creationDate: Long!
+    lastUpdate: Long!
+    promotionCode:String!
+    offer:GlobalOffer!
+    driverDistanceInfoList:[DriverDistanceInfo!]!
+    coordinates:Coordinates!
+    destCoordinates:Coordinates!
+    tripSummary:TripSummary!
+    client:Client!
+    trip:Trip!
+    when:Long!
+    tripSummaries:[TripSummary!]!
+    resend:Boolean!
+    notifyClient:Boolean!
+    status:RequestStatus!
+    driver:Driver!
+    driverDestinationId :String!
+    sendDate:Long!
+    targetDrivers:[String!]!
+    excludedDrivers:[String!]!
+    sentCount:Int!
+    remainingTime:Long!
+    deliveryStatus:RequestDeliveryStatus!
+    sentTime:Long!
+    appointmentPath:String!
+    destinationPath:String!
+    takenByAdmin:Admin!
+    canceledByAdmin:Admin!
+    estimations:[Estimation!]!
+}
+
+type ServerParameters implements BasicEntity{
+    id: ID!
+    creationDate: Long!
+    lastUpdate: Long!
+    applicationStartDate:Long!
+    applicationEndDate:Long!
+    generalConfig:GeneralConfig!
+    authConfig:AuthConfig!
+    externalApiConfig:ExternalApiConfig!
+    tripConfig:TripConfig!
+    appVersions:AppVersions!
+    documentParams:DocumentParams!
+    contacts:[Contact!]!
+    cancelParams:CancelParams!
+}
+
+type AppVersions{
+    clientAndroidVersion:Int!
+    partnerAndroidVersion:Int!
+    clientIosVersion:Int!
+    partnerIosVersion:Int!
+}
+
+type ExternalApiConfig{
+    stripeLivePublicKey:String!
+    stripeLiveSecretKey:String!
+    stripeTestPublicKey:String!
+    stripeTestSecretKey:String!
+    firebaseApiKeyClient:String!
+    firebaseApiKeyDriver:String!
+    urlShortenerKey:String!
+    googleMapsKey:String!
+    stripeTestMode:Boolean!
+}
+
+type GeneralConfig{
+    monitorTimeout:Long!
+    showUrlLogs:Boolean!
+}
+
+type CancelParams{
+    client:[TripStatus!]!
+    driver:[TripStatus!]!
+}
+
+type AuthConfig{
+    passwordChangeRequestExpiry:Long!
+    loginFailedExpiryTimeInMs:Long!
+    loginFailedRetryCount:Int!
+    cookieMaxAge:Int!
+}
+
+type DocumentParams{
+    driverDocuments:[DocumentRequest!]!
+    vehicleDocuments:[DocumentRequest!]!
+    companyDocuments:[DocumentRequest!]!
+    storeDocuments:[DocumentRequest!]!
+}
+
+type TripConfig{
+    visibilityRange:Float!
+    tripTimeOut:Long!
+    tripLifeTime:Long!
+    changeDestMinDistance:Long!
+    bookingTimeout:Long!
+    minDistanceToEval:Int!
+    driverEvalCount:Int!
+    maxRetryCount:Int!
+    tripPendingTimeout:Long!
+    bookingPendingTimeout:Long!
+    tripHangCheckPeriod:Long!
+    dispatchBookingAutomatically:Boolean!
+}
+
+type Contact{
+    name:String!
+    value:String!
+}
+
+type DriverDistanceInfo implements BasicEntity{
+    id: ID!
+    creationDate: Long!
+    lastUpdate: Long!
+    driver:Driver!
+    duration:Long!
+    distance:Long!
+}
+
+type Route{
+  coordinateList:[Coordinates!]!
+}
+
+type Trip implements BasicEntity{
+    id: ID!
+    creationDate: Long!
+    lastUpdate: Long!
+    client:Client!
+    status:TripStatus!
+    driver:Driver!
+    coordinates:Coordinates!
+    destinationCoordinates:Coordinates!
+    destinationRoute:Route!
+    clientDestinationRoute:Route!
+    appointmentRoute:Route!
+    clientRate:Rate!
+    riverRate:Rate!
+    acceptState:TripStateChange!
+    arriveState:TripStateChange!
+    startState:TripStateChange!
+    endState:TripStateChange!
+    clientCancel:TripStateChange!
+    driverCancel:TripStateChange!
+    adminCancel:TripStateChange!
+    tripSummary:TripSummary!
+    oldTripSummary:TripSummary!
+    tripCode:String!
+    appointmentRoutes:[Route!]!
+    destinationRoutes:[Route!]!
+    appointmentProgress:TripProgress!
+    destinationProgress:TripProgress!
+    vehicle:Vehicle!
+    promoCode:PromoCode!
+    friendInfo:ContactInfo!
+    contactInfo:ContactInfo!
+    destContactInfo:ContactInfo!
+    notes:String!
+    request:DocumentRequest!
+    offer:GlobalOffer!
+    when:Long!
+    srcEncodedPaths:[String!]!
+    destEncodedPaths:[String!]!
+    admin:Admin!
+    takenByAdmin:Admin!
+    paymentIntentId:String!
+    paid:Boolean!
+    cancelAdmin:Admin!
+}
+
+type TripProgress{
+    distance:Float!
+    duration:Float!
+    distanceText:String!
+    durationText:String!
+}
+
+type TripSummary{
+    tripDistance:Long!
+    tripDuration:Long!
+    costClient:Float!
+    costDriver:Float!
+    discount:Float!
+    commission:Float!
+    priceSetByAdmin:Boolean!
+    currencyText:String!
+}
+
+type Admin implements UserBase & BasicEntity{
+    id: ID!
+    creationDate: Long!
+    lastUpdate: Long!
+    firstName:String!
+    lastName:String!
+    middleName:String
+    imageId:String
+    gender:Gender!
+    userType:UserType!
+    roles:[Role!]!
+    disabled:Boolean!
+    userName:String!
+    password:String!
+    preferences:Preferences!
+}
+
+type Client implements NormalUser & BasicEntity & UserBase{
+    id: ID!
+    creationDate: Long!
+    lastUpdate: Long!
+    firstName:String!
+    lastName:String!
+    middleName:String
+    imageId:String
+    gender:Gender!
+    userType:UserType!
+    roles:[Role!]!
+    disabled:Boolean!
+    dateOfBirth:Long!
+    phoneNumber:PhoneNumber!
+    email:Email!
+    address:Address!
+    rate:Float!
+    rateCount:Int!
+    tripCount:Int!
+    stripeAccountId:String
+    preferences:ClientPreferences!
+    currentLocation:Coordinates
+}
+
+type CloseDriver{
+    driver:Driver!
+    name:String!
+    longitude:Float!
+    latitude:Float!
+    close:Boolean!
+}
+
+type Company implements BasicEntity{
+    id: ID!
+    creationDate: Long!
+    lastUpdate: Long!
+    type:CompanyType!
+    name:String!
+    imageId:String
+}
+
+type ContactInfo{
+    firstName:String!
+    lastName:String!
+    phoneNumber:PhoneNumber!
+
+}
+
+type Driver implements NormalUser & BasicEntity & UserBase{
+    id: ID!
+    creationDate: Long!
+    lastUpdate: Long!
+    firstName:String!
+    lastName:String!
+    middleName:String
+    imageId:String
+    gender:Gender!
+    userType:UserType!
+    roles:[Role!]!
+    disabled:Boolean!
+    dateOfBirth:Long!
+    phoneNumber:PhoneNumber!
+    email:Email!
+    address:Address!
+    rate:Float!
+    rateCount:Int!
+    tripCount:Int!
+    stripeAccountId:String
+    coordinates:Coordinates
+    vehicle:Vehicle!
+    preferences:DriverPreferences!
+    status:DriverState!
+    company:Company
+    primaryDriver:Boolean!
+    bicIban:BicIban
+    lastUsedVehicle:Vehicle
+    request:DocumentRequest
+}
+
+type User{
+    userId:String!
+    roles:[Role!]!
+    type:UserType!
+}
+
+type Vehicle implements BasicEntity{
+    id: ID!
+    creationDate: Long!
+    lastUpdate: Long!
+    brand:String!
+    model:String!
+    year:Int!
+    registrationNumber:String!
+    imageIds:[String!]!
+    type:VehicleType!
+    offerIds:[String!]!
+    activeOfferIds:[String!]!
+    ownerId:String!
+    validity:Validity!
+}
+
+type Address{
+    road:String
+    street:String!
+    city:String!
+    state:String!
+    zipCode:String!
+    country:String!
+    formattedAddress:String!
+}
+
+type CancelReason implements BasicEntity{
+    id: ID!
+    creationDate: Long!
+    lastUpdate: Long!
+    value:String!
+    forClients:Boolean!
+    active:Boolean!
+    redispatchIfCanceled:Boolean!
+}
+
+type Coordinates {
+    longitude:Float!
+    latitude:Float!
+    address:Address!
+    localTime:Long!
+    serverTime:Long!
+    provider:String!
+}
+
+type Email{
+    value:String!
+    verified:Boolean!
+}
+
+type DriverLoginResult implements LoginResult{
+    data:Driver!
+    token:String!
+}
+
+type AdminLoginResult implements LoginResult{
+    data:Admin!
+    token:String!
+}
+
+type ClientLoginResult implements LoginResult{
+    data:Client!
+    token:String!
+}
+
+type Notification implements BasicEntity{
+    id: ID!
+    creationDate: Long!
+    lastUpdate: Long!
+    title:String!
+    text:String!
+    imageId:String
+    ownerId:String!
+    read:Boolean!
+    dismissed:Boolean!
+    dismissedTime:Long!
+    readTime:Long!
+    trip:Trip!
+    highPriority:Boolean!
+}
+
+type PhoneCode{
+    name:String!
+    dial:String!
+    code:String!
+}
+
+type Rate{
+    score:Float!
+    comment:String!
+}
+
+type TripStateChange{
+    date:Long!
+    cancelReason:CancelReason!
+    waitTime:Long!
+    waitTimeStart:Long!
+}
+
+type Validity{
+    expiryDate:Long!
+    status:ValidityStatus!
+    statusText:String!
+}
+
+type BicIban{
+    bic:String!
+    iban:String!
+}
+
+#*************************** INPUT ***************************
+
+input  RateInput{
+    score:Float!
+    comment:String!
+}
+input PhoneNumberInput{
+    region:String!
+    regionCode:Int!
+    national:String!
+    international:String!
+}
+
+input  EmailInput{
+    value:String!
+    verified:Boolean!
+}
+input ValidityInput{
+    expiryDate:Long!
+    status:ValidityStatus!
+    statusText:String!
+}
+
+input CancelReasonInput{
+    id:ID
+    value:String!
+    forClients:Boolean!
+    active:Boolean!
+    redispatchIfCanceled:Boolean!
+}
+
+input ClientInput{
+     id:ID
+     email:String!
+     phoneNumber:String!
+     firstName:String!
+     lastName:String!
+     gender:Gender!
+}
+
+input DriverContactInfo{
+    firstName:String!
+    lastName:String!
+    email:String!
+    gender:Gender!
+    companyType:CompanyType!
+    dateOfBirth:Long!
+}
+
+input  RegionInfoInput{
+    regionId:String!
+    from:String!
+    to:String!
+}
+
+
+input EstimationRequest{
+    start:CoordinatesInput!
+    end:CoordinatesInput!
+    promoCode:String
+    when:Long!
+}
+
+input FeedbackInput{
+    id:ID
+    message:String!
+    type:FeedbackType!
+
+}
+
+input LoginObjectInput{
+    username:String!
+    password:String!
+}
+
+input PromocodeInput{
+    id:ID
+    code: String!
+    limit:Long!
+    exclusive:Boolean!
+    discount: Float!
+    expiryDate: Long!
+    regionInfoList:[RegionInfoInput!]!
+}
+
+input RegionInput{
+    id:ID
+    name:String!
+    polygonInfo:PolygonInfoInput!
+    diskRegionInfo: DiskRegionInfoInput!
+    paymentTypes:[PaymentType!]!
+    parentIds:[String!]!
+}
+
+input PolygonInfoInput{
+    corners:[GeoPointInput!]!
+}
+
+input GeoPointInput{
+    coordinates:[Float!]!
+    type:String!
+}
+
+input CoordinatesInput{
+    lat:Float!
+    lng:Float!
+}
+
+input BicIbanInput{
+    bic:String!
+    iban:String!
+}
+
+input AppVersionsInput{
+    clientAndroidVersion:Int!
+    partnerAndroidVersion:Int!
+    clientIosVersion:Int!
+    partnerIosVersion:Int!
+}
+
+input AuthConfigInput{
+    passwordChangeRequestExpiry:Long!
+    loginFailedExpiryTimeInMs:Long!
+    loginFailedRetryCount:Int!
+    cookieMaxAge:Int!
+}
+
+input  CancelParamsInput{
+    client:[TripStatus!]!
+    driver:[TripStatus!]!
+}
+
+input ContactInput{
+    name:String!
+    value:String!
+}
+
+input DocumentParamsInput{
+     driverDocuments:[DocumentRequestInput!]!
+     vehicleDocuments:[DocumentRequestInput!]!
+     companyDocuments:[DocumentRequestInput!]!
+     storeDocuments:[DocumentRequestInput!]!
+ }
+
+input ExternalApiConfigInput{
+    stripeLivePublicKey:String!
+    stripeLiveSecretKey:String!
+    stripeTestPublicKey:String!
+    stripeTestSecretKey:String!
+    firebaseApiKeyClient:String!
+    firebaseApiKeyDriver:String!
+    urlShortenerKey:String!
+    googleMapsKey:String!
+    stripeTestMode:Boolean!
+}
+
+input GeneralConfigInput{
+    monitorTimeout:Long!
+    showUrlLogs:Boolean!
+}
+
+input ServerParametersInput{
+    applicationStartDate:Long!
+    applicationEndDate:Long!
+    generalConfig:GeneralConfigInput!
+    authConfig:AuthConfigInput!
+    externalApiConfig:ExternalApiConfigInput!
+    tripConfig:TripConfigInput!
+    appVersions:AppVersionsInput!
+    documentParams:DocumentParamsInput!
+    contacts:[ContactInput!]!
+    cancelParams:CancelParamsInput!
+}
+
+input DocumentRequestInput {
+    documentName: String!
+    description: String!
+}
+
+input ClientPreferencesInput {
+    lang:String!
+    ratedOnPlayStore:Boolean!
+    keepScreenOn:Boolean!
+    notifyOnArrive:Boolean!
+    notifyOnTripStarted:Boolean!
+    notifyOnTripEnded:Boolean!
+    notifyOnTripCanceled:Boolean!
+    statusBarEnabled:Boolean!
+
+}
+
+input DriverPreferencesInput {
+    lang:String!
+    ratedOnPlayStore:Boolean!
+    keepScreenOn:Boolean!
+    vibrateOnNewTrip :Boolean!
+    ringOnNewTrip :Boolean!
+    online:Boolean!
+    startGeoOnAcceptTrip :Boolean!
+    startGeoOnStartTrip :Boolean!
+}
+
+input DiskRegionInfoInput{
+    radius:Long!
+    center:GeoPointInput!
+}
+
+input TripRequestInput{
+    id: ID
+    promoCode:String!
+    src:CoordinatesInput!
+    dest:CoordinatesInput!
+    when:Long!
+    offerId:String!
+}
+
+input UserBasicInfoInput{
+    firstName:String!
+    lastName:String!
+    middleName:String
+    gender:Gender!
+    email:String!
+    phoneNumber:String!
+    dateOfBirth:Long!
+}
+
+input VehicleInput{
+    id:ID
+    brand:String!
+    model:String!
+    year:Int!
+    registration:String!
+    type:VehicleType!
+}
+
+input GlobalOfferInput{
+    id:ID
+    name:String!
+    description:String!
+    regionIds:[String!]!
+    allRegions:Boolean!
+    rank:Int!
+    formula:DistanceFormulaInput!
+    onlinePaymentRequired:Boolean!
+    globalFee:FeeInput!
+    reservationFee:FeeInput
+    cancelationFee:FeeInput
+    arriveWaitTime:WaitTimeInput
+    startWaitTime:WaitTimeInput
+    enabled:Boolean!
+}
+
+input BasicFormulaInput{
+    minutePrice:Float!
+    kilometerPrice:Float!
+    minimumPrice:Float!
+}
+
+input DayFormulaInput{
+    dayOfWeek : Int!
+    formula: IncreaseFormulaInput!
+}
+
+input DistanceFormulaInput{
+    basicFormulaInput: BasicFormulaInput!
+    distanceRangeFormulaInputs : [DistanceRangeFormulaInput!]!
+}
+
+input DistanceRangeFormulaInput{
+    min: Float!
+    max: Float!
+    increaseFormulaInput: IncreaseFormulaInput!
+}
+
+input FeeInput{
+    feeValue: Float!
+    percentage: Boolean!
+}
+
+input IncreaseFormulaInput{
+    distanceFormulaInput:DistanceFormulaInput!
+    increasePercentage:Float!
+}
+
+input PathFormulaInput{
+    sourceId:String!
+    destId:String!
+    direction:PathDirection!
+    formula:IncreaseFormulaInput!
+}
+
+input TimeRangeFormulaInput{
+    startHour:Int!
+    startMinute:Int!
+    endHour:Int!
+    endMinute:Int!
+    formula:IncreaseFormulaInput!
+}
+
+input WaitTimeInput{
+    freeWaitTimeInMinutes:Long!
+    fee:FeeInput!
+}
+
+input TripSummaryInput{
+    tripDistance:Long!
+    tripDuration:Long!
+    costClient:Float!
+    costDriver:Float!
+    discount:Float!
+    commission:Float!
+    priceSetByAdmin:Boolean!
+    currencyText:String!
+}
+
+input TripConfigInput{
+    visibilityRange:Float!
+    tripTimeOut:Long!
+    tripLifeTime:Long!
+    changeDestMinDistance:Long!
+    bookingTimeout:Long!
+    minDistanceToEval:Int!
+    driverEvalCount:Int!
+    maxRetryCount:Int!
+    tripPendingTimeout:Long!
+    bookingPendingTimeout:Long!
+    tripHangCheckPeriod:Long!
+    dispatchBookingAutomatically:Boolean!
 }
 
 input PageInfo {
-    index: Int!
+    page: Int!
     size: Int!
+}
+
+input CurrentTripsInput{
+    status: TripStatus
+    clientId:String
+    driverId:String
+    tripCode:String
+    startDate:Long!
+    endDate:Long!
+}
+
+
+#*************************** ENUM ***************************
+
+enum VehicleType {
+    MOTO
+    CAR
+}
+
+enum RegionType {
+    POLYGON
+    DISK
+}
+
+enum PathDirection {
+GO
+BACK
+ROUND
+}
+
+enum ValidityStatus {
+    PENDING
+    VALID
+    REJECTED
+    SUSPENDED
+    EXPIRED
+}
+
+enum UserType {
+    CLIENT
+    DRIVER
+    ADMIN
+}
+
+enum TripStatus {
+    PENDING
+    ACCEPTED
+    CANCELED_BY_CLIENT
+    CANCELED_BY_DRIVER
+    CANCELED_BY_ADMIN
+    ARRIVED
+    TRIP_STARTED
+    TRIP_ENDED
+}
+
+enum RequestStatus {
+    PENDING
+    NEW
+    SENT
+    ACCEPTED
+    DECLINED
+    CANCELED
+    CANCELED_BY_ADMIN
+    DONE
+    EXPIRED
+}
+
+enum RequestDeliveryStatus {
+    SENT
+    DELIVERED
+    SEEN
+}
+
+enum PaymentType {
+    ONLINE_PAYMENT
+    ONBOARD_PAYMENT
+    CASH
+}
+
+enum DriverState {
+    OFFLINE
+    ONLINE
+}
+
+enum Gender {
+    UNSPECIFIED
+    MALE
+    FEMALE
+}
+
+enum Role {
+    CLIENT
+    DRIVER
+    ADMIN
+}
+
+enum FeedbackType {
+    FEEDBACK
+    PROBLEM
+    SUGGESTION
+    OTHER
+}
+
+enum DocumentType {
+    DRIVER
+    VEHICLE
+    COMPANY
+    STORE
+}
+
+enum CompanyType {
+    CAPACITAIRE
+    VTC
 }

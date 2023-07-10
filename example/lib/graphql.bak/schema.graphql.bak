@@ -1,0 +1,70 @@
+
+
+scalar Long
+
+interface BasicEntity {
+    id: ID!
+    creationDate: Long!
+    lastUpdate: Long!
+}
+
+interface BasicUser implements BasicEntity {
+
+    id: ID!
+    creationDate: Long!
+    lastUpdate: Long!
+
+
+    firstName: String!
+    lastName: String!
+    middleName: String
+
+    gender: Gender!
+    dateOfBirth: Long!
+
+}
+
+type Driver implements BasicUser & BasicEntity {
+    id: ID!
+    creationDate: Long!
+    lastUpdate: Long!
+
+
+    firstName: String!
+    lastName: String!
+    middleName: String
+
+    gender: Gender!
+    dateOfBirth: Long!
+
+    cars: [Car!]!
+    phoneNumber: String!
+    email: String
+
+}
+
+enum Gender {
+    MALE, FEMALE
+}
+
+type Car {
+    brand: String!
+    model: String!
+    year: Int!
+    imageUrl: String
+}
+
+type Query {
+    getDriverById(id: ID!): Driver!
+    getDrivers(pageInfo: PageInfo): [Driver!]!
+}
+
+type Subscription {
+    watchDriver(id: ID!): Driver!
+    watchDriver2(id: ID!): Driver!
+}
+
+input PageInfo {
+    index: Int!
+    size: Int!
+}
