@@ -175,7 +175,7 @@ class GQQueryElement extends GQToken {
 
   @override
   String serialize() {
-    return """$_escapedToken ${serializeList(arguments, join: ", ")} ${serializeList(directives, join: " ")}
+    return """$_escapedToken ${serializeList(arguments, join: ", ")} ${serializeList(directives, join: " ", withParenthesis: false)}
       ${block != null ? block!.serialize() : ''}""";
   }
 
