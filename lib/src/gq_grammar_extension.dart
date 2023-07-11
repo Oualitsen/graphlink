@@ -476,7 +476,6 @@ $data
   }
 
   void createAllFieldsFragments() {
-    return;
     var allTypes = {...interfaces, ...types};
     allTypes.forEach((key, typeDefinition) {
       if (![schema.mutation, schema.query, schema.subscription].contains(key)) {
