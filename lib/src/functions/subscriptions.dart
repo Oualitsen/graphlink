@@ -1,8 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
-
 import 'package:retrofit_graphql/src/functions/graphql_data_objects.dart';
+import 'package:retrofit_graphql/src/utils.dart';
 
 enum _AckStatus { none, progress, acknoledged }
 
@@ -71,7 +70,7 @@ class SubscriptionHandler {
 
   Stream<Map<String, dynamic>> handle(GQPayload pl) {
     var controller = StreamController<Map<String, dynamic>>();
-    String uuid = _generateUuid();
+    String uuid = generateUuid();
     _map[uuid] = controller;
     _initWs().then((streamSink) {
       streamSink.stream
@@ -126,22 +125,6 @@ class SubscriptionHandler {
       _cahce = null;
       ack = StreamController<_StreamSink>();
     }
-  }
-
-  String _generateUuid() {
-    final random = Random();
-    const hexDigits = '0123456789abcdef';
-
-    String generateRandomString(int length) {
-      final buffer = StringBuffer();
-      for (var i = 0; i < length; i++) {
-        final randomIndex = random.nextInt(hexDigits.length);
-        buffer.write(hexDigits[randomIndex]);
-      }
-      return buffer.toString();
-    }
-
-    return '${generateRandomString(8)}-${generateRandomString(4)}-${generateRandomString(4)}-${generateRandomString(4)}-${generateRandomString(12)}';
   }
 }
 

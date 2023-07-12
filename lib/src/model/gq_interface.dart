@@ -14,7 +14,7 @@ class GQInterfaceDefinition extends GQTypeDefinition
     required this.parentNames,
     required super.directives,
     required super.interfaceNames,
-  });
+  }) : super(derivedFromType: null);
 
   @override
   String toString() {

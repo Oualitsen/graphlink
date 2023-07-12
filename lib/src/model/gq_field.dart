@@ -24,6 +24,17 @@ class GQField extends DartSerializable {
   });
 
   @override
+  bool operator ==(Object other) {
+    if (other is GQField && runtimeType == other.runtimeType) {
+      return name == other.name && type == other.type;
+    }
+    return false;
+  }
+
+  @override
+  int get hashCode => name.hashCode * type.hashCode;
+
+  @override
   String toString() {
     return 'GraphqlField{name: $name, type: ${type.serialize()}, initialValue: $initialValue, documentation: $documentation, arguments: $arguments}';
   }
@@ -31,6 +42,10 @@ class GQField extends DartSerializable {
   @override
   String toDart(GQGrammar grammar) {
     return "final ${type.toDartType(grammar.typeMap, _hasInculeOrSkipDiretives)} $name;";
+  }
+
+  String toDartMethodDeclaration(GQGrammar grammar) {
+    return "final ${type.toDartType(grammar.typeMap, _hasInculeOrSkipDiretives)} $name";
   }
 
   String toDartNoFinal(GQGrammar grammar) {

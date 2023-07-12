@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
@@ -59,4 +61,26 @@ String? getNameValueFromDirectives(Iterable<GQDirectiveValue> directives) {
           (arg) => arg.token == GQGrammar.gqTypeNameDirectiveArgumentName)
       .value as String;
   return name.replaceAll("\"", "");
+}
+
+String generateUuid([String separator = "-"]) {
+  final random = Random();
+  const hexDigits = '0123456789abcdef';
+
+  String generateRandomString(int length) {
+    final buffer = StringBuffer();
+    for (var i = 0; i < length; i++) {
+      final randomIndex = random.nextInt(hexDigits.length);
+      buffer.write(hexDigits[randomIndex]);
+    }
+    return buffer.toString();
+  }
+
+  return [
+    generateRandomString(8),
+    generateRandomString(4),
+    generateRandomString(4),
+    generateRandomString(4),
+    generateRandomString(12),
+  ].join(separator);
 }

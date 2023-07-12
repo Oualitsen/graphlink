@@ -12,6 +12,14 @@ class GQType extends GQToken {
   GQType(super.name, this.nullable, {this.isScalar = true});
 
   @override
+  bool operator ==(Object other) {
+    if (other is GQType) {
+      return token == other.token && nullable == other.nullable;
+    }
+    return false;
+  }
+
+  @override
   String toString() {
     return serialize();
   }
@@ -33,6 +41,9 @@ class GQType extends GQToken {
   String get nullableTextDart => nullable ? "?" : "";
 
   GQType get inlineType => this;
+
+  @override
+  int get hashCode => token.hashCode;
 }
 
 class GQListType extends GQType {

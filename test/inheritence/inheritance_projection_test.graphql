@@ -1,0 +1,40 @@
+
+
+interface User {
+  firstName: String!
+  lastName: String!
+}
+
+type Admin implements User {
+  firstName: String!
+  lastName: String!
+
+  username: String!
+}
+
+type Assistant implements User {
+  firstName: String!
+  lastName: String!
+
+  username: String!
+  password: String!
+}
+
+
+
+type Query {
+  getAdmin: Admin!
+  getAssitant: Assistant!
+  getUser: User!
+}
+
+query getUser {
+  myUser:getUser @gqTypeName(name: "MyUser") {
+    ... on Admin @gqTypeName(name: "AdminEEEE"){
+      firstName lastName username
+    }
+    ... on Assistant @gqTypeName(name: "Assistant222"){
+    firstName lastName  username password
+    }
+  } 
+}

@@ -78,6 +78,7 @@ class GQQueryDefinition extends GQToken {
         fields: _generateFields(),
         directives: directives,
         interfaceNames: {},
+        derivedFromType: null,
       );
     }
     return gqDef;
@@ -115,6 +116,7 @@ class GQQueryDefinition extends GQToken {
 class GQQueryElement extends GQToken {
   final List<GQDirectiveValue> directives;
   final GQFragmentBlockDefinition? block;
+
   final List<GQArgumentValue> arguments;
   final String? alias;
 

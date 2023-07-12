@@ -316,6 +316,32 @@ $data
   void validateProjection(
       GQProjection projection, String typeName, String? fragmentName) {
     var type = getType(typeName);
+    if (projection is GQInlineFragmentsProjection) {
+      var type = getType(typeName);
+
+      if (type is GQInterfaceDefinition) {
+        //handl for interface
+        projection.inlineFragments
+            .map((e) => e.onTypeName)
+            .map((e) => getType(e))
+            .forEach((type) {
+          if (!type.interfaceNames.contains(typeName)) {
+            throw ParseException(
+                "Type '${type.token}' does not implement '$typeName'");
+          }
+        });
+
+        for (var inlineFrag in projection.inlineFragments) {
+          inlineFrag.block.projections.forEach((key, proj) {
+            validateProjection(proj, inlineFrag.onTypeName, null);
+          });
+        }
+      }
+
+      //handle union type here
+
+      return;
+    }
     if (projection.isFragmentReference) {
       var fragment = getFragment(projection.token);
 
@@ -488,7 +514,6 @@ $data
                         fragmentName: null,
                         token: field.name,
                         alias: null,
-                        isFragmentReference: false,
                         block: createAllFieldBlock(field),
                         directives: []))
                     .toList()),
@@ -508,19 +533,16 @@ $data
     }
     return GQFragmentBlockDefinition([
       GQProjection(
-          fragmentName: allFieldsFragmentName(field.type.inlineType.token),
-          token: allFieldsFragmentName(field.type.inlineType.token),
-          alias: null,
-          isFragmentReference: true,
-          block: null,
-          directives: [])
+        fragmentName: allFieldsFragmentName(field.type.inlineType.token),
+        token: allFieldsFragmentName(field.type.inlineType.token),
+        alias: null,
+        block: null,
+        directives: [],
+      )
     ]);
   }
 
   void createProjectedTypes() {
-    print(
-        "Creating projected types ${getAllElements().where((e) => e.block != null).length}");
-    //create for queries, mutations and subscriptions
     getAllElements().where((e) => e.block != null).forEach((element) {
       var newType = createProjectedTypeForQuery(element);
       element.projectedTypeKey = newType.token;
@@ -546,21 +568,64 @@ $data
     var type = element.returnType;
     var block = element.block!;
     var onType = getType(type.inlineType.token);
-
     var name = generateName(onType.token, block, element.directives);
+
+    //in case of interface
+
     var newType = GQTypeDefinition(
+      name: name.value,
+      nameDeclared: name.declared,
+      fields: applyProjection(onType, block.projections),
+      interfaceNames: onType.interfaceNames,
+      directives: onType.directives,
+      derivedFromType: onType,
+    );
+
+    // check for super types
+    if (onType is GQInterfaceDefinition) {
+      var map = <GQTypeDefinition>{};
+      //generate implementations ...
+      block.projections.values
+          .whereType<GQInlineFragmentsProjection>()
+          .forEach((inlineFrag) {
+        var result = generateSubClasses(newType, onType, inlineFrag);
+        map.addAll(result);
+      });
+      newType.subTypes.addAll(map);
+    }
+    return addToProjectedType(newType);
+  }
+
+  Set<GQTypeDefinition> generateSubClasses(
+    GQTypeDefinition superType,
+    GQInterfaceDefinition onType,
+    GQInlineFragmentsProjection projection,
+  ) {
+    var result = <String, GQTypeDefinition>{};
+    projection.inlineFragments.map((inlineFragProjection) {
+      var name = generateName(inlineFragProjection.token,
+          inlineFragProjection.block, inlineFragProjection.directives);
+      var subType = getType(inlineFragProjection.onTypeName);
+      return GQTypeDefinition(
         name: name.value,
         nameDeclared: name.declared,
-        fields: applyProjection(onType.fields, block.projections),
-        interfaceNames: onType.interfaceNames,
-        directives: onType.directives);
-    return addToProjectedType(newType);
+        fields:
+            applyProjection(subType, inlineFragProjection.block.projections),
+        interfaceNames: subType.interfaceNames,
+        directives: subType.directives,
+        derivedFromType: subType,
+      )..superClass = superType;
+    }).forEach((type) {
+      addToProjectedType(type);
+      result[type.token] = type;
+    });
+
+    return result.values.toSet();
   }
 
   GQTypeDefinition createProjectedTypeWithProjectionBlock(GQField field,
       GQTypeDefinition nonProjectedType, GQFragmentBlockDefinition block,
       [List<GQDirectiveValue> fieldDirectives = const []]) {
-    var fields = [...nonProjectedType.fields];
     var projections = {...block.projections};
     var name = generateName(nonProjectedType.token, block, fieldDirectives);
     block.projections.values
@@ -572,11 +637,13 @@ $data
     });
 
     var result = GQTypeDefinition(
-        name: name.value,
-        nameDeclared: name.declared,
-        fields: applyProjection(fields, projections),
-        interfaceNames: {},
-        directives: []);
+      name: name.value,
+      nameDeclared: name.declared,
+      fields: applyProjection(nonProjectedType, projections),
+      interfaceNames: {},
+      directives: [],
+      derivedFromType: nonProjectedType,
+    );
 
     return addToProjectedType(result);
   }
@@ -640,7 +707,8 @@ $data
   }
 
   List<GQField> applyProjection(
-      List<GQField> src, Map<String, GQProjection> p) {
+      GQTypeDefinition type, Map<String, GQProjection> p) {
+    var src = type.fields;
     var result = <GQField>[];
     var projections = {...p};
 
@@ -651,6 +719,15 @@ $data
         .forEach((fragment) {
       projections.addAll(fragment.block.projections);
     });
+
+    if (type is! GQInterfaceDefinition) {
+      p.values
+          .whereType<GQInlineFragmentsProjection>()
+          .expand((e) => e.inlineFragments)
+          .forEach((inlineFrag) {
+        projections.addAll(inlineFrag.block.projections);
+      });
+    }
 
     for (var field in src) {
       var projection = projections[field.name];

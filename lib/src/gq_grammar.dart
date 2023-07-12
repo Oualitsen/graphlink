@@ -23,6 +23,11 @@ export 'package:retrofit_graphql/src/gq_grammar_extension.dart';
 class GQGrammar extends GrammarDefinition {
   var logger = Logger();
   static const typename = "__typename";
+  static final typenameField = GQField(
+      name: typename,
+      type: GQType("String", false, isScalar: true),
+      arguments: [],
+      directives: []);
   static const gqTypeNameDirective = "@gqTypeName";
 
   static const includeDirective = "@include";
@@ -225,6 +230,7 @@ class GQGrammar extends GrammarDefinition {
         fields: fields,
         interfaceNames: interfaceNames ?? {},
         directives: directives,
+        derivedFromType: null,
       );
       addTypeDefinition(type);
       return type;
@@ -582,36 +588,34 @@ class GQGrammar extends GrammarDefinition {
         .map3((p0, p1, p2) => "$p0-$p2");
   }
 
-  Parser<GQProjection> fragmentNameValue() {
+  Parser<GQProjection> fragmentReference() {
     return seq3(ref1(token, "..."), identifier(), directiveValueList()).map3(
       (_, name, directives) => GQProjection(
           fragmentName: name,
           token: name,
           alias: null,
-          isFragmentReference: true,
           block: null,
           directives: directives),
     );
   }
 
   Parser<GQProjection> fragmentField() {
-    return [fragmentValue(), plainFragmentField()].toChoiceParser();
+    return [fragmentValue(), projectionFieldField()].toChoiceParser();
   }
 
-  Parser<GQProjection> plainFragmentField() {
+  Parser<GQProjection> projectionFieldField() {
     return seq4(alias().optional(), identifier(), directiveValueList(),
             ref0(fragmentBlock).optional())
         .map4((alias, token, directives, block) => GQProjection(
               token: token,
               fragmentName: null,
               alias: alias,
-              isFragmentReference: false,
               block: block,
               directives: directives,
             ));
   }
 
-  Parser<GQProjection> inlineFragment() {
+  Parser<GQInlineFragmentDefinition> inlineFragment() {
     return seq4(
       ref1(token, "..."),
       ref1(token, "on"),
@@ -621,20 +625,25 @@ class GQGrammar extends GrammarDefinition {
           fragmentName: null,
           token: null,
           alias: null,
-          isFragmentReference: false,
           block: block,
           directives: directives,
         ),
       ),
     ).map4((p0, p1, typeName, projection) {
-      addFragmentDefinition(GQInlineFragmentDefinition(
-          typeName, projection.block!, projection.directives));
-      return projection;
+      var def = GQInlineFragmentDefinition(
+        typeName,
+        projection.block!,
+        projection.directives,
+      );
+      addFragmentDefinition(def);
+      return def;
     });
   }
 
-  Parser<GQProjection> fragmentValue() =>
-      (inlineFragment() | fragmentNameValue()).cast<GQProjection>();
+  Parser<GQProjection> fragmentValue() => (inlineFragment().plus().map(
+              (list) => GQInlineFragmentsProjection(inlineFragments: list)) |
+          fragmentReference())
+      .cast<GQProjection>();
 
   Parser<GQFragmentDefinition> fragmentDefinition() {
     return seq4(
@@ -672,6 +681,12 @@ class GQGrammar extends GrammarDefinition {
       return value;
     });
   }
+
+  ///
+  /// example: {
+  ///   firstName lastName
+  /// }
+  ///
 
   Parser<GQFragmentBlockDefinition> fragmentBlock() {
     return seq3(openBrace(), fragmentField().plus(), closeBrace()).map3(

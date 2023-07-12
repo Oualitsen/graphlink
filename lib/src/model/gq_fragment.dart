@@ -43,8 +43,7 @@ abstract class GQFragmentDefinitionBase extends GQToken {
 class GQInlineFragmentDefinition extends GQFragmentDefinitionBase {
   GQInlineFragmentDefinition(String onTypeName, GQFragmentBlockDefinition block,
       List<GQDirectiveValue> directives)
-      : super("__inline_${DateTime.now().millisecondsSinceEpoch}", onTypeName,
-            block, directives);
+      : super("__inline_${generateUuid('_')}", onTypeName, block, directives);
 
   @override
   String serialize() {
@@ -87,10 +86,23 @@ class GQFragmentDefinition extends GQFragmentDefinitionBase {
   }
 }
 
+class GQInlineFragmentsProjection extends GQProjection {
+  final List<GQInlineFragmentDefinition> inlineFragments;
+  GQInlineFragmentsProjection({required this.inlineFragments})
+      : super(
+            alias: null,
+            directives: const [],
+            fragmentName: null,
+            token: null,
+            block: null);
+}
+
 class GQProjection extends GQToken {
   ///
   ///This contains a reference to the fragment name containing this projection
   ///
+  ///something like  ... fragmentName
+
   ///
   final String? fragmentName;
 
@@ -102,7 +114,7 @@ class GQProjection extends GQToken {
   ///
   ///  something like  ... fragmentName
   ///
-  final bool isFragmentReference;
+  bool get isFragmentReference => fragmentName != null;
 
   ///
   ///  something like
@@ -119,12 +131,9 @@ class GQProjection extends GQToken {
     required this.fragmentName,
     required String? token,
     required this.alias,
-    required this.isFragmentReference,
     required this.block,
     required this.directives,
-  }) : super(token ??
-            fragmentName ??
-            "projection_${DateTime.now().millisecondsSinceEpoch}");
+  }) : super(token ?? fragmentName ?? "projection_${generateUuid('_')}");
 
   @override
   String toString() {

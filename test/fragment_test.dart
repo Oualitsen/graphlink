@@ -7,7 +7,7 @@ void main() {
   test("Fragment field test", () {
     final GQGrammar g = GQGrammar();
 
-    var parser = g.buildFrom(g.plainFragmentField().end());
+    var parser = g.buildFrom(g.projectionFieldField().end());
     var result = parser.parse('''
       name
     ''');
@@ -20,7 +20,7 @@ void main() {
   test("Fragment field with alias test", () {
     final GQGrammar g = GQGrammar();
 
-    var parser = g.buildFrom(g.plainFragmentField().end());
+    var parser = g.buildFrom(g.projectionFieldField().end());
     var result = parser.parse('''
       
       alias: name
@@ -35,7 +35,7 @@ void main() {
   test("Fragment field with alias test", () {
     final GQGrammar g = GQGrammar();
 
-    var parser = g.buildFrom(g.plainFragmentField().end());
+    var parser = g.buildFrom(g.projectionFieldField().end());
     var result = parser.parse('''
       
       alias: name {
@@ -68,7 +68,7 @@ void main() {
   test("Fragment Value", () {
     final GQGrammar g = GQGrammar();
 
-    var parser = g.buildFrom(g.fragmentNameValue().end());
+    var parser = g.buildFrom(g.fragmentReference().end());
     var result = parser.parse('''
        ... fragmentName
     ''');
@@ -157,7 +157,7 @@ void main() {
   test("plainFragmentField List Test", () {
     //plainFragmentField()
     final GQGrammar g = GQGrammar();
-    var parser = g.buildFrom(g.plainFragmentField().plus().end());
+    var parser = g.buildFrom(g.projectionFieldField().plus().end());
     var result = parser.parse('''
           id  
           myAliassedName : FirstName 
