@@ -1,0 +1,15 @@
+subscription watchDriver($id: ID!){
+  watchDriver(id: $id) {
+    ...myFrag
+  }
+}
+
+fragment myFrag on Driver {
+  id firstName cars {
+    ...carFrag
+  }
+}
+
+fragment carFrag on Car {
+  model year
+}

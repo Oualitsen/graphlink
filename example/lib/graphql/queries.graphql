@@ -1,0 +1,19 @@
+
+query getUser($id: ID!, $client: Boolean) {
+    getUser(id: $id, client: $client) {
+        ... on Driver @gqTypeName(name: "Driver"){
+            firstName lastName
+            
+        }
+        ... on Client  @gqTypeName(name: "Client"){
+            lastUpdate
+            firstName
+        }
+    }
+}
+
+fragment DriverFragment on Driver {
+    firstName lastName id cars {
+        year
+    }
+}
