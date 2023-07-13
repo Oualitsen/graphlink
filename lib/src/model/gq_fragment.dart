@@ -1,4 +1,5 @@
 import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
+import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
 import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
@@ -43,12 +44,27 @@ abstract class GQFragmentDefinitionBase extends GQToken {
 class GQInlineFragmentDefinition extends GQFragmentDefinitionBase {
   GQInlineFragmentDefinition(String onTypeName, GQFragmentBlockDefinition block,
       List<GQDirectiveValue> directives)
-      : super("__inline_${generateUuid('_')}", onTypeName, block, directives);
+      : super(
+          "Inline_${generateUuid('_')}",
+          onTypeName,
+          block,
+          directives,
+        ) {
+    if (!block.projections.containsKey(GQGrammar.typename)) {
+      print("Adding __typename ###");
+      block.projections[GQGrammar.typename] = GQProjection(
+          fragmentName: null,
+          token: GQGrammar.typename,
+          alias: null,
+          block: null,
+          directives: []);
+    }
+  }
 
   @override
   String serialize() {
     return """
-     ... $token on $onTypeName ${directives.map((e) => e.serialize()).join(" ")} ${block.serialize()} 
+     ... on $onTypeName ${directives.map((e) => e.serialize()).join(" ")} ${block.serialize()} 
     """;
   }
 
@@ -90,11 +106,12 @@ class GQInlineFragmentsProjection extends GQProjection {
   final List<GQInlineFragmentDefinition> inlineFragments;
   GQInlineFragmentsProjection({required this.inlineFragments})
       : super(
-            alias: null,
-            directives: const [],
-            fragmentName: null,
-            token: null,
-            block: null);
+          alias: null,
+          directives: const [],
+          fragmentName: null,
+          token: null,
+          block: null,
+        );
 }
 
 class GQProjection extends GQToken {
@@ -145,6 +162,12 @@ class GQProjection extends GQToken {
 
   @override
   String serialize() {
+    if (this is GQInlineFragmentsProjection) {
+      return serializeList(
+          (this as GQInlineFragmentsProjection).inlineFragments,
+          join: "\n",
+          withParenthesis: false);
+    }
     String result = "";
     if (isFragmentReference) {
       result = "... ";

@@ -45,7 +45,7 @@ class GQField extends DartSerializable {
   }
 
   String toDartMethodDeclaration(GQGrammar grammar) {
-    return "final ${type.toDartType(grammar.typeMap, _hasInculeOrSkipDiretives)} $name";
+    return "required final ${type.toDartType(grammar.typeMap, _hasInculeOrSkipDiretives)} $name";
   }
 
   String toDartNoFinal(GQGrammar grammar) {

@@ -13,24 +13,25 @@ import 'package:retrofit_graphql/retrofit_graphql.dart';
     class Queries {
         final GQHttpClientAdapter _adapter;
         Queries(this._adapter);
-        Future<GetDriversResponse> getDrivers({required String id}) {
-        var operationName = "getDrivers";
+        Future<GetUserResponse> getUser({required String id, required bool? client}) {
+        var operationName = "getUser";
         var query = """
-query getDrivers (\$id: ID!)  {
-  getDriverById (id: \$id)
+query getUser (\$id: ID!, \$client: Boolean)  {
+  getUser (id: \$id, client: \$client)
   {
-    ... DriverFragment
+    ... on Driver  {
+      firstName  lastName  __typename
+    }
+    ... on Client  {
+      lastUpdate  firstName  __typename
+    }
   }
 } 
-fragment DriverFragment on Driver  {
-  firstName  lastName  id  cars {
-    year
-  }
-}
+
         """;
 
-        var variables = {
-          'id': id
+        var variables = <String, dynamic>{
+          'id': id, 'client': client
         };
         
         var payload = GQPayload(query: query, operationName: operationName, variables: variables);
@@ -40,7 +41,7 @@ fragment DriverFragment on Driver  {
             throw result["errors"].map((error) => GraphQLError.fromJson(error)).toList();
           }
           var data = result["data"];
-          return GetDriversResponse.fromJson(data);
+          return GetUserResponse.fromJson(data);
       }).first;
 
       }
@@ -75,7 +76,7 @@ fragment carFrag on Car  {
 }
         """;
 
-        var variables = {
+        var variables = <String, dynamic>{
           'id': id
         };
         

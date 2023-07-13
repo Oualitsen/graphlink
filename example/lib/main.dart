@@ -1,6 +1,7 @@
 import 'package:retrofit_graphql/retrofit_graphql.dart';
 import 'package:retrofit_graphql_example/generated/client.gq.dart';
 import 'package:http/http.dart' as http;
+import 'package:retrofit_graphql_example/generated/types.gq.dart';
 
 void main(List<String> args) {
   const wsUrl = "ws://localhost:8080/graphql";
@@ -16,8 +17,23 @@ void main(List<String> args) {
 
   var client = GQClient(fn, wsAdapter);
 
-  client.subscriptions.watchDriver(id: "azul").listen((event) {
-    print(
-        "hello world ${event.watchDriver.id} ${event.watchDriver.firstName} ${event.watchDriver.cars.length}");
+  client.queries
+      .getUser(id: "test", client: true)
+      .asStream()
+      .map((event) => event.getUser)
+      .first
+      .then((value) {
+    print("isDriver => ${value is Client}");
+    print("go response = ${value.runtimeType}");
+  });
+
+  client.queries
+      .getUser(id: "test", client: false)
+      .asStream()
+      .map((event) => event.getUser)
+      .first
+      .then((value) {
+    print("isDriver => ${value is Driver}");
+    print("go response = ${value.runtimeType}");
   });
 }

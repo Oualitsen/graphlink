@@ -86,7 +86,7 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
       var typename = json["__typename"];
       switch(typename) {
         
-        ${subTypes.map((st) => "case \"${st.derivedFromType?.token}\": return ${st.token}FromJson(json);").join("\n        ")}
+        ${subTypes.map((st) => "case \"${st.derivedFromType?.token}\": return _\$${st.token}FromJson(json);").join("\n        ")}
       }
       return _\$${token}FromJson(json);
     """;

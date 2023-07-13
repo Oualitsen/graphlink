@@ -15,6 +15,6 @@ void main() async {
     var result = parser.parse(text);
 
     //expect(result.isSuccess, true);
-    print("g ==> ${g.generateTypes()}");
+    print("g ==> ${g.generateClient()}");
   });
 }
