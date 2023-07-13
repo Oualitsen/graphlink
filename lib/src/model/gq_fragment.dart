@@ -51,7 +51,6 @@ class GQInlineFragmentDefinition extends GQFragmentDefinitionBase {
           directives,
         ) {
     if (!block.projections.containsKey(GQGrammar.typename)) {
-      print("Adding __typename ###");
       block.projections[GQGrammar.typename] = GQProjection(
           fragmentName: null,
           token: GQGrammar.typename,

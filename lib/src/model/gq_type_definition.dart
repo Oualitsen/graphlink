@@ -173,10 +173,8 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
   }
 
   String serializeFields(GQGrammar grammar) {
-    return serializeListText(
-        fields.map((e) => e.toDartNoFinal(grammar)).toList(),
-        join: " ",
-        withParenthesis: false);
+    return serializeListText(fields.map((e) => e.createHash(grammar)).toList(),
+        join: " ", withParenthesis: false);
   }
 
   String serializeContructorArgs(GQGrammar grammar) {

@@ -48,8 +48,18 @@ class GQField extends DartSerializable {
     return "required final ${type.toDartType(grammar, _hasInculeOrSkipDiretives)} $name";
   }
 
-  String toDartNoFinal(GQGrammar grammar) {
+  String createHash(GQGrammar grammar) {
+    if (grammar.projectedTypes.containsKey(type.token)) {
+      return "[${grammar.projectedTypes[type.token]!.getHash(grammar)}]${_getDartNullableText()} $name";
+    }
     return "${type.toDartType(grammar, _hasInculeOrSkipDiretives)} $name";
+  }
+
+  String _getDartNullableText() {
+    if (_hasInculeOrSkipDiretives) {
+      return "?";
+    }
+    return type.nullableTextDart;
   }
 
   //check for inclue or skip directives

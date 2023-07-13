@@ -1,0 +1,73 @@
+
+
+
+
+input PageIndex {
+  index: Int!
+  page: Int!
+}
+
+type Product {
+  id: ID!
+  name: String!
+  price: Float!
+  wasPrice: Float
+  brand: Brand!
+}
+
+type Brand {
+  name: String!
+  country: String!
+  
+}
+
+input ProductInput {
+  name: String!
+  price: Float!
+  wasPrice: Float
+}
+
+type Query {
+
+  getProducts(pageIndex: PageIndex): [Product!]!
+  getProductById(id: ID!): Product!
+
+  getAllProducts(): [Product!]!
+
+  getCount(): Int!
+
+  getCount2(): Long!
+
+  getBrand: Brand
+
+}
+
+
+
+query getProducts($pageIndex: PageIndex!) {
+
+  getProducts(pageIndex: $pageIndex)  @gqTypeName(name: "Product")  {
+   ... _all_fields_Product
+  }
+
+  getCount
+
+}
+
+query getBrand {
+  getBrand @gqTypeName(name: "Brand") {
+    ... _all_fields_Brand
+  }
+}
+
+query getAllProducts @gqTypeName(name: "MyProductResp") {
+  getAllProducts  {
+   ... _all_fields_Product
+  }
+}
+
+
+
+
+
+
