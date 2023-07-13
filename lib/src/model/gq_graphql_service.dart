@@ -131,8 +131,7 @@ ${def.fragments(g).map((e) => e.serialize()).toList().join("\n")}
       return "";
     }
     var result = def.arguments
-        .map((e) =>
-            "${e.type.toDartType(g.typeMap, false)} ${e.dartArgumentName}")
+        .map((e) => "${e.type.toDartType(g, false)} ${e.dartArgumentName}")
         .map((e) => "required $e")
         .toList()
         .join(", ");

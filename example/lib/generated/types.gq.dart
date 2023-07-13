@@ -42,7 +42,7 @@
       }
     
       @JsonSerializable()
-      class Driver extends BasicUser_projection_d10ee51b_dcca_a04d_a552_5937b721d106 {
+      class Driver extends BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eab {
         
           final String lastName;
           
@@ -58,7 +58,7 @@
       }
     
       @JsonSerializable()
-      class Client extends BasicUser_projection_d10ee51b_dcca_a04d_a552_5937b721d106 {
+      class Client extends BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eab {
         
           final int lastUpdate;
           
@@ -74,25 +74,25 @@
       }
     
       @JsonSerializable()
-      class BasicUser_projection_d10ee51b_dcca_a04d_a552_5937b721d106 {
+      class BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eab {
         
           final String firstName;
           
-          BasicUser_projection_d10ee51b_dcca_a04d_a552_5937b721d106({required this.firstName});
+          BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eab({required this.firstName});
           
-          factory BasicUser_projection_d10ee51b_dcca_a04d_a552_5937b721d106.fromJson(Map<String, dynamic> json) {
+          factory BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eab.fromJson(Map<String, dynamic> json) {
                    var typename = json["__typename"];
       switch(typename) {
         
         case "Driver": return _$DriverFromJson(json);
         case "Client": return _$ClientFromJson(json);
       }
-      return _$BasicUser_projection_d10ee51b_dcca_a04d_a552_5937b721d106FromJson(json);
+      return _$BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eabFromJson(json);
     
           }
           
           Map<String, dynamic> toJson() {
-            return _$BasicUser_projection_d10ee51b_dcca_a04d_a552_5937b721d106ToJson(this);
+            return _$BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eabToJson(this);
           }
       }
     
@@ -115,7 +115,7 @@
       @JsonSerializable()
       class GetUserResponse {
         
-          final BasicUser_projection_d10ee51b_dcca_a04d_a552_5937b721d106 getUser;
+          final BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eab getUser;
           
           GetUserResponse({required this.getUser});
           

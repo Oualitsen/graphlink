@@ -1,3 +1,4 @@
+import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
 
 class GQType extends GQToken {
@@ -24,8 +25,9 @@ class GQType extends GQToken {
     return serialize();
   }
 
-  String toDartType(Map<String, String> typeMapping, bool forceNullable) {
-    var dartTpe = typeMapping[token] ?? token;
+  String toDartType(GQGrammar grammar, bool forceNullable) {
+    var dartTpe =
+        grammar.typeMap[token] ?? grammar.projectedTypes[token]?.token ?? token;
     if (forceNullable) {
       return "$dartTpe?";
     }
@@ -63,11 +65,11 @@ class GQListType extends GQType {
   }
 
   @override
-  String toDartType(Map<String, String> typeMapping, bool forceNullable) {
+  String toDartType(GQGrammar grammar, bool forceNullable) {
     if (forceNullable) {
-      return "List<${type.toDartType(typeMapping, false)}>?";
+      return "List<${type.toDartType(grammar, false)}>?";
     }
-    return "List<${type.toDartType(typeMapping, false)}>$nullableTextDart";
+    return "List<${type.toDartType(grammar, false)}>$nullableTextDart";
   }
 
   @override

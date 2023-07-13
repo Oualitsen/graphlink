@@ -53,16 +53,16 @@ Map<String, dynamic> _$ClientToJson(Client instance) => <String, dynamic>{
       'lastUpdate': instance.lastUpdate,
     };
 
-BasicUser_projection_d10ee51b_dcca_a04d_a552_5937b721d106
-    _$BasicUser_projection_d10ee51b_dcca_a04d_a552_5937b721d106FromJson(
+BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eab
+    _$BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eabFromJson(
             Map<String, dynamic> json) =>
-        BasicUser_projection_d10ee51b_dcca_a04d_a552_5937b721d106(
+        BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eab(
           firstName: json['firstName'] as String,
         );
 
 Map<String,
-    dynamic> _$BasicUser_projection_d10ee51b_dcca_a04d_a552_5937b721d106ToJson(
-        BasicUser_projection_d10ee51b_dcca_a04d_a552_5937b721d106 instance) =>
+    dynamic> _$BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eabToJson(
+        BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eab instance) =>
     <String, dynamic>{
       'firstName': instance.firstName,
     };
@@ -82,7 +82,7 @@ Map<String, dynamic> _$WatchDriverResponseToJson(
 GetUserResponse _$GetUserResponseFromJson(Map<String, dynamic> json) =>
     GetUserResponse(
       getUser:
-          BasicUser_projection_d10ee51b_dcca_a04d_a552_5937b721d106.fromJson(
+          BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eab.fromJson(
               json['getUser'] as Map<String, dynamic>),
     );
 

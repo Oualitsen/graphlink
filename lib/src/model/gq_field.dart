@@ -41,15 +41,15 @@ class GQField extends DartSerializable {
 
   @override
   String toDart(GQGrammar grammar) {
-    return "final ${type.toDartType(grammar.typeMap, _hasInculeOrSkipDiretives)} $name;";
+    return "final ${type.toDartType(grammar, _hasInculeOrSkipDiretives)} $name;";
   }
 
   String toDartMethodDeclaration(GQGrammar grammar) {
-    return "required final ${type.toDartType(grammar.typeMap, _hasInculeOrSkipDiretives)} $name";
+    return "required final ${type.toDartType(grammar, _hasInculeOrSkipDiretives)} $name";
   }
 
   String toDartNoFinal(GQGrammar grammar) {
-    return "${type.toDartType(grammar.typeMap, _hasInculeOrSkipDiretives)} $name";
+    return "${type.toDartType(grammar, _hasInculeOrSkipDiretives)} $name";
   }
 
   //check for inclue or skip directives
