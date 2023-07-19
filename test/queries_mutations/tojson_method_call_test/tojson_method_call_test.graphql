@@ -1,0 +1,47 @@
+
+
+
+
+
+
+type Product {
+  id: ID!
+  name: String!
+  price: Float!
+  wasPrice: Float
+  brand: Brand!
+}
+
+type Brand {
+  name: String!
+  country: String!
+  
+}
+
+input ProductInput {
+  name: String!
+  price: Float!
+  wasPrice: Float
+}
+
+type Query {
+  getProducts(pageIndex: PageIndex): [Product!]!
+}
+
+type Mutation {
+  createProduct(input: ProductInput): Product
+  createProductList(input: [[ProductInput]!]!): [Product!]
+}
+
+mutation CreateProduct($input: ProductInput) {
+  createProduct(input: $input) {
+    id name
+  }
+}
+
+mutation CreateProductList($input: [[ProductInput]!]!) {
+  createProductList(input: $input) {
+    id name
+  }
+}
+

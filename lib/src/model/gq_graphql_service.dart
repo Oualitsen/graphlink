@@ -1,6 +1,7 @@
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/dart_serializable.dart';
 import 'package:retrofit_graphql/src/model/gq_queries.dart';
+import 'package:retrofit_graphql/src/model/gq_type.dart';
 import 'package:retrofit_graphql/src/utils.dart';
 
 class GQGraphqlService implements DartSerializable {
@@ -118,11 +119,26 @@ ${def.fragments(g).map((e) => e.serialize()).toList().join("\n")}
   String serializeArgumentValue(
       GQGrammar g, GQQueryDefinition def, String argName) {
     var arg = def.findByName(argName);
-    String result = arg.dartArgumentName;
-    if (g.inputTypeRequiresProjection(arg.type)) {
-      return "$result.toJson()";
+    return callToJson(arg.dartArgumentName, arg.type, g);
+  }
+
+  String callToJson(String argName, GQType type, GQGrammar g) {
+    if (g.inputTypeRequiresProjection(type)) {
+      if (type is GQListType) {
+        if (type.nullable) {
+          return "$argName?.map((e) => ${callToJson("e", type.type, g)}).toList()";
+        } else {
+          return "$argName.map((e) => ${callToJson("e", type.type, g)}).toList()";
+        }
+      } else {
+        if (type.nullable) {
+          return "$argName?.toJson()";
+        } else {
+          return "$argName.toJson()";
+        }
+      }
     } else {
-      return result;
+      return argName;
     }
   }
 

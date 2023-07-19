@@ -627,6 +627,7 @@ $data
       GQTypeDefinition nonProjectedType, GQFragmentBlockDefinition block,
       [List<GQDirectiveValue> fieldDirectives = const []]) {
     var projections = {...block.projections};
+
     var name = generateName(nonProjectedType.token, block, fieldDirectives);
     block.projections.values
         .where((element) => element.isFragmentReference)
@@ -694,7 +695,6 @@ $data
       return GeneratedTypeName(name, true);
     }
     name = "${originalName}_${block.uniqueName}";
-
     String? indexedName;
     int nameIndex = 0;
     if (projectedTypes.containsKey(name)) {
@@ -744,6 +744,7 @@ $data
       [List<GQDirectiveValue> fieldDirectives = const []]) {
     final String fieldName = projection.alias ?? field.name;
     var block = projection.block;
+
     if (block != null) {
       //we should create another type here ...
       var generatedType = createProjectedTypeWithProjectionBlock(
