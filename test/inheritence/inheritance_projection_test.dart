@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:test/test.dart';
@@ -18,3 +19,5 @@ void main() async {
     print("g ==> ${g.generateClient()}");
   });
 }
+
+enum Gender { MALE, FEMALE }

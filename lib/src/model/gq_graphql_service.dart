@@ -125,17 +125,16 @@ ${def.fragments(g).map((e) => e.serialize()).toList().join("\n")}
   String callToJson(String argName, GQType type, GQGrammar g) {
     if (g.inputTypeRequiresProjection(type)) {
       if (type is GQListType) {
-        if (type.nullable) {
-          return "$argName?.map((e) => ${callToJson("e", type.type, g)}).toList()";
-        } else {
-          return "$argName.map((e) => ${callToJson("e", type.type, g)}).toList()";
-        }
+        return "$argName${type.nullableTextDart}.map((e) => ${callToJson("e", type.type, g)}).toList()";
       } else {
-        if (type.nullable) {
-          return "$argName?.toJson()";
-        } else {
-          return "$argName.toJson()";
-        }
+        return "$argName${type.nullableTextDart}.toJson()";
+      }
+    }
+    if (g.enums.containsKey(type.token)) {
+      if (type is GQListType) {
+        return "$argName${type.nullableTextDart}.map((e) => ${callToJson("e", type.type, g)}).toList()";
+      } else {
+        return "$argName${type.nullableTextDart}.name";
       }
     } else {
       return argName;

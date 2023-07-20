@@ -23,5 +23,7 @@ void main() async {
         .writeAsStringSync(g.generateTypes());
     File("test/queries_mutations/tojson_method_call_test/gen/inputs.gq.dart")
         .writeAsStringSync(g.generateInputs());
+    File("test/queries_mutations/tojson_method_call_test/gen/enums.gq.dart")
+        .writeAsStringSync(g.generateEnums());
   });
 }

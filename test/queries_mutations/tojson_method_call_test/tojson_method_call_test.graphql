@@ -1,7 +1,9 @@
 
 
 
-
+enum State{
+  NEW USED
+}
 
 
 type Product {
@@ -22,6 +24,7 @@ input ProductInput {
   name: String!
   price: Float!
   wasPrice: Float
+  state: State!
 }
 
 type Query {
@@ -30,7 +33,8 @@ type Query {
 
 type Mutation {
   createProduct(input: ProductInput): Product
-  createProductList(input: [[ProductInput]!]!): [Product!]
+  createProductList(input: [ProductInput!]!): [Product!]
+  setProductState(state: [State]): Product!
 }
 
 mutation CreateProduct($input: ProductInput) {
@@ -45,3 +49,8 @@ mutation CreateProductList($input: [[ProductInput]!]!) {
   }
 }
 
+mutation SetProductState($input: [State]) {
+  setProductState(input: $input) {
+    id name
+  }
+}
