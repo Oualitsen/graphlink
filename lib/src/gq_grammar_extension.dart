@@ -208,7 +208,8 @@ $data
     fragments.forEach((key, typedFragment) {
       var refs = typedFragment.block.getFragmentReferences();
       for (var ref in refs) {
-        var referencedFragment = fragments[ref.fragmentName!]!;
+        var referencedFragment = getFragment(ref.fragmentName!);
+
         logger.i(
             "${referencedFragment.onTypeName} typedFrag = ${typedFragment.onTypeName}");
       }
@@ -631,8 +632,7 @@ $data
     var name = generateName(nonProjectedType.token, block, fieldDirectives);
     block.projections.values
         .where((element) => element.isFragmentReference)
-        .map((e) => (fragments[e.fragmentName!] ??
-            allFieldsFragments[e.fragmentName!]?.fragment)!)
+        .map((e) => getFragment(e.fragmentName!))
         .forEach((frag) {
       projections.addAll(frag.block.projections);
     });
