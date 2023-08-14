@@ -20,6 +20,6 @@ void main() async {
     expect(
         response.fields.where((field) => field.name == "driver"), isNotEmpty);
     var client = g.generateClient();
-    print("client = $client");
+    //print("client = $client");
   });
 }

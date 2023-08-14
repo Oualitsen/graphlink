@@ -18,7 +18,7 @@ void main() async {
     expect(parsed.isSuccess, true);
     var product = g.projectedTypes["Product"]!;
     var list = g.findSimilarTo(product);
-    print("list = ${list.first.token}");
+    //print("list = ${list.first.token}");
     //renamed product input
 
     File("test/queries_mutations/renaming_projected_types_2/types.dart")

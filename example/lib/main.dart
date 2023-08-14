@@ -1,7 +1,6 @@
 import 'package:retrofit_graphql/retrofit_graphql.dart';
 import 'package:retrofit_graphql_example/generated/client.gq.dart';
 import 'package:http/http.dart' as http;
-import 'package:retrofit_graphql_example/generated/types.gq.dart';
 
 void main(List<String> args) {
   const wsUrl = "ws://localhost:8080/graphql";
@@ -23,8 +22,8 @@ void main(List<String> args) {
       .map((event) => event.getUser)
       .first
       .then((value) {
-    print("isDriver => ${value is Client}");
-    print("go response = ${value.runtimeType}");
+    // print("isDriver => ${value is Client}");
+    // print("go response = ${value.runtimeType}");
   });
 
   client.queries
@@ -33,7 +32,7 @@ void main(List<String> args) {
       .map((event) => event.getUser)
       .first
       .then((value) {
-    print("isDriver => ${value is Driver}");
-    print("go response = ${value.runtimeType}");
+    //  print("isDriver => ${value is Driver}");
+    //  print("go response = ${value.runtimeType}");
   });
 }

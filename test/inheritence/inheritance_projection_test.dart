@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:test/test.dart';
@@ -13,10 +12,10 @@ void main() async {
 
     final text = File("test/inheritence/inheritance_projection_test.graphql")
         .readAsStringSync();
-    var result = parser.parse(text);
+    parser.parse(text);
 
     //expect(result.isSuccess, true);
-    print("g ==> ${g.generateClient()}");
+    //print("g ==> ${g.generateClient()}");
   });
 }
 
