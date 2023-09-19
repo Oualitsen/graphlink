@@ -25,7 +25,7 @@ class GQInputDefinition extends GQTokenWithFields implements DartSerializable {
   @override
   String toDart(GQGrammar grammar) {
     return """
-    @JsonSerializable()
+    @JsonSerializable(explicitToJson: true)
       class $token {
           ${serializeListText(fields.map((e) => e.toDart(grammar)).toList(), join: "\n\r          ", withParenthesis: false)}
           
