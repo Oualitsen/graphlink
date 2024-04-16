@@ -7,7 +7,7 @@
   part 'types.gq.g.dart';
 
       @JsonSerializable(explicitToJson: true)
-      class Driver extends BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390a {
+      class Driver extends BasicUser_projection_27e724fa_b856_a90b_cb4b_87143d4b40c6 {
         
           final String lastName;
           
@@ -23,7 +23,7 @@
       }
     
       @JsonSerializable(explicitToJson: true)
-      class Client extends BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390a {
+      class Client extends BasicUser_projection_27e724fa_b856_a90b_cb4b_87143d4b40c6 {
         
           final int lastUpdate;
           
@@ -39,25 +39,25 @@
       }
     
       @JsonSerializable(explicitToJson: true)
-      class BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390a {
+      class BasicUser_projection_27e724fa_b856_a90b_cb4b_87143d4b40c6 {
         
           final String firstName;
           
-          BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390a({required this.firstName});
+          BasicUser_projection_27e724fa_b856_a90b_cb4b_87143d4b40c6({required this.firstName});
           
-          factory BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390a.fromJson(Map<String, dynamic> json) {
+          factory BasicUser_projection_27e724fa_b856_a90b_cb4b_87143d4b40c6.fromJson(Map<String, dynamic> json) {
                    var typename = json["__typename"];
       switch(typename) {
         
         case "Driver": return _$DriverFromJson(json);
         case "Client": return _$ClientFromJson(json);
       }
-      return _$BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390aFromJson(json);
+      return _$BasicUser_projection_27e724fa_b856_a90b_cb4b_87143d4b40c6FromJson(json);
     
           }
           
           Map<String, dynamic> toJson() {
-            return _$BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390aToJson(this);
+            return _$BasicUser_projection_27e724fa_b856_a90b_cb4b_87143d4b40c6ToJson(this);
           }
       }
     
@@ -99,7 +99,7 @@
       @JsonSerializable(explicitToJson: true)
       class GetUserResponse {
         
-          final BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390a getUser;
+          final BasicUser_projection_27e724fa_b856_a90b_cb4b_87143d4b40c6 getUser;
           
           GetUserResponse({required this.getUser});
           

@@ -13,16 +13,13 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
-  json_annotation: ^4.8.1
   petitparser: ^5.4.0
   source_gen: ^1.0.0
   glob: ^2.1.2
   logger: ^1.4.0
-  web_socket_channel: ^2.4.0
   build: ^2.4.1
 
 dev_dependencies:
   test:
   flutter_lints: ^2.0.1
   build_runner: 
-  json_serializable: 

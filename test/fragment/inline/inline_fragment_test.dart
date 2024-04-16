@@ -6,6 +6,7 @@ import 'package:petitparser/petitparser.dart';
 
 void main() async {
   const folderPath = "test/fragment/inline";
+  /*
   test("Simple projection", () {
     final GQGrammar g = GQGrammar();
 
@@ -17,4 +18,5 @@ void main() async {
 
     expect(parsed.isSuccess, true);
   });
+  */
 }

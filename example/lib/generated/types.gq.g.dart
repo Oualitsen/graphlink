@@ -26,16 +26,16 @@ Map<String, dynamic> _$ClientToJson(Client instance) => <String, dynamic>{
       'lastUpdate': instance.lastUpdate,
     };
 
-BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390a
-    _$BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390aFromJson(
+BasicUser_projection_27e724fa_b856_a90b_cb4b_87143d4b40c6
+    _$BasicUser_projection_27e724fa_b856_a90b_cb4b_87143d4b40c6FromJson(
             Map<String, dynamic> json) =>
-        BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390a(
+        BasicUser_projection_27e724fa_b856_a90b_cb4b_87143d4b40c6(
           firstName: json['firstName'] as String,
         );
 
 Map<String,
-    dynamic> _$BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390aToJson(
-        BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390a instance) =>
+    dynamic> _$BasicUser_projection_27e724fa_b856_a90b_cb4b_87143d4b40c6ToJson(
+        BasicUser_projection_27e724fa_b856_a90b_cb4b_87143d4b40c6 instance) =>
     <String, dynamic>{
       'firstName': instance.firstName,
     };
@@ -70,7 +70,7 @@ Map<String, dynamic> _$Driver_myFragToJson(Driver_myFrag instance) =>
 GetUserResponse _$GetUserResponseFromJson(Map<String, dynamic> json) =>
     GetUserResponse(
       getUser:
-          BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390a.fromJson(
+          BasicUser_projection_27e724fa_b856_a90b_cb4b_87143d4b40c6.fromJson(
               json['getUser'] as Map<String, dynamic>),
     );
 

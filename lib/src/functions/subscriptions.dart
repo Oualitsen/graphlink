@@ -8,7 +8,7 @@ enum _AckStatus { none, progress, acknoledged }
 class SubscriptionHandler {
   final Map<String, StreamController<Map<String, dynamic>>> _map = {};
   final WebSocketAdapter adapter;
-  final connectionInit = SubscriptionMessage(type: SubscriptionMessageType.connection_init);
+  final connectionInit = SubscriptionMessage(type: SubscriptionMessageTypes.connection_init);
 
   SubscriptionHandler(this.adapter);
 
@@ -43,9 +43,9 @@ class SubscriptionHandler {
             }
           }).map((event) {
             switch (event.type) {
-              case SubscriptionMessageType.connection_ack:
+              case SubscriptionMessageTypes.connection_ack:
                 return broadcasStream;
-              case SubscriptionMessageType.error:
+              case SubscriptionMessageTypes.error:
                 throw (event as SubscriptionErrorMessage).payload;
               default:
                 return broadcasStream;
@@ -86,16 +86,16 @@ class SubscriptionHandler {
           .listen((msg) {
             var msgId = msg.id!;
             switch (msg.type!) {
-              case SubscriptionMessageType.next:
+              case SubscriptionMessageTypes.next:
                 var msg2 = msg as SubscriptionMessage;
                 var ctrl = _map[msgId]!;
                 ctrl.add(msg2.payload!.data!);
                 break;
-              case SubscriptionMessageType.complete:
+              case SubscriptionMessageTypes.complete:
                 removeController(msgId);
 
                 break;
-              case SubscriptionMessageType.error:
+              case SubscriptionMessageTypes.error:
                 var errorMsg = msg as SubscriptionErrorMessage;
                 var ctrl = _map[msgId]!;
                 ctrl.addError(errorMsg.payload);
