@@ -7,6 +7,6 @@ class GQUnionDefinition extends GQToken {
 
   @override
   String serialize() {
-    return "union $token = ${serializeListText(typeNames, withParenthesis: false, join: " | ")}";
+    return "union $token = ${serializeListText(typeNames, withParenthesis: false, join: "|")}";
   }
 }

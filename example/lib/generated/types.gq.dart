@@ -6,7 +6,62 @@
  import 'enums.gq.dart';
   part 'types.gq.g.dart';
 
-      @JsonSerializable()
+      @JsonSerializable(explicitToJson: true)
+      class Driver extends BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390a {
+        
+          final String lastName;
+          
+          Driver({required this.lastName, required final String firstName}): super(firstName: firstName);
+          
+          factory Driver.fromJson(Map<String, dynamic> json) {
+             return _$DriverFromJson(json);
+          }
+          
+          Map<String, dynamic> toJson() {
+            return _$DriverToJson(this);
+          }
+      }
+    
+      @JsonSerializable(explicitToJson: true)
+      class Client extends BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390a {
+        
+          final int lastUpdate;
+          
+          Client({required this.lastUpdate, required final String firstName}): super(firstName: firstName);
+          
+          factory Client.fromJson(Map<String, dynamic> json) {
+             return _$ClientFromJson(json);
+          }
+          
+          Map<String, dynamic> toJson() {
+            return _$ClientToJson(this);
+          }
+      }
+    
+      @JsonSerializable(explicitToJson: true)
+      class BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390a {
+        
+          final String firstName;
+          
+          BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390a({required this.firstName});
+          
+          factory BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390a.fromJson(Map<String, dynamic> json) {
+                   var typename = json["__typename"];
+      switch(typename) {
+        
+        case "Driver": return _$DriverFromJson(json);
+        case "Client": return _$ClientFromJson(json);
+      }
+      return _$BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390aFromJson(json);
+    
+          }
+          
+          Map<String, dynamic> toJson() {
+            return _$BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390aToJson(this);
+          }
+      }
+    
+      @JsonSerializable(explicitToJson: true)
       class Car_carFrag {
         
           final String model;
@@ -23,7 +78,7 @@
           }
       }
     
-      @JsonSerializable()
+      @JsonSerializable(explicitToJson: true)
       class Driver_myFrag {
         
           final List<Car_carFrag> cars;
@@ -41,62 +96,23 @@
           }
       }
     
-      @JsonSerializable()
-      class Driver extends BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eab {
+      @JsonSerializable(explicitToJson: true)
+      class GetUserResponse {
         
-          final String lastName;
+          final BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390a getUser;
           
-          Driver({required this.lastName, required final String firstName}): super(firstName: firstName);
+          GetUserResponse({required this.getUser});
           
-          factory Driver.fromJson(Map<String, dynamic> json) {
-             return _$DriverFromJson(json);
+          factory GetUserResponse.fromJson(Map<String, dynamic> json) {
+             return _$GetUserResponseFromJson(json);
           }
           
           Map<String, dynamic> toJson() {
-            return _$DriverToJson(this);
+            return _$GetUserResponseToJson(this);
           }
       }
     
-      @JsonSerializable()
-      class Client extends BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eab {
-        
-          final int lastUpdate;
-          
-          Client({required this.lastUpdate, required final String firstName}): super(firstName: firstName);
-          
-          factory Client.fromJson(Map<String, dynamic> json) {
-             return _$ClientFromJson(json);
-          }
-          
-          Map<String, dynamic> toJson() {
-            return _$ClientToJson(this);
-          }
-      }
-    
-      @JsonSerializable()
-      class BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eab {
-        
-          final String firstName;
-          
-          BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eab({required this.firstName});
-          
-          factory BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eab.fromJson(Map<String, dynamic> json) {
-                   var typename = json["__typename"];
-      switch(typename) {
-        
-        case "Driver": return _$DriverFromJson(json);
-        case "Client": return _$ClientFromJson(json);
-      }
-      return _$BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eabFromJson(json);
-    
-          }
-          
-          Map<String, dynamic> toJson() {
-            return _$BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eabToJson(this);
-          }
-      }
-    
-      @JsonSerializable()
+      @JsonSerializable(explicitToJson: true)
       class WatchDriverResponse {
         
           final Driver_myFrag watchDriver;
@@ -109,22 +125,6 @@
           
           Map<String, dynamic> toJson() {
             return _$WatchDriverResponseToJson(this);
-          }
-      }
-    
-      @JsonSerializable()
-      class GetUserResponse {
-        
-          final BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eab getUser;
-          
-          GetUserResponse({required this.getUser});
-          
-          factory GetUserResponse.fromJson(Map<String, dynamic> json) {
-             return _$GetUserResponseFromJson(json);
-          }
-          
-          Map<String, dynamic> toJson() {
-            return _$GetUserResponseToJson(this);
           }
       }
     

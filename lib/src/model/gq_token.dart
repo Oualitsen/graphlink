@@ -17,22 +17,3 @@ abstract class GQTokenWithFields extends GQToken {
 
   Set<String> get fieldNames => fields.map((e) => e.name).toSet();
 }
-
-class Base {
-  final String firstName;
-  final String lastName;
-
-  Base({required this.firstName, required this.lastName});
-}
-
-class Super extends Base {
-  final String username;
-  final String password;
-
-  Super(
-      {required this.username,
-      required this.password,
-      required final String firstName,
-      required final String lastName})
-      : super(firstName: firstName, lastName: lastName);
-}

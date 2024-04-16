@@ -42,8 +42,8 @@ abstract class GQFragmentDefinitionBase extends GQToken {
 }
 
 class GQInlineFragmentDefinition extends GQFragmentDefinitionBase {
-  GQInlineFragmentDefinition(String onTypeName, GQFragmentBlockDefinition block,
-      List<GQDirectiveValue> directives)
+  GQInlineFragmentDefinition(
+      String onTypeName, GQFragmentBlockDefinition block, List<GQDirectiveValue> directives)
       : super(
           "Inline_${generateUuid('_')}",
           onTypeName,
@@ -52,19 +52,13 @@ class GQInlineFragmentDefinition extends GQFragmentDefinitionBase {
         ) {
     if (!block.projections.containsKey(GQGrammar.typename)) {
       block.projections[GQGrammar.typename] = GQProjection(
-          fragmentName: null,
-          token: GQGrammar.typename,
-          alias: null,
-          block: null,
-          directives: []);
+          fragmentName: null, token: GQGrammar.typename, alias: null, block: null, directives: []);
     }
   }
 
   @override
   String serialize() {
-    return """
-     ... on $onTypeName ${directives.map((e) => e.serialize()).join(" ")} ${block.serialize()} 
-    """;
+    return """... on $onTypeName ${directives.map((e) => e.serialize()).join(" ")} ${block.serialize()} """;
   }
 
   @override
@@ -78,8 +72,8 @@ class GQFragmentDefinition extends GQFragmentDefinitionBase {
 
   final String fragmentName;
 
-  GQFragmentDefinition(this.fragmentName, String onTypeName,
-      GQFragmentBlockDefinition block, List<GQDirectiveValue> directives)
+  GQFragmentDefinition(this.fragmentName, String onTypeName, GQFragmentBlockDefinition block,
+      List<GQDirectiveValue> directives)
       : super(fragmentName, onTypeName, block, directives);
 
   @override
@@ -89,10 +83,7 @@ class GQFragmentDefinition extends GQFragmentDefinitionBase {
 
   @override
   String serialize() {
-    String unformatted = """
-      fragment $fragmentName on $onTypeName ${directives.map((e) => e.serialize()).join(" ")} ${block.serialize()} 
-    """;
-    return formatUnformattedGraphQL(unformatted);
+    return """fragment $fragmentName on $onTypeName${serializeDirectives(directives)}${block.serialize()}""";
   }
 
   @override
@@ -153,7 +144,6 @@ class GQProjection extends GQToken {
 
   @override
   String toString() {
-    //return 'FragmentField{fieldName: $name, alias: $alias}';
     return serialize();
   }
 
@@ -162,22 +152,19 @@ class GQProjection extends GQToken {
   @override
   String serialize() {
     if (this is GQInlineFragmentsProjection) {
-      return serializeList(
-          (this as GQInlineFragmentsProjection).inlineFragments,
-          join: "\n",
-          withParenthesis: false);
+      return serializeList((this as GQInlineFragmentsProjection).inlineFragments,
+          join: " ", withParenthesis: false);
     }
     String result = "";
     if (isFragmentReference) {
-      result = "... ";
+      result = "...";
     }
     if (alias != null) {
-      result += "$alias: $token";
+      result += "$alias:$token";
     } else {
       result += token;
     }
-    result +=
-        " ${serializeList(directives, join: " ", withParenthesis: false)}";
+    result += serializeDirectives(directives);
 
     result += block?.serialize() ?? '';
 
@@ -236,9 +223,7 @@ class GQFragmentBlockDefinition {
   }
 
   String serialize() {
-    return """{
-      ${serializeList(projections.values.toList(), join: " ", withParenthesis: false)}
-    }""";
+    return """{${serializeList(projections.values.toList(), join: " ", withParenthesis: false)}}""";
   }
 
   @override
@@ -262,8 +247,6 @@ class GQFragmentBlockDefinition {
   }
 
   List<GQProjection> getFragmentReferences() {
-    return projections.values
-        .where((projection) => projection.isFragmentReference)
-        .toList();
+    return projections.values.where((projection) => projection.isFragmentReference).toList();
   }
 }

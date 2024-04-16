@@ -6,6 +6,40 @@ part of 'types.gq.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+Driver _$DriverFromJson(Map<String, dynamic> json) => Driver(
+      lastName: json['lastName'] as String,
+      firstName: json['firstName'] as String,
+    );
+
+Map<String, dynamic> _$DriverToJson(Driver instance) => <String, dynamic>{
+      'firstName': instance.firstName,
+      'lastName': instance.lastName,
+    };
+
+Client _$ClientFromJson(Map<String, dynamic> json) => Client(
+      lastUpdate: json['lastUpdate'] as int,
+      firstName: json['firstName'] as String,
+    );
+
+Map<String, dynamic> _$ClientToJson(Client instance) => <String, dynamic>{
+      'firstName': instance.firstName,
+      'lastUpdate': instance.lastUpdate,
+    };
+
+BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390a
+    _$BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390aFromJson(
+            Map<String, dynamic> json) =>
+        BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390a(
+          firstName: json['firstName'] as String,
+        );
+
+Map<String,
+    dynamic> _$BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390aToJson(
+        BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390a instance) =>
+    <String, dynamic>{
+      'firstName': instance.firstName,
+    };
+
 Car_carFrag _$Car_carFragFromJson(Map<String, dynamic> json) => Car_carFrag(
       model: json['model'] as String,
       year: json['year'] as int,
@@ -28,43 +62,21 @@ Driver_myFrag _$Driver_myFragFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$Driver_myFragToJson(Driver_myFrag instance) =>
     <String, dynamic>{
-      'cars': instance.cars,
+      'cars': instance.cars.map((e) => e.toJson()).toList(),
       'firstName': instance.firstName,
       'id': instance.id,
     };
 
-Driver _$DriverFromJson(Map<String, dynamic> json) => Driver(
-      lastName: json['lastName'] as String,
-      firstName: json['firstName'] as String,
+GetUserResponse _$GetUserResponseFromJson(Map<String, dynamic> json) =>
+    GetUserResponse(
+      getUser:
+          BasicUser_projection_6e4cbe57_500e_f574_cd0a_124b2162390a.fromJson(
+              json['getUser'] as Map<String, dynamic>),
     );
 
-Map<String, dynamic> _$DriverToJson(Driver instance) => <String, dynamic>{
-      'firstName': instance.firstName,
-      'lastName': instance.lastName,
-    };
-
-Client _$ClientFromJson(Map<String, dynamic> json) => Client(
-      lastUpdate: json['lastUpdate'] as int,
-      firstName: json['firstName'] as String,
-    );
-
-Map<String, dynamic> _$ClientToJson(Client instance) => <String, dynamic>{
-      'firstName': instance.firstName,
-      'lastUpdate': instance.lastUpdate,
-    };
-
-BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eab
-    _$BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eabFromJson(
-            Map<String, dynamic> json) =>
-        BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eab(
-          firstName: json['firstName'] as String,
-        );
-
-Map<String,
-    dynamic> _$BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eabToJson(
-        BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eab instance) =>
+Map<String, dynamic> _$GetUserResponseToJson(GetUserResponse instance) =>
     <String, dynamic>{
-      'firstName': instance.firstName,
+      'getUser': instance.getUser.toJson(),
     };
 
 WatchDriverResponse _$WatchDriverResponseFromJson(Map<String, dynamic> json) =>
@@ -76,17 +88,5 @@ WatchDriverResponse _$WatchDriverResponseFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$WatchDriverResponseToJson(
         WatchDriverResponse instance) =>
     <String, dynamic>{
-      'watchDriver': instance.watchDriver,
-    };
-
-GetUserResponse _$GetUserResponseFromJson(Map<String, dynamic> json) =>
-    GetUserResponse(
-      getUser:
-          BasicUser_projection_6a6a66a8_c41f_da86_da27_85e1e5028eab.fromJson(
-              json['getUser'] as Map<String, dynamic>),
-    );
-
-Map<String, dynamic> _$GetUserResponseToJson(GetUserResponse instance) =>
-    <String, dynamic>{
-      'getUser': instance.getUser,
+      'watchDriver': instance.watchDriver.toJson(),
     };

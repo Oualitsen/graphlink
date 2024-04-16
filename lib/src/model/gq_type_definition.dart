@@ -68,17 +68,17 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
           $token(${serializeContructorArgs(grammar)})${_serializeCallToSuper(grammar)};
           
           factory $token.fromJson(Map<String, dynamic> json) {
-             ${_serilaizeFromJson()}
+             ${_serializeFromJson()}
           }
           
           Map<String, dynamic> toJson() {
-            ${_serilaizeToJson()}
+            ${_serializeToJson()}
           }
       }
     """;
   }
 
-  String _serilaizeFromJson() {
+  String _serializeFromJson() {
     if (subTypes.isEmpty) {
       return "return _\$${token}FromJson(json);";
     } else {
@@ -93,7 +93,7 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
     }
   }
 
-  String _serilaizeToJson() {
+  String _serializeToJson() {
     return "return _\$${token}ToJson(this);";
   }
 
@@ -143,7 +143,7 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
       return _commonFields;
     }
     if (subTypes.isNotEmpty) {
-      //get the commont fields
+      //get the common fields
       Map<GQField, int> occurenceMap = {};
 
       for (var typeDef in subTypes) {
@@ -182,20 +182,11 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
       return "";
     }
 
-    String commonFields = _superFields.isEmpty
-        ? ""
-        : _superFields
-            .map((e) => e.toDartMethodDeclaration(grammar))
-            .join(", ");
-    String nonCommonFields = getFields().isEmpty
-        ? ""
-        : getFields()
-            .map((e) => e.name)
-            .map((e) => "required this.$e")
-            .join(", ");
-    var combined = [nonCommonFields, commonFields]
-        .where((element) => element.isNotEmpty)
-        .toSet();
+    String commonFields =
+        _superFields.isEmpty ? "" : _superFields.map((e) => e.toDartMethodDeclaration(grammar)).join(", ");
+    String nonCommonFields =
+        getFields().isEmpty ? "" : getFields().map((e) => e.name).map((e) => "required this.$e").join(", ");
+    var combined = [nonCommonFields, commonFields].where((element) => element.isNotEmpty).toSet();
     if (combined.isEmpty) {
       return "";
     } else if (combined.length == 1) {

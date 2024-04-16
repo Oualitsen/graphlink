@@ -6,7 +6,7 @@
   import 'enums.gq.dart';
   part 'inputs.gq.g.dart';
 
-    @JsonSerializable()
+    @JsonSerializable(explicitToJson: true)
       class PageInfo {
           final int index;
           final int size;

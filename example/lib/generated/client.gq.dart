@@ -11,30 +11,17 @@ import 'package:retrofit_graphql/retrofit_graphql.dart';
 
 
     class Queries {
-        final GQHttpClientAdapter _adapter;
+        final Future<String> Function(String payload) _adapter;
         Queries(this._adapter);
         Future<GetUserResponse> getUser({required String id, required bool? client}) {
-        var operationName = "getUser";
-        var query = """
-query getUser (\$id: ID!, \$client: Boolean)  {
-  getUser (id: \$id, client: \$client)
-  {
-    ... on Driver  {
-      firstName  lastName  __typename
-    }
-    ... on Client  {
-      lastUpdate  firstName  __typename
-    }
-  }
-} 
+        const operationName = "getUser";
+        const query = """query getUser(\$id:ID!,\$client:Boolean){getUser(id:\$id,client:\$client){... on Driver  {firstName lastName __typename}  ... on Client  {lastUpdate firstName __typename}}}""";
 
-        """;
-
-        var variables = <String, dynamic>{
+        final variables = <String, dynamic>{
           'id': id, 'client': client
         };
         
-        var payload = GQPayload(query: query, operationName: operationName, variables: variables);
+        final payload = GQPayload(query: query, operationName: operationName, variables: variables);
             return _adapter(payload.toString()).asStream().map((response) {
           Map<String, dynamic> result = jsonDecode(response);
           if (result.containsKey("errors")) {
@@ -47,40 +34,21 @@ query getUser (\$id: ID!, \$client: Boolean)  {
       }
 
 }
-class Mutations {
-        final GQHttpClientAdapter _adapter;
-        Mutations(this._adapter);
-        
 
-}
 class Subscriptions {
                 final SubscriptionHandler _handler;
         
         Subscriptions(WebSocketAdapter adapter) : _handler = SubscriptionHandler(adapter);
         Stream<WatchDriverResponse> watchDriver({required String id}) {
-        var operationName = "watchDriver";
-        var query = """
-subscription watchDriver (\$id: ID!)  {
-  watchDriver (id: \$id)
-  {
-    ... myFrag
-  }
-} 
-fragment myFrag on Driver  {
-  id  firstName  cars {
-    ... carFrag
-  }
-}
-fragment carFrag on Car  {
-  model  year
-}
-        """;
+        const operationName = "watchDriver";
+        const query = """subscription watchDriver(\$id:ID!){watchDriver(id:\$id){...myFrag}}fragment myFrag on Driver{id firstName cars{...carFrag}}
+fragment carFrag on Car{model year}""";
 
-        var variables = <String, dynamic>{
+        final variables = <String, dynamic>{
           'id': id
         };
         
-        var payload = GQPayload(query: query, operationName: operationName, variables: variables);
+        final payload = GQPayload(query: query, operationName: operationName, variables: variables);
               return _handler.handle(payload)
         .map((e) => WatchDriverResponse.fromJson(e));
     
@@ -89,11 +57,11 @@ fragment carFrag on Car  {
 }
 
 class GQClient {
+  
   final Queries queries;
-  final Mutations mutations;
+  
   final Subscriptions subscriptions;
-  GQClient(GQHttpClientAdapter adapter, WebSocketAdapter wsAdapter)
-      : queries = Queries(adapter),
-        mutations = Mutations(adapter),
-        subscriptions = Subscriptions(wsAdapter);
+  GQClient(Future<String> Function(String payload) adapter, WebSocketAdapter wsAdapter)
+      :queries = Queries(adapter), subscriptions = Subscriptions(wsAdapter);
+        
 }

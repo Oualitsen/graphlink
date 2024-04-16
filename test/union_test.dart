@@ -11,7 +11,7 @@ void main() {
 
   test("Union serialization with multiple types", () {
     var union = GQUnionDefinition("type", ["User", "Client"]);
-    expect(union.serialize(), "union type = User | Client");
+    expect(union.serialize(), "union type = User|Client");
   });
 
   test("Parse union", () {

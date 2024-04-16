@@ -51,6 +51,16 @@ mutation CreateProductList($input: [[ProductInput]!]!) {
 
 mutation SetProductState($input: [State]) {
   setProductState(input: $input) {
-    id name
+    ...productFrag
   }
+}
+
+fragment productFrag on Product {
+  id name brand {
+    ... brandFrag
+  }
+} 
+
+fragment brandFrag on Brand {
+  name country
 }

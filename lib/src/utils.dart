@@ -4,24 +4,31 @@ import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
 
-String serializeList(List<GQToken>? list,
-    {String join = ", ", bool withParenthesis = true}) {
+String serializeList(List<GQToken>? list, {String join = ",", bool withParenthesis = true}) {
   return serializeListText(list?.map((e) => e.serialize()).toList(),
-      withParenthesis: withParenthesis, join: join);
+          withParenthesis: withParenthesis, join: join)
+      .trim();
 }
 
-String serializeListText(List<String>? list,
-    {String join = ", ", bool withParenthesis = true}) {
+String serializeDirectives(List<GQDirectiveValue> directives) {
+  var directivesText = directives.isEmpty ? '' : serializeList(directives, withParenthesis: false);
+  if (directivesText.isNotEmpty) {
+    directivesText = ' $directivesText';
+  }
+  return directivesText;
+}
+
+String serializeListText(List<String>? list, {String join = ",", bool withParenthesis = true}) {
   if (list == null || list.isEmpty) {
     return '';
   }
   String result;
   if (withParenthesis) {
-    result = "(${list.join(join)})";
+    result = "(${list.join(join).trim()})";
   } else {
     result = list.join(join);
   }
-  return result;
+  return result.trim();
 }
 
 String formatUnformattedGraphQL(String unformattedGraphQL) {
@@ -51,14 +58,12 @@ String formatUnformattedGraphQL(String unformattedGraphQL) {
 }
 
 String? getNameValueFromDirectives(Iterable<GQDirectiveValue> directives) {
-  var dirs = directives
-      .where((element) => element.token == GQGrammar.gqTypeNameDirective);
+  var dirs = directives.where((element) => element.token == GQGrammar.gqTypeNameDirective);
   if (dirs.isEmpty) {
     return null;
   }
   var name = dirs.first.arguments
-      .firstWhere(
-          (arg) => arg.token == GQGrammar.gqTypeNameDirectiveArgumentName)
+      .firstWhere((arg) => arg.token == GQGrammar.gqTypeNameDirectiveArgumentName)
       .value as String;
   return name.replaceAll("\"", "");
 }

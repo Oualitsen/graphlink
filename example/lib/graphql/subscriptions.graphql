@@ -6,10 +6,11 @@ subscription watchDriver($id: ID!){
 
 fragment myFrag on Driver {
   id firstName cars {
-    ...carFrag
+    ...carFrag 
   }
 }
 
 fragment carFrag on Car {
   model year
 }
+

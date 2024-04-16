@@ -1,15 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:retrofit_graphql/src/functions/graphql_data_objects.dart';
-import 'package:retrofit_graphql/src/utils.dart';
 
 enum _AckStatus { none, progress, acknoledged }
 
 class SubscriptionHandler {
   final Map<String, StreamController<Map<String, dynamic>>> _map = {};
   final WebSocketAdapter adapter;
-  final connectionInit =
-      SubscriptionMessage(type: SubscriptionMessageType.connection_init);
+  final connectionInit = SubscriptionMessage(type: SubscriptionMessageType.connection_init);
 
   SubscriptionHandler(this.adapter);
 
@@ -52,8 +51,7 @@ class SubscriptionHandler {
                 return broadcasStream;
             }
           }).map((bs) {
-            var streamSink =
-                _StreamSink(sendMessage: adapter.sendMessage, stream: bs);
+            var streamSink = _StreamSink(sendMessage: adapter.sendMessage, stream: bs);
             ackStatus = _AckStatus.acknoledged;
             ack.sink.add(streamSink);
             return streamSink;
@@ -108,8 +106,7 @@ class SubscriptionHandler {
             }
           });
 
-      streamSink
-          .sendMessage(SubscriptionMessage.fromQuery(uuid, pl).toJsonText());
+      streamSink.sendMessage(SubscriptionMessage.fromQuery(uuid, pl).toJsonText());
     });
 
     return controller.stream;
@@ -143,4 +140,26 @@ abstract class WebSocketAdapter {
   void sendMessage(String message);
 
   void close();
+}
+
+String generateUuid([String separator = "-"]) {
+  final random = Random();
+  const hexDigits = '0123456789abcdef';
+
+  String generateRandomString(int length) {
+    final buffer = StringBuffer();
+    for (var i = 0; i < length; i++) {
+      final randomIndex = random.nextInt(hexDigits.length);
+      buffer.write(hexDigits[randomIndex]);
+    }
+    return buffer.toString();
+  }
+
+  return [
+    generateRandomString(8),
+    generateRandomString(4),
+    generateRandomString(4),
+    generateRandomString(4),
+    generateRandomString(12),
+  ].join(separator);
 }

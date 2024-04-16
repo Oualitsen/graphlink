@@ -63,9 +63,7 @@ class GQDirectiveValue extends GQToken {
     if (token == GQGrammar.gqTypeNameDirective) {
       return "";
     }
-    var args = arguments.isEmpty
-        ? ""
-        : "(${arguments.map((e) => e.serialize()).join(", ")})";
+    var args = arguments.isEmpty ? "" : "(${arguments.map((e) => e.serialize()).join(",")})";
     return "$token$args";
   }
 }

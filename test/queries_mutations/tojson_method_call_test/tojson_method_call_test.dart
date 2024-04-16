@@ -7,23 +7,18 @@ import 'package:petitparser/petitparser.dart';
 void main() async {
   test("tojson_method_call_test", () {
     final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
+    const path = "test/queries_mutations/tojson_method_call_test";
 
     var parser = g.buildFrom(g.fullGrammar().end());
 
-    final text = File(
-            "test/queries_mutations/tojson_method_call_test/tojson_method_call_test.graphql")
-        .readAsStringSync();
+    final text = File("$path/tojson_method_call_test.graphql").readAsStringSync();
     var parsed = parser.parse(text);
 
     expect(parsed.isSuccess, true);
-
-    File("test/queries_mutations/tojson_method_call_test/gen/client.gq.dart")
-        .writeAsStringSync(g.generateClient());
-    File("test/queries_mutations/tojson_method_call_test/gen/types.gq.dart")
-        .writeAsStringSync(g.generateTypes());
-    File("test/queries_mutations/tojson_method_call_test/gen/inputs.gq.dart")
-        .writeAsStringSync(g.generateInputs());
-    File("test/queries_mutations/tojson_method_call_test/gen/enums.gq.dart")
-        .writeAsStringSync(g.generateEnums());
+    Directory("$path/gen").createSync();
+    File("$path/gen/client.gq.dart").writeAsStringSync(g.generateClient());
+    File("$path/gen/types.gq.dart").writeAsStringSync(g.generateTypes());
+    File("$path/gen/inputs.gq.dart").writeAsStringSync(g.generateInputs());
+    File("$path/gen/enums.gq.dart").writeAsStringSync(g.generateEnums());
   });
 }

@@ -8,8 +8,7 @@ import 'package:retrofit_graphql/src/model/gq_token.dart';
 class GQArgumentDefinition extends GQToken {
   final GQType type;
   final Object? initialValue;
-  GQArgumentDefinition(String name, this.type, {this.initialValue})
-      : super(name);
+  GQArgumentDefinition(String name, this.type, {this.initialValue}) : super(name);
 
   @override
   String toString() {
@@ -20,9 +19,9 @@ class GQArgumentDefinition extends GQToken {
 
   @override
   String serialize() {
-    var r = "$_escappedToken: ${type.serialize()}";
+    var r = "$_escappedToken:${type.serialize()}";
     if (initialValue != null) {
-      r += " = $initialValue";
+      r += "=$initialValue";
     }
     return r;
   }
@@ -42,7 +41,7 @@ class GQArgumentValue extends GQToken {
 
   @override
   String serialize() {
-    return "$_escapedToken: $_escapedValue";
+    return "$_escapedToken:$_escapedValue";
   }
 
   String get _escapedToken => token.replaceFirst("\$", "\\\$");

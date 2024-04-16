@@ -1,8 +1,8 @@
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/dart_serializable.dart';
+import 'package:retrofit_graphql/src/model/gq_fragment.dart';
 import 'package:retrofit_graphql/src/model/gq_queries.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
-import 'package:retrofit_graphql/src/utils.dart';
 
 class GQGraphqlService implements DartSerializable {
   final List<GQQueryDefinition> queries;
@@ -16,25 +16,42 @@ import 'dart:convert';
 import 'package:retrofit_graphql/retrofit_graphql.dart';
 
 
+final _fragmMap = <String, String>{};
+
+String _getFragment(String fragName) {
+  return _fragmMap[fragName]!;
+}
 
     ${GQQueryType.values.map((e) => generateQueriesClassByType(e, grammar)).join("\n")}
 
 class GQClient {
-  final Queries queries;
-  final Mutations mutations;
-  final Subscriptions subscriptions;
-  GQClient(GQHttpClientAdapter adapter, WebSocketAdapter wsAdapter)
-      : queries = Queries(adapter),
-        mutations = Mutations(adapter),
-        subscriptions = Subscriptions(wsAdapter);
+  
+  ${grammar.hasQueries ? 'final Queries queries;' : ''}
+  ${grammar.hasMutations ? 'final Mutations mutations;' : ''}
+  ${grammar.hasSubscriptions ? 'final Subscriptions subscriptions;' : ''}
+  GQClient(Future<String> Function(String payload) adapter${grammar.hasSubscriptions ? ', WebSocketAdapter wsAdapter' : ''})
+      :${[
+      grammar.hasQueries ? 'queries = Queries(adapter)' : '',
+      grammar.hasMutations ? ' mutations = Mutations(adapter)' : '',
+      grammar.hasSubscriptions ? 'subscriptions = Subscriptions(wsAdapter)' : '',
+    ].where((element) => element.isNotEmpty).join(", ")} {
+      
+${grammar.fragments.values.map((value) => "_fragmMap['${value.token}'] = '${value.serialize()}';").toList().join("\n")}
+${grammar.allFieldsFragments.values.map((e) => e.fragment).map((value) => "_fragmMap['${value.token}'] = '${value.serialize()}';").toList().join("\n")}
+       
+      
+    }
+        
 }
     """
         .trim();
   }
 
   String generateQueriesClassByType(GQQueryType type, GQGrammar g) {
-    var queryList = queries.where((element) => element.type == type).toList();
-
+    var queryList = queries.where((element) => element.type == type && g.hasQueryType(type)).toList();
+    if (queryList.isEmpty) {
+      return "";
+    }
     return """
       class ${classNameFromType(type)} {
         ${declareAdapter(type)}
@@ -58,7 +75,7 @@ class GQClient {
     switch (type) {
       case GQQueryType.query:
       case GQQueryType.mutation:
-        return "final GQHttpClientAdapter _adapter;";
+        return "final Future<String> Function(String payload) _adapter;";
       case GQQueryType.subscription:
         return """
         final SubscriptionHandler _handler;
@@ -80,17 +97,15 @@ class GQClient {
   String queryToMethod(GQQueryDefinition def, GQGrammar g) {
     return """
       ${returnTypeByQueryType(def, g)} ${def.token}(${generateArgs(def, g)}) {
-        var operationName = "${def.token}";
-        var query = \"\"\"
-${formatUnformattedGraphQL(def.serialize())} 
-${def.fragments(g).map((e) => e.serialize()).toList().join("\n")}
-        \"\"\";
+        const operationName = "${def.token}";
+        final fragsValues = ${def.fragments(g).isEmpty ? '"";' : '[${def.fragments(g).map((e) => '"${e.token}"').toList().join(", ")}].map((fragName) => _getFragment(fragName)).join(" ");'}
+        final query = \"\"\"${def.serialize()}\$fragsValues\"\"\";
 
-        var variables = <String, dynamic>{
+        final variables = <String, dynamic>{
           ${def.arguments.map((e) => "'${e.dartArgumentName}': ${serializeArgumentValue(g, def, e.token)}").toList().join(", ")}
         };
         
-        var payload = GQPayload(query: query, operationName: operationName, variables: variables);
+        final payload = GQPayload(query: query, operationName: operationName, variables: variables);
         ${generateAdapterCall(def)}
       }
     """
@@ -116,8 +131,7 @@ ${def.fragments(g).map((e) => e.serialize()).toList().join("\n")}
 """;
   }
 
-  String serializeArgumentValue(
-      GQGrammar g, GQQueryDefinition def, String argName) {
+  String serializeArgumentValue(GQGrammar g, GQQueryDefinition def, String argName) {
     var arg = def.findByName(argName);
     return callToJson(arg.dartArgumentName, arg.type, g);
   }
