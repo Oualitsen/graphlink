@@ -641,14 +641,18 @@ $data
 
     var similarDeinitions = findSimilarTo(definition);
     if (similarDeinitions.isNotEmpty) {
-      return similarDeinitions.first;
+      var first = similarDeinitions.first;
+      projectedTypes.putIfAbsent(first.token, () => first);
+      return first;
     }
     projectedTypes[definition.token] = definition;
     return definition;
   }
 
   List<GQTypeDefinition> findSimilarTo(GQTypeDefinition definition) {
-    return projectedTypes.values.where((element) => element.isSimilarTo(definition, this)).toList();
+    return [...projectedTypes.values, ...types.values, ...interfaces.values]
+        .where((element) => element.isSimilarTo(definition, this))
+        .toList();
   }
 
   GeneratedTypeName generateName(
@@ -657,6 +661,7 @@ $data
     if (name != null) {
       return GeneratedTypeName(name, true);
     }
+    // check if we have similar objects
     name = "${originalName}_${block.uniqueName}";
     String? indexedName;
     int nameIndex = 0;

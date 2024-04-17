@@ -26,8 +26,6 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
 
   bool _fiedsUpdated = false;
 
-  String? _hash;
-
   GQTypeDefinition({
     required String name,
     required this.nameDeclared,
@@ -47,8 +45,7 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
   }
 
   String getHash(GQGrammar grammar) {
-    _hash ??= serializeFields(grammar);
-    return _hash!;
+    return serializeFields(grammar);
   }
 
   @override

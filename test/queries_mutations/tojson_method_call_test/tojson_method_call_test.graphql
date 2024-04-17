@@ -57,7 +57,7 @@ mutation SetProductState($input: [State]) {
 
 fragment productFrag on Product {
   id name brand {
-    ... brandFrag
+   ... brandFrag
   }
 } 
 
