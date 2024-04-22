@@ -23,6 +23,8 @@ const String enumsFileName = "enums.gq";
 const String typesFileName = "types.gq";
 const String clientFileName = "client.gq";
 
+const all_fields = '_all_fields';
+
 const fileHeadComment = """
 // GENERATED CODE - DO NOT MODIFY BY HAND.
 
@@ -328,8 +330,7 @@ $data
       return;
     }
     if (projection.isFragmentReference) {
-      var fragment = getFragment(projection.token);
-
+      GQFragmentDefinitionBase fragment = getFragment(projection.token, typeName);
       if (fragment.onTypeName != type.token && !type.interfaceNames.contains(fragment.onTypeName)) {
         throw ParseException("Fragment ${fragment.token} cannot be applied to type ${type.token}");
       }
@@ -452,10 +453,16 @@ $data
     return type;
   }
 
-  GQFragmentDefinitionBase getFragment(String name) {
-    final fragment = fragments[name] ?? allFieldsFragments[name]?.fragment;
+  GQFragmentDefinitionBase getFragment(String name, [String? typeName]) {
+    String fragmentName;
+    if (name == all_fields && typeName != null) {
+      fragmentName = '${all_fields}_$typeName';
+    } else {
+      fragmentName = name;
+    }
+    final fragment = fragments[fragmentName] ?? allFieldsFragments[fragmentName]?.fragment;
     if (fragment == null) {
-      throw ParseException("Fragment '$name' was not found");
+      throw ParseException("Fragment '$fragmentName' was not found");
     }
     return fragment;
   }
@@ -498,7 +505,7 @@ $data
   }
 
   static String allFieldsFragmentName(String token) {
-    return "_all_fields_$token";
+    return "${all_fields}_$token";
   }
 
   GQFragmentBlockDefinition? createAllFieldBlock(GQField field) {
@@ -599,7 +606,7 @@ $data
     var name = generateName(nonProjectedType.token, block, fieldDirectives);
     block.projections.values
         .where((element) => element.isFragmentReference)
-        .map((e) => getFragment(e.fragmentName!))
+        .map((e) => getFragment(e.fragmentName!, nonProjectedType.token))
         .forEach((frag) {
       projections.addAll(frag.block.projections);
     });
@@ -679,12 +686,11 @@ $data
     var result = <GQField>[];
     var projections = {...p};
 
-    p.values
-        .where((element) => element.isFragmentReference)
-        .map((e) => e.fragmentName!)
-        .map((fragName) => getFragment(fragName))
-        .forEach((fragment) {
-      projections.addAll(fragment.block.projections);
+    p.forEach((key, value) {
+      if (value.isFragmentReference) {
+        var fragment = getFragment(value.fragmentName!, type.token);
+        projections.addAll(fragment.block.projections);
+      }
     });
 
     if (type is! GQInterfaceDefinition) {

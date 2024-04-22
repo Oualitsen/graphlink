@@ -1,0 +1,25 @@
+type User {
+    name: String!
+    vehicles: [Vehicle!]!
+}
+
+type Vehicle {
+    make: Make!
+    model: String!
+}
+
+type Make {
+    brand: String
+}
+
+type Query {
+    getUsers: [User!]!
+}
+
+query getUsers {
+    getUsers {
+        ... _all_fields
+    }
+}
+
+
