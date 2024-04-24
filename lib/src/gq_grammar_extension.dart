@@ -388,17 +388,17 @@ $data
     }
   }
 
-  void updateFragmentAllTypesDependecies() {
+  void updateFragmentAllTypesDependencies() {
     fragments.forEach((key, fragment) {
       fragment.block.projections.values.where((projection) => projection.block == null).forEach((projection) {
         if (projection.isFragmentReference) {
           var fragmentRef = getFragment(projection.token);
-          fragment.dependecies.add(fragmentRef);
+          fragment.addDependecy(fragmentRef);
         } else {
           var type = getType(fragment.onTypeName);
           var field = findFieldByName(projection.token, type);
           if (types.containsKey(field.type.token)) {
-            fragment.dependecies.add(allFieldsFragments[field.type.token]!.fragment);
+            fragment.addDependecy(allFieldsFragments[field.type.token]!.fragment);
           }
         }
       });

@@ -136,9 +136,9 @@ class GQGrammar extends GrammarDefinition {
     fillQueryElementsReturnType();
     fillTypedFragments();
     validateProjections();
-    createProjectedTypes();
     updateFragmentDependencies();
-    updateFragmentAllTypesDependecies();
+    createProjectedTypes();
+    updateFragmentAllTypesDependencies();
     generateGQClient();
   }
 

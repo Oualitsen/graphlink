@@ -3,6 +3,7 @@ import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
 import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
+import 'package:retrofit_graphql/src/tree/tree.dart';
 import 'package:retrofit_graphql/src/utils.dart';
 
 class GQTypedFragment {
@@ -18,7 +19,7 @@ abstract class GQFragmentDefinitionBase extends GQToken {
   final GQFragmentBlockDefinition block;
   final List<GQDirectiveValue> directives;
 
-  final Set<GQFragmentDefinitionBase> dependecies = {};
+  final List<GQFragmentDefinitionBase> _dependecies = [];
 
   GQFragmentDefinitionBase(
     super.token,
@@ -28,17 +29,26 @@ abstract class GQFragmentDefinitionBase extends GQToken {
   );
 
   void updateDepencies(Map<String, GQFragmentDefinitionBase> map) {
-    final Set<String> dependecyNames = block.getDependecies(map);
+    var rootNode = TreeNode(value: token);
+    block.getDependecies(map, rootNode);
+    var dependecyNames = rootNode.getAllValues(true).toSet();
+
     for (var name in dependecyNames) {
       final def = map[name];
       if (def == null) {
         throw ParseException("Fragment $name is not defined");
       }
-      dependecies.add(def);
+      _dependecies.add(def);
     }
   }
 
   String generateName();
+
+  addDependecy(GQFragmentDefinitionBase fragment) {
+    _dependecies.add(fragment);
+  }
+
+  Set<GQFragmentDefinitionBase> get dependecies => _dependecies.toSet();
 }
 
 class GQInlineFragmentDefinition extends GQFragmentDefinitionBase {
@@ -171,16 +181,22 @@ class GQProjection extends GQToken {
     return result;
   }
 
-  Set<String> getDependecies(Map<String, GQFragmentDefinitionBase> map) {
-    final result = <String>{};
+  getDependecies(Map<String, GQFragmentDefinitionBase> map, TreeNode node) {
     if (isFragmentReference) {
       if (block == null) {
-        result.add(token);
+        TreeNode child;
+
+        if (!node.contains(token)) {
+          child = node.addChild(token);
+        } else {
+          throw ParseException("Dependecy Cycle ${[token, ...node.getParents()].join(" -> ")}");
+        }
+
         var frag = map[token];
         if (frag == null) {
           throw ParseException("Fragment $token is not defined");
         } else {
-          result.addAll(frag.block.getDependecies(map));
+          frag.block.getDependecies(map, child);
         }
       } else {
         ///
@@ -191,17 +207,15 @@ class GQProjection extends GQToken {
         if (myBlock == null) {
           throw ParseException("Inline Fragment must have a body");
         }
-        result.addAll(myBlock.getDependecies(map));
+        myBlock.getDependecies(map, node);
       }
     }
     if (block != null) {
       var children = block!.projections.values;
-      for (var element in children) {
-        result.addAll(element.getDependecies(map));
+      for (var projection in children) {
+        projection.getDependecies(map, node);
       }
     }
-
-    return result;
   }
 }
 
@@ -231,13 +245,11 @@ class GQFragmentBlockDefinition {
     return serialize();
   }
 
-  Set<String> getDependecies(Map<String, GQFragmentDefinitionBase> map) {
-    var result = <String>{};
-    var p = projections.values;
-    for (var v in p) {
-      result.addAll(v.getDependecies(map));
+  void getDependecies(Map<String, GQFragmentDefinitionBase> map, TreeNode node) {
+    var projectionList = projections.values;
+    for (var projection in projectionList) {
+      projection.getDependecies(map, node);
     }
-    return result;
   }
 
   String get uniqueName {

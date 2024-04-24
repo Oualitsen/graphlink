@@ -1,4 +1,4 @@
-import 'dart:io';
+  /*import 'dart:io';
 
 import 'package:test/test.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
@@ -6,7 +6,7 @@ import 'package:petitparser/petitparser.dart';
 
 void main() async {
   const folderPath = "test/fragment/inline";
-  /*
+
   test("Simple projection", () {
     final GQGrammar g = GQGrammar();
 
@@ -18,5 +18,5 @@ void main() async {
 
     expect(parsed.isSuccess, true);
   });
-  */
-}
+  
+}*/
