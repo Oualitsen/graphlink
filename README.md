@@ -5,12 +5,11 @@
 ## Table of Contents
 ​
 1. [Installation](#installation)
-2. [Getting Started](#getting-started)
-3. [Code Generation](#code-generation)
-4. [GraphQL Client](#graphql-client)
-5. [Generate Code with Build Runner](#generate-code-with-build-runner)
-6. [Note: GraphQL Unions](#note-graphql-unions)
-7. [License](#license)
+2. [Code Generation](#code-generation)
+3. [GraphQL Client](#graphql-client)
+4. [Generate Code with Build Runner](#generate-code-with-build-runner)
+5. [Note: GraphQL Unions](#note-graphql-unions)
+6. [License](#license)
 ​
 ## Installation
 ​
@@ -77,19 +76,12 @@ The code generation process involves:
 ​
 7. **Generate All Fields Fragments**:
 ​
-   - By enabling the `generateAllFieldsFragments` option in your build configuration, you can automatically generate fragments for all types. These fragments simplify the retrieval of all attributes for a specific class, allowing you to access them like this: `{... _all_fields_YourClassName}`. This feature enhances the ease of working with the generated Dart classes.
+   - By enabling the `generateAllFieldsFragments` option in your build configuration, you can automatically generate fragments for all types. These fragments simplify the retrieval of all attributes for a specific class, allowing you to access them like this: `{... _all_fields_YourClassName}` or just `{... _all_fields}`. This feature enhances the ease of working with the generated Dart classes.
 ​
 ## GraphQL Client
 
-1. **Import the Client**:
 ​
-Import the `retrofit_graphql` package for the GraphQL client:
-​
-```dart
-    import 'package:retrofit_graphql/retrofit_graphql.dart';
-```
-​
-2. **Initialize the Client**:
+1. **Initialize the Client**:
 ​
 To initialize the GraphQL client, you can use the following code. This configuration sets up the client with WebSocket and HTTP adapters:
 ​
@@ -98,7 +90,7 @@ To initialize the GraphQL client, you can use the following code. This configura
     const url = "http://localhost:8080/graphql";
 ​
     // Create a WebSocket channel adapter for subscriptions.
-    var wsAdapter = WebSocketChannelAdapter(wsUrl);
+    var wsAdapter = WebSocketChannelAdapter(wsUrl); // this is optional
 ​
     // Define an HTTP request function for queries and mutations.
     var httpFn = (payload) => http
@@ -112,7 +104,7 @@ To initialize the GraphQL client, you can use the following code. This configura
     var client = GQClient(httpFn, wsAdapter);
 ```
 ​
-3. **Execute GraphQL Operations**:
+2. **Execute GraphQL Operations**:
 ​
 You can use the GraphQL client to send queries, mutations, and subscriptions. The following code example demonstrates how to retrieve data with a query:
 ​
@@ -130,11 +122,11 @@ You can use the GraphQL client to send queries, mutations, and subscriptions. Th
 ​
 The client.queries.getUser method sends a GraphQL query to the server, and the response is processed in the stream. You can adapt this example to perform mutations and subscriptions as needed.
 ​
-4. **Working with Data Payloads**:
+3. **Working with Data Payloads**:
 ​
    The client seamlessly handles data payloads using the provided adapter for JSON data transmission.
 ​
-5. **Error Handling**:
+4. **Error Handling**:
 
 ​
    The generated client includes error handling mechanisms for GraphQL errors and exceptions.
