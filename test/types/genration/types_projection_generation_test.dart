@@ -11,9 +11,9 @@ void main() {
     final GQGrammar g = GQGrammar();
     var parser = g.buildFrom(g.start());
 
-    var parsed = parser.parse(
-        File("test/types/genration/types_projection_generation_simple_case_schema.graphql")
-            .readAsStringSync());
+    var parsed = parser.parse(File(
+            "test/types/genration/types_projection_generation_simple_case_schema.graphql")
+        .readAsStringSync());
     logger.i("g.projectedTypes.length = ${g.projectedTypes.length}");
     expect(parsed.isSuccess, true);
     logger.i("""
@@ -33,8 +33,9 @@ void main() {
     final GQGrammar g = GQGrammar();
     var parser = g.buildFrom(g.start());
 
-    var parsed = parser
-        .parse(File("test/types/genration/types_projection_generation_frag_ref.graphql").readAsStringSync());
+    var parsed = parser.parse(File(
+            "test/types/genration/types_projection_generation_frag_ref.graphql")
+        .readAsStringSync());
     logger.i("g.projectedTypes.length = ${g.projectedTypes.length}");
     expect(parsed.isSuccess, true);
     logger.i("""
@@ -49,14 +50,15 @@ void main() {
     final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
     var parser = g.buildFrom(g.start());
 
-    var parsed = parser
-        .parse(File("test/types/genration/types_all_fields_fragments_generation.graphql").readAsStringSync());
+    var parsed = parser.parse(File(
+            "test/types/genration/types_all_fields_fragments_generation.graphql")
+        .readAsStringSync());
     logger.i("g.projectedTypes.length = ${g.projectedTypes.length}");
     expect(parsed.isSuccess, true);
-    expect(g.allFieldsFragments.isEmpty, false);
+    expect(g.fragments.isEmpty, false);
     logger.i("""
     _______________ projected types _________________
-    ${g.allFieldsFragments.values.map((e) => e.fragment.serialize()).toList()}
+    ${g.fragments.values.map((e) => e.serialize()).toList()}
     _________________________________________________
 
 """);
@@ -66,18 +68,26 @@ void main() {
     final GQGrammar g = GQGrammar();
     var parser = g.buildFrom(g.start());
 
-    var parsed = parser.parse(
-        File("test/types/genration/types_all_fields_fragments_dependecies.graphql").readAsStringSync());
+    var parsed = parser.parse(File(
+            "test/types/genration/types_all_fields_fragments_dependecies.graphql")
+        .readAsStringSync());
     expect(parsed.isSuccess, true);
-    expect(g.getFragment("UserFields").dependecies.map((e) => e.token).contains("AddressFields"), true);
+    expect(
+        g
+            .getFragment("UserFields")
+            .dependecies
+            .map((e) => e.token)
+            .contains("AddressFields"),
+        true);
   });
 
   test("test projection validation", () {
     final GQGrammar g = GQGrammar();
     var parser = g.buildFrom(g.start());
     expect(
-        () =>
-            parser.parse(File("test/types/genration/types_projection_validation.graphql").readAsStringSync()),
+        () => parser.parse(
+            File("test/types/genration/types_projection_validation.graphql")
+                .readAsStringSync()),
         throwsA(isA<ParseException>()));
   });
 }

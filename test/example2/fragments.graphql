@@ -1,0 +1,387 @@
+fragment patientRowFragment on Patient {
+  id
+  admissionDate
+  hemodialysisGroup {
+    id
+    designation
+  }
+  flatFee {
+    id
+    code
+    designation
+  }
+  personalInfo {
+    firstName
+    lastName
+  }
+  position {
+    id
+    name
+  }
+  room {
+    id
+    name
+  }
+  dialysisProtocol {
+    ...dialysisProtocolFrag
+  }
+  medicalRecordId
+  height
+  patientType
+  visitTableHealthUnits @gqTypeName(name: "HealthUnitShortcut") {
+    id
+    name
+    unit
+  }
+  latestHbValue {
+    healthUnit {
+      ..._all_fields_HealthUnit
+    }
+    value
+  }
+  latestFerritinValue {
+    healthUnit {
+      ..._all_fields_HealthUnit
+    }
+    value
+  }
+  diureseRefId
+  kalimieRefId
+  natrimieRefId
+  ureeRefId
+  creatinineRefId
+  hbRefId
+  ferritinRefId
+  csRefId
+  calcemieRefId
+  phosphoremieRefId
+  pthRefId
+  bmiRefId
+  acideUriqueRefId
+  latestEPODose
+  latestDeltaHb
+  latestCSValue {
+    healthUnit {
+      ..._all_fields_HealthUnit
+    }
+    value
+  }
+}
+
+fragment medicalStaffRowFrag on MedicalStaff {
+  id
+  rank
+  keycloackUserId
+  personalInfo {
+    firstName
+    lastName
+  }
+}
+
+fragment medicalStaffFrag on MedicalStaff {
+  id
+  rank
+  username
+  roles
+  keycloackUserId
+  personalInfo @gqTypeName(name: "MedicalStaffPersonalInfo") {
+    firstName
+    lastName
+    dateOfBirth
+    placeOfBirth
+    image
+    address
+    phones
+    emails
+  }
+}
+fragment medicalStaffNoRoleFrag on MedicalStaff {
+  id
+  rank
+  keycloackUserId
+  personalInfo @gqTypeName(name: "MedicalStaffPersonalInfo") {
+    firstName
+    lastName
+    dateOfBirth
+    placeOfBirth
+    image
+    address
+    phones
+    emails
+  }
+}
+fragment personalInfoFrag on Patient {
+  id
+  personalInfo @gqTypeName(name: "PersonalInfo") {
+    firstName
+    lastName
+    gender
+    dateOfBirth
+    placeOfBirth
+    image
+    address
+    phones
+    emails
+  }
+}
+fragment visitFrag on Visit {
+  notes
+  vascularAccessState
+  favDoppler
+  omi
+  pleuropulmonaryAuscultation
+  tobaccoUsage
+  dietaryHabits
+  physicalActivity
+  cardiovascularExamination
+  ecgResult
+  echocardiogram
+  energyIntake
+  proteinIntake
+  personalPatientProfile
+  sleepPattern
+  occupation
+  socialLife
+  managementPlan
+  statusHVB
+  statusHVC
+  statusHIV
+  vaccinationStatus
+  vaccinationDate
+  vaccinationNumber
+  id
+  visitDate
+  complications
+  medicalStaffInfo @gqTypeName(name: "MedicalStaffInfo") {
+    id
+    firstName
+    lastName
+    rank
+  }
+  patientInfo @gqTypeName(name: "PatientInfo") {
+    id
+    firstName
+    lastName
+  }
+  healthValues @gqTypeName(name: "HealthValue_123") {
+    healthUnit {
+      ..._all_fields
+    }
+    value
+  }
+  notes
+  deltaHb
+}
+
+
+
+fragment protocolRowFrag on DialysisProtocol {
+  id
+  patientInfo @gqTypeName(name: "PatientInfo") {
+    id
+    firstName
+    lastName
+  }
+  prescribedDuration
+  maxHourlyUF
+  needles
+}
+
+fragment sessionRowFrag on DialysisSession {
+  id
+  patientInfo @gqTypeName(name: "PatientInfo") {
+    id
+    firstName
+    lastName
+  }
+  date
+  actualDuration
+  weightLoss
+  pumpSpeed
+  checkEOP
+  ironCheck
+  startTime
+  stopTime
+}
+
+fragment medicalRecordRowFrag on MedicalRecord {
+  id
+  patientInfo @gqTypeName(name: "PatientInfo") {
+    id
+    firstName
+    lastName
+  }
+  initialObservations {
+    bloodGroup
+    bloodPressureDiastolic
+    generalState
+  }
+}
+
+fragment medicalRecordFrag on MedicalRecord {
+  id
+  patientInfo @gqTypeName(name: "PatientInfo") {
+    id
+    firstName
+    lastName
+  }
+  pathologies @gqTypeName(name: "Pathology") {
+    diagnostic
+    examinator
+    examinationDate
+  }
+  renalBiopsies @gqTypeName(name: "RenalBiopsy") {
+    diagnosticDate
+    examinator
+    results
+  }
+  deseaseHistory @gqTypeName(name: "DeseaseHistory") {
+    diagnostic
+    initialNephropathy
+  }
+  techniques @gqTypeName(name: "MedicalTechnique") {
+    type
+    startDate
+    endDate
+    notes
+  }
+  dialysisAccessHistories @gqTypeName(name: "DialysisAccessHistory") {
+    type
+    notes
+    insersionDate
+    removalDate
+  }
+  initialObservations @gqTypeName(name: "MedicalObservation") {
+    generalState
+    skinMucousPallor
+    hydrationState
+    omi
+    pulmonaryAuscultation
+    dyspnea
+    cardiacAuscultation
+    urinarySystemExamination
+    notes
+    phenotype
+    otherEcho
+    heartEcho
+    heartRate
+    bloodPressureDiastolic
+    bloodPressureSystolic
+    meanCorpuscularVolume
+    ccmh
+    bloodGroup
+    statusAgHBS
+    statusAcantiHCV
+    statusHIV
+    height
+    otherAssessments
+    otherExamination
+  }
+  healthValues @gqTypeName(name: "HealthValue_123") {
+    healthUnit {
+      ..._all_fields_HealthUnit
+    }
+    value
+  }
+}
+
+fragment medicationTreatmentFrag on MedicationTreatment {
+  id
+  patientInfo @gqTypeName(name: "PatientInfo") {
+    id
+    firstName
+    lastName
+  }
+  startingDate
+  stopingDate
+  medicalStaff {
+    id
+    firstName
+    lastName
+    rank
+  }
+  type
+  dciOrNc
+  dosage
+  dose
+  prescriberExtern
+}
+fragment dialysisProtocolFrag on DialysisProtocol {
+  id
+  creationDate
+  lastUpdate
+  patientInfo {
+    id
+    firstName
+    lastName
+  }
+  prescribedDuration
+  specialPrecautions
+  dryWeight
+  maxHourlyUF
+  specificProfiles
+  vascularAccess
+  needles
+  puncture
+  avLines
+  pumpSpeed
+  skinSurfaceArea
+  filter
+  dialysisConcentrate
+  buffer
+  dialysateFlowRate
+  anticoagulationType
+  anticoagulationDose
+  typeEPO
+  necessaryDoseEPO
+  perscribedDoseEPO
+  ironType
+  necessaryIronDose
+  perscribedIronDose
+  eri
+  allergies
+}
+
+fragment ordonanceFrag on MedicationTreatment {
+  dciOrNc
+  dosage
+  dose
+}
+
+fragment patientProcessingRowFragment on Patient {
+  id
+  personalInfo {
+    firstName
+    lastName
+    dateOfBirth
+  }
+  hemodialysisGroup {
+    id
+    designation
+  }
+  position {
+    id
+    name
+  }
+  room {
+    id
+    name
+  }
+
+  dialysisProtocol {
+    id
+    perscribedDoseEPO
+    perscribedIronDose
+    anticoagulationType
+    anticoagulationDose
+    filter
+    dryWeight
+    pumpSpeed
+    dialysisConcentrate
+    prescribedDuration
+    vascularAccess
+    maxHourlyUF
+    dialysateFlowRate
+    allergies
+  }
+}

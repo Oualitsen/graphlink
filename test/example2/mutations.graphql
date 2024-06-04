@@ -1,0 +1,311 @@
+mutation openIdLogin($username: String!, $password: String!) {
+  openIdLogin(username: $username, password: $password) {
+    user @gqTypeName(name: "User") {
+      ..._all_fields_User
+    }
+    token @gqTypeName(name: "ResponseToken") {
+      ..._all_fields_ResponseToken
+    }
+  }
+}
+
+mutation refreshToken($token: String!) {
+  refreshToken(token: $token) {
+    user @gqTypeName(name: "User") {
+      ..._all_fields_User
+    }
+    token @gqTypeName(name: "ResponseToken") {
+      ..._all_fields_ResponseToken
+    }
+  }
+}
+
+mutation changePassword($password: PasswordChange!) {
+  changePassword(password: $password)
+}
+
+mutation resetPassword($userId: String!, $password: String!) {
+  resetPassword(userId: $userId, password: $password)
+}
+mutation saveClinic($input: ClinicInput!) {
+  saveClinic(input: $input) {
+    ..._all_fields_Clinic
+  }
+}
+mutation saveAgency($input: AgencyInput!) {
+  saveAgency(input: $input) {
+    id
+  }
+}
+
+mutation saveFlatFee($input: FlatFeeInput!) {
+  saveFlatFee(input: $input) {
+    id
+  }
+}
+
+mutation saveCashier($input: CashierInput!) {
+  saveCashier(input: $input) {
+    id
+  }
+}
+
+mutation saveHemodialysisGroup($input: HemodialysisGroupInput!) {
+  saveHemodialysisGroup(input: $input) {
+    id
+  }
+}
+
+mutation saveMedicalStaff($input: MedicalStaffInput!) {
+  saveMedicalStaff(input: $input) {
+    id
+  }
+}
+mutation savePatient($input: PatientInput!) {
+  savePatient(input: $input) {
+    id
+  }
+}
+mutation savePayerCenter($input: PayerCenterInput!) {
+  savePayerCenter(input: $input) {
+    id
+  }
+}
+mutation savePosition($input: PositionInput!) {
+  savePosition(input: $input) {
+    id
+  }
+}
+mutation saveRoom($input: RoomInput!) {
+  saveRoom(input: $input) {
+    id
+  }
+}
+mutation deleteAgency($id: ID!) {
+  deleteAgencyById(id: $id)
+}
+
+mutation deleteAdministratifDocumentById($id: ID!) {
+  deleteAdministratifDocumentById(id: $id)
+}
+mutation deleteMedicalDocumentById($id: ID!) {
+  deleteMedicalDocumentById(id: $id)
+}
+mutation deleteCashier($id: ID!) {
+  deleteCashierById(id: $id)
+}
+mutation deleteHemodialysisGroup($id: ID!) {
+  deleteHemodialysisGroupById(id: $id)
+}
+mutation deleteMedicalStaff($id: ID!) {
+  deleteMedicalStaffById(id: $id)
+}
+mutation deletePatient($id: ID!) {
+  deletePatientById(id: $id)
+}
+mutation deletePayerCenter($id: ID!) {
+  deletePayerCenterById(id: $id)
+}
+mutation deletePosition($id: ID!) {
+  deletePositionById(id: $id)
+}
+mutation deleteRoom($id: ID!) {
+  deleteRoomById(id: $id)
+}
+
+mutation deleteScannedDocument($id: ID!) {
+  deleteScannedDocument(id: $id)
+}
+mutation deleteFlatFee($id: ID!) {
+  deleteFlatFeeById(id: $id)
+}
+mutation deleteHealthUnitById($id: ID!) {
+  deleteHealthUnitById(id: $id)
+}
+mutation deleteVisit($id: ID!) {
+  deleteVisitById(id: $id)
+}
+
+mutation saveHealthUnit($input: HealthUnitInput!) {
+  saveHealthUnit(input: $input) {
+    id
+  }
+}
+mutation saveVisit($input: VisitInput!) {
+  saveVisit(input: $input) {
+    id
+  }
+}
+
+mutation saveMedicalRecord($input: MedicalRecordInput!) {
+  saveMedicalRecord(input: $input) {
+    id
+  }
+}
+
+mutation saveDialysisProtocol($input: DialysisProtocolInput!) {
+  saveDialysisProtocol(input: $input) {
+    id
+  }
+}
+mutation saveDialysisSession($input: DialysisSessionInput!) {
+  saveDialysisSession(input: $input) {
+    id
+  }
+}
+mutation saveMedicationTreatment($input: MedicationTreatmentInput!) {
+  saveMedicationTreatment(input: $input) {
+    id
+  }
+}
+
+mutation deleteDialysisProtocolById($id: ID!) {
+  deleteDialysisProtocolById(id: $id)
+}
+
+mutation deleteDialysisSessionById($id: ID!) {
+  deleteDialysisSessionById(id: $id)
+}
+
+mutation deleteMedicalRecordById($id: ID!) {
+  deleteMedicalRecordById(id: $id)
+}
+mutation deleteMedicationTreatmentById($id: ID!) {
+  deleteMedicationTreatmentById(id: $id)
+}
+
+mutation saveTransportationCompany($input: TransportationCompanyInput!) {
+  saveTransportationCompany(input: $input) {
+    id
+  }
+}
+mutation deleteTransportationCompanyById($id: ID!) {
+  deleteTransportationCompanyById(id: $id)
+}
+mutation saveAdministratifDocument($input: AdministratifDocumentInput!) {
+  saveAdministratifDocument(input: $input) {
+    id
+  }
+}
+mutation saveMedicalDocument($input: MedicalDocumentInput!) {
+  saveMedicalDocument(input: $input) {
+    id
+  }
+}
+mutation saveTransfusion($input: TransfusionInput!) {
+  saveTransfusion(input: $input) {
+    id
+  }
+}
+
+mutation deleteTransfusionById($id: ID!) {
+  deleteTransfusionById(id: $id)
+}
+mutation saveMonitoring($input: MonitoringInput!) {
+  saveMonitoring(input: $input) {
+    id
+  }
+}
+
+mutation deleteMonitoringById($id: ID!) {
+  deleteMonitoringById(id: $id)
+}
+mutation saveHygienicAndDietaryRule($input: HygienicAndDietaryRuleInput!) {
+  saveHygienicAndDietaryRule(input: $input) {
+    id
+  }
+}
+mutation deleteHygienicAndDietaryRuleById($id: ID!) {
+  deleteHygienicAndDietaryRuleById(id: $id)
+}
+
+mutation saveExchange($input: ExchangeInput!) {
+  saveExchange(input: $input) {
+    id
+  }
+}
+
+mutation deleteExchangeById($id: ID!) {
+  deleteExchangeById(id: $id)
+}
+mutation setClinicImageURL($imageId: String!) {
+  setClinicImageURL(imageUrl: $imageId) {
+    ..._all_fields_Clinic
+  }
+}
+
+mutation archivePatient($input: ArchivedPatientInput!) {
+  archivePatient(input: $input) @gqTypeName(name: "ArchivedPatient") {
+    ..._all_fields_ArchivedPatient
+  }
+}
+mutation updatePathologies(
+  $recordId: String!
+  $pathologies: [PathologyInput!]!
+) {
+  updatePathologies(recordId: $recordId, pathologies: $pathologies) {
+    id
+  }
+}
+mutation updateRenalBiopsies(
+  $recordId: String!
+  $renalBiopsies: [RenalBiopsyInput!]!
+) {
+  updateRenalBiopsies(recordId: $recordId, renalBiopsies: $renalBiopsies) {
+    id
+  }
+}
+mutation updateMedicalTechniques(
+  $recordId: String!
+  $medicalTechniques: [MedicalTechniqueInput!]!
+) {
+  updateMedicalTechniques(
+    recordId: $recordId
+    medicalTechniques: $medicalTechniques
+  ) {
+    id
+  }
+}
+mutation updateDialysisAccessHistories(
+  $recordId: String!
+  $accessHistories: [DialysisAccessHistoryInput!]!
+) {
+  updateDialysisAccessHistories(
+    recordId: $recordId
+    accessHistories: $accessHistories
+  ) {
+    id
+  }
+}
+mutation updateDeseaseHistory(
+  $recordId: String!
+  $deseaseHistory: DeseaseHistoryInput!
+) {
+  updateDeseaseHistory(recordId: $recordId, deseaseHistory: $deseaseHistory) {
+    id
+  }
+}
+
+mutation updateMedicalObservationAndAssessments(
+  $recordId: String!
+  $medicalObservation: MedicalObservationInput
+  $assessments: [HealthValueInput!]
+) {
+  updateMedicalObservationAndAssessments(
+    recordId: $recordId
+    medicalObservation: $medicalObservation
+    assessments: $assessments
+  ) {
+    id
+  }
+}
+
+mutation saveGeneratedDocument($input: GeneratedDocumentInput!) {
+  saveGeneratedDocument(input: $input) {
+    id
+  }
+}
+
+mutation deleteGeneratedDocumentById($id: String!) {
+  deleteGeneratedDocumentById(id: $id)
+}

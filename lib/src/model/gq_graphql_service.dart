@@ -35,11 +35,12 @@ class GQClient {
       :${[
       grammar.hasQueries ? 'queries = Queries(adapter)' : '',
       grammar.hasMutations ? ' mutations = Mutations(adapter)' : '',
-      grammar.hasSubscriptions ? 'subscriptions = Subscriptions(wsAdapter)' : '',
+      grammar.hasSubscriptions
+          ? 'subscriptions = Subscriptions(wsAdapter)'
+          : '',
     ].where((element) => element.isNotEmpty).join(", ")} {
       
       ${grammar.fragments.values.map((value) => "_fragmMap['${value.token}'] = '${value.serialize()}';").toList().join("\n")}
-      ${grammar.allFieldsFragments.values.map((e) => e.fragment).map((value) => "_fragmMap['${value.token}'] = '${value.serialize()}';").toList().join("\n")}
          
     }
 }
@@ -119,7 +120,9 @@ ${genSubscriptions(grammar)}
   }
 
   String generateQueriesClassByType(GQQueryType type, GQGrammar g) {
-    var queryList = queries.where((element) => element.type == type && g.hasQueryType(type)).toList();
+    var queryList = queries
+        .where((element) => element.type == type && g.hasQueryType(type))
+        .toList();
     if (queryList.isEmpty) {
       return "";
     }
@@ -202,7 +205,8 @@ ${genSubscriptions(grammar)}
 """;
   }
 
-  String serializeArgumentValue(GQGrammar g, GQQueryDefinition def, String argName) {
+  String serializeArgumentValue(
+      GQGrammar g, GQQueryDefinition def, String argName) {
     var arg = def.findByName(argName);
     return callToJson(arg.dartArgumentName, arg.type, g);
   }

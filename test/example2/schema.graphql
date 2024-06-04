@@ -1,0 +1,1507 @@
+#*************************** SCALAR ***************************
+scalar Long
+#*************************** INTERFACE ***************************
+interface BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+}
+
+interface UserBase implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  username: String!
+  userType: UserType!
+  firstName: String!
+  lastName: String!
+  gender: Gender!
+  roles: [Role!]!
+}
+#*************************** QUERY ***************************
+type Query {
+  getAdmin(lastUpdate: Long!): Admin!
+  agencyList(
+    pageInfo: PageInfo!
+    code: String
+    cashierIds: [String!]!
+  ): [Agency!]!
+  cashierList(pageInfo: PageInfo!, code: String): [Cashier!]!
+  flatFeeList(pageInfo: PageInfo!): [FlatFee!]!
+
+  hemodialysisGroupList(code: String): [HemodialysisGroup!]!
+  medicalStaffList(
+    pageInfo: PageInfo!
+    params: MedicalStaffSearchParam!
+  ): [MedicalStaff!]!
+  patientList(pageInfo: PageInfo!, params: PatientSearchParams!): [Patient!]!
+  payerCenterList(
+    pageInfo: PageInfo!
+    code: String
+    agencyIds: [String!]!
+  ): [PayerCenter!]!
+  positionList: [Position!]!
+  roomList(code: String): [Room!]!
+  visitList(pageInfo: PageInfo!, params: VisitSearchParam!): [Visit!]!
+  healthUnitList(pageInfo: PageInfo!, name: String): [HealthUnit!]!
+  observationHealthUnitList: [HealthUnit!]!
+  graphicHealthUnitList: [HealthUnit!]!
+
+  findAgencyById(id: ID!): Agency!
+  findCashierById(id: ID!): Cashier!
+  findHemodialysisGroupById(id: ID!): HemodialysisGroup!
+  findMedicalStaffById(id: ID!): MedicalStaff!
+  findPatientById(id: ID!): Patient!
+  findPayerCenterById(id: ID!): PayerCenter!
+  findPositionById(id: ID!): Position!
+  findRoomById(id: ID!): Room!
+  findFlatFeeById(id: ID!): FlatFee!
+  getVisitById(id: String!): Visit!
+  getHealthUnitById(id: String!): HealthUnit!
+  findPayerCentersByAgencyId(agencyId: ID!): [PayerCenter!]!
+  findAgenciesByCashierId(cashierId: ID!): [Agency!]!
+
+  getTotalAgencies: Long!
+  getTotalFlatFee: Long!
+  getTotalCashier: Long!
+  getTotalHemodialysisGroup: Long!
+  getTotalMedicalStaffs: Long!
+  getTotalPatients(params: PatientSearchParams!): Long!
+  getTotalPayerCenter: Long!
+  getTotalPositions: Long!
+  getTotalRooms: Long!
+  getTotalVisits: Long!
+  getTotalHealthUnits: Long!
+
+  getScannedDocuments(pageInfo: PageInfo!): [ScannedDocument!]!
+  getScannedDocumentById(id: ID!): ScannedDocument!
+  findTransportationCompanyById(id: ID!): TransportationCompany!
+  getScannedDocumentsByEntityId(entityId: String!): [ScannedDocument!]!
+  getScannedDocumentsByType(
+    pageInfo: PageInfo!
+    entityId: String!
+    type: PatientDocumentType!
+  ): [ScannedDocument!]!
+
+  patientPreviousMedicalRecordList(
+    pageInfo: PageInfo!
+    patientId: String
+  ): [MedicalRecord!]!
+  dialysisProtocolList(
+    pageInfo: PageInfo!
+    patientId: String
+  ): [DialysisProtocol!]!
+  exchangeList(pageInfo: PageInfo!, patientId: String!): [Exchange!]!
+
+  hygienicAndDietaryRulesList(
+    pageInfo: PageInfo!
+    patientId: String!
+  ): [HygienicAndDietaryRule!]!
+  dialysisSessionList(
+    pageInfo: PageInfo!
+    params: SessionSearchParam!
+  ): [DialysisSession!]!
+
+  medicationTreatmentList(
+    pageInfo: PageInfo!
+    params: TreatmentSearchParam!
+  ): [MedicationTreatment!]!
+
+  administratifDocumentList(
+    pageInfo: PageInfo!
+    params: AdministratifDocumentSearchParam!
+  ): [AdministratifDocument!]!
+
+  medicalDocumentList(
+    pageInfo: PageInfo!
+    params: MedicalDocumentSearchParams!
+  ): [MedicalDocument!]!
+  transfusionList(pageInfo: PageInfo!, sessionId: String!): [Transfusion!]!
+  monitoringList(pageInfo: PageInfo!, sessionId: String!): [Monitoring!]!
+
+  transportationCompanyList(pageInfo: PageInfo!): [TransportationCompany!]!
+  getMedicalRecordById(id: ID!): MedicalRecord!
+  findMedicalRecordById(id: String): MedicalRecord
+  getDialysisProtocolById(id: ID!): DialysisProtocol!
+  getDialysisProtocolByPatientId(patientId: ID!): DialysisProtocol
+  getHygienicAndDietaryRuleById(id: ID!): HygienicAndDietaryRule!
+  getDialysisSessionById(id: ID!): DialysisSession!
+  getMedicationTreatmentById(id: ID!): MedicationTreatment!
+  getAdministratifDocumentById(id: ID!): AdministratifDocument!
+  getMedicalDocumentById(id: ID!): MedicalDocument!
+  getTransfusionById(id: ID!): Transfusion!
+  getMonitoringById(id: ID!): Monitoring!
+  getExchangeById(id: ID!): Exchange!
+  getTotalMedicalRecords: Long!
+  getTotalTransfusion(sessionId: String!): Long!
+  getTotalMonitoring(sessionId: String!): Long!
+  getTotalDialysisProtocols: Long!
+  getTotalHygienicAndDietaryRule(patientId: String!): Long!
+  getTotalExchanges(patientId: String!): Long!
+  getTotalDialysisSessions: Long!
+  getTotalMedicationTreatments: Long!
+  getTotalTransportationCompany: Long!
+  getTotalAdministratifDocuments: Long!
+  getTotalMedicalDocuments: Long!
+  exitsVisitByDateAndPatientId(visitDate: Long!, patientId: String!): Boolean!
+  getTemplateContent(name: String!): String!
+
+  findLatestDryWeightValue(patientId: String!): Float
+  findLatestEPODose(patientId: String!): Float
+  findLatestWeightGainValue(patientId: String!): Float
+  findLatestIronDoseValue(patientId: String!): Float
+  findLatestSessionByPatientId(patientId: String!): DialysisSession
+  findEarliestSessionByPatientId(patientId: String!): DialysisSession
+  lastestVisist(patientId: String!): Visit
+  findLatestObservation(patientId: String!): String
+  findLatestEchocardiographie(patientId: String!): String
+  findLatestVascularAccessState(patientId: String!): String
+  findLatestComplications(patientId: String!): String
+
+  getLatestUREEValue(patientId: String!): HealthValue
+  getLatestCREATININEValue(patientId: String!): HealthValue
+  getLatestNATREMIEValue(patientId: String!): HealthValue
+  getLatestKALIEMIEValue(patientId: String!): HealthValue
+  getLatestCALCEMIEValue(patientId: String!): HealthValue
+  getLatestPHOSPHOREMIEValue(patientId: String!): HealthValue
+  getLatestPTHValue(patientId: String!): HealthValue
+  getLatestFerritinaValue(patientId: String!): HealthValue
+  getLatestDIUSEREValue(patientId: String!): HealthValue
+  getLatestCSValue(patientId: String!): HealthValue
+  getLatestAcideUriqueValue(patientId: String!): HealthValue
+
+  clinicList(pageInfo: PageInfo!): [Clinic!]!
+  countClinic: Long!
+  getClinicById(id: String!): Clinic!
+  getClinicByGroupId: Clinic!
+  medicalTests: [String!]!
+  allPatients: [Patient!]!
+
+  getArchivedPatientById(archivedPatientId: String!): ArchivedPatient!
+  archivedPatientList(
+    pageInfo: PageInfo!
+    params: ArchivingSearchParams
+  ): [ArchivedPatient!]!
+  countArchivedPatients(params: ArchivingSearchParams): Long!
+  getTemplateByGroupId: Template!
+  getTemplateById(id: String!): Template!
+
+  getGeneratedDocumentById(id: String!): GeneratedDocument!
+  listGeneratedDocumentsByPatientId(
+    pageInfo: PageInfo!
+    patientId: String!
+  ): [GeneratedDocument!]!
+}
+#*************************** MUTATION ***************************
+type Mutation {
+  openIdLogin(username: String!, password: String!): TokenUser!
+  refreshToken(token: String!): TokenUser!
+  deleteAll(deletePatients: Boolean!): String
+  setLangAdmin(lang: String!): Admin!
+  changePassword(password: PasswordChange!): String
+  resetPassword(userId: String!, password: String!): String
+  saveAgency(input: AgencyInput!): Agency!
+  saveCashier(input: CashierInput!): Cashier!
+  saveHemodialysisGroup(input: HemodialysisGroupInput!): HemodialysisGroup!
+  saveMedicalStaff(input: MedicalStaffInput!): MedicalStaff!
+  savePatient(input: PatientInput!): Patient!
+  savePayerCenter(input: PayerCenterInput!): PayerCenter!
+  savePosition(input: PositionInput!): Position!
+  saveRoom(input: RoomInput!): Room!
+  saveFlatFee(input: FlatFeeInput): FlatFee!
+  saveVisit(input: VisitInput!): Visit!
+  saveHealthUnit(input: HealthUnitInput!): HealthUnit!
+  saveMedicalRecord(input: MedicalRecordInput!): MedicalRecord!
+  saveDialysisProtocol(input: DialysisProtocolInput!): DialysisProtocol!
+  saveHygienicAndDietaryRule(
+    input: HygienicAndDietaryRuleInput!
+  ): HygienicAndDietaryRule!
+  saveDialysisSession(input: DialysisSessionInput!): DialysisSession!
+  saveTransfusion(input: TransfusionInput!): Transfusion!
+  saveMonitoring(input: MonitoringInput!): Monitoring!
+  saveMedicationTreatment(
+    input: MedicationTreatmentInput!
+  ): MedicationTreatment!
+  saveTransportationCompany(
+    input: TransportationCompanyInput!
+  ): TransportationCompany!
+  saveAdministratifDocument(
+    input: AdministratifDocumentInput!
+  ): AdministratifDocument!
+  saveMedicalDocument(input: MedicalDocumentInput!): MedicalDocument!
+  saveExchange(input: ExchangeInput!): Exchange!
+  saveClinic(input: ClinicInput!): Clinic!
+  setClinicImageURL(imageUrl: String!): Clinic!
+
+  deleteAgencyById(id: ID!): ID
+  deleteCashierById(id: ID!): ID
+  deleteHemodialysisGroupById(id: ID!): ID
+  deleteMedicalStaffById(id: ID!): ID
+  deletePatientById(id: ID!): ID
+  deletePayerCenterById(id: ID!): ID
+  deletePositionById(id: ID!): ID
+  deleteRoomById(id: ID!): ID
+  deleteScannedDocument(id: ID!): ID
+  deleteFlatFeeById(id: ID!): ID
+  deleteVisitById(id: ID!): ID
+  deleteHealthUnitById(id: ID!): ID
+  deleteMedicalRecordById(id: ID!): ID
+  deleteDialysisProtocolById(id: ID!): ID
+  deleteHygienicAndDietaryRuleById(id: ID!): ID
+  deleteDialysisSessionById(id: ID!): ID
+  deleteMedicationTreatmentById(id: ID!): ID
+  deleteTransportationCompanyById(id: ID!): ID
+  deleteAdministratifDocumentById(id: ID!): ID
+  deleteMedicalDocumentById(id: ID!): ID
+  deleteTransfusionById(id: ID!): ID
+  deleteMonitoringById(id: ID!): ID
+  deleteExchangeById(id: ID!): ID
+  deleteClinicById(id: ID!): ID
+  resetHealthUnits: String
+
+  archivePatient(input: ArchivedPatientInput!): ArchivedPatient!
+  updatePathologies(
+    recordId: String!
+    pathologies: [PathologyInput!]!
+  ): MedicalRecord!
+
+  updateRenalBiopsies(
+    recordId: String!
+    renalBiopsies: [RenalBiopsyInput!]!
+  ): MedicalRecord!
+
+  updateMedicalTechniques(
+    recordId: String!
+    medicalTechniques: [MedicalTechniqueInput!]!
+  ): MedicalRecord!
+
+  updateDialysisAccessHistories(
+    recordId: String!
+    accessHistories: [DialysisAccessHistoryInput!]!
+  ): MedicalRecord!
+
+  updateDeseaseHistory(
+    recordId: String!
+    deseaseHistory: DeseaseHistoryInput!
+  ): MedicalRecord!
+
+  updateMedicalObservationAndAssessments(
+    recordId: String!
+    medicalObservation: MedicalObservationInput
+    assessments: [HealthValueInput!]
+  ): MedicalRecord!
+
+  saveGeneratedDocument(input: GeneratedDocumentInput!): GeneratedDocument!
+  deleteGeneratedDocumentById(id: String!): ID
+}
+#*************************** SUBSCRIPTION ***************************
+type Subscription {
+  positions: Position!
+}
+#*************************** TYPE ***************************
+
+####################### OPENID USERS ##########################
+type ResponseToken {
+  accessToken: String!
+  expiresIn: Int!
+  refreshExpiresIn: Int!
+  refreshToken: String!
+  tokenType: String!
+  notBeforePolicy: Int!
+  sessionState: String!
+  scope: String!
+}
+
+type TokenUser {
+  token: ResponseToken!
+  user: User!
+}
+
+type User {
+  name: String!
+  email: String
+  roles: [String!]!
+}
+
+type RealmAccess {
+  roles: [String!]!
+}
+
+type ResourceAccess {
+  account: Account!
+}
+
+type Account {
+  roles: [String!]!
+}
+
+####################### END OPENID USERS ######################
+type Clinic implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  groupId: String!
+  designation: String!
+  venue: String!
+  address: String!
+  imageId: String
+  phones: [String!]!
+  emails: [String!]!
+}
+type HygienicAndDietaryRule implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  patientInfo: PatientInfo!
+  date: Long!
+  rule: String!
+}
+type Agency implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  designation: String!
+  code: String!
+  cashier: Cashier!
+  address: String
+  phones: [String!]!
+  emails: [String!]!
+  webSite: String
+}
+type Cashier implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  conventionNumber: Long
+  conventionDate: Long
+  designation: String!
+  address: String
+  phones: [String!]!
+  emails: [String!]!
+  webSite: String
+}
+type HemodialysisGroup implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  designation: String!
+  daysOfWeek: [DaysOfWeek!]!
+}
+type MedicalStaff implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  personalInfo: MedicalStaffPersonalInfo!
+  username: String!
+  keycloackUserId: String!
+  roles: [String!]!
+  rank: Rank!
+}
+type Patient implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  personalInfo: PersonalInfo!
+  insuranceStatus: InsuranceStatus!
+  admissionDate: Long
+  socialSecurityNumber: String
+  ensurer: Ensurer
+  hemodialysisGroup: HemodialysisGroup!
+  position: Position!
+  room: Room!
+  flatFee: FlatFee
+  payerCenter: PayerCenter
+  dialysisProtocol: DialysisProtocol
+  medicalRecordId: ID
+  transportationType: TransportationType
+  transportationCompany: TransportationCompany
+  driver: Driver
+  rightForLunch: Boolean!
+  clinicOfOrigin: String!
+  employerNameAddress: String
+  height: Float
+  patientType: PatientType!
+  visitTableHealthUnits: [HealthUnit!]!
+  latestHbValue: HealthValue
+  latestFerritinValue: HealthValue
+  diureseRefId: String!
+  kalimieRefId: String!
+  natrimieRefId: String!
+  ureeRefId: String!
+  creatinineRefId: String!
+  hbRefId: String!
+  ferritinRefId: String!
+  csRefId: String!
+  calcemieRefId: String!
+  phosphoremieRefId: String!
+  pthRefId: String!
+  bmiRefId: String!
+  acideUriqueRefId: String!
+  latestEPODose: Float
+  latestCSValue: HealthValue
+  latestDeltaHb: Float
+}
+type PayerCenter implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  agency: Agency!
+  code: String!
+  designation: String!
+  address: String
+  phones: [String!]!
+  emails: [String!]!
+  webSite: String
+}
+type Position implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  name: String!
+  startTime: Long!
+  endTime: Long!
+}
+
+type FlatFee implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  code: String!
+  designation: String
+  priceTTC: Float!
+}
+type Room implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  name: String!
+  description: String
+  capacity: Int!
+}
+type PersonalInfo {
+  firstName: String!
+  lastName: String!
+  gender: Gender!
+  dateOfBirth: Long!
+  placeOfBirth: String
+  image: String
+  address: String
+  phones: [String!]!
+  emails: [String!]!
+}
+type MedicalStaffPersonalInfo {
+  firstName: String!
+  lastName: String!
+  dateOfBirth: Long!
+  placeOfBirth: String
+  image: String
+  address: String
+  phones: [String!]!
+  emails: [String!]!
+}
+type Ensurer {
+  socialSecurityNumber: String!
+  ensurerRelationship: EnsurerRelationship!
+  payerCenterEnsurer: PayerCenter!
+  firstName: String!
+  lastName: String!
+  employerNameAddress: String
+  dateOfBirth: Long
+  placeOfBirth: String
+}
+
+type Admin implements UserBase & BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  username: String!
+  userType: UserType!
+  firstName: String!
+  lastName: String!
+  gender: Gender!
+  roles: [Role!]!
+  preferences: Preferences
+  dateOfBirth: Long!
+  imageId: String
+}
+
+type Preferences {
+  lang: String!
+}
+
+type ScannedDocument implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  name: String!
+  documentId: String!
+  entityId: String!
+  type: PatientDocumentType!
+}
+
+type HealthUnit implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  name: String!
+  refId: String!
+  unit: String!
+  tickInterval: Float!
+  category: HealthUnitCategory!
+  required: Boolean!
+  shortcut: Boolean!
+}
+
+type HealthValue {
+  healthUnit: HealthUnit!
+  value: Float!
+}
+
+type Visit implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  visitDate: Long!
+  patientInfo: PatientInfo!
+  medicalStaffInfo: MedicalStaffInfo!
+  healthValues: [HealthValue!]!
+  notes: String!
+  vascularAccessState: String!
+  favDoppler: String!
+  omi: String!
+  pleuropulmonaryAuscultation: String!
+  tobaccoUsage: String!
+  dietaryHabits: String!
+  physicalActivity: String!
+  cardiovascularExamination: String!
+  ecgResult: String!
+  echocardiogram: String!
+  energyIntake: String!
+  proteinIntake: String!
+  personalPatientProfile: String!
+  sleepPattern: String!
+  occupation: String!
+  socialLife: String!
+  managementPlan: String!
+  statusHVB: Polarity!
+  statusHVC: Polarity!
+  statusHIV: Polarity!
+  vaccinationStatus: VaccinationStatus!
+  vaccinationDate: Long
+  vaccinationNumber: Long
+  deltaHb: Float
+  complications: String!
+}
+type MedicalStaffInfo {
+  id: String!
+  firstName: String!
+  lastName: String!
+  rank: Rank!
+}
+type PatientInfo {
+  id: String!
+  firstName: String!
+  lastName: String!
+}
+type MedicalObservation {
+  otherAssessments: String
+  otherExamination: String
+  generalState: String!
+  skinMucousPallor: String!
+  hydrationState: String!
+  omi: String!
+  pulmonaryAuscultation: String!
+  dyspnea: String!
+  cardiacAuscultation: String!
+  urinarySystemExamination: String!
+  notes: String!
+  phenotype: String!
+  otherEcho: String!
+  heartEcho: String!
+  heartRate: Float!
+  bloodPressureSystolic: Float!
+  bloodPressureDiastolic: Float!
+  meanCorpuscularVolume: Float!
+  ccmh: Float!
+  height: Float!
+  bloodGroup: BloodGroup
+  statusAgHBS: Polarity
+  statusAcantiHCV: Polarity
+  statusHIV: Polarity
+}
+type Pathology {
+  diagnostic: String!
+  examinator: String!
+  examinationDate: Long
+}
+type RenalBiopsy {
+  diagnosticDate: Long
+  examinator: String!
+  results: String!
+}
+type MedicalTechnique {
+  type: TechniqueType!
+  startDate: Long
+  endDate: Long
+  notes: String!
+}
+type DialysisAccessHistory {
+  type: String!
+  notes: String!
+  insersionDate: Long
+  removalDate: Long
+}
+type DeseaseHistory {
+  diagnostic: String!
+  initialNephropathy: String!
+}
+type MedicalRecord implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  patientInfo: PatientInfo!
+  pathologies: [Pathology!]!
+  deseaseHistory: DeseaseHistory!
+  renalBiopsies: [RenalBiopsy!]!
+  techniques: [MedicalTechnique!]!
+  dialysisAccessHistories: [DialysisAccessHistory!]!
+  initialObservations: MedicalObservation!
+  healthValues: [HealthValue!]!
+}
+
+type DialysisProtocol implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  patientInfo: PatientInfo!
+  prescribedDuration: Float!
+  specialPrecautions: String!
+  dryWeight: Float!
+  maxHourlyUF: Float!
+  specificProfiles: String!
+  vascularAccess: String!
+  needles: NeedleType!
+  puncture: PunctureType!
+  avLines: AVLineType!
+  pumpSpeed: Float!
+  skinSurfaceArea: Float!
+  filter: FilterType!
+  dialysisConcentrate: DialysisConcentrateType!
+  buffer: BufferType!
+  dialysateFlowRate: Float!
+  anticoagulationType: String!
+  anticoagulationDose: String!
+  typeEPO: String!
+  ironType: String!
+  necessaryDoseEPO: Float!
+  perscribedDoseEPO: Float!
+  necessaryIronDose: Float!
+  perscribedIronDose: Float!
+  eri: Float!
+  allergies: String!
+}
+type DialysisSession implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  patientInfo: PatientInfo!
+  doctorInfo: MedicalStaffInfo!
+  nurseInfo: MedicalStaffInfo!
+  date: Long!
+  prescribedDuration: Float!
+  actualDuration: Float!
+  startTime: Long
+  stopTime: Long
+  requestedAssessment: String!
+  observations: String!
+  specialPrecautions: String!
+  todayWeight: Float!
+  dryWeight: Float!
+  weightGain: Float!
+  maxHourlyUF: Float!
+  prescribedUF: Float!
+  specificProfiles: String!
+  lostUF: Float!
+  exitWeight: Float!
+  weightLoss: Float!
+  vascularAccess: String!
+  needles: NeedleType!
+  puncture: PunctureType!
+  avLines: AVLineType!
+  pumpSpeed: Float!
+  skinSurfaceArea: Float!
+  filter: FilterType!
+  dialysisConcentrate: DialysisConcentrateType!
+  buffer: BufferType!
+  dialysateFlowRate: Float!
+  anticoagulationType: String!
+  anticoagulationDose: String!
+  typeEPO: String!
+  doseEPO: Float!
+  checkEOP: Boolean!
+  ironType: String!
+  ironDose: Float!
+  ironCheck: Boolean!
+  allergies: String!
+}
+
+type MedicationTreatment implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  dciOrNc: String!
+  dosage: String!
+  dose: String!
+  startingDate: Long
+  stopingDate: Long
+  patientInfo: PatientInfo!
+  prescriberExtern: String
+  medicalStaff: MedicalStaffInfo
+  type: MedicationTreatmentType!
+}
+
+type TransportationCompany implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  designation: String!
+  drivers: [Driver!]!
+}
+
+type Driver {
+  name: String!
+  phones: [String!]!
+}
+
+type AdministratifDocument implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  expriationDate: Long!
+  type: AdministratifDocType!
+  renewable: Boolean!
+  maxDaysRenewal: Long!
+  patientInfo: PatientInfo!
+  name: String!
+  document: ScannedDocument
+}
+type MedicalDocument implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  type: MedicalDocType!
+  patientInfo: PatientInfo!
+  name: String!
+  document: ScannedDocument
+}
+type Transfusion implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  sessionId: String!
+  bloodProduct: String!
+  expirationDate: Long!
+  number: Float!
+  compatibilityTest: Boolean!
+}
+type Monitoring implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  sessionId: String!
+  hour: MonitoringHours!
+  systolicBloodPressure: Float!
+  diastolicBloodPressure: Float!
+  arterialPressure: Float!
+  meanArterialPressure: Float!
+  lostUF: Float!
+  bloodVolume: Float!
+}
+type Exchange implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  patientInfo: PatientInfo!
+  message: String!
+  recipient: String!
+  response: String!
+  date: Long!
+}
+type ArchivedPatient implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  personalInfo: PersonalInfo!
+  admissionDate: Long
+  patientType: PatientType!
+  rightForLunch: Boolean!
+  insuranceStatus: InsuranceStatus!
+  ensurer: Ensurer
+  socialSecurityNumber: String
+  employerNameAddress: String
+  hemodialysisGroup: HemodialysisGroup!
+  position: Position!
+  room: Room!
+  flatFee: FlatFee
+  payerCenter: PayerCenter
+  clinicOfOrigin: String!
+  driver: Driver
+  transportationType: TransportationType
+  transportationCompany: TransportationCompany
+
+  date: Long
+  archiveStatus: ArchiveStatus!
+  administratifDocuments: [AdministratifDocument!]!
+  medicalRecord: MedicalRecord
+  medicalDocuments: [MedicalDocument!]!
+  dialysisProtocol: DialysisProtocol
+  rules: [HygienicAndDietaryRule!]!
+  medicationTreatments: [MedicationTreatment!]!
+  dialysisSessions: [DialysisSession!]!
+  visits: [Visit!]!
+  exchanges: [Exchange!]!
+}
+
+type Template implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  groupId: String!
+  header: String!
+  footer: String!
+}
+
+type GeneratedDocument implements BasicEntity {
+  id: ID!
+  creationDate: Long!
+  lastUpdate: Long!
+  name: String!
+  htmlData: String!
+  patient: PatientInfo!
+}
+#*************************** INPUT ***************************
+input ClinicInput {
+  id: String
+  designation: String!
+  venue: String!
+  address: String!
+  imageId: String
+  phones: [String!]!
+  emails: [String!]!
+}
+input ExchangeInput {
+  id: String
+  patientId: String!
+  message: String!
+  recipient: String!
+  response: String!
+  date: Long!
+}
+input HygienicAndDietaryRuleInput {
+  id: String
+  patientId: String!
+  date: Long!
+  rule: String!
+}
+input MonitoringInput {
+  id: String
+  sessionId: String!
+  hour: MonitoringHours!
+  systolicBloodPressure: Float!
+  diastolicBloodPressure: Float!
+  arterialPressure: Float!
+  meanArterialPressure: Float!
+  lostUF: Float!
+  bloodVolume: Float!
+}
+input TransfusionInput {
+  id: String
+  sessionId: String!
+  bloodProduct: String!
+  expirationDate: Long!
+  number: Float!
+  compatibilityTest: Boolean!
+}
+
+input AdministratifDocumentInput {
+  id: ID
+  expriationDate: Long!
+  type: AdministratifDocType!
+  renewable: Boolean!
+  maxDaysRenewal: Long!
+  patientId: String!
+  name: String!
+}
+
+input MedicalDocumentInput {
+  id: ID
+  type: MedicalDocType!
+  patientId: String!
+  name: String!
+}
+input DriverInput {
+  name: String!
+  phones: [String!]!
+}
+input DialysisProtocolInput {
+  id: ID
+  patientId: String!
+  prescribedDuration: Float!
+  specialPrecautions: String!
+  dryWeight: Float!
+  maxHourlyUF: Float!
+  specificProfiles: String!
+  vascularAccess: String!
+  needles: NeedleType!
+  puncture: PunctureType!
+  avLines: AVLineType!
+  pumpSpeed: Float!
+  skinSurfaceArea: Float!
+  filter: FilterType!
+  dialysisConcentrate: DialysisConcentrateType!
+  buffer: BufferType!
+  dialysateFlowRate: Float!
+  anticoagulationType: String!
+  anticoagulationDose: String!
+  typeEPO: String!
+  ironType: String!
+  necessaryDoseEPO: Float!
+  perscribedDoseEPO: Float!
+  necessaryIronDose: Float!
+  perscribedIronDose: Float!
+  eri: Float!
+  allergies: String!
+}
+
+input DeseaseHistoryInput {
+  diagnostic: String!
+  initialNephropathy: String!
+}
+input DialysisAccessHistoryInput {
+  type: String!
+  notes: String!
+  insersionDate: Long
+  removalDate: Long
+}
+
+input MedicalTechniqueInput {
+  type: TechniqueType!
+  startDate: Long
+  endDate: Long
+  notes: String!
+}
+input RenalBiopsyInput {
+  diagnosticDate: Long!
+  examinator: String!
+  results: String!
+}
+input PathologyInput {
+  diagnostic: String!
+  examinator: String!
+  examinationDate: Long
+}
+
+input AgencyInput {
+  id: ID
+  designation: String
+  code: String!
+  cashierId: String!
+  address: String
+  phones: [String!]!
+  emails: [String!]!
+  webSite: String
+}
+input CashierInput {
+  id: ID
+  conventionNumber: Long
+  conventionDate: Long
+  designation: String!
+  address: String
+  phones: [String!]!
+  emails: [String!]!
+  webSite: String
+}
+input HemodialysisGroupInput {
+  id: ID
+  designation: String!
+  daysOfWeek: [DaysOfWeek!]!
+}
+input MedicalStaffInput {
+  id: ID
+  personalInfo: MedicalStaffPersonalInfoInput!
+  rank: Rank!
+  credentials: CredentialsInput
+}
+
+input CredentialsInput {
+  username: String!
+  password: String!
+  roles: [String!]!
+}
+
+input FlatFeeInput {
+  id: ID
+  code: String!
+  designation: String
+  priceTTC: Float
+}
+input PatientInput {
+  id: ID
+  insuranceStatus: InsuranceStatus!
+  personalInfo: PersonalInfoInput!
+  admissionDate: Long
+  ensurer: EnsurerInput
+  hemodialysisGroupId: String!
+  positionId: String!
+  roomId: String!
+  flatFeeId: String
+  payerCenterId: String
+  socialSecurityNumber: String
+  transportationCompanyId: String
+  driver: DriverInput
+  transportationType: TransportationType
+  clinicOfOrigin: String!
+  employerNameAddress: String
+  rightForLunch: Boolean!
+  patientType: PatientType!
+}
+input PayerCenterInput {
+  id: ID
+  code: String!
+  designation: String
+  agencyId: String!
+  address: String
+  phones: [String!]!
+  emails: [String!]!
+  webSite: String
+}
+input PositionInput {
+  id: ID
+  name: String!
+  startTime: Long!
+  endTime: Long!
+}
+input RoomInput {
+  id: ID
+  name: String!
+  description: String
+  capacity: Int!
+}
+input PersonalInfoInput {
+  firstName: String!
+  lastName: String!
+  gender: Gender!
+  dateOfBirth: Long!
+  placeOfBirth: String
+  image: String
+  address: String
+  phones: [String!]!
+  emails: [String!]!
+}
+input MedicalStaffPersonalInfoInput {
+  firstName: String!
+  lastName: String!
+  dateOfBirth: Long!
+  placeOfBirth: String
+  image: String
+  address: String
+  phones: [String!]!
+  emails: [String!]!
+}
+input EnsurerInput {
+  firstName: String!
+  lastName: String!
+  socialSecurityNumber: String!
+  payerCenterId: String
+  ensurerRelationship: EnsurerRelationship
+  employerNameAddress: String
+  dateOfBirth: Long
+  placeOfBirth: String
+}
+input PageInfo {
+  page: Int!
+  size: Int!
+}
+
+input PasswordChange {
+  old: String!
+  current: String!
+}
+
+input PatientSearchParams {
+  firstName: String
+  lastName: String
+  hemodialysisGroupIds: [String!]!
+  roomId: String
+  positionIds: [String!]!
+  sortField: String
+  sortASC: Boolean
+}
+
+input MedicalStaffSearchParam {
+  firstName: String
+  lastName: String
+  rank: Rank
+}
+
+input VisitInput {
+  id: String
+  visitDate: Long!
+  patientId: String!
+  medicalStaffId: String!
+  healthValueInputs: [HealthValueInput!]!
+  notes: String!
+  vascularAccessState: String!
+  favDoppler: String!
+  omi: String!
+  pleuropulmonaryAuscultation: String!
+  tobaccoUsage: String!
+  dietaryHabits: String!
+  physicalActivity: String!
+  cardiovascularExamination: String!
+  ecgResult: String!
+  echocardiogram: String!
+  energyIntake: String!
+  proteinIntake: String!
+  personalPatientProfile: String!
+  sleepPattern: String!
+  occupation: String!
+  socialLife: String!
+  managementPlan: String!
+  statusHVB: Polarity!
+  statusHVC: Polarity!
+  statusHIV: Polarity!
+  vaccinationStatus: VaccinationStatus!
+  vaccinationDate: Long
+  vaccinationNumber: Long
+  deltaHb: Float
+  complications: String!
+}
+
+input HealthValueInput {
+  healthUnitId: String!
+  value: Float!
+}
+input HealthUnitInput {
+  id: String
+  name: String!
+  refId: String!
+  unit: String!
+  tickInterval: Float!
+  category: HealthUnitCategory!
+  required: Boolean!
+  shortcut: Boolean!
+}
+
+input VisitSearchParam {
+  patientId: String
+  medicalStaffId: String
+  visitDate: Long
+  endDate: Long
+}
+
+input MedicalObservationInput {
+  otherAssessments: String
+  otherExamination: String
+  generalState: String!
+  skinMucousPallor: String!
+  hydrationState: String!
+  omi: String!
+  pulmonaryAuscultation: String!
+  dyspnea: String!
+  cardiacAuscultation: String!
+  urinarySystemExamination: String!
+  notes: String!
+  phenotype: String!
+  otherEcho: String!
+  heartEcho: String!
+  height: Float!
+  heartRate: Float!
+  bloodPressureSystolic: Float!
+  bloodPressureDiastolic: Float!
+  meanCorpuscularVolume: Float!
+  ccmh: Float!
+  bloodGroup: BloodGroup
+  statusAgHBS: Polarity
+  statusAcantiHCV: Polarity
+  statusHIV: Polarity
+}
+input MedicalRecordInput {
+  id: String
+  patientId: String!
+  pathologies: [PathologyInput!]!
+  deseaseHistory: DeseaseHistoryInput!
+  techniques: [MedicalTechniqueInput!]!
+  dialysisAccessHistories: [DialysisAccessHistoryInput!]!
+  initialObservations: MedicalObservationInput!
+  healthValuesInputs: [HealthValueInput!]!
+  renalBiopsies: [RenalBiopsyInput!]!
+}
+
+input DialysisSessionInput {
+  id: ID
+  prescribedDuration: Float!
+  specialPrecautions: String
+  todayWeight: Float!
+  dryWeight: Float!
+  weightGain: Float!
+  maxHourlyUF: Float!
+  prescribedUF: Float!
+  specificProfiles: String!
+  lostUF: Float!
+  exitWeight: Float!
+  weightLoss: Float!
+  vascularAccess: String!
+  needles: NeedleType!
+  puncture: PunctureType!
+  avLines: AVLineType!
+  pumpSpeed: Float!
+  skinSurfaceArea: Float!
+  filter: FilterType!
+  dialysisConcentrate: DialysisConcentrateType!
+  buffer: BufferType!
+  dialysateFlowRate: Float!
+  anticoagulationType: String!
+  anticoagulationDose: String!
+  typeEPO: String!
+  doseEPO: Float!
+  checkEOP: Boolean!
+  ironType: String!
+  ironDose: Float!
+  ironCheck: Boolean!
+  allergies: String!
+  doctorId: String!
+  nurseId: String!
+  patientId: String!
+  date: Long!
+  startTime: Long
+  stopTime: Long
+  actualDuration: Float!
+  requestedAssessment: String!
+  observations: String!
+}
+input ArchivedPatientInput {
+  patientId: String!
+  status: ArchiveStatus!
+  date: Long
+}
+input ArchivingSearchParams {
+  archiveStatus: ArchiveStatus
+  date: Long
+}
+input SessionSearchParam {
+  patientId: String
+  doctorId: String
+  nurseId: String
+  startDate: Long
+  endDate: Long
+}
+input TreatmentSearchParam {
+  patientId: String
+  startDate: Long
+  endDate: Long
+  type: MedicationTreatmentType
+  activeOnly: Boolean!
+}
+input MedicationTreatmentInput {
+  id: ID
+  prescriberExtern: String
+  medicalStaffId: String
+  type: MedicationTreatmentType!
+  dciOrNc: String!
+  dosage: String!
+  dose: String!
+  patientId: String!
+  startingDate: Long
+  stopingDate: Long
+}
+input TransportationCompanyInput {
+  id: ID
+  designation: String!
+  driverInputs: [DriverInput!]!
+}
+
+input AdministratifDocumentSearchParam {
+  patientId: String
+  type: AdministratifDocType
+  startDate: Long
+  endDate: Long
+  renewable: Boolean
+}
+input MedicalDocumentSearchParams {
+  patientId: String
+  type: MedicalDocType
+  startDate: Long
+  endDate: Long
+}
+
+input GeneratedDocumentInput {
+  id: ID
+  name: String!
+  htmlData: String!
+  patientId: String!
+}
+#******************** DOCS *********************
+type DocumentField {
+  title: String!
+  value: String!
+}
+
+input DocumentFieldInput {
+  title: String!
+  value: String!
+}
+
+input DocumentFieldsInput {
+  fields: [DocumentFieldInput!]!
+}
+
+#*************************** ENUM ***************************
+enum Gender {
+  MAN
+  WOMAN
+}
+enum Rank {
+  DOCTOR
+  NURSE
+  ADMIN
+  ASSISTANT
+}
+enum BloodGroup {
+  A_POSITIF
+  A_NEGATIF
+  B_POSITIF
+  B_NEGATIF
+  AB_POSITIF
+  AB_NEGATIF
+  O_POSITIF
+  O_NEGATIF
+}
+enum EnsurerRelationship {
+  ASCENDANT
+  SPOUSE
+  DESCENDANT
+  OTHER
+}
+enum UserType {
+  CUSTOMER
+  ADMIN
+  AGENT
+}
+enum Role {
+  ADMIN
+  CUSTOMER
+  AGENT
+}
+enum DaysOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+enum PatientDocumentType {
+  MEDICAL
+  ADMINISTRATIVE
+}
+enum TechniqueType {
+  HEMODIALYSIS
+  PERITONEAL_DIALYSIS
+  KIDNEY_TRANSPLANT
+}
+enum VaccinationStatus {
+  UP_TO_DATE
+  DELAYED
+  NOT_VACCINATED
+}
+enum Polarity {
+  POSITIVE
+  NEGATIVE
+}
+enum PunctureType {
+  SINGLE_PUNCTURE
+  BI_PUNCTURE
+}
+
+enum NeedleType {
+  G16
+  G17
+}
+
+enum AVLineType {
+  ADULT
+  CHILD
+}
+
+enum FilterType {
+  F5
+  F8
+  F10
+  M11
+  M15
+  M19
+}
+
+enum DialysisConcentrateType {
+  A13
+  A15
+  A17
+  G15
+  G17
+}
+
+enum BufferType {
+  BICARB
+  ACETATE
+}
+enum TransportationType {
+  VSL
+  AMBULANCE
+}
+enum MedicationTreatmentType {
+  INTERN
+  EXTERN
+}
+enum AdministratifDocType {
+  OD
+  PEC
+  OTHER
+}
+enum MedicalDocType {
+  ASSESSMENT
+  IMAGING
+  OTHER
+}
+enum HealthUnitCategory {
+  HYDRO_SODIUM_BALANCE
+  PURIFICATION_QUALITY
+  ANEMIA_ASSESSMENT
+  MINERAL_AND_BONE_DISORDERS
+  RCV_METABOLISM
+  NUTRITION_INFLAMMATION
+}
+
+enum PatientType {
+  TEMPORARY
+  PERMANENT
+}
+enum MonitoringHours {
+  Avant
+  H1
+  H2
+  H3
+  H4
+}
+enum InsuranceStatus {
+  UNINSURED
+  DEPENDENT_INSURED
+  SELF_INSURED
+}
+enum ArchiveStatus {
+  DEATH
+  TRANSFER
+  HEALED
+  OTHER
+}

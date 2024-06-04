@@ -1,0 +1,562 @@
+query getClinicInfo {
+  getClinicByGroupId @gqTypeName(name: "Clinic") {
+    ..._all_fields_Clinic
+  }
+}
+query getAgencyList(
+  $pageInfo: PageInfo!
+  $code: String
+  $cashierIds: [String!]!
+) {
+  agencyList(pageInfo: $pageInfo, code: $code, cashierIds: $cashierIds)
+    @gqTypeName(name: "Agency") {
+    ..._all_fields_Agency
+  }
+}
+
+query getCashierList($pageInfo: PageInfo!, $code: String) {
+  cashierList(pageInfo: $pageInfo, code: $code) @gqTypeName(name: "Cashier") {
+    ..._all_fields_Cashier
+  }
+  getTotalCashier
+}
+
+query getPayerCenterList(
+  $pageInfo: PageInfo!
+  $code: String
+  $agencyIds: [String!]!
+) {
+  payerCenterList(pageInfo: $pageInfo, code: $code, agencyIds: $agencyIds)
+    @gqTypeName(name: "PayerCenter") {
+    ..._all_fields_PayerCenter
+  }
+}
+
+query getMedicalStaffList(
+  $pageInfo: PageInfo!
+  $params: MedicalStaffSearchParam!
+) {
+  medicalStaffList(pageInfo: $pageInfo, params: $params)
+    @gqTypeName(name: "MedicalStaffRow") {
+    ...medicalStaffRowFrag
+  }
+}
+query medicalStaffList(
+  $pageInfo: PageInfo!
+  $params: MedicalStaffSearchParam!
+) {
+  medicalStaffList(pageInfo: $pageInfo, params: $params) {
+    ..._all_fields_MedicalStaff
+  }
+}
+query getHemodialysisGroupList($code: String) {
+  hemodialysisGroupList(code: $code) @gqTypeName(name: "HemodialysisGroup") {
+    ..._all_fields_HemodialysisGroup
+  }
+}
+
+query getFlatFeeList($pageInfo: PageInfo!) {
+  flatFeeList(pageInfo: $pageInfo) @gqTypeName(name: "FlatFee") {
+    ..._all_fields_FlatFee
+  }
+  count: getTotalFlatFee
+}
+
+query getRoomList($code: String) {
+  roomList(code: $code) @gqTypeName(name: "Room") {
+    ..._all_fields_Room
+  }
+}
+
+query getPatientList($pageInfo: PageInfo!, $params: PatientSearchParams!) {
+  patientList(pageInfo: $pageInfo, params: $params)
+    @gqTypeName(name: "PatientRow") {
+    ...patientRowFragment
+  }
+  total: getTotalPatients(params: $params)
+}
+query getPatientProcessingList(
+  $pageInfo: PageInfo!
+  $params: PatientSearchParams!
+) {
+  patientList(pageInfo: $pageInfo, params: $params)
+    @gqTypeName(name: "PatientProcessingRow") {
+    ...patientProcessingRowFragment
+  }
+  total: getTotalPatients(params: $params)
+}
+
+query findPatientById($id: ID!) {
+  findPatientById(id: $id) @gqTypeName(name: "Patient") {
+    ..._all_fields_Patient
+  }
+}
+query findPatientRowById($id: ID!) {
+  findPatientById(id: $id) @gqTypeName(name: "PatientRow") {
+    ...patientRowFragment
+  }
+}
+query findPatientPersonalInfoById($id: ID!) {
+  findPatientById(id: $id) @gqTypeName(name: "PatientPersonalInfo") {
+    ...personalInfoFrag
+  }
+}
+
+query findFlatFeeById($id: ID!) {
+  findFlatFeeById(id: $id) @gqTypeName(name: "FlatFee") {
+    ..._all_fields_FlatFee
+  }
+}
+
+query findMedicalStaffById($id: ID!) {
+  findMedicalStaffById(id: $id) {
+    ..._all_fields_MedicalStaff
+  }
+}
+query findMedicalStaffNoRoleById($id: ID!) {
+  findMedicalStaffById(id: $id) @gqTypeName(name: "MedicalStaffNoRole") {
+    ...medicalStaffNoRoleFrag
+  }
+}
+
+query findHemodialysisGroupById($id: ID!) {
+  findHemodialysisGroupById(id: $id) @gqTypeName(name: "HemodialysisGroup") {
+    ..._all_fields_HemodialysisGroup
+  }
+}
+query getPositionList {
+  positionList @gqTypeName(name: "Position") {
+    ..._all_fields_Position
+  }
+  count: getTotalPositions
+}
+
+query getPayerCenterByAgencyId($agencyId: ID!) {
+  findPayerCentersByAgencyId(agencyId: $agencyId) {
+    ..._all_fields_PayerCenter
+  }
+}
+
+query getAgeciesByCashierId($cashierId: ID!) {
+  findAgenciesByCashierId(cashierId: $cashierId) {
+    ..._all_fields_Agency
+  }
+}
+
+query getScannedDocumentById($id: ID!) {
+  getScannedDocumentById(id: $id) @gqTypeName(name: "ScannedDocument") {
+    ..._all_fields_ScannedDocument
+  }
+}
+
+query findPositionById($id: ID!) {
+  findPositionById(id: $id) @gqTypeName(name: "Position") {
+    ..._all_fields_Position
+  }
+}
+query findRoomById($id: ID!) {
+  findRoomById(id: $id) @gqTypeName(name: "Room") {
+    ..._all_fields_Room
+  }
+}
+
+query getScannedDocumentsByType(
+  $pageInfo: PageInfo!
+  $entityId: String!
+  $type: PatientDocumentType!
+) {
+  getScannedDocumentsByType(
+    pageInfo: $pageInfo
+    entityId: $entityId
+    type: $type
+  ) @gqTypeName(name: "ScannedDocument") {
+    ..._all_fields_ScannedDocument
+  }
+}
+
+query healthUnitList($pageInfo: PageInfo!, $name: String) {
+  healthUnitList(pageInfo: $pageInfo, name: $name)
+    @gqTypeName(name: "HealthUnit") {
+    ..._all_fields_HealthUnit
+  }
+}
+query getObservationHealthUnits {
+  observationHealthUnitList @gqTypeName(name: "HealthUnit") {
+    ..._all_fields_HealthUnit
+  }
+}
+query visitList($pageInfo: PageInfo!, $params: VisitSearchParam!) {
+  visitList(pageInfo: $pageInfo, params: $params) @gqTypeName(name: "Visit") {
+    ..._all_fields_Visit
+  }
+}
+
+query chartsData($pageInfo: PageInfo!, $params: VisitSearchParam!) {
+  healthUnits: graphicHealthUnitList @gqTypeName(name: "HealthUnit") {
+    ..._all_fields_HealthUnit
+  }
+  visits: visitList(pageInfo: $pageInfo, params: $params)
+    @gqTypeName(name: "Visit") {
+    ..._all_fields_Visit
+  }
+}
+
+query dialysisProtocolList($pageInfo: PageInfo!, $patientId: String) {
+  dialysisProtocolList(pageInfo: $pageInfo, patientId: $patientId)
+    @gqTypeName(name: "DialysisProtocol") {
+    ..._all_fields_DialysisProtocol
+  }
+}
+
+query dialysisSessionRowList(
+  $pageInfo: PageInfo!
+  $params: SessionSearchParam!
+) {
+  dialysisSessionList(pageInfo: $pageInfo, params: $params)
+    @gqTypeName(name: "DialysisSessionRow") {
+    ...sessionRowFrag
+  }
+}
+
+query getDialysisProtocolById($id: ID!) {
+  getDialysisProtocolById(id: $id) @gqTypeName(name: "DialysisProtocol") {
+    ..._all_fields_DialysisProtocol
+  }
+}
+query dialysisProtocolRowList($pageInfo: PageInfo!, $patientId: String) {
+  dialysisProtocolList(pageInfo: $pageInfo, patientId: $patientId)
+    @gqTypeName(name: "DialysisProtocolRow") {
+    ...protocolRowFrag
+  }
+}
+query getDialysisSessionById($id: ID!) {
+  getDialysisSessionById(id: $id) @gqTypeName(name: "DialysisSession") {
+    ..._all_fields_DialysisSession
+  }
+}
+query getMedicalRecordById($id: ID!) {
+  getMedicalRecordById(id: $id)  {
+    ..._all_fields_MedicalRecord
+  }
+}
+
+query medicalRecordRowList($pageInfo: PageInfo!, $patientId: String) {
+  patientPreviousMedicalRecordList(pageInfo: $pageInfo, patientId: $patientId)
+    @gqTypeName(name: "MedicalRecordRow") {
+    ...medicalRecordRowFrag
+  }
+}
+query medicalRecordList($pageInfo: PageInfo!, $patientId: String) {
+  patientPreviousMedicalRecordList(pageInfo: $pageInfo, patientId: $patientId)
+    {
+    ..._all_fields_MedicalRecord
+  }
+}
+query medicationTreatmentRowList(
+  $pageInfo: PageInfo!
+  $params: TreatmentSearchParam!
+) {
+  medicationTreatmentList(pageInfo: $pageInfo, params: $params)
+    @gqTypeName(name: "MedicationTreatmentRow") {
+    ...medicationTreatmentFrag
+  }
+}
+query MedicationTreatmentInfoList(
+  $pageInfo: PageInfo!
+  $params: TreatmentSearchParam!
+) {
+  medicationTreatmentList(pageInfo: $pageInfo, params: $params)
+    @gqTypeName(name: "MedicationTreatmentInfo") {
+    ...ordonanceFrag
+  }
+}
+
+query getMedicationTreatmentById($id: ID!) {
+  getMedicationTreatmentById(id: $id) @gqTypeName(name: "MedicationTreatment") {
+    ..._all_fields_MedicationTreatment
+  }
+}
+
+query exitsVisitByDateAndPatientId($visitDate: Long!, $patientId: String!) {
+  exitsVisitByDateAndPatientId(visitDate: $visitDate, patientId: $patientId)
+}
+
+query transportationCompanyList($pageInfo: PageInfo!) {
+  transportationCompanyList(pageInfo: $pageInfo)
+    @gqTypeName(name: "TransportationCompany") {
+    ..._all_fields_TransportationCompany
+  }
+  count: getTotalTransportationCompany
+}
+query findTransportationCompanyById($id: ID!) {
+  findTransportationCompanyById(id: $id)
+    @gqTypeName(name: "TransportationCompany") {
+    ..._all_fields_TransportationCompany
+  }
+}
+query administratifDocumentList(
+  $pageInfo: PageInfo!
+  $params: AdministratifDocumentSearchParam!
+) {
+  administratifDocumentList(pageInfo: $pageInfo, params: $params)
+    @gqTypeName(name: "AdministratifDocument") {
+    ..._all_fields_AdministratifDocument
+  }
+  count: getTotalAdministratifDocuments
+}
+query getAdministratifDocumentById($id: ID!) {
+  getAdministratifDocumentById(id: $id)
+    @gqTypeName(name: "AdministratifDocument") {
+    ..._all_fields_AdministratifDocument
+  }
+}
+query getMedicalDocumentById($id: ID!) {
+  getMedicalDocumentById(id: $id) @gqTypeName(name: "MedicalDocument") {
+    ..._all_fields_MedicalDocument
+  }
+}
+query medicalDocumentList(
+  $pageInfo: PageInfo!
+  $params: MedicalDocumentSearchParams!
+) {
+  medicalDocumentList(pageInfo: $pageInfo, params: $params)
+    @gqTypeName(name: "MedicalDocument") {
+    ..._all_fields_MedicalDocument
+  }
+  count: getTotalMedicalDocuments
+}
+query transfusionList($pageInfo: PageInfo!, $sessionId: String!) {
+  transfusionList(pageInfo: $pageInfo, sessionId: $sessionId)
+    @gqTypeName(name: "Transfusion") {
+    ..._all_fields_Transfusion
+  }
+  count: getTotalTransfusion(sessionId: $sessionId)
+}
+
+query getTransfusionById($id: ID!) {
+  getTransfusionById(id: $id) @gqTypeName(name: "Transfusion") {
+    ..._all_fields_Transfusion
+  }
+}
+query monitoringList($pageInfo: PageInfo!, $sessionId: String!) {
+  monitoringList(pageInfo: $pageInfo, sessionId: $sessionId)
+    @gqTypeName(name: "Monitoring") {
+    ..._all_fields_Monitoring
+  }
+  count: getTotalMonitoring(sessionId: $sessionId)
+}
+
+query getMonitoringById($id: ID!) {
+  getMonitoringById(id: $id) @gqTypeName(name: "Monitoring") {
+    ..._all_fields_Monitoring
+  }
+}
+
+query hygienicAndDietaryRulesList($pageInfo: PageInfo!, $patientId: String!) {
+  hygienicAndDietaryRulesList(patientId: $patientId, pageInfo: $pageInfo)
+    @gqTypeName(name: "HygienicAndDietaryRule") {
+    ..._all_fields_HygienicAndDietaryRule
+  }
+}
+query getHygienicAndDietaryRuleById($id: ID!) {
+  getHygienicAndDietaryRuleById(id: $id)
+    @gqTypeName(name: "HygienicAndDietaryRule") {
+    ..._all_fields_HygienicAndDietaryRule
+  }
+}
+query exchangeList($pageInfo: PageInfo!, $patientId: String!) {
+  exchangeList(pageInfo: $pageInfo, patientId: $patientId)
+    @gqTypeName(name: "Exchange") {
+    ..._all_fields_Exchange
+  }
+  count: getTotalExchanges(patientId: $patientId)
+}
+
+query getExchangeById($id: ID!) {
+  getExchangeById(id: $id) @gqTypeName(name: "Exchange") {
+    ..._all_fields_Exchange
+  }
+}
+
+query getTemplateContent($name: String!) {
+  data: getTemplateContent(name: $name)
+}
+
+query getMedicalTests {
+  medicalTests
+}
+query getDialysisProtocolPrintingInfo(
+  $patientId: String!
+  $medicalRecordId: String
+) {
+  findLatestObservation(patientId: $patientId)
+  findLatestEchocardiographie(patientId: $patientId)
+  findLatestVascularAccessState(patientId: $patientId)
+  findLatestComplications(patientId: $patientId)
+  getLatestUREEValue(patientId: $patientId) {
+    healthUnit {
+      ..._all_fields_HealthUnit
+    }
+    value
+  }
+  getLatestCREATININEValue(patientId: $patientId) {
+    healthUnit {
+      ..._all_fields_HealthUnit
+    }
+    value
+  }
+  getLatestNATREMIEValue(patientId: $patientId) {
+    healthUnit {
+      ..._all_fields_HealthUnit
+    }
+    value
+  }
+  getLatestKALIEMIEValue(patientId: $patientId) {
+    healthUnit {
+      ..._all_fields_HealthUnit
+    }
+    value
+  }
+  getLatestCALCEMIEValue(patientId: $patientId) {
+    healthUnit {
+      ..._all_fields_HealthUnit
+    }
+    value
+  }
+  getLatestPHOSPHOREMIEValue(patientId: $patientId) {
+    healthUnit {
+      ..._all_fields_HealthUnit
+    }
+    value
+  }
+  getLatestPTHValue(patientId: $patientId) {
+    healthUnit {
+      ..._all_fields_HealthUnit
+    }
+    value
+  }
+
+  findLatestDryWeightValue(patientId: $patientId)
+  findLatestEPODose(patientId: $patientId)
+  findLatestWeightGainValue(patientId: $patientId)
+  findLatestIronDoseValue(patientId: $patientId)
+  findMedicalRecordById(id: $medicalRecordId) {
+    healthValues {
+      healthUnit {
+        ..._all_fields_HealthUnit
+      }
+      value
+    }
+    pathologies {
+      diagnostic
+      examinator
+      examinationDate
+    }
+    deseaseHistory {
+      initialNephropathy
+      diagnostic
+    }
+    dialysisAccessHistories {
+      type
+    }
+    initialObservations {
+      generalState
+      skinMucousPallor
+      hydrationState
+      omi
+      pulmonaryAuscultation
+      dyspnea
+      cardiacAuscultation
+      urinarySystemExamination
+      notes
+      phenotype
+      otherEcho
+      heartEcho
+      heartRate
+      bloodPressureSystolic
+      bloodPressureDiastolic
+      meanCorpuscularVolume
+      ccmh
+      height
+      bloodGroup
+      statusAgHBS
+      statusAcantiHCV
+      statusHIV
+    }
+  }
+  lastestVisist(patientId: $patientId) {
+    statusHVB
+    statusHVC
+    statusHIV
+    vaccinationStatus
+    deltaHb
+  }
+  findLatestSessionByPatientId(patientId: $patientId) {
+    id
+  }
+  findEarliestSessionByPatientId(patientId: $patientId) {
+    id
+    date
+  }
+}
+
+query dashboard {
+  rooms: roomList {
+    ..._all_fields_Room
+  }
+  positions: positionList {
+    ..._all_fields_Position
+  }
+  patients: allPatients {
+    ..._all_fields_Patient
+  }
+  hemodialysisGroupList {
+    ..._all_fields_HemodialysisGroup
+  }
+}
+query archivedPatientList(
+  $pageInfo: PageInfo!
+  $params: ArchivingSearchParams
+) {
+  archivedPatientList(pageInfo: $pageInfo, params: $params) {
+    ..._all_fields_ArchivedPatient
+  }
+}
+query getVisitById($id: String!) {
+  getVisitById(id: $id) {
+    ... _all_fields_Visit
+  }
+}
+
+query getTemplateByGroupId {
+  getTemplateByGroupId @gqTypeName(name: "Template") {
+    ..._all_fields_Template
+  }
+}
+
+query getTemplateById($id: String!) {
+  getTemplateById(id: $id) {
+    ..._all_fields_Template
+  }
+}
+
+query getGeneratedDocumentById($id: String!) {
+  getGeneratedDocumentById(id: $id) @gqTypeName(name: "GeneratedDocument") {
+    ..._all_fields_GeneratedDocument
+  }
+}
+query listGeneratedDocumentsByPatientId(
+  $pageInfo: PageInfo!
+  $patientId: String!
+) {
+  listGeneratedDocumentsByPatientId(pageInfo: $pageInfo, patientId: $patientId)
+    @gqTypeName(name: "GeneratedDocument") {
+    ..._all_fields_GeneratedDocument
+  }
+}
+query getClinicLogoId {
+  getClinicByGroupId {
+    id
+    imageId
+  }
+}

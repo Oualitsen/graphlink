@@ -52,8 +52,8 @@ abstract class GQFragmentDefinitionBase extends GQToken {
 }
 
 class GQInlineFragmentDefinition extends GQFragmentDefinitionBase {
-  GQInlineFragmentDefinition(
-      String onTypeName, GQFragmentBlockDefinition block, List<GQDirectiveValue> directives)
+  GQInlineFragmentDefinition(String onTypeName, GQFragmentBlockDefinition block,
+      List<GQDirectiveValue> directives)
       : super(
           "Inline_${generateUuid('_')}",
           onTypeName,
@@ -62,7 +62,11 @@ class GQInlineFragmentDefinition extends GQFragmentDefinitionBase {
         ) {
     if (!block.projections.containsKey(GQGrammar.typename)) {
       block.projections[GQGrammar.typename] = GQProjection(
-          fragmentName: null, token: GQGrammar.typename, alias: null, block: null, directives: []);
+          fragmentName: null,
+          token: GQGrammar.typename,
+          alias: null,
+          block: null,
+          directives: []);
     }
   }
 
@@ -82,8 +86,8 @@ class GQFragmentDefinition extends GQFragmentDefinitionBase {
 
   final String fragmentName;
 
-  GQFragmentDefinition(this.fragmentName, String onTypeName, GQFragmentBlockDefinition block,
-      List<GQDirectiveValue> directives)
+  GQFragmentDefinition(this.fragmentName, String onTypeName,
+      GQFragmentBlockDefinition block, List<GQDirectiveValue> directives)
       : super(fragmentName, onTypeName, block, directives);
 
   @override
@@ -121,7 +125,7 @@ class GQProjection extends GQToken {
   ///something like  ... fragmentName
 
   ///
-  final String? fragmentName;
+  String? fragmentName;
 
   ///
   ///This should contain the name of the type this projection is on
@@ -162,8 +166,10 @@ class GQProjection extends GQToken {
   @override
   String serialize() {
     if (this is GQInlineFragmentsProjection) {
-      return serializeList((this as GQInlineFragmentsProjection).inlineFragments,
-          join: " ", withParenthesis: false);
+      return serializeList(
+          (this as GQInlineFragmentsProjection).inlineFragments,
+          join: " ",
+          withParenthesis: false);
     }
     String result = "";
     if (isFragmentReference) {
@@ -186,13 +192,20 @@ class GQProjection extends GQToken {
       if (block == null) {
         TreeNode child;
 
-        if (!node.contains(token)) {
-          child = node.addChild(token);
+        String targetToken =
+            token == all_fields && fragmentName != null ? fragmentName! : token;
+
+        if (!node.contains(targetToken)) {
+          child = node.addChild(targetToken);
         } else {
-          throw ParseException("Dependecy Cycle ${[token, ...node.getParents()].join(" -> ")}");
+          throw ParseException("Dependecy Cycle ${[
+            targetToken,
+            ...node.getParents()
+          ].join(" -> ")}");
         }
 
-        var frag = map[token];
+        GQFragmentDefinitionBase? frag = map[targetToken];
+
         if (frag == null) {
           throw ParseException("Fragment $token is not defined");
         } else {
@@ -245,7 +258,8 @@ class GQFragmentBlockDefinition {
     return serialize();
   }
 
-  void getDependecies(Map<String, GQFragmentDefinitionBase> map, TreeNode node) {
+  void getDependecies(
+      Map<String, GQFragmentDefinitionBase> map, TreeNode node) {
     var projectionList = projections.values;
     for (var projection in projectionList) {
       projection.getDependecies(map, node);
@@ -259,6 +273,8 @@ class GQFragmentBlockDefinition {
   }
 
   List<GQProjection> getFragmentReferences() {
-    return projections.values.where((projection) => projection.isFragmentReference).toList();
+    return projections.values
+        .where((projection) => projection.isFragmentReference)
+        .toList();
   }
 }
