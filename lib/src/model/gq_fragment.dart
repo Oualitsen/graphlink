@@ -161,7 +161,7 @@ class GQProjection extends GQToken {
     return serialize();
   }
 
-  String get actualName => alias ?? token;
+  String get actualName => alias ?? targetToken;
 
   @override
   String serialize() {
@@ -176,9 +176,9 @@ class GQProjection extends GQToken {
       result = "...";
     }
     if (alias != null) {
-      result += "$alias:$token";
+      result += "$alias:$targetToken";
     } else {
-      result += token;
+      result += targetToken;
     }
     result += serializeDirectives(directives);
 
@@ -187,13 +187,13 @@ class GQProjection extends GQToken {
     return result;
   }
 
+  String get targetToken =>
+      token == all_fields && fragmentName != null ? fragmentName! : token;
+
   getDependecies(Map<String, GQFragmentDefinitionBase> map, TreeNode node) {
     if (isFragmentReference) {
       if (block == null) {
         TreeNode child;
-
-        String targetToken =
-            token == all_fields && fragmentName != null ? fragmentName! : token;
 
         if (!node.contains(targetToken)) {
           child = node.addChild(targetToken);

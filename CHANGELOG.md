@@ -19,3 +19,6 @@
 
  ## 2.0.1 - 2024-06-04
   - Fixes `_all_fields` to target all fields (without class name)
+
+ ## 2.0.2 - 2024-06-04
+  - Fixes generated code when `_all_fields` is used.
