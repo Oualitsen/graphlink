@@ -14,6 +14,15 @@ class RetrofitGraphqlGeneratorBuilder implements Builder {
   static final inputFiles2 = Glob('lib/**/*.graphqls');
   RetrofitGraphqlGeneratorBuilder(this.options);
   static const outputDir = 'lib/generated';
+  final map = {
+    "ID": "String",
+    "String": "String",
+    "Float": "double",
+    "Int": "int",
+    "Boolean": "bool",
+    "Null": "null"
+  };
+  final List<AssetId> assets = [];
 
   @override
   Map<String, List<String>> get buildExtensions => {
@@ -22,24 +31,12 @@ class RetrofitGraphqlGeneratorBuilder implements Builder {
 
   @override
   Future<void> build(BuildStep buildStep) async {
-    var map = {
-      "ID": "String",
-      "String": "String",
-      "Float": "double",
-      "Int": "int",
-      "Boolean": "bool",
-      "Null": "null"
-    };
-    options.config.entries
-        .where((element) => element.value is String)
-        .forEach((e) {
+    await initAssets(buildStep);
+    options.config.entries.where((element) => element.value is String).forEach((e) {
       map[e.key] = e.value as String;
     });
-
     var g = GQGrammar(
-        typeMap: map,
-        generateAllFieldsFragments:
-            options.config["generateAllFieldsFragments"] ?? false);
+        typeMap: map, generateAllFieldsFragments: options.config["generateAllFieldsFragments"] ?? false);
 
     var parser = g.buildFrom(g.start());
 
@@ -63,13 +60,17 @@ class RetrofitGraphqlGeneratorBuilder implements Builder {
     await File('$outputDir/$clientFileName.dart').writeAsString(client);
   }
 
-  Future<String> readSchema(BuildStep buildStep) async {
-    final inputAssets = await buildStep.findAssets(inputFiles).toList();
-    final inputAssets2 = await buildStep.findAssets(inputFiles2).toList();
-    inputAssets.addAll(inputAssets2);
+  Future<void> initAssets(BuildStep buildStep) async {
+    assets.clear();
 
-    final contents = await Future.wait(
-        inputAssets.map((asset) => buildStep.readAsString(asset)));
+    var inputAssets = await buildStep.findAssets(inputFiles).toList();
+    final inputAssets2 = await buildStep.findAssets(inputFiles2).toList();
+    assets.addAll(inputAssets);
+    assets.addAll(inputAssets2);
+  }
+
+  Future<String> readSchema(BuildStep buildStep) async {
+    final contents = await Future.wait(assets.map((asset) => buildStep.readAsString(asset)));
     final schema = contents.join("\n");
     return schema;
   }

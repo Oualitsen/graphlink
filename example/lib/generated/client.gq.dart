@@ -41,6 +41,26 @@ String _getFragment(String fragName) {
       }).first;
 
       }
+Future<GetDriverByIdResponse> getDriverById({required String id}) {
+        const operationName = "getDriverById";
+        const fragsValues = "";
+        const query = """query getDriverById(\$id:ID!){getDriverById(id:\$id){firstName lastName middleName}}$fragsValues""";
+
+        final variables = <String, dynamic>{
+          'id': id
+        };
+        
+        final payload = GQPayload(query: query, operationName: operationName, variables: variables);
+            return _adapter(payload.toString()).asStream().map((response) {
+          Map<String, dynamic> result = jsonDecode(response);
+          if (result.containsKey("errors")) {
+            throw result["errors"].map((error) => GraphQLError.fromJson(error)).toList();
+          }
+          var data = result["data"];
+          return GetDriverByIdResponse.fromJson(data);
+      }).first;
+
+      }
 
 }
 
@@ -73,12 +93,17 @@ class GQClient {
   GQClient(Future<String> Function(String payload) adapter, WebSocketAdapter wsAdapter)
       :queries = Queries(adapter), subscriptions = Subscriptions(wsAdapter) {
       
-      _fragmMap['Inline_0712f4bf_d4fb_adc7_fdb0_234969fe6158'] = '... on Driver  {firstName lastName __typename} ';
-_fragmMap['Inline_6f5266a7_4809_3207_fc1f_1fb99faff456'] = '... on Client  {lastUpdate firstName __typename} ';
+      _fragmMap['Inline_e6a98805_9c1e_b4b1_3829_30bad3cbe47b'] = '... on Driver  {firstName lastName __typename} ';
+_fragmMap['Inline_5b1aad20_c975_e940_991f_2a434c27f6fe'] = '... on Client  {lastUpdate firstName __typename} ';
 _fragmMap['DriverFragment'] = 'fragment DriverFragment on Driver{firstName lastName id cars{year}}';
 _fragmMap['myFrag'] = 'fragment myFrag on Driver{id firstName cars{...carFrag}}';
 _fragmMap['carFrag'] = 'fragment carFrag on Car{model year}';
-      
+_fragmMap['_all_fields_BasicEntity'] = 'fragment _all_fields_BasicEntity on BasicEntity{creationDate id lastUpdate}';
+_fragmMap['_all_fields_BasicUser'] = 'fragment _all_fields_BasicUser on BasicUser{creationDate dateOfBirth firstName gender id lastName lastUpdate middleName}';
+_fragmMap['_all_fields_Driver'] = 'fragment _all_fields_Driver on Driver{cars{..._all_fields_Car} creationDate dateOfBirth email email3 firstName gender id lastName lastUpdate middleName phoneNumber}';
+_fragmMap['_all_fields_Client'] = 'fragment _all_fields_Client on Client{creationDate dateOfBirth email firstName gender id lastName lastUpdate middleName phoneNumber}';
+_fragmMap['_all_fields_Car'] = 'fragment _all_fields_Car on Car{brand imageUrl model year}';
+_fragmMap['_all_fields_Home'] = 'fragment _all_fields_Home on Home{address lat lng owner{..._all_fields_BasicUser}}';
          
     }
 }

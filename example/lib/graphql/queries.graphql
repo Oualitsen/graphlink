@@ -1,8 +1,8 @@
 
 query getUser($id: ID!, $client: Boolean) {
     getUser(id: $id, client: $client) {
-        ... on Driver @gqTypeName(name: "Driver"){
-            firstName lastName
+        ... on Driver {
+            firstName lastName 
             
         }
         ... on Client  @gqTypeName(name: "Client"){
@@ -10,6 +10,14 @@ query getUser($id: ID!, $client: Boolean) {
             firstName
         }
     }
+    
+}
+
+query getDriverById($id: ID!) {
+    getDriverById(id: $id) {
+        firstName lastName middleName
+    }
+    
 }
 
 fragment DriverFragment on Driver {

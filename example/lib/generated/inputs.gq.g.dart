@@ -7,8 +7,8 @@ part of 'inputs.gq.dart';
 // **************************************************************************
 
 PageInfo _$PageInfoFromJson(Map<String, dynamic> json) => PageInfo(
-      index: json['index'] as int,
-      size: json['size'] as int,
+      index: (json['index'] as num).toInt(),
+      size: (json['size'] as num).toInt(),
     );
 
 Map<String, dynamic> _$PageInfoToJson(PageInfo instance) => <String, dynamic>{

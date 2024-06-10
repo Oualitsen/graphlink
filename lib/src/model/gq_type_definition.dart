@@ -11,6 +11,7 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
   final bool nameDeclared;
   final GQTypeDefinition? derivedFromType;
   GQTypeDefinition? superClass;
+  final Set<String> originalTokens = <String>{};
 
   ///
   /// Used only when generating type for interfaces.

@@ -22,3 +22,7 @@
 
  ## 2.0.2 - 2024-06-04
   - Fixes generated code when `_all_fields` is used.
+
+ ## 2.0.3 - 2024-06-11
+  - Optimizes code generation.
+  - Generates code much faster.

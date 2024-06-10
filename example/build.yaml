@@ -10,3 +10,4 @@ targets:
         # following are going to be mappings between scalars and dart types
           Long: int
           ID: String
+          generateAllFieldsFragments: true
