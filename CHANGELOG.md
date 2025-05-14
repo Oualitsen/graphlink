@@ -34,3 +34,5 @@
 
 ## 2.1.1 - 2025-05-14
     - Updates project dependcy versions
+## 2.1.2 - 2025-05-14
+    - Adds project links on generated files
