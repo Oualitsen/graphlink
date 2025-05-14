@@ -231,6 +231,20 @@ class GQFragmentBlockDefinition {
     }
   }
 
+  Map<String, GQProjection> getAllProjections(GQGrammar grammar) {
+    var result = <String, GQProjection>{};
+    projections.forEach((key, value) {
+      if (value.isFragmentReference) {
+        var frag = grammar.getFragment(key);
+        var fragProjections = frag.block.getAllProjections(grammar);
+        result.addAll(fragProjections);
+      } else {
+        result[key] = value;
+      }
+    });
+    return result;
+  }
+
   GQProjection getProjection(String name) {
     final p = projections[name];
     if (p == null) {

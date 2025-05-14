@@ -36,3 +36,5 @@
     - Updates project dependcy versions
 ## 2.1.2 - 2025-05-14
     - Adds project links on generated files
+## 2.1.3 - 2025-05-14
+    - Fixes transitive frament reference

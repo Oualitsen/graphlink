@@ -695,7 +695,7 @@ $data
     p.forEach((key, value) {
       if (value.isFragmentReference) {
         var fragment = getFragment(value.fragmentName!, type.token);
-        projections.addAll(fragment.block.projections);
+        projections.addAll(fragment.block.getAllProjections(this));
       }
     });
 
