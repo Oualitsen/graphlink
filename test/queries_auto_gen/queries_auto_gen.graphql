@@ -1,0 +1,50 @@
+type Product {
+    name: String!
+    make: String!
+    model: String!
+    exppiryDate: String
+    variant: Variant
+}
+
+type Variant {
+    name: String
+    make: String
+    model: String
+    skuId: String
+}
+
+fragment VariantFrag on Variant {
+    name make
+}
+
+
+type Query {
+    getProduct: Product
+    findProucts(page: Page!): [Product!]!
+}
+
+type Mutation {
+    addProduct(input: Page!): Product!
+    countProducts: Int
+}
+
+fragment AddrFrag on Product {
+    ... PFrag make
+}
+
+fragment PFrag on Product{
+    name variant {
+      model  ...VariantFrag
+    }
+}
+
+query getProduct {
+    getProduct {
+         ...AddrFrag
+    }
+}
+
+input Page {
+    index: Int!
+    size: Int!
+}

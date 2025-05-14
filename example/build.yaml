@@ -12,3 +12,5 @@ targets:
           ID: String
           generateAllFieldsFragments: true
           nullableFieldsRequired: false
+          autoGenerateQueries: true
+          autoGenerateQueriesDefaultAlias: "data"

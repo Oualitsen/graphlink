@@ -79,21 +79,28 @@ class GQGrammar extends GrammarDefinition {
   bool schemaInitialized = false;
   final bool generateAllFieldsFragments;
   final bool nullableFieldsRequired;
+  final bool autoGenerateQueries;
+  final String? autoGenerateQueriesDefaultAlias;
 
   late final GQGraphqlService service;
-  GQGrammar({
-    this.typeMap = const {
-      "ID": "String",
-      "String": "String",
-      "Float": "double",
-      "Int": "int",
-      "Boolean": "bool",
-      "Null": "null",
-      "Long": "int"
-    },
-    this.generateAllFieldsFragments = false,
-    this.nullableFieldsRequired = false,
-  });
+  GQGrammar(
+      {this.typeMap = const {
+        "ID": "String",
+        "String": "String",
+        "Float": "double",
+        "Int": "int",
+        "Boolean": "bool",
+        "Null": "null",
+        "Long": "int"
+      },
+      this.generateAllFieldsFragments = false,
+      this.nullableFieldsRequired = false,
+      this.autoGenerateQueries = false,
+      this.autoGenerateQueriesDefaultAlias})
+      : assert(
+          !autoGenerateQueries || generateAllFieldsFragments,
+          'autoGenerateQueries can only be true if generateAllFieldsFragments is also true',
+        );
 
   bool get hasSubscriptions => hasQueryType(GQQueryType.subscription);
   bool get hasQueries => hasQueryType(GQQueryType.query);
@@ -132,6 +139,9 @@ class GQGrammar extends GrammarDefinition {
   void _onDone() {
     if (generateAllFieldsFragments) {
       createAllFieldsFragments();
+      if (autoGenerateQueries) {
+        generateQueryDefinitions();
+      }
     }
     checkFragmentRefs();
     updateInterfaceParents();
@@ -142,6 +152,47 @@ class GQGrammar extends GrammarDefinition {
     createProjectedTypes();
     updateFragmentAllTypesDependencies();
     generateGQClient();
+  }
+
+  generateQueryDefinitions() {
+    var queryDeclarations = types[schema.query];
+    if (queryDeclarations != null) {
+      generateQueries(queryDeclarations, GQQueryType.query);
+    }
+
+    var mutationDeclarations = types[schema.mutation];
+    if (mutationDeclarations != null) {
+      generateQueries(mutationDeclarations, GQQueryType.mutation);
+    }
+
+    var subscriptionDeclarations = types[schema.subscription];
+    if (subscriptionDeclarations != null) {
+      generateQueries(subscriptionDeclarations, GQQueryType.subscription);
+    }
+  }
+
+  void generateQueries(GQTypeDefinition def, GQQueryType queryType) {
+    for (var field in def.fields) {
+      generateForField(field, queryType);
+    }
+  }
+
+  void generateForField(GQField field, GQQueryType queryType) {
+    GQFragmentBlockDefinition? block;
+    if (typeRequiresProjection(field.type.inlineType)) {
+      block = getFragment("_all_fields_${field.type.inlineType.token}").block;
+    }
+    var queryElement = GQQueryElement(field.name, [], block, [], autoGenerateQueriesDefaultAlias);
+    final def = GQQueryDefinition(
+        field.name,
+        [],
+        field.arguments
+            .map((e) => GQArgumentDefinition("\$${e.token}", e.type, initialValue: e.initialValue))
+            .toList(),
+        [queryElement],
+        queryType);
+
+    addQueryDefinitionSkipIfExists(def);
   }
 
   void updateInterfaceParents() {

@@ -1,7 +1,7 @@
 name: retrofit_graphql
 description: |
   retrofit_graphql or Retrofit GraphQL for Dart is a powerful code generation tool that simplifies working with GraphQL in Dart projects. This tool automates the generation of Dart classes for types, enums, inputs. Additionally, it creates a GraphQL client for streamlined query, mutation and subscription execution. The code generator can also be configured to generate fragments that simplify attribute access.​
-version: 2.1.2
+version: 2.2.0
 repository: https://github.com/Oualitsen/Retrofi-Graphql-For-Dart
 
 environment:

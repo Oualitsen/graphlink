@@ -77,17 +77,17 @@ type Home {
     address: String!
     lat: Float!
     lng: Float!
-    owner: BasicUser!
+   # owner: BasicUser!
 }
 
 type Query {
     getDriverById(id: ID!): Driver!
     getDrivers(pageInfo: PageInfo): [Driver!]!
 
-    getUser(id: ID!, client: Boolean): BasicUser!
-
+#    getUser(id: ID!, client: Boolean): BasicUser!
     getHome(id: ID!, ownerTypeDriver: Boolean!): Home!
 
+    getDriver3: Driver!
     
 }
 

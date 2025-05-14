@@ -13,6 +13,8 @@ void main(List<String> args) {
       .first;
 
   var client = GQClient(fn, wsAdapter);
+  client.queries.getDriver3().then((value) => value.data);
+/*
 
   client.queries
       .getUser(id: "test", client: true)
@@ -23,7 +25,6 @@ void main(List<String> args) {
     // print("isDriver => ${value is Client}");
     // print("go response = ${value.runtimeType}");
   });
-
   client.queries
       .getUser(id: "test", client: false)
       .asStream()
@@ -33,4 +34,5 @@ void main(List<String> args) {
     //  print("isDriver => ${value is Driver}");
     //  print("go response = ${value.runtimeType}");
   });
+  */
 }

@@ -38,7 +38,9 @@ class RetrofitGraphqlGeneratorBuilder implements Builder {
     var g = GQGrammar(
         typeMap: map,
         generateAllFieldsFragments: options.config["generateAllFieldsFragments"] ?? false,
-        nullableFieldsRequired: options.config["nullableFieldsRequired"] ?? false);
+        nullableFieldsRequired: options.config["nullableFieldsRequired"] ?? false,
+        autoGenerateQueries: options.config["autoGenerateQueries"] ?? false,
+        autoGenerateQueriesDefaultAlias: options.config["autoGenerateQueriesDefaultAlias"]);
 
     var parser = g.buildFrom(g.start());
 

@@ -38,3 +38,7 @@
     - Adds project links on generated files
 ## 2.1.3 - 2025-05-14
     - Fixes transitive frament reference
+## 2.2.0 - 2025-05-15
+    - Generates declares queries mutations and subscriptions without declaration
+      You need to pass `autoGenerateQueries: true` on your build.yaml to enable this option
+      You can also pass `autoGenerateQueriesDefaultAlias` as an alias to be used for queries, mutations and subscriptions.

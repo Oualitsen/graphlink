@@ -82,6 +82,14 @@ extension GQGrammarExtension on GQGrammar {
     queries[definition.token] = definition;
   }
 
+  void addQueryDefinitionSkipIfExists(GQQueryDefinition definition) {
+    if (queries.containsKey(definition.token)) {
+      logger.w("${definition.type} ${definition.token} is already defined, skipping generation");
+      return;
+    }
+    queries[definition.token] = definition;
+  }
+
   String generateEnums() {
     return """
 $fileHeadComment
@@ -193,9 +201,7 @@ $data
     fragments.forEach((key, typedFragment) {
       var refs = typedFragment.block.getFragmentReferences();
       for (var ref in refs) {
-        var referencedFragment = getFragment(ref.fragmentName!);
-
-        logger.i("${referencedFragment.onTypeName} typedFrag = ${typedFragment.onTypeName}");
+        getFragment(ref.fragmentName!);
       }
     });
   }
