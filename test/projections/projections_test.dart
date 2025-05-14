@@ -12,7 +12,7 @@ void main() async {
 
     final text = File("test/projections/projections_test.graphql").readAsStringSync();
     var parsed = parser.parse(text);
-    expect(parsed.isSuccess, true);
+    expect(parsed is Success, true);
     var user = g.projectedTypes["User"];
     var address = g.projectedTypes["Address"];
     var state = g.projectedTypes["State"];

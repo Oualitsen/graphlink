@@ -22,9 +22,7 @@ void main() async {
         $queries
        $mutations
 """);
-    var took = DateTime.now().millisecondsSinceEpoch - now.millisecondsSinceEpoch;
-    print("Took ${took / 1000} seconds");
-    expect(parsed.isSuccess, true);
+    expect(parsed is Success, true);
   });
 
   test("depedecy_cycle_detection_test_indirect_dependency", () {

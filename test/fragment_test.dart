@@ -11,7 +11,7 @@ void main() {
     var result = parser.parse('''
       name
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
     GQProjection value = result.value;
     expect(value.token, "name");
     expect(value.alias, null);
@@ -26,7 +26,7 @@ void main() {
       alias: name
     
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
     var value = result.value;
     expect(value.token, "name");
     expect(value.alias, "alias");
@@ -43,7 +43,7 @@ void main() {
       }
     
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
     var value = result.value;
     expect(value.token, "name");
     expect(value.alias, "alias");
@@ -62,7 +62,7 @@ void main() {
      
     
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 
   test("Fragment Value", () {
@@ -72,7 +72,7 @@ void main() {
     var result = parser.parse('''
        ... fragmentName
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 
   test("Inline fragment or fragment value", () {
@@ -82,7 +82,7 @@ void main() {
     var result = parser.parse('''
        ... fragmentName
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
 
     result = parser.parse('''
         ... on BasicEntity {
@@ -90,7 +90,7 @@ void main() {
        }
       
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 
   test("fragmentField test", () {
@@ -100,7 +100,7 @@ void main() {
     var result = parser.parse('''
        ... fragmentName
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
 
     result = parser.parse('''
         ... on BasicEntity {
@@ -108,7 +108,7 @@ void main() {
        }
       
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
 
     result = parser.parse('''
        alias:name {
@@ -116,7 +116,7 @@ void main() {
        }
       
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 
   test("Fragment Definitions 1", () {
@@ -135,7 +135,7 @@ void main() {
           }
       }
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 
   test("Fragment Definitions 2", () {
@@ -163,7 +163,7 @@ void main() {
           myAliassedName : FirstName 
           firstName
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
     var value = result.value;
     expect(value[0].alias, equals(null));
     expect(value[1].alias, equals("myAliassedName"));

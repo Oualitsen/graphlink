@@ -10,7 +10,7 @@ void main() {
     var result = parser.parse("""
       scalar Date 
     """);
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
     expect(result.value, "Date");
   });
 
@@ -22,7 +22,7 @@ void main() {
       scalar Date @skip(if: true) @skip2(ifNot: 12
       )
     """);
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
     expect(result.value, "Date");
   });
 }

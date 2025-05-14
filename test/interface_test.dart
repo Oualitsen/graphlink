@@ -10,7 +10,7 @@ void main() {
     var result = parser.parse('''
       implements UserBase & BasicEntity
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 
   test("Interface  test", () {
@@ -23,7 +23,7 @@ void main() {
         test: boolean! 
       }
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 
   test("Interface  list test", () {
@@ -31,7 +31,7 @@ void main() {
     var result = parser.parse('''
        BasicEntity  
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 
   test("Interface  list test multiple", () {
@@ -40,6 +40,6 @@ void main() {
        BasicEntity & UserBase & UserBase2 
     ''');
     expect(result.value.length, 3);
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 }

@@ -14,7 +14,7 @@ void main() {
         next: Test2
       }
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
 
     result = parser.parse('''
       type Test3  {
@@ -23,7 +23,7 @@ void main() {
         next: Test3
       }
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
 
     result = parser.parse('''
       type Test4 @test(if: true) {
@@ -32,7 +32,7 @@ void main() {
         next: [Test4!]
       }
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 
   test("Type test with arguments", () {
@@ -46,6 +46,6 @@ void main() {
         next: Test2
       }
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 }

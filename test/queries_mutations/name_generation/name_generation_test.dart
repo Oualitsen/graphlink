@@ -10,11 +10,10 @@ void main() async {
 
     var parser = g.buildFrom(g.fullGrammar().end());
 
-    final text = File(
-            "test/queries_mutations/name_generation/name_generation_test.graphql")
-        .readAsStringSync();
+    final text =
+        File("test/queries_mutations/name_generation/name_generation_test.graphql").readAsStringSync();
     var parsed = parser.parse(text);
 
-    expect(parsed.isSuccess, true);
+    expect(parsed is Success, true);
   });
 }

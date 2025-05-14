@@ -10,13 +10,12 @@ void main() async {
 
     var parser = g.buildFrom(g.fullGrammar().end());
 
-    final text = File("test/inheritence/inheritance_projection_test.graphql")
-        .readAsStringSync();
+    final text = File("test/inheritence/inheritance_projection_test.graphql").readAsStringSync();
     parser.parse(text);
 
-    //expect(result.isSuccess, true);
+    //expect(result is Success, true);
     //print("g ==> ${g.generateClient()}");
   });
 }
 
-enum Gender { MALE, FEMALE }
+enum Gender { male, femal }

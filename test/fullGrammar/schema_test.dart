@@ -12,6 +12,6 @@ void main() async {
     final text = File("test/schema.graphql").readAsStringSync();
 
     var parsed = parser.parse(text);
-    expect(parsed.isSuccess, true);
+    expect(parsed is Success, true);
   });
 }

@@ -9,8 +9,7 @@ void main() async {
   test("Input transformation", () {
     var logger = Logger();
     final GQGrammar g = GQGrammar();
-    logger.i(
-        "________________________________________init______________________");
+    logger.i("________________________________________init______________________");
 
     var parser = g.buildFrom(g.fullGrammar().end());
     logger.i("reading file");
@@ -18,7 +17,7 @@ void main() async {
     final text = File("test/input/input_schema.graphql").readAsStringSync();
     logger.i("file read $test");
     var parsed = parser.parse(text);
-    expect(parsed.isSuccess, true);
+    expect(parsed is Success, true);
     expect(g.inputs.length, greaterThanOrEqualTo(1));
   });
 }

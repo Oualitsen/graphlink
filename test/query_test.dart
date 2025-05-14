@@ -14,7 +14,7 @@ void main() {
     }
      ''');
     // print("result.message = ${result.message}");
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 
   test("Query definition test", () {
@@ -30,7 +30,7 @@ void main() {
     }
     
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 
   test("Query definition test 2", () {
@@ -46,7 +46,7 @@ void main() {
       }
     
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 
   test("Query definition test 3", () {
@@ -62,7 +62,7 @@ void main() {
       }
     
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 
   test("Query definition test 4", () {
@@ -77,7 +77,7 @@ void main() {
       }
     
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 
   test("subscription test", () {
@@ -95,6 +95,6 @@ void main() {
       }
     
     ''');
-    expect(result.isSuccess, false);
+    expect(result is Success, false);
   });
 }

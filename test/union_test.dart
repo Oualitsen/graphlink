@@ -21,7 +21,7 @@ void main() {
     var result = parser.parse('''
     union type = User | Client
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
     expect(result.value.token, "type");
     expect(result.value.typeNames.length, 2);
   });
@@ -33,7 +33,7 @@ void main() {
     var result = parser.parse('''
     union type = User
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
     expect(result.value.token, "type");
     expect(result.value.typeNames.length, 1);
   });

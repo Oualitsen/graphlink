@@ -20,7 +20,7 @@ void main() async {
     logger.i("file read $test");
 
     var parsed = parser.parse(text);
-    expect(parsed.isSuccess, true);
+    expect(parsed is Success, true);
 
     var inputs = g.generateInputs();
 

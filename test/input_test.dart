@@ -17,7 +17,7 @@ void main() {
         test2: Int
       }
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
 
     // print((result.value as GraphqlTypeDefinition).toDart());
 
@@ -30,26 +30,24 @@ void main() {
         }
       }
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 
   test("Field test with init", () {
     final GQGrammar g = GQGrammar();
 
-    var parser = g.buildFrom(
-        g.field(canBeInitialized: true, acceptsArguments: false).end());
+    var parser = g.buildFrom(g.field(canBeInitialized: true, acceptsArguments: false).end());
     var result = parser.parse('''
       fieldName: String! = "Azul fellawen" @skip(if: true)
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
     expect(result.value.type.nullable, false);
   });
 
   test("Field test without init", () {
     final GQGrammar g = GQGrammar();
 
-    var parser = g.buildFrom(
-        g.field(canBeInitialized: false, acceptsArguments: false).end());
+    var parser = g.buildFrom(g.field(canBeInitialized: false, acceptsArguments: false).end());
     var result = parser.parse('''
       fieldName: String! = "Azul fellawen" @skip(if: true)
     ''');
@@ -57,6 +55,6 @@ void main() {
     result = parser.parse('''
       fieldName: String!  @skip(if: true)
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 }

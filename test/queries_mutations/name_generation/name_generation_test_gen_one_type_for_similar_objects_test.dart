@@ -15,7 +15,7 @@ void main() async {
         .readAsStringSync();
     var parsed = parser.parse(text);
 
-    expect(parsed.isSuccess, true);
+    expect(parsed is Success, true);
     expect(
         g.projectedTypes.values
             .where((element) => element.token != "ProductResponse")

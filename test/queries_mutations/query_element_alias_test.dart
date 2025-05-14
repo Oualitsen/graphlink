@@ -10,16 +10,12 @@ void main() async {
 
     var parser = g.buildFrom(g.fullGrammar().end());
 
-    final text = File("test/queries_mutations/query_element_alias_test.graphql")
-        .readAsStringSync();
+    final text = File("test/queries_mutations/query_element_alias_test.graphql").readAsStringSync();
     var r = parser.parse(text);
-    expect(r.isSuccess, true);
+    expect(r is Success, true);
     expect(g.projectedTypes.keys, contains("DriverResponse"));
     var response = g.projectedTypes["DriverResponse"]!;
 
-    expect(
-        response.fields.where((field) => field.name == "driver"), isNotEmpty);
-    var client = g.generateClient();
-    //print("client = $client");
+    expect(response.fields.where((field) => field.name == "driver"), isNotEmpty);
   });
 }

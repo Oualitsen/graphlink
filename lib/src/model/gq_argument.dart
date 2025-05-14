@@ -8,7 +8,7 @@ import 'package:retrofit_graphql/src/model/gq_token.dart';
 class GQArgumentDefinition extends GQToken {
   final GQType type;
   final Object? initialValue;
-  GQArgumentDefinition(String name, this.type, {this.initialValue}) : super(name);
+  GQArgumentDefinition(super.name, this.type, {this.initialValue});
 
   @override
   String toString() {
@@ -37,7 +37,7 @@ class GQArgumentValue extends GQToken {
   Object? value;
   //this is not know at parse type, it must be set only once the grammer parsing is done.
   late final GQType type;
-  GQArgumentValue(String name, this.value) : super(name);
+  GQArgumentValue(super.name, this.value);
 
   @override
   String serialize() {

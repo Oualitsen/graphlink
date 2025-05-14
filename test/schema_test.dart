@@ -12,7 +12,7 @@ void main() {
       mutation: Test2
     
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
     expect(result.value, "mutation-Test2");
   });
 
@@ -24,6 +24,6 @@ void main() {
    #   query: test1
     }
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 }

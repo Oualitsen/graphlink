@@ -31,3 +31,6 @@
   - Generate constructor without `required` for nullable arguments
     ### Note:
     if you need to keep generating required nullable fields you need to pass `nullableFieldsRequired: true` on your build.yaml
+
+## 2.1.1 - 2025-05-14
+    - Updates project dependcy versions

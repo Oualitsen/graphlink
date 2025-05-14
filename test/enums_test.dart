@@ -20,6 +20,6 @@ void main() {
       }
     
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 }

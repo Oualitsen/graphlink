@@ -8,53 +8,53 @@ void main() {
   test("identifier test", () {
     var parser = g.buildFrom(g.identifier().end());
     var result = parser.parse(''' test12 ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
     result = parser.parse(''' 1test ''');
-    expect(result.isSuccess, false);
+    expect(result is Success, false);
   });
 
   test("simple type test", () {
     var parser = g.buildFrom(g.simpleTypeTokenDefinition().end());
     var result = parser.parse(''' test12 ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
     result = parser.parse(''' 1test ''');
-    expect(result.isSuccess, false);
+    expect(result is Success, false);
 
     result = parser.parse(''' test! ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 
   test("list type test", () {
     var parser = g.buildFrom(g.listTypeDefinition().end());
     var result = parser.parse(''' [test12] ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
     result = parser.parse(''' 1test ''');
-    expect(result.isSuccess, false);
+    expect(result is Success, false);
 
     result = parser.parse(''' [test]! ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
 
     result = parser.parse(''' [test!]! ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 
   test(" type test", () {
     var parser = g.buildFrom(g.typeTokenDefinition().end());
     var result = parser.parse(''' [test12] ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
     result = parser.parse(''' 1test ''');
-    expect(result.isSuccess, false);
+    expect(result is Success, false);
 
     result = parser.parse(''' [test]! ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
 
     result = parser.parse(''' [test!]! ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
 
     result = parser.parse(''' test! ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
 
     result = parser.parse(''' test ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 }

@@ -15,7 +15,7 @@ void main() async {
     var parsed = parser.parse(text);
     var vehicleFrag = g.getFragment("_all_fields_Vehicle");
     var depencyFragNames = vehicleFrag.dependecies.map((e) => e.token).toList();
-    expect(parsed.isSuccess, true);
+    expect(parsed is Success, true);
     expect(depencyFragNames, contains("_all_fields_Make"));
   });
 }

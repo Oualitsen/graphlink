@@ -3,7 +3,7 @@ import 'package:retrofit_graphql/src/utils.dart';
 
 class GQUnionDefinition extends GQToken {
   final List<String> typeNames;
-  GQUnionDefinition(String name, this.typeNames) : super(name);
+  GQUnionDefinition(super.name, this.typeNames);
 
   @override
   String serialize() {

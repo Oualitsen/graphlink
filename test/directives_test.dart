@@ -10,15 +10,15 @@ void main() {
     var result = parser.parse('''
       @skip(if: true)
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
 
     result = parser.parse('''
       @skip(if: [1 2, {name:"ramdane", age: 33}])
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
 
     result = parser.parse('''@azul''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 
   test("Directive scopes test", () {
@@ -26,7 +26,7 @@ void main() {
     var result = parser.parse('''
     SCALAR|OBJECT|INTERFACE | ARGUMENT_DEFINITION
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 
   test("Directive definition test", () {
@@ -34,6 +34,6 @@ void main() {
     var result = parser.parse('''
     directive @test(test: String! = "Azul fellawen") on INTERFACE | ARGUMENT_DEFINITION
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 }

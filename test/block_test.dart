@@ -13,7 +13,7 @@ void main() {
           ...name ... dob ... on merde
          }
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 
   test("Plain fragment field test", () {
@@ -25,6 +25,6 @@ void main() {
           name 
          }
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
   });
 }

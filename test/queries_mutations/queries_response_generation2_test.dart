@@ -10,11 +10,9 @@ void main() async {
 
     var parser = g.buildFrom(g.fullGrammar().end());
 
-    final text =
-        File("test/queries_mutations/queries_response_generation2_test.graphql")
-            .readAsStringSync();
+    final text = File("test/queries_mutations/queries_response_generation2_test.graphql").readAsStringSync();
     var parsed = parser.parse(text);
-    expect(parsed.isSuccess, true);
+    expect(parsed is Success, true);
     // print("g.enums.keys = ${g.enums.keys}");
     // print("q = ${g.service.toDart(g)}");
   });

@@ -10,7 +10,7 @@ void main() {
     var result = parser.parse('''
       String!
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
     expect(result.value.nullable, false);
     expect(result.value.toDartType(g, false), "String");
   });
@@ -22,7 +22,7 @@ void main() {
     var result = parser.parse('''
       String
     ''');
-    expect(result.isSuccess, true);
+    expect(result is Success, true);
     expect(result.value.nullable, true);
     expect(result.value.toDartType(g, false), "String?");
   });

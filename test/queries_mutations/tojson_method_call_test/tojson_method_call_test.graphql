@@ -1,9 +1,6 @@
 
 
 
-enum State{
-  NEW USED
-}
 
 
 type Product {
@@ -14,11 +11,7 @@ type Product {
   brand: Brand!
 }
 
-type Brand {
-  name: String!
-  country: String!
-  
-}
+
 
 input ProductInput {
   name: String!
@@ -27,14 +20,8 @@ input ProductInput {
   state: State!
 }
 
-type Query {
-  getProducts(pageIndex: PageIndex): [Product!]!
-}
-
 type Mutation {
   createProduct(input: ProductInput): Product
-  createProductList(input: [ProductInput!]!): [Product!]
-  setProductState(state: [State]): Product!
 }
 
 mutation CreateProduct($input: ProductInput) {
@@ -43,24 +30,3 @@ mutation CreateProduct($input: ProductInput) {
   }
 }
 
-mutation CreateProductList($input: [[ProductInput]!]!) {
-  createProductList(input: $input) {
-    id name
-  }
-}
-
-mutation SetProductState($input: [State]) {
-  setProductState(input: $input) {
-    ...productFrag
-  }
-}
-
-fragment productFrag on Product {
-  id name brand {
-   ... brandFrag
-  }
-} 
-
-fragment brandFrag on Brand {
-  name country
-}

@@ -14,11 +14,9 @@ void main() async {
     final text = File("$path/tojson_method_call_test.graphql").readAsStringSync();
     var parsed = parser.parse(text);
 
-    expect(parsed.isSuccess, true);
+    expect(parsed is Success, true);
     Directory("$path/gen").createSync();
-    File("$path/gen/client.gq.dart").writeAsStringSync(g.generateClient());
-    File("$path/gen/types.gq.dart").writeAsStringSync(g.generateTypes());
-    File("$path/gen/inputs.gq.dart").writeAsStringSync(g.generateInputs());
-    File("$path/gen/enums.gq.dart").writeAsStringSync(g.generateEnums());
+    var client = g.generateClient();
+    expect(client, contains("'input': input?.toJson()"));
   });
 }

@@ -16,7 +16,7 @@ void main() async {
     final parser = g.buildFrom(g.fullGrammar().end());
     final parsed = parser.parse(text);
 
-    expect(parsed.isSuccess, true);
+    expect(parsed is Success, true);
   });
   
 }*/

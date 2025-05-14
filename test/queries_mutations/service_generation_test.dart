@@ -10,10 +10,8 @@ void main() async {
 
     var parser = g.buildFrom(g.fullGrammar().end());
 
-    final text =
-        File("test/queries_mutations/simple_queries_service_generation.graphql")
-            .readAsStringSync();
+    final text = File("test/queries_mutations/simple_queries_service_generation.graphql").readAsStringSync();
     var parsed = parser.parse(text);
-    expect(parsed.isSuccess, true);
+    expect(parsed is Success, true);
   });
 }

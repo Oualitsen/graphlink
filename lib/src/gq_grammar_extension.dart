@@ -21,7 +21,7 @@ const String enumsFileName = "enums.gq";
 const String typesFileName = "types.gq";
 const String clientFileName = "client.gq";
 
-const all_fields = '_all_fields';
+const allFields = '_all_fields';
 
 const fileHeadComment = """
 // GENERATED CODE - DO NOT MODIFY BY HAND.
@@ -324,8 +324,8 @@ $data
       if (fragment.onTypeName != type.token && !type.interfaceNames.contains(fragment.onTypeName)) {
         throw ParseException("Fragment ${fragment.token} cannot be applied to type ${type.token}");
       }
-      if (projection.token == all_fields) {
-        projection.fragmentName = '${all_fields}_$typeName';
+      if (projection.token == allFields) {
+        projection.fragmentName = '${allFields}_$typeName';
       }
     } else {
       var requiresProjection = fieldRequiresProjection(projection.token, typeName);
@@ -441,8 +441,8 @@ $data
 
   GQFragmentDefinitionBase getFragment(String name, [String? typeName]) {
     String fragmentName;
-    if (name == all_fields && typeName != null) {
-      fragmentName = '${all_fields}_$typeName';
+    if (name == allFields && typeName != null) {
+      fragmentName = '${allFields}_$typeName';
     } else {
       fragmentName = name;
     }
@@ -493,7 +493,7 @@ $data
   }
 
   static String allFieldsFragmentName(String token) {
-    return "${all_fields}_$token";
+    return "${allFields}_$token";
   }
 
   GQFragmentBlockDefinition? createAllFieldBlock(GQField field) {

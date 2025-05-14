@@ -55,7 +55,7 @@ class GQDirectiveValue extends GQToken {
   final List<GQDirectiveScope> locations;
   final List<GQArgumentValue> arguments;
 
-  GQDirectiveValue(String name, this.locations, this.arguments) : super(name);
+  GQDirectiveValue(super.name, this.locations, this.arguments);
 
   @override
   String serialize() {
