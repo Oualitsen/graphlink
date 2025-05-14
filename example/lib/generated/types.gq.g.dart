@@ -6,17 +6,17 @@ part of 'types.gq.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-Inline_4ff46788_488c_dc02_5f2f_98101e709fbe___typename_firstName_lastName
-    _$Inline_4ff46788_488c_dc02_5f2f_98101e709fbe___typename_firstName_lastNameFromJson(
+Inline_b5e8ad64_03a4_abb8_336d_26cb5a169b67___typename_firstName_lastName
+    _$Inline_b5e8ad64_03a4_abb8_336d_26cb5a169b67___typename_firstName_lastNameFromJson(
             Map<String, dynamic> json) =>
-        Inline_4ff46788_488c_dc02_5f2f_98101e709fbe___typename_firstName_lastName(
+        Inline_b5e8ad64_03a4_abb8_336d_26cb5a169b67___typename_firstName_lastName(
           lastName: json['lastName'] as String,
           firstName: json['firstName'] as String,
         );
 
 Map<String, dynamic>
-    _$Inline_4ff46788_488c_dc02_5f2f_98101e709fbe___typename_firstName_lastNameToJson(
-            Inline_4ff46788_488c_dc02_5f2f_98101e709fbe___typename_firstName_lastName
+    _$Inline_b5e8ad64_03a4_abb8_336d_26cb5a169b67___typename_firstName_lastNameToJson(
+            Inline_b5e8ad64_03a4_abb8_336d_26cb5a169b67___typename_firstName_lastName
                 instance) =>
         <String, dynamic>{
           'firstName': instance.firstName,
@@ -33,16 +33,16 @@ Map<String, dynamic> _$ClientToJson(Client instance) => <String, dynamic>{
       'lastUpdate': instance.lastUpdate,
     };
 
-BasicUser_projection_cbb7f99c_ca2d_2f21_d42f_e6c8fd1cbd06
-    _$BasicUser_projection_cbb7f99c_ca2d_2f21_d42f_e6c8fd1cbd06FromJson(
+BasicUser_projection_e5638224_9ccb_4679_2564_2f2b8e87d8ac
+    _$BasicUser_projection_e5638224_9ccb_4679_2564_2f2b8e87d8acFromJson(
             Map<String, dynamic> json) =>
-        BasicUser_projection_cbb7f99c_ca2d_2f21_d42f_e6c8fd1cbd06(
+        BasicUser_projection_e5638224_9ccb_4679_2564_2f2b8e87d8ac(
           firstName: json['firstName'] as String,
         );
 
 Map<String,
-    dynamic> _$BasicUser_projection_cbb7f99c_ca2d_2f21_d42f_e6c8fd1cbd06ToJson(
-        BasicUser_projection_cbb7f99c_ca2d_2f21_d42f_e6c8fd1cbd06 instance) =>
+    dynamic> _$BasicUser_projection_e5638224_9ccb_4679_2564_2f2b8e87d8acToJson(
+        BasicUser_projection_e5638224_9ccb_4679_2564_2f2b8e87d8ac instance) =>
     <String, dynamic>{
       'firstName': instance.firstName,
     };
@@ -93,7 +93,7 @@ Map<String, dynamic> _$Driver_myFragToJson(Driver_myFrag instance) =>
 GetUserResponse _$GetUserResponseFromJson(Map<String, dynamic> json) =>
     GetUserResponse(
       getUser:
-          BasicUser_projection_cbb7f99c_ca2d_2f21_d42f_e6c8fd1cbd06.fromJson(
+          BasicUser_projection_e5638224_9ccb_4679_2564_2f2b8e87d8ac.fromJson(
               json['getUser'] as Map<String, dynamic>),
     );
 

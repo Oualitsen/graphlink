@@ -760,6 +760,14 @@ $data
     }
     return result;
   }
+
+  String toContructoDeclaration(GQField field) {
+    if (nullableFieldsRequired || !field.type.nullable) {
+      return "required this.${field.name}";
+    } else {
+      return "this.${field.name}";
+    }
+  }
 }
 
 class GeneratedTypeName {

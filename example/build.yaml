@@ -11,3 +11,4 @@ targets:
           Long: int
           ID: String
           generateAllFieldsFragments: true
+          nullableFieldsRequired: false

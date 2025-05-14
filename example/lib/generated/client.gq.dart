@@ -93,8 +93,8 @@ class GQClient {
   GQClient(Future<String> Function(String payload) adapter, WebSocketAdapter wsAdapter)
       :queries = Queries(adapter), subscriptions = Subscriptions(wsAdapter) {
       
-      _fragmMap['Inline_e6a98805_9c1e_b4b1_3829_30bad3cbe47b'] = '... on Driver  {firstName lastName __typename} ';
-_fragmMap['Inline_5b1aad20_c975_e940_991f_2a434c27f6fe'] = '... on Client  {lastUpdate firstName __typename} ';
+      _fragmMap['Inline_470bd691_6e06_ac29_70ed_f6f315db5dbb'] = '... on Driver  {firstName lastName __typename} ';
+_fragmMap['Inline_7867e36f_a529_10da_51fa_efa1add1aa35'] = '... on Client  {lastUpdate firstName __typename} ';
 _fragmMap['DriverFragment'] = 'fragment DriverFragment on Driver{firstName lastName id cars{year}}';
 _fragmMap['myFrag'] = 'fragment myFrag on Driver{id firstName cars{...carFrag}}';
 _fragmMap['carFrag'] = 'fragment carFrag on Car{model year}';

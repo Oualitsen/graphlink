@@ -18,3 +18,15 @@
           Map<String, dynamic> toJson() => _$PageInfoToJson(this);
       }
 
+    @JsonSerializable(explicitToJson: true)
+      class TestInput {
+          final String name;
+          final String? midName;
+          
+          TestInput({required this.name, this.midName});
+          
+          factory TestInput.fromJson(Map<String, dynamic> json) => _$TestInputFromJson(json);
+          
+          Map<String, dynamic> toJson() => _$TestInputToJson(this);
+      }
+

@@ -78,6 +78,7 @@ class GQGrammar extends GrammarDefinition {
   GQSchema schema = GQSchema();
   bool schemaInitialized = false;
   final bool generateAllFieldsFragments;
+  final bool nullableFieldsRequired;
 
   late final GQGraphqlService service;
   GQGrammar({
@@ -91,6 +92,7 @@ class GQGrammar extends GrammarDefinition {
       "Long": "int"
     },
     this.generateAllFieldsFragments = false,
+    this.nullableFieldsRequired = false,
   });
 
   bool get hasSubscriptions => hasQueryType(GQQueryType.subscription);

@@ -102,3 +102,8 @@ input PageInfo {
     index: Int!
     size: Int!
 }
+
+input TestInput {
+    name: String!
+    midName: String
+}

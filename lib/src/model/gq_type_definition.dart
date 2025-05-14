@@ -183,7 +183,7 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
     String commonFields =
         _superFields.isEmpty ? "" : _superFields.map((e) => e.toDartMethodDeclaration(grammar)).join(", ");
     String nonCommonFields =
-        getFields().isEmpty ? "" : getFields().map((e) => e.name).map((e) => "required this.$e").join(", ");
+        getFields().isEmpty ? "" : getFields().map((e) => grammar.toContructoDeclaration(e)).join(", ");
     var combined = [nonCommonFields, commonFields].where((element) => element.isNotEmpty).toSet();
     if (combined.isEmpty) {
       return "";

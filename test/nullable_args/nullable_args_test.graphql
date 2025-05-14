@@ -1,0 +1,22 @@
+
+
+
+input UserInput {
+    name: String!
+    middleName: String
+}
+
+type User {
+    name: String!
+    middleName: String
+}
+
+type Query {
+    getUser: User
+}
+
+query getUser {
+    getUser {
+        name middleName
+    }
+}

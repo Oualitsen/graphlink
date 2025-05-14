@@ -26,3 +26,8 @@
  ## 2.0.3 - 2024-06-11
   - Optimizes code generation.
   - Generates code much faster.
+
+ ## 2.1.0 - 2025-05-14
+  - Generate constructor without `required` for nullable arguments
+    ### Note:
+    if you need to keep generating required nullable fields you need to pass `nullableFieldsRequired: true` on your build.yaml
