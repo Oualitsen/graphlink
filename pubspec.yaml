@@ -16,7 +16,7 @@ dependencies:
   petitparser: ^5.4.0
   source_gen: ^1.0.0
   glob: ^2.1.2
-  logger: ^1.4.0
+  logger: ^2.3.0
   build: ^2.4.1
 
 dev_dependencies:
