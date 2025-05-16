@@ -1,0 +1,29 @@
+type Model {
+    id: String
+    name: String
+}
+
+type Make {
+    id: String
+    name: String
+}
+
+
+type Query {
+    getModels: Model
+    getMakes: Make
+}
+
+query getAll {
+
+    getMakes {
+        id name
+    }
+    
+   
+    getModels {
+        id name
+    }
+
+     
+}

@@ -1,13 +1,13 @@
 {
-    "dart.flutterSdkPath": ".fvm/flutter_sdk",
-    "search.exclude": {
-        "**/node_modules": true,
-        "**/bower_components": true,
-        "**/*.code-search": true,
-        "**/.fvm": true
-    },
-    "files.watcherExclude": {
-        "**/.dart_tool": true,
-        "**/.fvm": true
-    }
+  "dart.flutterSdkPath": ".fvm/versions/3.29.3",
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/*.code-search": true,
+    "**/.fvm": true
+  },
+  "files.watcherExclude": {
+    "**/.dart_tool": true,
+    "**/.fvm": true
+  }
 }

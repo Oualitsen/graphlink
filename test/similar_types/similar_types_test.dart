@@ -6,7 +6,8 @@ import 'package:petitparser/petitparser.dart';
 
 void main() {
   test("type_looks_like_test", () {
-    final text = File("test/similar_types/similar_types_test.graphql").readAsStringSync();
+    final text = File("test/similar_types/similar_types_test.graphql")
+        .readAsStringSync();
     var g = GQGrammar();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);

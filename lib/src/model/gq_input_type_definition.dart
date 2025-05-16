@@ -5,7 +5,8 @@ import 'package:retrofit_graphql/src/model/gq_token.dart';
 import 'package:retrofit_graphql/src/utils.dart';
 
 class GQInputDefinition extends GQTokenWithFields implements DartSerializable {
-  GQInputDefinition({required String name, required List<GQField> fields}) : super(name, fields);
+  GQInputDefinition({required String name, required List<GQField> fields})
+      : super(name, fields);
 
   @override
   String toString() {

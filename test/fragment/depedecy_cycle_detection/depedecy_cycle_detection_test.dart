@@ -11,7 +11,8 @@ void main() async {
 
     var parser = g.buildFrom(g.fullGrammar().end());
 
-    final text = File("test/fragment/depedecy_cycle_detection/depedecy_cycle_detection_test.graphql")
+    final text = File(
+            "test/fragment/depedecy_cycle_detection/depedecy_cycle_detection_test.graphql")
         .readAsStringSync();
     expect(() => parser.parse(text), throwsA(isA<ParseException>()));
   });

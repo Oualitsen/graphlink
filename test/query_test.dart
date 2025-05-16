@@ -8,7 +8,7 @@ void main() {
     final GQGrammar g = GQGrammar();
 
     var parser = g.buildFrom(g.queryElement().end());
-    var result = parser.parse(''' 
+    var result = parser.parse('''
     adType(id: \$id) @test {
     ...adTypeFields
     }

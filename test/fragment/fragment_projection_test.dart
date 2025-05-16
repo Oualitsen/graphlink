@@ -9,7 +9,8 @@ final GQGrammar g = GQGrammar();
 
 void main() async {
   test("fragment projection test", () {
-    final text = File("test/fragment/fragment_projection_test.graphql").readAsStringSync();
+    final text = File("test/fragment/fragment_projection_test.graphql")
+        .readAsStringSync();
 
     final GQGrammar g = GQGrammar();
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -19,7 +20,9 @@ void main() async {
   });
 
   test("fragment projection test", () {
-    final text = File("test/fragment/fragment_projection_mismatch_fragment_type.graphql").readAsStringSync();
+    final text =
+        File("test/fragment/fragment_projection_mismatch_fragment_type.graphql")
+            .readAsStringSync();
 
     final GQGrammar g = GQGrammar();
     var parser = g.buildFrom(g.fullGrammar().end());

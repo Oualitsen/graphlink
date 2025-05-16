@@ -10,9 +10,11 @@ void main() async {
 
     var parser = g.buildFrom(g.fullGrammar().end());
 
-    final text = File("test/queries_mutations/query_depency_test.graphql").readAsStringSync();
+    final text = File("test/queries_mutations/query_depency_test.graphql")
+        .readAsStringSync();
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
-    expect(g.queries["ProductQuery"]!.fragments(g).map((e) => e.token), contains("ProductFragment"));
+    expect(g.queries["ProductQuery"]!.fragments(g).map((e) => e.token),
+        contains("ProductFragment"));
   });
 }

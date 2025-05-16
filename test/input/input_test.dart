@@ -9,7 +9,8 @@ void main() async {
   test("Input transformation", () {
     var logger = Logger();
     final GQGrammar g = GQGrammar();
-    logger.i("________________________________________init______________________");
+    logger.i(
+        "________________________________________init______________________");
 
     var parser = g.buildFrom(g.fullGrammar().end());
     logger.i("reading file");

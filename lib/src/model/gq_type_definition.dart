@@ -42,6 +42,13 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
   ///check is the two definitions will produce the same object structure
   ///
   bool isSimilarTo(GQTypeDefinition other, GQGrammar g) {
+    var dft = derivedFromType;
+    var otherDft = other.derivedFromType;
+    if (otherDft != null) {
+      if ((dft?.token ?? token) != otherDft.token) {
+        return false;
+      }
+    }
     return getHash(g) == other.getHash(g);
   }
 
@@ -180,11 +187,17 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
       return "";
     }
 
-    String commonFields =
-        _superFields.isEmpty ? "" : _superFields.map((e) => e.toDartMethodDeclaration(grammar)).join(", ");
-    String nonCommonFields =
-        getFields().isEmpty ? "" : getFields().map((e) => grammar.toContructoDeclaration(e)).join(", ");
-    var combined = [nonCommonFields, commonFields].where((element) => element.isNotEmpty).toSet();
+    String commonFields = _superFields.isEmpty
+        ? ""
+        : _superFields
+            .map((e) => e.toDartMethodDeclaration(grammar))
+            .join(", ");
+    String nonCommonFields = getFields().isEmpty
+        ? ""
+        : getFields().map((e) => grammar.toContructoDeclaration(e)).join(", ");
+    var combined = [nonCommonFields, commonFields]
+        .where((element) => element.isNotEmpty)
+        .toSet();
     if (combined.isEmpty) {
       return "";
     } else if (combined.length == 1) {

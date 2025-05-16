@@ -10,7 +10,8 @@ void main() async {
 
     var parser = g.buildFrom(g.fullGrammar().end());
 
-    final text = File("test/queries_mutations/renamin_projected_types/renaming_projected_types_test.graphql")
+    final text = File(
+            "test/queries_mutations/renamin_projected_types/renaming_projected_types_test.graphql")
         .readAsStringSync();
     var parsed = parser.parse(text);
 
@@ -18,6 +19,7 @@ void main() async {
     //renamed product input
     expect(g.inputs.keys, contains("MyProductInput"));
     //renamed responses
-    expect(g.queries["getAllProducts"]!.getGeneratedTypeDefinition().token, equals("MyProductResp"));
+    expect(g.queries["getAllProducts"]!.getGeneratedTypeDefinition().token,
+        equals("MyProductResp"));
   });
 }

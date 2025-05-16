@@ -28,7 +28,8 @@ class GQQueryDefinition extends GQToken {
     return {...frags, ...frags.expand((e) => e.dependecies)};
   }
 
-  GQQueryDefinition(super.token, this.directives, this.arguments, this.elements, this.type) {
+  GQQueryDefinition(
+      super.token, this.directives, this.arguments, this.elements, this.type) {
     checkVariables();
   }
 
@@ -81,7 +82,8 @@ class GQQueryDefinition extends GQToken {
   }
 
   String _getGeneratedTypeName() {
-    return getNameValueFromDirectives(directives) ?? "${_capitilizedFirstLetterToken}Response";
+    return getNameValueFromDirectives(directives) ??
+        "${_capitilizedFirstLetterToken}Response";
   }
 
   String get _capitilizedFirstLetterToken {
@@ -104,7 +106,8 @@ class GQQueryDefinition extends GQToken {
         .toList();
   }
 
-  GQArgumentDefinition findByName(String name) => arguments.where((arg) => arg.token == name).first;
+  GQArgumentDefinition findByName(String name) =>
+      arguments.where((arg) => arg.token == name).first;
 }
 
 class GQQueryElement extends GQToken {
@@ -139,28 +142,35 @@ class GQQueryElement extends GQToken {
         .map((e) => e.fragmentName!)
         .toSet();
     var set2 = block.projections.values
-        .where((element) => !element.isFragmentReference && element.block != null)
+        .where(
+            (element) => !element.isFragmentReference && element.block != null)
         .map((e) => e.block!)
         .expand((element) => _getFragmentNamesByBlock(element))
         .toSet();
     return {...set1, ...set2};
   }
 
-  GQType _getReturnProjectedType(GQTypeDefinition? projectedType, GQType returnType) {
+  GQType _getReturnProjectedType(
+      GQTypeDefinition? projectedType, GQType returnType) {
     if (projectedType == null) {
       return returnType;
     } else {
       if (returnType is GQListType) {
-        return GQListType(_getReturnProjectedType(projectedType, returnType.type), returnType.nullable);
+        return GQListType(
+            _getReturnProjectedType(projectedType, returnType.type),
+            returnType.nullable);
       } else {
-        return GQType(projectedType.token, returnType.nullable, isScalar: false);
+        return GQType(projectedType.token, returnType.nullable,
+            isScalar: false);
       }
     }
   }
 
-  GQType get returnProjectedType => _getReturnProjectedType(projectedType, returnType);
+  GQType get returnProjectedType =>
+      _getReturnProjectedType(projectedType, returnType);
 
-  GQQueryElement(super.token, this.directives, this.block, this.arguments, this.alias);
+  GQQueryElement(
+      super.token, this.directives, this.block, this.arguments, this.alias);
 
   @override
   String serialize() {

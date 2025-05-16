@@ -9,7 +9,8 @@ void main() async {
     final GQGrammar g = GQGrammar();
     var parser = g.buildFrom(g.fullGrammar().end());
 
-    final text = File("test/interface/interface_schema.graphql").readAsStringSync();
+    final text =
+        File("test/interface/interface_schema.graphql").readAsStringSync();
 
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
@@ -19,7 +20,8 @@ void main() async {
 
     final i2 = g.interfaces["AddressInput1"]!;
     expect(i2.fieldNames, containsAll(["street", "wilayaId", "city"]));
-    expect(i2.fieldNames, isNot(containsAll(["firstName1", "lastName1", "middleName1"])));
+    expect(i2.fieldNames,
+        isNot(containsAll(["firstName1", "lastName1", "middleName1"])));
     expect(i2.parentNames, contains("UserInput1"));
   });
 }

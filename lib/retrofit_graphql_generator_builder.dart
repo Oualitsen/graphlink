@@ -32,15 +32,20 @@ class RetrofitGraphqlGeneratorBuilder implements Builder {
   @override
   Future<void> build(BuildStep buildStep) async {
     await initAssets(buildStep);
-    options.config.entries.where((element) => element.value is String).forEach((e) {
+    options.config.entries
+        .where((element) => element.value is String)
+        .forEach((e) {
       map[e.key] = e.value as String;
     });
     var g = GQGrammar(
         typeMap: map,
-        generateAllFieldsFragments: options.config["generateAllFieldsFragments"] ?? false,
-        nullableFieldsRequired: options.config["nullableFieldsRequired"] ?? false,
+        generateAllFieldsFragments:
+            options.config["generateAllFieldsFragments"] ?? false,
+        nullableFieldsRequired:
+            options.config["nullableFieldsRequired"] ?? false,
         autoGenerateQueries: options.config["autoGenerateQueries"] ?? false,
-        autoGenerateQueriesDefaultAlias: options.config["autoGenerateQueriesDefaultAlias"]);
+        autoGenerateQueriesDefaultAlias:
+            options.config["autoGenerateQueriesDefaultAlias"]);
 
     var parser = g.buildFrom(g.start());
 
@@ -74,7 +79,8 @@ class RetrofitGraphqlGeneratorBuilder implements Builder {
   }
 
   Future<String> readSchema(BuildStep buildStep) async {
-    final contents = await Future.wait(assets.map((asset) => buildStep.readAsString(asset)));
+    final contents =
+        await Future.wait(assets.map((asset) => buildStep.readAsString(asset)));
     final schema = contents.join("\n");
     return schema;
   }

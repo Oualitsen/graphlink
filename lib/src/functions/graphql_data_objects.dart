@@ -12,24 +12,28 @@ class SubscriptionMessage extends SubscriptionMessageBase {
 
   SubscriptionMessage({super.id, super.type, this.payload});
 
-  static SubscriptionMessage fromQuery(String id, GQPayload query) => SubscriptionMessage(
-      id: id,
-      type: SubscriptionMessageTypes.subscribe,
-      payload: SubscriptionPayload(
-        query: query.query,
-        operationName: query.operationName,
-        variables: query.variables,
-      ));
+  static SubscriptionMessage fromQuery(String id, GQPayload query) =>
+      SubscriptionMessage(
+          id: id,
+          type: SubscriptionMessageTypes.subscribe,
+          payload: SubscriptionPayload(
+            query: query.query,
+            operationName: query.operationName,
+            variables: query.variables,
+          ));
 
-  static final connectionInit =
-      SubscriptionMessage(type: SubscriptionMessageTypes.connection_init, payload: SubscriptionPayload());
+  static final connectionInit = SubscriptionMessage(
+      type: SubscriptionMessageTypes.connection_init,
+      payload: SubscriptionPayload());
 
-  factory SubscriptionMessage.fromJson(Map<String, dynamic> json) => SubscriptionMessage(
+  factory SubscriptionMessage.fromJson(Map<String, dynamic> json) =>
+      SubscriptionMessage(
         id: json['id'] as String?,
         type: json['type'] as String?,
         payload: json['payload'] == null
             ? null
-            : SubscriptionPayload.fromJson(json['payload'] as Map<String, dynamic>),
+            : SubscriptionPayload.fromJson(
+                json['payload'] as Map<String, dynamic>),
       );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
@@ -46,7 +50,8 @@ class SubscriptionErrorMessage extends SubscriptionMessageBase {
 
   SubscriptionErrorMessage({super.id, super.type, required this.payload});
 
-  factory SubscriptionErrorMessage.fromJson(Map<String, dynamic> json) => SubscriptionErrorMessage(
+  factory SubscriptionErrorMessage.fromJson(Map<String, dynamic> json) =>
+      SubscriptionErrorMessage(
         id: json['id'] as String?,
         type: json['type'] as String,
         payload: (json['payload'] as List<dynamic>)
@@ -74,7 +79,8 @@ class SubscriptionPayload {
     this.variables,
     this.data,
   });
-  factory SubscriptionPayload.fromJson(Map<String, dynamic> json) => SubscriptionPayload(
+  factory SubscriptionPayload.fromJson(Map<String, dynamic> json) =>
+      SubscriptionPayload(
         query: json['query'] as String?,
         operationName: json['operationName'] as String?,
         variables: json['variables'] as Map<String, dynamic>?,
@@ -111,7 +117,8 @@ class GraphQLError {
   factory GraphQLError.fromJson(Map<String, dynamic> json) => GraphQLError(
         json['message'] as String,
         locations: (json['locations'] as List<dynamic>?)
-            ?.map((e) => GraphQLErrorLocation.fromJson(e as Map<String, dynamic>))
+            ?.map(
+                (e) => GraphQLErrorLocation.fromJson(e as Map<String, dynamic>))
             .toList(),
         extensions: json['extensions'] as Map<String, dynamic>?,
         path: json['path'] as List<dynamic>?,
@@ -135,7 +142,8 @@ class GraphQLErrorLocation {
 
   GraphQLErrorLocation(this.line, this.column);
 
-  factory GraphQLErrorLocation.fromJson(Map<String, dynamic> json) => GraphQLErrorLocation(
+  factory GraphQLErrorLocation.fromJson(Map<String, dynamic> json) =>
+      GraphQLErrorLocation(
         json['line'] as int,
         json['column'] as int,
       );

@@ -11,12 +11,14 @@ void main() async {
   test("Nullable Arguments", () {
     var logger = Logger();
     final GQGrammar g = GQGrammar(nullableFieldsRequired: false);
-    logger.i("________________________________________init______________________");
+    logger.i(
+        "________________________________________init______________________");
 
     var parser = g.buildFrom(g.fullGrammar().end());
     logger.i("reading file");
 
-    final text = File("test/nullable_args/nullable_args_test.graphql").readAsStringSync();
+    final text = File("test/nullable_args/nullable_args_test.graphql")
+        .readAsStringSync();
     logger.i("file read $test");
 
     var parsed = parser.parse(text);
@@ -35,18 +37,22 @@ void main() async {
     final GQGrammar g1 = GQGrammar(nullableFieldsRequired: false);
     final nullableString = GQType("String", true);
     final nonNullableString = GQType("String", false);
-    final nullableField = GQField(name: "name", type: nullableString, arguments: [], directives: []);
-    final nonNullableField = GQField(name: "name", type: nonNullableString, arguments: [], directives: []);
+    final nullableField = GQField(
+        name: "name", type: nullableString, arguments: [], directives: []);
+    final nonNullableField = GQField(
+        name: "name", type: nonNullableString, arguments: [], directives: []);
 
     var dartContructorTypeNullable = g1.toContructoDeclaration(nullableField);
-    var dartContructorTypeNonNullable = g1.toContructoDeclaration(nonNullableField);
+    var dartContructorTypeNonNullable =
+        g1.toContructoDeclaration(nonNullableField);
 
     expect(dartContructorTypeNullable, "this.name");
     expect(dartContructorTypeNonNullable, "required this.name");
 
     final GQGrammar g2 = GQGrammar(nullableFieldsRequired: true);
     var dartContructorTypeNullable2 = g2.toContructoDeclaration(nullableField);
-    var dartContructorTypeNonNullable2 = g2.toContructoDeclaration(nonNullableField);
+    var dartContructorTypeNonNullable2 =
+        g2.toContructoDeclaration(nonNullableField);
 
     expect(dartContructorTypeNullable2, "required this.name");
     expect(dartContructorTypeNonNullable2, "required this.name");

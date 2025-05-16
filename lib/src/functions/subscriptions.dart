@@ -8,7 +8,8 @@ enum _AckStatus { none, progress, acknoledged }
 class SubscriptionHandler {
   final Map<String, StreamController<Map<String, dynamic>>> _map = {};
   final WebSocketAdapter adapter;
-  final connectionInit = SubscriptionMessage(type: SubscriptionMessageTypes.connection_init);
+  final connectionInit =
+      SubscriptionMessage(type: SubscriptionMessageTypes.connection_init);
 
   SubscriptionHandler(this.adapter);
 
@@ -51,7 +52,8 @@ class SubscriptionHandler {
                 return broadcasStream;
             }
           }).map((bs) {
-            var streamSink = _StreamSink(sendMessage: adapter.sendMessage, stream: bs);
+            var streamSink =
+                _StreamSink(sendMessage: adapter.sendMessage, stream: bs);
             ackStatus = _AckStatus.acknoledged;
             ack.sink.add(streamSink);
             return streamSink;
@@ -106,7 +108,8 @@ class SubscriptionHandler {
             }
           });
 
-      streamSink.sendMessage(SubscriptionMessage.fromQuery(uuid, pl).toJsonText());
+      streamSink
+          .sendMessage(SubscriptionMessage.fromQuery(uuid, pl).toJsonText());
     });
 
     return controller.stream;

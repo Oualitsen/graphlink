@@ -10,9 +10,9 @@ void main() async {
 
     var parser = g.buildFrom(g.fullGrammar().end());
 
-    final text =
-        File("test/queries_mutations/renaming_projected_types_2/renaming_projected_types_2_test.graphql")
-            .readAsStringSync();
+    final text = File(
+            "test/queries_mutations/renaming_projected_types_2/renaming_projected_types_2_test.graphql")
+        .readAsStringSync();
     var parsed = parser.parse(text);
 
     expect(parsed is Success, true);

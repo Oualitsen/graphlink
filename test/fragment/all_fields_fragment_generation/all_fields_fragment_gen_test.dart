@@ -10,7 +10,8 @@ void main() async {
 
     var parser = g.buildFrom(g.fullGrammar().end());
 
-    final text = File("test/fragment/all_fields_fragment_generation/all_fields_fragment_gen_test.graphql")
+    final text = File(
+            "test/fragment/all_fields_fragment_generation/all_fields_fragment_gen_test.graphql")
         .readAsStringSync();
     var parsed = parser.parse(text);
     expect(parsed is Success, true);

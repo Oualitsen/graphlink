@@ -11,7 +11,8 @@ void main() async {
 
     var parser = g.buildFrom(g.fullGrammar().end());
 
-    final text = File("$path/tojson_method_call_test.graphql").readAsStringSync();
+    final text =
+        File("$path/tojson_method_call_test.graphql").readAsStringSync();
     var parsed = parser.parse(text);
 
     expect(parsed is Success, true);

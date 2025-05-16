@@ -14,8 +14,10 @@ void main() async {
 
     final schema = File("test/example2/schema.graphql").readAsStringSync();
     final queries = File("test/example2/queries.graphql").readAsStringSync();
-    final mutations = File("test/example2/mutations.graphql").readAsStringSync();
-    final fragments = File("test/example2/fragments.graphql").readAsStringSync();
+    final mutations =
+        File("test/example2/mutations.graphql").readAsStringSync();
+    final fragments =
+        File("test/example2/fragments.graphql").readAsStringSync();
     var parsed = parser.parse("""
         $schema
         $fragments
