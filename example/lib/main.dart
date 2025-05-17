@@ -7,14 +7,14 @@ void main(List<String> args) {
   var wsAdapter = WebSocketChannelAdapter(wsUrl);
 
   fn(payload) => http
-      .post(Uri.parse(url),
-          body: payload, headers: {"Content-Type": "application/json"})
+      .post(Uri.parse(url), body: payload, headers: {"Content-Type": "application/json"})
       .asStream()
       .map((response) => response.body)
       .first;
 
   var client = GQClient(fn, wsAdapter);
   client.queries.getDriver3().then((value) => value.data);
+  client.queries.getVehicle().then((value) {});
 /*
 
   client.queries

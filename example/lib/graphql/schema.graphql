@@ -73,6 +73,13 @@ type Car {
     imageUrl: String
 }
 
+type Moto {
+    brand: String!
+    model: String!
+}
+
+union Vehicle = Car | Moto
+
 type Home {
     address: String!
     lat: Float!
@@ -88,6 +95,8 @@ type Query {
     getHome(id: ID!, ownerTypeDriver: Boolean!): Home!
 
     getDriver3: Driver!
+
+    getVehicle: Vehicle
     
 }
 

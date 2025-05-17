@@ -1,0 +1,32 @@
+interface Animal {
+    name: String
+}
+
+
+
+type Cat implements Animal {
+    name: String
+    male: Boolean
+}
+
+type Dog implements Animal {
+    name: String
+    ownerName: String
+    age: Int
+
+}
+
+type Query {
+    getAnimal: Animal
+}
+
+query getAnimal {
+    getAnimal {
+        ... on Cat {
+            ... _all_fields
+        }
+        ... on Dog {
+           age ownerName
+        }
+    }
+}

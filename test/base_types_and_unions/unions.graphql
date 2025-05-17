@@ -1,0 +1,30 @@
+
+
+
+
+type Cat  {
+    name: String
+    male: Boolean
+}
+
+type Dog  {
+    name: String
+    ownerName: String
+    age: Int
+
+}
+union Animal = Cat | Dog
+type Query {
+    getAnimal: Animal
+}
+
+query getAnimal {
+    getAnimal  {
+        ... on Cat {
+            ... _all_fields
+        }
+        ... on Dog  {
+           age ownerName
+        }
+    }
+}

@@ -91,7 +91,7 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
       var typename = json["__typename"];
       switch(typename) {
         
-        ${subTypes.map((st) => "case \"${st.derivedFromType?.token}\": return _\$${st.token}FromJson(json);").join("\n        ")}
+        ${subTypes.map((st) => "case \"${st.derivedFromType?.token ?? st.token}\": return _\$${st.token}FromJson(json);").join("\n        ")}
       }
       return _\$${token}FromJson(json);
     """;
@@ -187,17 +187,11 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
       return "";
     }
 
-    String commonFields = _superFields.isEmpty
-        ? ""
-        : _superFields
-            .map((e) => e.toDartMethodDeclaration(grammar))
-            .join(", ");
-    String nonCommonFields = getFields().isEmpty
-        ? ""
-        : getFields().map((e) => grammar.toContructoDeclaration(e)).join(", ");
-    var combined = [nonCommonFields, commonFields]
-        .where((element) => element.isNotEmpty)
-        .toSet();
+    String commonFields =
+        _superFields.isEmpty ? "" : _superFields.map((e) => e.toDartMethodDeclaration(grammar)).join(", ");
+    String nonCommonFields =
+        getFields().isEmpty ? "" : getFields().map((e) => grammar.toContructoDeclaration(e)).join(", ");
+    var combined = [nonCommonFields, commonFields].where((element) => element.isNotEmpty).toSet();
     if (combined.isEmpty) {
       return "";
     } else if (combined.length == 1) {
