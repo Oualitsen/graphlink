@@ -16,3 +16,5 @@ targets:
           autoGenerateQueriesDefaultAlias: "data"
           operationNameAsParameter: true
           operationNameParameterName: "opName"
+          identityFields: ["id"]
+          

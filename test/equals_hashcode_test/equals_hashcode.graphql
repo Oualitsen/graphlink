@@ -1,0 +1,40 @@
+type Product {
+    id: ID!
+    name: String!
+    price: Int!
+    wasPrice: Int
+    description: String
+}
+
+type Entity {
+    createdBy: String
+    id: String
+}
+
+type OtherEntity {
+    name: String
+}
+
+type Query {
+    getProduct: Product!
+    getProductById(id: ID!): Product!
+    getProductById3(id: ID!): Product!
+
+    getEntity: Entity
+    getOtherEntity: OtherEntity
+}
+
+query getProduct($id: ID!) {
+    getProduct @gqTypeName(name: "MyProduct") @gqEqualsHashcode(fields: ["id", "name"]) {
+        id name price
+    }   
+
+    getEntity {
+       id createdBy 
+    }
+
+    getOtherEntity {
+        name
+    }
+    
+}

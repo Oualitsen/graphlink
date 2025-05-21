@@ -613,7 +613,7 @@ $data
       nameDeclared: name.declared,
       fields: applyProjection(onType, block.projections),
       interfaceNames: onType.interfaceNames,
-      directives: onType.directives,
+      directives: [... element.directives, ...onType.directives],
       derivedFromType: onType,
     );
     // check for super types

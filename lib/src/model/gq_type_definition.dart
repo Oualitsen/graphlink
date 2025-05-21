@@ -1,3 +1,4 @@
+import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/dart_serializable.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
@@ -22,7 +23,7 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
   /// used to call super on
   final Set<GQField> _superFields = {};
 
-  bool _fiedsUpdated = false;
+  final _directiveValues = <String, GQDirectiveValue>{};
 
   GQTypeDefinition({
     required String name,
@@ -33,6 +34,9 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
     required this.derivedFromType,
   }) : super(name, fields) {
     fields.sort((f1, f2) => f1.name.compareTo(f2.name));
+    for (var d in directives) {
+      _directiveValues.putIfAbsent(d.token, () => d);
+    }
   }
 
   ///
@@ -53,6 +57,41 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
     return serializeFields(grammar);
   }
 
+  Set<String> getIdentityFields(GQGrammar g) {
+    var directive = _directiveValues[GQGrammar.gqEqualsHashcode];
+    if (directive != null) {
+      var directiveFields = ((directive.arguments.first.value as List)[1] as List)
+          .map((e) => e as String)
+          .map((e) => e.replaceAll('"', '').replaceAll("'", ""))
+          .toSet();
+      return directiveFields.where((e) => fieldNames.contains(e)).toSet();
+    }
+    return g.identityFields.where((e) => fieldNames.contains(e)).toSet();
+  }
+
+  String generateEqualsAndHashCode(GQGrammar g) {
+    var fieldsToInclude = getIdentityFields(g);
+    if (fieldsToInclude.isNotEmpty) {
+      return equalsHascodeCode(fieldsToInclude.toList());
+    }
+    return "";
+  }
+
+  String equalsHascodeCode(List<String> fields) {
+    return """\n\n
+    @override
+    bool operator ==(Object other) {
+      if (identical(this, other)) return true;
+
+      return other is $token &&
+          ${fields.map((e) => "$e == other.$e").join(" && ")};
+    }
+
+    @override
+    int get hashCode => Object.hashAll([${fields.join(", ")}]);
+  """;
+  }
+
   @override
   String toString() {
     return 'GraphqlType{name: $token, fields: $fields, interfaceNames: $interfaceNames}';
@@ -67,6 +106,8 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
           ${serializeListText(getFields().map((e) => e.toDart(grammar)).toList(), join: "\n\r          ", withParenthesis: false)}
           
           $token(${serializeContructorArgs(grammar)})${_serializeCallToSuper(grammar)};
+          
+          ${generateEqualsAndHashCode(grammar)}
           
           factory $token.fromJson(Map<String, dynamic> json) {
              ${_serializeFromJson()}
@@ -129,19 +170,11 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
       return "";
     }
 
-    String commonFields = _superFields.isEmpty
-        ? ""
-        : _superFields
-            .map((e) => e.toDartMethodDeclaration(grammar))
-            .join(", ");
-    String nonCommonFields = getFields().isEmpty
-        ? ""
-        : getFields()
-            .map((e) => grammar.toConstructorDeclaration(e))
-            .join(", ");
-    var combined = [nonCommonFields, commonFields]
-        .where((element) => element.isNotEmpty)
-        .toSet();
+    String commonFields =
+        _superFields.isEmpty ? "" : _superFields.map((e) => e.toDartMethodDeclaration(grammar)).join(", ");
+    String nonCommonFields =
+        getFields().isEmpty ? "" : getFields().map((e) => grammar.toConstructorDeclaration(e)).join(", ");
+    var combined = [nonCommonFields, commonFields].where((element) => element.isNotEmpty).toSet();
     if (combined.isEmpty) {
       return "";
     } else if (combined.length == 1) {

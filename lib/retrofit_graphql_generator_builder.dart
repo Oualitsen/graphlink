@@ -4,6 +4,7 @@ import 'package:build/build.dart';
 import 'package:glob/glob.dart';
 import 'package:logger/logger.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
+import 'package:yaml/yaml.dart';
 
 class RetrofitGraphqlGeneratorBuilder implements Builder {
   final BuilderOptions options;
@@ -32,21 +33,18 @@ class RetrofitGraphqlGeneratorBuilder implements Builder {
   @override
   Future<void> build(BuildStep buildStep) async {
     await initAssets(buildStep);
-    options.config.entries
-        .where((element) => element.value is String)
-        .forEach((e) {
+    options.config.entries.where((element) => element.value is String).forEach((e) {
       map[e.key] = e.value as String;
     });
     var g = GQGrammar(
-        typeMap: map,
-        generateAllFieldsFragments:
-            options.config["generateAllFieldsFragments"] as bool?  ?? false,
-        nullableFieldsRequired:
-            options.config["nullableFieldsRequired"] as bool?  ?? false,
-        autoGenerateQueries: options.config["autoGenerateQueries"] as bool?  ?? false,
-        defaultAlias: options.config["autoGenerateQueriesDefaultAlias"],
-        operationNameAsParameter: options.config["operationNameAsParameter"] as bool? ?? false,
-        );
+      typeMap: map,
+      generateAllFieldsFragments: options.config["generateAllFieldsFragments"] as bool? ?? false,
+      nullableFieldsRequired: options.config["nullableFieldsRequired"] as bool? ?? false,
+      autoGenerateQueries: options.config["autoGenerateQueries"] as bool? ?? false,
+      defaultAlias: options.config["autoGenerateQueriesDefaultAlias"],
+      operationNameAsParameter: options.config["operationNameAsParameter"] as bool? ?? false,
+      identityFields: (options.config["identityFields"] as YamlList?)?.cast<String>() ?? [],
+    );
 
     var parser = g.buildFrom(g.start());
 
@@ -80,8 +78,7 @@ class RetrofitGraphqlGeneratorBuilder implements Builder {
   }
 
   Future<String> readSchema(BuildStep buildStep) async {
-    final contents =
-        await Future.wait(assets.map((asset) => buildStep.readAsString(asset)));
+    final contents = await Future.wait(assets.map((asset) => buildStep.readAsString(asset)));
     final schema = contents.join("\n");
     return schema;
   }

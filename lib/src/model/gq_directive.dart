@@ -60,7 +60,7 @@ class GQDirectiveValue extends GQToken {
   @override
   String serialize() {
     //don't serialize the gqTypeName directive
-    if (token == GQGrammar.gqTypeNameDirective) {
+    if (GQGrammar.directivesToSkip.contains(token)) {
       return "";
     }
     var args = arguments.isEmpty
