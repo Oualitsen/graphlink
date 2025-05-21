@@ -7,8 +7,11 @@ import 'package:petitparser/petitparser.dart';
 final GQGrammar g = GQGrammar();
 
 void main() async {
-  test("same type signature should generate different classes when derrived from different types", () {
-    final text = File("test/same_type_signature/same_type_signature.graphql").readAsStringSync();
+  test(
+      "same type signature should generate different classes when derrived from different types",
+      () {
+    final text = File("test/same_type_signature/same_type_signature.graphql")
+        .readAsStringSync();
     final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);

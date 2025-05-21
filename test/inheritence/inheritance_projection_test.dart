@@ -10,7 +10,8 @@ void main() async {
 
     var parser = g.buildFrom(g.fullGrammar().end());
 
-    final text = File("test/inheritence/inheritance_projection_test.graphql").readAsStringSync();
+    final text = File("test/inheritence/inheritance_projection_test.graphql")
+        .readAsStringSync();
     var result = parser.parse(text);
 
     expect(result is Success, true);

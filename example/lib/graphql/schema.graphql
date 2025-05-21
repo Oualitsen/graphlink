@@ -24,7 +24,7 @@ interface BasicUser implements BasicEntity {
 
 }
 
-type Driver implements BasicUser & BasicEntity {
+type Driver implements BasicUser  {
     id: ID!
     creationDate: Long!
     lastUpdate: Long!
@@ -44,7 +44,7 @@ type Driver implements BasicUser & BasicEntity {
 
 }
 
-type Client implements BasicUser & BasicEntity {
+type Client implements BasicUser  {
     id: ID!
     creationDate: Long!
     lastUpdate: Long!
@@ -78,20 +78,20 @@ type Moto {
     model: String!
 }
 
-union Vehicle = Car | Moto
+union Vehicle = Car | Moto | Client
 
 type Home {
     address: String!
     lat: Float!
     lng: Float!
-   # owner: BasicUser!
+    owner: BasicUser!
 }
 
 type Query {
     getDriverById(id: ID!): Driver!
     getDrivers(pageInfo: PageInfo): [Driver!]!
 
-#    getUser(id: ID!, client: Boolean): BasicUser!
+    getUser(id: ID!, client: Boolean): BasicUser!
     getHome(id: ID!, ownerTypeDriver: Boolean!): Home!
 
     getDriver3: Driver!
@@ -104,7 +104,7 @@ type Query {
 
 type Subscription {
     watchDriver(id: ID!): Driver!
-    watchDriver2(id: ID!): Driver!
+    watchDriver2(id: ID!): [Driver!]!
 }
 
 input PageInfo {

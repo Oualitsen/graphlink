@@ -29,7 +29,7 @@ class GQInputDefinition extends GQTokenWithFields implements DartSerializable {
       class $token {
           ${serializeListText(fields.map((e) => e.toDart(grammar)).toList(), join: "\n\r          ", withParenthesis: false)}
           
-          $token({${fields.map((e) => grammar.toContructoDeclaration(e)).join(", ")}});
+          $token({${fields.map((e) => grammar.toConstructorDeclaration(e)).join(", ")}});
           
           factory $token.fromJson(Map<String, dynamic> json) => _\$${token}FromJson(json);
           

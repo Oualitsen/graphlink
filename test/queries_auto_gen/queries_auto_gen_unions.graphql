@@ -1,0 +1,36 @@
+union MyUnion = Product|Variant|Variant2
+
+type Product  {
+    id: String
+    creationDate: Int
+    lastUpdate: Int
+    createdBy: Int
+    name: String!
+    make: String!
+    model: String!
+    exppiryDate: String
+    variant: Variant
+}
+
+type Variant   {
+    id: String
+    creationDate: Int
+    lastUpdate: Int
+    createdBy: Int
+    varName: String
+}
+
+type Variant2   {
+    id: String
+    creationDate: Int
+    lastUpdate: Int
+    createdBy: Int
+    varName: String
+}
+
+type Query {
+    getProduct: MyUnion
+}
+
+
+

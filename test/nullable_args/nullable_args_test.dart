@@ -42,17 +42,18 @@ void main() async {
     final nonNullableField = GQField(
         name: "name", type: nonNullableString, arguments: [], directives: []);
 
-    var dartContructorTypeNullable = g1.toContructoDeclaration(nullableField);
+    var dartContructorTypeNullable = g1.toConstructorDeclaration(nullableField);
     var dartContructorTypeNonNullable =
-        g1.toContructoDeclaration(nonNullableField);
+        g1.toConstructorDeclaration(nonNullableField);
 
     expect(dartContructorTypeNullable, "this.name");
     expect(dartContructorTypeNonNullable, "required this.name");
 
     final GQGrammar g2 = GQGrammar(nullableFieldsRequired: true);
-    var dartContructorTypeNullable2 = g2.toContructoDeclaration(nullableField);
+    var dartContructorTypeNullable2 =
+        g2.toConstructorDeclaration(nullableField);
     var dartContructorTypeNonNullable2 =
-        g2.toContructoDeclaration(nonNullableField);
+        g2.toConstructorDeclaration(nonNullableField);
 
     expect(dartContructorTypeNullable2, "required this.name");
     expect(dartContructorTypeNonNullable2, "required this.name");

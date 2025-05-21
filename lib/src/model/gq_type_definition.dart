@@ -10,7 +10,7 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
   final List<GQDirectiveValue> directives;
   final bool nameDeclared;
   final GQTypeDefinition? derivedFromType;
-  GQTypeDefinition? superClass;
+
   final Set<String> originalTokens = <String>{};
 
   ///
@@ -21,9 +21,6 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
 
   /// used to call super on
   final Set<GQField> _superFields = {};
-
-  //common fields from subTypes
-  final Set<GQField> _commonFields = {};
 
   bool _fiedsUpdated = false;
 
@@ -63,7 +60,6 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
 
   @override
   String toDart(GQGrammar grammar) {
-    _updateFields();
     return """
       @JsonSerializable(explicitToJson: true)
       class $token ${_serializeSuperClass()}{
@@ -75,7 +71,7 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
           factory $token.fromJson(Map<String, dynamic> json) {
              ${_serializeFromJson()}
           }
-          
+          ${interfaceNames.isNotEmpty ? '\n${"\t" * 5}@override' : ''}
           Map<String, dynamic> toJson() {
             ${_serializeToJson()}
           }
@@ -102,19 +98,6 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
     return "return _\$${token}ToJson(this);";
   }
 
-  void _updateFields() {
-    if (_fiedsUpdated) {
-      return;
-    }
-    _fiedsUpdated = true;
-    _removeCommonFieldsFromFields();
-    _addCommonFieldsFromSubTypes();
-    var sc = superClass;
-    if (sc != null) {
-      _superFields.addAll(sc.getCommonFields());
-    }
-  }
-
   String _serializeCallToSuper(GQGrammar grammar) {
     if (_superFields.isEmpty) {
       return "";
@@ -129,52 +112,11 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
     return fields;
   }
 
-  void _removeCommonFieldsFromFields() {
-    var sc = superClass;
-    if (sc != null) {
-      var scFields = sc.getCommonFields().toSet();
-      fields.removeWhere((f) => scFields.contains(f));
-    }
-  }
-
-  void _addCommonFieldsFromSubTypes() {
-    if (subTypes.isNotEmpty) {
-      fields.addAll(getCommonFields());
-    }
-  }
-
-  Set<GQField> getCommonFields() {
-    if (_commonFields.isNotEmpty) {
-      return _commonFields;
-    }
-    if (subTypes.isNotEmpty) {
-      //get the common fields
-      Map<GQField, int> occurenceMap = {};
-
-      for (var typeDef in subTypes) {
-        for (var field in typeDef.fields) {
-          if (occurenceMap.containsKey(field)) {
-            occurenceMap[field] = occurenceMap[field]! + 1;
-          } else {
-            occurenceMap[field] = 1;
-          }
-        }
-      }
-
-      occurenceMap.forEach((key, value) {
-        if (value > 1) {
-          _commonFields.add(key);
-        }
-      });
-    }
-    return _commonFields;
-  }
-
   String _serializeSuperClass() {
-    if (superClass == null) {
+    if (interfaceNames.isEmpty) {
       return '';
     }
-    return "extends ${superClass!.token} ";
+    return "implements ${interfaceNames.join(", ")} ";
   }
 
   String serializeFields(GQGrammar grammar) {
@@ -187,11 +129,19 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
       return "";
     }
 
-    String commonFields =
-        _superFields.isEmpty ? "" : _superFields.map((e) => e.toDartMethodDeclaration(grammar)).join(", ");
-    String nonCommonFields =
-        getFields().isEmpty ? "" : getFields().map((e) => grammar.toContructoDeclaration(e)).join(", ");
-    var combined = [nonCommonFields, commonFields].where((element) => element.isNotEmpty).toSet();
+    String commonFields = _superFields.isEmpty
+        ? ""
+        : _superFields
+            .map((e) => e.toDartMethodDeclaration(grammar))
+            .join(", ");
+    String nonCommonFields = getFields().isEmpty
+        ? ""
+        : getFields()
+            .map((e) => grammar.toConstructorDeclaration(e))
+            .join(", ");
+    var combined = [nonCommonFields, commonFields]
+        .where((element) => element.isNotEmpty)
+        .toSet();
     if (combined.isEmpty) {
       return "";
     } else if (combined.length == 1) {

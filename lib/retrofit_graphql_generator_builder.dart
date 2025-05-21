@@ -44,8 +44,7 @@ class RetrofitGraphqlGeneratorBuilder implements Builder {
         nullableFieldsRequired:
             options.config["nullableFieldsRequired"] ?? false,
         autoGenerateQueries: options.config["autoGenerateQueries"] ?? false,
-        autoGenerateQueriesDefaultAlias:
-            options.config["autoGenerateQueriesDefaultAlias"]);
+        defaultAlias: options.config["autoGenerateQueriesDefaultAlias"]);
 
     var parser = g.buildFrom(g.start());
 

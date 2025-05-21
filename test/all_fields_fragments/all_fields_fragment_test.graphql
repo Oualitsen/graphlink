@@ -1,0 +1,24 @@
+interface Animal {
+    name: String
+}
+
+type Cat implements Animal {
+    name: String
+    male: Boolean
+}
+
+type Dog implements Animal {
+    name: String
+    ownerName: String
+    age: Int
+}
+
+type Person {
+    name: String
+    animal: Animal
+}
+
+type Query {
+    getPerson: Person
+}
+

@@ -1,0 +1,47 @@
+interface Entity {
+    id: String
+    creationDate: Int
+    lastUpdate: Int
+    createdBy: Int
+}
+
+interface BasicProduct implements Entity {
+
+    id: String
+    creationDate: Int
+    lastUpdate: Int
+    createdBy: Int
+
+    name: String!
+    barcode: String!
+}
+
+type Product implements Entity & BasicProduct {
+    id: String
+    creationDate: Int
+    lastUpdate: Int
+    createdBy: Int
+    name: String!
+    barcode: String!
+    make: String!
+    model: String!
+    exppiryDate: String
+    variant: Variant
+}
+
+type Variant implements Entity & BasicProduct  {
+    id: String
+    creationDate: Int
+    lastUpdate: Int
+    createdBy: Int
+    varName: String
+    name: String!
+    barcode: String!
+}
+
+type Query {
+    getProduct: BasicProduct
+}
+
+
+
