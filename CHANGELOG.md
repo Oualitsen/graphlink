@@ -42,3 +42,11 @@
     - Generates declares queries mutations and subscriptions without declaration
       You need to pass `autoGenerateQueries: true` on your build.yaml to enable this option
       You can also pass `autoGenerateQueriesDefaultAlias` as an alias to be used for queries, mutations and subscriptions.
+
+## 3.0.0 - 2025-05-21
+    - Generates code for unions
+    - Generates == and hashcode method using either:
+        1. @gqEqualsHashcode(fields: ["field1", "field2"])
+        2. on build.yaml 
+        identityFields: ["field1", "field2"]
+    Note: In case of Unions and Interfaces, the Retrofit Graphql generates empty interfaces instead of base classes.  

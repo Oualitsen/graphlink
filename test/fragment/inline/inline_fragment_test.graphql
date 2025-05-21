@@ -24,6 +24,7 @@ union User = SubUser | Admin
 fragment PersonFragment on Person {
     age user ... on Admin {
         username password firstName lastName
-    }
+        }
+    
     
 }
