@@ -2,7 +2,7 @@ import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/dart_serializable.dart';
 import 'package:retrofit_graphql/src/model/gq_queries.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
-
+const _operationNameParam = "operationName";
 class GQGraphqlService implements DartSerializable {
   final List<GQQueryDefinition> queries;
 
@@ -31,13 +31,13 @@ class GQClient {
   ${grammar.hasQueries ? 'final Queries queries;' : ''}
   ${grammar.hasMutations ? 'final Mutations mutations;' : ''}
   ${grammar.hasSubscriptions ? 'final Subscriptions subscriptions;' : ''}
-  GQClient(Future<String> Function(String payload) adapter${grammar.hasSubscriptions ? ', WebSocketAdapter wsAdapter' : ''})
+  GQClient(Future<String> Function(String payload${grammar.operationNameAsParameter ? ', String $_operationNameParam': ''}) adapter${grammar.hasSubscriptions ? ', WebSocketAdapter wsAdapter' : ''})
       :${[
-      grammar.hasQueries ? 'queries = Queries(adapter)' : '',
-      grammar.hasMutations ? ' mutations = Mutations(adapter)' : '',
-      grammar.hasSubscriptions
-          ? 'subscriptions = Subscriptions(wsAdapter)'
-          : '',
+      if(grammar.hasQueries)  'queries = Queries(adapter)',
+      if(grammar.hasMutations)  ' mutations = Mutations(adapter)',
+      if (grammar.hasSubscriptions)
+           'subscriptions = Subscriptions(wsAdapter)'
+         
     ].where((element) => element.isNotEmpty).join(", ")} {
       
       ${grammar.fragments.values.map((value) => "_fragmMap['${value.token}'] = '${value.serialize()}';").toList().join("\n")}
@@ -128,7 +128,7 @@ ${genSubscriptions(grammar)}
     }
     return """
       class ${classNameFromType(type)} {
-        ${declareAdapter(type)}
+        ${declareAdapter(type, g)}
         ${classNameFromType(type)}${declareConstructorArgs(type)}
         ${queryList.map((e) => queryToMethod(e, g)).join("\n")}
 
@@ -145,11 +145,11 @@ ${genSubscriptions(grammar)}
     return "(this._adapter);";
   }
 
-  String declareAdapter(GQQueryType type) {
+  String declareAdapter(GQQueryType type, GQGrammar g) {
     switch (type) {
       case GQQueryType.query:
       case GQQueryType.mutation:
-        return "final Future<String> Function(String payload) _adapter;";
+        return "final Future<String> Function(String payload${g.operationNameAsParameter? ', String $_operationNameParam':''}) _adapter;";
       case GQQueryType.subscription:
         return """
         final SubscriptionHandler _handler;
@@ -180,13 +180,13 @@ ${genSubscriptions(grammar)}
         };
         
         final payload = GQPayload(query: query, operationName: operationName, variables: variables);
-        ${generateAdapterCall(def)}
+        ${generateAdapterCall(def, g)}
       }
     """
         .trim();
   }
 
-  String generateAdapterCall(GQQueryDefinition def) {
+  String generateAdapterCall(GQQueryDefinition def, GQGrammar g) {
     if (def.type == GQQueryType.subscription) {
       return """
       return _handler.handle(payload)
@@ -194,7 +194,7 @@ ${genSubscriptions(grammar)}
     """;
     }
     return """
-    return _adapter(payload.toString()).asStream().map((response) {
+    return _adapter(payload.toString()${g.operationNameAsParameter?', operationName': ''}).asStream().map((response) {
           Map<String, dynamic> result = jsonDecode(response);
           if (result.containsKey("errors")) {
             throw result["errors"].map((error) => GraphQLError.fromJson(error)).toList();

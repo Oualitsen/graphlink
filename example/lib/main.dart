@@ -6,7 +6,7 @@ void main(List<String> args) {
   const url = "http://localhost:8080/graphql";
   var wsAdapter = WebSocketChannelAdapter(wsUrl);
 
-  fn(payload) => http
+  fn(payload, opName) => http
       .post(Uri.parse(url),
           body: payload, headers: {"Content-Type": "application/json"})
       .asStream()

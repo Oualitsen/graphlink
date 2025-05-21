@@ -93,6 +93,7 @@ class GQGrammar extends GrammarDefinition {
   final bool nullableFieldsRequired;
   final bool autoGenerateQueries;
   final String? defaultAlias;
+  final bool operationNameAsParameter;
 
   late final GQGraphqlService service;
   GQGrammar(
@@ -108,6 +109,7 @@ class GQGrammar extends GrammarDefinition {
       this.generateAllFieldsFragments = false,
       this.nullableFieldsRequired = false,
       this.autoGenerateQueries = false,
+      this.operationNameAsParameter = false,
       this.defaultAlias})
       : assert(
           !autoGenerateQueries || generateAllFieldsFragments,

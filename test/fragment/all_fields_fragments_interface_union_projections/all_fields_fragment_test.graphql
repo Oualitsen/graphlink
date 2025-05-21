@@ -13,9 +13,12 @@ type Dog implements Animal {
     age: Int
 }
 
+union Animal2 = Cat | Dog
+
 type Person {
     name: String
     animal: Animal
+    animal2: Animal2
 }
 
 type Query {

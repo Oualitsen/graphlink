@@ -14,3 +14,5 @@ targets:
           nullableFieldsRequired: false
           autoGenerateQueries: true
           autoGenerateQueriesDefaultAlias: "data"
+          operationNameAsParameter: true
+          operationNameParameterName: "opName"
