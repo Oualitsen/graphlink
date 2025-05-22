@@ -21,6 +21,7 @@ fragment VariantFrag on Variant {
 type Query {
     getProduct: Product
     findProucts(page: Page!): [Product!]!
+    listProducts: [Product!]!
 }
 
 type Mutation {

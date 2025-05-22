@@ -1,0 +1,48 @@
+type PlacesResult {
+    predictions: [Prediction!]!
+    status: ResponseStatus!
+}
+
+type Prediction {
+    description: String!
+    id: String
+    placeId: String!
+    reference: String!
+    types: [String!]!
+    matchedSubStrings: [MatchedSubstring!]!
+    terms: [Term!]!
+    structuredFormatting: StructuredFormatting
+}
+
+type MatchedSubstring {
+    length: Int!
+    offset: Int!
+}
+
+type Term {
+    offset: Int!
+    value: String
+    length: Int!
+}
+
+type StructuredFormatting {
+    mainText: String!
+    secondaryText: String
+    mainTextMatchedSubstrings: [Term!]
+}
+
+enum ResponseStatus {
+    OK
+    INVALID_REQUEST
+    MAX_ELEMENTS_EXCEEDED
+    OVER_QUERY_LIMIT
+    REQUEST_DENIED
+    UNKNOWN_ERROR
+    ZERO_RESULTS
+}
+
+type Query {
+    getPlaces(req: String!, lang: String!): PlacesResult!
+}
+
+

@@ -50,3 +50,5 @@
         2. on build.yaml 
         identityFields: ["field1", "field2"]
     Note: In case of Unions and Interfaces, the Retrofit Graphql generates empty interfaces instead of base classes.  
+## 3.0.1 - 2025-05-21
+    - Fixed some minor bugs
