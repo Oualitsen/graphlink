@@ -52,3 +52,6 @@
     Note: In case of Unions and Interfaces, the Retrofit Graphql generates empty interfaces instead of base classes.  
 ## 3.0.1 - 2025-05-21
     - Fixed some minor bugs
+
+## 3.1.0 - 2025-05-21
+    - Generates all implemented interfaces

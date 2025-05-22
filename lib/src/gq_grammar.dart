@@ -163,6 +163,7 @@ class GQGrammar extends GrammarDefinition {
     validateProjections();
     updateFragmentDependencies();
     createProjectedTypes();
+    generateImplementedInterfaces();
     updateFragmentAllTypesDependencies();
 
     generateGQClient();

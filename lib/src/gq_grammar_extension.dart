@@ -549,6 +549,27 @@ $data
     ]);
   }
 
+  void generateImplementedInterfaces() {
+    final projectedTypes = {...this.projectedTypes};
+    final interfaceNames = <String>{};
+    projectedTypes.forEach((k, type) {
+      interfaceNames.addAll(type.interfaceNames);
+    });
+    interfaceNames.removeAll(projectedTypes.keys);
+    for (var name in interfaceNames) {
+      var interface = interfaces[name]!;
+      var type = GQTypeDefinition(
+          name: interface.token,
+          nameDeclared: false,
+          fields: [],
+          interfaceNames: {...interface.interfaceNames, ...interface.parentNames},
+          directives: interface.directives,
+          derivedFromType: null);
+      // add to projected types without similarity check
+      addToProjectedType(type, similarityCheck: false);
+    }
+  }
+
   void createProjectedTypes() {
     final allEmenets = getAllElements();
     allEmenets.where((e) => e.block != null).forEach((element) {
@@ -653,20 +674,22 @@ $data
     return addToProjectedType(result);
   }
 
-  GQTypeDefinition addToProjectedType(GQTypeDefinition definition) {
+  GQTypeDefinition addToProjectedType(GQTypeDefinition definition, {bool similarityCheck = true}) {
     if (definition.nameDeclared) {
       var type = projectedTypes[definition.token];
       if (type == null) {
-        var similarDefinitions = findSimilarTo(definition);
-        if (similarDefinitions.isNotEmpty) {
-          similarDefinitions.where((element) => !element.nameDeclared).forEach((e) {
-            var currentDef = projectedTypes[e.token];
-            if (currentDef != null) {
-              definition.interfaceNames.addAll(currentDef.interfaceNames);
-              definition.subTypes.addAll(currentDef.subTypes);
-            }
-            projectedTypes[e.token] = definition;
-          });
+        if (similarityCheck) {
+          var similarDefinitions = findSimilarTo(definition);
+          if (similarDefinitions.isNotEmpty) {
+            similarDefinitions.where((element) => !element.nameDeclared).forEach((e) {
+              var currentDef = projectedTypes[e.token];
+              if (currentDef != null) {
+                definition.interfaceNames.addAll(currentDef.interfaceNames);
+                definition.subTypes.addAll(currentDef.subTypes);
+              }
+              projectedTypes[e.token] = definition;
+            });
+          }
         }
 
         projectedTypes[definition.token] = definition;
@@ -683,16 +706,19 @@ $data
       }
     }
 
-    var similarDefinitions = findSimilarTo(definition);
+    if (similarityCheck) {
+      var similarDefinitions = findSimilarTo(definition);
 
-    if (similarDefinitions.isNotEmpty) {
-      var first = similarDefinitions.first;
-      first.originalTokens.add(definition.token);
-      first.interfaceNames.addAll(definition.interfaceNames);
-      first.subTypes.addAll(definition.subTypes);
-      projectedTypes[first.token] = first;
-      return first;
+      if (similarDefinitions.isNotEmpty) {
+        var first = similarDefinitions.first;
+        first.originalTokens.add(definition.token);
+        first.interfaceNames.addAll(definition.interfaceNames);
+        first.subTypes.addAll(definition.subTypes);
+        projectedTypes[first.token] = first;
+        return first;
+      }
     }
+
     String key = definition.token;
     projectedTypes[key] = definition;
     definition.originalTokens.add(key);
@@ -774,8 +800,11 @@ $data
       block = GQFragmentBlockDefinition(
           [GQProjection(fragmentName: fragName, token: fragName, alias: null, block: null, directives: [])]);
     }
-    var queryElement = GQQueryElement(field.name, [], block, [], defaultAlias);
 
+    var argValues = field.arguments.map((arg) {
+      return GQArgumentValue(arg.token, "\$${arg.token}");
+    }).toList();
+    var queryElement = GQQueryElement(field.name, [], block, argValues, defaultAlias);
     final def = GQQueryDefinition(
         field.name,
         [],
@@ -784,7 +813,6 @@ $data
             .toList(),
         [queryElement],
         queryType);
-
     addQueryDefinitionSkipIfExists(def);
   }
 
@@ -816,9 +844,6 @@ $data
   }
 
   List<GQField> applyProjection(GQTypeDefinition type, Map<String, GQProjection> p) {
-    if (type.token == "StructuredFormatting") {
-      print("Applying for type StructuredFormatting");
-    }
     var src = type.fields;
     var result = <GQField>[];
     var projections = {...p};

@@ -1,0 +1,22 @@
+
+interface BasicEntity {
+    id: String
+}
+
+interface UserBase implements BasicEntity {
+    id: String!
+    username: String!
+}
+
+type User implements UserBase &  BasicEntity{
+    id: String!
+    username: String!
+    name: String!
+    
+}
+
+type Query {
+    getUser: User!
+}
+
+
