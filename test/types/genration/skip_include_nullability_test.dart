@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/gq_queries.dart';
+import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
@@ -25,7 +26,8 @@ void main() async {
     var nameField =
         getProductType.fields.where((element) => element.name == "name").first;
     expect(nameField.type.nullable, false);
-    expect(nameField.toDart(g), contains("String?"));
+    var serilaizer = DartSerializer(g);
+    expect(serilaizer.serializeField(nameField), contains("String?"));
 
     GQField getProductList = productTypeDef.fields
         .where((field) => field.name == "getProductList")
@@ -37,6 +39,7 @@ void main() async {
         .where((element) => element.name == "description")
         .first;
     expect(descriptionField.type.nullable, false);
-    expect(descriptionField.toDart(g), contains("String?"));
+    var serializer = DartSerializer(g);
+    expect(serializer.serializeField(descriptionField), contains("String?"));
   });
 }

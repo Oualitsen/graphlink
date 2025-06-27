@@ -15,7 +15,5 @@ void main() async {
             .readAsStringSync();
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
-    // print("g.enums.keys = ${g.enums.keys}");
-    // print("q = ${g.service.toDart(g)}");
   });
 }

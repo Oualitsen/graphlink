@@ -32,10 +32,6 @@ void main() async {
       final parser = g.buildFrom(g.fullGrammar().end());
       final parsed = parser.parse(text);
       expect(parsed is Success, true);
-
-      g.types.forEach((key, value) {
-        //print("######## key = $key ===> ${value.toDart(g)}");
-      });
     });
 
     test("Fragment reference", () {

@@ -7,7 +7,6 @@ import 'package:petitparser/petitparser.dart';
 
 void main() async {
   test("example2 test", () {
-    var now = DateTime.now();
     final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
 
     var parser = g.buildFrom(g.fullGrammar().end());

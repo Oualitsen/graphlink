@@ -1,7 +1,8 @@
 import 'package:logger/logger.dart';
 import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
 import 'package:retrofit_graphql/src/model/gq_enum_definition.dart';
-import 'package:retrofit_graphql/src/model/gq_graphql_service.dart';
+import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
+import 'package:retrofit_graphql/src/serializers/dart_client_serializer.dart';
 import 'package:retrofit_graphql/src/model/gq_schema.dart';
 import 'package:retrofit_graphql/src/model/gq_argument.dart';
 import 'package:retrofit_graphql/src/model/gq_comment.dart';
@@ -16,6 +17,7 @@ import 'package:retrofit_graphql/src/model/gq_queries.dart';
 import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_union.dart';
 import 'package:petitparser/petitparser.dart';
+import 'package:retrofit_graphql/src/serializers/gq_serializer.dart';
 import 'package:retrofit_graphql/src/utils.dart';
 
 export 'package:retrofit_graphql/src/gq_grammar_extension.dart';
@@ -92,7 +94,11 @@ class GQGrammar extends GrammarDefinition {
   final bool operationNameAsParameter;
   final List<String> identityFields;
 
-  late final GQGraphqlService service;
+  late final DartClientSerializer service;
+  GqSerializer? _serializer;
+   GqSerializer get serializer {
+      return _serializer ??= DartSerializer(this);
+   }
   GQGrammar(
       {this.typeMap = const {
         "ID": "String",

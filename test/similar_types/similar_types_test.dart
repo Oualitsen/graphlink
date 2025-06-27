@@ -14,6 +14,6 @@ void main() {
     var type1 = g.projectedTypes["Prduct1"]!;
     var type2 = g.projectedTypes["Prduct2"]!;
     expect(parsed is Success, true);
-    expect(type1.isSimilarTo(type2, g), true);
+    expect(type1.isSimilarTo(type2, g.serializer), true);
   });
 }

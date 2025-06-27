@@ -19,7 +19,6 @@ void main() {
     ''');
     expect(result is Success, true);
 
-    // print((result.value as GraphqlTypeDefinition).toDart());
 
     result = parser.parse('''
       input Test2 @skip(if: true){

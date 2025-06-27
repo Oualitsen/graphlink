@@ -1,10 +1,10 @@
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_argument.dart';
-import 'package:retrofit_graphql/src/model/dart_serializable.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
+import 'package:retrofit_graphql/src/serializers/gq_serializer.dart';
 
-class GQField extends DartSerializable {
+class GQField {
   final String name;
   final GQType type;
   final Object? initialValue;
@@ -41,25 +41,17 @@ class GQField extends DartSerializable {
     return 'GraphqlField{name: $name, type: ${type.serialize()}, initialValue: $initialValue, documentation: $documentation, arguments: $arguments}';
   }
 
-  @override
-  String toDart(GQGrammar grammar) {
-    return "final ${type.toDartType(grammar, _hasInculeOrSkipDiretives)} $name;";
-  }
 
-  String toDartMethodDeclaration(GQGrammar grammar) {
-    return "required final ${type.toDartType(grammar, _hasInculeOrSkipDiretives)} $name";
-  }
-
-  String createHash(GQGrammar grammar) {
+  String createHash(GqSerializer serializer) {
     var cache = _hashCache;
     if (cache == null) {
-      _hashCache = cache = "${type.toDartType(grammar, _hasInculeOrSkipDiretives)} $name";
+      _hashCache = cache = "${serializer.serializeType(type, hasInculeOrSkipDiretives)} $name";
     }
     return cache;
   }
 
   //check for inclue or skip directives
-  bool get _hasInculeOrSkipDiretives => _containsSkipOrIncludeDirective ??= directives
+  bool get hasInculeOrSkipDiretives => _containsSkipOrIncludeDirective ??= directives
       .where((d) => [GQGrammar.includeDirective, GQGrammar.skipDirective].contains(d.token))
       .isNotEmpty;
 }

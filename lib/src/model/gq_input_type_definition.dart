@@ -1,10 +1,7 @@
-import 'package:retrofit_graphql/src/gq_grammar.dart';
-import 'package:retrofit_graphql/src/model/dart_serializable.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
-import 'package:retrofit_graphql/src/utils.dart';
 
-class GQInputDefinition extends GQTokenWithFields implements DartSerializable {
+class GQInputDefinition extends GQTokenWithFields {
   GQInputDefinition({required String name, required List<GQField> fields})
       : super(name, fields);
 
@@ -21,20 +18,5 @@ class GQInputDefinition extends GQTokenWithFields implements DartSerializable {
       }
     """;
   }
-
-  @override
-  String toDart(GQGrammar grammar) {
-    return """
-    @JsonSerializable(explicitToJson: true)
-      class $token {
-          ${serializeListText(fields.map((e) => e.toDart(grammar)).toList(), join: "\n\r          ", withParenthesis: false)}
-          
-          $token({${fields.map((e) => grammar.toConstructorDeclaration(e)).join(", ")}});
-          
-          factory $token.fromJson(Map<String, dynamic> json) => _\$${token}FromJson(json);
-          
-          Map<String, dynamic> toJson() => _\$${token}ToJson(this);
-      }
-""";
-  }
+ 
 }

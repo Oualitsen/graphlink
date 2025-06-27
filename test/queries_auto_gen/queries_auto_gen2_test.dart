@@ -14,7 +14,6 @@ void main() async {
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
-    print("types = ${g.projectedTypes["StructuredFormatting"]?.toDart(g)}");
   });
 }
 //String description String? id List<MatchedSubstring> matchedSubStrings String placeId String reference StructuredFormatting_mainText_mainTextMatchedSubstrings_secondaryText? structuredFormatting List<Term> terms List<String> types

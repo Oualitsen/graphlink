@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
+import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
 import 'package:logger/logger.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
@@ -24,9 +25,9 @@ void main() async {
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
 
-    var inputs = g.generateInputs();
+    var inputs = g.generateInputs(DartSerializer(g));
 
-    var types = g.generateTypes();
+    var types = g.generateTypes(DartSerializer(g));
     expect(inputs, contains("this.middleName"));
     expect(inputs, isNot(contains("required this.middleName")));
 

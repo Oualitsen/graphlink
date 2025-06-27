@@ -16,6 +16,7 @@ class GQQueryDefinition extends GQToken {
   final List<GQArgumentDefinition> arguments;
   final List<GQQueryElement> elements;
   final GQQueryType type; //query|mutation|subscription
+  Set<GQFragmentDefinitionBase>? _allFrags;
 
   GQTypeDefinition? _gqTypeDefinition;
 
@@ -24,8 +25,11 @@ class GQQueryDefinition extends GQToken {
   }
 
   Set<GQFragmentDefinitionBase> fragments(GQGrammar g) {
-    var frags = fragmentNames.map((e) => g.getFragment(e)).toSet();
-    return {...frags, ...frags.expand((e) => e.dependecies)};
+    if (_allFrags == null) {
+      var frags = fragmentNames.map((e) => g.getFragment(e)).toSet();
+      _allFrags = {...frags, ...frags.expand((e) => e.dependecies)};
+    }
+    return _allFrags!;
   }
 
   GQQueryDefinition(

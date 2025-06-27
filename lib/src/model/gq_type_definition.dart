@@ -1,11 +1,11 @@
 import 'package:retrofit_graphql/src/gq_grammar.dart';
-import 'package:retrofit_graphql/src/model/dart_serializable.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
+import 'package:retrofit_graphql/src/serializers/gq_serializer.dart';
 import 'package:retrofit_graphql/src/utils.dart';
 
-class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
+class GQTypeDefinition extends GQTokenWithFields {
   final Set<String> interfaceNames;
   final List<GQDirectiveValue> directives;
   final bool nameDeclared;
@@ -18,9 +18,6 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
   /// This will be a super class of one or more base types.
   ///
   final Set<GQTypeDefinition> subTypes = {};
-
-  /// used to call super on
-  final Set<GQField> _superFields = {};
 
   final _directiveValues = <String, GQDirectiveValue>{};
 
@@ -41,7 +38,7 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
   ///
   ///check is the two definitions will produce the same object structure
   ///
-  bool isSimilarTo(GQTypeDefinition other, GQGrammar g) {
+  bool isSimilarTo(GQTypeDefinition other, GqSerializer serializer) {
     var dft = derivedFromType;
     var otherDft = other.derivedFromType;
     if (otherDft != null) {
@@ -49,11 +46,11 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
         return false;
       }
     }
-    return getHash(g) == other.getHash(g);
+    return getHash(serializer) == other.getHash(serializer);
   }
 
-  String getHash(GQGrammar grammar) {
-    return serializeFields(grammar);
+  String getHash(GqSerializer serializer) {
+    return serializeFields(serializer);
   }
 
   Set<String> getIdentityFields(GQGrammar g) {
@@ -96,90 +93,36 @@ class GQTypeDefinition extends GQTokenWithFields implements DartSerializable {
     return 'GraphqlType{name: $token, fields: $fields, interfaceNames: $interfaceNames}';
   }
 
-  @override
-  String toDart(GQGrammar grammar) {
-    return """
-      @JsonSerializable(explicitToJson: true)
-      class $token ${_serializeSuperClass()}{
-        
-          ${serializeListText(getFields().map((e) => e.toDart(grammar)).toList(), join: "\n\r          ", withParenthesis: false)}
-          
-          $token(${serializeContructorArgs(grammar)})${_serializeCallToSuper(grammar)};
-          
-          ${generateEqualsAndHashCode(grammar)}
-          
-          factory $token.fromJson(Map<String, dynamic> json) {
-             ${_serializeFromJson()}
-          }
-          ${interfaceNames.isNotEmpty ? '\n${"\t" * 5}@override' : ''}
-          Map<String, dynamic> toJson() {
-            ${_serializeToJson()}
-          }
-      }
-    """;
-  }
+  
 
-  String _serializeFromJson() {
-    if (subTypes.isEmpty) {
-      return "return _\$${token}FromJson(json);";
-    } else {
-      return """
-      var typename = json["__typename"];
-      switch(typename) {
-        
-        ${subTypes.map((st) => "case \"${st.derivedFromType?.token ?? st.token}\": return _\$${st.token}FromJson(json);").join("\n        ")}
-      }
-      return _\$${token}FromJson(json);
-    """;
-    }
-  }
+  
 
-  String _serializeToJson() {
-    return "return _\$${token}ToJson(this);";
-  }
-
-  String _serializeCallToSuper(GQGrammar grammar) {
-    if (_superFields.isEmpty) {
-      return "";
-    }
-    return ": super(${serializeListText(
-      _superFields.map((e) => "${e.name}: ${e.name}").toList(),
-      withParenthesis: false,
-    )})";
-  }
+  
 
   List<GQField> getFields() {
-    return fields;
+    return [...fields];
   }
 
-  String _serializeSuperClass() {
-    if (interfaceNames.isEmpty) {
-      return '';
-    }
-    return "implements ${interfaceNames.join(", ")} ";
-  }
+  
 
-  String serializeFields(GQGrammar grammar) {
-    return serializeListText(fields.map((e) => e.createHash(grammar)).toList(),
+  String serializeFields(GqSerializer serializer) {
+    return serializeListText(fields.map((e) => e.createHash(serializer)).toList(),
         join: " ", withParenthesis: false);
   }
 
   String serializeContructorArgs(GQGrammar grammar) {
-    if (fields.isEmpty && _superFields.isEmpty) {
+    if (fields.isEmpty) {
       return "";
     }
-
-    String commonFields =
-        _superFields.isEmpty ? "" : _superFields.map((e) => e.toDartMethodDeclaration(grammar)).join(", ");
     String nonCommonFields =
         getFields().isEmpty ? "" : getFields().map((e) => grammar.toConstructorDeclaration(e)).join(", ");
-    var combined = [nonCommonFields, commonFields].where((element) => element.isNotEmpty).toSet();
+    var combined = [nonCommonFields].where((element) => element.isNotEmpty).toSet();
     if (combined.isEmpty) {
       return "";
     } else if (combined.length == 1) {
       return "{${combined.first}}";
     }
-    return "{${[nonCommonFields, commonFields].join(", ")}}";
+    return "{${[nonCommonFields].join(", ")}}";
   }
 
   @override

@@ -1,3 +1,4 @@
+import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
@@ -12,7 +13,9 @@ void main() {
     ''');
     expect(result is Success, true);
     expect(result.value.nullable, false);
-    expect(result.value.toDartType(g, false), "String");
+    var serializer = DartSerializer(g);
+
+    expect(serializer.serializeType(result.value, false), "String");
   });
 
   test("nullable type test", () {
@@ -24,6 +27,7 @@ void main() {
     ''');
     expect(result is Success, true);
     expect(result.value.nullable, true);
-    expect(result.value.toDartType(g, false), "String?");
+    var serializer = DartSerializer(g);
+    expect(serializer.serializeType(result.value, false) , "String?");
   });
 }

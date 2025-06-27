@@ -3,7 +3,7 @@ import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_argument.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
-import 'package:retrofit_graphql/src/model/gq_graphql_service.dart';
+import 'package:retrofit_graphql/src/serializers/dart_client_serializer.dart';
 import 'package:retrofit_graphql/src/model/gq_schema.dart';
 import 'package:retrofit_graphql/src/model/gq_enum_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_fragment.dart';
@@ -14,6 +14,7 @@ import 'package:retrofit_graphql/src/model/gq_type.dart';
 import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_union.dart';
 import 'package:retrofit_graphql/src/model/gq_queries.dart';
+import 'package:retrofit_graphql/src/serializers/gq_serializer.dart';
 import 'package:retrofit_graphql/src/utils.dart';
 
 const String inputsFileName = "inputs.gq";
@@ -91,15 +92,15 @@ extension GQGrammarExtension on GQGrammar {
     queries[definition.token] = definition;
   }
 
-  String generateEnums() {
+  String generateEnums(GqSerializer serializer){
     return """
 $fileHeadComment
- ${enums.values.toList().map((e) => e.toDart(this)).join("\n")}
+ ${enums.values.toList().map((e) => serializer.serializeEnumDefinition(e)).join("\n")}
  """;
   }
 
-  String generateInputs() {
-    var inputs = this.inputs.values.toList().map((e) => e.toDart(this)).join("\n");
+  String generateInputs(GqSerializer serializer) {
+    var inputs = this.inputs.values.toList().map((e) => serializer.serializeInputDefinition(e)).join("\n");
     return """
 $fileHeadComment
   import 'package:json_annotation/json_annotation.dart';
@@ -110,8 +111,8 @@ $inputs
 """;
   }
 
-  String generateTypes() {
-    var data = projectedTypes.values.toSet().map((e) => e.toDart(this)).join("\n");
+  String generateTypes(GqSerializer serializer) {
+    var data = projectedTypes.values.toSet().map((e) => serializer.serializeTypeDefinition(e)).join("\n");
 
     return """
 $fileHeadComment
@@ -125,7 +126,7 @@ $data
   }
 
   String generateClient() {
-    var data = service.toDart(this);
+    var data = service.generateClient();
     return """
 $fileHeadComment
 import '$enumsFileName.dart';
@@ -174,7 +175,7 @@ $data
   }
 
   generateGQClient() {
-    service = GQGraphqlService(queries.values.toList());
+    service = DartClientSerializer(serializer, this);
   }
 
   void checmEnumDefinition(GQEnumDefinition enumDefinition) {
@@ -696,12 +697,12 @@ $data
         definition.originalTokens.add(definition.token);
         return definition;
       } else {
-        if (type.isSimilarTo(definition, this)) {
+        if (type.isSimilarTo(definition, serializer)) {
           type.originalTokens.add(definition.token);
           return type;
         } else {
           throw ParseException(
-              "You have names two object the same name '${definition.token}' but have diffrent fields. ${definition.token}_1.fields are: [${type.serializeFields(this)}], ${definition.token}_2.fields are: [${definition.serializeFields(this)}]. Please consider renaming one of them");
+              "You have names two object the same name '${definition.token}' but have diffrent fields. ${definition.token}_1.fields are: [${type.serializeFields(serializer)}], ${definition.token}_2.fields are: [${definition.serializeFields(serializer)}]. Please consider renaming one of them");
         }
       }
     }
@@ -739,7 +740,7 @@ $data
     return [
       ...projectedTypes.values,
       ...types.values,
-    ].where((element) => element.isSimilarTo(definition, this)).toList();
+    ].where((element) => element.isSimilarTo(definition, serializer)).toList();
   }
 
   GeneratedTypeName generateName(

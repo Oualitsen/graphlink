@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:petitparser/petitparser.dart';
+import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
 import 'package:logger/logger.dart';
 import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
@@ -17,13 +18,14 @@ void main() {
         .readAsStringSync());
     logger.i("g.projectedTypes.length = ${g.projectedTypes.length}");
     expect(parsed is Success, true);
+    var serializer = DartSerializer(g);
     logger.i("""
     _______________ projected types _________________
-    ${g.projectedTypes.values.map((e) => e.toDart(g)).toList()}
+    ${g.projectedTypes.values.map((e) => serializer.serializeTypeDefinition(e)).toList()}
     _________________________________________________
 
     _______________ inputs types _________________
-    ${g.inputs.values.map((e) => e.toDart(g)).toList()}
+    ${g.inputs.values.map((e) => serializer.serializeInputDefinition(e)).toList()}
     _________________________________________________
 
 
@@ -39,9 +41,10 @@ void main() {
         .readAsStringSync());
     logger.i("g.projectedTypes.length = ${g.projectedTypes.length}");
     expect(parsed is Success, true);
+    final serializer = DartSerializer(g);
     logger.i("""
     _______________ projected types _________________
-    ${g.projectedTypes.values.map((e) => e.toDart(g)).toList()}
+    ${g.projectedTypes.values.map((e) => serializer.serializeTypeDefinition(e)).toList()}
     _________________________________________________
 
 """);
