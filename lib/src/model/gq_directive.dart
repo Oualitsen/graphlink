@@ -18,6 +18,8 @@ enum GQDirectiveScope {
   // ignore: constant_identifier_names
   SUBSCRIPTION,
   // ignore: constant_identifier_names
+  FIELD_DEFINITION,
+  // ignore: constant_identifier_names
   FIELD,
   // ignore: constant_identifier_names
   FRAGMENT_DEFINITION,
@@ -31,8 +33,7 @@ enum GQDirectiveScope {
   SCALAR,
   // ignore: constant_identifier_names
   OBJECT,
-  // ignore: constant_identifier_names
-  FIELD_DEFINITION,
+
   // ignore: constant_identifier_names
   ARGUMENT_DEFINITION,
   // ignore: constant_identifier_names
@@ -49,13 +50,32 @@ enum GQDirectiveScope {
   INPUT_FIELD_DEFINITION,
   // ignore: constant_identifier_names
   VARIABLE_DEFINITION
+// ignore: constant_identifier_names
 }
 
 class GQDirectiveValue extends GQToken {
   final List<GQDirectiveScope> locations;
   final List<GQArgumentValue> arguments;
+  final Map<String, GQArgumentValue> _argsMap = {};
 
-  GQDirectiveValue(super.name, this.locations, this.arguments);
+  GQDirectiveValue(super.name, this.locations, this.arguments) {
+    for (var arg in arguments) {
+      _argsMap[arg.token] = arg;
+    }
+  }
+
+  void setDefualtArguments(List<GQArgumentDefinition> args) {
+    List<GQArgumentValue> argsToAdd = [];
+    for (var argDef in args) {
+      var argValue = _argsMap[argDef.token];
+      if (argValue == null && argDef.initialValue != null) {
+        var newArgValue = GQArgumentValue(argDef.token, argDef.initialValue);
+        _argsMap[argDef.token] = newArgValue;
+        argsToAdd.add(newArgValue);
+      }
+    }
+    arguments.addAll(argsToAdd);
+  }
 
   @override
   String serialize() {
@@ -63,9 +83,7 @@ class GQDirectiveValue extends GQToken {
     if (GQGrammar.directivesToSkip.contains(token)) {
       return "";
     }
-    var args = arguments.isEmpty
-        ? ""
-        : "(${arguments.map((e) => e.serialize()).join(",")})";
+    var args = arguments.isEmpty ? "" : "(${arguments.map((e) => e.serialize()).join(",")})";
     return "$token$args";
   }
 }

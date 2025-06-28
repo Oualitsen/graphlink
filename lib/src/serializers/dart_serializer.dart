@@ -14,7 +14,8 @@ class DartSerializer extends GqSerializer {
   @override
   String serializeEnumDefinition(GQEnumDefinition def) {
     return """
-   enum ${def.token} { ${def.values.map((e) => e.value).toList().join(", ")} }
+${serializeDecorators(def.directives)}
+  enum ${def.token} { ${def.values.map((e) => e.value).toList().join(", ")} }
 """;
   }
 
@@ -23,7 +24,7 @@ class DartSerializer extends GqSerializer {
     final type = def.type;
     final name = def.name;
     final hasInculeOrSkipDiretives = def.hasInculeOrSkipDiretives;
-    return "final ${serializeType(type, hasInculeOrSkipDiretives)} $name;";
+    return "${serializeDecorators(def.directives)}final ${serializeType(type, hasInculeOrSkipDiretives)} $name;";
   }
 
   @override
@@ -43,16 +44,17 @@ class DartSerializer extends GqSerializer {
   @override
   String serializeInputDefinition(GQInputDefinition def) {
     return """
+    ${serializeDecorators(def.directives)}
     @JsonSerializable(explicitToJson: true)
-      class ${def.token} {
-          ${serializeListText(def.fields.map((e) => serializeField(e)).toList(), join: "\n\r          ", withParenthesis: false)}
-          
-          ${def.token}({${def.fields.map((e) => grammar.toConstructorDeclaration(e)).join(", ")}});
-          
-          factory ${def.token}.fromJson(Map<String, dynamic> json) => _\$${def.token}FromJson(json);
-          
-          Map<String, dynamic> toJson() => _\$${def.token}ToJson(this);
-      }
+    class ${def.token} {
+        ${serializeListText(def.fields.map((e) => serializeField(e)).toList(), join: "\n\r          ", withParenthesis: false)}
+        
+        ${def.token}({${def.fields.map((e) => grammar.toConstructorDeclaration(e)).join(", ")}});
+        
+        factory ${def.token}.fromJson(Map<String, dynamic> json) => _\$${def.token}FromJson(json);
+        
+        Map<String, dynamic> toJson() => _\$${def.token}ToJson(this);
+    }
 """;
   }
 
@@ -61,15 +63,16 @@ class DartSerializer extends GqSerializer {
     if (def is GQInterfaceDefinition) {
       return serializeInterface(def);
     } else {
-      return _doSerializeField(def);
+      return _doSerializeTypeDefinition(def);
     }
   }
 
-  String _doSerializeField(GQTypeDefinition def) {
+  String _doSerializeTypeDefinition(GQTypeDefinition def) {
     final token = def.token;
     final subTypes = def.subTypes;
     final interfaceNames = def.interfaceNames;
     return """
+      ${serializeDecorators(def.directives)}
       @JsonSerializable(explicitToJson: true)
       class $token ${_serializeImplements(interfaceNames)}{
         
@@ -162,12 +165,13 @@ class DartSerializer extends GqSerializer {
   }
 
   String serializeInterface(GQInterfaceDefinition interface) {
-    final buffer = StringBuffer();
     final token = interface.token;
     final parents = interface.parents;
     final fields = interface.fields;
 
-    return """abstract class $token ${parents.isNotEmpty ? "extends ${parents.map((e) => e.token).join(", ")} " : ""}{
+    return """
+${serializeDecorators(interface.directives)}
+abstract class $token ${parents.isNotEmpty ? "extends ${parents.map((e) => e.token).join(", ")} " : ""}{
 
 \t${fields.map((f) => serializeGetterDeclaration(f)).join(";\n\t")}${fields.isNotEmpty ? ";" : ""}
 }""";

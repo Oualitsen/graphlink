@@ -18,6 +18,7 @@ import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_union.dart';
 import 'package:petitparser/petitparser.dart';
 import 'package:retrofit_graphql/src/serializers/gq_serializer.dart';
+import 'package:retrofit_graphql/src/serializers/language.dart';
 import 'package:retrofit_graphql/src/utils.dart';
 
 export 'package:retrofit_graphql/src/gq_grammar_extension.dart';
@@ -36,11 +37,13 @@ class GQGrammar extends GrammarDefinition {
 
   static const gqTypeNameDirectiveArgumentName = "name";
   static const gqEqualsHashcodeArgumentName = "fields";
+  static const gqDecoratorsArgumentName = "value";
   final Set<String> scalars = {"ID", "Boolean", "Int", "Float", "String", "null"};
   final Map<String, GQFragmentDefinitionBase> fragments = {};
   final Map<String, GQTypedFragment> typedFragments = {};
 
   late final Map<String, String> typeMap;
+  late final CodeGenerationMode mode;
 
   static const directivesToSkip = [gqTypeNameDirective, gqEqualsHashcode];
 
@@ -84,6 +87,8 @@ class GQGrammar extends GrammarDefinition {
   final Map<String, GQQueryDefinition> queries = {};
   final Map<String, GQEnumDefinition> enums = {};
   final Map<String, GQTypeDefinition> projectedTypes = {};
+  final Map<String, GQDirectiveDefinition> directiveDefinitions = {};
+  final List<GQDirectiveValue> directiveValues = [];
 
   GQSchema schema = GQSchema();
   bool schemaInitialized = false;
@@ -96,9 +101,10 @@ class GQGrammar extends GrammarDefinition {
 
   late final DartClientSerializer service;
   GqSerializer? _serializer;
-   GqSerializer get serializer {
-      return _serializer ??= DartSerializer(this);
-   }
+  GqSerializer get serializer {
+    return _serializer ??= DartSerializer(this);
+  }
+
   GQGrammar(
       {this.typeMap = const {
         "ID": "String",
@@ -114,7 +120,8 @@ class GQGrammar extends GrammarDefinition {
       this.autoGenerateQueries = false,
       this.operationNameAsParameter = false,
       this.identityFields = const [],
-      this.defaultAlias})
+      this.defaultAlias,
+      this.mode = CodeGenerationMode.client})
       : assert(
           !autoGenerateQueries || generateAllFieldsFragments,
           'autoGenerateQueries can only be true if generateAllFieldsFragments is also true',
@@ -164,6 +171,7 @@ class GQGrammar extends GrammarDefinition {
     }
     checkFragmentRefs();
     updateInterfaceParents();
+    setDirectivesDefaulValues();
     fillQueryElementsReturnType();
     fillTypedFragments();
     validateProjections();
@@ -272,7 +280,7 @@ class GQGrammar extends GrammarDefinition {
                 ref0(closeBrace))
             .map3((p0, fieldList, p2) => fieldList)).map4((_, name, directives, fields) {
       var inputName = getNameValueFromDirectives(directives) ?? name;
-      final input = GQInputDefinition(name: inputName, fields: fields);
+      final input = GQInputDefinition(name: inputName, fields: fields, directives: directives);
       addInputDefinition(input);
       return input;
     });
@@ -379,18 +387,26 @@ class GQGrammar extends GrammarDefinition {
   Parser<List<GQDirectiveValue>> directiveValueList() => directiveValue().star();
 
   Parser<GQDirectiveValue> directiveValue() => seq2(directiveValueName(), argumentValues().optional())
-      .map2((name, args) => GQDirectiveValue(name, [], args ?? []));
+          .map2((name, args) => GQDirectiveValue(name, [], args ?? []))
+          .map((directiveValue) {
+        addDiectiveValue(directiveValue);
+        return directiveValue;
+      });
 
   Parser<String> directiveValueName() => ref1(token, "@".toParser() & identifier()).flatten();
 
   Parser<GQDirectiveDefinition> directiveDefinition() => seq3(
-          seq2(
-            ref1(token, "directive"),
-            directiveValueName(),
-          ).map2((_, name) => name),
-          arguments().optional(),
-          seq2(ref1(token, "on"), ref1(token, directiveScopes())).map2((_, scopes) => scopes))
-      .map3((name, args, scopes) => GQDirectiveDefinition(name, args ?? [], scopes));
+              seq2(
+                ref1(token, "directive"),
+                directiveValueName(),
+              ).map2((_, name) => name),
+              arguments().optional(),
+              seq2(ref1(token, "on"), ref1(token, directiveScopes())).map2((_, scopes) => scopes))
+          .map3((name, args, scopes) => GQDirectiveDefinition(name, args ?? [], scopes))
+          .map((definition) {
+        addDirectiveDefinition(definition);
+        return definition;
+      });
 
   Parser<GQDirectiveScope> directiveScope() {
     return GQDirectiveScope.values

@@ -1,3 +1,3 @@
 enum Language { dart, java }
 
-enum Mode { frontend, backend }
+enum CodeGenerationMode { client, server }

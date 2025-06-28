@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:retrofit_graphql/src/serializers/language.dart';
 import 'package:test/test.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
@@ -15,6 +16,36 @@ void main() {
     "Null": "null",
     "Long": "Long"
   };
+
+  test("testDecorators", () {
+    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final text =
+        File("test/serializers/java/types/type_serialization_decorators_test.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+
+    expect(parsed is Success, true);
+    var javaSerialzer = JavaSerializer(g);
+
+    var user = g.getType("User");
+
+    var idField = user.fields.where((f) => f.name == "id").first;
+    var id = javaSerialzer.serializeField(idField);
+    expect(id, "@Getter @Setter private String id;");
+
+    var ibase = g.interfaces["IBase"]!;
+
+    var ibaseText = javaSerialzer.serializeInterface(ibase);
+    expect(ibaseText.trim(), startsWith("@Logger"));
+
+    var gender = g.enums["Gender"]!;
+    var genderText = javaSerialzer.serializeEnumDefinition(gender);
+    expect(genderText.trim(), startsWith("@Logger"));
+
+    var input = g.inputs["UserInput"]!;
+    var inputText = javaSerialzer.serializeInputDefinition(input);
+    expect(inputText.trim(), startsWith("@Input"));
+  });
 
   test("serializeField", () {
     final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);

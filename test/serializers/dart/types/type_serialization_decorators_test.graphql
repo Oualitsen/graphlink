@@ -1,0 +1,37 @@
+
+directive @gqDecorators(
+  value: [String!]!
+  applyOnClient: Boolean = true
+  applyOnServer: Boolean = true
+) on FIELD_DEFINITION | OBJECT | INPUT_OBJECT
+
+
+enum Gender 
+@gqDecorators(value: ["@Logger"])
+{
+    male, female
+}
+
+interface IBase 
+@gqDecorators(value: ["@Logger"])
+
+ {
+    id: String!
+}
+
+input UserInput @gqDecorators(value: ["@Input"]) {
+    name: String!
+}
+    
+type User @gqDecorators(value: ["@Logger"]) {
+
+    id: String! @gqDecorators(value: ["@Getter", "@Setter"])
+    name: String!
+    middleName: String
+    married: Boolean!
+    listExample: [String!]!
+}
+
+
+
+

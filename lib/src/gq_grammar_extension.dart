@@ -15,6 +15,7 @@ import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_union.dart';
 import 'package:retrofit_graphql/src/model/gq_queries.dart';
 import 'package:retrofit_graphql/src/serializers/gq_serializer.dart';
+import 'package:retrofit_graphql/src/serializers/language.dart';
 import 'package:retrofit_graphql/src/utils.dart';
 
 const String inputsFileName = "inputs.gq";
@@ -34,8 +35,22 @@ const fileHeadComment = """
 """;
 
 extension GQGrammarExtension on GQGrammar {
+  void setDirectivesDefaulValues() {
+    var values = [...directiveValues];
+    for (var value in values) {
+      var def = directiveDefinitions[value.token];
+      if (def != null) {
+        value.setDefualtArguments(def.arguments);
+      }
+    }
+  }
+
   bool isNonProjectableType(String token) {
     return scalars.contains(token) || enums.containsKey(token);
+  }
+
+  void addDiectiveValue(GQDirectiveValue value) {
+    directiveValues.add(value);
   }
 
   void addScalarDefinition(String scalar) {
@@ -43,9 +58,20 @@ extension GQGrammarExtension on GQGrammar {
     scalars.add(scalar);
   }
 
+  void addDirectiveDefinition(GQDirectiveDefinition directive) {
+    checkDirectiveDefinition(directive.name);
+    directiveDefinitions[directive.name] = directive;
+  }
+
   void checkSacalarDefinition(String scalar) {
     if (scalars.contains(scalar)) {
       throw ParseException("Scalar $scalar has already been declared");
+    }
+  }
+
+  void checkDirectiveDefinition(String name) {
+    if (directiveDefinitions.containsKey(name)) {
+      throw ParseException("Directive $name has already been declared");
     }
   }
 
@@ -92,7 +118,7 @@ extension GQGrammarExtension on GQGrammar {
     queries[definition.token] = definition;
   }
 
-  String generateEnums(GqSerializer serializer){
+  String generateEnums(GqSerializer serializer) {
     return """
 $fileHeadComment
  ${enums.values.toList().map((e) => serializer.serializeEnumDefinition(e)).join("\n")}
@@ -925,6 +951,36 @@ $data
     } else {
       return "this.${field.name}";
     }
+  }
+
+  static const gqDecorators = "@gqDecorators";
+
+  static List<String> extractDecorators(
+      {required List<GQDirectiveValue> directives, required CodeGenerationMode mode}) {
+    // find the list
+    var decorators = directives
+        .where((d) => d.token == gqDecorators)
+        .where((d) {
+          switch (mode) {
+            case CodeGenerationMode.client:
+              return d.arguments.where((arg) => arg.token == "applyOnClient").first.value as bool;
+            case CodeGenerationMode.server:
+              return d.arguments.where((arg) => arg.token == "applyOnServer").first.value as bool;
+          }
+        })
+        .map((d) {
+          return d.arguments.where((arg) => arg.token == "value").first;
+        })
+        .map((d) {
+          var decoratorValues = ((d.value as List)[1] as List)
+              .map((e) => e as String)
+              .map((str) => str.substring(1, str.length - 1))
+              .toList();
+          return decoratorValues;
+        })
+        .expand((inner) => inner)
+        .toList();
+    return decorators;
   }
 }
 

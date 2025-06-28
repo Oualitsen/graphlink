@@ -14,6 +14,7 @@ class JavaSerializer extends GqSerializer {
   @override
   String serializeEnumDefinition(GQEnumDefinition def) {
     return """
+${serializeDecorators(def.directives)}
 public enum ${def.token} {
 \t${def.values.map((e) => e.value).toList().join(", ")}
 }
@@ -25,20 +26,18 @@ public enum ${def.token} {
     final type = def.type;
     final name = def.name;
     final hasInculeOrSkipDiretives = def.hasInculeOrSkipDiretives;
-    return "private ${serializeType(type, hasInculeOrSkipDiretives)} $name;";
+    return "${serializeDecorators(def.directives)}private ${serializeType(type, hasInculeOrSkipDiretives)} $name;";
   }
 
   String serializeArgument(GQField def) {
     final type = def.type;
     final name = def.name;
     final hasInculeOrSkipDiretives = def.hasInculeOrSkipDiretives;
-    return "final ${serializeType(type, hasInculeOrSkipDiretives)} $name";
+    return "${serializeDecorators(def.directives)}final ${serializeType(type, hasInculeOrSkipDiretives)} $name";
   }
 
   @override
   String serializeType(GQType def, bool forceNullable) {
-    //bool nullable = forceNullable || def.nullable;
-
     if (def is GQListType) {
       return "java.util.List<${serializeType(def.inlineType, false)}>";
     }
@@ -50,6 +49,7 @@ public enum ${def.token} {
   @override
   String serializeInputDefinition(GQInputDefinition def) {
     return """
+${serializeDecorators(def.directives)}
 public class ${def.token} {
 
 \t${serializeListText(def.fields.map((e) => serializeField(e)).toList(), join: "\n\t", withParenthesis: false)}
@@ -163,6 +163,7 @@ public static class Builder {
     final token = def.token;
     final interfaceNames = def.interfaceNames;
     return """
+${serializeDecorators(def.directives)}
 public class $token ${_serializeImplements(interfaceNames)}{
   
 \t${serializeListText(def.getFields().map((e) => serializeField(e)).toList(), join: "\n\t", withParenthesis: false)}
@@ -241,14 +242,10 @@ public int hashCode() {
     final fields = interface.fields;
 
     return """
+      ${serializeDecorators(interface.directives)}
       public interface $token ${parents.isNotEmpty ? "extends ${parents.map((e) => e.token).join(", ")} " : ""}{
 
 \t${fields.map((f) => serializeGetterDeclaration(f, skipModifier: true)).join(";\n\t")}${fields.isNotEmpty ? ";" : ""}
 }""";
-  }
-
-  String indentWithTabs(String text, int tabCount) {
-    final tabs = '\t' * tabCount;
-    return text.split('\n').map((line) => '$tabs$line').join('\n');
   }
 }

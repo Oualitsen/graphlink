@@ -32,7 +32,15 @@ void main() {
   test("Directive definition test", () {
     var parser = g.buildFrom(g.directiveDefinition().end());
     var result = parser.parse('''
-    directive @test(test: String! = "Azul fellawen") on INTERFACE | ARGUMENT_DEFINITION
+    directive @test(test: String!, arg2: [String!]! ) on INTERFACE | ARGUMENT_DEFINITION
+    ''');
+    expect(result is Success, true);
+  });
+
+  test("Directive definition test2", () {
+    var parser = g.buildFrom(g.directiveDefinition().end());
+    var result = parser.parse('''
+    directive @gqDecorator(value: String) on  OBJECT | INPUT_OBJECT| FIELD_DEFINITION | FIELD
     ''');
     expect(result is Success, true);
   });
