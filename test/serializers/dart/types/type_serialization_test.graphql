@@ -1,0 +1,24 @@
+
+
+
+input UserInput {
+    id: String
+    name: String!
+    middleName: String
+}
+
+type User {
+    id: String!
+    name: String!
+    middleName: String
+}
+
+type MyEntity implements Entity {
+    id: String!
+    name: String!
+}
+
+interface Entity {
+    id: String!
+}
+

@@ -1,0 +1,35 @@
+
+
+type MyEntity implements Entity {
+    id: String!
+    name: String!
+}
+
+
+
+interface Interface1 {
+    id: String!
+    creationDate: String!
+    createdBy: String!
+}
+
+interface Interface2 implements IBase {
+    id: String!
+    creationDate: String!
+    createdBy: String!
+}
+
+interface Interface3 implements IBase & IBase2{
+    id: String!
+    name: String!
+    creationDate: String!
+    createdBy: String!
+}
+
+interface IBase {
+    id: String!
+}
+
+interface IBase2 {
+    name: String!
+}

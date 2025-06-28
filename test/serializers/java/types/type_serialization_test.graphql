@@ -1,0 +1,31 @@
+
+
+
+input UserInput {
+    id: String
+    name: String!
+    middleName: String
+}
+
+type User {
+    id: String!
+    name: String!
+    middleName: String
+    married: Boolean!
+    listExample: [String!]!
+
+}
+
+enum Gender {
+    male, female
+}
+
+type MyEntity implements Entity {
+    id: String!
+    name: String!
+}
+
+interface Entity {
+    id: String!
+}
+

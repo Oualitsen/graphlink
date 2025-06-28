@@ -36,8 +36,7 @@ class DartSerializer extends GqSerializer {
       return "List<${serializeType(def.inlineType, false)}>$postfix";
     }
     final token = def.token;
-    var dartTpe =
-        grammar.typeMap[token] ?? grammar.projectedTypes[token]?.token ?? token;
+    var dartTpe = grammar.typeMap[token] ?? grammar.projectedTypes[token]?.token ?? token;
     return "$dartTpe$postfix";
   }
 
@@ -115,8 +114,7 @@ class DartSerializer extends GqSerializer {
   """;
   }
 
-  static String serializeContructorArgs(
-      GQTypeDefinition def, GQGrammar grammar) {
+  static String serializeContructorArgs(GQTypeDefinition def, GQGrammar grammar) {
     var fields = def.getFields();
     if (fields.isEmpty) {
       return "";
@@ -125,12 +123,10 @@ class DartSerializer extends GqSerializer {
     if (fields.isEmpty) {
       nonCommonFields = "";
     } else {
-      nonCommonFields =
-          fields.map((e) => grammar.toConstructorDeclaration(e)).join(", ");
+      nonCommonFields = fields.map((e) => grammar.toConstructorDeclaration(e)).join(", ");
     }
 
-    var combined =
-        [nonCommonFields].where((element) => element.isNotEmpty).toSet();
+    var combined = [nonCommonFields].where((element) => element.isNotEmpty).toSet();
     if (combined.isEmpty) {
       return "";
     } else if (combined.length == 1) {
@@ -143,8 +139,7 @@ class DartSerializer extends GqSerializer {
     return "return _\$${token}ToJson(this);";
   }
 
-  static String _serializeFromJson(
-      String token, Set<GQTypeDefinition> subTypes) {
+  static String _serializeFromJson(String token, Set<GQTypeDefinition> subTypes) {
     if (subTypes.isEmpty) {
       return "return _\$${token}FromJson(json);";
     } else {
@@ -172,34 +167,13 @@ class DartSerializer extends GqSerializer {
     final parents = interface.parents;
     final fields = interface.fields;
 
-    buffer.write("abstract class $token");
-    if (parents.isNotEmpty) {
-      buffer.write(" extends ");
+    return """abstract class $token ${parents.isNotEmpty ? "extends ${parents.map((e) => e.token).join(", ")} " : ""}{
 
-      for (var p in parents) {
-        buffer.write(p.token);
-        if (p != parents.last) {
-          buffer.write(", ");
-        }
-      }
-    }
-
-    /// @TODO review this potential bug!
-    buffer.writeln("{");
-    for (var element in fields) {
-      buffer.writeln(serializeField(element));
-    }
-
-    buffer.write("$token({");
-    for (int i = 0; i < fields.length; i++) {
-      final element = fields[i];
-      buffer.write("required this.${element.name}, ");
-    }
-    buffer.writeln("});");
-
-    buffer.writeln("}");
-
-    return buffer.toString();
+\t${fields.map((f) => serializeGetterDeclaration(f)).join(";\n\t")}${fields.isNotEmpty ? ";" : ""}
+}""";
   }
 
+  String serializeGetterDeclaration(GQField field) {
+    return """${serializeType(field.type, false)} get ${field.name}""";
+  }
 }

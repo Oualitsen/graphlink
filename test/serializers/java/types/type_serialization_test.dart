@@ -1,0 +1,254 @@
+import 'dart:io';
+
+import 'package:test/test.dart';
+import 'package:retrofit_graphql/src/gq_grammar.dart';
+import 'package:petitparser/petitparser.dart';
+import 'package:retrofit_graphql/src/serializers/java_serializer.dart';
+
+void main() {
+  final typeMapping = {
+    "ID": "String",
+    "String": "String",
+    "Float": "Double",
+    "Int": "Integer",
+    "Boolean": "Boolean",
+    "Null": "null",
+    "Long": "Long"
+  };
+
+  test("serializeField", () {
+    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final text = File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+    expect(parsed is Success, true);
+    var javaSerialzer = JavaSerializer(g);
+    var user = g.getType("User");
+    var idField = user.fields.where((f) => f.name == "id").first;
+    var id = javaSerialzer.serializeField(idField);
+    print("id = $id");
+    expect(id, "private String id;");
+  });
+
+  test("serializeArgument", () {
+    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final text = File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+    expect(parsed is Success, true);
+    var javaSerialzer = JavaSerializer(g);
+    var user = g.getType("User");
+    var idField = user.fields.where((f) => f.name == "id").first;
+    var id = javaSerialzer.serializeArgument(idField);
+    expect(id, "final String id");
+  });
+
+  test("serializeArgument", () {
+    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final text = File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+    expect(parsed is Success, true);
+    var javaSerialzer = JavaSerializer(g);
+    var user = g.getType("User");
+    var idField = user.fields.where((f) => f.name == "id").first;
+    var listExample = user.fields.where((f) => f.name == "listExample").first;
+    var id = javaSerialzer.serializeType(idField.type, false);
+    var list = javaSerialzer.serializeType(listExample.type, false);
+    expect(id, "String");
+    expect(list, "java.util.List<String>");
+  });
+
+  test("serializeEnumDefinition", () {
+    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final text = File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+    expect(parsed is Success, true);
+    var javaSerialzer = JavaSerializer(g);
+    var genderEnum = g.enums["Gender"]!;
+    var enum_ = javaSerialzer.serializeEnumDefinition(genderEnum);
+    expect(
+        enum_.trim(),
+        """
+public enum Gender {
+\tmale, female
+}
+"""
+            .trim());
+  });
+
+  test("serializeGetterDeclaration", () {
+    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final text = File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+    expect(parsed is Success, true);
+    var javaSerialzer = JavaSerializer(g);
+
+    var user = g.getType("User");
+    var idField = user.fields.where((f) => f.name == "id").first;
+    var marriedField = user.fields.where((f) => f.name == "married").first;
+
+    var getterWithoutModifier = javaSerialzer.serializeGetterDeclaration(idField, skipModifier: true);
+    var getterWithModifier = javaSerialzer.serializeGetterDeclaration(idField, skipModifier: false);
+    var marriedGetter = javaSerialzer.serializeGetterDeclaration(marriedField, skipModifier: false);
+    expect(getterWithoutModifier, "String getId()");
+    expect(getterWithModifier, "public String getId()");
+    expect(marriedGetter, "public Boolean isMarried()");
+  });
+
+  test("serializeSetter", () {
+    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final text = File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+    expect(parsed is Success, true);
+    var javaSerialzer = JavaSerializer(g);
+
+    var user = g.getType("User");
+    var idField = user.fields.where((f) => f.name == "id").first;
+    var middleName = user.fields.where((f) => f.name == "middleName").first;
+
+    var setId = javaSerialzer.serializeSetter(idField);
+    var setMiddleName = javaSerialzer.serializeSetter(middleName);
+
+    expect(
+        setMiddleName,
+        """
+public void setMiddleName(final String middleName) {
+\tthis.middleName = middleName;
+}
+"""
+            .trim());
+
+    expect(
+        setId,
+        """
+public void setId(final String id) {
+\tjava.util.Objects.requireNonNull(id);
+\tthis.id = id;
+}
+"""
+            .trim());
+  });
+
+  test("serializeGetter", () {
+    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final text = File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+    expect(parsed is Success, true);
+    var javaSerialzer = JavaSerializer(g);
+
+    var user = g.getType("User");
+    var idField = user.fields.where((f) => f.name == "id").first;
+    var married = user.fields.where((f) => f.name == "married").first;
+    var middleName = user.fields.where((f) => f.name == "middleName").first;
+
+    var getId = javaSerialzer.serializeGetter(idField);
+    var isMarried = javaSerialzer.serializeGetter(married);
+    var middleNameText = javaSerialzer.serializeGetter(middleName);
+    expect(
+        getId,
+        """
+public String getId() {
+\tjava.util.Objects.requireNonNull(id);
+\treturn id;
+}"""
+            .trim());
+    expect(
+        middleNameText,
+        """
+public String getMiddleName() {
+\treturn middleName;
+}"""
+            .trim());
+    expect(
+        isMarried,
+        """
+public Boolean isMarried() {
+\tjava.util.Objects.requireNonNull(married);
+\treturn married;
+}"""
+            .trim());
+  });
+
+  test("Java type serialization", () {
+    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final text = File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+    expect(parsed is Success, true);
+
+    var user = g.getType("User");
+    var javaSerialzer = JavaSerializer(g);
+    var class_ = javaSerialzer.serializeTypeDefinition(user);
+    print(class_);
+  });
+
+  test("Java input serialization", () {
+    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final text = File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+    expect(parsed is Success, true);
+
+    var user = g.inputs["UserInput"];
+    var javaSerialzer = JavaSerializer(g);
+    var class_ = javaSerialzer.serializeInputDefinition(user!);
+    print(class_);
+  });
+
+  test("Java interface serialization", () {
+    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final text = File("test/serializers/java/types/interface_serialization_test.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+    expect(parsed is Success, true);
+
+    var entity = g.interfaces["Interface1"]!;
+    var javaSerialzer = JavaSerializer(g);
+    var class_ = javaSerialzer.serializeInterface(entity).trim();
+    expect(class_, startsWith("public interface Interface1 {"));
+    expect(class_, endsWith("}"));
+    for (var e in entity.fields) {
+      expect(class_, contains(javaSerialzer.serializeGetterDeclaration(e, skipModifier: true)));
+    }
+  });
+
+  test("Java interface implementing one interface serialization", () {
+    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final text = File("test/serializers/java/types/interface_serialization_test.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+    expect(parsed is Success, true);
+
+    var entity = g.interfaces["Interface2"]!;
+    var javaSerialzer = JavaSerializer(g);
+    var class_ = javaSerialzer.serializeInterface(entity).trim();
+
+    expect(class_, startsWith("public interface Interface2 extends IBase {"));
+    expect(class_, endsWith("}"));
+    for (var e in entity.fields) {
+      expect(class_, contains(javaSerialzer.serializeGetterDeclaration(e, skipModifier: true)));
+    }
+  });
+
+  test("Java interface implementing multiple interface serialization", () {
+    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final text = File("test/serializers/java/types/interface_serialization_test.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+    expect(parsed is Success, true);
+
+    var entity = g.interfaces["Interface3"]!;
+    var javaSerialzer = JavaSerializer(g);
+    var class_ = javaSerialzer.serializeInterface(entity).trim();
+    expect(class_, startsWith("public interface Interface3 extends IBase, IBase2 {"));
+    expect(class_, endsWith("}"));
+    for (var e in entity.fields) {
+      expect(class_, contains(javaSerialzer.serializeGetterDeclaration(e, skipModifier: true)));
+    }
+  });
+}

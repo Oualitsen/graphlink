@@ -143,20 +143,27 @@ ${_genSubscriptions()}
   String _callToJson(String argName, GQType type) {
     if (_grammar.inputTypeRequiresProjection(type)) {
       if (type is GQListType) {
-        return "$argName${type.nullableTextDart}.map((e) => ${_callToJson("e", type.type)}).toList()";
+        return "$argName${_getNullableText(type)}.map((e) => ${_callToJson("e", type.type)}).toList()";
       } else {
-        return "$argName${type.nullableTextDart}.toJson()";
+        return "$argName${_getNullableText(type)}.toJson()";
       }
     }
     if (_grammar.enums.containsKey(type.token)) {
       if (type is GQListType) {
-        return "$argName${type.nullableTextDart}.map((e) => ${_callToJson("e", type.type)}).toList()";
+        return "$argName${_getNullableText(type)}.map((e) => ${_callToJson("e", type.type)}).toList()";
       } else {
-        return "$argName${type.nullableTextDart}.name";
+        return "$argName${_getNullableText(type)}.name";
       }
     } else {
       return argName;
     }
+  }
+
+  String _getNullableText(GQType type) {
+    if(type.nullable) {
+      return "?";
+    }
+    return "";
   }
 
   String _generateArgs(GQQueryDefinition def) {
