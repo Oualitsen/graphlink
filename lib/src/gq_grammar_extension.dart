@@ -982,6 +982,23 @@ $data
         .toList();
     return decorators;
   }
+
+  static const gqSkipOnServer = "@gqSkipOnServer";
+  static const gqSkipOnClient = "@gqSkipOnClient";
+
+  bool shouldSkipSerialization({required List<GQDirectiveValue> directives}) {
+    String token;
+    switch (mode) {
+      case CodeGenerationMode.client:
+        token = gqSkipOnClient;
+        break;
+      case CodeGenerationMode.server:
+        token = gqSkipOnServer;
+        break;
+    }
+    var skipOnList = directives.where((d) => d.token == token).toList();
+    return skipOnList.isNotEmpty;
+  }
 }
 
 class GeneratedTypeName {

@@ -17,6 +17,51 @@ void main() {
     "Long": "Long"
   };
 
+  test("test skipOn mode = client", () {
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.client);
+
+    final text =
+        File("test/serializers/java/types/type_serialization_skip_on_test.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+
+    expect(parsed is Success, true);
+    var javaSerialzer = JavaSerializer(g);
+
+    var userServer = g.getType("User");
+    var result = javaSerialzer.serializeTypeDefinition(userServer);
+    expect(result, isNot(contains("String companyId")));
+  });
+
+  test("test skipOn mode = server", () {
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+
+    final text =
+        File("test/serializers/java/types/type_serialization_skip_on_test.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+
+    expect(parsed is Success, true);
+    var javaSerialzer = JavaSerializer(g);
+
+    var userServer = g.getType("User");
+    var result = javaSerialzer.serializeTypeDefinition(userServer);
+    expect(result, isNot(contains("Company company")));
+
+    var input = g.inputs["SkipInput"]!;
+    var skipedInputSerialized = javaSerialzer.serializeInputDefinition(input);
+    expect(skipedInputSerialized, "");
+
+    var enum_ = g.enums["Gender"]!;
+    var serializedEnum = javaSerialzer.serializeEnumDefinition(enum_);
+    expect(serializedEnum, "");
+    var type = g.getType("SkipType");
+    var serilzedType = javaSerialzer.serializeTypeDefinition(type);
+    expect(serilzedType, "");
+  });
+
   test("testDecorators", () {
     final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
     final text =
@@ -57,7 +102,6 @@ void main() {
     var user = g.getType("User");
     var idField = user.fields.where((f) => f.name == "id").first;
     var id = javaSerialzer.serializeField(idField);
-    print("id = $id");
     expect(id, "private String id;");
   });
 

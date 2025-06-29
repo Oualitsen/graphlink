@@ -1,13 +1,11 @@
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
 
-class GQEnumDefinition extends GQToken  {
+class GQEnumDefinition extends GQToken {
   List<GQEnumValue> values;
   List<GQDirectiveValue> list;
 
-  GQEnumDefinition(
-      {required String token, required this.values, required this.list})
-      : super(token);
+  GQEnumDefinition({required String token, required this.values, required this.list}) : super(token);
 
   @override
   String serialize() {
@@ -15,7 +13,6 @@ class GQEnumDefinition extends GQToken  {
   }
 
   List<GQDirectiveValue> get directives => list;
-  
 }
 
 class GQEnumValue {

@@ -1,11 +1,50 @@
 import 'dart:io';
 
 import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
+import 'package:retrofit_graphql/src/serializers/language.dart';
 import 'package:test/test.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {
+  test("dart test skipOn mode = client", () {
+    final GQGrammar g = GQGrammar(identityFields: ["id"], mode: CodeGenerationMode.client);
+
+    final text =
+        File("test/serializers/dart/types/type_serialization_skip_on_test.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+    expect(parsed is Success, true);
+    var javaSerialzer = DartSerializer(g);
+    var user = g.getType("User");
+    var result = javaSerialzer.serializeTypeDefinition(user);
+    expect(result, isNot(contains("String companyId")));
+  });
+
+  test("dart test skipOn mode = server", () {
+    final GQGrammar g = GQGrammar(identityFields: ["id"], mode: CodeGenerationMode.server);
+
+    final text =
+        File("test/serializers/dart/types/type_serialization_skip_on_test.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+    expect(parsed is Success, true);
+    var javaSerialzer = DartSerializer(g);
+    var user = g.getType("User");
+    var result = javaSerialzer.serializeTypeDefinition(user);
+    expect(result, isNot(contains("Company company")));
+
+    var input = g.inputs["SkipInput"]!;
+    var skipedInputSerialized = javaSerialzer.serializeInputDefinition(input);
+    expect(skipedInputSerialized, "");
+
+    var enum_ = g.enums["Gender"]!;
+    var serializedEnum = javaSerialzer.serializeEnumDefinition(enum_);
+    expect(serializedEnum, "");
+    var type = g.getType("SkipType");
+    var serilzedType = javaSerialzer.serializeTypeDefinition(type);
+    expect(serilzedType, "");
+  });
   test("testDecorators", () {
     final GQGrammar g = GQGrammar(identityFields: ["id"]);
     final text =
@@ -111,6 +150,5 @@ void main() {
     for (var e in entity.fields) {
       expect(class_, contains(dartSerialzer.serializeGetterDeclaration(e)));
     }
-    print(class_);
   });
 }

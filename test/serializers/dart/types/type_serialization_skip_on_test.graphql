@@ -1,0 +1,40 @@
+
+
+
+directive @gqSkipOnServer()
+on FIELD|FIELD_DEFINITION|OBJECT|INTERFACE|INPUT_OBJECT|INPUT_FIELD_DEFINITION
+
+
+directive @gqSkipOnClient()
+on FIELD|FIELD_DEFINITION|OBJECT|INTERFACE|INPUT_OBJECT|INPUT_FIELD_DEFINITION
+    
+type User {
+
+    id: String! 
+    name: String!
+    middleName: String
+
+    companyId: String! @gqSkipOnClient()
+    company: Company! @gqSkipOnServer()
+}
+
+type Company {
+    id: String!
+    name: String!
+}
+
+
+type SkipType @gqSkipOnServer() {
+    id: String!
+}
+
+enum Gender @gqSkipOnServer() {
+    male, female
+}
+
+input SkipInput @gqSkipOnServer(){
+    name: String!
+}
+
+
+  

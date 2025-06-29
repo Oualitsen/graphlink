@@ -12,7 +12,7 @@ class DartSerializer extends GqSerializer {
   DartSerializer(super.grammar);
 
   @override
-  String serializeEnumDefinition(GQEnumDefinition def) {
+  String doSerializeEnumDefinition(GQEnumDefinition def) {
     return """
 ${serializeDecorators(def.directives)}
   enum ${def.token} { ${def.values.map((e) => e.value).toList().join(", ")} }
@@ -20,7 +20,7 @@ ${serializeDecorators(def.directives)}
   }
 
   @override
-  String serializeField(GQField def) {
+  String doSerializeField(GQField def) {
     final type = def.type;
     final name = def.name;
     final hasInculeOrSkipDiretives = def.hasInculeOrSkipDiretives;
@@ -42,14 +42,14 @@ ${serializeDecorators(def.directives)}
   }
 
   @override
-  String serializeInputDefinition(GQInputDefinition def) {
+  String doSerializeInputDefinition(GQInputDefinition def) {
     return """
     ${serializeDecorators(def.directives)}
     @JsonSerializable(explicitToJson: true)
     class ${def.token} {
-        ${serializeListText(def.fields.map((e) => serializeField(e)).toList(), join: "\n\r          ", withParenthesis: false)}
+        ${serializeListText(def.getSerializableFields(grammar).map((e) => serializeField(e)).toList(), join: "\n\r          ", withParenthesis: false)}
         
-        ${def.token}({${def.fields.map((e) => grammar.toConstructorDeclaration(e)).join(", ")}});
+        ${def.token}({${def.getSerializableFields(grammar).map((e) => grammar.toConstructorDeclaration(e)).join(", ")}});
         
         factory ${def.token}.fromJson(Map<String, dynamic> json) => _\$${def.token}FromJson(json);
         
@@ -59,7 +59,7 @@ ${serializeDecorators(def.directives)}
   }
 
   @override
-  String serializeTypeDefinition(GQTypeDefinition def) {
+  String doSerializeTypeDefinition(GQTypeDefinition def) {
     if (def is GQInterfaceDefinition) {
       return serializeInterface(def);
     } else {
@@ -76,7 +76,7 @@ ${serializeDecorators(def.directives)}
       @JsonSerializable(explicitToJson: true)
       class $token ${_serializeImplements(interfaceNames)}{
         
-          ${serializeListText(def.getFields().map((e) => serializeField(e)).toList(), join: "\n\r          ", withParenthesis: false)}
+          ${serializeListText(def.getSerializableFields(grammar).map((e) => serializeField(e)).toList(), join: "\n\r          ", withParenthesis: false)}
           
           $token(${serializeContructorArgs(def, grammar)});
           
@@ -118,7 +118,7 @@ ${serializeDecorators(def.directives)}
   }
 
   static String serializeContructorArgs(GQTypeDefinition def, GQGrammar grammar) {
-    var fields = def.getFields();
+    var fields = def.getSerializableFields(grammar);
     if (fields.isEmpty) {
       return "";
     }
@@ -167,7 +167,7 @@ ${serializeDecorators(def.directives)}
   String serializeInterface(GQInterfaceDefinition interface) {
     final token = interface.token;
     final parents = interface.parents;
-    final fields = interface.fields;
+    final fields = interface.getSerializableFields(grammar);
 
     return """
 ${serializeDecorators(interface.directives)}

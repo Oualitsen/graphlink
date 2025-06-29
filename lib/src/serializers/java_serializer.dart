@@ -12,7 +12,7 @@ class JavaSerializer extends GqSerializer {
   JavaSerializer(super.grammar);
 
   @override
-  String serializeEnumDefinition(GQEnumDefinition def) {
+  String doSerializeEnumDefinition(GQEnumDefinition def) {
     return """
 ${serializeDecorators(def.directives)}
 public enum ${def.token} {
@@ -22,7 +22,7 @@ public enum ${def.token} {
   }
 
   @override
-  String serializeField(GQField def) {
+  String doSerializeField(GQField def) {
     final type = def.type;
     final name = def.name;
     final hasInculeOrSkipDiretives = def.hasInculeOrSkipDiretives;
@@ -47,22 +47,22 @@ public enum ${def.token} {
   }
 
   @override
-  String serializeInputDefinition(GQInputDefinition def) {
+  String doSerializeInputDefinition(GQInputDefinition def) {
     return """
 ${serializeDecorators(def.directives)}
 public class ${def.token} {
 
-\t${serializeListText(def.fields.map((e) => serializeField(e)).toList(), join: "\n\t", withParenthesis: false)}
+\t${serializeListText(def.getSerializableFields(grammar).map((e) => serializeField(e)).toList(), join: "\n\t", withParenthesis: false)}
 
 \tpublic ${def.token} () {}
 
-\t${generateAllArgsContructor(def.token, def.fields)}
+\t${generateAllArgsContructor(def.token, def.getSerializableFields(grammar))}
 
-${generateBuilder(def.token, def.fields)}
+${generateBuilder(def.token, def.getSerializableFields(grammar))}
           
-\t${serializeListText(def.fields.map((e) => serializeGetter(e).replaceAll("\n", "\n\t")).toList(), join: "\n\t", withParenthesis: false)}
+\t${serializeListText(def.getSerializableFields(grammar).map((e) => serializeGetter(e).replaceAll("\n", "\n\t")).toList(), join: "\n\t", withParenthesis: false)}
           
-${serializeListText(def.fields.map((e) => serializeSetter(e)).toList(), join: "\n", withParenthesis: false)}
+${serializeListText(def.getSerializableFields(grammar).map((e) => serializeSetter(e)).toList(), join: "\n", withParenthesis: false)}
 
 }
 """;
@@ -151,7 +151,7 @@ public static class Builder {
   }
 
   @override
-  String serializeTypeDefinition(GQTypeDefinition def) {
+  String doSerializeTypeDefinition(GQTypeDefinition def) {
     if (def is GQInterfaceDefinition) {
       return serializeInterface(def);
     } else {
@@ -166,16 +166,16 @@ public static class Builder {
 ${serializeDecorators(def.directives)}
 public class $token ${_serializeImplements(interfaceNames)}{
   
-\t${serializeListText(def.getFields().map((e) => serializeField(e)).toList(), join: "\n\t", withParenthesis: false)}
+\t${serializeListText(def.getSerializableFields(grammar).map((e) => serializeField(e)).toList(), join: "\n\t", withParenthesis: false)}
     
 \tpublic $token() {}
 
-\t${generateAllArgsContructor(def.token, def.fields)}
-\t${generateBuilder(def.token, def.fields)}
+\t${generateAllArgsContructor(def.token, def.getSerializableFields(grammar))}
+\t${generateBuilder(def.token, def.getSerializableFields(grammar))}
 
-\t${serializeListText(def.getFields().map((e) => serializeGetter(e)).toList(), join: "\n\t", withParenthesis: false)}
+\t${serializeListText(def.getSerializableFields(grammar).map((e) => serializeGetter(e)).toList(), join: "\n\t", withParenthesis: false)}
     
-\t${serializeListText(def.getFields().map((e) => serializeSetter(e)).toList(), join: "\n\t", withParenthesis: false)}
+\t${serializeListText(def.getSerializableFields(grammar).map((e) => serializeSetter(e)).toList(), join: "\n\t", withParenthesis: false)}
     
 \t${generateEqualsAndHashCode(def).replaceAll("\n", "\n\t")}
     
