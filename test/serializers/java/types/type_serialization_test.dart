@@ -17,6 +17,25 @@ void main() {
     "Long": "Long"
   };
 
+  test("test list as array", () {
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.client);
+
+    final text =
+        File("test/serializers/java/types/type_serialization_list_as_array.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+
+    expect(parsed is Success, true);
+    var javaSerialzer = JavaSerializer(g);
+
+    var userServer = g.getType("User");
+    var result = javaSerialzer.serializeTypeDefinition(userServer);
+    expect(result, contains("String[] array"));
+    expect(result, contains("String[][] arrayOfArrays"));
+    expect(result, contains("java.util.List<java.util.List<String>> listOfLists"));
+  });
+
   test("test skipOn mode = client", () {
     final GQGrammar g =
         GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.client);

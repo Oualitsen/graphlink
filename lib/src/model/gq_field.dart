@@ -12,6 +12,8 @@ class GQField {
   final List<GQArgumentDefinition> arguments;
   final List<GQDirectiveValue> directives;
 
+  bool? _isArray;
+
   bool? _containsSkipOrIncludeDirective;
 
   String? _hashCache;
@@ -41,7 +43,6 @@ class GQField {
     return 'GraphqlField{name: $name, type: ${type.serialize()}, initialValue: $initialValue, documentation: $documentation, arguments: $arguments}';
   }
 
-
   String createHash(GqSerializer serializer) {
     var cache = _hashCache;
     if (cache == null) {
@@ -54,4 +55,9 @@ class GQField {
   bool get hasInculeOrSkipDiretives => _containsSkipOrIncludeDirective ??= directives
       .where((d) => [GQGrammar.includeDirective, GQGrammar.skipDirective].contains(d.token))
       .isNotEmpty;
+
+  bool get serialzeAsArray {
+    _isArray ??= directives.where((e) => e.token == GQGrammar.gqArray).isNotEmpty;
+    return _isArray!;
+  }
 }

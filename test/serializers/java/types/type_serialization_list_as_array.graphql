@@ -1,0 +1,14 @@
+
+
+
+directive @gqArray()
+on FIELD|FIELD_DEFINITION
+  
+type User {
+    array: [String!]! @gqArray
+    arrayOfArrays: [[String!]!]! @gqArray
+
+    listOfLists: [[String!]!]!
+}
+
+  

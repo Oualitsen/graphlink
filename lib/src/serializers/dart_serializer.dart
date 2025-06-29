@@ -28,7 +28,7 @@ ${serializeDecorators(def.directives)}
   }
 
   @override
-  String serializeType(GQType def, bool forceNullable) {
+  String serializeType(GQType def, bool forceNullable, [bool _ = false]) {
     String postfix = "";
     if (forceNullable || def.nullable) {
       postfix = "?";

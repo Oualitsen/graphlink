@@ -26,20 +26,24 @@ public enum ${def.token} {
     final type = def.type;
     final name = def.name;
     final hasInculeOrSkipDiretives = def.hasInculeOrSkipDiretives;
-    return "${serializeDecorators(def.directives)}private ${serializeType(type, hasInculeOrSkipDiretives)} $name;";
+    return "${serializeDecorators(def.directives)}private ${serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray)} $name;";
   }
 
   String serializeArgument(GQField def) {
     final type = def.type;
     final name = def.name;
     final hasInculeOrSkipDiretives = def.hasInculeOrSkipDiretives;
-    return "${serializeDecorators(def.directives)}final ${serializeType(type, hasInculeOrSkipDiretives)} $name";
+    return "${serializeDecorators(def.directives)}final ${serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray)} $name";
   }
 
   @override
-  String serializeType(GQType def, bool forceNullable) {
+  String serializeType(GQType def, bool forceNullable, [bool asArray = false]) {
     if (def is GQListType) {
-      return "java.util.List<${serializeType(def.inlineType, false)}>";
+      if (asArray) {
+        return "${serializeType(def.inlineType, false, asArray)}[]";
+      } else {
+        return "java.util.List<${serializeType(def.inlineType, false)}>";
+      }
     }
     final token = def.token;
     var dartTpe = grammar.typeMap[token] ?? grammar.projectedTypes[token]?.token ?? token;
@@ -113,7 +117,7 @@ public static class Builder {
 
   String serializeGetterDeclaration(GQField field, {skipModifier = false}) {
     final result =
-        """${serializeType(field.type, false)} ${_getterName(field.name, field.type.token == "Boolean")}()""";
+        """${serializeType(field.type, false, field.serialzeAsArray)} ${_getterName(field.name, field.type.token == "Boolean")}()""";
     if (skipModifier) {
       return result;
     }

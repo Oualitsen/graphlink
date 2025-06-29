@@ -29,7 +29,7 @@ abstract class GqSerializer {
   }
 
   String doSerializeField(GQField def);
-  String serializeType(GQType def, bool forceNullable);
+  String serializeType(GQType def, bool forceNullable, [bool asArray = false]);
 
   String serializeInputDefinition(GQInputDefinition def) {
     if (grammar.shouldSkipSerialization(directives: def.directives)) {

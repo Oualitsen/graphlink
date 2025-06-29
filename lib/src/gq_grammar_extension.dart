@@ -953,13 +953,11 @@ $data
     }
   }
 
-  static const gqDecorators = "@gqDecorators";
-
   static List<String> extractDecorators(
       {required List<GQDirectiveValue> directives, required CodeGenerationMode mode}) {
     // find the list
     var decorators = directives
-        .where((d) => d.token == gqDecorators)
+        .where((d) => d.token == GQGrammar.gqDecorators)
         .where((d) {
           switch (mode) {
             case CodeGenerationMode.client:
@@ -983,17 +981,14 @@ $data
     return decorators;
   }
 
-  static const gqSkipOnServer = "@gqSkipOnServer";
-  static const gqSkipOnClient = "@gqSkipOnClient";
-
   bool shouldSkipSerialization({required List<GQDirectiveValue> directives}) {
     String token;
     switch (mode) {
       case CodeGenerationMode.client:
-        token = gqSkipOnClient;
+        token = GQGrammar.gqSkipOnClient;
         break;
       case CodeGenerationMode.server:
-        token = gqSkipOnServer;
+        token = GQGrammar.gqSkipOnServer;
         break;
     }
     var skipOnList = directives.where((d) => d.token == token).toList();

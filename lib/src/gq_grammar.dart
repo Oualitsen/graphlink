@@ -28,6 +28,12 @@ class GQGrammar extends GrammarDefinition {
   static const typename = "__typename";
   static final typenameField =
       GQField(name: typename, type: GQType("String", false, isScalar: true), arguments: [], directives: []);
+
+  static const gqDecorators = "@gqDecorators";
+  static const gqSkipOnServer = "@gqSkipOnServer";
+  static const gqSkipOnClient = "@gqSkipOnClient";
+  static const gqArray = "@gqArray";
+
   static const gqTypeNameDirective = "@gqTypeName";
   static const gqEqualsHashcode = "@gqEqualsHashcode";
 
@@ -387,7 +393,7 @@ class GQGrammar extends GrammarDefinition {
   Parser<List<GQDirectiveValue>> directiveValueList() => directiveValue().star();
 
   Parser<GQDirectiveValue> directiveValue() => seq2(directiveValueName(), argumentValues().optional())
-          .map2((name, args) => GQDirectiveValue(name, [], args ?? []))
+          .map2((name, args) => GQDirectiveValue(name.trim(), [], args ?? []))
           .map((directiveValue) {
         addDiectiveValue(directiveValue);
         return directiveValue;

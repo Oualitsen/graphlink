@@ -24,13 +24,12 @@ class GQType extends GQToken {
     return serialize();
   }
 
- 
   @override
   String serialize() {
     return "$token${_getNullableText()}";
   }
 
-  String _getNullableText() => nullable ? "" : "!"; 
+  String _getNullableText() => nullable ? "" : "!";
 
   GQType get inlineType => this;
 
@@ -41,8 +40,7 @@ class GQType extends GQToken {
 class GQListType extends GQType {
   ///this could be an instance of GQListType
   final GQType type;
-  GQListType(this.type, bool nullable)
-      : super(type.token, nullable, isScalar: false);
+  GQListType(this.type, bool nullable) : super(type.token, nullable, isScalar: false);
 
   @override
   String serialize() {
@@ -55,5 +53,5 @@ class GQListType extends GQType {
   }
 
   @override
-  GQType get inlineType => type.inlineType;
+  GQType get inlineType => type;
 }
