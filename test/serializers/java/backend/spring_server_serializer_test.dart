@@ -68,8 +68,8 @@ void main() {
           "User getUserById(final String id);",
           "Integer getUserCount();",
           "java.util.List<User> getUsers(final String name, final String middle);",
-          "reactor.core.publisher.Flux<Car> watchCars(final String userId);",
-          "reactor.core.publisher.Mono<User> watchUser(final String userId);",
+          "reactor.core.publisher.Flux<java.util.List<Car>> watchCars(final String userId);",
+          "reactor.core.publisher.Flux<User> watchUser(final String userId);",
           "java.util.Map<User, java.util.List<Car>> userCars(java.util.List<User> userList);"
         ]));
     var carService = g.services["CarService"]!;
