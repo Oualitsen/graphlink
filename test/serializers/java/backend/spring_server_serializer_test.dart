@@ -46,6 +46,7 @@ void main() {
           "public String userPassword(User user)",
           """throw new graphql.GraphQLException("Access denied to field 'User.password'");"""
         ]));
+    print("$result");
   });
 
   test("test serialize Service", () {
@@ -72,6 +73,7 @@ void main() {
           "reactor.core.publisher.Flux<User> watchUser(final String userId);",
           "java.util.Map<User, java.util.List<Car>> userCars(java.util.List<User> userList);"
         ]));
+    print(serializedService);
     var carService = g.services["CarService"]!;
     var serializedCarService = serverSerialzer.serializeService(carService);
     expect(

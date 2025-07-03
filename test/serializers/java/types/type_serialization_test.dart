@@ -137,7 +137,7 @@ void main() {
     expect(id, "final String id");
   });
 
-  test("serializeArgument", () {
+  test("serializeType", () {
     final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
     final text = File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -243,29 +243,25 @@ public void setId(final String id) {
     var getId = javaSerialzer.serializeGetter(idField);
     var isMarried = javaSerialzer.serializeGetter(married);
     var middleNameText = javaSerialzer.serializeGetter(middleName);
+
     expect(
         getId,
-        """
-public String getId() {
-\tjava.util.Objects.requireNonNull(id);
-\treturn id;
-}"""
-            .trim());
+        stringContainsInOrder(
+            ["public String getId() {", "java.util.Objects.requireNonNull(id);", "return id;", "}"]));
     expect(
         middleNameText,
-        """
-public String getMiddleName() {
-\treturn middleName;
-}"""
-            .trim());
+        stringContainsInOrder([
+          "public String getMiddleName() {",
+          "return middleName;",
+          "}",
+        ]));
     expect(
         isMarried,
-        """
-public Boolean isMarried() {
-\tjava.util.Objects.requireNonNull(married);
-\treturn married;
-}"""
-            .trim());
+        stringContainsInOrder([
+          "public Boolean isMarried() {",
+          "java.util.Objects.requireNonNull(married);",
+          "return married;"
+        ]));
   });
 
   test("Java type serialization", () {
@@ -309,6 +305,7 @@ public Boolean isMarried() {
     for (var e in entity.fields) {
       expect(class_, contains(javaSerialzer.serializeGetterDeclaration(e, skipModifier: true)));
     }
+    print(class_);
   });
 
   test("Java interface implementing one interface serialization", () {

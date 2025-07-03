@@ -32,26 +32,36 @@ class SpringServerSerializer {
     return """
 @org.springframework.stereotype.Controller
 public class $controllerName {
-\tprivate final ${service.name} $sericeInstanceName;
-\tpublic $controllerName(final ${service.name} $sericeInstanceName) {
-\t\tthis.$sericeInstanceName = $sericeInstanceName;
-\t}
-\t${service.getMethodNames().map((n) {
+${'private final ${service.name} $sericeInstanceName;'.ident()}
+${serializer.generateContructor(controllerName, [
+              GQField(
+                  name: sericeInstanceName, type: GQType(service.name, false), arguments: [], directives: [])
+            ], "public").ident()}
+
+${service.getMethodNames().map((n) {
               var method = service.getMethod(n)!;
               var type = service.getMethodType(n)!;
-              return """
-${getAnnotationByShcemaType(type)}
-\t${serializer.serializeTypeReactive(gqType: createListTypeOnSubscription(method.type, type), reactive: type == GQQueryType.subscription)} ${method.name}(${serializeArgs(method.arguments, "@org.springframework.graphql.data.method.annotation.Argument")}) {
-\t\treturn $sericeInstanceName.${method.name}(${method.arguments.map((arg) => arg.token).join(", ")});
-\t}""";
-            }).toList().join("\n\t")}
+              return serializehandlerMethod(type, method, sericeInstanceName);
+            }).toList().join("\n").ident()}
 
-\t${mappings.isNotEmpty ? "// schema mappings and batch mapping" : ""}
-\t${mappings.map((m) {
+${mappings.isNotEmpty ? "// schema mappings and batch mapping".ident() : ""}
+${mappings.map((m) {
               return serializeMappingMethod(m, sericeInstanceName);
-            }).toList().join("\n\t")}
+            }).toList().join("\n").ident()}
 }
 """;
+  }
+
+  String serializehandlerMethod(GQQueryType type, GQField method, String sericeInstanceName) {
+    String statement =
+        "return $sericeInstanceName.${method.name}(${method.arguments.map((arg) => arg.token).join(", ")});";
+
+    return """
+${getAnnotationByShcemaType(type)}
+${serializer.serializeTypeReactive(gqType: createListTypeOnSubscription(method.type, type), reactive: type == GQQueryType.subscription)} ${method.name}(${serializeArgs(method.arguments, "@org.springframework.graphql.data.method.annotation.Argument")}) {
+${statement.ident()}
+}"""
+        .trim();
   }
 
   GQType createListTypeOnSubscription(GQType type, GQQueryType queryType) {
@@ -68,16 +78,16 @@ ${getAnnotationByShcemaType(type)}
 
     return """
 public interface ${service.name} {
-\t${service.getMethodNames().map((n) {
+${service.getMethodNames().map((n) {
               var method = service.getMethod(n)!;
               var type = service.getMethodType(n)!;
               return "${serializer.serializeTypeReactive(gqType: createListTypeOnSubscription(method.type, type), reactive: type == GQQueryType.subscription)} ${method.name}(${serializeArgs(method.arguments)});";
-            }).toList().join("\n\t")}
+            }).toList().join("\n").ident()}
 
-\t${mappings.isNotEmpty ? "// schema mappings and batch mapping" : ""}
-\t${mappings.map((m) {
+${mappings.isNotEmpty ? "// schema mappings and batch mapping".ident() : ""}
+${mappings.map((m) {
               return "${serializeMappingImplMethodHeader(m, true, true)};";
-            }).toList().join("\n\t")}
+            }).toList().join("\n").ident()}
 
 }
 """;
@@ -104,17 +114,24 @@ final ${serializer.serializeType(arg.type, false)} ${arg.token}
 
   String serializeMappingMethod(GQSchemaMapping mapping, String serviceInstanceName) {
     if (mapping.forbid) {
+      final statement = """
+throw new graphql.GraphQLException("Access denied to field '${mapping.type.token}.${mapping.field.name}'");
+"""
+          .trim();
       return """
 ${serializeMappingImplMethodHeader(mapping)} {
-\tthrow new graphql.GraphQLException("Access denied to field '${mapping.type.token}.${mapping.field.name}'");
+${statement.ident()}
 }
   """;
     }
-
+    final statement = """
+return $serviceInstanceName.${mapping.key}(${mapping.field.name});
+"""
+        .trim();
     return """
 ${serializeMappingImplMethodHeader(mapping)} {
-\t\treturn $serviceInstanceName.${mapping.key}(${mapping.field.name});
-\t}""";
+${statement.ident()}
+}""";
   }
 
   String _getAnnotation(GQSchemaMapping mapping) {

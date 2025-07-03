@@ -56,9 +56,4 @@ abstract class GqSerializer {
     }
     return "${serializeListText(decorators, withParenthesis: false, join: " ")} ";
   }
-
-  static String indentWithTabs(String text, int tabCount) {
-    final tabs = '\t' * tabCount;
-    return text.split('\n').map((line) => '$tabs$line').join('\n');
-  }
 }
