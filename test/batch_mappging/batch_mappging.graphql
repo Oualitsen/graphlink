@@ -1,0 +1,34 @@
+
+
+
+
+  
+type User {
+    id: ID!
+    name: String!
+    middleName: String
+    cars: [Car!]!  @gqSkipOnServer
+}
+
+type Car {
+    make: String!
+    model: String!
+    userId: ID! @gqSkipOnClient
+    owner: Owner! @gqSkipOnServer
+    ownerId: ID! @gqSkipOnClient
+}
+
+type Owner {
+    id: ID!
+}
+
+type Query {
+
+   getUser: User
+   getUserById(id: ID!): User
+   getUsers(name: String, middle: String): [User!]!
+   getCarById(id: ID!): Car!
+
+}
+
+  

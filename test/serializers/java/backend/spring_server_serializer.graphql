@@ -1,0 +1,43 @@
+
+
+
+
+  
+type User {
+    id: ID!
+    name: String!
+    middleName: String
+    cars: [Car!]!  @gqSkipOnServer
+    password: String! @gqSkipOnClient
+}
+
+type Car {
+    make: String!
+    model: String!
+    userId: ID! @gqSkipOnClient
+    owner: Owner! @gqSkipOnServer
+    ownerId: ID! @gqSkipOnClient
+}
+
+type Owner {
+    id: ID!
+}
+
+type Query {
+
+   getUser: User
+   getUserById(id: ID!): User
+   getUsers(name: String, middle: String): [User!]!
+   getCarById(id: ID!): Car!
+   getCarCount(userId: ID!): Int! @gqServiceName(name: "CarService")
+   getUserCount: Int! @gqServiceName(name: "UserService")
+   getSomethingCount: Int!
+
+}
+
+type Subscription {
+    watchUser(userId: ID!): User! 
+    watchCars(userId: ID!): [Car]! @gqServiceName(name: "User")
+}
+
+  

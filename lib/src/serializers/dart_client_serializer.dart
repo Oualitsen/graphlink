@@ -1,20 +1,64 @@
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_queries.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
+import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/gq_client_serilaizer.dart';
 import 'package:retrofit_graphql/src/serializers/gq_serializer.dart';
 
 const _operationNameParam = "operationName";
 
+const String enumsFileName = "enums.gq";
+const String typesFileName = "types.gq";
+const String clientFileName = "client.gq";
+const String inputsFileName = "inputs.gq";
+
+
 class DartClientSerializer extends ClientSerilaizer {
   final GqSerializer _serializer;
   final GQGrammar _grammar;
 
-  DartClientSerializer(this._serializer, this._grammar);
+  DartClientSerializer(this._grammar ): _serializer = DartSerializer(_grammar);
+
+   String generateEnums(GqSerializer serializer) {
+    return """
+$fileHeadComment
+ ${_grammar.enums.values.toList().map((e) => serializer.serializeEnumDefinition(e)).join("\n")}
+ """;
+  }
+
+  String serializeInputs(GqSerializer serializer) {
+    var inputs = _grammar.inputs.values.toList().map((e) => serializer.serializeInputDefinition(e)).join("\n");
+    return """
+$fileHeadComment
+  import 'package:json_annotation/json_annotation.dart';
+  import '$enumsFileName.dart';
+  part '$inputsFileName.g.dart';
+
+$inputs
+""";
+  }
+
+  String generateTypes(GqSerializer serializer) {
+    var data = _grammar. projectedTypes.values.toSet().map((e) => serializer.serializeTypeDefinition(e)).join("\n");
+
+    return """
+$fileHeadComment
+ import 'package:json_annotation/json_annotation.dart';
+ import '$enumsFileName.dart';
+ part '$typesFileName.g.dart';
+
+$data
+
+""";
+  }
 
   @override
-  String generateClient() {
+  String serializeClient() {
     return """
+$fileHeadComment
+import '$enumsFileName.dart';
+import '$inputsFileName.dart';
+import '$typesFileName.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'dart:math';
@@ -28,7 +72,7 @@ String _getFragment(String fragName) {
   return _fragmMap[fragName]!;
 }
 
-    ${GQQueryType.values.map((e) => _generateQueriesClassByType(e)).join("\n")}
+    ${GQQueryType.values.map((e) => _serializeQueriesClassByType(e)).join("\n")}
 
 class GQClient {
   
@@ -54,12 +98,12 @@ class GQClient {
   $_gqPayload
 
 
-${_genSubscriptions()}
+${_serializeSubscriptions()}
     """
         .trim();
   }
 
-  String _generateQueriesClassByType(GQQueryType type) {
+  String _serializeQueriesClassByType(GQQueryType type) {
     var queries = _grammar.queries.values;
     var queryList = queries
         .where((element) => element.type == type && _grammar.hasQueryType(type))
@@ -100,7 +144,7 @@ ${_genSubscriptions()}
 
   String _queryToMethod(GQQueryDefinition def) {
     return """
-      ${_returnTypeByQueryType(def)} ${def.token}(${_generateArgs(def)}) {
+      ${_returnTypeByQueryType(def)} ${def.token}(${_serializeArgs(def)}) {
         const operationName = "${def.token}";
         ${def.fragments(_grammar).isEmpty ? 'const' : 'final'} fragsValues = ${def.fragments(_grammar).isEmpty ? '"";' : '[${def.fragments(_grammar).map((e) => '"${e.token}"').toList().join(", ")}].map((fragName) => _getFragment(fragName)).join(" ");'}
         ${def.fragments(_grammar).isEmpty ? 'const' : 'final'} query = \"\"\"${def.serialize()}\$fragsValues\"\"\";
@@ -110,13 +154,13 @@ ${_genSubscriptions()}
         };
         
         final payload = GQPayload(query: query, operationName: operationName, variables: variables);
-        ${_generateAdapterCall(def)}
+        ${_serializeAdapterCall(def)}
       }
     """
         .trim();
   }
 
-  String _generateAdapterCall(GQQueryDefinition def) {
+  String _serializeAdapterCall(GQQueryDefinition def) {
     if (def.type == GQQueryType.subscription) {
       return """
       return _handler.handle(payload)
@@ -166,7 +210,7 @@ ${_genSubscriptions()}
     return "";
   }
 
-  String _generateArgs(GQQueryDefinition def) {
+  String _serializeArgs(GQQueryDefinition def) {
     if (def.arguments.isEmpty) {
       return "";
     }
@@ -188,7 +232,7 @@ ${_genSubscriptions()}
     return "Future<${gen.token}>";
   }
 
-  String _genSubscriptions() {
+  String _serializeSubscriptions() {
     if (!_grammar.hasSubscriptions) {
       return "";
     }

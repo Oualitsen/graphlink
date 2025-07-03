@@ -36,18 +36,31 @@ public enum ${def.token} {
     return "${serializeDecorators(def.directives)}final ${serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray)} $name";
   }
 
-  @override
-  String serializeType(GQType def, bool forceNullable, [bool asArray = false]) {
-    if (def is GQListType) {
+  String serializeTypeReactive({required GQType gqType, bool forceNullable = false, bool asArray = false, bool reactive = false}) {
+    if (gqType is GQListType) {
+      if(reactive) {
+        return "reactor.core.publisher.Flux<${serializeTypeReactive(gqType: gqType.inlineType)}>";
+      }
       if (asArray) {
-        return "${serializeType(def.inlineType, false, asArray)}[]";
+        return "${serializeType(gqType.inlineType, false, asArray)}[]";
       } else {
-        return "java.util.List<${serializeType(def.inlineType, false)}>";
+        return "java.util.List<${serializeType(gqType.inlineType, false)}>";
       }
     }
-    final token = def.token;
-    var dartTpe = grammar.typeMap[token] ?? grammar.projectedTypes[token]?.token ?? token;
-    return dartTpe;
+    final token = gqType.token;
+    var type = grammar.typeMap[token] ?? grammar.projectedTypes[token]?.token ?? token;
+    if(reactive) {
+      return "reactor.core.publisher.Mono<$type>";
+    }
+    return type;
+  }
+
+
+  
+
+  @override
+  String serializeType(GQType def, bool forceNullable, [bool asArray = false]) {
+    return serializeTypeReactive(gqType: def, forceNullable: forceNullable, asArray: asArray, reactive: false);
   }
 
   @override

@@ -77,6 +77,20 @@ class GQDirectiveValue extends GQToken {
     arguments.addAll(argsToAdd);
   }
 
+  Object? getArgValue(String name) {
+    var arg = _argsMap[name];
+    return arg?.value;
+  }
+
+  String? getArgValueAsString(String name) {
+    var value = getArgValue(name);
+    if(value == null) {
+      return null;
+    }
+    var str = value as String;
+    return str.substring(1, str.length-1);
+  }
+
   @override
   String serialize() {
     //don't serialize the gqTypeName directive

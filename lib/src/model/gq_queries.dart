@@ -4,6 +4,7 @@ import 'package:retrofit_graphql/src/model/gq_argument.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/gq_fragment.dart';
 import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
+import 'package:retrofit_graphql/src/model/gq_has_directives.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
 import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
@@ -11,7 +12,7 @@ import 'package:retrofit_graphql/src/utils.dart';
 
 enum GQQueryType { query, mutation, subscription }
 
-class GQQueryDefinition extends GQToken {
+class GQQueryDefinition extends GQToken with GqHasDirectives {
   final List<GQDirectiveValue> directives;
   final List<GQArgumentDefinition> arguments;
   final List<GQQueryElement> elements;
@@ -116,6 +117,11 @@ class GQQueryDefinition extends GQToken {
 
   GQArgumentDefinition findByName(String name) =>
       arguments.where((arg) => arg.token == name).first;
+
+  @override
+  List<GQDirectiveValue> getDirectives() {
+    return [...directives];
+  }
 }
 
 class GQQueryElement extends GQToken {

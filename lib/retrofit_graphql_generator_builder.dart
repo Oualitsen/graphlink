@@ -4,6 +4,7 @@ import 'package:build/build.dart';
 import 'package:glob/glob.dart';
 import 'package:logger/logger.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
+import 'package:retrofit_graphql/src/serializers/dart_client_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/gq_serializer.dart';
 import 'package:yaml/yaml.dart';
@@ -55,11 +56,12 @@ class RetrofitGraphqlGeneratorBuilder implements Builder {
 
     var schema = await readSchema(buildStep);
     parser.parse(schema);
+    final dcs = DartClientSerializer(g);
 
-    final inputs = g.generateInputs(serializer);
-    final enums = g.generateEnums(serializer);
-    final types = g.generateTypes(serializer);
-    final client = g.generateClient();
+    final inputs = dcs.serializeInputs(serializer);
+    final enums = dcs.generateEnums(serializer);
+    final types = dcs.generateTypes(serializer);
+    final client = dcs.serializeClient();
 
     var dir = Directory(outputDir);
     var exists = await dir.exists();

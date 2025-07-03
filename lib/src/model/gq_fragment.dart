@@ -1,6 +1,7 @@
 import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
+import 'package:retrofit_graphql/src/model/gq_has_directives.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
 import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
 import 'package:retrofit_graphql/src/tree/tree.dart';
@@ -13,7 +14,7 @@ class GQTypedFragment {
   GQTypedFragment(this.fragment, this.onType);
 }
 
-abstract class GQFragmentDefinitionBase extends GQToken {
+abstract class GQFragmentDefinitionBase extends GQToken with GqHasDirectives {
   final String onTypeName;
 
   final GQFragmentBlockDefinition block;
@@ -49,6 +50,11 @@ abstract class GQFragmentDefinitionBase extends GQToken {
   }
 
   Set<GQFragmentDefinitionBase> get dependecies => _dependecies.toSet();
+
+  @override
+  List<GQDirectiveValue> getDirectives() {
+    return [...directives];
+  }
 }
 
 class GQInlineFragmentDefinition extends GQFragmentDefinitionBase {

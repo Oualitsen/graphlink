@@ -1,11 +1,10 @@
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
+import 'package:retrofit_graphql/src/model/gq_has_directives.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
-import 'package:retrofit_graphql/src/serializers/gq_serializer.dart';
-import 'package:retrofit_graphql/src/utils.dart';
 
-class GQTypeDefinition extends GQTokenWithFields {
+class GQTypeDefinition extends GQTokenWithFields with GqHasDirectives {
   final Set<String> interfaceNames;
   final List<GQDirectiveValue> directives;
   final bool nameDeclared;
@@ -38,7 +37,7 @@ class GQTypeDefinition extends GQTokenWithFields {
   ///
   ///check is the two definitions will produce the same object structure
   ///
-  bool isSimilarTo(GQTypeDefinition other, GqSerializer serializer) {
+  bool isSimilarTo(GQTypeDefinition other) {
     var dft = derivedFromType;
     var otherDft = other.derivedFromType;
     if (otherDft != null) {
@@ -46,77 +45,50 @@ class GQTypeDefinition extends GQTokenWithFields {
         return false;
       }
     }
-    return getHash(serializer) == other.getHash(serializer);
+    return getHash() == other.getHash();
   }
 
-  String getHash(GqSerializer serializer) {
-    return serializeFields(serializer);
+  String getHash() {
+    return fields.map((f) => "${f.name}:${f.type.serializeForceNullable(f.hasInculeOrSkipDiretives)}").join(",");
   }
 
   Set<String> getIdentityFields(GQGrammar g) {
     var directive = _directiveValues[GQGrammar.gqEqualsHashcode];
     if (directive != null) {
-      var directiveFields = ((directive.arguments.first.value as List)[1] as List)
-          .map((e) => e as String)
-          .map((e) => e.replaceAll('"', '').replaceAll("'", ""))
-          .toSet();
+      var directiveFields =
+          ((directive.arguments.first.value as List)[1] as List)
+              .map((e) => e as String)
+              .map((e) => e.replaceAll('"', '').replaceAll("'", ""))
+              .toSet();
       return directiveFields.where((e) => fieldNames.contains(e)).toSet();
     }
     return g.identityFields.where((e) => fieldNames.contains(e)).toSet();
   }
 
-  String generateEqualsAndHashCode(GQGrammar g) {
-    var fieldsToInclude = getIdentityFields(g);
-    if (fieldsToInclude.isNotEmpty) {
-      return equalsHascodeCode(fieldsToInclude.toList());
-    }
-    return "";
-  }
 
-  String equalsHascodeCode(List<String> fields) {
-    return """\n\n
-    @override
-    bool operator ==(Object other) {
-      if (identical(this, other)) return true;
 
-      return other is $token &&
-          ${fields.map((e) => "$e == other.$e").join(" && ")};
-    }
-
-    @override
-    int get hashCode => Object.hashAll([${fields.join(", ")}]);
-  """;
-  }
+  
 
   @override
   String toString() {
     return 'GraphqlType{name: $token, fields: $fields, interfaceNames: $interfaceNames}';
   }
 
-  
-
-  
-
-  
-
   List<GQField> getFields() {
     return [...fields];
-  }
-
-  
-
-  String serializeFields(GqSerializer serializer) {
-    return serializeListText(fields.map((e) => e.createHash(serializer)).toList(),
-        join: " ", withParenthesis: false);
   }
 
   String serializeContructorArgs(GQGrammar grammar) {
     if (fields.isEmpty) {
       return "";
     }
-    String nonCommonFields =
-        getFields().isEmpty ? "" : getFields().map((e) => grammar.toConstructorDeclaration(e)).join(", ");
-    var combined = [nonCommonFields].where((element) => element.isNotEmpty).toSet();
+    String nonCommonFields = getFields().isEmpty
+        ? ""
+        : getFields()
+            .map((e) => grammar.toConstructorDeclaration(e))
+            .join(", ");
+    var combined =
+        [nonCommonFields].where((element) => element.isNotEmpty).toSet();
     if (combined.isEmpty) {
       return "";
     } else if (combined.length == 1) {
@@ -139,5 +111,10 @@ class GQTypeDefinition extends GQTokenWithFields {
       directives: [],
       derivedFromType: derivedFromType,
     );
+  }
+
+  @override
+  List<GQDirectiveValue> getDirectives() {
+    return [...directives];
   }
 }

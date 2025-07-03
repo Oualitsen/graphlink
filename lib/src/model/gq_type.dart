@@ -26,10 +26,17 @@ class GQType extends GQToken {
 
   @override
   String serialize() {
-    return "$token${_getNullableText()}";
+    return "$token${nullable ? "" : "!"}";
   }
 
   String _getNullableText() => nullable ? "" : "!";
+
+  String serializeForceNullable(bool force) {
+    if(force) {
+      return token;
+    }
+    return serialize();
+  }
 
   GQType get inlineType => this;
 
@@ -44,7 +51,7 @@ class GQListType extends GQType {
 
   @override
   String serialize() {
-    return "[${type.serialize()}]${_getNullableText()}";
+    return "[${inlineType.serialize()}]${_getNullableText()}";
   }
 
   @override

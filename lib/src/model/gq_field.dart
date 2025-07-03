@@ -1,15 +1,16 @@
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_argument.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
+import 'package:retrofit_graphql/src/model/gq_has_directives.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
-import 'package:retrofit_graphql/src/serializers/gq_serializer.dart';
 
-class GQField {
+class GQField with GqHasDirectives {
   final String name;
   final GQType type;
   final Object? initialValue;
   final String? documentation;
   final List<GQArgumentDefinition> arguments;
+  
   final List<GQDirectiveValue> directives;
 
   bool? _isArray;
@@ -43,10 +44,10 @@ class GQField {
     return 'GraphqlField{name: $name, type: ${type.serialize()}, initialValue: $initialValue, documentation: $documentation, arguments: $arguments}';
   }
 
-  String createHash(GqSerializer serializer) {
+  String createHash() {
     var cache = _hashCache;
     if (cache == null) {
-      _hashCache = cache = "${serializer.serializeType(type, hasInculeOrSkipDiretives)} $name";
+      _hashCache = cache = "hASH";//"${serializer.serializeType(type, hasInculeOrSkipDiretives)} $name";
     }
     return cache;
   }
@@ -59,5 +60,10 @@ class GQField {
   bool get serialzeAsArray {
     _isArray ??= directives.where((e) => e.token == GQGrammar.gqArray).isNotEmpty;
     return _isArray!;
+  }
+
+  @override
+  List<GQDirectiveValue> getDirectives() {
+    return [... directives];
   }
 }
