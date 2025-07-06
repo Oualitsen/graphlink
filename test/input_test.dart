@@ -19,10 +19,9 @@ void main() {
     ''');
     expect(result is Success, true);
 
-
     result = parser.parse('''
       input Test2 @skip(if: true){
-        test: boolean! = true @test(if: true) @test(if: true)
+        test: boolean! = true @test(if: true) @test12(if: true)
         object: User! = {
           firstName: "Oualitsen"
           lastName: "Ramdane"
@@ -35,8 +34,7 @@ void main() {
   test("Field test with init", () {
     final GQGrammar g = GQGrammar();
 
-    var parser = g.buildFrom(
-        g.field(canBeInitialized: true, acceptsArguments: false).end());
+    var parser = g.buildFrom(g.field(canBeInitialized: true, acceptsArguments: false).end());
     var result = parser.parse('''
       fieldName: String! = "Azul fellawen" @skip(if: true)
     ''');
@@ -47,8 +45,7 @@ void main() {
   test("Field test without init", () {
     final GQGrammar g = GQGrammar();
 
-    var parser = g.buildFrom(
-        g.field(canBeInitialized: false, acceptsArguments: false).end());
+    var parser = g.buildFrom(g.field(canBeInitialized: false, acceptsArguments: false).end());
     var result = parser.parse('''
       fieldName: String! = "Azul fellawen" @skip(if: true)
     ''');

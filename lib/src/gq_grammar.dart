@@ -177,6 +177,7 @@ class GQGrammar extends GrammarDefinition {
     convertUnionsToInterfaces();
     setDirectivesDefaulValues();
     updateInterfaceParents();
+    handleDirectiveInheritance();
 
     if (mode == CodeGenerationMode.client) {
       handleRepositories(false);

@@ -222,7 +222,6 @@ public void setMiddleName(final String middleName) {
         setId,
         """
 public void setId(final String id) {
-\tjava.util.Objects.requireNonNull(id);
 \tthis.id = id;
 }
 """
@@ -246,10 +245,7 @@ public void setId(final String id) {
     var isMarried = javaSerialzer.serializeGetter(married);
     var middleNameText = javaSerialzer.serializeGetter(middleName);
 
-    expect(
-        getId,
-        stringContainsInOrder(
-            ["public String getId() {", "java.util.Objects.requireNonNull(id);", "return id;", "}"]));
+    expect(getId, stringContainsInOrder(["public String getId() {", "return id;", "}"]));
     expect(
         middleNameText,
         stringContainsInOrder([
@@ -257,13 +253,7 @@ public void setId(final String id) {
           "return middleName;",
           "}",
         ]));
-    expect(
-        isMarried,
-        stringContainsInOrder([
-          "public Boolean isMarried() {",
-          "java.util.Objects.requireNonNull(married);",
-          "return married;"
-        ]));
+    expect(isMarried, stringContainsInOrder(["public Boolean isMarried() {", "return married;"]));
   });
 
   test("Java type serialization", () {

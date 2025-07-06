@@ -17,8 +17,6 @@ class GQTypeDefinition extends GQTokenWithFields with GqHasDirectives {
   ///
   final Set<GQTypeDefinition> subTypes = {};
 
-  final _directiveValues = <String, GQDirectiveValue>{};
-
   GQTypeDefinition({
     required String name,
     required this.nameDeclared,
@@ -29,9 +27,6 @@ class GQTypeDefinition extends GQTokenWithFields with GqHasDirectives {
   }) : super(name, fields) {
     directives.forEach(addDirective);
     fields.sort((f1, f2) => f1.name.compareTo(f2.name));
-    for (var d in directives) {
-      _directiveValues.putIfAbsent(d.token, () => d);
-    }
   }
 
   ///
@@ -55,7 +50,7 @@ class GQTypeDefinition extends GQTokenWithFields with GqHasDirectives {
   }
 
   Set<String> getIdentityFields(GQGrammar g) {
-    var directive = _directiveValues[gqEqualsHashcode];
+    var directive = getDirectiveByName(gqEqualsHashcode);
     if (directive != null) {
       var directiveFields = ((directive.getArguments().first.value as List)[1] as List)
           .map((e) => e as String)

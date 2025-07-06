@@ -24,6 +24,32 @@ const String allFieldsFragmentsFileName = "allFieldsFragments";
 const allFields = '_all_fields';
 
 extension GQGrammarExtension on GQGrammar {
+  void handleDirectiveInheritance() {
+    var myTypes = <String, Set<GQTypeDefinition>>{};
+    types.values.where((type) => type.interfaceNames.isNotEmpty).forEach((t) {
+      for (var ifname in t.interfaceNames) {
+        var myType = myTypes[ifname] ?? <GQTypeDefinition>{};
+        myType.add(t);
+        myTypes[ifname] = myType;
+      }
+    });
+    for (var interface in interfaces.values) {
+      var typeSet = myTypes[interface.token];
+      if (typeSet != null) {
+        for (var type in typeSet) {
+          for (var f in interface.fields) {
+            var typeField = type.getFieldByName(f.name);
+            if (typeField == null) {
+              throw ParseException(
+                  "Type ${type.token} implements ${interface.token} but does not declare field ${f.name}");
+            }
+            f.getDirectives().forEach((d) => typeField.addDirectiveIfAbsent(d));
+          }
+        }
+      }
+    }
+  }
+
   void checkIdAndEmbededId() {
     types.forEach((k, v) {
       _checkIdAndEmbededId(v);
