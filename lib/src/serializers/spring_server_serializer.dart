@@ -30,7 +30,7 @@ class SpringServerSerializer {
     }).toList();
   }
 
-  String serializeController(GQService service) {
+  String serializeController(GQService service, {bool injectDataFtechingEnv = false}) {
     // get schema mappings by service name
     final controllerName = "${service.name}Controller";
     final sericeInstanceName = service.name.firstLow;
@@ -53,7 +53,8 @@ ${serializer.generateContructor(controllerName, [
 ${service.getMethodNames().map((n) {
               var method = service.getMethod(n)!;
               var type = service.getMethodType(n)!;
-              return serializehandlerMethod(type, method, sericeInstanceName);
+              return serializehandlerMethod(type, method, sericeInstanceName,
+                  injectDataFtechingEnv: injectDataFtechingEnv, qualifier: "public");
             }).toList().join("\n").ident()}
 """
         .trim();
@@ -73,13 +74,22 @@ $result
     }
   }
 
-  String serializehandlerMethod(GQQueryType type, GQField method, String sericeInstanceName) {
+  String serializehandlerMethod(GQQueryType type, GQField method, String sericeInstanceName,
+      {bool injectDataFtechingEnv = false, String? qualifier}) {
     String statement =
-        "return $sericeInstanceName.${method.name}(${method.arguments.map((arg) => arg.token).join(", ")});";
-
+        "return $sericeInstanceName.${method.name}(${method.arguments.map((arg) => arg.token).join(", ")}";
+    if (injectDataFtechingEnv) {
+      if (method.arguments.isNotEmpty) {
+        statement = "$statement, dataFetchingEnvironment);";
+      } else {
+        statement = "${statement}dataFetchingEnvironment);";
+      }
+    } else {
+      statement = "$statement);";
+    }
     return """
 ${getAnnotationByShcemaType(type)}
-${serializer.serializeTypeReactive(gqType: createListTypeOnSubscription(method.type, type), reactive: type == GQQueryType.subscription)} ${method.name}(${serializeArgs(method.arguments, "@org.springframework.graphql.data.method.annotation.Argument")}) {
+${qualifier == null ? '' : "${qualifier} "}${serializeMethodDeclaration(method, type, argPrefix: "@org.springframework.graphql.data.method.annotation.Argument", injectDataFtechingEnv: injectDataFtechingEnv)} {
 ${statement.ident()}
 }"""
         .trim();
@@ -139,13 +149,13 @@ ${statement.ident()}
     return serializer.serializeInterface(interface, getters: false);
   }
 
-  String serializeService(GQService service) {
+  String serializeService(GQService service, {bool injectDataFtechingEnv = false}) {
     // get schema mappings by service name
     var mappings =
         grammar.schemaMappings.values.where((sm) => !sm.forbid && sm.serviceName == service.name).toList();
     var mappingSerial = """
 ${mappings.map((m) {
-              return "${serializeMappingImplMethodHeader(m, true, true)};";
+              return "${serializeMappingImplMethodHeader(m, skipAnnotation: true, skipQualifier: true)};";
             }).toList().join("\n")}
  """
         .trim();
@@ -155,7 +165,7 @@ public interface ${service.name} {
 ${service.getMethodNames().map((n) {
               var method = service.getMethod(n)!;
               var type = service.getMethodType(n)!;
-              return "${serializer.serializeTypeReactive(gqType: createListTypeOnSubscription(method.type, type), reactive: type == GQQueryType.subscription)} ${method.name}(${serializeArgs(method.arguments)});";
+              return "${serializeMethodDeclaration(method, type, injectDataFtechingEnv: injectDataFtechingEnv)};";
             }).toList().join("\n").ident()}
 """
         .trim();
@@ -173,6 +183,21 @@ $result
 }
 """;
     }
+  }
+
+  String serializeMethodDeclaration(GQField method, GQQueryType type,
+      {String? argPrefix, bool injectDataFtechingEnv = false}) {
+    var result =
+        "${serializer.serializeTypeReactive(gqType: createListTypeOnSubscription(method.type, type), reactive: type == GQQueryType.subscription)} ${method.name}(${serializeArgs(method.arguments, argPrefix)}";
+    if (injectDataFtechingEnv) {
+      var inject = "graphql.schema.DataFetchingEnvironment dataFetchingEnvironment";
+      if (method.arguments.isNotEmpty) {
+        result = "$result, $inject";
+      } else {
+        result = "$result$inject";
+      }
+    }
+    return "${result})";
   }
 
   String serializeArgs(List<GQArgumentDefinition> args, [String? prefix]) {
@@ -250,8 +275,9 @@ java.util.Map<${mapping.type.token}, ${serializer.serializeType(mapping.field.ty
   }
 
   String serializeMappingImplMethodHeader(GQSchemaMapping mapping,
-      [bool skipAnnotation = false, bool skipQualifier = false]) {
+      {bool skipAnnotation = false, bool skipQualifier = false}) {
     var result = "${_getReturnType(mapping)} ${mapping.key}(${_getArg(mapping)})";
+
     if (!skipQualifier) {
       result = "public $result";
     }

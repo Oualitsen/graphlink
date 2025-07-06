@@ -654,7 +654,8 @@ extension GQGrammarExtension on GQGrammar {
           fragments[allFieldsKey] = GQFragmentDefinition(
               allFieldsKey,
               typeDefinition.token,
-              GQFragmentBlockDefinition(typeDefinition.fields
+              GQFragmentBlockDefinition(typeDefinition
+                  .getSerializableFields(this)
                   .map((field) => GQProjection(
                       fragmentName: null,
                       token: field.name,

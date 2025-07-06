@@ -1,0 +1,22 @@
+
+
+interface UserBase {
+    username: String!
+    password: String! 
+}
+
+type User implements UserBase {
+
+    firstName: String!
+    lastName: String!
+    middleName: String
+    address: Address
+
+    username: String
+
+    password: String! @gqSkipOnClient
+}
+
+
+
+

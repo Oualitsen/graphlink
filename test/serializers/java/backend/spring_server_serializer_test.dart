@@ -29,6 +29,7 @@ void main() {
     var serverSerialzer = SpringServerSerializer(g);
     var userUser = g.services["UserService"]!;
     var result = serverSerialzer.serializeController(userUser);
+    print(result);
     expect(
         result,
         stringContainsInOrder([
@@ -37,14 +38,44 @@ void main() {
           "private final UserService userService;",
           "public UserServiceController(final UserService userService)",
           "this.userService = userService;",
-          "User getUserById(@org.springframework.graphql.data.method.annotation.Argument final String id)",
+          "public User getUserById(@org.springframework.graphql.data.method.annotation.Argument final String id)",
           "@org.springframework.graphql.data.method.annotation.SubscriptionMapping",
-          "reactor.core.publisher.Flux<java.util.List<Car>> watchCars(@org.springframework.graphql.data.method.annotation.Argument final String userId)",
+          "public reactor.core.publisher.Flux<java.util.List<Car>> watchCars(@org.springframework.graphql.data.method.annotation.Argument final String userId)",
           "@org.springframework.graphql.data.method.annotation.SubscriptionMapping",
-          "reactor.core.publisher.Flux<User> watchUser(@org.springframework.graphql.data.method.annotation.Argument final String userId)",
+          "public reactor.core.publisher.Flux<User> watchUser(@org.springframework.graphql.data.method.annotation.Argument final String userId)",
           '@org.springframework.graphql.data.method.annotation.SchemaMapping(type="User", field="password")',
           "public String userPassword(User user)",
           """throw new graphql.GraphQLException("Access denied to field 'User.password'");"""
+        ]));
+  });
+
+  test("test backend handlers with DataFetchingEnvironment injection", () {
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+
+    final text = File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+
+    expect(parsed is Success, true);
+    var serverSerialzer = SpringServerSerializer(g);
+    var userUser = g.services["UserService"]!;
+    var result = serverSerialzer.serializeController(userUser, injectDataFtechingEnv: true);
+    expect(
+        result,
+        stringContainsInOrder([
+          "@org.springframework.stereotype.Controller",
+          "public class UserServiceController",
+          "private final UserService userService;",
+          "public UserServiceController(final UserService userService)",
+          "this.userService = userService;",
+          "User getUser(graphql.schema.DataFetchingEnvironment dataFetchingEnvironment) {",
+          "return userService.getUser(dataFetchingEnvironment);",
+          "User getUserById(@org.springframework.graphql.data.method.annotation.Argument final String id, graphql.schema.DataFetchingEnvironment dataFetchingEnvironment)",
+          "return userService.getUserById(id, dataFetchingEnvironment);",
+          "@org.springframework.graphql.data.method.annotation.SubscriptionMapping",
+          "reactor.core.publisher.Flux<java.util.List<Car>> watchCars(@org.springframework.graphql.data.method.annotation.Argument final String userId, graphql.schema.DataFetchingEnvironment dataFetchingEnvironment)",
+          "return userService.watchCars(userId, dataFetchingEnvironment);",
         ]));
   });
 
@@ -79,6 +110,33 @@ void main() {
         stringContainsInOrder([
           "Car getCarById(final String id);",
           "Integer getCarCount(final String userId);",
+          "Owner carOwner(Car car);",
+        ]));
+
+    serializedCarService = serverSerialzer.serializeService(carService, injectDataFtechingEnv: true);
+    print(serializedCarService);
+  });
+
+  test("test serialize Service with DataFetchingEnvironment", () {
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+
+    final text = File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+
+    expect(parsed is Success, true);
+    var serverSerialzer = SpringServerSerializer(g);
+
+    var carService = g.services["CarService"]!;
+
+    var serializedCarService = serverSerialzer.serializeService(carService, injectDataFtechingEnv: true);
+    print(serializedCarService);
+    expect(
+        serializedCarService,
+        stringContainsInOrder([
+          "Car getCarById(final String id, graphql.schema.DataFetchingEnvironment dataFetchingEnvironment);",
+          "Integer getCarCount(final String userId, graphql.schema.DataFetchingEnvironment dataFetchingEnvironment);",
           "Owner carOwner(Car car);",
         ]));
   });
