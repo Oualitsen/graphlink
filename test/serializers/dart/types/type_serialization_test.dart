@@ -35,8 +35,8 @@ void main() {
     expect(result, isNot(contains("Company company")));
 
     var input = g.inputs["SkipInput"]!;
-    var skipedInputSerialized = javaSerialzer.serializeInputDefinition(input);
-    expect(skipedInputSerialized, "");
+    var skippedInputSerialized = javaSerialzer.serializeInputDefinition(input);
+    expect(skippedInputSerialized, "");
 
     var enum_ = g.enums["Gender"]!;
     var serializedEnum = javaSerialzer.serializeEnumDefinition(enum_);

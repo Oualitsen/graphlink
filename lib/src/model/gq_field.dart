@@ -10,8 +10,6 @@ class GQField with GqHasDirectives {
   final Object? initialValue;
   final String? documentation;
   final List<GQArgumentDefinition> arguments;
-  
-  final List<GQDirectiveValue> directives;
 
   bool? _isArray;
 
@@ -25,8 +23,10 @@ class GQField with GqHasDirectives {
     required this.arguments,
     this.initialValue,
     this.documentation,
-    required this.directives,
-  });
+    required List<GQDirectiveValue> directives,
+  }) {
+    directives.forEach(addDirective);
+  }
 
   @override
   bool operator ==(Object other) {
@@ -47,23 +47,18 @@ class GQField with GqHasDirectives {
   String createHash() {
     var cache = _hashCache;
     if (cache == null) {
-      _hashCache = cache = "hASH";//"${serializer.serializeType(type, hasInculeOrSkipDiretives)} $name";
+      // @TODO
+      _hashCache = cache = "hASH"; //"${serializer.serializeType(type, hasInculeOrSkipDiretives)} $name";
     }
     return cache;
   }
 
   //check for inclue or skip directives
-  bool get hasInculeOrSkipDiretives => _containsSkipOrIncludeDirective ??= directives
-      .where((d) => [GQGrammar.includeDirective, GQGrammar.skipDirective].contains(d.token))
-      .isNotEmpty;
+  bool get hasInculeOrSkipDiretives => _containsSkipOrIncludeDirective ??=
+      getDirectives().where((d) => [includeDirective, skipDirective].contains(d.token)).isNotEmpty;
 
   bool get serialzeAsArray {
-    _isArray ??= directives.where((e) => e.token == GQGrammar.gqArray).isNotEmpty;
+    _isArray ??= getDirectives().where((e) => e.token == gqArray).isNotEmpty;
     return _isArray!;
-  }
-
-  @override
-  List<GQDirectiveValue> getDirectives() {
-    return [... directives];
   }
 }

@@ -1,5 +1,6 @@
 import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
+import 'package:retrofit_graphql/src/model/gq_argument.dart';
 import 'package:retrofit_graphql/src/model/gq_enum_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/gq_input_type_definition.dart';
@@ -27,14 +28,25 @@ ${def.values.map((e) => e.value).toList().join(", ").ident()}
     final type = def.type;
     final name = def.name;
     final hasInculeOrSkipDiretives = def.hasInculeOrSkipDiretives;
-    return "${serializeDecorators(def.directives)}private ${serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray)} $name;";
+    return "${serializeDecorators(def.getDirectives())}private ${serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray)} $name;";
   }
 
-  String serializeArgument(GQField def) {
+  String serializeArgument(GQArgumentDefinition arg) {
+    var type = arg.type;
+    var name = arg.token;
+    var decorators = serializeDecorators(arg.getDirectives());
+    var result = "final ${serializeType(type, false)} ${name}";
+    if (decorators.isNotEmpty) {
+      return "$decorators $result";
+    }
+    return result;
+  }
+
+  String serializeArgumentField(GQField def) {
     final type = def.type;
     final name = def.name;
     final hasInculeOrSkipDiretives = def.hasInculeOrSkipDiretives;
-    return "${serializeDecorators(def.directives)}final ${serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray)} $name";
+    return "final ${serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray)} $name";
   }
 
   String serializeTypeReactive(
@@ -66,7 +78,7 @@ ${def.values.map((e) => e.value).toList().join(", ").ident()}
   @override
   String doSerializeInputDefinition(GQInputDefinition def) {
     return """
-${serializeDecorators(def.directives)}
+${serializeDecorators(def.getDirectives())}
 public class ${def.token} {
 
 ${serializeListText(def.getSerializableFields(grammar).map((e) => serializeField(e)).toList(), join: "\n", withParenthesis: false).ident()}
@@ -89,7 +101,7 @@ ${serializeListText(def.getSerializableFields(grammar).map((e) => serializeSette
       return "";
     }
     var result =
-        """$name(${serializeListText(fields.map((e) => serializeArgument(e)).toList(), join: ", ", withParenthesis: false)}) {
+        """$name(${serializeListText(fields.map((e) => serializeArgumentField(e)).toList(), join: ", ", withParenthesis: false)}) {
 ${serializeListText(fields.where((e) => !e.type.nullable).map((e) => "java.util.Objects.requireNonNull(${e.name});").toList(), join: "\n", withParenthesis: false).ident()}
 
 ${serializeListText(fields.map((e) => "this.${e.name} = ${e.name};").toList(), join: "\n", withParenthesis: false).ident()}
@@ -114,7 +126,7 @@ ${'return new Builder();'.ident()}
 public static class Builder {
 ${serializeListText(fields.map((e) => serializeField(e)).toList(), join: "\n", withParenthesis: false).ident()}
 
-${serializeListText(fields.map((e) => '''public Builder ${e.name}(${serializeArgument(e)}) {
+${serializeListText(fields.map((e) => '''public Builder ${e.name}(${serializeArgumentField(e)}) {
 ${'this.${e.name} = ${e.name};'.ident()}
 ${'return this;'.ident()}
 }''').toList(), join: "\n", withParenthesis: false).ident()}
@@ -141,6 +153,22 @@ ${statements.join("\n").ident()}
 }
 """
         .trim();
+  }
+
+  String serializeMethod(GQField field, {String? modifier}) {
+    var decorators = serializeDecorators(field.getDirectives());
+    var args = serializeListText(field.arguments.map(serializeArgument).toList(), withParenthesis: false);
+    var result = "${serializeType(field.type, false, field.serialzeAsArray)} ${field.name}($args)";
+    if (modifier != null) {
+      result = "$modifier $result";
+    }
+    if (decorators.isNotEmpty) {
+      result = """
+$decorators
+$result
+""";
+    }
+    return result.trim();
   }
 
   String serializeGetterDeclaration(GQField field, {skipModifier = false}) {
@@ -183,7 +211,7 @@ ${statements.join("\n").ident()}
     }
     var statements = [if (nullCheck != null) nullCheck, setStatement];
     return """
-public void ${_setterName(field.name)}(${serializeArgument(field)}) {
+public void ${_setterName(field.name)}(${serializeArgumentField(field)}) {
 ${statements.join("\n").ident()}
 }
 """
@@ -203,7 +231,7 @@ ${statements.join("\n").ident()}
     final token = def.token;
     final interfaceNames = def.interfaceNames;
     return """
-${serializeDecorators(def.directives)}
+${serializeDecorators(def.getDirectives())}
 public class $token ${_serializeImplements(interfaceNames)}{
   
 ${serializeListText(def.getSerializableFields(grammar).map((e) => serializeField(e)).toList(), join: "\n", withParenthesis: false).ident()}
@@ -275,16 +303,29 @@ ${'return java.util.Objects.hash(${fields.join(", ")});'.ident()}
     return "implements ${interfaceNames.join(", ")} ";
   }
 
-  String serializeInterface(GQInterfaceDefinition interface) {
+  String serializeInterface(GQInterfaceDefinition interface, {bool getters = true}) {
     final token = interface.token;
     final parents = interface.parents;
-    final fields = interface.fields;
+    final fields = interface.getSerializableFields(grammar);
+    var decorators = serializeDecorators(interface.getDirectives());
 
-    return """
-      ${serializeDecorators(interface.directives)}
-      public interface $token ${parents.isNotEmpty ? "extends ${parents.map((e) => e.token).join(", ")} " : ""}{
+    var result = """
+public interface $token ${parents.isNotEmpty ? "extends ${parents.map((e) => e.token).join(", ")} " : ""}{
 
-${fields.map((f) => serializeGetterDeclaration(f, skipModifier: true)).join(";\n").ident()}${fields.isNotEmpty ? ";" : ""}
+${fields.map((f) {
+              if (getters) {
+                return serializeGetterDeclaration(f, skipModifier: true);
+              } else {
+                return serializeMethod(f);
+              }
+            }).map((e) => "$e;").join("\n").ident()}
 }""";
+    if (decorators.isNotEmpty) {
+      return """
+$decorators
+$result
+""";
+    }
+    return result;
   }
 }

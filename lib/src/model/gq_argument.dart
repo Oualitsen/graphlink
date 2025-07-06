@@ -1,3 +1,5 @@
+import 'package:retrofit_graphql/src/model/gq_directive.dart';
+import 'package:retrofit_graphql/src/model/gq_has_directives.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
 
@@ -5,10 +7,12 @@ import 'package:retrofit_graphql/src/model/gq_token.dart';
 ///  some thing like function(if: Boolean = true, name: String! = "Ahmed" ...)
 ///
 
-class GQArgumentDefinition extends GQToken {
+class GQArgumentDefinition extends GQToken with GqHasDirectives {
   final GQType type;
   final Object? initialValue;
-  GQArgumentDefinition(super.name, this.type, {this.initialValue});
+  GQArgumentDefinition(super.name, this.type, List<GQDirectiveValue> directives, {this.initialValue}) {
+    directives.forEach(addDirective);
+  }
 
   @override
   String toString() {

@@ -4,16 +4,16 @@ import 'package:retrofit_graphql/src/model/gq_has_directives.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
 
 class GQInputDefinition extends GQTokenWithFields with GqHasDirectives {
-  final List<GQDirectiveValue> directives;
-  GQInputDefinition({required this.directives, required String name, required List<GQField> fields})
-      : super(name, fields);
+  GQInputDefinition(
+      {required List<GQDirectiveValue> directives, required String name, required List<GQField> fields})
+      : super(name, fields) {
+    directives.forEach(addDirective);
+  }
 
   @override
   String toString() {
     return 'InputType{fields: $fields, name: $token}';
   }
-
-
 
   @override
   String serialize() {
@@ -22,10 +22,5 @@ class GQInputDefinition extends GQTokenWithFields with GqHasDirectives {
       
       }
     """;
-  }
-
-  @override
-  List<GQDirectiveValue> getDirectives() {
-    return [...directives];
   }
 }

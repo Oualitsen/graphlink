@@ -22,7 +22,7 @@ abstract class GqSerializer {
   String doSerializeEnumDefinition(GQEnumDefinition def);
 
   String serializeField(GQField def) {
-    if (grammar.shouldSkipSerialization(directives: def.directives)) {
+    if (grammar.shouldSkipSerialization(directives: def.getDirectives())) {
       return "";
     }
     return doSerializeField(def);
@@ -32,7 +32,7 @@ abstract class GqSerializer {
   String serializeType(GQType def, bool forceNullable, [bool asArray = false]);
 
   String serializeInputDefinition(GQInputDefinition def) {
-    if (grammar.shouldSkipSerialization(directives: def.directives)) {
+    if (grammar.shouldSkipSerialization(directives: def.getDirectives())) {
       return "";
     }
     return doSerializeInputDefinition(def);
@@ -41,7 +41,7 @@ abstract class GqSerializer {
   String doSerializeInputDefinition(GQInputDefinition def);
 
   String serializeTypeDefinition(GQTypeDefinition def) {
-    if (grammar.shouldSkipSerialization(directives: def.directives)) {
+    if (grammar.shouldSkipSerialization(directives: def.getDirectives())) {
       return "";
     }
     return doSerializeTypeDefinition(def);

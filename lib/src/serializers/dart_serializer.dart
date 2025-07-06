@@ -24,7 +24,7 @@ ${serializeDecorators(def.directives)}
     final type = def.type;
     final name = def.name;
     final hasInculeOrSkipDiretives = def.hasInculeOrSkipDiretives;
-    return "${serializeDecorators(def.directives)}final ${serializeType(type, hasInculeOrSkipDiretives)} $name;";
+    return "${serializeDecorators(def.getDirectives())}final ${serializeType(type, hasInculeOrSkipDiretives)} $name;";
   }
 
   @override
@@ -44,7 +44,7 @@ ${serializeDecorators(def.directives)}
   @override
   String doSerializeInputDefinition(GQInputDefinition def) {
     return """
-    ${serializeDecorators(def.directives)}
+    ${serializeDecorators(def.getDirectives())}
     @JsonSerializable(explicitToJson: true)
     class ${def.token} {
         ${serializeListText(def.getSerializableFields(grammar).map((e) => serializeField(e)).toList(), join: "\n\r          ", withParenthesis: false)}
@@ -72,7 +72,7 @@ ${serializeDecorators(def.directives)}
     final subTypes = def.subTypes;
     final interfaceNames = def.interfaceNames;
     return """
-      ${serializeDecorators(def.directives)}
+      ${serializeDecorators(def.getDirectives())}
       @JsonSerializable(explicitToJson: true)
       class $token ${_serializeImplements(interfaceNames)}{
         
@@ -170,7 +170,7 @@ ${serializeDecorators(def.directives)}
     final fields = interface.getSerializableFields(grammar);
 
     return """
-${serializeDecorators(interface.directives)}
+${serializeDecorators(interface.getDirectives())}
 abstract class $token ${parents.isNotEmpty ? "extends ${parents.map((e) => e.token).join(", ")} " : ""}{
 
 \t${fields.map((f) => serializeGetterDeclaration(f)).join(";\n\t")}${fields.isNotEmpty ? ";" : ""}

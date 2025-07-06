@@ -6,7 +6,6 @@ import 'package:retrofit_graphql/src/model/gq_token.dart';
 
 class GQTypeDefinition extends GQTokenWithFields with GqHasDirectives {
   final Set<String> interfaceNames;
-  final List<GQDirectiveValue> directives;
   final bool nameDeclared;
   final GQTypeDefinition? derivedFromType;
 
@@ -25,9 +24,10 @@ class GQTypeDefinition extends GQTokenWithFields with GqHasDirectives {
     required this.nameDeclared,
     required List<GQField> fields,
     required this.interfaceNames,
-    required this.directives,
+    required List<GQDirectiveValue> directives,
     required this.derivedFromType,
   }) : super(name, fields) {
+    directives.forEach(addDirective);
     fields.sort((f1, f2) => f1.name.compareTo(f2.name));
     for (var d in directives) {
       _directiveValues.putIfAbsent(d.token, () => d);
@@ -49,25 +49,22 @@ class GQTypeDefinition extends GQTokenWithFields with GqHasDirectives {
   }
 
   String getHash() {
-    return fields.map((f) => "${f.name}:${f.type.serializeForceNullable(f.hasInculeOrSkipDiretives)}").join(",");
+    return fields
+        .map((f) => "${f.name}:${f.type.serializeForceNullable(f.hasInculeOrSkipDiretives)}")
+        .join(",");
   }
 
   Set<String> getIdentityFields(GQGrammar g) {
-    var directive = _directiveValues[GQGrammar.gqEqualsHashcode];
+    var directive = _directiveValues[gqEqualsHashcode];
     if (directive != null) {
-      var directiveFields =
-          ((directive.arguments.first.value as List)[1] as List)
-              .map((e) => e as String)
-              .map((e) => e.replaceAll('"', '').replaceAll("'", ""))
-              .toSet();
+      var directiveFields = ((directive.getArguments().first.value as List)[1] as List)
+          .map((e) => e as String)
+          .map((e) => e.replaceAll('"', '').replaceAll("'", ""))
+          .toSet();
       return directiveFields.where((e) => fieldNames.contains(e)).toSet();
     }
     return g.identityFields.where((e) => fieldNames.contains(e)).toSet();
   }
-
-
-
-  
 
   @override
   String toString() {
@@ -82,13 +79,9 @@ class GQTypeDefinition extends GQTokenWithFields with GqHasDirectives {
     if (fields.isEmpty) {
       return "";
     }
-    String nonCommonFields = getFields().isEmpty
-        ? ""
-        : getFields()
-            .map((e) => grammar.toConstructorDeclaration(e))
-            .join(", ");
-    var combined =
-        [nonCommonFields].where((element) => element.isNotEmpty).toSet();
+    String nonCommonFields =
+        getFields().isEmpty ? "" : getFields().map((e) => grammar.toConstructorDeclaration(e)).join(", ");
+    var combined = [nonCommonFields].where((element) => element.isNotEmpty).toSet();
     if (combined.isEmpty) {
       return "";
     } else if (combined.length == 1) {
@@ -111,10 +104,5 @@ class GQTypeDefinition extends GQTokenWithFields with GqHasDirectives {
       directives: [],
       derivedFromType: derivedFromType,
     );
-  }
-
-  @override
-  List<GQDirectiveValue> getDirectives() {
-    return [...directives];
   }
 }

@@ -13,7 +13,6 @@ import 'package:retrofit_graphql/src/utils.dart';
 enum GQQueryType { query, mutation, subscription }
 
 class GQQueryDefinition extends GQToken with GqHasDirectives {
-  final List<GQDirectiveValue> directives;
   final List<GQArgumentDefinition> arguments;
   final List<GQQueryElement> elements;
   final GQQueryType type; //query|mutation|subscription
@@ -34,7 +33,8 @@ class GQQueryDefinition extends GQToken with GqHasDirectives {
   }
 
   GQQueryDefinition(
-      super.token, this.directives, this.arguments, this.elements, this.type) {
+      super.token, List<GQDirectiveValue> directives, this.arguments, this.elements, this.type) {
+    directives.forEach(addDirective);
     checkVariables();
   }
 
@@ -68,7 +68,7 @@ class GQQueryDefinition extends GQToken with GqHasDirectives {
 
   @override
   String serialize() {
-    return """${type.name} $token${serializeList(arguments, join: ",")}${serializeDirectives(directives)}{${serializeList(elements, join: " ", withParenthesis: false)}}""";
+    return """${type.name} $token${serializeList(arguments, join: ",")}${serializeDirectives(getDirectives())}{${serializeList(elements, join: " ", withParenthesis: false)}}""";
   }
 
   GQTypeDefinition getGeneratedTypeDefinition() {
@@ -76,9 +76,9 @@ class GQQueryDefinition extends GQToken with GqHasDirectives {
     if (gqDef == null) {
       _gqTypeDefinition = gqDef = GQTypeDefinition(
         name: _getGeneratedTypeName(),
-        nameDeclared: getNameValueFromDirectives(directives) != null,
+        nameDeclared: getNameValueFromDirectives(getDirectives()) != null,
         fields: _generateFields(),
-        directives: directives,
+        directives: getDirectives(),
         interfaceNames: {},
         derivedFromType: null,
       );
@@ -91,8 +91,7 @@ class GQQueryDefinition extends GQToken with GqHasDirectives {
   }
 
   String _getGeneratedTypeName() {
-    return getNameValueFromDirectives(directives) ??
-        "${_capitilizedFirstLetterToken}Response";
+    return getNameValueFromDirectives(getDirectives()) ?? "${_capitilizedFirstLetterToken}Response";
   }
 
   String get _capitilizedFirstLetterToken {
@@ -109,23 +108,16 @@ class GQQueryDefinition extends GQToken with GqHasDirectives {
             name: e.alias ?? e.token,
             type: e.returnProjectedType,
             arguments: [],
-            directives: e.directives,
+            directives: e.getDirectives(),
           ),
         )
         .toList();
   }
 
-  GQArgumentDefinition findByName(String name) =>
-      arguments.where((arg) => arg.token == name).first;
-
-  @override
-  List<GQDirectiveValue> getDirectives() {
-    return [...directives];
-  }
+  GQArgumentDefinition findByName(String name) => arguments.where((arg) => arg.token == name).first;
 }
 
-class GQQueryElement extends GQToken {
-  final List<GQDirectiveValue> directives;
+class GQQueryElement extends GQToken with GqHasDirectives {
   final GQFragmentBlockDefinition? block;
 
   final List<GQArgumentValue> arguments;
@@ -156,39 +148,34 @@ class GQQueryElement extends GQToken {
         .map((e) => e.fragmentName!)
         .toSet();
     var set2 = block.projections.values
-        .where(
-            (element) => !element.isFragmentReference && element.block != null)
+        .where((element) => !element.isFragmentReference && element.block != null)
         .map((e) => e.block!)
         .expand((element) => _getFragmentNamesByBlock(element))
         .toSet();
     return {...set1, ...set2};
   }
 
-  GQType _getReturnProjectedType(
-      GQTypeDefinition? projectedType, GQType returnType) {
+  GQType _getReturnProjectedType(GQTypeDefinition? projectedType, GQType returnType) {
     if (projectedType == null) {
       return returnType;
     } else {
       if (returnType is GQListType) {
-        return GQListType(
-            _getReturnProjectedType(projectedType, returnType.type),
-            returnType.nullable);
+        return GQListType(_getReturnProjectedType(projectedType, returnType.type), returnType.nullable);
       } else {
-        return GQType(projectedType.token, returnType.nullable,
-            isScalar: false);
+        return GQType(projectedType.token, returnType.nullable, isScalar: false);
       }
     }
   }
 
-  GQType get returnProjectedType =>
-      _getReturnProjectedType(projectedType, returnType);
+  GQType get returnProjectedType => _getReturnProjectedType(projectedType, returnType);
 
-  GQQueryElement(
-      super.token, this.directives, this.block, this.arguments, this.alias);
+  GQQueryElement(super.token, List<GQDirectiveValue> directives, this.block, this.arguments, this.alias) {
+    directives.forEach(addDirective);
+  }
 
   @override
   String serialize() {
-    return """$_escapedToken${serializeList(arguments, join: ",")}${serializeDirectives(directives)}${block != null ? block!.serialize() : ''}""";
+    return """$_escapedToken${serializeList(arguments, join: ",")}${serializeDirectives(getDirectives())}${block != null ? block!.serialize() : ''}""";
   }
 
   String get _escapedToken {

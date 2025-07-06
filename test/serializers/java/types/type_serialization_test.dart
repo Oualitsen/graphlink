@@ -1,6 +1,8 @@
 import 'dart:io';
 
+import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/serializers/language.dart';
+import 'package:retrofit_graphql/src/serializers/spring_server_serializer.dart';
 import 'package:test/test.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
@@ -70,8 +72,8 @@ void main() {
     expect(result, isNot(contains("Company company")));
 
     var input = g.inputs["SkipInput"]!;
-    var skipedInputSerialized = javaSerialzer.serializeInputDefinition(input);
-    expect(skipedInputSerialized, "");
+    var skippedInputSerialized = javaSerialzer.serializeInputDefinition(input);
+    expect(skippedInputSerialized, "");
 
     var enum_ = g.enums["Gender"]!;
     var serializedEnum = javaSerialzer.serializeEnumDefinition(enum_);
@@ -133,7 +135,7 @@ void main() {
     var javaSerialzer = JavaSerializer(g);
     var user = g.getType("User");
     var idField = user.fields.where((f) => f.name == "id").first;
-    var id = javaSerialzer.serializeArgument(idField);
+    var id = javaSerialzer.serializeArgumentField(idField);
     expect(id, "final String id");
   });
 
@@ -305,7 +307,6 @@ public void setId(final String id) {
     for (var e in entity.fields) {
       expect(class_, contains(javaSerialzer.serializeGetterDeclaration(e, skipModifier: true)));
     }
-    print(class_);
   });
 
   test("Java interface implementing one interface serialization", () {
@@ -341,5 +342,47 @@ public void setId(final String id) {
     for (var e in entity.fields) {
       expect(class_, contains(javaSerialzer.serializeGetterDeclaration(e, skipModifier: true)));
     }
+  });
+
+  test("Repository serialization", () {
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final text = File("test/serializers/java/types/repository_serialization_test.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+    expect(parsed is Success, true);
+    var repo = g.repositories["UserRepository"]!;
+    var serialzer = SpringServerSerializer(g);
+    var repoSerial = serialzer.serializeRepository(repo);
+    expect(
+        repoSerial,
+        stringContainsInOrder([
+          "@org.springframework.stereotype.Repository",
+          "public interface UserRepository extends org.springframework.data.mongodb.repository.MongoRepository<String, User>",
+          "User findById(org.springframework.data.repository.query.Param(value=\"id\")  final String id);",
+          "}"
+        ]));
+  });
+
+  test("Query serialization", () {
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final text = File("test/serializers/java/types/repository_serialization_test.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+    expect(parsed is Success, true);
+    var repo = g.repositories["UserRepository"]!;
+    var directive = repo.getFieldByName("findById")!.getDirectiveByName("@gqQuery")!;
+    var serialzer = SpringServerSerializer(g);
+    var r = serialzer.serializeQueryAnnotation(directive);
+    expect(
+        r,
+        stringContainsInOrder([
+          "@org.springframework.data.jpa.repository.Query(",
+          '''value = "select * from User u \\n" + ''',
+          '''where u.id = :id"''',
+          "nativeQuery = false",
+          ")"
+        ]));
   });
 }
