@@ -15,8 +15,6 @@ class GQField with GqHasDirectives {
 
   bool? _containsSkipOrIncludeDirective;
 
-  String? _hashCache;
-
   GQField({
     required this.name,
     required this.type,
@@ -42,15 +40,6 @@ class GQField with GqHasDirectives {
   @override
   String toString() {
     return 'GraphqlField{name: $name, type: ${type.serialize()}, initialValue: $initialValue, documentation: $documentation, arguments: $arguments}';
-  }
-
-  String createHash() {
-    var cache = _hashCache;
-    if (cache == null) {
-      // @TODO
-      _hashCache = cache = "hASH"; //"${serializer.serializeType(type, hasInculeOrSkipDiretives)} $name";
-    }
-    return cache;
   }
 
   //check for inclue or skip directives
