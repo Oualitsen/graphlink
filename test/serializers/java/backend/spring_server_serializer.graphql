@@ -23,6 +23,8 @@ type Owner {
     id: ID!
 }
 
+
+
 type Query {
 
    getUser: User

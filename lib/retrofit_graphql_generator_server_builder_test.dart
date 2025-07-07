@@ -25,7 +25,8 @@ void main() {
   var file = File(graphqlFile);
   var schema = file.readAsLinesSync().join("\n");
   var parser = grammar.buildFrom(grammar.fullGrammar().end());
-  var parsed = parser.parse(schema);
+  parser.parse(schema);
+
   final serialzer = JavaSerializer(grammar);
   final springSeriaalizer = SpringServerSerializer(grammar);
   // lets generate some code!

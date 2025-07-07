@@ -178,7 +178,7 @@ class GQGrammar extends GrammarDefinition {
     setDirectivesDefaulValues();
     updateInterfaceParents();
     handleDirectiveInheritance();
-
+    skipFieldOfSkipOnServerTypes();
     if (mode == CodeGenerationMode.client) {
       handleRepositories(false);
       if (generateAllFieldsFragments) {

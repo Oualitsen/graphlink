@@ -29,7 +29,6 @@ void main() {
     var serverSerialzer = SpringServerSerializer(g);
     var userUser = g.services["UserService"]!;
     var result = serverSerialzer.serializeController(userUser);
-    print(result);
     expect(
         result,
         stringContainsInOrder([
@@ -46,6 +45,107 @@ void main() {
           '@org.springframework.graphql.data.method.annotation.SchemaMapping(type="User", field="password")',
           "public String userPassword(User user)",
           """throw new graphql.GraphQLException("Access denied to field 'User.password'");"""
+        ]));
+  });
+
+  test("test controller/service returning skipped type ", () {
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+
+    final text = File("test/serializers/java/backend/spring_server_serializer2.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+
+    expect(parsed is Success, true);
+    var userCarService = g.services["UserCarService"]!;
+
+    var serialzer = SpringServerSerializer(g);
+    var serviceSerial = serialzer.serializeService(userCarService);
+    var controllerSerial = serialzer.serializeController(userCarService);
+
+    expect(
+        serviceSerial,
+        stringContainsInOrder([
+          "User getUserCar();",
+          "Car userCarCar(User user);",
+          "User userCarUser(User user);",
+        ]));
+
+    expect(
+        controllerSerial,
+        stringContainsInOrder([
+          "public User getUserCar()",
+          "return userCarService.getUserCar();",
+          "public Car userCarCar(User user)",
+          "return userCarService.userCarCar(car);",
+          "User userCarUser(User user)",
+          "return userCarService.userCarUser(user);"
+        ]));
+  });
+
+  test("test controller/service returning skipped type (batch mapping) ", () {
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+
+    final text = File("test/serializers/java/backend/spring_server_serializer2.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+
+    expect(parsed is Success, true);
+    var serialzer = SpringServerSerializer(g);
+
+    var ownerAnimalService = g.services["OwnerWithAnimalService"]!;
+    var ownerServiceSerial = serialzer.serializeService(ownerAnimalService);
+    expect(
+        ownerServiceSerial,
+        stringContainsInOrder([
+          "java.util.List<Owner> getOwnwers();",
+          "java.util.Map<Owner, Owner> ownerWithAnimalOwner(java.util.List<Owner> ownerList);",
+          "java.util.Map<Owner, Animal> ownerWithAnimalAnimal(java.util.List<Owner> ownerList);"
+        ]));
+  });
+
+  test("test controller/service returning skipped type with no mapTo", () {
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+
+    final text = File("test/serializers/java/backend/spring_server_serializer2.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+
+    expect(parsed is Success, true);
+    var serialzer = SpringServerSerializer(g);
+
+    var ownerAnimalService = g.services["OwnerWithAnimal2Service"]!;
+    var ownerServiceSerial = serialzer.serializeService(ownerAnimalService);
+    expect(
+        ownerServiceSerial,
+        stringContainsInOrder([
+          "Object getOwnerWithAnimal2();",
+          "Owner ownerWithAnimal2Owner(Object object);",
+          "Animal ownerWithAnimal2Animal(Object object);"
+        ]));
+  });
+
+  test("test controller/service returning skipped type with no mapTo", () {
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+
+    final text = File("test/serializers/java/backend/spring_server_serializer2.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+
+    expect(parsed is Success, true);
+    var serialzer = SpringServerSerializer(g);
+
+    var ownerAnimalService = g.services["OwnerWithAnimal3Service"]!;
+    var ownerServiceSerial = serialzer.serializeService(ownerAnimalService);
+    expect(
+        ownerServiceSerial,
+        stringContainsInOrder([
+          "java.util.List<Object> getOwnwers3();",
+          "java.util.Map<Object, Owner> ownerWithAnimal3Owner(java.util.List<Object> objectList);",
+          "java.util.Map<Object, Animal> ownerWithAnimal3Animal(java.util.List<Object> objectList);",
         ]));
   });
 

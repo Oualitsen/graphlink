@@ -1,0 +1,53 @@
+
+
+
+
+  
+type User {
+    id: ID!
+    name: String!
+}
+
+type Car {
+    id: ID!
+    make: String!
+    model: String!
+}
+
+type UserCar  @gqSkipOnServer(mapTo: "User") {
+    car: Car 
+    user: User! 
+}
+
+type Animal {
+    name: String
+}
+type Owner {
+    name: String
+}
+
+type OwnerWithAnimal @gqSkipOnServer(mapTo: "Owner") {
+    owner: Owner!
+    animal: Animal
+}
+
+type OwnerWithAnimal2 @gqSkipOnServer() {
+    owner: Owner!
+    animal: Animal
+}
+
+type OwnerWithAnimal3 @gqSkipOnServer() {
+    owner: Owner!
+    animal: Animal
+}
+
+type Query {
+    getUserCar: UserCar
+    getOwnerWithAnimal2: OwnerWithAnimal2
+    getOwnwers: [OwnerWithAnimal!]
+    getOwnwers3: [OwnerWithAnimal3!]
+}
+
+
+
+  

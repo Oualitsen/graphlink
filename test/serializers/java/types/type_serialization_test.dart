@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/serializers/language.dart';
 import 'package:retrofit_graphql/src/serializers/spring_server_serializer.dart';
 import 'package:test/test.dart';

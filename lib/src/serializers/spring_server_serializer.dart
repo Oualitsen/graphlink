@@ -1,3 +1,4 @@
+import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_argument.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
@@ -188,7 +189,7 @@ $result
   String serializeMethodDeclaration(GQField method, GQQueryType type,
       {String? argPrefix, bool injectDataFtechingEnv = false}) {
     var result =
-        "${serializer.serializeTypeReactive(gqType: createListTypeOnSubscription(method.type, type), reactive: type == GQQueryType.subscription)} ${method.name}(${serializeArgs(method.arguments, argPrefix)}";
+        "${serializer.serializeTypeReactive(gqType: createListTypeOnSubscription(_getServiceReturnType(method.type), type), reactive: type == GQQueryType.subscription)} ${method.name}(${serializeArgs(method.arguments, argPrefix)}";
     if (injectDataFtechingEnv) {
       var inject = "graphql.schema.DataFetchingEnvironment dataFetchingEnvironment";
       if (method.arguments.isNotEmpty) {
@@ -198,6 +199,43 @@ $result
       }
     }
     return "${result})";
+  }
+
+  GQType _getServiceReturnType(GQType type) {
+    if (grammar.scalars.contains(type.token) || grammar.enums.containsKey(type.token)) {
+      return type;
+    }
+
+    var returnType = grammar.getType(type.token);
+
+    var skipOnserverDir = returnType.getDirectiveByName(gqSkipOnServer);
+    if (skipOnserverDir != null) {
+      var mapTo = getMapTo(type.token);
+      var rt = GQType(mapTo, false);
+      if (type is GQListType) {
+        return GQListType(rt, false);
+      } else {
+        return rt;
+      }
+    }
+    return type;
+  }
+
+  String getMapTo(String typeName) {
+    var type = grammar.getType(typeName);
+    var dir = type.getDirectiveByName(gqSkipOnServer);
+    if (dir == null) {
+      return type.token;
+    }
+    var mapTo = dir.getArgValueAsString("mapTo");
+    if (mapTo == null) {
+      return "Object";
+    }
+    var mappedTo = grammar.getType(mapTo);
+    if (mappedTo.getDirectiveByName(gqSkipOnServer) != null) {
+      throw ParseException("You cannot mapTo ${mappedTo.token} because it is annotated with $gqSkipOnServer");
+    }
+    return mappedTo.token;
   }
 
   String serializeArgs(List<GQArgumentDefinition> args, [String? prefix]) {
@@ -257,8 +295,9 @@ ${statement.ident()}
 
   String _getReturnType(GQSchemaMapping mapping) {
     if (mapping.batch) {
+      var keyType = serializer.serializeType(_getServiceReturnType(GQType(mapping.type.token, false)), false);
       return """
-java.util.Map<${mapping.type.token}, ${serializer.serializeType(mapping.field.type, false)}>
+java.util.Map<${keyType}, ${serializer.serializeType(mapping.field.type, false)}>
       """
           .trim();
     } else {
@@ -267,10 +306,11 @@ java.util.Map<${mapping.type.token}, ${serializer.serializeType(mapping.field.ty
   }
 
   String _getArg(GQSchemaMapping mapping) {
+    var argType = serializer.serializeType(_getServiceReturnType(GQType(mapping.type.token, false)), false);
     if (mapping.batch) {
-      return "java.util.List<${mapping.type.token}> ${mapping.type.token.firstLow}List";
+      return "java.util.List<${argType}> ${argType.firstLow}List";
     } else {
-      return "${mapping.type.token} ${mapping.type.token.firstLow}";
+      return "${argType} ${argType.firstLow}";
     }
   }
 

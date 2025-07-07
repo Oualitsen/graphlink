@@ -24,6 +24,14 @@ const String allFieldsFragmentsFileName = "allFieldsFragments";
 const allFields = '_all_fields';
 
 extension GQGrammarExtension on GQGrammar {
+  void skipFieldOfSkipOnServerTypes() {
+    types.values.where((t) => t.getDirectiveByName(gqSkipOnServer) != null).forEach((t) {
+      for (var f in t.fields) {
+        f.addDirectiveIfAbsent(t.getDirectiveByName(gqSkipOnServer)!);
+      }
+    });
+  }
+
   void handleDirectiveInheritance() {
     var myTypes = <String, Set<GQTypeDefinition>>{};
     types.values.where((type) => type.interfaceNames.isNotEmpty).forEach((t) {
