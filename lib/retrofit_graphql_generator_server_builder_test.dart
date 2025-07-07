@@ -31,9 +31,9 @@ void main() {
   final springSeriaalizer = SpringServerSerializer(grammar);
   // lets generate some code!
 
-  grammar.types.forEach((k, def) {
+  grammar.getSerializableTypes().forEach((def) {
     var text = serialzer.serializeTypeDefinition(def);
-    writeToFile(text, "$k.java", "types", ["$packageName.enums", "$packageName.interfaces"]);
+    writeToFile(text, "${def.token}.java", "types", ["$packageName.enums", "$packageName.interfaces"]);
   });
   grammar.interfaces.forEach((k, def) {
     var text = serialzer.serializeInterface(def);
@@ -58,6 +58,11 @@ void main() {
     var text = springSeriaalizer.serializeController(def);
     writeToFile(text, "${k}Controller.java", "controllers",
         ["$packageName.enums", "$packageName.types", "$packageName.inputs", "$packageName.services"]);
+  });
+
+  grammar.repositories.forEach((k, def) {
+    var text = springSeriaalizer.serializeRepository(def);
+    writeToFile(text, "${k}.java", "repositories", ["$packageName.enums", "$packageName.types"]);
   });
 }
 

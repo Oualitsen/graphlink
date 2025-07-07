@@ -24,6 +24,18 @@ const String allFieldsFragmentsFileName = "allFieldsFragments";
 const allFields = '_all_fields';
 
 extension GQGrammarExtension on GQGrammar {
+  List<GQTypeDefinition> getSerializableTypes() {
+    final queries = [schema.mutation, schema.query, schema.subscription];
+    return types.values.where((type) => !queries.contains(type.token)).where((type) {
+      switch (mode) {
+        case CodeGenerationMode.client:
+          return type.getDirectiveByName(gqSkipOnClient) == null;
+        case CodeGenerationMode.server:
+          return type.getDirectiveByName(gqSkipOnServer) == null;
+      }
+    }).toList();
+  }
+
   void skipFieldOfSkipOnServerTypes() {
     types.values.where((t) => t.getDirectiveByName(gqSkipOnServer) != null).forEach((t) {
       for (var f in t.fields) {

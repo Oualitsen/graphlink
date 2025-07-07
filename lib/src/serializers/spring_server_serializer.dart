@@ -270,7 +270,7 @@ ${statement.ident()}
   """;
     }
     final statement = """
-return $serviceInstanceName.${mapping.key}(${mapping.field.name});
+return $serviceInstanceName.${mapping.key}(value);
 """
         .trim();
     return """
@@ -282,12 +282,12 @@ ${statement.ident()}
   String _getAnnotation(GQSchemaMapping mapping) {
     if (mapping.batch) {
       return """
-@org.springframework.graphql.data.method.annotation.BatchMapping(type="${mapping.type.token}", field="${mapping.field.name}")
+@org.springframework.graphql.data.method.annotation.BatchMapping(typeName="${mapping.type.token}", field="${mapping.field.name}")
       """
           .trim();
     } else {
       return """
-@org.springframework.graphql.data.method.annotation.SchemaMapping(type="${mapping.type.token}", field="${mapping.field.name}")
+@org.springframework.graphql.data.method.annotation.SchemaMapping(typeName="${mapping.type.token}", field="${mapping.field.name}")
 """
           .trim();
     }
@@ -305,18 +305,18 @@ java.util.Map<${keyType}, ${serializer.serializeType(mapping.field.type, false)}
     }
   }
 
-  String _getArg(GQSchemaMapping mapping) {
+  String _getMappingArgument(GQSchemaMapping mapping) {
     var argType = serializer.serializeType(_getServiceReturnType(GQType(mapping.type.token, false)), false);
     if (mapping.batch) {
-      return "java.util.List<${argType}> ${argType.firstLow}List";
+      return "java.util.List<${argType}> value";
     } else {
-      return "${argType} ${argType.firstLow}";
+      return "${argType} value";
     }
   }
 
   String serializeMappingImplMethodHeader(GQSchemaMapping mapping,
       {bool skipAnnotation = false, bool skipQualifier = false}) {
-    var result = "${_getReturnType(mapping)} ${mapping.key}(${_getArg(mapping)})";
+    var result = "${_getReturnType(mapping)} ${mapping.key}(${_getMappingArgument(mapping)})";
 
     if (!skipQualifier) {
       result = "public $result";
