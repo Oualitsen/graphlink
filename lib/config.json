@@ -1,0 +1,31 @@
+{
+    "schemaPaths": [],
+    "mode": "server",
+    "identityFields": [],
+    "typeMappings": {
+      "ID": "String",
+      "String": "String",
+      "Float": "Double",
+      "Int": "Integer",
+      "Boolean": "Boolean",
+      "Null": "null"
+    },
+    "outputDir": "src/main/java",
+    "serverConfig": {
+      "spring": {
+        "basePackage": "com.mycompany.generated",
+        "generateControllers": true,
+        "generateInputs": true,
+        "generateTypes": true,
+        "generateRepositories": true
+      }
+    },
+    "clientConfig": {
+      "targetLanguage": "dart",
+      "generateAllFieldsFragments": false,
+      "nullableFieldsRequired": false,
+      "autoGenerateQueries": false,
+      "autoGenerateQueriesDefaultAlias": null,
+      "operationNameAsParameter": false
+    }
+  }
