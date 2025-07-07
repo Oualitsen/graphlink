@@ -29,6 +29,7 @@ void main() {
     var serverSerialzer = SpringServerSerializer(g);
     var userUser = g.services["UserService"]!;
     var result = serverSerialzer.serializeController(userUser);
+    print(result);
     expect(
         result,
         stringContainsInOrder([
@@ -42,8 +43,8 @@ void main() {
           "public reactor.core.publisher.Flux<java.util.List<Car>> watchCars(@org.springframework.graphql.data.method.annotation.Argument final String userId)",
           "@org.springframework.graphql.data.method.annotation.SubscriptionMapping",
           "public reactor.core.publisher.Flux<User> watchUser(@org.springframework.graphql.data.method.annotation.Argument final String userId)",
-          '@org.springframework.graphql.data.method.annotation.SchemaMapping(type="User", field="password")',
-          "public String userPassword(User user)",
+          '@org.springframework.graphql.data.method.annotation.SchemaMapping(typeName="User", field="password")',
+          "public String userPassword(User value)",
           """throw new graphql.GraphQLException("Access denied to field 'User.password'");"""
         ]));
   });
@@ -67,8 +68,8 @@ void main() {
         serviceSerial,
         stringContainsInOrder([
           "User getUserCar();",
-          "Car userCarCar(User user);",
-          "User userCarUser(User user);",
+          "Car userCarCar(User value);",
+          "User userCarUser(User value);",
         ]));
 
     expect(
@@ -76,10 +77,10 @@ void main() {
         stringContainsInOrder([
           "public User getUserCar()",
           "return userCarService.getUserCar();",
-          "public Car userCarCar(User user)",
-          "return userCarService.userCarCar(car);",
-          "User userCarUser(User user)",
-          "return userCarService.userCarUser(user);"
+          "public Car userCarCar(User value)",
+          "return userCarService.userCarCar(value);",
+          "User userCarUser(User value)",
+          "return userCarService.userCarUser(value);"
         ]));
   });
 
@@ -100,8 +101,8 @@ void main() {
         ownerServiceSerial,
         stringContainsInOrder([
           "java.util.List<Owner> getOwnwers();",
-          "java.util.Map<Owner, Owner> ownerWithAnimalOwner(java.util.List<Owner> ownerList);",
-          "java.util.Map<Owner, Animal> ownerWithAnimalAnimal(java.util.List<Owner> ownerList);"
+          "java.util.Map<Owner, Owner> ownerWithAnimalOwner(java.util.List<Owner> value);",
+          "java.util.Map<Owner, Animal> ownerWithAnimalAnimal(java.util.List<Owner> value);"
         ]));
   });
 
@@ -122,8 +123,8 @@ void main() {
         ownerServiceSerial,
         stringContainsInOrder([
           "Object getOwnerWithAnimal2();",
-          "Owner ownerWithAnimal2Owner(Object object);",
-          "Animal ownerWithAnimal2Animal(Object object);"
+          "Owner ownerWithAnimal2Owner(Object value);",
+          "Animal ownerWithAnimal2Animal(Object value);"
         ]));
   });
 
@@ -144,8 +145,8 @@ void main() {
         ownerServiceSerial,
         stringContainsInOrder([
           "java.util.List<Object> getOwnwers3();",
-          "java.util.Map<Object, Owner> ownerWithAnimal3Owner(java.util.List<Object> objectList);",
-          "java.util.Map<Object, Animal> ownerWithAnimal3Animal(java.util.List<Object> objectList);",
+          "java.util.Map<Object, Owner> ownerWithAnimal3Owner(java.util.List<Object> value);",
+          "java.util.Map<Object, Animal> ownerWithAnimal3Animal(java.util.List<Object> value);",
         ]));
   });
 
@@ -201,7 +202,7 @@ void main() {
           "java.util.List<User> getUsers(final String name, final String middle);",
           "reactor.core.publisher.Flux<java.util.List<Car>> watchCars(final String userId);",
           "reactor.core.publisher.Flux<User> watchUser(final String userId);",
-          "java.util.Map<User, java.util.List<Car>> userCars(java.util.List<User> userList);"
+          "java.util.Map<User, java.util.List<Car>> userCars(java.util.List<User> value);"
         ]));
     var carService = g.services["CarService"]!;
     var serializedCarService = serverSerialzer.serializeService(carService);
@@ -210,7 +211,7 @@ void main() {
         stringContainsInOrder([
           "Car getCarById(final String id);",
           "Integer getCarCount(final String userId);",
-          "Owner carOwner(Car car);",
+          "Owner carOwner(Car value);",
         ]));
 
     serializedCarService = serverSerialzer.serializeService(carService, injectDataFtechingEnv: true);
@@ -237,7 +238,7 @@ void main() {
         stringContainsInOrder([
           "Car getCarById(final String id, graphql.schema.DataFetchingEnvironment dataFetchingEnvironment);",
           "Integer getCarCount(final String userId, graphql.schema.DataFetchingEnvironment dataFetchingEnvironment);",
-          "Owner carOwner(Car car);",
+          "Owner carOwner(Car value);",
         ]));
   });
 
