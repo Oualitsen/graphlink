@@ -1,0 +1,20 @@
+
+directive @gqRepository(onType: String!, id: String!) on INTERFACE
+directive @gqExternal(gqFQCN: String!) on OBJECT | INPUT_OBJECT
+
+
+type User {
+    id: ID!
+    name: String!
+    middleName: String
+}
+
+scalar Pagebale @gqExternal(gqFQCN: "org.springframework.data.domain.Pageable")
+
+scalar ExternalUser @gqExternal(gqFQCN: "com.mycompany.ExternalUser")
+
+interface UserRepository @gqRepository(id: "id", onType: "User") {
+    findAll(pagebale: Pagebale!): [ExternalUser!]!
+    countElements: Int!
+}
+

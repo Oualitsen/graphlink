@@ -110,7 +110,7 @@ ${statement.ident()}
       f.addDirective(GQDirectiveValue(gqSkipOnServer, [], []));
     });
 
-    fields.forEach((f) {
+    for (var f in fields) {
       f
           .findQueryDirectives()
           .map(serializeQueryAnnotation)
@@ -118,7 +118,7 @@ ${statement.ident()}
           .forEach((dir) {
         f.addDirective(dir);
       });
-    });
+    }
     var dec = GQDirectiveValue.createGqDecorators(
         decorators: ["@org.springframework.stereotype.Repository"], applyOnClient: false);
     interface.addDirective(dec);
@@ -202,7 +202,7 @@ $result
   }
 
   GQType _getServiceReturnType(GQType type) {
-    if (grammar.scalars.contains(type.token) || grammar.enums.containsKey(type.token)) {
+    if (grammar.scalars.containsKey(type.token) || grammar.enums.containsKey(type.token)) {
       return type;
     }
 

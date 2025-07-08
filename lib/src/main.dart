@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:vmservice_io';
 
 import 'package:retrofit_graphql/src/config.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
@@ -30,7 +29,7 @@ Future<void> main(List<String> arguments) async {
   final args = parser.parse(arguments);
 
   if (args['help'] as bool) {
-    print('''
+   stdout.write('''
 Usage: gqlcodegen [options]
 
 Options:
@@ -41,7 +40,7 @@ ${parser.usage}
 
   final configPath = args['config'] as String?;
   if (configPath == null) {
-    print('''
+    stdout.write('''
 Usage: gqlcodegen generate [options]
 
 Options:
@@ -245,5 +244,5 @@ $importsText
 
 $data
 """);
-  print("Done wrting to  $fileName");
+  stdout.write("Done wrting to  $fileName");
 }

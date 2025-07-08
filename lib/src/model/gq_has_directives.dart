@@ -9,7 +9,6 @@ mixin GqHasDirectives {
 
   final Map<String, GQDirectiveValue> _directives = {};
 
-  final Map<String, GQDirectiveValue?> _cache = {};
 
   void addDirective(GQDirectiveValue directiveValue) {
     if (_directives.containsKey(directiveValue.token)) {
@@ -19,9 +18,6 @@ mixin GqHasDirectives {
   }
 
   void addDirectiveIfAbsent(GQDirectiveValue directiveValue) {
-    if (directiveValue.token == "@gqCreationDate") {
-      print("object");
-    }
     _directives.putIfAbsent(directiveValue.token, () => directiveValue);
   }
 
@@ -33,16 +29,6 @@ mixin GqHasDirectives {
   }
 
   GQDirectiveValue? getDirectiveByName(String name) {
-    var result = _cache[name];
-    if (result == null && !_cache.containsKey(name)) {
-      var directiveList = getDirectives().where((d) => d.token == name).toList();
-      if (directiveList.isEmpty) {
-        result = null;
-      } else {
-        result = directiveList.first;
-      }
-      _cache[name] = result;
-    }
-    return result;
+    return _directives[name];
   }
 }

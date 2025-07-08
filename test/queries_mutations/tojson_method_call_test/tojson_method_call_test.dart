@@ -20,7 +20,6 @@ void main() async {
     Directory("$path/gen").createSync();
     final dsc = DartClientSerializer(g);
     var client = dsc.serializeClient();
-    print(client);
     expect(client, contains("'input': input?.toJson()"));
   });
 }

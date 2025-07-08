@@ -58,7 +58,8 @@ class GQDirectiveValue extends GQToken {
   final List<GQDirectiveScope> locations;
   final Map<String, GQArgumentValue> _argsMap = {};
 
-  GQDirectiveValue(super.name, this.locations, List<GQArgumentValue> arguments) {
+  GQDirectiveValue(
+      super.name, this.locations, List<GQArgumentValue> arguments) {
     _addArgument(arguments);
   }
 
@@ -105,12 +106,19 @@ class GQDirectiveValue extends GQToken {
       return "";
     }
     var arguments = getArguments();
-    var args = arguments.isEmpty ? "" : "(${arguments.map((e) => e.serialize()).join(",")})";
+    var args = arguments.isEmpty
+        ? ""
+        : "(${arguments.map((e) => e.serialize()).join(",")})";
     return "$token$args";
   }
 
   List<GQArgumentValue> getArguments() {
     return _argsMap.values.toList();
+  }
+
+  static GQDirectiveValue createDirectiveValue(
+      {required String directiveName}) {
+    return GQDirectiveValue(directiveName, [], []);
   }
 
   static GQDirectiveValue createGqDecorators({
@@ -119,7 +127,8 @@ class GQDirectiveValue extends GQToken {
     bool applyOnClient = true,
   }) {
     return GQDirectiveValue(gqDecorators, [], [
-      GQArgumentValue("value", ["[[", decorators.map((s) => '"$s"').toList(), "]]"]),
+      GQArgumentValue(
+          "value", ["[[", decorators.map((s) => '"$s"').toList(), "]]"]),
       GQArgumentValue("applyOnServer", true),
     ]);
   }

@@ -4,6 +4,8 @@ import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_argument.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
+import 'package:retrofit_graphql/src/model/gq_has_directives.dart';
+import 'package:retrofit_graphql/src/model/gq_scalar_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_service.dart';
 import 'package:retrofit_graphql/src/model/gq_shcema_mapping.dart';
 import 'package:retrofit_graphql/src/model/gq_schema.dart';
@@ -24,6 +26,17 @@ const String allFieldsFragmentsFileName = "allFieldsFragments";
 const allFields = '_all_fields';
 
 extension GQGrammarExtension on GQGrammar {
+
+  void handleGqExternal() {
+   [...inputs.values, ...types.values, ...scalars.values, ...enums.values]
+   .map((f) => f as GqHasDirectives)
+   .where((t) => t.getDirectiveByName(gqExternal) != null)
+    .forEach((f) {
+      f.addDirectiveIfAbsent(GQDirectiveValue.createDirectiveValue(directiveName:  gqSkipOnClient));
+      f.addDirectiveIfAbsent(GQDirectiveValue.createDirectiveValue(directiveName:  gqSkipOnServer));
+    });
+  }
+
   List<GQTypeDefinition> getSerializableTypes() {
     final queries = [schema.mutation, schema.query, schema.subscription];
     return types.values.where((type) => !queries.contains(type.token)).where((type) {
@@ -225,16 +238,16 @@ extension GQGrammarExtension on GQGrammar {
   }
 
   bool isNonProjectableType(String token) {
-    return scalars.contains(token) || enums.containsKey(token);
+    return scalars.containsKey(token) || enums.containsKey(token);
   }
 
   void addDiectiveValue(GQDirectiveValue value) {
     directiveValues.add(value);
   }
 
-  void addScalarDefinition(String scalar) {
+  void addScalarDefinition(GQScalarDefinition scalar) {
     checkSacalarDefinition(scalar);
-    scalars.add(scalar);
+    scalars[scalar.token] = scalar;
   }
 
   void addDirectiveDefinition(GQDirectiveDefinition directive) {
@@ -242,8 +255,8 @@ extension GQGrammarExtension on GQGrammar {
     directiveDefinitions[directive.name] = directive;
   }
 
-  void checkSacalarDefinition(String scalar) {
-    if (scalars.contains(scalar)) {
+  void checkSacalarDefinition(GQScalarDefinition scalar) {
+    if (scalars.containsKey(scalar.token)) {
       throw ParseException("Scalar $scalar has already been declared");
     }
   }
@@ -357,7 +370,7 @@ extension GQGrammarExtension on GQGrammar {
     if (types.containsKey(typeName) ||
         interfaces.containsKey(typeName) ||
         enums.containsKey(typeName) ||
-        scalars.contains(typeName)) {
+        scalars.containsKey(typeName)) {
       return;
     }
     throw ParseException("Type $typeName is not defined");
@@ -397,7 +410,7 @@ extension GQGrammarExtension on GQGrammar {
   }
 
   void checkType(String name) {
-    bool b = scalars.contains(name) ||
+    bool b = scalars.containsKey(name) ||
         unions.containsKey(name) ||
         types.containsKey(name) ||
         inputs.containsKey(name) ||
@@ -429,7 +442,7 @@ extension GQGrammarExtension on GQGrammar {
   }
 
   void checkScalar(String scalarName) {
-    if (!scalars.contains(scalarName)) {
+    if (!scalars.containsKey(scalarName)) {
       throw ParseException("Scalar $scalarName was not declared");
     }
   }

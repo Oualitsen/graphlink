@@ -40,7 +40,7 @@ void main() async {
     expect(frag.block.projections.keys, isNot(contains("password")));
     expect(frag.block.projections.keys,
         containsAll(["firstName", "lastName", "middleName", "address", "username"]));
-    print(frag);
+    
   });
 
   test("all_fields_fragments_test with skip on client on interface", () {
@@ -56,6 +56,5 @@ void main() async {
 
     var frag = g.fragments[GQGrammarExtension.allFieldsFragmentName("UserBase")]!;
     expect(frag.block.projections.keys, isNot(contains("password")));
-    print(frag);
   });
 }

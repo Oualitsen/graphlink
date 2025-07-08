@@ -37,7 +37,7 @@ ${serializeDecorators(def.directives)}
       return "List<${serializeType(def.inlineType, false)}>$postfix";
     }
     final token = def.token;
-    var dartTpe = grammar.typeMap[token] ?? grammar.projectedTypes[token]?.token ?? token;
+    var dartTpe = getTypeNameFromGQExternal(token) ?? token;
     return "$dartTpe$postfix";
   }
 

@@ -11,7 +11,7 @@ void main() {
       scalar Date 
     """);
     expect(result is Success, true);
-    expect(result.value, "Date");
+    expect(result.value.token, "Date");
   });
 
   test("Object value test", () {
@@ -23,6 +23,6 @@ void main() {
       )
     """);
     expect(result is Success, true);
-    expect(result.value, "Date");
+    expect(result.value.token, "Date");
   });
 }

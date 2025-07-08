@@ -13,7 +13,8 @@ void main(List<String> args) {
       .map((response) => response.body)
       .first;
 
-  var client = GQClient(fn, wsAdapter);
+   GQClient(fn, wsAdapter);
+  
   // client.queries.getDriver3().then((value) => value.data);
 /*
 
