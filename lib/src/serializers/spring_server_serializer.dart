@@ -211,8 +211,12 @@ $result
     var skipOnserverDir = returnType.getDirectiveByName(gqSkipOnServer);
     if (skipOnserverDir != null) {
       var mapTo = getMapTo(type.token);
+      
       var rt = GQType(mapTo, false);
       if (type is GQListType) {
+        if(mapTo == "Object") {
+          rt = GQType("?", false);
+        }
         return GQListType(rt, false);
       } else {
         return rt;
@@ -296,6 +300,9 @@ ${statement.ident()}
   String _getReturnType(GQSchemaMapping mapping) {
     if (mapping.batch) {
       var keyType = serializer.serializeType(_getServiceReturnType(GQType(mapping.type.token, false)), false);
+      if(keyType == "Object") {
+        keyType = "?";
+      }
       return """
 java.util.Map<${keyType}, ${serializer.serializeType(mapping.field.type, false)}>
       """

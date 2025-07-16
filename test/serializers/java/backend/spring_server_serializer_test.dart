@@ -144,9 +144,9 @@ void main() {
     expect(
         ownerServiceSerial,
         stringContainsInOrder([
-          "java.util.List<Object> getOwnwers3();",
-          "java.util.Map<Object, Owner> ownerWithAnimal3Owner(java.util.List<Object> value);",
-          "java.util.Map<Object, Animal> ownerWithAnimal3Animal(java.util.List<Object> value);",
+          "java.util.List<?> getOwnwers3();",
+          "java.util.Map<?, Owner> ownerWithAnimal3Owner(java.util.List<Object> value);",
+          "java.util.Map<?, Animal> ownerWithAnimal3Animal(java.util.List<Object> value);",
         ]));
   });
 
