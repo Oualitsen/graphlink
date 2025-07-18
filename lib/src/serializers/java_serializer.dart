@@ -62,7 +62,7 @@ ${def.values.map((e) => e.value).toList().join(", ").ident()}
       }
     }
     final token = gqType.token;
-    
+
     var type = getTypeNameFromGQExternal(token) ?? token;
     if (reactive) {
       return "reactor.core.publisher.Mono<$type>";
@@ -99,9 +99,6 @@ ${serializeListText(def.getSerializableFields(grammar).map((e) => serializeSette
 
   String generateContructor(String name, List<GQField> fields, String? modifier,
       {bool checkForNulls = false}) {
-    if (fields.isEmpty) {
-      return "";
-    }
     String nullCheck;
     if (checkForNulls) {
       nullCheck = serializeListText(

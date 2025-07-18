@@ -26,14 +26,13 @@ const String allFieldsFragmentsFileName = "allFieldsFragments";
 const allFields = '_all_fields';
 
 extension GQGrammarExtension on GQGrammar {
-
   void handleGqExternal() {
-   [...inputs.values, ...types.values, ...scalars.values, ...enums.values]
-   .map((f) => f as GqHasDirectives)
-   .where((t) => t.getDirectiveByName(gqExternal) != null)
-    .forEach((f) {
-      f.addDirectiveIfAbsent(GQDirectiveValue.createDirectiveValue(directiveName:  gqSkipOnClient));
-      f.addDirectiveIfAbsent(GQDirectiveValue.createDirectiveValue(directiveName:  gqSkipOnServer));
+    [...inputs.values, ...types.values, ...scalars.values, ...enums.values]
+        .map((f) => f as GqHasDirectives)
+        .where((t) => t.getDirectiveByName(gqExternal) != null)
+        .forEach((f) {
+      f.addDirectiveIfAbsent(GQDirectiveValue.createDirectiveValue(directiveName: gqSkipOnClient));
+      f.addDirectiveIfAbsent(GQDirectiveValue.createDirectiveValue(directiveName: gqSkipOnServer));
     });
   }
 

@@ -347,7 +347,7 @@ public void setId(final String id) {
         repoSerial,
         stringContainsInOrder([
           "@org.springframework.stereotype.Repository",
-          "public interface UserRepository extends org.springframework.data.mongodb.repository.MongoRepository<String, User>",
+          "public interface UserRepository extends org.springframework.data.mongodb.repository.MongoRepository<User, String>",
           "User findById(org.springframework.data.repository.query.Param(value=\"id\")  final String id);",
           "}"
         ]));

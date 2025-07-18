@@ -26,8 +26,8 @@ input UserInput @gqDecorators(value: ["@Input"]) {
 type User @gqDecorators(value: ["@Logger"]) {
 
     id: String! @gqDecorators(value: ["@Getter", "@Setter"])
-    name: String!
-    middleName: String
+    name: String! @gqDecorators(value: ["""@Getter""", """@Setter"""])
+    middleName: String @gqDecorators(value: ["""@Getter("value")"""])
     married: Boolean!
     listExample: [String!]!
 }

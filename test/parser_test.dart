@@ -15,15 +15,40 @@ void main() {
     expect(result is Success, false);
   });
 
+  test("Single quote String token with inner quotes", () {
+    var parser = g.buildFrom(g.singleLineStringToken().end());
+    var result = parser.parse('''" hello \\"test\\" "''');
+    expect(result is Success, true);
+    expect(result.value.trim(), 'hello "test"');
+  });
+
   test("BlockString token Test", () {
     var parser = g.buildFrom(g.blockStringToken().end());
     var result = parser.parse('''""" Hello world """''');
     expect(result is Success, true);
-    result = g.singleLineStringToken().parse('''"""
+    result = g.blockStringToken().parse('''"""
     azul
-    Fellawen
+    Fellawen 
     """''');
+
     expect(result is Success, true);
+  });
+
+  test("BlockString token Test", () {
+    var parser = g.buildFrom(g.blockStringToken().end());
+    var result = parser.parse('''""" Hello "world" """''');
+    expect(result is Success, true);
+    expect(result.value.trim(), 'Hello "world"');
+  });
+
+  test("BlockString token Test with new lines", () {
+    var parser = g.buildFrom(g.blockStringToken().end());
+    var result = parser.parse('''""" Hello 
+    "world"
+    this is me
+     """''');
+    expect(result is Success, true);
+    expect(result.value, stringContainsInOrder(["Hello", '"world"', "this is me"]));
   });
 
   test("Boolean token test", () {

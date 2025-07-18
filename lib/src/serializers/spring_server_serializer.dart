@@ -140,7 +140,7 @@ ${statement.ident()}
       }
     });
     interface.parents.add(GQInterfaceDefinition(
-        name: "$fqcn<${serializer.serializeType(idField.type, false)}, $ontType>",
+        name: "$fqcn<$ontType, ${serializer.serializeType(idField.type, false)}>",
         nameDeclared: false,
         fields: [],
         parentNames: {},
