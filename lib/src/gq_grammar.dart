@@ -20,38 +20,13 @@ import 'package:retrofit_graphql/src/model/gq_union.dart';
 import 'package:petitparser/petitparser.dart';
 import 'package:retrofit_graphql/src/serializers/language.dart';
 import 'package:retrofit_graphql/src/utils.dart';
-
+import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 export 'package:retrofit_graphql/src/gq_grammar_extension.dart';
 
-const gqDecorators = "@gqDecorators";
-const gqSkipOnServer = "@gqSkipOnServer";
-const gqSkipOnClient = "@gqSkipOnClient";
-const gqArray = "@gqArray";
-const gqServiceName = "@gqServiceName";
-const gqServiceNameArg = "name";
 
-const gqTypeNameDirective = "@gqTypeName";
-const gqEqualsHashcode = "@gqEqualsHashcode";
-
-const includeDirective = "@include";
-
-const skipDirective = "@skip";
-const gqRepository = "@gqRepository";
-const gqId = "@gqId";
-const gqEmbeddedId = "@gqEmbeddedId";
-const gqExternal = "@gqExternal";
-const gqExternalArg = gqFQCN;
-const gqFQCN = "gqFQCN";
-const gqAnnotation = "gqAnnotation";
-
-const gqQueryArg = "gqQuery";
-const gqParam = "@gqParam";
-
-const gqTypeNameDirectiveArgumentName = "name";
-const gqEqualsHashcodeArgumentName = "fields";
-const gqDecoratorsArgumentName = "value";
 
 class GQGrammar extends GrammarDefinition {
+  bool annotationsProcessed = false;
   var logger = Logger();
   static const typename = "__typename";
   static final typenameField =
@@ -408,8 +383,8 @@ class GQGrammar extends GrammarDefinition {
           directiveValueList(),
           seq3(
                   ref0(openBrace),
-                  seq2(ref1(token, documentation().optional()), ref1(token, identifier()))
-                      .map2((comment, value) => GQEnumValue(value: value, comment: comment))
+                  seq3(ref1(token, documentation().optional()), ref1(token, identifier()), directiveValueList())
+                      .map3((comment, value, directives) => GQEnumValue(value: value, comment: comment, directives: directives))
                       .plus(),
                   ref0(closeBrace))
               .map3((p0, list, p2) => list)).map3((identifier, directives, enumValues) {

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
+import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 import 'package:retrofit_graphql/src/serializers/language.dart';
 import 'package:retrofit_graphql/src/serializers/spring_server_serializer.dart';
 import 'package:test/test.dart';

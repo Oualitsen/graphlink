@@ -2,6 +2,7 @@ import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_argument.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
+import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 
 class GQDirectiveDefinition {
   final String name;
@@ -42,9 +43,10 @@ enum GQDirectiveScope {
   // ignore: constant_identifier_names
   UNION,
   // ignore: constant_identifier_names
-  ENUM,
-  // ignore: constant_identifier_names
   ENUM_VALUE,
+  // ignore: constant_identifier_names
+  ENUM,
+  
   // ignore: constant_identifier_names
   INPUT_OBJECT,
   // ignore: constant_identifier_names
@@ -129,7 +131,8 @@ class GQDirectiveValue extends GQToken {
     return GQDirectiveValue(gqDecorators, [], [
       GQArgumentValue(
           "value", ["[[", decorators.map((s) => '"$s"').toList(), "]]"]),
-      GQArgumentValue("applyOnServer", true),
+      GQArgumentValue("applyOnServer", applyOnServer),
+      GQArgumentValue("applyOnClient", applyOnClient),
     ]);
   }
 }

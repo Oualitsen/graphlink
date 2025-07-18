@@ -7,34 +7,54 @@ import 'package:retrofit_graphql/src/model/gq_input_type_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_interface.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
 import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
+import 'package:retrofit_graphql/src/serializers/annotation_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/gq_serializer.dart';
 import 'package:retrofit_graphql/src/utils.dart';
 
 class JavaSerializer extends GqSerializer {
-  JavaSerializer(super.grammar);
+  JavaSerializer(super.grammar){
+    _initAnnotations();
+  }
+
+  void _initAnnotations() {
+    grammar.handleAnnotations((val) => AnnotationSerializer.serializeAnnotation(val, multiLineString: false));
+  }
 
   @override
   String doSerializeEnumDefinition(GQEnumDefinition def) {
+    
     return """
-${serializeDecorators(def.directives)}
+${serializeDecorators(def.getDirectives())}
 public enum ${def.token} {
-${def.values.map((e) => e.value).toList().join(", ").ident()}
+${def.values.map((e) => doSerialzeEnumValue(e)).toList().join(", ").ident()}
 }
 """;
   }
+
+  @override
+  String doSerialzeEnumValue(GQEnumValue value) {
+    var decorators = serializeDecorators(value.getDirectives(), joiner: " ");
+    if(decorators.isEmpty) {
+      return value.value;
+    }else {
+      return "$decorators ${value.value}";
+    }
+  }
+
+
 
   @override
   String doSerializeField(GQField def) {
     final type = def.type;
     final name = def.name;
     final hasInculeOrSkipDiretives = def.hasInculeOrSkipDiretives;
-    return "${serializeDecorators(def.getDirectives())}private ${serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray)} $name;";
+    return "${serializeDecorators(def.getDirectives(), joiner: "\n")}private ${serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray)} $name;";
   }
 
   String serializeArgument(GQArgumentDefinition arg) {
     var type = arg.type;
     var name = arg.token;
-    var decorators = serializeDecorators(arg.getDirectives());
+    var decorators = serializeDecorators(arg.getDirectives(), joiner: " ");
     var result = "final ${serializeType(type, false)} ${name}";
     if (decorators.isNotEmpty) {
       return "$decorators $result";
@@ -286,6 +306,8 @@ ${'return java.util.Objects.hash(${fields.join(", ")});'.ident()}
   """;
   }
 
+  
+
   static String serializeContructorArgs(GQTypeDefinition def, GQGrammar grammar) {
     var fields = def.getFields();
     if (fields.isEmpty) {
@@ -324,10 +346,11 @@ ${'return java.util.Objects.hash(${fields.join(", ")});'.ident()}
 public interface $token ${parents.isNotEmpty ? "extends ${parents.map((e) => e.token).join(", ")} " : ""}{
 
 ${fields.map((f) {
+
               if (getters) {
-                return serializeGetterDeclaration(f, skipModifier: true);
+                return "${serializeDecorators(f.getDirectives(), joiner: "\n")}${serializeGetterDeclaration(f, skipModifier: true)}";
               } else {
-                return serializeMethod(f);
+                return "${serializeDecorators(f.getDirectives(), joiner: "\n")}${serializeMethod(f)}";
               }
             }).map((e) => "$e;").join("\n").ident()}
 }""";

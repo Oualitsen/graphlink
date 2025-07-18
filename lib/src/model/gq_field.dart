@@ -1,10 +1,10 @@
-import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_argument.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/gq_has_directives.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
+import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 
-class GQField with GqHasDirectives {
+class GQField with GqDirectivesMixin {
   final String name;
   final GQType type;
   final Object? initialValue;

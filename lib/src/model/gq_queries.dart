@@ -12,7 +12,7 @@ import 'package:retrofit_graphql/src/utils.dart';
 
 enum GQQueryType { query, mutation, subscription }
 
-class GQQueryDefinition extends GQToken with GqHasDirectives {
+class GQQueryDefinition extends GQToken with GqDirectivesMixin {
   final List<GQArgumentDefinition> arguments;
   final List<GQQueryElement> elements;
   final GQQueryType type; //query|mutation|subscription
@@ -117,7 +117,7 @@ class GQQueryDefinition extends GQToken with GqHasDirectives {
   GQArgumentDefinition findByName(String name) => arguments.where((arg) => arg.token == name).first;
 }
 
-class GQQueryElement extends GQToken with GqHasDirectives {
+class GQQueryElement extends GQToken with GqDirectivesMixin {
   final GQFragmentBlockDefinition? block;
 
   final List<GQArgumentValue> arguments;

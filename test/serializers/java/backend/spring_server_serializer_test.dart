@@ -194,7 +194,6 @@ void main() {
     var serializedService = serverSerialzer.serializeService(userService);
     expect(serializedService, startsWith("public interface UserService"));
     print(serializedService);
-    return;
     expect(
         serializedService,
         stringContainsInOrder([

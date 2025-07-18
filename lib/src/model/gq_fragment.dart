@@ -14,7 +14,7 @@ class GQTypedFragment {
   GQTypedFragment(this.fragment, this.onType);
 }
 
-abstract class GQFragmentDefinitionBase extends GQToken with GqHasDirectives {
+abstract class GQFragmentDefinitionBase extends GQToken with GqDirectivesMixin {
   final String onTypeName;
 
   final GQFragmentBlockDefinition block;
@@ -116,7 +116,7 @@ class GQInlineFragmentsProjection extends GQProjection {
         );
 }
 
-class GQProjection extends GQToken with GqHasDirectives {
+class GQProjection extends GQToken with GqDirectivesMixin {
   ///
   ///This contains a reference to the fragment name containing this projection
   ///

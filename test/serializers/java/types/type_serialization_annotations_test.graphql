@@ -1,0 +1,71 @@
+
+directive @gqDecorators(
+    value: [String!]!
+    applyOnClient: Boolean = true
+    applyOnServer: Boolean = true
+) on  OBJECT | INPUT_OBJECT | ENUM | ENUM_VALUE
+    | INTERFACE | INPUT_FIELD_DEFINITION
+    |SCALAR |ARGUMENT_DEFINITION |FIELD |FRAGMENT_DEFINITION |FRAGMENT_SPREAD
+    |INLINE_FRAGMENT |MUTATION | QUERY |SCHEMA
+    |SUBSCRIPTION |UNION |VARIABLE_DEFINITION
+
+
+directive @Getter(
+    gqOnClient: Boolean = false
+    gqOnServer: Boolean = true
+    gqAnnotation: Boolean = true
+    gqFQCN: String = "@lombok.Getter"
+) on FIELD_DEFINITION | OBJECT | INPUT_OBJECT | ENUM | ENUM_VALUE | INTERFACE
+
+directive @Query(
+    value: String!
+    gqOnClient: Boolean = false
+    gqOnServer: Boolean = true
+    gqAnnotation: Boolean = true
+    gqFQCN: String = "@Query"
+    native: Boolean = false
+) on FIELD_DEFINITION | OBJECT | INPUT_OBJECT | ENUM | ENUM_VALUE | INTERFACE 
+
+directive @Json(
+    value: String!
+    gqOnClient: Boolean = false
+    gqOnServer: Boolean = true
+    gqAnnotation: Boolean = true
+    gqFQCN: String = "@Json"
+) on FIELD_DEFINITION | OBJECT | INPUT_OBJECT | ENUM | ENUM_VALUE | INTERFACE 
+
+enum Gender @Getter {
+    male, female @Json(value: "FEMALE")
+}
+
+interface IBase @Getter {
+    id: String! @Json(value: "my_id")
+}
+
+interface IBase2 {
+    id: String!
+}
+
+type IBaseImple  {
+    id: String!
+    name: String!
+}
+
+input UserInput @Getter {
+    name: String! @Json(value: "my_name")
+}
+
+type User @Getter  @Json(value: "MyJson") @Query(value: """
+Select * From User wheere id = 10
+"""){
+
+    id: String!  @Getter @Json(value: "_id")
+    name: String!
+    middleName: String
+    married: Boolean!
+    listExample: [String!]!
+}
+
+
+
+

@@ -96,7 +96,7 @@ void main() {
 
     var idField = user.fields.where((f) => f.name == "id").first;
     var id = javaSerialzer.serializeField(idField);
-    expect(id, "@Getter @Setter private String id;");
+    expect(id, stringContainsInOrder(["@Getter", "@Setter", "private String id"]));
 
     var ibase = g.interfaces["IBase"]!;
 

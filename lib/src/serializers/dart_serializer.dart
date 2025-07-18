@@ -5,18 +5,35 @@ import 'package:retrofit_graphql/src/model/gq_input_type_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_interface.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
 import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
+import 'package:retrofit_graphql/src/serializers/annotation_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/gq_serializer.dart';
 import 'package:retrofit_graphql/src/utils.dart';
 
 class DartSerializer extends GqSerializer {
-  DartSerializer(super.grammar);
+  DartSerializer(super.grammar) {
+    _initAnnotations();
+  }
+
+  void _initAnnotations() {
+    grammar.handleAnnotations(AnnotationSerializer.serializeAnnotation);
+  }
 
   @override
   String doSerializeEnumDefinition(GQEnumDefinition def) {
     return """
-${serializeDecorators(def.directives)}
-  enum ${def.token} { ${def.values.map((e) => e.value).toList().join(", ")} }
+${serializeDecorators(def.getDirectives())}
+  enum ${def.token} { ${def.values.map((e) => doSerialzeEnumValue(e)).toList().join(", ")} }
 """;
+  }
+
+  @override
+  String doSerialzeEnumValue(GQEnumValue value) {
+    var decorators = serializeDecorators(value.getDirectives(), joiner: " ");
+    if(decorators.isEmpty) {
+      return value.value;
+    }else {
+      return "$decorators ${value.value}";
+    }
   }
 
   @override
@@ -180,4 +197,6 @@ abstract class $token ${parents.isNotEmpty ? "extends ${parents.map((e) => e.tok
   String serializeGetterDeclaration(GQField field) {
     return """${serializeType(field.type, false)} get ${field.name}""";
   }
+
+  
 }

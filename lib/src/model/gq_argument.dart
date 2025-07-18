@@ -7,7 +7,7 @@ import 'package:retrofit_graphql/src/model/gq_token.dart';
 ///  some thing like function(if: Boolean = true, name: String! = "Ahmed" ...)
 ///
 
-class GQArgumentDefinition extends GQToken with GqHasDirectives {
+class GQArgumentDefinition extends GQToken with GqDirectivesMixin {
   final GQType type;
   final Object? initialValue;
   GQArgumentDefinition(super.name, this.type, List<GQDirectiveValue> directives, {this.initialValue}) {

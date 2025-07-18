@@ -1,5 +1,6 @@
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
+import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 
 abstract class GQToken {
   final String token;

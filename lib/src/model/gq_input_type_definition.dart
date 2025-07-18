@@ -3,7 +3,7 @@ import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/gq_has_directives.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
 
-class GQInputDefinition extends GQTokenWithFields with GqHasDirectives {
+class GQInputDefinition extends GQTokenWithFields with GqDirectivesMixin {
   GQInputDefinition(
       {required List<GQDirectiveValue> directives, required String name, required List<GQField> fields})
       : super(name, fields) {

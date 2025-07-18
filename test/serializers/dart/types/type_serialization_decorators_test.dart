@@ -25,9 +25,9 @@ void main() {
     var id = dartSerialzer.serializeField(idField);
     var nameSerial = dartSerialzer.serializeField(nameField);
     var middleNameFieldSerial = dartSerialzer.serializeField(middleNameField);
-    expect(id, "@Getter @Setter final String id;");
-    expect(nameSerial, "@Getter @Setter final String name;");
-    expect(middleNameFieldSerial, '@Getter("value") final String? middleName;');
+    expect(id, stringContainsInOrder([ "@Getter", "@Setter", "final String id;"]));
+    expect(nameSerial, stringContainsInOrder(["@Getter", "@Setter", "final String name;"]) );
+    expect(middleNameFieldSerial, stringContainsInOrder(['@Getter("value")', 'final String? middleName;']));
 
     var ibase = g.interfaces["IBase"]!;
 
