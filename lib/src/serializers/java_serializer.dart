@@ -12,7 +12,7 @@ import 'package:retrofit_graphql/src/serializers/gq_serializer.dart';
 import 'package:retrofit_graphql/src/utils.dart';
 
 class JavaSerializer extends GqSerializer {
-  JavaSerializer(super.grammar){
+  JavaSerializer(super.grammar) {
     _initAnnotations();
   }
 
@@ -22,7 +22,6 @@ class JavaSerializer extends GqSerializer {
 
   @override
   String doSerializeEnumDefinition(GQEnumDefinition def) {
-    
     return """
 ${serializeDecorators(def.getDirectives())}
 public enum ${def.token} {
@@ -34,14 +33,12 @@ ${def.values.map((e) => doSerialzeEnumValue(e)).toList().join(", ").ident()}
   @override
   String doSerialzeEnumValue(GQEnumValue value) {
     var decorators = serializeDecorators(value.getDirectives(), joiner: " ");
-    if(decorators.isEmpty) {
+    if (decorators.isEmpty) {
       return value.value;
-    }else {
+    } else {
       return "$decorators ${value.value}";
     }
   }
-
-
 
   @override
   String doSerializeField(GQField def) {
@@ -203,8 +200,9 @@ $result
   }
 
   String serializeGetterDeclaration(GQField field, {skipModifier = false}) {
+    var returnType = serializeType(field.type, false);
     final result =
-        """${serializeType(field.type, false, field.serialzeAsArray)} ${_getterName(field.name, field.type.token == "Boolean")}()""";
+        """${serializeType(field.type, false, field.serialzeAsArray)} ${_getterName(field.name, returnType == "boolean")}()""";
     if (skipModifier) {
       return result;
     }
@@ -306,8 +304,6 @@ ${'return java.util.Objects.hash(${fields.join(", ")});'.ident()}
   """;
   }
 
-  
-
   static String serializeContructorArgs(GQTypeDefinition def, GQGrammar grammar) {
     var fields = def.getFields();
     if (fields.isEmpty) {
@@ -346,7 +342,6 @@ ${'return java.util.Objects.hash(${fields.join(", ")});'.ident()}
 public interface $token ${parents.isNotEmpty ? "extends ${parents.map((e) => e.token).join(", ")} " : ""}{
 
 ${fields.map((f) {
-
               if (getters) {
                 return "${serializeDecorators(f.getDirectives(), joiner: "\n")}${serializeGetterDeclaration(f, skipModifier: true)}";
               } else {

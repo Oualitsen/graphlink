@@ -190,7 +190,7 @@ public enum Gender {
     var marriedGetter = javaSerialzer.serializeGetterDeclaration(marriedField, skipModifier: false);
     expect(getterWithoutModifier, "String getId()");
     expect(getterWithModifier, "public String getId()");
-    expect(marriedGetter, "public Boolean isMarried()");
+    expect(marriedGetter, "public Boolean getMarried()");
   });
 
   test("serializeSetter", () {
@@ -252,7 +252,7 @@ public void setId(final String id) {
           "return middleName;",
           "}",
         ]));
-    expect(isMarried, stringContainsInOrder(["public Boolean isMarried() {", "return married;"]));
+    expect(isMarried, stringContainsInOrder(["public Boolean getMarried() {", "return married;"]));
   });
 
   test("Java type serialization", () {
