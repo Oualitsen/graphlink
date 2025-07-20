@@ -104,43 +104,22 @@ ${statement.ident()}
   }
 
   String serializeRepository(GQInterfaceDefinition interface) {
-    var fields = interface.getSerializableFields(grammar).where((f) => f.name != "_").toList();
     // find the _ field and ignore it
     interface.getSerializableFields(grammar).where((f) => f.name == "_").forEach((f) {
       f.addDirective(GQDirectiveValue(gqSkipOnServer, [], []));
     });
 
-    for (var f in fields) {
-      f
-          .findQueryDirectives()
-          .map(serializeQueryAnnotation)
-          .map((text) => GQDirectiveValue.createGqDecorators(decorators: [text], applyOnClient: false))
-          .forEach((dir) {
-        f.addDirective(dir);
-      });
-    }
     var dec = GQDirectiveValue.createGqDecorators(
         decorators: ["@org.springframework.stereotype.Repository"], applyOnClient: false);
     interface.addDirective(dec);
     interface.invalidateSerializableFieldsCache();
     var gqRepo = interface.getDirectiveByName(gqRepository)!;
     var fqcn = gqRepo.getArgValueAsString(gqFQCN) ?? "org.springframework.data.jpa.repository.JpaRepository";
-    var id = gqRepo.getArgValueAsString("id");
-    var ontType = gqRepo.getArgValueAsString("onType")!;
-    var type = grammar.getType(ontType);
-    var idField = type.getSerializableFields(grammar).where((f) => f.name == id).first;
-    interface.getSerializableFields(grammar).forEach((f) {
-      for (var arg in f.arguments) {
-        var param = arg.getDirectiveByName(gqParam);
-        if (param != null) {
-          arg.addDirective(GQDirectiveValue.createGqDecorators(decorators: [
-            "${param.getArgValueAsString(gqFQCN) ?? "// @TODO gqFQCN is required on your gqParam directive"}(value=${param.getArgValueAsString("value")?.toJavaString()})"
-          ]));
-        }
-      }
-    });
+    var id = gqRepo.getArgValueAsString(gqIdType);
+    var ontType = gqRepo.getArgValueAsString(gqType)!;
+
     interface.parents.add(GQInterfaceDefinition(
-        name: "$fqcn<$ontType, ${serializer.serializeType(idField.type, false)}>",
+        name: "$fqcn<$ontType, ${id}>",
         nameDeclared: false,
         fields: [],
         parentNames: {},
@@ -352,24 +331,5 @@ $result
         break;
     }
     return "@org.springframework.graphql.data.method.annotation.$result";
-  }
-
-  String serializeQueryAnnotation(GQDirectiveValue value) {
-    const skip = [gqFQCN, gqQueryArg];
-    var args = value.getArguments().where((arg) => !skip.contains(arg.token)).map((arg) {
-      var argValue = arg.value;
-      if (argValue is String) {
-        argValue = argValue.toJavaString();
-      }
-
-      return "${arg.token} = ${argValue}".ident();
-    }).join(",\n");
-    var fqcn = getFqcnFromDirective(value);
-    return """
-       ${fqcn ?? '// @TODO: $gqFQCN needed on your gqQuery directive'}(
-       ${args}
-       )
-    """
-        .trim();
   }
 }

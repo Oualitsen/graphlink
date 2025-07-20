@@ -343,35 +343,14 @@ public void setId(final String id) {
     var repo = g.repositories["UserRepository"]!;
     var serialzer = SpringServerSerializer(g);
     var repoSerial = serialzer.serializeRepository(repo);
+
     expect(
         repoSerial,
         stringContainsInOrder([
           "@org.springframework.stereotype.Repository",
           "public interface UserRepository extends org.springframework.data.mongodb.repository.MongoRepository<User, String>",
-          "User findById(org.springframework.data.repository.query.Param(value=\"id\")  final String id);",
+          'User findById(@org.springframework.data.repository.query.Param(value = "id")  final String id);',
           "}"
-        ]));
-  });
-
-  test("Query serialization", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
-    final text = File("test/serializers/java/types/repository_serialization_test.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
-    var repo = g.repositories["UserRepository"]!;
-    var directive = repo.getFieldByName("findById")!.getDirectiveByName("@gqQuery")!;
-    var serialzer = SpringServerSerializer(g);
-    var r = serialzer.serializeQueryAnnotation(directive);
-    expect(
-        r,
-        stringContainsInOrder([
-          "@org.springframework.data.jpa.repository.Query(",
-          '''value = "select * from User u \\n" + ''',
-          '''where u.id = :id"''',
-          "nativeQuery = false",
-          ")"
         ]));
   });
 }

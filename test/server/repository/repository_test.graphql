@@ -1,5 +1,7 @@
 
-directive @gqRepository(onType: String!, id: String!) on INTERFACE
+directive @gqRepository(gqType: String!, gqIdType: String!) on INTERFACE
+
+
 
 interface Entity {
     id: ID!
@@ -20,10 +22,11 @@ type Car {
     ownerId: ID!
 }
 
-interface UserRepository @gqRepository(id: "id", onType: "User") {
+interface UserRepository @gqRepository(gqIdType: "id", gqType: "User") {
     _: String
 }
 
-interface CarRepository @gqRepository(id: "id", onType: "Car") {
+interface CarRepository @gqRepository(gqIdType: "id", gqType: "Car") {
     _: String
 }
+

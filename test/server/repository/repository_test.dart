@@ -35,7 +35,6 @@ void main() {
     expect(g.repositories, hasLength(2));
   });
 
-
   test("external types/inputs serialization", () {
     final GQGrammar g =
         GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
@@ -58,9 +57,12 @@ void main() {
 
     var serializer = SpringServerSerializer(g);
     var result = serializer.serializeRepository(userRepository);
-    expect(result, stringContainsInOrder(["java.util.List<com.mycompany.ExternalUser> findAll(final org.springframework.data.domain.Pageable pagebale);"]));
+    expect(
+        result,
+        stringContainsInOrder([
+          "java.util.List<com.mycompany.ExternalUser> findAll(final org.springframework.data.domain.Pageable pagebale);"
+        ]));
   });
-
 
   test("check type == null", () {
     final GQGrammar g =
@@ -70,7 +72,7 @@ void main() {
         type User {
           id: ID!
         }
-        interface UserRepository @gqRepository(id: "id") {
+        interface UserRepository @gqRepository(gqTypeId: "id") {
           _: String
         }
         """;
@@ -81,52 +83,10 @@ void main() {
         isA<ParseException>().having(
           (e) => e.message,
           'message',
-          contains('onType is required on @gqRepository directive'),
+          contains('gqType is required on @gqRepository directive'),
         ),
       ),
     );
-  });
-
-  test("check type = null but onType is not defined", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
-
-    const text = """
-        type User {
-          id: ID!
-        }
-        interface UserRepository @gqRepository(id: "id", onType: "NOT_DEFINED") {
-          _: String
-        }
-        """;
-    var parser = g.buildFrom(g.fullGrammar().end());
-    expect(
-      () => parser.parse(text),
-      throwsA(
-        isA<ParseException>().having(
-          (e) => e.message,
-          'message',
-          contains("Type 'NOT_DEFINED' referenced by directive '@gqRepository' is not defined or skipped"),
-        ),
-      ),
-    );
-  });
-
-  test("ID is consedered as an id if no annotation found", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
-
-    const text = """
-        type User {
-          id: ID!
-        }
-        interface UserRepository @gqRepository(onType: "User") {
-          _: String
-        }
-        """;
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
   });
 
   test("check id = null", () {
@@ -137,7 +97,7 @@ void main() {
         type User {
           id: String!
         }
-        interface UserRepository @gqRepository(onType: "User") {
+        interface UserRepository @gqRepository(gqType: "User") {
           _: String
         }
         """;
@@ -148,51 +108,9 @@ void main() {
         isA<ParseException>().having(
           (e) => e.message,
           'message',
-          contains("id is required on @gqRepository directive"),
+          contains("gqIdType is required on @gqRepository directive"),
         ),
       ),
     );
-  });
-
-  test("check id is not defined on target type", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
-
-    const text = """
-        type User {
-          id: ID!
-        }
-        interface UserRepository @gqRepository(onType: "User", id:"name") {
-          _: String
-        }
-        """;
-    var parser = g.buildFrom(g.fullGrammar().end());
-    expect(
-      () => parser.parse(text),
-      throwsA(
-        isA<ParseException>().having(
-          (e) => e.message,
-          'message',
-          contains("Field 'User.name' referenced by directive '@gqRepository' is not defined or skipped"),
-        ),
-      ),
-    );
-  });
-
-  test("check id = null but type has a field with @gqId directive", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
-
-    const text = """
-        type User {
-          id: ID! @gqId
-        }
-        interface UserRepository @gqRepository(onType: "User") {
-          _: String
-        }
-        """;
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
   });
 }

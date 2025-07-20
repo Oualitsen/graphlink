@@ -348,7 +348,7 @@ ${fields.map((f) {
               if (getters) {
                 return "${serializeDecorators(f.getDirectives(), joiner: "\n")}${serializeGetterDeclaration(f, skipModifier: true)}";
               } else {
-                return "${serializeDecorators(f.getDirectives(), joiner: "\n")}${serializeMethod(f)}";
+                return serializeMethod(f);
               }
             }).map((e) => "$e;").join("\n").ident()}
 }""";

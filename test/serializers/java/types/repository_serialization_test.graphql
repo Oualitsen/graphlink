@@ -11,12 +11,17 @@ directive @gqQuery(
   name: String
   countName: String
   gqFQCN: String = "org.springframework.data.jpa.repository.Query"
-  gqQuery: Boolean = true
+  gqAnnotation: Boolean = true
+  gqOnClient: Boolean = false
+  gqOnServer: Boolean = true
 ) on FIELD_DEFINITION
 
 directive @gqParam(
   name: String!
-  gqFQCN: String = "org.springframework.data.repository.query.Param"
+  gqFQCN: String = "org.springframework.data.repository.query.Param",
+  gqAnnotation: Boolean = true
+  gqOnClient: Boolean = false
+  gqOnServer: Boolean = true
 ) on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION
 
 type User {
@@ -24,7 +29,7 @@ type User {
     name: String
 }
 
-interface UserRepository @gqRepository(onType: "User") @gqJpaQuery() {
+interface UserRepository @gqRepository(gqType: "User", gqIdType: "String") @gqJpaQuery() {
     _: String
 
     findById(id: ID! @gqParam(value: "id")): User @gqQuery(value: """

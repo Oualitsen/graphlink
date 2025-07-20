@@ -23,8 +23,6 @@ import 'package:retrofit_graphql/src/utils.dart';
 import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 export 'package:retrofit_graphql/src/gq_grammar_extension.dart';
 
-
-
 class GQGrammar extends GrammarDefinition {
   bool annotationsProcessed = false;
   var logger = Logger();
@@ -184,9 +182,7 @@ class GQGrammar extends GrammarDefinition {
       generateImplementedInterfaces();
       updateFragmentAllTypesDependencies();
     } else {
-      checkIdAndEmbededId();
       handleRepositories(true);
-
       generateSchemaMappings();
       generateServices();
     }
@@ -383,8 +379,10 @@ class GQGrammar extends GrammarDefinition {
           directiveValueList(),
           seq3(
                   ref0(openBrace),
-                  seq3(ref1(token, documentation().optional()), ref1(token, identifier()), directiveValueList())
-                      .map3((comment, value, directives) => GQEnumValue(value: value, comment: comment, directives: directives))
+                  seq3(ref1(token, documentation().optional()), ref1(token, identifier()),
+                          directiveValueList())
+                      .map3((comment, value, directives) =>
+                          GQEnumValue(value: value, comment: comment, directives: directives))
                       .plus(),
                   ref0(closeBrace))
               .map3((p0, list, p2) => list)).map3((identifier, directives, enumValues) {

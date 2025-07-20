@@ -43,9 +43,7 @@ void main() {
     expect(parsed is Success, true);
     var user = g.getType("User");
     var userAnnotations = user.getAnnotations(mode: g.mode);
-    var javaSerial = JavaSerializer(g);
     var annotationSerial = AnnotationSerializer.serializeAnnotation(userAnnotations.first);
-    print(annotationSerial);
     expect(annotationSerial, "@lombok.Getter()");
   });
 

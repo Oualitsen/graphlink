@@ -7,6 +7,7 @@ mixin GqDirectivesMixin {
   List<GQDirectiveValue> getDirectives() {
     return [..._directives.values, ..._decorators];
   }
+
   ///
   /// We need to handle decorators differently as one field can have multiple
   /// decorators comming from different other annotations.
@@ -16,10 +17,7 @@ mixin GqDirectivesMixin {
   final Map<String, GQDirectiveValue> _directives = {};
 
   List<GQDirectiveValue> getAnnotations({CodeGenerationMode? mode}) {
-    return getDirectives()
-        .where((d) => d.getArgValue(gqAnnotation) == true)
-        .where((d) {
-          
+    return getDirectives().where((d) => d.getArgValue(gqAnnotation) == true).where((d) {
       switch (mode) {
         case CodeGenerationMode.client:
           return d.getArgValue(gqOnClient) == true;
@@ -32,26 +30,18 @@ mixin GqDirectivesMixin {
   }
 
   void addDirective(GQDirectiveValue directiveValue) {
-    if(directiveValue.token == gqDecorators) {
+    if (directiveValue.token == gqDecorators) {
       _decorators.add(directiveValue);
       return;
     }
     if (_directives.containsKey(directiveValue.token)) {
-      throw ParseException(
-          "Directive '${directiveValue.token}' already exists");
+      throw ParseException("Directive '${directiveValue.token}' already exists");
     }
     _directives[directiveValue.token] = directiveValue;
   }
 
   void addDirectiveIfAbsent(GQDirectiveValue directiveValue) {
     _directives.putIfAbsent(directiveValue.token, () => directiveValue);
-  }
-
-  List<GQDirectiveValue> findQueryDirectives() {
-    return getDirectives().where((dir) {
-      var isQuery = dir.getArgValue(gqQueryArg);
-      return isQuery != null && isQuery is bool && isQuery;
-    }).toList();
   }
 
   GQDirectiveValue? getDirectiveByName(String name) {
