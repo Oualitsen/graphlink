@@ -31,13 +31,14 @@ String serializeListText(List<String>? list, {String join = ",", bool withParent
   }
   return result.trim();
 }
- String? getFqcnFromDirective(GQDirectiveValue value) {
-    var fqcn = value.getArgValueAsString(gqFQCN);
-    if (fqcn != null && !fqcn.startsWith("@")) {
-      fqcn = "@$fqcn";
-    }
-    return fqcn;
+
+String? getFqcnFromDirective(GQDirectiveValue value) {
+  var fqcn = value.getArgValueAsString(gqFQCN);
+  if (fqcn != null && !fqcn.startsWith("@")) {
+    fqcn = "@$fqcn";
   }
+  return fqcn;
+}
 
 String formatUnformattedGraphQL(String unformattedGraphQL) {
   const indentSize = 2;
@@ -95,4 +96,20 @@ String generateUuid([String separator = "-"]) {
     generateRandomString(4),
     generateRandomString(12),
   ].join(separator);
+}
+
+// java
+const _primitiveToBoxed = {
+  'byte': 'Byte',
+  'short': 'Short',
+  'int': 'Integer',
+  'long': 'Long',
+  'float': 'Float',
+  'double': 'Double',
+  'char': 'Character',
+  'boolean': 'Boolean',
+};
+
+String convertPrimitiveToBoxed(String type) {
+  return _primitiveToBoxed[type] ?? type;
 }

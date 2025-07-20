@@ -75,7 +75,8 @@ ${def.values.map((e) => doSerialzeEnumValue(e)).toList().join(", ").ident()}
       if (asArray) {
         return "${serializeType(gqType.inlineType, false, asArray)}[]";
       } else {
-        return "java.util.List<${serializeType(gqType.inlineType, false)}>";
+        var genericType = convertPrimitiveToBoxed(serializeType(gqType.inlineType, false));
+        return "java.util.List<${genericType}>";
       }
     }
     final token = gqType.token;

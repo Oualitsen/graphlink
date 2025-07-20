@@ -185,4 +185,30 @@ void main() {
     var agedDeclaration = javaSerialzer.serializeGetterDeclaration(aged, skipModifier: true);
     expect(agedDeclaration, "boolean isAged()");
   });
+
+  test("test boxed types", () {
+    final GQGrammar g = GQGrammar(identityFields: [
+      "id"
+    ], typeMap: {
+      "ID": "String",
+      "String": "String",
+      "Float": "Double",
+      "Int": "int",
+      "Boolean": "boolean",
+      "Null": "null",
+      "Long": "Long"
+    }, mode: CodeGenerationMode.server);
+    final text = File("test/serializers/java/types/boxed_types.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+
+    expect(parsed is Success, true);
+    var javaSerialzer = JavaSerializer(g);
+    var person = g.getType("Person");
+    var ids = person.fields.where((f) => f.name == "ids").first;
+
+    var idsSerial = javaSerialzer.serializeGetterDeclaration(ids, skipModifier: true);
+
+    expect(idsSerial, "java.util.List<Integer> getIds()");
+  });
 }
