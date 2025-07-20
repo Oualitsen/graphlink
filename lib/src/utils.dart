@@ -113,3 +113,7 @@ const _primitiveToBoxed = {
 String convertPrimitiveToBoxed(String type) {
   return _primitiveToBoxed[type] ?? type;
 }
+
+bool typeIsJavaPrimitive(String type) {
+  return _primitiveToBoxed.containsKey(type);
+}

@@ -211,4 +211,32 @@ void main() {
 
     expect(idsSerial, "java.util.List<Integer> getIds()");
   });
+
+  test("primitive types to boxed types when nullable", () {
+    final GQGrammar g = GQGrammar(identityFields: [
+      "id"
+    ], typeMap: {
+      "ID": "String",
+      "String": "String",
+      "Float": "Double",
+      "Int": "int",
+      "Boolean": "boolean",
+      "Null": "null",
+      "Long": "Long"
+    }, mode: CodeGenerationMode.server);
+    final text = File("test/serializers/java/types/boxed_types.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+
+    expect(parsed is Success, true);
+    var javaSerialzer = JavaSerializer(g);
+    var person = g.getType("Person");
+    var age = person.fields.where((f) => f.name == "age").first;
+    var age2 = person.fields.where((f) => f.name == "age2").first;
+
+    var ageSerial = javaSerialzer.serializeField(age);
+    var age2Serial = javaSerialzer.serializeField(age2);
+    expect(ageSerial, "private Integer age;");
+    expect(age2Serial, "private int age2;");
+  });
 }

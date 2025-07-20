@@ -70,20 +70,22 @@ ${def.values.map((e) => doSerialzeEnumValue(e)).toList().join(", ").ident()}
       {required GQType gqType, bool forceNullable = false, bool asArray = false, bool reactive = false}) {
     if (gqType is GQListType) {
       if (reactive) {
-        return "reactor.core.publisher.Flux<${serializeTypeReactive(gqType: gqType.inlineType)}>";
+        return "reactor.core.publisher.Flux<${convertPrimitiveToBoxed(serializeTypeReactive(gqType: gqType.inlineType))}>";
       }
       if (asArray) {
         return "${serializeType(gqType.inlineType, false, asArray)}[]";
       } else {
-        var genericType = convertPrimitiveToBoxed(serializeType(gqType.inlineType, false));
-        return "java.util.List<${genericType}>";
+        return "java.util.List<${convertPrimitiveToBoxed(serializeType(gqType.inlineType, false))}>";
       }
     }
     final token = gqType.token;
 
     var type = getTypeNameFromGQExternal(token) ?? token;
     if (reactive) {
-      return "reactor.core.publisher.Mono<$type>";
+      return "reactor.core.publisher.Mono<${convertPrimitiveToBoxed(type)}>";
+    }
+    if (typeIsJavaPrimitive(type) && (gqType.nullable || forceNullable)) {
+      return convertPrimitiveToBoxed(type);
     }
     return type;
   }

@@ -1,4 +1,6 @@
 
 type Person {
     ids: [Int!]!
+    age: Int
+    age2: Int!
 }
