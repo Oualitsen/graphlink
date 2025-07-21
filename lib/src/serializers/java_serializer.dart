@@ -59,11 +59,21 @@ ${def.values.map((e) => doSerialzeEnumValue(e)).toList().join(", ").ident()}
     return result;
   }
 
-  String serializeArgumentField(GQField def) {
+  String serializeArgumentField(GQField def, {bool withFianl = true, bool withDecorators = false}) {
     final type = def.type;
     final name = def.name;
     final hasInculeOrSkipDiretives = def.hasInculeOrSkipDiretives;
-    return "final ${serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray)} $name";
+    var result = "${serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray)} $name";
+    if (withFianl) {
+      result = "final $result";
+    }
+    if (withDecorators) {
+      var decorators = serializeDecorators(def.getDirectives());
+      if (decorators.trim().isNotEmpty) {
+        result = "$decorators $result";
+      }
+    }
+    return result;
   }
 
   String serializeTypeReactive(
@@ -98,8 +108,16 @@ ${def.values.map((e) => doSerialzeEnumValue(e)).toList().join(", ").ident()}
 
   @override
   String doSerializeInputDefinition(GQInputDefinition def, {bool checkForNulls = false}) {
+    final decorators = serializeDecorators(def.getDirectives());
+    if (grammar.javaInputsAsRecord) {
+      return """
+$decorators
+${serializeRecord(def.token, def.fields, {})}
+""";
+    }
+
     return """
-${serializeDecorators(def.getDirectives())}
+$decorators
 public class ${def.token} {
 
 ${serializeListText(def.getSerializableFields(grammar).map((e) => serializeField(e)).toList(), join: "\n", withParenthesis: false).ident()}
@@ -202,10 +220,22 @@ $result
     return result.trim();
   }
 
-  String serializeGetterDeclaration(GQField field, {skipModifier = false}) {
+  String serializeRecord(String recordName, List<GQField> fields, Set<String> interfaceNames) {
+    final list =
+        fields.map((f) => serializeArgumentField(f, withFianl: false, withDecorators: true)).toList();
+    String interfaceImpl = _serializeImplements(interfaceNames);
+    return "public record $recordName ${interfaceImpl}(${serializeListText(list, withParenthesis: false, join: ", ")}) {}";
+  }
+
+  String serializeGetterDeclaration(GQField field, {bool skipModifier = false, bool asProperty = false}) {
     var returnType = serializeType(field.type, false);
-    final result =
-        """${serializeType(field.type, false, field.serialzeAsArray)} ${_getterName(field.name, returnType == "boolean")}()""";
+    var result = serializeType(field.type, false, field.serialzeAsArray);
+    if (asProperty) {
+      result = "$result ${field.name}";
+    } else {
+      result = "$result ${_getterName(field.name, returnType == "boolean")}";
+    }
+    result = "$result()";
     if (skipModifier) {
       return result;
     }
@@ -262,8 +292,19 @@ ${statements.join("\n").ident()}
   String _doSerializeTypeDefinition(GQTypeDefinition def, {bool checkNulls = false}) {
     final token = def.token;
     final interfaceNames = def.interfaceNames;
+    final decorators = serializeDecorators(def.getDirectives());
+
+    if (grammar.javaInputsAsRecord) {
+      if (grammar.javaTypesAsRecord) {
+        return """
+$decorators
+${serializeRecord(def.token, def.fields, interfaceNames)}
+""";
+      }
+    }
+
     return """
-${serializeDecorators(def.getDirectives())}
+${decorators}
 public class $token ${_serializeImplements(interfaceNames)}{
   
 ${serializeListText(def.getSerializableFields(grammar).map((e) => serializeField(e)).toList(), join: "\n", withParenthesis: false).ident()}
@@ -346,7 +387,11 @@ public interface $token ${parents.isNotEmpty ? "extends ${parents.map((e) => e.t
 
 ${fields.map((f) {
               if (getters) {
-                return "${serializeDecorators(f.getDirectives(), joiner: "\n")}${serializeGetterDeclaration(f, skipModifier: true)}";
+                if (grammar.javaTypesAsRecord) {
+                  return "${serializeDecorators(f.getDirectives(), joiner: "\n")}${serializeGetterDeclaration(f, skipModifier: true, asProperty: true)}";
+                } else {
+                  return "${serializeDecorators(f.getDirectives(), joiner: "\n")}${serializeGetterDeclaration(f, skipModifier: true)}";
+                }
               } else {
                 return serializeMethod(f);
               }

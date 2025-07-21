@@ -1,0 +1,51 @@
+
+directive @JsonProperty(
+    value: String!
+    gqAnnotation: Boolean = true
+    gqFQCN: String = "@com.fasterxml.jackson.annotation.JsonProperty"
+    gqOnClient: Boolean = true
+    gqOnServer: Boolean = true
+
+) on OBJECT | INPUT_OBJECT | INTERFACE | FIELD_DEFINITION
+
+directive @FieldNameConstants(
+    gqAnnotation: Boolean = true
+    gqFQCN: String = "@lombok.experimental.FieldNameConstants"
+    gqOnClient: Boolean = true
+    gqOnServer: Boolean = true
+
+) on OBJECT | INPUT_OBJECT | INTERFACE
+
+
+type Person {
+    name: String!
+    age: Int,
+    married: Boolean
+}
+
+input PersonInput {
+    name: String!
+    age: Int!
+}
+
+type Car @FieldNameConstants {
+    model: String!  @JsonProperty(value: "car_model")
+    make: String @JsonProperty(value: "car_make")
+}
+
+input CarInput @FieldNameConstants {
+    model: String! @JsonProperty(value: "car_model")
+    make: String @JsonProperty(value: "car_make")
+}
+
+interface Entity {
+    id: String!
+    creationDate: String
+}
+
+type MyType implements Entity {
+    id: String!
+    creationDate: String
+    name: String
+}
+

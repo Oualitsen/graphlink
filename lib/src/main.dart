@@ -186,6 +186,8 @@ GQGrammar createGrammar(GeneratorConfig config) {
       autoGenerateQueries: clientConfig?.autoGenerateQueries ?? false,
       defaultAlias: clientConfig?.defaultAlias,
       operationNameAsParameter: clientConfig?.operationNameAsParameter ?? false,
+      javaTypesAsRecord: config.serverConfig?.spring?.typeAsRecord ?? false,
+      javaInputsAsRecord: config.serverConfig?.spring?.inputAsRecord ?? false,
     );
   }
 }

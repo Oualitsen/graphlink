@@ -58,14 +58,17 @@ class SpringServerConfig {
   final bool generateInputs;
   final bool generateTypes;
   final bool generateRepositories;
+  final bool inputAsRecord;
+  final bool typeAsRecord;
 
-  SpringServerConfig({
-    required this.basePackage,
-    required this.generateControllers,
-    required this.generateInputs,
-    required this.generateTypes,
-    required this.generateRepositories,
-  });
+  SpringServerConfig(
+      {required this.basePackage,
+      required this.generateControllers,
+      required this.generateInputs,
+      required this.generateTypes,
+      required this.generateRepositories,
+      required this.inputAsRecord,
+      required this.typeAsRecord});
 
   factory SpringServerConfig.fromJson(Map<String, dynamic> json) {
     return SpringServerConfig(
@@ -74,6 +77,8 @@ class SpringServerConfig {
       generateInputs: json['generateInputs'] ?? true,
       generateTypes: json['generateTypes'] ?? true,
       generateRepositories: json['generateRepositories'] ?? false,
+      inputAsRecord: json['inputAsRecord'] ?? false,
+      typeAsRecord: json['typeAsRecord'] ?? false,
     );
   }
 }
