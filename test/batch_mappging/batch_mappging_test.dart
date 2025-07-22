@@ -84,8 +84,10 @@ void main() {
     var springSerializer = SpringServerSerializer(g);
     var serice = g.services["UserWithCarService"]!;
     var serviceSerial = springSerializer.serializeController(serice);
-    expect(serviceSerial,
-        contains("public java.util.List<User> userWithCarUser(java.util.List<User> vlaue){ return value; }"));
+    expect(
+        serviceSerial,
+        contains(
+            "public java.util.List<User> userWithCarUser(java.util.List<User> value) { return value; }"));
   });
 
   test("Controller should implement identity on SchemaMappings ", () {
@@ -99,6 +101,6 @@ void main() {
     var springSerializer = SpringServerSerializer(g);
     var serice = g.services["UserWithCarService"]!;
     var serviceSerial = springSerializer.serializeController(serice);
-    expect(serviceSerial, contains("public User userWithCarUser(User vlaue){ return value; }"));
+    expect(serviceSerial, contains("public User userWithCarUser(User value) { return value; }"));
   });
 }

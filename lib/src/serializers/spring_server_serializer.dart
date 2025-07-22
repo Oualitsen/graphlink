@@ -295,7 +295,7 @@ ${statement.ident()}
       returnType = type;
     }
 
-    var result = """public ${returnType} ${mapping.key}($returnType vlaue){ return value; }""";
+    var result = """public ${returnType} ${mapping.key}($returnType value) { return value; }""";
     return """
 $annotation
 $result
