@@ -117,3 +117,24 @@ String convertPrimitiveToBoxed(String type) {
 bool typeIsJavaPrimitive(String type) {
   return _primitiveToBoxed.containsKey(type);
 }
+
+String formatElapsedTime(DateTime startDate) {
+  final now = DateTime.now();
+  final difference = now.difference(startDate);
+
+  final minutes = difference.inMinutes;
+  final seconds = difference.inSeconds % 60;
+  final milliseconds = difference.inMilliseconds % 1000;
+
+  final parts = <String>[];
+
+  if (minutes > 0) {
+    parts.add('${minutes}m');
+  }
+  if (minutes > 0 || seconds > 0) {
+    parts.add('${seconds}s');
+  }
+  parts.add('${milliseconds}ms');
+
+  return parts.join(' ');
+}

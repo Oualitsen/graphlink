@@ -33,7 +33,7 @@ class GQTypeDefinition extends GQTokenWithFields with GqDirectivesMixin {
   ///
   ///check is the two definitions will produce the same object structure
   ///
-  bool isSimilarTo(GQTypeDefinition other) {
+  bool isSimilarTo(GQTypeDefinition other, GQGrammar g) {
     var dft = derivedFromType;
     var otherDft = other.derivedFromType;
     if (otherDft != null) {
@@ -41,11 +41,11 @@ class GQTypeDefinition extends GQTokenWithFields with GqDirectivesMixin {
         return false;
       }
     }
-    return getHash() == other.getHash();
+    return getHash(g) == other.getHash(g);
   }
 
-  String getHash() {
-    return fields
+  String getHash(GQGrammar g) {
+    return getSerializableFields(g)
         .map((f) => "${f.name}:${f.type.serializeForceNullable(f.hasInculeOrSkipDiretives)}")
         .join(",");
   }

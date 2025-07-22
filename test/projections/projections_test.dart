@@ -1,17 +1,17 @@
 import 'dart:io';
 
+import 'package:retrofit_graphql/src/serializers/language.dart';
 import 'package:test/test.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() async {
   test("projections_test", () {
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
+    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
 
     var parser = g.buildFrom(g.fullGrammar().end());
 
-    final text =
-        File("test/projections/projections_test.graphql").readAsStringSync();
+    final text = File("test/projections/projections_test.graphql").readAsStringSync();
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
     var user = g.projectedTypes["User"];
@@ -22,5 +22,17 @@ void main() async {
     expect(user != null, true);
     expect(address != null, true);
     expect(state != null, true);
+  });
+
+  test("projections_test2 on gqSkipOnClient", () {
+    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
+
+    var parser = g.buildFrom(g.fullGrammar().end());
+
+    final text = File("test/projections/projections2_test.graphql").readAsStringSync();
+    var parsed = parser.parse(text);
+    expect(parsed is Success, true);
+    var projectedTypes = g.projectedTypes;
+    expect(projectedTypes.keys, contains("Notif"));
   });
 }

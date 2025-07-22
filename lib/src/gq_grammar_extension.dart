@@ -902,7 +902,7 @@ extension GQGrammarExtension on GQGrammar {
         definition.originalTokens.add(definition.token);
         return definition;
       } else {
-        if (type.isSimilarTo(definition)) {
+        if (type.isSimilarTo(definition, this)) {
           type.originalTokens.add(definition.token);
           return type;
         } else {
@@ -945,7 +945,7 @@ extension GQGrammarExtension on GQGrammar {
     return [
       ...projectedTypes.values,
       ...types.values,
-    ].where((element) => element.isSimilarTo(definition)).toList();
+    ].where((element) => element.isSimilarTo(definition, this)).toList();
   }
 
   GeneratedTypeName generateName(

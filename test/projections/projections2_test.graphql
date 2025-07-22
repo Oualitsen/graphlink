@@ -1,0 +1,15 @@
+
+interface BasicEntity  {
+    id: ID! 
+}
+
+type Notif implements BasicEntity  {
+    id: ID!
+    ownsMission: Boolean!
+    missionId: String
+    ownerId: String! @gqSkipOnClient
+}
+
+type Query {
+    getNotif: Notif!
+}

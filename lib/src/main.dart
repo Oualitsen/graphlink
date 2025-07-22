@@ -13,6 +13,8 @@ import 'package:retrofit_graphql/src/serializers/spring_server_serializer.dart';
 import 'package:args/args.dart';
 import 'dart:convert';
 
+import 'package:retrofit_graphql/src/utils.dart';
+
 Future<void> main(List<String> arguments) async {
   final parser = ArgParser()
     ..addOption(
@@ -141,7 +143,7 @@ void watchAndGenerate(GeneratorConfig config) {
 }
 
 void handleGeneration(GeneratorConfig config) async {
-  stdout.writeln("Generating classes");
+  final now = DateTime.now();
   StringBuffer sb = StringBuffer();
   for (var path in config.schemaPaths) {
     var file = File(path);
@@ -157,12 +159,18 @@ void handleGeneration(GeneratorConfig config) async {
   final grammar = createGrammar(config);
   var gqParser = grammar.buildFrom(grammar.fullGrammar().end());
   try {
-    gqParser.parse(sb.toString());
+    var result = gqParser.parse(sb.toString());
+    if (result is Failure) {
+      throw """
+messasge: ${result.message}
+position: ${result.position}
+""";
+    }
     var mode = config.getMode();
     if (mode == CodeGenerationMode.server) {
-      generateServerClasses(grammar, config);
+      generateServerClasses(grammar, config, now);
     } else if (mode == CodeGenerationMode.client) {
-      generateClientClasses(grammar, config);
+      generateClientClasses(grammar, config, now);
     }
   } catch (ex, st) {
     // ignore parse errors
@@ -192,7 +200,7 @@ GQGrammar createGrammar(GeneratorConfig config) {
   }
 }
 
-void generateClientClasses(GQGrammar grammar, GeneratorConfig config) async {
+void generateClientClasses(GQGrammar grammar, GeneratorConfig config, DateTime started) async {
   final GqSerializer serializer = DartSerializer(grammar);
   final dcs = DartClientSerializer(grammar);
   final inputs = dcs.serializeInputs(serializer);
@@ -200,17 +208,19 @@ void generateClientClasses(GQGrammar grammar, GeneratorConfig config) async {
   final types = dcs.generateTypes(serializer);
   final client = dcs.serializeClient();
   var outputDir = config.outputDir;
-  await File('$outputDir/$inputsFileName.dart').writeAsString(inputs);
-  await File('$outputDir/$enumsFileName.dart').writeAsString(enums);
-  await File('$outputDir/$typesFileName.dart').writeAsString(types);
-  await File('$outputDir/$clientFileName.dart').writeAsString(client);
+  File('$outputDir/$inputsFileName.dart').writeAsStringSync(inputs);
+  File('$outputDir/$enumsFileName.dart').writeAsStringSync(enums);
+  File('$outputDir/$typesFileName.dart').writeAsStringSync(types);
+  File('$outputDir/$clientFileName.dart').writeAsStringSync(client);
+  stdout.writeln("Generated client in ${formatElapsedTime(started)}");
 }
 
-void generateServerClasses(GQGrammar grammar, GeneratorConfig config) {
+void generateServerClasses(GQGrammar grammar, GeneratorConfig config, DateTime started) {
   final packageName = config.serverConfig!.spring!.basePackage;
   final destinationDir = config.outputDir;
   final serialzer = JavaSerializer(grammar);
   final springSeriaalizer = SpringServerSerializer(grammar);
+  int fileCount = 0;
   grammar.getSerializableTypes().forEach((def) {
     var text = serialzer.serializeTypeDefinition(def);
     writeToFile(
@@ -220,6 +230,7 @@ void generateServerClasses(GQGrammar grammar, GeneratorConfig config) {
         imports: ["$packageName.enums", "$packageName.interfaces"],
         destinationDir: destinationDir,
         packageName: packageName);
+    fileCount++;
   });
   grammar.interfaces.forEach((k, def) {
     var text = serialzer.serializeInterface(def);
@@ -230,6 +241,7 @@ void generateServerClasses(GQGrammar grammar, GeneratorConfig config) {
         imports: ["$packageName.enums", "$packageName.types"],
         destinationDir: destinationDir,
         packageName: packageName);
+    fileCount++;
   });
   grammar.enums.forEach((k, def) {
     var text = serialzer.serializeEnumDefinition(def);
@@ -240,6 +252,7 @@ void generateServerClasses(GQGrammar grammar, GeneratorConfig config) {
         imports: [],
         destinationDir: destinationDir,
         packageName: packageName);
+    fileCount++;
   });
   grammar.inputs.forEach((k, def) {
     var text = serialzer.serializeInputDefinition(def);
@@ -250,6 +263,7 @@ void generateServerClasses(GQGrammar grammar, GeneratorConfig config) {
         imports: ["$packageName.enums"],
         destinationDir: destinationDir,
         packageName: packageName);
+    fileCount++;
   });
 
   grammar.services.forEach((k, def) {
@@ -261,6 +275,7 @@ void generateServerClasses(GQGrammar grammar, GeneratorConfig config) {
         imports: ["$packageName.enums", "$packageName.types", "$packageName.inputs"],
         destinationDir: destinationDir,
         packageName: packageName);
+    fileCount++;
   });
 
   grammar.services.forEach((k, def) {
@@ -272,6 +287,7 @@ void generateServerClasses(GQGrammar grammar, GeneratorConfig config) {
         imports: ["$packageName.enums", "$packageName.types", "$packageName.inputs", "$packageName.services"],
         destinationDir: destinationDir,
         packageName: packageName);
+    fileCount++;
   });
 
   grammar.repositories.forEach((k, def) {
@@ -283,7 +299,9 @@ void generateServerClasses(GQGrammar grammar, GeneratorConfig config) {
         imports: ["$packageName.enums", "$packageName.types"],
         destinationDir: destinationDir,
         packageName: packageName);
+    fileCount++;
   });
+  stdout.writeln("Generated $fileCount files in ${formatElapsedTime(started)}");
 }
 
 void writeToFile(
