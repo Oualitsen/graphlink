@@ -1,0 +1,22 @@
+
+
+
+type User {
+    name: String
+}
+
+type Car {
+    model: String
+}
+
+type UserWithCar @gqSkipOnServer(mapTo: "User") {
+    user: User!
+    car: Car
+}
+
+
+type Query {
+    getUsers: [UserWithCar!]!
+}
+
+  

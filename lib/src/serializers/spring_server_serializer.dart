@@ -131,8 +131,12 @@ ${statement.ident()}
 
   String serializeService(GQService service, {bool injectDataFtechingEnv = false}) {
     // get schema mappings by service name
-    var mappings =
-        grammar.schemaMappings.values.where((sm) => !sm.forbid && sm.serviceName == service.name).toList();
+
+    var mappings = grammar.schemaMappings.values
+        .where((sm) => !sm.forbid)
+        .where((sm) => !sm.identity)
+        .where((sm) => sm.serviceName == service.name)
+        .toList();
     var mappingSerial = """
 ${mappings.map((m) {
               return "${serializeMappingImplMethodHeader(m, skipAnnotation: true, skipQualifier: true)};";
@@ -210,7 +214,7 @@ $result
     if (dir == null) {
       return type.token;
     }
-    var mapTo = dir.getArgValueAsString("mapTo");
+    var mapTo = dir.getArgValueAsString(gqMapTo);
     if (mapTo == null) {
       return "Object";
     }
@@ -252,6 +256,11 @@ ${statement.ident()}
 }
   """;
     }
+
+    if (mapping.identity) {
+      return serializeIdentityMapping(mapping);
+    }
+
     final statement = """
 return $serviceInstanceName.${mapping.key}(value);
 """
@@ -274,6 +283,23 @@ ${statement.ident()}
 """
           .trim();
     }
+  }
+
+  String serializeIdentityMapping(GQSchemaMapping mapping) {
+    var annotation = _getAnnotation(mapping);
+    final type = serializer.serializeTypeReactive(gqType: mapping.field.type, reactive: false);
+    final String returnType;
+    if (mapping.batch) {
+      returnType = "java.util.List<${convertPrimitiveToBoxed(type)}>";
+    } else {
+      returnType = type;
+    }
+
+    var result = """public ${returnType} ${mapping.key}($returnType vlaue){ return value; }""";
+    return """
+$annotation
+$result
+""";
   }
 
   String _getReturnType(GQSchemaMapping mapping) {

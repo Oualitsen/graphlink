@@ -69,7 +69,6 @@ void main() {
         stringContainsInOrder([
           "User getUserCar();",
           "Car userCarCar(User value);",
-          "User userCarUser(User value);",
         ]));
 
     expect(
@@ -79,8 +78,6 @@ void main() {
           "return userCarService.getUserCar();",
           "public Car userCarCar(User value)",
           "return userCarService.userCarCar(value);",
-          "User userCarUser(User value)",
-          "return userCarService.userCarUser(value);"
         ]));
   });
 
@@ -101,7 +98,6 @@ void main() {
         ownerServiceSerial,
         stringContainsInOrder([
           "java.util.List<Owner> getOwnwers();",
-          "java.util.Map<Owner, Owner> ownerWithAnimalOwner(java.util.List<Owner> value);",
           "java.util.Map<Owner, Animal> ownerWithAnimalAnimal(java.util.List<Owner> value);"
         ]));
   });
@@ -180,7 +176,7 @@ void main() {
         ]));
   });
 
-  test("test serialize Service", () {
+  test("test serialize Service (User Service)", () {
     final GQGrammar g =
         GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
@@ -193,7 +189,6 @@ void main() {
     var userService = g.services["UserService"]!;
     var serializedService = serverSerialzer.serializeService(userService);
     expect(serializedService, startsWith("public interface UserService"));
-    print(serializedService);
     expect(
         serializedService,
         stringContainsInOrder([
@@ -205,6 +200,19 @@ void main() {
           "reactor.core.publisher.Flux<User> watchUser(final String userId);",
           "java.util.Map<User, java.util.List<Car>> userCars(java.util.List<User> value);"
         ]));
+  });
+
+  test("test serialize Service (Car Service)", () {
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+
+    final text = File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+
+    expect(parsed is Success, true);
+    var serverSerialzer = SpringServerSerializer(g);
+
     var carService = g.services["CarService"]!;
     var serializedCarService = serverSerialzer.serializeService(carService);
     expect(
@@ -212,11 +220,7 @@ void main() {
         stringContainsInOrder([
           "Car getCarById(final String id);",
           "Integer getCarCount(final String userId);",
-          "Owner carOwner(Car value);",
         ]));
-
-    serializedCarService = serverSerialzer.serializeService(carService, injectDataFtechingEnv: true);
-    print(serializedCarService);
   });
 
   test("test serialize Service with DataFetchingEnvironment", () {
@@ -238,7 +242,6 @@ void main() {
         stringContainsInOrder([
           "Car getCarById(final String id, graphql.schema.DataFetchingEnvironment dataFetchingEnvironment);",
           "Integer getCarCount(final String userId, graphql.schema.DataFetchingEnvironment dataFetchingEnvironment);",
-          "Owner carOwner(Car value);",
         ]));
   });
 

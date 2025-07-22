@@ -196,17 +196,40 @@ extension GQGrammarExtension on GQGrammar {
     return serviceName;
   }
 
+  GQField? _getIdentityField(GQTypeDefinition type) {
+    var mapsTo = type.getDirectiveByName(gqSkipOnServer)?.getArgValueAsString(gqMapTo);
+    var skipOnServerFields = type.getSkipOnServerFields();
+    if (mapsTo != null) {
+      var list = skipOnServerFields.where((e) => e.type.token == mapsTo && e.type is! GQListType).toList();
+      if (list.length == 1) {
+        return list.first;
+      }
+    }
+    return null;
+  }
+
   void genSchemaMappings(List<GQField> queryFields, GQQueryType queryType) {
     for (var field in queryFields) {
       var type = getType(field.type.token);
-      type.getSkipOnServerFields().forEach((typeField) {
-        addSchemaMapping(GQSchemaMapping(
-            type: type,
-            field: typeField,
-            batch: field.type is GQListType,
-            serviceName: getServiceName(field),
-            queryType: queryType));
-      });
+      var skipOnServerFields = type.getSkipOnServerFields();
+      // find the field to make as identity
+
+      GQField? identityField = _getIdentityField(type);
+
+      for (var typeField in skipOnServerFields) {
+        var schemaMappings = GQSchemaMapping(
+          type: type,
+          field: typeField,
+          batch: field.type is GQListType,
+          serviceName: getServiceName(field),
+          queryType: queryType,
+          identity: identityField == typeField,
+        );
+        if (schemaMappings.serviceName == "CarService") {
+          print("Car service ");
+        }
+        addSchemaMapping(schemaMappings);
+      }
       type.getSkinOnClientFields().forEach((typeField) {
         addSchemaMapping(GQSchemaMapping(
             type: type,
@@ -221,7 +244,9 @@ extension GQGrammarExtension on GQGrammar {
   void generateSchemaMappings() {
     for (var queryType in GQQueryType.values) {
       genSchemaMappings(
-          (types[schema.query]?.fields ?? []).where((f) => types.containsKey(f.type.token)).toList(),
+          (types[schema.getByQueryType(queryType)]?.fields ?? [])
+              .where((f) => types.containsKey(f.type.token))
+              .toList(),
           queryType);
     }
   }

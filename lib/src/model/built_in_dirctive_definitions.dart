@@ -7,6 +7,7 @@ const gqDecorators = "@gqDecorators";
 /// Skips generating on server
 ///
 const gqSkipOnServer = "@gqSkipOnServer";
+const gqMapTo = "mapTo";
 
 ///
 /// Skips generating on client
