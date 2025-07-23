@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:glob/glob.dart';
+import 'package:glob/list_local_fs.dart';
 import 'package:retrofit_graphql/src/config.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/serializers/dart_client_serializer.dart';
@@ -108,8 +110,21 @@ ${parser.usage}
 }
 
 void watchAndGenerate(GeneratorConfig config) {
-  final watchedFiles = config.schemaPaths.map((p) => File(p)).toList();
   final lastModifiedMap = <String, DateTime>{};
+
+  List<File> resolveWatchedFiles() {
+    final files = <File>{};
+
+    for (var pattern in config.schemaPaths) {
+      final glob = Glob(pattern);
+      final matched = glob.listSync().whereType<File>();
+      files.addAll(matched);
+    }
+
+    return files.toList();
+  }
+
+  List<File> watchedFiles = resolveWatchedFiles();
 
   for (var file in watchedFiles) {
     if (file.existsSync()) {
@@ -124,7 +139,9 @@ void watchAndGenerate(GeneratorConfig config) {
   handleGeneration(config);
 
   Timer.periodic(const Duration(seconds: 1), (timer) {
-    for (var file in watchedFiles) {
+    final currentFiles = resolveWatchedFiles();
+
+    for (var file in currentFiles) {
       try {
         final newModified = file.lastModifiedSync();
         final prevModified = lastModifiedMap[file.path];
@@ -139,20 +156,37 @@ void watchAndGenerate(GeneratorConfig config) {
         // Ignore if file temporarily unavailable
       }
     }
+
+    // Also check if new files were added that match the globs
+    for (var file in currentFiles) {
+      if (!lastModifiedMap.containsKey(file.path)) {
+        stdout.writeln('🆕 New matching file detected: ${file.path}');
+        lastModifiedMap[file.path] = file.lastModifiedSync();
+        handleGeneration(config);
+        break;
+      }
+    }
+
+    watchedFiles = currentFiles;
   });
 }
 
 void handleGeneration(GeneratorConfig config) async {
   final now = DateTime.now();
   StringBuffer sb = StringBuffer();
-  for (var path in config.schemaPaths) {
-    var file = File(path);
-    if (!await file.exists()) {
-      stderr.writeln('❌ Schema file "$path" not found');
+
+  for (var pattern in config.schemaPaths) {
+    final glob = Glob(pattern);
+    final files = glob.listSync().whereType<File>();
+
+    if (files.isEmpty) {
+      stderr.writeln('❌ No schema files matched "$pattern"');
       exit(1);
-    } else {
-      sb.write(file.readAsStringSync());
-      sb.write("\n");
+    }
+
+    for (var file in files) {
+      sb.write(await file.readAsString());
+      sb.write('\n');
     }
   }
 
@@ -168,9 +202,9 @@ position: ${result.position}
     }
     var mode = config.getMode();
     if (mode == CodeGenerationMode.server) {
-      generateServerClasses(grammar, config, now);
+      await generateServerClasses(grammar, config, now);
     } else if (mode == CodeGenerationMode.client) {
-      generateClientClasses(grammar, config, now);
+      await generateClientClasses(grammar, config, now);
     }
   } catch (ex, st) {
     // ignore parse errors
@@ -200,7 +234,7 @@ GQGrammar createGrammar(GeneratorConfig config) {
   }
 }
 
-void generateClientClasses(GQGrammar grammar, GeneratorConfig config, DateTime started) async {
+Future<void> generateClientClasses(GQGrammar grammar, GeneratorConfig config, DateTime started) async {
   final GqSerializer serializer = DartSerializer(grammar);
   final dcs = DartClientSerializer(grammar);
   final inputs = dcs.serializeInputs(serializer);
@@ -208,103 +242,108 @@ void generateClientClasses(GQGrammar grammar, GeneratorConfig config, DateTime s
   final types = dcs.generateTypes(serializer);
   final client = dcs.serializeClient();
   var outputDir = config.outputDir;
-  File('$outputDir/$inputsFileName.dart').writeAsStringSync(inputs);
-  File('$outputDir/$enumsFileName.dart').writeAsStringSync(enums);
-  File('$outputDir/$typesFileName.dart').writeAsStringSync(types);
-  File('$outputDir/$clientFileName.dart').writeAsStringSync(client);
+  var futures = [
+    File('$outputDir/$inputsFileName.dart').writeAsString(inputs),
+    File('$outputDir/$enumsFileName.dart').writeAsString(enums),
+    File('$outputDir/$typesFileName.dart').writeAsString(types),
+    File('$outputDir/$clientFileName.dart').writeAsString(client),
+  ];
+  await Future.wait(futures);
   stdout.writeln("Generated client in ${formatElapsedTime(started)}");
 }
 
-void generateServerClasses(GQGrammar grammar, GeneratorConfig config, DateTime started) {
+Future<void> generateServerClasses(GQGrammar grammar, GeneratorConfig config, DateTime started) async {
   final packageName = config.serverConfig!.spring!.basePackage;
   final destinationDir = config.outputDir;
   final serialzer = JavaSerializer(grammar);
   final springSeriaalizer = SpringServerSerializer(grammar);
-  int fileCount = 0;
+  final List<Future> futures = [];
+
   grammar.getSerializableTypes().forEach((def) {
     var text = serialzer.serializeTypeDefinition(def);
-    writeToFile(
+    var r = writeToFile(
         data: text,
         fileName: "${def.token}.java",
         subpackage: "types",
         imports: ["$packageName.enums", "$packageName.interfaces"],
         destinationDir: destinationDir,
         packageName: packageName);
-    fileCount++;
+    futures.add(r);
   });
   grammar.interfaces.forEach((k, def) {
     var text = serialzer.serializeInterface(def);
-    writeToFile(
+    var r = writeToFile(
         data: text,
         fileName: "$k.java",
         subpackage: "interfaces",
         imports: ["$packageName.enums", "$packageName.types"],
         destinationDir: destinationDir,
         packageName: packageName);
-    fileCount++;
+    futures.add(r);
   });
   grammar.enums.forEach((k, def) {
     var text = serialzer.serializeEnumDefinition(def);
-    writeToFile(
+    var r = writeToFile(
         data: text,
         fileName: "$k.java",
         subpackage: "enums",
         imports: [],
         destinationDir: destinationDir,
         packageName: packageName);
-    fileCount++;
+    futures.add(r);
   });
   grammar.inputs.forEach((k, def) {
     var text = serialzer.serializeInputDefinition(def);
-    writeToFile(
+    var r = writeToFile(
         data: text,
         fileName: "$k.java",
         subpackage: "inputs",
         imports: ["$packageName.enums"],
         destinationDir: destinationDir,
         packageName: packageName);
-    fileCount++;
+    futures.add(r);
   });
 
   grammar.services.forEach((k, def) {
     var text = springSeriaalizer.serializeService(def);
-    writeToFile(
+    var r = writeToFile(
         data: text,
         fileName: "$k.java",
         subpackage: "services",
         imports: ["$packageName.enums", "$packageName.types", "$packageName.inputs"],
         destinationDir: destinationDir,
         packageName: packageName);
-    fileCount++;
+    futures.add(r);
   });
 
   grammar.services.forEach((k, def) {
     var text = springSeriaalizer.serializeController(def);
-    writeToFile(
+    var r = writeToFile(
         data: text,
         fileName: "${k}Controller.java",
         subpackage: "controllers",
         imports: ["$packageName.enums", "$packageName.types", "$packageName.inputs", "$packageName.services"],
         destinationDir: destinationDir,
         packageName: packageName);
-    fileCount++;
+    futures.add(r);
   });
 
   grammar.repositories.forEach((k, def) {
     var text = springSeriaalizer.serializeRepository(def);
-    writeToFile(
+    var r = writeToFile(
         data: text,
         fileName: "${k}.java",
         subpackage: "repositories",
         imports: ["$packageName.enums", "$packageName.types"],
         destinationDir: destinationDir,
         packageName: packageName);
-    fileCount++;
+    futures.add(r);
   });
-  stdout.writeln("Generated $fileCount files in ${formatElapsedTime(started)}");
+  await Future.wait(futures);
+  stdout.writeln("Generated ${futures.length} files in ${formatElapsedTime(started)}");
 }
 
-void writeToFile(
+Future<File> writeToFile(
     {required String data,
     required String fileName,
     required String subpackage,
@@ -316,12 +355,11 @@ void writeToFile(
     file.createSync(recursive: true);
   }
   var importsText = imports.map((i) => "import $i.*;").join("\n");
-  file.writeAsStringSync("""
+  return file.writeAsString("""
 package $packageName.$subpackage;
 
 $importsText
 
 $data
 """);
-  stdout.writeln("$fileName created");
 }
