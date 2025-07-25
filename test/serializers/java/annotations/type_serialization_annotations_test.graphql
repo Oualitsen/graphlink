@@ -34,6 +34,15 @@ directive @Json(
     gqFQCN: String = "@Json"
 ) on FIELD_DEFINITION | OBJECT | INPUT_OBJECT | ENUM | ENUM_VALUE | INTERFACE 
 
+
+directive @LoggedIn(
+    value: String!
+    gqOnClient: Boolean = false
+    gqOnServer: Boolean = true
+    gqAnnotation: Boolean = true
+    gqFQCN: String = "@LoggedIn"
+) on FIELD_DEFINITION | OBJECT | INPUT_OBJECT | ENUM | ENUM_VALUE | INTERFACE 
+
 enum Gender @Getter {
     male, female @Json(value: "FEMALE")
 }
@@ -66,6 +75,10 @@ Select * From User wheere id = 10
     listExample: [String!]!
 }
 
+
+type Query {
+    getUser: User @LoggedIn
+}
 
 
 

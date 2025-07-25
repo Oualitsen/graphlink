@@ -42,6 +42,7 @@ class SpringServerSerializer {
         })
         .toList()
         .join("\n");
+        
     var result = """
 @org.springframework.stereotype.Controller
 public class $controllerName {
@@ -77,6 +78,7 @@ $result
 
   String serializehandlerMethod(GQQueryType type, GQField method, String sericeInstanceName,
       {bool injectDataFtechingEnv = false, String? qualifier}) {
+        final decorators = serializer.serializeDecorators(method.getDirectives());
     String statement =
         "return $sericeInstanceName.${method.name}(${method.arguments.map((arg) => arg.token).join(", ")}";
     if (injectDataFtechingEnv) {
@@ -88,12 +90,20 @@ $result
     } else {
       statement = "$statement);";
     }
-    return """
+    var result = """
 ${getAnnotationByShcemaType(type)}
 ${qualifier == null ? '' : "${qualifier} "}${serializeMethodDeclaration(method, type, argPrefix: "@org.springframework.graphql.data.method.annotation.Argument", injectDataFtechingEnv: injectDataFtechingEnv)} {
 ${statement.ident()}
 }"""
         .trim();
+        if(decorators.isNotEmpty) {
+          result = """
+${decorators.trim()}
+$result
+""";
+        }
+return result;
+
   }
 
   GQType createListTypeOnSubscription(GQType type, GQQueryType queryType) {
