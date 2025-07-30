@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:logger/logger.dart';
 import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
 import 'package:retrofit_graphql/src/model/gq_enum_definition.dart';
@@ -75,6 +77,8 @@ class GQGrammar extends GrammarDefinition {
     ),
   };
 
+  bool _validate = true;
+
   ///
   /// key is the type name
   /// and value gives a fragment that has references of all fields
@@ -135,7 +139,27 @@ class GQGrammar extends GrammarDefinition {
     return ref0(fullGrammar).end();
   }
 
-  // write the full grammar here
+
+  Result parse(String text) {
+     var parser = buildFrom(fullGrammar().end());
+     return parser.parse(text);
+  }
+
+  Future<Result> parseFile(String path, {bool validate = true}) async {
+    var text = await File(path).readAsString();
+    _validate = validate;
+    return parse(text);
+  }
+
+  Future<List<Result>> parseFiles(List<String> paths) async {
+    var result = <Result>[];
+
+    for(var path in paths) {
+      var parseResult = await parseFile(path, validate: path == paths.last);
+      result.add(parseResult);
+    }
+    return result;
+  }
 
   Parser fullGrammar() => (documentation().optional() &
               [
@@ -152,13 +176,18 @@ class GQGrammar extends GrammarDefinition {
                 queryDefinition(GQQueryType.mutation),
                 queryDefinition(GQQueryType.subscription),
               ].toChoiceParser())
-          .plus()
+          .star()
           .map((value) {
-        _onDone();
+        _validateSemantics();
         return value;
       });
 
-  void _onDone() {
+  void _validateSemantics() {
+    if(!_validate) {
+      return;
+    }
+    validateInputReferences();
+    validateTypeReferences();
     convertUnionsToInterfaces();
     setDirectivesDefaulValues();
     updateInterfaceParents();

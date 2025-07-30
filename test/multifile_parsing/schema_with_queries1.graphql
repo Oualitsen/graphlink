@@ -1,0 +1,26 @@
+
+
+
+input UserInput {
+    firstName: String!
+    lastName: String!
+    middleName: String
+}
+
+type User {
+    firstName: String!
+    lastName: String!
+    middleName: String
+}
+
+type Query {
+    getUser: User!
+}
+
+type Mutation {
+    createUser(input: UserInput!): User
+}
+
+type Subscription {
+    watchUser: User!
+}

@@ -1,0 +1,11 @@
+
+
+
+input UserInput {
+    firstName: String!
+    lastName: String!
+    middleName: String
+    address: AddressInput
+}
+
+

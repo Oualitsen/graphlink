@@ -17,8 +17,8 @@ type State {
 type Address {
     city: String!
     state: State!
-    lat: double!
-    lng: double!
+    lat: Float!
+    lng: Float!
 }
 
 fragment UserFragment on User {

@@ -173,8 +173,7 @@ void watchAndGenerate(GeneratorConfig config) {
 
 void handleGeneration(GeneratorConfig config) async {
   final now = DateTime.now();
-  StringBuffer sb = StringBuffer();
-
+  var filePaths = <String>[];
   for (var pattern in config.schemaPaths) {
     final glob = Glob(pattern);
     final files = glob.listSync().whereType<File>();
@@ -185,21 +184,21 @@ void handleGeneration(GeneratorConfig config) async {
     }
 
     for (var file in files) {
-      sb.write(await file.readAsString());
-      sb.write('\n');
+      filePaths.add(file.path);
     }
   }
 
   final grammar = createGrammar(config);
-  var gqParser = grammar.buildFrom(grammar.fullGrammar().end());
   try {
-    var result = gqParser.parse(sb.toString());
-    if (result is Failure) {
+    var result = await grammar.parseFiles(filePaths);
+    var failures = result.whereType<Failure>().toList();
+    if(failures.isNotEmpty) {
       throw """
-messasge: ${result.message}
-position: ${result.position}
+messasge: ${failures.first.message}
+position: ${failures.first.position}
 """;
     }
+    
     var mode = config.getMode();
     if (mode == CodeGenerationMode.server) {
       await generateServerClasses(grammar, config, now);
@@ -254,7 +253,7 @@ Future<void> generateServerClasses(GQGrammar grammar, GeneratorConfig config, Da
   final packageName = config.serverConfig!.spring!.basePackage;
   final destinationDir = config.outputDir;
   final serialzer = JavaSerializer(grammar, inputsAsRecords: config.serverConfig?.spring?.inputAsRecord ?? false,
-   typesAsRecords: config.serverConfig?.spring?.typeAsRecord ?? false);
+  typesAsRecords: config.serverConfig?.spring?.typeAsRecord ?? false);
   final springSeriaalizer = SpringServerSerializer(grammar, javaSerializer: serialzer);
   final List<Future> futures = [];
 

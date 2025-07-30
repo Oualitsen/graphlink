@@ -317,8 +317,21 @@ extension GQGrammarExtension on GQGrammar {
   }
 
   void addTypeDefinition(GQTypeDefinition type) {
+    var queryTypes = GQQueryType.values.map((e) => schema.getByQueryType(e)).toList();
+    if(queryTypes.contains(type.token)) {
+      if(types.containsKey(type.token)) {
+        merge(getType(type.token), type);
+        return;
+      }
+    }
     checkTypeDefinition(type);
     types[type.token] = type;
+  }
+
+  static void merge(GQTypeDefinition dest, GQTypeDefinition orig) {
+    for (var field in orig.fields) {
+      dest.addField(field);
+    }
   }
 
   void addInterfaceDefinition(GQInterfaceDefinition interface) {
@@ -342,6 +355,40 @@ extension GQGrammarExtension on GQGrammar {
       return;
     }
     queries[definition.token] = definition;
+  }
+
+  void validateInputReferences() {
+    inputs.values.forEach(_validateInputRef);
+  }
+
+  void _validateInputRef(GQInputDefinition def) {
+    for (var field in def.fields) {
+      var typeToken = field.type.token;
+      if(!scalars.containsKey(typeToken) &&
+       !inputs.containsKey(typeToken) &&
+       !enums.containsKey(typeToken)
+       ) {
+        throw ParseException("$typeToken is not a scalar, input or enum");
+      }
+    }
+  }
+
+  void validateTypeReferences() {
+    [...types.values, ...interfaces.values].forEach(_validateTypeRef);
+  }
+
+  void _validateTypeRef(GQTypeDefinition def) {
+    for (var field in def.fields) {
+      var typeToken = field.type.token;
+      if(!scalars.containsKey(typeToken) && 
+      !types.containsKey(typeToken)&&
+      !interfaces.containsKey(typeToken) &&
+      !unions.containsKey(typeToken) &&
+      !enums.containsKey(typeToken) 
+      ) {
+        throw ParseException("$typeToken is not a scalar, enum, type, interface or union");
+      }
+    }
   }
 
   void convertUnionsToInterfaces() {

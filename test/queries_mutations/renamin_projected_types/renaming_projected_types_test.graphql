@@ -71,7 +71,7 @@ mutation createProduct($input: ProductInput!) @gqTypeName(name: "ProductCreation
     }
   }
 
-  createProduct(input: $input) @gqTypeName(name: "AhmedProduct2") {
+  p2: createProduct(input: $input) @gqTypeName(name: "AhmedProduct2") {
     id name   brand {
       ...BrandFragment
     }

@@ -1,0 +1,23 @@
+
+
+
+type User {
+    firstName: String!
+    lastName: String!
+    middleName: String
+    address: Address
+}
+
+type Address {
+    street: String!
+    city: String!
+    state: String!
+    
+}
+
+input AddressInput {
+    street: String!
+    wilayaId: Int!
+    city: String
+}
+

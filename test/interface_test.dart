@@ -18,9 +18,9 @@ void main() {
     var result = parser.parse('''
       interface Test implements BasicEntity & UserBase & UserBase2 @skip(if: true) {
         test: boolean! 
-        test: boolean! 
-        test: boolean! 
-        test: boolean! 
+        test2: boolean! 
+        test3: boolean! 
+        test4: boolean! 
       }
     ''');
     expect(result is Success, true);

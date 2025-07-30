@@ -1,6 +1,6 @@
 
 
-
+scalar Long
 
 input PageIndex {
   index: Int!

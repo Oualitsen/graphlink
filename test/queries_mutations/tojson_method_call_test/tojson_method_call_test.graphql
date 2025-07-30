@@ -11,13 +11,15 @@ type Product {
   brand: Brand!
 }
 
+type Brand {
+  name: String!
+}
 
 
 input ProductInput {
   name: String!
   price: Float!
   wasPrice: Float
-  state: State!
 }
 
 type Mutation {

@@ -1,0 +1,28 @@
+
+
+
+type Car {
+    make: String!
+    model: String!
+}
+
+
+type CarInput {
+    make: String!
+    model: String!
+}
+
+type Query {
+    getCar: Car!
+    countCars: Int!
+}
+
+type Mutation {
+    creatCar(input: CarInput!): Car!
+}
+
+type Subscription {
+    watchCar: Car!
+}
+
+

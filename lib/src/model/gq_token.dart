@@ -1,3 +1,4 @@
+import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
@@ -22,6 +23,9 @@ abstract class GQTokenWithFields extends GQToken {
   }
 
   void addField(GQField field) {
+    if(_fieldMap.containsKey(field.name)) {
+      throw ParseException("Duplicate field defition on type ${token}, field: ${field.name}");
+    }
     _fieldMap[field.name] = field;
   }
 

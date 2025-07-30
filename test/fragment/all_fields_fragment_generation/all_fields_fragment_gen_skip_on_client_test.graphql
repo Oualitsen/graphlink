@@ -17,6 +17,10 @@ type User implements UserBase {
     password: String! @gqSkipOnClient
 }
 
+type Address {
+    city: String!
+}
+
 
 
 
