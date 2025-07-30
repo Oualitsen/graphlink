@@ -43,8 +43,6 @@ class GQGrammar extends GrammarDefinition {
 
   late final Map<String, String> typeMap;
   late final CodeGenerationMode mode;
-  final bool javaTypesAsRecord;
-  final bool javaInputsAsRecord;
 
   static const directivesToSkip = [gqTypeNameDirective, gqEqualsHashcode];
 
@@ -121,8 +119,6 @@ class GQGrammar extends GrammarDefinition {
     this.identityFields = const [],
     this.defaultAlias,
     this.mode = CodeGenerationMode.client,
-    this.javaInputsAsRecord = false,
-    this.javaTypesAsRecord = false,
   }) : assert(
           !autoGenerateQueries || generateAllFieldsFragments,
           'autoGenerateQueries can only be true if generateAllFieldsFragments is also true',

@@ -12,7 +12,12 @@ import 'package:retrofit_graphql/src/serializers/gq_serializer.dart';
 import 'package:retrofit_graphql/src/utils.dart';
 
 class JavaSerializer extends GqSerializer {
-  JavaSerializer(super.grammar) {
+  final bool inputsAsRecords;
+  final bool typesAsRecords;
+  JavaSerializer(super.grammar, {
+    this.inputsAsRecords = false,
+    this.typesAsRecords = false
+  }) {
     _initAnnotations();
   }
 
@@ -109,7 +114,7 @@ ${def.values.map((e) => doSerialzeEnumValue(e)).toList().join(", ").ident()}
   @override
   String doSerializeInputDefinition(GQInputDefinition def, {bool checkForNulls = false}) {
     final decorators = serializeDecorators(def.getDirectives());
-    if (grammar.javaInputsAsRecord) {
+    if (inputsAsRecords) {
       return """
 $decorators
 ${serializeRecord(def.token, def.fields, {})}
@@ -294,14 +299,12 @@ ${statements.join("\n").ident()}
     final interfaceNames = def.interfaceNames;
     final decorators = serializeDecorators(def.getDirectives());
 
-    if (grammar.javaInputsAsRecord) {
-      if (grammar.javaTypesAsRecord) {
+      if (typesAsRecords) {
         return """
 $decorators
 ${serializeRecord(def.token, def.fields, interfaceNames)}
 """;
       }
-    }
 
     return """
 ${decorators}
@@ -387,7 +390,7 @@ public interface $token ${parents.isNotEmpty ? "extends ${parents.map((e) => e.t
 
 ${fields.map((f) {
               if (getters) {
-                if (grammar.javaTypesAsRecord) {
+                if (typesAsRecords) {
                   return "${serializeDecorators(f.getDirectives(), joiner: "\n")}${serializeGetterDeclaration(f, skipModifier: true, asProperty: true)}";
                 } else {
                   return "${serializeDecorators(f.getDirectives(), joiner: "\n")}${serializeGetterDeclaration(f, skipModifier: true)}";

@@ -228,8 +228,6 @@ GQGrammar createGrammar(GeneratorConfig config) {
       autoGenerateQueries: clientConfig?.autoGenerateQueries ?? false,
       defaultAlias: clientConfig?.defaultAlias,
       operationNameAsParameter: clientConfig?.operationNameAsParameter ?? false,
-      javaTypesAsRecord: config.serverConfig?.spring?.typeAsRecord ?? false,
-      javaInputsAsRecord: config.serverConfig?.spring?.inputAsRecord ?? false,
     );
   }
 }
@@ -255,8 +253,9 @@ Future<void> generateClientClasses(GQGrammar grammar, GeneratorConfig config, Da
 Future<void> generateServerClasses(GQGrammar grammar, GeneratorConfig config, DateTime started) async {
   final packageName = config.serverConfig!.spring!.basePackage;
   final destinationDir = config.outputDir;
-  final serialzer = JavaSerializer(grammar);
-  final springSeriaalizer = SpringServerSerializer(grammar);
+  final serialzer = JavaSerializer(grammar, inputsAsRecords: config.serverConfig?.spring?.inputAsRecord ?? false,
+   typesAsRecords: config.serverConfig?.spring?.typeAsRecord ?? false);
+  final springSeriaalizer = SpringServerSerializer(grammar, javaSerializer: serialzer);
   final List<Future> futures = [];
 
   grammar.getSerializableTypes().forEach((def) {

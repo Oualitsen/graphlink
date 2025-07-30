@@ -20,10 +20,10 @@ class SpringServerSerializer {
   final GQGrammar grammar;
   final JavaSerializer serializer;
 
-  SpringServerSerializer(this.grammar, {this.defaultRepositoryBase})
+  SpringServerSerializer(this.grammar, {this.defaultRepositoryBase, JavaSerializer? javaSerializer})
       : assert(grammar.mode == CodeGenerationMode.server,
             "Gramar must be in code generation mode = `CodeGenerationMode.server`"),
-        serializer = JavaSerializer(grammar);
+        serializer = javaSerializer ?? JavaSerializer(grammar);
 
   List<String> serializeServices() {
     return grammar.services.values.map((service) {
