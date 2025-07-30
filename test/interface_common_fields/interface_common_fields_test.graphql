@@ -1,0 +1,48 @@
+
+interface BasicEntity {
+
+    id: ID!
+    createdBy: String
+    creationDate: String
+    lastUpdate: String
+    lastUpdateBy: String
+
+}
+
+type User implements BasicEntity{
+     id: ID!
+    createdBy: String
+    creationDate: String
+    lastUpdate: String
+    lastUpdateBy: String
+
+    firstName: String
+    lastName: String
+}
+
+type Car implements BasicEntity {
+     id: ID!
+    createdBy: String
+    creationDate: String
+    lastUpdate: String
+    lastUpdateBy: String
+
+    make: String
+    model: String
+}
+
+type Query {
+    getCar: Car
+    getUser: User
+}
+
+query getData {
+    getCar {
+        id lastUpdate creationDate make model
+    }
+
+    getUser {
+        id lastUpdate firstName lastName 
+    }
+}
+

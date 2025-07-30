@@ -39,7 +39,7 @@ $inputs
   }
 
   String generateTypes(GqSerializer serializer) {
-    var data = _grammar. projectedTypes.values.toSet().map((e) => serializer.serializeTypeDefinition(e)).join("\n");
+    var data = _grammar.projectedTypes.values.toSet().map((e) => serializer.serializeTypeDefinition(e)).join("\n");
 
     return """
 $fileHeadComment

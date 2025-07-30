@@ -811,16 +811,34 @@ extension GQGrammarExtension on GQGrammar {
     interfaceNames.removeAll(projectedTypes.keys);
     for (var name in interfaceNames) {
       var interface = interfaces[name]!;
-      var type = GQTypeDefinition(
+      var type = GQInterfaceDefinition(
           name: interface.token,
           nameDeclared: false,
-          fields: [],
-          interfaceNames: {...interface.interfaceNames, ...interface.parentNames},
+          fields: _getCommonInterfaceFields(interface),
+          interfaceNames: {...interface.interfaceNames, ... interface.parentNames},
           directives: interface.getDirectives(),
-          derivedFromType: null);
+          parentNames: {...interface.parentNames}
+          );
       // add to projected types without similarity check
       addToProjectedType(type, similarityCheck: false);
     }
+  }
+
+  List<GQField> _getCommonInterfaceFields(GQInterfaceDefinition def) {
+    // search in projected types, types that have implemented this interface
+    var fields = def.fields;
+    var types = getProjectdeTypesImplementing(def);
+    var fieldsToRemove = <GQField>[];
+
+    for (var type in types) {
+      for (var field in fields) {
+        if(!type.fieldNames.contains(field.name)) {
+          fieldsToRemove.add(field);
+        }
+      }
+    }
+    fields.removeWhere((f) => fieldsToRemove.contains(f));
+    return fields;
   }
 
   void createProjectedTypes() {
@@ -1084,6 +1102,16 @@ extension GQGrammarExtension on GQGrammar {
 
     var prj = GQInlineFragmentsProjection(inlineFragments: inlineFrags);
     return GQFragmentBlockDefinition([prj]);
+  }
+
+  List<GQTypeDefinition> getProjectdeTypesImplementing(GQInterfaceDefinition def) {
+    var result = <GQTypeDefinition>[];
+    projectedTypes.forEach((k, v) {
+      if (v.interfaceNames.contains(def.token)) {
+        result.add(v);
+      }
+    });
+    return result;
   }
 
   List<GQTypeDefinition> getTypesImplementing(GQInterfaceDefinition def) {
