@@ -189,7 +189,13 @@ extension GQGrammarExtension on GQGrammar {
 
   String getServiceName(GQField field, [String suffix = "Service"]) {
     var serviceName = field.getDirectiveByName(gqServiceName)?.getArgValueAsString(gqServiceNameArg);
-    serviceName ??= "${field.type.token.firstUp}$suffix";
+    if(serviceName == null) {
+      if(typeRequiresProjection(field.type)) {
+        serviceName = "${field.type.token.firstUp}$suffix";
+      }else {
+        serviceName = "${field.name.firstUp}$suffix";
+      }
+    }
     if (suffix.isNotEmpty && !serviceName.endsWith(suffix)) {
       serviceName += suffix;
     }
