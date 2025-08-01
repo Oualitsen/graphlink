@@ -65,11 +65,7 @@ class GQQueryDefinition extends GQToken with GqDirectivesMixin {
     }
     return false;
   }
-
-  @override
-  String serialize() {
-    return """${type.name} $token${serializeList(arguments, join: ",")}${serializeDirectives(getDirectives())}{${serializeList(elements, join: " ", withParenthesis: false)}}""";
-  }
+  
 
   GQTypeDefinition getGeneratedTypeDefinition() {
     var gqDef = _gqTypeDefinition;
@@ -173,12 +169,7 @@ class GQQueryElement extends GQToken with GqDirectivesMixin {
     directives.forEach(addDirective);
   }
 
-  @override
-  String serialize() {
-    return """$_escapedToken${serializeList(arguments, join: ",")}${serializeDirectives(getDirectives())}${block != null ? block!.serialize() : ''}""";
-  }
-
-  String get _escapedToken {
+  String get escapedToken {
     var aliasText = alias == null ? '' : "$alias:";
     return "$aliasText$token".replaceFirst("\$", "\\\$");
   }

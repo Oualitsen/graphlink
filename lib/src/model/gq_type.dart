@@ -19,25 +19,6 @@ class GQType extends GQToken {
     return false;
   }
 
-  @override
-  String toString() {
-    return serialize();
-  }
-
-  @override
-  String serialize() {
-    return "$token${nullable ? "" : "!"}";
-  }
-
-  String _getNullableText() => nullable ? "" : "!";
-
-  String serializeForceNullable(bool force) {
-    if(force) {
-      return token;
-    }
-    return serialize();
-  }
-
   GQType get inlineType => this;
 
   @override
@@ -48,16 +29,6 @@ class GQListType extends GQType {
   ///this could be an instance of GQListType
   final GQType type;
   GQListType(this.type, bool nullable) : super(type.token, nullable, isScalar: false);
-
-  @override
-  String serialize() {
-    return "[${inlineType.serialize()}]${_getNullableText()}";
-  }
-
-  @override
-  String toString() {
-    return serialize();
-  }
 
   @override
   GQType get inlineType => type;

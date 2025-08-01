@@ -19,7 +19,7 @@ class GQSchema {
         query: query, mutation: mutation, subscription: subscription);
   }
 
-  String getByQueryType(GQQueryType type) {
+   String getByQueryType(GQQueryType type) {
     switch (type) {
       case GQQueryType.query:
         return query;

@@ -37,10 +37,6 @@ class GQField with GqDirectivesMixin {
   @override
   int get hashCode => name.hashCode * type.hashCode;
 
-  @override
-  String toString() {
-    return 'GraphqlField{name: $name, type: ${type.serialize()}, initialValue: $initialValue, documentation: $documentation, arguments: $arguments}';
-  }
 
   //check for inclue or skip directives
   bool get hasInculeOrSkipDiretives => _containsSkipOrIncludeDirective ??=

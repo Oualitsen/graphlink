@@ -116,7 +116,7 @@ return result;
   String serializeRepository(GQInterfaceDefinition interface) {
     // find the _ field and ignore it
     interface.getSerializableFields(grammar).where((f) => f.name == "_").forEach((f) {
-      f.addDirective(GQDirectiveValue(gqSkipOnServer, [], []));
+      f.addDirective(GQDirectiveValue(gqSkipOnServer, [], [], generated: true));
     });
 
     var dec = GQDirectiveValue.createGqDecorators(

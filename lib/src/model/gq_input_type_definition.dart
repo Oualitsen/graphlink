@@ -14,13 +14,5 @@ class GQInputDefinition extends GQTokenWithFields with GqDirectivesMixin {
   String toString() {
     return 'InputType{fields: $fields, name: $token}';
   }
-
-  @override
-  String serialize() {
-    return """
-      input $token {
-      
-      }
-    """;
-  }
+  
 }

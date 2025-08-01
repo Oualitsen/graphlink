@@ -56,7 +56,18 @@ void main() {
     var user = g.getType("User");
     var dartSerialzer = DartSerializer(g);
     var class_ = dartSerialzer.serializeTypeDefinition(user);
-    print(class_);
+    expect(
+      class_.split("\n").map((str) => str.trim()),
+      containsAllInOrder([
+        "class User {",
+        "final String id;",
+        "final String name;",
+        "final String? middleName;",
+        "User({required this.id, required this.name, this.middleName});",
+        "}"
+      ]),
+    );
+
   });
 
   test("Dart input serialization", () {
@@ -69,7 +80,18 @@ void main() {
     var user = g.inputs["UserInput"];
     var dartSerialzer = DartSerializer(g);
     var class_ = dartSerialzer.serializeInputDefinition(user!);
-    print(class_);
+
+    expect(
+      class_.split("\n").map((str) => str.trim()),
+      containsAllInOrder([
+        "class UserInput {",
+        "final String? id;",
+        "final String name;",
+        "final String? middleName;",
+        "UserInput({this.id, required this.name, this.middleName});",
+        "}"
+      ]),
+    );
   });
 
   test("Dart interface serialization", () {

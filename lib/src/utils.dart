@@ -2,22 +2,10 @@ import 'dart:math';
 
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
-import 'package:retrofit_graphql/src/model/gq_token.dart';
 import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 
-String serializeList(List<GQToken>? list, {String join = ",", bool withParenthesis = true}) {
-  return serializeListText(list?.map((e) => e.serialize()).toList(),
-          withParenthesis: withParenthesis, join: join)
-      .trim();
-}
 
-String serializeDirectives(List<GQDirectiveValue> directives) {
-  var directivesText = directives.isEmpty ? '' : serializeList(directives, withParenthesis: false);
-  if (directivesText.isNotEmpty) {
-    directivesText = ' $directivesText';
-  }
-  return directivesText;
-}
+
 
 String serializeListText(List<String>? list, {String join = ",", bool withParenthesis = true}) {
   if (list == null || list.isEmpty) {

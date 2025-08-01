@@ -21,16 +21,8 @@ class GQArgumentDefinition extends GQToken with GqDirectivesMixin {
 
   String get dartArgumentName => token.substring(1);
 
-  @override
-  String serialize() {
-    var r = "$_escappedToken:${type.serialize()}";
-    if (initialValue != null) {
-      r += "=$initialValue";
-    }
-    return r;
-  }
 
-  String get _escappedToken => token.replaceFirst("\$", "\\\$");
+
 }
 
 ///
@@ -42,15 +34,6 @@ class GQArgumentValue extends GQToken {
   //this is not know at parse type, it must be set only once the grammer parsing is done.
   late final GQType type;
   GQArgumentValue(super.name, this.value);
-
-  @override
-  String serialize() {
-    return "$_escapedToken:$_escapedValue";
-  }
-
-  String get _escapedToken => token.replaceFirst("\$", "\\\$");
-
-  String get _escapedValue => "$value".replaceFirst("\$", "\\\$");
 
   @override
   String toString() {

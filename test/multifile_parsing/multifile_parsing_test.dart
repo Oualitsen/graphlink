@@ -1,8 +1,6 @@
-import 'dart:io';
 
 import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
 import 'package:test/test.dart';
-import 'package:logger/logger.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 

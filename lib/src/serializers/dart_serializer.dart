@@ -1,3 +1,4 @@
+import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_enum_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
@@ -61,17 +62,17 @@ ${serializeDecorators(def.getDirectives())}
   @override
   String doSerializeInputDefinition(GQInputDefinition def) {
     return """
-    ${serializeDecorators(def.getDirectives())}
-    @JsonSerializable(explicitToJson: true)
-    class ${def.token} {
-        ${serializeListText(def.getSerializableFields(grammar).map((e) => serializeField(e)).toList(), join: "\n\r          ", withParenthesis: false)}
+${serializeDecorators(def.getDirectives())}
+@JsonSerializable(explicitToJson: true)
+class ${def.token} {
+${serializeListText(def.getSerializableFields(grammar).map((e) => serializeField(e)).toList(), join: "\n", withParenthesis: false).ident()}
         
-        ${def.token}({${def.getSerializableFields(grammar).map((e) => grammar.toConstructorDeclaration(e)).join(", ")}});
+${'${def.token}({${def.getSerializableFields(grammar).map((e) => grammar.toConstructorDeclaration(e)).join(", ")}});'.ident()}
         
-        factory ${def.token}.fromJson(Map<String, dynamic> json) => _\$${def.token}FromJson(json);
+${'factory ${def.token}.fromJson(Map<String, dynamic> json) => _\$${def.token}FromJson(json);'.ident()}
         
-        Map<String, dynamic> toJson() => _\$${def.token}ToJson(this);
-    }
+${'Map<String, dynamic> toJson() => _\$${def.token}ToJson(this);'.ident()}
+}
 """;
   }
 

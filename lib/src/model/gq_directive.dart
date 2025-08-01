@@ -1,5 +1,4 @@
 import 'package:retrofit_graphql/src/extensions.dart';
-import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_argument.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
 import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
@@ -59,9 +58,13 @@ enum GQDirectiveScope {
 class GQDirectiveValue extends GQToken {
   final List<GQDirectiveScope> locations;
   final Map<String, GQArgumentValue> _argsMap = {};
+  ///
+  /// helps with the schema serialization
+  ///
+  final bool generated;
 
   GQDirectiveValue(
-      super.name, this.locations, List<GQArgumentValue> arguments) {
+      super.name, this.locations, List<GQArgumentValue> arguments, {required this.generated}) {
     _addArgument(arguments);
   }
 
@@ -101,26 +104,13 @@ class GQDirectiveValue extends GQToken {
     _argsMap[name] = GQArgumentValue(name, value);
   }
 
-  @override
-  String serialize() {
-    //don't serialize the gqTypeName directive
-    if (GQGrammar.directivesToSkip.contains(token)) {
-      return "";
-    }
-    var arguments = getArguments();
-    var args = arguments.isEmpty
-        ? ""
-        : "(${arguments.map((e) => e.serialize()).join(",")})";
-    return "$token$args";
-  }
-
   List<GQArgumentValue> getArguments() {
     return _argsMap.values.toList();
   }
 
   static GQDirectiveValue createDirectiveValue(
-      {required String directiveName}) {
-    return GQDirectiveValue(directiveName, [], []);
+      {required String directiveName, required bool generated}) {
+    return GQDirectiveValue(directiveName, [], [], generated: generated);
   }
 
   static GQDirectiveValue createGqDecorators({
@@ -133,6 +123,7 @@ class GQDirectiveValue extends GQToken {
           "value", ["[[", decorators.map((s) => '"$s"').toList(), "]]"]),
       GQArgumentValue("applyOnServer", applyOnServer),
       GQArgumentValue("applyOnClient", applyOnClient),
-    ]);
+      
+    ], generated: true);
   }
 }

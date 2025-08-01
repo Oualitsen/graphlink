@@ -4,8 +4,12 @@ import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 import 'package:retrofit_graphql/src/serializers/language.dart';
 
 mixin GqDirectivesMixin {
-  List<GQDirectiveValue> getDirectives() {
-    return [..._directives.values, ..._decorators];
+  List<GQDirectiveValue> getDirectives({bool skipGenerated = false}) {
+    final result = [..._directives.values, ..._decorators];
+    if(skipGenerated) {
+      return result.where((d) => !d.generated).toList();
+    }
+    return result;
   }
 
   ///

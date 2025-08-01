@@ -60,12 +60,6 @@ void main() {
     logger.i("g.projectedTypes.length = ${g.projectedTypes.length}");
     expect(parsed is Success, true);
     expect(g.fragments.isEmpty, false);
-    logger.i("""
-    _______________ projected types _________________
-    ${g.fragments.values.map((e) => e.serialize()).toList()}
-    _________________________________________________
-
-""");
   });
 
   test("test add all fields fragments to fragment depencies", () {

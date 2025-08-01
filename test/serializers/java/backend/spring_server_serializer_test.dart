@@ -29,7 +29,6 @@ void main() {
     var serverSerialzer = SpringServerSerializer(g);
     var userUser = g.services["UserService"]!;
     var result = serverSerialzer.serializeController(userUser);
-    print(result);
     expect(
         result,
         stringContainsInOrder([

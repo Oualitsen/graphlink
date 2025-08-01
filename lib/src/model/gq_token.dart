@@ -6,7 +6,6 @@ import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 abstract class GQToken {
   final String token;
   GQToken(this.token);
-  String serialize();
 }
 
 abstract class GQTokenWithFields extends GQToken {
@@ -51,10 +50,10 @@ abstract class GQTokenWithFields extends GQToken {
     return _fieldNames;
   }
 
-  List<GQField> getSerializableFields(GQGrammar grammar) {
+  List<GQField> getSerializableFields(GQGrammar grammar, {bool skipGenerated = false}) {
     if (_serializableFields.isEmpty) {
       _serializableFields
-          .addAll(fields.where((f) => !grammar.shouldSkipSerialization(directives: f.getDirectives())));
+          .addAll(fields.where((f) => !grammar.shouldSkipSerialization(directives: f.getDirectives(skipGenerated: skipGenerated))));
     }
     return _serializableFields;
   }

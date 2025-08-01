@@ -14,15 +14,14 @@ import 'package:retrofit_graphql/src/utils.dart';
 class JavaSerializer extends GqSerializer {
   final bool inputsAsRecords;
   final bool typesAsRecords;
-  JavaSerializer(super.grammar, {
-    this.inputsAsRecords = false,
-    this.typesAsRecords = false
-  }) {
+  JavaSerializer(super.grammar,
+      {this.inputsAsRecords = false, this.typesAsRecords = false}) {
     _initAnnotations();
   }
 
   void _initAnnotations() {
-    grammar.handleAnnotations((val) => AnnotationSerializer.serializeAnnotation(val, multiLineString: false));
+    grammar.handleAnnotations((val) =>
+        AnnotationSerializer.serializeAnnotation(val, multiLineString: false));
   }
 
   @override
@@ -64,11 +63,13 @@ ${def.values.map((e) => doSerialzeEnumValue(e)).toList().join(", ").ident()}
     return result;
   }
 
-  String serializeArgumentField(GQField def, {bool withFianl = true, bool withDecorators = false}) {
+  String serializeArgumentField(GQField def,
+      {bool withFianl = true, bool withDecorators = false}) {
     final type = def.type;
     final name = def.name;
     final hasInculeOrSkipDiretives = def.hasInculeOrSkipDiretives;
-    var result = "${serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray)} $name";
+    var result =
+        "${serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray)} $name";
     if (withFianl) {
       result = "final $result";
     }
@@ -82,7 +83,10 @@ ${def.values.map((e) => doSerialzeEnumValue(e)).toList().join(", ").ident()}
   }
 
   String serializeTypeReactive(
-      {required GQType gqType, bool forceNullable = false, bool asArray = false, bool reactive = false}) {
+      {required GQType gqType,
+      bool forceNullable = false,
+      bool asArray = false,
+      bool reactive = false}) {
     if (gqType is GQListType) {
       if (reactive) {
         return "reactor.core.publisher.Flux<${convertPrimitiveToBoxed(serializeTypeReactive(gqType: gqType.inlineType))}>";
@@ -108,11 +112,15 @@ ${def.values.map((e) => doSerialzeEnumValue(e)).toList().join(", ").ident()}
   @override
   String serializeType(GQType def, bool forceNullable, [bool asArray = false]) {
     return serializeTypeReactive(
-        gqType: def, forceNullable: forceNullable, asArray: asArray, reactive: false);
+        gqType: def,
+        forceNullable: forceNullable,
+        asArray: asArray,
+        reactive: false);
   }
 
   @override
-  String doSerializeInputDefinition(GQInputDefinition def, {bool checkForNulls = false}) {
+  String doSerializeInputDefinition(GQInputDefinition def,
+      {bool checkForNulls = false}) {
     final decorators = serializeDecorators(def.getDirectives());
     if (inputsAsRecords) {
       return """
@@ -127,7 +135,7 @@ public class ${def.token} {
 
 ${serializeListText(def.getSerializableFields(grammar).map((e) => serializeField(e)).toList(), join: "\n", withParenthesis: false).ident()}
 
-${generateContructor(def.token, [], "public", checkForNulls: checkForNulls)}
+${generateContructor(def.token, [], "public", checkForNulls: checkForNulls).ident()}
 
 ${generateContructor(def.token, def.getSerializableFields(grammar), "private").ident()}
 
@@ -144,27 +152,38 @@ ${serializeListText(def.getSerializableFields(grammar).map((e) => serializeSette
       {bool checkForNulls = false}) {
     String nullCheck;
     if (checkForNulls) {
-      nullCheck = serializeListText(
-          fields
-              .where((e) => !e.type.nullable)
-              .map((e) => "java.util.Objects.requireNonNull(${e.name});")
-              .toList(),
-          join: "\n",
-          withParenthesis: false);
+      var checkingFields = fields
+          .where((e) => !e.type.nullable)
+          .map((e) => "java.util.Objects.requireNonNull(${e.name});")
+          .toList();
+      if (checkingFields.isNotEmpty) {
+        nullCheck = serializeListText(checkingFields,
+            join: "\n", withParenthesis: false);
+      } else {
+        nullCheck = "";
+      }
     } else {
       nullCheck = "";
     }
-    var result =
-        """$name(${serializeListText(fields.map((e) => serializeArgumentField(e)).toList(), join: ", ", withParenthesis: false)}) {
-${nullCheck.ident()}
 
-${serializeListText(fields.map((e) => "this.${e.name} = ${e.name};").toList(), join: "\n", withParenthesis: false).ident()}
-}
-    """;
-    if (modifier != null) {
-      return "$modifier $result";
+    final buffer = StringBuffer();
+    if(modifier != null) {
+      buffer.write("$modifier ");
     }
-    return result;
+    buffer.writeln(
+        "$name(${serializeListText(fields.map((e) => serializeArgumentField(e)).toList(), join: ", ", withParenthesis: false)}) {");
+    if (nullCheck.isNotEmpty) {
+      buffer.writeln(nullCheck.ident());
+    }
+    if (fields.isNotEmpty) {
+      buffer.writeln(serializeListText(
+              fields.map((e) => "this.${e.name} = ${e.name};").toList(),
+              join: "\n",
+              withParenthesis: false)
+          .ident());
+    }
+    buffer.writeln("}");
+    return buffer.toString();
   }
 
   String generateBuilder(String name, List<GQField> fields) {
@@ -211,8 +230,11 @@ ${statements.join("\n").ident()}
 
   String serializeMethod(GQField field, {String? modifier}) {
     var decorators = serializeDecorators(field.getDirectives());
-    var args = serializeListText(field.arguments.map(serializeArgument).toList(), withParenthesis: false);
-    var result = "${serializeType(field.type, false, field.serialzeAsArray)} ${field.name}($args)";
+    var args = serializeListText(
+        field.arguments.map(serializeArgument).toList(),
+        withParenthesis: false);
+    var result =
+        "${serializeType(field.type, false, field.serialzeAsArray)} ${field.name}($args)";
     if (modifier != null) {
       result = "$modifier $result";
     }
@@ -225,14 +247,18 @@ $result
     return result.trim();
   }
 
-  String serializeRecord(String recordName, List<GQField> fields, Set<String> interfaceNames) {
-    final list =
-        fields.map((f) => serializeArgumentField(f, withFianl: false, withDecorators: true)).toList();
+  String serializeRecord(
+      String recordName, List<GQField> fields, Set<String> interfaceNames) {
+    final list = fields
+        .map((f) =>
+            serializeArgumentField(f, withFianl: false, withDecorators: true))
+        .toList();
     String interfaceImpl = _serializeImplements(interfaceNames);
     return "public record $recordName ${interfaceImpl}(${serializeListText(list, withParenthesis: false, join: ", ")}) {}";
   }
 
-  String serializeGetterDeclaration(GQField field, {bool skipModifier = false, bool asProperty = false}) {
+  String serializeGetterDeclaration(GQField field,
+      {bool skipModifier = false, bool asProperty = false}) {
     var returnType = serializeType(field.type, false);
     var result = serializeType(field.type, false, field.serialzeAsArray);
     if (asProperty) {
@@ -294,17 +320,18 @@ ${statements.join("\n").ident()}
     }
   }
 
-  String _doSerializeTypeDefinition(GQTypeDefinition def, {bool checkNulls = false}) {
+  String _doSerializeTypeDefinition(GQTypeDefinition def,
+      {bool checkNulls = false}) {
     final token = def.token;
     final interfaceNames = def.interfaceNames;
     final decorators = serializeDecorators(def.getDirectives());
 
-      if (typesAsRecords) {
-        return """
+    if (typesAsRecords) {
+      return """
 $decorators
 ${serializeRecord(def.token, def.fields, interfaceNames)}
 """;
-      }
+    }
 
     return """
 ${decorators}
@@ -351,7 +378,8 @@ ${'return java.util.Objects.hash(${fields.join(", ")});'.ident()}
   """;
   }
 
-  static String serializeContructorArgs(GQTypeDefinition def, GQGrammar grammar) {
+  static String serializeContructorArgs(
+      GQTypeDefinition def, GQGrammar grammar) {
     var fields = def.getFields();
     if (fields.isEmpty) {
       return "";
@@ -360,10 +388,12 @@ ${'return java.util.Objects.hash(${fields.join(", ")});'.ident()}
     if (fields.isEmpty) {
       nonCommonFields = "";
     } else {
-      nonCommonFields = fields.map((e) => grammar.toConstructorDeclaration(e)).join(", ");
+      nonCommonFields =
+          fields.map((e) => grammar.toConstructorDeclaration(e)).join(", ");
     }
 
-    var combined = [nonCommonFields].where((element) => element.isNotEmpty).toSet();
+    var combined =
+        [nonCommonFields].where((element) => element.isNotEmpty).toSet();
     if (combined.isEmpty) {
       return "";
     } else if (combined.length == 1) {
@@ -379,7 +409,8 @@ ${'return java.util.Objects.hash(${fields.join(", ")});'.ident()}
     return "implements ${interfaceNames.join(", ")} ";
   }
 
-  String serializeInterface(GQInterfaceDefinition interface, {bool getters = true}) {
+  String serializeInterface(GQInterfaceDefinition interface,
+      {bool getters = true}) {
     final token = interface.token;
     final parents = interface.parents;
     final fields = interface.getSerializableFields(grammar);

@@ -265,7 +265,18 @@ public void setId(final String id) {
     var user = g.getType("User");
     var javaSerialzer = JavaSerializer(g);
     var class_ = javaSerialzer.serializeTypeDefinition(user);
-    print(class_);
+    expect(
+      class_.split("\n").map((str) => str.trim()),
+      containsAllInOrder([
+        "public class User {",
+        "private String id;",
+        "private String name;",
+        "private String middleName;",
+        "private Boolean married;",
+        "private java.util.List<String> listExample;",
+        "}"
+      ]),
+    );
   });
 
   test("Java input serialization", () {
@@ -278,7 +289,17 @@ public void setId(final String id) {
     var user = g.inputs["UserInput"];
     var javaSerialzer = JavaSerializer(g);
     var class_ = javaSerialzer.serializeInputDefinition(user!);
-    print(class_);
+
+    expect(
+      class_.split("\n").map((str) => str.trim()),
+      containsAllInOrder([
+        "public class UserInput {",
+        "private String id;",
+        "private String name;",
+        "private String middleName;",
+        "}"
+      ]),
+    );
   });
 
   test("Java interface serialization", () {

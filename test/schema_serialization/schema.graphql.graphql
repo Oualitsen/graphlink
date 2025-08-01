@@ -1,0 +1,1280 @@
+schema {
+	query: Query
+	mutation: Mutation
+}
+scalar Long
+
+input PaymentMethodInput  {
+	id: String!
+	name: String!
+}
+
+input StoryInput  {
+	id: String
+	type: StoryType!
+	active: Boolean!
+	data: String!
+}
+
+input ProRateInput  {
+	timeRespected: Float!
+	communication: Float!
+	professionalism: Float!
+	global: Float!
+	comment: String
+}
+
+input ClinicRateInput  {
+	punctuality: Float!
+	competence: Float!
+	professionalism: Float!
+	global: Float!
+	comment: String
+}
+
+input MyFiltersInput  {
+	notifyOnNewMission: Boolean!
+	notifyIfKnowSoftware: Boolean!
+	selectedDistance: MissionDistanceFilter!
+	showBelowRateMissions: Boolean!
+	autoAccept: Boolean!
+	ultimatum: Boolean!
+	contactInfo: ContactInfoVisibility!
+	defaultProProfile: Boolean!
+}
+
+input CertificationInput  {
+	id: String
+	name: String!
+	organization: String!
+	neverExpire: Boolean!
+	issueDate: DateInput!
+	expirationDate: DateInput
+	credentialId: String!
+}
+
+input EducationInput  {
+	id: String
+	schoolName: String!
+	grade: String!
+	fieldOfStudy: String!
+	currentlyStudying: Boolean!
+	startDate: DateInput!
+	endDate: DateInput
+	location: AddressLocationInput!
+}
+
+input ExperienceInput  {
+	id: String
+	title: String!
+	type: ExperienceType!
+	company: String!
+	currentlyWorking: Boolean!
+	startDate: DateInput!
+	endDate: DateInput
+	location: AddressLocationInput!
+}
+
+input AddressLocationInput  {
+	address: AddressInput!
+	location: GeoPointInput!
+}
+
+input SchoolInfoInput  {
+	name: String!
+	graduationYear: Int!
+}
+
+input TitleInfoInput  {
+	titleId: String!
+	councilInfoInput: CouncilInfoInput
+	missionInfoInput: MissionInfoInput
+	schoolInfoInput: SchoolInfoInput
+}
+
+input CouncilInfoInput  {
+	councilId: String!
+	memberSinceYear: Int!
+	licenseNumber: String!
+}
+
+input MissionInfoInput  {
+	hourlyRate: Float
+	lookingForFullTime: Boolean!
+	acceptsEveningShifts: Boolean!
+	days: [JobDay!]!
+}
+
+input CompleteInfoInput  {
+	firstName: String!
+	lastName: String!
+	email: String!
+	spokenLanguages: [SpokenLanguageInput!]!
+}
+
+input SpokenLanguageInput  {
+	code: String!
+	name: String!
+	nativeName: String!
+}
+
+input GeoPointInput  {
+	lat: Float!
+	lng: Float!
+}
+
+input CoordinatesInput  {
+	lat: Float!
+	lng: Float!
+}
+
+input MissionInput  {
+	id: String
+	days: [DayInfoInput!]!
+	breakLength: Int!
+	description: String!
+	clinicId: String!
+	type: MissionType!
+	hourlyRate: Float!
+	titleId: String!
+}
+
+input DayInfoInput  {
+	date: DateInput!
+	startTime: TimeInput!
+	endTime: TimeInput!
+}
+
+input TimeInput  {
+	hour: Int!
+	minute: Int!
+}
+
+input ReceiverInfoInput  {
+	firstName: String!
+	lastName: String!
+	middleName: String
+	phoneNumber: String!
+	email: String
+}
+
+input UserInput  {
+	id: ID
+	personalInfoInput: PersonalInfoInput!
+	credentials: UserCredentialsInput
+	username: String
+}
+
+input UserCredentialsInput  {
+	email: String!
+	password: String!
+}
+
+input CredentialsInput  {
+	username: String!
+	password: String!
+	roles: [String!]!
+}
+
+input PersonalInfoInput  {
+	firstName: String!
+	lastName: String!
+	middleName: String
+	dateOfBirth: Long!
+	gender: Gender!
+	phoneNumber: String
+}
+
+input PagingInfo  {
+	page: Int!
+	size: Int!
+}
+
+input PasswordChange  {
+	old: String!
+	current: String!
+}
+
+input UserSearchParam  {
+	firstName: String
+	lastName: String
+	sortField: String
+	sortASC: Boolean
+}
+
+input MissionSearchParams  {
+	clinicId: String
+	creatorId: String
+	proId: String
+	status: MissionStatus
+	sortField: String
+	sortASC: Boolean!
+	startDate: DateInput
+	endDate: DateInput
+}
+
+input ProMissionSearchParams  {
+	clinicId: String
+	status: MissionStatus
+	sortField: String
+	sortASC: Boolean!
+	startDate: DateInput
+	endDate: DateInput
+	appliedTo: Boolean
+	hired: Boolean!
+}
+
+input ApplicationInput  {
+	missionId: String!
+}
+
+input CardInput  {
+	nameOnCard: String!
+	cardName: String!
+	makeDefault: Boolean!
+	address: BillingAddressInput!
+	paymentMethodId: String!
+}
+
+input BillingAddressInput  {
+	firstName: String!
+	lastName: String!
+	line1: String!
+	line2: String
+	city: String!
+	state: String!
+	zip: String!
+	country: String!
+}
+
+input PaymentIntentInput  {
+	amount: Int!
+	currency: String!
+	customerId: String!
+	paymentMethod: String!
+}
+
+input ClinicInput  {
+	id: String
+	name: String!
+	phoneNumber: String!
+	address: AddressInput!
+	geoPoint: GeoPointInput!
+	logoUrl: String
+}
+
+input BillingContactInput  {
+	firstName: String!
+	lastName: String!
+	email: String!
+	ccEmail: String
+	ccOtherEmail: String
+}
+
+input AddressInput  {
+	road: String
+	suite: String
+	street: String!
+	city: String!
+	state: String!
+	zipCode: String!
+	country: String!
+	formattedAddress: String!
+}
+
+input CouncilInput  {
+	id: ID
+	name: String!
+	active: Boolean!
+	titleId: String!
+}
+
+input TitleInput  {
+	id: ID
+	name: String!
+	nameFr: String
+	active: Boolean!
+	requiresCouncil: Boolean!
+	requiresSchool: Boolean!
+	canLookForFullTimeJob: Boolean!
+}
+
+input ClinicFilterInput  {
+	contactHighRateCandidatesIfNoAvailable: Boolean!
+	autoAcceptApplicants: AutoAcceptApplicants!
+	notifyOnNewApplication: Boolean!
+	showClinicContactsOnPublicProfile: ShowClinicContactsOnPublicProfile!
+	myProfileAsDefault: Boolean!
+}
+
+input DateInput  {
+	millis: Long!
+	offsetSecs: Long!
+}
+
+type UserToken   {
+	id: ID!
+	creationDate: Long!
+	lastUpdate: Long!
+	createdBy: String
+	lastModifiedBy: String
+	tokens: [String!]!
+}
+
+type Ban  {
+	id: ID!
+	creationDate: Long!
+	lastUpdate: Long!
+	createdBy: String
+	lastModifiedBy: String
+	bannerId: String!
+	bannedId: String!
+	type: BannedType!
+}
+
+type Query  {
+	getMaxUploadSize: UploadConfig!
+	getUsers(info: PagingInfo!, params: UserSearchParam!): [DentilynxUser!]!
+	countUsers(params: UserSearchParam!): Long!
+	getUserById(userId: String!): DentilynxUser!
+	getUnreadNotifCount: Long!
+	getNotifs(info: PagingInfo!): [Notif!]!
+	getPaymentMethods: [PaymentMethodDTO!]!
+	createPaymentIntent(input: PaymentIntentInput!, missionId: String!): PaymentIntentResult!
+	getMyClinics: [Clinic!]!
+	findClinicsByZipCodeAndPhoneNumber(zipCode: String!, phoneNumber: String!): [Clinic!]!
+	getActiveStories: [Story!]!
+	getAllStories: [Story!]!
+	validatePhoneNumber(phoneNumber: String!, region: String!): String
+	findAllTitles: [JobTitle!]!
+	findActiveTitles: [JobTitle!]!
+	findAllCouncils: [Council!]!
+	findActiveCouncils(titleId: String!): [Council!]!
+	allLanguages: [SpokenLanguage!]!
+	skills: [String!]!
+	software: [String!]!
+	paymentMethods: [PaymentMethod!]!
+	radiography: [String!]!
+	ultrasound: [String!]!
+	listEducations: [Education!]!
+	listExperiences: [Experience!]!
+	listCertifications: [Certification!]!
+	getMyClinicsAll(info: PagingInfo!): [ClinicFavBan!]!
+	getMyClinicsFavorites(info: PagingInfo!): [ClinicFavBan!]!
+	getMyClinicsBanned(info: PagingInfo!): [ClinicFavBan!]!
+	getCalendarStats(startDate: DateInput!, endDate: DateInput!, clinicId: String): [DayStats!]!
+	missionAll: [Mission!]!
+	findMissions(input: MissionSearchParams!, pagingInfo: PagingInfo!): [MissionAppCount!]!
+	getMissionForPro(input: ProMissionSearchParams!, pagingInfo: PagingInfo!): [MissionWithApplication!]!
+	getMissionById(missionId: String!): Mission!
+	getApplications(missionId: String!, pagingInfo: PagingInfo!): [MissionApplication!]!
+	getFriendShips(status: FriendshipStatus!, info: PagingInfo!): [Friendship!]!
+	searchByPhoneNumber(phoneNumber: String): [UserFriendShip!]!
+	getSentFriendships(info: PagingInfo!): [Friendship!]!
+	getReceivedFriendships(info: PagingInfo!): [Friendship!]!
+}
+
+type Mutation  {
+	login(phoneNumber: String!, code: String!, clinicOwner: Boolean!): TokenUser!
+	refreshToken(token: String!): TokenUser!
+	saveToken(token: String!): String
+	removeToken(token: String!): String
+	getPlaces(req: String!, lang: String!): PlacesResult!
+	geoCodePlacesByCoordinates(coordinates: CoordinatesInput!): String!
+	geoCodePlacesById(placeId: String!): Coordinates!
+	updatePhoneNumber(token: String!): DentilynxUser!
+	apply(input: ApplicationInput!): Mission!
+	acceptApplication(appId: String!): Mission!
+	cancelApplication(appId: String!): Mission!
+	declineApplication(appId: String!): Mission!
+	markAsRead(notifId: String!, read: Boolean!): Notif!
+	deleteNotif(notifId: String!): String
+	broadcast(jobTitle: String!, body: String): String
+	createClinic(input: ClinicInput!): Clinic!
+	createStory(input: StoryInput!): Story!
+	createTitle(input: TitleInput!): JobTitle!
+	createCouncil(input: CouncilInput!): Council!
+	completeInfo(input: CompleteInfoInput!): DentilynxUser!
+	setCaregiverAddress(addressInput: AddressInput!, geoPointInput: GeoPointInput!): DentilynxUser!
+	updateTitle(input: TitleInfoInput!): DentilynxUser!
+	importClinics: String
+	updateLegal(allowedToWorkInCanada: Boolean, councilId: String): DentilynxUser!
+	updateSkills(skills: [String!]): DentilynxUser!
+	updateSoftware(software: [String!]): DentilynxUser!
+	updateLanguages(languages: [SpokenLanguageInput!]): DentilynxUser!
+	updatePresentationLetter(presentationLetter: String!): DentilynxUser!
+	updateHourlyRate(rate: Float!): DentilynxUser!
+	setPaymentMethod(input: PaymentMethodInput!): DentilynxUser!
+	setFilters(input: MyFiltersInput!): DentilynxUser!
+	addEducation(input: EducationInput!): Education!
+	deleteEducation(id: String!): Boolean!
+	addExperience(input: ExperienceInput!): Experience!
+	deleteExperience(id: String!): Boolean!
+	addCertification(input: CertificationInput!): Certification!
+	deleteCertification(id: String!): Boolean!
+	banClinic(clinicId: String!): Ban!
+	unbanClinic(clinicId: String!): Boolean!
+	addClinicToFavorites(clinicId: String!): Favorite!
+	removeFromFavorites(clinicId: String!): Boolean!
+	setClinicFilter(input: ClinicFilterInput!, clinicId: String!): Clinic!
+	setLanguages(clinicId: String!, languages: [SpokenLanguageInput!]!): Clinic!
+	setRadiography(clinicId: String!, radiography: [String!]!): Clinic!
+	setUltrasound(clinicId: String!, ultrasound: [String!]!): Clinic!
+	setSpecialities(clinicId: String!, specialities: [String!]!): Clinic!
+	setSoftware(clinicId: String!, software: [String!]!): Clinic!
+	setDentalRecord(clinicId: String!, dentalRecord: DentalRecord!): Clinic!
+	setParking(clinicId: String!, parking: Parking!): Clinic!
+	setBillingContact(clinicId: String!, input: BillingContactInput!): Clinic!
+	setOtherInformation(clinicId: String!, input: String!): Clinic!
+	createMission(input: MissionInput!): Mission!
+	cancelMission(missionId: String!): Mission!
+	deleteMyAccount: String
+	rateProfessional(missionId: String!, input: ProRateInput!): Mission!
+	rateClinic(missionId: String!, input: ClinicRateInput!): Mission!
+	completeMission(missionId: String!, rateInput: ProRateInput!, realDayInfoInput: DayInfoInput!, realBreakLength: Int!): Mission!
+	completeMissionByClinic(missionId: String!, rateInput: ClinicRateInput!, realDayInfoInput: DayInfoInput!, realBreakLength: Int!, payed: Boolean!, paymentMethod: PaymentMethodInput!, amount: Float): Mission!
+	requestFriendShip(friendId: String!): Friendship!
+	acceptFriendShip(friendShipId: String!): Friendship!
+	declineFriendShip(friendShipId: String!): Friendship!
+	deleteFriendship(friendShipId: String!): Friendship
+}
+
+type UserFriendShip   {
+	user: DentilynxUser!
+	isFriend: Boolean!
+	alreadySent: Boolean!
+}
+
+type ProRate  {
+	timeRespected: Float!
+	communication: Float!
+	professionalism: Float!
+	global: Float!
+	comment: String
+}
+
+type ClinicRate  {
+	punctuality: Float!
+	competence: Float!
+	professionalism: Float!
+	global: Float!
+	comment: String
+}
+
+type DayStats  {
+	date: String!
+	formatPattern: String!
+	missionStats: MissionStats!
+	scheduleStats: ScheduleStats!
+	clinicCalendarStats: ClinicCalendarStats!
+}
+
+type ClinicCalendarStats  {
+	fullTime: Boolean!
+	missionCount: Int!
+	multiDteMissionCount: Int!
+	applied: Boolean!
+	confirmed: Boolean!
+	canceled: Boolean!
+	attentionRequired: Boolean!
+	completed: Boolean!
+}
+
+type MissionStats  {
+	availableCount: Int!
+	availablePartTimeCount: Int!
+	appliedCount: Int!
+}
+
+type ScheduleStats  {
+	mainJob: Boolean!
+	attentionRequired: Boolean!
+	eventsCount: Int!
+	missionConfirmedCount: Int!
+	missionCanceledCount: Int!
+	missionCompletedCount: Int!
+	notAvailable: Boolean!
+}
+
+type MyFilters  {
+	notifyOnNewMission: Boolean!
+	notifyIfKnowSoftware: Boolean!
+	selectedDistance: MissionDistanceFilter!
+	showBelowRateMissions: Boolean!
+	autoAccept: Boolean!
+	ultimatum: Boolean!
+	contactInfo: ContactInfoVisibility!
+	defaultProProfile: Boolean!
+}
+
+type Certification   {
+	id: ID!
+	creationDate: Long!
+	lastUpdate: Long!
+	createdBy: String
+	lastModifiedBy: String
+	userId: String!
+	name: String!
+	organization: String!
+	neverExpire: Boolean!
+	issueDate: Long!
+	expirationDate: Long
+	credentialId: String!
+}
+
+type Education   {
+	id: ID!
+	creationDate: Long!
+	lastUpdate: Long!
+	createdBy: String
+	lastModifiedBy: String
+	userId: String!
+	schoolName: String!
+	grade: String!
+	fieldOfStudy: String!
+	currentlyStudying: Boolean!
+	startDate: Long!
+	endDate: Long
+	location: AddressLocation!
+}
+
+type Experience   {
+	id: ID!
+	creationDate: Long!
+	lastUpdate: Long!
+	createdBy: String
+	lastModifiedBy: String
+	userId: String!
+	title: String!
+	type: ExperienceType!
+	company: String!
+	currentlyWorking: Boolean!
+	startDate: Long!
+	endDate: Long
+	location: AddressLocation!
+}
+
+type AddressLocation  {
+	address: Address!
+	location: GeoPoint!
+}
+
+type PaymentMethod  {
+	id: String!
+	name: String!
+}
+
+type PaymentMethodDTO  {
+	id: String!
+	last4: String!
+	type: String!
+	customerId: String!
+	paymentMethod: String!
+	brand: String!
+}
+
+type PaymentIntentResult  {
+	clientSecret: String!
+	status: String!
+	paymentIntentId: String!
+}
+
+type ResponseToken  {
+	accessToken: String!
+	expiresIn: Int!
+	refreshExpiresIn: Int!
+	refreshToken: String!
+	tokenType: String!
+	notBeforePolicy: Int!
+	sessionState: String!
+	scope: String!
+}
+
+type TokenUser  {
+	token: ResponseToken!
+	user: DentilynxUser!
+}
+
+type MissionWithApplication  {
+	mission: Mission!
+	application: MissionApplication
+}
+
+type MissionAppCount  {
+	mission: Mission!
+	applicationCount: Int!
+	acceptedPro: DentilynxUser
+}
+
+type User  {
+	name: String!
+	email: String
+	roles: [String!]!
+}
+
+type RealmAccess  {
+	roles: [String!]!
+}
+
+type ResourceAccess  {
+	account: Account!
+}
+
+type Account  {
+	roles: [String!]!
+}
+
+type CaregiverInfo  {
+	jobTitle: JobTitle
+	council: CouncilInfo
+	missionInfo: MissionInfo
+	schoolInfo: SchoolInfo
+	allowedToWorkInCanada: Boolean
+	memberOfCouncil: String
+	skills: [String!]!
+	software: [String!]!
+	presentationLetter: String
+	paymentMethod: PaymentMethod
+	myFilters: MyFilters!
+}
+
+type MissionInfo  {
+	hourlyRate: Float!
+	lookingForFullTime: Boolean!
+	acceptsEveningShifts: Boolean!
+	days: [JobDay!]!
+}
+
+type CouncilInfo  {
+	council: Council!
+	memberSinceYear: Int!
+	licenseNumber: String!
+}
+
+type CaregiverAddressInfo  {
+	address: Address
+	geoPoint: GeoPoint
+}
+
+type SpokenLanguage  {
+	code: String!
+	name: String!
+	nativeName: String!
+}
+
+type Council  {
+	id: ID!
+	creationDate: Long!
+	lastUpdate: Long!
+	createdBy: String
+	lastModifiedBy: String
+	name: String!
+	active: Boolean!
+	titleId: String
+}
+
+type SchoolInfo  {
+	name: String!
+	graduationYear: Int!
+}
+
+type JobTitle  {
+	id: ID!
+	creationDate: Long!
+	lastUpdate: Long!
+	createdBy: String
+	lastModifiedBy: String
+	name: String!
+	nameFr: String
+	active: Boolean!
+	requiresCouncil: Boolean!
+	requiresSchool: Boolean!
+	canLookForFullTimeJob: Boolean!
+}
+
+type UploadConfig  {
+	size: Long!
+	text: String!
+}
+
+type Story   {
+	id: ID!
+	creationDate: Long!
+	lastUpdate: Long!
+	createdBy: String
+	lastModifiedBy: String
+	type: StoryType!
+	active: Boolean!
+	data: String!
+}
+
+type DentilynxUser   {
+	id: ID!
+	creationDate: Long!
+	lastUpdate: Long!
+	createdBy: String
+	lastModifiedBy: String
+	email: String
+	firstName: String!
+	lastName: String!
+	middleName: String
+	gender: Gender
+	roles: [String!]!
+	photoUrl: String
+	phoneNumber: String
+	phoneVerified: Boolean!
+	caregiverInfo: CaregiverInfo
+	addressInfo: CaregiverAddressInfo
+	spokenLanguages: [SpokenLanguage!]!
+	stripeCustomers: [String!]!
+	username: String
+}
+
+type CaregiverInfoRecord  {
+	userInfo: UserInfo!
+	title: JobTitle!
+}
+
+type UserInfo  {
+	id: String!
+	firstName: String!
+	lastName: String!
+	middleName: String
+	selfie: String
+}
+
+type Mission   {
+	id: ID!
+	titleInfo: TitleInfo!
+	creationDate: Long!
+	lastUpdate: Long!
+	createdBy: String
+	lastModifiedBy: String
+	createdByUserInfo: UserInfo!
+	proInfo: UserInfo
+	date: DayInfo!
+	realDayInfo: DayInfo
+	breakLength: Int!
+	realBreakLength: Int
+	description: String!
+	hourlyRate: Float!
+	type: MissionType!
+	clinicId: String
+	status: MissionStatus!
+	cancelDate: Long
+	proRateTheClinic: ProRate
+	clinicRateThePro: ClinicRate
+	realDayInfoClinic: DayInfo
+	realBreakLengthClinic: Int
+	amount: Float
+	paymentMethod: PaymentMethod
+	payed: Boolean
+	appliedUserIds: [String!]
+}
+
+type TitleInfo  {
+	id: String!
+	name: String!
+	nameFr: String!
+}
+
+type DayInfo  {
+	date: Long!
+	startTime: Time!
+	endTime: Time!
+}
+
+type Time  {
+	hour: Int!
+	minute: Int!
+}
+
+type ClinicManager  {
+	manager: UserInfo!
+}
+
+type ClinicFavBan  {
+	clinic: Clinic!
+	banned: Boolean!
+	favorite: Boolean!
+}
+
+type Clinic  {
+	id: ID!
+	creationDate: Long!
+	lastUpdate: Long!
+	createdBy: String
+	lastModifiedBy: String
+	phoneNumber: String!
+	name: String!
+	address: Address!
+	logoUrl: String
+	status: ClinicCreationStatus!
+	rejectionRaison: String
+	managers: [ClinicManager!]!
+	filter: ClinicFilter!
+	software: [String!]!
+	specialities: [String!]!
+	languages: [SpokenLanguage!]!
+	parking: Parking
+	billingContact: BillingContact
+	dentalRecord: DentalRecord
+	radiography: [String!]!
+	ultrasound: [String!]!
+	otherInformation: String
+	geoPoint: GeoPoint
+	administrativeRegion: String
+}
+
+type BillingContact  {
+	firstName: String!
+	lastName: String!
+	email: String!
+	ccEmail: String
+	ccOtherEmail: String
+}
+
+type ClinicFilter  {
+	contactHighRateCandidatesIfNoAvailable: Boolean!
+	autoAcceptApplicants: AutoAcceptApplicants!
+	notifyOnNewApplication: Boolean!
+	showClinicContactsOnPublicProfile: ShowClinicContactsOnPublicProfile!
+	myProfileAsDefault: Boolean!
+}
+
+type GeoPoint  {
+	coordinates: [Float!]!
+}
+
+type ReceiverInfo  {
+	firstName: String!
+	lastName: String!
+	middleName: String
+	phoneNumber: String!
+	email: String!
+}
+
+type Coordinates  {
+	longitude: Float!
+	latitude: Float!
+	address: Address
+	localTime: Long
+	serverTime: Long
+	provider: String
+}
+
+type Address  {
+	road: String
+	street: String
+	suite: String
+	city: String
+	state: String
+	zipCode: String
+	country: String
+	formattedAddress: String!
+}
+
+type MonthlyMissionSummary  {
+	monthIndex: Int!
+	statusCounts: [MissionStatusCount!]!
+}
+
+type MissionStatusCount  {
+	status: MissionStatus!
+	count: Int!
+}
+
+type MissionApplication  {
+	id: ID!
+	creationDate: Long!
+	lastUpdate: Long!
+	createdBy: String
+	lastModifiedBy: String
+	proId: ID!
+	missionId: String!
+	status: ApplicationStatus!
+	message: String
+	acceptedAt: Long
+	missionDate: Long
+}
+
+type Notif  {
+	id: ID!
+	creationDate: Long!
+	lastUpdate: Long!
+	createdBy: String
+	lastModifiedBy: String
+	title: String!
+	body: String!
+	read: Boolean!
+	imageUrl: String
+	ownsMission: Boolean!
+	missionId: String
+	ownerId: String!
+}
+
+type DirectionsCache   {
+	id: ID!
+	creationDate: Long!
+	lastUpdate: Long!
+	createdBy: String
+	lastModifiedBy: String
+	userId: String
+	result: DirectionResult
+	withTrafficInfo: Boolean
+	lang: String
+	departureTime: Long
+	origin: GeoPoint
+	destination: GeoPoint
+}
+
+type DistanceMatrixCache  {
+	id: ID!
+	creationDate: Long!
+	lastUpdate: Long!
+	createdBy: String
+	lastModifiedBy: String
+	userId: String
+	response: DistanceMatrixResponse
+	origins: String
+	destinations: String
+	time: Long
+	withoutTraffic: Boolean
+	origin: GeoPoint
+	destination: GeoPoint
+}
+
+type GeocodeCache  {
+	id: ID!
+	creationDate: Long!
+	lastUpdate: Long!
+	createdBy: String
+	lastModifiedBy: String
+	userId: String
+	response: GeocodeResponse
+	result: GeocodeResult
+}
+
+type PlacesCache  {
+	id: ID!
+	creationDate: Long!
+	lastUpdate: Long!
+	createdBy: String
+	lastModifiedBy: String
+	userId: String
+	result: PlacesResult
+	query: String
+	lang: String
+}
+
+type CacheHit   {
+	id: ID!
+	creationDate: Long!
+	lastUpdate: Long!
+	createdBy: String
+	lastModifiedBy: String
+	cacheId: String
+	isHit: Boolean
+	userId: String
+	cacheType: String
+	type: String
+}
+
+type AddressComponent  {
+	longName: String
+	shortName: String
+	types: [String]
+}
+
+type Bounds  {
+	northeast: Coords
+	southwest: Coords
+}
+
+type Coords  {
+	lng: Float
+	lat: Float
+}
+
+type DirectionResult  {
+	geocodedWaypoints: [GeocodedWaypoint]
+	status: DirectionResultStatus
+	routes: [Route]
+}
+
+type DistanceDurationValue  {
+	distance: Float
+	duration: Float
+	durationInTraffic: Float
+}
+
+type DistanceMatrixRequest  {
+	origins: [Coordinates]
+	destinations: [Coordinates]
+}
+
+type DistanceMatrixResponse  {
+	status: ResponseStatus
+	originalAddresses: [String]
+	destinationAddresses: [String]
+	errorMessage: String
+	elements: [Element]
+	rows: [Row]
+}
+
+type Element  {
+	status: ElementStatus
+	duration: TextValue
+	distance: TextValue
+	durationInTraffic: TextValue
+}
+
+type TextValue  {
+	distance: Boolean!
+	text: String
+	value: Long
+}
+
+type Fare  {
+	distance: Boolean
+	text: String
+	value: Long
+	currency: String
+}
+
+type GeocodedWaypoint  {
+	status: GeocodedWaypointStatus
+	placeId: String
+	types: [String]
+}
+
+type GeocodeResponse  {
+	results: [GeocodeResult]
+	status: ResponseStatus
+}
+
+type GeocodeResult  {
+	addressComponents: [AddressComponent]
+	formattedAddress: String
+	geometry: Geometry
+	placeId: String
+	types: [String]
+}
+
+type Geometry  {
+	location: Coords
+	locationType: String
+	viewport: Viewport
+}
+
+type Leg  {
+	distance: TextValue
+	duration: TextValue
+	startAddress: String
+	endAddress: String
+	startLocation: Coords
+	endLocation: Coords
+	steps: [Step]
+}
+
+type MatchedSubstring  {
+	length: Int!
+	offset: Int!
+}
+
+type Polyline  {
+	points: String
+}
+
+type Prediction  {
+	description: String
+	id: String
+	matchedSubStrings: [MatchedSubstring]
+	placeId: String
+	reference: String
+	structuredFormatting: StructuredFormatting
+	terms: [Term]
+	types: [String]
+}
+
+type Route  {
+	copyrights: String
+	bounds: Bounds
+	legs: [Leg]
+	overviewPolyline: Polyline
+	summary: String
+}
+
+type Row  {
+	elements: [Element]
+}
+
+type Step  {
+	distance: TextValue
+	duration: TextValue
+	startLocation: Coords
+	endLocation: Coords
+	polyline: Polyline
+	HtmlInstructions: String
+	travelMode: String
+}
+
+type Viewport  {
+	northeast: Coords
+	southwest: Coords
+}
+
+type PlacesResult  {
+	predictions: [Prediction!]!
+	status: ResponseStatus!
+}
+
+type Term  {
+	offset: Int!
+	value: String
+	length: Int!
+}
+
+type StructuredFormatting  {
+	mainText: String!
+	secondaryText: String
+	mainTextMatchedSubstrings: [Term!]
+}
+
+type Friendship  {
+	id: ID!
+	creationDate: Long!
+	lastUpdate: Long!
+	createdBy: String
+	lastModifiedBy: String
+	status: FriendshipStatus
+	ownerId: String!
+	friendId: String!
+}
+
+type Favorite  {
+	id: ID!
+	creationDate: Long!
+	lastUpdate: Long!
+	createdBy: String
+	lastModifiedBy: String
+	ownerId: String!
+	favoriteId: String!
+	type: FavoriteType!
+}
+
+interface BasicEntity  {
+	id: ID!
+	creationDate: Long!
+	lastUpdate: Long!
+	createdBy: String
+	lastModifiedBy: String
+}
+
+interface UserBase  {
+	id: ID!
+	creationDate: Long!
+	lastUpdate: Long!
+	createdBy: String
+	lastModifiedBy: String
+	email: String
+	firstName: String!
+	lastName: String!
+	gender: Gender
+	roles: [String!]!
+}
+
+interface Cache  {
+	id: ID!
+	creationDate: Long!
+	lastUpdate: Long!
+	createdBy: String
+	lastModifiedBy: String
+	userId: String
+}
+
+enum BannedType  {
+	CLINIC
+}
+
+enum DirectionResultStatus  {
+	OK NOT_FOUND ZERO_RESULTS MAX_WAYPOINTS_EXCEEDED MAX_ROUTE_LENGTH_EXCEEDED INVALID_REQUEST OVER_DAILY_LIMIT OVER_QUERY_LIMIT REQUEST_DENIED UNKNOWN_ERROR
+}
+
+enum ElementStatus  {
+	OK NOT_FOUND ZERO_RESULTS MAX_ROUTE_LENGTH_EXCEEDED
+}
+
+enum GeocodedWaypointStatus  {
+	OK ZERO_RESULTS
+}
+
+enum ResponseStatus  {
+	OK INVALID_REQUEST MAX_ELEMENTS_EXCEEDED OVER_QUERY_LIMIT REQUEST_DENIED UNKNOWN_ERROR ZERO_RESULTS
+}
+
+enum MissionType  {
+	FULL_TIME REPLACEMENT
+}
+
+enum Gender  {
+	MAN WOMAN
+}
+
+enum MissionStatus  {
+	DRAFT PUBLISHED ACCEPTED AWAIT_PAYMENT CANCELED DONE
+}
+
+enum ApplicationStatus  {
+	NEW DECLINED CANCELED ACCEPTED AUTO_CANCELED
+}
+
+enum StoryType  {
+	TEXT IMAGE VIDEO
+}
+
+enum JobDay  {
+	SUNDAY MONDAY TUESDAY WEDNESDAY THURSDAY FRIDAY SATURDAY
+}
+
+enum ClinicCreationStatus  {
+	PENDING VALID REJECTED
+}
+
+enum ExperienceType  {
+	PERMANENT_FULL_TIME PERMANENT_PART_TIME CONTACT_FULL_TIME CONTACT_PART_TIME
+}
+
+enum MissionDistanceFilter  {
+	FIVE_KMS TEN_KMS TWENTY_KMS
+}
+
+enum ContactInfoVisibility  {
+	SHOW HIDE
+}
+
+enum ShowClinicContactsOnPublicProfile  {
+	HIDE MY_CANDIDATES ALL
+}
+
+enum AutoAcceptApplicants  {
+	NO FAVORITES PREVIOUS ALL
+}
+
+enum Parking  {
+	FREE PAID ON_STREET PUBLIC NO_PARKING
+}
+
+enum DentalRecord  {
+	DIGITAL PAPER
+}
+
+enum FriendshipStatus  {
+	NEW ACCEPTED
+}
+
+enum FavoriteType  {
+	CLINIC
+}
+
+union Union1 = Favorite | Ban | Term

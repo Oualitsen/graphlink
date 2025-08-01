@@ -86,7 +86,7 @@ class GQClient {
       if (_grammar.hasSubscriptions) 'subscriptions = Subscriptions(wsAdapter)'
     ].where((element) => element.isNotEmpty).join(", ")} {
       
-      ${_grammar.fragments.values.map((value) => "_fragmMap['${value.token}'] = '${value.serialize()}';").toList().join("\n")}
+      ${_grammar.fragments.values.map((value) => "_fragmMap['${value.token}'] = '${_grammar.serializer.serializeFragmentDefinitionBase(value)}';").toList().join("\n")}
          
     }
 }
@@ -147,7 +147,7 @@ ${_serializeSubscriptions()}
       ${_returnTypeByQueryType(def)} ${def.token}(${_serializeArgs(def)}) {
         const operationName = "${def.token}";
         ${def.fragments(_grammar).isEmpty ? 'const' : 'final'} fragsValues = ${def.fragments(_grammar).isEmpty ? '"";' : '[${def.fragments(_grammar).map((e) => '"${e.token}"').toList().join(", ")}].map((fragName) => _getFragment(fragName)).join(" ");'}
-        ${def.fragments(_grammar).isEmpty ? 'const' : 'final'} query = \"\"\"${def.serialize()}\$fragsValues\"\"\";
+        ${def.fragments(_grammar).isEmpty ? 'const' : 'final'} query = \"\"\"${_grammar.serializer.serializeQueryDefinition(def)}\$fragsValues\"\"\";
 
         final variables = <String, dynamic>{
           ${def.arguments.map((e) => "'${e.dartArgumentName}': ${_serializeArgumentValue(def, e.token)}").toList().join(", ")}

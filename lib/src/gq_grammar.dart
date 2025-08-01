@@ -20,6 +20,7 @@ import 'package:retrofit_graphql/src/model/gq_queries.dart';
 import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_union.dart';
 import 'package:petitparser/petitparser.dart';
+import 'package:retrofit_graphql/src/serializers/graphq_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/language.dart';
 import 'package:retrofit_graphql/src/utils.dart';
 import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
@@ -31,6 +32,10 @@ class GQGrammar extends GrammarDefinition {
   static const typename = "__typename";
   static final typenameField =
       GQField(name: typename, type: GQType("String", false, isScalar: true), arguments: [], directives: []);
+
+  // used to skip serialization
+  final builtInScalars = {"ID", "Boolean", "Int", "Float", "String", "null"};
+
 
   final Map<String, GQScalarDefinition> scalars = {
     "ID": GQScalarDefinition(token: "ID", directives: []),
@@ -106,6 +111,8 @@ class GQGrammar extends GrammarDefinition {
   final bool operationNameAsParameter;
   final List<String> identityFields;
 
+  late final GraphqSerializer serializer;
+
   GQGrammar({
     this.typeMap = const {
       "ID": "String",
@@ -126,7 +133,9 @@ class GQGrammar extends GrammarDefinition {
   }) : assert(
           !autoGenerateQueries || generateAllFieldsFragments,
           'autoGenerateQueries can only be true if generateAllFieldsFragments is also true',
-        );
+        ){
+          serializer = GraphqSerializer(this);
+        }
 
   bool get hasSubscriptions => hasQueryType(GQQueryType.subscription);
   bool get hasQueries => hasQueryType(GQQueryType.query);
@@ -163,9 +172,9 @@ class GQGrammar extends GrammarDefinition {
 
   Parser fullGrammar() => (documentation().optional() &
               [
+                schemaDefinition(),
                 scalarDefinition(),
                 directiveDefinition(),
-                schemaDefinition(),
                 inputDefinition(),
                 typeDefinition(),
                 interfaceDefinition(),
@@ -271,6 +280,7 @@ class GQGrammar extends GrammarDefinition {
   Parser closeSquareBracket() => ref1(token, char("]"));
 
   Parser colon() => ref1(token, char(":"));
+  Parser at() => ref1(token, char("@"));
 
   Parser<GQTypeDefinition> typeDefinition() {
     return seq4(
@@ -423,13 +433,14 @@ class GQGrammar extends GrammarDefinition {
   Parser<List<GQDirectiveValue>> directiveValueList() => directiveValue().star();
 
   Parser<GQDirectiveValue> directiveValue() => seq2(directiveValueName(), argumentValues().optional())
-          .map2((name, args) => GQDirectiveValue(name.trim(), [], args ?? []))
+          .map2((name, args) => GQDirectiveValue(name.trim(), [], args ?? [], generated: false))
           .map((directiveValue) {
         addDiectiveValue(directiveValue);
         return directiveValue;
       });
 
-  Parser<String> directiveValueName() => ref1(token, "@".toParser() & identifier()).flatten();
+  Parser<String> directiveValueName() => ref1(token, (ref0(at) & identifier()))
+      .map((list) => "${list.first}${list.last}");
 
   Parser<GQDirectiveDefinition> directiveDefinition() => seq3(
               seq2(

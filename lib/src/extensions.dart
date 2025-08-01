@@ -52,4 +52,8 @@ extension StringExt on String {
     }).join(" + ${noNewLines ? '' : '\n'}");
     return result;
   }
+
+  String dolarEscape() {
+    return replaceFirst("\$", "\\\$");
+  }
 }

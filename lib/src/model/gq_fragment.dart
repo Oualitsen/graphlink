@@ -69,11 +69,6 @@ class GQInlineFragmentDefinition extends GQFragmentDefinitionBase {
   }
 
   @override
-  String serialize() {
-    return """... on $onTypeName ${getDirectives().map((e) => e.serialize()).join(" ")} ${block.serialize()} """;
-  }
-
-  @override
   String generateName() {
     return "${onTypeName}_$token";
   }
@@ -87,16 +82,7 @@ class GQFragmentDefinition extends GQFragmentDefinitionBase {
   GQFragmentDefinition(this.fragmentName, String onTypeName, GQFragmentBlockDefinition block,
       List<GQDirectiveValue> directives)
       : super(fragmentName, onTypeName, block, directives);
-
-  @override
-  String toString() {
-    return serialize();
-  }
-
-  @override
-  String serialize() {
-    return """fragment $fragmentName on $onTypeName${serializeDirectives(getDirectives())}${block.serialize()}""";
-  }
+ 
 
   @override
   String generateName() {
@@ -154,34 +140,8 @@ class GQProjection extends GQToken with GqDirectivesMixin {
     directives.forEach(addDirective);
   }
 
-  @override
-  String toString() {
-    return serialize();
-  }
-
   String get actualName => alias ?? targetToken;
 
-  @override
-  String serialize() {
-    if (this is GQInlineFragmentsProjection) {
-      return serializeList((this as GQInlineFragmentsProjection).inlineFragments,
-          join: " ", withParenthesis: false);
-    }
-    String result = "";
-    if (isFragmentReference) {
-      result = "...";
-    }
-    if (alias != null) {
-      result += "$alias:$targetToken";
-    } else {
-      result += targetToken;
-    }
-    result += serializeDirectives(getDirectives());
-
-    result += block?.serialize() ?? '';
-
-    return result;
-  }
 
   String get targetToken => token == allFields && fragmentName != null ? fragmentName! : token;
 
@@ -253,15 +213,6 @@ class GQFragmentBlockDefinition {
       throw ParseException("Could not find projection with name is $name");
     }
     return p;
-  }
-
-  String serialize() {
-    return """{${serializeList(projections.values.toList(), join: " ", withParenthesis: false)}}""";
-  }
-
-  @override
-  String toString() {
-    return serialize();
   }
 
   void getDependecies(Map<String, GQFragmentDefinitionBase> map, TreeNode node) {

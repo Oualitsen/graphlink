@@ -8,10 +8,6 @@ class GQScalarDefinition extends GQToken with GqDirectivesMixin {
   GQScalarDefinition({required String token, required List<GQDirectiveValue> directives,}) : super(token) {
     directives.forEach(addDirective);
   }
-
-  @override
-  String serialize() {
-    throw UnimplementedError();
-  }
+  
 }
 

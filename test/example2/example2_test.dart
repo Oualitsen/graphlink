@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
+import 'package:retrofit_graphql/src/serializers/dart_client_serializer.dart';
+import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
@@ -35,5 +37,25 @@ void main() async {
             "test/fragment/depedecy_cycle_detection/depedecy_cycle_detection_test_indirect_dependency.graphql")
         .readAsStringSync();
     expect(() => parser.parse(text), throwsA(isA<ParseException>()));
+  });
+
+
+  test("client should not contain Instance of", () {
+    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
+    final text = File("test/example2/schema.graphql").readAsStringSync();
+    var result =  g.parse(text);    
+    expect(result is Success, true);
+    var clientGen = DartClientSerializer(g);
+    var client = clientGen.serializeClient();
+    var types = clientGen.generateTypes(DartSerializer(g));
+    var inputs = clientGen.serializeInputs(DartSerializer(g));
+    var enums = clientGen.generateEnums(DartSerializer(g));
+
+    
+    expect(client, isNot(stringContainsInOrder(["Instance of"])));
+    expect(types, isNot(stringContainsInOrder(["Instance of"])));
+    expect(inputs, isNot(stringContainsInOrder(["Instance of"])));
+    expect(enums, isNot(stringContainsInOrder(["Instance of"])));
+
   });
 }

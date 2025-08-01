@@ -4,6 +4,7 @@ import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/gq_has_directives.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
 import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
+import 'package:retrofit_graphql/src/serializers/graphq_serializer.dart';
 
 class GQTypeDefinition extends GQTokenWithFields with GqDirectivesMixin {
   final Set<String> interfaceNames;
@@ -45,8 +46,9 @@ class GQTypeDefinition extends GQTokenWithFields with GqDirectivesMixin {
   }
 
   String getHash(GQGrammar g) {
+    var serilaize = GraphqSerializer(g);
     return getSerializableFields(g)
-        .map((f) => "${f.name}:${f.type.serializeForceNullable(f.hasInculeOrSkipDiretives)}")
+        .map((f) => "${f.name}:${serilaize.serializeType(f.type, forceNullable: f.hasInculeOrSkipDiretives)}")
         .join(",");
   }
 
@@ -84,11 +86,6 @@ class GQTypeDefinition extends GQTokenWithFields with GqDirectivesMixin {
       return "{${combined.first}}";
     }
     return "{${[nonCommonFields].join(", ")}}";
-  }
-
-  @override
-  String serialize() {
-    throw UnimplementedError();
   }
 
   GQTypeDefinition clone(String newName) {

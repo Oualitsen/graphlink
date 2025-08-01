@@ -8,12 +8,6 @@ class GQEnumDefinition extends GQToken with GqDirectivesMixin {
   GQEnumDefinition({required String token, required this.values, required List<GQDirectiveValue> directives}) : super(token) {
     directives.forEach(addDirective);
   }
-
-  @override
-  String serialize() {
-    throw UnimplementedError();
-  }
-
 }
 
 class GQEnumValue with GqDirectivesMixin {

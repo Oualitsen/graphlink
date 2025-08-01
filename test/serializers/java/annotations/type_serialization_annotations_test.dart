@@ -84,7 +84,7 @@ void main() {
 
     var ibase = g.interfaces["IBase"]!;
     var ibaseSerial = javaSerialzer.serializeInterface(ibase);
-    print(ibaseSerial);
+    
     expect(
         ibaseSerial,
         stringContainsInOrder(
@@ -104,7 +104,6 @@ void main() {
 
     var user = g.getType("User");
     var userSerial = javaSerialzer.serializeTypeDefinition(user);
-    print(userSerial);
     expect(
         userSerial,
         stringContainsInOrder([
