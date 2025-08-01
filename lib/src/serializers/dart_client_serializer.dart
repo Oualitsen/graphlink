@@ -21,18 +21,16 @@ class DartClientSerializer extends ClientSerilaizer {
 
    String generateEnums(GqSerializer serializer) {
     return """
-$fileHeadComment
  ${_grammar.enums.values.toList().map((e) => serializer.serializeEnumDefinition(e)).join("\n")}
  """;
   }
 
-  String serializeInputs(GqSerializer serializer) {
+  String generateInputs(GqSerializer serializer) {
     var inputs = _grammar.inputs.values.toList().map((e) => serializer.serializeInputDefinition(e)).join("\n");
     return """
-$fileHeadComment
-  import 'package:json_annotation/json_annotation.dart';
-  import '$enumsFileName.dart';
-  part '$inputsFileName.g.dart';
+import 'package:json_annotation/json_annotation.dart';
+import '$enumsFileName.dart';
+part '$inputsFileName.g.dart';
 
 $inputs
 """;
@@ -42,10 +40,9 @@ $inputs
     var data = _grammar.projectedTypes.values.toSet().map((e) => serializer.serializeTypeDefinition(e)).join("\n");
 
     return """
-$fileHeadComment
- import 'package:json_annotation/json_annotation.dart';
- import '$enumsFileName.dart';
- part '$typesFileName.g.dart';
+import 'package:json_annotation/json_annotation.dart';
+import '$enumsFileName.dart';
+part '$typesFileName.g.dart';
 
 $data
 
@@ -53,9 +50,8 @@ $data
   }
 
   @override
-  String serializeClient() {
+  String generateClient() {
     return """
-$fileHeadComment
 import '$enumsFileName.dart';
 import '$inputsFileName.dart';
 import '$typesFileName.dart';

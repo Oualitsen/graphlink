@@ -26,7 +26,7 @@ void main() async {
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
     final dsc = DartClientSerializer(g);
-    var inputs = dsc.serializeInputs(DartSerializer(g));
+    var inputs = dsc.generateInputs(DartSerializer(g));
 
     var types = dsc.generateTypes(DartSerializer(g));
     expect(inputs, contains("this.middleName"));

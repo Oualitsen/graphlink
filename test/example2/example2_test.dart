@@ -46,9 +46,9 @@ void main() async {
     var result =  g.parse(text);    
     expect(result is Success, true);
     var clientGen = DartClientSerializer(g);
-    var client = clientGen.serializeClient();
+    var client = clientGen.generateClient();
     var types = clientGen.generateTypes(DartSerializer(g));
-    var inputs = clientGen.serializeInputs(DartSerializer(g));
+    var inputs = clientGen.generateInputs(DartSerializer(g));
     var enums = clientGen.generateEnums(DartSerializer(g));
 
     

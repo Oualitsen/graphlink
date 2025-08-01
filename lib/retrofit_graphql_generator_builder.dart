@@ -1,12 +1,11 @@
-import 'dart:io';
 
 import 'package:build/build.dart';
 import 'package:glob/glob.dart';
 import 'package:logger/logger.dart';
+import 'package:petitparser/core.dart';
+import 'package:retrofit_graphql/src/config.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
-import 'package:retrofit_graphql/src/serializers/dart_client_serializer.dart';
-import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
-import 'package:retrofit_graphql/src/serializers/gq_serializer.dart';
+import 'package:retrofit_graphql/src/main.dart';
 import 'package:yaml/yaml.dart';
 
 class RetrofitGraphqlGeneratorBuilder implements Builder {
@@ -35,6 +34,7 @@ class RetrofitGraphqlGeneratorBuilder implements Builder {
 
   @override
   Future<void> build(BuildStep buildStep) async {
+    final now = DateTime.now();
     await initAssets(buildStep);
     options.config.entries.where((element) => element.value is String).forEach((e) {
       map[e.key] = e.value as String;
@@ -49,29 +49,13 @@ class RetrofitGraphqlGeneratorBuilder implements Builder {
       identityFields: (options.config["identityFields"] as YamlList?)?.cast<String>() ?? [],
     );
 
-    final GqSerializer serializer = DartSerializer(g);
-
-    var parser = g.buildFrom(g.start());
-
     var schema = await readSchema(buildStep);
-    parser.parse(schema);
-    final dcs = DartClientSerializer(g);
-
-    final inputs = dcs.serializeInputs(serializer);
-    final enums = dcs.generateEnums(serializer);
-    final types = dcs.generateTypes(serializer);
-    final client = dcs.serializeClient();
-
-    var dir = Directory(outputDir);
-    var exists = await dir.exists();
-    if (!exists) {
-      await dir.create(recursive: true);
+    var parsed = g.parse(schema);
+    if(parsed is Success) {
+      await generateClientClasses(g, GeneratorConfig(schemaPaths: [], mode: "client", identityFields: g.identityFields,
+     typeMappings: map, outputDir: outputDir), now);
     }
-
-    await File('$outputDir/$inputsFileName.dart').writeAsString(inputs);
-    await File('$outputDir/$enumsFileName.dart').writeAsString(enums);
-    await File('$outputDir/$typesFileName.dart').writeAsString(types);
-    await File('$outputDir/$clientFileName.dart').writeAsString(client);
+   
   }
 
   Future<void> initAssets(BuildStep buildStep) async {
