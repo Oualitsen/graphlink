@@ -13,7 +13,6 @@ abstract class GQTokenWithFields extends GQToken {
   final Map<String, GQField> _fieldMap = {};
 
   final _fieldNames = <String>{};
-  final _serializableFields = <GQField>[];
 
   List<GQField>? _skipOnClientFields;
   List<GQField>? _skipOnServerFields;
@@ -52,16 +51,10 @@ abstract class GQTokenWithFields extends GQToken {
   }
 
   List<GQField> getSerializableFields(CodeGenerationMode mode, {bool skipGenerated = false}) {
-    if (_serializableFields.isEmpty) {
-      _serializableFields
-          .addAll(fields.where((f) => !shouldSkipSerialization(directives: f.getDirectives(skipGenerated: skipGenerated), mode: mode)));
-    }
-    return _serializableFields;
+    return fields.where((f) => !shouldSkipSerialization(directives: f.getDirectives(skipGenerated: skipGenerated), mode: mode)).toList();
   }
 
-  void invalidateSerializableFieldsCache() {
-    _serializableFields.clear();
-  }
+ 
 
   List<GQField> getSkipOnServerFields() {
     return _skipOnServerFields ??= fields.where((field) {

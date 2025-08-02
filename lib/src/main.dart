@@ -256,7 +256,7 @@ Future<Set<String>> generateServerClasses(GQGrammar grammar, GeneratorConfig con
   final destinationDir = config.outputDir;
   final serialzer = JavaSerializer(grammar, inputsAsRecords: config.serverConfig?.spring?.inputAsRecord ?? false,
   typesAsRecords: config.serverConfig?.spring?.typeAsRecord ?? false);
-  final springSeriaalizer = SpringServerSerializer(grammar, javaSerializer: serialzer, generateSchema: springConfig.generateSchema);
+  final springSerializer = SpringServerSerializer(grammar, javaSerializer: serialzer, generateSchema: springConfig.generateSchema);
   final List<Future<File>> futures = [];
 
   grammar.getSerializableTypes().forEach((def) {
@@ -305,7 +305,7 @@ Future<Set<String>> generateServerClasses(GQGrammar grammar, GeneratorConfig con
   });
 
   grammar.services.forEach((k, def) {
-    var text = springSeriaalizer.serializeService(def);
+    var text = springSerializer.serializeService(def);
     var r = writeToFile(
         data: text,
         fileName: "$k.java",
@@ -317,7 +317,7 @@ Future<Set<String>> generateServerClasses(GQGrammar grammar, GeneratorConfig con
   });
 
   grammar.services.forEach((k, def) {
-    var text = springSeriaalizer.serializeController(def);
+    var text = springSerializer.serializeController(def);
     var r = writeToFile(
         data: text,
         fileName: "${k}Controller.java",
@@ -329,7 +329,7 @@ Future<Set<String>> generateServerClasses(GQGrammar grammar, GeneratorConfig con
   });
 
   grammar.repositories.forEach((k, def) {
-    var text = springSeriaalizer.serializeRepository(def);
+    var text = springSerializer.serializeRepository(def);
     var r = writeToFile(
         data: text,
         fileName: "${k}.java",

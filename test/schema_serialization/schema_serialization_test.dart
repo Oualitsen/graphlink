@@ -9,6 +9,30 @@ import 'package:retrofit_graphql/src/gq_grammar.dart';
 final GQGrammar g = GQGrammar();
 
 void main() {
+
+  test("serialize directive definition with different argument types@@", () {
+ final g = GQGrammar(generateAllFieldsFragments: true);
+    var result = g.parse('''
+
+    type User {
+      id: String
+      name: String
+      pet: Pet @gqSkipOnServer
+      petId: String @gqSkipOnClient
+    }
+    type Pet {
+      name: String
+    }
+  ''');
+    expect(result is Success, true);
+    final serializer = GraphqSerializer(g);
+  
+  var schema = serializer.generateSchema();
+  // user should declare a pet: Pet but should not declare a petId
+  expect(schema, contains("pet: Pet"));
+  expect(schema, isNot(contains("petId: String")));
+
+  });
   
   test("serialize directive definition with different argument types", () {
  final g = GQGrammar(generateAllFieldsFragments: true);

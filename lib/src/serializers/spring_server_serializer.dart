@@ -124,7 +124,6 @@ return result;
     var dec = GQDirectiveValue.createGqDecorators(
         decorators: ["@org.springframework.stereotype.Repository"], applyOnClient: false);
     interface.addDirective(dec);
-    interface.invalidateSerializableFieldsCache();
     var gqRepo = interface.getDirectiveByName(gqRepository)!;
     var fqcn = gqRepo.getArgValueAsString(gqFQCN) ?? "org.springframework.data.jpa.repository.JpaRepository";
     var id = gqRepo.getArgValueAsString(gqIdType);

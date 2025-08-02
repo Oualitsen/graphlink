@@ -129,17 +129,13 @@ String formatElapsedTime(DateTime startDate) {
   return parts.join(' ');
 }
 
+const _map = <CodeGenerationMode, String>{
+  CodeGenerationMode.client: gqSkipOnClient,
+  CodeGenerationMode.server: gqSkipOnServer,
+};
 
 bool shouldSkipSerialization({required List<GQDirectiveValue> directives, required CodeGenerationMode mode}) {
-    String token;
-    switch (mode) {
-      case CodeGenerationMode.client:
-        token = gqSkipOnClient;
-        break;
-      case CodeGenerationMode.server:
-        token = gqSkipOnServer;
-        break;
-    }
+    String token = _map[mode]!;
     var skipOnList = directives.where((d) => d.token == token).toList();
     return skipOnList.isNotEmpty;
 }
