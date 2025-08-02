@@ -47,7 +47,7 @@ class GQTypeDefinition extends GQTokenWithFields with GqDirectivesMixin {
 
   String getHash(GQGrammar g) {
     var serilaize = GraphqSerializer(g);
-    return getSerializableFields(g)
+    return getSerializableFields(g.mode)
         .map((f) => "${f.name}:${serilaize.serializeType(f.type, forceNullable: f.hasInculeOrSkipDiretives)}")
         .join(",");
   }

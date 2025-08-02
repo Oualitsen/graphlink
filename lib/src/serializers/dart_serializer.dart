@@ -65,9 +65,9 @@ ${serializeDecorators(def.getDirectives())}
 ${serializeDecorators(def.getDirectives())}
 @JsonSerializable(explicitToJson: true)
 class ${def.token} {
-${serializeListText(def.getSerializableFields(grammar).map((e) => serializeField(e)).toList(), join: "\n", withParenthesis: false).ident()}
+${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeField(e)).toList(), join: "\n", withParenthesis: false).ident()}
         
-${'${def.token}({${def.getSerializableFields(grammar).map((e) => grammar.toConstructorDeclaration(e)).join(", ")}});'.ident()}
+${'${def.token}({${def.getSerializableFields(grammar.mode).map((e) => grammar.toConstructorDeclaration(e)).join(", ")}});'.ident()}
         
 ${'factory ${def.token}.fromJson(Map<String, dynamic> json) => _\$${def.token}FromJson(json);'.ident()}
         
@@ -94,7 +94,7 @@ ${'Map<String, dynamic> toJson() => _\$${def.token}ToJson(this);'.ident()}
       @JsonSerializable(explicitToJson: true)
       class $token ${_serializeImplements(interfaceNames)}{
         
-          ${serializeListText(def.getSerializableFields(grammar).map((e) => serializeField(e)).toList(), join: "\n\r          ", withParenthesis: false)}
+          ${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeField(e)).toList(), join: "\n\r          ", withParenthesis: false)}
           
           $token(${serializeContructorArgs(def, grammar)});
           
@@ -136,7 +136,7 @@ ${'Map<String, dynamic> toJson() => _\$${def.token}ToJson(this);'.ident()}
   }
 
   static String serializeContructorArgs(GQTypeDefinition def, GQGrammar grammar) {
-    var fields = def.getSerializableFields(grammar);
+    var fields = def.getSerializableFields(grammar.mode);
     if (fields.isEmpty) {
       return "";
     }
@@ -185,7 +185,7 @@ ${'Map<String, dynamic> toJson() => _\$${def.token}ToJson(this);'.ident()}
   String serializeInterface(GQInterfaceDefinition interface) {
     final token = interface.token;
     final parents = interface.parents;
-    final fields = interface.getSerializableFields(grammar);
+    final fields = interface.getSerializableFields(grammar.mode);
 
     return """
 ${serializeDecorators(interface.getDirectives())}

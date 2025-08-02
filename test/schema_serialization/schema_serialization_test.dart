@@ -1,4 +1,6 @@
 
+import 'dart:io';
+
 import 'package:petitparser/petitparser.dart';
 import 'package:retrofit_graphql/src/serializers/graphq_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/language.dart';
@@ -159,7 +161,7 @@ void main() {
 ''');
     expect(result is Success, true);
     final serializer = GraphqSerializer(g);
-    var serial = serializer.serializeInputDefinition(g.inputs["UserInput"]!);
+    var serial = serializer.serializeInputDefinition(g.inputs["UserInput"]!, CodeGenerationMode.client);
     expect(
       serial.split("\n").map((str) => str.trim()),
       containsAllInOrder([
@@ -176,12 +178,13 @@ void main() {
   test("serializeTypeDefinition test", () async {
     final g = GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
     var result =  g.parse('''
-    type User @gqSkipOnServer {
+    type User {
       id: String
       name: String
       lastName: String
       age: Int
       car: Car @gqSkipOnServer
+      carId: ID! @gqSkipOnClient
     }
     type Car {
       id: ID!
@@ -189,8 +192,8 @@ void main() {
 ''');
     expect(result is Success, true);
     final serializer = GraphqSerializer(g);
-    var serial = serializer.serializeTypeDefinition(g.getType("User"));
-    // should seriaze skip on server types
+    var serial = serializer.generateSchema();
+    // should seriaze skip on client types
     // but should skip fields with @gqSkipOnServer directive
     expect(
       serial.split("\n").map((str) => str.trim()),
@@ -200,11 +203,94 @@ void main() {
         "name: String",
         "lastName: String",
         "age: Int",
+        "car: Car",
         "}"
       ]),
     );
 
-    expect(serial.contains("car"), isFalse);
+    expect(serial.contains("carId"), isFalse);
+  });
+
+  test("serializeTypeDefinition implements one interface", () async {
+    final g = GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+    var result =  g.parse('''
+    interface IBase {
+      id: String
+    }
+    type User implements IBase {
+      id: String
+      name: String
+      lastName: String
+      age: Int
+      car: Car @gqSkipOnServer
+      carId: ID! @gqSkipOnClient
+    }
+    type Car {
+      id: ID!
+    }
+''');
+    expect(result is Success, true);
+    final serializer = GraphqSerializer(g);
+    var serial = serializer.generateSchema();
+    // should seriaze skip on client types
+    // but should skip fields with @gqSkipOnServer directive
+    expect(
+      serial.split("\n").map((str) => str.trim()),
+      containsAllInOrder([
+        "type User implements IBase {",
+        "id: String",
+        "name: String",
+        "lastName: String",
+        "age: Int",
+        "car: Car",
+        "}"
+      ]),
+    );
+
+    expect(serial.contains("carId"), isFalse);
+  });
+
+  test("serializeTypeDefinition implements multiple interfaces", () async {
+    final g = GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+    var result =  g.parse('''
+    interface IBase {
+      id: String
+    }
+
+    interface IBase2 {
+      name: String
+    }
+    type User implements IBase&IBase2 {
+      id: String
+      name: String
+      lastName: String
+      age: Int
+      car: Car @gqSkipOnServer
+      carId: ID! @gqSkipOnClient
+    }
+    type Car {
+      id: ID!
+    }
+''');
+    expect(result is Success, true);
+    final serializer = GraphqSerializer(g);
+    var serial = serializer.generateSchema();
+    // should seriaze skip on client types
+    // but should skip fields with @gqSkipOnServer directive
+    expect(
+      serial.split("\n").map((str) => str.trim()),
+      containsAllInOrder([
+        "type User implements IBase & IBase2 {",
+        "id: String",
+        "name: String",
+        "lastName: String",
+        "age: Int",
+        "car: Car",
+        "}"
+      ]),
+    );
+
+    expect(serial.contains("carId"), isFalse);
   });
 
 
@@ -217,6 +303,7 @@ void main() {
       lastName: String
       age: Int
       car: Car @gqSkipOnServer
+      carId: ID! @gqSkipOnClient
     }
     type Car {
       id: ID!
@@ -224,7 +311,7 @@ void main() {
 ''');
     expect(result is Success, true);
     final serializer = GraphqSerializer(g);
-    var serial = serializer.serializeInterfaceDefinition(g.interfaces["User"]!);
+    var serial = serializer.generateSchema();
 
     expect(
       serial.split("\n").map((str) => str.trim()),
@@ -234,12 +321,95 @@ void main() {
         "name: String",
         "lastName: String",
         "age: Int",
+        "car: Car",
         "}"
       ]),
     );
 
-    expect(serial.contains("car"), isFalse);
+    expect(serial.contains("carId"), isFalse);
   });
+
+
+  test("serializeInterfaceDefinition imlements one interface", () async {
+    final g = GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+    var result =  g.parse('''
+interface IBase {
+      id: String
+    }
+    interface User implements IBase {
+      id: String
+      name: String
+      lastName: String
+      age: Int
+      car: Car @gqSkipOnServer
+      carId: ID! @gqSkipOnClient
+    }
+    type Car {
+      id: ID!
+    }
+''');
+    expect(result is Success, true);
+    final serializer = GraphqSerializer(g);
+    var serial = serializer.generateSchema();
+
+    expect(
+      serial.split("\n").map((str) => str.trim()),
+      containsAllInOrder([
+        "interface User implements IBase {",
+        "id: String",
+        "name: String",
+        "lastName: String",
+        "age: Int",
+        "car: Car",
+        "}"
+      ]),
+    );
+
+    expect(serial.contains("carId"), isFalse);
+  });
+
+    test("serializeInterfaceDefinition imlements multiple interfaces", () async {
+    final g = GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+    var result =  g.parse('''
+interface IBase {
+      id: String
+    }
+
+    interface IBase2 {
+      id: String
+    }
+    interface User implements IBase&IBase2 {
+      id: String
+      name: String
+      lastName: String
+      age: Int
+      car: Car @gqSkipOnServer
+      carId: ID! @gqSkipOnClient
+    }
+    type Car {
+      id: ID!
+    }
+''');
+    expect(result is Success, true);
+    final serializer = GraphqSerializer(g);
+    var serial = serializer.generateSchema();
+
+    expect(
+      serial.split("\n").map((str) => str.trim()),
+      containsAllInOrder([
+        "interface User implements IBase & IBase2 {",
+        "id: String",
+        "name: String",
+        "lastName: String",
+        "age: Int",
+        "car: Car",
+        "}"
+      ]),
+    );
+
+    expect(serial.contains("carId"), isFalse);
+  });
+
 
 
 

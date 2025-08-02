@@ -14,6 +14,7 @@ import 'package:retrofit_graphql/src/model/gq_schema.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
 import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_union.dart';
+import 'package:retrofit_graphql/src/serializers/language.dart';
 import 'package:retrofit_graphql/src/utils.dart';
 
 const _skippedDirectives = {
@@ -41,22 +42,24 @@ bool _shouldSkipDriectiveValue(GQDirectiveValue def) {
       GQGrammar.directivesToSkip.contains(def.token) ||
       def.getArgValue(gqAnnotation) == true;
 }
-
+// this is for skipping generating objects that should be hidden from the client
+const clientMode = CodeGenerationMode.client;
 class GraphqSerializer {
   final GQGrammar grammar;
 
   GraphqSerializer(this.grammar);
 
   String generateSchema() {
-    final buffer = StringBuffer();
+    
+    final buffer = StringBuffer("###### azul fellawen ######\n");
 
     ///schema
     buffer.writeln(serializeSchemaDefinition(grammar.schema));
 
     /// sacalars
 
-    var scalars = grammar
-        .filterSerialization(grammar.scalars.values)
+    var scalars = 
+        filterSerialization(grammar.scalars.values, clientMode)
         .where((s) => !grammar.builtInScalars.contains(s.token))
         .map(serializeScalarDefinition)
         .join("\n");
@@ -72,24 +75,24 @@ class GraphqSerializer {
     buffer.writeln(directiveDefinitions);
 
     // inputs
-    var inputSerial =
-      grammar.filterSerialization(grammar.inputs.values).map(serializeInputDefinition).join("\n");
+    var inputSerial = filterSerialization(grammar.inputs.values, clientMode)
+    .map((e) => serializeInputDefinition(e, clientMode)).join("\n");
     buffer.writeln(inputSerial);
 
     // types
     var typesSerial =
-        grammar.types.values.map(serializeTypeDefinition).join("\n");
+     filterSerialization(grammar.types.values, clientMode).map((e) => serializeTypeDefinition(e, clientMode)).join("\n");
     buffer.writeln(typesSerial);
     // interfaces
 
     var interfacesSerial =
-        grammar.interfaces.values
+    filterSerialization(grammar.interfaces.values, clientMode)
         .where((i) => !i.fromUnion)
-        .map(serializeInterfaceDefinition).join("\n");
+        .map((e) => serializeTypeDefinition(e, clientMode)).join("\n");
     buffer.writeln(interfacesSerial);
     // enums
     var enumsSerial =
-        grammar.enums.values.map(serializeEnumDefinition).join("\n");
+       filterSerialization(grammar.enums.values, clientMode).map(serializeEnumDefinition).join("\n");
     buffer.writeln(enumsSerial);
 
     //unions
@@ -174,32 +177,43 @@ ${inner.join("\n").ident()}
 '''.trim();
   }
 
-  String serializeInputDefinition(GQInputDefinition def) {
+  String serializeInputDefinition(GQInputDefinition def, CodeGenerationMode mode) {
     return '''
 input ${def.token} ${serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}{
-${def.getSerializableFields(grammar, skipGenerated: true).map(serializeField).map((e) => e.ident()).join("\n")}
+${def.getSerializableFields(mode, skipGenerated: true).map(serializeField).map((e) => e.ident()).join("\n")}
 }
 ''';
   }
 
-  String serializeTypeDefinition(GQTypeDefinition def) {
+  String serializeTypeDefinition(GQTypeDefinition def, CodeGenerationMode mode) {
+
+    String type;
+    Iterable<String> interfaces;
     if(def is GQInterfaceDefinition) {
-      return serializeInterfaceDefinition(def);
+      type = "interface";
+      interfaces = def.parentNames;
+    }else { 
+      type = "type";
+      interfaces = def.interfaceNames;
     }
-    return '''
-type ${def.token} ${serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}{
-${def.getSerializableFields(grammar, skipGenerated: true).map(serializeField).map((e) => e.ident()).join("\n")}
-}
-''';
+
+    var result = StringBuffer("$type ${def.token}");
+    if(interfaces.isNotEmpty) {
+      result.write(" implements ");
+      result.write(interfaces.join(" & "));
+    }
+    var directives = serializeDirectiveValueList(def.getDirectives(skipGenerated: true));
+    if(directives.isNotEmpty) {
+      result.write(" ");
+      result.write(directives);
+    }
+    result.writeln(" {");
+    result.writeln(def.getSerializableFields(mode, skipGenerated: true).map(serializeField).map((e) => e.ident()).join("\n"));
+    result.write("}");
+    return result.toString();
   }
 
-  String serializeInterfaceDefinition(GQInterfaceDefinition def) {
-    return '''
-interface ${def.token} ${serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}{
-${def.getSerializableFields(grammar, skipGenerated: true).map(serializeField).map((e) => e.ident()).join("\n")}
-}
-''';
-  }
+
 
   String serializeEnumDefinition(GQEnumDefinition def) {
     return '''

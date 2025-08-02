@@ -774,7 +774,7 @@ extension GQGrammarExtension on GQGrammar {
               allFieldsKey,
               typeDefinition.token,
               GQFragmentBlockDefinition(typeDefinition
-                  .getSerializableFields(this)
+                  .getSerializableFields(mode)
                   .map((field) => GQProjection(
                       fragmentName: null,
                       token: field.name,
@@ -1239,25 +1239,9 @@ extension GQGrammarExtension on GQGrammar {
         .toList();
     return decorators;
   }
+  
 
-  bool shouldSkipSerialization({required List<GQDirectiveValue> directives}) {
-    String token;
-    switch (mode) {
-      case CodeGenerationMode.client:
-        token = gqSkipOnClient;
-        break;
-      case CodeGenerationMode.server:
-        token = gqSkipOnServer;
-        break;
-    }
-    var skipOnList = directives.where((d) => d.token == token).toList();
-    return skipOnList.isNotEmpty;
-  }
-
-   List<T> filterSerialization<T extends GqDirectivesMixin>(Iterable<T> list) {
-      return list.where((element) => !shouldSkipSerialization(directives: element.getDirectives()))
-      .toList();
-   }
+   
 }
 
 class GeneratedTypeName {

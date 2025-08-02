@@ -133,17 +133,17 @@ ${serializeRecord(def.token, def.fields, {})}
 $decorators
 public class ${def.token} {
 
-${serializeListText(def.getSerializableFields(grammar).map((e) => serializeField(e)).toList(), join: "\n", withParenthesis: false).ident()}
+${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeField(e)).toList(), join: "\n", withParenthesis: false).ident()}
 
 ${generateContructor(def.token, [], "public", checkForNulls: checkForNulls).ident()}
 
-${generateContructor(def.token, def.getSerializableFields(grammar), "private").ident()}
+${generateContructor(def.token, def.getSerializableFields(grammar.mode), "private").ident()}
 
-${generateBuilder(def.token, def.getSerializableFields(grammar)).ident()}
+${generateBuilder(def.token, def.getSerializableFields(grammar.mode)).ident()}
           
-${serializeListText(def.getSerializableFields(grammar).map((e) => serializeGetter(e, checkForNulls: checkForNulls)).toList(), join: "\n", withParenthesis: false).ident()}
+${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeGetter(e, checkForNulls: checkForNulls)).toList(), join: "\n", withParenthesis: false).ident()}
 
-${serializeListText(def.getSerializableFields(grammar).map((e) => serializeSetter(e, checkForNulls: checkForNulls)).toList(), join: "\n", withParenthesis: false).ident()}
+${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeSetter(e, checkForNulls: checkForNulls)).toList(), join: "\n", withParenthesis: false).ident()}
 }
 """;
   }
@@ -337,15 +337,15 @@ ${serializeRecord(def.token, def.fields, interfaceNames)}
 ${decorators}
 public class $token ${_serializeImplements(interfaceNames)}{
   
-${serializeListText(def.getSerializableFields(grammar).map((e) => serializeField(e)).toList(), join: "\n", withParenthesis: false).ident()}
+${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeField(e)).toList(), join: "\n", withParenthesis: false).ident()}
     
 ${generateContructor(def.token, [], "public", checkForNulls: checkNulls).ident()}
-${generateContructor(def.token, def.getSerializableFields(grammar), "private").ident()}
-${generateBuilder(def.token, def.getSerializableFields(grammar)).ident()}
+${generateContructor(def.token, def.getSerializableFields(grammar.mode), "private").ident()}
+${generateBuilder(def.token, def.getSerializableFields(grammar.mode)).ident()}
 
-${serializeListText(def.getSerializableFields(grammar).map((e) => serializeGetter(e, checkForNulls: checkNulls)).toList(), join: "\n", withParenthesis: false).ident()}
+${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeGetter(e, checkForNulls: checkNulls)).toList(), join: "\n", withParenthesis: false).ident()}
     
-${serializeListText(def.getSerializableFields(grammar).map((e) => serializeSetter(e, checkForNulls: checkNulls)).toList(), join: "\n", withParenthesis: false).ident()}
+${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeSetter(e, checkForNulls: checkNulls)).toList(), join: "\n", withParenthesis: false).ident()}
     
 ${generateEqualsAndHashCode(def).ident()}
     
@@ -413,7 +413,7 @@ ${'return java.util.Objects.hash(${fields.join(", ")});'.ident()}
       {bool getters = true}) {
     final token = interface.token;
     final parents = interface.parents;
-    final fields = interface.getSerializableFields(grammar);
+    final fields = interface.getSerializableFields(grammar.mode);
     var decorators = serializeDecorators(interface.getDirectives());
 
     var result = """

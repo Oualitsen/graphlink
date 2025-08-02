@@ -6,9 +6,11 @@ import 'package:glob/list_local_fs.dart';
 import 'package:retrofit_graphql/src/config.dart';
 import 'package:retrofit_graphql/src/constants.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
+import 'package:retrofit_graphql/src/io_utils.dart';
 import 'package:retrofit_graphql/src/serializers/dart_client_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/gq_serializer.dart';
+import 'package:retrofit_graphql/src/serializers/graphq_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/java_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/language.dart';
 import 'package:petitparser/petitparser.dart';
@@ -250,11 +252,12 @@ GQGrammar createGrammar(GeneratorConfig config) {
 }
 
 Future<Set<String>> generateServerClasses(GQGrammar grammar, GeneratorConfig config, DateTime started) async {
-  final packageName = config.serverConfig!.spring!.basePackage;
+  final springConfig = config.serverConfig!.spring!;
+  final packageName = springConfig.basePackage;
   final destinationDir = config.outputDir;
   final serialzer = JavaSerializer(grammar, inputsAsRecords: config.serverConfig?.spring?.inputAsRecord ?? false,
   typesAsRecords: config.serverConfig?.spring?.typeAsRecord ?? false);
-  final springSeriaalizer = SpringServerSerializer(grammar, javaSerializer: serialzer);
+  final springSeriaalizer = SpringServerSerializer(grammar, javaSerializer: serialzer, generateSchema: springConfig.generateSchema);
   final List<Future<File>> futures = [];
 
   grammar.getSerializableTypes().forEach((def) {
@@ -337,13 +340,20 @@ Future<Set<String>> generateServerClasses(GQGrammar grammar, GeneratorConfig con
         packageName: packageName);
     futures.add(r);
   });
+  if(springConfig.generateSchema) {
+    var text = GraphqSerializer(grammar).generateSchema();
+    var r = saveSource(data: text, path: springConfig.schemaTargetPath!, graphqlSource: true);
+    futures.add(r);
+  }
+  
   var result = await Future.wait(futures);
   stdout.writeln("Generated ${futures.length} files in ${formatElapsedTime(started)}");
-
   var paths = result.map((f) => f.path).toSet();
   await cleanUpObsoleteFiles(paths);
   return paths;
 }
+
+
 
 Future<void> cleanUpObsoleteFiles(Set<String> newFiles) async {
   var paths = _lastGeneratedFiles.where((path) => !newFiles.contains(path));
@@ -378,17 +388,4 @@ return saveSource(data: source, path: path);
 
 }
 
-Future<File> saveSource({
-  required String data,
-  required String path
-}) {
-  var file = File(path);
-  if (!file.existsSync()) {
-    file.createSync(recursive: true);
-  }
 
-  return file.writeAsString('''
-$fileHeadComment
-$data
-''');
-}

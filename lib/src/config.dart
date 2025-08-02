@@ -60,6 +60,9 @@ class SpringServerConfig {
   final bool generateRepositories;
   final bool inputAsRecord;
   final bool typeAsRecord;
+  final bool generateSchema;
+  final String? schemaTargetPath;
+  
 
   SpringServerConfig(
       {required this.basePackage,
@@ -68,7 +71,14 @@ class SpringServerConfig {
       required this.generateTypes,
       required this.generateRepositories,
       required this.inputAsRecord,
-      required this.typeAsRecord});
+      required this.typeAsRecord,
+      required this.generateSchema,
+      this.schemaTargetPath
+      }): assert(
+          !generateSchema || (schemaTargetPath != null &&
+              (schemaTargetPath.endsWith('.graphql') || schemaTargetPath.endsWith('.graphqls'))),
+          'schemaTargetPath must be a non-null path ending with .graphql or .graphqls when generateSchema is true',
+        );
 
   factory SpringServerConfig.fromJson(Map<String, dynamic> json) {
     return SpringServerConfig(
@@ -79,6 +89,8 @@ class SpringServerConfig {
       generateRepositories: json['generateRepositories'] ?? false,
       inputAsRecord: json['inputAsRecord'] ?? false,
       typeAsRecord: json['typeAsRecord'] ?? false,
+      generateSchema: json['generateSchema'] ?? false,
+      schemaTargetPath: json['schemaTargetPath'],
     );
   }
 }

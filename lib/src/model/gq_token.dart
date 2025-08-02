@@ -1,7 +1,8 @@
 import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
-import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
+import 'package:retrofit_graphql/src/serializers/language.dart';
+import 'package:retrofit_graphql/src/utils.dart';
 
 abstract class GQToken {
   final String token;
@@ -50,10 +51,10 @@ abstract class GQTokenWithFields extends GQToken {
     return _fieldNames;
   }
 
-  List<GQField> getSerializableFields(GQGrammar grammar, {bool skipGenerated = false}) {
+  List<GQField> getSerializableFields(CodeGenerationMode mode, {bool skipGenerated = false}) {
     if (_serializableFields.isEmpty) {
       _serializableFields
-          .addAll(fields.where((f) => !grammar.shouldSkipSerialization(directives: f.getDirectives(skipGenerated: skipGenerated))));
+          .addAll(fields.where((f) => !shouldSkipSerialization(directives: f.getDirectives(skipGenerated: skipGenerated), mode: mode)));
     }
     return _serializableFields;
   }

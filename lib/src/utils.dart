@@ -3,6 +3,8 @@ import 'dart:math';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
+import 'package:retrofit_graphql/src/model/gq_has_directives.dart';
+import 'package:retrofit_graphql/src/serializers/language.dart';
 
 
 
@@ -126,3 +128,23 @@ String formatElapsedTime(DateTime startDate) {
 
   return parts.join(' ');
 }
+
+
+bool shouldSkipSerialization({required List<GQDirectiveValue> directives, required CodeGenerationMode mode}) {
+    String token;
+    switch (mode) {
+      case CodeGenerationMode.client:
+        token = gqSkipOnClient;
+        break;
+      case CodeGenerationMode.server:
+        token = gqSkipOnServer;
+        break;
+    }
+    var skipOnList = directives.where((d) => d.token == token).toList();
+    return skipOnList.isNotEmpty;
+}
+
+List<T> filterSerialization<T extends GqDirectivesMixin>(Iterable<T> list, CodeGenerationMode mode ) {
+      return list.where((element) => !shouldSkipSerialization(directives: element.getDirectives(), mode: mode))
+      .toList();
+   }

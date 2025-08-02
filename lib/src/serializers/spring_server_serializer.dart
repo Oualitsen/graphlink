@@ -19,8 +19,10 @@ class SpringServerSerializer {
 
   final GQGrammar grammar;
   final JavaSerializer serializer;
+  final bool generateSchema;
+  
 
-  SpringServerSerializer(this.grammar, {this.defaultRepositoryBase, JavaSerializer? javaSerializer})
+  SpringServerSerializer(this.grammar, {this.defaultRepositoryBase, JavaSerializer? javaSerializer, this.generateSchema = false})
       : assert(grammar.mode == CodeGenerationMode.server,
             "Gramar must be in code generation mode = `CodeGenerationMode.server`"),
         serializer = javaSerializer ?? JavaSerializer(grammar);
@@ -115,7 +117,7 @@ return result;
 
   String serializeRepository(GQInterfaceDefinition interface) {
     // find the _ field and ignore it
-    interface.getSerializableFields(grammar).where((f) => f.name == "_").forEach((f) {
+    interface.getSerializableFields(grammar.mode).where((f) => f.name == "_").forEach((f) {
       f.addDirective(GQDirectiveValue(gqSkipOnServer, [], [], generated: true));
     });
 
@@ -255,6 +257,9 @@ final ${serializer.serializeType(arg.type, false)} ${arg.token}
   }
 
   String serializeMappingMethod(GQSchemaMapping mapping, String serviceInstanceName) {
+    if(mapping.forbid && generateSchema) {
+      return "";
+    }
     if (mapping.forbid) {
       final statement = """
 throw new graphql.GraphQLException("Access denied to field '${mapping.type.token}.${mapping.field.name}'");

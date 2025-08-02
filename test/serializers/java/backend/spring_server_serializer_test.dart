@@ -48,6 +48,67 @@ void main() {
         ]));
   });
 
+   test("test backend handlers", () {
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+
+    final text = File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+
+    expect(parsed is Success, true);
+    var serverSerialzer = SpringServerSerializer(g);
+    var userUser = g.services["UserService"]!;
+    var result = serverSerialzer.serializeController(userUser);
+    expect(
+        result,
+        stringContainsInOrder([
+          "@org.springframework.stereotype.Controller",
+          "public class UserServiceController",
+          "private final UserService userService;",
+          "public UserServiceController(final UserService userService)",
+          "this.userService = userService;",
+          "public User getUserById(@org.springframework.graphql.data.method.annotation.Argument final String id)",
+          "@org.springframework.graphql.data.method.annotation.SubscriptionMapping",
+          "public reactor.core.publisher.Flux<java.util.List<Car>> watchCars(@org.springframework.graphql.data.method.annotation.Argument final String userId)",
+          "@org.springframework.graphql.data.method.annotation.SubscriptionMapping",
+          "public reactor.core.publisher.Flux<User> watchUser(@org.springframework.graphql.data.method.annotation.Argument final String userId)",
+          '@org.springframework.graphql.data.method.annotation.SchemaMapping(typeName="User", field="password")',
+          "public String userPassword(User value)",
+          """throw new graphql.GraphQLException("Access denied to field 'User.password'");"""
+        ]));
+  }); 
+  
+  test("test backend handlers when shcema generation is on", () {
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+
+    final text = File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+
+    expect(parsed is Success, true);
+    var serverSerialzer = SpringServerSerializer(g, generateSchema: true);
+    var userUser = g.services["UserService"]!;
+    var result = serverSerialzer.serializeController(userUser);
+    expect(
+        result,
+        stringContainsInOrder([
+          "@org.springframework.stereotype.Controller",
+          "public class UserServiceController",
+          "private final UserService userService;",
+          "public UserServiceController(final UserService userService)",
+          "this.userService = userService;",
+          "public User getUserById(@org.springframework.graphql.data.method.annotation.Argument final String id)",
+          "@org.springframework.graphql.data.method.annotation.SubscriptionMapping",
+          "public reactor.core.publisher.Flux<java.util.List<Car>> watchCars(@org.springframework.graphql.data.method.annotation.Argument final String userId)",
+          "@org.springframework.graphql.data.method.annotation.SubscriptionMapping",
+          "public reactor.core.publisher.Flux<User> watchUser(@org.springframework.graphql.data.method.annotation.Argument final String userId)",
+        ]));
+        expect(result, isNot (contains("public String userPassword")));
+        expect(result, isNot (contains("throw new graphql.GraphQLException")));
+  });
+
   test("test controller/service returning skipped type ", () {
     final GQGrammar g =
         GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);

@@ -6,23 +6,24 @@ import 'package:retrofit_graphql/src/model/gq_has_directives.dart';
 import 'package:retrofit_graphql/src/model/gq_input_type_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
 import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
+import 'package:retrofit_graphql/src/serializers/language.dart';
 import 'package:retrofit_graphql/src/utils.dart';
 import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 
 abstract class GqSerializer {
   final GQGrammar grammar;
-
-  GqSerializer(this.grammar);
+  late final CodeGenerationMode mode;
+  GqSerializer(this.grammar) : mode = grammar.mode;
 
   String serializeEnumDefinition(GQEnumDefinition def) {
-    if (grammar.shouldSkipSerialization(directives: def.getDirectives())) {
+    if (shouldSkipSerialization(directives: def.getDirectives(), mode: mode)) {
       return "";
     }
     return doSerializeEnumDefinition(def);
   }
 
   String serialzeEnumValue(GQEnumValue value) {
-    if (grammar.shouldSkipSerialization(directives: value.getDirectives())) {
+    if (shouldSkipSerialization(directives: value.getDirectives(), mode: mode)) {
       return "";
     }
     return doSerialzeEnumValue(value);
@@ -33,7 +34,7 @@ abstract class GqSerializer {
   String doSerialzeEnumValue(GQEnumValue value);
 
   String serializeField(GQField def) {
-    if (grammar.shouldSkipSerialization(directives: def.getDirectives())) {
+    if (shouldSkipSerialization(directives: def.getDirectives(), mode: mode)) {
       return "";
     }
     return doSerializeField(def);
@@ -43,7 +44,7 @@ abstract class GqSerializer {
   String serializeType(GQType def, bool forceNullable, [bool asArray = false]);
 
   String serializeInputDefinition(GQInputDefinition def) {
-    if (grammar.shouldSkipSerialization(directives: def.getDirectives())) {
+    if (shouldSkipSerialization(directives: def.getDirectives(), mode: mode)) {
       return "";
     }
     return doSerializeInputDefinition(def);
@@ -52,7 +53,7 @@ abstract class GqSerializer {
   String doSerializeInputDefinition(GQInputDefinition def);
 
   String serializeTypeDefinition(GQTypeDefinition def) {
-    if (grammar.shouldSkipSerialization(directives: def.getDirectives())) {
+    if (shouldSkipSerialization(directives: def.getDirectives(), mode: mode)) {
       return "";
     }
     return doSerializeTypeDefinition(def);
