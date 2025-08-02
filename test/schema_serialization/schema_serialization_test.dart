@@ -1,5 +1,4 @@
 
-import 'dart:io';
 
 import 'package:petitparser/petitparser.dart';
 import 'package:retrofit_graphql/src/serializers/graphq_serializer.dart';
@@ -11,6 +10,64 @@ final GQGrammar g = GQGrammar();
 
 void main() {
   
+  test("serialize directive definition with different argument types", () {
+ final g = GQGrammar(generateAllFieldsFragments: true);
+    var result = g.parse('''
+    directive @myDirective(value: User!) on OBJECT
+    directive @myDirective2(value: [String!]!) on OBJECT
+    directive @myDirective3(value: [User!]!) on OBJECT
+
+    type User {
+      id: String @myDirective(value: {name: "ramdane", age: 12, id: "test"})
+      name: String @myDirective2(value: ["azul", "fellawen"])
+      lastName: String @myDirective3(value: [{name: "ramdane", age: 12, id: "test"}])
+      age: Int
+    }
+  ''');
+  expect(result is Success, true);
+    final serializer = GraphqSerializer(g);
+    var myDirective = serializer.serializeDirectiveDefinition(g.directiveDefinitions["@myDirective"]!);
+    expect(myDirective, "directive @myDirective(value: User!) on OBJECT");
+
+    var myDirective2 = serializer.serializeDirectiveDefinition(g.directiveDefinitions["@myDirective2"]!);
+    expect(myDirective2, "directive @myDirective2(value: [String!]!) on OBJECT");
+
+    var myDirective3 = serializer.serializeDirectiveDefinition(g.directiveDefinitions["@myDirective3"]!);
+    expect(myDirective3, "directive @myDirective3(value: [User!]!) on OBJECT");
+
+  });
+
+test("serialize directive values with different argument types", () {
+ final g = GQGrammar(generateAllFieldsFragments: true);
+    var result = g.parse('''
+    directive @myDirective(value: User!) on OBJECT
+    directive @myDirective2(value: [String!]!) on OBJECT
+    directive @myDirective3(value: [User!]!) on OBJECT
+
+    type User {
+      id: String @myDirective(value: {name: "ramdane", age: 12, id: "test"})
+      name: String @myDirective2(value: ["azul", "fellawen"])
+      lastName: String @myDirective3(value: [{name: "ramdane", age: 12, id: "test"}])
+      age: Int
+    }
+  ''');
+  expect(result is Success, true);
+    final serializer = GraphqSerializer(g);
+    var user = g.getType("User");
+    var myDirective = user.getFieldByName("id")!.getDirectiveByName("@myDirective")!;
+    var myDirectiveSerial = serializer.serializeDirectiveValue(myDirective);
+    expect(myDirectiveSerial, '@myDirective(value: {name: "ramdane", age: 12, id: "test"})');
+
+    var myDirective2 = user.getFieldByName("name")!.getDirectiveByName("@myDirective2")!;
+    var myDirectiveSerial2 = serializer.serializeDirectiveValue(myDirective2);
+    expect(myDirectiveSerial2, '@myDirective2(value: ["azul", "fellawen"])');
+
+    var myDirective3 = user.getFieldByName("lastName")!.getDirectiveByName("@myDirective3")!;
+    var myDirectiveSerial3 = serializer.serializeDirectiveValue(myDirective3);
+    expect(myDirectiveSerial3, '@myDirective3(value: [{name: "ramdane", age: 12, id: "test"}])');
+  });
+
+
 
   test("serializeSchemaDefinition - all root types", () async {
     final g = GQGrammar(generateAllFieldsFragments: true);

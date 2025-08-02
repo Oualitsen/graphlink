@@ -1229,7 +1229,7 @@ extension GQGrammarExtension on GQGrammar {
           return d.getArguments().where((arg) => arg.token == "value").first;
         })
         .map((d) {
-          var decoratorValues = ((d.value as List)[1] as List)
+          var decoratorValues = (d.value as List)
               .map((e) => e as String)
               .map((str) => str.removeQuotes())
               .toList();

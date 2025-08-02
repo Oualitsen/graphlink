@@ -267,20 +267,20 @@ class GQGrammar extends GrammarDefinition {
         return GQArgumentValue(value.first, value.last);
       });
 
-  Parser openParen() => ref1(token, char("("));
+  Parser<String> openParen() => ref1(token, char("(")).map((_) => "(");
 
-  Parser closeParen() => ref1(token, char(")"));
+  Parser<String> closeParen() => ref1(token, char(")")).map((_) => ")");
 
-  Parser openBrace() => ref1(token, char("{"));
+  Parser<String> openBrace() => ref1(token, char("{")).map((_) => "{");
 
-  Parser closeBrace() => ref1(token, char("}"));
+  Parser<String> closeBrace() => ref1(token, char("}")).map((_) => "}");
 
-  Parser openSquareBracket() => ref1(token, char("["));
+  Parser<String> openSquareBracket() => ref1(token, char("[")).map((_) => "[");
 
-  Parser closeSquareBracket() => ref1(token, char("]"));
+  Parser<String> closeSquareBracket() => ref1(token, char("]")).map((_) => "]");
 
-  Parser colon() => ref1(token, char(":"));
-  Parser at() => ref1(token, char("@"));
+  Parser<String> colon() => ref1(token, char(":")).map((_) => ":");
+  Parser<String> at() => ref1(token, char("@")).map((_) => "@");
 
   Parser<GQTypeDefinition> typeDefinition() {
     return seq4(
@@ -500,14 +500,18 @@ class GQGrammar extends GrammarDefinition {
             ref1(token, refValue()),
             nullParser()
           ].toChoiceParser())
+          
       .map((value) => value);
 
-  Parser nullParser() => "null".toParser();
+  Parser<String> nullParser() => "null".toParser();
 
-  Parser objectValue() =>
-      openBrace() & ref1(token, identifier() & colon() & initialValue()).star() & closeBrace();
+  Parser<Map<String, Object?>> objectValue() =>
+     seq3(openBrace() , ref1(token, oneObjectField()).cast<MapEntry<String, Object>>().star() , closeBrace()).map3((_, entries, __) => Map.fromEntries(entries));
 
-  Parser arrayValue() => openSquareBracket() & ref0(initialValue).star() & closeSquareBracket();
+  Parser<MapEntry<String, Object>> oneObjectField() => seq3 (identifier(), colon(), initialValue())
+  .map3((id, _, value) => MapEntry(id, value));
+
+  Parser<List<Object?>> arrayValue() => seq3 (openSquareBracket(), ref0(initialValue).star(), closeSquareBracket()).map3((_, values, __) => values);
 
   Parser<GQType> typeTokenDefinition() =>
       (ref0(simpleTypeTokenDefinition) | ref0(listTypeDefinition)).cast<GQType>();
@@ -533,27 +537,27 @@ class GQGrammar extends GrammarDefinition {
   Parser<String> identifier() =>
       ref1(token, (ref0(_myLetter) & (((ref0(_myLetter) | ref0(number)).star()))).flatten()).cast<String>();
 
-  Parser number() => ref0(digit).plus();
+  Parser<int> number() => ref0(digit).plus().flatten().map(int.parse);
 
-  Parser _myLetter() => ref0(letter) | char("_");
+  Parser<String> _myLetter() =>  [ref0(letter), char("_")].toChoiceParser();
 
   Parser hiddenStuffWhitespace() => (ref0(visibleWhitespace) | ref0(singleLineComment) | ref0(commas));
 
   Parser<String> visibleWhitespace() => whitespace();
 
-  Parser commas() => char(",");
+  Parser<String> commas() => char(",");
 
-  Parser doubleQuote() => char('"');
+  Parser<String> doubleQuote() => char('"');
 
-  Parser tripleQuote() => string('"""');
+  Parser<String> tripleQuote() => string('"""');
 
   Parser<GQComment> singleLineComment() =>
       (char('#') & ref0(newlineLexicalToken).neg().star()).flatten().map((value) => GQComment(value));
 
-  Parser singleLineStringLexicalToken() =>
-      doubleQuote() & ref0(stringContentDoubleQuotedLexicalToken) & doubleQuote();
+  Parser<String> singleLineStringLexicalToken() =>
+      seq3(doubleQuote(), ref0(stringContentDoubleQuotedLexicalToken), doubleQuote()).flatten();
 
-  Parser stringContentDoubleQuotedLexicalToken() => doubleQuote().neg().star();
+  Parser<String> stringContentDoubleQuotedLexicalToken() => doubleQuote().neg().star().flatten();
 
   Parser<String> singleLineStringToken() {
     final quote = char('"');
@@ -592,7 +596,7 @@ class GQGrammar extends GrammarDefinition {
 
   Parser<String> documentation() => (blockStringToken() | singleLineStringToken()).flatten();
 
-  Parser newlineLexicalToken() => pattern('\n\r');
+  Parser<String> newlineLexicalToken() => pattern('\n\r');
 
   Parser<Set<String>> implementsToken() {
     return seq2(ref1(token, "implements"), interfaceList()).map2((_, set) => set);

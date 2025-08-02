@@ -51,7 +51,7 @@ class GraphqSerializer {
 
   String generateSchema() {
     
-    final buffer = StringBuffer("###### azul fellawen ######\n");
+    final buffer = StringBuffer();
 
     ///schema
     buffer.writeln(serializeSchemaDefinition(grammar.schema));

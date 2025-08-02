@@ -55,7 +55,7 @@ class GQTypeDefinition extends GQTokenWithFields with GqDirectivesMixin {
   Set<String> getIdentityFields(GQGrammar g) {
     var directive = getDirectiveByName(gqEqualsHashcode);
     if (directive != null) {
-      var directiveFields = ((directive.getArguments().first.value as List)[1] as List)
+      var directiveFields = (directive.getArguments().first.value as List)
           .map((e) => e as String)
           .map((e) => e.replaceAll('"', '').replaceAll("'", ""))
           .toSet();

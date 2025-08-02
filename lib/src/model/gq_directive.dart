@@ -120,7 +120,7 @@ class GQDirectiveValue extends GQToken {
   }) {
     return GQDirectiveValue(gqDecorators, [], [
       GQArgumentValue(
-          "value", ["[[", decorators.map((s) => '"$s"').toList(), "]]"]),
+          "value", decorators.map((s) => '"$s"').toList()),
       GQArgumentValue("applyOnServer", applyOnServer),
       GQArgumentValue("applyOnClient", applyOnClient),
       
