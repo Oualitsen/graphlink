@@ -24,7 +24,7 @@ void main() async {
     });
   });
   group("Fragment tests", () {
-    test("Fragments test", () async {
+    test("Fragments test 1", () async {
       final text = File("test/fragment/fragments.graphql").readAsStringSync();
       final GQGrammar g = GQGrammar();
       var parser = g.buildFrom(g.fullGrammar().end());
@@ -35,7 +35,7 @@ void main() async {
       expect(g.fragments.length, greaterThanOrEqualTo(4));
     });
 
-    test("Fragemnt Dependecies Test", () {
+    test("Fragemnt Dependecies Test 1", () {
       final GQGrammar g = GQGrammar();
       var parser = g.buildFrom(g.fullGrammar().end());
 

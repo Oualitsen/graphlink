@@ -5,7 +5,7 @@ import 'package:petitparser/petitparser.dart';
 final GQGrammar g = GQGrammar();
 
 void main() {
-  test("identifier test", () {
+  test("identifier test 1", () {
     var parser = g.buildFrom(g.identifier().end());
     var result = parser.parse(''' test12 ''');
     expect(result is Success, true);

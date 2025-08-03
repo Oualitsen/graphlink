@@ -6,7 +6,7 @@ import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() async {
-  test("Input transformation", () {
+  test("Input transformation 1", () {
     var logger = Logger();
     final GQGrammar g = GQGrammar();
     logger.i(

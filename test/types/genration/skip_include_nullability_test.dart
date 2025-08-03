@@ -19,24 +19,24 @@ void main() async {
     GQQueryDefinition products = g.queries["products"]!;
     var productTypeDef = products.getGeneratedTypeDefinition();
     GQField getProduct = productTypeDef.fields
-        .where((field) => field.name == "getProduct")
+        .where((field) => field.name.token == "getProduct")
         .first;
 
     var getProductType = g.projectedTypes[getProduct.type.token]!;
     var nameField =
-        getProductType.fields.where((element) => element.name == "name").first;
+        getProductType.fields.where((element) => element.name.token == "name").first;
     expect(nameField.type.nullable, false);
     var serilaizer = DartSerializer(g);
     expect(serilaizer.serializeField(nameField), contains("String?"));
 
     GQField getProductList = productTypeDef.fields
-        .where((field) => field.name == "getProductList")
+        .where((field) => field.name.token == "getProductList")
         .first;
 
     var getProductListType =
         g.projectedTypes[getProductList.type.inlineType.token]!;
     var descriptionField = getProductListType.fields
-        .where((element) => element.name == "description")
+        .where((element) => element.name.token == "description")
         .first;
     expect(descriptionField.type.nullable, false);
     var serializer = DartSerializer(g);

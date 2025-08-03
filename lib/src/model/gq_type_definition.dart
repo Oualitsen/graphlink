@@ -4,10 +4,11 @@ import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/gq_has_directives.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
 import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
+import 'package:retrofit_graphql/src/model/token_info.dart';
 import 'package:retrofit_graphql/src/serializers/graphq_serializer.dart';
 
 class GQTypeDefinition extends GQTokenWithFields with GqDirectivesMixin {
-  final Set<String> interfaceNames;
+  final Set<TokenInfo> interfaceNames;
   final bool nameDeclared;
   final GQTypeDefinition? derivedFromType;
 
@@ -19,8 +20,9 @@ class GQTypeDefinition extends GQTokenWithFields with GqDirectivesMixin {
   ///
   final Set<GQTypeDefinition> subTypes = {};
 
+
   GQTypeDefinition({
-    required String name,
+    required TokenInfo name,
     required this.nameDeclared,
     required List<GQField> fields,
     required this.interfaceNames,
@@ -28,7 +30,7 @@ class GQTypeDefinition extends GQTokenWithFields with GqDirectivesMixin {
     required this.derivedFromType,
   }) : super(name, fields) {
     directives.forEach(addDirective);
-    fields.sort((f1, f2) => f1.name.compareTo(f2.name));
+    fields.sort((f1, f2) => f1.name.token.compareTo(f2.name.token));
   }
 
   ///
@@ -38,11 +40,15 @@ class GQTypeDefinition extends GQTokenWithFields with GqDirectivesMixin {
     var dft = derivedFromType;
     var otherDft = other.derivedFromType;
     if (otherDft != null) {
-      if ((dft?.token ?? token) != otherDft.token) {
+      if ((dft?.tokenInfo ?? tokenInfo) != otherDft.tokenInfo) {
         return false;
       }
     }
     return getHash(g) == other.getHash(g);
+  }
+
+  bool implements(String interfaceName) {
+    return interfaceNames.where((i) => i.token == interfaceName).isNotEmpty;
   }
 
   String getHash(GQGrammar g) {
@@ -66,7 +72,7 @@ class GQTypeDefinition extends GQTokenWithFields with GqDirectivesMixin {
 
   @override
   String toString() {
-    return 'GraphqlType{name: $token, fields: $fields, interfaceNames: $interfaceNames}';
+    return 'GraphqlType{name: $tokenInfo, fields: $fields, interfaceNames: $interfaceNames}';
   }
 
   List<GQField> getFields() {
@@ -88,9 +94,13 @@ class GQTypeDefinition extends GQTokenWithFields with GqDirectivesMixin {
     return "{${[nonCommonFields].join(", ")}}";
   }
 
+  bool containsInteface(String interfaceName) => interfaceNames.where((e) => e.token == interfaceName).isNotEmpty;
+
+  Set<String> getInterfaceNames() => interfaceNames.map((e) => e.token).toSet();
+
   GQTypeDefinition clone(String newName) {
     return GQTypeDefinition(
-      name: newName,
+      name: TokenInfo(token: newName, line: tokenInfo.line, column: tokenInfo.column, fileName: tokenInfo.fileName),
       nameDeclared: nameDeclared,
       fields: fields.toList(),
       interfaceNames: interfaceNames,

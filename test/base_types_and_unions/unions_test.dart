@@ -5,7 +5,7 @@ import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {
-  test("type_looks_like_test", () {
+  test("type_looks_like_test 2", () {
     final text =
         File("test/base_types_and_unions/unions.graphql").readAsStringSync();
     var g = GQGrammar(generateAllFieldsFragments: true);

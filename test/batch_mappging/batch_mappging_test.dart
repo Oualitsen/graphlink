@@ -32,13 +32,13 @@ void main() {
     expect(carOwner.batch, false);
     expect(carOwner.type.token, "Car");
     expect(carOwner.field.type.token, "Owner");
-    expect(carOwner.field.name, "owner");
+    expect(carOwner.field.name.token, "owner");
 
     var userCars = g.schemaMappings["userCars"]!;
     expect(userCars.batch, true);
     expect(userCars.type.token, "User");
     expect(userCars.field.type.token, "Car");
-    expect(userCars.field.name, "cars");
+    expect(userCars.field.name.token, "cars");
 
     expect(g.schemaMappings["carUserId"]!.forbid, true);
     expect(g.schemaMappings["carOwnerId"]!.forbid, true);

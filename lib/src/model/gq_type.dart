@@ -9,12 +9,12 @@ class GQType extends GQToken {
   ///
   bool isScalar;
 
-  GQType(super.name, this.nullable, {this.isScalar = true});
+  GQType(super.tokenInfo, this.nullable, {this.isScalar = true});
 
   @override
   bool operator ==(Object other) {
     if (other is GQType) {
-      return token == other.token && nullable == other.nullable;
+      return tokenInfo == other.tokenInfo && nullable == other.nullable;
     }
     return false;
   }
@@ -22,13 +22,13 @@ class GQType extends GQToken {
   GQType get inlineType => this;
 
   @override
-  int get hashCode => token.hashCode;
+  int get hashCode => tokenInfo.hashCode;
 }
 
 class GQListType extends GQType {
   ///this could be an instance of GQListType
   final GQType type;
-  GQListType(this.type, bool nullable) : super(type.token, nullable, isScalar: false);
+  GQListType(this.type, bool nullable) : super(type.tokenInfo, nullable, isScalar: false);
 
   @override
   GQType get inlineType => type;

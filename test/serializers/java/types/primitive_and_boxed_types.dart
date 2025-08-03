@@ -27,7 +27,7 @@ void main() {
     expect(parsed is Success, true);
     var javaSerialzer = JavaSerializer(g);
     var person = g.getType("Person");
-    var aged = person.fields.where((f) => f.name == "aged").first;
+    var aged = person.fields.where((f) => f.name.token == "aged").first;
 
     var agedDeclaration = javaSerialzer.serializeGetterDeclaration(aged, skipModifier: true);
     expect(agedDeclaration, "Boolean getAged()");
@@ -52,7 +52,7 @@ void main() {
     expect(parsed is Success, true);
     var javaSerialzer = JavaSerializer(g);
     var person = g.getType("Person");
-    var aged = person.fields.where((f) => f.name == "aged").first;
+    var aged = person.fields.where((f) => f.name.token == "aged").first;
 
     var agedDeclaration = javaSerialzer.serializeGetterDeclaration(aged, skipModifier: true);
     expect(agedDeclaration, "boolean isAged()");
@@ -77,7 +77,7 @@ void main() {
     expect(parsed is Success, true);
     var javaSerialzer = JavaSerializer(g);
     var person = g.getType("Person");
-    var ids = person.fields.where((f) => f.name == "ids").first;
+    var ids = person.fields.where((f) => f.name.token == "ids").first;
 
     var idsSerial = javaSerialzer.serializeGetterDeclaration(ids, skipModifier: true);
 
@@ -103,8 +103,8 @@ void main() {
     expect(parsed is Success, true);
     var javaSerialzer = JavaSerializer(g);
     var person = g.getType("Person");
-    var age = person.fields.where((f) => f.name == "age").first;
-    var age2 = person.fields.where((f) => f.name == "age2").first;
+    var age = person.fields.where((f) => f.name.token == "age").first;
+    var age2 = person.fields.where((f) => f.name.token == "age2").first;
 
     var ageSerial = javaSerialzer.serializeField(age);
     var age2Serial = javaSerialzer.serializeField(age2);

@@ -1,3 +1,5 @@
+import 'package:retrofit_graphql/src/model/token_info.dart';
+
 extension StringExt on String {
   String get firstUp {
     if (isEmpty) {
@@ -56,4 +58,6 @@ extension StringExt on String {
   String dolarEscape() {
     return replaceFirst("\$", "\\\$");
   }
+
+  TokenInfo toToken() => TokenInfo.ofString(this);
 }

@@ -51,7 +51,7 @@ public class $controllerName {
 ${'private final ${service.name} $sericeInstanceName;'.ident()}
 ${serializer.generateContructor(controllerName, [
               GQField(
-                  name: sericeInstanceName, type: GQType(service.name, false), arguments: [], directives: [])
+                  name: sericeInstanceName.toToken(), type: GQType(service.name.toToken(), false), arguments: [], directives: [])
             ], "public").ident()}
 
 ${service.getMethodNames().map((n) {
@@ -82,7 +82,7 @@ $result
       {bool injectDataFtechingEnv = false, String? qualifier}) {
         final decorators = serializer.serializeDecorators(method.getDirectives());
     String statement =
-        "return $sericeInstanceName.${method.name}(${method.arguments.map((arg) => arg.token).join(", ")}";
+        "return $sericeInstanceName.${method.name}(${method.arguments.map((arg) => arg.tokenInfo).join(", ")}";
     if (injectDataFtechingEnv) {
       if (method.arguments.isNotEmpty) {
         statement = "$statement, dataFetchingEnvironment);";
@@ -117,8 +117,8 @@ return result;
 
   String serializeRepository(GQInterfaceDefinition interface) {
     // find the _ field and ignore it
-    interface.getSerializableFields(grammar.mode).where((f) => f.name == "_").forEach((f) {
-      f.addDirective(GQDirectiveValue(gqSkipOnServer, [], [], generated: true));
+    interface.getSerializableFields(grammar.mode).where((f) => f.name.token == "_").forEach((f) {
+      f.addDirective(GQDirectiveValue(gqSkipOnServer.toToken(), [], [], generated: true));
     });
 
     var dec = GQDirectiveValue.createGqDecorators(
@@ -130,7 +130,7 @@ return result;
     var ontType = gqRepo.getArgValueAsString(gqType)!;
 
     interface.parents.add(GQInterfaceDefinition(
-        name: "$fqcn<$ontType, ${id}>",
+        name: "$fqcn<$ontType, ${id}>".toToken(),
         nameDeclared: false,
         fields: [],
         parentNames: {},
@@ -196,20 +196,21 @@ $result
   }
 
   GQType _getServiceReturnType(GQType type) {
-    if (grammar.scalars.containsKey(type.token) || grammar.enums.containsKey(type.token)) {
+    var token = type.token;
+    if (grammar.scalars.containsKey(token) || grammar.enums.containsKey(token)) {
       return type;
     }
 
-    var returnType = grammar.getType(type.token);
+    var returnType = grammar.getType(token);
 
     var skipOnserverDir = returnType.getDirectiveByName(gqSkipOnServer);
     if (skipOnserverDir != null) {
-      var mapTo = getMapTo(type.token);
+      var mapTo = getMapTo(token);
 
-      var rt = GQType(mapTo, false);
+      var rt = GQType(mapTo.toToken(), false);
       if (type is GQListType) {
         if (mapTo == "Object") {
-          rt = GQType("?", false);
+          rt = GQType("?".toToken(), false);
         }
         return GQListType(rt, false);
       } else {
@@ -231,7 +232,7 @@ $result
     }
     var mappedTo = grammar.getType(mapTo);
     if (mappedTo.getDirectiveByName(gqSkipOnServer) != null) {
-      throw ParseException("You cannot mapTo ${mappedTo.token} because it is annotated with $gqSkipOnServer");
+      throw ParseException("You cannot mapTo ${mappedTo.tokenInfo} because it is annotated with $gqSkipOnServer");
     }
     return mappedTo.token;
   }
@@ -250,7 +251,7 @@ ${args.map((a) => serializeArg(a)).map((e) {
 
   String serializeArg(GQArgumentDefinition arg) {
     return """
-final ${serializer.serializeType(arg.type, false)} ${arg.token}
+final ${serializer.serializeType(arg.type, false)} ${arg.tokenInfo}
 """
         .trim();
   }
@@ -261,7 +262,7 @@ final ${serializer.serializeType(arg.type, false)} ${arg.token}
     }
     if (mapping.forbid) {
       final statement = """
-throw new graphql.GraphQLException("Access denied to field '${mapping.type.token}.${mapping.field.name}'");
+throw new graphql.GraphQLException("Access denied to field '${mapping.type.tokenInfo}.${mapping.field.name}'");
 """
           .trim();
       return """
@@ -288,12 +289,12 @@ ${statement.ident()}
   String _getAnnotation(GQSchemaMapping mapping) {
     if (mapping.batch) {
       return """
-@org.springframework.graphql.data.method.annotation.BatchMapping(typeName="${mapping.type.token}", field="${mapping.field.name}")
+@org.springframework.graphql.data.method.annotation.BatchMapping(typeName="${mapping.type.tokenInfo}", field="${mapping.field.name}")
       """
           .trim();
     } else {
       return """
-@org.springframework.graphql.data.method.annotation.SchemaMapping(typeName="${mapping.type.token}", field="${mapping.field.name}")
+@org.springframework.graphql.data.method.annotation.SchemaMapping(typeName="${mapping.type.tokenInfo}", field="${mapping.field.name}")
 """
           .trim();
     }
@@ -318,7 +319,7 @@ $result
 
   String _getReturnType(GQSchemaMapping mapping) {
     if (mapping.batch) {
-      var keyType = serializer.serializeType(_getServiceReturnType(GQType(mapping.type.token, false)), false);
+      var keyType = serializer.serializeType(_getServiceReturnType(GQType(mapping.type.tokenInfo, false)), false);
       if (keyType == "Object") {
         keyType = "?";
       }
@@ -332,7 +333,7 @@ java.util.Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(ser
   }
 
   String _getMappingArgument(GQSchemaMapping mapping) {
-    var argType = serializer.serializeType(_getServiceReturnType(GQType(mapping.type.token, false)), false);
+    var argType = serializer.serializeType(_getServiceReturnType(GQType(mapping.type.tokenInfo, false)), false);
     if (mapping.batch) {
       return "java.util.List<${convertPrimitiveToBoxed(argType)}> value";
     } else {

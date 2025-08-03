@@ -7,7 +7,7 @@ import 'package:petitparser/petitparser.dart';
 final GQGrammar g = GQGrammar();
 
 void main() async {
-  test("query definition auto generation", () {
+  test("query definition auto generation 2", () {
     final text = File("test/queries_auto_gen/queries_auto_gen2.graphql").readAsStringSync();
     final GQGrammar g =
         GQGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true, defaultAlias: "data");

@@ -7,7 +7,7 @@ import 'package:petitparser/petitparser.dart';
 final GQGrammar g = GQGrammar();
 
 void main() async {
-  test("fragment projection test", () {
+  test("fragment projection test 1", () {
     final text = File("test/frag_ref/fragment_ref.graphql").readAsStringSync();
     final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
     var parser = g.buildFrom(g.fullGrammar().end());

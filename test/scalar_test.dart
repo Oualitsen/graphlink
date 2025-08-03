@@ -3,7 +3,7 @@ import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {
-  test("Object value test", () {
+  test("Object value test 1", () {
     final GQGrammar g = GQGrammar();
 
     var parser = g.buildFrom(g.scalarDefinition().end());
@@ -14,7 +14,7 @@ void main() {
     expect(result.value.token, "Date");
   });
 
-  test("Object value test", () {
+  test("Object value test 2", () {
     final GQGrammar g = GQGrammar();
 
     var parser = g.buildFrom(g.scalarDefinition().end());

@@ -5,7 +5,7 @@ import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() async {
-  test("all_fields_without_type_name", () {
+  test("all_fields_without_type_name 1", () {
     final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
 
     var parser = g.buildFrom(g.fullGrammar().end());

@@ -6,7 +6,7 @@ import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() async {
-  test("fail_on_absence_of_query_projection_over_type_test", () {
+  test("fail_on_absence_of_query_projection_over_type_test 1", () {
     final GQGrammar g = GQGrammar();
 
     var parser = g.buildFrom(g.fullGrammar().end());

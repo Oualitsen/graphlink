@@ -1,8 +1,9 @@
 import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
+import 'package:retrofit_graphql/src/model/token_info.dart';
 
 class GQInterfaceDefinition extends GQTypeDefinition {
   final Set<GQInterfaceDefinition> parents = <GQInterfaceDefinition>{};
-  final Set<String> parentNames;
+  final Set<TokenInfo> parentNames;
   final bool fromUnion;
 
   GQInterfaceDefinition({
@@ -17,7 +18,9 @@ class GQInterfaceDefinition extends GQTypeDefinition {
 
   @override
   String toString() {
-    return 'GraphQLInterface{name: $token, fields: $fields, parenNames:$parentNames}';
+    return 'GraphQLInterface{name: $tokenInfo, fields: $fields, parenNames:$parentNames}';
   }
+
+  Set<String> getParentNames() => parentNames.map((e) => e.token).toSet();
   
 }

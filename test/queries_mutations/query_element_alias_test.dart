@@ -5,7 +5,7 @@ import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() async {
-  test("fail_on_absence_of_query_projection_over_type_test", () {
+  test("fail_on_absence_of_query_projection_over_type_test 2", () {
     final GQGrammar g = GQGrammar();
 
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -18,6 +18,6 @@ void main() async {
     var response = g.projectedTypes["DriverResponse"]!;
 
     expect(
-        response.fields.where((field) => field.name == "driver"), isNotEmpty);
+        response.fields.where((field) => field.name.token == "driver"), isNotEmpty);
   });
 }

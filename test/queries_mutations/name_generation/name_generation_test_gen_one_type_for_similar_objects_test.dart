@@ -19,7 +19,7 @@ void main() async {
     expect(
         g.projectedTypes.values
             .where((element) => element.token != "ProductResponse")
-            .map((e) => e.token)
+            .map((e) => e.tokenInfo)
             .toList(),
         hasLength(1));
   });

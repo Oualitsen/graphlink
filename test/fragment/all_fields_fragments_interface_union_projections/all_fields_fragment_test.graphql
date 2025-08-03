@@ -23,5 +23,6 @@ type Person {
 
 type Query {
     getPerson: Person
+    
 }
 

@@ -9,11 +9,11 @@ class AnnotationSerializer {
  static String serializeAnnotation(GQDirectiveValue value, {bool multiLineString = false}) {
     if (value.getArgValue(gqAnnotation) != true) {
       throw ParseException(
-          "Cannot serialze annotation ${value.token} with argment ${gqAnnotation} = ${value.getArgValue(gqAnnotation)}");
+          "Cannot serialze annotation ${value.tokenInfo} with argment ${gqAnnotation} = ${value.getArgValue(gqAnnotation)}");
     }
     if (value.getArgValue(gqFQCN) is! String) {
       throw ParseException(
-          "Cannot serialze annotation ${value.token} with argment ${gqFQCN} = ${value.getArgValue(gqFQCN)}");
+          "Cannot serialze annotation ${value.tokenInfo} with argment ${gqFQCN} = ${value.getArgValue(gqFQCN)}");
     }
     const skip = [gqFQCN, gqAnnotation, gqOnClient, gqOnServer];
     var args = value
@@ -25,7 +25,7 @@ class AnnotationSerializer {
         argValue = argValue.toJavaString();
       }
 
-      return "${arg.token} = ${argValue}";
+      return "${arg.tokenInfo} = ${argValue}";
     }).join(", ");
     var fqcn = getFqcnFromDirective(value);
     return "${fqcn}(${args})";

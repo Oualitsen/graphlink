@@ -16,7 +16,7 @@ void main() {
     "Long": "Long"
   };
 
-  test("test schema mapping generation", () {
+  test("test schema mapping generation2", () {
     final GQGrammar g =
         GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 

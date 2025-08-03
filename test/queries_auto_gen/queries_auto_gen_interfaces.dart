@@ -18,7 +18,7 @@ void main() async {
     expect(parsed is Success, true);
     expect(g.queries.keys, contains("getProduct"));
     var getProduct = g.queries["getProduct"]!;
-    expect(getProduct.token, equals("getProduct"));
+    expect(getProduct.tokenInfo, equals("getProduct"));
     expect(getProduct.elements.length, equals(1));
   });
 }

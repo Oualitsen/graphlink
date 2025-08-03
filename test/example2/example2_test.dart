@@ -28,7 +28,7 @@ void main() async {
     expect(parsed is Success, true);
   });
 
-  test("depedecy_cycle_detection_test_indirect_dependency", () {
+  test("depedecy_cycle_detection_test_indirect_dependency2", () {
     final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
 
     var parser = g.buildFrom(g.fullGrammar().end());

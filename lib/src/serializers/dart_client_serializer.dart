@@ -82,7 +82,7 @@ class GQClient {
       if (_grammar.hasSubscriptions) 'subscriptions = Subscriptions(wsAdapter)'
     ].where((element) => element.isNotEmpty).join(", ")} {
       
-      ${_grammar.fragments.values.map((value) => "_fragmMap['${value.token}'] = '${_grammar.serializer.serializeFragmentDefinitionBase(value)}';").toList().join("\n")}
+      ${_grammar.fragments.values.map((value) => "_fragmMap['${value.tokenInfo}'] = '${_grammar.serializer.serializeFragmentDefinitionBase(value)}';").toList().join("\n")}
          
     }
 }
@@ -140,9 +140,9 @@ ${_serializeSubscriptions()}
 
   String _queryToMethod(GQQueryDefinition def) {
     return """
-      ${_returnTypeByQueryType(def)} ${def.token}(${_serializeArgs(def)}) {
-        const operationName = "${def.token}";
-        ${def.fragments(_grammar).isEmpty ? 'const' : 'final'} fragsValues = ${def.fragments(_grammar).isEmpty ? '"";' : '[${def.fragments(_grammar).map((e) => '"${e.token}"').toList().join(", ")}].map((fragName) => _getFragment(fragName)).join(" ");'}
+      ${_returnTypeByQueryType(def)} ${def.tokenInfo}(${_serializeArgs(def)}) {
+        const operationName = "${def.tokenInfo}";
+        ${def.fragments(_grammar).isEmpty ? 'const' : 'final'} fragsValues = ${def.fragments(_grammar).isEmpty ? '"";' : '[${def.fragments(_grammar).map((e) => '"${e.tokenInfo}"').toList().join(", ")}].map((fragName) => _getFragment(fragName)).join(" ");'}
         ${def.fragments(_grammar).isEmpty ? 'const' : 'final'} query = \"\"\"${_grammar.serializer.serializeQueryDefinition(def)}\$fragsValues\"\"\";
 
         final variables = <String, dynamic>{
@@ -160,7 +160,7 @@ ${_serializeSubscriptions()}
     if (def.type == GQQueryType.subscription) {
       return """
       return _handler.handle(payload)
-        .map((e) => ${def.getGeneratedTypeDefinition().token}.fromJson(e));
+        .map((e) => ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson(e));
     """;
     }
     return """
@@ -170,7 +170,7 @@ ${_serializeSubscriptions()}
             throw result["errors"].map((error) => GraphQLError.fromJson(error)).toList();
           }
           var data = result["data"];
-          return ${def.getGeneratedTypeDefinition().token}.fromJson(data);
+          return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson(data);
       }).first;
 """;
   }
@@ -223,9 +223,9 @@ ${_serializeSubscriptions()}
     var gen = def.getGeneratedTypeDefinition();
 
     if (def.type == GQQueryType.subscription) {
-      return "Stream<${gen.token}>";
+      return "Stream<${gen.tokenInfo}>";
     }
-    return "Future<${gen.token}>";
+    return "Future<${gen.tokenInfo}>";
   }
 
   String _serializeSubscriptions() {

@@ -1,12 +1,14 @@
 import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
+import 'package:retrofit_graphql/src/model/token_info.dart';
 import 'package:retrofit_graphql/src/serializers/language.dart';
 import 'package:retrofit_graphql/src/utils.dart';
 
 abstract class GQToken {
-  final String token;
-  GQToken(this.token);
+  final TokenInfo tokenInfo;
+  GQToken(this.tokenInfo);
+  String get token => tokenInfo.token;
 }
 
 abstract class GQTokenWithFields extends GQToken {
@@ -17,15 +19,15 @@ abstract class GQTokenWithFields extends GQToken {
   List<GQField>? _skipOnClientFields;
   List<GQField>? _skipOnServerFields;
 
-  GQTokenWithFields(super.token, List<GQField> allFields) {
+  GQTokenWithFields(super.tokenInfo, List<GQField> allFields) {
     allFields.forEach(addField);
   }
 
   void addField(GQField field) {
-    if(_fieldMap.containsKey(field.name)) {
-      throw ParseException("Duplicate field defition on type ${token}, field: ${field.name}");
+    if(_fieldMap.containsKey(field.name.token)) {
+      throw ParseException("Duplicate field defition on type ${tokenInfo}, field: ${field.name}");
     }
-    _fieldMap[field.name] = field;
+    _fieldMap[field.name.token] = field;
   }
 
   bool hasField(String name) {
@@ -45,7 +47,7 @@ abstract class GQTokenWithFields extends GQToken {
       return {};
     }
     if (_fieldNames.isEmpty) {
-      _fieldNames.addAll(fields.map((e) => e.name));
+      _fieldNames.addAll(fields.map((e) => e.name.token));
     }
     return _fieldNames;
   }

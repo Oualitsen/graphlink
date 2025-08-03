@@ -2,9 +2,10 @@ import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/model/gq_argument.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
 import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
+import 'package:retrofit_graphql/src/model/token_info.dart';
 
 class GQDirectiveDefinition {
-  final String name;
+  final TokenInfo name;
   final List<GQArgumentDefinition> arguments;
   final Set<GQDirectiveScope> scopes;
 
@@ -64,7 +65,7 @@ class GQDirectiveValue extends GQToken {
   final bool generated;
 
   GQDirectiveValue(
-      super.name, this.locations, List<GQArgumentValue> arguments, {required this.generated}) {
+      super.tokenInfo, this.locations, List<GQArgumentValue> arguments, {required this.generated}) {
     _addArgument(arguments);
   }
 
@@ -79,7 +80,7 @@ class GQDirectiveValue extends GQToken {
     for (var argDef in args) {
       var argValue = _argsMap[argDef.token];
       if (argValue == null && argDef.initialValue != null) {
-        var newArgValue = GQArgumentValue(argDef.token, argDef.initialValue);
+        var newArgValue = GQArgumentValue(argDef.tokenInfo, argDef.initialValue);
         _argsMap[argDef.token] = newArgValue;
         argsToAdd.add(newArgValue);
       }
@@ -101,7 +102,7 @@ class GQDirectiveValue extends GQToken {
   }
 
   void addArg(String name, Object? value) {
-    _argsMap[name] = GQArgumentValue(name, value);
+    _argsMap[name] = GQArgumentValue(TokenInfo.ofString(name), value);
   }
 
   List<GQArgumentValue> getArguments() {
@@ -110,7 +111,7 @@ class GQDirectiveValue extends GQToken {
 
   static GQDirectiveValue createDirectiveValue(
       {required String directiveName, required bool generated}) {
-    return GQDirectiveValue(directiveName, [], [], generated: generated);
+    return GQDirectiveValue(TokenInfo.ofString(directiveName), [], [], generated: generated);
   }
 
   static GQDirectiveValue createGqDecorators({
@@ -118,11 +119,11 @@ class GQDirectiveValue extends GQToken {
     bool applyOnServer = true,
     bool applyOnClient = true,
   }) {
-    return GQDirectiveValue(gqDecorators, [], [
+    return GQDirectiveValue(TokenInfo.ofString(gqDecorators), [], [
       GQArgumentValue(
-          "value", decorators.map((s) => '"$s"').toList()),
-      GQArgumentValue("applyOnServer", applyOnServer),
-      GQArgumentValue("applyOnClient", applyOnClient),
+          TokenInfo.ofString("value"), decorators.map((s) => '"$s"').toList()),
+      GQArgumentValue(TokenInfo.ofString("applyOnServer"), applyOnServer),
+      GQArgumentValue(TokenInfo.ofString("applyOnClient"), applyOnClient),
       
     ], generated: true);
   }

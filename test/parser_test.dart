@@ -22,7 +22,7 @@ void main() {
     expect(result.value.trim(), 'hello "test"');
   });
 
-  test("BlockString token Test", () {
+  test("BlockString token Test 1", () {
     var parser = g.buildFrom(g.blockStringToken().end());
     var result = parser.parse('''""" Hello world """''');
     expect(result is Success, true);
@@ -34,7 +34,7 @@ void main() {
     expect(result is Success, true);
   });
 
-  test("BlockString token Test", () {
+  test("BlockString token Test 2", () {
     var parser = g.buildFrom(g.blockStringToken().end());
     var result = parser.parse('''""" Hello "world" """''');
     expect(result is Success, true);

@@ -5,7 +5,7 @@ import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {
-  test("type_looks_like_test", () {
+  test("type_looks_like_test 3", () {
     final text = File("test/similar_types/similar_types_test.graphql").readAsStringSync();
     var g = GQGrammar();
     var parser = g.buildFrom(g.fullGrammar().end());

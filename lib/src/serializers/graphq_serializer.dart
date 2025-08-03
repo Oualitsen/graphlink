@@ -30,7 +30,7 @@ const _skippedDirectives = {
 };
 
 bool _shouldSkipDriectiveDefinition(GQDirectiveDefinition def) {
-  return _skippedDirectives.contains(def.name) ||
+  return _skippedDirectives.contains(def.name.token) ||
       def.arguments
           .where(
               (arg) => arg.token == gqAnnotation && arg.type.token == "Boolean")
@@ -105,7 +105,7 @@ class GraphqSerializer {
 
   String serializeScalarDefinition(GQScalarDefinition def) {
     return '''
-scalar ${def.token} ${serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}
+scalar ${def.tokenInfo} ${serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}
 '''
         .trim();
   }
@@ -122,7 +122,7 @@ scalar ${def.token} ${serializeDirectiveValueList(def.getDirectives(skipGenerate
     var args = arguments.isEmpty
         ? ""
         : "(${arguments.map((e) => serializeArgumentValue(e)).join(", ")})";
-    return "${value.token}$args";
+    return "${value.tokenInfo}$args";
   }
 
   String serializeDirectiveDefinition(GQDirectiveDefinition def) {
@@ -179,7 +179,7 @@ ${inner.join("\n").ident()}
 
   String serializeInputDefinition(GQInputDefinition def, CodeGenerationMode mode) {
     return '''
-input ${def.token} ${serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}{
+input ${def.tokenInfo} ${serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}{
 ${def.getSerializableFields(mode, skipGenerated: true).map(serializeField).map((e) => e.ident()).join("\n")}
 }
 ''';
@@ -191,13 +191,13 @@ ${def.getSerializableFields(mode, skipGenerated: true).map(serializeField).map((
     Iterable<String> interfaces;
     if(def is GQInterfaceDefinition) {
       type = "interface";
-      interfaces = def.parentNames;
+      interfaces = def.getParentNames();
     }else { 
       type = "type";
-      interfaces = def.interfaceNames;
+      interfaces = def.getInterfaceNames();
     }
 
-    var result = StringBuffer("$type ${def.token}");
+    var result = StringBuffer("$type ${def.tokenInfo}");
     if(interfaces.isNotEmpty) {
       result.write(" implements ");
       result.write(interfaces.join(" & "));
@@ -217,7 +217,7 @@ ${def.getSerializableFields(mode, skipGenerated: true).map(serializeField).map((
 
   String serializeEnumDefinition(GQEnumDefinition def) {
     return '''
-enum ${def.token} ${serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}{
+enum ${def.tokenInfo} ${serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}{
 ${"\t"}${def.values.map(serializeEnumValue).join(" ")}
 }
 ''';
@@ -243,7 +243,7 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
     if (gqType is GQListType) {
       return "[${serializeType(gqType.inlineType)}]${nullableText}";
     }
-    return "${gqType.token}${nullableText}";
+    return "${gqType.tokenInfo}${nullableText}";
   }
 
   String _getNullableText(bool nullable) => nullable ? "" : "!";
@@ -278,7 +278,7 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
     } else if (def is GQInlineFragmentDefinition) {
       return serializeInlineFragment(def);
     }
-    throw "serialization of ${def.token} is not supported yet";
+    throw "serialization of ${def.tokenInfo} is not supported yet";
   }
 
   String serializeProjection(GQProjection proj) {
@@ -309,11 +309,11 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
   }
 
   String serializeUnionDefinition(GQUnionDefinition def) {
-    return "union ${def.token} = ${serializeListText(def.typeNames, withParenthesis: false, join: " | ")}";
+    return "union ${def.tokenInfo} = ${serializeListText(def.typeNames.map((e) => e.token).toList(), withParenthesis: false, join: " | ")}";
   }
 
   String serializeQueryDefinition(GQQueryDefinition def) {
-    return """${def.type.name} ${def.token}${serializeListText(def.arguments.map(serializeArgumentDefinition).toList(), join: ",")}${serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}{${serializeListText(def.elements.map(serializeQueryElement).toList(), join: " ", withParenthesis: false)}}""";
+    return """${def.type.name} ${def.tokenInfo}${serializeListText(def.arguments.map(serializeArgumentDefinition).toList(), join: ",")}${serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}{${serializeListText(def.elements.map(serializeQueryElement).toList(), join: " ", withParenthesis: false)}}""";
   }
 
   String serializeQueryElement(GQQueryElement def) {

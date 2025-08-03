@@ -18,9 +18,9 @@ void main() {
 
     var user = g.getType("User");
 
-    var idField = user.fields.where((f) => f.name == "id").first;
-    var nameField = user.fields.where((f) => f.name == "name").first;
-    var middleNameField = user.fields.where((f) => f.name == "middleName").first;
+    var idField = user.fields.where((f) => f.name.token == "id").first;
+    var nameField = user.fields.where((f) => f.name.token == "name").first;
+    var middleNameField = user.fields.where((f) => f.name.token == "middleName").first;
     var id = dartSerialzer.serializeField(idField);
     var nameSerial = dartSerialzer.serializeField(nameField);
     var middleNameFieldSerial = dartSerialzer.serializeField(middleNameField);

@@ -6,7 +6,7 @@ import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() async {
-  test("all_fields_without_type_name", () {
+  test("depedecy_cycle_detection_test_indirect_dependency 1", () {
     final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
 
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -17,7 +17,7 @@ void main() async {
     expect(() => parser.parse(text), throwsA(isA<ParseException>()));
   });
 
-  test("depedecy_cycle_detection_test_indirect_dependency", () {
+  test("depedecy_cycle_detection_test_indirect_dependency 2", () {
     final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
 
     var parser = g.buildFrom(g.fullGrammar().end());

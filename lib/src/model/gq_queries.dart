@@ -1,3 +1,4 @@
+import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/gq_argument.dart';
@@ -8,6 +9,7 @@ import 'package:retrofit_graphql/src/model/gq_has_directives.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
 import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
+import 'package:retrofit_graphql/src/model/token_info.dart';
 import 'package:retrofit_graphql/src/utils.dart';
 
 enum GQQueryType { query, mutation, subscription }
@@ -33,7 +35,7 @@ class GQQueryDefinition extends GQToken with GqDirectivesMixin {
   }
 
   GQQueryDefinition(
-      super.token, List<GQDirectiveValue> directives, this.arguments, this.elements, this.type) {
+      super.tokenInfo, List<GQDirectiveValue> directives, this.arguments, this.elements, this.type) {
     directives.forEach(addDirective);
     checkVariables();
   }
@@ -71,7 +73,7 @@ class GQQueryDefinition extends GQToken with GqDirectivesMixin {
     var gqDef = _gqTypeDefinition;
     if (gqDef == null) {
       _gqTypeDefinition = gqDef = GQTypeDefinition(
-        name: _getGeneratedTypeName(),
+        name: tokenInfo.ofNewName(_getGeneratedTypeName()),
         nameDeclared: getNameValueFromDirectives(getDirectives()) != null,
         fields: _generateFields(),
         directives: getDirectives(),
@@ -91,17 +93,14 @@ class GQQueryDefinition extends GQToken with GqDirectivesMixin {
   }
 
   String get _capitilizedFirstLetterToken {
-    if (token.length == 1) {
-      return token.toUpperCase();
-    }
-    return "${token[0].toUpperCase()}${token.substring(1)}";
+    return tokenInfo.token.firstUp;
   }
 
   List<GQField> _generateFields() {
     return elements
         .map(
           (e) => GQField(
-            name: e.alias ?? e.token,
+            name: e.alias ?? e.tokenInfo,
             type: e.returnProjectedType,
             arguments: [],
             directives: e.getDirectives(),
@@ -117,7 +116,7 @@ class GQQueryElement extends GQToken with GqDirectivesMixin {
   final GQFragmentBlockDefinition? block;
 
   final List<GQArgumentValue> arguments;
-  final String? alias;
+  final TokenInfo? alias;
 
   ///
   ///This is unknown on parse time. It is filled on run time.
@@ -158,19 +157,19 @@ class GQQueryElement extends GQToken with GqDirectivesMixin {
       if (returnType is GQListType) {
         return GQListType(_getReturnProjectedType(projectedType, returnType.type), returnType.nullable);
       } else {
-        return GQType(projectedType.token, returnType.nullable, isScalar: false);
+        return GQType(projectedType.tokenInfo, returnType.nullable, isScalar: false);
       }
     }
   }
 
   GQType get returnProjectedType => _getReturnProjectedType(projectedType, returnType);
 
-  GQQueryElement(super.token, List<GQDirectiveValue> directives, this.block, this.arguments, this.alias) {
+  GQQueryElement(super.tokenInfo, List<GQDirectiveValue> directives, this.block, this.arguments, this.alias) {
     directives.forEach(addDirective);
   }
 
   String get escapedToken {
     var aliasText = alias == null ? '' : "$alias:";
-    return "$aliasText$token".replaceFirst("\$", "\\\$");
+    return "$aliasText$tokenInfo".replaceFirst("\$", "\\\$");
   }
 }

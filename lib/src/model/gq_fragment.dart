@@ -1,9 +1,11 @@
 import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
+import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/gq_has_directives.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
 import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
+import 'package:retrofit_graphql/src/model/token_info.dart';
 import 'package:retrofit_graphql/src/tree/tree.dart';
 import 'package:retrofit_graphql/src/utils.dart';
 
@@ -15,14 +17,14 @@ class GQTypedFragment {
 }
 
 abstract class GQFragmentDefinitionBase extends GQToken with GqDirectivesMixin {
-  final String onTypeName;
+  final TokenInfo onTypeName;
 
   final GQFragmentBlockDefinition block;
 
   final List<GQFragmentDefinitionBase> _dependecies = [];
 
   GQFragmentDefinitionBase(
-    super.token,
+    super.tokenInfo,
     this.onTypeName,
     this.block,
     List<GQDirectiveValue> directives,
@@ -31,7 +33,7 @@ abstract class GQFragmentDefinitionBase extends GQToken with GqDirectivesMixin {
   }
 
   void updateDepencies(Map<String, GQFragmentDefinitionBase> map) {
-    var rootNode = TreeNode(value: token);
+    var rootNode = TreeNode(value: tokenInfo.token);
     block.getDependecies(map, rootNode);
     var dependecyNames = rootNode.getAllValues(true).toSet();
 
@@ -51,26 +53,28 @@ abstract class GQFragmentDefinitionBase extends GQToken with GqDirectivesMixin {
   }
 
   Set<GQFragmentDefinitionBase> get dependecies => _dependecies.toSet();
+
+  List get deps => _dependecies;
 }
 
 class GQInlineFragmentDefinition extends GQFragmentDefinitionBase {
   GQInlineFragmentDefinition(
-      String onTypeName, GQFragmentBlockDefinition block, List<GQDirectiveValue> directives)
+      TokenInfo onTypeName, GQFragmentBlockDefinition block, List<GQDirectiveValue> directives)
       : super(
-          "Inline_${generateUuid('_')}",
+         "Inline_${generateUuid('_')}".toToken(),
           onTypeName,
           block,
           directives,
         ) {
     if (!block.projections.containsKey(GQGrammar.typename)) {
       block.projections[GQGrammar.typename] = GQProjection(
-          fragmentName: null, token: GQGrammar.typename, alias: null, block: null, directives: []);
+          fragmentName: null, token: TokenInfo.ofString(GQGrammar.typename), alias: null, block: null, directives: []);
     }
   }
 
   @override
   String generateName() {
-    return "${onTypeName}_$token";
+    return "${onTypeName}_$tokenInfo";
   }
 }
 
@@ -79,9 +83,7 @@ class GQFragmentDefinition extends GQFragmentDefinitionBase {
 
   final String fragmentName;
 
-  GQFragmentDefinition(this.fragmentName, String onTypeName, GQFragmentBlockDefinition block,
-      List<GQDirectiveValue> directives)
-      : super(fragmentName, onTypeName, block, directives);
+  GQFragmentDefinition(super.token, super.onTypeName, super.block,super.directives): fragmentName = token.token;
  
 
   @override
@@ -114,7 +116,7 @@ class GQProjection extends GQToken with GqDirectivesMixin {
   ///
   ///This should contain the name of the type this projection is on
   ///
-  final String? alias;
+  final TokenInfo? alias;
 
   ///
   ///  something like  ... fragmentName
@@ -132,18 +134,18 @@ class GQProjection extends GQToken with GqDirectivesMixin {
 
   GQProjection({
     required this.fragmentName,
-    required String? token,
+    required TokenInfo? token,
     required this.alias,
     required this.block,
     required List<GQDirectiveValue> directives,
-  }) : super(token ?? fragmentName ?? "*") {
+  }) : super(token ?? TokenInfo.ofString( fragmentName ?? "*")) {
     directives.forEach(addDirective);
   }
 
-  String get actualName => alias ?? targetToken;
+  String get actualName => alias?.token ?? targetToken;
 
 
-  String get targetToken => token == allFields && fragmentName != null ? fragmentName! : token;
+  String get targetToken => tokenInfo.token == allFields && fragmentName != null ? fragmentName! : tokenInfo.token;
 
   getDependecies(Map<String, GQFragmentDefinitionBase> map, TreeNode node) {
     if (isFragmentReference) {
@@ -159,7 +161,7 @@ class GQProjection extends GQToken with GqDirectivesMixin {
         GQFragmentDefinitionBase? frag = map[targetToken];
 
         if (frag == null) {
-          throw ParseException("Fragment $token is not defined");
+          throw ParseException("Fragment $tokenInfo is not defined");
         } else {
           frag.block.getDependecies(map, child);
         }

@@ -17,7 +17,7 @@ void main() {
     expect(value.alias, null);
   });
 
-  test("Fragment field with alias test", () {
+  test("Fragment field with alias test 1", () {
     final GQGrammar g = GQGrammar();
 
     var parser = g.buildFrom(g.projectionFieldField().end());
@@ -29,10 +29,10 @@ void main() {
     expect(result is Success, true);
     var value = result.value;
     expect(value.token, "name");
-    expect(value.alias, "alias");
+    expect(value.alias?.token, "alias");
   });
 
-  test("Fragment field with alias test", () {
+  test("Fragment field with alias test 2", () {
     final GQGrammar g = GQGrammar();
 
     var parser = g.buildFrom(g.projectionFieldField().end());
@@ -46,7 +46,7 @@ void main() {
     expect(result is Success, true);
     var value = result.value;
     expect(value.token, "name");
-    expect(value.alias, "alias");
+    expect(value.alias?.token, "alias");
     expect(value.block == null, false);
   });
 
@@ -150,8 +150,8 @@ void main() {
     final frag = g.getFragment("ProductFields");
     final name = frag.block.projections["name"]!;
     final id = frag.block.projections["id"]!;
-    expect(id.alias, equals("myAliassedId"));
-    expect(name.alias, equals(null));
+    expect(id.alias?.token, equals("myAliassedId"));
+    expect(name.alias?.token, equals(null));
   });
 
   test("plainFragmentField List Test", () {
@@ -165,8 +165,8 @@ void main() {
     ''');
     expect(result is Success, true);
     var value = result.value;
-    expect(value[0].alias, equals(null));
-    expect(value[1].alias, equals("myAliassedName"));
-    expect(value[2].alias, equals(null));
+    expect(value[0].alias?.token, equals(null));
+    expect(value[1].alias?.token, equals("myAliassedName"));
+    expect(value[2].alias?.token, equals(null));
   });
 }

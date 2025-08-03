@@ -82,7 +82,7 @@ void main() {
     expect(serilzedType, "");
   });
 
-  test("testDecorators", () {
+  test("testDecorators 2", () {
     final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
     final text =
         File("test/serializers/java/types/type_serialization_decorators_test.graphql").readAsStringSync();
@@ -94,7 +94,7 @@ void main() {
 
     var user = g.getType("User");
 
-    var idField = user.fields.where((f) => f.name == "id").first;
+    var idField = user.fields.where((f) => f.name.token == "id").first;
     var id = javaSerialzer.serializeField(idField);
     expect(id, stringContainsInOrder(["@Getter", "@Setter", "private String id"]));
 
@@ -120,7 +120,7 @@ void main() {
     expect(parsed is Success, true);
     var javaSerialzer = JavaSerializer(g);
     var user = g.getType("User");
-    var idField = user.fields.where((f) => f.name == "id").first;
+    var idField = user.fields.where((f) => f.name.token == "id").first;
     var id = javaSerialzer.serializeField(idField);
     expect(id, "private String id;");
   });
@@ -133,7 +133,7 @@ void main() {
     expect(parsed is Success, true);
     var javaSerialzer = JavaSerializer(g);
     var user = g.getType("User");
-    var idField = user.fields.where((f) => f.name == "id").first;
+    var idField = user.fields.where((f) => f.name.token == "id").first;
     var id = javaSerialzer.serializeArgumentField(idField);
     expect(id, "final String id");
   });
@@ -146,8 +146,8 @@ void main() {
     expect(parsed is Success, true);
     var javaSerialzer = JavaSerializer(g);
     var user = g.getType("User");
-    var idField = user.fields.where((f) => f.name == "id").first;
-    var listExample = user.fields.where((f) => f.name == "listExample").first;
+    var idField = user.fields.where((f) => f.name.token == "id").first;
+    var listExample = user.fields.where((f) => f.name.token == "listExample").first;
     var id = javaSerialzer.serializeType(idField.type, false);
     var list = javaSerialzer.serializeType(listExample.type, false);
     expect(id, "String");
@@ -182,8 +182,8 @@ public enum Gender {
     var javaSerialzer = JavaSerializer(g);
 
     var user = g.getType("User");
-    var idField = user.fields.where((f) => f.name == "id").first;
-    var marriedField = user.fields.where((f) => f.name == "married").first;
+    var idField = user.fields.where((f) => f.name.token == "id").first;
+    var marriedField = user.fields.where((f) => f.name.token == "married").first;
 
     var getterWithoutModifier = javaSerialzer.serializeGetterDeclaration(idField, skipModifier: true);
     var getterWithModifier = javaSerialzer.serializeGetterDeclaration(idField, skipModifier: false);
@@ -202,8 +202,8 @@ public enum Gender {
     var javaSerialzer = JavaSerializer(g);
 
     var user = g.getType("User");
-    var idField = user.fields.where((f) => f.name == "id").first;
-    var middleName = user.fields.where((f) => f.name == "middleName").first;
+    var idField = user.fields.where((f) => f.name.token == "id").first;
+    var middleName = user.fields.where((f) => f.name.token == "middleName").first;
 
     var setId = javaSerialzer.serializeSetter(idField);
     var setMiddleName = javaSerialzer.serializeSetter(middleName);
@@ -236,9 +236,9 @@ public void setId(final String id) {
     var javaSerialzer = JavaSerializer(g);
 
     var user = g.getType("User");
-    var idField = user.fields.where((f) => f.name == "id").first;
-    var married = user.fields.where((f) => f.name == "married").first;
-    var middleName = user.fields.where((f) => f.name == "middleName").first;
+    var idField = user.fields.where((f) => f.name.token == "id").first;
+    var married = user.fields.where((f) => f.name.token == "married").first;
+    var middleName = user.fields.where((f) => f.name.token == "middleName").first;
 
     var getId = javaSerialzer.serializeGetter(idField);
     var isMarried = javaSerialzer.serializeGetter(married);

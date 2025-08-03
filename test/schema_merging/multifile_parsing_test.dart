@@ -5,13 +5,8 @@ import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() async {
-  test("empty text parsing", () {
-    final GQGrammar g = GQGrammar();
-    var parsed = g.parse("");
-    expect(parsed is Success, true);
-  });
 
-  test("parseFile with validate test", () async {
+  test("multiple file parsing 1", () async {
     const fileName = "test/multifile_parsing/schema1.graphql";
     final GQGrammar g = GQGrammar();
     expect(() async {
@@ -22,7 +17,7 @@ void main() async {
     expect(parsed is Success, true);
   });
 
-  test("multiple file parsing", () async {
+  test("multiple file parsing 2", () async {
     const fileName = "test/multifile_parsing/schema1.graphql";
     const fileName2 = "test/multifile_parsing/schema2.graphql";
     final GQGrammar g = GQGrammar();
@@ -37,7 +32,7 @@ void main() async {
   });
 
 
-  test("merging Query, Mutation and Subscription types", () async {
+  test("merging Query, Mutation and Subscription types 2", () async {
     const fileName = "test/multifile_parsing/schema_with_queries1.graphql";
     const fileName2 = "test/multifile_parsing/schema_with_queries2.graphql";
     final GQGrammar g = GQGrammar();
@@ -57,7 +52,7 @@ void main() async {
   });
 
 
-  test("fail on merging other than Query, Mutation and Subscription types", () async {
+  test("fail on merging other than Query, Mutation and Subscription types 2", () async {
    
     final GQGrammar g = GQGrammar();
    
@@ -75,7 +70,7 @@ void main() async {
   });
 
 
-  test("fail on merging same field", () async {
+  test("fail on merging same field 2", () async {
    
     final GQGrammar g = GQGrammar();
    

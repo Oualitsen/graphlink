@@ -263,7 +263,7 @@ Future<Set<String>> generateServerClasses(GQGrammar grammar, GeneratorConfig con
     var text = serialzer.serializeTypeDefinition(def);
     var r = writeToFile(
         data: text,
-        fileName: "${def.token}.java",
+        fileName: "${def.tokenInfo}.java",
         subpackage: "types",
         imports: ["$packageName.enums", "$packageName.interfaces"],
         destinationDir: destinationDir,

@@ -32,5 +32,5 @@ class GQSchemaMapping {
     required this.queryType,
     this.identity = false,
   });
-  String get key => "${type.token.firstLow}${field.name.firstUp}";
+  String get key => "${type.token.firstLow}${field.name.token.firstUp}";
 }

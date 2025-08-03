@@ -5,7 +5,7 @@ import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() async {
-  test("Input transformation", () {
+  test("Input transformation 2", () {
     final GQGrammar g = GQGrammar();
     var parser = g.buildFrom(g.fullGrammar().end());
 
@@ -22,6 +22,6 @@ void main() async {
     expect(i2.fieldNames, containsAll(["street", "wilayaId", "city"]));
     expect(i2.fieldNames,
         isNot(containsAll(["firstName1", "lastName1", "middleName1"])));
-    expect(i2.parentNames, contains("UserInput1"));
+    expect(i2.getParentNames(), contains("UserInput1"));
   });
 }

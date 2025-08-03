@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
 import 'package:retrofit_graphql/src/serializers/dart_client_serializer.dart';
@@ -37,12 +38,12 @@ void main() async {
   });
   test("toContructoDeclaration test ", () {
     final GQGrammar g1 = GQGrammar(nullableFieldsRequired: false);
-    final nullableString = GQType("String", true);
-    final nonNullableString = GQType("String", false);
+    final nullableString = GQType("String".toToken(), true);
+    final nonNullableString = GQType("String".toToken(), false);
     final nullableField = GQField(
-        name: "name", type: nullableString, arguments: [], directives: []);
+        name: "name".toToken(), type: nullableString, arguments: [], directives: []);
     final nonNullableField = GQField(
-        name: "name", type: nonNullableString, arguments: [], directives: []);
+        name: "name".toToken(), type: nonNullableString, arguments: [], directives: []);
 
     var dartContructorTypeNullable = g1.toConstructorDeclaration(nullableField);
     var dartContructorTypeNonNullable =

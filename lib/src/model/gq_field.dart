@@ -3,9 +3,10 @@ import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/gq_has_directives.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
 import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
+import 'package:retrofit_graphql/src/model/token_info.dart';
 
 class GQField with GqDirectivesMixin {
-  final String name;
+  final TokenInfo name;
   final GQType type;
   final Object? initialValue;
   final String? documentation;

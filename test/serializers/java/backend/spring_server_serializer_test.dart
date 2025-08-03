@@ -17,7 +17,7 @@ void main() {
     "Long": "Long"
   };
 
-  test("test backend handlers", () {
+  test("test backend handlers 1", () {
     final GQGrammar g =
         GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
@@ -48,7 +48,7 @@ void main() {
         ]));
   });
 
-   test("test backend handlers", () {
+   test("test backend handlers 2", () {
     final GQGrammar g =
         GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
@@ -162,7 +162,7 @@ void main() {
         ]));
   });
 
-  test("test controller/service returning skipped type with no mapTo", () {
+  test("test controller/service returning skipped type with no mapTo 1", () {
     final GQGrammar g =
         GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
@@ -184,7 +184,7 @@ void main() {
         ]));
   });
 
-  test("test controller/service returning skipped type with no mapTo", () {
+  test("test controller/service returning skipped type with no mapTo 2", () {
     final GQGrammar g =
         GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 

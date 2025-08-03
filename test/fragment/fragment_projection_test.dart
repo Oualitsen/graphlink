@@ -8,7 +8,7 @@ import 'package:petitparser/petitparser.dart';
 final GQGrammar g = GQGrammar();
 
 void main() async {
-  test("fragment projection test", () {
+  test("fragment projection test 2", () {
     final text = File("test/fragment/fragment_projection_test.graphql")
         .readAsStringSync();
 
@@ -19,7 +19,7 @@ void main() async {
     expect(parsed is Success, true);
   });
 
-  test("fragment projection test", () {
+  test("fragment projection test 3", () {
     final text =
         File("test/fragment/fragment_projection_mismatch_fragment_type.graphql")
             .readAsStringSync();

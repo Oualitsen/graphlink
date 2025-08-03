@@ -14,7 +14,9 @@ void main() async {
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
     expect(g.projectedTypes.keys, containsAll(["BasicEntity", "UserBase"]));
+
     var userBase = g.projectedTypes["UserBase"]!;
-    expect(userBase.interfaceNames, contains("BasicEntity"));
+    expect(userBase.getInterfaceNames(), contains("BasicEntity"));
+
   });
 }

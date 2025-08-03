@@ -10,16 +10,16 @@ import 'package:retrofit_graphql/src/model/gq_token.dart';
 class GQArgumentDefinition extends GQToken with GqDirectivesMixin {
   final GQType type;
   final Object? initialValue;
-  GQArgumentDefinition(super.name, this.type, List<GQDirectiveValue> directives, {this.initialValue}) {
+  GQArgumentDefinition(super.tokenInfo, this.type, List<GQDirectiveValue> directives, {this.initialValue}) {
     directives.forEach(addDirective);
   }
 
   @override
   String toString() {
-    return 'Argument{name: $token, type: $type}';
+    return 'Argument{name: $tokenInfo, type: $type}';
   }
 
-  String get dartArgumentName => token.substring(1);
+  String get dartArgumentName => tokenInfo.token.substring(1);
 
 
 
@@ -33,10 +33,10 @@ class GQArgumentValue extends GQToken {
   Object? value;
   //this is not know at parse type, it must be set only once the grammer parsing is done.
   late final GQType type;
-  GQArgumentValue(super.name, this.value);
+  GQArgumentValue(super.tokenInfo, this.value);
 
   @override
   String toString() {
-    return 'GraphqlArgumentValue{value: $value name: $token}';
+    return 'GraphqlArgumentValue{value: $value name: $tokenInfo}';
   }
 }

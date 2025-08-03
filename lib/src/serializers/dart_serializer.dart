@@ -23,7 +23,7 @@ class DartSerializer extends GqSerializer {
   String doSerializeEnumDefinition(GQEnumDefinition def) {
     return """
 ${serializeDecorators(def.getDirectives())}
-  enum ${def.token} { ${def.values.map((e) => doSerialzeEnumValue(e)).toList().join(", ")} }
+  enum ${def.tokenInfo} { ${def.values.map((e) => doSerialzeEnumValue(e)).toList().join(", ")} }
 """;
   }
 
@@ -31,9 +31,9 @@ ${serializeDecorators(def.getDirectives())}
   String doSerialzeEnumValue(GQEnumValue value) {
     var decorators = serializeDecorators(value.getDirectives(), joiner: " ");
     if(decorators.isEmpty) {
-      return value.value;
+      return value.value.token;
     }else {
-      return "$decorators ${value.value}";
+      return "$decorators ${value.value.token}";
     }
   }
 
@@ -64,14 +64,14 @@ ${serializeDecorators(def.getDirectives())}
     return """
 ${serializeDecorators(def.getDirectives())}
 @JsonSerializable(explicitToJson: true)
-class ${def.token} {
+class ${def.tokenInfo} {
 ${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeField(e)).toList(), join: "\n", withParenthesis: false).ident()}
         
-${'${def.token}({${def.getSerializableFields(grammar.mode).map((e) => grammar.toConstructorDeclaration(e)).join(", ")}});'.ident()}
+${'${def.tokenInfo}({${def.getSerializableFields(grammar.mode).map((e) => grammar.toConstructorDeclaration(e)).join(", ")}});'.ident()}
         
-${'factory ${def.token}.fromJson(Map<String, dynamic> json) => _\$${def.token}FromJson(json);'.ident()}
+${'factory ${def.tokenInfo}.fromJson(Map<String, dynamic> json) => _\$${def.tokenInfo}FromJson(json);'.ident()}
         
-${'Map<String, dynamic> toJson() => _\$${def.token}ToJson(this);'.ident()}
+${'Map<String, dynamic> toJson() => _\$${def.tokenInfo}ToJson(this);'.ident()}
 }
 """;
   }
@@ -88,7 +88,7 @@ ${'Map<String, dynamic> toJson() => _\$${def.token}ToJson(this);'.ident()}
   String _doSerializeTypeDefinition(GQTypeDefinition def) {
     final token = def.token;
     final subTypes = def.subTypes;
-    final interfaceNames = def.interfaceNames;
+    final interfaceNames = def.interfaceNames.map((e) => e.token).toSet();
     return """
       ${serializeDecorators(def.getDirectives())}
       @JsonSerializable(explicitToJson: true)
@@ -120,7 +120,7 @@ ${'Map<String, dynamic> toJson() => _\$${def.token}ToJson(this);'.ident()}
   }
 
   String equalsHascodeCode(GQTypeDefinition def, Set<String> fields) {
-    final token = def.token;
+    final token = def.tokenInfo;
     return """\n\n
     @override
     bool operator ==(Object other) {
@@ -168,7 +168,7 @@ ${'Map<String, dynamic> toJson() => _\$${def.token}ToJson(this);'.ident()}
       var typename = json["__typename"];
       switch(typename) {
         
-        ${subTypes.map((st) => "case \"${st.derivedFromType?.token ?? st.token}\": return _\$${st.token}FromJson(json);").join("\n        ")}
+        ${subTypes.map((st) => "case \"${st.derivedFromType?.tokenInfo ?? st.tokenInfo}\": return _\$${st.tokenInfo}FromJson(json);").join("\n        ")}
       }
       return _\$${token}FromJson(json);
     """;
@@ -183,13 +183,13 @@ ${'Map<String, dynamic> toJson() => _\$${def.token}ToJson(this);'.ident()}
   }
 
   String serializeInterface(GQInterfaceDefinition interface) {
-    final token = interface.token;
+    final token = interface.tokenInfo;
     final parents = interface.parents;
     final fields = interface.getSerializableFields(grammar.mode);
 
     return """
 ${serializeDecorators(interface.getDirectives())}
-abstract class $token ${parents.isNotEmpty ? "extends ${parents.map((e) => e.token).join(", ")} " : ""}{
+abstract class $token ${parents.isNotEmpty ? "extends ${parents.map((e) => e.tokenInfo).join(", ")} " : ""}{
 
 \t${fields.map((f) => serializeGetterDeclaration(f)).join(";\n\t")}${fields.isNotEmpty ? ";" : ""}
 }""";

@@ -28,7 +28,7 @@ class JavaSerializer extends GqSerializer {
   String doSerializeEnumDefinition(GQEnumDefinition def) {
     return """
 ${serializeDecorators(def.getDirectives())}
-public enum ${def.token} {
+public enum ${def.tokenInfo} {
 ${def.values.map((e) => doSerialzeEnumValue(e)).toList().join(", ").ident()}
 }
 """;
@@ -38,9 +38,9 @@ ${def.values.map((e) => doSerialzeEnumValue(e)).toList().join(", ").ident()}
   String doSerialzeEnumValue(GQEnumValue value) {
     var decorators = serializeDecorators(value.getDirectives(), joiner: " ");
     if (decorators.isEmpty) {
-      return value.value;
+      return value.value.token;
     } else {
-      return "$decorators ${value.value}";
+      return "$decorators ${value.value.token}";
     }
   }
 
@@ -54,7 +54,7 @@ ${def.values.map((e) => doSerialzeEnumValue(e)).toList().join(", ").ident()}
 
   String serializeArgument(GQArgumentDefinition arg) {
     var type = arg.type;
-    var name = arg.token;
+    var name = arg.tokenInfo;
     var decorators = serializeDecorators(arg.getDirectives(), joiner: " ");
     var result = "final ${serializeType(type, false)} ${name}";
     if (decorators.isNotEmpty) {
@@ -131,7 +131,7 @@ ${serializeRecord(def.token, def.fields, {})}
 
     return """
 $decorators
-public class ${def.token} {
+public class ${def.tokenInfo} {
 
 ${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeField(e)).toList(), join: "\n", withParenthesis: false).ident()}
 
@@ -264,7 +264,7 @@ $result
     if (asProperty) {
       result = "$result ${field.name}";
     } else {
-      result = "$result ${_getterName(field.name, returnType == "boolean")}";
+      result = "$result ${_getterName(field.name.token, returnType == "boolean")}";
     }
     result = "$result()";
     if (skipModifier) {
@@ -304,7 +304,7 @@ $result
     }
     var statements = [if (nullCheck != null) nullCheck, setStatement];
     return """
-public void ${_setterName(field.name)}(${serializeArgumentField(field)}) {
+public void ${_setterName(field.name.token)}(${serializeArgumentField(field)}) {
 ${statements.join("\n").ident()}
 }
 """
@@ -322,20 +322,20 @@ ${statements.join("\n").ident()}
 
   String _doSerializeTypeDefinition(GQTypeDefinition def,
       {bool checkNulls = false}) {
-    final token = def.token;
+    final token = def.tokenInfo;
     final interfaceNames = def.interfaceNames;
     final decorators = serializeDecorators(def.getDirectives());
 
     if (typesAsRecords) {
       return """
 $decorators
-${serializeRecord(def.token, def.fields, interfaceNames)}
+${serializeRecord(def.token, def.fields, interfaceNames.map((e) => e.token).toSet())}
 """;
     }
 
     return """
 ${decorators}
-public class $token ${_serializeImplements(interfaceNames)}{
+public class $token ${_serializeImplements(interfaceNames.map((e) => e.token).toSet())}{
   
 ${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeField(e)).toList(), join: "\n", withParenthesis: false).ident()}
     
@@ -362,7 +362,7 @@ ${generateEqualsAndHashCode(def).ident()}
   }
 
   String equalsHascodeCode(GQTypeDefinition def, Set<String> fields) {
-    final token = def.token;
+    final token = def.tokenInfo;
     return """
 @Override
 public boolean equals(Object o) {
@@ -411,13 +411,13 @@ ${'return java.util.Objects.hash(${fields.join(", ")});'.ident()}
 
   String serializeInterface(GQInterfaceDefinition interface,
       {bool getters = true}) {
-    final token = interface.token;
+    final token = interface.tokenInfo;
     final parents = interface.parents;
     final fields = interface.getSerializableFields(grammar.mode);
     var decorators = serializeDecorators(interface.getDirectives());
 
     var result = """
-public interface $token ${parents.isNotEmpty ? "extends ${parents.map((e) => e.token).join(", ")} " : ""}{
+public interface $token ${parents.isNotEmpty ? "extends ${parents.map((e) => e.tokenInfo).join(", ")} " : ""}{
 
 ${fields.map((f) {
               if (getters) {
