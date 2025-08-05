@@ -197,7 +197,7 @@ $result
 
   GQType _getServiceReturnType(GQType type) {
     var token = type.token;
-    if (grammar.scalars.containsKey(token) || grammar.enums.containsKey(token)) {
+    if (grammar.isNonProjectableType(token)) {
       return type;
     }
 

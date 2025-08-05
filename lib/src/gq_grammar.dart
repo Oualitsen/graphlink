@@ -145,7 +145,7 @@ class GQGrammar extends GrammarDefinition {
 
   bool hasQueryType(GQQueryType type) => queries.values.where((query) => query.type == type).isNotEmpty;
 
-  String? _parsingCurrentPath;
+  String? lastParsedFile;
 
   @override
   Parser start() {
@@ -159,11 +159,10 @@ class GQGrammar extends GrammarDefinition {
   }
 
   Future<Result> parseFile(String path, {bool validate = true}) async {
-    _parsingCurrentPath = path;
+    lastParsedFile = path;
     var text = await File(path).readAsString();
     _validate = validate;
     var result = parse(text);
-    _parsingCurrentPath = null;
     return result;
   }
 
@@ -191,6 +190,7 @@ class GQGrammar extends GrammarDefinition {
                 queryDefinition(GQQueryType.query),
                 queryDefinition(GQQueryType.mutation),
                 queryDefinition(GQQueryType.subscription),
+                ignoredStuff(),
               ].toChoiceParser())
           .star()
           .map((value) {
@@ -205,6 +205,7 @@ class GQGrammar extends GrammarDefinition {
     validateInputReferences();
     validateTypeReferences();
     convertUnionsToInterfaces();
+    fillInterfaceSubtypes();
     setDirectivesDefaulValues();
     updateInterfaceParents();
     handleDirectiveInheritance();
@@ -256,7 +257,7 @@ class GQGrammar extends GrammarDefinition {
   }
 
   Parser<TokenInfo> capture(Parser parser) {
-    return parser.token().map((token) => TokenInfo.of(token, _parsingCurrentPath));
+    return parser.token().map((token) => TokenInfo.of(token, lastParsedFile));
   }
 
   Parser<List<GQArgumentDefinition>> arguments({bool parametrized = false}) {
@@ -577,7 +578,7 @@ Parser<String> nullKw() => "null".toParser();
 
   Parser<TokenInfo> identifier() =>
     ref1(token, _id())
-    .token().map((t) => TokenInfo.of(t, _parsingCurrentPath));
+    .token().map((t) => TokenInfo.of(t, lastParsedFile));
 
   Parser<String> _id() => seq2(_myLetter(), [_myLetter(), number()].toChoiceParser().star()).flatten();
 
@@ -586,6 +587,7 @@ Parser<String> nullKw() => "null".toParser();
   Parser<String> _myLetter() =>  [ref0(letter), char("_")].toChoiceParser();
 
   Parser hiddenStuffWhitespace() => (ref0(visibleWhitespace) | ref0(singleLineComment) | ref0(commas));
+  Parser ignoredStuff() => (ref0(visibleWhitespace) | ref0(singleLineComment) | ref0(documentation));
 
   Parser<String> visibleWhitespace() => whitespace();
 

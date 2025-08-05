@@ -78,6 +78,14 @@ extension GQGrammarExtension on GQGrammar {
     return result;
   }
 
+  void fillInterfaceSubtypes() {
+    var ifaces = interfaces.values;
+    for(var iface in ifaces) {
+      var types = getTypesImplementing(iface);
+      iface.subTypes.addAll(types);
+    }
+  }
+
   void handleGqExternal() {
     [...inputs.values, ...types.values, ...interfaces.values, ...scalars.values, ...enums.values]
         .map((f) => f as GqDirectivesMixin)
@@ -277,7 +285,19 @@ extension GQGrammarExtension on GQGrammar {
   }
 
   bool isNonProjectableType(String token) {
-    return scalars.containsKey(token) || enums.containsKey(token);
+    return isEnum(token) || isScalar(token);
+  }
+
+  bool isProjectableType(String token) {
+    return !isNonProjectableType(token);
+  }
+
+  bool isEnum(String token) {
+    return enums.containsKey(token);
+  }
+
+  bool isScalar(String token) {
+    return scalars.containsKey(token);
   }
 
   void addDiectiveValue(GQDirectiveValue value) {

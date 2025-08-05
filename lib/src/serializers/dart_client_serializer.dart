@@ -188,7 +188,7 @@ ${_serializeSubscriptions()}
         return "$argName${_getNullableText(type)}.toJson()";
       }
     }
-    if (_grammar.enums.containsKey(type.token)) {
+    if (_grammar.isEnum(type.token)) {
       if (type is GQListType) {
         return "$argName${_getNullableText(type)}.map((e) => ${_callToJson("e", type.type)}).toList()";
       } else {

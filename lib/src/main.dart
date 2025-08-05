@@ -195,6 +195,11 @@ void handleGeneration(GeneratorConfig config) async {
     var result = await grammar.parseFiles(filePaths);
     var failures = result.whereType<Failure>().toList();
     if(failures.isNotEmpty) {
+      
+      for (var f in failures) {
+        stderr.writeln("at file ${grammar.lastParsedFile}: ${f.message}");
+      }
+
       throw """
 messasge: ${failures.first.message}
 position: ${failures.first.position}
@@ -211,6 +216,7 @@ position: ${failures.first.position}
   } catch (ex, st) {
     // ignore parse errors
     stderr.writeln(st);
+    throw ex;
   }
 }
 final _lastGeneratedFiles = <String>{};

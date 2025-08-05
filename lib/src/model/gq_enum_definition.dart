@@ -11,11 +11,11 @@ class GQEnumDefinition extends GQToken with GqDirectivesMixin {
   }
 }
 
-class GQEnumValue with GqDirectivesMixin {
+class GQEnumValue extends GQToken with GqDirectivesMixin {
   final TokenInfo value;
   final String? comment;
 
-  GQEnumValue({required this.value, required this.comment, required List<GQDirectiveValue> directives}){
+  GQEnumValue({required this.value, required this.comment, required List<GQDirectiveValue> directives}) : super(value) {
     directives.forEach(addDirective);
   }
 }
