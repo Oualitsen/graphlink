@@ -25,7 +25,7 @@ abstract class GQTokenWithFields extends GQToken {
 
   void addField(GQField field) {
     if(_fieldMap.containsKey(field.name.token)) {
-      throw ParseException("Duplicate field defition on type ${tokenInfo}, field: ${field.name}");
+      throw ParseException("Duplicate field defition on type ${tokenInfo}, field: ${field.name}", info: field.name);
     }
     _fieldMap[field.name.token] = field;
   }

@@ -33,7 +33,7 @@ void main() {
     var inputSerial = javaSerial.serializeInputDefinition(input).trim();
     expect(inputSerial, startsWith("public record PersonInput(String name, Integer age) {"));
     expect(inputSerial, endsWith("}"));
-    var type = g.getType("Person");
+    var type = g.getTypeByName("Person")!;
 
     var typeSerial = javaSerial.serializeTypeDefinition(type).trim();
     expect(typeSerial, startsWith("public record Person(String name, Integer age, Boolean married) {"));
@@ -54,7 +54,7 @@ void main() {
 
     var javaSerial = JavaSerializer(g, inputsAsRecords: true, typesAsRecords: true);
 
-    var type = g.getType("Car");
+    var type = g.getTypeByName("Car")!;
     var typeSerial = javaSerial.serializeTypeDefinition(type);
     
     expect(
@@ -130,7 +130,7 @@ void main() {
 
     var javaSerial = JavaSerializer(g, inputsAsRecords: true, typesAsRecords: true);
 
-    var iface = g.getType("MyType");
+    var iface = g.getTypeByName("MyType")!;
     var typeSerial = javaSerial.serializeTypeDefinition(iface);
     expect(typeSerial, contains("MyType(String id, String creationDate, String name) implements Entity"));
   });

@@ -30,7 +30,7 @@ void main() {
     expect(parsed is Success, true);
     var javaSerialzer = JavaSerializer(g);
 
-    var userServer = g.getType("User");
+    var userServer = g.getTypeByName("User")!;
     var result = javaSerialzer.serializeTypeDefinition(userServer);
     expect(result, contains("String[] array"));
     expect(result, contains("String[][] arrayOfArrays"));
@@ -49,7 +49,7 @@ void main() {
     expect(parsed is Success, true);
     var javaSerialzer = JavaSerializer(g);
 
-    var userServer = g.getType("User");
+    var userServer = g.getTypeByName("User")!;
     var result = javaSerialzer.serializeTypeDefinition(userServer);
     expect(result, isNot(contains("String companyId")));
   });
@@ -66,7 +66,7 @@ void main() {
     expect(parsed is Success, true);
     var javaSerialzer = JavaSerializer(g);
 
-    var userServer = g.getType("User");
+    var userServer = g.getTypeByName("User")!;
     var result = javaSerialzer.serializeTypeDefinition(userServer);
     expect(result, isNot(contains("Company company")));
 
@@ -77,7 +77,7 @@ void main() {
     var enum_ = g.enums["Gender"]!;
     var serializedEnum = javaSerialzer.serializeEnumDefinition(enum_);
     expect(serializedEnum, "");
-    var type = g.getType("SkipType");
+    var type = g.getTypeByName("SkipType")!;
     var serilzedType = javaSerialzer.serializeTypeDefinition(type);
     expect(serilzedType, "");
   });
@@ -92,7 +92,7 @@ void main() {
     expect(parsed is Success, true);
     var javaSerialzer = JavaSerializer(g);
 
-    var user = g.getType("User");
+    var user = g.getTypeByName("User")!;
 
     var idField = user.fields.where((f) => f.name.token == "id").first;
     var id = javaSerialzer.serializeField(idField);
@@ -119,7 +119,7 @@ void main() {
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
     var javaSerialzer = JavaSerializer(g);
-    var user = g.getType("User");
+    var user = g.getTypeByName("User")!;
     var idField = user.fields.where((f) => f.name.token == "id").first;
     var id = javaSerialzer.serializeField(idField);
     expect(id, "private String id;");
@@ -132,7 +132,7 @@ void main() {
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
     var javaSerialzer = JavaSerializer(g);
-    var user = g.getType("User");
+    var user = g.getTypeByName("User")!;
     var idField = user.fields.where((f) => f.name.token == "id").first;
     var id = javaSerialzer.serializeArgumentField(idField);
     expect(id, "final String id");
@@ -145,7 +145,7 @@ void main() {
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
     var javaSerialzer = JavaSerializer(g);
-    var user = g.getType("User");
+    var user = g.getTypeByName("User")!;
     var idField = user.fields.where((f) => f.name.token == "id").first;
     var listExample = user.fields.where((f) => f.name.token == "listExample").first;
     var id = javaSerialzer.serializeType(idField.type, false);
@@ -180,7 +180,7 @@ void main() {
     expect(parsed is Success, true);
     var javaSerialzer = JavaSerializer(g);
 
-    var user = g.getType("User");
+    var user = g.getTypeByName("User")!;
     var idField = user.fields.where((f) => f.name.token == "id").first;
     var marriedField = user.fields.where((f) => f.name.token == "married").first;
 
@@ -200,7 +200,7 @@ void main() {
     expect(parsed is Success, true);
     var javaSerialzer = JavaSerializer(g);
 
-    var user = g.getType("User");
+    var user = g.getTypeByName("User")!;
     var idField = user.fields.where((f) => f.name.token == "id").first;
     var middleName = user.fields.where((f) => f.name.token == "middleName").first;
 
@@ -234,7 +234,7 @@ public void setId(final String id) {
     expect(parsed is Success, true);
     var javaSerialzer = JavaSerializer(g);
 
-    var user = g.getType("User");
+    var user = g.getTypeByName("User")!;
     var idField = user.fields.where((f) => f.name.token == "id").first;
     var married = user.fields.where((f) => f.name.token == "married").first;
     var middleName = user.fields.where((f) => f.name.token == "middleName").first;
@@ -261,7 +261,7 @@ public void setId(final String id) {
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
 
-    var user = g.getType("User");
+    var user = g.getTypeByName("User")!;
     var javaSerialzer = JavaSerializer(g);
     var class_ = javaSerialzer.serializeTypeDefinition(user);
     expect(

@@ -147,7 +147,7 @@ void main() {
           myAliassedId:id  name 
       }
     ''');
-    final frag = g.getFragment("ProductFields");
+    final frag = g.getFragmentByName("ProductFields")!;
     final name = frag.block.projections["name"]!;
     final id = frag.block.projections["id"]!;
     expect(id.alias?.token, equals("myAliassedId"));

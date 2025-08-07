@@ -28,7 +28,7 @@ class GQQueryDefinition extends GQToken with GqDirectivesMixin {
 
   Set<GQFragmentDefinitionBase> fragments(GQGrammar g) {
     if (_allFrags == null) {
-      var frags = fragmentNames.map((e) => g.getFragment(e)).toSet();
+      var frags = fragmentNames.map((e) => g.getFragmentByName(e)).where((e) => e!=null).map((e) => e!).toSet();
       _allFrags = {...frags, ...frags.expand((e) => e.dependecies)};
     }
     return _allFrags!;
@@ -53,7 +53,7 @@ class GQQueryDefinition extends GQToken with GqDirectivesMixin {
       if ("${arg.value}".startsWith("\$")) {
         var check = checkValue("${arg.value}");
         if (!check) {
-          throw ParseException("Argument ${arg.value} was not declared");
+          throw ParseException("Argument ${arg.value} was not declared", info: arg.tokenInfo);
         }
       }
     }

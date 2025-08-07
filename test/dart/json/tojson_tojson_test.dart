@@ -1,4 +1,3 @@
-import 'dart:io';
 
 import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';

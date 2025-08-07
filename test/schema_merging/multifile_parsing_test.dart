@@ -42,9 +42,9 @@ void main() async {
     for (var e in parsed) {
       expect(e is Success, true);
     }
-    var query = g.getType("Query");
-    var mutation = g.getType("Mutation");
-    var subscription = g.getType("Subscription");
+    var query = g.getTypeByName("Query")!;
+    var mutation = g.getTypeByName("Mutation")!;
+    var subscription = g.getTypeByName("Subscription")!;
 
     expect(query.fieldNames, containsAll(["getUser", "getCar", "countCars"]));
     expect(mutation.fieldNames, containsAll(["createUser", "creatCar"]));

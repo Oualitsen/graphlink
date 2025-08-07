@@ -1,19 +1,27 @@
 import 'dart:core';
-import 'package:petitparser/petitparser.dart';
+import 'package:retrofit_graphql/src/model/token_info.dart';
 
 class ParseException {
   final String message;
-  final Parser? parser;
-  final String? parserName;
-  final String? fileName;
-  final int? line;
-  final int? column;
+  final TokenInfo? info;
 
-  ParseException(this.message,
-      {this.parser, this.parserName, this.fileName, this.line, this.column});
+  ParseException(this.message, { this.info});
 
   @override
   String toString() {
-    return "$message ${parserName ?? ''}";
+    return errorMessage;
+  }
+
+  String get errorMessage {
+    var info = this.info;
+    if(info == null) {
+      return message;
+    }
+    var buffer = StringBuffer(message);
+    if(info.fileName != null) {
+      buffer.write(" at file: ${info.fileName ?? ''}");
+    }
+    buffer.write(' line: ${info.line + 1} column: ${info.column}');
+    return buffer.toString();
   }
 }

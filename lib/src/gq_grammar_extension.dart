@@ -133,7 +133,7 @@ extension GQGrammarExtension on GQGrammar {
             var typeField = type.getFieldByName(f.name.token);
             if (typeField == null) {
               throw ParseException(
-                  "Type ${type.tokenInfo} implements ${interface.tokenInfo} but does not declare field ${f.name}");
+                  "Type ${type.tokenInfo} implements ${interface.tokenInfo} but does not declare field ${f.name}", info: type.tokenInfo);
             }
             f.getDirectives().forEach((d) => typeField.addDirectiveIfAbsent(d));
           }
@@ -159,18 +159,18 @@ extension GQGrammarExtension on GQGrammar {
     var repo = interface.getDirectiveByName(gqRepository)!;
     var typeName = repo.getArgValueAsString(gqType);
     if (typeName == null) {
-      throw ParseException("$gqType is required on $gqRepository directive");
+      throw ParseException("$gqType is required on $gqRepository directive", info: repo.tokenInfo);
     }
 
     var idType = repo.getArgValueAsString(gqIdType);
     if (idType == null) {
-      throw ParseException("$gqIdType is required on $gqRepository directive");
+      throw ParseException("$gqIdType is required on $gqRepository directive", info: repo.tokenInfo);
     }
 
     var type = types[typeName];
     if (type == null) {
       throw ParseException(
-          "Type '$typeName' referenced by directive '$gqRepository' is not defined or skipped");
+          "Type '$typeName' referenced by directive '$gqRepository' is not defined or skipped", info: repo.tokenInfo);
     }
   }
 
@@ -225,7 +225,7 @@ extension GQGrammarExtension on GQGrammar {
 
   void genSchemaMappings(List<GQField> queryFields, GQQueryType queryType) {
     for (var field in queryFields) {
-      var type = getType(field.type.token);
+      var type = getType(field.type.tokenInfo);
       var skipOnServerFields = type.getSkipOnServerFields();
       // find the field to make as identity
 
@@ -320,13 +320,13 @@ extension GQGrammarExtension on GQGrammar {
 
   void checkSacalarDefinition(GQScalarDefinition scalar) {
     if (scalars.containsKey(scalar.token)) {
-      throw ParseException("Scalar $scalar has already been declared");
+      throw ParseException("Scalar ${scalar.token} has already been declared", info: scalar.tokenInfo);
     }
   }
 
   void checkDirectiveDefinition(TokenInfo name) {
     if (directiveDefinitions.containsKey(name.token)) {
-      throw ParseException("Directive $name has already been declared");
+      throw ParseException("Directive $name has already been declared", info: name);
     }
   }
 
@@ -349,7 +349,7 @@ extension GQGrammarExtension on GQGrammar {
     var queryTypes = GQQueryType.values.map((e) => schema.getByQueryType(e)).toList();
     if(queryTypes.contains(type.token)) {
       if(types.containsKey(type.token)) {
-        merge(getType(type.token), type);
+        merge(getType(type.tokenInfo), type);
         return;
       }
     }
@@ -374,7 +374,7 @@ extension GQGrammarExtension on GQGrammar {
   }
 
   void addQueryDefinition(GQQueryDefinition definition) {
-    checkQueryDefinition(definition.token);
+    checkQueryDefinition(definition.tokenInfo);
     queries[definition.token] = definition;
   }
 
@@ -397,7 +397,7 @@ extension GQGrammarExtension on GQGrammar {
        !inputs.containsKey(typeToken) &&
        !enums.containsKey(typeToken)
        ) {
-        throw ParseException("[$typeToken] is not a scalar, input or enum");
+        throw ParseException("$typeToken is not a scalar, input or enum", info: field.name);
       }
     }
   }
@@ -415,7 +415,7 @@ extension GQGrammarExtension on GQGrammar {
       !unions.containsKey(typeToken) &&
       !enums.containsKey(typeToken) 
       ) {
-        throw ParseException("$typeToken is not a scalar, enum, type, interface or union");
+        throw ParseException("$typeToken is not a scalar, enum, type, interface or union", info: field.name);
       }
     }
   }
@@ -434,7 +434,7 @@ extension GQGrammarExtension on GQGrammar {
       addInterfaceDefinition(interfaceDef);
 
       for (var typeName in union.typeNames) {
-        var type = getType(typeName.token);
+        var type = getType(typeName);
         type.interfaceNames.add(union.tokenInfo);
       }
     });
@@ -444,7 +444,7 @@ extension GQGrammarExtension on GQGrammar {
     for (var arg in element.arguments) {
       var list = query.arguments.where((a) => a.token == arg.value).toList();
       if (list.isEmpty) {
-        throw ParseException("Could not find argument ${arg.value} on query ${query.tokenInfo}");
+        throw ParseException("Could not find argument ${arg.value} on query ${query.tokenInfo}", info: arg.tokenInfo);
       }
       arg.type = list.first.type;
     }
@@ -453,7 +453,7 @@ extension GQGrammarExtension on GQGrammar {
   fillQueryElementsReturnType() {
     queries.forEach((name, queryDefinition) {
       for (var element in queryDefinition.elements) {
-        element.returnType = getTypeFromFieldName(element.token, schema.getByQueryType(queryDefinition.type));
+        element.returnType = getTypeFromFieldName(element.token, schema.getByQueryType(queryDefinition.type), element.tokenInfo);
         fillQueryElementArgumentTypes(element, queryDefinition);
       }
     });
@@ -461,41 +461,42 @@ extension GQGrammarExtension on GQGrammar {
 
   void checmEnumDefinition(GQEnumDefinition enumDefinition) {
     if (enums.containsKey(enumDefinition.token)) {
-      throw ParseException("Enum ${enumDefinition.tokenInfo} has already been declared");
+      throw ParseException("Enum ${enumDefinition.tokenInfo} has already been declared", info: enumDefinition.tokenInfo);
     }
   }
 
   void checkInterfaceDefinition(GQInterfaceDefinition interface) {
     if (interfaces.containsKey(interface.token)) {
-      throw ParseException("Interface ${interface.tokenInfo} has already been declared");
+      throw ParseException("Interface ${interface.tokenInfo} has already been declared", info: interface.tokenInfo);
     }
   }
 
   void checkTypeDefinition(GQTypeDefinition type) {
     if (types.containsKey(type.token)) {
-      throw ParseException("Type ${type.tokenInfo} has already been declared");
+      throw ParseException("Type ${type.tokenInfo} has already been declared", info: type.tokenInfo);
     }
   }
 
-  void checkIfDefined(String typeName) {
+  void checkIfDefined(TokenInfo typeNameToken) {
+    var typeName = typeNameToken.token;
     if (types.containsKey(typeName) ||
         interfaces.containsKey(typeName) ||
         enums.containsKey(typeName) ||
         scalars.containsKey(typeName)) {
       return;
     }
-    throw ParseException("Type $typeName is not defined");
+    throw ParseException("Type $typeName is not defined", info: typeNameToken);
   }
 
   void checkInputDefinition(GQInputDefinition input) {
     if (inputs.containsKey(input.token)) {
-      throw ParseException("Input ${input.tokenInfo} has already been declared");
+      throw ParseException("Input ${input.tokenInfo} has already been declared", info: input.tokenInfo);
     }
   }
 
   void checkUnitionDefinition(GQUnionDefinition union) {
     if (unions.containsKey(union.token)) {
-      throw ParseException("Union ${union.tokenInfo} has already been declared");
+      throw ParseException("Union ${union.tokenInfo} has already been declared", info: union.tokenInfo);
     }
   }
 
@@ -503,60 +504,31 @@ extension GQGrammarExtension on GQGrammar {
     fragments.forEach((key, typedFragment) {
       var refs = typedFragment.block.getFragmentReferences();
       for (var ref in refs) {
-        getFragment(ref.fragmentName!, typedFragment.onTypeName.token);
+        getFragment(ref.fragmentName!, ref.tokenInfo, typedFragment.onTypeName.token);
       }
     });
   }
 
   void checkFragmentDefinition(GQFragmentDefinitionBase fragment) {
     if (fragments.containsKey(fragment.token)) {
-      throw ParseException("Fragment ${fragment.tokenInfo} has already been declared");
+      throw ParseException("Fragment ${fragment.tokenInfo} has already been declared", info: fragment.tokenInfo);
     }
   }
 
-  void checkQueryDefinition(String token) {
-    if (queries.containsKey(token)) {
-      throw ParseException("Query $token has already been declared");
-    }
-  }
-
-  void checkType(String name) {
-    bool b = scalars.containsKey(name) ||
-        unions.containsKey(name) ||
-        types.containsKey(name) ||
-        inputs.containsKey(name) ||
-        interfaces.containsKey(name) ||
-        enums.containsKey(name);
-    if (!b) {
-      throw ParseException("Type $name undefined");
-    }
-  }
-
-  void checkInput(String inputName) {
-    if (!inputs.containsKey(inputName)) {
-      throw ParseException("Input $inputName undefined");
-    }
-  }
-
-  void checkInterface(String interface) {
-    if (!interfaces.containsKey(interface)) {
-      throw ParseException("Interface $interface undefined");
+  void checkQueryDefinition(TokenInfo tokenInfo) {
+    if (queries.containsKey(tokenInfo.token)) {
+      throw ParseException("Query ${tokenInfo.token} has already been declared", info: tokenInfo);
     }
   }
 
   void defineSchema(GQSchema schema) {
     if (schemaInitialized) {
-      throw ParseException("A schema has already been defined");
+      throw ParseException("A schema has already been defined", info: schema.tokenInfo);
     }
     schemaInitialized = true;
     this.schema = schema;
   }
-
-  void checkScalar(String scalarName) {
-    if (!scalars.containsKey(scalarName)) {
-      throw ParseException("Scalar $scalarName was not declared");
-    }
-  }
+ 
 
   void validateProjections() {
     validateFragmentProjections();
@@ -573,9 +545,9 @@ extension GQGrammarExtension on GQGrammar {
       var requiresProjection = typeRequiresProjection(inlineType);
       //check if projection should be applied
       if (requiresProjection && element.block == null) {
-        throw ParseException("A projection is need on ${inlineType.tokenInfo}");
+        throw ParseException("A projection is need on ${inlineType.tokenInfo}", info: inlineType.tokenInfo);
       } else if (!requiresProjection && element.block != null) {
-        throw ParseException("A projection is not need on ${inlineType.tokenInfo}");
+        throw ParseException("A projection is not need on ${inlineType.tokenInfo}", info: inlineType.tokenInfo);
       }
 
       if (element.block != null) {
@@ -593,70 +565,71 @@ extension GQGrammarExtension on GQGrammar {
     }
     block.projections.forEach((key, projection) {
       var inlineType = type.inlineType;
-      validateProjection(projection, inlineType.token, null);
+      validateProjection(projection, inlineType.tokenInfo, null);
     });
   }
 
   void validateFragmentProjections() {
     fragments.forEach((key, fragment) {
       fragment.block.projections.forEach((key, projection) {
-        validateProjection(projection, fragment.onTypeName.token, fragment.token);
+        validateProjection(projection, fragment.onTypeName, fragment.token);
       });
     });
   }
 
-  void validateProjection(GQProjection projection, String typeName, String? fragmentName) {
-    var type = getType(typeName);
+  void validateProjection(GQProjection projection, TokenInfo onTypeNameToken, String? fragmentName) {
+    final typeName = onTypeNameToken.token;
+    var type = getType(onTypeNameToken);
     if (projection is GQInlineFragmentsProjection) {
-      var type = getType(typeName);
+      var type = getType(onTypeNameToken);
 
       if (type is GQInterfaceDefinition || type is GQUnionDefinition) {
         //handl for interface
-        projection.inlineFragments.map((e) => e.onTypeName).map((e) => getType(e.token)).forEach((type) {
+        projection.inlineFragments.map((e) => e.onTypeName).map((e) => getType(e)).forEach((type) {
           if (!type.containsInteface(typeName)) {
-            throw ParseException("Type '${type.tokenInfo}' does not implement '$typeName'");
+            throw ParseException("Type '${type.tokenInfo}' does not implement '${typeName}'", info: onTypeNameToken);
           }
         });
 
         for (var inlineFrag in projection.inlineFragments) {
           inlineFrag.block.projections.forEach((key, proj) {
-            validateProjection(proj, inlineFrag.onTypeName.token, null);
+            validateProjection(proj, inlineFrag.onTypeName, null);
           });
         }
       }
       return;
     }
     if (projection.isFragmentReference) {
-      GQFragmentDefinitionBase fragment = getFragment(projection.token, typeName);
+      GQFragmentDefinitionBase fragment = getFragment(projection.token, projection.tokenInfo, typeName);
       if (fragment.onTypeName.token != type.token && !type.containsInteface(fragment.onTypeName.token)) {
-        throw ParseException("Fragment ${fragment.tokenInfo} cannot be applied to type ${type.tokenInfo}");
+        throw ParseException("Fragment ${fragment.tokenInfo} cannot be applied to type ${type.tokenInfo}", info: fragment.tokenInfo);
       }
       if (projection.token == allFields) {
         projection.fragmentName = '${allFields}_$typeName';
       }
     } else {
-      var requiresProjection = fieldRequiresProjection(projection.token, typeName);
+      var requiresProjection = fieldRequiresProjection(projection.tokenInfo, onTypeNameToken, projection.tokenInfo);
 
       if (requiresProjection && projection.block == null) {
         throw ParseException(
-            "Field '${projection.tokenInfo}' of type '$typeName' must have a selection of subfield ${fragmentName == null ? "" : "Fragment: '$fragmentName'"}");
+            "Field '${projection.tokenInfo}' of type '$typeName' must have a selection of subfield ${fragmentName == null ? "" : "Fragment: '$fragmentName'"}", info: projection.tokenInfo);
       }
       if (!requiresProjection && projection.block != null) {
         throw ParseException(
-            "Field '${projection.tokenInfo}' of type '$typeName' should not have a selection of subfields ${fragmentName == null ? "" : "Fragment: '$fragmentName'"}");
+            "Field '${projection.tokenInfo}' of type '$typeName' should not have a selection of subfields ${fragmentName == null ? "" : "Fragment: '$fragmentName'"}", info: projection.tokenInfo);
       }
     }
     if (projection.block != null) {
-      var myType = getTypeFromFieldName(projection.actualName, typeName);
+      var myType = getTypeFromFieldName(projection.actualName, typeName, projection.tokenInfo);
       for (var p in projection.block!.projections.values) {
-        validateProjection(p, myType.token, null);
+        validateProjection(p, myType.tokenInfo, null);
       }
     }
   }
 
-  bool fieldRequiresProjection(String fieldName, String onTypeName) {
+  bool fieldRequiresProjection(TokenInfo fieldNameToken, TokenInfo onTypeName, TokenInfo info) {
     checkIfDefined(onTypeName);
-    GQType type = getFieldType(fieldName, onTypeName);
+    GQType type = getFieldType(fieldNameToken, onTypeName.token);
     return typeRequiresProjection(type);
   }
 
@@ -669,12 +642,13 @@ extension GQGrammarExtension on GQGrammar {
     return inputs[type.token] != null;
   }
 
-  GQType getFieldType(String fieldName, String typeName) {
-    var onType = getType(typeName);
+  GQType getFieldType(TokenInfo fieldNameToken, String typeName) {
+    var fieldName = fieldNameToken.token;
+    var onType = getType(fieldNameToken.ofNewName(typeName));
 
     var result = onType.fields.where((element) => element.name.token == fieldName);
     if (result.isEmpty && fieldName != GQGrammar.typename) {
-      throw ParseException("Could not find field '$fieldName' on type '$typeName'");
+      throw ParseException("Could not find field '$fieldName' on type '$typeName'", info: fieldNameToken);
     } else {
       if (result.isNotEmpty) {
         return result.first.type;
@@ -703,14 +677,13 @@ extension GQGrammarExtension on GQGrammar {
         });
       }
     } else if (projection.isFragmentReference) {
-      var fragmentRef = getFragment(projection.targetToken);
+      var fragmentRef = getFragment(projection.targetToken, projection.tokenInfo);
       
       fragment.addDependecy(fragmentRef);
     } else {
-      var type = getType(fragment.onTypeName.token);
+      var type = getType(fragment.onTypeName);
       var field = findFieldByName(projection.token, type);
       if (types.containsKey(field.type.token)) {
-         
         fragment.addDependecy(fragments[field.type.token]!);
       }
     }
@@ -727,18 +700,18 @@ extension GQGrammarExtension on GQGrammar {
           directives: [],
         );
       } else {
-        throw ParseException("Could not find field '$fieldName' on type ${dataType.tokenInfo}");
+        throw ParseException("Could not find field '$fieldName' on type ${dataType.tokenInfo}", info: dataType.tokenInfo);
       }
     }
     return filtered.first;
   }
 
-  GQType getTypeFromFieldName(String fieldName, String typeName) {
-    var type = getType(typeName);
+  GQType getTypeFromFieldName(String fieldName, String typeName, TokenInfo fieldToken) {
+    var type = getType(fieldToken.ofNewName(typeName));
 
     var fields = type.fields.where((element) => element.name.token == fieldName).toList();
     if (fields.isEmpty) {
-      throw ParseException("$typeName does not declare a field with name $fieldName");
+      throw ParseException("$typeName does not declare a field with name $fieldName", info: type.tokenInfo);
     }
     return fields.first.type;
   }
@@ -749,40 +722,49 @@ extension GQGrammarExtension on GQGrammar {
     });
   }
 
-  GQTypeDefinition getType(String name) {
-    final type = types[name] ?? interfaces[name];
+  GQTypeDefinition? getTypeByName(String name) {
+    return types[name] ?? interfaces[name];
+  }
+
+  GQTypeDefinition getType(TokenInfo info) {
+    var name = info.token;
+    final type = getTypeByName(name);
     if (type == null) {
-      throw ParseException("No type or interface '$name' defined");
+      throw ParseException("No type or interface '$name' defined", info: info);
     }
     return type;
   }
 
-  GQFragmentDefinitionBase getFragment(String name, [String? typeName]) {
+   GQFragmentDefinitionBase? getFragmentByName(String name, [String? typeName]) {
     String fragmentName;
     if (name == allFields && typeName != null) {
       fragmentName = '${allFields}_$typeName';
     } else {
       fragmentName = name;
     }
-    final fragment = fragments[fragmentName];
-    if (fragment == null) {
-      throw ParseException("Fragment '$fragmentName' is not defined");
+    return fragments[fragmentName];
+   }
+
+  GQFragmentDefinitionBase getFragment(String name, TokenInfo info, [String? typeName]) {
+    var frag = getFragmentByName(name, typeName);
+    if(frag == null) {
+      throw ParseException("Fragment '$name' is not defined", info: info);
     }
-    return fragment;
+    return frag;
   }
 
-  GQInterfaceDefinition getInterface(String name) {
+  GQInterfaceDefinition getInterface(String name, TokenInfo info) {
     final type = interfaces[name];
     if (type == null) {
-      throw ParseException("Interface $name was not found");
+      throw ParseException("Interface $name was not found", info: info);
     }
     return type;
   }
 
   void fillTypedFragments() {
     fragments.forEach((key, fragment) {
-      checkIfDefined(fragment.onTypeName.token);
-      typedFragments[key] = GQTypedFragment(fragment, getType(fragment.onTypeName.token));
+      checkIfDefined(fragment.onTypeName);
+      typedFragments[key] = GQTypedFragment(fragment, getType(fragment.onTypeName));
     });
   }
 
@@ -792,7 +774,7 @@ extension GQGrammarExtension on GQGrammar {
       if (![schema.mutation, schema.query, schema.subscription].contains(key)) {
         var allFieldsKey = allFieldsFragmentName(key);
         if (fragments[allFieldsKey] != null) {
-          throw ParseException("Fragment $allFieldsKey is Already defined");
+          throw ParseException("Fragment $allFieldsKey is Already defined", info: fragments[allFieldsKey]!.tokenInfo);
         }
         if (typeDefinition is GQInterfaceDefinition) {
           var block = createProjectionBlockForInterface(typeDefinition);
@@ -827,7 +809,7 @@ extension GQGrammarExtension on GQGrammar {
     return GQFragmentBlockDefinition([
       GQProjection(
         fragmentName: allFieldsFragmentName(field.type.inlineType.token),
-        token: allFieldsFragmentName(field.type.inlineType.token).toToken(),
+        token: field.type.inlineType.tokenInfo.ofNewName(allFieldsFragmentName(field.type.inlineType.token)),
         alias: null,
         block: null,
         directives: [],
@@ -889,7 +871,7 @@ extension GQGrammarExtension on GQGrammar {
     queries.forEach((key, query) {
       var projectedType = query.getGeneratedTypeDefinition();
       if (projectedTypes.containsKey(projectedType.token)) {
-        throw ParseException("Type ${projectedType.tokenInfo} has already been defined, please rename it");
+        throw ParseException("Type ${projectedType.tokenInfo.token} has already been defined, please rename it", info: projectedType.tokenInfo);
       }
       var def = addToProjectedType(projectedType);
       query.updateTypeDefinition(def);
@@ -899,13 +881,12 @@ extension GQGrammarExtension on GQGrammar {
   GQTypeDefinition createProjectedTypeForQuery(GQQueryElement element) {
     var type = element.returnType;
     var block = element.block!;
-    var onType = getType(type.inlineType.token);
+    var onType = getType(type.inlineType.tokenInfo);
     var name = generateName(onType.token, block, element.getDirectives());
 
     //in case of interface
-
     var newType = GQTypeDefinition(
-      name: name.value.toToken(),
+      name: onType.tokenInfo.ofNewName(name.value),
       nameDeclared: name.declared,
       fields: applyProjection(onType, block.projections),
       interfaceNames: onType.interfaceNames,
@@ -934,7 +915,7 @@ extension GQGrammarExtension on GQGrammar {
     projection.inlineFragments.map((inlineFragProjection) {
       var name = generateName(
           inlineFragProjection.onTypeName.token, inlineFragProjection.block, inlineFragProjection.getDirectives());
-      var subType = getType(inlineFragProjection.onTypeName.token);
+      var subType = getType(inlineFragProjection.onTypeName);
       var generatedType = GQTypeDefinition(
         name: name.value.toToken(),
         nameDeclared: name.declared,
@@ -963,7 +944,7 @@ extension GQGrammarExtension on GQGrammar {
     }
     block.projections.values
         .where((element) => element.isFragmentReference)
-        .map((e) => getFragment(e.fragmentName!, nonProjectedType.token))
+        .map((e) => getFragment(e.fragmentName!, e.tokenInfo, nonProjectedType.token))
         .forEach((frag) {
       projections.addAll(frag.block.projections);
     });
@@ -1005,8 +986,9 @@ extension GQGrammarExtension on GQGrammar {
           type.originalTokens.add(definition.token);
           return type;
         } else {
+          var typeTokenInfo = type.getDirectiveByName(gqTypeNameDirective)?.getArgumentByName('name')?.tokenInfo;
           throw ParseException(
-              "You have names two object the same name '${definition.tokenInfo}' but have diffrent fields. ${definition.tokenInfo}_1.fields are: [${type.fields.map((f) => "${f.name}: ${serializer.serializeType(f.type)}").toList()}], ${definition.tokenInfo}_2.fields are: [${definition.fields.map((f) => "${f.name}: ${serializer.serializeType(f.type)}").toList()}]. Please consider renaming one of them");
+              "You have names two object the same name '${definition.tokenInfo}' but have diffrent fields. ${definition.tokenInfo}_1.fields are: [${type.fields.map((f) => "${f.name}: ${serializer.serializeType(f.type)}").toList()}], ${definition.tokenInfo}_2.fields are: [${definition.fields.map((f) => "${f.name}: ${serializer.serializeType(f.type)}").toList()}]. Please consider renaming one of them", info: typeTokenInfo ?? type.tokenInfo);
         }
       }
     }
@@ -1101,7 +1083,7 @@ extension GQGrammarExtension on GQGrammar {
     GQFragmentBlockDefinition? block;
     if (typeRequiresProjection(field.type.inlineType)) {
       final fragName = "${allFields}_${field.type.inlineType.tokenInfo}";
-      getFragment(fragName);
+      getFragment(fragName, field.name);
       block = GQFragmentBlockDefinition(
           [GQProjection(fragmentName: fragName, token: fragName.toToken(), alias: null, block: null, directives: [])]);
     }
@@ -1164,7 +1146,7 @@ extension GQGrammarExtension on GQGrammar {
     var projections = {...p};
     p.forEach((key, value) {
       if (value.isFragmentReference) {
-        var fragment = getFragment(value.fragmentName!, type.token);
+        var fragment = getFragment(value.fragmentName!, value.tokenInfo, type.token);
         projections.addAll(fragment.block.getAllProjections(this));
       }
     });
@@ -1196,7 +1178,7 @@ extension GQGrammarExtension on GQGrammar {
       //we should create another type here ...
       var generatedType = createProjectedTypeWithProjectionBlock(
         field,
-        getType(field.type.token),
+        getType(field.type.tokenInfo),
         block,
         fieldDirectives,
       );

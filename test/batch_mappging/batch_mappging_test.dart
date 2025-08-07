@@ -53,7 +53,7 @@ void main() {
     var parsed = parser.parse(text);
 
     expect(parsed is Success, true);
-    var car = g.getType("Car");
+    var car = g.getTypeByName("Car")!;
     var result = g.getSchemaByType(car);
     expect(result.length, 3);
   });

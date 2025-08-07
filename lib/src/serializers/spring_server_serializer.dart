@@ -8,6 +8,7 @@ import 'package:retrofit_graphql/src/model/gq_queries.dart';
 import 'package:retrofit_graphql/src/model/gq_service.dart';
 import 'package:retrofit_graphql/src/model/gq_shcema_mapping.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
+import 'package:retrofit_graphql/src/model/token_info.dart';
 import 'package:retrofit_graphql/src/serializers/java_serializer.dart';
 import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/serializers/language.dart';
@@ -201,11 +202,11 @@ $result
       return type;
     }
 
-    var returnType = grammar.getType(token);
+    var returnType = grammar.getType(type.tokenInfo);
 
     var skipOnserverDir = returnType.getDirectiveByName(gqSkipOnServer);
     if (skipOnserverDir != null) {
-      var mapTo = getMapTo(token);
+      var mapTo = getMapTo(type.tokenInfo);
 
       var rt = GQType(mapTo.toToken(), false);
       if (type.isList) {
@@ -220,8 +221,8 @@ $result
     return type;
   }
 
-  String getMapTo(String typeName) {
-    var type = grammar.getType(typeName);
+  String getMapTo(TokenInfo typeToken) {
+    var type = grammar.getType(typeToken);
     var dir = type.getDirectiveByName(gqSkipOnServer);
     if (dir == null) {
       return type.token;
@@ -230,9 +231,9 @@ $result
     if (mapTo == null) {
       return "Object";
     }
-    var mappedTo = grammar.getType(mapTo);
+    var mappedTo = grammar.getType(dir.getArgumentByName(gqMapTo)!.tokenInfo.ofNewName(mapTo));
     if (mappedTo.getDirectiveByName(gqSkipOnServer) != null) {
-      throw ParseException("You cannot mapTo ${mappedTo.tokenInfo} because it is annotated with $gqSkipOnServer");
+      throw ParseException("You cannot mapTo ${mappedTo.tokenInfo} because it is annotated with $gqSkipOnServer", info: mappedTo.tokenInfo);
     }
     return mappedTo.token;
   }

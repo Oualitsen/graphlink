@@ -39,7 +39,7 @@ mixin GqDirectivesMixin {
       return;
     }
     if (_directives.containsKey(directiveValue.token)) {
-      throw ParseException("Directive '${directiveValue.tokenInfo}' already exists");
+      throw ParseException("Directive '${directiveValue.tokenInfo}' already exists", info: directiveValue.tokenInfo);
     }
     _directives[directiveValue.token] = directiveValue;
   }

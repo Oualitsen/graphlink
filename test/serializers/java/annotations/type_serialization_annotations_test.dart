@@ -28,7 +28,7 @@ void main() {
     var parsed = parser.parse(text);
 
     expect(parsed is Success, true);
-    var user = g.getType("User");
+    var user = g.getTypeByName("User")!;
     var userAnnotations = user.getAnnotations(mode: g.mode);
     expect(userAnnotations, hasLength(3));
   });
@@ -42,7 +42,7 @@ void main() {
     var parsed = parser.parse(text);
 
     expect(parsed is Success, true);
-    var user = g.getType("User");
+    var user = g.getTypeByName("User")!;
     var userAnnotations = user.getAnnotations(mode: g.mode);
     var annotationSerial = AnnotationSerializer.serializeAnnotation(userAnnotations.first);
     expect(annotationSerial, "@lombok.Getter()");
@@ -102,7 +102,7 @@ void main() {
     expect(parsed is Success, true);
     var javaSerialzer = JavaSerializer(g);
 
-    var user = g.getType("User");
+    var user = g.getTypeByName("User")!;
     var userSerial = javaSerialzer.serializeTypeDefinition(user);
     expect(
         userSerial,

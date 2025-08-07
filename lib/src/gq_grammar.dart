@@ -104,7 +104,7 @@ class GQGrammar extends GrammarDefinition {
 
   final List<GQDirectiveValue> directiveValues = [];
 
-  GQSchema schema = GQSchema();
+  GQSchema schema = GQSchema(TokenInfo.ofString("schema"));
   bool schemaInitialized = false;
   final bool generateAllFieldsFragments;
   final bool nullableFieldsRequired;
@@ -240,7 +240,7 @@ class GQGrammar extends GrammarDefinition {
         for (var iface in value.parentNames) {
           var interface = interfaces[iface.token];
           if (interface == null) {
-            throw ParseException("interface $iface is not defined");
+            throw ParseException("interface $iface is not defined", info: iface);
           } else {
             value.parents.add(interface);
           }
@@ -293,7 +293,7 @@ class GQGrammar extends GrammarDefinition {
 Parser<String> queryKw() => "query".toParser();
 Parser<String> mutationKw() => "mutation".toParser();
 Parser<String> subscriptionKw() => "subscription".toParser();
-Parser<String> schemaKw() => "schema".toParser();
+Parser<TokenInfo> schemaKw() => "schema".toParser().token().map((t) => TokenInfo.of(t, lastParsedFile));
 Parser<String> scalarKw() => "scalar".toParser();
 Parser<String> typeKw() => "type".toParser();
 Parser<String> interfaceKw() => "interface".toParser();
@@ -654,12 +654,15 @@ Parser<String> nullKw() => "null".toParser();
       (identifier() & (ref1(token, andKw()) & identifier()).map((value) => value[1]).star()).map((array) {
         Set<TokenInfo> interfaceList = {array[0]};
         for (var value in array[1]) {
-          final added = interfaceList.add(value);
-          if (!added) {
+          //if(interfaceList.where((e) => e.token == ))
+          final exists = interfaceList.where((e) => e.token == value.token).isNotEmpty;
+          if (exists) {
             throw ParseException(
-              "interface $value has been implemented more than once",
+              "interface $value has been implemented more than once", info: value
             );
           }
+          interfaceList.add(value);
+          
         }
         return interfaceList;
       });
@@ -693,9 +696,10 @@ Parser<String> nullKw() => "null".toParser();
       });
 
   Parser<GQSchema> schemaDefinition() {
-    return seq4(ref1(token, schemaKw()), openBrace(), schemaElement().repeat(0, 3).map(GQSchema.fromList),
+    return seq4(ref1(token, schemaKw()), openBrace(), schemaElement().repeat(0, 3),
             closeBrace())
-        .map4((p0, p1, schema, p3) {
+        .map4((tokenInfo, p1, list, p3) {
+          var schema = GQSchema.fromList(tokenInfo, list);
       defineSchema(schema);
       return schema;
     });

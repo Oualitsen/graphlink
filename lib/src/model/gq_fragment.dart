@@ -40,7 +40,7 @@ abstract class GQFragmentDefinitionBase extends GQToken with GqDirectivesMixin {
     for (var name in dependecyNames) {
       final def = map[name];
       if (def == null) {
-        throw ParseException("Fragment $name is not defined");
+        throw ParseException("Fragment $name is not defined", info: tokenInfo);
       }
       _dependecies.add(def);
     }
@@ -155,13 +155,13 @@ class GQProjection extends GQToken with GqDirectivesMixin {
         if (!node.contains(targetToken)) {
           child = node.addChild(targetToken);
         } else {
-          throw ParseException("Dependecy Cycle ${[targetToken, ...node.getParents()].join(" -> ")}");
+          throw ParseException("Dependecy Cycle ${[targetToken, ...node.getParents()].join(" -> ")}", info: tokenInfo);
         }
 
         GQFragmentDefinitionBase? frag = map[targetToken];
 
         if (frag == null) {
-          throw ParseException("Fragment $tokenInfo is not defined");
+          throw ParseException("Fragment $tokenInfo is not defined", info: tokenInfo);
         } else {
           frag.block.getDependecies(map, child);
         }
@@ -172,7 +172,7 @@ class GQProjection extends GQToken with GqDirectivesMixin {
 
         var myBlock = block;
         if (myBlock == null) {
-          throw ParseException("Inline Fragment must have a body");
+          throw ParseException("Inline Fragment must have a body", info: tokenInfo);
         }
         myBlock.getDependecies(map, node);
       }
@@ -199,7 +199,7 @@ class GQFragmentBlockDefinition {
     var result = <String, GQProjection>{};
     projections.forEach((key, value) {
       if (value.isFragmentReference) {
-        var frag = grammar.getFragment(key);
+        var frag = grammar.getFragment(key, value.tokenInfo);
         var fragProjections = frag.block.getAllProjections(grammar);
         result.addAll(fragProjections);
       } else {
@@ -209,10 +209,10 @@ class GQFragmentBlockDefinition {
     return result;
   }
 
-  GQProjection getProjection(String name) {
-    final p = projections[name];
+  GQProjection getProjection(TokenInfo token) {
+    final p = projections[token.token];
     if (p == null) {
-      throw ParseException("Could not find projection with name is $name");
+      throw ParseException("Could not find projection with name is ${token.token}", info: token);
     }
     return p;
   }
@@ -241,7 +241,7 @@ class GQFragmentBlockDefinition {
     projections.forEach((k, v) {
       if (k != GQGrammar.typename) {
         if (v.isFragmentReference) {
-          var frag = g.getFragment(v.targetToken);
+          var frag = g.getFragment(v.targetToken, v.tokenInfo);
           var currKey = frag.block._getKeys(g);
           key.addAll(currKey);
         } else {

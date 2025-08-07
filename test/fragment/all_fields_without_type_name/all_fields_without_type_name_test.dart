@@ -14,7 +14,7 @@ void main() async {
             "test/fragment/all_fields_without_type_name/all_fields_without_type_name_test.graphql")
         .readAsStringSync();
     var parsed = parser.parse(text);
-    var vehicleFrag = g.getFragment("_all_fields_Vehicle");
+    var vehicleFrag = g.getFragmentByName("_all_fields_Vehicle")!;
     var depencyFragNames = vehicleFrag.dependecies.map((e) => e.token).toList();
     expect(parsed is Success, true);
     expect(depencyFragNames, contains("_all_fields_Make"));

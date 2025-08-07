@@ -72,7 +72,7 @@ void main() {
     expect(parsed is Success, true);
     expect(
         g
-            .getFragment("UserFields")
+            .getFragmentByName("UserFields")!
             .dependecies
             .map((e) => e.token)
             .contains("AddressFields"),

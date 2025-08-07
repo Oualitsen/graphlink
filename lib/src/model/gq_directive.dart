@@ -101,6 +101,10 @@ class GQDirectiveValue extends GQToken {
     return (value as String).removeQuotes();
   }
 
+  GQArgumentValue? getArgumentByName(String name) {
+    return _argsMap[name];
+  }
+
   void addArg(String name, Object? value) {
     _argsMap[name] = GQArgumentValue(TokenInfo.ofString(name), value);
   }

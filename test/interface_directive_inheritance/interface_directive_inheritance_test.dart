@@ -31,7 +31,7 @@ void main() {
 
     expect(idField.getDirectiveByName("@gqId"), isNotNull);
 
-    var type = g.getType("User");
+    var type = g.getTypeByName("User")!;
     var typeIdField = type.getFieldByName("id")!;
     expect(typeIdField.getDirectiveByName("@gqId"), isNotNull);
     var iCreationDate =

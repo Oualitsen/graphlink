@@ -81,9 +81,9 @@ void main() {
       () => parser.parse(text),
       throwsA(
         isA<ParseException>().having(
-          (e) => e.message,
-          'message',
-          contains('gqType is required on @gqRepository directive'),
+          (e) => e.errorMessage,
+          'errorMessage',
+          contains('gqType is required on @gqRepository directive line: 5 column: 35'),
         ),
       ),
     );

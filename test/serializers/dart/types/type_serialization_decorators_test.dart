@@ -16,7 +16,7 @@ void main() {
     expect(parsed is Success, true);
     var dartSerialzer = DartSerializer(g);
 
-    var user = g.getType("User");
+    var user = g.getTypeByName("User")!;
 
     var idField = user.fields.where((f) => f.name.token == "id").first;
     var nameField = user.fields.where((f) => f.name.token == "name").first;

@@ -77,7 +77,7 @@ test("serialize directive values with different argument types", () {
   ''');
   expect(result is Success, true);
     final serializer = GraphqSerializer(g);
-    var user = g.getType("User");
+    var user = g.getTypeByName("User")!;
     var myDirective = user.getFieldByName("id")!.getDirectiveByName("@myDirective")!;
     var myDirectiveSerial = serializer.serializeDirectiveValue(myDirective);
     expect(myDirectiveSerial, '@myDirective(value: {name: "ramdane", age: 12, id: "test"})');

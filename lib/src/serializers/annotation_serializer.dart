@@ -9,11 +9,11 @@ class AnnotationSerializer {
  static String serializeAnnotation(GQDirectiveValue value, {bool multiLineString = false}) {
     if (value.getArgValue(gqAnnotation) != true) {
       throw ParseException(
-          "Cannot serialze annotation ${value.tokenInfo} with argment ${gqAnnotation} = ${value.getArgValue(gqAnnotation)}");
+          "Cannot serialze annotation ${value.tokenInfo} with argment ${gqAnnotation} = ${value.getArgValue(gqAnnotation)}", info: value.tokenInfo);
     }
     if (value.getArgValue(gqFQCN) is! String) {
       throw ParseException(
-          "Cannot serialze annotation ${value.tokenInfo} with argment ${gqFQCN} = ${value.getArgValue(gqFQCN)}");
+          "Cannot serialze annotation ${value.tokenInfo} with argment ${gqFQCN} = ${value.getArgValue(gqFQCN)}", info: value.tokenInfo);
     }
     const skip = [gqFQCN, gqAnnotation, gqOnClient, gqOnServer];
     var args = value

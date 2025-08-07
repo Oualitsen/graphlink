@@ -16,7 +16,7 @@ void main() {
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
     var javaSerialzer = DartSerializer(g);
-    var user = g.getType("User");
+    var user = g.getTypeByName("User")!;
     var result = javaSerialzer.serializeTypeDefinition(user);
     expect(result, isNot(contains("String companyId")));
   });
@@ -30,7 +30,7 @@ void main() {
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
     var javaSerialzer = DartSerializer(g);
-    var user = g.getType("User");
+    var user = g.getTypeByName("User")!;
     var result = javaSerialzer.serializeTypeDefinition(user);
     expect(result, isNot(contains("Company company")));
 
@@ -41,7 +41,7 @@ void main() {
     var enum_ = g.enums["Gender"]!;
     var serializedEnum = javaSerialzer.serializeEnumDefinition(enum_);
     expect(serializedEnum, "");
-    var type = g.getType("SkipType");
+    var type = g.getTypeByName("SkipType")!;
     var serilzedType = javaSerialzer.serializeTypeDefinition(type);
     expect(serilzedType, "");
   });
@@ -53,7 +53,7 @@ void main() {
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
 
-    var user = g.getType("User");
+    var user = g.getTypeByName("User")!;
     var dartSerialzer = DartSerializer(g);
     var class_ = dartSerialzer.serializeTypeDefinition(user);
     expect(

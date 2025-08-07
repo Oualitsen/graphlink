@@ -10,7 +10,7 @@ class GQService {
 
   void addMethod(GQField method, GQQueryType type) {
     if (_methods.containsKey(method.name.token)) {
-      throw ParseException("Service $name already contains method ${method.name}");
+      throw ParseException("Service $name already contains method ${method.name}", info: method.name);
     }
     _methods[method.name.token] = _FieldWithType(field: method, type: type);
   }
