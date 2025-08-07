@@ -155,7 +155,7 @@ ${generateFromJson(def.getSerializableFields(mode), def.token).ident()}
     String serializedType = serializeType(type, false);
     String numSuffix = type.nullable ? "?": "";
 
-    if(type is GQListType) {
+    if(type.isList) {
       return "(${variable} as List<dynamic>${numSuffix})";
     }
     if(grammar.isEnum(type.token)) {
@@ -192,7 +192,7 @@ ${generateFromJson(def.getSerializableFields(mode), def.token).ident()}
     String fromJsonCall;
     String dot = type.nullable ? "?.": ".";
     fromJsonCall = castDynamicToType(variable, type);
-    if(type is GQListType) {
+    if(type.isList) {
       String varName = "e${index}";
       var inlneCallToJson = callFromJson(varName, field, type.inlineType, index + 1);
       return "${fromJsonCall}${dot}map((${varName}) => ${inlneCallToJson}).toList()";
@@ -210,7 +210,7 @@ ${generateFromJson(def.getSerializableFields(mode), def.token).ident()}
     }else {
        toJsonCall = '';
     }
-    if(type is GQListType) {
+    if(type.isList) {
       String varName = "e${index}";
       var inlneCallToJson = callToJson(field, type.inlineType, index + 1);
       return "${dot}map((${varName}) => ${varName}${inlneCallToJson}).toList()";

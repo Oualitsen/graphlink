@@ -182,15 +182,15 @@ ${_serializeSubscriptions()}
 
   String _callToJson(String argName, GQType type) {
     if (_grammar.inputTypeRequiresProjection(type)) {
-      if (type is GQListType) {
-        return "$argName${_getNullableText(type)}.map((e) => ${_callToJson("e", type.type)}).toList()";
+      if (type.isList) {
+        return "$argName${_getNullableText(type)}.map((e) => ${_callToJson("e", type.inlineType)}).toList()";
       } else {
         return "$argName${_getNullableText(type)}.toJson()";
       }
     }
     if (_grammar.isEnum(type.token)) {
-      if (type is GQListType) {
-        return "$argName${_getNullableText(type)}.map((e) => ${_callToJson("e", type.type)}).toList()";
+      if (type.isList) {
+        return "$argName${_getNullableText(type)}.map((e) => ${_callToJson("e", type.inlineType)}).toList()";
       } else {
         return "$argName${_getNullableText(type)}.name";
       }

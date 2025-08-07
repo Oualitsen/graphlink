@@ -1,5 +1,6 @@
 import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
+import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 import 'package:retrofit_graphql/src/model/gq_argument.dart';
 import 'package:retrofit_graphql/src/model/gq_enum_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
@@ -10,6 +11,47 @@ import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
 import 'package:retrofit_graphql/src/serializers/annotation_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/gq_serializer.dart';
 import 'package:retrofit_graphql/src/utils.dart';
+
+const _toList = "collect(java.util.stream.Collectors.toList())";
+const _list = "java.util.List";
+const _map = "java.util.Map";
+const _javaNumbers = {
+  "Byte",
+  "Short",
+  "Integer",
+  "Long",
+  "Float",
+  "Double",
+  "byte",
+  "short",
+  "int",
+  "long",
+  "float",
+  "double"
+};
+
+const _javaNumberMethods = {
+  "Byte": "byteValue()",
+  "Short": "shortValue()",
+  "Integer": "intValue()",
+  "Long": "longValue()",
+  "Float": "floatValue()",
+  "Double": "doubleValue()",
+  "byte": "byteValue()",
+  "short": "shortValue()",
+  "int": "intValue()",
+  "long": "longValue()",
+  "float": "floatValue()",
+  "double": "doubleValue()"
+};
+
+String _listOf(String type) {
+  return '${_list}<${type}>';
+}
+
+String _mapOf(String key, String type) {
+  return '${_map}<${key}, ${type}>';
+}
 
 class JavaSerializer extends GqSerializer {
   final bool inputsAsRecords;
@@ -26,12 +68,29 @@ class JavaSerializer extends GqSerializer {
 
   @override
   String doSerializeEnumDefinition(GQEnumDefinition def) {
-    return """
-${serializeDecorators(def.getDirectives())}
-public enum ${def.tokenInfo} {
-${def.values.map((e) => doSerialzeEnumValue(e)).toList().join(", ").ident()}
-}
-""";
+    var buffer = StringBuffer();
+    var decorators = serializeDecorators(def.getDirectives());
+    if (decorators.isNotEmpty) {
+      buffer.writeln(decorators);
+    }
+    buffer.writeln("public enum ${def.tokenInfo} {");
+    buffer.write(def.values
+        .map((e) => doSerialzeEnumValue(e))
+        .toList()
+        .join(", ")
+        .ident());
+    buffer.writeln(";");
+    buffer.writeln("public String toJson() {".ident());
+    buffer.writeln("return name();".ident(2));
+    buffer.writeln("}".ident());
+    buffer
+        .writeln("public static ${def.token} fromJson(String value) {".ident());
+    buffer.writeln(
+        "return java.util.Optional.ofNullable(value).map(${def.token}::valueOf).orElse(null);"
+            .ident(2));
+    buffer.writeln("}".ident());
+    buffer.writeln("}");
+    return buffer.toString();
   }
 
   @override
@@ -64,22 +123,25 @@ ${def.values.map((e) => doSerialzeEnumValue(e)).toList().join(", ").ident()}
   }
 
   String serializeArgumentField(GQField def,
-      {bool withFianl = true, bool withDecorators = false}) {
+      {bool withFianl = true, bool withDecorators = false, String decoratorJoiner = "\n"}) {
     final type = def.type;
     final name = def.name;
     final hasInculeOrSkipDiretives = def.hasInculeOrSkipDiretives;
-    var result =
-        "${serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray)} $name";
-    if (withFianl) {
-      result = "final $result";
-    }
+    final buffer = StringBuffer();
     if (withDecorators) {
-      var decorators = serializeDecorators(def.getDirectives());
+      var decorators = serializeDecorators(def.getDirectives(), joiner: decoratorJoiner);
       if (decorators.trim().isNotEmpty) {
-        result = "$decorators $result";
+        buffer.write(decorators);
+        buffer.write(decoratorJoiner);
       }
     }
-    return result;
+    if(withFianl) {
+      buffer.write("final ");
+    }
+    buffer.write(serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray));
+    buffer.write(" ");
+    buffer.write(name);
+    return buffer.toString();
   }
 
   String serializeTypeReactive(
@@ -94,7 +156,8 @@ ${def.values.map((e) => doSerialzeEnumValue(e)).toList().join(", ").ident()}
       if (asArray) {
         return "${serializeType(gqType.inlineType, false, asArray)}[]";
       } else {
-        return "java.util.List<${convertPrimitiveToBoxed(serializeType(gqType.inlineType, false))}>";
+        return _listOf(
+            convertPrimitiveToBoxed(serializeType(gqType.inlineType, false)));
       }
     }
     final token = gqType.token;
@@ -123,18 +186,20 @@ ${def.values.map((e) => doSerialzeEnumValue(e)).toList().join(", ").ident()}
       {bool checkForNulls = false}) {
     final decorators = serializeDecorators(def.getDirectives());
     if (inputsAsRecords) {
-      return """
-$decorators
-${serializeRecord(def.token, def.fields, {})}
-""";
+      var buffer = StringBuffer();
+      if(decorators.isNotEmpty) {
+        buffer.writeln(decorators);
+      }
+      buffer.writeln(serializeRecord(def.token, def.fields, {}));
+      return buffer.toString();
+
+      
     }
 
     return """
 $decorators
-public class ${def.tokenInfo} {
-
+public class ${def.tokenInfo.token} {
 ${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeField(e)).toList(), join: "\n", withParenthesis: false).ident()}
-
 ${generateContructor(def.token, [], "public", checkForNulls: checkForNulls).ident()}
 
 ${generateContructor(def.token, def.getSerializableFields(grammar.mode), "private").ident()}
@@ -144,8 +209,210 @@ ${generateBuilder(def.token, def.getSerializableFields(grammar.mode)).ident()}
 ${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeGetter(e, checkForNulls: checkForNulls)).toList(), join: "\n", withParenthesis: false).ident()}
 
 ${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeSetter(e, checkForNulls: checkForNulls)).toList(), join: "\n", withParenthesis: false).ident()}
+
+${generateToJson(def.getSerializableFields(grammar.mode)).ident()}
+
+${generateFromJson(def.getSerializableFields(mode), def.token).ident()}
 }
 """;
+  }
+
+  String fieldFromJson(GQField field) {
+    var buffer = StringBuffer('${field.name}: ');
+    var toJosnCall =
+        callFromJson("json['${field.name}']", field, field.type, 0);
+    buffer.write(toJosnCall);
+    return buffer.toString();
+  }
+
+  String callFromJson(String variable, GQField field, GQType type, int index) {
+    String fromJsonCall;
+    String dot = type.nullable ? "?." : ".";
+    fromJsonCall = castDynamicToType(variable, type);
+    if (type.isList) {
+      String varName = "e${index}";
+      var inlneCallToJson =
+          callFromJson(varName, field, type.inlineType, index + 1);
+      return "${fromJsonCall}${dot}map((${varName}) => ${inlneCallToJson}).toList()";
+    }
+    return fromJsonCall;
+  }
+
+  String castDynamicToType(String variable, GQType type) {
+    String dot = type.nullable ? "?." : ".";
+    String serializedType = serializeType(type, false);
+    String numSuffix = type.nullable ? "?" : "";
+
+    if (type.isList) {
+      return "(${variable} as List<dynamic>${numSuffix})";
+    }
+    if (grammar.isEnum(type.token)) {
+      var enumFromJson = "${type.token}.fromJson(${variable} as String)";
+      if (type.nullable) {
+        return "${variable} == null ? null : ${enumFromJson}";
+      } else {
+        return enumFromJson;
+      }
+    }
+    if (grammar.isProjectableType(type.token)) {
+      var typeFromJson =
+          "${type.token}.fromJson(${variable} as Map<String, dynamic>)";
+      if (type.nullable) {
+        return "${variable} == null ? null : ${typeFromJson}";
+      } else {
+        return typeFromJson;
+      }
+    }
+
+    if (serializedType == "double" || serializedType == "double?") {
+      return "(${variable} as num${numSuffix})${dot}toDouble()";
+    }
+
+    var result = "${variable} as ${serializedType}";
+
+    if (type is GQListType ||
+        grammar.isProjectableType(type.token) ||
+        grammar.isEnum(type.token)) {
+      return "(${result})";
+    }
+
+    return result;
+  }
+
+  bool _isNumber(GQType type) {
+    if (type.isList) {
+      return _isNumber(type.inlineType);
+    }
+    var serializedType = serializeType(type, false);
+    return _javaNumbers.contains(serializedType);
+  }
+
+  String _numberValueMethod(GQType type) {
+    if (type.isList) {
+      return _numberValueMethod(type.inlineType);
+    }
+    return _javaNumberMethods[serializeType(type, false)]!;
+  }
+
+  String getFromJsonCall(GQField field, String varName, int depth,
+      [GQType? type]) {
+    type ??= field.type;
+    String callMapDotGet = depth == 0 ? '.get("${field.name.token}")' : '';
+    String nullCheckStatement =
+        type.nullable ? '${varName}${callMapDotGet} == null ? null :' : '';
+
+    if (type.isList) {
+      var newVarName = '${varName}${depth}';
+      var inlineType = type.inlineType;
+      String targetCast;
+      if (grammar.isNonProjectableType(inlineType.token) &&
+          !grammar.isEnum(inlineType.token) &&
+          !grammar.isInput(inlineType.token)) {
+        targetCast = "(${_listOf('Object')})";
+      } else if (grammar.isEnum(type.token)) {
+        targetCast = "(${_listOf('Object')})";
+      } else {
+        targetCast = "(${_listOf('Object')})";
+      }
+      String mapFunction =
+          'map(${newVarName} -> ${getFromJsonCall(field, newVarName, depth + 1, type.inlineType)})';
+      return '$nullCheckStatement (${targetCast}${varName}${callMapDotGet}).stream().${mapFunction}.${_toList}';
+    }
+    String result;
+    if (grammar.isNonProjectableType(type.token) &&
+        !grammar.isEnum(type.token) &&
+        !grammar.isInput(type.token)) {
+      if (_isNumber(type)) {
+        result =
+            '((Number)${varName}${callMapDotGet}).${_numberValueMethod(type)}';
+      } else {
+        result = '(${serializeType(type, false)})${varName}${callMapDotGet}';
+      }
+    } else if (grammar.isEnum(type.token)) {
+      result = '${type.token}.fromJson((String)${varName}${callMapDotGet})';
+    } else {
+      result =
+          '${type.token}.fromJson((${_mapOf('String', 'Object')})${varName}${callMapDotGet})';
+    }
+    return nullCheckStatement.isEmpty ? result : '$nullCheckStatement $result';
+  }
+
+  String generateFromJson(List<GQField> fields, String token) {
+    var buffer = StringBuffer(
+        "public static ${token} fromJson(${_mapOf('String', 'Object')} json) {");
+    buffer.writeln();
+    buffer.writeln("return new ${token}(".ident());
+    for (var field in fields) {
+      String statement = getFromJsonCall(field, 'json', 0);
+      if (field != fields.last) {
+        statement = "${statement},";
+      }
+      buffer.writeln(statement.ident(2));
+    }
+    buffer.writeln(");".ident());
+    buffer.writeln("}");
+    return buffer.toString();
+  }
+
+  String generateToJson(List<GQField> fields) {
+    var buffer =
+        StringBuffer("public ${_mapOf('String', 'Object')} toJson() {");
+    buffer.writeln();
+    buffer.writeln(
+        "${_mapOf('String', 'Object')} map = new java.util.HashMap<>();"
+            .ident());
+    for (var field in fields) {
+      buffer
+          .writeln('map.put("${field.name}", ${fieldToJson(field)});'.ident());
+    }
+    buffer.writeln("return map;".ident());
+    buffer.writeln("}");
+    return buffer.toString();
+  }
+
+  String fieldToJson(GQField field) {
+    var buffer = StringBuffer();
+    var toJosnCall = callToJson(field, field.type, field.name.token, 0);
+    buffer.write(toJosnCall);
+    return buffer.toString();
+  }
+
+  String safeCall(String variable, String method, bool nullable) {
+    if (nullable) {
+      return "${wrapInOptional(variable, true)}.map((e) -> e.${method}).orElse(null)";
+    }
+    return "${variable}.${method}";
+  }
+
+  String wrapInOptional(String variable, bool nullable) {
+    if (nullable) {
+      return "java.util.Optional.ofNullable(${variable})";
+    }
+    return variable;
+  }
+
+  String callToJson(
+      GQField field, GQType type, String variableName, int index) {
+    if (type.isList) {
+      var inlineType = type.inlineType;
+      String varName = "e${index}";
+      var inlineCallToJson = callToJson(field, inlineType, varName, index + 1);
+      if (field.getDirectiveByName(gqArray) != null) {
+        // array
+        String method =
+            "java.util.stream.Stream.of(${variableName}).map(${varName} -> ${inlineCallToJson}).${_toList}";
+        return "${variableName} == null ? null : $method";
+      } else {
+        // list
+        String method =
+            "stream().map(${varName} -> ${inlineCallToJson}).${_toList}";
+        return safeCall(variableName, method, type.nullable);
+      }
+    }
+    if (grammar.isEnum(type.token) || grammar.isProjectableType(type.token)) {
+      return safeCall(variableName, "toJson()", type.nullable);
+    }
+    return variableName;
   }
 
   String generateContructor(String name, List<GQField> fields, String? modifier,
@@ -167,7 +434,7 @@ ${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serialize
     }
 
     final buffer = StringBuffer();
-    if(modifier != null) {
+    if (modifier != null) {
       buffer.write("$modifier ");
     }
     buffer.writeln(
@@ -251,10 +518,24 @@ $result
       String recordName, List<GQField> fields, Set<String> interfaceNames) {
     final list = fields
         .map((f) =>
-            serializeArgumentField(f, withFianl: false, withDecorators: true))
+            serializeArgumentField(f, withFianl: false, withDecorators: true, decoratorJoiner: " "))
         .toList();
     String interfaceImpl = _serializeImplements(interfaceNames);
-    return "public record $recordName ${interfaceImpl}(${serializeListText(list, withParenthesis: false, join: ", ")}) {}";
+    var buffer = StringBuffer();
+    buffer.write("public record $recordName");
+    
+    buffer.write("(");
+    buffer.write(serializeListText(list, withParenthesis: false, join: ", "));
+    buffer.write(")");
+    if(interfaceImpl.isNotEmpty) {
+      buffer.write(" ");
+      buffer.write(interfaceImpl);
+    }
+    buffer.writeln(" {");
+    buffer.writeln(generateToJson(fields).ident());
+    buffer.writeln(generateFromJson(fields, recordName).ident());
+    buffer.write("}");
+    return buffer.toString();
   }
 
   String serializeGetterDeclaration(GQField field,
@@ -264,7 +545,8 @@ $result
     if (asProperty) {
       result = "$result ${field.name}";
     } else {
-      result = "$result ${_getterName(field.name.token, returnType == "boolean")}";
+      result =
+          "$result ${_getterName(field.name.token, returnType == "boolean")}";
     }
     result = "$result()";
     if (skipModifier) {
@@ -348,7 +630,10 @@ ${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serialize
 ${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeSetter(e, checkForNulls: checkNulls)).toList(), join: "\n", withParenthesis: false).ident()}
     
 ${generateEqualsAndHashCode(def).ident()}
-    
+
+${generateToJson(def.getSerializableFields(grammar.mode)).ident()}
+${generateFromJson(def.getSerializableFields(grammar.mode), def.token).ident()}
+
 }
     """;
   }
@@ -415,28 +700,60 @@ ${'return java.util.Objects.hash(${fields.join(", ")});'.ident()}
     final parents = interface.parents;
     final fields = interface.getSerializableFields(grammar.mode);
     var decorators = serializeDecorators(interface.getDirectives());
-
-    var result = """
-public interface $token ${parents.isNotEmpty ? "extends ${parents.map((e) => e.tokenInfo).join(", ")} " : ""}{
-
-${fields.map((f) {
-              if (getters) {
-                if (typesAsRecords) {
-                  return "${serializeDecorators(f.getDirectives(), joiner: "\n")}${serializeGetterDeclaration(f, skipModifier: true, asProperty: true)}";
-                } else {
-                  return "${serializeDecorators(f.getDirectives(), joiner: "\n")}${serializeGetterDeclaration(f, skipModifier: true)}";
-                }
-              } else {
-                return serializeMethod(f);
-              }
-            }).map((e) => "$e;").join("\n").ident()}
-}""";
+    var buffer = StringBuffer();
     if (decorators.isNotEmpty) {
-      return """
-$decorators
-$result
-""";
+      buffer.writeln(decorators);
     }
-    return result;
+    buffer.write("public interface $token");
+    if (parents.isNotEmpty) {
+      buffer.write(" extends ${parents.map((e) => e.tokenInfo).join(", ")}");
+    }
+    buffer.writeln(" {");
+    for (var f in fields) {
+      if (getters) {
+        var fieldDecorators = serializeDecorators(f.getDirectives(), joiner: "\n");
+        if(fieldDecorators.isNotEmpty) {
+          buffer.write(fieldDecorators.ident());
+        }
+        if (typesAsRecords) {
+          buffer.write(serializeGetterDeclaration(f, skipModifier: true, asProperty: true).ident());
+        } else {
+           buffer.write(serializeGetterDeclaration(f, skipModifier: true).ident());
+        }
+      } else {
+        buffer.write(serializeMethod(f).ident());
+      }
+      buffer.writeln(";");
+    }
+    // toJson
+    buffer.writeln("java.util.Map<String, Object> toJson();".ident());
+    // fromJson to Json
+    if(interface.subTypes.isNotEmpty){
+      buffer.writeln(_serializeFromJsonForInterface(interface.token, interface.subTypes).ident());
+    }
+    buffer.write("}");
+    return buffer.toString();
+   
+  }
+
+    static String _serializeFromJsonForInterface(String token, Set<GQTypeDefinition> subTypes) {
+    if(subTypes.isEmpty) {
+      return "";
+    }
+    var buffer = StringBuffer("static ${token} fromJson(${_mapOf("String", "Object")} json) {");
+    buffer.writeln();
+
+    buffer.writeln('String typename = (String)json.get("__typename");'.ident());
+    buffer.writeln("switch(typename) {".ident());
+    for(var st in subTypes) {
+      String currentToken = st.derivedFromType?.tokenInfo.token ?? st.tokenInfo.token;
+      buffer.writeln('case "${currentToken}": return ${currentToken}.fromJson(json);'.ident(2));
+    }
+    buffer.writeln('default: throw new RuntimeException(String.format("Invalid type %s. %s does not implement $token or not defined", typename, typename));'.ident(2));
+    buffer.writeln("}".ident());
+    buffer.writeln("}");
+    return buffer.toString();
+
+    
   }
 }

@@ -21,8 +21,15 @@ class GQType extends GQToken {
 
   GQType get inlineType => this;
 
+  bool get isList => this is GQListType;
+
+  bool get isNotList => !isList;
+
+
   @override
   int get hashCode => tokenInfo.hashCode;
+
+  
 }
 
 class GQListType extends GQType {

@@ -215,7 +215,7 @@ extension GQGrammarExtension on GQGrammar {
     var mapsTo = type.getDirectiveByName(gqSkipOnServer)?.getArgValueAsString(gqMapTo);
     var skipOnServerFields = type.getSkipOnServerFields();
     if (mapsTo != null) {
-      var list = skipOnServerFields.where((e) => e.type.token == mapsTo && e.type is! GQListType).toList();
+      var list = skipOnServerFields.where((e) => e.type.token == mapsTo && e.type.isNotList).toList();
       if (list.length == 1) {
         return list.first;
       }
@@ -294,6 +294,10 @@ extension GQGrammarExtension on GQGrammar {
 
   bool isEnum(String token) {
     return enums.containsKey(token);
+  }
+  
+  bool isInput(String token) {
+    return inputs.containsKey(token);
   }
 
   bool isScalar(String token) {

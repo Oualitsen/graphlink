@@ -261,14 +261,6 @@ void main() {
     var user = g.types["User"]!;
     var serializer = DartSerializer(g);
     var userSerial = serializer.doSerializeTypeDefinition(user);
-    var gender = g.enums["Gender"]!;
-    print(userSerial);
-    var fileName = "test/dart/json/test.dart";
-    File(fileName).writeAsStringSync('''
-${userSerial}
-${serializer.serializeEnumDefinition(gender)}
-${serializer.serializeTypeDefinition(g.types["City"]!)}
-''');
     expect(
       userSerial.split("\n").map((e) => e.trim()),
       containsAllInOrder([
@@ -317,12 +309,23 @@ ${serializer.serializeTypeDefinition(g.types["City"]!)}
     var user = g.interfaces["BasicEntity"]!;
     var serializer = DartSerializer(g);
     var userSerial = serializer.serializeInterface(user);
-    print(userSerial);
-    var fileName = "test/dart/json/test.dart";
-    File(fileName).writeAsStringSync('''
-${userSerial}
-${serializer.serializeTypeDefinition(g.getType("User"))}
-${serializer.serializeTypeDefinition(g.getType("Animal"))}
-''');
+    
+expect(
+  userSerial.split('\n').map((e) => e.trim()),
+  containsAllInOrder([
+    'abstract class BasicEntity {',
+    'String get id;',
+    'Map<String, dynamic> toJson();',
+    'static BasicEntity fromJson(Map<String, dynamic> json) {',
+    "var typename = json['__typename'] as String;",
+    'switch(typename) {',
+    "case 'User': return User.fromJson(json);",
+    "case 'Animal': return Animal.fromJson(json);",
+    'default: throw ArgumentError("Invalid type \$typename. \$typename does not implement BasicEntity or not defined");',
+    '}',
+    '}',
+    '}'
+  ]),
+);
   });
 }

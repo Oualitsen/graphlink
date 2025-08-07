@@ -216,7 +216,7 @@ position: ${failures.first.position}
   } catch (ex, st) {
     // ignore parse errors
     stderr.writeln(st);
-    throw ex;
+    rethrow;
   }
 }
 final _lastGeneratedFiles = <String>{};

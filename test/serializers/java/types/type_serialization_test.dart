@@ -163,14 +163,13 @@ void main() {
     var javaSerialzer = JavaSerializer(g);
     var genderEnum = g.enums["Gender"]!;
     var enum_ = javaSerialzer.serializeEnumDefinition(genderEnum);
-    expect(
-        enum_.trim(),
-        """
-public enum Gender {
-\tmale, female
-}
-"""
-            .trim());
+    expect(enum_.split("\n").map((e) => e.trim()).toList(), containsAllInOrder([
+      'public enum Gender {',
+      'male, female;',
+      '}'
+      
+    ]));
+    
   });
 
   test("serializeGetterDeclaration", () {
@@ -329,7 +328,6 @@ public void setId(final String id) {
     var entity = g.interfaces["Interface2"]!;
     var javaSerialzer = JavaSerializer(g);
     var class_ = javaSerialzer.serializeInterface(entity).trim();
-
     expect(class_, startsWith("public interface Interface2 extends IBase {"));
     expect(class_, endsWith("}"));
     for (var e in entity.fields) {

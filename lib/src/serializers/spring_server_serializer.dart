@@ -208,7 +208,7 @@ $result
       var mapTo = getMapTo(token);
 
       var rt = GQType(mapTo.toToken(), false);
-      if (type is GQListType) {
+      if (type.isList) {
         if (mapTo == "Object") {
           rt = GQType("?".toToken(), false);
         }

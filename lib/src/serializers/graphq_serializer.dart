@@ -240,7 +240,7 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
   String serializeType(GQType gqType, {bool forceNullable = false}) {
     String nullableText =
         forceNullable ? '' : _getNullableText(gqType.nullable);
-    if (gqType is GQListType) {
+    if (gqType.isList) {
       return "[${serializeType(gqType.inlineType)}]${nullableText}";
     }
     return "${gqType.tokenInfo}${nullableText}";
