@@ -28,9 +28,7 @@ class DartClientSerializer extends ClientSerilaizer {
   String generateInputs(GqSerializer serializer) {
     var inputs = _grammar.inputs.values.toList().map((e) => serializer.serializeInputDefinition(e)).join("\n");
     return """
-import 'package:json_annotation/json_annotation.dart';
 import '$enumsFileName.dart';
-part '$inputsFileName.g.dart';
 
 $inputs
 """;
@@ -40,9 +38,7 @@ $inputs
     var data = _grammar.projectedTypes.values.toSet().map((e) => serializer.serializeTypeDefinition(e)).join("\n");
 
     return """
-import 'package:json_annotation/json_annotation.dart';
 import '$enumsFileName.dart';
-part '$typesFileName.g.dart';
 
 $data
 
