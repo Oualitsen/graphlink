@@ -26,12 +26,12 @@ abstract class GqSerializer {
     if (shouldSkipSerialization(directives: value.getDirectives(), mode: mode)) {
       return "";
     }
-    return doSerialzeEnumValue(value);
+    return doSerializeEnumValue(value);
   }
 
   String doSerializeEnumDefinition(GQEnumDefinition def);
 
-  String doSerialzeEnumValue(GQEnumValue value);
+  String doSerializeEnumValue(GQEnumValue value);
 
   String serializeField(GQField def) {
     if (shouldSkipSerialization(directives: def.getDirectives(), mode: mode)) {

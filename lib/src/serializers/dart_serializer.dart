@@ -27,7 +27,7 @@ class DartSerializer extends GqSerializer {
       buffer.writeln(decorators);
     }
     buffer.writeln("enum ${def.tokenInfo} {");
-    buffer.write(def.values.map((e) => doSerialzeEnumValue(e)).toList().join(", ").ident());
+    buffer.write(def.values.map((e) => doSerializeEnumValue(e)).toList().join(", ").ident());
     buffer.writeln(";");
     // toJson
     buffer.writeln("String toJson() {".ident());
@@ -55,7 +55,7 @@ class DartSerializer extends GqSerializer {
   }
 
   @override
-  String doSerialzeEnumValue(GQEnumValue value) {
+  String doSerializeEnumValue(GQEnumValue value) {
     var decorators = serializeDecorators(value.getDirectives(), joiner: " ");
     if(decorators.isEmpty) {
       return value.value.token;

@@ -153,6 +153,11 @@ class GQGrammar extends GrammarDefinition {
   }
 
 
+  Result parseAndValidate(String text) {
+     _validate = true;
+     return parse(text);
+  }
+
   Result parse(String text) {
      var parser = buildFrom(fullGrammar().end());
      return parser.parse(text);
@@ -166,12 +171,15 @@ class GQGrammar extends GrammarDefinition {
     return result;
   }
 
-  Future<List<Result>> parseFiles(List<String> paths) async {
+  Future<List<Result>> parseFiles(List<String> paths, {String? extraGql}) async {
     var result = <Result>[];
 
     for(var path in paths) {
-      var parseResult = await parseFile(path, validate: path == paths.last);
+      var parseResult = await parseFile(path, validate: extraGql == null && path == paths.last);
       result.add(parseResult);
+    }
+    if(extraGql != null) {
+      result.add(parseAndValidate(extraGql));
     }
     return result;
   }

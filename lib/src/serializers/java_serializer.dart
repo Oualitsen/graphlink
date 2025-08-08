@@ -75,7 +75,7 @@ class JavaSerializer extends GqSerializer {
     }
     buffer.writeln("public enum ${def.tokenInfo} {");
     buffer.write(def.values
-        .map((e) => doSerialzeEnumValue(e))
+        .map((e) => doSerializeEnumValue(e))
         .toList()
         .join(", ")
         .ident());
@@ -94,7 +94,7 @@ class JavaSerializer extends GqSerializer {
   }
 
   @override
-  String doSerialzeEnumValue(GQEnumValue value) {
+  String doSerializeEnumValue(GQEnumValue value) {
     var decorators = serializeDecorators(value.getDirectives(), joiner: " ");
     if (decorators.isEmpty) {
       return value.value.token;

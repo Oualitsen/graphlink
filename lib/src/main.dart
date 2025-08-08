@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:glob/glob.dart';
 import 'package:glob/list_local_fs.dart';
 import 'package:retrofit_graphql/src/config.dart';
+import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/io_utils.dart';
 import 'package:retrofit_graphql/src/serializers/dart_client_serializer.dart';
@@ -18,7 +19,63 @@ import 'package:args/args.dart';
 import 'dart:convert';
 
 import 'package:retrofit_graphql/src/utils.dart';
+const _clientTpes = { 'GQPayload', 'GQError', 'GQErrorLocation', 'GQSubscriptionPayload'  ,'GQSubscriptionErrorMessage', 'GQSubscriptionMessage'};
+const _clientInterfaces = {'GQSubscriptionErrorMessageBase'};
+const _clientObjects = '''
+scalar gqlMapStrObj @gqExternal(gqFQCN: "Map<String, dynamic>")
+scalar dartDynamic @gqExternal(gqFQCN: "dynamic")
 
+type GQPayload {
+  query: String!
+  operationName: String!
+  variables: gqlMapStrObj!
+}
+
+type GQError {
+  message: String!
+  path: [dartDynamic!]
+  extensions: gqlMapStrObj
+  locations: [GQErrorLocation!]
+}
+
+type GQErrorLocation {
+  line: Int!
+  column: Int!
+}
+
+
+
+type GQSubscriptionPayload {
+  query: String
+  operationName: String
+  variables: gqlMapStrObj
+  data: gqlMapStrObj
+}
+
+enum GQAckStatus {none progress acknoledged }
+
+interface GQSubscriptionErrorMessageBase {
+  type: GQSubscriptionMessageType
+  id: String
+}
+
+type GQSubscriptionErrorMessage implements GQSubscriptionErrorMessageBase {
+  id: String
+  type: GQSubscriptionMessageType
+  payload: [GQError!]
+}
+
+type GQSubscriptionMessage implements GQSubscriptionErrorMessageBase {
+  id: String
+  type: GQSubscriptionMessageType
+  payload: GQSubscriptionPayload
+}
+
+enum GQSubscriptionMessageType {
+  connection_init connection_ack subscribe next complete error
+}
+
+''';
 Future<void> main(List<String> arguments) async {
   final parser = ArgParser()
     ..addOption(
@@ -192,7 +249,8 @@ void handleGeneration(GeneratorConfig config) async {
 
   final grammar = createGrammar(config);
   try {
-    var result = await grammar.parseFiles(filePaths);
+    var extra = grammar.mode == CodeGenerationMode.client ? _clientObjects : null;
+    var result = await grammar.parseFiles(filePaths, extraGql: extra);
     var failures = result.whereType<Failure>().toList();
     if(failures.isNotEmpty) {
       
@@ -211,6 +269,13 @@ position: ${failures.first.position}
       await generateServerClasses(grammar, config, now);
      
     } else if (mode == CodeGenerationMode.client) {
+      for (var type in _clientTpes) {
+        grammar.projectedTypes[type] = grammar.getType(type.toToken());
+      }
+
+      for (var type in _clientInterfaces) {
+        grammar.projectedTypes[type] = grammar.getType(type.toToken());
+      }
       await generateClientClasses(grammar, config, now);
     }
   } catch (ex, st) {
@@ -243,7 +308,7 @@ GQGrammar createGrammar(GeneratorConfig config) {
 
  Future<void> generateClientClasses(GQGrammar grammar, GeneratorConfig config, DateTime started) async {
   final GqSerializer serializer = DartSerializer(grammar);
-  final dcs = DartClientSerializer(grammar);
+  final dcs = DartClientSerializer(grammar, serializer);
   
   var outputDir = config.outputDir;
   var futures = [
