@@ -581,22 +581,19 @@ extension GQGrammarExtension on GQGrammar {
     final typeName = onTypeNameToken.token;
     var type = getType(onTypeNameToken);
     if (projection is GQInlineFragmentsProjection) {
-      var type = getType(onTypeNameToken);
 
-      if (type is GQInterfaceDefinition || type is GQUnionDefinition) {
-        //handl for interface
-        projection.inlineFragments.map((e) => e.onTypeName).map((e) => getType(e)).forEach((type) {
-          if (!type.containsInteface(typeName)) {
-            throw ParseException("Type '${type.tokenInfo}' does not implement '${typeName}'", info: onTypeNameToken);
-          }
-        });
-
-        for (var inlineFrag in projection.inlineFragments) {
-          inlineFrag.block.projections.forEach((key, proj) {
-            validateProjection(proj, inlineFrag.onTypeName, null);
-          });
-        }
+    //handl for interface
+    projection.inlineFragments.map((e) => e.onTypeName).map((e) => getType(e)).forEach((type) {
+      if (!type.containsInteface(typeName)) {
+        throw ParseException("Type '${type.tokenInfo}' does not implement '${typeName}'", info: onTypeNameToken);
       }
+    });
+
+    for (var inlineFrag in projection.inlineFragments) {
+      inlineFrag.block.projections.forEach((key, proj) {
+        validateProjection(proj, inlineFrag.onTypeName, null);
+      });
+    }
       return;
     }
     if (projection.isFragmentReference) {
@@ -671,7 +668,6 @@ extension GQGrammarExtension on GQGrammar {
       for (var inlineFrag in projection.inlineFragments) {
         inlineFrag.block.projections.forEach((k, proj) {
           if (projection.block == null) {
-            
             handleFragmentDepenecy(fragment, proj);
           }
         });

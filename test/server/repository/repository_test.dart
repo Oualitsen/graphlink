@@ -83,7 +83,7 @@ void main() {
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
-          contains('gqType is required on @gqRepository directive line: 5 column: 35'),
+          contains('gqType is required on @gqRepository directive line: 4 column: 35'),
         ),
       ),
     );

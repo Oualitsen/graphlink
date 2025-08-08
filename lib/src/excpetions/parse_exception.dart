@@ -21,7 +21,7 @@ class ParseException {
     if(info.fileName != null) {
       buffer.write(" at file: ${info.fileName ?? ''}");
     }
-    buffer.write(' line: ${info.line + 1} column: ${info.column}');
+    buffer.write(' line: ${info.line} column: ${info.column}');
     return buffer.toString();
   }
 }
