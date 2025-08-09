@@ -7,11 +7,11 @@ abstract class ClientSerilaizer {
    String classNameFromType(GQQueryType type) {
     switch (type) {
       case GQQueryType.query:
-        return "Queries";
+        return "GQQueries";
       case GQQueryType.mutation:
-        return "Mutations";
+        return "GQMutations";
       case GQQueryType.subscription:
-        return "Subscriptions";
+        return "GQSubscriptions";
     }
   }
 }

@@ -46,10 +46,11 @@ void main() async {
     var result =  g.parse(text);    
     expect(result is Success, true);
     var clientGen = DartClientSerializer(g);
+    var serializer = DartSerializer(g);
     var client = clientGen.generateClient();
-    var types = clientGen.generateTypes(DartSerializer(g));
-    var inputs = clientGen.generateInputs(DartSerializer(g));
-    var enums = clientGen.generateEnums(DartSerializer(g));
+    var types = g.types.values.map((t) => serializer.serializeTypeDefinition(t)).join("\n");
+    var inputs = g.inputs.values.map((t) => serializer.serializeInputDefinition(t)).join("\n");
+    var enums = g.enums.values.map((t) => serializer.serializeEnumDefinition(t)).join("\n");
 
     
     expect(client, isNot(stringContainsInOrder(["Instance of"])));

@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
-import 'package:retrofit_graphql/src/serializers/dart_client_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
 import 'package:logger/logger.dart';
@@ -26,10 +25,10 @@ void main() async {
 
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
-    final dsc = DartClientSerializer(g);
-    var inputs = dsc.generateInputs(DartSerializer(g));
+    var serializer = DartSerializer(g);
+    var types = g.types.values.map((t) => serializer.serializeTypeDefinition(t)).join("\n");
+    var inputs = g.inputs.values.map((t) => serializer.serializeInputDefinition(t)).join("\n");
 
-    var types = dsc.generateTypes(DartSerializer(g));
     expect(inputs, contains("this.middleName"));
     expect(inputs, isNot(contains("required this.middleName")));
 
