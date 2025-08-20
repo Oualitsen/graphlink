@@ -1,0 +1,34 @@
+type Product {
+    name: String!
+    make: String!
+    model: String!
+    exppiryDate: String
+    variant: Variant
+}
+
+type Variant {
+    name: String
+    make: String
+    model: String
+    skuId: String
+}
+
+
+type Query {
+    getProduct: Product
+}
+
+query getProduct {
+    getProduct {
+        ... on Product {
+            name make model exppiryDate variant {
+                ... on Variant {
+                  name make model  skuId 
+                }
+            }
+        }
+    }
+}
+
+
+

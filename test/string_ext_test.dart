@@ -13,7 +13,7 @@ void main() {
   });
 
   test("ident", () {
-    expect("ident".ident(), "\tident");
+    expect("ident".ident(), "   ident");
     expect(
         """
 line1
@@ -21,8 +21,8 @@ line2
 """
             .ident(),
         """
-\tline1
-\tline2
+   line1
+   line2
 """);
   });
 

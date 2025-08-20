@@ -130,11 +130,10 @@ return result;
     var id = gqRepo.getArgValueAsString(gqIdType);
     var ontType = gqRepo.getArgValueAsString(gqType)!;
 
-    interface.parents.add(GQInterfaceDefinition(
+    interface.interfaces.add(GQInterfaceDefinition(
         name: "$fqcn<$ontType, ${id}>".toToken(),
         nameDeclared: false,
         fields: [],
-        parentNames: {},
         directives: [],
         interfaceNames: {}));
 

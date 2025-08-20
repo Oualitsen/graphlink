@@ -1,0 +1,38 @@
+interface Animal {
+    name: String
+    dateOfBirth: String!
+}
+
+type Dog implements Animal {
+    name: String
+    dateOfBirth: String!
+    race: String!
+}
+
+type Cat implements Animal {
+    name: String
+    dateOfBirth: String!
+    ownerId: String!
+}
+
+type Person {
+    name: String
+    animal: Animal
+}
+
+type Query {
+    getPerson: Person
+}
+
+query getPerson {
+    getPerson {
+        name animal {
+            ... on Cat {
+                name dateOfBirth ownerId
+            }
+            ... on Dog {
+                 name dateOfBirth race
+            }
+        }
+    }
+}

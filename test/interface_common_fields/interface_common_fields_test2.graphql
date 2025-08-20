@@ -1,0 +1,48 @@
+
+interface BasicEntity {
+
+    id: ID!
+    createdBy: String
+    creationDate: String
+}
+
+
+
+type User implements BasicEntity {
+     id: ID!
+    createdBy: String
+    creationDate: String
+    firstName: String
+    lastName: String
+}
+
+type Car implements BasicEntity {
+     id: ID!
+    createdBy: String
+    creationDate: String
+    lastUpdate: String
+    lastUpdateBy: String
+
+    make: String
+    model: String
+}
+
+type Query {
+    getEntity: BasicEntity
+}
+
+query getEntity {
+    getEntity {
+        ... _all_fields
+    } 
+}
+
+fragment BasicEntityFrag on BasicEntity {
+        ... on Car {
+            ... _all_fields
+        }
+        ... on User {
+            ... _all_fields
+        }
+}
+

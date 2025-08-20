@@ -20,14 +20,14 @@ extension StringExt on String {
   }
 
   String ident([int num = 1]) {
-    final indentStr = '\t' * num;
+    String ident = " " * 3;
+    final indentStr = ident * num;
     return split('\n').map((line) => line.isEmpty ? line : '$indentStr$line').join('\n');
   }
 
   String removeQuotes() {
     var trimed = trim();
-    if (trimed.startsWith("'''") && trimed.endsWith("'''") ||
-        trimed.startsWith('"""') && trimed.endsWith('"""')) {
+    if (trimed.startsWith("'''") && trimed.endsWith("'''") || trimed.startsWith('"""') && trimed.endsWith('"""')) {
       return trimed.substring(3, trimed.length - 3);
     }
     if (trimed.startsWith("'") && trimed.endsWith("'") || trimed.startsWith('"') && trimed.endsWith('"')) {

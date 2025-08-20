@@ -19,11 +19,9 @@ void main() {
   };
 
   test("test list as array", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.client);
+    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.client);
 
-    final text =
-        File("test/serializers/java/types/type_serialization_list_as_array.graphql").readAsStringSync();
+    final text = File("test/serializers/java/types/type_serialization_list_as_array.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
@@ -38,11 +36,9 @@ void main() {
   });
 
   test("test skipOn mode = client", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.client);
+    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.client);
 
-    final text =
-        File("test/serializers/java/types/type_serialization_skip_on_test.graphql").readAsStringSync();
+    final text = File("test/serializers/java/types/type_serialization_skip_on_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
@@ -55,11 +51,9 @@ void main() {
   });
 
   test("test skipOn mode = server", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
-    final text =
-        File("test/serializers/java/types/type_serialization_skip_on_test.graphql").readAsStringSync();
+    final text = File("test/serializers/java/types/type_serialization_skip_on_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
@@ -84,8 +78,7 @@ void main() {
 
   test("testDecorators 2", () {
     final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
-    final text =
-        File("test/serializers/java/types/type_serialization_decorators_test.graphql").readAsStringSync();
+    final text = File("test/serializers/java/types/type_serialization_decorators_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
@@ -163,13 +156,8 @@ void main() {
     var javaSerialzer = JavaSerializer(g);
     var genderEnum = g.enums["Gender"]!;
     var enum_ = javaSerialzer.serializeEnumDefinition(genderEnum);
-    expect(enum_.split("\n").map((e) => e.trim()).toList(), containsAllInOrder([
-      'public enum Gender {',
-      'male, female;',
-      '}'
-      
-    ]));
-    
+    expect(enum_.split("\n").map((e) => e.trim()).toList(),
+        containsAllInOrder(['public enum Gender {', 'male, female;', '}']));
   });
 
   test("serializeGetterDeclaration", () {
@@ -206,24 +194,20 @@ void main() {
 
     var setId = javaSerialzer.serializeSetter(idField);
     var setMiddleName = javaSerialzer.serializeSetter(middleName);
+    print(setMiddleName);
 
     expect(
-        setMiddleName,
-        """
-public void setMiddleName(final String middleName) {
-\tthis.middleName = middleName;
-}
-"""
-            .trim());
+        setMiddleName.split("\n").map((e) => e.trim()),
+        containsAllInOrder([
+          'public void setMiddleName(final String middleName) {',
+          'this.middleName = middleName;',
+          '}',
+        ]));
 
     expect(
-        setId,
-        """
-public void setId(final String id) {
-\tthis.id = id;
-}
-"""
-            .trim());
+      setId.split("\n").map((e) => e.trim()),
+      containsAllInOrder(['public void setId(final String id) {', 'this.id = id;', '}']),
+    );
   });
 
   test("serializeGetter", () {
@@ -353,8 +337,7 @@ public void setId(final String id) {
   });
 
   test("Repository serialization", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
     final text = File("test/serializers/java/types/repository_serialization_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);

@@ -6,9 +6,6 @@ import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 import 'package:retrofit_graphql/src/model/gq_has_directives.dart';
 import 'package:retrofit_graphql/src/serializers/language.dart';
 
-
-
-
 String serializeListText(List<String>? list, {String join = ",", bool withParenthesis = true}) {
   if (list == null || list.isEmpty) {
     return '';
@@ -61,8 +58,8 @@ String? getNameValueFromDirectives(Iterable<GQDirectiveValue> directives) {
   if (dirs.isEmpty) {
     return null;
   }
-  var name = dirs.first.getArguments().firstWhere((arg) => arg.token == gqTypeNameDirectiveArgumentName).value
-      as String;
+  var name =
+      dirs.first.getArguments().firstWhere((arg) => arg.token == gqTypeNameDirectiveArgumentName).value as String;
   return name.replaceAll("\"", "");
 }
 
@@ -135,12 +132,11 @@ const _map = <CodeGenerationMode, String>{
 };
 
 bool shouldSkipSerialization({required List<GQDirectiveValue> directives, required CodeGenerationMode mode}) {
-    String token = _map[mode]!;
-    var skipOnList = directives.where((d) => d.token == token).toList();
-    return skipOnList.isNotEmpty;
+  String token = _map[mode]!;
+  var skipOnList = directives.where((d) => d.token == token).toList();
+  return skipOnList.isNotEmpty;
 }
 
-List<T> filterSerialization<T extends GqDirectivesMixin>(Iterable<T> list, CodeGenerationMode mode ) {
-      return list.where((element) => !shouldSkipSerialization(directives: element.getDirectives(), mode: mode))
-      .toList();
-   }
+List<T> filterSerialization<T extends GqDirectivesMixin>(Iterable<T> list, CodeGenerationMode mode) {
+  return list.where((element) => !shouldSkipSerialization(directives: element.getDirectives(), mode: mode)).toList();
+}

@@ -709,7 +709,6 @@ void main() {
   test("Exception on interface implement undefined interface",
       () {
     final GQGrammar g = GQGrammar(typeMap: typeMapping);
-   
     expect(() => g.parse('''
     interface BasicEntity implements IBase {
       id: String
@@ -718,7 +717,7 @@ void main() {
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
-          contains("interface IBase is not defined line: 1 column: 38"),
+          contains("Interface IBase is not found line: 1 column: 38"),
         ),
       ),);
   });

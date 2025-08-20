@@ -5,7 +5,9 @@ type MyEntity implements Entity {
     name: String!
 }
 
-
+interface Entity {
+    id: String!
+}
 
 interface Interface1 {
     id: String!

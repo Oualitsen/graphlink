@@ -22,6 +22,6 @@ void main() async {
     expect(i2.fieldNames, containsAll(["street", "wilayaId", "city"]));
     expect(i2.fieldNames,
         isNot(containsAll(["firstName1", "lastName1", "middleName1"])));
-    expect(i2.getParentNames(), contains("UserInput1"));
+    expect(i2.getInterfaceNames(), contains("UserInput1"));
   });
 }

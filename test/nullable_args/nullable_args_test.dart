@@ -13,14 +13,12 @@ void main() async {
   test("Nullable Arguments", () {
     var logger = Logger();
     final GQGrammar g = GQGrammar(nullableFieldsRequired: false);
-    logger.i(
-        "________________________________________init______________________");
+    logger.i("________________________________________init______________________");
 
     var parser = g.buildFrom(g.fullGrammar().end());
     logger.i("reading file");
 
-    final text = File("test/nullable_args/nullable_args_test.graphql")
-        .readAsStringSync();
+    final text = File("test/nullable_args/nullable_args_test.graphql").readAsStringSync();
     logger.i("file read $test");
 
     var parsed = parser.parse(text);
@@ -39,23 +37,21 @@ void main() async {
     final GQGrammar g1 = GQGrammar(nullableFieldsRequired: false);
     final nullableString = GQType("String".toToken(), true);
     final nonNullableString = GQType("String".toToken(), false);
-    final nullableField = GQField(
-        name: "name".toToken(), type: nullableString, arguments: [], directives: []);
-    final nonNullableField = GQField(
-        name: "name".toToken(), type: nonNullableString, arguments: [], directives: []);
+    final nullableField = GQField(name: "name".toToken(), type: nullableString, arguments: [], directives: []);
+    final nonNullableField = GQField(name: "name".toToken(), type: nonNullableString, arguments: [], directives: []);
+    var serializer1 = DartSerializer(g1);
 
-    var dartContructorTypeNullable = g1.toConstructorDeclaration(nullableField);
-    var dartContructorTypeNonNullable =
-        g1.toConstructorDeclaration(nonNullableField);
+    var dartContructorTypeNullable = serializer1.toConstructorDeclaration(nullableField);
+    var dartContructorTypeNonNullable = serializer1.toConstructorDeclaration(nonNullableField);
 
     expect(dartContructorTypeNullable, "this.name");
     expect(dartContructorTypeNonNullable, "required this.name");
 
     final GQGrammar g2 = GQGrammar(nullableFieldsRequired: true);
-    var dartContructorTypeNullable2 =
-        g2.toConstructorDeclaration(nullableField);
-    var dartContructorTypeNonNullable2 =
-        g2.toConstructorDeclaration(nonNullableField);
+    var serializer2 = DartSerializer(g2);
+
+    var dartContructorTypeNullable2 = serializer2.toConstructorDeclaration(nullableField);
+    var dartContructorTypeNonNullable2 = serializer2.toConstructorDeclaration(nonNullableField);
 
     expect(dartContructorTypeNullable2, "required this.name");
     expect(dartContructorTypeNonNullable2, "required this.name");

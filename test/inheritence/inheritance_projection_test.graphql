@@ -30,10 +30,10 @@ type Query {
 
 query getUser {
   myUser:getUser @gqTypeName(name: "MyUser") {
-    ... on Admin @gqTypeName(name: "AdminEEEE"){
+    ... on Admin @gqTypeName(name: "AdminEEEE") {
       firstName lastName username
     }
-    ... on Assistant @gqTypeName(name: "Assistant222"){
+    ... on Assistant @gqTypeName(name: "Assistant222") {
     firstName lastName  username password
     }
   } 

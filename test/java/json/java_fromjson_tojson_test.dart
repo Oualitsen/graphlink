@@ -12,8 +12,7 @@ void saveToFile(String data, String fileName) {
 
 void main() {
   test("Java enum to json", () {
-    final GQGrammar g = GQGrammar(
-        generateAllFieldsFragments: false, autoGenerateQueries: false);
+    final GQGrammar g = GQGrammar();
 
     var parsed = g.parse('''
   enum Gender {male, female}
@@ -34,7 +33,7 @@ void main() {
 
   test("Java enum from json", () {
     final GQGrammar g = GQGrammar(
-        generateAllFieldsFragments: false, autoGenerateQueries: false);
+        );
 
     var parsed = g.parse('''
   enum Gender {male, female}
@@ -54,7 +53,7 @@ void main() {
 
   test("Java input tojson", () {
     final GQGrammar g = GQGrammar(
-        generateAllFieldsFragments: false, autoGenerateQueries: false);
+        );
 
     var parsed = g.parse('''
   scalar Long
@@ -109,7 +108,7 @@ void main() {
 
   test("Java input tojson list as array", () {
     final GQGrammar g = GQGrammar(
-        generateAllFieldsFragments: false, autoGenerateQueries: false);
+        );
 
     var parsed = g.parse('''
   enum Gender {male, female}
@@ -140,7 +139,7 @@ void main() {
 
   test("Java input tojson list of lists", () {
     final GQGrammar g = GQGrammar(
-        generateAllFieldsFragments: false, autoGenerateQueries: false);
+        );
 
     var parsed = g.parse('''
   scalar Long
@@ -169,7 +168,7 @@ void main() {
 
   test("Java type tojson", () {
     final GQGrammar g = GQGrammar(
-        generateAllFieldsFragments: false, autoGenerateQueries: false);
+        );
 
     var parsed = g.parse('''
   scalar Long
@@ -446,7 +445,7 @@ void main() {
 
   test("Java interface fromJson", () {
     final GQGrammar g = GQGrammar(
-        generateAllFieldsFragments: false, autoGenerateQueries: false);
+        );
 
     var parsed = g.parse('''
   interface BasicEntity {

@@ -188,13 +188,11 @@ ${def.getSerializableFields(mode, skipGenerated: true).map(serializeField).map((
   String serializeTypeDefinition(GQTypeDefinition def, CodeGenerationMode mode) {
 
     String type;
-    Iterable<String> interfaces;
+    Iterable<String> interfaces = def.getInterfaceNames().where((i) => !grammar.interfaces[i]!.fromUnion);
     if(def is GQInterfaceDefinition) {
       type = "interface";
-      interfaces = def.getParentNames();
     }else { 
       type = "type";
-      interfaces = def.getInterfaceNames();
     }
 
     var result = StringBuffer("$type ${def.tokenInfo}");

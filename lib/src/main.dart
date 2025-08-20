@@ -9,7 +9,6 @@ import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/io_utils.dart';
 import 'package:retrofit_graphql/src/serializers/dart_client_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
-import 'package:retrofit_graphql/src/serializers/gq_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/graphq_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/java_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/language.dart';
@@ -149,8 +148,7 @@ ${parser.usage}
   try {
     config = GeneratorConfig.fromJson(json);
     if (!["server", "client"].contains(config.mode)) {
-      stderr.writeln(
-          '❌ Error parsing config: mode must be one of "server" or "client"');
+      stderr.writeln('❌ Error parsing config: mode must be one of "server" or "client"');
     }
   } catch (e) {
     stderr.writeln('❌ Error parsing config: $e');
@@ -258,8 +256,7 @@ void handleGeneration(GeneratorConfig config) async {
 
   final grammar = createGrammar(config);
   try {
-    var extra =
-        grammar.mode == CodeGenerationMode.client ? _clientObjects : null;
+    var extra = grammar.mode == CodeGenerationMode.client ? _clientObjects : null;
     var result = await grammar.parseFiles(filePaths, extraGql: extra);
     var failures = result.whereType<Failure>().toList();
     if (failures.isNotEmpty) {
@@ -298,10 +295,7 @@ final _lastGeneratedFiles = <String>{};
 GQGrammar createGrammar(GeneratorConfig config) {
   var mode = config.getMode();
   if (mode == CodeGenerationMode.server) {
-    return GQGrammar(
-        mode: mode,
-        typeMap: config.typeMappings!,
-        identityFields: config.identityFields);
+    return GQGrammar(mode: mode, typeMap: config.typeMappings!, identityFields: config.identityFields);
   } else {
     var clientConfig = config.clientConfig;
 
@@ -309,8 +303,7 @@ GQGrammar createGrammar(GeneratorConfig config) {
       mode: mode,
       typeMap: config.typeMappings!,
       identityFields: config.identityFields,
-      generateAllFieldsFragments:
-          clientConfig?.generateAllFieldsFragments ?? false,
+      generateAllFieldsFragments: clientConfig?.generateAllFieldsFragments ?? false,
       nullableFieldsRequired: clientConfig?.nullableFieldsRequired ?? false,
       autoGenerateQueries: clientConfig?.autoGenerateQueries ?? false,
       defaultAlias: clientConfig?.defaultAlias,
@@ -319,23 +312,16 @@ GQGrammar createGrammar(GeneratorConfig config) {
   }
 }
 
-Future<Set<String>> generateClientClasses(
-    GQGrammar grammar, GeneratorConfig config, DateTime started) async {
+Future<Set<String>> generateClientClasses(GQGrammar grammar, GeneratorConfig config, DateTime started) async {
   final DartSerializer serializer = DartSerializer(grammar);
   final dcs = DartClientSerializer(grammar, serializer);
   final fileExtension = dcs.fileExtension;
   final List<Future<File>> futures = [];
   final destinationDir = config.outputDir;
 
-  var enumFiles = grammar.enums.values
-      .map((e) => "'../enums/${e.token}${fileExtension}'")
-      .toSet();
-  var inputFiles = grammar.inputs.values
-      .map((e) => "'../inputs/${e.token}${fileExtension}'")
-      .toSet();
-  var typeFiles = grammar.projectedTypes.values
-      .map((e) => "'../types/${e.token}${fileExtension}'")
-      .toSet();
+  var enumFiles = grammar.enums.values.map((e) => "'../enums/${e.token}${fileExtension}'").toSet();
+  var inputFiles = grammar.inputs.values.map((e) => "'../inputs/${e.token}${fileExtension}'").toSet();
+  var typeFiles = grammar.projectedTypes.values.map((e) => "'../types/${e.token}${fileExtension}'").toSet();
 
   grammar.enums.forEach((k, def) {
     var text = serializer.serializeEnumDefinition(def);
@@ -380,23 +366,21 @@ Future<Set<String>> generateClientClasses(
       destinationDir: destinationDir);
   futures.add(r);
   var result = await Future.wait(futures);
-  stdout.writeln(
-      "Generated ${futures.length} files in ${formatElapsedTime(started)}");
+  stdout.writeln("Generated ${futures.length} files in ${formatElapsedTime(started)}");
   var paths = result.map((f) => f.path).toSet();
   await cleanUpObsoleteFiles(paths);
   return paths;
 }
 
-Future<Set<String>> generateServerClasses(
-    GQGrammar grammar, GeneratorConfig config, DateTime started) async {
+Future<Set<String>> generateServerClasses(GQGrammar grammar, GeneratorConfig config, DateTime started) async {
   final springConfig = config.serverConfig!.spring!;
   final packageName = springConfig.basePackage;
   final destinationDir = config.outputDir;
   final serializer = JavaSerializer(grammar,
       inputsAsRecords: config.serverConfig?.spring?.inputAsRecord ?? false,
       typesAsRecords: config.serverConfig?.spring?.typeAsRecord ?? false);
-  final springSerializer = SpringServerSerializer(grammar,
-      javaSerializer: serializer, generateSchema: springConfig.generateSchema);
+  final springSerializer =
+      SpringServerSerializer(grammar, javaSerializer: serializer, generateSchema: springConfig.generateSchema);
   final List<Future<File>> futures = [];
   const fileExtension = ".java";
 
@@ -464,7 +448,8 @@ Future<Set<String>> generateServerClasses(
         imports: [
           if (grammar.enums.isNotEmpty) "$packageName.enums",
           if (grammar.types.isNotEmpty) "$packageName.types",
-          if (grammar.inputs.isNotEmpty) "$packageName.inputs"
+          if (grammar.inputs.isNotEmpty) "$packageName.inputs",
+          if (grammar.interfaces.isNotEmpty) "$packageName.interfaces",
         ],
         destinationDir: destinationDir,
         packageName: packageName,
@@ -482,7 +467,8 @@ Future<Set<String>> generateServerClasses(
           if (grammar.enums.isNotEmpty) "$packageName.enums",
           if (grammar.types.isNotEmpty) "$packageName.types",
           if (grammar.inputs.isNotEmpty) "$packageName.inputs",
-          if (grammar.services.isNotEmpty) "$packageName.services"
+          if (grammar.services.isNotEmpty) "$packageName.services",
+          if (grammar.interfaces.isNotEmpty) "$packageName.interfaces",
         ],
         destinationDir: destinationDir,
         packageName: packageName,
@@ -507,14 +493,12 @@ Future<Set<String>> generateServerClasses(
   });
   if (springConfig.generateSchema) {
     var text = GraphqSerializer(grammar).generateSchema();
-    var r = saveSource(
-        data: text, path: springConfig.schemaTargetPath!, graphqlSource: true);
+    var r = saveSource(data: text, path: springConfig.schemaTargetPath!, graphqlSource: true);
     futures.add(r);
   }
 
   var result = await Future.wait(futures);
-  stdout.writeln(
-      "Generated ${futures.length} files in ${formatElapsedTime(started)}");
+  stdout.writeln("Generated ${futures.length} files in ${formatElapsedTime(started)}");
   var paths = result.map((f) => f.path).toSet();
   await cleanUpObsoleteFiles(paths);
   return paths;

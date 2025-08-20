@@ -2,6 +2,7 @@ import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/gq_has_directives.dart';
+import 'package:retrofit_graphql/src/model/gq_interface.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
 import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 import 'package:retrofit_graphql/src/model/token_info.dart';
@@ -9,6 +10,7 @@ import 'package:retrofit_graphql/src/serializers/graphq_serializer.dart';
 
 class GQTypeDefinition extends GQTokenWithFields with GqDirectivesMixin {
   final Set<TokenInfo> interfaceNames;
+  final Set<GQInterfaceDefinition> interfaces = {};
   final bool nameDeclared;
   final GQTypeDefinition? derivedFromType;
 
@@ -18,8 +20,7 @@ class GQTypeDefinition extends GQTokenWithFields with GqDirectivesMixin {
   /// Used only when generating type for interfaces.
   /// This will be a super class of one or more base types.
   ///
-  final Set<GQTypeDefinition> subTypes = {};
-
+  final Set<GQTypeDefinition> implementations = {};
 
   GQTypeDefinition({
     required TokenInfo name,
@@ -79,33 +80,7 @@ class GQTypeDefinition extends GQTokenWithFields with GqDirectivesMixin {
     return [...fields];
   }
 
-  String serializeContructorArgs(GQGrammar grammar) {
-    if (fields.isEmpty) {
-      return "";
-    }
-    String nonCommonFields =
-        getFields().isEmpty ? "" : getFields().map((e) => grammar.toConstructorDeclaration(e)).join(", ");
-    var combined = [nonCommonFields].where((element) => element.isNotEmpty).toSet();
-    if (combined.isEmpty) {
-      return "";
-    } else if (combined.length == 1) {
-      return "{${combined.first}}";
-    }
-    return "{${[nonCommonFields].join(", ")}}";
-  }
-
   bool containsInteface(String interfaceName) => interfaceNames.where((e) => e.token == interfaceName).isNotEmpty;
 
   Set<String> getInterfaceNames() => interfaceNames.map((e) => e.token).toSet();
-
-  GQTypeDefinition clone(String newName) {
-    return GQTypeDefinition(
-      name: TokenInfo(token: newName, line: tokenInfo.line, column: tokenInfo.column, fileName: tokenInfo.fileName),
-      nameDeclared: nameDeclared,
-      fields: fields.toList(),
-      interfaceNames: interfaceNames,
-      directives: [],
-      derivedFromType: derivedFromType,
-    );
-  }
 }

@@ -6,8 +6,7 @@ import 'package:petitparser/petitparser.dart';
 
 void main() {
   test("enum to json", () {
-    final GQGrammar g = GQGrammar(
-        generateAllFieldsFragments: false, autoGenerateQueries: false);
+    final GQGrammar g = GQGrammar();
 
     var parsed = g.parse('''
   enum Gender {male, female}
@@ -29,7 +28,7 @@ void main() {
 
   test("enum from json", () {
     final GQGrammar g = GQGrammar(
-        generateAllFieldsFragments: false, autoGenerateQueries: false);
+        );
 
     var parsed = g.parse('''
   enum Gender {male, female}
@@ -53,7 +52,7 @@ void main() {
 
   test("input tojson", () {
     final GQGrammar g = GQGrammar(
-        generateAllFieldsFragments: false, autoGenerateQueries: false);
+        );
 
     var parsed = g.parse('''
   scalar Long
@@ -103,7 +102,7 @@ void main() {
 
   test("input tojson list of lists", () {
     final GQGrammar g = GQGrammar(
-        generateAllFieldsFragments: false, autoGenerateQueries: false);
+        );
 
     var parsed = g.parse('''
   scalar Long
@@ -130,7 +129,7 @@ void main() {
 
   test("type tojson", () {
     final GQGrammar g = GQGrammar(
-        generateAllFieldsFragments: false, autoGenerateQueries: false);
+        );
 
     var parsed = g.parse('''
   scalar Long
@@ -177,7 +176,7 @@ void main() {
 
   test("input fromJson", () {
     final GQGrammar g = GQGrammar(
-        generateAllFieldsFragments: false, autoGenerateQueries: false);
+        );
 
     var parsed = g.parse('''
   scalar Long
@@ -232,7 +231,7 @@ void main() {
 
   test("type fromJson", () {
     final GQGrammar g = GQGrammar(
-        generateAllFieldsFragments: false, autoGenerateQueries: false);
+        );
 
     var parsed = g.parse('''
   scalar Long
@@ -286,7 +285,7 @@ void main() {
 
   test("interface fromJson", () {
     final GQGrammar g = GQGrammar(
-        generateAllFieldsFragments: false, autoGenerateQueries: false);
+        );
 
     var parsed = g.parse('''
   interface BasicEntity {

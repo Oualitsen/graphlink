@@ -1,6 +1,9 @@
 import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
+import 'package:retrofit_graphql/src/extensions.dart';
+import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
+import 'package:retrofit_graphql/src/model/gq_type.dart';
 import 'package:retrofit_graphql/src/model/token_info.dart';
 import 'package:retrofit_graphql/src/serializers/language.dart';
 import 'package:retrofit_graphql/src/utils.dart';
@@ -24,7 +27,7 @@ abstract class GQTokenWithFields extends GQToken {
   }
 
   void addField(GQField field) {
-    if(_fieldMap.containsKey(field.name.token)) {
+    if (_fieldMap.containsKey(field.name.token)) {
       throw ParseException("Duplicate field defition on type ${tokenInfo}, field: ${field.name}", info: field.name);
     }
     _fieldMap[field.name.token] = field;
@@ -42,6 +45,23 @@ abstract class GQTokenWithFields extends GQToken {
     return _fieldMap[name];
   }
 
+  GQField findFieldByName(String fieldName, GQGrammar g) {
+    var field = getFieldByName(fieldName);
+    if (field == null) {
+      if (fieldName == GQGrammar.typename) {
+        return GQField(
+          name: fieldName.toToken(),
+          type: GQType(g.getLangType("String").toToken(), false),
+          arguments: [],
+          directives: [],
+        );
+      } else {
+        throw ParseException("Could not find field '$fieldName' on type ${tokenInfo}", info: tokenInfo);
+      }
+    }
+    return field;
+  }
+
   Set<String> get fieldNames {
     if (fields.isEmpty) {
       return {};
@@ -53,10 +73,10 @@ abstract class GQTokenWithFields extends GQToken {
   }
 
   List<GQField> getSerializableFields(CodeGenerationMode mode, {bool skipGenerated = false}) {
-    return fields.where((f) => !shouldSkipSerialization(directives: f.getDirectives(skipGenerated: skipGenerated), mode: mode)).toList();
+    return fields
+        .where((f) => !shouldSkipSerialization(directives: f.getDirectives(skipGenerated: skipGenerated), mode: mode))
+        .toList();
   }
-
- 
 
   List<GQField> getSkipOnServerFields() {
     return _skipOnServerFields ??= fields.where((field) {

@@ -130,7 +130,7 @@ return _handler.handle(payload).map((e) => ${def.getGeneratedTypeDefinition().to
     """.trim().ident();
     }
     return """
-return _adapter(payload.toString()${_grammar.operationNameAsParameter ? ', operationName' : ''}).asStream().map((response) {
+return _adapter(json.encode(payload.toJson())${_grammar.operationNameAsParameter ? ', operationName' : ''}).asStream().map((response) {
     Map<String, dynamic> result = jsonDecode(response);
     if (result.containsKey("errors")) {
       throw result["errors"].map((error) => GQError.fromJson(error)).toList();

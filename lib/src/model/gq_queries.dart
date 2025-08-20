@@ -28,14 +28,13 @@ class GQQueryDefinition extends GQToken with GqDirectivesMixin {
 
   Set<GQFragmentDefinitionBase> fragments(GQGrammar g) {
     if (_allFrags == null) {
-      var frags = fragmentNames.map((e) => g.getFragmentByName(e)).where((e) => e!=null).map((e) => e!).toSet();
+      var frags = fragmentNames.map((e) => g.getFragmentByName(e)).where((e) => e != null).map((e) => e!).toSet();
       _allFrags = {...frags, ...frags.expand((e) => e.dependecies)};
     }
     return _allFrags!;
   }
 
-  GQQueryDefinition(
-      super.tokenInfo, List<GQDirectiveValue> directives, this.arguments, this.elements, this.type) {
+  GQQueryDefinition(super.tokenInfo, List<GQDirectiveValue> directives, this.arguments, this.elements, this.type) {
     directives.forEach(addDirective);
     checkVariables();
   }
@@ -67,7 +66,6 @@ class GQQueryDefinition extends GQToken with GqDirectivesMixin {
     }
     return false;
   }
-  
 
   GQTypeDefinition getGeneratedTypeDefinition() {
     var gqDef = _gqTypeDefinition;
@@ -138,10 +136,8 @@ class GQQueryElement extends GQToken with GqDirectivesMixin {
   }
 
   Set<String> _getFragmentNamesByBlock(GQFragmentBlockDefinition block) {
-    var set1 = block.projections.values
-        .where((element) => element.isFragmentReference)
-        .map((e) => e.fragmentName!)
-        .toSet();
+    var set1 =
+        block.projections.values.where((element) => element.isFragmentReference).map((e) => e.fragmentName!).toSet();
     var set2 = block.projections.values
         .where((element) => !element.isFragmentReference && element.block != null)
         .map((e) => e.block!)
