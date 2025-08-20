@@ -1,4 +1,3 @@
-
 import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
@@ -27,8 +26,7 @@ void main() {
   });
 
   test("enum from json", () {
-    final GQGrammar g = GQGrammar(
-        );
+    final GQGrammar g = GQGrammar();
 
     var parsed = g.parse('''
   enum Gender {male, female}
@@ -51,8 +49,7 @@ void main() {
   });
 
   test("input tojson", () {
-    final GQGrammar g = GQGrammar(
-        );
+    final GQGrammar g = GQGrammar();
 
     var parsed = g.parse('''
   scalar Long
@@ -63,6 +60,7 @@ void main() {
   input UserInput {
     id: ID
     name: String!
+    names: [String!]!
     middleName: String
     dateOfBirth: Long
     gender: Gender
@@ -101,8 +99,7 @@ void main() {
   });
 
   test("input tojson list of lists", () {
-    final GQGrammar g = GQGrammar(
-        );
+    final GQGrammar g = GQGrammar();
 
     var parsed = g.parse('''
   scalar Long
@@ -128,8 +125,7 @@ void main() {
   });
 
   test("type tojson", () {
-    final GQGrammar g = GQGrammar(
-        );
+    final GQGrammar g = GQGrammar();
 
     var parsed = g.parse('''
   scalar Long
@@ -175,8 +171,7 @@ void main() {
   });
 
   test("input fromJson", () {
-    final GQGrammar g = GQGrammar(
-        );
+    final GQGrammar g = GQGrammar();
 
     var parsed = g.parse('''
   scalar Long
@@ -230,8 +225,7 @@ void main() {
   });
 
   test("type fromJson", () {
-    final GQGrammar g = GQGrammar(
-        );
+    final GQGrammar g = GQGrammar();
 
     var parsed = g.parse('''
   scalar Long
@@ -284,8 +278,7 @@ void main() {
   });
 
   test("interface fromJson", () {
-    final GQGrammar g = GQGrammar(
-        );
+    final GQGrammar g = GQGrammar();
 
     var parsed = g.parse('''
   interface BasicEntity {
@@ -307,23 +300,23 @@ void main() {
     var user = g.interfaces["BasicEntity"]!;
     var serializer = DartSerializer(g);
     var userSerial = serializer.serializeInterface(user);
-    
-expect(
-  userSerial.split('\n').map((e) => e.trim()),
-  containsAllInOrder([
-    'abstract class BasicEntity {',
-    'String get id;',
-    'Map<String, dynamic> toJson();',
-    'static BasicEntity fromJson(Map<String, dynamic> json) {',
-    "var typename = json['__typename'] as String;",
-    'switch(typename) {',
-    "case 'User': return User.fromJson(json);",
-    "case 'Animal': return Animal.fromJson(json);",
-    'default: throw ArgumentError("Invalid type \$typename. \$typename does not implement BasicEntity or not defined");',
-    '}',
-    '}',
-    '}'
-  ]),
-);
+
+    expect(
+      userSerial.split('\n').map((e) => e.trim()),
+      containsAllInOrder([
+        'abstract class BasicEntity {',
+        'String get id;',
+        'Map<String, dynamic> toJson();',
+        'static BasicEntity fromJson(Map<String, dynamic> json) {',
+        "var typename = json['__typename'] as String;",
+        'switch(typename) {',
+        "case 'User': return User.fromJson(json);",
+        "case 'Animal': return Animal.fromJson(json);",
+        'default: throw ArgumentError("Invalid type \$typename. \$typename does not implement BasicEntity or not defined");',
+        '}',
+        '}',
+        '}'
+      ]),
+    );
   });
 }

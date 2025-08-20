@@ -56,8 +56,13 @@ String _mapOf(String key, String type) {
 class JavaSerializer extends GqSerializer {
   final bool inputsAsRecords;
   final bool typesAsRecords;
-  final bool fromToJson;
-  JavaSerializer(super.grammar, {this.inputsAsRecords = false, this.typesAsRecords = false, this.fromToJson = false}) {
+  final bool generateJsonMethods;
+  JavaSerializer(
+    super.grammar, {
+    this.inputsAsRecords = false,
+    this.typesAsRecords = false,
+    this.generateJsonMethods = false,
+  }) {
     _initAnnotations();
   }
 
@@ -198,63 +203,6 @@ ${generateFromJson(def.getSerializableFields(mode), def.token).ident()}
 """;
   }
 
-  String fieldFromJson(GQField field) {
-    var buffer = StringBuffer('${field.name}: ');
-    var toJosnCall = callFromJson("json['${field.name}']", field, field.type, 0);
-    buffer.write(toJosnCall);
-    return buffer.toString();
-  }
-
-  String callFromJson(String variable, GQField field, GQType type, int index) {
-    String fromJsonCall;
-    String dot = type.nullable ? "?." : ".";
-    fromJsonCall = castDynamicToType(variable, type);
-    if (type.isList) {
-      String varName = "e${index}";
-      var inlneCallToJson = callFromJson(varName, field, type.inlineType, index + 1);
-      return "${fromJsonCall}${dot}map((${varName}) => ${inlneCallToJson}).toList()";
-    }
-    return fromJsonCall;
-  }
-
-  String castDynamicToType(String variable, GQType type) {
-    String dot = type.nullable ? "?." : ".";
-    String serializedType = serializeType(type, false);
-    String numSuffix = type.nullable ? "?" : "";
-
-    if (type.isList) {
-      return "(${variable} as List<dynamic>${numSuffix})";
-    }
-    if (grammar.isEnum(type.token)) {
-      var enumFromJson = "${type.token}.fromJson(${variable} as String)";
-      if (type.nullable) {
-        return "${variable} == null ? null : ${enumFromJson}";
-      } else {
-        return enumFromJson;
-      }
-    }
-    if (grammar.isProjectableType(type.token)) {
-      var typeFromJson = "${type.token}.fromJson(${variable} as Map<String, dynamic>)";
-      if (type.nullable) {
-        return "${variable} == null ? null : ${typeFromJson}";
-      } else {
-        return typeFromJson;
-      }
-    }
-
-    if (serializedType == "double" || serializedType == "double?") {
-      return "(${variable} as num${numSuffix})${dot}toDouble()";
-    }
-
-    var result = "${variable} as ${serializedType}";
-
-    if (type is GQListType || grammar.isProjectableType(type.token) || grammar.isEnum(type.token)) {
-      return "(${result})";
-    }
-
-    return result;
-  }
-
   bool _isNumber(GQType type) {
     if (type.isList) {
       return _isNumber(type.inlineType);
@@ -307,7 +255,7 @@ ${generateFromJson(def.getSerializableFields(mode), def.token).ident()}
   }
 
   String generateFromJson(List<GQField> fields, String token) {
-    if (!fromToJson) {
+    if (!generateJsonMethods) {
       return "";
     }
     var buffer = StringBuffer("public static ${token} fromJson(${_mapOf('String', 'Object')} json) {");
@@ -326,7 +274,7 @@ ${generateFromJson(def.getSerializableFields(mode), def.token).ident()}
   }
 
   String generateToJson(List<GQField> fields) {
-    if (!fromToJson) {
+    if (!generateJsonMethods) {
       return "";
     }
     var buffer = StringBuffer("public ${_mapOf('String', 'Object')} toJson() {");
@@ -349,16 +297,9 @@ ${generateFromJson(def.getSerializableFields(mode), def.token).ident()}
 
   String safeCall(String variable, String method, bool nullable) {
     if (nullable) {
-      return "${wrapInOptional(variable, true)}.map((e) -> e.${method}).orElse(null)";
+      return "$variable == null ? null : ${variable}.${method}";
     }
     return "${variable}.${method}";
-  }
-
-  String wrapInOptional(String variable, bool nullable) {
-    if (nullable) {
-      return "java.util.Optional.ofNullable(${variable})";
-    }
-    return variable;
   }
 
   String callToJson(GQField field, GQType type, String variableName, int index) {
@@ -372,7 +313,14 @@ ${generateFromJson(def.getSerializableFields(mode), def.token).ident()}
         return "${variableName} == null ? null : $method";
       } else {
         // list
-        String method = "stream().map(${varName} -> ${inlineCallToJson}).${_toList}";
+
+        String method;
+        if (varName == inlineCallToJson) {
+          method = "stream().${_toList}";
+        } else {
+          method = "stream().map(${varName} -> ${inlineCallToJson}).${_toList}";
+        }
+
         return safeCall(variableName, method, type.nullable);
       }
     }
@@ -654,7 +602,7 @@ ${'return java.util.Objects.hash(${fields.join(", ")});'.ident()}
       buffer.writeln(";");
     }
     // toJson
-    if (fromToJson) {
+    if (generateJsonMethods) {
       buffer.writeln("java.util.Map<String, Object> toJson();".ident());
     }
     // fromJson to Json
@@ -666,7 +614,7 @@ ${'return java.util.Objects.hash(${fields.join(", ")});'.ident()}
   }
 
   String _serializeFromJsonForInterface(String token, Set<GQTypeDefinition> subTypes) {
-    if (subTypes.isEmpty || !fromToJson) {
+    if (subTypes.isEmpty || !generateJsonMethods) {
       return "";
     }
     var buffer = StringBuffer("static ${token} fromJson(${_mapOf("String", "Object")} json) {");

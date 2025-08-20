@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
@@ -14,13 +13,7 @@ void main() async {
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
-    var serializer = DartSerializer(g);
-    g.projectedTypes.values.forEach((t) {
-      print("######### ${t.token} ##############");
-      print(serializer.serializeTypeDefinition(t));
-    });
     expect(g.projectedTypes.keys, containsAll(["BasicEntity", "UserBase"]));
-
     var userBase = g.projectedTypes["UserBase"]!;
     expect(userBase.getInterfaceNames(), contains("BasicEntity"));
   });
