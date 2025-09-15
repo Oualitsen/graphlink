@@ -2,14 +2,16 @@ import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
 import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_argument.dart';
+import 'package:retrofit_graphql/src/model/gq_controller.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
-import 'package:retrofit_graphql/src/model/gq_has_directives.dart';
+import 'package:retrofit_graphql/src/model/gq_directives_mixin.dart';
 import 'package:retrofit_graphql/src/model/gq_service.dart';
 import 'package:retrofit_graphql/src/model/gq_shcema_mapping.dart';
 import 'package:retrofit_graphql/src/model/gq_enum_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_fragment.dart';
-import 'package:retrofit_graphql/src/model/gq_interface.dart';
+import 'package:retrofit_graphql/src/model/gq_interface_definition.dart';
+import 'package:retrofit_graphql/src/model/gq_token.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
 import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_queries.dart';
@@ -23,6 +25,29 @@ const String allFieldsFragmentsFileName = "allFieldsFragments";
 const allFields = '_all_fields';
 
 extension GQGrammarExtension on GQGrammar {
+  GQToken? getTokenByKey(String key) {
+    GQToken? token;
+
+    if (isEnum(key)) {
+      token = enums[key]!;
+    } else if (types.containsKey(key)) {
+      token = types[key]!;
+    } else if (interfaces.containsKey(key)) {
+      token = interfaces[key]!;
+    } else if (isScalar(key)) {
+      token = scalars[key];
+    } else if (projectedTypes.containsKey(key)) {
+      token = projectedTypes[key]!;
+    } else if (inputs.containsKey(key)) {
+      token = inputs[key]!;
+    } else if (services.containsKey(key)) {
+      token = services[key]!;
+    } else if (controllers.containsKey(key)) {
+      token = controllers[key]!;
+    }
+    return token;
+  }
+
   void handleAnnotations(String Function(GQDirectiveValue value) serializer) {
     if (annotationsProcessed) {
       return;
@@ -42,7 +67,7 @@ extension GQGrammarExtension on GQGrammar {
     });
   }
 
-  List<GqDirectivesMixin> getDirectiveObjects() {
+  List<GQDirectivesMixin> getDirectiveObjects() {
     var result = [
       ...inputs.values,
       ...types.values,
@@ -50,7 +75,7 @@ extension GQGrammarExtension on GQGrammar {
       ...scalars.values,
       ...enums.values,
       ...repositories.values
-    ].map((f) => f as GqDirectivesMixin).toList();
+    ].map((f) => f as GQDirectivesMixin).toList();
 
     var inputFields = inputs.values.expand((e) => e.fields);
     var interfaceFields = interfaces.values.expand((e) => e.fields);
@@ -64,7 +89,7 @@ extension GQGrammarExtension on GQGrammar {
       ...enumValues,
       ...repositoryFields,
     ]);
-    var params = <GqDirectivesMixin>[];
+    var params = <GQDirectivesMixin>[];
     result.whereType<GQField>().where((f) => f.arguments.isNotEmpty).forEach((f) {
       params.addAll(f.arguments);
     });
@@ -77,13 +102,13 @@ extension GQGrammarExtension on GQGrammar {
     var ifaces = interfaces.values;
     for (var iface in ifaces) {
       var types = getTypesImplementing(iface);
-      iface.implementations.addAll(types);
+      types.forEach(iface.addImplementation);
     }
   }
 
   void handleGqExternal() {
     [...inputs.values, ...types.values, ...interfaces.values, ...scalars.values, ...enums.values]
-        .map((f) => f as GqDirectivesMixin)
+        .map((f) => f as GQDirectivesMixin)
         .where((t) => t.getDirectiveByName(gqExternal) != null)
         .forEach((f) {
       f.addDirectiveIfAbsent(GQDirectiveValue.createDirectiveValue(directiveName: gqSkipOnClient, generated: true));
@@ -138,24 +163,30 @@ extension GQGrammarExtension on GQGrammar {
     }
   }
 
-  void addSchemaMapping(GQSchemaMapping mapping) {
-    var m = schemaMappings[mapping.key];
-    if (m == null || (!m.batch && mapping.batch)) {
-      schemaMappings[mapping.key] = mapping;
-    }
+  void _addSchemaMapping(GQSchemaMapping mapping) {
+    var service = services[mapping.serviceName]!;
+    var ctrl = controllers["${mapping.serviceName}Controller"]!;
+    service.addMapping(mapping);
+    ctrl.addMapping(mapping);
   }
 
-  void generateServices() {
+  void generateServicesAndControllers() {
     for (var type in GQQueryType.values) {
       _doGenerateServices(types[schema.getByQueryType(type)]?.fields ?? [], type);
+    }
+    for (var s in services.values) {
+      var ctrl = GQController.ofService(s);
+      controllers[ctrl.token] = ctrl;
     }
   }
 
   void _doGenerateServices(List<GQField> fields, GQQueryType type) {
     for (var field in fields) {
       var name = getServiceName(field);
-      var service = services[name] ??= GQService(name: name);
-      service.addMethod(field, type);
+      var service = services[name] ??=
+          GQService(name: name.toToken(), nameDeclared: true, directives: [], fields: [], interfaceNames: {});
+      service.addField(field);
+      service.setFieldType(field.name.token, type);
       services.putIfAbsent(name, () => service);
     }
   }
@@ -205,10 +236,10 @@ extension GQGrammarExtension on GQGrammar {
           identity: identityField == typeField,
         );
 
-        addSchemaMapping(schemaMappings);
+        _addSchemaMapping(schemaMappings);
       }
       type.getSkinOnClientFields().forEach((typeField) {
-        addSchemaMapping(GQSchemaMapping(
+        _addSchemaMapping(GQSchemaMapping(
             type: type, field: typeField, forbid: true, serviceName: getServiceName(field), queryType: queryType));
       });
     }
@@ -222,16 +253,6 @@ extension GQGrammarExtension on GQGrammar {
               .toList(),
           queryType);
     }
-  }
-
-  List<GQSchemaMapping> getSchemaByType(GQTypeDefinition def) {
-    var result = <GQSchemaMapping>[];
-    schemaMappings.forEach((k, v) {
-      if (v.type == def) {
-        result.add(v);
-      }
-    });
-    return result;
   }
 
   void setDirectivesDefaulValues() {
@@ -258,7 +279,7 @@ extension GQGrammarExtension on GQGrammar {
 
       for (var typeName in union.typeNames) {
         var type = getType(typeName);
-        type.interfaceNames.add(union.tokenInfo);
+        type.addInterfaceName(union.tokenInfo);
       }
     });
   }
@@ -425,7 +446,7 @@ extension GQGrammarExtension on GQGrammar {
     var name = def.token;
     if (projectedTypes.containsKey(name)) {
       var iface = projectedTypes[name]! as GQInterfaceDefinition;
-      iface.implementations.add(implementation);
+      iface.addImplementation(implementation);
       return iface;
     }
     var newType = GQInterfaceDefinition(
@@ -435,7 +456,7 @@ extension GQGrammarExtension on GQGrammar {
       interfaceNames: {...def.interfaceNames},
       directives: def.getDirectives(),
     );
-    newType.implementations.add(implementation);
+    newType.addImplementation(implementation);
     return addToProjectedTypes(newType, similarityCheck: false) as GQInterfaceDefinition;
   }
 
@@ -443,7 +464,7 @@ extension GQGrammarExtension on GQGrammar {
     var allTypes = [...interfaces.values, ...types.values];
     allTypes.where((type) => type.interfaceNames.isNotEmpty).forEach((type) {
       var result = type.interfaceNames.map((token) => getInterface(token.token, token));
-      type.interfaces.addAll(result);
+      result.forEach(type.addInterface);
     });
   }
 
@@ -522,8 +543,10 @@ extension GQGrammarExtension on GQGrammar {
             similarDefinitions.where((element) => !element.nameDeclared).forEach((e) {
               var currentDef = projectedTypes[e.token];
               if (currentDef != null) {
-                definition.interfaceNames.addAll(currentDef.interfaceNames);
-                definition.implementations.addAll(currentDef.implementations);
+                currentDef.interfaceNames.forEach(definition.addInterfaceName);
+                if (currentDef is GQInterfaceDefinition && definition is GQInterfaceDefinition) {
+                  currentDef.implementations.forEach(definition.addImplementation);
+                }
               }
               projectedTypes[e.token] = definition;
             });
@@ -531,11 +554,11 @@ extension GQGrammarExtension on GQGrammar {
         }
 
         projectedTypes[definition.token] = definition;
-        definition.originalTokens.add(definition.token);
+        definition.addOriginalToken(definition.token);
         return definition;
       } else {
         if (type.isSimilarTo(definition, this)) {
-          type.originalTokens.add(definition.token);
+          type.addOriginalToken(definition.token);
           return type;
         } else {
           var typeTokenInfo = type.getDirectiveByName(gqTypeNameDirective)?.getArgumentByName('name')?.tokenInfo;
@@ -551,9 +574,11 @@ extension GQGrammarExtension on GQGrammar {
 
       if (similarDefinitions.isNotEmpty) {
         var first = similarDefinitions.first;
-        first.originalTokens.add(definition.token);
-        first.interfaceNames.addAll(definition.interfaceNames);
-        first.implementations.addAll(definition.implementations);
+        first.addOriginalToken(definition.token);
+        definition.interfaceNames.forEach(first.addInterfaceName);
+        if (definition is GQInterfaceDefinition && first is GQInterfaceDefinition) {
+          definition.implementations.forEach(first.addImplementation);
+        }
         projectedTypes[first.token] = first;
         return first;
       }
@@ -561,7 +586,7 @@ extension GQGrammarExtension on GQGrammar {
 
     String key = definition.token;
     projectedTypes[key] = definition;
-    definition.originalTokens.add(key);
+    definition.addOriginalToken(key);
     return projectedTypes[key]!;
   }
 
@@ -786,7 +811,7 @@ extension GQGrammarExtension on GQGrammar {
     if (type is GQInterfaceDefinition) {
       var savedType = addToProjectedTypes(newType);
       var iface = _regiterInterface(type, savedType);
-      newType.interfaceNames.add(type.tokenInfo);
+      newType.addInterfaceName(type.tokenInfo);
       return iface;
     } else {
       var savedType = addToProjectedTypes(newType);

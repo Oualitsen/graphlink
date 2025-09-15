@@ -1,3 +1,4 @@
+import 'package:retrofit_graphql/src/constants.dart';
 import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
@@ -5,16 +6,18 @@ import 'package:retrofit_graphql/src/model/gq_argument.dart';
 import 'package:retrofit_graphql/src/model/gq_enum_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/gq_input_type_definition.dart';
-import 'package:retrofit_graphql/src/model/gq_interface.dart';
+import 'package:retrofit_graphql/src/model/gq_interface_definition.dart';
+import 'package:retrofit_graphql/src/model/gq_token.dart';
+import 'package:retrofit_graphql/src/model/gq_token_with_fields.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
 import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
 import 'package:retrofit_graphql/src/serializers/annotation_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/gq_serializer.dart';
 import 'package:retrofit_graphql/src/utils.dart';
 
-const _toList = "collect(java.util.stream.Collectors.toList())";
-const _list = "java.util.List";
-const _map = "java.util.Map";
+const _toList = "collect(Collectors.toList())";
+const _list = "List";
+const _map = "Map";
 const _javaNumbers = {
   "Byte",
   "Short",
@@ -80,13 +83,39 @@ class JavaSerializer extends GqSerializer {
     buffer.writeln("public enum ${def.tokenInfo} {");
     buffer.write(def.values.map((e) => doSerializeEnumValue(e)).toList().join(", ").ident());
     buffer.writeln(";");
-    buffer.writeln("public String toJson() {".ident());
-    buffer.writeln("return name();".ident(2));
-    buffer.writeln("}".ident());
-    buffer.writeln("public static ${def.token} fromJson(String value) {".ident());
-    buffer.writeln("return java.util.Optional.ofNullable(value).map(${def.token}::valueOf).orElse(null);".ident(2));
-    buffer.writeln("}".ident());
+    var toJson = serializeToJsonForEnum(def);
+    if (toJson.isNotEmpty) {
+      buffer.writeln(toJson.ident());
+    }
+
+    var fromJson = serializeFromJsonForEnum(def);
+    if (fromJson.isNotEmpty) {
+      buffer.writeln(fromJson.ident());
+    }
     buffer.writeln("}");
+    return buffer.toString();
+  }
+
+  String serializeToJsonForEnum(GQEnumDefinition def) {
+    if (!generateJsonMethods) {
+      return "";
+    }
+    var buffer = StringBuffer();
+    buffer.writeln("public String toJson() {");
+    buffer.writeln("return name();".ident());
+    buffer.writeln("}");
+    return buffer.toString();
+  }
+
+  String serializeFromJsonForEnum(GQEnumDefinition def) {
+    if (!generateJsonMethods) {
+      return "";
+    }
+    var buffer = StringBuffer();
+    buffer.writeln("public static ${def.token} fromJson(String value) {");
+    buffer.writeln("return Optional.ofNullable(value).map(${def.token}::valueOf).orElse(null);".ident());
+    buffer.writeln("}");
+    def.addImport(JavaImports.optional);
     return buffer.toString();
   }
 
@@ -141,11 +170,17 @@ class JavaSerializer extends GqSerializer {
     return buffer.toString();
   }
 
-  String serializeTypeReactive(
-      {required GQType gqType, bool forceNullable = false, bool asArray = false, bool reactive = false}) {
+  String serializeTypeReactive({
+    required GQType gqType,
+    bool forceNullable = false,
+    bool asArray = false,
+    bool reactive = false,
+    required GQToken? context,
+  }) {
     if (gqType is GQListType) {
       if (reactive) {
-        return "reactor.core.publisher.Flux<${convertPrimitiveToBoxed(serializeTypeReactive(gqType: gqType.inlineType))}>";
+        context?.addImport(JavaImports.flux);
+        return "Flux<${convertPrimitiveToBoxed(serializeTypeReactive(gqType: gqType.inlineType, context: context))}>";
       }
       if (asArray) {
         return "${serializeType(gqType.inlineType, false, asArray)}[]";
@@ -157,7 +192,8 @@ class JavaSerializer extends GqSerializer {
 
     var type = getTypeNameFromGQExternal(token) ?? token;
     if (reactive) {
-      return "reactor.core.publisher.Mono<${convertPrimitiveToBoxed(type)}>";
+      context?.addImport(JavaImports.mono);
+      return "Mono<${convertPrimitiveToBoxed(type)}>";
     }
     if (typeIsJavaPrimitive(type) && (gqType.nullable || forceNullable)) {
       return convertPrimitiveToBoxed(type);
@@ -167,7 +203,15 @@ class JavaSerializer extends GqSerializer {
 
   @override
   String serializeType(GQType def, bool forceNullable, [bool asArray = false]) {
-    return serializeTypeReactive(gqType: def, forceNullable: forceNullable, asArray: asArray, reactive: false);
+    var token = def.token;
+    var context = grammar.getTokenByKey(token);
+    return serializeTypeReactive(
+      context: context,
+      gqType: def,
+      forceNullable: forceNullable,
+      asArray: asArray,
+      reactive: false,
+    );
   }
 
   @override
@@ -178,7 +222,7 @@ class JavaSerializer extends GqSerializer {
       if (decorators.isNotEmpty) {
         buffer.writeln(decorators);
       }
-      buffer.writeln(serializeRecord(def.token, def.fields, {}));
+      buffer.writeln(serializeRecord(def.token, def.fields, {}, def));
       return buffer.toString();
     }
 
@@ -186,19 +230,20 @@ class JavaSerializer extends GqSerializer {
 $decorators
 public class ${def.tokenInfo.token} {
 ${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeField(e)).toList(), join: "\n", withParenthesis: false).ident()}
-${generateContructor(def.token, [], "public", checkForNulls: checkForNulls).ident()}
 
-${generateContructor(def.token, def.getSerializableFields(grammar.mode), "private").ident()}
+${generateContructor(def.token, [], "public", def, checkForNulls: checkForNulls).ident()}
+
+${generateContructor(def.token, def.getSerializableFields(grammar.mode), "private", def).ident()}
 
 ${generateBuilder(def.token, def.getSerializableFields(grammar.mode)).ident()}
           
 ${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeGetter(e, checkForNulls: checkForNulls)).toList(), join: "\n", withParenthesis: false).ident()}
 
-${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeSetter(e, checkForNulls: checkForNulls)).toList(), join: "\n", withParenthesis: false).ident()}
+${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeSetter(e, def, checkForNulls: checkForNulls)).toList(), join: "\n", withParenthesis: false).ident()}
 
-${generateToJson(def.getSerializableFields(grammar.mode)).ident()}
+${generateToJson(def.getSerializableFields(grammar.mode), def).ident()}
 
-${generateFromJson(def.getSerializableFields(mode), def.token).ident()}
+${generateFromJson(def.getSerializableFields(mode), def.token, def).ident()}
 }
 """;
   }
@@ -218,7 +263,7 @@ ${generateFromJson(def.getSerializableFields(mode), def.token).ident()}
     return _javaNumberMethods[serializeType(type, false)]!;
   }
 
-  String getFromJsonCall(GQField field, String varName, int depth, [GQType? type]) {
+  String getFromJsonCall(GQField field, String varName, int depth, GQToken context, [GQType? type]) {
     type ??= field.type;
     String callMapDotGet = depth == 0 ? '.get("${field.name.token}")' : '';
     String nullCheckStatement = type.nullable ? '${varName}${callMapDotGet} == null ? null :' : '';
@@ -236,8 +281,12 @@ ${generateFromJson(def.getSerializableFields(mode), def.token).ident()}
       } else {
         targetCast = "(${_listOf('Object')})";
       }
-      String mapFunction = 'map(${newVarName} -> ${getFromJsonCall(field, newVarName, depth + 1, type.inlineType)})';
-      return '$nullCheckStatement (${targetCast}${varName}${callMapDotGet}).stream().${mapFunction}.${_toList}';
+      String mapFunction =
+          'map(${newVarName} -> ${getFromJsonCall(field, newVarName, depth + 1, context, type.inlineType)})';
+      var finalResult =
+          '$nullCheckStatement (${targetCast}${varName}${callMapDotGet}).stream().${mapFunction}.${_toList}';
+      context.addImport(JavaImports.collectors);
+      return finalResult;
     }
     String result;
     if (grammar.isNonProjectableType(type.token) && !grammar.isEnum(type.token) && !grammar.isInput(type.token)) {
@@ -254,7 +303,7 @@ ${generateFromJson(def.getSerializableFields(mode), def.token).ident()}
     return nullCheckStatement.isEmpty ? result : '$nullCheckStatement $result';
   }
 
-  String generateFromJson(List<GQField> fields, String token) {
+  String generateFromJson(List<GQField> fields, String token, GQToken context) {
     if (!generateJsonMethods) {
       return "";
     }
@@ -262,7 +311,7 @@ ${generateFromJson(def.getSerializableFields(mode), def.token).ident()}
     buffer.writeln();
     buffer.writeln("return new ${token}(".ident());
     for (var field in fields) {
-      String statement = getFromJsonCall(field, 'json', 0);
+      String statement = getFromJsonCall(field, 'json', 0, context);
       if (field != fields.last) {
         statement = "${statement},";
       }
@@ -273,24 +322,27 @@ ${generateFromJson(def.getSerializableFields(mode), def.token).ident()}
     return buffer.toString();
   }
 
-  String generateToJson(List<GQField> fields) {
+  String generateToJson(List<GQField> fields, GQToken context) {
     if (!generateJsonMethods) {
       return "";
     }
     var buffer = StringBuffer("public ${_mapOf('String', 'Object')} toJson() {");
     buffer.writeln();
-    buffer.writeln("${_mapOf('String', 'Object')} map = new java.util.HashMap<>();".ident());
+    buffer.writeln("${_mapOf('String', 'Object')} map = new HashMap<>();".ident());
     for (var field in fields) {
-      buffer.writeln('map.put("${field.name}", ${fieldToJson(field)});'.ident());
+      buffer.writeln('map.put("${field.name}", ${fieldToJson(field, context)});'.ident());
     }
     buffer.writeln("return map;".ident());
     buffer.writeln("}");
+    context.addImport(JavaImports.hasMap);
+    context.addImport(JavaImports.map);
+
     return buffer.toString();
   }
 
-  String fieldToJson(GQField field) {
+  String fieldToJson(GQField field, GQToken context) {
     var buffer = StringBuffer();
-    var toJosnCall = callToJson(field, field.type, field.name.token, 0);
+    var toJosnCall = callToJson(field, field.type, field.name.token, 0, context);
     buffer.write(toJosnCall);
     return buffer.toString();
   }
@@ -302,14 +354,15 @@ ${generateFromJson(def.getSerializableFields(mode), def.token).ident()}
     return "${variable}.${method}";
   }
 
-  String callToJson(GQField field, GQType type, String variableName, int index) {
+  String callToJson(GQField field, GQType type, String variableName, int index, GQToken context) {
     if (type.isList) {
       var inlineType = type.inlineType;
       String varName = "e${index}";
-      var inlineCallToJson = callToJson(field, inlineType, varName, index + 1);
+      var inlineCallToJson = callToJson(field, inlineType, varName, index + 1, context);
       if (field.getDirectiveByName(gqArray) != null) {
         // array
-        String method = "java.util.stream.Stream.of(${variableName}).map(${varName} -> ${inlineCallToJson}).${_toList}";
+        String method = "Stream.of(${variableName}).map(${varName} -> ${inlineCallToJson}).${_toList}";
+        context.addImport(JavaImports.stream);
         return "${variableName} == null ? null : $method";
       } else {
         // list
@@ -320,6 +373,7 @@ ${generateFromJson(def.getSerializableFields(mode), def.token).ident()}
         } else {
           method = "stream().map(${varName} -> ${inlineCallToJson}).${_toList}";
         }
+        context.addImport(JavaImports.collectors);
 
         return safeCall(variableName, method, type.nullable);
       }
@@ -330,13 +384,15 @@ ${generateFromJson(def.getSerializableFields(mode), def.token).ident()}
     return variableName;
   }
 
-  String generateContructor(String name, List<GQField> fields, String? modifier, {bool checkForNulls = false}) {
+  String generateContructor(String name, List<GQField> fields, String? modifier, GQToken context,
+      {bool checkForNulls = false}) {
     String nullCheck;
     if (checkForNulls) {
       var checkingFields =
-          fields.where((e) => !e.type.nullable).map((e) => "java.util.Objects.requireNonNull(${e.name});").toList();
+          fields.where((e) => !e.type.nullable).map((e) => "Objects.requireNonNull(${e.name});").toList();
       if (checkingFields.isNotEmpty) {
         nullCheck = serializeListText(checkingFields, join: "\n", withParenthesis: false);
+        context.addImport(JavaImports.objects);
       } else {
         nullCheck = "";
       }
@@ -420,7 +476,12 @@ $result
     return result.trim();
   }
 
-  String serializeRecord(String recordName, List<GQField> fields, Set<String> interfaceNames) {
+  String serializeRecord(
+    String recordName,
+    List<GQField> fields,
+    Set<String> interfaceNames,
+    GQToken context,
+  ) {
     final list = fields
         .map((f) => serializeArgumentField(f, withFianl: false, withDecorators: true, decoratorJoiner: " "))
         .toList();
@@ -436,8 +497,8 @@ $result
       buffer.write(interfaceImpl);
     }
     buffer.writeln(" {");
-    buffer.writeln(generateToJson(fields).ident());
-    buffer.writeln(generateFromJson(fields, recordName).ident());
+    buffer.writeln(generateToJson(fields, context).ident());
+    buffer.writeln(generateFromJson(fields, recordName, context).ident());
     buffer.write("}");
     return buffer.toString();
   }
@@ -479,12 +540,13 @@ $result
     return "$prefix${name.firstUp}";
   }
 
-  String serializeSetter(GQField field, {bool checkForNulls = false}) {
+  String serializeSetter(GQField field, GQToken context, {bool checkForNulls = false}) {
     String? nullCheck;
     final setStatement = "this.${field.name} = ${field.name};";
 
     if (!field.type.nullable && checkForNulls) {
-      nullCheck = "java.util.Objects.requireNonNull(${field.name});";
+      context.addImport(JavaImports.objects);
+      nullCheck = "Objects.requireNonNull(${field.name});";
     }
     var statements = [if (nullCheck != null) nullCheck, setStatement];
     return """
@@ -512,7 +574,7 @@ ${statements.join("\n").ident()}
     if (typesAsRecords) {
       return """
 $decorators
-${serializeRecord(def.token, def.fields, interfaceNames.map((e) => e.token).toSet())}
+${serializeRecord(def.token, def.fields, interfaceNames.map((e) => e.token).toSet(), def)}
 """;
     }
 
@@ -522,18 +584,18 @@ public class $token ${_serializeImplements(interfaceNames.map((e) => e.token).to
   
 ${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeField(e)).toList(), join: "\n", withParenthesis: false).ident()}
     
-${generateContructor(def.token, [], "public", checkForNulls: checkNulls).ident()}
-${generateContructor(def.token, def.getSerializableFields(grammar.mode), "private").ident()}
+${generateContructor(def.token, [], "public", def, checkForNulls: checkNulls).ident()}
+${generateContructor(def.token, def.getSerializableFields(grammar.mode), "private", def).ident()}
 ${generateBuilder(def.token, def.getSerializableFields(grammar.mode)).ident()}
 
 ${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeGetter(e, checkForNulls: checkNulls)).toList(), join: "\n", withParenthesis: false).ident()}
     
-${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeSetter(e, checkForNulls: checkNulls)).toList(), join: "\n", withParenthesis: false).ident()}
+${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeSetter(e, def, checkForNulls: checkNulls)).toList(), join: "\n", withParenthesis: false).ident()}
     
 ${generateEqualsAndHashCode(def).ident()}
 
-${generateToJson(def.getSerializableFields(grammar.mode)).ident()}
-${generateFromJson(def.getSerializableFields(grammar.mode), def.token).ident()}
+${generateToJson(def.getSerializableFields(grammar.mode), def).ident()}
+${generateFromJson(def.getSerializableFields(grammar.mode), def.token, def).ident()}
 
 }
     """;
@@ -578,13 +640,14 @@ ${'return java.util.Objects.hash(${fields.join(", ")});'.ident()}
     var decorators = serializeDecorators(interface.getDirectives());
     var buffer = StringBuffer();
     if (decorators.isNotEmpty) {
-      buffer.writeln(decorators);
+      buffer.writeln(decorators.trim());
     }
     buffer.write("public interface $token");
     if (interfaces.isNotEmpty) {
       buffer.write(" extends ${interfaces.map((e) => e.tokenInfo.token).join(", ")}");
     }
     buffer.writeln(" {");
+    buffer.writeln();
     for (var f in fields) {
       if (getters) {
         var fieldDecorators = serializeDecorators(f.getDirectives(), joiner: "\n");
@@ -600,10 +663,12 @@ ${'return java.util.Objects.hash(${fields.join(", ")});'.ident()}
         buffer.write(serializeMethod(f).ident());
       }
       buffer.writeln(";");
+      buffer.writeln();
     }
     // toJson
     if (generateJsonMethods) {
-      buffer.writeln("java.util.Map<String, Object> toJson();".ident());
+      interface.addImport(JavaImports.map);
+      buffer.writeln("Map<String, Object> toJson();".ident());
     }
     // fromJson to Json
     if (interface.implementations.isNotEmpty) {
@@ -633,5 +698,38 @@ ${'return java.util.Objects.hash(${fields.join(", ")});'.ident()}
     buffer.writeln("}".ident());
     buffer.writeln("}");
     return buffer.toString();
+  }
+
+  @override
+  String getFileNameFor(GQToken token) {
+    return "${token.token}.java";
+  }
+
+  @override
+  String serializeImportToken(GQToken token, String importPrefix) {
+    String? path;
+
+    if (grammar.enums.containsKey(token.token)) {
+      path = "enums.${token.token}";
+    } else if (grammar.interfaces.containsKey(token.token)) {
+      path = "interfaces.${token.token}";
+    } else if (grammar.types.containsKey(token.token)) {
+      path = "types.${token.token}";
+    } else if (grammar.inputs.containsKey(token.token)) {
+      path = "inputs.${token.token}";
+    } else if (grammar.services.containsKey(token.token)) {
+      path = "services.${token.token}";
+    } else if (grammar.controllers.containsKey(token.token)) {
+      path = "controllers.${token.token}";
+    }
+    return "import ${importPrefix}.${path};";
+  }
+
+  @override
+  String serializeImport(String import) {
+    if (import == importList) {
+      return 'import java.util.List;';
+    }
+    return 'import ${import};';
   }
 }

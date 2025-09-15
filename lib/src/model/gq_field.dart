@@ -1,11 +1,11 @@
 import 'package:retrofit_graphql/src/model/gq_argument.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
-import 'package:retrofit_graphql/src/model/gq_has_directives.dart';
+import 'package:retrofit_graphql/src/model/gq_directives_mixin.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
 import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 import 'package:retrofit_graphql/src/model/token_info.dart';
 
-class GQField with GqDirectivesMixin {
+class GQField with GQDirectivesMixin {
   final TokenInfo name;
   final GQType type;
   final Object? initialValue;
@@ -37,7 +37,6 @@ class GQField with GqDirectivesMixin {
 
   @override
   int get hashCode => name.hashCode * type.hashCode;
-
 
   //check for inclue or skip directives
   bool get hasInculeOrSkipDiretives => _containsSkipOrIncludeDirective ??=

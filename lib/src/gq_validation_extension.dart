@@ -6,8 +6,9 @@ import 'package:retrofit_graphql/src/model/gq_enum_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/gq_fragment.dart';
 import 'package:retrofit_graphql/src/model/gq_input_type_definition.dart';
-import 'package:retrofit_graphql/src/model/gq_interface.dart';
+import 'package:retrofit_graphql/src/model/gq_interface_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_queries.dart';
+import 'package:retrofit_graphql/src/model/gq_repository.dart';
 import 'package:retrofit_graphql/src/model/gq_scalar_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_schema.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
@@ -337,7 +338,7 @@ extension GqValidationExtension on GQGrammar {
         if (check) {
           checkRepository(v);
         }
-        repositories[k] = v;
+        repositories[k] = GQRepository.of(v);
       }
     });
     interfaces.removeWhere((k, _) => repositories.containsKey(k));

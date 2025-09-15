@@ -8,8 +8,7 @@ import 'package:petitparser/petitparser.dart';
 void main() {
   test("testDecorators", () {
     final GQGrammar g = GQGrammar(identityFields: ["id"]);
-    final text =
-        File("test/serializers/dart/types/type_serialization_decorators_test.graphql").readAsStringSync();
+    final text = File("test/serializers/dart/types/type_serialization_decorators_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
@@ -34,11 +33,11 @@ void main() {
     expect(ibaseText.trim(), startsWith("@Logger"));
 
     var gender = g.enums["Gender"]!;
-    var genderText = dartSerialzer.serializeEnumDefinition(gender);
+    var genderText = dartSerialzer.serializeEnumDefinition(gender, "");
     expect(genderText.trim(), startsWith("@Logger"));
 
     var input = g.inputs["UserInput"]!;
-    var inputText = dartSerialzer.serializeInputDefinition(input);
+    var inputText = dartSerialzer.serializeInputDefinition(input, "");
     expect(inputText.trim(), startsWith("@Input"));
   });
 }

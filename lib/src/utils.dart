@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
-import 'package:retrofit_graphql/src/model/gq_has_directives.dart';
+import 'package:retrofit_graphql/src/model/gq_directives_mixin.dart';
 import 'package:retrofit_graphql/src/serializers/language.dart';
 
 String serializeListText(List<String>? list, {String join = ",", bool withParenthesis = true}) {
@@ -20,7 +20,7 @@ String serializeListText(List<String>? list, {String join = ",", bool withParent
 }
 
 String? getFqcnFromDirective(GQDirectiveValue value) {
-  var fqcn = value.getArgValueAsString(gqFQCN);
+  var fqcn = value.getArgValueAsString(gqClass);
   if (fqcn != null && !fqcn.startsWith("@")) {
     fqcn = "@$fqcn";
   }
@@ -137,6 +137,10 @@ bool shouldSkipSerialization({required List<GQDirectiveValue> directives, requir
   return skipOnList.isNotEmpty;
 }
 
-List<T> filterSerialization<T extends GqDirectivesMixin>(Iterable<T> list, CodeGenerationMode mode) {
+List<T> filterSerialization<T extends GQDirectivesMixin>(Iterable<T> list, CodeGenerationMode mode) {
   return list.where((element) => !shouldSkipSerialization(directives: element.getDirectives(), mode: mode)).toList();
+}
+
+bool shouldSkip(GQDirectivesMixin mixin, CodeGenerationMode mode) {
+  return shouldSkipSerialization(directives: mixin.getDirectives(), mode: mode);
 }

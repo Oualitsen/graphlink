@@ -3,11 +3,11 @@ import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 import 'package:retrofit_graphql/src/serializers/language.dart';
 
-mixin GqDirectivesMixin {
+mixin GQDirectivesMixin {
   List<GQDirectiveValue> getDirectives({bool skipGenerated = false}) {
     final result = [..._directives.values, ..._decorators];
-    if(skipGenerated) {
-      return result.where((d) => !d.generated).toList();
+    if (skipGenerated) {
+      return result.where((d) => !d.generated).toList(growable: false);
     }
     return result;
   }
@@ -30,7 +30,7 @@ mixin GqDirectivesMixin {
         case null:
           return true;
       }
-    }).toList();
+    }).toList(growable: false);
   }
 
   void addDirective(GQDirectiveValue directiveValue) {

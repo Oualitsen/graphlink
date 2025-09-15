@@ -18,43 +18,44 @@ void main() {
   };
 
   test("test schema mapping generation", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     final text = File("test/batch_mappging/batch_mappging.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
     expect(parsed is Success, true);
-    expect(g.schemaMappings.keys, containsAll(["carOwner", "userCars", "carUserId", "carOwnerId"]));
-    var carOwner = g.schemaMappings["carOwner"]!;
+    var mappings = g.services.values.expand((s) => s.mappings);
+    var mappingKeys = g.services.values.expand((s) => s.mappings).map((e) => e.key);
+    expect(mappingKeys, containsAll(["carOwner", "userCars", "carUserId", "carOwnerId"]));
+    var carOwner = mappings.where((e) => e.key == "carOwner").first;
 
     expect(carOwner.batch, false);
     expect(carOwner.type.token, "Car");
     expect(carOwner.field.type.token, "Owner");
     expect(carOwner.field.name.token, "owner");
 
-    var userCars = g.schemaMappings["userCars"]!;
+    var userCars = mappings.where((e) => e.key == "userCars").first;
     expect(userCars.batch, true);
     expect(userCars.type.token, "User");
     expect(userCars.field.type.token, "Car");
     expect(userCars.field.name.token, "cars");
 
-    expect(g.schemaMappings["carUserId"]!.forbid, true);
-    expect(g.schemaMappings["carOwnerId"]!.forbid, true);
+    expect(mappings.where((e) => e.key == "carUserId").first.forbid, true);
+    expect(mappings.where((e) => e.key == "carOwnerId").first.forbid, true);
   });
 
   test("test getSchemaByType", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     final text = File("test/batch_mappging/batch_mappging.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
     expect(parsed is Success, true);
+    var carSerice = g.services["CarService"]!;
     var car = g.getTypeByName("Car")!;
-    var result = g.getSchemaByType(car);
+    var result = carSerice.getSchemaByType(car);
     expect(result.length, 3);
   });
 
@@ -68,9 +69,8 @@ void main() {
 
     var springSerializer = SpringServerSerializer(g);
     var serice = g.services["UserWithCarService"]!;
-    var serviceSerial = springSerializer.serializeService(serice);
-    expect(serviceSerial,
-        isNot(contains("java.util.Map<User, User> userWithCarUser(java.util.List<User> value);")));
+    var serviceSerial = springSerializer.serializeService(serice, "");
+    expect(serviceSerial, isNot(contains("Map<User, User> userWithCarUser(List<User> value);")));
   });
 
   test("Controller should implement identity on BatchMappings ", () {
@@ -82,12 +82,15 @@ void main() {
     expect(parsed is Success, true);
 
     var springSerializer = SpringServerSerializer(g);
-    var serice = g.services["UserWithCarService"]!;
-    var serviceSerial = springSerializer.serializeController(serice);
+    var ctrl = g.controllers["UserWithCarServiceController"]!;
+    var serviceSerial = springSerializer.serializeController(ctrl, "");
     expect(
         serviceSerial,
-        contains(
-            "public java.util.List<User> userWithCarUser(java.util.List<User> value) { return value; }"));
+        stringContainsInOrder([
+          "public List<User> userWithCarUser(List<User> value) {",
+          "return value;",
+          "}",
+        ]));
   });
 
   test("Controller should implement identity on SchemaMappings ", () {
@@ -99,8 +102,8 @@ void main() {
     expect(parsed is Success, true);
 
     var springSerializer = SpringServerSerializer(g);
-    var serice = g.services["UserWithCarService"]!;
-    var serviceSerial = springSerializer.serializeController(serice);
+    var ctrl = g.controllers["UserWithCarServiceController"]!;
+    var serviceSerial = springSerializer.serializeController(ctrl, "");
     expect(serviceSerial, contains("public User userWithCarUser(User value) { return value; }"));
   });
 }

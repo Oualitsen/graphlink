@@ -10,39 +10,37 @@ void main() {
   test("dart test skipOn mode = client", () {
     final GQGrammar g = GQGrammar(identityFields: ["id"], mode: CodeGenerationMode.client);
 
-    final text =
-        File("test/serializers/dart/types/type_serialization_skip_on_test.graphql").readAsStringSync();
+    final text = File("test/serializers/dart/types/type_serialization_skip_on_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
     var javaSerialzer = DartSerializer(g);
     var user = g.getTypeByName("User")!;
-    var result = javaSerialzer.serializeTypeDefinition(user);
+    var result = javaSerialzer.serializeTypeDefinition(user, "");
     expect(result, isNot(contains("String companyId")));
   });
 
   test("dart test skipOn mode = server", () {
     final GQGrammar g = GQGrammar(identityFields: ["id"], mode: CodeGenerationMode.server);
 
-    final text =
-        File("test/serializers/dart/types/type_serialization_skip_on_test.graphql").readAsStringSync();
+    final text = File("test/serializers/dart/types/type_serialization_skip_on_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
     var javaSerialzer = DartSerializer(g);
     var user = g.getTypeByName("User")!;
-    var result = javaSerialzer.serializeTypeDefinition(user);
+    var result = javaSerialzer.serializeTypeDefinition(user, "");
     expect(result, isNot(contains("Company company")));
 
     var input = g.inputs["SkipInput"]!;
-    var skippedInputSerialized = javaSerialzer.serializeInputDefinition(input);
+    var skippedInputSerialized = javaSerialzer.serializeInputDefinition(input, "");
     expect(skippedInputSerialized, "");
 
     var enum_ = g.enums["Gender"]!;
-    var serializedEnum = javaSerialzer.serializeEnumDefinition(enum_);
+    var serializedEnum = javaSerialzer.serializeEnumDefinition(enum_, "");
     expect(serializedEnum, "");
     var type = g.getTypeByName("SkipType")!;
-    var serilzedType = javaSerialzer.serializeTypeDefinition(type);
+    var serilzedType = javaSerialzer.serializeTypeDefinition(type, "");
     expect(serilzedType, "");
   });
 
@@ -55,7 +53,7 @@ void main() {
 
     var user = g.getTypeByName("User")!;
     var dartSerialzer = DartSerializer(g);
-    var class_ = dartSerialzer.serializeTypeDefinition(user);
+    var class_ = dartSerialzer.serializeTypeDefinition(user, "");
     expect(
       class_.split("\n").map((str) => str.trim()),
       containsAllInOrder([
@@ -67,7 +65,6 @@ void main() {
         "}"
       ]),
     );
-
   });
 
   test("Dart input serialization", () {
@@ -79,7 +76,7 @@ void main() {
 
     var user = g.inputs["UserInput"];
     var dartSerialzer = DartSerializer(g);
-    var class_ = dartSerialzer.serializeInputDefinition(user!);
+    var class_ = dartSerialzer.serializeInputDefinition(user!, "");
 
     expect(
       class_.split("\n").map((str) => str.trim()),

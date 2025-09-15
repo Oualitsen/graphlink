@@ -2,7 +2,7 @@
 directive @JsonProperty(
     value: String!
     gqAnnotation: Boolean = true
-    gqFQCN: String = "@com.fasterxml.jackson.annotation.JsonProperty"
+    gqClass: String = "@com.fasterxml.jackson.annotation.JsonProperty"
     gqOnClient: Boolean = true
     gqOnServer: Boolean = true
 
@@ -10,7 +10,7 @@ directive @JsonProperty(
 
 directive @FieldNameConstants(
     gqAnnotation: Boolean = true
-    gqFQCN: String = "@lombok.experimental.FieldNameConstants"
+    gqClass: String = "@lombok.experimental.FieldNameConstants"
     gqOnClient: Boolean = true
     gqOnServer: Boolean = true
 

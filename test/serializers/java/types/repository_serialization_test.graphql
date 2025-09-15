@@ -1,6 +1,6 @@
 
 directive @gqRepository(
-  gqFQCN: String = "org.springframework.data.mongodb.repository.MongoRepository"
+  gqClass: String = "org.springframework.data.mongodb.repository.MongoRepository"
 ) on FIELD_DEFINITION
 
 directive @gqQuery(
@@ -10,7 +10,7 @@ directive @gqQuery(
   countProjection: String
   name: String
   countName: String
-  gqFQCN: String = "org.springframework.data.jpa.repository.Query"
+  gqClass: String = "org.springframework.data.jpa.repository.Query"
   gqAnnotation: Boolean = true
   gqOnClient: Boolean = false
   gqOnServer: Boolean = true
@@ -18,7 +18,7 @@ directive @gqQuery(
 
 directive @gqParam(
   name: String!
-  gqFQCN: String = "org.springframework.data.repository.query.Param",
+  gqClass: String = "org.springframework.data.repository.query.Param",
   gqAnnotation: Boolean = true
   gqOnClient: Boolean = false
   gqOnServer: Boolean = true

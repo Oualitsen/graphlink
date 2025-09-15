@@ -14,7 +14,7 @@ directive @Getter(
     gqOnClient: Boolean = false
     gqOnServer: Boolean = true
     gqAnnotation: Boolean = true
-    gqFQCN: String = "@lombok.Getter"
+    gqClass: String = "@lombok.Getter"
 ) on FIELD_DEFINITION | OBJECT | INPUT_OBJECT | ENUM | ENUM_VALUE | INTERFACE
 
 directive @Query(
@@ -22,7 +22,7 @@ directive @Query(
     gqOnClient: Boolean = false
     gqOnServer: Boolean = true
     gqAnnotation: Boolean = true
-    gqFQCN: String = "@Query"
+    gqClass: String = "@Query"
     native: Boolean = false
 ) on FIELD_DEFINITION | OBJECT | INPUT_OBJECT | ENUM | ENUM_VALUE | INTERFACE 
 
@@ -31,7 +31,7 @@ directive @Json(
     gqOnClient: Boolean = false
     gqOnServer: Boolean = true
     gqAnnotation: Boolean = true
-    gqFQCN: String = "@Json"
+    gqClass: String = "@Json"
 ) on FIELD_DEFINITION | OBJECT | INPUT_OBJECT | ENUM | ENUM_VALUE | INTERFACE 
 
 
@@ -40,7 +40,7 @@ directive @LoggedIn(
     gqOnClient: Boolean = false
     gqOnServer: Boolean = true
     gqAnnotation: Boolean = true
-    gqFQCN: String = "@LoggedIn"
+    gqClass: String = "@LoggedIn"
 ) on FIELD_DEFINITION | OBJECT | INPUT_OBJECT | ENUM | ENUM_VALUE | INTERFACE 
 
 enum Gender @Getter {

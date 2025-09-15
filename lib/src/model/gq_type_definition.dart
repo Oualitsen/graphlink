@@ -1,37 +1,49 @@
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
-import 'package:retrofit_graphql/src/model/gq_has_directives.dart';
-import 'package:retrofit_graphql/src/model/gq_interface.dart';
-import 'package:retrofit_graphql/src/model/gq_token.dart';
+import 'package:retrofit_graphql/src/model/gq_directives_mixin.dart';
+import 'package:retrofit_graphql/src/model/gq_interface_definition.dart';
 import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
+import 'package:retrofit_graphql/src/model/gq_token.dart';
+import 'package:retrofit_graphql/src/model/gq_token_with_fields.dart';
 import 'package:retrofit_graphql/src/model/token_info.dart';
 import 'package:retrofit_graphql/src/serializers/graphq_serializer.dart';
 
-class GQTypeDefinition extends GQTokenWithFields with GqDirectivesMixin {
-  final Set<TokenInfo> interfaceNames;
-  final Set<GQInterfaceDefinition> interfaces = {};
+class GQTypeDefinition extends GQTokenWithFields with GQDirectivesMixin {
+  final Set<TokenInfo> _interfaceNames = {};
+  final Set<GQInterfaceDefinition> _interfaces = {};
   final bool nameDeclared;
   final GQTypeDefinition? derivedFromType;
 
-  final Set<String> originalTokens = <String>{};
-
-  ///
-  /// Used only when generating type for interfaces.
-  /// This will be a super class of one or more base types.
-  ///
-  final Set<GQTypeDefinition> implementations = {};
+  final Set<String> _originalTokens = <String>{};
 
   GQTypeDefinition({
     required TokenInfo name,
     required this.nameDeclared,
     required List<GQField> fields,
-    required this.interfaceNames,
+    required Set<TokenInfo> interfaceNames,
     required List<GQDirectiveValue> directives,
     required this.derivedFromType,
   }) : super(name, fields) {
     directives.forEach(addDirective);
     fields.sort((f1, f2) => f1.name.token.compareTo(f2.name.token));
+    interfaceNames.forEach(addInterfaceName);
+  }
+
+  Set<GQInterfaceDefinition> get interfaces => Set.unmodifiable(_interfaces);
+  Set<TokenInfo> get interfaceNames => Set.unmodifiable(_interfaceNames);
+  Set<String> get originalTokens => Set.unmodifiable(_originalTokens);
+
+  void addInterfaceName(TokenInfo token) {
+    _interfaceNames.add(token);
+  }
+
+  void addInterface(GQInterfaceDefinition iface) {
+    _interfaces.add(iface);
+  }
+
+  void addOriginalToken(String token) {
+    _originalTokens.add(token);
   }
 
   ///
@@ -49,7 +61,7 @@ class GQTypeDefinition extends GQTokenWithFields with GqDirectivesMixin {
   }
 
   bool implements(String interfaceName) {
-    return interfaceNames.where((i) => i.token == interfaceName).isNotEmpty;
+    return _interfaceNames.where((i) => i.token == interfaceName).isNotEmpty;
   }
 
   String getHash(GQGrammar g) {
@@ -83,4 +95,17 @@ class GQTypeDefinition extends GQTokenWithFields with GqDirectivesMixin {
   bool containsInteface(String interfaceName) => interfaceNames.where((e) => e.token == interfaceName).isNotEmpty;
 
   Set<String> getInterfaceNames() => interfaceNames.map((e) => e.token).toSet();
+
+  @override
+  Set<GQToken> getImportDependecies(GQGrammar g) {
+    var result = {...super.getImportDependecies(g)};
+
+    for (var iface in _interfaces) {
+      var token = g.getTokenByKey(iface.token);
+      if (filterDependecy(token, g)) {
+        result.add(token!);
+      }
+    }
+    return result;
+  }
 }

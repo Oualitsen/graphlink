@@ -20,7 +20,7 @@ void main() {
     expect(parsed is Success, true);
     var gender = g.enums["Gender"]!;
     var serializer = JavaSerializer(g, generateJsonMethods: true);
-    var genderSerial = serializer.serializeEnumDefinition(gender);
+    var genderSerial = serializer.serializeEnumDefinition(gender, "");
 
     expect(
         genderSerial.split("\n").map((e) => e.trim()),
@@ -40,12 +40,12 @@ void main() {
     expect(parsed is Success, true);
     var gender = g.enums["Gender"]!;
     var serializer = JavaSerializer(g, generateJsonMethods: true);
-    var genderSerial = serializer.serializeEnumDefinition(gender);
+    var genderSerial = serializer.serializeEnumDefinition(gender, "");
     expect(
         genderSerial.split("\n").map((e) => e.trim()),
         containsAllInOrder([
           "public static Gender fromJson(String value) {",
-          "return java.util.Optional.ofNullable(value).map(Gender::valueOf).orElse(null);",
+          "return Optional.ofNullable(value).map(Gender::valueOf).orElse(null);",
           "}",
         ]));
   });
@@ -83,19 +83,19 @@ void main() {
     expect(
       inputSerial.split('\n').map((e) => e.trim()),
       containsAllInOrder([
-        'public java.util.Map<String, Object> toJson() {',
-        'java.util.Map<String, Object> map = new java.util.HashMap<>();',
+        'public Map<String, Object> toJson() {',
+        'Map<String, Object> map = new HashMap<>();',
         'map.put("id", id);',
         'map.put("name", name);',
         'map.put("middleName", middleName);',
         'map.put("dateOfBirth", dateOfBirth);',
         'map.put("gender", gender == null ? null : gender.toJson());',
         'map.put("gender2", gender2.toJson());',
-        'map.put("names", names.stream().collect(java.util.stream.Collectors.toList()));',
-        'map.put("deepGender", deepGender.stream().map(e0 -> e0 == null ? null : e0.stream().map(e1 -> e1 == null ? null : e1.toJson()).collect(java.util.stream.Collectors.toList())).collect(java.util.stream.Collectors.toList()));',
-        'map.put("genders1", genders1.stream().map(e0 -> e0.toJson()).collect(java.util.stream.Collectors.toList()));',
-        'map.put("genders2", genders2.stream().map(e0 -> e0 == null ? null : e0.toJson()).collect(java.util.stream.Collectors.toList()));',
-        'map.put("genders3", genders3 == null ? null : genders3.stream().map(e0 -> e0.toJson()).collect(java.util.stream.Collectors.toList()));',
+        'map.put("names", names.stream().collect(Collectors.toList()));',
+        'map.put("deepGender", deepGender.stream().map(e0 -> e0 == null ? null : e0.stream().map(e1 -> e1 == null ? null : e1.toJson()).collect(Collectors.toList())).collect(Collectors.toList()));',
+        'map.put("genders1", genders1.stream().map(e0 -> e0.toJson()).collect(Collectors.toList()));',
+        'map.put("genders2", genders2.stream().map(e0 -> e0 == null ? null : e0.toJson()).collect(Collectors.toList()));',
+        'map.put("genders3", genders3 == null ? null : genders3.stream().map(e0 -> e0.toJson()).collect(Collectors.toList()));',
         'map.put("city", city == null ? null : city.toJson());',
         'map.put("city2", city2.toJson());',
         'return map;',
@@ -118,16 +118,16 @@ void main() {
     expect(parsed is Success, true);
     var userInput = g.inputs["UserInput"]!;
     var serializer = JavaSerializer(g, generateJsonMethods: true);
-    var inputSerial = serializer.generateToJson(userInput.fields);
+    var inputSerial = serializer.generateToJson(userInput.fields, userInput);
 
     expect(
       inputSerial.split('\n').map((e) => e.trim()),
       containsAllInOrder([
-        'public java.util.Map<String, Object> toJson() {',
-        'java.util.Map<String, Object> map = new java.util.HashMap<>();',
-        'map.put("names", names == null ? null : java.util.stream.Stream.of(names).map(e0 -> e0).collect(java.util.stream.Collectors.toList()));',
-        'map.put("genderList", genderList == null ? null : java.util.stream.Stream.of(genderList).map(e0 -> e0 == null ? null : e0.toJson()).collect(java.util.stream.Collectors.toList()));',
-        'map.put("genderList2", genderList2 == null ? null : java.util.stream.Stream.of(genderList2).map(e0 -> e0 == null ? null : java.util.stream.Stream.of(e0).map(e1 -> e1.toJson()).collect(java.util.stream.Collectors.toList())).collect(java.util.stream.Collectors.toList()));',
+        'public Map<String, Object> toJson() {',
+        'Map<String, Object> map = new HashMap<>();',
+        'map.put("names", names == null ? null : Stream.of(names).map(e0 -> e0).collect(Collectors.toList()));',
+        'map.put("genderList", genderList == null ? null : Stream.of(genderList).map(e0 -> e0 == null ? null : e0.toJson()).collect(Collectors.toList()));',
+        'map.put("genderList2", genderList2 == null ? null : Stream.of(genderList2).map(e0 -> e0 == null ? null : Stream.of(e0).map(e1 -> e1.toJson()).collect(Collectors.toList())).collect(Collectors.toList()));',
         'return map;',
         '}'
       ]),
@@ -154,9 +154,9 @@ void main() {
     expect(
       inputSerial.split("\n").map((e) => e.trim()),
       containsAllInOrder([
-        'public java.util.Map<String, Object> toJson() {',
-        'java.util.Map<String, Object> map = new java.util.HashMap<>();',
-        'map.put("genders", genders == null ? null : genders.stream().map(e0 -> e0 == null ? null : e0.stream().map(e1 -> e1 == null ? null : e1.toJson()).collect(java.util.stream.Collectors.toList())).collect(java.util.stream.Collectors.toList()));',
+        'public Map<String, Object> toJson() {',
+        'Map<String, Object> map = new HashMap<>();',
+        'map.put("genders", genders == null ? null : genders.stream().map(e0 -> e0 == null ? null : e0.stream().map(e1 -> e1 == null ? null : e1.toJson()).collect(Collectors.toList())).collect(Collectors.toList()));',
         'return map;',
         '}'
       ]),
@@ -194,11 +194,7 @@ void main() {
     // same as input, so we only check for the existance of toJson method
     expect(
       userSerial.split("\n").map((e) => e.trim()),
-      containsAllInOrder([
-        'public java.util.Map<String, Object> toJson() {',
-        'java.util.Map<String, Object> map = new java.util.HashMap<>();',
-        "}"
-      ]),
+      containsAllInOrder(['public Map<String, Object> toJson() {', 'Map<String, Object> map = new HashMap<>();', "}"]),
     );
   });
 
@@ -214,12 +210,12 @@ void main() {
     var userInput = g.inputs["UserInput"]!;
 
     var serializer = JavaSerializer(g, generateJsonMethods: true);
-    var fromJson = serializer.generateFromJson(userInput.getSerializableFields(g.mode), "UserInput");
+    var fromJson = serializer.generateFromJson(userInput.getSerializableFields(g.mode), "UserInput", userInput);
 
     expect(
         fromJson.split("\n").map((e) => e.trim()),
         containsAllInOrder([
-          'public static UserInput fromJson(java.util.Map<String, Object> json) {',
+          'public static UserInput fromJson(Map<String, Object> json) {',
           'return new UserInput(',
           'json.get("name") == null ? null : (String)json.get("name")',
           ');',
@@ -239,12 +235,12 @@ void main() {
     var userInput = g.inputs["UserInput"]!;
 
     var serializer = JavaSerializer(g, generateJsonMethods: true);
-    var fromJson = serializer.generateFromJson(userInput.getSerializableFields(g.mode), "UserInput");
+    var fromJson = serializer.generateFromJson(userInput.getSerializableFields(g.mode), "UserInput", userInput);
 
     expect(
         fromJson.split("\n").map((e) => e.trim()),
         containsAllInOrder([
-          'public static UserInput fromJson(java.util.Map<String, Object> json) {',
+          'public static UserInput fromJson(Map<String, Object> json) {',
           'return new UserInput(',
           '(String)json.get("name")',
           ');',
@@ -264,14 +260,14 @@ void main() {
     var userInput = g.inputs["UserInput"]!;
 
     var serializer = JavaSerializer(g, generateJsonMethods: true);
-    var fromJson = serializer.generateFromJson(userInput.getSerializableFields(g.mode), "UserInput");
+    var fromJson = serializer.generateFromJson(userInput.getSerializableFields(g.mode), "UserInput", userInput);
 
     expect(
         fromJson.split("\n").map((e) => e.trim()),
         containsAllInOrder([
-          'public static UserInput fromJson(java.util.Map<String, Object> json) {',
+          'public static UserInput fromJson(Map<String, Object> json) {',
           'return new UserInput(',
-          '((java.util.List<Object>)json.get("name")).stream().map(json0 -> (String)json0).collect(java.util.stream.Collectors.toList())',
+          '((List<Object>)json.get("name")).stream().map(json0 -> (String)json0).collect(Collectors.toList())',
           ');',
           "}"
         ]));
@@ -289,12 +285,12 @@ void main() {
     var userInput = g.inputs["UserInput"]!;
 
     var serializer = JavaSerializer(g, generateJsonMethods: true);
-    var fromJson = serializer.generateFromJson(userInput.getSerializableFields(g.mode), "UserInput");
+    var fromJson = serializer.generateFromJson(userInput.getSerializableFields(g.mode), "UserInput", userInput);
 
     expect(
         fromJson.split("\n").map((e) => e.trim()),
         containsAllInOrder([
-          'public static UserInput fromJson(java.util.Map<String, Object> json) {',
+          'public static UserInput fromJson(Map<String, Object> json) {',
           'return new UserInput(',
           '((Number)json.get("age")).intValue()',
           ');',
@@ -314,13 +310,13 @@ void main() {
     var userInput = g.inputs["UserInput"]!;
 
     var serializer = JavaSerializer(g, generateJsonMethods: true);
-    var fromJson = serializer.generateFromJson(userInput.getSerializableFields(g.mode), "UserInput");
+    var fromJson = serializer.generateFromJson(userInput.getSerializableFields(g.mode), "UserInput", userInput);
     expect(
         fromJson.split("\n").map((e) => e.trim()),
         containsAllInOrder([
-          'public static UserInput fromJson(java.util.Map<String, Object> json) {',
+          'public static UserInput fromJson(Map<String, Object> json) {',
           'return new UserInput(',
-          '((java.util.List<Object>)json.get("age")).stream().map(json0 -> ((Number)json0).intValue()).collect(java.util.stream.Collectors.toList())',
+          '((List<Object>)json.get("age")).stream().map(json0 -> ((Number)json0).intValue()).collect(Collectors.toList())',
           ');',
           "}"
         ]));
@@ -339,11 +335,11 @@ void main() {
     var userInput = g.inputs["UserInput"]!;
 
     var serializer = JavaSerializer(g, generateJsonMethods: true);
-    var fromJson = serializer.generateFromJson(userInput.getSerializableFields(g.mode), "UserInput");
+    var fromJson = serializer.generateFromJson(userInput.getSerializableFields(g.mode), "UserInput", userInput);
     expect(
         fromJson.split("\n").map((e) => e.trim()),
         containsAllInOrder([
-          'public static UserInput fromJson(java.util.Map<String, Object> json) {',
+          'public static UserInput fromJson(Map<String, Object> json) {',
           'return new UserInput(',
           'Gender.fromJson((String)json.get("gender"))',
           ');',
@@ -364,13 +360,13 @@ void main() {
     var userInput = g.inputs["UserInput"]!;
 
     var serializer = JavaSerializer(g, generateJsonMethods: true);
-    var fromJson = serializer.generateFromJson(userInput.getSerializableFields(g.mode), "UserInput");
+    var fromJson = serializer.generateFromJson(userInput.getSerializableFields(g.mode), "UserInput", userInput);
     expect(
         fromJson.split("\n").map((e) => e.trim()),
         containsAllInOrder([
-          'public static UserInput fromJson(java.util.Map<String, Object> json) {',
+          'public static UserInput fromJson(Map<String, Object> json) {',
           'return new UserInput(',
-          '((java.util.List<Object>)json.get("gender")).stream().map(json0 -> Gender.fromJson((String)json0)).collect(java.util.stream.Collectors.toList())',
+          '((List<Object>)json.get("gender")).stream().map(json0 -> Gender.fromJson((String)json0)).collect(Collectors.toList())',
           ');',
           "}"
         ]));
@@ -391,13 +387,13 @@ void main() {
     var userInput = g.inputs["UserInput"]!;
 
     var serializer = JavaSerializer(g, generateJsonMethods: true);
-    var fromJson = serializer.generateFromJson(userInput.getSerializableFields(g.mode), "UserInput");
+    var fromJson = serializer.generateFromJson(userInput.getSerializableFields(g.mode), "UserInput", userInput);
     expect(
         fromJson.split("\n").map((e) => e.trim()),
         containsAllInOrder([
-          'public static UserInput fromJson(java.util.Map<String, Object> json) {',
+          'public static UserInput fromJson(Map<String, Object> json) {',
           'return new UserInput(',
-          'AgeInput.fromJson((java.util.Map<String, Object>)json.get("age"))',
+          'AgeInput.fromJson((Map<String, Object>)json.get("age"))',
           ');',
           "}"
         ]));
@@ -418,13 +414,13 @@ void main() {
     var userInput = g.inputs["UserInput"]!;
 
     var serializer = JavaSerializer(g, generateJsonMethods: true);
-    var fromJson = serializer.generateFromJson(userInput.getSerializableFields(g.mode), "UserInput");
+    var fromJson = serializer.generateFromJson(userInput.getSerializableFields(g.mode), "UserInput", userInput);
     expect(
         fromJson.split("\n").map((e) => e.trim()),
         containsAllInOrder([
-          'public static UserInput fromJson(java.util.Map<String, Object> json) {',
+          'public static UserInput fromJson(Map<String, Object> json) {',
           'return new UserInput(',
-          '((java.util.List<Object>)json.get("age")).stream().map(json0 -> AgeInput.fromJson((java.util.Map<String, Object>)json0)).collect(java.util.stream.Collectors.toList())',
+          '((List<Object>)json.get("age")).stream().map(json0 -> AgeInput.fromJson((Map<String, Object>)json0)).collect(Collectors.toList())',
           ');',
           "}"
         ]));
@@ -453,14 +449,15 @@ void main() {
     var user = g.interfaces["BasicEntity"]!;
     var serializer = JavaSerializer(g, generateJsonMethods: true);
     var userSerial = serializer.serializeInterface(user);
+    print(userSerial);
 
     expect(
       userSerial.split('\n').map((e) => e.trim()),
       containsAllInOrder([
         'public interface BasicEntity {',
         'String getId();',
-        'java.util.Map<String, Object> toJson();',
-        'static BasicEntity fromJson(java.util.Map<String, Object> json) {',
+        'Map<String, Object> toJson();',
+        'static BasicEntity fromJson(Map<String, Object> json) {',
         'String typename = (String)json.get("__typename");',
         'switch(typename) {',
         'case "User": return User.fromJson(json);',

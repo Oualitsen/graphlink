@@ -74,7 +74,7 @@ void main() async {
     var serializer = DartSerializer(g);
     g.projectedTypes.values.forEach((pt) {
       print("############## ${pt.token} ###########");
-      print(serializer.serializeTypeDefinition(pt));
+      print(serializer.serializeTypeDefinition(pt, ""));
     });
   });
 
@@ -131,7 +131,7 @@ void main() async {
     var serializer = DartSerializer(g);
     g.projectedTypes.values.forEach((pt) {
       print("############## ${pt.token} ###########2");
-      print(serializer.serializeTypeDefinition(pt));
+      print(serializer.serializeTypeDefinition(pt, ""));
     });
   });
 
@@ -160,7 +160,7 @@ void main() async {
     var serializer = DartSerializer(g);
     g.projectedTypes.values.forEach((pt) {
       print("############## ${pt.token} ###########");
-      print(serializer.serializeTypeDefinition(pt));
+      print(serializer.serializeTypeDefinition(pt, ""));
     });
   });
 }

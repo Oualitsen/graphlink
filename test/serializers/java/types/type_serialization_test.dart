@@ -29,10 +29,10 @@ void main() {
     var javaSerialzer = JavaSerializer(g);
 
     var userServer = g.getTypeByName("User")!;
-    var result = javaSerialzer.serializeTypeDefinition(userServer);
+    var result = javaSerialzer.serializeTypeDefinition(userServer, "");
     expect(result, contains("String[] array"));
     expect(result, contains("String[][] arrayOfArrays"));
-    expect(result, contains("java.util.List<java.util.List<String>> listOfLists"));
+    expect(result, contains("List<List<String>> listOfLists"));
   });
 
   test("test skipOn mode = client", () {
@@ -46,7 +46,7 @@ void main() {
     var javaSerialzer = JavaSerializer(g);
 
     var userServer = g.getTypeByName("User")!;
-    var result = javaSerialzer.serializeTypeDefinition(userServer);
+    var result = javaSerialzer.serializeTypeDefinition(userServer, "");
     expect(result, isNot(contains("String companyId")));
   });
 
@@ -61,18 +61,18 @@ void main() {
     var javaSerialzer = JavaSerializer(g);
 
     var userServer = g.getTypeByName("User")!;
-    var result = javaSerialzer.serializeTypeDefinition(userServer);
+    var result = javaSerialzer.serializeTypeDefinition(userServer, "");
     expect(result, isNot(contains("Company company")));
 
     var input = g.inputs["SkipInput"]!;
-    var skippedInputSerialized = javaSerialzer.serializeInputDefinition(input);
+    var skippedInputSerialized = javaSerialzer.serializeInputDefinition(input, "");
     expect(skippedInputSerialized, "");
 
     var enum_ = g.enums["Gender"]!;
-    var serializedEnum = javaSerialzer.serializeEnumDefinition(enum_);
+    var serializedEnum = javaSerialzer.serializeEnumDefinition(enum_, "");
     expect(serializedEnum, "");
     var type = g.getTypeByName("SkipType")!;
-    var serilzedType = javaSerialzer.serializeTypeDefinition(type);
+    var serilzedType = javaSerialzer.serializeTypeDefinition(type, "");
     expect(serilzedType, "");
   });
 
@@ -97,11 +97,11 @@ void main() {
     expect(ibaseText.trim(), startsWith("@Logger"));
 
     var gender = g.enums["Gender"]!;
-    var genderText = javaSerialzer.serializeEnumDefinition(gender);
+    var genderText = javaSerialzer.serializeEnumDefinition(gender, "");
     expect(genderText.trim(), startsWith("@Logger"));
 
     var input = g.inputs["UserInput"]!;
-    var inputText = javaSerialzer.serializeInputDefinition(input);
+    var inputText = javaSerialzer.serializeInputDefinition(input, "");
     expect(inputText.trim(), startsWith("@Input"));
   });
 
@@ -144,7 +144,7 @@ void main() {
     var id = javaSerialzer.serializeType(idField.type, false);
     var list = javaSerialzer.serializeType(listExample.type, false);
     expect(id, "String");
-    expect(list, "java.util.List<String>");
+    expect(list, "List<String>");
   });
 
   test("serializeEnumDefinition", () {
@@ -155,7 +155,7 @@ void main() {
     expect(parsed is Success, true);
     var javaSerialzer = JavaSerializer(g);
     var genderEnum = g.enums["Gender"]!;
-    var enum_ = javaSerialzer.serializeEnumDefinition(genderEnum);
+    var enum_ = javaSerialzer.serializeEnumDefinition(genderEnum, "");
     expect(enum_.split("\n").map((e) => e.trim()).toList(),
         containsAllInOrder(['public enum Gender {', 'male, female;', '}']));
   });
@@ -192,8 +192,8 @@ void main() {
     var idField = user.fields.where((f) => f.name.token == "id").first;
     var middleName = user.fields.where((f) => f.name.token == "middleName").first;
 
-    var setId = javaSerialzer.serializeSetter(idField);
-    var setMiddleName = javaSerialzer.serializeSetter(middleName);
+    var setId = javaSerialzer.serializeSetter(idField, user);
+    var setMiddleName = javaSerialzer.serializeSetter(middleName, user);
     print(setMiddleName);
 
     expect(
@@ -247,7 +247,7 @@ void main() {
 
     var user = g.getTypeByName("User")!;
     var javaSerialzer = JavaSerializer(g);
-    var class_ = javaSerialzer.serializeTypeDefinition(user);
+    var class_ = javaSerialzer.serializeTypeDefinition(user, "");
     expect(
       class_.split("\n").map((str) => str.trim()),
       containsAllInOrder([
@@ -256,7 +256,7 @@ void main() {
         "private String name;",
         "private String middleName;",
         "private Boolean married;",
-        "private java.util.List<String> listExample;",
+        "private List<String> listExample;",
         "}"
       ]),
     );
@@ -271,7 +271,7 @@ void main() {
 
     var user = g.inputs["UserInput"];
     var javaSerialzer = JavaSerializer(g);
-    var class_ = javaSerialzer.serializeInputDefinition(user!);
+    var class_ = javaSerialzer.serializeInputDefinition(user!, "");
 
     expect(
       class_.split("\n").map((str) => str.trim()),
@@ -344,12 +344,12 @@ void main() {
     expect(parsed is Success, true);
     var repo = g.repositories["UserRepository"]!;
     var serialzer = SpringServerSerializer(g);
-    var repoSerial = serialzer.serializeRepository(repo);
+    var repoSerial = serialzer.serializeRepository(repo, "com.myorg");
 
     expect(
         repoSerial,
         stringContainsInOrder([
-          "@org.springframework.stereotype.Repository",
+          "@Repository",
           "public interface UserRepository extends org.springframework.data.mongodb.repository.MongoRepository<User, String>",
           'User findById(@org.springframework.data.repository.query.Param(value = "id")  final String id);',
           "}"

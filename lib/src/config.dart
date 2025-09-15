@@ -62,7 +62,6 @@ class SpringServerConfig {
   final bool typeAsRecord;
   final bool generateSchema;
   final String? schemaTargetPath;
-  
 
   SpringServerConfig(
       {required this.basePackage,
@@ -73,10 +72,11 @@ class SpringServerConfig {
       required this.inputAsRecord,
       required this.typeAsRecord,
       required this.generateSchema,
-      this.schemaTargetPath
-      }): assert(
-          !generateSchema || (schemaTargetPath != null &&
-              (schemaTargetPath.endsWith('.graphql') || schemaTargetPath.endsWith('.graphqls'))),
+      this.schemaTargetPath})
+      : assert(
+          !generateSchema ||
+              (schemaTargetPath != null &&
+                  (schemaTargetPath.endsWith('.graphql') || schemaTargetPath.endsWith('.graphqls'))),
           'schemaTargetPath must be a non-null path ending with .graphql or .graphqls when generateSchema is true',
         );
 
@@ -103,15 +103,18 @@ class ClientConfig {
   final bool operationNameAsParameter;
   final String? autoGenerateQueriesDefaultAlias;
   final String? defaultAlias;
+  final String? packageName;
 
-  ClientConfig(
-      {required this.targetLanguage,
-      required this.generateAllFieldsFragments,
-      required this.nullableFieldsRequired,
-      required this.autoGenerateQueries,
-      this.autoGenerateQueriesDefaultAlias,
-      required this.operationNameAsParameter,
-      this.defaultAlias});
+  ClientConfig({
+    required this.targetLanguage,
+    required this.generateAllFieldsFragments,
+    required this.nullableFieldsRequired,
+    required this.autoGenerateQueries,
+    this.autoGenerateQueriesDefaultAlias,
+    required this.operationNameAsParameter,
+    this.defaultAlias,
+    required this.packageName,
+  });
 
   factory ClientConfig.fromJson(Map<String, dynamic> json) {
     return ClientConfig(
@@ -122,6 +125,7 @@ class ClientConfig {
       autoGenerateQueriesDefaultAlias: json['autoGenerateQueriesDefaultAlias'] as String?,
       operationNameAsParameter: json['operationNameAsParameter'] ?? false,
       defaultAlias: json['defaultAlias'],
+      packageName: json['packageName'] as String?,
     );
   }
 }

@@ -3,16 +3,17 @@ import 'dart:io';
 import 'package:logger/logger.dart';
 import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
 import 'package:retrofit_graphql/src/extensions.dart';
+import 'package:retrofit_graphql/src/model/gq_controller.dart';
 import 'package:retrofit_graphql/src/model/gq_enum_definition.dart';
+import 'package:retrofit_graphql/src/model/gq_repository.dart';
 import 'package:retrofit_graphql/src/model/gq_scalar_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_service.dart';
-import 'package:retrofit_graphql/src/model/gq_shcema_mapping.dart';
 import 'package:retrofit_graphql/src/model/gq_schema.dart';
 import 'package:retrofit_graphql/src/model/gq_argument.dart';
 import 'package:retrofit_graphql/src/model/gq_comment.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
-import 'package:retrofit_graphql/src/model/gq_interface.dart';
+import 'package:retrofit_graphql/src/model/gq_interface_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
 import 'package:retrofit_graphql/src/model/gq_input_type_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_fragment.dart';
@@ -98,13 +99,13 @@ class GQGrammar extends GrammarDefinition {
   final Map<String, GQInputDefinition> inputs = {};
   final Map<String, GQTypeDefinition> types = {};
   final Map<String, GQInterfaceDefinition> interfaces = {};
-  final Map<String, GQInterfaceDefinition> repositories = {};
+  final Map<String, GQRepository> repositories = {};
   final Map<String, GQQueryDefinition> queries = {};
   final Map<String, GQEnumDefinition> enums = {};
   final Map<String, GQTypeDefinition> projectedTypes = {};
   final Map<String, GQDirectiveDefinition> directiveDefinitions = {};
-  final Map<String, GQSchemaMapping> schemaMappings = {};
   final Map<String, GQService> services = {};
+  final Map<String, GQController> controllers = {};
 
   final List<GQDirectiveValue> directiveValues = [];
 
@@ -240,8 +241,8 @@ class GQGrammar extends GrammarDefinition {
       updateFragmentAllTypesDependencies();
     } else {
       handleRepositories(true);
+      generateServicesAndControllers();
       generateSchemaMappings();
-      generateServices();
     }
   }
 

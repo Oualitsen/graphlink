@@ -13,7 +13,7 @@ void main() {
     expect(parsed is Success, true);
     var gender = g.enums["Gender"]!;
     var serializer = DartSerializer(g);
-    var genderSerial = serializer.serializeEnumDefinition(gender);
+    var genderSerial = serializer.serializeEnumDefinition(gender, "");
     expect(
         genderSerial.split("\n").map((e) => e.trim()),
         containsAllInOrder([
@@ -34,7 +34,7 @@ void main() {
     expect(parsed is Success, true);
     var gender = g.enums["Gender"]!;
     var serializer = DartSerializer(g);
-    var genderSerial = serializer.serializeEnumDefinition(gender);
+    var genderSerial = serializer.serializeEnumDefinition(gender, "");
     expect(
         genderSerial.split("\n").map((e) => e.trim()),
         containsAllInOrder([

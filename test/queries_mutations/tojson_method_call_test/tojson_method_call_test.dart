@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:retrofit_graphql/src/serializers/dart_client_serializer.dart';
+import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
@@ -12,14 +13,13 @@ void main() async {
 
     var parser = g.buildFrom(g.fullGrammar().end());
 
-    final text =
-        File("$path/tojson_method_call_test.graphql").readAsStringSync();
+    final text = File("$path/tojson_method_call_test.graphql").readAsStringSync();
     var parsed = parser.parse(text);
 
     expect(parsed is Success, true);
     Directory("$path/gen").createSync();
-    final dsc = DartClientSerializer(g);
-    var client = dsc.generateClient();
+    final dsc = DartClientSerializer(g, DartSerializer(g));
+    var client = dsc.generateClient("package");
     expect(client, contains("'input': input?.toJson()"));
   });
 }

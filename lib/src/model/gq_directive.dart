@@ -46,7 +46,7 @@ enum GQDirectiveScope {
   ENUM_VALUE,
   // ignore: constant_identifier_names
   ENUM,
-  
+
   // ignore: constant_identifier_names
   INPUT_OBJECT,
   // ignore: constant_identifier_names
@@ -59,13 +59,13 @@ enum GQDirectiveScope {
 class GQDirectiveValue extends GQToken {
   final List<GQDirectiveScope> locations;
   final Map<String, GQArgumentValue> _argsMap = {};
+
   ///
   /// helps with the schema serialization
   ///
   final bool generated;
 
-  GQDirectiveValue(
-      super.tokenInfo, this.locations, List<GQArgumentValue> arguments, {required this.generated}) {
+  GQDirectiveValue(super.tokenInfo, this.locations, List<GQArgumentValue> arguments, {required this.generated}) {
     _addArgument(arguments);
   }
 
@@ -113,8 +113,7 @@ class GQDirectiveValue extends GQToken {
     return _argsMap.values.toList();
   }
 
-  static GQDirectiveValue createDirectiveValue(
-      {required String directiveName, required bool generated}) {
+  static GQDirectiveValue createDirectiveValue({required String directiveName, required bool generated}) {
     return GQDirectiveValue(TokenInfo.ofString(directiveName), [], [], generated: generated);
   }
 
@@ -122,13 +121,17 @@ class GQDirectiveValue extends GQToken {
     required List<String> decorators,
     bool applyOnServer = true,
     bool applyOnClient = true,
+    String? import,
   }) {
-    return GQDirectiveValue(TokenInfo.ofString(gqDecorators), [], [
-      GQArgumentValue(
-          TokenInfo.ofString("value"), decorators.map((s) => '"$s"').toList()),
-      GQArgumentValue(TokenInfo.ofString("applyOnServer"), applyOnServer),
-      GQArgumentValue(TokenInfo.ofString("applyOnClient"), applyOnClient),
-      
-    ], generated: true);
+    return GQDirectiveValue(
+        TokenInfo.ofString(gqDecorators),
+        [],
+        [
+          GQArgumentValue(TokenInfo.ofString("value"), decorators.map((s) => '"$s"').toList()),
+          GQArgumentValue(TokenInfo.ofString("applyOnServer"), applyOnServer),
+          GQArgumentValue(TokenInfo.ofString("applyOnClient"), applyOnClient),
+          if (import != null) GQArgumentValue(TokenInfo.ofString(gqImport), import),
+        ],
+        generated: true);
   }
 }

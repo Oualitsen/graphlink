@@ -2,7 +2,7 @@ import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
 import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
-import 'package:retrofit_graphql/src/model/gq_has_directives.dart';
+import 'package:retrofit_graphql/src/model/gq_directives_mixin.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
 import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
 import 'package:retrofit_graphql/src/model/token_info.dart';
@@ -16,7 +16,7 @@ class GQTypedFragment {
   GQTypedFragment(this.fragment, this.onType);
 }
 
-abstract class GQFragmentDefinitionBase extends GQToken with GqDirectivesMixin {
+abstract class GQFragmentDefinitionBase extends GQToken with GQDirectivesMixin {
   final TokenInfo onTypeName;
 
   final GQFragmentBlockDefinition block;
@@ -58,10 +58,9 @@ abstract class GQFragmentDefinitionBase extends GQToken with GqDirectivesMixin {
 }
 
 class GQInlineFragmentDefinition extends GQFragmentDefinitionBase {
-  GQInlineFragmentDefinition(
-      TokenInfo onTypeName, GQFragmentBlockDefinition block, List<GQDirectiveValue> directives)
+  GQInlineFragmentDefinition(TokenInfo onTypeName, GQFragmentBlockDefinition block, List<GQDirectiveValue> directives)
       : super(
-         "Inline_${generateUuid('_')}".toToken(),
+          "Inline_${generateUuid('_')}".toToken(),
           onTypeName,
           block,
           directives,
@@ -83,8 +82,7 @@ class GQFragmentDefinition extends GQFragmentDefinitionBase {
 
   final String fragmentName;
 
-  GQFragmentDefinition(super.token, super.onTypeName, super.block,super.directives): fragmentName = token.token;
- 
+  GQFragmentDefinition(super.token, super.onTypeName, super.block, super.directives) : fragmentName = token.token;
 
   @override
   String generateName() {
@@ -104,7 +102,7 @@ class GQInlineFragmentsProjection extends GQProjection {
         );
 }
 
-class GQProjection extends GQToken with GqDirectivesMixin {
+class GQProjection extends GQToken with GQDirectivesMixin {
   ///
   ///This contains a reference to the fragment name containing this projection
   ///
@@ -138,12 +136,11 @@ class GQProjection extends GQToken with GqDirectivesMixin {
     required this.alias,
     required this.block,
     required List<GQDirectiveValue> directives,
-  }) : super(token ?? TokenInfo.ofString( fragmentName ?? "*")) {
+  }) : super(token ?? TokenInfo.ofString(fragmentName ?? "*")) {
     directives.forEach(addDirective);
   }
 
   String get actualName => alias?.token ?? targetToken;
-
 
   String get targetToken => tokenInfo.token == allFields && fragmentName != null ? fragmentName! : tokenInfo.token;
 

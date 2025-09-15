@@ -7,7 +7,7 @@ import 'package:retrofit_graphql/src/model/gq_enum_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/gq_fragment.dart';
 import 'package:retrofit_graphql/src/model/gq_input_type_definition.dart';
-import 'package:retrofit_graphql/src/model/gq_interface.dart';
+import 'package:retrofit_graphql/src/model/gq_interface_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_queries.dart';
 import 'package:retrofit_graphql/src/model/gq_scalar_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_schema.dart';
@@ -31,10 +31,7 @@ const _skippedDirectives = {
 
 bool _shouldSkipDriectiveDefinition(GQDirectiveDefinition def) {
   return _skippedDirectives.contains(def.name.token) ||
-      def.arguments
-          .where(
-              (arg) => arg.token == gqAnnotation && arg.type.token == "Boolean")
-          .isNotEmpty;
+      def.arguments.where((arg) => arg.token == gqAnnotation && arg.type.token == "Boolean").isNotEmpty;
 }
 
 bool _shouldSkipDriectiveValue(GQDirectiveValue def) {
@@ -42,15 +39,16 @@ bool _shouldSkipDriectiveValue(GQDirectiveValue def) {
       GQGrammar.directivesToSkip.contains(def.token) ||
       def.getArgValue(gqAnnotation) == true;
 }
+
 // this is for skipping generating objects that should be hidden from the client
 const clientMode = CodeGenerationMode.client;
+
 class GraphqSerializer {
   final GQGrammar grammar;
 
   GraphqSerializer(this.grammar);
 
   String generateSchema() {
-    
     final buffer = StringBuffer();
 
     ///schema
@@ -58,8 +56,7 @@ class GraphqSerializer {
 
     /// sacalars
 
-    var scalars = 
-        filterSerialization(grammar.scalars.values, clientMode)
+    var scalars = filterSerialization(grammar.scalars.values, clientMode)
         .where((s) => !grammar.builtInScalars.contains(s.token))
         .map(serializeScalarDefinition)
         .join("\n");
@@ -67,37 +64,35 @@ class GraphqSerializer {
 
     /// directives
 
-    var directiveDefinitions = grammar.directiveDefinitions.values
-        .map(serializeDirectiveDefinition)
-        .where((s) => s.isNotEmpty)
-        .join("\n");
+    var directiveDefinitions =
+        grammar.directiveDefinitions.values.map(serializeDirectiveDefinition).where((s) => s.isNotEmpty).join("\n");
 
     buffer.writeln(directiveDefinitions);
 
     // inputs
     var inputSerial = filterSerialization(grammar.inputs.values, clientMode)
-    .map((e) => serializeInputDefinition(e, clientMode)).join("\n");
+        .map((e) => serializeInputDefinition(e, clientMode))
+        .join("\n");
     buffer.writeln(inputSerial);
 
     // types
-    var typesSerial =
-     filterSerialization(grammar.types.values, clientMode).map((e) => serializeTypeDefinition(e, clientMode)).join("\n");
+    var typesSerial = filterSerialization(grammar.types.values, clientMode)
+        .map((e) => serializeTypeDefinition(e, clientMode))
+        .join("\n");
     buffer.writeln(typesSerial);
     // interfaces
 
-    var interfacesSerial =
-    filterSerialization(grammar.interfaces.values, clientMode)
+    var interfacesSerial = filterSerialization(grammar.interfaces.values, clientMode)
         .where((i) => !i.fromUnion)
-        .map((e) => serializeTypeDefinition(e, clientMode)).join("\n");
+        .map((e) => serializeTypeDefinition(e, clientMode))
+        .join("\n");
     buffer.writeln(interfacesSerial);
     // enums
-    var enumsSerial =
-       filterSerialization(grammar.enums.values, clientMode).map(serializeEnumDefinition).join("\n");
+    var enumsSerial = filterSerialization(grammar.enums.values, clientMode).map(serializeEnumDefinition).join("\n");
     buffer.writeln(enumsSerial);
 
     //unions
-    var unionSerial =
-        grammar.unions.values.map(serializeUnionDefinition).join("\n");
+    var unionSerial = grammar.unions.values.map(serializeUnionDefinition).join("\n");
     buffer.writeln(unionSerial);
 
     return buffer.toString();
@@ -119,9 +114,7 @@ scalar ${def.tokenInfo} ${serializeDirectiveValueList(def.getDirectives(skipGene
       return '';
     }
     var arguments = value.getArguments();
-    var args = arguments.isEmpty
-        ? ""
-        : "(${arguments.map((e) => serializeArgumentValue(e)).join(", ")})";
+    var args = arguments.isEmpty ? "" : "(${arguments.map((e) => serializeArgumentValue(e)).join(", ")})";
     return "${value.tokenInfo}$args";
   }
 
@@ -145,8 +138,7 @@ directive ${def.name}${serializeDirectiveArgs(def.arguments)} on ${def.scopes.ma
   }
 
   String serializeArgumentDefinition(GQArgumentDefinition def) {
-    var buffer =
-        StringBuffer("${def.token.dolarEscape()}: ${serializeType(def.type)}");
+    var buffer = StringBuffer("${def.token.dolarEscape()}: ${serializeType(def.type)}");
     if (def.initialValue != null) {
       buffer.write(" = ${def.initialValue}");
     }
@@ -154,11 +146,9 @@ directive ${def.name}${serializeDirectiveArgs(def.arguments)} on ${def.scopes.ma
   }
 
   String serializeSchemaDefinition(GQSchema schema) {
-   var inner = GQQueryType.values
-    .where((value) => grammar.types.containsKey(schema.getByQueryType(value)))
-    .map((value) {
-      switch(value) {
-        
+    var inner =
+        GQQueryType.values.where((value) => grammar.types.containsKey(schema.getByQueryType(value))).map((value) {
+      switch (value) {
         case GQQueryType.query:
           return "query: ${schema.query}";
         case GQQueryType.mutation:
@@ -167,14 +157,15 @@ directive ${def.name}${serializeDirectiveArgs(def.arguments)} on ${def.scopes.ma
           return "subscription: ${schema.subscription}";
       }
     });
-if(inner.isEmpty) {
-  return "";
-}
+    if (inner.isEmpty) {
+      return "";
+    }
     return '''
 schema {
 ${inner.join("\n").ident()}
 }
-'''.trim();
+'''
+        .trim();
   }
 
   String serializeInputDefinition(GQInputDefinition def, CodeGenerationMode mode) {
@@ -186,32 +177,30 @@ ${def.getSerializableFields(mode, skipGenerated: true).map(serializeField).map((
   }
 
   String serializeTypeDefinition(GQTypeDefinition def, CodeGenerationMode mode) {
-
     String type;
     Iterable<String> interfaces = def.getInterfaceNames().where((i) => !grammar.interfaces[i]!.fromUnion);
-    if(def is GQInterfaceDefinition) {
+    if (def is GQInterfaceDefinition) {
       type = "interface";
-    }else { 
+    } else {
       type = "type";
     }
 
     var result = StringBuffer("$type ${def.tokenInfo}");
-    if(interfaces.isNotEmpty) {
+    if (interfaces.isNotEmpty) {
       result.write(" implements ");
       result.write(interfaces.join(" & "));
     }
     var directives = serializeDirectiveValueList(def.getDirectives(skipGenerated: true));
-    if(directives.isNotEmpty) {
+    if (directives.isNotEmpty) {
       result.write(" ");
       result.write(directives);
     }
     result.writeln(" {");
-    result.writeln(def.getSerializableFields(mode, skipGenerated: true).map(serializeField).map((e) => e.ident()).join("\n"));
+    result.writeln(
+        def.getSerializableFields(mode, skipGenerated: true).map(serializeField).map((e) => e.ident()).join("\n"));
     result.write("}");
     return result.toString();
   }
-
-
 
   String serializeEnumDefinition(GQEnumDefinition def) {
     return '''
@@ -236,8 +225,7 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
   }
 
   String serializeType(GQType gqType, {bool forceNullable = false}) {
-    String nullableText =
-        forceNullable ? '' : _getNullableText(gqType.nullable);
+    String nullableText = forceNullable ? '' : _getNullableText(gqType.nullable);
     if (gqType.isList) {
       return "[${serializeType(gqType.inlineType)}]${nullableText}";
     }
@@ -281,10 +269,8 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
 
   String serializeProjection(GQProjection proj) {
     if (proj is GQInlineFragmentsProjection) {
-      return serializeListText(
-          proj.inlineFragments.map(serializeInlineFragment).toList(),
-          join: " ",
-          withParenthesis: false);
+      return serializeListText(proj.inlineFragments.map(serializeInlineFragment).toList(),
+          join: " ", withParenthesis: false);
     }
     final buffer = StringBuffer();
     if (proj.isFragmentReference) {

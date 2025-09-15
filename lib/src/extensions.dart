@@ -60,4 +60,12 @@ extension StringExt on String {
   }
 
   TokenInfo toToken() => TokenInfo.ofString(this);
+
+  String toSnakeCase() {
+    final snake = replaceAllMapped(
+      RegExp(r'([a-z0-9])([A-Z])'),
+      (Match m) => '${m[1]}_${m[2]}',
+    );
+    return snake.toLowerCase();
+  }
 }

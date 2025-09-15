@@ -17,11 +17,9 @@ void main() {
   };
 
   test("test schema mapping generation2", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
-    final text =
-        File("test/server/services/service_gen.graphql").readAsStringSync();
+    final text = File("test/server/services/service_gen.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
@@ -32,13 +30,10 @@ void main() {
     var carService = g.services["CarService"]!;
     var azulService = g.services["AzulService"]!;
 
-    expect(azulService.getMethod("getAzuls"), isNotNull);
-    expect(carService.getMethod("getCarById"), isNotNull);
-    expect(carService.getMethod("countCars"), isNotNull);
-    expect(userService.getMethod("getUser"), isNotNull);
-    expect(userService.getMethod("getUsers"), isNotNull);
-
-    
+    expect(azulService.getFieldByName("getAzuls"), isNotNull);
+    expect(carService.getFieldByName("getCarById"), isNotNull);
+    expect(carService.getFieldByName("countCars"), isNotNull);
+    expect(userService.getFieldByName("getUser"), isNotNull);
+    expect(userService.getFieldByName("getUsers"), isNotNull);
   });
-
 }

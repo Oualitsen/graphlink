@@ -5,21 +5,19 @@ import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/utils.dart';
 
 class AnnotationSerializer {
-
- static String serializeAnnotation(GQDirectiveValue value, {bool multiLineString = false}) {
+  static String serializeAnnotation(GQDirectiveValue value, {bool multiLineString = false}) {
     if (value.getArgValue(gqAnnotation) != true) {
       throw ParseException(
-          "Cannot serialze annotation ${value.tokenInfo} with argment ${gqAnnotation} = ${value.getArgValue(gqAnnotation)}", info: value.tokenInfo);
+          "Cannot serialze annotation ${value.tokenInfo} with argment ${gqAnnotation} = ${value.getArgValue(gqAnnotation)}",
+          info: value.tokenInfo);
     }
-    if (value.getArgValue(gqFQCN) is! String) {
+    if (value.getArgValue(gqClass) is! String) {
       throw ParseException(
-          "Cannot serialze annotation ${value.tokenInfo} with argment ${gqFQCN} = ${value.getArgValue(gqFQCN)}", info: value.tokenInfo);
+          "Cannot serialze annotation ${value.tokenInfo} with argment ${gqClass} = ${value.getArgValue(gqClass)}",
+          info: value.tokenInfo);
     }
-    const skip = [gqFQCN, gqAnnotation, gqOnClient, gqOnServer];
-    var args = value
-        .getArguments()
-        .where((arg) => !skip.contains(arg.token))
-        .map((arg) {
+    const skip = [gqClass, gqAnnotation, gqOnClient, gqOnServer, gqImport];
+    var args = value.getArguments().where((arg) => !skip.contains(arg.token)).map((arg) {
       var argValue = arg.value;
       if (argValue is String && !multiLineString) {
         argValue = argValue.toJavaString();
@@ -29,8 +27,5 @@ class AnnotationSerializer {
     }).join(", ");
     var fqcn = getFqcnFromDirective(value);
     return "${fqcn}(${args})";
-    
-
   }
 }
-

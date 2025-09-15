@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:retrofit_graphql/src/model/gq_interface_definition.dart';
 import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
@@ -14,7 +15,7 @@ void main() async {
 
     var parsed = g.parse(text);
     expect(parsed is Success, true);
-    var basicEntityInterface = g.projectedTypes["BasicEntity"]!;
+    var basicEntityInterface = g.projectedTypes["BasicEntity"]! as GQInterfaceDefinition;
     expect(basicEntityInterface.fieldNames.length, 1);
     expect(basicEntityInterface.fieldNames, containsAll(["id"]));
     expect(basicEntityInterface.implementations.length, 2);
@@ -54,7 +55,7 @@ void main() async {
     var parsed = g.parse(text);
 
     expect(parsed is Success, true);
-    var vehicle = g.projectedTypes["Vehicle"]!;
+    var vehicle = g.projectedTypes["Vehicle"]! as GQInterfaceDefinition;
     expect(vehicle.fieldNames.length, 2);
     expect(vehicle.fieldNames, containsAll(["make", "model"]));
     expect(vehicle.implementations.length, 2);
@@ -65,9 +66,9 @@ void main() async {
     final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
     var parsed = g.parse(text);
     expect(parsed is Success, true);
-    var vehicle = g.projectedTypes["Vehicle"]!;
+    var vehicle = g.projectedTypes["Vehicle"]! as GQInterfaceDefinition;
     var serializer = DartSerializer(g);
-    print(serializer.serializeTypeDefinition(vehicle));
+    print(serializer.serializeTypeDefinition(vehicle, ""));
     expect(vehicle.fieldNames.length, 2);
     expect(vehicle.fieldNames, containsAll(["make", "model"]));
     print("vehicle.implementations = ${vehicle.implementations.map((e) => e.token)}");

@@ -1,6 +1,6 @@
 
 directive @gqRepository(gqType: String!, gqIdType: String!) on INTERFACE
-directive @gqExternal(gqFQCN: String!) on OBJECT | INPUT_OBJECT
+directive @gqExternal(gqClass: String!) on OBJECT | INPUT_OBJECT
 
 
 type User {
@@ -9,9 +9,9 @@ type User {
     middleName: String
 }
 
-scalar Pagebale @gqExternal(gqFQCN: "org.springframework.data.domain.Pageable")
+scalar Pagebale @gqExternal(gqClass: "org.springframework.data.domain.Pageable")
 
-scalar ExternalUser @gqExternal(gqFQCN: "com.mycompany.ExternalUser")
+scalar ExternalUser @gqExternal(gqClass: "com.mycompany.ExternalUser")
 
 interface UserRepository @gqRepository(gqIdType: "id", gqType: "User") {
     findAll(pagebale: Pagebale!): [ExternalUser!]!

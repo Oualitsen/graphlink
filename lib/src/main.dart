@@ -4,9 +4,11 @@ import 'dart:io';
 import 'package:glob/glob.dart';
 import 'package:glob/list_local_fs.dart';
 import 'package:retrofit_graphql/src/config.dart';
+import 'package:retrofit_graphql/src/constants.dart';
 import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/io_utils.dart';
+import 'package:retrofit_graphql/src/model/gq_interface_definition.dart';
 import 'package:retrofit_graphql/src/serializers/dart_client_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/graphq_serializer.dart';
@@ -19,70 +21,6 @@ import 'dart:convert';
 
 import 'package:retrofit_graphql/src/utils.dart';
 
-const _clientTpes = {
-  'GQPayload',
-  'GQError',
-  'GQErrorLocation',
-  'GQSubscriptionPayload',
-  'GQSubscriptionErrorMessage',
-  'GQSubscriptionMessage'
-};
-const _clientInterfaces = {'GQSubscriptionErrorMessageBase'};
-const _clientObjects = '''
-scalar gqlMapStrObj @gqExternal(gqFQCN: "Map<String, dynamic>")
-scalar dartDynamic @gqExternal(gqFQCN: "dynamic")
-
-type GQPayload {
-  query: String!
-  operationName: String!
-  variables: gqlMapStrObj!
-}
-
-type GQError {
-  message: String!
-  path: [dartDynamic!]
-  extensions: gqlMapStrObj
-  locations: [GQErrorLocation!]
-}
-
-type GQErrorLocation {
-  line: Int!
-  column: Int!
-}
-
-
-
-type GQSubscriptionPayload {
-  query: String
-  operationName: String
-  variables: gqlMapStrObj
-  data: gqlMapStrObj
-}
-
-enum GQAckStatus {none progress acknoledged }
-
-interface GQSubscriptionErrorMessageBase {
-  type: GQSubscriptionMessageType
-  id: String
-}
-
-type GQSubscriptionErrorMessage implements GQSubscriptionErrorMessageBase {
-  id: String
-  type: GQSubscriptionMessageType
-  payload: [GQError!]
-}
-
-type GQSubscriptionMessage implements GQSubscriptionErrorMessageBase {
-  id: String
-  type: GQSubscriptionMessageType
-  payload: GQSubscriptionPayload
-}
-
-enum GQSubscriptionMessageType {
-  connection_init connection_ack subscribe next complete error
-}
-
-''';
 Future<void> main(List<String> arguments) async {
   final parser = ArgParser()
     ..addOption(
@@ -256,7 +194,7 @@ void handleGeneration(GeneratorConfig config) async {
 
   final grammar = createGrammar(config);
   try {
-    var extra = grammar.mode == CodeGenerationMode.client ? _clientObjects : null;
+    var extra = grammar.mode == CodeGenerationMode.client ? clientObjects : null;
     var result = await grammar.parseFiles(filePaths, extraGql: extra);
     var failures = result.whereType<Failure>().toList();
     if (failures.isNotEmpty) {
@@ -274,11 +212,11 @@ position: ${failures.first.position}
     if (mode == CodeGenerationMode.server) {
       await generateServerClasses(grammar, config, now);
     } else if (mode == CodeGenerationMode.client) {
-      for (var type in _clientTpes) {
+      for (var type in clientTypes) {
         grammar.projectedTypes[type] = grammar.getType(type.toToken());
       }
 
-      for (var type in _clientInterfaces) {
+      for (var type in clientInterfaces) {
         grammar.projectedTypes[type] = grammar.getType(type.toToken());
       }
       await generateClientClasses(grammar, config, now);
@@ -315,54 +253,53 @@ GQGrammar createGrammar(GeneratorConfig config) {
 Future<Set<String>> generateClientClasses(GQGrammar grammar, GeneratorConfig config, DateTime started) async {
   final DartSerializer serializer = DartSerializer(grammar);
   final dcs = DartClientSerializer(grammar, serializer);
-  final fileExtension = dcs.fileExtension;
   final List<Future<File>> futures = [];
   final destinationDir = config.outputDir;
-
-  var enumFiles = grammar.enums.values.map((e) => "'../enums/${e.token}${fileExtension}'").toSet();
-  var inputFiles = grammar.inputs.values.map((e) => "'../inputs/${e.token}${fileExtension}'").toSet();
-  var typeFiles = grammar.projectedTypes.values.map((e) => "'../types/${e.token}${fileExtension}'").toSet();
+  final packageName = config.clientConfig?.packageName;
+  final prefix = "package:${packageName}/${config.outputDir.replaceFirst("lib/", "")}";
 
   grammar.enums.forEach((k, def) {
-    var text = serializer.serializeEnumDefinition(def);
+    var text = serializer.serializeEnumDefinition(def, "");
     var r = writeToFile(
       data: text,
-      fileName: "${k}${fileExtension}",
+      fileName: serializer.getFileNameFor(def),
       subdir: "enums",
-      imports: enumFiles,
+      imports: [],
       destinationDir: destinationDir,
     );
     futures.add(r);
   });
 
   grammar.inputs.forEach((k, def) {
-    var text = serializer.serializeInputDefinition(def);
+    var text = serializer.serializeInputDefinition(def, prefix);
     var r = writeToFile(
         data: text,
-        fileName: "$k${fileExtension}",
+        fileName: serializer.getFileNameFor(def),
         subdir: "inputs",
-        imports: [...enumFiles, ...inputFiles],
+        imports: [],
         destinationDir: destinationDir);
     futures.add(r);
   });
 
   grammar.projectedTypes.forEach((k, def) {
-    var text = serializer.serializeTypeDefinition(def);
+    final subdir = def is GQInterfaceDefinition ? "interfaces" : "types";
+
+    var text = serializer.serializeTypeDefinition(def, prefix);
     var r = writeToFile(
         data: text,
-        fileName: "$k${fileExtension}",
-        subdir: "types",
-        imports: [...enumFiles, ...inputFiles, ...typeFiles],
+        fileName: serializer.getFileNameFor(def),
+        subdir: subdir,
+        imports: [],
         destinationDir: destinationDir);
     futures.add(r);
   });
 
-  String client = dcs.generateClient();
+  String client = dcs.generateClient(prefix);
   var r = writeToFile(
       data: client,
-      fileName: 'GQClient${fileExtension}',
+      fileName: 'GQClient${dcs.fileExtension}',
       subdir: 'client',
-      imports: [...enumFiles, ...inputFiles, ...typeFiles],
+      imports: [],
       destinationDir: destinationDir);
   futures.add(r);
   var result = await Future.wait(futures);
@@ -385,37 +322,31 @@ Future<Set<String>> generateServerClasses(GQGrammar grammar, GeneratorConfig con
   const fileExtension = ".java";
 
   grammar.getSerializableTypes().forEach((def) {
-    var text = serializer.serializeTypeDefinition(def);
+    var text = serializer.serializeTypeDefinition(def, packageName);
     var r = writeToFile(
         data: text,
         fileName: "${def.tokenInfo}${fileExtension}",
         subdir: "types",
-        imports: [
-          if (grammar.enums.isNotEmpty) "$packageName.enums",
-          if (grammar.interfaces.isNotEmpty) "$packageName.interfaces"
-        ],
+        imports: [],
         destinationDir: destinationDir,
         packageName: packageName,
         appendStar: true);
     futures.add(r);
   });
   grammar.interfaces.forEach((k, def) {
-    var text = serializer.serializeInterface(def);
+    var text = serializer.serializeTypeDefinition(def, packageName);
     var r = writeToFile(
         data: text,
         fileName: "$k${fileExtension}",
         subdir: "interfaces",
-        imports: [
-          if (grammar.enums.isNotEmpty) "$packageName.enums",
-          if (grammar.types.isNotEmpty) "$packageName.types"
-        ],
+        imports: [],
         destinationDir: destinationDir,
         packageName: packageName,
         appendStar: true);
     futures.add(r);
   });
   grammar.enums.forEach((k, def) {
-    var text = serializer.serializeEnumDefinition(def);
+    var text = serializer.serializeEnumDefinition(def, packageName);
     var r = writeToFile(
         data: text,
         fileName: "$k${fileExtension}",
@@ -427,12 +358,12 @@ Future<Set<String>> generateServerClasses(GQGrammar grammar, GeneratorConfig con
     futures.add(r);
   });
   grammar.inputs.forEach((k, def) {
-    var text = serializer.serializeInputDefinition(def);
+    var text = serializer.serializeInputDefinition(def, packageName);
     var r = writeToFile(
         data: text,
         fileName: "$k${fileExtension}",
         subdir: "inputs",
-        imports: [if (grammar.enums.isNotEmpty) "$packageName.enums"],
+        imports: [],
         destinationDir: destinationDir,
         packageName: packageName,
         appendStar: true);
@@ -440,36 +371,25 @@ Future<Set<String>> generateServerClasses(GQGrammar grammar, GeneratorConfig con
   });
 
   grammar.services.forEach((k, def) {
-    var text = springSerializer.serializeService(def);
+    var text = springSerializer.serializeService(def, packageName);
     var r = writeToFile(
         data: text,
         fileName: "$k${fileExtension}",
         subdir: "services",
-        imports: [
-          if (grammar.enums.isNotEmpty) "$packageName.enums",
-          if (grammar.types.isNotEmpty) "$packageName.types",
-          if (grammar.inputs.isNotEmpty) "$packageName.inputs",
-          if (grammar.interfaces.isNotEmpty) "$packageName.interfaces",
-        ],
+        imports: [],
         destinationDir: destinationDir,
         packageName: packageName,
         appendStar: true);
     futures.add(r);
   });
 
-  grammar.services.forEach((k, def) {
-    var text = springSerializer.serializeController(def);
+  grammar.controllers.forEach((k, def) {
+    var text = springSerializer.serializeController(def, packageName);
     var r = writeToFile(
         data: text,
-        fileName: "${k}Controller${fileExtension}",
+        fileName: "${k}${fileExtension}",
         subdir: "controllers",
-        imports: [
-          if (grammar.enums.isNotEmpty) "$packageName.enums",
-          if (grammar.types.isNotEmpty) "$packageName.types",
-          if (grammar.inputs.isNotEmpty) "$packageName.inputs",
-          if (grammar.services.isNotEmpty) "$packageName.services",
-          if (grammar.interfaces.isNotEmpty) "$packageName.interfaces",
-        ],
+        imports: [],
         destinationDir: destinationDir,
         packageName: packageName,
         appendStar: true);
@@ -477,15 +397,12 @@ Future<Set<String>> generateServerClasses(GQGrammar grammar, GeneratorConfig con
   });
 
   grammar.repositories.forEach((k, def) {
-    var text = springSerializer.serializeRepository(def);
+    var text = springSerializer.serializeRepository(def, packageName);
     var r = writeToFile(
         data: text,
         fileName: "${k}${fileExtension}",
         subdir: "repositories",
-        imports: [
-          if (grammar.enums.isNotEmpty) "$packageName.enums",
-          if (grammar.types.isNotEmpty) "$packageName.types"
-        ],
+        imports: [],
         destinationDir: destinationDir,
         packageName: packageName,
         appendStar: true);

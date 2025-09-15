@@ -24,8 +24,8 @@ void main() async {
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
     var serializer = DartSerializer(g);
-    var types = g.types.values.map((t) => serializer.serializeTypeDefinition(t)).join("\n");
-    var inputs = g.inputs.values.map((t) => serializer.serializeInputDefinition(t)).join("\n");
+    var types = g.types.values.map((t) => serializer.serializeTypeDefinition(t, "")).join("\n");
+    var inputs = g.inputs.values.map((t) => serializer.serializeInputDefinition(t, "")).join("\n");
 
     expect(inputs, contains("this.middleName"));
     expect(inputs, isNot(contains("required this.middleName")));

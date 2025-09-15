@@ -20,8 +20,7 @@ void main() {
   };
 
   test("handle repositories", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     final text = File("test/server/repository/repository_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -36,8 +35,7 @@ void main() {
   });
 
   test("external types/inputs serialization", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     final text = File("test/server/repository/repository_test_external_types.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -56,17 +54,15 @@ void main() {
     var userRepository = g.repositories["UserRepository"]!;
 
     var serializer = SpringServerSerializer(g);
-    var result = serializer.serializeRepository(userRepository);
+    var result = serializer.serializeRepository(userRepository, "com.myorg");
     expect(
         result,
-        stringContainsInOrder([
-          "java.util.List<com.mycompany.ExternalUser> findAll(final org.springframework.data.domain.Pageable pagebale);"
-        ]));
+        stringContainsInOrder(
+            ["List<com.mycompany.ExternalUser> findAll(final org.springframework.data.domain.Pageable pagebale);"]));
   });
 
   test("check type == null", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     const text = """
         type User {
@@ -90,8 +86,7 @@ void main() {
   });
 
   test("check id = null", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     const text = """
         type User {

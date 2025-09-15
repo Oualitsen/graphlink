@@ -5,7 +5,7 @@ import 'package:retrofit_graphql/src/model/gq_argument.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/gq_fragment.dart';
 import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
-import 'package:retrofit_graphql/src/model/gq_has_directives.dart';
+import 'package:retrofit_graphql/src/model/gq_directives_mixin.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
 import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
@@ -14,7 +14,7 @@ import 'package:retrofit_graphql/src/utils.dart';
 
 enum GQQueryType { query, mutation, subscription }
 
-class GQQueryDefinition extends GQToken with GqDirectivesMixin {
+class GQQueryDefinition extends GQToken with GQDirectivesMixin {
   final List<GQArgumentDefinition> arguments;
   final List<GQQueryElement> elements;
   final GQQueryType type; //query|mutation|subscription
@@ -86,6 +86,8 @@ class GQQueryDefinition extends GQToken with GqDirectivesMixin {
     _gqTypeDefinition = def;
   }
 
+  GQTypeDefinition? get typeDefinition => _gqTypeDefinition;
+
   String _getGeneratedTypeName() {
     return getNameValueFromDirectives(getDirectives()) ?? "${_capitilizedFirstLetterToken}Response";
   }
@@ -110,7 +112,7 @@ class GQQueryDefinition extends GQToken with GqDirectivesMixin {
   GQArgumentDefinition findByName(String name) => arguments.where((arg) => arg.token == name).first;
 }
 
-class GQQueryElement extends GQToken with GqDirectivesMixin {
+class GQQueryElement extends GQToken with GQDirectivesMixin {
   final GQFragmentBlockDefinition? block;
 
   final List<GQArgumentValue> arguments;

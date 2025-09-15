@@ -48,8 +48,9 @@ const gqRepository = "@gqRepository";
 const gqType = "gqType";
 const gqIdType = "gqIdType";
 const gqExternal = "@gqExternal";
-const gqExternalArg = gqFQCN;
-const gqFQCN = "gqFQCN";
+const gqExternalArg = gqClass;
+const gqClass = "gqClass";
+const gqImport = "gqImport";
 
 const gqTypeNameDirectiveArgumentName = "name";
 const gqEqualsHashcodeArgumentName = "fields";

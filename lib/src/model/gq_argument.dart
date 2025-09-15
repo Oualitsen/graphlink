@@ -1,5 +1,5 @@
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
-import 'package:retrofit_graphql/src/model/gq_has_directives.dart';
+import 'package:retrofit_graphql/src/model/gq_directives_mixin.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
 
@@ -7,7 +7,7 @@ import 'package:retrofit_graphql/src/model/gq_token.dart';
 ///  some thing like function(if: Boolean = true, name: String! = "Ahmed" ...)
 ///
 
-class GQArgumentDefinition extends GQToken with GqDirectivesMixin {
+class GQArgumentDefinition extends GQToken with GQDirectivesMixin {
   final GQType type;
   final Object? initialValue;
   GQArgumentDefinition(super.tokenInfo, this.type, List<GQDirectiveValue> directives, {this.initialValue}) {
@@ -20,9 +20,6 @@ class GQArgumentDefinition extends GQToken with GqDirectivesMixin {
   }
 
   String get dartArgumentName => tokenInfo.token.substring(1);
-
-
-
 }
 
 ///
