@@ -7,12 +7,13 @@ class GQSchema extends GQToken {
   final String mutation;
   final String subscription;
 
+   final Set<String> queryNamesSet;
+
   GQSchema(super.tokenInfo, {
     this.query = "Query",
     this.mutation = "Mutation",
     this.subscription = "Subscription",
-    
-  });
+  }): queryNamesSet = {query, mutation, subscription};
 
   factory GQSchema.fromList(TokenInfo tokenInfo, List<String> list) {
     String query = find("query", list) ?? "Query";

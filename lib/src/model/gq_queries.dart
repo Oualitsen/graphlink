@@ -89,11 +89,7 @@ class GQQueryDefinition extends GQToken with GQDirectivesMixin {
   GQTypeDefinition? get typeDefinition => _gqTypeDefinition;
 
   String _getGeneratedTypeName() {
-    return getNameValueFromDirectives(getDirectives()) ?? "${_capitilizedFirstLetterToken}Response";
-  }
-
-  String get _capitilizedFirstLetterToken {
-    return tokenInfo.token.firstUp;
+    return getNameValueFromDirectives(getDirectives()) ?? "${tokenInfo.token.firstUp}Response";
   }
 
   List<GQField> _generateFields() {

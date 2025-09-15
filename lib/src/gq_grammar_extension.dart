@@ -607,7 +607,10 @@ extension GQGrammarExtension on GQGrammar {
     return [
       ...projectedTypes.values,
       ...types.values,
-    ].where((element) => element.isSimilarTo(definition, this)).toList();
+    ].where((element) => element.isSimilarTo(definition, this))
+    //filter out the Query, Mutation, Subscription
+    .where((e) => !schema.queryNamesSet.contains(e.token))
+    .toList();
   }
 
   String getUniqueName(Iterable<GQProjection> projections) {

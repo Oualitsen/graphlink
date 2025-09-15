@@ -3,7 +3,6 @@ import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/model/gq_token_with_fields.dart';
 import 'package:retrofit_graphql/src/serializers/dart_client_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
-import 'package:retrofit_graphql/src/serializers/java_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/language.dart';
 import 'package:retrofit_graphql/src/serializers/spring_server_serializer.dart';
 import 'package:test/test.dart';
