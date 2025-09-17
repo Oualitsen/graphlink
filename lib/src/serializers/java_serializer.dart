@@ -141,9 +141,9 @@ class JavaSerializer extends GqSerializer {
     var type = arg.type;
     var name = arg.tokenInfo;
     var decorators = serializeDecorators(arg.getDirectives(), joiner: " ");
-    var result = "final ${serializeType(type, false)} ${name}";
+    var result = "${serializeType(type, false)} ${name}";
     if (decorators.isNotEmpty) {
-      return "$decorators $result";
+      return "$decorators$result";
     }
     return result;
   }
@@ -461,19 +461,18 @@ ${statements.join("\n").ident()}
   }
 
   String serializeMethod(GQField field, {String? modifier}) {
+    var buffer = StringBuffer();
     var decorators = serializeDecorators(field.getDirectives());
-    var args = serializeListText(field.arguments.map(serializeArgument).toList(), withParenthesis: false);
+    var args = serializeListText(field.arguments.map(serializeArgument).toList(), withParenthesis: false, join: ", ");
     var result = "${serializeType(field.type, false, field.serialzeAsArray)} ${field.name}($args)";
     if (modifier != null) {
       result = "$modifier $result";
     }
     if (decorators.isNotEmpty) {
-      result = """
-$decorators
-$result
-""";
+      buffer.writeln(decorators);
     }
-    return result.trim();
+    buffer.writeln(result);
+    return result;
   }
 
   String serializeRecord(

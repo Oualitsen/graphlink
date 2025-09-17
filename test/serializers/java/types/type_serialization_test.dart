@@ -345,13 +345,12 @@ void main() {
     var repo = g.repositories["UserRepository"]!;
     var serialzer = SpringServerSerializer(g);
     var repoSerial = serialzer.serializeRepository(repo, "com.myorg");
-
     expect(
         repoSerial,
         stringContainsInOrder([
           "@Repository",
           "public interface UserRepository extends org.springframework.data.mongodb.repository.MongoRepository<User, String>",
-          'User findById(@org.springframework.data.repository.query.Param(value = "id")  final String id);',
+          'User findById(@org.springframework.data.repository.query.Param(value = "id") String id);',
           "}"
         ]));
   });

@@ -58,7 +58,7 @@ void main() {
     expect(
         result,
         stringContainsInOrder(
-            ["List<com.mycompany.ExternalUser> findAll(final org.springframework.data.domain.Pageable pagebale);"]));
+            ["List<com.mycompany.ExternalUser> findAll(org.springframework.data.domain.Pageable pagebale);"]));
   });
 
   test("check type == null", () {
