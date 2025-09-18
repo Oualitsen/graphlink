@@ -485,7 +485,9 @@ type Cat implements Animal {
 ''');
     expect(parsed is Success, true);
     var animal = g.projectedTypes['Animal']!;
-    expect(animal.getImportDependecies(g).map((e) => e.token), containsAll(["Cat"]));
+    var serializer = DartSerializer(g, generateJsonMethods: true);
+    var animalSerial = serializer.serializeTypeDefinition(animal, "myorg");
+    expect(animalSerial, stringContainsInOrder(["import 'myorg/types/cat.dart';"]));
   });
 
   test("Client should import responses", () {

@@ -407,4 +407,30 @@ extension GqValidationExtension on GQGrammar {
     }
     return type;
   }
+
+  void checkInterfaceInheritance() {
+    var myTypes = <String, Set<GQTypeDefinition>>{};
+    types.values.where((type) => type.interfaceNames.isNotEmpty).forEach((t) {
+      for (var ifname in t.interfaceNames) {
+        var myType = myTypes[ifname.token] ?? <GQTypeDefinition>{};
+        myType.add(t);
+        myTypes[ifname.token] = myType;
+      }
+    });
+    for (var interface in interfaces.values) {
+      var typeSet = myTypes[interface.token];
+      if (typeSet != null) {
+        for (var type in typeSet) {
+          for (var f in interface.fields) {
+            var typeField = type.getFieldByName(f.name.token);
+            if (typeField == null) {
+              throw ParseException(
+                  "Type ${type.tokenInfo} implements ${interface.tokenInfo} but does not declare field ${f.name}",
+                  info: type.tokenInfo);
+            }
+          }
+        }
+      }
+    }
+  }
 }

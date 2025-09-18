@@ -4,6 +4,7 @@ import 'package:retrofit_graphql/src/model/gq_enum_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/gq_directives_mixin.dart';
 import 'package:retrofit_graphql/src/model/gq_input_type_definition.dart';
+import 'package:retrofit_graphql/src/model/gq_interface_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
 import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
@@ -14,6 +15,7 @@ import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 abstract class GqSerializer {
   final GQGrammar grammar;
   late final CodeGenerationMode mode;
+  bool get generateJsonMethods;
   GqSerializer(this.grammar) : mode = grammar.mode;
 
   String serializeEnumDefinition(GQEnumDefinition def, String importPrefix) {
@@ -102,6 +104,9 @@ abstract class GqSerializer {
 
   String serializeImports(GQToken token, String importPrefix) {
     var deps = token.getImportDependecies(grammar);
+    if (token is GQInterfaceDefinition && generateJsonMethods) {
+      deps = {...deps, ...token.implementations};
+    }
     var imports = token.getImports(grammar);
     if (deps.isEmpty && imports.isEmpty) {
       return "";

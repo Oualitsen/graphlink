@@ -1,5 +1,3 @@
-import 'package:retrofit_graphql/src/gq_grammar.dart';
-import 'package:retrofit_graphql/src/model/gq_token.dart';
 import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
 
 class GQInterfaceDefinition extends GQTypeDefinition {
@@ -29,11 +27,5 @@ class GQInterfaceDefinition extends GQTypeDefinition {
 
   void addImplementation(GQTypeDefinition token) {
     _implementations.add(token);
-  }
-
-  @override
-  Set<GQToken> getImportDependecies(GQGrammar g) {
-    var result = {...super.getImportDependecies(g), ...implementations};
-    return result;
   }
 }

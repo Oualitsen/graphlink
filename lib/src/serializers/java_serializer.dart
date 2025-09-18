@@ -59,6 +59,7 @@ String _mapOf(String key, String type) {
 class JavaSerializer extends GqSerializer {
   final bool inputsAsRecords;
   final bool typesAsRecords;
+  @override
   final bool generateJsonMethods;
   JavaSerializer(
     super.grammar, {
@@ -134,7 +135,13 @@ class JavaSerializer extends GqSerializer {
     final type = def.type;
     final name = def.name;
     final hasInculeOrSkipDiretives = def.hasInculeOrSkipDiretives;
-    return "${serializeDecorators(def.getDirectives(), joiner: "\n")}private ${serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray)} $name;";
+    var buffer = StringBuffer();
+    var decorators = serializeDecorators(def.getDirectives(), joiner: "\n");
+    if (decorators.isNotEmpty) {
+      buffer.writeln(decorators.trim());
+    }
+    buffer.write('private ${serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray)} $name;');
+    return buffer.toString();
   }
 
   String serializeArgument(GQArgumentDefinition arg) {
@@ -217,35 +224,44 @@ class JavaSerializer extends GqSerializer {
   @override
   String doSerializeInputDefinition(GQInputDefinition def, {bool checkForNulls = false}) {
     final decorators = serializeDecorators(def.getDirectives());
+    var buffer = StringBuffer();
+    if (decorators.isNotEmpty) {
+      buffer.writeln(decorators.trim());
+    }
     if (inputsAsRecords) {
-      var buffer = StringBuffer();
-      if (decorators.isNotEmpty) {
-        buffer.writeln(decorators);
-      }
       buffer.writeln(serializeRecord(def.token, def.fields, {}, def));
       return buffer.toString();
     }
 
-    return """
-$decorators
-public class ${def.tokenInfo.token} {
-${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeField(e)).toList(), join: "\n", withParenthesis: false).ident()}
-
-${generateContructor(def.token, [], "public", def, checkForNulls: checkForNulls).ident()}
-
-${generateContructor(def.token, def.getSerializableFields(grammar.mode), "private", def).ident()}
-
-${generateBuilder(def.token, def.getSerializableFields(grammar.mode)).ident()}
-          
-${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeGetter(e, checkForNulls: checkForNulls)).toList(), join: "\n", withParenthesis: false).ident()}
-
-${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeSetter(e, def, checkForNulls: checkForNulls)).toList(), join: "\n", withParenthesis: false).ident()}
-
-${generateToJson(def.getSerializableFields(grammar.mode), def).ident()}
-
-${generateFromJson(def.getSerializableFields(mode), def.token, def).ident()}
-}
-""";
+    buffer.writeln('public class ${def.tokenInfo.token} {');
+    buffer.writeln(serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeField(e)).toList(),
+            join: "\n", withParenthesis: false)
+        .ident());
+    buffer.writeln(generateContructor(def.token, [], "public", def, checkForNulls: checkForNulls).ident());
+    buffer.writeln(generateContructor(def.token, def.getSerializableFields(grammar.mode), "private", def).ident());
+    buffer.writeln(generateBuilder(def.token, def.getSerializableFields(grammar.mode)).ident());
+    buffer.writeln(serializeListText(
+            def
+                .getSerializableFields(grammar.mode)
+                .map((e) => serializeGetter(e, checkForNulls: checkForNulls))
+                .toList(),
+            join: "\n",
+            withParenthesis: false)
+        .ident());
+    buffer.writeln(serializeListText(
+            def
+                .getSerializableFields(grammar.mode)
+                .map((e) => serializeSetter(e, def, checkForNulls: checkForNulls))
+                .toList(),
+            join: "\n",
+            withParenthesis: false)
+        .ident());
+    if (generateJsonMethods) {
+      buffer.writeln(generateToJson(def.getSerializableFields(grammar.mode), def).ident());
+      buffer.writeln(generateFromJson(def.getSerializableFields(mode), def.token, def).ident());
+    }
+    buffer.writeln("}");
+    return buffer.toString();
   }
 
   bool _isNumber(GQType type) {
@@ -304,9 +320,6 @@ ${generateFromJson(def.getSerializableFields(mode), def.token, def).ident()}
   }
 
   String generateFromJson(List<GQField> fields, String token, GQToken context) {
-    if (!generateJsonMethods) {
-      return "";
-    }
     var buffer = StringBuffer("public static ${token} fromJson(${_mapOf('String', 'Object')} json) {");
     buffer.writeln();
     buffer.writeln("return new ${token}(".ident());
@@ -323,9 +336,6 @@ ${generateFromJson(def.getSerializableFields(mode), def.token, def).ident()}
   }
 
   String generateToJson(List<GQField> fields, GQToken context) {
-    if (!generateJsonMethods) {
-      return "";
-    }
     var buffer = StringBuffer("public ${_mapOf('String', 'Object')} toJson() {");
     buffer.writeln();
     buffer.writeln("${_mapOf('String', 'Object')} map = new HashMap<>();".ident());
@@ -423,26 +433,31 @@ ${generateFromJson(def.getSerializableFields(mode), def.token, def).ident()}
       return "";
     }
 
-    return """public static Builder builder() {
-${'return new Builder();'.ident()}
-}
+    var buffer = StringBuffer();
+    buffer.writeln('public static Builder builder() {');
+    buffer.writeln('return new Builder();'.ident());
+    buffer.writeln('}');
+    buffer.writeln();
 
-
-public static class Builder {
-${serializeListText(fields.map((e) => serializeField(e)).toList(), join: "\n", withParenthesis: false).ident()}
-
-${serializeListText(fields.map((e) => '''public Builder ${e.name}(${serializeArgumentField(e)}) {
-${'this.${e.name} = ${e.name};'.ident()}
-${'return this;'.ident()}
-}''').toList(), join: "\n", withParenthesis: false).ident()}
-
-${'public $name build() {'.ident()}
-${'return new $name(${fields.map((e) => e.name).join(", ")});'.ident(2)}
-${'}'.ident()}
-
-}
-"""
-        .trim();
+    buffer.writeln('public static class Builder {');
+    buffer.writeln();
+    for (var field in fields) {
+      var noDirectiveField = GQField(name: field.name, type: field.type, arguments: field.arguments, directives: []);
+      buffer.writeln(serializeField(noDirectiveField).trim().ident());
+    }
+    buffer.writeln();
+    for (var e in fields) {
+      buffer.writeln('public Builder ${e.name}(${serializeArgumentField(e)}) {'.ident());
+      buffer.writeln('this.${e.name} = ${e.name};'.ident(2));
+      buffer.writeln('return this;'.ident(2));
+      buffer.writeln('}'.ident());
+    }
+    buffer.writeln();
+    buffer.writeln('public $name build() {'.ident());
+    buffer.writeln('return new $name(${fields.map((e) => e.name).join(", ")});'.ident(2));
+    buffer.writeln('}'.ident());
+    buffer.writeln('}');
+    return buffer.toString();
   }
 
   String serializeGetter(GQField field, {bool checkForNulls = false}) {
@@ -496,8 +511,10 @@ ${statements.join("\n").ident()}
       buffer.write(interfaceImpl);
     }
     buffer.writeln(" {");
-    buffer.writeln(generateToJson(fields, context).ident());
-    buffer.writeln(generateFromJson(fields, recordName, context).ident());
+    if (generateJsonMethods) {
+      buffer.writeln(generateToJson(fields, context).ident());
+      buffer.writeln(generateFromJson(fields, recordName, context).ident());
+    }
     buffer.write("}");
     return buffer.toString();
   }
@@ -569,35 +586,43 @@ ${statements.join("\n").ident()}
     final token = def.tokenInfo;
     final interfaceNames = def.interfaceNames;
     final decorators = serializeDecorators(def.getDirectives());
-
+    var buffer = StringBuffer();
+    if (decorators.isNotEmpty) {
+      buffer.writeln(decorators.trim());
+    }
     if (typesAsRecords) {
-      return """
-$decorators
-${serializeRecord(def.token, def.fields, interfaceNames.map((e) => e.token).toSet(), def)}
-""";
+      buffer.writeln(serializeRecord(def.token, def.fields, interfaceNames.map((e) => e.token).toSet(), def));
+      return buffer.toString();
     }
 
-    return """
-${decorators}
-public class $token ${_serializeImplements(interfaceNames.map((e) => e.token).toSet())}{
-  
-${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeField(e)).toList(), join: "\n", withParenthesis: false).ident()}
-    
-${generateContructor(def.token, [], "public", def, checkForNulls: checkNulls).ident()}
-${generateContructor(def.token, def.getSerializableFields(grammar.mode), "private", def).ident()}
-${generateBuilder(def.token, def.getSerializableFields(grammar.mode)).ident()}
+    buffer.writeln('public class $token ${_serializeImplements(interfaceNames.map((e) => e.token).toSet())}{');
 
-${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeGetter(e, checkForNulls: checkNulls)).toList(), join: "\n", withParenthesis: false).ident()}
-    
-${serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeSetter(e, def, checkForNulls: checkNulls)).toList(), join: "\n", withParenthesis: false).ident()}
-    
-${generateEqualsAndHashCode(def).ident()}
-
-${generateToJson(def.getSerializableFields(grammar.mode), def).ident()}
-${generateFromJson(def.getSerializableFields(grammar.mode), def.token, def).ident()}
-
-}
-    """;
+    buffer.writeln(serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeField(e)).toList(),
+            join: "\n", withParenthesis: false)
+        .ident());
+    buffer.writeln(generateContructor(def.token, [], "public", def, checkForNulls: checkNulls).ident());
+    buffer.writeln(generateContructor(def.token, def.getSerializableFields(grammar.mode), "private", def).ident());
+    buffer.writeln(generateBuilder(def.token, def.getSerializableFields(grammar.mode)).ident());
+    buffer.writeln(serializeListText(
+            def.getSerializableFields(grammar.mode).map((e) => serializeGetter(e, checkForNulls: checkNulls)).toList(),
+            join: "\n",
+            withParenthesis: false)
+        .ident());
+    buffer.writeln(serializeListText(
+            def
+                .getSerializableFields(grammar.mode)
+                .map((e) => serializeSetter(e, def, checkForNulls: checkNulls))
+                .toList(),
+            join: "\n",
+            withParenthesis: false)
+        .ident());
+    buffer.writeln(generateEqualsAndHashCode(def).ident());
+    if (generateJsonMethods) {
+      buffer.writeln(generateToJson(def.getSerializableFields(grammar.mode), def).ident());
+      buffer.writeln(generateFromJson(def.getSerializableFields(grammar.mode), def.token, def).ident());
+    }
+    buffer.writeln('}');
+    return buffer.toString();
   }
 
   String generateEqualsAndHashCode(GQTypeDefinition def) {
@@ -610,19 +635,20 @@ ${generateFromJson(def.getSerializableFields(grammar.mode), def.token, def).iden
 
   String equalsHascodeCode(GQTypeDefinition def, Set<String> fields) {
     final token = def.tokenInfo;
-    return """
-@Override
-public boolean equals(Object o) {
-${'if (!(o instanceof $token)) return false;'.ident()}
-${'$token o2 = ($token) o;'.ident()}
-${'return ${fields.map((e) => "java.util.Objects.equals($e, o2.$e);").join(" && ")}'.ident()}
-}
-
-@Override
-public int hashCode() {
-${'return java.util.Objects.hash(${fields.join(", ")});'.ident()}
-}   
-  """;
+    def.addImport("java.util.Objects");
+    var buffer = StringBuffer();
+    buffer.writeln('@Override');
+    buffer.writeln('public boolean equals(Object o) {');
+    buffer.writeln('if (!(o instanceof $token)) return false;'.ident());
+    buffer.writeln('$token o2 = ($token) o;'.ident());
+    buffer.writeln('return ${fields.map((e) => "Objects.equals($e, o2.$e);").join(" && ")}'.ident());
+    buffer.writeln('}');
+    buffer.writeln();
+    buffer.writeln('@Override');
+    buffer.writeln('public int hashCode() {');
+    buffer.writeln('return Objects.hash(${fields.join(", ")});'.ident());
+    buffer.writeln('}');
+    return buffer.toString();
   }
 
   static String _serializeImplements(Set<String> interfaceNames) {
@@ -648,11 +674,11 @@ ${'return java.util.Objects.hash(${fields.join(", ")});'.ident()}
     buffer.writeln(" {");
     buffer.writeln();
     for (var f in fields) {
+      var fieldDecorators = serializeDecorators(f.getDirectives(), joiner: "\n");
+      if (fieldDecorators.isNotEmpty) {
+        buffer.writeln(fieldDecorators.trim().ident());
+      }
       if (getters) {
-        var fieldDecorators = serializeDecorators(f.getDirectives(), joiner: "\n");
-        if (fieldDecorators.isNotEmpty) {
-          buffer.write(fieldDecorators.ident());
-        }
         if (typesAsRecords) {
           buffer.write(serializeGetterDeclaration(f, skipModifier: true, asProperty: true).ident());
         } else {

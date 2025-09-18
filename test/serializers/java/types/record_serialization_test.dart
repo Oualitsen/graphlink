@@ -28,7 +28,7 @@ void main() {
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
 
-    var javaSerial = JavaSerializer(g, inputsAsRecords: true, typesAsRecords: true);
+    var javaSerial = JavaSerializer(g, inputsAsRecords: true, typesAsRecords: true, generateJsonMethods: false);
     var input = g.inputs["PersonInput"]!;
     var inputSerial = javaSerial.serializeInputDefinition(input, "").trim();
     expect(inputSerial, startsWith("public record PersonInput(String name, Integer age) {"));

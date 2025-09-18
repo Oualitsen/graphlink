@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:retrofit_graphql/src/serializers/annotation_serializer.dart';
+import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/language.dart';
 import 'package:retrofit_graphql/src/serializers/spring_server_serializer.dart';
 import 'package:test/test.dart';
@@ -145,5 +146,30 @@ void main() {
     var userController = springSerialzer.serializeController(userCtrl, "");
 
     expect(userController, stringContainsInOrder(["@LoggedIn()", "@QueryMapping", "public User getUser()"]));
+  });
+
+  test("annotations on interfaces", () {
+    final GQGrammar g = GQGrammar(mode: CodeGenerationMode.server);
+    var parsed = g.parse('''
+    directive @Id(gqClass: String = "Id",
+     gqImport: String = "org.springframework.data.annotation.Id",
+    gqOnClient: Boolean = false,
+    gqOnServer: Boolean = true,
+    gqAnnotation: Boolean = true
+      )
+ on FIELD_DEFINITION | FIELD
+ 
+ interface BasicEntity {
+  id: ID! @Id
+ }
+''');
+    expect(parsed is Success, true);
+    var serialzer = JavaSerializer(g);
+    var dartSerialzer = DartSerializer(g);
+    var iface = g.interfaces['BasicEntity']!;
+
+    print(serialzer.serializeTypeDefinition(iface, "com.myorg"));
+    print(dartSerialzer.serializeTypeDefinition(iface, "com.myorg"));
+    print("Done!");
   });
 }

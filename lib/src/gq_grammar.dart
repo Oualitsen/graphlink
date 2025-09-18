@@ -220,7 +220,7 @@ class GQGrammar extends GrammarDefinition {
     fillInterfaceImplementations();
     setDirectivesDefaulValues();
     updateInterfaceReferences();
-    handleDirectiveInheritance();
+    checkInterfaceInheritance();
     skipFieldOfSkipOnServerTypes();
     handleGqExternal();
     if (mode == CodeGenerationMode.client) {

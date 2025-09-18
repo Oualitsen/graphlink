@@ -115,6 +115,7 @@ void main() {
     var user = g.getTypeByName("User")!;
     var idField = user.fields.where((f) => f.name.token == "id").first;
     var id = javaSerialzer.serializeField(idField);
+    print(id);
     expect(id, "private String id;");
   });
 
@@ -353,5 +354,37 @@ void main() {
           'User findById(@org.springframework.data.repository.query.Param(value = "id") String id);',
           "}"
         ]));
+  });
+
+  test("decorators on interfaces ", () {
+    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    var parsed = g.parse('''
+    directive @Id(
+    gqClass: String = "Id",
+    gqImport: String = "org.springframework.data.annotation.Id",
+    gqOnClient: Boolean = false,
+    gqOnServer: Boolean = true,
+    gqAnnotation: Boolean = true
+)
+ on FIELD_DEFINITION | FIELD
+
+  interface BasicEntity {
+    id: ID! @Id
+  }
+  
+  type User implements BasicEntity {
+    id: ID!
+    name: String
+  }
+
+''');
+
+    expect(parsed is Success, true);
+
+    var user = g.getTypeByName("User")!;
+    var serializer = JavaSerializer(g);
+
+    print(serializer.serializeTypeDefinition(user, "com.myorg"));
+    print("DONE");
   });
 }

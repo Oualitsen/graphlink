@@ -68,7 +68,7 @@ void main() {
         type User {
           id: ID!
         }
-        interface UserRepository @gqRepository(gqTypeId: "id") {
+        interface UserRepository @gqRepository(gqIdType: "id") {
           _: String
         }
         """;
@@ -107,5 +107,39 @@ void main() {
         ),
       ),
     );
+  });
+
+  test("should serialize directives on methods", () {
+    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+
+    const text = """
+      directive @gqQuery(
+        value: String
+        count: Boolean
+        exists: Boolean
+        delete: Boolean
+        fields: String
+        sort: String
+        gqClass: String = "@Query"
+        gqImport: String = "org.springframework.data.mongodb.repository.Query"
+        gqOnClient: Boolean = false
+        gqOnServer: Boolean = true
+        gqAnnotation: Boolean = true
+    ) on FIELD_DEFINITION
+
+        type User {
+          id: ID!
+        }
+        interface UserRepository @gqRepository(gqIdType: "id", gqType: "User") {
+          findUsers: [User!]! @gqQuery(value: "select * from User")
+        }
+        """;
+    var parsed = g.parse(text);
+    expect(parsed is Success, true);
+    var springSerializer = SpringServerSerializer(g);
+    var userRepo = g.repositories["UserRepository"]!;
+    var repoSerial = springSerializer.serializeRepository(userRepo, "myorg");
+    expect(repoSerial.split("\n").map((e) => e.trim()),
+        containsAll(['@Query(value = "select * from User")', 'List<User> findUsers();']));
   });
 }

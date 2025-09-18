@@ -53,21 +53,19 @@ extension GQGrammarExtension on GQGrammar {
       return;
     }
     annotationsProcessed = true;
-    getDirectiveObjects().forEach((elm) {
-      var annotations = elm.getAnnotations(mode: mode);
-      for (var an in annotations) {
-        String serial = serializer(an);
-        var dir = GQDirectiveValue.createGqDecorators(
-          decorators: [serial],
-          applyOnClient: mode == CodeGenerationMode.client,
-          applyOnServer: mode == CodeGenerationMode.server,
-        );
-        elm.addDirective(dir);
-      }
+    _getDirectiveObjects().forEach((elm) {
+      elm
+          .getAnnotations(mode: mode)
+          .map((an) => GQDirectiveValue.createGqDecorators(
+                decorators: [serializer(an)],
+                applyOnClient: mode == CodeGenerationMode.client,
+                applyOnServer: mode == CodeGenerationMode.server,
+              ))
+          .forEach(elm.addDirective);
     });
   }
 
-  List<GQDirectivesMixin> getDirectiveObjects() {
+  List<GQDirectivesMixin> _getDirectiveObjects() {
     var result = [
       ...inputs.values,
       ...types.values,
@@ -134,33 +132,6 @@ extension GQGrammarExtension on GQGrammar {
         f.addDirectiveIfAbsent(GQDirectiveValue.createDirectiveValue(directiveName: gqSkipOnServer, generated: true));
       }
     });
-  }
-
-  void handleDirectiveInheritance() {
-    var myTypes = <String, Set<GQTypeDefinition>>{};
-    types.values.where((type) => type.interfaceNames.isNotEmpty).forEach((t) {
-      for (var ifname in t.interfaceNames) {
-        var myType = myTypes[ifname.token] ?? <GQTypeDefinition>{};
-        myType.add(t);
-        myTypes[ifname.token] = myType;
-      }
-    });
-    for (var interface in interfaces.values) {
-      var typeSet = myTypes[interface.token];
-      if (typeSet != null) {
-        for (var type in typeSet) {
-          for (var f in interface.fields) {
-            var typeField = type.getFieldByName(f.name.token);
-            if (typeField == null) {
-              throw ParseException(
-                  "Type ${type.tokenInfo} implements ${interface.tokenInfo} but does not declare field ${f.name}",
-                  info: type.tokenInfo);
-            }
-            f.getDirectives().forEach((d) => typeField.addDirectiveIfAbsent(d));
-          }
-        }
-      }
-    }
   }
 
   void _addSchemaMapping(GQSchemaMapping mapping) {
@@ -607,10 +578,11 @@ extension GQGrammarExtension on GQGrammar {
     return [
       ...projectedTypes.values,
       ...types.values,
-    ].where((element) => element.isSimilarTo(definition, this))
-    //filter out the Query, Mutation, Subscription
-    .where((e) => !schema.queryNamesSet.contains(e.token))
-    .toList();
+    ]
+        .where((element) => element.isSimilarTo(definition, this))
+        //filter out the Query, Mutation, Subscription
+        .where((e) => !schema.queryNamesSet.contains(e.token))
+        .toList();
   }
 
   String getUniqueName(Iterable<GQProjection> projections) {
