@@ -605,4 +605,30 @@ type Person  {
     expect(parsed is Success, true);
     expect(person.getImports(g), isNot(contains("org.springframework.data.annotation.Id")));
   });
+
+  test("import should be skipped on skip mode on directives", () {
+    final GQGrammar g =
+        GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.client, autoGenerateQueries: true);
+
+    var parsed = g.parse('''
+  ${clientObjects}
+
+  directive @FieldNameConstants(
+    gqAnnotation: Boolean = true
+    gqClass: String = "@FieldNameConstants"
+    gqImport: String = "lombok.experimental.FieldNameConstants"
+    gqOnClient: Boolean = false
+    gqOnServer: Boolean = true
+
+) on OBJECT | INPUT_OBJECT | INTERFACE
+
+enum Gender {male, female}
+type Person @FieldNameConstants  {
+  id: String 
+}
+''');
+    var person = g.types['Person']!;
+    expect(parsed is Success, true);
+    expect(person.getImports(g), isNot(contains("lombok.experimental.FieldNameConstants")));
+  });
 }

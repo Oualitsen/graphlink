@@ -112,6 +112,7 @@ class DartClientSerializer extends ClientSerilaizer {
   String queryToMethod(GQQueryDefinition def) {
     var buffer = StringBuffer();
     buffer.write(returnTypeByQueryType(def));
+    buffer.write(" ");
     buffer.write(def.tokenInfo);
     buffer.write("(");
     buffer.write(serializeArgs(def));
@@ -122,7 +123,7 @@ class DartClientSerializer extends ClientSerilaizer {
     } else {
       buffer.write("final fragsValues = [".ident());
       buffer.write(def.fragments(_grammar).map((e) => '"${e.tokenInfo}"').toList().join(", "));
-      buffer.writeln("];");
+      buffer.writeln("].map((fragName) => fragmentMap[fragName]!).join(' ');");
     }
     if (def.fragments(_grammar).isEmpty) {
       buffer.writeln("const query = '''${_grammar.serializer.serializeQueryDefinition(def)}''';".ident());
