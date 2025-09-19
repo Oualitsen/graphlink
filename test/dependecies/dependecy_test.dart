@@ -133,7 +133,7 @@ void main() async {
   });
 
   test("input depends on directive import", () {
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
+    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
     var parsed = g.parse('''
   directive @FieldNameConstants(
     gqAnnotation: Boolean = true
@@ -155,7 +155,7 @@ void main() async {
   });
 
   test("input depends on directive import on field", () {
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
+    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
     var parsed = g.parse('''
   directive @FieldNameConstants(
     gqAnnotation: Boolean = true
@@ -177,7 +177,7 @@ void main() async {
   });
 
   test("type depends on directive import", () {
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
+    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
     var parsed = g.parse('''
   directive @FieldNameConstants(
     gqAnnotation: Boolean = true
@@ -199,7 +199,7 @@ void main() async {
   });
 
   test("type depends on directive import on field", () {
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
+    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
     var parsed = g.parse('''
   directive @FieldNameConstants(
     gqAnnotation: Boolean = true
@@ -228,6 +228,7 @@ void main() async {
     gqIdType: String!
     gqImport: String = "org.springframework.data.mongodb.repository.MongoRepository"
     gqClass: String = "MongoRepository"
+    gqOnServer: Boolean = true
 ) on INTERFACE
 
 directive @gqQuery(
@@ -538,7 +539,6 @@ type Cat  {
 
 ''');
     expect(parsed is Success, true);
-    print(clientGen.generateClient("mypackage"));
     expect(clientGen.getImportDependecies(g).map((e) => e.token), containsAll(["CatInput"]));
   });
 
@@ -561,5 +561,48 @@ type Query {
 ''');
     expect(parsed is Success, true);
     expect(clientGen.getImportDependecies(g).map((e) => e.token), containsAll(["Gender"]));
+  });
+
+  test("import should be skipped on skip mode", () {
+    final GQGrammar g =
+        GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server, autoGenerateQueries: true);
+
+    var parsed = g.parse('''
+  ${clientObjects}
+enum Gender {male, female}
+type Person  {
+  name: String
+  gender: Gender @gqSkipOnServer
+}
+''');
+    var person = g.types['Person']!;
+    expect(parsed is Success, true);
+    expect(person.getImportDependecies(g).map((e) => e.token), isNot(contains("Gender")));
+  });
+
+  test("import should be skipped on skip mode on directives", () {
+    final GQGrammar g =
+        GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.client, autoGenerateQueries: true);
+
+    var parsed = g.parse('''
+  ${clientObjects}
+
+  directive @Id(
+    gqClass: String = "Id",
+    gqImport: String = "org.springframework.data.annotation.Id",
+    gqOnClient: Boolean = false,
+    gqOnServer: Boolean = true,
+    gqAnnotation: Boolean = true
+)
+ on FIELD_DEFINITION | FIELD
+
+enum Gender {male, female}
+type Person  {
+  id: String @Id
+}
+''');
+    var person = g.types['Person']!;
+    expect(parsed is Success, true);
+    expect(person.getImports(g), isNot(contains("org.springframework.data.annotation.Id")));
   });
 }

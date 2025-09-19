@@ -90,7 +90,8 @@ abstract class GQTokenWithFields extends GQToken {
   @override
   Set<GQToken> getImportDependecies(GQGrammar g) {
     var result = <String, GQToken>{};
-    for (var f in _fieldMap.values) {
+    var fields = getSerializableFields(g.mode);
+    for (var f in fields) {
       var token = g.getTokenByKey(f.type.token);
       if (filterDependecy(token, g)) {
         result[token!.token] = token;
@@ -109,16 +110,16 @@ abstract class GQTokenWithFields extends GQToken {
   Set<String> getImports(GQGrammar g) {
     var result = <String>{};
     if (this is GQDirectivesMixin) {
-      result.addAll(extractImports(this as GQDirectivesMixin));
+      result.addAll(extractImports(this as GQDirectivesMixin, g.mode));
     }
     for (var f in _fieldMap.values) {
       var token = g.getTokenByKey(f.type.token);
-      result.addAll(extractImports(f));
+      result.addAll(extractImports(f, g.mode));
       if (f.type.isList) {
         result.add(importList);
       }
       if (token != null && token is GQDirectivesMixin) {
-        result.addAll(extractImports(token as GQDirectivesMixin));
+        result.addAll(extractImports(token as GQDirectivesMixin, g.mode));
 
         // handle arguments
         for (var arg in f.arguments) {
@@ -127,7 +128,7 @@ abstract class GQTokenWithFields extends GQToken {
           }
           var argToken = g.getTokenByKey(arg.type.token);
           if (argToken != null && argToken is GQDirectivesMixin) {
-            result.addAll(extractImports(argToken as GQDirectivesMixin));
+            result.addAll(extractImports(argToken as GQDirectivesMixin, g.mode));
           }
         }
       }
@@ -136,7 +137,7 @@ abstract class GQTokenWithFields extends GQToken {
     return result;
   }
 
-  static Set<String> extractImports(GQDirectivesMixin dir) {
+  static Set<String> extractImports(GQDirectivesMixin dir, CodeGenerationMode mode) {
     var result = <String>{};
     // is it external ?
     var external = dir.getDirectiveByName(gqExternal);
@@ -149,6 +150,14 @@ abstract class GQTokenWithFields extends GQToken {
     // does it have imports
     dir
         .getDirectives()
+        .where((e) {
+          switch (mode) {
+            case CodeGenerationMode.client:
+              return e.getArgValue(gqOnClient) == true;
+            case CodeGenerationMode.server:
+              return e.getArgValue(gqOnServer) == true;
+          }
+        })
         .map((d) => d.getArgValueAsString(gqImport))
         .where((e) => e != null)
         .map((e) => e!)
