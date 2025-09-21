@@ -47,7 +47,7 @@ class GQRepository extends GQInterfaceDefinition {
     if (key != null) {
       var token = g.getTokenByKey(key);
       if (token is GQDirectivesMixin) {
-        return GQTokenWithFields.extractImports(token as GQDirectivesMixin, g.mode);
+        return GQTokenWithFields.extractImports(token as GQDirectivesMixin, g.mode, skipOwnImports: true);
       }
     }
     return {};

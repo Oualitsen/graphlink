@@ -3,6 +3,7 @@ import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/model/gq_token_with_fields.dart';
 import 'package:retrofit_graphql/src/serializers/dart_client_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
+import 'package:retrofit_graphql/src/serializers/java_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/language.dart';
 import 'package:retrofit_graphql/src/serializers/spring_server_serializer.dart';
 import 'package:test/test.dart';
@@ -622,7 +623,6 @@ type Person  {
 
 ) on OBJECT | INPUT_OBJECT | INTERFACE
 
-enum Gender {male, female}
 type Person @FieldNameConstants  {
   id: String 
 }
@@ -630,5 +630,45 @@ type Person @FieldNameConstants  {
     var person = g.types['Person']!;
     expect(parsed is Success, true);
     expect(person.getImports(g), isNot(contains("lombok.experimental.FieldNameConstants")));
+  });
+
+  test("services and repos should not import related class imports", () {
+    final GQGrammar g = GQGrammar(mode: CodeGenerationMode.server);
+
+    var parsed = g.parse('''
+  ${clientObjects}
+
+  directive @FieldNameConstants(
+    gqAnnotation: Boolean = true
+    gqClass: String = "@FieldNameConstants"
+    gqImport: String = "lombok.experimental.FieldNameConstants"
+    gqOnClient: Boolean = false
+    gqOnServer: Boolean = true
+) on OBJECT | INPUT_OBJECT | INTERFACE
+
+type Person @FieldNameConstants  {
+  id: String 
+}
+
+interface PersonRepository @gqRepository(gqIdType: "String", gqType: "Person") {
+  _: Int
+}
+
+type Query {
+  findPerson: Person @gqServiceName(name: "MainService")
+}
+''');
+    expect(parsed is Success, true);
+
+    var person = g.types['Person']!;
+    // Person should import lombok.experimental.FieldNameConstants
+    expect(person.getImports(g), contains('lombok.experimental.FieldNameConstants'));
+
+    var service = g.services['MainService']!;
+    var repo = g.repositories['PersonRepository']!;
+    // service should NOT import lombok.experimental.FieldNameConstants
+    expect(service.getImports(g), isNot(contains("lombok.experimental.FieldNameConstants")));
+    // repo should NOT import lombok.experimental.FieldNameConstants
+    expect(repo.getImports(g), isNot(contains("lombok.experimental.FieldNameConstants")));
   });
 }

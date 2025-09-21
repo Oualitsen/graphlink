@@ -114,12 +114,12 @@ abstract class GQTokenWithFields extends GQToken {
     }
     for (var f in _fieldMap.values) {
       var token = g.getTokenByKey(f.type.token);
-      result.addAll(extractImports(f, g.mode));
+      result.addAll(extractImports(f, g.mode, skipOwnImports: false));
       if (f.type.isList) {
         result.add(importList);
       }
       if (token != null && token is GQDirectivesMixin) {
-        result.addAll(extractImports(token as GQDirectivesMixin, g.mode));
+        result.addAll(extractImports(token as GQDirectivesMixin, g.mode, skipOwnImports: true));
 
         // handle arguments
         for (var arg in f.arguments) {
@@ -128,7 +128,7 @@ abstract class GQTokenWithFields extends GQToken {
           }
           var argToken = g.getTokenByKey(arg.type.token);
           if (argToken != null && argToken is GQDirectivesMixin) {
-            result.addAll(extractImports(argToken as GQDirectivesMixin, g.mode));
+            result.addAll(extractImports(argToken as GQDirectivesMixin, g.mode, skipOwnImports: true));
           }
         }
       }
@@ -137,7 +137,7 @@ abstract class GQTokenWithFields extends GQToken {
     return result;
   }
 
-  static Set<String> extractImports(GQDirectivesMixin dir, CodeGenerationMode mode) {
+  static Set<String> extractImports(GQDirectivesMixin dir, CodeGenerationMode mode, {bool skipOwnImports = false}) {
     var result = <String>{};
     // is it external ?
     var external = dir.getDirectiveByName(gqExternal);
@@ -147,21 +147,23 @@ abstract class GQTokenWithFields extends GQToken {
         result.add(externalImport);
       }
     }
-    // does it have imports
-    dir
-        .getDirectives()
-        .where((e) {
-          switch (mode) {
-            case CodeGenerationMode.client:
-              return e.getArgValue(gqOnClient) == true;
-            case CodeGenerationMode.server:
-              return e.getArgValue(gqOnServer) == true;
-          }
-        })
-        .map((d) => d.getArgValueAsString(gqImport))
-        .where((e) => e != null)
-        .map((e) => e!)
-        .forEach(result.add);
+    if (!skipOwnImports) {
+      // does it have imports
+      dir
+          .getDirectives()
+          .where((e) {
+            switch (mode) {
+              case CodeGenerationMode.client:
+                return e.getArgValue(gqOnClient) == true;
+              case CodeGenerationMode.server:
+                return e.getArgValue(gqOnServer) == true;
+            }
+          })
+          .map((d) => d.getArgValueAsString(gqImport))
+          .where((e) => e != null)
+          .map((e) => e!)
+          .forEach(result.add);
+    }
     return result;
   }
 

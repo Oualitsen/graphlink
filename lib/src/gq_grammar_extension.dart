@@ -6,6 +6,7 @@ import 'package:retrofit_graphql/src/model/gq_controller.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/gq_directives_mixin.dart';
+import 'package:retrofit_graphql/src/model/gq_input_type_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_service.dart';
 import 'package:retrofit_graphql/src/model/gq_shcema_mapping.dart';
 import 'package:retrofit_graphql/src/model/gq_enum_definition.dart';
@@ -116,14 +117,28 @@ extension GQGrammarExtension on GQGrammar {
 
   List<GQTypeDefinition> getSerializableTypes() {
     final queries = [schema.mutation, schema.query, schema.subscription];
-    return types.values.where((type) => !queries.contains(type.token)).where((type) {
-      switch (mode) {
-        case CodeGenerationMode.client:
-          return type.getDirectiveByName(gqSkipOnClient) == null;
-        case CodeGenerationMode.server:
-          return type.getDirectiveByName(gqSkipOnServer) == null;
-      }
-    }).toList();
+    return types.values.where((type) => !queries.contains(type.token)).where(_filterByMode).toList();
+  }
+
+  List<GQInputDefinition> getSerializableInputs() {
+    return inputs.values.where(_filterByMode).toList();
+  }
+
+  List<GQEnumDefinition> getSerializableEnums() {
+    return enums.values.where(_filterByMode).toList();
+  }
+
+  List<GQInterfaceDefinition> getSerializableInterfaces() {
+    return interfaces.values.where(_filterByMode).toList();
+  }
+
+  bool _filterByMode(GQDirectivesMixin mixin) {
+    switch (mode) {
+      case CodeGenerationMode.client:
+        return mixin.getDirectiveByName(gqSkipOnClient) == null;
+      case CodeGenerationMode.server:
+        return mixin.getDirectiveByName(gqSkipOnServer) == null;
+    }
   }
 
   void skipFieldOfSkipOnServerTypes() {

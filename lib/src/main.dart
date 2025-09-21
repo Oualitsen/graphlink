@@ -325,7 +325,7 @@ Future<Set<String>> generateServerClasses(GQGrammar grammar, GeneratorConfig con
     var text = serializer.serializeTypeDefinition(def, packageName);
     var r = writeToFile(
         data: text,
-        fileName: "${def.tokenInfo}${fileExtension}",
+        fileName: serializer.getFileNameFor(def),
         subdir: "types",
         imports: [],
         destinationDir: destinationDir,
@@ -333,11 +333,11 @@ Future<Set<String>> generateServerClasses(GQGrammar grammar, GeneratorConfig con
         appendStar: true);
     futures.add(r);
   });
-  grammar.interfaces.forEach((k, def) {
+  grammar.getSerializableInterfaces().forEach((def) {
     var text = serializer.serializeTypeDefinition(def, packageName);
     var r = writeToFile(
         data: text,
-        fileName: "$k${fileExtension}",
+        fileName: serializer.getFileNameFor(def),
         subdir: "interfaces",
         imports: [],
         destinationDir: destinationDir,
@@ -345,11 +345,11 @@ Future<Set<String>> generateServerClasses(GQGrammar grammar, GeneratorConfig con
         appendStar: true);
     futures.add(r);
   });
-  grammar.enums.forEach((k, def) {
+  grammar.getSerializableEnums().forEach((def) {
     var text = serializer.serializeEnumDefinition(def, packageName);
     var r = writeToFile(
         data: text,
-        fileName: "$k${fileExtension}",
+        fileName: serializer.getFileNameFor(def),
         subdir: "enums",
         imports: [],
         destinationDir: destinationDir,
@@ -357,11 +357,11 @@ Future<Set<String>> generateServerClasses(GQGrammar grammar, GeneratorConfig con
         appendStar: true);
     futures.add(r);
   });
-  grammar.inputs.forEach((k, def) {
+  grammar.getSerializableInputs().forEach((def) {
     var text = serializer.serializeInputDefinition(def, packageName);
     var r = writeToFile(
         data: text,
-        fileName: "$k${fileExtension}",
+        fileName: serializer.getFileNameFor(def),
         subdir: "inputs",
         imports: [],
         destinationDir: destinationDir,
@@ -374,7 +374,7 @@ Future<Set<String>> generateServerClasses(GQGrammar grammar, GeneratorConfig con
     var text = springSerializer.serializeService(def, packageName);
     var r = writeToFile(
         data: text,
-        fileName: "$k${fileExtension}",
+        fileName: serializer.getFileNameFor(def),
         subdir: "services",
         imports: [],
         destinationDir: destinationDir,
@@ -387,7 +387,7 @@ Future<Set<String>> generateServerClasses(GQGrammar grammar, GeneratorConfig con
     var text = springSerializer.serializeController(def, packageName);
     var r = writeToFile(
         data: text,
-        fileName: "${k}${fileExtension}",
+        fileName: serializer.getFileNameFor(def),
         subdir: "controllers",
         imports: [],
         destinationDir: destinationDir,
