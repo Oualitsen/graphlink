@@ -44,6 +44,14 @@ extension GqValidationExtension on GQGrammar {
           !enums.containsKey(typeToken)) {
         throw ParseException("$typeToken is not a scalar, enum, type, interface or union", info: field.name);
       }
+      for (var arg in field.arguments) {
+        var argToken = arg.type.token;
+        if (!scalars.containsKey(argToken) &&
+            !inputs.containsKey(argToken) &&
+            !enums.containsKey(argToken)) {
+          throw ParseException("$argToken is not a scalar, enum, or input", info: field.name);
+        }
+      }
     }
   }
 
