@@ -4,7 +4,6 @@ import 'package:retrofit_graphql/src/model/gq_interface_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_queries.dart';
 import 'package:retrofit_graphql/src/model/gq_shcema_mapping.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
-import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
 
 class GQService extends GQInterfaceDefinition {
   final Map<String, GQQueryType> _fieldType = {};
@@ -30,16 +29,6 @@ class GQService extends GQInterfaceDefinition {
     if (m == null || (!m.batch && mapping.batch)) {
       _mappings[mapping.key] = mapping;
     }
-  }
-
-  List<GQSchemaMapping> getSchemaByType(GQTypeDefinition def) {
-    var result = <GQSchemaMapping>[];
-    _mappings.forEach((k, v) {
-      if (v.type == def) {
-        result.add(v);
-      }
-    });
-    return result;
   }
 
   List<GQSchemaMapping> get mappings => _mappings.values.toList();

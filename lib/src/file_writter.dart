@@ -33,8 +33,12 @@ class FileWritter {
 
     final List<Future<File>> futures = [];
 
-    [...grammar.getSerializableTypes(), ...grammar.interfaces.values, ...grammar.inputs.values, ...grammar.enums.values]
-        .forEach((def) {
+    for (var def in [
+      ...grammar.getSerializableTypes(),
+      ...grammar.interfaces.values,
+      ...grammar.inputs.values,
+      ...grammar.enums.values
+    ]) {
       var packageName = config.serverConfig!.spring!.basePackage;
       var text = serializer.serializeToken(def, packageName);
       var imports = serializer.serializeImports(def, destinationDir);
@@ -46,7 +50,7 @@ class FileWritter {
       buffer.writeln(text);
       var r = saveFile(buffer.toString(), path);
       futures.add(r);
-    });
+    }
 
     if (springConfig.generateSchema) {
       var text = GraphqSerializer(grammar).generateSchema();

@@ -115,7 +115,6 @@ void main() {
     var user = g.getTypeByName("User")!;
     var idField = user.fields.where((f) => f.name.token == "id").first;
     var id = javaSerialzer.serializeField(idField);
-    print(id);
     expect(id, "private String id;");
   });
 
@@ -195,7 +194,6 @@ void main() {
 
     var setId = javaSerialzer.serializeSetter(idField, user);
     var setMiddleName = javaSerialzer.serializeSetter(middleName, user);
-    print(setMiddleName);
 
     expect(
         setMiddleName.split("\n").map((e) => e.trim()),
@@ -385,6 +383,5 @@ void main() {
     var serializer = JavaSerializer(g);
 
     print(serializer.serializeTypeDefinition(user, "com.myorg"));
-    print("DONE");
   });
 }

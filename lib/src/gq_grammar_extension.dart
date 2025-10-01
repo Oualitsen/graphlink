@@ -149,13 +149,6 @@ extension GQGrammarExtension on GQGrammar {
     });
   }
 
-  void _addSchemaMapping(GQSchemaMapping mapping) {
-    var service = services[mapping.serviceName]!;
-    var ctrl = controllers["${mapping.serviceName}Controller"]!;
-    service.addMapping(mapping);
-    ctrl.addMapping(mapping);
-  }
-
   void generateServicesAndControllers() {
     for (var type in GQQueryType.values) {
       _doGenerateServices(types[schema.getByQueryType(type)]?.fields ?? [], type);
@@ -168,7 +161,7 @@ extension GQGrammarExtension on GQGrammar {
 
   void _doGenerateServices(List<GQField> fields, GQQueryType type) {
     for (var field in fields) {
-      var name = getServiceName(field);
+      var name = _getServiceName(field);
       var service = services[name] ??=
           GQService(name: name.toToken(), nameDeclared: true, directives: [], fields: [], interfaceNames: {});
       service.addField(field);
@@ -177,7 +170,7 @@ extension GQGrammarExtension on GQGrammar {
     }
   }
 
-  String getServiceName(GQField field, [String suffix = "Service"]) {
+  String _getServiceName(GQField field, [String suffix = "Service"]) {
     var serviceName = field.getDirectiveByName(gqServiceName)?.getArgValueAsString(gqServiceNameArg);
     if (serviceName == null) {
       if (typeRequiresProjection(field.type)) {
@@ -204,8 +197,46 @@ extension GQGrammarExtension on GQGrammar {
     return null;
   }
 
-  void genSchemaMappings(List<GQField> queryFields, GQQueryType queryType) {
-    for (var field in queryFields) {
+  void generateSchemaMappings() {
+    for (var type in types.values) {
+      genSchemaMappings(type);
+    }
+    // generate Services and controllers for mappings only
+    generateSchemaMappingServices();
+  }
+
+  void generateSchemaMappingServices() {
+    for (var type in types.values) {
+      var serviceMappings = getServiceMappingByType(type.token);
+      if (serviceMappings.isNotEmpty) {
+        var serviceName = serviceMappingName(type.token);
+        var service = services[serviceName] ??
+            GQService(name: serviceName.toToken(), nameDeclared: false, fields: [], directives: [], interfaceNames: {});
+        serviceMappings.forEach(service.addMapping);
+        services[serviceName] = service;
+
+        var controllerMappings = getAllMappingsByType(type.token);
+        if (controllerMappings.isNotEmpty) {
+          var ctrlName = controllerMappingName(type.token);
+          var ctrl = controllers[ctrlName] ??
+              GQController(
+                serviceName: serviceName,
+                name: ctrlName.toToken(),
+                nameDeclared: false,
+                fields: [],
+                interfaceNames: {},
+                directives: [],
+              );
+          controllerMappings.forEach(ctrl.addMapping);
+          controllers[ctrlName] = ctrl;
+        }
+      }
+    }
+  }
+
+  void genSchemaMappings(GQTypeDefinition typeDef) {
+    var fields = typeDef.fields.where((f) => types.containsKey(f.type.token)).toList();
+    for (var field in fields) {
       var type = getType(field.type.tokenInfo);
       var skipOnServerFields = type.getSkipOnServerFields();
       // find the field to make as identity
@@ -216,30 +247,29 @@ extension GQGrammarExtension on GQGrammar {
         var schemaMappings = GQSchemaMapping(
           type: type,
           field: typeField,
-          batch: field.type is GQListType,
-          serviceName: getServiceName(field),
-          queryType: queryType,
+          batch: field.type.isList,
           identity: identityField == typeField,
         );
 
-        _addSchemaMapping(schemaMappings);
+        addSchemaMapping(schemaMappings);
       }
+      // generate forbidden fields
       type.getSkinOnClientFields().forEach((typeField) {
-        _addSchemaMapping(GQSchemaMapping(
-            type: type, field: typeField, forbid: true, serviceName: getServiceName(field), queryType: queryType));
+        addSchemaMapping(GQSchemaMapping(type: type, field: typeField, forbid: true));
       });
     }
+
+    typeDef.getSkinOnClientFields().forEach((typeField) {
+      addSchemaMapping(GQSchemaMapping(
+        type: typeDef,
+        field: typeField,
+        forbid: true,
+      ));
+    });
   }
 
-  void generateSchemaMappings() {
-    for (var queryType in GQQueryType.values) {
-      genSchemaMappings(
-          (types[schema.getByQueryType(queryType)]?.fields ?? [])
-              .where((f) => types.containsKey(f.type.token))
-              .toList(),
-          queryType);
-    }
-  }
+  String serviceMappingName(String type) => "${type}SchemaMappingsService";
+  String controllerMappingName(String type) => "${type}SchemaMappingsController";
 
   void setDirectivesDefaulValues() {
     var values = [...directiveValues];

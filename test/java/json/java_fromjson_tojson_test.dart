@@ -149,7 +149,6 @@ void main() {
     var userInput = g.inputs["UserInput"]!;
     var serializer = JavaSerializer(g, generateJsonMethods: true);
     var inputSerial = serializer.doSerializeInputDefinition(userInput);
-    print(inputSerial);
 
     expect(
       inputSerial.split("\n").map((e) => e.trim()),
@@ -449,7 +448,6 @@ void main() {
     var user = g.interfaces["BasicEntity"]!;
     var serializer = JavaSerializer(g, generateJsonMethods: true);
     var userSerial = serializer.serializeInterface(user);
-    print(userSerial);
 
     expect(
       userSerial.split('\n').map((e) => e.trim()),

@@ -14,6 +14,7 @@ import 'package:retrofit_graphql/src/model/gq_comment.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/gq_interface_definition.dart';
+import 'package:retrofit_graphql/src/model/gq_shcema_mapping.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
 import 'package:retrofit_graphql/src/model/gq_input_type_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_fragment.dart';
@@ -51,6 +52,8 @@ class GQGrammar extends GrammarDefinition {
   };
   final Map<String, GQFragmentDefinitionBase> fragments = {};
   final Map<String, GQTypedFragment> typedFragments = {};
+
+  final Map<String, GQSchemaMapping> _schemaMappings = {};
 
   late final Map<String, String> typeMap;
   late final CodeGenerationMode mode;
@@ -142,6 +145,22 @@ class GQGrammar extends GrammarDefinition {
           'autoGenerateQueries can only be true if generateAllFieldsFragments is also true',
         ) {
     serializer = GraphqSerializer(this);
+  }
+
+  void addSchemaMapping(GQSchemaMapping mapping) {
+    var m = _schemaMappings[mapping.key];
+    if (m == null || (!m.batch && mapping.batch)) {
+      _schemaMappings[mapping.key] = mapping;
+    }
+  }
+
+  List<GQSchemaMapping> getAllMappingsByType(String typeName) =>
+      _schemaMappings.values.where((e) => e.type.token == typeName).toList();
+  List<GQSchemaMapping> getServiceMappingByType(String typeName) =>
+      _schemaMappings.values.where((e) => e.type.token == typeName && !e.forbid && !e.identity).toList();
+
+  List<GQSchemaMapping> getSchemaMappings(GQTypeDefinition def) {
+    return _schemaMappings.values.where((e) => e.type == def).toList();
   }
 
   bool get hasSubscriptions => hasQueryType(GQQueryType.subscription);

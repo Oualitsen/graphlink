@@ -439,8 +439,8 @@ directive @gqExternal(gqClass: String!, gqImport: String!) on  OBJECT|INPUT_OBJE
 
 ''');
     expect(parsed is Success, true);
-    var carService = g.services["CarService"]!;
-    expect(carService.getImportDependecies(g).map((e) => e.token), contains("Person"));
+    var carMappingService = g.services[g.serviceMappingName("Car")]!;
+    expect(carMappingService.getImportDependecies(g).map((e) => e.token), contains("Person"));
   });
 
   test("service should import arguments event when type is skipped", () {

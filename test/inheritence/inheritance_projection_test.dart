@@ -12,7 +12,6 @@ void main() async {
 
     final text = File("test/inheritence/inheritance_projection_test.graphql").readAsStringSync();
     var result = parser.parse(text);
-    print("DONE");
     expect(result is Success, true);
   });
 }

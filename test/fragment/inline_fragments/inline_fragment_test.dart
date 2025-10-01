@@ -26,9 +26,8 @@ void main() async {
     var parsed = g.parse(text);
     expect(parsed is Success, true);
     var serialize = DartSerializer(g);
-    g.projectedTypes.values.forEach((pt) {
-      print("############# ${pt.token} #############");
+    for (var pt in g.projectedTypes.values) {
       print(serialize.serializeTypeDefinition(pt, ""));
-    });
+    }
   });
 }

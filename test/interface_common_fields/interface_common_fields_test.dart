@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:retrofit_graphql/src/model/gq_interface_definition.dart';
-import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
@@ -67,11 +66,8 @@ void main() async {
     var parsed = g.parse(text);
     expect(parsed is Success, true);
     var vehicle = g.projectedTypes["Vehicle"]! as GQInterfaceDefinition;
-    var serializer = DartSerializer(g);
-    print(serializer.serializeTypeDefinition(vehicle, ""));
     expect(vehicle.fieldNames.length, 2);
     expect(vehicle.fieldNames, containsAll(["make", "model"]));
-    print("vehicle.implementations = ${vehicle.implementations.map((e) => e.token)}");
 
     expect(vehicle.implementations.length, 2);
   });

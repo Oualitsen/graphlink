@@ -61,18 +61,6 @@ void main() {
         'public Flux<List<Car>> watchCars(@Argument final String userId) {',
         'return userService.watchCars(userId);',
         '}',
-        '@BatchMapping(typeName="User", field="cars")',
-        'public Map<User, List<Car>> userCars(List<User> value) {',
-        'return userService.userCars(value);',
-        '}',
-        '@SchemaMapping(typeName="User", field="password")',
-        'public String userPassword(User value) {',
-        'throw new GraphQLException("Access denied to field \'User.password\'");',
-        '}',
-        '@BatchMapping(typeName="Car", field="owner")',
-        'public Map<Car, Owner> carOwner(List<Car> value) {',
-        'return userService.carOwner(value);',
-        '}',
         '}',
       ]),
     );
@@ -123,18 +111,6 @@ void main() {
         'public Flux<List<Car>> watchCars(@Argument final String userId) {',
         'return userService.watchCars(userId);',
         '}',
-        '@BatchMapping(typeName="User", field="cars")',
-        'public Map<User, List<Car>> userCars(List<User> value) {',
-        'return userService.userCars(value);',
-        '}',
-        '@SchemaMapping(typeName="User", field="password")',
-        'public String userPassword(User value) {',
-        'throw new GraphQLException("Access denied to field \'User.password\'");',
-        '}',
-        '@BatchMapping(typeName="Car", field="owner")',
-        'public Map<Car, Owner> carOwner(List<Car> value) {',
-        'return userService.carOwner(value);',
-        '}',
         '}',
       ]),
     );
@@ -184,14 +160,6 @@ void main() {
         'public Flux<List<Car>> watchCars(@Argument final String userId) {',
         'return userService.watchCars(userId);',
         '}',
-        '@BatchMapping(typeName="User", field="cars")',
-        'public Map<User, List<Car>> userCars(List<User> value) {',
-        'return userService.userCars(value);',
-        '}',
-        '@BatchMapping(typeName="Car", field="owner")',
-        'public Map<Car, Owner> carOwner(List<Car> value) {',
-        'return userService.carOwner(value);',
-        '}',
         '}',
       ]),
     );
@@ -219,16 +187,12 @@ void main() {
         serviceSerial,
         stringContainsInOrder([
           "User getUserCar();",
-          "Car userCarCar(User value);",
         ]));
 
     expect(
         controllerSerial,
         stringContainsInOrder([
           "public User getUserCar()",
-          "return userCarService.getUserCar();",
-          "public Car userCarCar(User value)",
-          "return userCarService.userCarCar(value);",
         ]));
   });
 
@@ -243,11 +207,14 @@ void main() {
     var serialzer = SpringServerSerializer(g);
 
     var ownerAnimalService = g.services["OwnerWithAnimalService"]!;
+    var ownerAnimalMappingService = g.services[g.serviceMappingName("OwnerWithAnimal")]!;
     var ownerServiceSerial = serialzer.serializeService(ownerAnimalService, "");
-    expect(
-        ownerServiceSerial,
-        stringContainsInOrder(
-            ["List<Owner> getOwnwers();", "Map<Owner, Animal> ownerWithAnimalAnimal(List<Owner> value);"]));
+    var ownerServiceMappingSerial = serialzer.serializeService(ownerAnimalMappingService, "");
+
+    expect(ownerServiceSerial, stringContainsInOrder(["List<Owner> getOwnwers();"]));
+
+    expect(ownerServiceMappingSerial,
+        stringContainsInOrder(["Map<Owner, Animal> ownerWithAnimalAnimal(List<Owner> value);"]));
   });
 
   test("test controller/service returning skipped type with no mapTo 1", () {
@@ -261,14 +228,19 @@ void main() {
     var serialzer = SpringServerSerializer(g);
 
     var ownerAnimalService = g.services["OwnerWithAnimal2Service"]!;
+    var ownerAnimalMappingService = g.services[g.serviceMappingName("OwnerWithAnimal2")]!;
     var ownerServiceSerial = serialzer.serializeService(ownerAnimalService, "");
+    var ownerServiceMappingSerial = serialzer.serializeService(ownerAnimalMappingService, "");
     expect(
         ownerServiceSerial,
         stringContainsInOrder([
           "Object getOwnerWithAnimal2();",
-          "Owner ownerWithAnimal2Owner(Object value);",
-          "Animal ownerWithAnimal2Animal(Object value);"
         ]));
+
+    expect(
+        ownerServiceMappingSerial,
+        stringContainsInOrder(
+            ["Owner ownerWithAnimal2Owner(Object value);", "Animal ownerWithAnimal2Animal(Object value);"]));
   });
 
   test("test controller/service returning skipped type with no mapTo 2", () {
@@ -282,12 +254,17 @@ void main() {
     var serialzer = SpringServerSerializer(g);
 
     var ownerAnimalService = g.services["OwnerWithAnimal3Service"]!;
+    var ownerAnimalServiceMapping = g.services[g.serviceMappingName("OwnerWithAnimal3")]!;
     var ownerServiceSerial = serialzer.serializeService(ownerAnimalService, "");
-    print(ownerServiceSerial);
+    var ownerServiceMappingSerial = serialzer.serializeService(ownerAnimalServiceMapping, "");
     expect(
         ownerServiceSerial,
         stringContainsInOrder([
           "List<?> getOwnwers3();",
+        ]));
+    expect(
+        ownerServiceMappingSerial,
+        stringContainsInOrder([
           "Map<?, Owner> ownerWithAnimal3Owner(List<Object> value);",
           "Map<?, Animal> ownerWithAnimal3Animal(List<Object> value);",
         ]));
@@ -333,7 +310,6 @@ void main() {
     var serverSerialzer = SpringServerSerializer(g);
     var userService = g.services["UserService"]!;
     var serializedService = serverSerialzer.serializeService(userService, "");
-    print(serializedService);
     expect(
         serializedService,
         stringContainsInOrder([
@@ -344,8 +320,6 @@ void main() {
           "Integer getUserCount();",
           "Flux<User> watchUser(final String userId);",
           "Flux<List<Car>> watchCars(final String userId);",
-          "Map<User, List<Car>> userCars(List<User> value);",
-          "Map<Car, Owner> carOwner(List<Car> value);"
         ]));
   });
 

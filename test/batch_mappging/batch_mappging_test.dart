@@ -20,14 +20,46 @@ void main() {
   test("test schema mapping generation", () {
     final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
-    final text = File("test/batch_mappging/batch_mappging.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
+    var parsed = g.parse('''
+  
+type User {
+    id: ID!
+    name: String!
+    middleName: String
+    cars: Car! @gqSkipOnServer
+}
+
+type Car {
+    make: String!
+    model: String!
+    userId: ID! @gqSkipOnClient
+    owner: Owner! @gqSkipOnServer
+    ownerId: ID! @gqSkipOnClient
+}
+
+type Owner {
+    id: ID!
+}
+
+type Query {
+
+   getUser: User
+   getUserById(id: ID!): User
+   getUsers(name: String, middle: String): [User!]!
+   getCarById(id: ID!): Car!
+
+}
+
+  
+
+''');
 
     expect(parsed is Success, true);
-    var mappings = g.services.values.expand((s) => s.mappings);
-    var mappingKeys = g.services.values.expand((s) => s.mappings).map((e) => e.key);
+    var mappings = g.controllers.values.expand((s) => s.mappings).toList();
+    var mappingKeys = g.controllers.values.expand((s) => s.mappings).map((e) => e.key).toList();
+
     expect(mappingKeys, containsAll(["carOwner", "userCars", "carUserId", "carOwnerId"]));
+
     var carOwner = mappings.where((e) => e.key == "carOwner").first;
 
     expect(carOwner.batch, false);
@@ -43,20 +75,6 @@ void main() {
 
     expect(mappings.where((e) => e.key == "carUserId").first.forbid, true);
     expect(mappings.where((e) => e.key == "carOwnerId").first.forbid, true);
-  });
-
-  test("test getSchemaByType", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
-
-    final text = File("test/batch_mappging/batch_mappging.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-
-    expect(parsed is Success, true);
-    var carSerice = g.services["CarService"]!;
-    var car = g.getTypeByName("Car")!;
-    var result = carSerice.getSchemaByType(car);
-    expect(result.length, 3);
   });
 
   test("Service should not have identity schema mapping", () {
@@ -82,7 +100,7 @@ void main() {
     expect(parsed is Success, true);
 
     var springSerializer = SpringServerSerializer(g);
-    var ctrl = g.controllers["UserWithCarServiceController"]!;
+    var ctrl = g.controllers[g.controllerMappingName("UserWithCar")]!;
     var serviceSerial = springSerializer.serializeController(ctrl, "");
     expect(
         serviceSerial,
@@ -102,7 +120,7 @@ void main() {
     expect(parsed is Success, true);
 
     var springSerializer = SpringServerSerializer(g);
-    var ctrl = g.controllers["UserWithCarServiceController"]!;
+    var ctrl = g.controllers[g.controllerMappingName("UserWithCar")]!;
     var serviceSerial = springSerializer.serializeController(ctrl, "");
     expect(serviceSerial, contains("public User userWithCarUser(User value) { return value; }"));
   });
