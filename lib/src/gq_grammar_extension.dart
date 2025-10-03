@@ -244,14 +244,32 @@ extension GQGrammarExtension on GQGrammar {
       GQField? identityField = _getIdentityField(type);
 
       for (var typeField in skipOnServerFields) {
-        var schemaMappings = GQSchemaMapping(
+        var targetField = typeField;
+        var fieldType = getTypeByName(typeField.type.token);
+        if (fieldType != null) {
+          var skipOnServer = fieldType.getDirectiveByName(gqSkipOnServer);
+
+          if (skipOnServer != null) {
+            var mapTo = skipOnServer.getArgValueAsString(gqMapTo);
+            if (mapTo == null) {
+              throw ParseException(
+                  "Argument '${gqMapTo}' is required on type '${type.token}' for schema mapping generation",
+                  info: skipOnServer.tokenInfo);
+            }
+            targetField = GQField(
+                name: typeField.name,
+                type: typeField.type.ofNewName(mapTo.toToken()),
+                arguments: typeField.arguments,
+                directives: typeField.getDirectives());
+          }
+        }
+        var schemaMapping = GQSchemaMapping(
           type: type,
-          field: typeField,
+          field: targetField,
           batch: field.type.isList,
           identity: identityField == typeField,
         );
-
-        addSchemaMapping(schemaMappings);
+        addSchemaMapping(schemaMapping);
       }
       // generate forbidden fields
       type.getSkinOnClientFields().forEach((typeField) {

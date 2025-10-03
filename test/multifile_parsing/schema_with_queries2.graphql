@@ -7,7 +7,7 @@ type Car {
 }
 
 
-type CarInput {
+input CarInput {
     make: String!
     model: String!
 }

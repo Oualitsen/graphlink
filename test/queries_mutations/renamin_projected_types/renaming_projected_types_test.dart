@@ -17,7 +17,9 @@ void main() async {
 
     expect(parsed is Success, true);
     //renamed product input
-    expect(g.inputs.keys, contains("MyProductInput"));
+    var productInput = g.inputs["ProductInput"]!;
+
+    expect(productInput.token, contains("MyProductInput"));
     //renamed responses
     expect(g.queries["getAllProducts"]!.getGeneratedTypeDefinition().token,
         equals("MyProductResp"));

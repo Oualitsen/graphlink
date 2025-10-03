@@ -369,7 +369,7 @@ class GQGrammar extends GrammarDefinition {
             .map3((p0, fieldList, p2) => fieldList)).map4((_, name, directives, fields) {
       String? nameFromDirective = getNameValueFromDirectives(directives);
       TokenInfo inputName = name.ofNewName(nameFromDirective ?? name.token);
-      final input = GQInputDefinition(name: inputName, fields: fields, directives: directives);
+      final input = GQInputDefinition(name: inputName, declaredName: name.token, fields: fields, directives: directives);
       addInputDefinition(input);
       return input;
     });

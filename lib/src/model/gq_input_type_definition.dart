@@ -5,8 +5,9 @@ import 'package:retrofit_graphql/src/model/gq_token_with_fields.dart';
 import 'package:retrofit_graphql/src/model/token_info.dart';
 
 class GQInputDefinition extends GQTokenWithFields with GQDirectivesMixin {
+  final String declaredName;
   GQInputDefinition(
-      {required List<GQDirectiveValue> directives, required TokenInfo name, required List<GQField> fields})
+      {required List<GQDirectiveValue> directives, required TokenInfo name, required this.declaredName, required List<GQField> fields})
       : super(name, fields) {
     directives.forEach(addDirective);
   }

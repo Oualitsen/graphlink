@@ -10,6 +10,7 @@ import 'package:retrofit_graphql/src/model/gq_queries.dart';
 import 'package:retrofit_graphql/src/model/gq_service.dart';
 import 'package:retrofit_graphql/src/model/gq_shcema_mapping.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
+import 'package:retrofit_graphql/src/model/gq_token_with_fields.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
 import 'package:retrofit_graphql/src/model/token_info.dart';
 import 'package:retrofit_graphql/src/serializers/java_serializer.dart';
@@ -182,9 +183,7 @@ $result
       buffer.writeln(";");
       buffer.writeln();
     }
-    if (mappings.isNotEmpty) {
-      buffer.writeln('// schema mappings and batch mapping'.ident());
-    }
+
     for (var m in mappings) {
       buffer.write(serializeMappingImplMethodHeader(m, service, skipAnnotation: true, skipQualifier: true).ident());
       buffer.writeln(";");
@@ -353,9 +352,10 @@ Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(serializer.se
     }
   }
 
-  String _getMappingArgument(GQSchemaMapping mapping) {
+  String _getMappingArgument(GQSchemaMapping mapping, GQToken context) {
     var argType = serializer.serializeType(_getServiceReturnType(GQType(mapping.type.tokenInfo, false)), false);
     if (mapping.batch) {
+      context.addImport(importList);
       return "List<${convertPrimitiveToBoxed(argType)}> value";
     } else {
       return "${argType} value";
@@ -364,7 +364,7 @@ Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(serializer.se
 
   String serializeMappingImplMethodHeader(GQSchemaMapping mapping, GQToken context,
       {bool skipAnnotation = false, bool skipQualifier = false}) {
-    var result = "${_getReturnType(mapping, context)} ${mapping.key}(${_getMappingArgument(mapping)})";
+    var result = "${_getReturnType(mapping, context)} ${mapping.key}(${_getMappingArgument(mapping, context)})";
 
     if (!skipQualifier) {
       result = "public $result";

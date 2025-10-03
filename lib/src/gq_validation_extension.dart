@@ -165,7 +165,7 @@ extension GqValidationExtension on GQGrammar {
   }
 
   void checkInputDefinition(GQInputDefinition input) {
-    if (inputs.containsKey(input.token)) {
+    if (inputs.containsKey(input.declaredName)) {
       throw ParseException("Input ${input.tokenInfo} has already been declared", info: input.tokenInfo);
     }
   }
@@ -295,7 +295,7 @@ extension GqValidationExtension on GQGrammar {
 
   void addInputDefinition(GQInputDefinition input) {
     checkInputDefinition(input);
-    inputs[input.token] = input;
+    inputs[input.declaredName] = input;
   }
 
   void addTypeDefinition(GQTypeDefinition type) {

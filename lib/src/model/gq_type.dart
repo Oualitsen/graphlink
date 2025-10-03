@@ -1,4 +1,5 @@
 import 'package:retrofit_graphql/src/model/gq_token.dart';
+import 'package:retrofit_graphql/src/model/token_info.dart';
 
 class GQType extends GQToken {
   final bool nullable;
@@ -25,11 +26,12 @@ class GQType extends GQToken {
 
   bool get isNotList => !isList;
 
-
   @override
   int get hashCode => tokenInfo.hashCode;
 
-  
+  GQType ofNewName(TokenInfo name) {
+    return GQType(name, nullable, isScalar: isScalar);
+  }
 }
 
 class GQListType extends GQType {
@@ -39,4 +41,9 @@ class GQListType extends GQType {
 
   @override
   GQType get inlineType => type;
+
+  @override
+  GQType ofNewName(TokenInfo name) {
+    return GQListType(type.ofNewName(name), nullable);
+  }
 }

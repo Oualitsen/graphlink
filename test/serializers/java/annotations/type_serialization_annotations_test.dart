@@ -170,6 +170,5 @@ void main() {
 
     print(serialzer.serializeTypeDefinition(iface, "com.myorg"));
     print(dartSerialzer.serializeTypeDefinition(iface, "com.myorg"));
-    print("Done!");
   });
 }

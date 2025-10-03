@@ -192,6 +192,7 @@ class JavaSerializer extends GqSerializer {
       if (asArray) {
         return "${serializeType(gqType.inlineType, false, asArray)}[]";
       } else {
+        context?.addImport(importList);
         return _listOf(convertPrimitiveToBoxed(serializeType(gqType.inlineType, false)));
       }
     }
