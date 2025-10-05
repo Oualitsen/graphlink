@@ -300,7 +300,11 @@ class SubscriptionHandler {
   }
 
   Stream<Map<String, dynamic>> handle(GQPayload pl) {
-    var controller = StreamController<Map<String, dynamic>>();
+    var controller = StreamController<Map<String, dynamic>>(
+      onCancel: () {
+        removeController(uuid);
+      },
+    );
     String uuid = generateUuid();
     _map[uuid] = controller;
     _initWs().then((streamSink) {
