@@ -22,13 +22,28 @@ abstract class ClientSerilaizer {
   }
 
   Set<GQToken> getImportDependecies(GQGrammar g) {
-    var payload = g.getTypeByName("GQPayload");
-    var error = g.getTypeByName("GQError");
-    var result = <GQToken>[if (payload != null) payload, if (error != null) error];
+    var result = <GQToken>[];
+    [
+      "GQPayload",
+      "GQError",
+      "GQSubscriptionPayload",
+      "GQAckStatus",
+      "GQSubscriptionErrorMessageBase",
+      "GQSubscriptionErrorMessage",
+      "GQSubscriptionMessage",
+      "GQSubscriptionMessageType"
+    ]
+        .map(g.getTokenByKey)
+        .where((e) => e != null)
+        .map(
+          (e) => e!,
+        )
+        .forEach(result.add);
     g.queries.values
         .where((element) => element.typeDefinition != null)
         .map((e) => e.typeDefinition!)
         .forEach(result.add);
+
     g.queries.values.expand((e) => e.arguments).forEach((arg) {
       if (g.isEnum(arg.type.token)) {
         result.add(g.enums[arg.type.token]!);

@@ -563,6 +563,35 @@ type Query {
     expect(clientGen.getImportDependecies(g).map((e) => e.token), containsAll(["Gender"]));
   });
 
+  test("Client should import subscription classes/eumms", () {
+    final GQGrammar g =
+        GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.client, autoGenerateQueries: true);
+    var serilazer = DartSerializer(g);
+    var clientGen = DartClientSerializer(g, serilazer);
+
+    var parsed = g.parse('''
+  ${clientObjects}
+type Cat  {
+  name: String
+}
+type Subscrtipion {
+  cat: Cat
+}
+
+''');
+    expect(parsed is Success, true);
+    expect(
+        clientGen.getImportDependecies(g).map((e) => e.token),
+        containsAll([
+          "GQSubscriptionPayload",
+          "GQAckStatus",
+          "GQSubscriptionErrorMessageBase",
+          "GQSubscriptionErrorMessage",
+          "GQSubscriptionMessage",
+          "GQSubscriptionMessageType"
+        ]));
+  });
+
   test("import should be skipped on skip mode", () {
     final GQGrammar g =
         GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server, autoGenerateQueries: true);
