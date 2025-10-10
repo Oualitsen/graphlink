@@ -25,6 +25,7 @@ import 'package:petitparser/petitparser.dart';
 import 'package:retrofit_graphql/src/model/token_info.dart';
 import 'package:retrofit_graphql/src/serializers/graphq_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/language.dart';
+import 'package:retrofit_graphql/src/ui/flutter/gq_type_view.dart';
 import 'package:retrofit_graphql/src/utils.dart';
 import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 import 'package:retrofit_graphql/src/gq_grammar_extension.dart';
@@ -109,6 +110,7 @@ class GQGrammar extends GrammarDefinition {
   final Map<String, GQDirectiveDefinition> directiveDefinitions = {};
   final Map<String, GQService> services = {};
   final Map<String, GQController> controllers = {};
+  final Map<String, GQTypeView> views = {};
 
   final List<GQDirectiveValue> directiveValues = [];
 
@@ -258,6 +260,7 @@ class GQGrammar extends GrammarDefinition {
       createProjectedTypes();
       updateInterfaceCommonFields();
       updateFragmentAllTypesDependencies();
+      generateViews();
     } else {
       handleRepositories(true);
       generateServicesAndControllers();

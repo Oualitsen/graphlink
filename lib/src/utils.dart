@@ -144,3 +144,6 @@ List<T> filterSerialization<T extends GQDirectivesMixin>(Iterable<T> list, CodeG
 bool shouldSkip(GQDirectivesMixin mixin, CodeGenerationMode mode) {
   return shouldSkipSerialization(directives: mixin.getDirectives(), mode: mode);
 }
+
+
+String widgetName(String typeName) => "${typeName}Widget";

@@ -10,6 +10,7 @@ import 'package:retrofit_graphql/src/model/gq_type.dart';
 import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
 import 'package:retrofit_graphql/src/serializers/annotation_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/gq_serializer.dart';
+import 'package:retrofit_graphql/src/ui/flutter/gq_type_view.dart';
 import 'package:retrofit_graphql/src/utils.dart';
 
 class DartSerializer extends GqSerializer {
@@ -414,6 +415,8 @@ class DartSerializer extends GqSerializer {
       init = "types/${getFileNameFor(token)}";
     } else if (token is GQInputDefinition) {
       init = "inputs/${getFileNameFor(token)}";
+    }else if (token is GQTypeView) {
+      init = "widgets/${getFileNameFor(token)}";
     }
 
     return "import '${importPrefix}/${init}';";

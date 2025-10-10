@@ -18,6 +18,7 @@ import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_queries.dart';
 import 'package:retrofit_graphql/src/model/token_info.dart';
 import 'package:retrofit_graphql/src/serializers/language.dart';
+import 'package:retrofit_graphql/src/ui/flutter/gq_type_view.dart';
 import 'package:retrofit_graphql/src/utils.dart';
 import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 
@@ -949,6 +950,22 @@ extension GQGrammarExtension on GQGrammar {
         .expand((inner) => inner)
         .toList();
     return decorators;
+  }
+
+  void generateViews() {
+    projectedTypes.values.where((t) => t is! GQInterfaceDefinition)
+    .map((t) => GQTypeView(type: t))
+    .forEach((view) {
+      views[view.token] = view;
+    });
+    if(views.isNotEmpty) {
+      // add GQFieldViewType enumeration
+      addEnumDefinition(GQEnumDefinition(token: "GQFieldViewType".toToken(), values: ['listTile','reversedListTile', 'labelValueRow' ]
+      .map((e) => e.toToken())
+      .map((e) => GQEnumValue(value: e, comment: null, directives: []), ).toList()
+    , directives: []));
+    }
+    
   }
 }
 

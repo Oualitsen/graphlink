@@ -104,6 +104,7 @@ class ClientConfig {
   final String? autoGenerateQueriesDefaultAlias;
   final String? defaultAlias;
   final String? packageName;
+  final String? appLocalizationsImport; 
 
   ClientConfig({
     required this.targetLanguage,
@@ -114,6 +115,7 @@ class ClientConfig {
     required this.operationNameAsParameter,
     this.defaultAlias,
     required this.packageName,
+    this.appLocalizationsImport,
   });
 
   factory ClientConfig.fromJson(Map<String, dynamic> json) {
@@ -126,6 +128,7 @@ class ClientConfig {
       operationNameAsParameter: json['operationNameAsParameter'] ?? false,
       defaultAlias: json['defaultAlias'],
       packageName: json['packageName'] as String?,
+      appLocalizationsImport: json['appLocalizationsImport'] as String?,
     );
   }
 }
