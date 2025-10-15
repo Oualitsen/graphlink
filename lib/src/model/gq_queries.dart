@@ -153,7 +153,7 @@ class GQQueryElement extends GQToken with GQDirectivesMixin {
       if (returnType is GQListType) {
         return GQListType(_getReturnProjectedType(projectedType, returnType.type), returnType.nullable);
       } else {
-        return GQType(projectedType.tokenInfo, returnType.nullable, isScalar: false);
+        return GQType(projectedType.tokenInfo, returnType.nullable);
       }
     }
   }

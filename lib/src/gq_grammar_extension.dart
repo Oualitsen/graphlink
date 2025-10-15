@@ -895,7 +895,7 @@ extension GQGrammarExtension on GQGrammar {
         projectionMap: block.projections,
         directives: fieldDirectives,
       );
-      var fieldInlineType = GQType(generatedType.tokenInfo, field.type.nullable, isScalar: false);
+      var fieldInlineType = GQType(generatedType.tokenInfo, field.type.nullable);
 
       return GQField(
         name: fieldName,
@@ -917,7 +917,7 @@ extension GQGrammarExtension on GQGrammar {
     if (orig is GQListType) {
       return GQListType(_createTypeFrom(orig.type, inline), orig.nullable);
     }
-    return GQType(inline.tokenInfo, orig.inlineType.nullable, isScalar: inline.isScalar);
+    return GQType(inline.tokenInfo, orig.inlineType.nullable);
   }
 
   String getLangType(String typeName) {

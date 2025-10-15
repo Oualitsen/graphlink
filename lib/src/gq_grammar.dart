@@ -37,8 +37,8 @@ class GQGrammar extends GrammarDefinition {
   bool annotationsProcessed = false;
   var logger = Logger();
   static const typename = "__typename";
-  static final typenameField = GQField(
-      name: typename.toToken(), type: GQType("String".toToken(), false, isScalar: true), arguments: [], directives: []);
+  static final typenameField =
+      GQField(name: typename.toToken(), type: GQType("String".toToken(), false), arguments: [], directives: []);
 
   // used to skip serialization
   final builtInScalars = {"ID", "Boolean", "Int", "Float", "String", "null"};
@@ -74,10 +74,7 @@ class GQGrammar extends GrammarDefinition {
     ),
     gqTypeNameDirective: GQDirectiveDefinition(
       gqTypeNameDirective.toToken(),
-      [
-        GQArgumentDefinition(
-            gqTypeNameDirectiveArgumentName.toToken(), GQType("String".toToken(), false, isScalar: false), [])
-      ],
+      [GQArgumentDefinition(gqTypeNameDirectiveArgumentName.toToken(), GQType("String".toToken(), false), [])],
       {
         GQDirectiveScope.INPUT_OBJECT,
         GQDirectiveScope.FRAGMENT_DEFINITION,
@@ -372,7 +369,8 @@ class GQGrammar extends GrammarDefinition {
             .map3((p0, fieldList, p2) => fieldList)).map4((_, name, directives, fields) {
       String? nameFromDirective = getNameValueFromDirectives(directives);
       TokenInfo inputName = name.ofNewName(nameFromDirective ?? name.token);
-      final input = GQInputDefinition(name: inputName, declaredName: name.token, fields: fields, directives: directives);
+      final input =
+          GQInputDefinition(name: inputName, declaredName: name.token, fields: fields, directives: directives);
       addInputDefinition(input);
       return input;
     });
@@ -567,7 +565,7 @@ class GQGrammar extends GrammarDefinition {
   Parser<GQType> simpleTypeTokenDefinition() {
     return seq2(ref1(token, identifier()), ref1(token, char("!")).optional().map((value) => value == null))
         .map2((name, nullable) {
-      return GQType(name, nullable, isScalar: false);
+      return GQType(name, nullable);
     });
   }
 

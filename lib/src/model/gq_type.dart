@@ -4,13 +4,7 @@ import 'package:retrofit_graphql/src/model/token_info.dart';
 class GQType extends GQToken {
   final bool nullable;
 
-  ///
-  ///used to check if the type is a scalar or an object
-  ///This is mainly used for fragments and queries
-  ///
-  bool isScalar;
-
-  GQType(super.tokenInfo, this.nullable, {this.isScalar = true});
+  GQType(super.tokenInfo, this.nullable);
 
   @override
   bool operator ==(Object other) {
@@ -31,14 +25,14 @@ class GQType extends GQToken {
   int get hashCode => tokenInfo.hashCode;
 
   GQType ofNewName(TokenInfo name) {
-    return GQType(name, nullable, isScalar: isScalar);
+    return GQType(name, nullable);
   }
 }
 
 class GQListType extends GQType {
   ///this could be an instance of GQListType
   final GQType type;
-  GQListType(this.type, bool nullable) : super(type.tokenInfo, nullable, isScalar: false);
+  GQListType(this.type, bool nullable) : super(type.tokenInfo, nullable);
 
   @override
   GQType get inlineType => type;
@@ -47,6 +41,7 @@ class GQListType extends GQType {
   GQType ofNewName(TokenInfo name) {
     return GQListType(type.ofNewName(name), nullable);
   }
+
   ///
   /// a recursive way to find the first TYPE even if this is a list of list of list .... of list of TYPE
   ///

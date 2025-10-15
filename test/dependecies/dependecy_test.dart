@@ -783,7 +783,6 @@ type Query {
 ''');
     expect(parsed is Success, true);
 
-    var serializer = SpringServerSerializer(g);
     var mapping = g.services[g.serviceMappingName('PersonDTO')]!;
     expect(mapping.getImportDependecies(g).map((e) => e.token), containsAll(['Person']));
   });
