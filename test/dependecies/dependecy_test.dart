@@ -1,5 +1,6 @@
 import 'package:retrofit_graphql/src/constants.dart';
 import 'package:retrofit_graphql/src/extensions.dart';
+import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 import 'package:retrofit_graphql/src/model/gq_token_with_fields.dart';
 import 'package:retrofit_graphql/src/serializers/dart_client_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
@@ -759,5 +760,31 @@ type Query {
     var personCarMappingService = g.services[g.serviceMappingName("PersonCar")]!;
     expect(personCarMappingService.getImportDependecies(g).map((e) => e.token), isNot(contains("Vehicle")));
     expect(personCarMappingService.getImportDependecies(g).map((e) => e.token), containsAll(["Person", "Car"]));
+  });
+
+  test("mapping should import mapped to dependecies", () {
+    final GQGrammar g = GQGrammar(mode: CodeGenerationMode.server);
+
+    var parsed = g.parse('''
+  ${clientObjects}
+  type Person {
+    firstName: String
+    lastName: String
+  }
+
+  type PersonDTO ${gqSkipOnServer}(mapTo: "Person") {
+    age: Int!
+  }
+
+  type Query {
+    getDTO: [PersonDTO!]!
+  }
+  
+''');
+    expect(parsed is Success, true);
+
+    var serializer = SpringServerSerializer(g);
+    var mapping = g.services[g.serviceMappingName('PersonDTO')]!;
+    expect(mapping.getImportDependecies(g).map((e) => e.token), containsAll(['Person']));
   });
 }

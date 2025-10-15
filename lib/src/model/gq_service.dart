@@ -1,6 +1,7 @@
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 import 'package:retrofit_graphql/src/model/gq_controller.dart';
+import 'package:retrofit_graphql/src/model/gq_directives_mixin.dart';
 import 'package:retrofit_graphql/src/model/gq_interface_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_queries.dart';
 import 'package:retrofit_graphql/src/model/gq_shcema_mapping.dart';
@@ -47,6 +48,7 @@ class GQService extends GQInterfaceDefinition {
 
     for (var m in mappings) {
       var typeToken = g.getTokenByKey(m.type.token);
+
       if (filterDependecy(typeToken, g)) {
         result.add(typeToken!);
       } else {
@@ -62,8 +64,23 @@ class GQService extends GQInterfaceDefinition {
           result.add(argToken!);
         }
       }
+
+      var mappedToToken = _getMappedTo(g, typeToken);
+      if (mappedToToken != null) {
+        result.add(mappedToToken);
+      }
     }
     return result;
+  }
+
+  GQToken? _getMappedTo(GQGrammar g, GQToken? token) {
+    if (token is GQDirectivesMixin) {
+      var mappedTo = (token as GQDirectivesMixin).getDirectiveByName(gqSkipOnServer)?.getArgValueAsString(gqMapTo);
+      if (filterDependecy(g.types[mappedTo], g)) {
+        return g.types[mappedTo];
+      }
+    }
+    return null;
   }
 
   List<GQToken> _getTokenFields(GQToken? typeToken, GQGrammar g) {
