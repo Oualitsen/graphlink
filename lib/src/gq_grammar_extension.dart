@@ -451,7 +451,8 @@ extension GQGrammarExtension on GQGrammar {
   void createAllFieldsFragments() {
     var allTypes = {...types, ...interfaces};
     allTypes.forEach((key, typeDefinition) {
-      if (![schema.mutation, schema.query, schema.subscription].contains(key)) {
+      if (![schema.mutation, schema.query, schema.subscription].contains(key) &&
+          typeDefinition.getDirectiveByName(gqInternal) == null) {
         var frag = createAllFieldsFragment(typeDefinition);
         addFragmentDefinition(frag);
       }
@@ -953,19 +954,25 @@ extension GQGrammarExtension on GQGrammar {
   }
 
   void generateViews() {
-    projectedTypes.values.where((t) => t is! GQInterfaceDefinition)
-    .map((t) => GQTypeView(type: t))
-    .forEach((view) {
+    var s = [schema.mutation, schema.query, schema.subscription];
+    projectedTypes.values
+        .where((t) => t is! GQInterfaceDefinition && !s.contains(t.token) && t.getDirectiveByName(gqInternal) == null)
+        .map((t) => GQTypeView(type: t))
+        .forEach((view) {
       views[view.token] = view;
     });
-    if(views.isNotEmpty) {
+    if (views.isNotEmpty) {
       // add GQFieldViewType enumeration
-      addEnumDefinition(GQEnumDefinition(token: "GQFieldViewType".toToken(), values: ['listTile','reversedListTile', 'labelValueRow' ]
-      .map((e) => e.toToken())
-      .map((e) => GQEnumValue(value: e, comment: null, directives: []), ).toList()
-    , directives: []));
+      addEnumDefinition(GQEnumDefinition(
+          token: "GQFieldViewType".toToken(),
+          values: ['listTile', 'reversedListTile', 'labelValueRow']
+              .map((e) => e.toToken())
+              .map(
+                (e) => GQEnumValue(value: e, comment: null, directives: []),
+              )
+              .toList(),
+          directives: []));
     }
-    
   }
 }
 

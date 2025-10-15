@@ -48,6 +48,14 @@ const gqRepository = "@gqRepository";
 const gqType = "gqType";
 const gqIdType = "gqIdType";
 const gqExternal = "@gqExternal";
+
+///
+/// Used for internally generated objects
+/// Any object with this decorator will be sikpped in all fields fragment generation, ui generation
+/// and other stuff in the future
+///
+const gqInternal = "@gqInternal";
+
 const gqExternalArg = gqClass;
 const gqClass = "gqClass";
 const gqImport = "gqImport";

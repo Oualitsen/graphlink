@@ -1,5 +1,6 @@
 import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
+import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/gq_argument.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
@@ -78,6 +79,7 @@ class GQQueryDefinition extends GQToken with GQDirectivesMixin {
         interfaceNames: {},
         derivedFromType: null,
       );
+      gqDef.addDirective(GQDirectiveValue(gqInternal.toToken(), [], [], generated: true));
     }
     return gqDef;
   }
