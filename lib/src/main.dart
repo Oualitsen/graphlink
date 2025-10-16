@@ -251,7 +251,8 @@ GQGrammar createGrammar(GeneratorConfig config) {
   }
 }
 
-Future<Set<String>> generateClientClasses(GQGrammar grammar, GeneratorConfig config, DateTime started, {String? pack, noClient = true}) async {
+Future<Set<String>> generateClientClasses(GQGrammar grammar, GeneratorConfig config, DateTime started,
+    {String? pack, noClient = true}) async {
   final DartSerializer serializer = DartSerializer(grammar, generateJsonMethods: true);
   final dcs = DartClientSerializer(grammar, serializer);
   final List<Future<File>> futures = [];
@@ -294,32 +295,34 @@ Future<Set<String>> generateClientClasses(GQGrammar grammar, GeneratorConfig con
         destinationDir: destinationDir);
     futures.add(r);
   });
+  if (config.clientConfig?.generateUiTypes ?? false) {
+    grammar.views.forEach((k, def) {
+      var appLocImport = config.clientConfig?.appLocalizationsImport;
+      // @TODO add an assertion here
+      if (appLocImport != null) {
+        def.addImport(appLocImport);
+      }
+      var text = viewSerializeer.serializeType(def, prefix);
+      var r = writeToFile(
+          data: text,
+          fileName: serializer.getFileNameFor(def),
+          subdir: "widgets",
+          imports: [],
+          destinationDir: destinationDir);
+      futures.add(r);
+    });
+  }
 
-  grammar.views.forEach((k, def) {
-    var appLocImport = config.clientConfig?.appLocalizationsImport;
-    // @TODO add an assertion here
-    if(appLocImport != null) {
-      def.addImport(appLocImport);
-    }
-    var text = viewSerializeer.serializeType(def, prefix);
+  if (!noClient) {
+    String client = dcs.generateClient(prefix);
     var r = writeToFile(
-        data: text,
-        fileName: serializer.getFileNameFor(def),
-        subdir: "widgets",
+        data: client,
+        fileName: 'GQClient${dcs.fileExtension}',
+        subdir: 'client',
         imports: [],
         destinationDir: destinationDir);
     futures.add(r);
-  });
-
-  if(!noClient){
-  String client = dcs.generateClient(prefix);
-  var r = writeToFile(
-      data: client,
-      fileName: 'GQClient${dcs.fileExtension}',
-      subdir: 'client',
-      imports: [],
-      destinationDir: destinationDir);
-  futures.add(r);}
+  }
   var result = await Future.wait(futures);
   stdout.writeln("Generated ${futures.length} files in ${formatElapsedTime(started)}");
   var paths = result.map((f) => f.path).toSet();

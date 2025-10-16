@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:retrofit_graphql/src/serializers/language.dart';
 
 class GeneratorConfig {
@@ -104,7 +106,9 @@ class ClientConfig {
   final String? autoGenerateQueriesDefaultAlias;
   final String? defaultAlias;
   final String? packageName;
-  final String? appLocalizationsImport; 
+  final String? appLocalizationsImport;
+  final bool generateUiTypes;
+  final bool generateUiInputs;
 
   ClientConfig({
     required this.targetLanguage,
@@ -116,6 +120,8 @@ class ClientConfig {
     this.defaultAlias,
     required this.packageName,
     this.appLocalizationsImport,
+    this.generateUiInputs = false,
+    this.generateUiTypes = false,
   });
 
   factory ClientConfig.fromJson(Map<String, dynamic> json) {
@@ -129,6 +135,8 @@ class ClientConfig {
       defaultAlias: json['defaultAlias'],
       packageName: json['packageName'] as String?,
       appLocalizationsImport: json['appLocalizationsImport'] as String?,
+      generateUiInputs: (json['generateUiInputs'] as bool?) ?? false,
+      generateUiTypes: (json['generateUiTypes'] as bool?) ?? false,
     );
   }
 }
