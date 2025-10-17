@@ -148,10 +148,19 @@ class GQGrammar extends GrammarDefinition {
 
   void addSchemaMapping(GQSchemaMapping mapping) {
     var m = _schemaMappings[mapping.key];
-    if (m == null || (!m.batch && mapping.batch)) {
+
+    ///
+    /// replace existing mapping when
+    /// current mapping does not exist
+    /// current mapping has batch is null
+    /// current mapping has batch is false and new mapping has mapping == true
+    ///
+    if (m == null || m.batch == null || (m.batch == false && m.batch == true)) {
       _schemaMappings[mapping.key] = mapping;
     }
   }
+
+  GQSchemaMapping? getMappingByName(String name) => _schemaMappings[name];
 
   List<GQSchemaMapping> getAllMappingsByType(String typeName) =>
       _schemaMappings.values.where((e) => e.type.token == typeName).toList();

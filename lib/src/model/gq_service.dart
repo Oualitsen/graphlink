@@ -29,7 +29,7 @@ class GQService extends GQInterfaceDefinition {
 
   void addMapping(GQSchemaMapping mapping) {
     var m = _mappings[mapping.key];
-    if (m == null || (!m.batch && mapping.batch)) {
+    if (m == null || m.batch == null || (m.batch == false && m.batch == true)) {
       _mappings[mapping.key] = mapping;
     }
   }

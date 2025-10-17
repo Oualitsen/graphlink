@@ -31,7 +31,7 @@ type OwnerWithAnimal @gqSkipOnServer(mapTo: "Owner") {
     animal: Animal
 }
 
-type OwnerWithAnimal2 @gqSkipOnServer() {
+type OwnerWithAnimal2 @gqSkipOnServer(batch: false) {
     owner: Owner!
     animal: Animal
 }

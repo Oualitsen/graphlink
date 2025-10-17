@@ -9,7 +9,9 @@ class GQSchemaMapping {
   ///
   /// when true, the generator should generate a @BatchMapping instead of @SchemaMapping (when false)
   ///
-  final bool batch;
+  final bool? batch;
+
+  bool get isBatch => batch ?? true;
 
   ///
   /// when true, a @SchemaMapping should be generated to forbid access to field.
@@ -23,7 +25,7 @@ class GQSchemaMapping {
   GQSchemaMapping({
     required this.type,
     required this.field,
-    this.batch = false,
+    this.batch,
     this.forbid = false,
     this.identity = false,
   });

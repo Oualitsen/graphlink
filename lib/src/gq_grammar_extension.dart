@@ -144,8 +144,10 @@ extension GQGrammarExtension on GQGrammar {
 
   void skipFieldOfSkipOnServerTypes() {
     types.values.where((t) => t.getDirectiveByName(gqSkipOnServer) != null).forEach((t) {
+      var argValues = t.getDirectiveByName(gqSkipOnServer)!.getArguments().where((e) => e.token != gqMapTo).toList();
       for (var f in t.fields) {
-        f.addDirectiveIfAbsent(GQDirectiveValue.createDirectiveValue(directiveName: gqSkipOnServer, generated: true));
+        f.addDirectiveIfAbsent(
+            GQDirectiveValue.createDirectiveValue(directiveName: gqSkipOnServer, generated: true, args: argValues));
       }
     });
   }
@@ -199,9 +201,7 @@ extension GQGrammarExtension on GQGrammar {
   }
 
   void generateSchemaMappings() {
-    for (var type in types.values) {
-      genSchemaMappings(type);
-    }
+    types.values.forEach(genSchemaMappings);
     // generate Services and controllers for mappings only
     generateSchemaMappingServices();
   }
@@ -237,13 +237,15 @@ extension GQGrammarExtension on GQGrammar {
 
   void genSchemaMappings(GQTypeDefinition typeDef) {
     var fields = typeDef.fields.where((f) => types.containsKey(f.type.token)).toList();
+
     for (var field in fields) {
       var type = getType(field.type.tokenInfo);
       var skipOnServerFields = type.getSkipOnServerFields();
+      var typeBatch = type.getDirectiveByName(gqSkipOnServer)?.getArgValue(gqBatch) as bool?;
+      var fieldBacth = field.getDirectiveByName(gqSkipOnServer)?.getArgValue(gqBatch) as bool?;
+
       // find the field to make as identity
-
       GQField? identityField = _getIdentityField(type);
-
       for (var typeField in skipOnServerFields) {
         var targetField = typeField;
         var fieldType = getTypeByName(typeField.type.token);
@@ -264,21 +266,23 @@ extension GQGrammarExtension on GQGrammar {
                 directives: typeField.getDirectives());
           }
         }
+        var identity = identityField == typeField;
+        var batch = identity ? false : fieldBacth ?? typeBatch;
         var schemaMapping = GQSchemaMapping(
           type: type,
           field: targetField,
-          batch: field.type.isList,
-          identity: identityField == typeField,
+          batch: batch,
+          identity: identity,
         );
         addSchemaMapping(schemaMapping);
       }
       // generate forbidden fields
-      type.getSkinOnClientFields().forEach((typeField) {
+      type.getSkipOnClientFields().forEach((typeField) {
         addSchemaMapping(GQSchemaMapping(type: type, field: typeField, forbid: true));
       });
     }
 
-    typeDef.getSkinOnClientFields().forEach((typeField) {
+    typeDef.getSkipOnClientFields().forEach((typeField) {
       addSchemaMapping(GQSchemaMapping(
         type: typeDef,
         field: typeField,

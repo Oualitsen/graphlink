@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 import 'package:retrofit_graphql/src/serializers/language.dart';
 import 'package:retrofit_graphql/src/serializers/spring_server_serializer.dart';
 import 'package:test/test.dart';
@@ -26,14 +27,14 @@ type User {
     id: ID!
     name: String!
     middleName: String
-    cars: Car! @gqSkipOnServer
+    cars: Car! @gqSkipOnServer(batch: false)
 }
 
 type Car {
     make: String!
     model: String!
     userId: ID! @gqSkipOnClient
-    owner: Owner! @gqSkipOnServer
+    owner: Owner! @gqSkipOnServer(batch: false)
     ownerId: ID! @gqSkipOnClient
 }
 
@@ -50,8 +51,6 @@ type Query {
 
 }
 
-  
-
 ''');
 
     expect(parsed is Success, true);
@@ -62,13 +61,13 @@ type Query {
 
     var carOwner = mappings.where((e) => e.key == "carOwner").first;
 
-    expect(carOwner.batch, false);
+    expect(carOwner.isBatch, false);
     expect(carOwner.type.token, "Car");
     expect(carOwner.field.type.token, "Owner");
     expect(carOwner.field.name.token, "owner");
 
     var userCars = mappings.where((e) => e.key == "userCars").first;
-    expect(userCars.batch, true);
+    expect(userCars.isBatch, true);
     expect(userCars.type.token, "User");
     expect(userCars.field.type.token, "Car");
     expect(userCars.field.name.token, "cars");
@@ -105,7 +104,8 @@ type Query {
     expect(
         serviceSerial,
         stringContainsInOrder([
-          "public List<User> userWithCarUser(List<User> value) {",
+          '@SchemaMapping(typeName="UserWithCar", field="user")',
+          "public User userWithCarUser(User value) {",
           "return value;",
           "}",
         ]));
@@ -122,6 +122,59 @@ type Query {
     var springSerializer = SpringServerSerializer(g);
     var ctrl = g.controllers[g.controllerMappingName("UserWithCar")]!;
     var serviceSerial = springSerializer.serializeController(ctrl, "");
+    print(serviceSerial);
     expect(serviceSerial, contains("public User userWithCarUser(User value) { return value; }"));
+  });
+
+  test("Should generate batch mapping when batch = true", () {
+    final GQGrammar g = GQGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
+
+    const text = '''
+type ConversationUnread ${gqSkipOnServer}(mapTo: "ConversationView", batch: true) {
+    view: ConversationView!
+    unread: Int!
+}
+
+type ConversationView  {
+    customName: String
+}
+
+type Query {
+  getConverstation: ConversationUnread
+}
+
+
+''';
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+    expect(parsed is Success, true);
+
+    var mapping = g.getMappingByName("conversationUnreadUnread")!;
+    expect(mapping.batch, isTrue);
+  });
+
+  test("Should generate batch mapping when batch = false", () {
+    final GQGrammar g = GQGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
+
+    const text = '''
+type ConversationUnread ${gqSkipOnServer}(mapTo: "ConversationView", batch: false) {
+    view: ConversationView!
+    unread: Int!
+}
+
+type ConversationView  {
+    customName: String
+}
+
+type Query {
+  getConverstation: ConversationUnread
+}
+''';
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+    expect(parsed is Success, true);
+
+    var mapping2 = g.getMappingByName("conversationUnreadUnread")!;
+    expect(mapping2.batch, isFalse);
   });
 }

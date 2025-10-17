@@ -81,7 +81,7 @@ abstract class GQTokenWithFields extends GQToken {
     }).toList();
   }
 
-  List<GQField> getSkinOnClientFields() {
+  List<GQField> getSkipOnClientFields() {
     return _skipOnClientFields ??= fields.where((field) {
       return field.getDirectives().where((d) => d.token == gqSkipOnClient).isNotEmpty;
     }).toList();

@@ -113,8 +113,9 @@ class GQDirectiveValue extends GQToken {
     return _argsMap.values.toList();
   }
 
-  static GQDirectiveValue createDirectiveValue({required String directiveName, required bool generated}) {
-    return GQDirectiveValue(TokenInfo.ofString(directiveName), [], [], generated: generated);
+  static GQDirectiveValue createDirectiveValue(
+      {required String directiveName, required bool generated, List<GQArgumentValue> args = const []}) {
+    return GQDirectiveValue(TokenInfo.ofString(directiveName), [], args, generated: generated);
   }
 
   static GQDirectiveValue createGqDecorators({

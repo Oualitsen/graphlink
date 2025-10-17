@@ -10,6 +10,11 @@ const gqSkipOnServer = "@gqSkipOnServer";
 const gqMapTo = "mapTo";
 
 ///
+/// Argument to generate a batch mapping, defaults to true
+///
+const gqBatch = "batch";
+
+///
 /// Skips generating on client
 ///
 const gqSkipOnClient = "@gqSkipOnClient";

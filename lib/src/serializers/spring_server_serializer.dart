@@ -303,7 +303,7 @@ ${statement.ident()}
   }
 
   String _getAnnotation(GQSchemaMapping mapping, GQToken context) {
-    if (mapping.batch) {
+    if (mapping.isBatch) {
       context.addImport(SpringImports.batchMapping);
 
       return """
@@ -323,7 +323,7 @@ ${statement.ident()}
     var annotation = _getAnnotation(mapping, context);
     final type = serializer.serializeTypeReactive(context: context, gqType: mapping.field.type, reactive: false);
     final String returnType;
-    if (mapping.batch) {
+    if (mapping.isBatch) {
       returnType = "List<${convertPrimitiveToBoxed(type)}>";
     } else {
       returnType = type;
@@ -337,7 +337,7 @@ $result
   }
 
   String _getReturnType(GQSchemaMapping mapping, GQToken context) {
-    if (mapping.batch) {
+    if (mapping.isBatch) {
       var keyType = serializer.serializeType(_getServiceReturnType(GQType(mapping.type.tokenInfo, false)), false);
       if (keyType == "Object") {
         keyType = "?";
@@ -354,7 +354,7 @@ Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(serializer.se
 
   String _getMappingArgument(GQSchemaMapping mapping, GQToken context) {
     var argType = serializer.serializeType(_getServiceReturnType(GQType(mapping.type.tokenInfo, false)), false);
-    if (mapping.batch) {
+    if (mapping.isBatch) {
       context.addImport(importList);
       return "List<${convertPrimitiveToBoxed(argType)}> value";
     } else {

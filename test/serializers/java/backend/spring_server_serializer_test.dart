@@ -236,7 +236,6 @@ void main() {
         stringContainsInOrder([
           "Object getOwnerWithAnimal2();",
         ]));
-
     expect(
         ownerServiceMappingSerial,
         stringContainsInOrder(

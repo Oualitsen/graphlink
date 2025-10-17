@@ -1,5 +1,3 @@
-import 'dart:ffi';
-
 import 'package:retrofit_graphql/src/serializers/language.dart';
 
 class GeneratorConfig {
