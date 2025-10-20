@@ -1,4 +1,4 @@
-import 'package:retrofit_graphql/src/code_gen_utils.dart' as cgu;
+import 'package:retrofit_graphql/src/code_gen_utils.dart';
 import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_enum_definition.dart';
@@ -11,6 +11,7 @@ class FlutterTypeWidgetSerializer {
   final GQGrammar grammar;
   final DartSerializer serializer;
   final bool useApplocalisation;
+  final codeGenUtils = DartCodeGenUtils();
 
   FlutterTypeWidgetSerializer(
       this.grammar, this.serializer, this.useApplocalisation);
@@ -61,7 +62,7 @@ class FlutterTypeWidgetSerializer {
     buffer.write('class ${widgetName} extends StatelessWidget ');
     // field orders
 
-    buffer.writeln(cgu.block([
+    buffer.writeln(codeGenUtils.block([
       ...getDeclarations(type),
       serializeConstructor(widgetName, fields),
       serializeBuildMethod(fields),
@@ -108,10 +109,10 @@ Widget _wrapWidget(Widget label, Widget value) {
   }
 
   String serializeConstructor(String widgetName, List<GQField> fields) {
-    var m = cgu.declareMethod(
+    var m = codeGenUtils.declareMethod(
         methodName: widgetName,
         returnType: 'const',
-        statements: [
+        arguments: [
           'super.key,',
           'required this.value,',
           // orders
@@ -148,9 +149,9 @@ Widget _wrapWidget(Widget label, Widget value) {
     var methodStatements = <String>[
       'final ${widgetsVar} = <MapEntry<Widget, int>>[];',
       ...fields.map((field) {
-        return cgu
+        return codeGenUtils
             .ifStatement(condition: visibleVar(field), ifBlockStatements: [
-          cgu.ifStatement(
+          codeGenUtils.ifStatement(
               condition: '${widgetVar(field)} != null',
               ifBlockStatements: [
                 '${widgetsVar}.add(MapEntry(${widgetVar(field)}!, ${orderVar(field)}));'
@@ -169,7 +170,7 @@ Widget _wrapWidget(Widget label, Widget value) {
     methodStatements.add(
         "final ${childrenVar} = ${widgetsVar}.expand((e) => e == ${widgetsVar}.last ? [e.key]: [e.key, if (\$\$inbetweenWidget != null) \$\$inbetweenWidget]).toList();");
 
-    methodStatements.add(cgu.ifStatement(
+    methodStatements.add(codeGenUtils.ifStatement(
         condition: 'verticalLayout',
         ifBlockStatements: ["return Column(children: ${childrenVar});"],
         elseBlockStatements: ["return Row(children: ${childrenVar});"]));
@@ -177,7 +178,7 @@ Widget _wrapWidget(Widget label, Widget value) {
     final buffer = StringBuffer();
     buffer.writeln("@override");
 
-    var m = cgu.method(
+    var m = codeGenUtils.method(
         returnType: 'Widget',
         methodName: 'build',
         arguments: ['BuildContext context'],
@@ -208,12 +209,12 @@ Widget _wrapWidget(Widget label, Widget value) {
           directives: field.getDirectives());
       final mapToList =
           "map((e) => ${_generateValueWidget(newField, field)}).toList())";
-      var ternaryOp = cgu.ternaryOp(
+      var ternaryOp = codeGenUtils.ternaryOp(
           condition: "${containerVar(field)} != null",
           positiveStatement:
               "${containerVar(field)}!(${valueName}${dot}${mapToList}",
           negativeStatement: "Column(children: ${valueName}${dot}${mapToList}");
-          var nullValueCheck = cgu.ternaryOp(condition: '${valueName} != null', positiveStatement: "(${ternaryOp})", negativeStatement: 'SizedBox.shrink()');
+          var nullValueCheck = codeGenUtils.ternaryOp(condition: '${valueName} != null', positiveStatement: "(${ternaryOp})", negativeStatement: 'SizedBox.shrink()');
       buffer.write(nullValueCheck);
 
       return buffer.toString();
@@ -257,7 +258,7 @@ Widget _wrapWidget(Widget label, Widget value) {
   }
 
   String generateEnumValueFor(GQEnumDefinition def) {
-    return cgu.method(
+    return codeGenUtils.method(
         returnType: "String",
         methodName: "_get${def.token}Value",
         arguments: [
@@ -267,11 +268,11 @@ Widget _wrapWidget(Widget label, Widget value) {
         statements: [
           if (useApplocalisation) ...[
             'final lang = AppLocalizations.of(context)!;',
-            cgu.switchStatement(
+            codeGenUtils.switchStatement(
                 expression: 'value',
                 cases: [
                   ...def.values.map(
-                    (val) => cgu.CaseStatement(
+                    (val) => DartCaseStatement(
                         caseValue: "${def.token}.${val.value.token}",
                         statement:
                             'return lang.${def.token.firstLow}${val.value.token.firstUp};'),
@@ -284,14 +285,14 @@ Widget _wrapWidget(Widget label, Widget value) {
   }
 
   String serializeGetInBetweenWidget() {
-    return cgu.method(
+    return codeGenUtils.method(
         returnType: "Widget?",
         methodName: "_getInBetweenWidget",
         statements: [
-          cgu.ifStatement(
+          codeGenUtils.ifStatement(
               condition: "spaceBetween <= 0",
               ifBlockStatements: ["return null;"]),
-          cgu.ifStatement(
+          codeGenUtils.ifStatement(
               condition: "verticalLayout",
               ifBlockStatements: ["return SizedBox(height: spaceBetween);"]),
           "return SizedBox(width: spaceBetween);"
@@ -339,15 +340,15 @@ Widget _wrapWidget(Widget label, Widget value) {
       } else {
         b.write('fieldName;');
       }
-      return cgu.CaseStatement(
+      return DartCaseStatement(
           caseValue: '"${field.name.token}"', statement: b.toString());
     }).toList();
-    methodStatements.add(cgu.switchStatement(
+    methodStatements.add(codeGenUtils.switchStatement(
         expression: 'fieldName',
         cases: cases,
         defaultStatement: 'result = fieldName;'));
     methodStatements.add('return result;');
-    return cgu.method(
+    return codeGenUtils.method(
         returnType: "String",
         methodName: "_getLabel",
         arguments: ["String fieldName", "BuildContext context"],

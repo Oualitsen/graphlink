@@ -1,34 +1,72 @@
 import 'package:retrofit_graphql/src/extensions.dart';
 
+abstract class CodeGenUtilsBase {
+  String block(List<String>? statements);
 
-   String block(List<String>? statements) {
+  String ifStatement(
+      {required String condition,
+      required List<String> ifBlockStatements,
+      List<String>? elseBlockStatements});
+
+  String method(
+      {required String returnType,
+      required methodName,
+      List<String>? arguments,
+      required List<String> statements});
+
+  String parentheses(List<String>? elements);
+
+  String switchStatement({
+    required String expression,
+    required List<CaseStatement> cases,
+    String? defaultStatement,
+  });
+  String ternaryOp(
+      {required String condition,
+      required String positiveStatement,
+      required String negativeStatement});
+
+  String declareMethod(
+      {String? returnType,
+      required String methodName,
+      List<String>? arguments});
+}
+
+class DartCodeGenUtils implements CodeGenUtilsBase {
+  @override
+  String block(List<String>? statements) {
     var buffer = StringBuffer();
     buffer.writeln("{");
-    if(statements != null){
+    if (statements != null) {
       statements.map((e) => e.ident()).forEach(buffer.writeln);
     }
     buffer.write("}");
     return buffer.toString();
   }
 
-   String ifStatement({
-    required String condition,
-    required List<String> ifBlockStatements,
-    List<String>? elseBlockStatements
-  }) {
+  @override
+  String ifStatement(
+      {required String condition,
+      required List<String> ifBlockStatements,
+      List<String>? elseBlockStatements}) {
     var buffer = StringBuffer();
     buffer.write("if");
     buffer.write(parentheses([condition]));
     buffer.write(" ");
     buffer.write(block(ifBlockStatements));
-    if(elseBlockStatements != null) {
+    if (elseBlockStatements != null) {
       buffer.write(" else ");
       buffer.write(block(elseBlockStatements));
     }
     return buffer.toString();
   }
 
-  String method({required String returnType, required methodName, List<String>? arguments, required List<String> statements}) {
+  @override
+  String method(
+      {required String returnType,
+      required methodName,
+      List<String>? arguments,
+      required List<String> statements}) {
     var buffer = StringBuffer();
     buffer.write(returnType);
     buffer.write(" ");
@@ -40,15 +78,16 @@ import 'package:retrofit_graphql/src/extensions.dart';
     return buffer.toString();
   }
 
+  @override
   String parentheses(List<String>? elements) {
-    if(elements == null || elements.isEmpty) {
+    if (elements == null || elements.isEmpty) {
       return "()";
     }
     var buffer = StringBuffer();
     buffer.write("(");
-    for(var e in elements) {
+    for (var e in elements) {
       buffer.write(e);
-      if(e != elements.last) {
+      if (e != elements.last) {
         buffer.write(", ");
       }
     }
@@ -56,38 +95,30 @@ import 'package:retrofit_graphql/src/extensions.dart';
     return buffer.toString();
   }
 
-  String switchStatement({required String expression, required List<CaseStatement> cases, String? defaultStatement, }) {
+  @override
+  String switchStatement({
+    required String expression,
+    required List<CaseStatement> cases,
+    String? defaultStatement,
+  }) {
     var buffer = StringBuffer();
     buffer.write("switch");
     buffer.write(parentheses([expression]));
     buffer.write(" ");
-    var myCases = [... cases.map((e) => e.toCaseStatement())];
-    if(defaultStatement != null) {
+    var myCases = [...cases.map((e) => e.toCaseStatement())];
+    if (defaultStatement != null) {
       myCases.add("default:");
-      myCases.add(defaultStatement);
+      myCases.add(defaultStatement.ident());
     }
     buffer.write(block(myCases));
     return buffer.toString();
   }
 
-  class CaseStatement {
-    final String caseValue;
-    final String statement;
-
-   CaseStatement({required this.caseValue, required this.statement});
-
-   String toCaseStatement() {
-    var buffer = StringBuffer();
-    buffer.writeln("case ${caseValue}:");
-    buffer.writeln(statement.ident());
-    if(!statement.trim().startsWith("return ")) {
-      buffer.writeln("break;");
-    }
-    return buffer.toString();
-   }
-  }
-
-  String ternaryOp({required String condition, required String positiveStatement,required String negativeStatement}) {
+  @override
+  String ternaryOp(
+      {required String condition,
+      required String positiveStatement,
+      required String negativeStatement}) {
     var buffer = StringBuffer(condition);
     buffer.write(" ? ");
     buffer.write(positiveStatement);
@@ -96,13 +127,182 @@ import 'package:retrofit_graphql/src/extensions.dart';
     return buffer.toString();
   }
 
-  String declareMethod({String? returnType, required String methodName, List<String>? statements}) {
+  @override
+  String declareMethod(
+      {String? returnType,
+      required String methodName,
+      List<String>? arguments,
+      bool namedArguments = true,
+      List<String>? statements}) {
     var buffer = StringBuffer();
-    if(returnType != null) {
+    if (returnType != null) {
       buffer.write(returnType);
       buffer.write(" ");
     }
     buffer.write(methodName);
-    buffer.write(parentheses([block(statements)]));
+    if (arguments != null) {
+      buffer.write(parentheses(namedArguments ?  [block(arguments)]: arguments));
+    } else {
+      buffer.write(parentheses([]));
+    }
+    if (statements != null) {
+      buffer.write(" ");
+      buffer.write(block(statements));
+    }
     return buffer.toString();
   }
+}
+
+class JavaCodeGenUtils implements CodeGenUtilsBase {
+  @override
+  String block(List<String>? statements) {
+    var buffer = StringBuffer();
+    buffer.writeln("{");
+    if (statements != null) {
+      statements.map((e) => e.ident()).forEach(buffer.writeln);
+    }
+    buffer.write("}");
+    return buffer.toString();
+  }
+
+  @override
+  String ifStatement(
+      {required String condition,
+      required List<String> ifBlockStatements,
+      List<String>? elseBlockStatements}) {
+    var buffer = StringBuffer();
+    buffer.write("if");
+    buffer.write(parentheses([condition]));
+    buffer.write(" ");
+    buffer.write(block(ifBlockStatements));
+    if (elseBlockStatements != null) {
+      buffer.write(" else ");
+      buffer.write(block(elseBlockStatements));
+    }
+    return buffer.toString();
+  }
+
+  @override
+  String method(
+      {required String returnType,
+      required methodName,
+      List<String>? arguments,
+      required List<String> statements}) {
+    var buffer = StringBuffer();
+    buffer.write(returnType);
+    buffer.write(" ");
+    buffer.write(methodName);
+    buffer.write(parentheses(arguments));
+    buffer.write(" ");
+
+    buffer.write(block(statements));
+    return buffer.toString();
+  }
+
+  @override
+  String parentheses(List<String>? elements) {
+    if (elements == null || elements.isEmpty) {
+      return "()";
+    }
+    var buffer = StringBuffer();
+    buffer.write("(");
+    for (var e in elements) {
+      buffer.write(e);
+      if (e != elements.last) {
+        buffer.write(", ");
+      }
+    }
+    buffer.write(")");
+    return buffer.toString();
+  }
+
+  @override
+  String switchStatement({
+    required String expression,
+    required List<CaseStatement> cases,
+    String? defaultStatement,
+  }) {
+    var buffer = StringBuffer();
+    buffer.write("switch");
+    buffer.write(parentheses([expression]));
+    buffer.write(" ");
+    var myCases = [...cases.map((e) => e.toCaseStatement())];
+    if (defaultStatement != null) {
+      myCases.add("default:");
+      myCases.add(defaultStatement);
+    }
+    buffer.write(block(myCases));
+    return buffer.toString();
+  }
+
+  @override
+  String ternaryOp(
+      {required String condition,
+      required String positiveStatement,
+      required String negativeStatement}) {
+    var buffer = StringBuffer(condition);
+    buffer.write(" ? ");
+    buffer.write(positiveStatement);
+    buffer.write(" : ");
+    buffer.write(negativeStatement);
+    return buffer.toString();
+  }
+
+  @override
+  String declareMethod(
+      {String? returnType,
+      required String methodName,
+      List<String>? arguments,
+      List<String>? statements}) {
+    var buffer = StringBuffer();
+    if (returnType != null) {
+      buffer.write(returnType);
+      buffer.write(" ");
+    }
+    buffer.write(methodName);
+    buffer.write(parentheses(arguments));
+    if (statements != null) {
+      buffer.write(block(statements));
+    }
+    return buffer.toString();
+  }
+}
+
+abstract class CaseStatement {
+  final String caseValue;
+  final String statement;
+
+  CaseStatement({required this.caseValue, required this.statement});
+
+  String toCaseStatement();
+}
+
+class DartCaseStatement extends CaseStatement {
+  DartCaseStatement({required super.caseValue, required super.statement});
+
+  @override
+  String toCaseStatement() {
+    var buffer = StringBuffer();
+    buffer.writeln("case ${caseValue}:");
+    buffer.writeln(statement.ident());
+    if (!statement.trim().startsWith("return ")) {
+      buffer.writeln("break;");
+    }
+    return buffer.toString();
+  }
+}
+
+class JavaCaseStatement extends CaseStatement {
+  JavaCaseStatement({required super.caseValue, required super.statement});
+
+  @override
+  String toCaseStatement() {
+    var buffer = StringBuffer();
+    buffer.writeln("case ${caseValue}:");
+    buffer.writeln(statement.ident());
+    if (!statement.trim().startsWith("return ")) {
+      buffer.writeln("break;");
+    }
+    return buffer.toString();
+  }
+}

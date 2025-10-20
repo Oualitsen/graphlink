@@ -1,3 +1,4 @@
+import 'package:retrofit_graphql/src/code_gen_utils.dart';
 import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_enum_definition.dart';
@@ -14,6 +15,7 @@ import 'package:retrofit_graphql/src/ui/flutter/gq_type_view.dart';
 import 'package:retrofit_graphql/src/utils.dart';
 
 class DartSerializer extends GqSerializer {
+  final codeGenUtils = DartCodeGenUtils();
   @override
   final bool generateJsonMethods;
   DartSerializer(super.grammar, {this.generateJsonMethods = true}) {
@@ -35,25 +37,19 @@ class DartSerializer extends GqSerializer {
     buffer.write(def.values.map((e) => doSerializeEnumValue(e)).toList().join(", ").ident());
     buffer.writeln(";");
     // toJson
-    buffer.writeln("String toJson() {".ident());
-    buffer.writeln('switch(this) {'.ident(2));
-    // switch cases
-    var switchCases = def.values.map((val) => 'case ${val.token}: return "${val.token}";').join("\n");
-    buffer.writeln(switchCases.ident(3));
-    buffer.writeln('}'.ident(2));
-    buffer.writeln("}".ident());
+    buffer.writeln(codeGenUtils.declareMethod(methodName: "toJson", returnType: "String", statements: [
+      codeGenUtils.switchStatement(expression: "this", cases: [
+       ... def.values.map((val) => DartCaseStatement(caseValue: val.token, statement: 'return "${val.token}";'))
+      ])
+    ]).ident());
+    
     // end toJson
     // fromJson
-    buffer.writeln("static ${def.token} fromJson(String value) {".ident());
-    //switch statement
-    buffer.writeln('switch(value) {'.ident(2));
-    var switchCasesFromJson = def.values.map((val) => 'case "${val.token}": return ${val.token};').join("\n");
-    buffer.writeln(switchCasesFromJson.ident(3));
-    buffer.writeln('default: throw ArgumentError("Invalid ${def.token}: \$value");'.ident(3));
-
-    buffer.writeln("}".ident(2));
-    buffer.writeln("}".ident());
-
+    buffer.writeln(codeGenUtils.declareMethod(methodName: "fromJson", arguments: ['String value'], namedArguments: false , returnType: 'static ${def.token}', statements: [
+      codeGenUtils.switchStatement(expression: 'value', cases: [
+        ... def.values.map((val) => DartCaseStatement(caseValue: '"${val.token}"', statement: 'return ${val.token};'))
+      ], defaultStatement: 'throw ArgumentError("Invalid Gender: \$value");')
+    ]).ident());
     buffer.writeln("}");
     return buffer.toString();
   }

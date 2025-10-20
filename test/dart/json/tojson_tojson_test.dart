@@ -4,7 +4,7 @@ import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {
-  test("enum to json", () {
+  test("Dart enum to json", () {
     final GQGrammar g = GQGrammar();
 
     var parsed = g.parse('''
@@ -19,13 +19,15 @@ void main() {
         containsAllInOrder([
           "String toJson() {",
           'switch(this) {',
-          'case male: return "male";',
-          'case female: return "female";',
-          '}',
+          'case male:',
+          'return "male";',
+          'case female:',
+          'return "female";',
+              '}',
         ]));
   });
 
-  test("enum from json", () {
+  test("Dart enum from json", () {
     final GQGrammar g = GQGrammar();
 
     var parsed = g.parse('''
@@ -40,9 +42,12 @@ void main() {
         containsAllInOrder([
           "static Gender fromJson(String value) {",
           'switch(value) {',
-          'case "male": return male;',
-          'case "female": return female;',
-          'default: throw ArgumentError("Invalid Gender: \$value");',
+          'case "male":',
+          'return male;',
+          'case "female":',
+          'return female;',
+          'default:',
+          'throw ArgumentError("Invalid Gender: \$value");',
           '}',
           '}',
         ]));
