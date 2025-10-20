@@ -252,7 +252,7 @@ GQGrammar createGrammar(GeneratorConfig config) {
 }
 
 Future<Set<String>> generateClientClasses(GQGrammar grammar, GeneratorConfig config, DateTime started,
-    {String? pack, noClient = true}) async {
+    {String? pack, noClient = false}) async {
   final DartSerializer serializer = DartSerializer(grammar, generateJsonMethods: true);
   final dcs = DartClientSerializer(grammar, serializer);
   final List<Future<File>> futures = [];
