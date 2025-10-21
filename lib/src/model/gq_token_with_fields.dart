@@ -6,6 +6,7 @@ import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
+import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
 import 'package:retrofit_graphql/src/serializers/language.dart';
 import 'package:retrofit_graphql/src/utils.dart';
 
@@ -95,6 +96,11 @@ abstract class GQTokenWithFields extends GQToken {
       var token = g.getTokenByKey(f.type.token);
       if (filterDependecy(token, g)) {
         result[token!.token] = token;
+      } else {
+        var mappedTo = _getMappedTo(token, g);
+        if (mappedTo != null) {
+          result[mappedTo.token] = mappedTo;
+        }
       }
       for (var arg in f.arguments) {
         var argToken = g.getTokenByKey(arg.type.token);
@@ -104,6 +110,17 @@ abstract class GQTokenWithFields extends GQToken {
       }
     }
     return Set.unmodifiable(result.values);
+  }
+
+  GQToken? _getMappedTo(GQToken? token, GQGrammar g) {
+    if (token == null || token is! GQTypeDefinition) {
+      return null;
+    }
+    var mapTo = token.getDirectiveByName(gqSkipOnServer)?.getArgValueAsString(gqMapTo);
+    if (mapTo == null) {
+      return null;
+    }
+    return g.types[mapTo];
   }
 
   @override

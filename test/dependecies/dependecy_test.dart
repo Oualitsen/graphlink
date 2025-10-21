@@ -786,4 +786,32 @@ type Query {
     var mapping = g.services[g.serviceMappingName('PersonDTO')]!;
     expect(mapping.getImportDependecies(g).map((e) => e.token), containsAll(['Person']));
   });
+
+  test("services and controllers should import mapped to dependecies", () {
+    final GQGrammar g = GQGrammar(mode: CodeGenerationMode.server);
+
+    var parsed = g.parse('''
+  ${clientObjects}
+  type ConversationUnread @gqSkipOnServer(mapTo: "ConversationView") {
+    view: ConversationView!
+    unread: Int!
+  }
+
+  type ConversationView  {
+    conversationId: ID! 
+    customName: String
+  }
+
+  type Query {
+    getConversationById(id: ID!): ConversationUnread! @gqServiceName(name: "MessageService")
+  }
+  
+''');
+    expect(parsed is Success, true);
+
+    var service = g.services["MessageService"]!;
+    var ctrl = g.controllers["MessageServiceController"]!;
+    expect(service.getImportDependecies(g).map((e) => e.token), containsAll(['ConversationView']));
+    expect(ctrl.getImportDependecies(g).map((e) => e.token), containsAll(['ConversationView']));
+  });
 }
