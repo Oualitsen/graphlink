@@ -245,7 +245,7 @@ class SubscriptionHandler {
 
   SubscriptionHandler(this.adapter);
 
-  var ack = StreamController<_StreamSink>();
+  var ack = StreamController<_StreamSink>.broadcast();
   var ackStatus = GQAckStatus.none;
 
   Stream<String>? _cahce;
@@ -365,7 +365,7 @@ class SubscriptionHandler {
       ackStatus = GQAckStatus.none;
       ack.close();
       _cahce = null;
-      ack = StreamController<_StreamSink>();
+      ack = StreamController<_StreamSink>.broadcast();
     }
   }
 }
