@@ -48,7 +48,7 @@ class DartSerializer extends GqSerializer {
     buffer.writeln(codeGenUtils.declareMethod(methodName: "fromJson", arguments: ['String value'], namedArguments: false , returnType: 'static ${def.token}', statements: [
       codeGenUtils.switchStatement(expression: 'value', cases: [
         ... def.values.map((val) => DartCaseStatement(caseValue: '"${val.token}"', statement: 'return ${val.token};'))
-      ], defaultStatement: 'throw ArgumentError("Invalid Gender: \$value");')
+      ], defaultStatement: 'throw ArgumentError("Invalid ${def.token}: \$value");')
     ]).ident());
     buffer.writeln("}");
     return buffer.toString();

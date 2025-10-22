@@ -55,27 +55,25 @@ type GQSubscriptionPayload ${gqInternal} {
 
 
 interface GQSubscriptionErrorMessageBase ${gqInternal} {
-  type: GQSubscriptionMessageType
+  type: String
   id: String
 }
 
 type GQSubscriptionErrorMessage implements GQSubscriptionErrorMessageBase ${gqInternal} {
   id: String
-  type: GQSubscriptionMessageType
+  type: String
   payload: [GQError!]
 }
 
 type GQSubscriptionMessage implements GQSubscriptionErrorMessageBase ${gqInternal} {
   id: String
-  type: GQSubscriptionMessageType
+  type: String
   payload: GQSubscriptionPayload
 }
 
 enum GQAckStatus {none progress acknoledged }
 
-enum GQSubscriptionMessageType {
-  connection_init connection_ack subscribe next complete error
-}
+
 
 ''';
 

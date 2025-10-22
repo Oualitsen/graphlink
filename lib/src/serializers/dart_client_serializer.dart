@@ -21,9 +21,6 @@ class DartClientSerializer extends ClientSerilaizer {
     buffer.writeln("import 'dart:async';");
     buffer.writeln("import 'dart:math';");
     buffer.writeln(imports);
-    if (_grammar.hasSubscriptions) {
-      buffer.writeln("import 'package:web_socket_channel/web_socket_channel.dart';");
-    }
 
     GQQueryType.values.map((e) => generateQueriesClassByType(e)).where((e) => e != null).map((e) => e!).forEach((line) {
       buffer.writeln(line);
@@ -92,7 +89,7 @@ class DartClientSerializer extends ClientSerilaizer {
 
   String _declareConstructorArgs(GQQueryType type) {
     if (type == GQQueryType.subscription) {
-      return "(WebSocketAdapter adapter, this.fragmentMap): _handler = SubscriptionHandler(adapter);";
+      return "(WebSocketAdapter adapter, this.fragmentMap): _handler = _SubscriptionHandler(adapter);";
     }
     return "(this._adapter, this.fragmentMap);";
   }
@@ -104,8 +101,8 @@ class DartClientSerializer extends ClientSerilaizer {
         return "final Future<String> Function(String payload${_grammar.operationNameAsParameter ? ', String $_operationNameParam' : ''}) _adapter;";
       case GQQueryType.subscription:
         return """
-        final SubscriptionHandler _handler;
-        """;
+        final _SubscriptionHandler _handler;
+        """.trim();
     }
   }
 
@@ -118,13 +115,11 @@ class DartClientSerializer extends ClientSerilaizer {
     buffer.write(serializeArgs(def));
     buffer.writeln(") {");
     buffer.writeln("const operationName = '${def.tokenInfo}';".ident());
-    if (def.fragments(_grammar).isEmpty) {
-      buffer.writeln("const fragsValues = '';".ident());
-    } else {
+    if (def.fragments(_grammar).isNotEmpty) {
       buffer.write("final fragsValues = [".ident());
       buffer.write(def.fragments(_grammar).map((e) => '"${e.tokenInfo}"').toList().join(", "));
       buffer.writeln("].map((fragName) => fragmentMap[fragName]!).join(' ');");
-    }
+    } 
     if (def.fragments(_grammar).isEmpty) {
       buffer.writeln("const query = '''${_grammar.serializer.serializeQueryDefinition(def)}''';".ident());
     } else {
@@ -229,8 +224,6 @@ return _adapter(json.encode(payload.toJson())${_grammar.operationNameAsParameter
 $_subscriptionHandler
 $_streamSink
 $_webSocketAdapter
-$_generateUuid
-$_webSocketChannelAdapter
 """;
   }
 
@@ -238,36 +231,83 @@ $_webSocketChannelAdapter
 }
 
 const _subscriptionHandler = """
-class SubscriptionHandler {
+
+class GraphqlWsMessageTypes {
+  /// Client initializes connection.
+  /// Example: { "type": "connection_init", "payload": { "authToken": "abc123" } }
+  static const String connectionInit = 'connection_init';
+
+  /// Server acknowledges connection.
+  /// Example: { "type": "connection_ack" }
+  static const String connectionAck = 'connection_ack';
+
+  /// Client subscribes to an operation.
+  /// Example:
+  /// {
+  ///   "id": "1",
+  ///   "type": "subscribe",
+  ///   "payload": { "query": "...", "variables": {} }
+  /// }
+  static const String subscribe = 'subscribe';
+
+  /// Client or server pings for keep-alive.
+  /// Example: { "type": "ping", "payload": {} }
+  static const String ping = 'ping';
+
+  /// Response to ping.
+  /// Example: { "type": "pong" }
+  static const String pong = 'pong';
+
+  /// Server sends subscription data.
+  /// Example:
+  /// {
+  ///   "id": "1",
+  ///   "type": "next",
+  ///   "payload": { "data": { "newMessage": { "id": "42", "content": "Hi" } } }
+  /// }
+  static const String next = 'next';
+
+  /// Server sends a fatal error for a subscription.
+  /// Example: { "id": "1", "type": "error", "payload": { "message": "Validation failed" } }
+  static const String error = 'error';
+
+  /// Client or server completes subscription.
+  /// Example: { "id": "1", "type": "complete" }
+  static const String complete = 'complete';
+}
+
+
+class _SubscriptionHandler {
+  static const hexDigits = '0123456789abcdef';
+  final _random = Random();
   final Map<String, StreamController<Map<String, dynamic>>> _map = {};
+  final Map<String, StreamSubscription> _subs = {};
   final WebSocketAdapter adapter;
-  final connectionInit = GQSubscriptionErrorMessage(type: GQSubscriptionMessageType.connection_init);
 
-  SubscriptionHandler(this.adapter);
+  final connectionInit = jsonEncode(GQSubscriptionErrorMessage(type: GraphqlWsMessageTypes.connectionInit).toJson());
+  final pingMessage = jsonEncode(GQSubscriptionErrorMessage(type: GraphqlWsMessageTypes.ping).toJson());
+  final pongMessage = jsonEncode(GQSubscriptionErrorMessage(type: GraphqlWsMessageTypes.pong).toJson());
 
-  var ack = StreamController<_StreamSink>.broadcast();
-  var ackStatus = GQAckStatus.none;
+  _SubscriptionHandler(this.adapter);
 
-  Stream<String>? _cahce;
+  var _ackStatus = GQAckStatus.none;
 
-  Stream<String> createBroadcaseStream() {
+  Stream<String> get _onMessageStream {
     var stream = adapter.onMessageStream;
     if (stream.isBroadcast) {
       return stream;
     }
-    if (_cahce != null) {
-      return _cahce!;
-    }
-    return _cahce = stream.asBroadcastStream();
+    return stream.asBroadcastStream();
   }
 
   Future<_StreamSink> _initWs() async {
-    switch (ackStatus) {
+    switch (_ackStatus) {
       case GQAckStatus.none:
-        ackStatus = GQAckStatus.progress;
-        return adapter.onConnectionReady().asStream().asyncMap((_) {
-          var broadcasStream = createBroadcaseStream();
-          var r = broadcasStream.map((event) {
+        {
+          _ackStatus = GQAckStatus.progress;
+          await adapter.onConnectionReady();
+          adapter.sendMessage(connectionInit);
+          return _onMessageStream.map((event) {
             var decoded = jsonDecode(event);
             if (decoded is Map<String, dynamic>) {
               return GQSubscriptionMessage.fromJson(decoded);
@@ -276,105 +316,138 @@ class SubscriptionHandler {
             }
           }).map((event) {
             switch (event.type) {
-              case GQSubscriptionMessageType.connection_ack:
-                return broadcasStream;
-              case GQSubscriptionMessageType.error:
+              case GraphqlWsMessageTypes.connectionAck:
+                _ackStatus = GQAckStatus.acknoledged;
+                return _StreamSink(sendMessage: adapter.sendMessage, stream: _onMessageStream);
+              case GraphqlWsMessageTypes.error:
+                _ackStatus = GQAckStatus.none;
                 throw (event as GQSubscriptionErrorMessage).payload!;
               default:
-                return broadcasStream;
+                return _StreamSink(sendMessage: adapter.sendMessage, stream: _onMessageStream);
             }
-          }).map((bs) {
-            var streamSink = _StreamSink(sendMessage: adapter.sendMessage, stream: bs);
-            ackStatus = GQAckStatus.acknoledged;
-            ack.sink.add(streamSink);
-            return streamSink;
           }).first;
-          adapter.sendMessage(json.encode(connectionInit.toJson()));
-          return r;
-        }).first;
-
+        }
       case GQAckStatus.progress:
       case GQAckStatus.acknoledged:
-        return ack.stream.first;
+        return _StreamSink(sendMessage: adapter.sendMessage, stream: _onMessageStream);
     }
   }
 
-  Stream<Map<String, dynamic>> handle(GQPayload pl) {
-    String uuid = generateUuid();
+  StreamController<Map<String, dynamic>> _createStremController(String uuid) {
     var controller = StreamController<Map<String, dynamic>>(
       onCancel: () {
-        removeController(uuid);
+        _removeController(uuid);
       },
     );
     _map[uuid] = controller;
+    return controller;
+  }
+
+  Stream<Map<String, dynamic>> handle(GQPayload pl) {
+    String uuid = _generateUuid();
+    var controller = _createStremController(uuid);
+
     _initWs().then((streamSink) {
-      streamSink.stream
-          .map((event) {
-            var map = jsonDecode(event);
-            var payload = map["payload"];
-            if (payload is Map) {
-              return GQSubscriptionMessage.fromJson(map);
-            } else if (payload is List) {
-              return GQSubscriptionErrorMessage.fromJson(map);
-            }
-          })
-          .map((event) => event!)
+      var sub = streamSink.stream
+          .map(_parseEvent)
           .where((event) => event.id == uuid)
-          .listen((msg) {
-            var msgId = msg.id!;
-            switch (msg.type!) {
-              case GQSubscriptionMessageType.next:
-                var msg2 = msg as GQSubscriptionMessage;
-                var ctrl = _map[msgId]!;
-                ctrl.add(msg2.payload!.data!);
-                break;
-              case GQSubscriptionMessageType.complete:
-                removeController(msgId);
+          .listen((msg) => _handleMessage(msg, uuid));
+      _subs[uuid] = sub;
+      var message = GQSubscriptionMessage(
+          id: uuid,
+          type: GraphqlWsMessageTypes.subscribe,
+          payload: GQSubscriptionPayload(
+            query: pl.query,
+            operationName: pl.operationName,
+            variables: pl.variables,
+          ));
 
-                break;
-              case GQSubscriptionMessageType.error:
-                var errorMsg = msg as GQSubscriptionErrorMessage;
-                var ctrl = _map[msgId]!;
-                ctrl.addError(errorMsg.payload as Object);
-                removeController(msgId);
-
-                break;
-              default:
-            }
-          });
-          var message =  GQSubscriptionMessage(
-        id: uuid,
-        type: GQSubscriptionMessageType.subscribe,
-        payload: GQSubscriptionPayload(
-          query: pl.query,
-          operationName: pl.operationName,
-          variables: pl.variables,
-        )).toJson();
-
-      streamSink.sendMessage(json.encode(message));
+      streamSink.sendMessage(json.encode(message.toJson()));
     });
 
     return controller.stream;
   }
 
-  void removeController(String uuid) {
-    var removed = _map.remove(uuid);
-    removed?.close();
-    if (_map.isEmpty) {
-      adapter.close();
-      ackStatus = GQAckStatus.none;
-      ack.close();
-      _cahce = null;
-      ack = StreamController<_StreamSink>.broadcast();
+  GQSubscriptionErrorMessageBase _parseEvent(String event) {
+    var map = jsonDecode(event);
+    var payload = map["payload"];
+    GQSubscriptionErrorMessageBase result;
+    if (payload is Map) {
+      result = GQSubscriptionMessage.fromJson(map);
+    } else {
+      result = GQSubscriptionErrorMessage.fromJson(map);
+    }
+    return result;
+  }
+
+  void _sendPingMessage() {
+    adapter.sendMessage(pingMessage);
+  }
+
+  void _sendPongMessage() {
+    adapter.sendMessage(pongMessage);
+  }
+
+  void _handleMessage(GQSubscriptionErrorMessageBase msg, String uuid) {
+    var controller = _map[uuid]!;
+    switch (msg.type!) {
+      case GraphqlWsMessageTypes.ping:
+        _sendPingMessage();
+        break;
+      case GraphqlWsMessageTypes.pong:
+        _sendPongMessage();
+        break;
+      case GraphqlWsMessageTypes.next:
+        controller.add((msg as GQSubscriptionMessage).payload!.data!);
+        break;
+      case GraphqlWsMessageTypes.complete:
+        _removeController(uuid);
+        break;
+      case GraphqlWsMessageTypes.error:
+        var errorMsg = msg as GQSubscriptionErrorMessage;
+        var ctrl = _map[uuid]!;
+        ctrl.addError(errorMsg.payload as Object);
+        _removeController(uuid);
+        break;
+      default:
     }
   }
+
+  void _removeController(String uuid) {
+    _subs.remove(uuid)?.cancel();
+    _map.remove(uuid)?.close();
+    if (_map.isEmpty) {
+      adapter.close();
+      _ackStatus = GQAckStatus.none;
+    }
+  }
+
+  String _generateRandomString(int length) {
+    final buffer = StringBuffer();
+    for (var i = 0; i < length; i++) {
+      final randomIndex = _random.nextInt(hexDigits.length);
+      buffer.write(hexDigits[randomIndex]);
+    }
+    return buffer.toString();
+  }
+
+  String _generateUuid([String separator = "-"]) {
+    return [
+      _generateRandomString(8),
+      _generateRandomString(4),
+      _generateRandomString(4),
+      _generateRandomString(4),
+      _generateRandomString(12),
+    ].join(separator);
+  }
 }
+
 """;
 
 const _streamSink = """
-  class _StreamSink {
+class _StreamSink {
   final Function(String) sendMessage;
-  final Stream<dynamic> stream;
+  final Stream<String> stream;
 
   _StreamSink({required this.sendMessage, required this.stream});
 }
@@ -391,60 +464,6 @@ abstract class WebSocketAdapter {
   void close();
 }
 """;
-const _generateUuid = """
-String generateUuid([String separator = "-"]) {
-  final random = Random();
-  const hexDigits = '0123456789abcdef';
 
-  String generateRandomString(int length) {
-    final buffer = StringBuffer();
-    for (var i = 0; i < length; i++) {
-      final randomIndex = random.nextInt(hexDigits.length);
-      buffer.write(hexDigits[randomIndex]);
-    }
-    return buffer.toString();
-  }
 
-  return [
-    generateRandomString(8),
-    generateRandomString(4),
-    generateRandomString(4),
-    generateRandomString(4),
-    generateRandomString(12),
-  ].join(separator);
-}
 
-""";
-
-const _webSocketChannelAdapter = """
-  class WebSocketChannelAdapter implements WebSocketAdapter {
-  final String url;
-  WebSocketChannelAdapter(this.url);
-
-  WebSocketChannel? channel;
-
-  @override
-  Future<void> onConnectionReady() async {
-    if (channel != null) {
-      return;
-    }
-    channel = WebSocketChannel.connect(Uri.parse(url));
-    return channel!.ready;
-  }
-
-  @override
-  sendMessage(String message) {
-    channel!.sink.add(message);
-  }
-
-  @override
-  Stream<String> get onMessageStream =>
-      channel!.stream.map((event) => event as String);
-
-  @override
-  void close() {
-    channel?.sink.close();
-    channel = null;
-  }
-}
-""";

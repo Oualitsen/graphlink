@@ -588,8 +588,7 @@ type Subscrtipion {
           "GQAckStatus",
           "GQSubscriptionErrorMessageBase",
           "GQSubscriptionErrorMessage",
-          "GQSubscriptionMessage",
-          "GQSubscriptionMessageType"
+          "GQSubscriptionMessage"
         ]));
   });
 
