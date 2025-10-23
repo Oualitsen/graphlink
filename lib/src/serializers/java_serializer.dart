@@ -59,6 +59,8 @@ String _mapOf(String key, String type) {
 class JavaSerializer extends GqSerializer {
   final bool inputsAsRecords;
   final bool typesAsRecords;
+  final bool typesCheckForNulls;
+  final bool inputsCheckForNulls;
   @override
   final bool generateJsonMethods;
   JavaSerializer(
@@ -66,6 +68,8 @@ class JavaSerializer extends GqSerializer {
     this.inputsAsRecords = false,
     this.typesAsRecords = false,
     this.generateJsonMethods = false,
+    this.typesCheckForNulls = false,
+    this.inputsCheckForNulls = true,
   }) {
     _initAnnotations();
   }
@@ -223,7 +227,7 @@ class JavaSerializer extends GqSerializer {
   }
 
   @override
-  String doSerializeInputDefinition(GQInputDefinition def, {bool checkForNulls = false}) {
+  String doSerializeInputDefinition(GQInputDefinition def) {
     final decorators = serializeDecorators(def.getDirectives());
     var buffer = StringBuffer();
     if (decorators.isNotEmpty) {
@@ -238,13 +242,13 @@ class JavaSerializer extends GqSerializer {
     buffer.writeln(serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeField(e)).toList(),
             join: "\n", withParenthesis: false)
         .ident());
-    buffer.writeln(generateContructor(def.token, [], "public", def, checkForNulls: checkForNulls).ident());
+    buffer.writeln(generateContructor(def.token, [], "public", def, checkForNulls: inputsCheckForNulls).ident());
     buffer.writeln(generateContructor(def.token, def.getSerializableFields(grammar.mode), "private", def).ident());
     buffer.writeln(generateBuilder(def.token, def.getSerializableFields(grammar.mode)).ident());
     buffer.writeln(serializeListText(
             def
                 .getSerializableFields(grammar.mode)
-                .map((e) => serializeGetter(e, checkForNulls: checkForNulls))
+                .map((e) => serializeGetter(e, def, checkForNulls: inputsCheckForNulls))
                 .toList(),
             join: "\n",
             withParenthesis: false)
@@ -252,7 +256,7 @@ class JavaSerializer extends GqSerializer {
     buffer.writeln(serializeListText(
             def
                 .getSerializableFields(grammar.mode)
-                .map((e) => serializeSetter(e, def, checkForNulls: checkForNulls))
+                .map((e) => serializeSetter(e, def, checkForNulls: inputsCheckForNulls))
                 .toList(),
             join: "\n",
             withParenthesis: false)
@@ -461,11 +465,12 @@ class JavaSerializer extends GqSerializer {
     return buffer.toString();
   }
 
-  String serializeGetter(GQField field, {bool checkForNulls = false}) {
+  String serializeGetter(GQField field, GQToken context, {bool checkForNulls = false}) {
     String? nullCheck;
     final returnStatement = "return ${field.name};";
     if (!field.type.nullable && checkForNulls) {
-      nullCheck = "java.util.Objects.requireNonNull(${field.name});";
+      context.addImport(JavaImports.objects);
+      nullCheck = "Objects.requireNonNull(${field.name});";
     }
     var statements = [if (nullCheck != null) nullCheck, returnStatement];
     return """
@@ -583,7 +588,7 @@ ${statements.join("\n").ident()}
     }
   }
 
-  String _doSerializeTypeDefinition(GQTypeDefinition def, {bool checkNulls = false}) {
+  String _doSerializeTypeDefinition(GQTypeDefinition def) {
     final token = def.tokenInfo;
     final interfaceNames = def.interfaceNames;
     final decorators = serializeDecorators(def.getDirectives());
@@ -601,18 +606,18 @@ ${statements.join("\n").ident()}
     buffer.writeln(serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeField(e)).toList(),
             join: "\n", withParenthesis: false)
         .ident());
-    buffer.writeln(generateContructor(def.token, [], "public", def, checkForNulls: checkNulls).ident());
+    buffer.writeln(generateContructor(def.token, [], "public", def, checkForNulls: typesCheckForNulls).ident());
     buffer.writeln(generateContructor(def.token, def.getSerializableFields(grammar.mode), "private", def).ident());
     buffer.writeln(generateBuilder(def.token, def.getSerializableFields(grammar.mode)).ident());
     buffer.writeln(serializeListText(
-            def.getSerializableFields(grammar.mode).map((e) => serializeGetter(e, checkForNulls: checkNulls)).toList(),
+            def.getSerializableFields(grammar.mode).map((e) => serializeGetter(e, def, checkForNulls: typesCheckForNulls)).toList(),
             join: "\n",
             withParenthesis: false)
         .ident());
     buffer.writeln(serializeListText(
             def
                 .getSerializableFields(grammar.mode)
-                .map((e) => serializeSetter(e, def, checkForNulls: checkNulls))
+                .map((e) => serializeSetter(e, def, checkForNulls: typesCheckForNulls))
                 .toList(),
             join: "\n",
             withParenthesis: false)

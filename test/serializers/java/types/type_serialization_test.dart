@@ -102,7 +102,7 @@ void main() {
 
     var input = g.inputs["UserInput"]!;
     var inputText = javaSerialzer.serializeInputDefinition(input, "");
-    expect(inputText.trim(), startsWith("@Input"));
+    expect(inputText.trim(), contains("@Input"));
   });
 
   test("serializeField", () {

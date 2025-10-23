@@ -31,7 +31,7 @@ class SpringServerSerializer {
       {this.defaultRepositoryBase, JavaSerializer? javaSerializer, this.generateSchema = false, this.injectDataFetching = false})
       : assert(grammar.mode == CodeGenerationMode.server,
             "Gramar must be in code generation mode = `CodeGenerationMode.server`"),
-        serializer = javaSerializer ?? JavaSerializer(grammar) {
+        serializer = javaSerializer ?? JavaSerializer(grammar, inputsCheckForNulls: true, typesCheckForNulls: grammar.mode == CodeGenerationMode.client) {
     _annotateRepositories();
   }
 

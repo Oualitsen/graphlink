@@ -336,7 +336,10 @@ Future<Set<String>> generateServerClasses(GQGrammar grammar, GeneratorConfig con
   final destinationDir = config.outputDir;
   final serializer = JavaSerializer(grammar,
       inputsAsRecords: config.serverConfig?.spring?.inputAsRecord ?? false,
-      typesAsRecords: config.serverConfig?.spring?.typeAsRecord ?? false);
+      typesAsRecords: config.serverConfig?.spring?.typeAsRecord ?? false,
+      inputsCheckForNulls: true,
+      typesCheckForNulls: grammar.mode == CodeGenerationMode.client,
+      );
   final springSerializer =
       SpringServerSerializer(grammar, javaSerializer: serializer,
        generateSchema: springConfig.generateSchema,

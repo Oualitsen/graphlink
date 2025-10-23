@@ -5,6 +5,7 @@ import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/io_utils.dart';
 import 'package:retrofit_graphql/src/serializers/graphq_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/java_serializer.dart';
+import 'package:retrofit_graphql/src/serializers/language.dart';
 import 'package:retrofit_graphql/src/serializers/spring_server_serializer.dart';
 import 'package:retrofit_graphql/src/utils.dart';
 
@@ -18,7 +19,10 @@ class FileWritter {
   FileWritter(this.grammar, this.config)
       : serializer = JavaSerializer(grammar,
             inputsAsRecords: config.serverConfig?.spring?.inputAsRecord ?? false,
-            typesAsRecords: config.serverConfig?.spring?.typeAsRecord ?? false) {
+            typesAsRecords: config.serverConfig?.spring?.typeAsRecord ?? false,
+            typesCheckForNulls: grammar.mode == CodeGenerationMode.client,
+            inputsCheckForNulls: true,
+            ) {
     final springConfig = config.serverConfig!.spring!;
     springSerializer = SpringServerSerializer(
       grammar,
