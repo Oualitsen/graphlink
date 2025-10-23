@@ -277,9 +277,9 @@ void main() {
     var parsed = parser.parse(text);
 
     expect(parsed is Success, true);
-    var serverSerialzer = SpringServerSerializer(g);
+    var serverSerialzer = SpringServerSerializer(g, injectDataFetching: true);
     var userCtrl = g.controllers["UserServiceController"]!;
-    var result = serverSerialzer.serializeController(userCtrl, "", injectDataFtechingEnv: true);
+    var result = serverSerialzer.serializeController(userCtrl, "");
     expect(
         result,
         stringContainsInOrder([
@@ -350,11 +350,11 @@ void main() {
     var parsed = parser.parse(text);
 
     expect(parsed is Success, true);
-    var serverSerialzer = SpringServerSerializer(g);
+    var serverSerialzer = SpringServerSerializer(g, injectDataFetching: true);
 
     var carService = g.services["CarService"]!;
 
-    var serializedCarService = serverSerialzer.serializeService(carService, "", injectDataFtechingEnv: true);
+    var serializedCarService = serverSerialzer.serializeService(carService, "");
     expect(
         serializedCarService,
         stringContainsInOrder([

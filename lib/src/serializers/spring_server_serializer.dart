@@ -25,9 +25,10 @@ class SpringServerSerializer {
   final GQGrammar grammar;
   final JavaSerializer serializer;
   final bool generateSchema;
+  final bool injectDataFetching;
 
   SpringServerSerializer(this.grammar,
-      {this.defaultRepositoryBase, JavaSerializer? javaSerializer, this.generateSchema = false})
+      {this.defaultRepositoryBase, JavaSerializer? javaSerializer, this.generateSchema = false, this.injectDataFetching = false})
       : assert(grammar.mode == CodeGenerationMode.server,
             "Gramar must be in code generation mode = `CodeGenerationMode.server`"),
         serializer = javaSerializer ?? JavaSerializer(grammar) {
@@ -48,12 +49,12 @@ class SpringServerSerializer {
     }
   }
 
-  String serializeController(GQController ctrl, String importPrefix, {bool injectDataFtechingEnv = false}) {
-    var body = _serializeControllerBody(ctrl, importPrefix, injectDataFtechingEnv: injectDataFtechingEnv);
+  String serializeController(GQController ctrl, String importPrefix) {
+    var body = _serializeControllerBody(ctrl, importPrefix);
     return serializer.serializeWithImport(ctrl, importPrefix, body);
   }
 
-  String _serializeControllerBody(GQController ctrl, String importPrefix, {bool injectDataFtechingEnv = false}) {
+  String _serializeControllerBody(GQController ctrl, String importPrefix) {
     final controllerName = ctrl.token;
     final sericeInstanceName = ctrl.serviceName.firstLow;
 
@@ -80,8 +81,7 @@ class SpringServerSerializer {
         .ident());
     for (var field in ctrl.fields) {
       var type = ctrl.getTypeByFieldName(field.name.token)!;
-      buffer.writeln(serializehandlerMethod(type, field, sericeInstanceName, ctrl,
-              injectDataFtechingEnv: injectDataFtechingEnv, qualifier: "public")
+      buffer.writeln(serializehandlerMethod(type, field, sericeInstanceName, ctrl, qualifier: "public")
           .ident());
       buffer.writeln();
     }
@@ -96,12 +96,12 @@ class SpringServerSerializer {
   }
 
   String serializehandlerMethod(GQQueryType type, GQField method, String sericeInstanceName, GQToken context,
-      {bool injectDataFtechingEnv = false, String? qualifier}) {
+      {String? qualifier}) {
     final decorators = serializer.serializeDecorators(method.getDirectives());
 
     String statement =
         "return $sericeInstanceName.${method.name}(${method.arguments.map((arg) => arg.tokenInfo).join(", ")}";
-    if (injectDataFtechingEnv) {
+    if (injectDataFetching) {
       if (method.arguments.isNotEmpty) {
         statement = "$statement, dataFetchingEnvironment);";
       } else {
@@ -115,7 +115,7 @@ class SpringServerSerializer {
     }
     var result = """
 ${getAnnotationByShcemaType(type, context)}
-${qualifier == null ? '' : "${qualifier} "}${serializeMethodDeclaration(method, type, context, argPrefix: "@Argument", injectDataFtechingEnv: injectDataFtechingEnv)} {
+${qualifier == null ? '' : "${qualifier} "}${serializeMethodDeclaration(method, type, context, argPrefix: "@Argument")} {
 ${statement.ident()}
 }"""
         .trim();
@@ -166,12 +166,12 @@ $result
     return serializer.serializeInterface(interface, getters: false);
   }
 
-  String serializeService(GQService service, String importPrefix, {bool injectDataFtechingEnv = false}) {
-    var body = _serializeServiceBody(service, injectDataFtechingEnv: injectDataFtechingEnv);
+  String serializeService(GQService service, String importPrefix) {
+    var body = _serializeServiceBody(service);
     return serializer.serializeWithImport(service, importPrefix, body);
   }
 
-  String _serializeServiceBody(GQService service, {bool injectDataFtechingEnv = false}) {
+  String _serializeServiceBody(GQService service) {
     var mappings = service.serviceMapping;
 
     var buffer = StringBuffer();
@@ -179,7 +179,7 @@ $result
     buffer.writeln();
     for (var n in service.fields) {
       var type = service.getTypeByFieldName(n.name.token)!;
-      buffer.write(serializeMethodDeclaration(n, type, service, injectDataFtechingEnv: injectDataFtechingEnv).ident());
+      buffer.write(serializeMethodDeclaration(n, type, service).ident());
       buffer.writeln(";");
       buffer.writeln();
     }
@@ -194,10 +194,10 @@ $result
   }
 
   String serializeMethodDeclaration(GQField method, GQQueryType type, GQToken context,
-      {String? argPrefix, bool injectDataFtechingEnv = false}) {
+      {String? argPrefix}) {
     var result =
         "${serializer.serializeTypeReactive(context: context, gqType: createListTypeOnSubscription(_getServiceReturnType(method.type), type), reactive: type == GQQueryType.subscription)} ${method.name}(${serializeArgs(method.arguments, argPrefix)}";
-    if (injectDataFtechingEnv) {
+    if (injectDataFetching) {
       var inject = "DataFetchingEnvironment dataFetchingEnvironment";
       context.addImport(SpringImports.gqlDataFetchingEnvironment);
       if (method.arguments.isNotEmpty) {
@@ -292,13 +292,16 @@ ${statement.ident()}
       return serializeIdentityMapping(mapping, context);
     }
 
-    final statement = """
-return $serviceInstanceName.${mapping.key}(value);
-"""
-        .trim();
+
+    final statement = StringBuffer('return $serviceInstanceName.${mapping.key}(value');
+    if(injectDataFetching) {
+      statement.write(', dataFetchingEnvironment');
+    }
+    statement.write(');');
+    
     return """
 ${serializeMappingImplMethodHeader(mapping, context)} {
-${statement.ident()}
+${statement.toString().ident()}
 }""";
   }
 
@@ -364,19 +367,21 @@ Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(serializer.se
 
   String serializeMappingImplMethodHeader(GQSchemaMapping mapping, GQToken context,
       {bool skipAnnotation = false, bool skipQualifier = false}) {
-    var result = "${_getReturnType(mapping, context)} ${mapping.key}(${_getMappingArgument(mapping, context)})";
-
-    if (!skipQualifier) {
-      result = "public $result";
-    }
-    if (skipAnnotation) {
-      return result;
-    }
-    return """
-${_getAnnotation(mapping, context)}
-$result
-"""
-        .trim();
+        var buffer = StringBuffer();
+        if(!skipAnnotation) {
+          buffer.writeln(_getAnnotation(mapping, context));
+        }
+        if(!skipQualifier) {
+          buffer.write("public ");
+        }
+        buffer.write("${_getReturnType(mapping, context)} ${mapping.key}(${_getMappingArgument(mapping, context)}");
+        if(injectDataFetching) {
+          context.addImport(SpringImports.gqlDataFetchingEnvironment);
+          buffer.write(', DataFetchingEnvironment dataFetchingEnvironment)');
+        }else {
+          buffer.write(')');
+        }
+        return buffer.toString();
   }
 
   String getAnnotationByShcemaType(GQQueryType queryType, GQToken context) {

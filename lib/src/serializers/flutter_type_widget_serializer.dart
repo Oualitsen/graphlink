@@ -109,7 +109,7 @@ Widget _wrapWidget(Widget label, Widget value) {
   }
 
   String serializeConstructor(String widgetName, List<GQField> fields) {
-    var m = codeGenUtils.declareMethod(
+    var m = codeGenUtils.createMethod(
         methodName: widgetName,
         returnType: 'const',
         arguments: [

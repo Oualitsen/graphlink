@@ -122,7 +122,6 @@ type Query {
     var springSerializer = SpringServerSerializer(g);
     var ctrl = g.controllers[g.controllerMappingName("UserWithCar")]!;
     var serviceSerial = springSerializer.serializeController(ctrl, "");
-    print(serviceSerial);
     expect(serviceSerial, contains("public User userWithCarUser(User value) { return value; }"));
   });
 
@@ -153,7 +152,7 @@ type Query {
     expect(mapping.batch, isTrue);
   });
 
-  test("Should generate batch mapping when batch = false", () {
+  test("Should not generate batch mapping when batch = false", () {
     final GQGrammar g = GQGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     const text = '''
@@ -176,5 +175,33 @@ type Query {
 
     var mapping2 = g.getMappingByName("conversationUnreadUnread")!;
     expect(mapping2.batch, isFalse);
+  });
+
+
+   test("should inject DataFetchingEnvironment for mappings when injectDataFetching = true", () {
+    final GQGrammar g = GQGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    var serializer = SpringServerSerializer(g, injectDataFetching: true);
+    const text = '''
+    type User {
+      name: String!
+      car: Car ${gqSkipOnServer}
+    }
+    type Car {
+      model: String!
+    }
+    type Query {
+      getUser: User
+    }
+''';
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+    expect(parsed is Success, true);
+    var mappingService = g.services[g.serviceMappingName('User')]!;
+    var mappingController = g.controllers[g.controllerMappingName('User')]!;
+    var serialService = serializer.serializeService(mappingService, "myOrg");
+    var serialController = serializer.serializeController(mappingController, "myOrg");
+    expect(serialService, contains('Map<User, Car> userCar(List<User> value, DataFetchingEnvironment dataFetchingEnvironment);'));
+    expect(serialController, contains('Map<User, Car> userCar(List<User> value, DataFetchingEnvironment dataFetchingEnvironment)'));
+    expect(serialController, contains(' return userSchemaMappingsService.userCar(value, dataFetchingEnvironment);'));
   });
 }

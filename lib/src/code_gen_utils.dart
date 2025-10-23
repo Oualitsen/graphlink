@@ -26,10 +26,12 @@ abstract class CodeGenUtilsBase {
       required String positiveStatement,
       required String negativeStatement});
 
-  String declareMethod(
+  String createMethod(
       {String? returnType,
       required String methodName,
       List<String>? arguments});
+    
+  
 }
 
 class DartCodeGenUtils implements CodeGenUtilsBase {
@@ -128,7 +130,7 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
   }
 
   @override
-  String declareMethod(
+  String createMethod(
       {String? returnType,
       required String methodName,
       List<String>? arguments,
@@ -148,6 +150,39 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
     if (statements != null) {
       buffer.write(" ");
       buffer.write(block(statements));
+    }
+    return buffer.toString();
+  }
+
+  String createClass({required String className, required List<String> statements, List<String>? baseClassNames}) {
+    var buffer = StringBuffer();
+    buffer.write("class ${className}");
+    if(baseClassNames != null && baseClassNames.isNotEmpty) {
+      buffer.write(" ");
+      buffer.write(baseClassNames.join(", "));
+    }
+    buffer.write(block(statements));
+    return buffer.toString();
+  }
+
+  String createInterface({required String className, required List<String> statements, List<String>? baseInterfaceNames}) {
+    var buffer = StringBuffer();
+    buffer.write("abstract class ${className}");
+     if(baseInterfaceNames != null && baseInterfaceNames.isNotEmpty) {
+      buffer.write(" ");
+      buffer.write(baseInterfaceNames.join(", "));
+    }
+    buffer.write(block(statements));
+    return buffer.toString();
+  }
+
+  String createEnum({required String className, required List<String> enumValues, List<String>? methods}) {
+    var buffer = StringBuffer();
+    buffer.write("enum ${className}");
+    buffer.write(enumValues.join(", "));
+    buffer.writeln(";");
+    if(methods != null && methods.isNotEmpty) {
+      methods.forEach(buffer.writeln);
     }
     return buffer.toString();
   }
@@ -249,7 +284,7 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
   }
 
   @override
-  String declareMethod(
+  String createMethod(
       {String? returnType,
       required String methodName,
       List<String>? arguments,
@@ -263,6 +298,39 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
     buffer.write(parentheses(arguments));
     if (statements != null) {
       buffer.write(block(statements));
+    }
+    return buffer.toString();
+  }
+
+  String createClass({required String className, required List<String> statements, List<String>? baseClassNames}) {
+    var buffer = StringBuffer();
+    buffer.write("public class ${className}");
+    if(baseClassNames != null && baseClassNames.isNotEmpty) {
+      buffer.write(" ");
+      buffer.write(baseClassNames.join(", "));
+    }
+    buffer.write(block(statements));
+    return buffer.toString();
+  }
+
+  String createInterface({required String className, required List<String> statements, List<String>? baseInterfaceNames}) {
+    var buffer = StringBuffer();
+    buffer.write("public interface ${className}");
+    if(baseInterfaceNames != null && baseInterfaceNames.isNotEmpty) {
+      buffer.write(" ");
+      buffer.write(baseInterfaceNames.join(", "));
+    }
+    buffer.write(block(statements));
+    return buffer.toString();
+  }
+
+  String createEnum({required String className, required List<String> enumValues, List<String>? methods}) {
+    var buffer = StringBuffer();
+    buffer.write("enum ${className}");
+    buffer.write(enumValues.join(", "));
+    buffer.writeln(";");
+    if(methods != null && methods.isNotEmpty) {
+      methods.forEach(buffer.writeln);
     }
     return buffer.toString();
   }

@@ -24,6 +24,7 @@ class FileWritter {
       grammar,
       javaSerializer: serializer,
       generateSchema: springConfig.generateSchema,
+      injectDataFetching: config.serverConfig?.spring?.injectDataFetching ?? false
     );
   }
 

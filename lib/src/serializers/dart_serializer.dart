@@ -37,7 +37,7 @@ class DartSerializer extends GqSerializer {
     buffer.write(def.values.map((e) => doSerializeEnumValue(e)).toList().join(", ").ident());
     buffer.writeln(";");
     // toJson
-    buffer.writeln(codeGenUtils.declareMethod(methodName: "toJson", returnType: "String", statements: [
+    buffer.writeln(codeGenUtils.createMethod(methodName: "toJson", returnType: "String", statements: [
       codeGenUtils.switchStatement(expression: "this", cases: [
        ... def.values.map((val) => DartCaseStatement(caseValue: val.token, statement: 'return "${val.token}";'))
       ])
@@ -45,7 +45,7 @@ class DartSerializer extends GqSerializer {
     
     // end toJson
     // fromJson
-    buffer.writeln(codeGenUtils.declareMethod(methodName: "fromJson", arguments: ['String value'], namedArguments: false , returnType: 'static ${def.token}', statements: [
+    buffer.writeln(codeGenUtils.createMethod(methodName: "fromJson", arguments: ['String value'], namedArguments: false , returnType: 'static ${def.token}', statements: [
       codeGenUtils.switchStatement(expression: 'value', cases: [
         ... def.values.map((val) => DartCaseStatement(caseValue: '"${val.token}"', statement: 'return ${val.token};'))
       ], defaultStatement: 'throw ArgumentError("Invalid ${def.token}: \$value");')

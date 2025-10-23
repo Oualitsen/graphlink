@@ -338,7 +338,10 @@ Future<Set<String>> generateServerClasses(GQGrammar grammar, GeneratorConfig con
       inputsAsRecords: config.serverConfig?.spring?.inputAsRecord ?? false,
       typesAsRecords: config.serverConfig?.spring?.typeAsRecord ?? false);
   final springSerializer =
-      SpringServerSerializer(grammar, javaSerializer: serializer, generateSchema: springConfig.generateSchema);
+      SpringServerSerializer(grammar, javaSerializer: serializer,
+       generateSchema: springConfig.generateSchema,
+       injectDataFetching: config.serverConfig?.spring?.injectDataFetching ?? false
+       );
   final List<Future<File>> futures = [];
   const fileExtension = ".java";
 

@@ -61,6 +61,7 @@ class SpringServerConfig {
   final bool inputAsRecord;
   final bool typeAsRecord;
   final bool generateSchema;
+  final bool injectDataFetching;
   final String? schemaTargetPath;
 
   SpringServerConfig(
@@ -72,6 +73,7 @@ class SpringServerConfig {
       required this.inputAsRecord,
       required this.typeAsRecord,
       required this.generateSchema,
+      required this.injectDataFetching,
       this.schemaTargetPath})
       : assert(
           !generateSchema ||
@@ -91,6 +93,7 @@ class SpringServerConfig {
       typeAsRecord: json['typeAsRecord'] ?? false,
       generateSchema: json['generateSchema'] ?? false,
       schemaTargetPath: json['schemaTargetPath'],
+      injectDataFetching: json['injectDataFetching'] as bool? ?? false
     );
   }
 }
