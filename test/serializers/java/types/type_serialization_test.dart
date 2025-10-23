@@ -222,9 +222,9 @@ void main() {
     var married = user.fields.where((f) => f.name.token == "married").first;
     var middleName = user.fields.where((f) => f.name.token == "middleName").first;
 
-    var getId = javaSerialzer.serializeGetter(idField);
-    var isMarried = javaSerialzer.serializeGetter(married);
-    var middleNameText = javaSerialzer.serializeGetter(middleName);
+    var getId = javaSerialzer.serializeGetter(idField, user);
+    var isMarried = javaSerialzer.serializeGetter(married, user);
+    var middleNameText = javaSerialzer.serializeGetter(middleName, user);
 
     expect(getId, stringContainsInOrder(["public String getId() {", "return id;", "}"]));
     expect(
