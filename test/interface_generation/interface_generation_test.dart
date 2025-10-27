@@ -13,8 +13,8 @@ void main() async {
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
-    expect(g.projectedTypes.keys, containsAll(["BasicEntity", "UserBase"]));
-    var userBase = g.projectedTypes["UserBase"]!;
+    expect(g.projectedInterfaces.keys, containsAll(["BasicEntity", "UserBase"]));
+    var userBase = g.projectedInterfaces["UserBase"]!;
     expect(userBase.getInterfaceNames(), contains("BasicEntity"));
   });
 }

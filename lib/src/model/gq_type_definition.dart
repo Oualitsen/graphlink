@@ -40,6 +40,7 @@ class GQTypeDefinition extends GQTokenWithFields with GQDirectivesMixin {
 
   void addInterface(GQInterfaceDefinition iface) {
     _interfaces.add(iface);
+    addInterfaceName(iface.tokenInfo);
   }
 
   void addOriginalToken(String token) {

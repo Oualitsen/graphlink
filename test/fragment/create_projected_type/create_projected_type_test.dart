@@ -163,4 +163,68 @@ void main() async {
       print(serializer.serializeTypeDefinition(pt, ""));
     });
   });
+
+
+   test("createProjectedType 5 (Projected Interfaces)", () {
+    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
+    var parsed = g.parse('''
+  interface BasicEntity {
+    id: String!
+    creationDate: String
+    lastUpdate: String
+  }
+  
+  type Person implements BasicEntity {
+    id: String!
+    creationDate: String
+    lastUpdate: String
+
+    firstName: String
+    lastName: String
+  }
+
+  type Car implements BasicEntity {
+    id: String!
+    creationDate: String
+    lastUpdate: String
+
+    make: String
+    model: String
+  }
+
+  type Query {
+    getPerson: Person!
+    getCar: Car
+  }
+
+  query getPerson {
+    p1: getPerson {
+      id firstName lastName
+    }
+
+    p2: getPerson {
+      id creationDate firstName 
+    }
+    car1: getCar {
+      id creationDate model 
+    }
+  }
+
+
+''');
+    expect(parsed is Success, true);
+    var serializer = DartSerializer(g);
+    var iface1 = g.projectedInterfaces['BasicEntity_creationDate_id']!;
+    var iface2 = g.projectedInterfaces['BasicEntity_id']!;
+    expect(iface1.implementations.map((e) => e.token), containsAll(['Person_creationDate_firstName_id', 'Car_creationDate_id_model']));
+    expect(iface2.implementations.map((e) => e.token), containsAll(['Person_firstName_id_lastName']));
+    for (var pt in[... g.projectedTypes.values, ...g.projectedInterfaces.values]) {
+      if(!pt.token.endsWith('Response')){
+        print(serializer.serializeTypeDefinition(pt, ""));
+      }
+    }
+  });
 }
+
+
+

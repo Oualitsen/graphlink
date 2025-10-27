@@ -38,7 +38,7 @@ type Query {
 query getData {
     getEntity {
         ... on Car {
-            id createdBy make model
+            id make model
         }
         ... on User {
             id firstName lastName

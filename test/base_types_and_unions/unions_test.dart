@@ -13,6 +13,8 @@ void main() {
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
     expect(g.projectedTypes.keys,
-        containsAll(["Cat", "Dog_age_ownerName", "Animal"]));
+        containsAll(["Cat", "Dog_age_ownerName"]));
+    expect(g.projectedInterfaces.keys,
+        containsAll(["Animal"]));
   });
 }

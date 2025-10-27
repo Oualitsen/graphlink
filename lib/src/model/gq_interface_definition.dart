@@ -16,7 +16,8 @@ class GQInterfaceDefinition extends GQTypeDefinition {
     required super.directives,
     required super.interfaceNames,
     this.fromUnion = false,
-  }) : super(derivedFromType: null);
+    super.derivedFromType
+  });
 
   @override
   String toString() {
@@ -27,5 +28,9 @@ class GQInterfaceDefinition extends GQTypeDefinition {
 
   void addImplementation(GQTypeDefinition token) {
     _implementations.add(token);
+  }
+
+  void removeImplementation(String token) {
+    _implementations.removeWhere((impl) => impl.token == token);
   }
 }

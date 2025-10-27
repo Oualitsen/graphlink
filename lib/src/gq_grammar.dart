@@ -104,6 +104,8 @@ class GQGrammar extends GrammarDefinition {
   final Map<String, GQQueryDefinition> queries = {};
   final Map<String, GQEnumDefinition> enums = {};
   final Map<String, GQTypeDefinition> projectedTypes = {};
+  final Map<String, GQInterfaceDefinition> projectedInterfaces = {};
+  final Map<String, GQInterfaceDefinition> tempProjectedInterfaces = {};
   final Map<String, GQDirectiveDefinition> directiveDefinitions = {};
   final Map<String, GQService> services = {};
   final Map<String, GQController> controllers = {};
@@ -265,6 +267,8 @@ class GQGrammar extends GrammarDefinition {
       updateFragmentDependencies();
       createProjectedTypes();
       updateInterfaceCommonFields();
+      fillProjectedInterfaces();
+      cleanProjectedInterfacesImplementations();
       updateFragmentAllTypesDependencies();
       generateViews();
     } else {

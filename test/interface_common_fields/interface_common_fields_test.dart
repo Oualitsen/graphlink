@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:retrofit_graphql/src/model/gq_interface_definition.dart';
+import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
@@ -14,7 +14,7 @@ void main() async {
 
     var parsed = g.parse(text);
     expect(parsed is Success, true);
-    var basicEntityInterface = g.projectedTypes["BasicEntity"]! as GQInterfaceDefinition;
+    var basicEntityInterface = g.projectedInterfaces["BasicEntity_id"]!;
     expect(basicEntityInterface.fieldNames.length, 1);
     expect(basicEntityInterface.fieldNames, containsAll(["id"]));
     expect(basicEntityInterface.implementations.length, 2);
@@ -26,7 +26,7 @@ void main() async {
 
     var parsed = g.parse(text);
     expect(parsed is Success, true);
-    var basicEntityInterface = g.projectedTypes["BasicEntity"]!;
+    var basicEntityInterface = g.projectedInterfaces["BasicEntity"]!;
 
     expect(basicEntityInterface.fieldNames.length, 3);
 
@@ -40,7 +40,7 @@ void main() async {
     var parsed = g.parse(text);
     expect(parsed is Success, true);
 
-    var basicEntityInterface = g.projectedTypes["BasicEntity"]!;
+    var basicEntityInterface = g.projectedInterfaces["BasicEntity"]!;
     expect(basicEntityInterface.fieldNames,
         containsAll(["id", "createdBy", "creationDate", "lastUpdate", "lastUpdateBy"]));
     expect(basicEntityInterface.fieldNames, isNot(contains("firstName")));
@@ -54,9 +54,12 @@ void main() async {
     var parsed = g.parse(text);
 
     expect(parsed is Success, true);
-    var vehicle = g.projectedTypes["Vehicle"]! as GQInterfaceDefinition;
+    var vehicle = g.projectedInterfaces["Vehicle"]!;
     expect(vehicle.fieldNames.length, 2);
     expect(vehicle.fieldNames, containsAll(["make", "model"]));
+    print("implementations = ${vehicle.implementations.map((e) => e.token).toList()}");
+    var serial = DartSerializer(g);
+    print(serial.serializeTypeDefinition(vehicle, ''));
     expect(vehicle.implementations.length, 2);
   });
 
@@ -65,7 +68,7 @@ void main() async {
     final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
     var parsed = g.parse(text);
     expect(parsed is Success, true);
-    var vehicle = g.projectedTypes["Vehicle"]! as GQInterfaceDefinition;
+    var vehicle = g.projectedInterfaces["Vehicle"]!;
     expect(vehicle.fieldNames.length, 2);
     expect(vehicle.fieldNames, containsAll(["make", "model"]));
 

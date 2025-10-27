@@ -40,6 +40,8 @@ extension GQGrammarExtension on GQGrammar {
       token = scalars[key];
     } else if (projectedTypes.containsKey(key)) {
       token = projectedTypes[key]!;
+    } else if (projectedInterfaces.containsKey(key)) {
+      token = projectedInterfaces[key]!;
     } else if (inputs.containsKey(key)) {
       token = inputs[key]!;
     } else if (services.containsKey(key)) {
@@ -90,7 +92,10 @@ extension GQGrammarExtension on GQGrammar {
       ...repositoryFields,
     ]);
     var params = <GQDirectivesMixin>[];
-    result.whereType<GQField>().where((f) => f.arguments.isNotEmpty).forEach((f) {
+    result
+        .whereType<GQField>()
+        .where((f) => f.arguments.isNotEmpty)
+        .forEach((f) {
       params.addAll(f.arguments);
     });
     result.addAll(params);
@@ -107,18 +112,29 @@ extension GQGrammarExtension on GQGrammar {
   }
 
   void handleGqExternal() {
-    [...inputs.values, ...types.values, ...interfaces.values, ...scalars.values, ...enums.values]
+    [
+      ...inputs.values,
+      ...types.values,
+      ...interfaces.values,
+      ...scalars.values,
+      ...enums.values
+    ]
         .map((f) => f as GQDirectivesMixin)
         .where((t) => t.getDirectiveByName(gqExternal) != null)
         .forEach((f) {
-      f.addDirectiveIfAbsent(GQDirectiveValue.createDirectiveValue(directiveName: gqSkipOnClient, generated: true));
-      f.addDirectiveIfAbsent(GQDirectiveValue.createDirectiveValue(directiveName: gqSkipOnServer, generated: true));
+      f.addDirectiveIfAbsent(GQDirectiveValue.createDirectiveValue(
+          directiveName: gqSkipOnClient, generated: true));
+      f.addDirectiveIfAbsent(GQDirectiveValue.createDirectiveValue(
+          directiveName: gqSkipOnServer, generated: true));
     });
   }
 
   List<GQTypeDefinition> getSerializableTypes() {
     final queries = [schema.mutation, schema.query, schema.subscription];
-    return types.values.where((type) => !queries.contains(type.token)).where(_filterByMode).toList();
+    return types.values
+        .where((type) => !queries.contains(type.token))
+        .where(_filterByMode)
+        .toList();
   }
 
   List<GQInputDefinition> getSerializableInputs() {
@@ -143,18 +159,25 @@ extension GQGrammarExtension on GQGrammar {
   }
 
   void skipFieldOfSkipOnServerTypes() {
-    types.values.where((t) => t.getDirectiveByName(gqSkipOnServer) != null).forEach((t) {
-      var argValues = t.getDirectiveByName(gqSkipOnServer)!.getArguments().where((e) => e.token != gqMapTo).toList();
+    types.values
+        .where((t) => t.getDirectiveByName(gqSkipOnServer) != null)
+        .forEach((t) {
+      var argValues = t
+          .getDirectiveByName(gqSkipOnServer)!
+          .getArguments()
+          .where((e) => e.token != gqMapTo)
+          .toList();
       for (var f in t.fields) {
-        f.addDirectiveIfAbsent(
-            GQDirectiveValue.createDirectiveValue(directiveName: gqSkipOnServer, generated: true, args: argValues));
+        f.addDirectiveIfAbsent(GQDirectiveValue.createDirectiveValue(
+            directiveName: gqSkipOnServer, generated: true, args: argValues));
       }
     });
   }
 
   void generateServicesAndControllers() {
     for (var type in GQQueryType.values) {
-      _doGenerateServices(types[schema.getByQueryType(type)]?.fields ?? [], type);
+      _doGenerateServices(
+          types[schema.getByQueryType(type)]?.fields ?? [], type);
     }
     for (var s in services.values) {
       var ctrl = GQController.ofService(s);
@@ -165,8 +188,12 @@ extension GQGrammarExtension on GQGrammar {
   void _doGenerateServices(List<GQField> fields, GQQueryType type) {
     for (var field in fields) {
       var name = _getServiceName(field);
-      var service = services[name] ??=
-          GQService(name: name.toToken(), nameDeclared: true, directives: [], fields: [], interfaceNames: {});
+      var service = services[name] ??= GQService(
+          name: name.toToken(),
+          nameDeclared: true,
+          directives: [],
+          fields: [],
+          interfaceNames: {});
       service.addField(field);
       service.setFieldType(field.name.token, type);
       services.putIfAbsent(name, () => service);
@@ -174,7 +201,9 @@ extension GQGrammarExtension on GQGrammar {
   }
 
   String _getServiceName(GQField field, [String suffix = "Service"]) {
-    var serviceName = field.getDirectiveByName(gqServiceName)?.getArgValueAsString(gqServiceNameArg);
+    var serviceName = field
+        .getDirectiveByName(gqServiceName)
+        ?.getArgValueAsString(gqServiceNameArg);
     if (serviceName == null) {
       if (typeRequiresProjection(field.type)) {
         serviceName = "${field.type.token.firstUp}$suffix";
@@ -189,10 +218,13 @@ extension GQGrammarExtension on GQGrammar {
   }
 
   GQField? _getIdentityField(GQTypeDefinition type) {
-    var mapsTo = type.getDirectiveByName(gqSkipOnServer)?.getArgValueAsString(gqMapTo);
+    var mapsTo =
+        type.getDirectiveByName(gqSkipOnServer)?.getArgValueAsString(gqMapTo);
     var skipOnServerFields = type.getSkipOnServerFields();
     if (mapsTo != null) {
-      var list = skipOnServerFields.where((e) => e.type.token == mapsTo && e.type.isNotList).toList();
+      var list = skipOnServerFields
+          .where((e) => e.type.token == mapsTo && e.type.isNotList)
+          .toList();
       if (list.length == 1) {
         return list.first;
       }
@@ -212,7 +244,12 @@ extension GQGrammarExtension on GQGrammar {
       if (serviceMappings.isNotEmpty) {
         var serviceName = serviceMappingName(type.token);
         var service = services[serviceName] ??
-            GQService(name: serviceName.toToken(), nameDeclared: false, fields: [], directives: [], interfaceNames: {});
+            GQService(
+                name: serviceName.toToken(),
+                nameDeclared: false,
+                fields: [],
+                directives: [],
+                interfaceNames: {});
         serviceMappings.forEach(service.addMapping);
         services[serviceName] = service;
 
@@ -236,13 +273,18 @@ extension GQGrammarExtension on GQGrammar {
   }
 
   void genSchemaMappings(GQTypeDefinition typeDef) {
-    var fields = typeDef.fields.where((f) => types.containsKey(f.type.token)).toList();
+    var fields =
+        typeDef.fields.where((f) => types.containsKey(f.type.token)).toList();
 
     for (var field in fields) {
       var type = getType(field.type.tokenInfo);
       var skipOnServerFields = type.getSkipOnServerFields();
-      var typeBatch = type.getDirectiveByName(gqSkipOnServer)?.getArgValue(gqBatch) as bool?;
-      var fieldBacth = field.getDirectiveByName(gqSkipOnServer)?.getArgValue(gqBatch) as bool?;
+      var typeBatch = type
+          .getDirectiveByName(gqSkipOnServer)
+          ?.getArgValue(gqBatch) as bool?;
+      var fieldBacth = field
+          .getDirectiveByName(gqSkipOnServer)
+          ?.getArgValue(gqBatch) as bool?;
 
       // find the field to make as identity
       GQField? identityField = _getIdentityField(type);
@@ -278,7 +320,8 @@ extension GQGrammarExtension on GQGrammar {
       }
       // generate forbidden fields
       type.getSkipOnClientFields().forEach((typeField) {
-        addSchemaMapping(GQSchemaMapping(type: type, field: typeField, forbid: true));
+        addSchemaMapping(
+            GQSchemaMapping(type: type, field: typeField, forbid: true));
       });
     }
 
@@ -292,7 +335,8 @@ extension GQGrammarExtension on GQGrammar {
   }
 
   String serviceMappingName(String type) => "${type}SchemaMappingsService";
-  String controllerMappingName(String type) => "${type}SchemaMappingsController";
+  String controllerMappingName(String type) =>
+      "${type}SchemaMappingsController";
 
   void setDirectivesDefaulValues() {
     var values = [...directiveValues];
@@ -323,11 +367,14 @@ extension GQGrammarExtension on GQGrammar {
     });
   }
 
-  fillQueryElementArgumentTypes(GQQueryElement element, GQQueryDefinition query) {
+  fillQueryElementArgumentTypes(
+      GQQueryElement element, GQQueryDefinition query) {
     for (var arg in element.arguments) {
       var list = query.arguments.where((a) => a.token == arg.value).toList();
       if (list.isEmpty) {
-        throw ParseException("Could not find argument ${arg.value} on query ${query.tokenInfo}", info: arg.tokenInfo);
+        throw ParseException(
+            "Could not find argument ${arg.value} on query ${query.tokenInfo}",
+            info: arg.tokenInfo);
       }
       arg.type = list.first.type;
     }
@@ -336,8 +383,8 @@ extension GQGrammarExtension on GQGrammar {
   fillQueryElementsReturnType() {
     queries.forEach((name, queryDefinition) {
       for (var element in queryDefinition.elements) {
-        element.returnType =
-            getTypeFromFieldName(element.token, schema.getByQueryType(queryDefinition.type), element.tokenInfo);
+        element.returnType = getTypeFromFieldName(element.token,
+            schema.getByQueryType(queryDefinition.type), element.tokenInfo);
         fillQueryElementArgumentTypes(element, queryDefinition);
       }
     });
@@ -345,7 +392,8 @@ extension GQGrammarExtension on GQGrammar {
 
   void checmEnumDefinition(GQEnumDefinition enumDefinition) {
     if (enums.containsKey(enumDefinition.token)) {
-      throw ParseException("Enum ${enumDefinition.tokenInfo} has already been declared",
+      throw ParseException(
+          "Enum ${enumDefinition.tokenInfo} has already been declared",
           info: enumDefinition.tokenInfo);
     }
   }
@@ -358,9 +406,12 @@ extension GQGrammarExtension on GQGrammar {
     var fieldName = fieldNameToken.token;
     var onType = getType(fieldNameToken.ofNewName(typeName));
 
-    var result = onType.fields.where((element) => element.name.token == fieldName);
+    var result =
+        onType.fields.where((element) => element.name.token == fieldName);
     if (result.isEmpty && fieldName != GQGrammar.typename) {
-      throw ParseException("Could not find field '$fieldName' on type '$typeName'", info: fieldNameToken);
+      throw ParseException(
+          "Could not find field '$fieldName' on type '$typeName'",
+          info: fieldNameToken);
     } else {
       if (result.isNotEmpty) {
         return result.first.type;
@@ -372,13 +423,16 @@ extension GQGrammarExtension on GQGrammar {
 
   void updateFragmentAllTypesDependencies() {
     fragments.forEach((key, fragment) {
-      fragment.block.projections.values.where((projection) => projection.block == null).forEach((projection) {
+      fragment.block.projections.values
+          .where((projection) => projection.block == null)
+          .forEach((projection) {
         handleFragmentDepenecy(fragment, projection);
       });
     });
   }
 
-  void handleFragmentDepenecy(GQFragmentDefinitionBase fragment, GQProjection projection) {
+  void handleFragmentDepenecy(
+      GQFragmentDefinitionBase fragment, GQProjection projection) {
     if (projection is GQInlineFragmentsProjection) {
       for (var inlineFrag in projection.inlineFragments) {
         inlineFrag.block.projections.forEach((k, proj) {
@@ -388,7 +442,8 @@ extension GQGrammarExtension on GQGrammar {
         });
       }
     } else if (projection.isFragmentReference) {
-      var fragmentRef = getFragment(projection.targetToken, projection.tokenInfo);
+      var fragmentRef =
+          getFragment(projection.targetToken, projection.tokenInfo);
 
       fragment.addDependecy(fragmentRef);
     } else {
@@ -400,12 +455,17 @@ extension GQGrammarExtension on GQGrammar {
     }
   }
 
-  GQType getTypeFromFieldName(String fieldName, String typeName, TokenInfo fieldToken) {
+  GQType getTypeFromFieldName(
+      String fieldName, String typeName, TokenInfo fieldToken) {
     var type = getType(fieldToken.ofNewName(typeName));
 
-    var fields = type.fields.where((element) => element.name.token == fieldName).toList();
+    var fields = type.fields
+        .where((element) => element.name.token == fieldName)
+        .toList();
     if (fields.isEmpty) {
-      throw ParseException("$typeName does not declare a field with name $fieldName", info: type.tokenInfo);
+      throw ParseException(
+          "$typeName does not declare a field with name $fieldName",
+          info: type.tokenInfo);
     }
     return fields.first.type;
   }
@@ -419,21 +479,25 @@ extension GQGrammarExtension on GQGrammar {
   void fillTypedFragments() {
     fragments.forEach((key, fragment) {
       checkIfDefined(fragment.onTypeName);
-      typedFragments[key] = GQTypedFragment(fragment, getType(fragment.onTypeName));
+      typedFragments[key] =
+          GQTypedFragment(fragment, getType(fragment.onTypeName));
     });
   }
 
-  GQFragmentDefinition createAllFieldsFragment(GQTypeDefinition typeDefinition) {
+  GQFragmentDefinition createAllFieldsFragment(
+      GQTypeDefinition typeDefinition) {
     var key = typeDefinition.token;
 
     var allFieldsKey = allFieldsFragmentName(key);
     if (fragments[allFieldsKey] != null) {
-      throw ParseException("Fragment $allFieldsKey is Already defined", info: fragments[allFieldsKey]!.tokenInfo);
+      throw ParseException("Fragment $allFieldsKey is Already defined",
+          info: fragments[allFieldsKey]!.tokenInfo);
     }
     if (typeDefinition is GQInterfaceDefinition) {
       var projection = _createProjectionForInterface(typeDefinition);
       var block = GQFragmentBlockDefinition([projection]);
-      return GQFragmentDefinition(allFieldsKey.toToken(), typeDefinition.tokenInfo, block, []);
+      return GQFragmentDefinition(
+          allFieldsKey.toToken(), typeDefinition.tokenInfo, block, []);
     } else {
       return GQFragmentDefinition(
           allFieldsKey.toToken(),
@@ -474,7 +538,8 @@ extension GQGrammarExtension on GQGrammar {
     return GQFragmentBlockDefinition([
       GQProjection(
         fragmentName: allFieldsFragmentName(field.type.inlineType.token),
-        token: field.type.inlineType.tokenInfo.ofNewName(allFieldsFragmentName(field.type.inlineType.token)),
+        token: field.type.inlineType.tokenInfo
+            .ofNewName(allFieldsFragmentName(field.type.inlineType.token)),
         alias: null,
         block: null,
         directives: [],
@@ -482,50 +547,70 @@ extension GQGrammarExtension on GQGrammar {
     ]);
   }
 
-  GQInterfaceDefinition _regiterInterface(GQInterfaceDefinition def, GQTypeDefinition implementation) {
-    var name = def.token;
-    if (projectedTypes.containsKey(name)) {
-      var iface = projectedTypes[name]! as GQInterfaceDefinition;
-      iface.addImplementation(implementation);
-      return iface;
-    }
-    var newType = GQInterfaceDefinition(
-      name: def.tokenInfo.ofNewName(name),
-      nameDeclared: false,
-      fields: [],
-      interfaceNames: {...def.interfaceNames},
-      directives: def.getDirectives(),
-    );
-    newType.addImplementation(implementation);
-    return addToProjectedTypes(newType, similarityCheck: false) as GQInterfaceDefinition;
-  }
-
   void updateInterfaceReferences() {
     var allTypes = [...interfaces.values, ...types.values];
     allTypes.where((type) => type.interfaceNames.isNotEmpty).forEach((type) {
-      var result = type.interfaceNames.map((token) => getInterface(token.token, token));
+      var result =
+          type.interfaceNames.map((token) => getInterface(token.token, token));
       result.forEach(type.addInterface);
     });
   }
 
   void updateInterfaceCommonFields() {
-    projectedTypes.values.whereType<GQInterfaceDefinition>().forEach((i) {
+    for (var i in tempProjectedInterfaces.values) {
       var commonFields = _getCommonInterfaceFields(i);
       for (var cf in commonFields) {
         i.addField(cf);
       }
-    });
+    }
+  }
+
+  void fillProjectedInterfaces() {
+    for (var iface in tempProjectedInterfaces.values) {
+      var projections = iface.fields.map((field) => GQProjection(
+          fragmentName: null,
+          token: field.name,
+          alias: null,
+          block: null,
+          directives: []));
+      var newName =
+          _generateName(iface.derivedFromType!.token, projections, []);
+      var newIface = GQInterfaceDefinition(
+          name: iface.tokenInfo.ofNewName(newName.value),
+          nameDeclared: newName.declared,
+          fields: iface.fields,
+          directives: iface.getDirectives(),
+          interfaceNames: iface.interfaceNames);
+      iface.implementations.forEach(newIface.addImplementation);
+      var added = addToProjectedTypes(newIface) as GQInterfaceDefinition;
+      iface.implementations.forEach(added.addImplementation);
+      for (var impl in added.implementations) {
+        impl.addInterface(added);
+      }
+    }
+  }
+  /// need to remove all implementations from interfaces that has been replaced by similar objects
+  void cleanProjectedInterfacesImplementations() {
+    for (var iface in projectedInterfaces.values) {
+      iface.implementations
+          .map((e) => e.token)
+          .where((token) => !projectedTypes.containsKey(token))
+          .toSet()
+          .forEach(iface.removeImplementation);
+    }
   }
 
   List<GQField> _getCommonInterfaceFields(GQInterfaceDefinition def) {
     // search in projected types, types that have implemented this interface
-    var types = getProjectdeTypesImplementing(def);
+    var types = def.implementations;
     if (types.isEmpty) {
       return [];
     }
     var map = <String, int>{};
-    final fields = interfaces[def.token]!.fields;
-    var interfaceFieldNames = interfaces[def.token]!.fields.map((f) => f.name.token).toSet();
+    var token = def.derivedFromType!.token;
+    final fields = interfaces[token]!.fields;
+    var interfaceFieldNames =
+        interfaces[token]!.fields.map((f) => f.name.token).toSet();
 
     types.expand((t) => t.fields).forEach((f) {
       if (map.containsKey(f.name.token)) {
@@ -558,7 +643,8 @@ extension GQGrammarExtension on GQGrammar {
     queries.forEach((key, query) {
       var projectedType = query.getGeneratedTypeDefinition();
       if (projectedTypes.containsKey(projectedType.token)) {
-        throw ParseException("Type ${projectedType.tokenInfo.token} has already been defined, please rename it",
+        throw ParseException(
+            "Type ${projectedType.tokenInfo.token} has already been defined, please rename it",
             info: projectedType.tokenInfo);
       }
       var def = addToProjectedTypes(projectedType);
@@ -570,38 +656,56 @@ extension GQGrammarExtension on GQGrammar {
     var type = element.returnType;
     var block = element.block!;
     var onType = getType(type.inlineType.tokenInfo);
-    return createProjectedType(type: onType, projectionMap: block.projections, directives: element.getDirectives());
+    return createProjectedType(
+        type: onType,
+        projectionMap: block.projections,
+        directives: element.getDirectives());
   }
 
-  GQTypeDefinition addToProjectedTypes(GQTypeDefinition definition, {bool similarityCheck = true}) {
+  GQTypeDefinition addToProjectedTypes(GQTypeDefinition definition,
+      {bool similarityCheck = true}) {
+    var targetStore = definition is GQInterfaceDefinition
+        ? projectedInterfaces
+        : projectedTypes;
     if (definition.nameDeclared) {
-      var type = projectedTypes[definition.token];
+      var type = targetStore[definition.token];
       if (type == null) {
         if (similarityCheck) {
           var similarDefinitions = findSimilarTo(definition);
           if (similarDefinitions.isNotEmpty) {
-            similarDefinitions.where((element) => !element.nameDeclared).forEach((e) {
-              var currentDef = projectedTypes[e.token];
+            similarDefinitions
+                .where((element) => !element.nameDeclared)
+                .forEach((e) {
+              var currentDef = targetStore[e.token];
               if (currentDef != null) {
                 currentDef.interfaceNames.forEach(definition.addInterfaceName);
-                if (currentDef is GQInterfaceDefinition && definition is GQInterfaceDefinition) {
-                  currentDef.implementations.forEach(definition.addImplementation);
+                if (currentDef is GQInterfaceDefinition &&
+                    definition is GQInterfaceDefinition) {
+                  currentDef.implementations
+                      .forEach(definition.addImplementation);
                 }
               }
-              projectedTypes[e.token] = definition;
+              targetStore[e.token] = definition;
             });
           }
         }
 
-        projectedTypes[definition.token] = definition;
+        targetStore[definition.token] = definition;
         definition.addOriginalToken(definition.token);
         return definition;
       } else {
         if (type.isSimilarTo(definition, this)) {
           type.addOriginalToken(definition.token);
+          if (type is GQInterfaceDefinition &&
+              definition is GQInterfaceDefinition) {
+            definition.implementations.forEach(type.addImplementation);
+          }
           return type;
         } else {
-          var typeTokenInfo = type.getDirectiveByName(gqTypeNameDirective)?.getArgumentByName('name')?.tokenInfo;
+          var typeTokenInfo = type
+              .getDirectiveByName(gqTypeNameDirective)
+              ?.getArgumentByName('name')
+              ?.tokenInfo;
           throw ParseException(
               "You have names two object the same name '${definition.tokenInfo}' but have diffrent fields. ${definition.tokenInfo}_1.fields are: [${type.fields.map((f) => "${f.name}: ${serializer.serializeType(f.type)}").toList()}], ${definition.tokenInfo}_2.fields are: [${definition.fields.map((f) => "${f.name}: ${serializer.serializeType(f.type)}").toList()}]. Please consider renaming one of them",
               info: typeTokenInfo ?? type.tokenInfo);
@@ -616,38 +720,30 @@ extension GQGrammarExtension on GQGrammar {
         var first = similarDefinitions.first;
         first.addOriginalToken(definition.token);
         definition.interfaceNames.forEach(first.addInterfaceName);
-        if (definition is GQInterfaceDefinition && first is GQInterfaceDefinition) {
+        if (definition is GQInterfaceDefinition &&
+            first is GQInterfaceDefinition) {
           definition.implementations.forEach(first.addImplementation);
         }
-        projectedTypes[first.token] = first;
+        targetStore[first.token] = first;
+        if (first is GQInterfaceDefinition &&
+            definition is GQInterfaceDefinition) {
+          definition.implementations.forEach(first.addImplementation);
+        }
         return first;
       }
     }
 
     String key = definition.token;
-    projectedTypes[key] = definition;
+    targetStore[key] = definition;
     definition.addOriginalToken(key);
-    return projectedTypes[key]!;
-  }
-
-  GQTypeDefinition? findByOriginalToken(String originalToken) {
-    var values = projectedTypes.values;
-    for (var value in values) {
-      if (value.originalTokens.contains(originalToken)) {
-        return value;
-      }
-    }
-    return null;
+    return targetStore[key]!;
   }
 
   List<GQTypeDefinition> findSimilarTo(GQTypeDefinition definition) {
-    if (definition is GQInterfaceDefinition) {
-      return [];
-    }
-    return [
-      ...projectedTypes.values,
-      ...types.values,
-    ]
+    var store = definition is GQInterfaceDefinition
+        ? [...projectedInterfaces.values, ...interfaces.values]
+        : [...projectedTypes.values, ...types.values];
+    return store
         .where((element) => element.isSimilarTo(definition, this))
         //filter out the Query, Mutation, Subscription
         .where((e) => !schema.queryNamesSet.contains(e.token))
@@ -666,8 +762,8 @@ extension GQGrammarExtension on GQGrammar {
     return keys.join("_");
   }
 
-  GeneratedTypeName _generateName(
-      String originalName, Iterable<GQProjection> projections, List<GQDirectiveValue> directives) {
+  GeneratedTypeName _generateName(String originalName,
+      Iterable<GQProjection> projections, List<GQDirectiveValue> directives) {
     String? name = getNameValueFromDirectives(directives);
 
     if (name != null) {
@@ -734,19 +830,28 @@ extension GQGrammarExtension on GQGrammar {
     GQFragmentBlockDefinition? block;
     if (typeRequiresProjection(field.type)) {
       final fragName = generateAllFieldFragment(field.type);
-      block = GQFragmentBlockDefinition(
-          [GQProjection(fragmentName: fragName, token: fragName.toToken(), alias: null, block: null, directives: [])]);
+      block = GQFragmentBlockDefinition([
+        GQProjection(
+            fragmentName: fragName,
+            token: fragName.toToken(),
+            alias: null,
+            block: null,
+            directives: [])
+      ]);
     }
 
     var argValues = field.arguments.map((arg) {
       return GQArgumentValue(arg.tokenInfo, "\$${arg.tokenInfo}");
     }).toList();
-    var queryElement = GQQueryElement(field.name, [], block, argValues, defaultAlias?.toToken());
+    var queryElement = GQQueryElement(
+        field.name, [], block, argValues, defaultAlias?.toToken());
     final def = GQQueryDefinition(
         field.name,
         [],
         field.arguments
-            .map((e) => GQArgumentDefinition("\$${e.tokenInfo}".toToken(), e.type, [], initialValue: e.initialValue))
+            .map((e) => GQArgumentDefinition(
+                "\$${e.tokenInfo}".toToken(), e.type, [],
+                initialValue: e.initialValue))
             .toList(),
         [queryElement],
         queryType);
@@ -761,8 +866,14 @@ extension GQGrammarExtension on GQGrammar {
       var token = t.tokenInfo.ofNewName("${allFields}_${t.token}");
       var inlineDef = GQInlineFragmentDefinition(
           t.tokenInfo,
-          GQFragmentBlockDefinition(
-              [GQProjection(fragmentName: token.token, token: token, alias: null, block: null, directives: [])]),
+          GQFragmentBlockDefinition([
+            GQProjection(
+                fragmentName: token.token,
+                token: token,
+                alias: null,
+                block: null,
+                directives: [])
+          ]),
           []);
       inlineFrags.add(inlineDef);
       addFragmentDefinition(inlineDef);
@@ -771,8 +882,11 @@ extension GQGrammarExtension on GQGrammar {
     return GQInlineFragmentsProjection(inlineFragments: inlineFrags);
   }
 
-  List<GQTypeDefinition> getProjectdeTypesImplementing(GQInterfaceDefinition def) {
-    return projectedTypes.values.where((pt) => pt.getInterfaceNames().contains(def.token)).toList();
+  List<GQTypeDefinition> getProjectdeTypesImplementing(
+      GQInterfaceDefinition def) {
+    return projectedTypes.values
+        .where((pt) => pt.getInterfaceNames().contains(def.token))
+        .toList();
   }
 
   List<GQTypeDefinition> getTypesImplementing(GQInterfaceDefinition def) {
@@ -793,7 +907,6 @@ extension GQGrammarExtension on GQGrammar {
     if (type is GQInterfaceDefinition) {
       var implementationTypes = getTypesImplementing(type);
       GQTypeDefinition? result;
-
       for (var it in implementationTypes) {
         var projections = _collectProjection(projectionMap, it.token);
         if (projections.isNotEmpty) {
@@ -822,6 +935,28 @@ extension GQGrammarExtension on GQGrammar {
     );
   }
 
+  GQInterfaceDefinition _createNewInterface(GQInterfaceDefinition original) {
+    return GQInterfaceDefinition(
+        name: generateUuid().toToken(),
+        nameDeclared: false,
+        fields: [],
+        directives: original.getDirectives(),
+        interfaceNames: {},
+        derivedFromType: original);
+  }
+
+  GQTypeDefinition _createNewType(GeneratedTypeName name, List<GQField> fields,
+      List<GQDirectiveValue> directives, GQTypeDefinition? realType) {
+    return GQTypeDefinition(
+      name: name.value.toToken(),
+      nameDeclared: name.declared,
+      fields: fields,
+      interfaceNames: {},
+      directives: directives,
+      derivedFromType: realType,
+    );
+  }
+
   GQTypeDefinition createProjectedTypeOnType({
     required GQTypeDefinition type,
     required Map<String, GQProjection> projectionMap,
@@ -838,37 +973,23 @@ extension GQGrammarExtension on GQGrammar {
     for (var field in src) {
       var projection = projections[field.name.token];
       if (projection != null) {
-        result.add(_applyProjectionToField(field, projection, projection.getDirectives()));
+        result.add(_applyProjectionToField(
+            field, projection, projection.getDirectives()));
       }
     }
     var name = _generateName(onTypeName, projections.values, directives);
-
-    var newType = GQTypeDefinition(
-      name: name.value.toToken(),
-      nameDeclared: name.declared,
-      fields: result,
-      interfaceNames: {},
-      directives: directives,
-      derivedFromType: realType,
-    );
-
-    if (type is GQInterfaceDefinition) {
-      var savedType = addToProjectedTypes(newType);
-      var iface = _regiterInterface(type, savedType);
-      newType.addInterfaceName(type.tokenInfo);
-      return iface;
-    } else {
-      var savedType = addToProjectedTypes(newType);
-      if (type.interfaceNames.isNotEmpty) {
-        for (var i in type.interfaceNames) {
-          _regiterInterface(interfaces[i.token]!, savedType);
-        }
-      }
-      return savedType;
+    var newType = _createNewType(name, result, directives, realType);
+    for (var iface in realType.interfaces) {
+      var newInface = _createNewInterface(iface);
+      tempProjectedInterfaces[newInface.token] = newInface;
+      newInface.addImplementation(newType);
     }
+
+    return addToProjectedTypes(newType);
   }
 
-  Map<String, GQProjection> _collectProjection(Map<String, GQProjection> projections, String onTypeName) {
+  Map<String, GQProjection> _collectProjection(
+      Map<String, GQProjection> projections, String onTypeName) {
     var result = <String, GQProjection>{};
     projections.forEach((k, v) {
       if (v.isFragmentReference) {
@@ -876,7 +997,9 @@ extension GQGrammarExtension on GQGrammar {
         var r = _collectProjection(fragment.block.projections, onTypeName);
         result.addAll(r);
       } else if (v is GQInlineFragmentsProjection) {
-        v.inlineFragments.where((inline) => inline.onTypeName.token == onTypeName).forEach((inline) {
+        v.inlineFragments
+            .where((inline) => inline.onTypeName.token == onTypeName)
+            .forEach((inline) {
           var r = _collectProjection(inline.block.projections, onTypeName);
           result.addAll(r);
         });
@@ -899,7 +1022,8 @@ extension GQGrammarExtension on GQGrammar {
         projectionMap: block.projections,
         directives: fieldDirectives,
       );
-      var fieldInlineType = GQType(generatedType.tokenInfo, field.type.nullable);
+      var fieldInlineType =
+          GQType(generatedType.tokenInfo, field.type.nullable);
 
       return GQField(
         name: fieldName,
@@ -933,23 +1057,35 @@ extension GQGrammarExtension on GQGrammar {
   }
 
   static List<String> extractDecorators(
-      {required List<GQDirectiveValue> directives, required CodeGenerationMode mode}) {
+      {required List<GQDirectiveValue> directives,
+      required CodeGenerationMode mode}) {
     // find the list
     var decorators = directives
         .where((d) => d.token == gqDecorators)
         .where((d) {
           switch (mode) {
             case CodeGenerationMode.client:
-              return d.getArguments().where((arg) => arg.token == "applyOnClient").first.value as bool;
+              return d
+                  .getArguments()
+                  .where((arg) => arg.token == "applyOnClient")
+                  .first
+                  .value as bool;
             case CodeGenerationMode.server:
-              return d.getArguments().where((arg) => arg.token == "applyOnServer").first.value as bool;
+              return d
+                  .getArguments()
+                  .where((arg) => arg.token == "applyOnServer")
+                  .first
+                  .value as bool;
           }
         })
         .map((d) {
           return d.getArguments().where((arg) => arg.token == "value").first;
         })
         .map((d) {
-          var decoratorValues = (d.value as List).map((e) => e as String).map((str) => str.removeQuotes()).toList();
+          var decoratorValues = (d.value as List)
+              .map((e) => e as String)
+              .map((str) => str.removeQuotes())
+              .toList();
           return decoratorValues;
         })
         .expand((inner) => inner)
@@ -960,7 +1096,10 @@ extension GQGrammarExtension on GQGrammar {
   void generateViews() {
     var s = [schema.mutation, schema.query, schema.subscription];
     projectedTypes.values
-        .where((t) => t is! GQInterfaceDefinition && !s.contains(t.token) && t.getDirectiveByName(gqInternal) == null)
+        .where((t) =>
+            t is! GQInterfaceDefinition &&
+            !s.contains(t.token) &&
+            t.getDirectiveByName(gqInternal) == null)
         .map((t) => GQTypeView(type: t))
         .forEach((view) {
       views[view.token] = view;

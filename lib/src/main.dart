@@ -9,6 +9,7 @@ import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/io_utils.dart';
 import 'package:retrofit_graphql/src/model/gq_interface_definition.dart';
+import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
 import 'package:retrofit_graphql/src/serializers/dart_client_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/flutter_type_widget_serializer.dart';
@@ -283,6 +284,9 @@ Future<Set<String>> generateClientClasses(GQGrammar grammar, GeneratorConfig con
     futures.add(r);
   });
 
+  var allProjectedTypes = <String, GQTypeDefinition>{};
+  allProjectedTypes.addAll(grammar.projectedTypes);
+  allProjectedTypes.addAll(grammar.projectedInterfaces);
   grammar.projectedTypes.forEach((k, def) {
     final subdir = def is GQInterfaceDefinition ? "interfaces" : "types";
 
