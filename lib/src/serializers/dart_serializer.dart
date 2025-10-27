@@ -12,7 +12,6 @@ import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
 import 'package:retrofit_graphql/src/serializers/annotation_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/gq_serializer.dart';
 import 'package:retrofit_graphql/src/ui/flutter/gq_type_view.dart';
-import 'package:retrofit_graphql/src/utils.dart';
 
 class DartSerializer extends GqSerializer {
   final codeGenUtils = DartCodeGenUtils();
@@ -34,22 +33,47 @@ class DartSerializer extends GqSerializer {
       buffer.writeln(decorators);
     }
     buffer.writeln("enum ${def.tokenInfo} {");
-    buffer.write(def.values.map((e) => doSerializeEnumValue(e)).toList().join(", ").ident());
+    buffer.write(def.values
+        .map((e) => doSerializeEnumValue(e))
+        .toList()
+        .join(", ")
+        .ident());
     buffer.writeln(";");
     // toJson
-    buffer.writeln(codeGenUtils.createMethod(methodName: "toJson", returnType: "String", statements: [
-      codeGenUtils.switchStatement(expression: "this", cases: [
-       ... def.values.map((val) => DartCaseStatement(caseValue: val.token, statement: 'return "${val.token}";'))
-      ])
-    ]).ident());
-    
+    buffer.writeln(codeGenUtils
+        .createMethod(
+            methodName: "toJson",
+            returnType: "String",
+            arguments: [],
+            namedArguments: false,
+            statements: [
+              codeGenUtils.switchStatement(expression: "this", cases: [
+                ...def.values.map((val) => DartCaseStatement(
+                    caseValue: val.token, statement: 'return "${val.token}";'))
+              ])
+            ])
+        .ident());
+
     // end toJson
     // fromJson
-    buffer.writeln(codeGenUtils.createMethod(methodName: "fromJson", arguments: ['String value'], namedArguments: false , returnType: 'static ${def.token}', statements: [
-      codeGenUtils.switchStatement(expression: 'value', cases: [
-        ... def.values.map((val) => DartCaseStatement(caseValue: '"${val.token}"', statement: 'return ${val.token};'))
-      ], defaultStatement: 'throw ArgumentError("Invalid ${def.token}: \$value");')
-    ]).ident());
+    buffer.writeln(codeGenUtils
+        .createMethod(
+            methodName: "fromJson",
+            arguments: ['String value'],
+            namedArguments: false,
+            returnType: 'static ${def.token}',
+            statements: [
+              codeGenUtils.switchStatement(
+                  expression: 'value',
+                  cases: [
+                    ...def.values.map((val) => DartCaseStatement(
+                        caseValue: '"${val.token}"',
+                        statement: 'return ${val.token};'))
+                  ],
+                  defaultStatement:
+                      'throw ArgumentError("Invalid ${def.token}: \$value");')
+            ])
+        .ident());
     buffer.writeln("}");
     return buffer.toString();
   }
@@ -93,20 +117,24 @@ class DartSerializer extends GqSerializer {
     if (decorators.isNotEmpty) {
       buffer.writeln(decorators.trim());
     }
-    buffer.writeln('class ${def.tokenInfo} {');
-    buffer.writeln(serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeField(e)).toList(),
-            join: "\n", withParenthesis: false)
-        .ident());
-    buffer.writeln(
-        '${def.tokenInfo}({${def.getSerializableFields(grammar.mode).map((e) => toConstructorDeclaration(e)).join(", ")}});'
-            .ident());
-    if (generateJsonMethods) {
-      buffer.writeln();
-      buffer.writeln(generateToJson(def.getSerializableFields(mode)).ident());
-      buffer.writeln();
-      buffer.writeln(generateFromJson(def.getSerializableFields(mode), def.token).ident());
-    }
-    buffer.writeln('}');
+    var inputClass =
+        codeGenUtils.createClass(className: def.token, statements: [
+      ...def.getSerializableFields(grammar.mode).map((e) => serializeField(e)),
+      codeGenUtils.createMethod(
+          methodName: def.token,
+          namedArguments: true,
+          arguments: def
+              .getSerializableFields(grammar.mode)
+              .map((e) => toConstructorDeclaration(e))
+              .map((e) => "${e},")
+              .toList()),
+      if (generateJsonMethods) ...[
+        generateToJson(def.getSerializableFields(mode)),
+        generateFromJson(def.getSerializableFields(mode), def.token)
+      ]
+    ]);
+
+    buffer.writeln(inputClass);
     return buffer.toString();
   }
 
@@ -122,34 +150,38 @@ class DartSerializer extends GqSerializer {
     if (!generateJsonMethods) {
       return "";
     }
-    var buffer = StringBuffer("static ${token} fromJson(Map<String, dynamic> json) {");
-    buffer.writeln();
-    buffer.writeln("return ${token}(".ident());
-    for (var field in fields) {
-      buffer.write(fieldFromJson(field).ident(2));
-      if (field != fields.last) {
-        buffer.write(",");
-      }
-      buffer.writeln();
-    }
-    buffer.writeln(");".ident());
-    buffer.writeln("}");
+    var buffer = StringBuffer();
+
+    buffer.writeln(
+      codeGenUtils.createMethod(
+          methodName: "fromJson",
+          returnType: 'static ${token}',
+          namedArguments: false,
+          arguments: [
+            'Map<String, dynamic> json'
+          ],
+          statements: [
+            'return ${token}(',
+            ...fields.map((e) => fieldFromJson(e)).map((e) => "${e},".ident()),
+            ');'
+          ]),
+    );
     return buffer.toString();
   }
 
   String generateToJson(List<GQField> fields) {
-    var buffer = StringBuffer("Map<String, dynamic> toJson() {");
-    buffer.writeln();
-    buffer.writeln("return {".ident());
-    for (var field in fields) {
-      buffer.write(fieldToJson(field).ident(2));
-      if (field != fields.last) {
-        buffer.write(",");
-      }
-      buffer.writeln();
-    }
-    buffer.writeln("};".ident());
-    buffer.writeln("}");
+    var buffer = StringBuffer();
+
+    buffer.writeln(codeGenUtils.method(
+        returnType: 'Map<String, dynamic>',
+        methodName: 'toJson',
+        statements: [
+          "return {",
+          ...fields
+              .map((field) => fieldToJson(field).ident())
+              .map((e) => "${e},"),
+          '};'
+        ]));
     return buffer.toString();
   }
 
@@ -162,7 +194,8 @@ class DartSerializer extends GqSerializer {
 
   String fieldFromJson(GQField field) {
     var buffer = StringBuffer('${field.name}: ');
-    var toJosnCall = callFromJson("json['${field.name}']", field, field.type, 0);
+    var toJosnCall =
+        callFromJson("json['${field.name}']", field, field.type, 0);
     buffer.write(toJosnCall);
     return buffer.toString();
   }
@@ -184,7 +217,8 @@ class DartSerializer extends GqSerializer {
       }
     }
     if (grammar.isProjectableType(type.token)) {
-      var typeFromJson = "${type.token}.fromJson(${variable} as Map<String, dynamic>)";
+      var typeFromJson =
+          "${type.token}.fromJson(${variable} as Map<String, dynamic>)";
       if (type.nullable) {
         return "${variable} == null ? null : ${typeFromJson}";
       } else {
@@ -198,7 +232,9 @@ class DartSerializer extends GqSerializer {
 
     var result = "${variable} as ${serializedType}";
 
-    if (type is GQListType || grammar.isProjectableType(type.token) || grammar.isEnum(type.token)) {
+    if (type is GQListType ||
+        grammar.isProjectableType(type.token) ||
+        grammar.isEnum(type.token)) {
       return "(${result})";
     }
 
@@ -211,7 +247,8 @@ class DartSerializer extends GqSerializer {
     fromJsonCall = castDynamicToType(variable, type);
     if (type.isList) {
       String varName = "e${index}";
-      var inlneCallToJson = callFromJson(varName, field, type.inlineType, index + 1);
+      var inlneCallToJson =
+          callFromJson(varName, field, type.inlineType, index + 1);
       return "${fromJsonCall}${dot}map((${varName}) => ${inlneCallToJson}).toList()";
     }
     return fromJsonCall;
@@ -222,7 +259,8 @@ class DartSerializer extends GqSerializer {
     String toJsonCall;
     String dot = type.nullable ? "?." : ".";
     //check if enum
-    if (grammar.isProjectableType(fieldType.token) || grammar.isEnum(fieldType.token)) {
+    if (grammar.isProjectableType(fieldType.token) ||
+        grammar.isEnum(fieldType.token)) {
       toJsonCall = '${dot}toJson()';
     } else {
       toJsonCall = '';
@@ -246,7 +284,9 @@ class DartSerializer extends GqSerializer {
 
   String _doSerializeTypeDefinition(GQTypeDefinition def) {
     final token = def.token;
-    final implementations = def is GQInterfaceDefinition ? def.implementations : <GQTypeDefinition>{};
+    final implementations = def is GQInterfaceDefinition
+        ? def.implementations
+        : <GQTypeDefinition>{};
 
     final interfaceNames = def.interfaceNames.map((e) => e.token).toSet();
     interfaceNames.addAll(implementations.map((e) => e.token));
@@ -255,31 +295,25 @@ class DartSerializer extends GqSerializer {
     if (decorators.isNotEmpty) {
       buffer.writeln(decorators);
     }
-    buffer.write("class $token");
-    var implements = _serializeImplements(interfaceNames);
-    buffer.write(" ");
-
-    if (implements.isNotEmpty) {
-      buffer.write(implements);
-    }
-    buffer.writeln("{");
-    buffer.writeln();
-    buffer.writeln(serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeField(e)).toList(),
-            join: "\n", withParenthesis: false)
-        .ident());
-    buffer.writeln();
-    buffer.writeln("$token(${serializeContructorArgs(def, grammar)});".ident());
-    buffer.writeln();
     var equalsHascodeCode = generateEqualsAndHashCode(def);
-    if (equalsHascodeCode.isNotEmpty) {
-      buffer.writeln(equalsHascodeCode.ident());
-    }
-    if (generateJsonMethods) {
-      buffer.writeln(generateToJson(def.getSerializableFields(mode)).ident());
-      buffer.writeln();
-      buffer.writeln(generateFromJson(def.getSerializableFields(mode), def.token).ident());
-    }
-    buffer.writeln("}");
+    buffer.writeln(codeGenUtils.createClass(
+      className: token,
+      baseClassNames: interfaceNames.toList(),
+      statements: [
+        ...def
+            .getSerializableFields(grammar.mode)
+            .map((e) => serializeField(e)),
+        codeGenUtils.createMethod(
+            methodName: token,
+            namedArguments: false,
+            arguments: [serializeContructorArgs(def, grammar)]),
+        if (equalsHascodeCode.isNotEmpty) equalsHascodeCode,
+        if (generateJsonMethods) ...[
+          generateToJson(def.getSerializableFields(mode)),
+          generateFromJson(def.getSerializableFields(mode), def.token)
+        ]
+      ],
+    ));
     return buffer.toString();
   }
 
@@ -295,15 +329,27 @@ class DartSerializer extends GqSerializer {
     final token = def.tokenInfo;
     var buffer = StringBuffer();
     buffer.writeln('@override');
-    buffer.writeln('bool operator ==(Object other) {');
-    buffer.writeln('if (identical(this, other)) return true;'.ident());
-    buffer.writeln('return other is $token &&'.ident());
-    buffer.write(fields.map((e) => "$e == other.$e").join(" && ").ident());
-    buffer.writeln(';');
-    buffer.writeln('}');
+    buffer.writeln(codeGenUtils.createMethod(
+        returnType: 'bool operator',
+        methodName: "==",
+        namedArguments: false,
+        arguments: [
+          'Object other'
+        ],
+        statements: [
+          codeGenUtils.ifStatement(
+              condition: 'identical(this, other)',
+              ifBlockStatements: ['return true;']),
+          'return other is $token &&',
+          "${fields.map((e) => "$e == other.$e").join(" && ")};"
+        ]));
+
     buffer.writeln();
     buffer.writeln('@override');
-    buffer.writeln('int get hashCode => Object.hashAll([${fields.join(", ")}]);');
+    buffer.writeln(codeGenUtils.createMethod(
+        returnType: "int get",
+        methodName: "hashCode => Object.hashAll([${fields.join(", ")}])"));
+
     return buffer.toString();
   }
 
@@ -316,10 +362,12 @@ class DartSerializer extends GqSerializer {
     if (fields.isEmpty) {
       nonCommonFields = "";
     } else {
-      nonCommonFields = fields.map((e) => toConstructorDeclaration(e)).join(", ");
+      nonCommonFields =
+          fields.map((e) => toConstructorDeclaration(e)).join(", ");
     }
 
-    var combined = [nonCommonFields].where((element) => element.isNotEmpty).toSet();
+    var combined =
+        [nonCommonFields].where((element) => element.isNotEmpty).toSet();
     if (combined.isEmpty) {
       return "";
     } else if (combined.length == 1) {
@@ -332,31 +380,29 @@ class DartSerializer extends GqSerializer {
     return "Map<String, dynamic> toJson();";
   }
 
-  static String _serializeFromJsonForInterface(String token, Set<GQTypeDefinition> implementations) {
-    var buffer = StringBuffer("static ${token} fromJson(Map<String, dynamic> json) {");
-    buffer.writeln();
-
-    buffer.writeln("var typename = json['__typename'] as String;".ident());
-    buffer.writeln("switch(typename) {".ident());
-    for (var st in implementations) {
-      String typeName = st.derivedFromType?.tokenInfo.token ?? st.tokenInfo.token;
-      String currentToken = st.tokenInfo.token;
-      buffer.writeln("case '${typeName}': return ${currentToken}.fromJson(json);".ident(2));
-    }
-    buffer.writeln(
-        'default: throw ArgumentError("Invalid type \$typename. \$typename does not implement $token or not defined");'
-            .ident(2));
-    buffer.writeln("}".ident());
-    buffer.writeln("}");
-    return buffer.toString();
+  String _serializeFromJsonForInterface(
+    String token,
+    Set<GQTypeDefinition> implementations,
+  ) {
+    return codeGenUtils
+        .createMethod(returnType: 'static ${token}', methodName: 'fromJson', namedArguments: false, arguments: [
+      'Map<String, dynamic> json'
+    ], statements: [
+      "var typename = json['__typename'] as String;",
+      codeGenUtils.switchStatement(
+        expression: 'typename',
+        cases: [
+          ...implementations.map((st) => DartCaseStatement(
+              caseValue:
+                  "'${st.derivedFromType?.tokenInfo.token ?? st.tokenInfo.token}'",
+              statement: 'return ${st.tokenInfo.token}.fromJson(json);'))
+        ],
+        defaultStatement:
+            'throw ArgumentError("Invalid type \$typename. \$typename does not implement $token or not defined");',
+      ),
+    ]);
   }
 
-  static String _serializeImplements(Set<String> interfaceNames) {
-    if (interfaceNames.isEmpty) {
-      return '';
-    }
-    return "implements ${interfaceNames.join(", ")} ";
-  }
 
   String serializeInterface(GQInterfaceDefinition interface) {
     final token = interface.tokenInfo.token;
@@ -384,7 +430,9 @@ class DartSerializer extends GqSerializer {
       buffer.writeln(_serializeToJsonForInterface(token).ident());
     }
     if (generateJsonMethods && interface.implementations.isNotEmpty) {
-      buffer.writeln(_serializeFromJsonForInterface(token, interface.implementations).ident());
+      buffer.writeln(
+          _serializeFromJsonForInterface(token, interface.implementations)
+              .ident());
     }
 
     buffer.writeln("}");
@@ -411,7 +459,7 @@ class DartSerializer extends GqSerializer {
       init = "types/${getFileNameFor(token)}";
     } else if (token is GQInputDefinition) {
       init = "inputs/${getFileNameFor(token)}";
-    }else if (token is GQTypeView) {
+    } else if (token is GQTypeView) {
       init = "widgets/${getFileNameFor(token)}";
     }
 

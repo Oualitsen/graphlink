@@ -14,6 +14,7 @@ void main() {
     var gender = g.enums["Gender"]!;
     var serializer = DartSerializer(g);
     var genderSerial = serializer.serializeEnumDefinition(gender, "");
+    print(genderSerial);
     expect(
         genderSerial.split("\n").map((e) => e.trim()),
         containsAllInOrder([
@@ -80,9 +81,9 @@ void main() {
     expect(parsed is Success, true);
     var userInput = g.inputs["UserInput"]!;
     var serializer = DartSerializer(g);
-    var inputSerial = serializer.doSerializeInputDefinition(userInput);
+    var toJsonSerial = serializer.generateToJson(userInput.getSerializableFields(g.mode));
     expect(
-      inputSerial.split("\n").map((e) => e.trim()),
+      toJsonSerial.split("\n").map((e) => e.trim()),
       containsAllInOrder([
         "Map<String, dynamic> toJson() {",
         "return {",
@@ -96,7 +97,7 @@ void main() {
         "'genders2': genders2.map((e0) => e0.toJson()).toList(),",
         "'genders3': genders3.map((e0) => e0?.toJson()).toList(),",
         "'city': city?.toJson(),",
-        "'cities': cities?.map((e0) => e0?.toJson()).toList()",
+        "'cities': cities?.map((e0) => e0?.toJson()).toList(),",
         "};",
         "}"
       ]),
@@ -117,14 +118,14 @@ void main() {
     expect(parsed is Success, true);
     var userInput = g.inputs["UserInput"]!;
     var serializer = DartSerializer(g);
-    var inputSerial = serializer.doSerializeInputDefinition(userInput);
+    var toJsonSerial = serializer.generateToJson(userInput.getSerializableFields(g.mode));
 
     expect(
-        inputSerial.split("\n").map((e) => e.trim()),
+        toJsonSerial.split("\n").map((e) => e.trim()),
         containsAllInOrder([
           "Map<String, dynamic> toJson() {",
           'return {',
-          "'genders': genders?.map((e0) => e0?.map((e1) => e1?.toJson()).toList()).toList()",
+          "'genders': genders?.map((e0) => e0?.map((e1) => e1?.toJson()).toList()).toList(),",
           '};',
         ]));
   });
@@ -155,11 +156,13 @@ void main() {
     expect(parsed is Success, true);
     var useer = g.types["User"]!;
     var serializer = DartSerializer(g);
-    var userSerial = serializer.doSerializeTypeDefinition(useer);
-
+    var toJsonSerial = serializer.generateToJson(useer.getSerializableFields(g.mode));
     expect(
-      userSerial.split("\n").map((e) => e.trim()),
+      toJsonSerial.split("\n").map((e) => e.trim()),
       containsAllInOrder([
+        "Map<String, dynamic> toJson() {",
+        "'id': id,",
+        "'name': name,",
         "'middleName': middleName,",
         "'dateOfBirth': dateOfBirth,",
         "'gender': gender?.toJson(),",
@@ -168,7 +171,7 @@ void main() {
         "'genders2': genders2.map((e0) => e0.toJson()).toList(),",
         "'genders3': genders3.map((e0) => e0?.toJson()).toList(),",
         "'city': city?.toJson(),",
-        "'cities': cities?.map((e0) => e0?.toJson()).toList()",
+        "'cities': cities?.map((e0) => e0?.toJson()).toList(),",
         "};",
         "}"
       ]),
@@ -203,8 +206,7 @@ void main() {
     expect(parsed is Success, true);
     var userInput = g.inputs["UserInput"]!;
     var serializer = DartSerializer(g);
-    var inputSerial = serializer.doSerializeInputDefinition(userInput);
-
+    var inputSerial = serializer.generateFromJson(userInput.getSerializableFields(g.mode), userInput.token);
     expect(
       inputSerial.split("\n").map((e) => e.trim()),
       containsAllInOrder([
@@ -222,7 +224,7 @@ void main() {
         "genders3: (json['genders3'] as List<dynamic>).map((e0) => e0 == null ? null : Gender.fromJson(e0 as String)).toList(),",
         "city: json['city'] == null ? null : CityInput.fromJson(json['city'] as Map<String, dynamic>),",
         "cities: (json['cities'] as List<dynamic>?)?.map((e0) => e0 == null ? null : CityInput.fromJson(e0 as Map<String, dynamic>)).toList(),",
-        "doubleCities: (json['doubleCities'] as List<dynamic>?)?.map((e0) => (e0 as List<dynamic>?)?.map((e1) => e1 == null ? null : CityInput.fromJson(e1 as Map<String, dynamic>)).toList()).toList()",
+        "doubleCities: (json['doubleCities'] as List<dynamic>?)?.map((e0) => (e0 as List<dynamic>?)?.map((e1) => e1 == null ? null : CityInput.fromJson(e1 as Map<String, dynamic>)).toList()).toList(),",
         ");",
         "}"
       ]),
@@ -257,7 +259,7 @@ void main() {
     expect(parsed is Success, true);
     var user = g.types["User"]!;
     var serializer = DartSerializer(g);
-    var userSerial = serializer.doSerializeTypeDefinition(user);
+    var userSerial = serializer.generateFromJson(user.getSerializableFields(g.mode), user.token);
     expect(
       userSerial.split("\n").map((e) => e.trim()),
       containsAllInOrder([
@@ -275,7 +277,7 @@ void main() {
         "genders3: (json['genders3'] as List<dynamic>).map((e0) => e0 == null ? null : Gender.fromJson(e0 as String)).toList(),",
         "city: json['city'] == null ? null : City.fromJson(json['city'] as Map<String, dynamic>),",
         "cities: (json['cities'] as List<dynamic>?)?.map((e0) => e0 == null ? null : City.fromJson(e0 as Map<String, dynamic>)).toList(),",
-        "doubleCities: (json['doubleCities'] as List<dynamic>?)?.map((e0) => (e0 as List<dynamic>?)?.map((e1) => e1 == null ? null : City.fromJson(e1 as Map<String, dynamic>)).toList()).toList()",
+        "doubleCities: (json['doubleCities'] as List<dynamic>?)?.map((e0) => (e0 as List<dynamic>?)?.map((e1) => e1 == null ? null : City.fromJson(e1 as Map<String, dynamic>)).toList()).toList(),",
         ");",
         "}"
       ]),
@@ -305,6 +307,7 @@ void main() {
     var user = g.interfaces["BasicEntity"]!;
     var serializer = DartSerializer(g);
     var userSerial = serializer.serializeInterface(user);
+    print(userSerial);
 
     expect(
       userSerial.split('\n').map((e) => e.trim()),
@@ -315,9 +318,12 @@ void main() {
         'static BasicEntity fromJson(Map<String, dynamic> json) {',
         "var typename = json['__typename'] as String;",
         'switch(typename) {',
-        "case 'User': return User.fromJson(json);",
-        "case 'Animal': return Animal.fromJson(json);",
-        'default: throw ArgumentError("Invalid type \$typename. \$typename does not implement BasicEntity or not defined");',
+        "case 'User':",
+        "return User.fromJson(json);",
+        "case 'Animal':",
+        "return Animal.fromJson(json);",
+        'default:',
+        'throw ArgumentError("Invalid type \$typename. \$typename does not implement BasicEntity or not defined");',
         '}',
         '}',
         '}'

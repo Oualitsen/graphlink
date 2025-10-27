@@ -16,12 +16,14 @@ void main() {
     var entity = g.projectedTypes["Entity"]!;
     var serializer = DartSerializer(g);
     var entityDart = serializer.serializeTypeDefinition(entity, "");
+    print(entityDart);
     expect(entityDart, contains("int get hashCode => Object.hashAll([id])"));
     expect(entityDart, contains("bool operator ==(Object other)"));
 
     var myProduct = g.projectedTypes["MyProduct"]!;
     var serilaizer = DartSerializer(g);
     var productDart = serilaizer.serializeTypeDefinition(myProduct, "");
+    print(productDart);
     expect(productDart, contains("int get hashCode => Object.hashAll([id, name]);"));
 
     // should not contain

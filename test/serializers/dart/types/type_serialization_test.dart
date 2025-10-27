@@ -77,7 +77,6 @@ void main() {
     var user = g.inputs["UserInput"];
     var dartSerialzer = DartSerializer(g);
     var class_ = dartSerialzer.serializeInputDefinition(user!, "");
-
     expect(
       class_.split("\n").map((str) => str.trim()),
       containsAllInOrder([
@@ -85,7 +84,11 @@ void main() {
         "final String? id;",
         "final String name;",
         "final String? middleName;",
-        "UserInput({this.id, required this.name, this.middleName});",
+        "UserInput({",
+        "this.id,",
+        "required this.name,",
+        "this.middleName,",
+        "});",
         "}"
       ]),
     );

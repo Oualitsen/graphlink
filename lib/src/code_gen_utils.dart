@@ -143,23 +143,24 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
     }
     buffer.write(methodName);
     if (arguments != null) {
-      buffer.write(parentheses(namedArguments ?  [block(arguments)]: arguments));
-    } else {
-      buffer.write(parentheses([]));
-    }
+      buffer.write(parentheses(namedArguments && arguments.isNotEmpty ?  [block(arguments)]: arguments));
+    } 
     if (statements != null) {
       buffer.write(" ");
       buffer.write(block(statements));
+    } else {
+      buffer.write(";");
     }
     return buffer.toString();
   }
 
   String createClass({required String className, required List<String> statements, List<String>? baseClassNames}) {
     var buffer = StringBuffer();
-    buffer.write("class ${className}");
+    buffer.write("class ${className} ");
     if(baseClassNames != null && baseClassNames.isNotEmpty) {
-      buffer.write(" ");
+      buffer.write("implements ");
       buffer.write(baseClassNames.join(", "));
+      buffer.write(" ");
     }
     buffer.write(block(statements));
     return buffer.toString();
