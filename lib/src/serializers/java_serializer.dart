@@ -1,3 +1,4 @@
+import 'package:retrofit_graphql/src/code_gen_utils.dart';
 import 'package:retrofit_graphql/src/constants.dart';
 import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
@@ -61,6 +62,7 @@ class JavaSerializer extends GqSerializer {
   final bool typesAsRecords;
   final bool typesCheckForNulls;
   final bool inputsCheckForNulls;
+  final codeGenUtils = JavaCodeGenUtils();
   @override
   final bool generateJsonMethods;
   JavaSerializer(
@@ -75,7 +77,8 @@ class JavaSerializer extends GqSerializer {
   }
 
   void _initAnnotations() {
-    grammar.handleAnnotations((val) => AnnotationSerializer.serializeAnnotation(val, multiLineString: false));
+    grammar.handleAnnotations(
+        (val) => AnnotationSerializer.serializeAnnotation(val, multiLineString: false));
   }
 
   @override
@@ -85,19 +88,13 @@ class JavaSerializer extends GqSerializer {
     if (decorators.isNotEmpty) {
       buffer.writeln(decorators);
     }
-    buffer.writeln("public enum ${def.tokenInfo} {");
-    buffer.write(def.values.map((e) => doSerializeEnumValue(e)).toList().join(", ").ident());
-    buffer.writeln(";");
     var toJson = serializeToJsonForEnum(def);
-    if (toJson.isNotEmpty) {
-      buffer.writeln(toJson.ident());
-    }
-
     var fromJson = serializeFromJsonForEnum(def);
-    if (fromJson.isNotEmpty) {
-      buffer.writeln(fromJson.ident());
-    }
-    buffer.writeln("}");
+    var enum_ = codeGenUtils.createEnum(
+        enumName: def.token,
+        enumValues: def.values.map((e) => doSerializeEnumValue(e)).toList(),
+        methods: [if (fromJson.isNotEmpty) fromJson, if (toJson.isNotEmpty) toJson]);
+    buffer.writeln(enum_);
     return buffer.toString();
   }
 
@@ -105,23 +102,23 @@ class JavaSerializer extends GqSerializer {
     if (!generateJsonMethods) {
       return "";
     }
-    var buffer = StringBuffer();
-    buffer.writeln("public String toJson() {");
-    buffer.writeln("return name();".ident());
-    buffer.writeln("}");
-    return buffer.toString();
+    return codeGenUtils.createMethod(
+      returnType: "public String",
+      methodName: "toJson",
+      statements: ["return name();"],
+    );
   }
 
   String serializeFromJsonForEnum(GQEnumDefinition def) {
     if (!generateJsonMethods) {
       return "";
     }
-    var buffer = StringBuffer();
-    buffer.writeln("public static ${def.token} fromJson(String value) {");
-    buffer.writeln("return Optional.ofNullable(value).map(${def.token}::valueOf).orElse(null);".ident());
-    buffer.writeln("}");
-    def.addImport(JavaImports.optional);
-    return buffer.toString();
+    return codeGenUtils.createMethod(
+      returnType: "public static ${def.token}",
+      methodName: "fromJson",
+      arguments: ["String value"],
+      statements: ["return Optional.ofNullable(value).map(${def.token}::valueOf).orElse(null);"],
+    );
   }
 
   @override
@@ -144,7 +141,8 @@ class JavaSerializer extends GqSerializer {
     if (decorators.isNotEmpty) {
       buffer.writeln(decorators.trim());
     }
-    buffer.write('private ${serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray)} $name;');
+    buffer.write(
+        'private ${serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray)} $name;');
     return buffer.toString();
   }
 
@@ -160,7 +158,7 @@ class JavaSerializer extends GqSerializer {
   }
 
   String serializeArgumentField(GQField def,
-      {bool withFianl = true, bool withDecorators = false, String decoratorJoiner = "\n"}) {
+      {bool withDecorators = false, String decoratorJoiner = "\n"}) {
     final type = def.type;
     final name = def.name;
     final hasInculeOrSkipDiretives = def.hasInculeOrSkipDiretives;
@@ -171,9 +169,6 @@ class JavaSerializer extends GqSerializer {
         buffer.write(decorators);
         buffer.write(decoratorJoiner);
       }
-    }
-    if (withFianl) {
-      buffer.write("final ");
     }
     buffer.write(serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray));
     buffer.write(" ");
@@ -237,35 +232,25 @@ class JavaSerializer extends GqSerializer {
       buffer.writeln(serializeRecord(def.token, def.fields, {}, def));
       return buffer.toString();
     }
-
-    buffer.writeln('public class ${def.tokenInfo.token} {');
-    buffer.writeln(serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeField(e)).toList(),
-            join: "\n", withParenthesis: false)
-        .ident());
-    buffer.writeln(generateContructor(def.token, [], "public", def, checkForNulls: inputsCheckForNulls).ident());
-    buffer.writeln(generateContructor(def.token, def.getSerializableFields(grammar.mode), "private", def).ident());
-    buffer.writeln(generateBuilder(def.token, def.getSerializableFields(grammar.mode)).ident());
-    buffer.writeln(serializeListText(
-            def
-                .getSerializableFields(grammar.mode)
-                .map((e) => serializeGetter(e, def, checkForNulls: inputsCheckForNulls))
-                .toList(),
-            join: "\n",
-            withParenthesis: false)
-        .ident());
-    buffer.writeln(serializeListText(
-            def
-                .getSerializableFields(grammar.mode)
-                .map((e) => serializeSetter(e, def, checkForNulls: inputsCheckForNulls))
-                .toList(),
-            join: "\n",
-            withParenthesis: false)
-        .ident());
-    if (generateJsonMethods) {
-      buffer.writeln(generateToJson(def.getSerializableFields(grammar.mode), def).ident());
-      buffer.writeln(generateFromJson(def.getSerializableFields(mode), def.token, def).ident());
-    }
-    buffer.writeln("}");
+    var class_ = codeGenUtils.createClass(className: def.tokenInfo.token, statements: [
+      ...def.getSerializableFields(grammar.mode).map((e) => serializeField(e)),
+      "",
+      generateContructor(def.token, [], "public", def, checkForNulls: inputsCheckForNulls),
+      "",
+      generateContructor(def.token, def.getSerializableFields(grammar.mode), "private", def),
+      generateBuilder(def.token, def.getSerializableFields(grammar.mode)),
+      ...def
+          .getSerializableFields(grammar.mode)
+          .map((e) => serializeGetter(e, def, checkForNulls: inputsCheckForNulls)),
+      ...def
+          .getSerializableFields(grammar.mode)
+          .map((e) => serializeSetter(e, def, checkForNulls: inputsCheckForNulls)),
+      if (generateJsonMethods) ...[
+        generateToJson(def.getSerializableFields(grammar.mode), def),
+        generateFromJson(def.getSerializableFields(mode), def.token, def)
+      ]
+    ]);
+    buffer.write(class_);
     return buffer.toString();
   }
 
@@ -284,7 +269,8 @@ class JavaSerializer extends GqSerializer {
     return _javaNumberMethods[serializeType(type, false)]!;
   }
 
-  String getFromJsonCall(GQField field, String varName, int depth, GQToken context, [GQType? type]) {
+  String getFromJsonCall(GQField field, String varName, int depth, GQToken context,
+      [GQType? type]) {
     type ??= field.type;
     String callMapDotGet = depth == 0 ? '.get("${field.name.token}")' : '';
     String nullCheckStatement = type.nullable ? '${varName}${callMapDotGet} == null ? null :' : '';
@@ -310,7 +296,9 @@ class JavaSerializer extends GqSerializer {
       return finalResult;
     }
     String result;
-    if (grammar.isNonProjectableType(type.token) && !grammar.isEnum(type.token) && !grammar.isInput(type.token)) {
+    if (grammar.isNonProjectableType(type.token) &&
+        !grammar.isEnum(type.token) &&
+        !grammar.isInput(type.token)) {
       if (_isNumber(type)) {
         result = '((Number)${varName}${callMapDotGet}).${_numberValueMethod(type)}';
       } else {
@@ -325,32 +313,42 @@ class JavaSerializer extends GqSerializer {
   }
 
   String generateFromJson(List<GQField> fields, String token, GQToken context) {
-    var buffer = StringBuffer("public static ${token} fromJson(${_mapOf('String', 'Object')} json) {");
-    buffer.writeln();
-    buffer.writeln("return new ${token}(".ident());
-    for (var field in fields) {
-      String statement = getFromJsonCall(field, 'json', 0, context);
-      if (field != fields.last) {
-        statement = "${statement},";
-      }
-      buffer.writeln(statement.ident(2));
-    }
-    buffer.writeln(");".ident());
-    buffer.writeln("}");
+    var buffer = StringBuffer();
+
+    buffer.writeln(
+      codeGenUtils
+          .createMethod(returnType: "public static ${token}", methodName: "fromJson", arguments: [
+        '${_mapOf('String', 'Object')} json'
+      ], statements: [
+        "return new ${token}(",
+        ...fields.map((field) {
+          var statement = getFromJsonCall(field, 'json', 0, context);
+          if (field != fields.last) {
+            return "${statement},";
+          }
+          return statement;
+        }),
+        ");"
+      ]),
+    );
     return buffer.toString();
   }
 
   String generateToJson(List<GQField> fields, GQToken context) {
-    var buffer = StringBuffer("public ${_mapOf('String', 'Object')} toJson() {");
-    buffer.writeln();
-    buffer.writeln("${_mapOf('String', 'Object')} map = new HashMap<>();".ident());
-    for (var field in fields) {
-      buffer.writeln('map.put("${field.name}", ${fieldToJson(field, context)});'.ident());
-    }
-    buffer.writeln("return map;".ident());
-    buffer.writeln("}");
-    context.addImport(JavaImports.hasMap);
+    var buffer = StringBuffer();
+    context.addImport(JavaImports.hashMap);
     context.addImport(JavaImports.map);
+
+    buffer.writeln(
+      codeGenUtils.createMethod(
+          returnType: "public ${_mapOf('String', 'Object')}",
+          methodName: "toJson",
+          statements: [
+            "${_mapOf('String', 'Object')} map = new HashMap<>();",
+            ...fields.map((field) => 'map.put("${field.name}", ${fieldToJson(field, context)});'),
+            'return map;'
+          ]),
+    );
 
     return buffer.toString();
   }
@@ -376,7 +374,8 @@ class JavaSerializer extends GqSerializer {
       var inlineCallToJson = callToJson(field, inlineType, varName, index + 1, context);
       if (field.getDirectiveByName(gqArray) != null) {
         // array
-        String method = "Stream.of(${variableName}).map(${varName} -> ${inlineCallToJson}).${_toList}";
+        String method =
+            "Stream.of(${variableName}).map(${varName} -> ${inlineCallToJson}).${_toList}";
         context.addImport(JavaImports.stream);
         return "${variableName} == null ? null : $method";
       } else {
@@ -403,8 +402,10 @@ class JavaSerializer extends GqSerializer {
       {bool checkForNulls = false}) {
     String nullCheck;
     if (checkForNulls) {
-      var checkingFields =
-          fields.where((e) => !e.type.nullable).map((e) => "Objects.requireNonNull(${e.name});").toList();
+      var checkingFields = fields
+          .where((e) => !e.type.nullable)
+          .map((e) => "Objects.requireNonNull(${e.name});")
+          .toList();
       if (checkingFields.isNotEmpty) {
         nullCheck = serializeListText(checkingFields, join: "\n", withParenthesis: false);
         context.addImport(JavaImports.objects);
@@ -439,52 +440,53 @@ class JavaSerializer extends GqSerializer {
     }
 
     var buffer = StringBuffer();
-    buffer.writeln('public static Builder builder() {');
-    buffer.writeln('return new Builder();'.ident());
-    buffer.writeln('}');
-    buffer.writeln();
+    buffer.writeln(codeGenUtils.createMethod(
+      returnType: "public static Builder",
+      methodName: "builder",
+      statements: ['return new Builder();'],
+    ));
 
-    buffer.writeln('public static class Builder {');
     buffer.writeln();
-    for (var field in fields) {
-      var noDirectiveField = GQField(name: field.name, type: field.type, arguments: field.arguments, directives: []);
-      buffer.writeln(serializeField(noDirectiveField).trim().ident());
-    }
-    buffer.writeln();
-    for (var e in fields) {
-      buffer.writeln('public Builder ${e.name}(${serializeArgumentField(e)}) {'.ident());
-      buffer.writeln('this.${e.name} = ${e.name};'.ident(2));
-      buffer.writeln('return this;'.ident(2));
-      buffer.writeln('}'.ident());
-    }
-    buffer.writeln();
-    buffer.writeln('public $name build() {'.ident());
-    buffer.writeln('return new $name(${fields.map((e) => e.name).join(", ")});'.ident(2));
-    buffer.writeln('}'.ident());
-    buffer.writeln('}');
+    buffer.writeln(codeGenUtils.createClass(staticClass: true, className: 'Builder', statements: [
+      ...fields
+          .map((field) => GQField(
+              name: field.name, type: field.type, arguments: field.arguments, directives: []))
+          .map(serializeField),
+      "",
+      ...fields.map((e) => codeGenUtils.createMethod(
+          returnType: 'public Builder',
+          methodName: e.name.token,
+          arguments: [serializeArgumentField(e)],
+          statements: ['this.${e.name} = ${e.name};', 'return this;'])),
+      "",
+      codeGenUtils.createMethod(
+          returnType: 'public $name',
+          methodName: 'build',
+          statements: ['return new $name(${fields.map((e) => e.name).join(", ")});']),
+    ]));
+
     return buffer.toString();
   }
 
   String serializeGetter(GQField field, GQToken context, {bool checkForNulls = false}) {
-    String? nullCheck;
-    final returnStatement = "return ${field.name};";
-    if (!field.type.nullable && checkForNulls) {
+    if (checkForNulls) {
       context.addImport(JavaImports.objects);
-      nullCheck = "Objects.requireNonNull(${field.name});";
     }
-    var statements = [if (nullCheck != null) nullCheck, returnStatement];
-    return """
-${serializeGetterDeclaration(field)} { 
-${statements.join("\n").ident()}
-}
-"""
-        .trim();
+    var returnType = serializeType(field.type, false, field.serialzeAsArray);
+    return codeGenUtils.createMethod(
+        returnType: "public ${returnType}",
+        methodName: _getterName(field.name.token, returnType == "boolean"),
+        statements: [
+          if (checkForNulls) 'Objects.requireNonNull(${field.name});',
+          'return ${field.name};'
+        ]);
   }
 
   String serializeMethod(GQField field, {String? modifier}) {
     var buffer = StringBuffer();
     var decorators = serializeDecorators(field.getDirectives());
-    var args = serializeListText(field.arguments.map(serializeArgument).toList(), withParenthesis: false, join: ", ");
+    var args = serializeListText(field.arguments.map(serializeArgument).toList(),
+        withParenthesis: false, join: ", ");
     var result = "${serializeType(field.type, false, field.serialzeAsArray)} ${field.name}($args)";
     if (modifier != null) {
       result = "$modifier $result";
@@ -502,30 +504,22 @@ ${statements.join("\n").ident()}
     Set<String> interfaceNames,
     GQToken context,
   ) {
-    final list = fields
-        .map((f) => serializeArgumentField(f, withFianl: false, withDecorators: true, decoratorJoiner: " "))
-        .toList();
-    String interfaceImpl = _serializeImplements(interfaceNames);
-    var buffer = StringBuffer();
-    buffer.write("public record $recordName");
-
-    buffer.write("(");
-    buffer.write(serializeListText(list, withParenthesis: false, join: ", "));
-    buffer.write(")");
-    if (interfaceImpl.isNotEmpty) {
-      buffer.write(" ");
-      buffer.write(interfaceImpl);
-    }
-    buffer.writeln(" {");
-    if (generateJsonMethods) {
-      buffer.writeln(generateToJson(fields, context).ident());
-      buffer.writeln(generateFromJson(fields, recordName, context).ident());
-    }
-    buffer.write("}");
-    return buffer.toString();
+    return codeGenUtils.createRecord(
+        recordName: recordName,
+        components: fields
+            .map((f) => serializeArgumentField(f, withDecorators: true, decoratorJoiner: " "))
+            .toList(),
+        interfaces: interfaceNames.toList(),
+        statements: [
+          if (generateJsonMethods) ...[
+            generateToJson(fields, context),
+            generateFromJson(fields, recordName, context)
+          ]
+        ]);
   }
 
-  String serializeGetterDeclaration(GQField field, {bool skipModifier = false, bool asProperty = false}) {
+  String serializeGetterDeclaration(GQField field,
+      {bool skipModifier = false, bool asProperty = false}) {
     var returnType = serializeType(field.type, false);
     var result = serializeType(field.type, false, field.serialzeAsArray);
     if (asProperty) {
@@ -563,20 +557,19 @@ ${statements.join("\n").ident()}
   }
 
   String serializeSetter(GQField field, GQToken context, {bool checkForNulls = false}) {
-    String? nullCheck;
-    final setStatement = "this.${field.name} = ${field.name};";
-
-    if (!field.type.nullable && checkForNulls) {
+    if (checkForNulls) {
       context.addImport(JavaImports.objects);
-      nullCheck = "Objects.requireNonNull(${field.name});";
     }
-    var statements = [if (nullCheck != null) nullCheck, setStatement];
-    return """
-public void ${_setterName(field.name.token)}(${serializeArgumentField(field)}) {
-${statements.join("\n").ident()}
-}
-"""
-        .trim();
+    return codeGenUtils.createMethod(
+        returnType: 'public void',
+        methodName: _setterName(field.name.token),
+        arguments: [
+          serializeArgumentField(field)
+        ],
+        statements: [
+          if (checkForNulls) 'Objects.requireNonNull(${field.name});',
+          "this.${field.name} = ${field.name};"
+        ]);
   }
 
   @override
@@ -597,37 +590,36 @@ ${statements.join("\n").ident()}
       buffer.writeln(decorators.trim());
     }
     if (typesAsRecords) {
-      buffer.writeln(serializeRecord(def.token, def.fields, interfaceNames.map((e) => e.token).toSet(), def));
+      buffer.writeln(
+          serializeRecord(def.token, def.fields, interfaceNames.map((e) => e.token).toSet(), def));
       return buffer.toString();
     }
 
-    buffer.writeln('public class $token ${_serializeImplements(interfaceNames.map((e) => e.token).toSet())}{');
-
-    buffer.writeln(serializeListText(def.getSerializableFields(grammar.mode).map((e) => serializeField(e)).toList(),
-            join: "\n", withParenthesis: false)
-        .ident());
-    buffer.writeln(generateContructor(def.token, [], "public", def, checkForNulls: typesCheckForNulls).ident());
-    buffer.writeln(generateContructor(def.token, def.getSerializableFields(grammar.mode), "private", def).ident());
-    buffer.writeln(generateBuilder(def.token, def.getSerializableFields(grammar.mode)).ident());
-    buffer.writeln(serializeListText(
-            def.getSerializableFields(grammar.mode).map((e) => serializeGetter(e, def, checkForNulls: typesCheckForNulls)).toList(),
-            join: "\n",
-            withParenthesis: false)
-        .ident());
-    buffer.writeln(serializeListText(
-            def
-                .getSerializableFields(grammar.mode)
-                .map((e) => serializeSetter(e, def, checkForNulls: typesCheckForNulls))
-                .toList(),
-            join: "\n",
-            withParenthesis: false)
-        .ident());
-    buffer.writeln(generateEqualsAndHashCode(def).ident());
-    if (generateJsonMethods) {
-      buffer.writeln(generateToJson(def.getSerializableFields(grammar.mode), def).ident());
-      buffer.writeln(generateFromJson(def.getSerializableFields(grammar.mode), def.token, def).ident());
-    }
-    buffer.writeln('}');
+    buffer.writeln(codeGenUtils.createClass(
+        className: token.token,
+        interfaceNames: interfaceNames.map((e) => e.token).toList(),
+        statements: [
+          ...def.getSerializableFields(grammar.mode).map((e) => serializeField(e)),
+          "",
+          generateContructor(def.token, [], "public", def, checkForNulls: typesCheckForNulls),
+          "",
+          generateContructor(def.token, def.getSerializableFields(grammar.mode), "private", def),
+          "",
+          generateBuilder(def.token, def.getSerializableFields(grammar.mode)),
+          "",
+          ...def
+              .getSerializableFields(grammar.mode)
+              .map((e) => serializeGetter(e, def, checkForNulls: typesCheckForNulls)),
+          "",
+          ...def
+              .getSerializableFields(grammar.mode)
+              .map((e) => serializeSetter(e, def, checkForNulls: typesCheckForNulls)),
+          generateEqualsAndHashCode(def),
+          if (generateJsonMethods) ...[
+            generateFromJson(def.getSerializableFields(grammar.mode), def.token, def),
+            generateToJson(def.getSerializableFields(grammar.mode), def)
+          ]
+        ]));
     return buffer.toString();
   }
 
@@ -644,24 +636,46 @@ ${statements.join("\n").ident()}
     def.addImport("java.util.Objects");
     var buffer = StringBuffer();
     buffer.writeln('@Override');
-    buffer.writeln('public boolean equals(Object o) {');
-    buffer.writeln('if (!(o instanceof $token)) return false;'.ident());
-    buffer.writeln('$token o2 = ($token) o;'.ident());
-    buffer.writeln('return ${fields.map((e) => "Objects.equals($e, o2.$e);").join(" && ")}'.ident());
-    buffer.writeln('}');
+    buffer.writeln(
+        codeGenUtils.createMethod(returnType: "public boolean", methodName: "equals", arguments: [
+      'Object o'
+    ], statements: [
+      codeGenUtils
+          .ifStatement(condition: '!(o instanceof $token)', ifBlockStatements: ['return false;']),
+      '$token o2 = ($token) o;',
+      'return ${fields.map((e) => "Objects.equals($e, o2.$e);").join(" && ")}'
+    ]));
+
     buffer.writeln();
     buffer.writeln('@Override');
-    buffer.writeln('public int hashCode() {');
-    buffer.writeln('return Objects.hash(${fields.join(", ")});'.ident());
-    buffer.writeln('}');
+
+    buffer.writeln(
+      codeGenUtils.createMethod(
+          returnType: 'public int',
+          methodName: 'hashCode',
+          statements: ['return Objects.hash(${fields.join(", ")});']),
+    );
+
     return buffer.toString();
   }
 
-  static String _serializeImplements(Set<String> interfaceNames) {
-    if (interfaceNames.isEmpty) {
-      return '';
+  String _serializeInterfaceField(GQField f, bool getters) {
+    var buffer = StringBuffer();
+    var fieldDecorators = serializeDecorators(f.getDirectives(), joiner: "\n");
+    if (fieldDecorators.isNotEmpty) {
+      buffer.writeln(fieldDecorators.trim().ident());
     }
-    return "implements ${interfaceNames.join(", ")} ";
+    if (getters) {
+      if (typesAsRecords) {
+        buffer.write(serializeGetterDeclaration(f, skipModifier: true, asProperty: true).ident());
+      } else {
+        buffer.write(serializeGetterDeclaration(f, skipModifier: true).ident());
+      }
+    } else {
+      buffer.write(serializeMethod(f).ident());
+    }
+    buffer.write(";");
+    return buffer.toString();
   }
 
   String serializeInterface(GQInterfaceDefinition interface, {bool getters = true}) {
@@ -673,39 +687,18 @@ ${statements.join("\n").ident()}
     if (decorators.isNotEmpty) {
       buffer.writeln(decorators.trim());
     }
-    buffer.write("public interface $token");
-    if (interfaces.isNotEmpty) {
-      buffer.write(" extends ${interfaces.map((e) => e.tokenInfo.token).join(", ")}");
-    }
-    buffer.writeln(" {");
-    buffer.writeln();
-    for (var f in fields) {
-      var fieldDecorators = serializeDecorators(f.getDirectives(), joiner: "\n");
-      if (fieldDecorators.isNotEmpty) {
-        buffer.writeln(fieldDecorators.trim().ident());
-      }
-      if (getters) {
-        if (typesAsRecords) {
-          buffer.write(serializeGetterDeclaration(f, skipModifier: true, asProperty: true).ident());
-        } else {
-          buffer.write(serializeGetterDeclaration(f, skipModifier: true).ident());
-        }
-      } else {
-        buffer.write(serializeMethod(f).ident());
-      }
-      buffer.writeln(";");
-      buffer.writeln();
-    }
-    // toJson
-    if (generateJsonMethods) {
-      interface.addImport(JavaImports.map);
-      buffer.writeln("Map<String, Object> toJson();".ident());
-    }
-    // fromJson to Json
-    if (interface.implementations.isNotEmpty) {
-      buffer.writeln(_serializeFromJsonForInterface(interface.token, interface.implementations).ident());
-    }
-    buffer.write("}");
+
+    buffer.writeln(codeGenUtils.createInterface(
+        interfaceName: token.token,
+        interfaceNames: interfaces.map((e) => e.tokenInfo.token).toList(),
+        statements: [
+          ...fields.map((f) => _serializeInterfaceField(f, getters)),
+          "",
+          if (generateJsonMethods) ...[
+            "Map<String, Object> toJson();",
+            _serializeFromJsonForInterface(interface.token, interface.implementations)
+          ]
+        ]));
     return buffer.toString();
   }
 

@@ -26,12 +26,7 @@ abstract class CodeGenUtilsBase {
       required String positiveStatement,
       required String negativeStatement});
 
-  String createMethod(
-      {String? returnType,
-      required String methodName,
-      List<String>? arguments});
-    
-  
+  String createMethod({String? returnType, required String methodName, List<String>? arguments});
 }
 
 class DartCodeGenUtils implements CodeGenUtilsBase {
@@ -143,8 +138,9 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
     }
     buffer.write(methodName);
     if (arguments != null) {
-      buffer.write(parentheses(namedArguments && arguments.isNotEmpty ?  [block(arguments)]: arguments));
-    } 
+      buffer.write(
+          parentheses(namedArguments && arguments.isNotEmpty ? [block(arguments)] : arguments));
+    }
     if (statements != null) {
       buffer.write(" ");
       buffer.write(block(statements));
@@ -154,10 +150,11 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
     return buffer.toString();
   }
 
-  String createClass({required String className, required List<String> statements, List<String>? baseClassNames}) {
+  String createClass(
+      {required String className, required List<String> statements, List<String>? baseClassNames}) {
     var buffer = StringBuffer();
     buffer.write("class ${className} ");
-    if(baseClassNames != null && baseClassNames.isNotEmpty) {
+    if (baseClassNames != null && baseClassNames.isNotEmpty) {
       buffer.write("implements ");
       buffer.write(baseClassNames.join(", "));
       buffer.write(" ");
@@ -166,10 +163,13 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
     return buffer.toString();
   }
 
-  String createInterface({required String className, required List<String> statements, List<String>? baseInterfaceNames}) {
+  String createInterface(
+      {required String className,
+      required List<String> statements,
+      List<String>? baseInterfaceNames}) {
     var buffer = StringBuffer();
     buffer.write("abstract class ${className}");
-     if(baseInterfaceNames != null && baseInterfaceNames.isNotEmpty) {
+    if (baseInterfaceNames != null && baseInterfaceNames.isNotEmpty) {
       buffer.write(" ");
       buffer.write(baseInterfaceNames.join(", "));
     }
@@ -177,12 +177,13 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
     return buffer.toString();
   }
 
-  String createEnum({required String className, required List<String> enumValues, List<String>? methods}) {
+  String createEnum(
+      {required String enumName, required List<String> enumValues, List<String>? methods}) {
     var buffer = StringBuffer();
-    buffer.write("enum ${className}");
+    buffer.write("enum ${enumName}");
     buffer.write(enumValues.join(", "));
     buffer.writeln(";");
-    if(methods != null && methods.isNotEmpty) {
+    if (methods != null && methods.isNotEmpty) {
       methods.forEach(buffer.writeln);
     }
     return buffer.toString();
@@ -292,47 +293,82 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
       List<String>? statements}) {
     var buffer = StringBuffer();
     if (returnType != null) {
-      buffer.write(returnType);
-      buffer.write(" ");
+      buffer.write("${returnType} ");
     }
     buffer.write(methodName);
     buffer.write(parentheses(arguments));
     if (statements != null) {
+      buffer.write(" ");
       buffer.write(block(statements));
     }
     return buffer.toString();
   }
 
-  String createClass({required String className, required List<String> statements, List<String>? baseClassNames}) {
+  String createRecord(
+      {required String recordName,
+      required List<String> components,
+      List<String>? statements,
+      List<String>? interfaces}) {
     var buffer = StringBuffer();
-    buffer.write("public class ${className}");
-    if(baseClassNames != null && baseClassNames.isNotEmpty) {
+    buffer.write("public record ${recordName}");
+    buffer.write("(");
+    buffer.write(components.join(", "));
+    buffer.write(") ");
+    if (interfaces != null && interfaces.isNotEmpty) {
+      buffer.write("implements ");
+      buffer.write(interfaces.join(", "));
       buffer.write(" ");
-      buffer.write(baseClassNames.join(", "));
     }
     buffer.write(block(statements));
     return buffer.toString();
   }
 
-  String createInterface({required String className, required List<String> statements, List<String>? baseInterfaceNames}) {
+  String createClass({
+    required String className,
+    required List<String> statements,
+    List<String>? interfaceNames,
+    bool staticClass = false,
+  }) {
     var buffer = StringBuffer();
-    buffer.write("public interface ${className}");
-    if(baseInterfaceNames != null && baseInterfaceNames.isNotEmpty) {
-      buffer.write(" ");
-      buffer.write(baseInterfaceNames.join(", "));
+    buffer.write("public ");
+    if (staticClass) {
+      buffer.write("static ");
+    }
+    buffer.write("class ${className} ");
+    if (interfaceNames != null && interfaceNames.isNotEmpty) {
+      buffer.write(" implements ");
+      buffer.write(interfaceNames.join(", "));
     }
     buffer.write(block(statements));
     return buffer.toString();
   }
 
-  String createEnum({required String className, required List<String> enumValues, List<String>? methods}) {
+  String createInterface(
+      {required String interfaceName,
+      required List<String> statements,
+      List<String>? interfaceNames}) {
     var buffer = StringBuffer();
-    buffer.write("enum ${className}");
-    buffer.write(enumValues.join(", "));
-    buffer.writeln(";");
-    if(methods != null && methods.isNotEmpty) {
-      methods.forEach(buffer.writeln);
+    buffer.write("public interface ${interfaceName}");
+    if (interfaceNames != null && interfaceNames.isNotEmpty) {
+      buffer.write(" extends ");
+      buffer.write(interfaceNames.join(", "));
     }
+    buffer.write(" ");
+    buffer.write(block(statements));
+    return buffer.toString();
+  }
+
+  String createEnum(
+      {required String enumName, required List<String> enumValues, List<String>? methods}) {
+    var buffer = StringBuffer();
+    buffer.write("public enum ${enumName} ");
+
+    buffer.write(block([
+      "${enumValues.join(", ")};",
+      "",
+      if (methods != null) ...methods,
+    ]));
+
     return buffer.toString();
   }
 }

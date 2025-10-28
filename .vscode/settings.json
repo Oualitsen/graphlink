@@ -9,5 +9,11 @@
   "files.watcherExclude": {
     "**/.dart_tool": true,
     "**/.fvm": true
-  }
+  },
+  "[dart]": {
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  },
+  "dart.lineLength": 100
 }

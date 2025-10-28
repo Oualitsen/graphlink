@@ -19,7 +19,8 @@ void main() {
   };
 
   test("test schema mapping generation", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     var parsed = g.parse('''
   
@@ -122,7 +123,8 @@ type Query {
     var springSerializer = SpringServerSerializer(g);
     var ctrl = g.controllers[g.controllerMappingName("UserWithCar")]!;
     var serviceSerial = springSerializer.serializeController(ctrl, "");
-    expect(serviceSerial, contains("public User userWithCarUser(User value) { return value; }"));
+    expect(serviceSerial,
+        stringContainsInOrder(["public User userWithCarUser(User value) {", "return value;", "}"]));
   });
 
   test("Should generate batch mapping when batch = true", () {
@@ -177,8 +179,7 @@ type Query {
     expect(mapping2.batch, isFalse);
   });
 
-
-   test("should inject DataFetchingEnvironment for mappings when injectDataFetching = true", () {
+  test("should inject DataFetchingEnvironment for mappings when injectDataFetching = true", () {
     final GQGrammar g = GQGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
     var serializer = SpringServerSerializer(g, injectDataFetching: true);
     const text = '''
@@ -200,8 +201,15 @@ type Query {
     var mappingController = g.controllers[g.controllerMappingName('User')]!;
     var serialService = serializer.serializeService(mappingService, "myOrg");
     var serialController = serializer.serializeController(mappingController, "myOrg");
-    expect(serialService, contains('Map<User, Car> userCar(List<User> value, DataFetchingEnvironment dataFetchingEnvironment);'));
-    expect(serialController, contains('Map<User, Car> userCar(List<User> value, DataFetchingEnvironment dataFetchingEnvironment)'));
-    expect(serialController, contains(' return userSchemaMappingsService.userCar(value, dataFetchingEnvironment);'));
+    expect(
+        serialService,
+        contains(
+            'Map<User, Car> userCar(List<User> value, DataFetchingEnvironment dataFetchingEnvironment);'));
+    expect(
+        serialController,
+        contains(
+            'Map<User, Car> userCar(List<User> value, DataFetchingEnvironment dataFetchingEnvironment)'));
+    expect(serialController,
+        contains(' return userSchemaMappingsService.userCar(value, dataFetchingEnvironment);'));
   });
 }

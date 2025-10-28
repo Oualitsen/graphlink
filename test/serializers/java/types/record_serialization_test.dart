@@ -17,26 +17,50 @@ void main() {
     "Long": "Long"
   };
 
-  test("input and type serialization as records", () {
+  test("input serialization as records", () {
     final GQGrammar g = GQGrammar(
       identityFields: ["id"],
       typeMap: typeMapping,
       mode: CodeGenerationMode.server,
     );
-    final text = File("test/serializers/java/types/record_serialization.graphql").readAsStringSync();
+    final text =
+        File("test/serializers/java/types/record_serialization.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
 
-    var javaSerial = JavaSerializer(g, inputsAsRecords: true, typesAsRecords: true, generateJsonMethods: false);
+    var javaSerial = JavaSerializer(
+      g,
+      inputsAsRecords: true,
+      typesAsRecords: true,
+      generateJsonMethods: false,
+    );
     var input = g.inputs["PersonInput"]!;
     var inputSerial = javaSerial.serializeInputDefinition(input, "").trim();
     expect(inputSerial, startsWith("public record PersonInput(String name, Integer age) {"));
     expect(inputSerial, endsWith("}"));
+  });
+
+  test("type serialization as records", () {
+    final GQGrammar g = GQGrammar(
+      identityFields: ["id"],
+      typeMap: typeMapping,
+      mode: CodeGenerationMode.server,
+    );
+    final text =
+        File("test/serializers/java/types/record_serialization.graphql").readAsStringSync();
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+    expect(parsed is Success, true);
+
+    var javaSerial =
+        JavaSerializer(g, inputsAsRecords: true, typesAsRecords: true, generateJsonMethods: false);
+
     var type = g.getTypeByName("Person")!;
 
     var typeSerial = javaSerial.serializeTypeDefinition(type, "").trim();
-    expect(typeSerial, startsWith("public record Person(String name, Integer age, Boolean married) {"));
+    expect(typeSerial,
+        startsWith("public record Person(String name, Integer age, Boolean married) {"));
     expect(typeSerial, endsWith("}"));
   });
 
@@ -46,7 +70,8 @@ void main() {
       typeMap: typeMapping,
       mode: CodeGenerationMode.server,
     );
-    final text = File("test/serializers/java/types/record_serialization.graphql").readAsStringSync();
+    final text =
+        File("test/serializers/java/types/record_serialization.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
@@ -71,7 +96,8 @@ void main() {
       typeMap: typeMapping,
       mode: CodeGenerationMode.server,
     );
-    final text = File("test/serializers/java/types/record_serialization.graphql").readAsStringSync();
+    final text =
+        File("test/serializers/java/types/record_serialization.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
@@ -95,7 +121,8 @@ void main() {
       typeMap: typeMapping,
       mode: CodeGenerationMode.server,
     );
-    final text = File("test/serializers/java/types/record_serialization.graphql").readAsStringSync();
+    final text =
+        File("test/serializers/java/types/record_serialization.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
@@ -105,8 +132,10 @@ void main() {
     var iface = g.interfaces["Entity"]!;
     var interfaceSerial = javaSerial.serializeTypeDefinition(iface, "");
 
-    expect(interfaceSerial,
-        stringContainsInOrder(["public interface Entity {", "String id();", "String creationDate();"]));
+    expect(
+        interfaceSerial,
+        stringContainsInOrder(
+            ["public interface Entity {", "String id();", "String creationDate();"]));
   });
 
   test("type serialization records when implementing interfaces", () {
@@ -115,7 +144,8 @@ void main() {
       typeMap: typeMapping,
       mode: CodeGenerationMode.server,
     );
-    final text = File("test/serializers/java/types/record_serialization.graphql").readAsStringSync();
+    final text =
+        File("test/serializers/java/types/record_serialization.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
@@ -124,6 +154,7 @@ void main() {
 
     var iface = g.getTypeByName("MyType")!;
     var typeSerial = javaSerial.serializeTypeDefinition(iface, "");
-    expect(typeSerial, contains("MyType(String id, String creationDate, String name) implements Entity"));
+    expect(typeSerial,
+        contains("MyType(String id, String creationDate, String name) implements Entity"));
   });
 }

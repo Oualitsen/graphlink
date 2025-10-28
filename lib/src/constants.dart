@@ -79,7 +79,7 @@ enum GQAckStatus {none progress acknoledged }
 
 class JavaImports {
   static const map = "java.util.Map";
-  static const hasMap = "java.util.HashMap";
+  static const hashMap = "java.util.HashMap";
   static const optional = "java.util.Optional";
   static const mono = "reactor.core.publisher.Mono";
   static const flux = "reactor.core.publisher.Flux";
@@ -98,6 +98,8 @@ class SpringImports {
   static const batchMapping = "org.springframework.graphql.data.method.annotation.BatchMapping";
   static const schemaMapping = "org.springframework.graphql.data.method.annotation.SchemaMapping";
   static const queryMapping = "org.springframework.graphql.data.method.annotation.QueryMapping";
-  static const mutationMapping = "org.springframework.graphql.data.method.annotation.MutationMapping";
-  static const subscriptionMapping = "org.springframework.graphql.data.method.annotation.SubscriptionMapping";
+  static const mutationMapping =
+      "org.springframework.graphql.data.method.annotation.MutationMapping";
+  static const subscriptionMapping =
+      "org.springframework.graphql.data.method.annotation.SubscriptionMapping";
 }

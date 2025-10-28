@@ -18,9 +18,11 @@ void main() {
   };
 
   test("test backend handlers 1", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
-    final text = File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
+    final text =
+        File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
@@ -28,13 +30,14 @@ void main() {
     var serverSerialzer = SpringServerSerializer(g);
     var userCtrl = g.controllers["UserServiceController"]!;
     var result = serverSerialzer.serializeController(userCtrl, "myorg");
+    print(result);
     expect(
       result.split('\n').map((e) => e.trim()).toList(),
       containsAllInOrder([
         '@Controller',
         'public class UserServiceController {',
         'private final UserService userService;',
-        'public UserServiceController(final UserService userService) {',
+        'public UserServiceController(UserService userService) {',
         'this.userService = userService;',
         '}',
         '@QueryMapping',
@@ -42,11 +45,11 @@ void main() {
         'return userService.getUser();',
         '}',
         '@QueryMapping',
-        'public User getUserById(@Argument final String id) {',
+        'public User getUserById(@Argument String id) {',
         'return userService.getUserById(id);',
         '}',
         '@QueryMapping',
-        'public List<User> getUsers(@Argument final String name, @Argument final String middle) {',
+        'public List<User> getUsers(@Argument String name, @Argument String middle) {',
         'return userService.getUsers(name, middle);',
         '}',
         '@QueryMapping',
@@ -54,11 +57,11 @@ void main() {
         'return userService.getUserCount();',
         '}',
         '@SubscriptionMapping',
-        'public Flux<User> watchUser(@Argument final String userId) {',
+        'public Flux<User> watchUser(@Argument String userId) {',
         'return userService.watchUser(userId);',
         '}',
         '@SubscriptionMapping',
-        'public Flux<List<Car>> watchCars(@Argument final String userId) {',
+        'public Flux<List<Car>> watchCars(@Argument String userId) {',
         'return userService.watchCars(userId);',
         '}',
         '}',
@@ -67,9 +70,11 @@ void main() {
   });
 
   test("test backend handlers 2", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
-    final text = File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
+    final text =
+        File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
@@ -84,7 +89,7 @@ void main() {
         '@Controller',
         'public class UserServiceController {',
         'private final UserService userService;',
-        'public UserServiceController(final UserService userService) {',
+        'public UserServiceController(UserService userService) {',
         'this.userService = userService;',
         '}',
         '@QueryMapping',
@@ -92,11 +97,11 @@ void main() {
         'return userService.getUser();',
         '}',
         '@QueryMapping',
-        'public User getUserById(@Argument final String id) {',
+        'public User getUserById(@Argument String id) {',
         'return userService.getUserById(id);',
         '}',
         '@QueryMapping',
-        'public List<User> getUsers(@Argument final String name, @Argument final String middle) {',
+        'public List<User> getUsers(@Argument String name, @Argument String middle) {',
         'return userService.getUsers(name, middle);',
         '}',
         '@QueryMapping',
@@ -104,11 +109,11 @@ void main() {
         'return userService.getUserCount();',
         '}',
         '@SubscriptionMapping',
-        'public Flux<User> watchUser(@Argument final String userId) {',
+        'public Flux<User> watchUser(@Argument String userId) {',
         'return userService.watchUser(userId);',
         '}',
         '@SubscriptionMapping',
-        'public Flux<List<Car>> watchCars(@Argument final String userId) {',
+        'public Flux<List<Car>> watchCars(@Argument String userId) {',
         'return userService.watchCars(userId);',
         '}',
         '}',
@@ -117,9 +122,11 @@ void main() {
   });
 
   test("test backend handlers when shcema generation is on", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
-    final text = File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
+    final text =
+        File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
@@ -133,7 +140,7 @@ void main() {
         '@Controller',
         'public class UserServiceController {',
         'private final UserService userService;',
-        'public UserServiceController(final UserService userService) {',
+        'public UserServiceController(UserService userService) {',
         'this.userService = userService;',
         '}',
         '@QueryMapping',
@@ -141,11 +148,11 @@ void main() {
         'return userService.getUser();',
         '}',
         '@QueryMapping',
-        'public User getUserById(@Argument final String id) {',
+        'public User getUserById(@Argument String id) {',
         'return userService.getUserById(id);',
         '}',
         '@QueryMapping',
-        'public List<User> getUsers(@Argument final String name, @Argument final String middle) {',
+        'public List<User> getUsers(@Argument String name, @Argument String middle) {',
         'return userService.getUsers(name, middle);',
         '}',
         '@QueryMapping',
@@ -153,11 +160,11 @@ void main() {
         'return userService.getUserCount();',
         '}',
         '@SubscriptionMapping',
-        'public Flux<User> watchUser(@Argument final String userId) {',
+        'public Flux<User> watchUser(@Argument String userId) {',
         'return userService.watchUser(userId);',
         '}',
         '@SubscriptionMapping',
-        'public Flux<List<Car>> watchCars(@Argument final String userId) {',
+        'public Flux<List<Car>> watchCars(@Argument String userId) {',
         'return userService.watchCars(userId);',
         '}',
         '}',
@@ -169,9 +176,11 @@ void main() {
   });
 
   test("test controller/service returning skipped type ", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
-    final text = File("test/serializers/java/backend/spring_server_serializer2.graphql").readAsStringSync();
+    final text =
+        File("test/serializers/java/backend/spring_server_serializer2.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
@@ -197,9 +206,11 @@ void main() {
   });
 
   test("test controller/service returning skipped type (batch mapping) ", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
-    final text = File("test/serializers/java/backend/spring_server_serializer2.graphql").readAsStringSync();
+    final text =
+        File("test/serializers/java/backend/spring_server_serializer2.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
@@ -218,9 +229,11 @@ void main() {
   });
 
   test("test controller/service returning skipped type with no mapTo 1", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
-    final text = File("test/serializers/java/backend/spring_server_serializer2.graphql").readAsStringSync();
+    final text =
+        File("test/serializers/java/backend/spring_server_serializer2.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
@@ -238,14 +251,18 @@ void main() {
         ]));
     expect(
         ownerServiceMappingSerial,
-        stringContainsInOrder(
-            ["Owner ownerWithAnimal2Owner(Object value);", "Animal ownerWithAnimal2Animal(Object value);"]));
+        stringContainsInOrder([
+          "Owner ownerWithAnimal2Owner(Object value);",
+          "Animal ownerWithAnimal2Animal(Object value);"
+        ]));
   });
 
   test("test controller/service returning skipped type with no mapTo 2", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
-    final text = File("test/serializers/java/backend/spring_server_serializer2.graphql").readAsStringSync();
+    final text =
+        File("test/serializers/java/backend/spring_server_serializer2.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
@@ -270,9 +287,11 @@ void main() {
   });
 
   test("test backend handlers with DataFetchingEnvironment injection", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
-    final text = File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
+    final text =
+        File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
@@ -286,22 +305,24 @@ void main() {
           "@Controller",
           "public class UserServiceController",
           "private final UserService userService;",
-          "public UserServiceController(final UserService userService)",
+          "public UserServiceController(UserService userService)",
           "this.userService = userService;",
           "User getUser(DataFetchingEnvironment dataFetchingEnvironment) {",
           "return userService.getUser(dataFetchingEnvironment);",
-          "User getUserById(@Argument final String id, DataFetchingEnvironment dataFetchingEnvironment)",
+          "User getUserById(@Argument String id, DataFetchingEnvironment dataFetchingEnvironment)",
           "return userService.getUserById(id, dataFetchingEnvironment);",
           "@SubscriptionMapping",
-          "Flux<List<Car>> watchCars(@Argument final String userId, DataFetchingEnvironment dataFetchingEnvironment)",
+          "Flux<List<Car>> watchCars(@Argument String userId, DataFetchingEnvironment dataFetchingEnvironment)",
           "return userService.watchCars(userId, dataFetchingEnvironment);",
         ]));
   });
 
   test("test serialize Service (User Service)", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
-    final text = File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
+    final text =
+        File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
@@ -314,18 +335,20 @@ void main() {
         stringContainsInOrder([
           "public interface UserService",
           "User getUser();",
-          "User getUserById(final String id);",
-          "List<User> getUsers(final String name, final String middle);",
+          "User getUserById(String id);",
+          "List<User> getUsers(String name, String middle);",
           "Integer getUserCount();",
-          "Flux<User> watchUser(final String userId);",
-          "Flux<List<Car>> watchCars(final String userId);",
+          "Flux<User> watchUser(String userId);",
+          "Flux<List<Car>> watchCars(String userId);",
         ]));
   });
 
   test("test serialize Service (Car Service)", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
-    final text = File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
+    final text =
+        File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
@@ -337,15 +360,17 @@ void main() {
     expect(
         serializedCarService,
         stringContainsInOrder([
-          "Car getCarById(final String id);",
-          "Integer getCarCount(final String userId);",
+          "Car getCarById(String id);",
+          "Integer getCarCount(String userId);",
         ]));
   });
 
   test("test serialize Service with DataFetchingEnvironment", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
-    final text = File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
+    final text =
+        File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
@@ -358,15 +383,17 @@ void main() {
     expect(
         serializedCarService,
         stringContainsInOrder([
-          "Car getCarById(final String id, DataFetchingEnvironment dataFetchingEnvironment);",
-          "Integer getCarCount(final String userId, DataFetchingEnvironment dataFetchingEnvironment);",
+          "Car getCarById(String id, DataFetchingEnvironment dataFetchingEnvironment);",
+          "Integer getCarCount(String userId, DataFetchingEnvironment dataFetchingEnvironment);",
         ]));
   });
 
   test("test serialize Handler", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
-    final text = File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
+    final text =
+        File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 

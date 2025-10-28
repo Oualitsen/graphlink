@@ -21,9 +21,11 @@ void main() {
   };
 
   test("test get annotations", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
     final text =
-        File("test/serializers/java/annotations/type_serialization_annotations_test.graphql").readAsStringSync();
+        File("test/serializers/java/annotations/type_serialization_annotations_test.graphql")
+            .readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
@@ -34,9 +36,11 @@ void main() {
   });
 
   test("test annotation serialization", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
     final text =
-        File("test/serializers/java/annotations/type_serialization_annotations_test.graphql").readAsStringSync();
+        File("test/serializers/java/annotations/type_serialization_annotations_test.graphql")
+            .readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
@@ -48,9 +52,11 @@ void main() {
   });
 
   test("test annotations on inputs and input fields", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
     final text =
-        File("test/serializers/java/annotations/type_serialization_annotations_test.graphql").readAsStringSync();
+        File("test/serializers/java/annotations/type_serialization_annotations_test.graphql")
+            .readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
@@ -59,16 +65,23 @@ void main() {
 
     var user = g.inputs["UserInput"]!;
     var userSerial = javaSerialzer.serializeInputDefinition(user, "");
+    print(userSerial);
     expect(
         userSerial,
-        stringContainsInOrder(
-            ["@lombok.Getter()", "public class UserInput {", '@Json(value = "my_name")', "private String name;"]));
+        stringContainsInOrder([
+          "@lombok.Getter()",
+          "public class UserInput {",
+          '@Json(value = "my_name")',
+          "private String name;",
+        ]));
   });
 
   test("test annotations on interfaces and its fields", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
     final text =
-        File("test/serializers/java/annotations/type_serialization_annotations_test.graphql").readAsStringSync();
+        File("test/serializers/java/annotations/type_serialization_annotations_test.graphql")
+            .readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
@@ -80,14 +93,20 @@ void main() {
 
     expect(
         ibaseSerial,
-        stringContainsInOrder(
-            ["@lombok.Getter()", 'public interface IBase', '@Json(value = "my_id")', 'String getId();']));
+        stringContainsInOrder([
+          "@lombok.Getter()",
+          'public interface IBase',
+          '@Json(value = "my_id")',
+          'String getId();'
+        ]));
   });
 
   test("test annotations on types", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
     final text =
-        File("test/serializers/java/annotations/type_serialization_annotations_test.graphql").readAsStringSync();
+        File("test/serializers/java/annotations/type_serialization_annotations_test.graphql")
+            .readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
@@ -108,9 +127,11 @@ void main() {
   });
 
   test("test annotations on enums and enum values", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
     final text =
-        File("test/serializers/java/annotations/type_serialization_annotations_test.graphql").readAsStringSync();
+        File("test/serializers/java/annotations/type_serialization_annotations_test.graphql")
+            .readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
@@ -119,8 +140,10 @@ void main() {
 
     var gender = g.enums["Gender"]!;
     var genderSerial = javaSerialzer.serializeEnumDefinition(gender, "");
-    expect(genderSerial,
-        stringContainsInOrder(["@lombok.Getter()", "public enum Gender {", 'male, @Json(value = "FEMALE")  female']));
+    expect(
+        genderSerial,
+        stringContainsInOrder(
+            ["@lombok.Getter()", "public enum Gender {", 'male, @Json(value = "FEMALE")  female']));
   });
 
   test("annotations on controllers", () {
@@ -136,7 +159,8 @@ void main() {
       "Long": "Long"
     }, mode: CodeGenerationMode.server);
     final text =
-        File("test/serializers/java/annotations/type_serialization_annotations_test.graphql").readAsStringSync();
+        File("test/serializers/java/annotations/type_serialization_annotations_test.graphql")
+            .readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
@@ -144,8 +168,8 @@ void main() {
     var springSerialzer = SpringServerSerializer(g);
     var userCtrl = g.controllers["UserServiceController"]!;
     var userController = springSerialzer.serializeController(userCtrl, "");
-
-    expect(userController, stringContainsInOrder(["@LoggedIn()", "@QueryMapping", "public User getUser()"]));
+    expect(userController,
+        stringContainsInOrder(["@QueryMapping", "@LoggedIn()", "public User getUser()"]));
   });
 
   test("annotations on interfaces", () {
