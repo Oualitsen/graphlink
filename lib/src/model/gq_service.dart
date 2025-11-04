@@ -1,3 +1,4 @@
+import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 import 'package:retrofit_graphql/src/model/gq_controller.dart';
@@ -35,7 +36,8 @@ class GQService extends GQInterfaceDefinition {
   }
 
   List<GQSchemaMapping> get mappings => _mappings.values.toList();
-  List<GQSchemaMapping> get serviceMapping => _mappings.values.where((e) => !e.forbid && !e.identity).toList();
+  List<GQSchemaMapping> get serviceMapping =>
+      _mappings.values.where((e) => !e.forbid && !e.identity).toList();
 
   @override
   Set<GQToken> getImportDependecies(GQGrammar g) {
@@ -74,7 +76,9 @@ class GQService extends GQInterfaceDefinition {
 
   GQToken? _getMappedTo(GQGrammar g, GQToken? token) {
     if (token is GQDirectivesMixin) {
-      var mappedTo = (token as GQDirectivesMixin).getDirectiveByName(gqSkipOnServer)?.getArgValueAsString(gqMapTo);
+      var mappedTo = (token as GQDirectivesMixin)
+          .getDirectiveByName(gqSkipOnServer)
+          ?.getArgValueAsString(gqMapTo);
       if (filterDependecy(g.types[mappedTo], g)) {
         return g.types[mappedTo];
       }
@@ -100,5 +104,9 @@ class GQService extends GQInterfaceDefinition {
       }
     }
     return result;
+  }
+
+  static String getValidationMethodName(String methodName) {
+    return '${gqValidateMethodPrefix}${methodName.firstUp}';
   }
 }

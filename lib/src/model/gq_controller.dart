@@ -1,5 +1,6 @@
 import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
+import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 import 'package:retrofit_graphql/src/model/gq_service.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
 
@@ -24,8 +25,11 @@ class GQController extends GQService {
       directives: [],
     );
     for (var f in service.fields) {
-      ctrl.addField(f);
-      ctrl.setFieldType(f.name.token, service.getTypeByFieldName(f.name.token)!);
+      var validationDirective = f.getDirectiveByName(gqValidate);
+      if (validationDirective == null || !validationDirective.generated) {
+        ctrl.addField(f);
+        ctrl.setFieldType(f.name.token, service.getTypeByFieldName(f.name.token)!);
+      }
     }
     return ctrl;
   }

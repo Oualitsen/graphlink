@@ -62,6 +62,14 @@ const gqInterfaceFieldAsProperties = "@gqInterfaceFieldAsProperties";
 ///
 const gqInternal = "@gqInternal";
 
+///
+/// When a method (from query/mutation/subscription) is decorated with this directive,
+/// the controller will call a validation method named validateXXX before calling the service method.
+///
+
+const gqValidate = "@gqValidate";
+const gqValidateMethodPrefix = "validate";
+
 const gqExternalArg = gqClass;
 const gqClass = "gqClass";
 const gqImport = "gqImport";

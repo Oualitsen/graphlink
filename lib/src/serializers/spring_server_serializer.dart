@@ -134,7 +134,11 @@ class SpringServerSerializer {
         returnType: returnType,
         methodName: method.name.token,
         arguments: args,
-        statements: ['return $sericeInstanceName.${method.name}(${serviceArgs.join(", ")});']));
+        statements: [
+          if (method.getDirectiveByName(gqValidate) != null)
+            '$sericeInstanceName.${GQService.getValidationMethodName(method.name.token)}(${serviceArgs.join(", ")});',
+          'return $sericeInstanceName.${method.name}(${serviceArgs.join(", ")});',
+        ]));
 
     return buffer.toString();
   }
@@ -203,8 +207,14 @@ class SpringServerSerializer {
 
   String serializeMethodDeclaration(GQField method, GQQueryType type, GQToken context,
       {String? argPrefix}) {
+    GQType returnType;
+    if (method.getDirectiveByName(gqValidate)?.generated == true) {
+      returnType = GQType('void'.toToken(), false);
+    } else {
+      returnType = _getServiceReturnType(method.type);
+    }
     var result =
-        "${serializer.serializeTypeReactive(context: context, gqType: createListTypeOnSubscription(_getServiceReturnType(method.type), type), reactive: type == GQQueryType.subscription)} ${method.name}(${serializeArgs(method.arguments, argPrefix)}";
+        "${serializer.serializeTypeReactive(context: context, gqType: createListTypeOnSubscription(returnType, type), reactive: type == GQQueryType.subscription)} ${method.name}(${serializeArgs(method.arguments, argPrefix)}";
     if (injectDataFetching) {
       var inject = "DataFetchingEnvironment dataFetchingEnvironment";
       context.addImport(SpringImports.gqlDataFetchingEnvironment);

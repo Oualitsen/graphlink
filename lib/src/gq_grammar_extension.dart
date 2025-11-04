@@ -181,6 +181,19 @@ extension GQGrammarExtension on GQGrammar {
           name: name.toToken(), nameDeclared: true, directives: [], fields: [], interfaceNames: {});
       service.addField(field);
       service.setFieldType(field.name.token, type);
+
+      var validate = field.getDirectiveByName(gqValidate);
+      if (validate != null) {
+        var validationField = GQField(
+            name: field.name.ofNewName(GQService.getValidationMethodName(field.name.token)),
+            type: field.type,
+            arguments: field.arguments,
+            directives: [
+              GQDirectiveValue.createDirectiveValue(directiveName: gqValidate, generated: true),
+            ]);
+        service.addField(validationField);
+        service.setFieldType(validationField.name.token, type);
+      }
       services.putIfAbsent(name, () => service);
     }
   }
