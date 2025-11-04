@@ -12,8 +12,7 @@ class DartClientSerializer extends ClientSerilaizer {
   final GQGrammar _grammar;
   final codeGenUtils = DartCodeGenUtils();
 
-  DartClientSerializer(this._grammar, GqSerializer dartSerializer)
-      : super(dartSerializer);
+  DartClientSerializer(this._grammar, GqSerializer dartSerializer) : super(dartSerializer);
 
   @override
   String generateClient(String importPrefix) {
@@ -35,10 +34,8 @@ class DartClientSerializer extends ClientSerilaizer {
 
     buffer.writeln(codeGenUtils.createClass(className: 'GQClient', statements: [
       'final _fragmMap = <String, String>{};',
-      if (_grammar.hasQueries)
-        'late final ${classNameFromType(GQQueryType.query)} queries;',
-      if (_grammar.hasMutations)
-        'late final ${classNameFromType(GQQueryType.mutation)} mutations;',
+      if (_grammar.hasQueries) 'late final ${classNameFromType(GQQueryType.query)} queries;',
+      if (_grammar.hasMutations) 'late final ${classNameFromType(GQQueryType.mutation)} mutations;',
       if (_grammar.hasSubscriptions)
         'late final ${classNameFromType(GQQueryType.subscription)} subscriptions;',
       codeGenUtils.createMethod(
@@ -74,15 +71,13 @@ class DartClientSerializer extends ClientSerilaizer {
 
   String? generateQueriesClassByType(GQQueryType type) {
     var queries = _grammar.queries.values;
-    var queryList = queries
-        .where((element) => element.type == type && _grammar.hasQueryType(type))
-        .toList();
+    var queryList =
+        queries.where((element) => element.type == type && _grammar.hasQueryType(type)).toList();
     if (queryList.isEmpty) {
       return null;
     }
 
-    return codeGenUtils
-        .createClass(className: classNameFromType(type), statements: [
+    return codeGenUtils.createClass(className: classNameFromType(type), statements: [
       declareAdapter(type),
       "final Map<String, String> fragmentMap;",
       codeGenUtils.createMethod(
@@ -90,8 +85,7 @@ class DartClientSerializer extends ClientSerilaizer {
           arguments: _declareConstructorArgs(type),
           namedArguments: false,
           statements: [
-            if (type == GQQueryType.subscription)
-              '_handler = _SubscriptionHandler(adapter);',
+            if (type == GQQueryType.subscription) '_handler = _SubscriptionHandler(adapter);',
           ]),
       ...queryList.map((e) => queryToMethod(e))
     ]);
@@ -116,37 +110,31 @@ class DartClientSerializer extends ClientSerilaizer {
 
   String queryToMethod(GQQueryDefinition def) {
     return codeGenUtils.createMethod(
-      returnType: returnTypeByQueryType(def),
-      methodName: def.tokenInfo.token,
-      arguments: getArguments(def),
-      statements: [
-        "const operationName = '${def.tokenInfo}';",
-        if (def.fragments(_grammar).isNotEmpty)
-        ...[
-          "final fragsValues = [",
-          ...def
-          .fragments(_grammar)
-          .map((e) => '"${e.tokenInfo}",'),
-          '].map((fragName) => fragmentMap[fragName]!).join(' ');'
-        ],
-        if (def.fragments(_grammar).isEmpty) 
-          "const query = '''${_grammar.serializer.serializeQueryDefinition(def)}''';"
-        else
-          "final query = '''${_grammar.serializer.serializeQueryDefinition(def)} \${fragsValues}''';",
-        generateVariables(def),
-        "final payload = GQPayload(query: query, operationName: operationName, variables: variables);",
-        _serializeAdapterCall(def)
-      ]
-    );
-   
+        returnType: returnTypeByQueryType(def),
+        methodName: def.tokenInfo.token,
+        arguments: getArguments(def),
+        statements: [
+          "const operationName = '${def.tokenInfo}';",
+          if (def.fragments(_grammar).isNotEmpty) ...[
+            "final fragsValues = [",
+            ...def.fragments(_grammar).map((e) => '"${e.tokenInfo}",'),
+            '].map((fragName) => fragmentMap[fragName]!).join(' ');'
+          ],
+          if (def.fragments(_grammar).isEmpty)
+            "const query = '''${_grammar.serializer.serializeQueryDefinition(def)}''';"
+          else
+            "final query = '''${_grammar.serializer.serializeQueryDefinition(def)} \${fragsValues}''';",
+          generateVariables(def),
+          "final payload = GQPayload(query: query, operationName: operationName, variables: variables);",
+          _serializeAdapterCall(def)
+        ]);
   }
 
   String generateVariables(GQQueryDefinition def) {
     var buffer = StringBuffer("final variables = <String, dynamic>{");
     buffer.writeln();
     def.arguments
-        .map((e) =>
-            "'${e.dartArgumentName}': ${_serializeArgumentValue(def, e.token)},")
+        .map((e) => "'${e.dartArgumentName}': ${_serializeArgumentValue(def, e.token)},")
         .forEach((line) {
       buffer.writeln(line.ident());
     });
@@ -210,11 +198,9 @@ return _adapter(json.encode(payload.toJson())${_grammar.operationNameAsParameter
       return [];
     }
     return def.arguments
-        .map((e) =>
-            "${serializer.serializeType(e.type, false)} ${e.dartArgumentName}")
+        .map((e) => "${serializer.serializeType(e.type, false)} ${e.dartArgumentName}")
         .map((e) => "required $e")
         .toList();
-  
   }
 
   String returnTypeByQueryType(GQQueryDefinition def) {

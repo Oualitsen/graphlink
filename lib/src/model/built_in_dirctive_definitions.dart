@@ -53,6 +53,7 @@ const gqRepository = "@gqRepository";
 const gqType = "gqType";
 const gqIdType = "gqIdType";
 const gqExternal = "@gqExternal";
+const gqInterfaceFieldAsProperties = "@gqInterfaceFieldAsProperties";
 
 ///
 /// Used for internally generated objects

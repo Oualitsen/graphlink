@@ -336,7 +336,7 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
     }
     buffer.write("class ${className} ");
     if (interfaceNames != null && interfaceNames.isNotEmpty) {
-      buffer.write(" implements ");
+      buffer.write("implements ");
       buffer.write(interfaceNames.join(", "));
     }
     buffer.write(block(statements));

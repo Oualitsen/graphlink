@@ -29,13 +29,18 @@ class GQQueryDefinition extends GQToken with GQDirectivesMixin {
 
   Set<GQFragmentDefinitionBase> fragments(GQGrammar g) {
     if (_allFrags == null) {
-      var frags = fragmentNames.map((e) => g.getFragmentByName(e)).where((e) => e != null).map((e) => e!).toSet();
+      var frags = fragmentNames
+          .map((e) => g.getFragmentByName(e))
+          .where((e) => e != null)
+          .map((e) => e!)
+          .toSet();
       _allFrags = {...frags, ...frags.expand((e) => e.dependecies)};
     }
     return _allFrags!;
   }
 
-  GQQueryDefinition(super.tokenInfo, List<GQDirectiveValue> directives, this.arguments, this.elements, this.type) {
+  GQQueryDefinition(super.tokenInfo, List<GQDirectiveValue> directives, this.arguments,
+      this.elements, this.type) {
     directives.forEach(addDirective);
     checkVariables();
   }
@@ -136,8 +141,10 @@ class GQQueryElement extends GQToken with GQDirectivesMixin {
   }
 
   Set<String> _getFragmentNamesByBlock(GQFragmentBlockDefinition block) {
-    var set1 =
-        block.projections.values.where((element) => element.isFragmentReference).map((e) => e.fragmentName!).toSet();
+    var set1 = block.projections.values
+        .where((element) => element.isFragmentReference)
+        .map((e) => e.fragmentName!)
+        .toSet();
     var set2 = block.projections.values
         .where((element) => !element.isFragmentReference && element.block != null)
         .map((e) => e.block!)
@@ -151,7 +158,8 @@ class GQQueryElement extends GQToken with GQDirectivesMixin {
       return returnType;
     } else {
       if (returnType is GQListType) {
-        return GQListType(_getReturnProjectedType(projectedType, returnType.type), returnType.nullable);
+        return GQListType(
+            _getReturnProjectedType(projectedType, returnType.type), returnType.nullable);
       } else {
         return GQType(projectedType.tokenInfo, returnType.nullable);
       }
@@ -160,12 +168,18 @@ class GQQueryElement extends GQToken with GQDirectivesMixin {
 
   GQType get returnProjectedType => _getReturnProjectedType(projectedType, returnType);
 
-  GQQueryElement(super.tokenInfo, List<GQDirectiveValue> directives, this.block, this.arguments, this.alias) {
+  GQQueryElement(
+      super.tokenInfo, List<GQDirectiveValue> directives, this.block, this.arguments, this.alias) {
     directives.forEach(addDirective);
   }
 
   String get escapedToken {
     var aliasText = alias == null ? '' : "$alias:";
     return "$aliasText$tokenInfo".replaceFirst("\$", "\\\$");
+  }
+
+  String get nonEscapedToken {
+    var aliasText = alias == null ? '' : "$alias:";
+    return "$aliasText$tokenInfo";
   }
 }

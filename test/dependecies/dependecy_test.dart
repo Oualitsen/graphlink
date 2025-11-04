@@ -2,8 +2,9 @@ import 'package:retrofit_graphql/src/constants.dart';
 import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 import 'package:retrofit_graphql/src/model/gq_token_with_fields.dart';
-import 'package:retrofit_graphql/src/serializers/dart_client_serializer.dart';
+import 'package:retrofit_graphql/src/serializers/client_serializers/dart_client_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
+import 'package:retrofit_graphql/src/serializers/java_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/language.dart';
 import 'package:retrofit_graphql/src/serializers/spring_server_serializer.dart';
 import 'package:test/test.dart';
@@ -518,7 +519,7 @@ type Cat implements Animal {
     var clientGen = DartClientSerializer(g, serilazer);
 
     var parsed = g.parse('''
-  ${clientObjects}
+  ${getClientObjects("dart")}
 
 type Cat  {
   name: String
@@ -545,7 +546,7 @@ type Cat  {
     var clientGen = DartClientSerializer(g, serilazer);
 
     var parsed = g.parse('''
-  ${clientObjects}
+  ${getClientObjects()}
 
 type Cat  {
   name: String
@@ -573,7 +574,7 @@ type Cat  {
     var clientGen = DartClientSerializer(g, serilazer);
 
     var parsed = g.parse('''
-  ${clientObjects}
+  ${getClientObjects()}
 enum Gender {male, female}
 type Cat  {
   name: String
@@ -596,7 +597,7 @@ type Query {
     var clientGen = DartClientSerializer(g, serilazer);
 
     var parsed = g.parse('''
-  ${clientObjects}
+  ${getClientObjects()}
 type Cat  {
   name: String
 }
@@ -624,7 +625,7 @@ type Subscrtipion {
         autoGenerateQueries: true);
 
     var parsed = g.parse('''
-  ${clientObjects}
+  ${getClientObjects()}
 enum Gender {male, female}
 type Person  {
   name: String
@@ -643,7 +644,7 @@ type Person  {
         autoGenerateQueries: true);
 
     var parsed = g.parse('''
-  ${clientObjects}
+  ${getClientObjects()}
 
   directive @Id(
     gqClass: String = "Id",
@@ -671,7 +672,7 @@ type Person  {
         autoGenerateQueries: true);
 
     var parsed = g.parse('''
-  ${clientObjects}
+  ${getClientObjects()}
 
   directive @FieldNameConstants(
     gqAnnotation: Boolean = true
@@ -695,7 +696,7 @@ type Person @FieldNameConstants  {
     final GQGrammar g = GQGrammar(mode: CodeGenerationMode.server);
 
     var parsed = g.parse('''
-  ${clientObjects}
+  ${getClientObjects()}
 
   directive @FieldNameConstants(
     gqAnnotation: Boolean = true
@@ -735,7 +736,7 @@ type Query {
     final GQGrammar g = GQGrammar(mode: CodeGenerationMode.server);
 
     var parsed = g.parse('''
-  ${clientObjects}
+  ${getClientObjects()}
 
   type PersonCar @gqSkipOnServer(mapTo: "Person") {
     person: Person!
@@ -761,7 +762,7 @@ type Query {
     final GQGrammar g = GQGrammar(mode: CodeGenerationMode.server);
 
     var parsed = g.parse('''
-  ${clientObjects}
+  ${getClientObjects()}
 
   type PersonCar @gqSkipOnServer(mapTo: "Person") {
     person: Person!
@@ -799,7 +800,7 @@ type Query {
     final GQGrammar g = GQGrammar(mode: CodeGenerationMode.server);
 
     var parsed = g.parse('''
-  ${clientObjects}
+  ${getClientObjects()}
   type Person {
     firstName: String
     lastName: String
@@ -824,7 +825,7 @@ type Query {
     final GQGrammar g = GQGrammar(mode: CodeGenerationMode.server);
 
     var parsed = g.parse('''
-  ${clientObjects}
+  ${getClientObjects()}
   type ConversationUnread @gqSkipOnServer(mapTo: "ConversationView") {
     view: ConversationView!
     unread: Int!
@@ -852,7 +853,7 @@ type Query {
     final GQGrammar g = GQGrammar(mode: CodeGenerationMode.server);
 
     var parsed = g.parse('''
-  ${clientObjects}
+  ${getClientObjects()}
   
 
   type Person  {
@@ -878,7 +879,7 @@ type Query {
     final GQGrammar g = GQGrammar(mode: CodeGenerationMode.server);
 
     var parsed = g.parse('''
-  ${clientObjects}
+  ${getClientObjects()}
   
 
   type Person  {
@@ -896,5 +897,33 @@ type Query {
     var controller = g.controllers["PersonServiceController"]!;
     serializer.serializeController(controller, "com.myorg");
     expect(controller.getImports(g), contains(SpringImports.gqlDataFetchingEnvironment));
+  });
+
+  test("Java interface should import java.util.map when json methods are serialized", () {
+    final GQGrammar g = GQGrammar(mode: CodeGenerationMode.server);
+
+    var parsed = g.parse('''
+  ${getClientObjects()}
+  
+  interface BasicEntity {
+    id: ID!
+  }
+
+  type Person implements BasicEntity  {
+    id: ID!
+    name: String!
+    age: Int!
+  }
+
+  type Query {
+    getPerson: Person! @gqServiceName(name: "PersonService")
+  }
+  
+''');
+    expect(parsed is Success, true);
+    var serializer = JavaSerializer(g, generateJsonMethods: true);
+    var basicEntity = g.interfaces["BasicEntity"]!;
+    var basicEntitySerial = serializer.serializeTypeDefinition(basicEntity, 'com.myorg');
+    expect(basicEntitySerial, stringContainsInOrder(['import java.util.Map;']));
   });
 }

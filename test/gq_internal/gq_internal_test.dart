@@ -11,7 +11,7 @@ void main() async {
       autoGenerateQueries: true,
     );
     var parsed = g.parse('''
-${clientObjects}
+${getClientObjects()}
 
   type Person {
     name: String

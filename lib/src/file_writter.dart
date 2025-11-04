@@ -17,22 +17,22 @@ class FileWritter {
   final _lastGeneratedFiles = <String>{};
 
   FileWritter(this.grammar, this.config)
-      : serializer = JavaSerializer(grammar,
-            inputsAsRecords: config.serverConfig?.spring?.inputAsRecord ?? false,
-            typesAsRecords: config.serverConfig?.spring?.typeAsRecord ?? false,
-            typesCheckForNulls: grammar.mode == CodeGenerationMode.client,
-            inputsCheckForNulls: true,
-            ) {
+      : serializer = JavaSerializer(
+          grammar,
+          inputsAsRecords: config.serverConfig?.spring?.inputAsRecord ?? false,
+          typesAsRecords: config.serverConfig?.spring?.typeAsRecord ?? false,
+          typesCheckForNulls: grammar.mode == CodeGenerationMode.client,
+          inputsCheckForNulls: true,
+        ) {
     final springConfig = config.serverConfig!.spring!;
-    springSerializer = SpringServerSerializer(
-      grammar,
-      javaSerializer: serializer,
-      generateSchema: springConfig.generateSchema,
-      injectDataFetching: config.serverConfig?.spring?.injectDataFetching ?? false
-    );
+    springSerializer = SpringServerSerializer(grammar,
+        javaSerializer: serializer,
+        generateSchema: springConfig.generateSchema,
+        injectDataFetching: config.serverConfig?.spring?.injectDataFetching ?? false);
   }
 
-  Future<Set<String>> generateServerClasses(GQGrammar grammar, DateTime started) async {
+  Future<Set<String>> generateServerClasses(
+      GQGrammar grammar, DateTime started, bool dolarEscape) async {
     final springConfig = config.serverConfig!.spring!;
     final destinationDir = config.outputDir;
 

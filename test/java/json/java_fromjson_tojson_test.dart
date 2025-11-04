@@ -459,7 +459,7 @@ void main() {
     expect(parsed is Success, true);
     var user = g.interfaces["BasicEntity"]!;
     var serializer = JavaSerializer(g, generateJsonMethods: true);
-    var userSerial = serializer.serializeInterface(user);
+    var userSerial = serializer.serializeInterface(user, getters: true);
 
     expect(
       userSerial.split('\n').map((e) => e.trim()),

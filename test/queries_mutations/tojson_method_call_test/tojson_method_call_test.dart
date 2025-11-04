@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:retrofit_graphql/src/serializers/dart_client_serializer.dart';
+import 'package:retrofit_graphql/src/serializers/client_serializers/dart_client_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';

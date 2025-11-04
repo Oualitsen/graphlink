@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
-import 'package:retrofit_graphql/src/serializers/dart_client_serializer.dart';
+import 'package:retrofit_graphql/src/serializers/client_serializers/dart_client_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
@@ -31,9 +31,9 @@ void main() async {
 
     var parser = g.buildFrom(g.fullGrammar().end());
 
-    final text =
-        File("test/fragment/depedecy_cycle_detection/depedecy_cycle_detection_test_indirect_dependency.graphql")
-            .readAsStringSync();
+    final text = File(
+            "test/fragment/depedecy_cycle_detection/depedecy_cycle_detection_test_indirect_dependency.graphql")
+        .readAsStringSync();
     expect(() => parser.parse(text), throwsA(isA<ParseException>()));
   });
 

@@ -31,7 +31,9 @@ const _skippedDirectives = {
 
 bool _shouldSkipDriectiveDefinition(GQDirectiveDefinition def) {
   return _skippedDirectives.contains(def.name.token) ||
-      def.arguments.where((arg) => arg.token == gqAnnotation && arg.type.token == "Boolean").isNotEmpty;
+      def.arguments
+          .where((arg) => arg.token == gqAnnotation && arg.type.token == "Boolean")
+          .isNotEmpty;
 }
 
 bool _shouldSkipDriectiveValue(GQDirectiveValue def) {
@@ -45,8 +47,9 @@ const clientMode = CodeGenerationMode.client;
 
 class GraphqSerializer {
   final GQGrammar grammar;
+  final bool escapeDolar;
 
-  GraphqSerializer(this.grammar);
+  GraphqSerializer(this.grammar, [this.escapeDolar = true]);
 
   String generateSchema() {
     final buffer = StringBuffer();
@@ -64,8 +67,10 @@ class GraphqSerializer {
 
     /// directives
 
-    var directiveDefinitions =
-        grammar.directiveDefinitions.values.map(serializeDirectiveDefinition).where((s) => s.isNotEmpty).join("\n");
+    var directiveDefinitions = grammar.directiveDefinitions.values
+        .map(serializeDirectiveDefinition)
+        .where((s) => s.isNotEmpty)
+        .join("\n");
 
     buffer.writeln(directiveDefinitions);
 
@@ -88,7 +93,9 @@ class GraphqSerializer {
         .join("\n");
     buffer.writeln(interfacesSerial);
     // enums
-    var enumsSerial = filterSerialization(grammar.enums.values, clientMode).map(serializeEnumDefinition).join("\n");
+    var enumsSerial = filterSerialization(grammar.enums.values, clientMode)
+        .map(serializeEnumDefinition)
+        .join("\n");
     buffer.writeln(enumsSerial);
 
     //unions
@@ -114,7 +121,8 @@ scalar ${def.tokenInfo} ${serializeDirectiveValueList(def.getDirectives(skipGene
       return '';
     }
     var arguments = value.getArguments();
-    var args = arguments.isEmpty ? "" : "(${arguments.map((e) => serializeArgumentValue(e)).join(", ")})";
+    var args =
+        arguments.isEmpty ? "" : "(${arguments.map((e) => serializeArgumentValue(e)).join(", ")})";
     return "${value.tokenInfo}$args";
   }
 
@@ -138,16 +146,24 @@ directive ${def.name}${serializeDirectiveArgs(def.arguments)} on ${def.scopes.ma
   }
 
   String serializeArgumentDefinition(GQArgumentDefinition def) {
-    var buffer = StringBuffer("${def.token.dolarEscape()}: ${serializeType(def.type)}");
+    var buffer = StringBuffer("${_escapeDolar(def.token)}: ${serializeType(def.type)}");
     if (def.initialValue != null) {
       buffer.write(" = ${def.initialValue}");
     }
     return buffer.toString();
   }
 
+  String _escapeDolar(String token) {
+    if (escapeDolar) {
+      return token.dolarEscape();
+    }
+    return token;
+  }
+
   String serializeSchemaDefinition(GQSchema schema) {
-    var inner =
-        GQQueryType.values.where((value) => grammar.types.containsKey(schema.getByQueryType(value))).map((value) {
+    var inner = GQQueryType.values
+        .where((value) => grammar.types.containsKey(schema.getByQueryType(value)))
+        .map((value) {
       switch (value) {
         case GQQueryType.query:
           return "query: ${schema.query}";
@@ -178,7 +194,8 @@ ${def.getSerializableFields(mode, skipGenerated: true).map(serializeField).map((
 
   String serializeTypeDefinition(GQTypeDefinition def, CodeGenerationMode mode) {
     String type;
-    Iterable<String> interfaces = def.getInterfaceNames().where((i) => !grammar.interfaces[i]!.fromUnion);
+    Iterable<String> interfaces =
+        def.getInterfaceNames().where((i) => !grammar.interfaces[i]!.fromUnion);
     if (def is GQInterfaceDefinition) {
       type = "interface";
     } else {
@@ -196,8 +213,11 @@ ${def.getSerializableFields(mode, skipGenerated: true).map(serializeField).map((
       result.write(directives);
     }
     result.writeln(" {");
-    result.writeln(
-        def.getSerializableFields(mode, skipGenerated: true).map(serializeField).map((e) => e.ident()).join("\n"));
+    result.writeln(def
+        .getSerializableFields(mode, skipGenerated: true)
+        .map(serializeField)
+        .map((e) => e.ident())
+        .join("\n"));
     result.write("}");
     return result.toString();
   }
@@ -243,7 +263,12 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
   }
 
   String serializeArgumentValue(GQArgumentValue value) {
-    return "${value.token.dolarEscape()}: ${"${value.value}".replaceFirst("\$", "\\\$")}";
+    var token = _escapeDolar(value.token);
+    String val = "${value.value}";
+    if (escapeDolar) {
+      val = val.replaceFirst("\$", "\\\$");
+    }
+    return '${token}: ${val}';
   }
 
   String serializeInlineFragment(GQInlineFragmentDefinition def) {
