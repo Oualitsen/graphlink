@@ -41,6 +41,7 @@ class SpringServerSerializer {
                 inputsCheckForNulls: true,
                 typesCheckForNulls: grammar.mode == CodeGenerationMode.client) {
     _annotateRepositories();
+    _annotateControllers();
   }
 
   List<String> serializeServices(String importPrefix) {
@@ -56,6 +57,28 @@ class SpringServerSerializer {
           applyOnClient: false,
           import: "org.springframework.stereotype.Repository");
       repo.addDirective(dec);
+    }
+  }
+
+  void _annotateControllers() {
+    for (var ctrl in grammar.controllers.values) {
+      for (var method in ctrl.fields) {
+        var annotations =
+            method.getDirectives().where((d) => d.getArgValue(gqAnnotation) == true).toList();
+        if (annotations.isNotEmpty) {
+          for (var an in annotations) {
+            String? import = an.getArgValueAsString(gqImport);
+            var dec = GQDirectiveValue.createGqDecorators(
+                decorators: [serializer.serializeAnnotation(an)],
+                applyOnClient: false,
+                import: import);
+            if (import != null) {
+              ctrl.addImport(import);
+            }
+            method.addDirective(dec);
+          }
+        }
+      }
     }
   }
 

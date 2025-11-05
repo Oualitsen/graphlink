@@ -4,6 +4,7 @@ import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 import 'package:retrofit_graphql/src/model/gq_argument.dart';
+import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/gq_enum_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/gq_input_type_definition.dart';
@@ -79,6 +80,10 @@ class JavaSerializer extends GqSerializer {
   void _initAnnotations() {
     grammar.handleAnnotations(
         (val) => AnnotationSerializer.serializeAnnotation(val, multiLineString: false));
+  }
+
+  String serializeAnnotation(GQDirectiveValue value) {
+    return AnnotationSerializer.serializeAnnotation(value, multiLineString: false);
   }
 
   @override
