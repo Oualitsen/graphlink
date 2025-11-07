@@ -50,6 +50,17 @@ const _javaNumberMethods = {
   "double": "doubleValue()"
 };
 
+const Set<String> _javaPrimitives = {
+  'boolean',
+  'byte',
+  'short',
+  'int',
+  'long',
+  'float',
+  'double',
+  'char',
+};
+
 String _listOf(String type) {
   return '${_list}<${type}>';
 }
@@ -182,6 +193,11 @@ class JavaSerializer extends GqSerializer {
     return buffer.toString();
   }
 
+  bool _isPrimitiveType(GQType type) {
+    var serialized = serializeType(type, false);
+    return _javaPrimitives.contains(serialized);
+  }
+
   String serializeTypeReactive({
     required GQType gqType,
     bool forceNullable = false,
@@ -243,7 +259,8 @@ class JavaSerializer extends GqSerializer {
       "",
       generateContructor(def.token, [], "public", def, checkForNulls: inputsCheckForNulls),
       "",
-      generateContructor(def.token, def.getSerializableFields(grammar.mode), "private", def),
+      generateContructor(def.token, def.getSerializableFields(grammar.mode), "private", def,
+          checkForNulls: inputsCheckForNulls),
       generateBuilder(def.token, def.getSerializableFields(grammar.mode)),
       ...def
           .getSerializableFields(grammar.mode)
@@ -406,20 +423,17 @@ class JavaSerializer extends GqSerializer {
 
   String generateContructor(String name, List<GQField> fields, String? modifier, GQToken context,
       {bool checkForNulls = false}) {
-    String nullCheck;
+    String nullCheck = "";
     if (checkForNulls) {
       var checkingFields = fields
-          .where((e) => !e.type.nullable)
+          .where((e) => !e.type.nullable && !_isPrimitiveType(e.type))
           .map((e) => "Objects.requireNonNull(${e.name});")
           .toList();
+
       if (checkingFields.isNotEmpty) {
         nullCheck = serializeListText(checkingFields, join: "\n", withParenthesis: false);
         context.addImport(JavaImports.objects);
-      } else {
-        nullCheck = "";
       }
-    } else {
-      nullCheck = "";
     }
 
     final buffer = StringBuffer();
@@ -483,7 +497,8 @@ class JavaSerializer extends GqSerializer {
         returnType: "public ${returnType}",
         methodName: _getterName(field.name.token, returnType == "boolean"),
         statements: [
-          if (checkForNulls) 'Objects.requireNonNull(${field.name});',
+          if (checkForNulls && !field.type.nullable && !_isPrimitiveType(field.type))
+            'Objects.requireNonNull(${field.name});',
           'return ${field.name};'
         ]);
   }
@@ -573,7 +588,8 @@ class JavaSerializer extends GqSerializer {
           serializeArgumentField(field)
         ],
         statements: [
-          if (checkForNulls) 'Objects.requireNonNull(${field.name});',
+          if (checkForNulls && !field.type.nullable && !_isPrimitiveType(field.type))
+            'Objects.requireNonNull(${field.name});',
           "this.${field.name} = ${field.name};"
         ]);
   }

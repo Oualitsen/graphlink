@@ -410,4 +410,101 @@ void main() {
 
     print(serializer.serializeTypeDefinition(user, "com.myorg"));
   });
+
+  test("serialize input with null checks", () {
+    final GQGrammar g = GQGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    var parsed = g.parse('''
+    input UserInput {
+      id: ID
+      name: String!
+    }
+''');
+
+    expect(parsed is Success, true);
+
+    var userInput = g.inputs['UserInput']!;
+    var serializer = JavaSerializer(g);
+    var serializedInput = serializer.serializeInputDefinition(userInput, "com.myorg");
+    // nullcheck on contrcutor
+    var lines = serializedInput
+        .split('\n')
+        .where((element) => element.isNotEmpty)
+        .map((e) => e.trim())
+        .toList();
+    expect(
+        lines,
+        containsAllInOrder([
+          'private UserInput(String id, String name) {',
+          'Objects.requireNonNull(name);',
+          'this.id = id;',
+          'this.name = name;'
+        ]));
+    // nullcheck on setter
+    expect(
+        lines,
+        containsAllInOrder([
+          'public void setName(String name) {',
+          'Objects.requireNonNull(name);',
+          'this.name = name;'
+        ]));
+
+    // nullcheck on getter
+    expect(
+        lines,
+        containsAllInOrder([
+          'public String getName() {',
+          'Objects.requireNonNull(name);',
+          'return name;',
+        ]));
+
+    // no nullcheck on setter id
+    expect(lines, containsAllInOrder(['public void setId(String id) {', 'this.id = id;']));
+
+    // no nullcheck on getter id
+    expect(
+        lines,
+        containsAllInOrder([
+          'public String getId() {',
+          'return id;',
+        ]));
+  });
+
+  test("serialize no null check on java primitives", () {
+    final typeMapping = {
+      "ID": "String",
+      "String": "String",
+      "Float": "Double",
+      "Int": "int",
+      "Boolean": "Boolean",
+      "Null": "null",
+      "Long": "Long"
+    };
+    final GQGrammar g = GQGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    var parsed = g.parse('''
+    input UserInput {
+      
+      age: Int!
+    }
+''');
+
+    expect(parsed is Success, true);
+
+    var userInput = g.inputs['UserInput']!;
+    var serializer = JavaSerializer(g);
+    var serializedInput = serializer.serializeInputDefinition(userInput, "com.myorg");
+    // no nullcheck on contrcutor primitives
+    var lines = serializedInput
+        .split('\n')
+        .where((element) => element.isNotEmpty)
+        .map((e) => e.trim())
+        .toList();
+    expect(lines, containsAllInOrder(['private UserInput(int age) {', 'this.age = age;', '}']));
+    // no nullcheck on setter
+    expect(lines, containsAllInOrder(['public void setAge(int age) {', 'this.age = age;', '}']));
+
+    // no nullcheck on getter
+    expect(lines, containsAllInOrder(['public int getAge() {', 'return age;', '}']));
+
+    // no nullcheck on setter id
+  });
 }
