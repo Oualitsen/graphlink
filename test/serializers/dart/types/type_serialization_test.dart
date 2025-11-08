@@ -10,7 +10,8 @@ void main() {
   test("dart test skipOn mode = client", () {
     final GQGrammar g = GQGrammar(identityFields: ["id"], mode: CodeGenerationMode.client);
 
-    final text = File("test/serializers/dart/types/type_serialization_skip_on_test.graphql").readAsStringSync();
+    final text = File("test/serializers/dart/types/type_serialization_skip_on_test.graphql")
+        .readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
@@ -23,7 +24,8 @@ void main() {
   test("dart test skipOn mode = server", () {
     final GQGrammar g = GQGrammar(identityFields: ["id"], mode: CodeGenerationMode.server);
 
-    final text = File("test/serializers/dart/types/type_serialization_skip_on_test.graphql").readAsStringSync();
+    final text = File("test/serializers/dart/types/type_serialization_skip_on_test.graphql")
+        .readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
@@ -46,7 +48,8 @@ void main() {
 
   test("Dart type serialization", () {
     final GQGrammar g = GQGrammar(identityFields: ["id"]);
-    final text = File("test/serializers/dart/types/type_serialization_test.graphql").readAsStringSync();
+    final text =
+        File("test/serializers/dart/types/type_serialization_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
@@ -69,7 +72,8 @@ void main() {
 
   test("Dart input serialization", () {
     final GQGrammar g = GQGrammar(identityFields: ["id"]);
-    final text = File("test/serializers/dart/types/type_serialization_test.graphql").readAsStringSync();
+    final text =
+        File("test/serializers/dart/types/type_serialization_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
@@ -87,7 +91,7 @@ void main() {
         "UserInput({",
         "this.id,",
         "required this.name,",
-        "this.middleName,",
+        "this.middleName",
         "});",
         "}"
       ]),
@@ -96,7 +100,8 @@ void main() {
 
   test("Dart interface serialization", () {
     final GQGrammar g = GQGrammar(identityFields: ["id"]);
-    final text = File("test/serializers/dart/types/interface_serialization_test.graphql").readAsStringSync();
+    final text =
+        File("test/serializers/dart/types/interface_serialization_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
@@ -113,7 +118,8 @@ void main() {
 
   test("Dart interface implementing one interface serialization", () {
     final GQGrammar g = GQGrammar(identityFields: ["id"]);
-    final text = File("test/serializers/dart/types/interface_serialization_test.graphql").readAsStringSync();
+    final text =
+        File("test/serializers/dart/types/interface_serialization_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
@@ -131,7 +137,8 @@ void main() {
 
   test("Dart interface implementing multiple interface serialization", () {
     final GQGrammar g = GQGrammar(identityFields: ["id"]);
-    final text = File("test/serializers/dart/types/interface_serialization_test.graphql").readAsStringSync();
+    final text =
+        File("test/serializers/dart/types/interface_serialization_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
     expect(parsed is Success, true);

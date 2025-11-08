@@ -138,8 +138,11 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
     }
     buffer.write(methodName);
     if (arguments != null) {
-      buffer.write(
-          parentheses(namedArguments && arguments.isNotEmpty ? [block(arguments)] : arguments));
+      buffer.write(parentheses(namedArguments && arguments.isNotEmpty
+          ? [
+              block([arguments.join(",\n")]),
+            ]
+          : arguments));
     }
     if (statements != null) {
       buffer.write(" ");
