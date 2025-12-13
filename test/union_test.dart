@@ -9,7 +9,7 @@ void main() {
   test("Union serialization", () {
     final GQGrammar g = GQGrammar();
     final serialzer = GraphqSerializer(g);
-    var union = GQUnionDefinition("type".toToken(), ["User".toToken()]);
+    var union = GQUnionDefinition("type".toToken(), false, ["User".toToken()], []);
 
     expect(serialzer.serializeUnionDefinition(union), "union type = User");
   });
@@ -17,7 +17,8 @@ void main() {
   test("Union serialization with multiple types", () {
     final GQGrammar g = GQGrammar();
     final serialzer = GraphqSerializer(g);
-    var union = GQUnionDefinition("type".toToken(), ["User".toToken(), "Client".toToken()]);
+    var union =
+        GQUnionDefinition("type".toToken(), false, ["User".toToken(), "Client".toToken()], []);
     expect(serialzer.serializeUnionDefinition(union), "union type = User | Client");
   });
 

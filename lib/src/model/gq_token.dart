@@ -22,3 +22,15 @@ abstract class GQToken {
     return Set.unmodifiable([]);
   }
 }
+
+abstract class GQExtensibleToken extends GQToken {
+  final bool extension;
+  bool parsedOriginal = false;
+  GQExtensibleToken(super.tokenInfo, this.extension) {
+    if (!extension) {
+      parsedOriginal = true;
+    }
+  }
+
+  void merge<T extends GQExtensibleToken>(T other);
+}

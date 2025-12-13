@@ -16,7 +16,8 @@ class GQInterfaceDefinition extends GQTypeDefinition {
     required super.directives,
     required super.interfaceNames,
     this.fromUnion = false,
-    super.derivedFromType
+    super.derivedFromType,
+    required super.extension,
   });
 
   @override

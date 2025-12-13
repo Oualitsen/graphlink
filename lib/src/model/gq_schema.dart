@@ -1,41 +1,55 @@
+import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
+import 'package:retrofit_graphql/src/model/gq_directive.dart';
+import 'package:retrofit_graphql/src/model/gq_directives_mixin.dart';
 import 'package:retrofit_graphql/src/model/gq_queries.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
 import 'package:retrofit_graphql/src/model/token_info.dart';
 
-class GQSchema extends GQToken {
-  final String query;
-  final String mutation;
-  final String subscription;
+class GQSchema extends GQExtensibleToken with GQDirectivesMixin {
+  final Map<GQQueryType, TokenInfo> _schemaMap = {};
 
-   final Set<String> queryNamesSet;
-
-  GQSchema(super.tokenInfo, {
-    this.query = "Query",
-    this.mutation = "Mutation",
-    this.subscription = "Subscription",
-  }): queryNamesSet = {query, mutation, subscription};
-
-  factory GQSchema.fromList(TokenInfo tokenInfo, List<String> list) {
-    String query = find("query", list) ?? "Query";
-    String mutation = find("mutation", list) ?? "Mutation";
-    String subscription = find("subscription", list) ?? "Subscription";
-    return GQSchema(tokenInfo, query: query, mutation: mutation, subscription: subscription);
+  GQSchema(
+    super.tokenInfo,
+    super.extension, {
+    required List<SchemaElement> operationTypes,
+    required List<GQDirectiveValue> directives,
+  }) {
+    directives.forEach(addDirective);
+    operationTypes.forEach(addSchemaElement);
   }
 
-   String getByQueryType(GQQueryType type) {
+  void addSchemaElement(SchemaElement element) {
+    if (_schemaMap.containsKey(element.type)) {
+      throw ParseException("Schema already contains a definition for ${element.type}",
+          info: element.name);
+    }
+    _schemaMap[element.type] = element.name;
+  }
+
+  String getByQueryType(GQQueryType type) {
     switch (type) {
       case GQQueryType.query:
-        return query;
+        return _schemaMap[type]?.token ?? "Query";
       case GQQueryType.mutation:
-        return mutation;
+        return _schemaMap[type]?.token ?? "Mutation";
       case GQQueryType.subscription:
-        return subscription;
+        return _schemaMap[type]?.token ?? "Subscription";
     }
   }
 
-  static String? find(String prefix, List<String> list) {
-    var elem = list.where((element) => element.startsWith(prefix)).toList();
-    return elem.isEmpty ? null : elem.first.split("-")[1].trim();
+  @override
+  void merge<T extends GQExtensibleToken>(T other) {
+    if (other is GQSchema) {
+      other.getDirectives().forEach(addDirective);
+      other._schemaMap.forEach((key, value) {
+        addSchemaElement(SchemaElement(key, value));
+      });
+    }
   }
-  
+}
+
+class SchemaElement {
+  final GQQueryType type;
+  final TokenInfo name;
+  SchemaElement(this.type, this.name);
 }

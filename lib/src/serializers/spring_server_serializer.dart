@@ -204,7 +204,8 @@ class SpringServerSerializer {
         nameDeclared: false,
         fields: [],
         directives: [],
-        interfaceNames: {}));
+        interfaceNames: {},
+        extension: false));
 
     return serializer.serializeInterface(interface, getters: false);
   }

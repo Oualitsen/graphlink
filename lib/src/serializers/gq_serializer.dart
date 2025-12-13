@@ -3,7 +3,7 @@ import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/gq_enum_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/gq_directives_mixin.dart';
-import 'package:retrofit_graphql/src/model/gq_input_type_definition.dart';
+import 'package:retrofit_graphql/src/model/gq_input_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_interface_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
@@ -80,7 +80,8 @@ abstract class GqSerializer {
         grammar.enums[token] ??
         grammar.scalars[token];
     typeWithDirectives = typeWithDirectives as GQDirectivesMixin?;
-    var result = typeWithDirectives?.getDirectiveByName(gqExternal)?.getArgValueAsString(gqExternalArg);
+    var result =
+        typeWithDirectives?.getDirectiveByName(gqExternal)?.getArgValueAsString(gqExternalArg);
     if (result == null) {
       // check on typeMap
       return grammar.typeMap[token];

@@ -1,3 +1,4 @@
+import 'package:retrofit_graphql/src/model/gq_queries.dart';
 import 'package:test/test.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
@@ -13,7 +14,8 @@ void main() {
     
     ''');
     expect(result is Success, true);
-    expect(result.value, "mutation-Test2");
+    expect(result.value.type, GQQueryType.mutation);
+    expect(result.value.name.token, "Test2");
   });
 
   test("Schema   test", () {

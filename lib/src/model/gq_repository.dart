@@ -12,6 +12,7 @@ class GQRepository extends GQInterfaceDefinition {
     required super.fields,
     required super.directives,
     required super.interfaceNames,
+    required super.extension,
   });
 
   static GQRepository of(GQInterfaceDefinition iface) {
@@ -21,6 +22,7 @@ class GQRepository extends GQInterfaceDefinition {
       fields: iface.fields,
       directives: iface.getDirectives(),
       interfaceNames: iface.interfaceNames,
+      extension: iface.extension,
     );
   }
 
@@ -47,7 +49,8 @@ class GQRepository extends GQInterfaceDefinition {
     if (key != null) {
       var token = g.getTokenByKey(key);
       if (token is GQDirectivesMixin) {
-        return GQTokenWithFields.extractImports(token as GQDirectivesMixin, g.mode, skipOwnImports: true);
+        return GQTokenWithFields.extractImports(token as GQDirectivesMixin, g.mode,
+            skipOwnImports: true);
       }
     }
     return {};

@@ -6,7 +6,7 @@ import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/gq_enum_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/gq_fragment.dart';
-import 'package:retrofit_graphql/src/model/gq_input_type_definition.dart';
+import 'package:retrofit_graphql/src/model/gq_input_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_interface_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_queries.dart';
 import 'package:retrofit_graphql/src/model/gq_scalar_definition.dart';
@@ -166,11 +166,11 @@ directive ${def.name}${serializeDirectiveArgs(def.arguments)} on ${def.scopes.ma
         .map((value) {
       switch (value) {
         case GQQueryType.query:
-          return "query: ${schema.query}";
+          return "query: ${schema.getByQueryType(value)}";
         case GQQueryType.mutation:
-          return "mutation: ${schema.mutation}";
+          return "mutation: ${schema.getByQueryType(value)}";
         case GQQueryType.subscription:
-          return "subscription: ${schema.subscription}";
+          return "subscription: ${schema.getByQueryType(value)}";
       }
     });
     if (inner.isEmpty) {

@@ -20,7 +20,8 @@ void main() {
   };
 
   test("handle repositories", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     final text = File("test/server/repository/repository_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -35,9 +36,11 @@ void main() {
   });
 
   test("external types/inputs serialization", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
-    final text = File("test/server/repository/repository_test_external_types.graphql").readAsStringSync();
+    final text =
+        File("test/server/repository/repository_test_external_types.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
@@ -57,12 +60,14 @@ void main() {
     var result = serializer.serializeRepository(userRepository, "com.myorg");
     expect(
         result,
-        stringContainsInOrder(
-            ["List<com.mycompany.ExternalUser> findAll(org.springframework.data.domain.Pageable pagebale);"]));
+        stringContainsInOrder([
+          "List<com.mycompany.ExternalUser> findAll(org.springframework.data.domain.Pageable pagebale);"
+        ]));
   });
 
   test("check type == null", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     const text = """
         type User {
@@ -86,7 +91,8 @@ void main() {
   });
 
   test("check id = null", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     const text = """
         type User {
@@ -110,7 +116,8 @@ void main() {
   });
 
   test("should serialize directives on methods", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     const text = """
       directive @gqQuery(

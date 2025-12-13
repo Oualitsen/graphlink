@@ -12,7 +12,7 @@ import 'package:retrofit_graphql/src/utils.dart';
 
 const importList = "_list";
 
-abstract class GQTokenWithFields extends GQToken {
+abstract class GQTokenWithFields extends GQExtensibleToken {
   final Map<String, GQField> _fieldMap = {};
 
   final _fieldNames = <String>{};
@@ -20,15 +20,25 @@ abstract class GQTokenWithFields extends GQToken {
   List<GQField>? _skipOnClientFields;
   List<GQField>? _skipOnServerFields;
 
-  GQTokenWithFields(super.tokenInfo, List<GQField> allFields) {
+  GQTokenWithFields(super.tokenInfo, super.extension, List<GQField> allFields) {
     allFields.forEach(addField);
   }
 
   void addField(GQField field) {
     if (_fieldMap.containsKey(field.name.token)) {
-      throw ParseException("Duplicate field defition on type ${tokenInfo}, field: ${field.name}", info: field.name);
+      throw ParseException("Duplicate field defition on type ${tokenInfo}, field: ${field.name}",
+          info: field.name);
     }
     _fieldMap[field.name.token] = field;
+  }
+
+  void addOrMergeField(GQField field) {
+    if (_fieldMap.containsKey(field.name.token)) {
+      var current = _fieldMap[field.name.token]!;
+      field.getDirectives().forEach(current.addDirective);
+    } else {
+      addField(field);
+    }
   }
 
   bool hasField(String name) {
@@ -54,7 +64,8 @@ abstract class GQTokenWithFields extends GQToken {
           directives: [],
         );
       } else {
-        throw ParseException("Could not find field '$fieldName' on type ${tokenInfo}", info: tokenInfo);
+        throw ParseException("Could not find field '$fieldName' on type ${tokenInfo}",
+            info: tokenInfo);
       }
     }
     return field;
@@ -72,7 +83,8 @@ abstract class GQTokenWithFields extends GQToken {
 
   List<GQField> getSerializableFields(CodeGenerationMode mode, {bool skipGenerated = false}) {
     return fields
-        .where((f) => !shouldSkipSerialization(directives: f.getDirectives(skipGenerated: skipGenerated), mode: mode))
+        .where((f) => !shouldSkipSerialization(
+            directives: f.getDirectives(skipGenerated: skipGenerated), mode: mode))
         .toList();
   }
 
@@ -145,7 +157,8 @@ abstract class GQTokenWithFields extends GQToken {
           }
           var argToken = g.getTokenByKey(arg.type.token);
           if (argToken != null && argToken is GQDirectivesMixin) {
-            result.addAll(extractImports(argToken as GQDirectivesMixin, g.mode, skipOwnImports: true));
+            result.addAll(
+                extractImports(argToken as GQDirectivesMixin, g.mode, skipOwnImports: true));
           }
         }
       }
@@ -154,7 +167,8 @@ abstract class GQTokenWithFields extends GQToken {
     return result;
   }
 
-  static Set<String> extractImports(GQDirectivesMixin dir, CodeGenerationMode mode, {bool skipOwnImports = false}) {
+  static Set<String> extractImports(GQDirectivesMixin dir, CodeGenerationMode mode,
+      {bool skipOwnImports = false}) {
     var result = <String>{};
     // is it external ?
     var external = dir.getDirectiveByName(gqExternal);

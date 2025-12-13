@@ -1,5 +1,3 @@
-
-
 import 'package:petitparser/petitparser.dart';
 import 'package:retrofit_graphql/src/serializers/graphq_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/language.dart';
@@ -9,9 +7,8 @@ import 'package:retrofit_graphql/src/gq_grammar.dart';
 final GQGrammar g = GQGrammar();
 
 void main() {
-
   test("serialize directive definition with different argument types@@", () {
- final g = GQGrammar(generateAllFieldsFragments: true);
+    final g = GQGrammar(generateAllFieldsFragments: true);
     var result = g.parse('''
 
     type User {
@@ -26,16 +23,15 @@ void main() {
   ''');
     expect(result is Success, true);
     final serializer = GraphqSerializer(g);
-  
-  var schema = serializer.generateSchema();
-  // user should declare a pet: Pet but should not declare a petId
-  expect(schema, contains("pet: Pet"));
-  expect(schema, isNot(contains("petId: String")));
 
+    var schema = serializer.generateSchema();
+    // user should declare a pet: Pet but should not declare a petId
+    expect(schema, contains("pet: Pet"));
+    expect(schema, isNot(contains("petId: String")));
   });
-  
+
   test("serialize directive definition with different argument types", () {
- final g = GQGrammar(generateAllFieldsFragments: true);
+    final g = GQGrammar(generateAllFieldsFragments: true);
     var result = g.parse('''
     directive @myDirective(value: User!) on OBJECT
     directive @myDirective2(value: [String!]!) on OBJECT
@@ -48,21 +44,23 @@ void main() {
       age: Int
     }
   ''');
-  expect(result is Success, true);
+    expect(result is Success, true);
     final serializer = GraphqSerializer(g);
-    var myDirective = serializer.serializeDirectiveDefinition(g.directiveDefinitions["@myDirective"]!);
+    var myDirective =
+        serializer.serializeDirectiveDefinition(g.directiveDefinitions["@myDirective"]!);
     expect(myDirective, "directive @myDirective(value: User!) on OBJECT");
 
-    var myDirective2 = serializer.serializeDirectiveDefinition(g.directiveDefinitions["@myDirective2"]!);
+    var myDirective2 =
+        serializer.serializeDirectiveDefinition(g.directiveDefinitions["@myDirective2"]!);
     expect(myDirective2, "directive @myDirective2(value: [String!]!) on OBJECT");
 
-    var myDirective3 = serializer.serializeDirectiveDefinition(g.directiveDefinitions["@myDirective3"]!);
+    var myDirective3 =
+        serializer.serializeDirectiveDefinition(g.directiveDefinitions["@myDirective3"]!);
     expect(myDirective3, "directive @myDirective3(value: [User!]!) on OBJECT");
-
   });
 
-test("serialize directive values with different argument types", () {
- final g = GQGrammar(generateAllFieldsFragments: true);
+  test("serialize directive values with different argument types", () {
+    final g = GQGrammar(generateAllFieldsFragments: true);
     var result = g.parse('''
     directive @myDirective(value: User!) on OBJECT
     directive @myDirective2(value: [String!]!) on OBJECT
@@ -75,7 +73,7 @@ test("serialize directive values with different argument types", () {
       age: Int
     }
   ''');
-  expect(result is Success, true);
+    expect(result is Success, true);
     final serializer = GraphqSerializer(g);
     var user = g.getTypeByName("User")!;
     var myDirective = user.getFieldByName("id")!.getDirectiveByName("@myDirective")!;
@@ -90,8 +88,6 @@ test("serialize directive values with different argument types", () {
     var myDirectiveSerial3 = serializer.serializeDirectiveValue(myDirective3);
     expect(myDirectiveSerial3, '@myDirective3(value: [{name: "ramdane", age: 12, id: "test"}])');
   });
-
-
 
   test("serializeSchemaDefinition - all root types", () async {
     final g = GQGrammar(generateAllFieldsFragments: true);
@@ -113,13 +109,8 @@ test("serialize directive values with different argument types", () {
     var serial = serializer.serializeSchemaDefinition(g.schema);
     expect(
       serial.split("\n").map((str) => str.trim()),
-      containsAllInOrder([
-        "schema {",
-        "query: Query",
-        "mutation: Mutation",
-        "subscription: Subscription",
-        "}"
-      ]),
+      containsAllInOrder(
+          ["schema {", "query: Query", "mutation: Mutation", "subscription: Subscription", "}"]),
     );
   });
 
@@ -140,12 +131,7 @@ test("serialize directive values with different argument types", () {
     expect(serial.contains("query"), isFalse);
     expect(
       serial.split("\n").map((str) => str.trim()),
-      containsAllInOrder([
-        "schema {",
-        "mutation: Mutation",
-        "subscription: Subscription",
-        "}"
-      ]),
+      containsAllInOrder(["schema {", "mutation: Mutation", "subscription: Subscription", "}"]),
     );
   });
 
@@ -166,8 +152,7 @@ test("serialize directive values with different argument types", () {
     expect(serial.contains("mutation"), isFalse);
     expect(
       serial.split("\n").map((str) => str.trim()),
-      containsAllInOrder(
-          ["schema {", "query: Query", "subscription: Subscription", "}"]),
+      containsAllInOrder(["schema {", "query: Query", "subscription: Subscription", "}"]),
     );
   });
 
@@ -188,8 +173,7 @@ test("serialize directive values with different argument types", () {
     expect(serial.contains("subscription"), isFalse);
     expect(
       serial.split("\n").map((str) => str.trim()),
-      containsAllInOrder(
-          ["schema {", "query: Query", "mutation: Mutation", "}"]),
+      containsAllInOrder(["schema {", "query: Query", "mutation: Mutation", "}"]),
     );
   });
 
@@ -208,7 +192,7 @@ test("serialize directive values with different argument types", () {
 
   test("serializeScalarDefinition test", () async {
     final g = GQGrammar(generateAllFieldsFragments: true);
-    var result =  g.parse('''
+    var result = g.parse('''
   scalar Long
 ''');
     expect(result is Success, true);
@@ -219,15 +203,13 @@ test("serialize directive values with different argument types", () {
 
   test("serializeDirectiveDefinition test", () async {
     final g = GQGrammar(generateAllFieldsFragments: true);
-    var result =  g.parse('''
+    var result = g.parse('''
     directive @myDirective(arg1: String) on FIELD_DEFINITION|OBJECT
 ''');
     expect(result is Success, true);
     final serializer = GraphqSerializer(g);
-    var serial = serializer
-        .serializeDirectiveDefinition(g.directiveDefinitions["@myDirective"]!);
-    expect(serial.trim(),
-        "directive @myDirective(arg1: String) on FIELD_DEFINITION | OBJECT");
+    var serial = serializer.serializeDirectiveDefinition(g.directiveDefinitions["@myDirective"]!);
+    expect(serial.trim(), "directive @myDirective(arg1: String) on FIELD_DEFINITION | OBJECT");
   });
 
   test("serializeInputDefinition test", () async {
@@ -242,23 +224,18 @@ test("serialize directive values with different argument types", () {
 ''');
     expect(result is Success, true);
     final serializer = GraphqSerializer(g);
-    var serial = serializer.serializeInputDefinition(g.inputs["UserInput"]!, CodeGenerationMode.client);
+    var serial =
+        serializer.serializeInputDefinition(g.inputs["UserInput"]!, CodeGenerationMode.client);
     expect(
       serial.split("\n").map((str) => str.trim()),
-      containsAllInOrder([
-        "input UserInput {",
-        "id: String",
-        "name: String",
-        "lastName: String",
-        "age: Int",
-        "}"
-      ]),
+      containsAllInOrder(
+          ["input UserInput {", "id: String", "name: String", "lastName: String", "age: Int", "}"]),
     );
   });
 
   test("serializeTypeDefinition test", () async {
     final g = GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
-    var result =  g.parse('''
+    var result = g.parse('''
     type User {
       id: String
       name: String
@@ -294,7 +271,7 @@ test("serialize directive values with different argument types", () {
 
   test("serializeTypeDefinition implements one interface", () async {
     final g = GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
-    var result =  g.parse('''
+    var result = g.parse('''
     interface IBase {
       id: String
     }
@@ -333,7 +310,7 @@ test("serialize directive values with different argument types", () {
 
   test("serializeTypeDefinition implements multiple interfaces", () async {
     final g = GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
-    var result =  g.parse('''
+    var result = g.parse('''
     interface IBase {
       id: String
     }
@@ -374,10 +351,9 @@ test("serialize directive values with different argument types", () {
     expect(serial.contains("carId"), isFalse);
   });
 
-
   test("serializeInterfaceDefinition test", () async {
     final g = GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
-    var result =  g.parse('''
+    var result = g.parse('''
     interface User  {
       id: String
       name: String
@@ -410,10 +386,9 @@ test("serialize directive values with different argument types", () {
     expect(serial.contains("carId"), isFalse);
   });
 
-
   test("serializeInterfaceDefinition imlements one interface", () async {
     final g = GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
-    var result =  g.parse('''
+    var result = g.parse('''
 interface IBase {
       id: String
     }
@@ -449,9 +424,9 @@ interface IBase {
     expect(serial.contains("carId"), isFalse);
   });
 
-    test("serializeInterfaceDefinition imlements multiple interfaces", () async {
+  test("serializeInterfaceDefinition imlements multiple interfaces", () async {
     final g = GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
-    var result =  g.parse('''
+    var result = g.parse('''
 interface IBase {
       id: String
     }
@@ -491,12 +466,9 @@ interface IBase {
     expect(serial.contains("carId"), isFalse);
   });
 
-
-
-
   test("serializeEnumDefinition test", () async {
     final g = GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
-    var result =  g.parse('''
+    var result = g.parse('''
     enum Gender {male, female}
 ''');
     expect(result is Success, true);
@@ -504,12 +476,7 @@ interface IBase {
     var serial = serializer.serializeEnumDefinition(g.enums["Gender"]!);
     expect(
       serial.split("\n").map((str) => str.trim()),
-      containsAllInOrder([
-        "enum Gender {",
-        "male female",
-        "}"
-      ]),
+      containsAllInOrder(["enum Gender {", "male female", "}"]),
     );
-
   });
 }

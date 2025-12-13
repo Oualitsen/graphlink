@@ -24,7 +24,8 @@ class GQTypeDefinition extends GQTokenWithFields with GQDirectivesMixin {
     required Set<TokenInfo> interfaceNames,
     required List<GQDirectiveValue> directives,
     required this.derivedFromType,
-  }) : super(name, fields) {
+    required bool extension,
+  }) : super(name, extension, fields) {
     directives.forEach(addDirective);
     fields.sort((f1, f2) => f1.name.token.compareTo(f2.name.token));
     interfaceNames.forEach(addInterfaceName);
@@ -68,7 +69,8 @@ class GQTypeDefinition extends GQTokenWithFields with GQDirectivesMixin {
   String getHash(GQGrammar g) {
     var serilaize = GraphqSerializer(g);
     return getSerializableFields(g.mode)
-        .map((f) => "${f.name}:${serilaize.serializeType(f.type, forceNullable: f.hasInculeOrSkipDiretives)}")
+        .map((f) =>
+            "${f.name}:${serilaize.serializeType(f.type, forceNullable: f.hasInculeOrSkipDiretives)}")
         .join(",");
   }
 
@@ -93,7 +95,8 @@ class GQTypeDefinition extends GQTokenWithFields with GQDirectivesMixin {
     return [...fields];
   }
 
-  bool containsInteface(String interfaceName) => interfaceNames.where((e) => e.token == interfaceName).isNotEmpty;
+  bool containsInteface(String interfaceName) =>
+      interfaceNames.where((e) => e.token == interfaceName).isNotEmpty;
 
   Set<String> getInterfaceNames() => interfaceNames.map((e) => e.token).toSet();
 
@@ -108,5 +111,13 @@ class GQTypeDefinition extends GQTokenWithFields with GQDirectivesMixin {
       }
     }
     return result;
+  }
+
+  @override
+  void merge<T extends GQExtensibleToken>(T other) {
+    if (other is GQTypeDefinition) {
+      other.getDirectives().forEach(addDirective);
+      other.fields.forEach(addOrMergeField);
+    }
   }
 }

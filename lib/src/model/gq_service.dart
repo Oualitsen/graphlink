@@ -18,7 +18,8 @@ class GQService extends GQInterfaceDefinition {
       required super.nameDeclared,
       required super.fields,
       required super.directives,
-      required super.interfaceNames});
+      required super.interfaceNames})
+      : super(extension: false);
 
   void setFieldType(String fieldName, GQQueryType type) {
     _fieldType[fieldName] = type;

@@ -83,6 +83,7 @@ class GQQueryDefinition extends GQToken with GQDirectivesMixin {
         directives: getDirectives(),
         interfaceNames: {},
         derivedFromType: null,
+        extension: false,
       );
       gqDef.addDirective(GQDirectiveValue(gqInternal.toToken(), [], [], generated: true));
     }
