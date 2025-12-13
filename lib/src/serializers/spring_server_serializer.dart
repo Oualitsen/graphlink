@@ -150,6 +150,8 @@ class SpringServerSerializer {
         context: context,
         gqType: createListTypeOnSubscription(_getServiceReturnType(method.type), type),
         reactive: type == GQQueryType.subscription);
+    bool returnTypeIsVoid = returnType == "void";
+
     if (qualifier != null) {
       returnType = "${qualifier} ${returnType}";
     }
@@ -160,7 +162,10 @@ class SpringServerSerializer {
         statements: [
           if (method.getDirectiveByName(gqValidate) != null)
             '$sericeInstanceName.${GQService.getValidationMethodName(method.name.token)}(${serviceArgs.join(", ")});',
-          'return $sericeInstanceName.${method.name}(${serviceArgs.join(", ")});',
+          if (returnTypeIsVoid)
+            '$sericeInstanceName.${method.name}(${serviceArgs.join(", ")});'
+          else
+            'return $sericeInstanceName.${method.name}(${serviceArgs.join(", ")});',
         ]));
 
     return buffer.toString();

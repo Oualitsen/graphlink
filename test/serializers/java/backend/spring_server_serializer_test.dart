@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 import 'package:retrofit_graphql/src/serializers/language.dart';
 import 'package:retrofit_graphql/src/serializers/spring_server_serializer.dart';
 import 'package:test/test.dart';
@@ -402,5 +403,50 @@ void main() {
     var userService = g.services["UserService"]!;
     var serializedService = serverSerialzer.serializeService(userService, "");
     expect(serializedService, contains("public interface UserService"));
+  });
+
+  test("controller should not serialize 'return' on void", () {
+    final typeMapping = {
+      "ID": "String",
+      "String": "String",
+      "Float": "Double",
+      "Int": "Integer",
+      "Boolean": "Boolean",
+      "Null": "null",
+      "Long": "Long",
+      'void': 'void',
+    };
+
+    final GQGrammar g =
+        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+
+    final text = '''
+  scalar void
+
+  type User {
+    userName: String
+  }
+ 
+
+  type Mutation {
+    deleteUser: void ${gqServiceName}(name: "UserService")
+  }
+
+''';
+
+    var parser = g.buildFrom(g.fullGrammar().end());
+    var parsed = parser.parse(text);
+
+    expect(parsed is Success, true);
+    var serverSerialzer = SpringServerSerializer(g);
+    var userController = g.controllers["UserServiceController"]!;
+
+    var controllerSerial = serverSerialzer.serializeController(userController, "com.myorg");
+
+    print(controllerSerial);
+    expect(controllerSerial, contains('serService.deleteUser();'));
+    expect(controllerSerial, isNot(contains('return userService.deleteUser();')));
+
+    print("DONE");
   });
 }
