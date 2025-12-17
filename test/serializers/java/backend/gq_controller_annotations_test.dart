@@ -20,24 +20,28 @@ void main() {
   test("Controller method should serialize annotations", () {
     final g = GQGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
     var parsed = g.parse('''
-      directive @preAuthorize(value: String, gqAnnotation: Boolean = true, gqClass: String! = "PreAuthorize", gqImport: String! = "org.springframework.security.access.prepost.PreAuthorize") on FIELD_DEFINITION
+      directive @preAuthorize(value: String, gqAnnotation: Boolean = true, gqOnServer: boolean = true, gqClass: String! = "PreAuthorize", gqImport: String! = "org.springframework.security.access.prepost.PreAuthorize") on FIELD_DEFINITION
       type Person {
         id: ID!
         name: String!
       }
       type Query {
-        getPerson: Person ${gqServiceName}(${gqServiceNameArg}: "PersonService") @preAuthorize(value: "hasRole('USER')") 
+        getPerson(id: String): Person ${gqServiceName}(${gqServiceNameArg}: "PersonService") @preAuthorize(value: "hasRole('USER')") 
       }
     ''');
     expect(parsed is Success, isTrue);
     // this line is needed for the test to pass! do not remote it.
-    var serializer = SpringServerSerializer(g);
     var personServiceController = g.controllers['PersonServiceController']!;
+
+    // needed for converting controller's annotations to decorators
+    SpringServerSerializer(g).serializeController(personServiceController, "com.myorg");
     expect(personServiceController.getImports(g),
         containsAll(['org.springframework.security.access.prepost.PreAuthorize']));
     var getPerson = personServiceController.getFieldByName('getPerson')!;
+
     var preAuth = getPerson.getDirectives().where((e) => e.token == gqDecorators).toList();
     String value = (preAuth.first.getArgValue("value") as List<String>).first;
+
     expect(value, '''"@PreAuthorize(value = "hasRole('USER')")"''');
   });
 }

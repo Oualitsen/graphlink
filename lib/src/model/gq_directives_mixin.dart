@@ -21,17 +21,19 @@ mixin GQDirectivesMixin {
   final Map<String, GQDirectiveValue> _directives = {};
 
   List<GQDirectiveValue> getAnnotations({CodeGenerationMode? mode}) {
-    return getDirectives().where((d) => d.getArgValue(gqAnnotation) == true).where((d) {
+    return getDirectives().where((d) => d.getArgValueAsBool(gqAnnotation)).where((d) {
       switch (mode) {
         case CodeGenerationMode.client:
-          return d.getArgValue(gqOnClient) == true;
+          return d.getArgValueAsBool(gqOnClient);
         case CodeGenerationMode.server:
-          return d.getArgValue(gqOnServer) == true;
+          return d.getArgValueAsBool(gqOnServer);
         case null:
           return true;
       }
     }).toList(growable: false);
   }
+
+  void addDecoratorIfAbsent(GQDirectiveValue decorator) {}
 
   void addDirective(GQDirectiveValue directiveValue) {
     if (directiveValue.token == gqDecorators) {
@@ -39,13 +41,18 @@ mixin GQDirectivesMixin {
       return;
     }
     if (_directives.containsKey(directiveValue.token)) {
-      throw ParseException("Directive '${directiveValue.tokenInfo}' already exists", info: directiveValue.tokenInfo);
+      throw ParseException("Directive '${directiveValue.tokenInfo}' already exists",
+          info: directiveValue.tokenInfo);
     }
     _directives[directiveValue.token] = directiveValue;
   }
 
   void addDirectiveIfAbsent(GQDirectiveValue directiveValue) {
     _directives.putIfAbsent(directiveValue.token, () => directiveValue);
+  }
+
+  void removeDirectiveByName(String name) {
+    _directives.remove(name);
   }
 
   GQDirectiveValue? getDirectiveByName(String name) {

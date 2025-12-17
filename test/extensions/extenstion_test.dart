@@ -1,4 +1,5 @@
 import 'package:petitparser/petitparser.dart';
+import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
 import 'package:retrofit_graphql/src/model/gq_queries.dart';
 import 'package:test/test.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
@@ -161,5 +162,120 @@ void main() {
     expect(schema.getByQueryType(GQQueryType.query), "TestQuery");
     expect(schema.getByQueryType(GQQueryType.mutation), "TestMutation");
     expect(schema.getDirectiveByName("@auth"), isNotNull);
+  });
+
+  test("throw when when trying to change the type of a field", () {
+    final g = GQGrammar(generateAllFieldsFragments: true);
+
+    expect(
+      () => g.parse('''
+    extend type User {
+      password: String
+    }
+    type User {
+      password: Int
+    }
+    
+  '''),
+      throwsA(
+        isA<ParseException>().having(
+          (e) => e.errorMessage,
+          'errorMessage',
+          contains("You cannot change field type in an extension line: 5 column: 7"),
+        ),
+      ),
+    );
+  });
+
+  test("throw when when trying to change the type of a field nullability", () {
+    final g = GQGrammar(generateAllFieldsFragments: true);
+
+    expect(
+      () => g.parse('''
+    extend type User {
+      password: String
+    }
+    type User {
+      password: String!
+    }
+    
+  '''),
+      throwsA(
+        isA<ParseException>().having(
+          (e) => e.errorMessage,
+          'errorMessage',
+          contains("You cannot change field type in an extension line: 5 column: 7"),
+        ),
+      ),
+    );
+  });
+
+  test("throw when when trying to change field arguments", () {
+    final g = GQGrammar(generateAllFieldsFragments: true);
+
+    expect(
+      () => g.parse('''
+    extend type User {
+      password: String
+    }
+    type User {
+      password(id: Int): String
+    }
+    
+  '''),
+      throwsA(
+        isA<ParseException>().having(
+          (e) => e.errorMessage,
+          'errorMessage',
+          contains("You cannot add/remove arguments in an extension line: 5 column: 7"),
+        ),
+      ),
+    );
+  });
+
+  test("throw when when trying to change field argument types", () {
+    final g = GQGrammar(generateAllFieldsFragments: true);
+
+    expect(
+      () => g.parse('''
+    extend type User {
+      password(id: String): String
+    }
+    type User {
+      password(id: Int): String
+    }
+    
+  '''),
+      throwsA(
+        isA<ParseException>().having(
+          (e) => e.errorMessage,
+          'errorMessage',
+          contains("You cannot alter argument type in an extension line: 5 column: 16"),
+        ),
+      ),
+    );
+  });
+
+  test("throw when when trying to change field argument nullability", () {
+    final g = GQGrammar(generateAllFieldsFragments: true);
+
+    expect(
+      () => g.parse('''
+    extend type User {
+      password(id: String): String
+    }
+    type User {
+      password(id: String!): String
+    }
+    
+  '''),
+      throwsA(
+        isA<ParseException>().having(
+          (e) => e.errorMessage,
+          'errorMessage',
+          contains("You cannot alter argument type in an extension line: 5 column: 16"),
+        ),
+      ),
+    );
   });
 }

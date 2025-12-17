@@ -79,5 +79,6 @@ const gqEqualsHashcodeArgumentName = "fields";
 const gqDecoratorsArgumentName = "value";
 
 const gqAnnotation = "gqAnnotation";
+const gqApplyOnFields = "gqApplyOnFields";
 const gqOnClient = "gqOnClient";
 const gqOnServer = "gqOnServer";

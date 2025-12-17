@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
 import 'package:retrofit_graphql/src/serializers/annotation_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/language.dart';
@@ -169,7 +170,7 @@ void main() {
     var userCtrl = g.controllers["UserServiceController"]!;
     var userController = springSerialzer.serializeController(userCtrl, "");
     expect(userController,
-        stringContainsInOrder(["@QueryMapping", "@LoggedIn()", "public User getUser()"]));
+        stringContainsInOrder(["@LoggedIn()", "@QueryMapping()", "public User getUser()"]));
   });
 
   test("annotations on interfaces", () {
@@ -191,8 +192,62 @@ void main() {
     var serialzer = JavaSerializer(g);
     var dartSerialzer = DartSerializer(g);
     var iface = g.interfaces['BasicEntity']!;
+    var javaSerial = serialzer.serializeTypeDefinition(iface, "com.myorg");
+    var dartSerial = dartSerialzer.serializeTypeDefinition(iface, "com.myorg");
+
+    expect(javaSerial,
+        stringContainsInOrder(['public interface BasicEntity', '@Id()', 'String getId();']));
+
+    expect(dartSerial,
+        stringContainsInOrder(['abstract class BasicEntity ', '@Id()', 'String get id;']));
 
     print(serialzer.serializeTypeDefinition(iface, "com.myorg"));
     print(dartSerialzer.serializeTypeDefinition(iface, "com.myorg"));
+  });
+
+  test("annotations gqApplyOnFields", () {
+    final GQGrammar g = GQGrammar(mode: CodeGenerationMode.server);
+    var parsed = g.parse('''
+    directive @auth(
+      gqClass: String = "Auth",
+      gqOnClient: Boolean = false,
+      gqOnServer: Boolean = true,
+      gqAnnotation: Boolean = true
+      gqApplyOnFields: Boolean = false
+      )
+ on FIELD_DEFINITION | FIELD
+
+ directive @auth2(
+      gqClass: String = "Auth2",
+      gqOnClient: Boolean = false,
+      gqOnServer: Boolean = true,
+      gqAnnotation: Boolean = true
+      gqApplyOnFields: Boolean = false
+      )
+ on FIELD_DEFINITION | FIELD
+
+ type Query @auth(gqApplyOnFields: true) {
+  countUsers: Int ${gqServiceName}(name: "MainService")
+ }
+
+ extend type Query @auth2(gqApplyOnFields: true) {
+  countAnimals: Int ${gqServiceName}(name: "MainService")
+ }
+ 
+ 
+''');
+    expect(parsed is Success, true);
+    var query = g.types["Query"]!;
+
+    var countUsers = query.getFieldByName("countUsers")!;
+    expect(countUsers.getDirectiveByName("@auth"), isNotNull);
+    var countAnimals = query.getFieldByName("countAnimals")!;
+    expect(countAnimals.getDirectiveByName("@auth2"), isNotNull);
+    expect(countAnimals.getDirectiveByName("@auth"), isNull);
+    var springSerial = SpringServerSerializer(g);
+    var mainController = g.controllers["MainServiceController"]!;
+    print(springSerial.serializeController(mainController, "com.myorg"));
+
+    //print(serializer.serializeTypeDefinition(query, "com.myorg"));
   });
 }

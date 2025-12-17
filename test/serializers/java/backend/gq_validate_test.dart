@@ -110,7 +110,7 @@ void main() {
     expect(
         serializedController.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty),
         containsAllInOrder([
-          'public Person getPerson(@Argument SearchQuery searchQuery) {',
+          'public Person getPerson(@Argument() SearchQuery searchQuery) {',
           'personService.validateGetPerson(searchQuery);',
           'return personService.getPerson(searchQuery);',
         ]));
@@ -139,7 +139,7 @@ void main() {
     expect(
         serializedController.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty),
         containsAllInOrder([
-          'public Person getPerson(@Argument SearchQuery searchQuery, DataFetchingEnvironment dataFetchingEnvironment) {',
+          'public Person getPerson(@Argument() SearchQuery searchQuery, DataFetchingEnvironment dataFetchingEnvironment) {',
           'personService.validateGetPerson(searchQuery, dataFetchingEnvironment);',
           'return personService.getPerson(searchQuery, dataFetchingEnvironment);',
         ]));

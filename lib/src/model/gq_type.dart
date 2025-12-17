@@ -9,7 +9,7 @@ class GQType extends GQToken {
   @override
   bool operator ==(Object other) {
     if (other is GQType) {
-      return tokenInfo == other.tokenInfo && nullable == other.nullable;
+      return tokenInfo.token == other.tokenInfo.token && nullable == other.nullable;
     }
     return false;
   }
@@ -22,7 +22,7 @@ class GQType extends GQToken {
   bool get isNotList => !isList;
 
   @override
-  int get hashCode => tokenInfo.hashCode;
+  int get hashCode => Object.hash(tokenInfo.token, nullable);
 
   GQType ofNewName(TokenInfo name) {
     return GQType(name, nullable);
@@ -47,4 +47,15 @@ class GQListType extends GQType {
   ///
   @override
   GQType get firstType => type.firstType;
+
+  @override
+  int get hashCode => Object.hash(tokenInfo.token, type, nullable);
+
+  @override
+  bool operator ==(Object other) {
+    if (other is GQListType) {
+      return type == other.type && nullable == other.nullable;
+    }
+    return false;
+  }
 }

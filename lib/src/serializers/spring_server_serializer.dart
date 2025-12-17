@@ -5,6 +5,7 @@ import 'package:retrofit_graphql/src/gq_grammar.dart';
 import 'package:retrofit_graphql/src/model/gq_argument.dart';
 import 'package:retrofit_graphql/src/model/gq_controller.dart';
 import 'package:retrofit_graphql/src/model/gq_directive.dart';
+import 'package:retrofit_graphql/src/model/gq_directives_mixin.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/gq_interface_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_queries.dart';
@@ -14,6 +15,7 @@ import 'package:retrofit_graphql/src/model/gq_token.dart';
 import 'package:retrofit_graphql/src/model/gq_token_with_fields.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
 import 'package:retrofit_graphql/src/model/token_info.dart';
+import 'package:retrofit_graphql/src/serializers/annotation_serializer.dart';
 import 'package:retrofit_graphql/src/serializers/java_serializer.dart';
 import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/serializers/language.dart';
@@ -42,6 +44,15 @@ class SpringServerSerializer {
                 typesCheckForNulls: grammar.mode == CodeGenerationMode.client) {
     _annotateRepositories();
     _annotateControllers();
+    grammar.convertAnnotationsToDecorators(_getControllerMixins(),
+        (val) => AnnotationSerializer.serializeAnnotation(val, multiLineString: false));
+  }
+
+  List<GQDirectivesMixin> _getControllerMixins() {
+    var ctrlList = grammar.controllers.values.toList();
+    var fields = ctrlList.expand((ctrl) => ctrl.fields);
+    var args = fields.expand((e) => e.arguments);
+    return [...ctrlList, ...fields, ...args];
   }
 
   List<String> serializeServices(String importPrefix) {
@@ -62,21 +73,12 @@ class SpringServerSerializer {
 
   void _annotateControllers() {
     for (var ctrl in grammar.controllers.values) {
+      ctrl.addDirective(_createControllerDirective());
       for (var method in ctrl.fields) {
-        var annotations =
-            method.getDirectives().where((d) => d.getArgValue(gqAnnotation) == true).toList();
-        if (annotations.isNotEmpty) {
-          for (var an in annotations) {
-            String? import = an.getArgValueAsString(gqImport);
-            var dec = GQDirectiveValue.createGqDecorators(
-                decorators: [serializer.serializeAnnotation(an)],
-                applyOnClient: false,
-                import: import);
-            if (import != null) {
-              ctrl.addImport(import);
-            }
-            method.addDirective(dec);
-          }
+        var queryType = ctrl.getTypeByFieldName(method.name.token)!;
+        method.addDirective(_createResolverDirective(queryType));
+        for (var arg in method.arguments) {
+          arg.addDirective(_createArgumentDirective());
         }
       }
     }
@@ -91,13 +93,13 @@ class SpringServerSerializer {
     final controllerName = ctrl.token;
     final sericeInstanceName = ctrl.serviceName.firstLow;
 
-    ctrl.addImport(SpringImports.controller);
     if (ctrl.fields.isNotEmpty && injectDataFetching) {
       ctrl.addImport(SpringImports.gqlDataFetchingEnvironment);
     }
+    var decorators = serializer.serializeDecorators(ctrl.getDirectives()).trim();
 
     var buffer = StringBuffer();
-    buffer.writeln("@Controller");
+    buffer.writeln(decorators);
     buffer.writeln(codeGenUtils.createClass(className: controllerName, statements: [
       'private final ${ctrl.serviceName} $sericeInstanceName;',
       '',
@@ -127,18 +129,19 @@ class SpringServerSerializer {
   String serializehandlerMethod(
       GQQueryType type, GQField method, String sericeInstanceName, GQToken context,
       {String? qualifier}) {
-    final decorators = serializer.serializeDecorators(method.getDirectives());
+    final decorators = serializer.serializeDecorators(method.getDirectives()).trim();
     var buffer = StringBuffer();
-    buffer.writeln(getAnnotationByShcemaType(type, context));
     if (decorators.isNotEmpty) {
       buffer.writeln(decorators);
     }
-    var args = method.arguments
-        .map((arg) => "@Argument ${serializer.serializeType(arg.type, false)} ${arg.token}")
-        .toList();
-    if (args.isNotEmpty) {
-      context.addImport(SpringImports.gqlArgument);
-    }
+    var args = method.arguments.map((arg) {
+      var argDecorators = serializer.serializeDecorators(arg.getDirectives()).trim();
+      if (argDecorators.isNotEmpty) {
+        return "$argDecorators ${serializer.serializeType(arg.type, false)} ${arg.token}";
+      }
+      return "${serializer.serializeType(arg.type, false)} ${arg.token}";
+    }).toList();
+
     if (injectDataFetching) {
       args.add("DataFetchingEnvironment dataFetchingEnvironment");
     }
@@ -425,24 +428,64 @@ Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(serializer.se
     return buffer.toString();
   }
 
-  String getAnnotationByShcemaType(GQQueryType queryType, GQToken context) {
-    String result;
-    String import;
+  GQDirectiveValue _createResolverDirective(GQQueryType type) {
+    return GQDirectiveValue(
+        "_gqMapping".toToken(),
+        [],
+        [
+          GQArgumentValue(gqAnnotation.toToken(), true),
+          GQArgumentValue(gqClass.toToken(), _toMappingAnnotationValue(type)),
+          GQArgumentValue(gqImport.toToken(), _toMappingAnnotationImport(type)),
+          GQArgumentValue(gqOnServer.toToken(), true),
+        ],
+        generated: true);
+  }
+
+  GQDirectiveValue _createControllerDirective() {
+    return GQDirectiveValue(
+        "_gqController".toToken(),
+        [],
+        [
+          GQArgumentValue(gqAnnotation.toToken(), true),
+          GQArgumentValue(gqClass.toToken(), "@Controller"),
+          GQArgumentValue(gqImport.toToken(), SpringImports.controller),
+          GQArgumentValue(gqOnServer.toToken(), true),
+        ],
+        generated: true);
+  }
+
+  GQDirectiveValue _createArgumentDirective() {
+    return GQDirectiveValue(
+        "_gqController".toToken(),
+        [],
+        [
+          GQArgumentValue(gqAnnotation.toToken(), true),
+          GQArgumentValue(gqClass.toToken(), "@Argument"),
+          GQArgumentValue(gqImport.toToken(), SpringImports.gqlArgument),
+          GQArgumentValue(gqOnServer.toToken(), true),
+        ],
+        generated: true);
+  }
+
+  String _toMappingAnnotationValue(GQQueryType queryType) {
     switch (queryType) {
       case GQQueryType.query:
-        result = "QueryMapping";
-        import = SpringImports.queryMapping;
-        break;
+        return "@QueryMapping";
       case GQQueryType.mutation:
-        result = "MutationMapping";
-        import = SpringImports.mutationMapping;
-        break;
+        return "@MutationMapping";
       case GQQueryType.subscription:
-        result = "SubscriptionMapping";
-        import = SpringImports.subscriptionMapping;
-        break;
+        return "@SubscriptionMapping";
     }
-    context.addImport(import);
-    return "@${result}";
+  }
+
+  String _toMappingAnnotationImport(GQQueryType queryType) {
+    switch (queryType) {
+      case GQQueryType.query:
+        return SpringImports.queryMapping;
+      case GQQueryType.mutation:
+        return SpringImports.mutationMapping;
+      case GQQueryType.subscription:
+        return SpringImports.subscriptionMapping;
+    }
   }
 }

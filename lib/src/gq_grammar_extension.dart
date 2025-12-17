@@ -14,6 +14,7 @@ import 'package:retrofit_graphql/src/model/gq_enum_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_fragment.dart';
 import 'package:retrofit_graphql/src/model/gq_interface_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
+import 'package:retrofit_graphql/src/model/gq_token_with_fields.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
 import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_queries.dart';
@@ -53,37 +54,44 @@ extension GQGrammarExtension on GQGrammar {
     return token;
   }
 
+  void convertAnnotationsToDecorators(
+      List<GQDirectivesMixin> mixins, String Function(GQDirectiveValue value) serializer) {
+    for (var elm in mixins) {
+      elm
+          .getAnnotations(mode: mode)
+          .map(
+            (an) => GQDirectiveValue.createGqDecorators(
+                decorators: [serializer(an)],
+                applyOnClient: mode == CodeGenerationMode.client,
+                applyOnServer: mode == CodeGenerationMode.server,
+                import: an.getArgValueAsString(gqImport)),
+          )
+          .forEach(elm.addDirective);
+    }
+  }
+
   void handleAnnotations(String Function(GQDirectiveValue value) serializer) {
     if (annotationsProcessed) {
       return;
     }
     annotationsProcessed = true;
-    _getDirectiveObjects().forEach((elm) {
-      elm
-          .getAnnotations(mode: mode)
-          .map((an) => GQDirectiveValue.createGqDecorators(
-                decorators: [serializer(an)],
-                applyOnClient: mode == CodeGenerationMode.client,
-                applyOnServer: mode == CodeGenerationMode.server,
-              ))
-          .forEach(elm.addDirective);
-    });
+    convertAnnotationsToDecorators(_getDirectiveObjects(), serializer);
   }
 
   List<GQDirectivesMixin> _getDirectiveObjects() {
     var result = [
       ...inputs.values,
-      ...types.values,
+      ...typesWithNoResolvers,
       ...interfaces.values,
       ...scalars.values,
       ...enums.values,
-      ...repositories.values
+      ...repositories.values,
     ].map((f) => f as GQDirectivesMixin).toList();
 
     var inputFields = inputs.values.expand((e) => e.fields);
     var interfaceFields = interfaces.values.expand((e) => e.fields);
     var repositoryFields = repositories.values.expand((e) => e.fields);
-    var typeFields = types.values.expand((e) => e.fields);
+    var typeFields = typesWithNoResolvers.expand((e) => e.fields);
     var enumValues = enums.values.expand((e) => e.values);
     result.addAll([
       ...inputFields,
@@ -122,11 +130,12 @@ extension GQGrammarExtension on GQGrammar {
   }
 
   List<GQTypeDefinition> getSerializableTypes() {
+    return typesWithNoResolvers.where(_filterByMode).toList();
+  }
+
+  List<GQTypeDefinition> get typesWithNoResolvers {
     final queries = GQQueryType.values.map((t) => schema.getByQueryType(t)).toSet();
-    return types.values
-        .where((type) => !queries.contains(type.token))
-        .where(_filterByMode)
-        .toList();
+    return types.values.where((type) => !queries.contains(type.token)).toList();
   }
 
   List<GQInputDefinition> getSerializableInputs() {
@@ -326,7 +335,7 @@ extension GQGrammarExtension on GQGrammar {
   String serviceMappingName(String type) => "${type}SchemaMappingsService";
   String controllerMappingName(String type) => "${type}SchemaMappingsController";
 
-  void setDirectivesDefaulValues() {
+  void setDirectivesDefaultValues() {
     var values = [...directiveValues];
     for (var value in values) {
       var def = directiveDefinitions[value.token];
@@ -334,6 +343,52 @@ extension GQGrammarExtension on GQGrammar {
         value.setDefualtArguments(def.arguments);
       }
     }
+  }
+
+  void proparageAnnotationsOnFields() {
+    extensibleTokens.values
+        .expand((e) => e.data)
+        .whereType<GQTokenWithFields>()
+        .forEach(_propagateAnnotations);
+  }
+
+  void mergeTokens() {
+    List<GQExtensibleToken> tokens = [
+      ...scalars.values,
+      ...enums.values,
+      ...inputs.values,
+      ...types.values,
+      ...interfaces.values,
+      ...unions.values
+    ];
+    for (var token in tokens) {
+      var list = extensibleTokens[token.token];
+      if (list != null) {
+        list.data.where((e) => e != token).forEach((e) {
+          token.merge(e);
+        });
+      }
+    }
+  }
+
+  void _propagateAnnotations(GQTokenWithFields tokenWithFields) {
+    if (tokenWithFields is! GQDirectivesMixin) {
+      return;
+    }
+    var mixin = tokenWithFields as GQDirectivesMixin;
+
+    var annotations = mixin
+        .getDirectives()
+        .where((d) => d.getArgValueAsBool(gqAnnotation) && d.getArgValueAsBool(gqApplyOnFields))
+        .toList();
+    if (annotations.isEmpty) {
+      return;
+    }
+    for (var field in tokenWithFields.fields) {
+      annotations.forEach(field.addDirectiveIfAbsent);
+    }
+    // remove directives from the super class.
+    annotations.map((e) => e.token).forEach(mixin.removeDirectiveByName);
   }
 
   void convertUnionsToInterfaces() {
@@ -346,7 +401,7 @@ extension GQGrammarExtension on GQGrammar {
         directives: [],
         interfaceNames: {},
         fromUnion: true,
-        extension: false,
+        extension: true,
       );
       addInterfaceDefinition(interfaceDef);
 
@@ -713,13 +768,8 @@ extension GQGrammarExtension on GQGrammar {
   List<GQTypeDefinition> findSimilarTo(GQTypeDefinition definition) {
     var store = definition is GQInterfaceDefinition
         ? [...projectedInterfaces.values, ...interfaces.values]
-        : [...projectedTypes.values, ...types.values];
-    var queryTypeNames = GQQueryType.values.map((t) => schema.getByQueryType(t)).toSet();
-    return store
-        .where((element) => element.isSimilarTo(definition, this))
-        //filter out the Query, Mutation, Subscription
-        .where((e) => !queryTypeNames.contains(e.token))
-        .toList();
+        : [...projectedTypes.values, ...typesWithNoResolvers];
+    return store.where((element) => element.isSimilarTo(definition, this)).toList();
   }
 
   String getUniqueName(Iterable<GQProjection> projections) {
@@ -1030,10 +1080,10 @@ extension GQGrammarExtension on GQGrammar {
         .where((d) {
           switch (mode) {
             case CodeGenerationMode.client:
-              return d.getArguments().where((arg) => arg.token == "applyOnClient").first.value
+              return d.getArguments().where((arg) => arg.token == gqApplyOnClient).first.value
                   as bool;
             case CodeGenerationMode.server:
-              return d.getArguments().where((arg) => arg.token == "applyOnServer").first.value
+              return d.getArguments().where((arg) => arg.token == gqApplyOnServer).first.value
                   as bool;
           }
         })

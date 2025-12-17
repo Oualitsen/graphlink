@@ -35,11 +35,14 @@ abstract class GQTokenWithFields extends GQExtensibleToken {
   void addOrMergeField(GQField field) {
     if (_fieldMap.containsKey(field.name.token)) {
       var current = _fieldMap[field.name.token]!;
+      current.checkMerge(field);
       field.getDirectives().forEach(current.addDirective);
     } else {
       addField(field);
     }
   }
+
+  void checkFields(GQField oroginal, GQField newField) {}
 
   bool hasField(String name) {
     return fieldNames.contains(name);

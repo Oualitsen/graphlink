@@ -1,3 +1,4 @@
+import 'package:retrofit_graphql/src/constants.dart';
 import 'package:retrofit_graphql/src/extensions.dart';
 import 'package:retrofit_graphql/src/model/gq_argument.dart';
 import 'package:retrofit_graphql/src/model/gq_token.dart';
@@ -65,7 +66,8 @@ class GQDirectiveValue extends GQToken {
   ///
   final bool generated;
 
-  GQDirectiveValue(super.tokenInfo, this.locations, List<GQArgumentValue> arguments, {required this.generated}) {
+  GQDirectiveValue(super.tokenInfo, this.locations, List<GQArgumentValue> arguments,
+      {required this.generated}) {
     _addArgument(arguments);
   }
 
@@ -93,6 +95,14 @@ class GQDirectiveValue extends GQToken {
     return arg?.value;
   }
 
+  bool getArgValueAsBool(String name) {
+    var arg = getArgValue(name);
+    if (arg == null) {
+      return false;
+    }
+    return arg is bool ? arg : false;
+  }
+
   String? getArgValueAsString(String name) {
     var value = getArgValue(name);
     if (value == null) {
@@ -114,7 +124,9 @@ class GQDirectiveValue extends GQToken {
   }
 
   static GQDirectiveValue createDirectiveValue(
-      {required String directiveName, required bool generated, List<GQArgumentValue> args = const []}) {
+      {required String directiveName,
+      required bool generated,
+      List<GQArgumentValue> args = const []}) {
     return GQDirectiveValue(TokenInfo.ofString(directiveName), [], args, generated: generated);
   }
 
@@ -129,8 +141,8 @@ class GQDirectiveValue extends GQToken {
         [],
         [
           GQArgumentValue(TokenInfo.ofString("value"), decorators.map((s) => '"$s"').toList()),
-          GQArgumentValue(TokenInfo.ofString("applyOnServer"), applyOnServer),
-          GQArgumentValue(TokenInfo.ofString("applyOnClient"), applyOnClient),
+          GQArgumentValue(TokenInfo.ofString(gqApplyOnServer), applyOnServer),
+          GQArgumentValue(TokenInfo.ofString(gqApplyOnClient), applyOnClient),
           if (import != null) GQArgumentValue(TokenInfo.ofString(gqImport), import),
         ],
         generated: true);

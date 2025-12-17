@@ -16,7 +16,7 @@ class AnnotationSerializer {
           "Cannot serialze annotation ${value.tokenInfo} with argment ${gqClass} = ${value.getArgValue(gqClass)}",
           info: value.tokenInfo);
     }
-    const skip = [gqClass, gqAnnotation, gqOnClient, gqOnServer, gqImport];
+    const skip = [gqClass, gqAnnotation, gqOnClient, gqOnServer, gqImport, gqApplyOnFields];
     var args = value.getArguments().where((arg) => !skip.contains(arg.token)).map((arg) {
       var argValue = arg.value;
       if (argValue is String && !multiLineString) {

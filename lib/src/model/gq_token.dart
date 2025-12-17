@@ -25,12 +25,21 @@ abstract class GQToken {
 
 abstract class GQExtensibleToken extends GQToken {
   final bool extension;
+  GQExtensibleToken(super.tokenInfo, this.extension);
+
+  void merge<T extends GQExtensibleToken>(T other);
+}
+
+class GQExtensibleTokenList {
+  final List<GQExtensibleToken> _data = [];
   bool parsedOriginal = false;
-  GQExtensibleToken(super.tokenInfo, this.extension) {
-    if (!extension) {
+
+  void addToken(GQExtensibleToken token) {
+    _data.add(token);
+    if (!token.extension) {
       parsedOriginal = true;
     }
   }
 
-  void merge<T extends GQExtensibleToken>(T other);
+  List<GQExtensibleToken> get data => List.unmodifiable(_data);
 }

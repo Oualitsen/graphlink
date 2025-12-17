@@ -251,10 +251,11 @@ extension GqValidationExtension on GQGrammar {
 
   bool checkExtensionToken(
       GQExtensibleToken token, String key, Map<String, GQExtensibleToken> map) {
-    if (token.extension) {
+    if (token.extension || !extensibleTokens.containsKey(key)) {
       return false;
     }
-    return map.containsKey(key) && map[key]!.parsedOriginal;
+    // token is not an extension
+    return extensibleTokens[key]!.parsedOriginal;
   }
 
   void checkSacalarDefinition(GQScalarDefinition scalar) {
@@ -278,6 +279,10 @@ extension GqValidationExtension on GQGrammar {
   }
 
   void checkTypeDefinition(GQTypeDefinition type) {
+    var queryTypes = GQQueryType.values.map((e) => schema.getByQueryType(e)).toList();
+    if (queryTypes.contains(type.token)) {
+      return;
+    }
     if (checkExtensionToken(type, type.token, types)) {
       throw ParseException("Type ${type.tokenInfo} has already been declared",
           info: type.tokenInfo);
@@ -314,15 +319,23 @@ extension GqValidationExtension on GQGrammar {
   }
 
   void _addOrMerge(GQExtensibleToken token, String key, Map<String, GQExtensibleToken> map) {
-    var current = map[key];
-    if (current != null) {
-      current.merge(token);
-      if (!token.extension) {
-        current.parsedOriginal = true;
-      }
-    } else {
+    /// if not found in map, then add it!
+    /// if the currently found in map is an extension and key is not an extension then add it,
+    /// the goal here is to keep in map only non extension token when possible.
+
+    if (!map.containsKey(key) || (!token.extension && !map[key]!.extension)) {
       map[key] = token;
     }
+    _addExtensibleToken(token);
+  }
+
+  void _addExtensibleToken(GQExtensibleToken token) {
+    var list = extensibleTokens[token.token];
+    if (list == null) {
+      list = GQExtensibleTokenList();
+      extensibleTokens[token.token] = list;
+    }
+    list.addToken(token);
   }
 
   void addDirectiveDefinition(GQDirectiveDefinition directive) {
@@ -346,21 +359,8 @@ extension GqValidationExtension on GQGrammar {
   }
 
   void addTypeDefinition(GQTypeDefinition type) {
-    var queryTypes = GQQueryType.values.map((e) => schema.getByQueryType(e)).toList();
-    if (queryTypes.contains(type.token)) {
-      if (types.containsKey(type.token)) {
-        merge(getType(type.tokenInfo), type);
-        return;
-      }
-    }
     checkTypeDefinition(type);
     _addOrMerge(type, type.token, types);
-  }
-
-  static void merge(GQTypeDefinition dest, GQTypeDefinition orig) {
-    for (var field in orig.fields) {
-      dest.addField(field);
-    }
   }
 
   void addInterfaceDefinition(GQInterfaceDefinition interface) {

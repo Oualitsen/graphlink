@@ -15,6 +15,7 @@ import 'package:retrofit_graphql/src/model/gq_directive.dart';
 import 'package:retrofit_graphql/src/model/gq_field.dart';
 import 'package:retrofit_graphql/src/model/gq_interface_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_shcema_mapping.dart';
+import 'package:retrofit_graphql/src/model/gq_token.dart';
 import 'package:retrofit_graphql/src/model/gq_type.dart';
 import 'package:retrofit_graphql/src/model/gq_input_definition.dart';
 import 'package:retrofit_graphql/src/model/gq_fragment.dart';
@@ -119,6 +120,8 @@ class GQGrammar extends GrammarDefinition {
   final Map<String, GQService> services = {};
   final Map<String, GQController> controllers = {};
   final Map<String, GQTypeView> views = {};
+
+  final Map<String, GQExtensibleTokenList> extensibleTokens = {};
 
   final List<GQDirectiveValue> directiveValues = [];
 
@@ -259,7 +262,9 @@ class GQGrammar extends GrammarDefinition {
     validateTypeReferences();
     convertUnionsToInterfaces();
     fillInterfaceImplementations();
-    setDirectivesDefaulValues();
+    setDirectivesDefaultValues();
+    proparageAnnotationsOnFields();
+    mergeTokens();
     updateInterfaceReferences();
     checkInterfaceInheritance();
     skipFieldOfSkipOnServerTypes();

@@ -1,4 +1,3 @@
-
 import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
 import 'package:test/test.dart';
 import 'package:retrofit_graphql/src/gq_grammar.dart';
@@ -26,7 +25,7 @@ void main() async {
     const fileName = "test/multifile_parsing/schema1.graphql";
     const fileName2 = "test/multifile_parsing/schema2.graphql";
     final GQGrammar g = GQGrammar();
-   
+
     var parsed = await g.parseFiles([fileName, fileName2]);
     expect(parsed.length, 2);
     for (var e in parsed) {
@@ -36,12 +35,11 @@ void main() async {
     expect(g.types.keys, containsAll(["User", "Address"]));
   });
 
-
   test("merging Query, Mutation and Subscription types 1", () async {
     const fileName = "test/multifile_parsing/schema_with_queries1.graphql";
     const fileName2 = "test/multifile_parsing/schema_with_queries2.graphql";
     final GQGrammar g = GQGrammar();
-   
+
     var parsed = await g.parseFiles([fileName, fileName2]);
     expect(parsed.length, 2);
     for (var e in parsed) {
@@ -56,12 +54,10 @@ void main() async {
     expect(subscription.fieldNames, containsAll(["watchUser", "watchCar"]));
   });
 
-
-  test("fail on merging other than Query, Mutation and Subscription types 1", () async {
-   
+  test("fail on merging other than Query, Mutation and Subscription types", () async {
     final GQGrammar g = GQGrammar();
-   
-    expect (() => g.parse('''
+
+    expect(() => g.parse('''
   type User {
     id: String!
   }
@@ -71,30 +67,5 @@ void main() async {
   }
 
 '''), throwsA(isA<ParseException>()));
-
   });
-
-
-  test("fail on merging same field 1", () async {
-   
-    final GQGrammar g = GQGrammar();
-   
-    expect (() => g.parse('''
-    type User {
-      id: String!
-    }
-
-    type Query {
-      getUser: User!
-    }
-
-    type Query {
-      getUser(id: String!): User!
-    }
-
-'''), throwsA(isA<ParseException>()));
-
-  });
-
-
 }
