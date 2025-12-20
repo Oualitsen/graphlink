@@ -44,4 +44,13 @@ void main() {
     ''');
     expect(result is Success, true);
   });
+
+  test("Directive definition repeatable test", () {
+    var parser = g.buildFrom(g.directiveDefinition().end());
+    var result = parser.parse('''
+    directive @gqDecorator(value: String) repeatable on  OBJECT | INPUT_OBJECT| FIELD_DEFINITION | FIELD
+    ''');
+    expect(result is Success, true);
+    expect(result.value.repeatable, true);
+  });
 }

@@ -70,11 +70,13 @@ class GQGrammar extends GrammarDefinition {
       includeDirective.toToken(),
       [GQArgumentDefinition("if".toToken(), GQType("Boolean".toToken(), false), [])],
       {GQDirectiveScope.FIELD},
+      false,
     ),
     skipDirective: GQDirectiveDefinition(
       skipDirective.toToken(),
       [GQArgumentDefinition("if".toToken(), GQType("Boolean".toToken(), false), [])],
       {GQDirectiveScope.FIELD},
+      false,
     ),
     gqTypeNameDirective: GQDirectiveDefinition(
       gqTypeNameDirective.toToken(),
@@ -89,6 +91,7 @@ class GQGrammar extends GrammarDefinition {
         GQDirectiveScope.MUTATION,
         GQDirectiveScope.SUBSCRIPTION,
       },
+      false,
     ),
     gqEqualsHashcode: GQDirectiveDefinition(
       gqEqualsHashcode.toToken(),
@@ -97,6 +100,7 @@ class GQGrammar extends GrammarDefinition {
             gqEqualsHashcodeArgumentName.toToken(), GQType("[String]".toToken(), false), [])
       ],
       {GQDirectiveScope.OBJECT},
+      false,
     ),
   };
 
@@ -353,6 +357,7 @@ class GQGrammar extends GrammarDefinition {
   Parser<String> implementsKw() => "implements".toParser();
   Parser<String> extendsKw() => "extends".toParser(); // optional in some tools
   Parser<String> directiveKw() => "directive".toParser();
+  Parser<String> repeatableKw() => "repeatable".toParser();
   Parser<String> onKw() => "on".toParser();
   Parser<String> trueKw() => "true".toParser();
   Parser<String> falseKw() => "false".toParser();
@@ -544,14 +549,16 @@ class GQGrammar extends GrammarDefinition {
         return token.ofNewName("@${token.token}");
       });
 
-  Parser<GQDirectiveDefinition> directiveDefinition() => seq3(
+  Parser<GQDirectiveDefinition> directiveDefinition() => seq4(
               seq2(
                 ref1(token, directiveKw()),
                 directiveValueName(),
               ).map2((_, name) => name),
               arguments().optional(),
+              ref1(token, repeatableKw()).optional(),
               seq2(ref1(token, onKw()), ref1(token, directiveScopes())).map2((_, scopes) => scopes))
-          .map3((name, args, scopes) => GQDirectiveDefinition(name, args ?? [], scopes))
+          .map4((name, args, repeatable, scopes) =>
+              GQDirectiveDefinition(name, args ?? [], scopes, repeatable != null))
           .map((definition) {
         addDirectiveDefinition(definition);
         return definition;

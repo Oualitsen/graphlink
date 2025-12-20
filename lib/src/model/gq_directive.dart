@@ -9,8 +9,9 @@ class GQDirectiveDefinition {
   final TokenInfo name;
   final List<GQArgumentDefinition> arguments;
   final Set<GQDirectiveScope> scopes;
+  final bool repeatable;
 
-  GQDirectiveDefinition(this.name, this.arguments, this.scopes);
+  GQDirectiveDefinition(this.name, this.arguments, this.scopes, this.repeatable);
 }
 
 enum GQDirectiveScope {
