@@ -926,4 +926,29 @@ type Query {
     var basicEntitySerial = serializer.serializeTypeDefinition(basicEntity, 'com.myorg');
     expect(basicEntitySerial, stringContainsInOrder(['import java.util.Map;']));
   });
+
+  test("controller must import @Argument", () {
+    final GQGrammar g = GQGrammar(mode: CodeGenerationMode.server);
+
+    var parsed = g.parse('''
+  ${getClientObjects()}
+  
+
+  type Person  {
+    name: String!
+    age: Int!
+  }
+
+  type Query {
+    getPersonById(id: String!): Person! @gqServiceName(name: "PersonService")
+  }
+  
+''');
+    expect(parsed is Success, true);
+    var serializer = SpringServerSerializer(g, injectDataFetching: true);
+    var controller = g.controllers["PersonServiceController"]!;
+    var serial = serializer.serializeController(controller, "com.myorg");
+    print(serial);
+    expect(controller.getImports(g), contains(SpringImports.gqlArgument));
+  });
 }

@@ -158,6 +158,7 @@ abstract class GQTokenWithFields extends GQExtensibleToken {
           if (arg.type.isList) {
             result.add(importList);
           }
+          result.addAll(extractImports(arg as GQDirectivesMixin, g.mode, skipOwnImports: false));
           var argToken = g.getTokenByKey(arg.type.token);
           if (argToken != null && argToken is GQDirectivesMixin) {
             result.addAll(
