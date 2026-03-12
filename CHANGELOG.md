@@ -55,3 +55,50 @@
 
 ## 3.1.0 - 2025-05-21
     - Generates all implemented interfaces
+
+## 4.0.0 - 2026-03-12
+  ### Java / Spring Boot code generation
+  - Generates Java types, inputs, enums with `toJson`/`fromJson` methods
+  - Generates Java client serializer
+  - Generates Spring for GraphQL controllers and service interfaces
+  - Generates repository interfaces (`@gqRepository`)
+  - Generates null checks on inputs and types
+  - Generates Java records support
+  - Generates annotations on controllers
+  - Validates backend inputs (`@gqValidateInput`)
+  - Injects data-fetching on mappings
+  - Generates schema mappings (identity, refactored)
+
+  ### Dart code generation
+  - Generates `toJson`/`fromJson` without `json_serializable` dependency
+  - Generates Flutter UI views (optional, `noUi: true` to disable)
+  - Projected interfaces support
+  - Fixes response generation for single-element queries
+
+  ### New directives
+  - `@gqDecorators` — attach decorators to generated classes
+  - `@gqSkipOnServer` / `@gqSkipOnClient` — skip fields/types per target
+  - `@gqArray` — serialize GraphQL lists as arrays (Java)
+  - `@gqInternal` — skip internal objects from processing
+  - `@gqExternal` — mark external types
+  - `extend` keyword support
+  - `repeatable` keyword support for directives
+  - Directives can now apply to fields
+
+  ### CLI & tooling
+  - CLI configuration support
+  - Watch-files mode
+  - Wildcard filename support
+  - Handle multiple input files
+  - Jenkins CI file added
+
+  ### Other improvements & fixes
+  - Removes `isScalar` from `GqType`
+  - Schema generation support
+  - Annotation serialization on controllers
+  - Interface directive inheritance
+  - `all_fields` projection skips `@gqSkipOnClient` fields
+  - Wildcard maps/lists instead of `List<Object>` / `Map<Object, Object>`
+  - Java primitives auto-boxed when nullable
+  - Multiple subscription fixes
+  - Various import and serialization bug fixes
