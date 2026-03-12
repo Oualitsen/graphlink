@@ -1,13 +1,13 @@
-import 'package:retrofit_graphql/src/code_gen_utils.dart';
-import 'package:retrofit_graphql/src/constants.dart';
-import 'package:retrofit_graphql/src/extensions.dart';
-import 'package:retrofit_graphql/src/gq_grammar.dart';
-import 'package:retrofit_graphql/src/model/gq_queries.dart';
-import 'package:retrofit_graphql/src/model/gq_token.dart';
-import 'package:retrofit_graphql/src/model/gq_type.dart';
-import 'package:retrofit_graphql/src/serializers/gq_client_serilaizer.dart';
-import 'package:retrofit_graphql/src/serializers/gq_serializer.dart';
-import 'package:retrofit_graphql/src/serializers/graphq_serializer.dart';
+import 'package:graphlink/src/code_gen_utils.dart';
+import 'package:graphlink/src/constants.dart';
+import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/model/gq_queries.dart';
+import 'package:graphlink/src/model/gq_token.dart';
+import 'package:graphlink/src/model/gq_type.dart';
+import 'package:graphlink/src/serializers/gq_client_serilaizer.dart';
+import 'package:graphlink/src/serializers/gq_serializer.dart';
+import 'package:graphlink/src/serializers/graphq_serializer.dart';
 
 const clientName = 'GQClient';
 const clientExceptionName = 'GQException';

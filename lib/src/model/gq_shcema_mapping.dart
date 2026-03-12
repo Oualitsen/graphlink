@@ -1,6 +1,6 @@
-import 'package:retrofit_graphql/src/model/gq_field.dart';
-import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
-import 'package:retrofit_graphql/src/extensions.dart';
+import 'package:graphlink/src/model/gq_field.dart';
+import 'package:graphlink/src/model/gq_type_definition.dart';
+import 'package:graphlink/src/extensions.dart';
 
 class GQSchemaMapping {
   final GQTypeDefinition type;

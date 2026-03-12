@@ -3,25 +3,25 @@ import 'dart:io';
 
 import 'package:glob/glob.dart';
 import 'package:glob/list_local_fs.dart';
-import 'package:retrofit_graphql/src/config.dart';
-import 'package:retrofit_graphql/src/constants.dart';
-import 'package:retrofit_graphql/src/gq_grammar.dart';
-import 'package:retrofit_graphql/src/io_utils.dart';
-import 'package:retrofit_graphql/src/model/gq_interface_definition.dart';
-import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
-import 'package:retrofit_graphql/src/serializers/client_serializers/dart_client_serializer.dart';
-import 'package:retrofit_graphql/src/serializers/client_serializers/java_client_serializer.dart';
-import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
-import 'package:retrofit_graphql/src/serializers/flutter_type_widget_serializer.dart';
-import 'package:retrofit_graphql/src/serializers/graphq_serializer.dart';
-import 'package:retrofit_graphql/src/serializers/java_serializer.dart';
-import 'package:retrofit_graphql/src/serializers/language.dart';
+import 'package:graphlink/src/config.dart';
+import 'package:graphlink/src/constants.dart';
+import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/io_utils.dart';
+import 'package:graphlink/src/model/gq_interface_definition.dart';
+import 'package:graphlink/src/model/gq_type_definition.dart';
+import 'package:graphlink/src/serializers/client_serializers/dart_client_serializer.dart';
+import 'package:graphlink/src/serializers/client_serializers/java_client_serializer.dart';
+import 'package:graphlink/src/serializers/dart_serializer.dart';
+import 'package:graphlink/src/serializers/flutter_type_widget_serializer.dart';
+import 'package:graphlink/src/serializers/graphq_serializer.dart';
+import 'package:graphlink/src/serializers/java_serializer.dart';
+import 'package:graphlink/src/serializers/language.dart';
 import 'package:petitparser/petitparser.dart';
-import 'package:retrofit_graphql/src/serializers/spring_server_serializer.dart';
+import 'package:graphlink/src/serializers/spring_server_serializer.dart';
 import 'package:args/args.dart';
 import 'dart:convert';
 
-import 'package:retrofit_graphql/src/utils.dart';
+import 'package:graphlink/src/utils.dart';
 
 Future<void> main(List<String> arguments) async {
   final parser = ArgParser()
@@ -49,7 +49,7 @@ Future<void> main(List<String> arguments) async {
 
   if (args['help'] as bool) {
     stdout.write('''
-Usage: gqlcodegen [options]
+Usage: glink [options]
 
 Options:
 ${parser.usage}
@@ -60,7 +60,7 @@ ${parser.usage}
   final configPath = args['config'] as String?;
   if (configPath == null) {
     stdout.write('''
-Usage: gqlcodegen generate [options]
+Usage: glink generate [options]
 
 Options:
 ${parser.usage}

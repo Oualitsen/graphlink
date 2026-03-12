@@ -1,7 +1,7 @@
-import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
-import 'package:retrofit_graphql/src/model/gq_directive.dart';
-import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
-import 'package:retrofit_graphql/src/serializers/language.dart';
+import 'package:graphlink/src/excpetions/parse_exception.dart';
+import 'package:graphlink/src/model/gq_directive.dart';
+import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+import 'package:graphlink/src/serializers/language.dart';
 
 mixin GQDirectivesMixin {
   List<GQDirectiveValue> getDirectives({bool skipGenerated = false}) {

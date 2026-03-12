@@ -1,9 +1,9 @@
-import 'package:retrofit_graphql/src/constants.dart';
-import 'package:retrofit_graphql/src/extensions.dart';
-import 'package:retrofit_graphql/src/model/gq_argument.dart';
-import 'package:retrofit_graphql/src/model/gq_token.dart';
-import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
-import 'package:retrofit_graphql/src/model/token_info.dart';
+import 'package:graphlink/src/constants.dart';
+import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/model/gq_argument.dart';
+import 'package:graphlink/src/model/gq_token.dart';
+import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+import 'package:graphlink/src/model/token_info.dart';
 
 class GQDirectiveDefinition {
   final TokenInfo name;

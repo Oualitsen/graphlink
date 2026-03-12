@@ -1,7 +1,7 @@
 targets:
-  retrofit_graphql:
+  graphlink:
     builders:
-      retrofit_graphql|aggregatingBuilder:
+      graphlink|aggregatingBuilder:
         enabled: true
         generate_for:
           include:
@@ -13,8 +13,8 @@ targets:
 
 builders:
   aggregatingBuilder:
-    import: 'package:retrofit_graphql/code_generators.dart'
-    builder_factories: ['retrofitGraphqlGeneratorBuilder']
+    import: 'package:graphlink/code_generators.dart'
+    builder_factories: ['graphlinkGeneratorBuilder']
     build_extensions:
       .graphql:
         - .gq.dart

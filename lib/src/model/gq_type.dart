@@ -1,5 +1,5 @@
-import 'package:retrofit_graphql/src/model/gq_token.dart';
-import 'package:retrofit_graphql/src/model/token_info.dart';
+import 'package:graphlink/src/model/gq_token.dart';
+import 'package:graphlink/src/model/token_info.dart';
 
 class GQType extends GQToken {
   final bool nullable;

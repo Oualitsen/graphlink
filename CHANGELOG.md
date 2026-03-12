@@ -56,6 +56,10 @@
 ## 3.1.0 - 2025-05-21
     - Generates all implemented interfaces
 
+## 4.1.0 - 2026-03-12
+  - Project renamed to **GraphLink** (package: `graphlink`, CLI: `glink`)
+  - Migrating from `retrofit_graphql`: update your `pubspec.yaml` and `build.yaml` references from `retrofit_graphql` to `graphlink`
+
 ## 4.0.0 - 2026-03-12
   ### Java / Spring Boot code generation
   - Generates Java types, inputs, enums with `toJson`/`fromJson` methods

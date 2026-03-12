@@ -1,5 +1,5 @@
 import 'dart:core';
-import 'package:retrofit_graphql/src/model/token_info.dart';
+import 'package:graphlink/src/model/token_info.dart';
 
 class ParseException {
   final String message;

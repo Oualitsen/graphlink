@@ -1,7 +1,7 @@
-import 'package:retrofit_graphql/src/gq_grammar.dart';
-import 'package:retrofit_graphql/src/model/gq_token.dart';
-import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
-import 'package:retrofit_graphql/src/utils.dart';
+import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/model/gq_token.dart';
+import 'package:graphlink/src/model/gq_type_definition.dart';
+import 'package:graphlink/src/utils.dart';
 
 class GQTypeView extends GQToken {
   final GQTypeDefinition type;

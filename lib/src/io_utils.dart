@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:retrofit_graphql/src/constants.dart';
+import 'package:graphlink/src/constants.dart';
 
 Future<File> saveSource({
   required String data,

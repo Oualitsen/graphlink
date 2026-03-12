@@ -1,7 +1,7 @@
-import 'package:retrofit_graphql/src/model/gq_directive.dart';
-import 'package:retrofit_graphql/src/model/gq_directives_mixin.dart';
-import 'package:retrofit_graphql/src/model/gq_type.dart';
-import 'package:retrofit_graphql/src/model/gq_token.dart';
+import 'package:graphlink/src/model/gq_directive.dart';
+import 'package:graphlink/src/model/gq_directives_mixin.dart';
+import 'package:graphlink/src/model/gq_type.dart';
+import 'package:graphlink/src/model/gq_token.dart';
 
 ///
 ///  some thing like function(if: Boolean = true, name: String! = "Ahmed" ...)

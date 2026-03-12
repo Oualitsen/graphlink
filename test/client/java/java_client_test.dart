@@ -1,9 +1,9 @@
-import 'package:retrofit_graphql/src/config.dart';
-import 'package:retrofit_graphql/src/constants.dart';
-import 'package:retrofit_graphql/src/main.dart';
-import 'package:retrofit_graphql/src/serializers/java_serializer.dart';
+import 'package:graphlink/src/config.dart';
+import 'package:graphlink/src/constants.dart';
+import 'package:graphlink/src/main.dart';
+import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:test/test.dart';
-import 'package:retrofit_graphql/src/gq_grammar.dart';
+import 'package:graphlink/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 const outputDir = "../gql-test-projects/gqlJavaClient/src/main/java/org/gqlclient/generated";

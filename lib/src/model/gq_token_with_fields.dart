@@ -1,14 +1,14 @@
-import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
-import 'package:retrofit_graphql/src/extensions.dart';
-import 'package:retrofit_graphql/src/gq_grammar.dart';
-import 'package:retrofit_graphql/src/model/gq_directives_mixin.dart';
-import 'package:retrofit_graphql/src/model/gq_field.dart';
-import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
-import 'package:retrofit_graphql/src/model/gq_token.dart';
-import 'package:retrofit_graphql/src/model/gq_type.dart';
-import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
-import 'package:retrofit_graphql/src/serializers/language.dart';
-import 'package:retrofit_graphql/src/utils.dart';
+import 'package:graphlink/src/excpetions/parse_exception.dart';
+import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/model/gq_directives_mixin.dart';
+import 'package:graphlink/src/model/gq_field.dart';
+import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+import 'package:graphlink/src/model/gq_token.dart';
+import 'package:graphlink/src/model/gq_type.dart';
+import 'package:graphlink/src/model/gq_type_definition.dart';
+import 'package:graphlink/src/serializers/language.dart';
+import 'package:graphlink/src/utils.dart';
 
 const importList = "_list";
 

@@ -1,4 +1,4 @@
-import 'package:retrofit_graphql/src/extensions.dart';
+import 'package:graphlink/src/extensions.dart';
 import 'package:test/test.dart';
 
 void main() {

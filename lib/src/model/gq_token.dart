@@ -1,5 +1,5 @@
-import 'package:retrofit_graphql/src/gq_grammar.dart';
-import 'package:retrofit_graphql/src/model/token_info.dart';
+import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/model/token_info.dart';
 
 abstract class GQToken {
   final TokenInfo tokenInfo;

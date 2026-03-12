@@ -1,7 +1,7 @@
-import 'package:retrofit_graphql/src/extensions.dart';
-import 'package:retrofit_graphql/src/serializers/dart_serializer.dart';
+import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
-import 'package:retrofit_graphql/src/gq_grammar.dart';
+import 'package:graphlink/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 final GQGrammar g = GQGrammar();

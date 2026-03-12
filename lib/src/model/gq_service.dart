@@ -1,13 +1,13 @@
-import 'package:retrofit_graphql/src/extensions.dart';
-import 'package:retrofit_graphql/src/gq_grammar.dart';
-import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
-import 'package:retrofit_graphql/src/model/gq_controller.dart';
-import 'package:retrofit_graphql/src/model/gq_directives_mixin.dart';
-import 'package:retrofit_graphql/src/model/gq_interface_definition.dart';
-import 'package:retrofit_graphql/src/model/gq_queries.dart';
-import 'package:retrofit_graphql/src/model/gq_shcema_mapping.dart';
-import 'package:retrofit_graphql/src/model/gq_token.dart';
-import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
+import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+import 'package:graphlink/src/model/gq_controller.dart';
+import 'package:graphlink/src/model/gq_directives_mixin.dart';
+import 'package:graphlink/src/model/gq_interface_definition.dart';
+import 'package:graphlink/src/model/gq_queries.dart';
+import 'package:graphlink/src/model/gq_shcema_mapping.dart';
+import 'package:graphlink/src/model/gq_token.dart';
+import 'package:graphlink/src/model/gq_type_definition.dart';
 
 class GQService extends GQInterfaceDefinition {
   final Map<String, GQQueryType> _fieldType = {};

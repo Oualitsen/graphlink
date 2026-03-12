@@ -10,7 +10,7 @@ pipeline {
         stage('cloning Repository') {
             steps {
                 echo 'Cloning Repo'
-                git branch: "${params.BRANCH}", credentialsId: 'ssh-key-github-access', url: 'git@github.com:Oualitsen/Retrofit-Graphql-For-Dart.git'
+                git branch: "${params.BRANCH}", credentialsId: 'ssh-key-github-access', url: 'git@github.com:Oualitsen/graphlink.git'
             }
         }
 
@@ -29,7 +29,7 @@ pipeline {
         stage('build') {
             steps {
                 echo " Building ..."
-                sh "dart compile exe lib/src/main.dart -o gqlcodegen"
+                sh "dart compile exe lib/src/main.dart -o glink"
             }
         }
 
@@ -39,7 +39,7 @@ pipeline {
             }
             steps {
                 echo " Deploying ..."
-                sh "sudo cp gqlcodegen /opt"
+                sh "sudo cp glink /opt"
             }
         }
     }

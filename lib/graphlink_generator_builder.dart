@@ -3,19 +3,19 @@ import 'package:build/build.dart';
 import 'package:glob/glob.dart';
 import 'package:logger/logger.dart';
 import 'package:petitparser/core.dart';
-import 'package:retrofit_graphql/src/config.dart';
-import 'package:retrofit_graphql/src/gq_grammar.dart';
-import 'package:retrofit_graphql/src/main.dart';
+import 'package:graphlink/src/config.dart';
+import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/main.dart';
 import 'package:yaml/yaml.dart';
 
-class RetrofitGraphqlGeneratorBuilder implements Builder {
+class GraphlinkGeneratorBuilder implements Builder {
   final BuilderOptions options;
   final logger = Logger();
 
   /// Glob of all input files with ".graphqls" extension
   static final inputFiles = Glob('lib/**/*.graphql');
   static final inputFiles2 = Glob('lib/**/*.graphqls');
-  RetrofitGraphqlGeneratorBuilder(this.options);
+  GraphlinkGeneratorBuilder(this.options);
   static const outputDir = 'lib/generated';
   final map = {
     "ID": "String",

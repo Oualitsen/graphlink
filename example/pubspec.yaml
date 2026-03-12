@@ -1,6 +1,6 @@
 
-name: retrofit_graphql_example
-description: Examples on how to use retrofit_graphql for dart
+name: graphlink_example
+description: Examples on how to use GraphLink
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
@@ -23,6 +23,6 @@ dev_dependencies:
   flutter_lints: ^2.0.1
   build_runner: ^2.4.6
   json_serializable: ^6.7.1
-  retrofit_graphql:
+  graphlink:
     path: ..
   

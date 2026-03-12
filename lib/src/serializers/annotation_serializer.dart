@@ -1,8 +1,8 @@
-import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
-import 'package:retrofit_graphql/src/extensions.dart';
-import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
-import 'package:retrofit_graphql/src/model/gq_directive.dart';
-import 'package:retrofit_graphql/src/utils.dart';
+import 'package:graphlink/src/excpetions/parse_exception.dart';
+import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+import 'package:graphlink/src/model/gq_directive.dart';
+import 'package:graphlink/src/utils.dart';
 
 class AnnotationSerializer {
   static String serializeAnnotation(GQDirectiveValue value, {bool multiLineString = false}) {

@@ -1,21 +1,21 @@
-import 'package:retrofit_graphql/src/extensions.dart';
-import 'package:retrofit_graphql/src/gq_grammar.dart';
-import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
-import 'package:retrofit_graphql/src/model/gq_argument.dart';
-import 'package:retrofit_graphql/src/model/gq_directive.dart';
-import 'package:retrofit_graphql/src/model/gq_enum_definition.dart';
-import 'package:retrofit_graphql/src/model/gq_field.dart';
-import 'package:retrofit_graphql/src/model/gq_fragment.dart';
-import 'package:retrofit_graphql/src/model/gq_input_definition.dart';
-import 'package:retrofit_graphql/src/model/gq_interface_definition.dart';
-import 'package:retrofit_graphql/src/model/gq_queries.dart';
-import 'package:retrofit_graphql/src/model/gq_scalar_definition.dart';
-import 'package:retrofit_graphql/src/model/gq_schema.dart';
-import 'package:retrofit_graphql/src/model/gq_type.dart';
-import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
-import 'package:retrofit_graphql/src/model/gq_union.dart';
-import 'package:retrofit_graphql/src/serializers/language.dart';
-import 'package:retrofit_graphql/src/utils.dart';
+import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+import 'package:graphlink/src/model/gq_argument.dart';
+import 'package:graphlink/src/model/gq_directive.dart';
+import 'package:graphlink/src/model/gq_enum_definition.dart';
+import 'package:graphlink/src/model/gq_field.dart';
+import 'package:graphlink/src/model/gq_fragment.dart';
+import 'package:graphlink/src/model/gq_input_definition.dart';
+import 'package:graphlink/src/model/gq_interface_definition.dart';
+import 'package:graphlink/src/model/gq_queries.dart';
+import 'package:graphlink/src/model/gq_scalar_definition.dart';
+import 'package:graphlink/src/model/gq_schema.dart';
+import 'package:graphlink/src/model/gq_type.dart';
+import 'package:graphlink/src/model/gq_type_definition.dart';
+import 'package:graphlink/src/model/gq_union.dart';
+import 'package:graphlink/src/serializers/language.dart';
+import 'package:graphlink/src/utils.dart';
 
 const _skippedDirectives = {
   gqDecorators,

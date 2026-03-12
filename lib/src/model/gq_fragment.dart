@@ -1,13 +1,13 @@
-import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
-import 'package:retrofit_graphql/src/extensions.dart';
-import 'package:retrofit_graphql/src/gq_grammar.dart';
-import 'package:retrofit_graphql/src/model/gq_directive.dart';
-import 'package:retrofit_graphql/src/model/gq_directives_mixin.dart';
-import 'package:retrofit_graphql/src/model/gq_token.dart';
-import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
-import 'package:retrofit_graphql/src/model/token_info.dart';
-import 'package:retrofit_graphql/src/tree/tree.dart';
-import 'package:retrofit_graphql/src/utils.dart';
+import 'package:graphlink/src/excpetions/parse_exception.dart';
+import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/model/gq_directive.dart';
+import 'package:graphlink/src/model/gq_directives_mixin.dart';
+import 'package:graphlink/src/model/gq_token.dart';
+import 'package:graphlink/src/model/gq_type_definition.dart';
+import 'package:graphlink/src/model/token_info.dart';
+import 'package:graphlink/src/tree/tree.dart';
+import 'package:graphlink/src/utils.dart';
 
 class GQTypedFragment {
   final GQFragmentDefinitionBase fragment;

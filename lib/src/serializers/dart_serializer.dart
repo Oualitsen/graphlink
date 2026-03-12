@@ -1,17 +1,17 @@
-import 'package:retrofit_graphql/src/code_gen_utils.dart';
-import 'package:retrofit_graphql/src/extensions.dart';
-import 'package:retrofit_graphql/src/gq_grammar.dart';
-import 'package:retrofit_graphql/src/model/gq_enum_definition.dart';
-import 'package:retrofit_graphql/src/model/gq_field.dart';
-import 'package:retrofit_graphql/src/model/gq_input_definition.dart';
-import 'package:retrofit_graphql/src/model/gq_interface_definition.dart';
-import 'package:retrofit_graphql/src/model/gq_token.dart';
-import 'package:retrofit_graphql/src/model/gq_token_with_fields.dart';
-import 'package:retrofit_graphql/src/model/gq_type.dart';
-import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
-import 'package:retrofit_graphql/src/serializers/annotation_serializer.dart';
-import 'package:retrofit_graphql/src/serializers/gq_serializer.dart';
-import 'package:retrofit_graphql/src/ui/flutter/gq_type_view.dart';
+import 'package:graphlink/src/code_gen_utils.dart';
+import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/model/gq_enum_definition.dart';
+import 'package:graphlink/src/model/gq_field.dart';
+import 'package:graphlink/src/model/gq_input_definition.dart';
+import 'package:graphlink/src/model/gq_interface_definition.dart';
+import 'package:graphlink/src/model/gq_token.dart';
+import 'package:graphlink/src/model/gq_token_with_fields.dart';
+import 'package:graphlink/src/model/gq_type.dart';
+import 'package:graphlink/src/model/gq_type_definition.dart';
+import 'package:graphlink/src/serializers/annotation_serializer.dart';
+import 'package:graphlink/src/serializers/gq_serializer.dart';
+import 'package:graphlink/src/ui/flutter/gq_type_view.dart';
 
 class DartSerializer extends GqSerializer {
   final codeGenUtils = DartCodeGenUtils();

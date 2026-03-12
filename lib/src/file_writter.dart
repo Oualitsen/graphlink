@@ -1,13 +1,13 @@
 import 'dart:io';
 
-import 'package:retrofit_graphql/src/config.dart';
-import 'package:retrofit_graphql/src/gq_grammar.dart';
-import 'package:retrofit_graphql/src/io_utils.dart';
-import 'package:retrofit_graphql/src/serializers/graphq_serializer.dart';
-import 'package:retrofit_graphql/src/serializers/java_serializer.dart';
-import 'package:retrofit_graphql/src/serializers/language.dart';
-import 'package:retrofit_graphql/src/serializers/spring_server_serializer.dart';
-import 'package:retrofit_graphql/src/utils.dart';
+import 'package:graphlink/src/config.dart';
+import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/io_utils.dart';
+import 'package:graphlink/src/serializers/graphq_serializer.dart';
+import 'package:graphlink/src/serializers/java_serializer.dart';
+import 'package:graphlink/src/serializers/language.dart';
+import 'package:graphlink/src/serializers/spring_server_serializer.dart';
+import 'package:graphlink/src/utils.dart';
 
 class FileWritter {
   final GQGrammar grammar;

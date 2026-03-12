@@ -1,9 +1,9 @@
-import 'package:retrofit_graphql/src/model/gq_directive.dart';
-import 'package:retrofit_graphql/src/model/gq_field.dart';
-import 'package:retrofit_graphql/src/model/gq_directives_mixin.dart';
-import 'package:retrofit_graphql/src/model/gq_token.dart';
-import 'package:retrofit_graphql/src/model/gq_token_with_fields.dart';
-import 'package:retrofit_graphql/src/model/token_info.dart';
+import 'package:graphlink/src/model/gq_directive.dart';
+import 'package:graphlink/src/model/gq_field.dart';
+import 'package:graphlink/src/model/gq_directives_mixin.dart';
+import 'package:graphlink/src/model/gq_token.dart';
+import 'package:graphlink/src/model/gq_token_with_fields.dart';
+import 'package:graphlink/src/model/token_info.dart';
 
 class GQInputDefinition extends GQTokenWithFields with GQDirectivesMixin {
   final String declaredName;

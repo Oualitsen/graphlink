@@ -1,4 +1,4 @@
-import 'package:retrofit_graphql/src/model/token_info.dart';
+import 'package:graphlink/src/model/token_info.dart';
 
 extension StringExt on String {
   String get firstUp {

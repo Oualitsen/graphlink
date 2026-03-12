@@ -1,13 +1,13 @@
-import 'package:retrofit_graphql/src/gq_grammar.dart';
-import 'package:retrofit_graphql/src/model/gq_directive.dart';
-import 'package:retrofit_graphql/src/model/gq_field.dart';
-import 'package:retrofit_graphql/src/model/gq_directives_mixin.dart';
-import 'package:retrofit_graphql/src/model/gq_interface_definition.dart';
-import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
-import 'package:retrofit_graphql/src/model/gq_token.dart';
-import 'package:retrofit_graphql/src/model/gq_token_with_fields.dart';
-import 'package:retrofit_graphql/src/model/token_info.dart';
-import 'package:retrofit_graphql/src/serializers/graphq_serializer.dart';
+import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/model/gq_directive.dart';
+import 'package:graphlink/src/model/gq_field.dart';
+import 'package:graphlink/src/model/gq_directives_mixin.dart';
+import 'package:graphlink/src/model/gq_interface_definition.dart';
+import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+import 'package:graphlink/src/model/gq_token.dart';
+import 'package:graphlink/src/model/gq_token_with_fields.dart';
+import 'package:graphlink/src/model/token_info.dart';
+import 'package:graphlink/src/serializers/graphq_serializer.dart';
 
 class GQTypeDefinition extends GQTokenWithFields with GQDirectivesMixin {
   final Set<TokenInfo> _interfaceNames = {};

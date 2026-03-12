@@ -1,4 +1,4 @@
-import 'package:retrofit_graphql/src/serializers/language.dart';
+import 'package:graphlink/src/serializers/language.dart';
 
 class GeneratorConfig {
   final List<String> schemaPaths;

@@ -1,8 +1,8 @@
-name: retrofit_graphql
+name: graphlink
 description: |
-  retrofit_graphql or Retrofit GraphQL for Dart is a powerful code generation tool that simplifies working with GraphQL in Dart projects.
-version: 4.0.0
-repository: https://github.com/Oualitsen/Retrofi-Graphql-For-Dart
+  GraphLink is a powerful code generation tool that generates type-safe client and server code from GraphQL schemas for Dart, Java, Spring Boot and more.
+version: 4.1.0
+repository: https://github.com/Oualitsen/graphlink
 
 environment:
   sdk: ">=2.19.0 <4.0.0"

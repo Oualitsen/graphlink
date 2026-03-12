@@ -1,11 +1,11 @@
 import 'dart:io';
 
-import 'package:retrofit_graphql/src/serializers/language.dart';
-import 'package:retrofit_graphql/src/serializers/spring_server_serializer.dart';
+import 'package:graphlink/src/serializers/language.dart';
+import 'package:graphlink/src/serializers/spring_server_serializer.dart';
 import 'package:test/test.dart';
-import 'package:retrofit_graphql/src/gq_grammar.dart';
+import 'package:graphlink/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
-import 'package:retrofit_graphql/src/serializers/java_serializer.dart';
+import 'package:graphlink/src/serializers/java_serializer.dart';
 
 void main() {
   final typeMapping = {

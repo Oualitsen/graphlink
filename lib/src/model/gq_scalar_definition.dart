@@ -1,7 +1,7 @@
-import 'package:retrofit_graphql/src/model/gq_directive.dart';
-import 'package:retrofit_graphql/src/model/gq_directives_mixin.dart';
-import 'package:retrofit_graphql/src/model/gq_token.dart';
-import 'package:retrofit_graphql/src/model/token_info.dart';
+import 'package:graphlink/src/model/gq_directive.dart';
+import 'package:graphlink/src/model/gq_directives_mixin.dart';
+import 'package:graphlink/src/model/gq_token.dart';
+import 'package:graphlink/src/model/token_info.dart';
 
 class GQScalarDefinition extends GQExtensibleToken with GQDirectivesMixin {
   GQScalarDefinition({

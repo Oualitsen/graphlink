@@ -1,7 +1,7 @@
-import 'package:retrofit_graphql/src/gq_grammar.dart';
-import 'package:retrofit_graphql/src/model/gq_queries.dart';
-import 'package:retrofit_graphql/src/model/gq_token.dart';
-import 'package:retrofit_graphql/src/serializers/gq_serializer.dart';
+import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/model/gq_queries.dart';
+import 'package:graphlink/src/model/gq_token.dart';
+import 'package:graphlink/src/serializers/gq_serializer.dart';
 
 abstract class ClientSerilaizer {
   final GqSerializer serializer;

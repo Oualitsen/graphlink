@@ -1,8 +1,8 @@
-import 'package:retrofit_graphql/src/extensions.dart';
-import 'package:retrofit_graphql/src/gq_grammar.dart';
-import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
-import 'package:retrofit_graphql/src/model/gq_service.dart';
-import 'package:retrofit_graphql/src/model/gq_token.dart';
+import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+import 'package:graphlink/src/model/gq_service.dart';
+import 'package:graphlink/src/model/gq_token.dart';
 
 class GQController extends GQService {
   final String serviceName;

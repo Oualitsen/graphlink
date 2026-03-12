@@ -1,10 +1,10 @@
-import 'package:retrofit_graphql/src/config.dart';
-import 'package:retrofit_graphql/src/main.dart';
-import 'package:retrofit_graphql/src/model/built_in_dirctive_definitions.dart';
-import 'package:retrofit_graphql/src/serializers/language.dart';
-import 'package:retrofit_graphql/src/utils.dart';
+import 'package:graphlink/src/config.dart';
+import 'package:graphlink/src/main.dart';
+import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+import 'package:graphlink/src/serializers/language.dart';
+import 'package:graphlink/src/utils.dart';
 import 'package:test/test.dart';
-import 'package:retrofit_graphql/src/gq_grammar.dart';
+import 'package:graphlink/src/gq_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 const outputDir = "../my_web_app/lib/generated";

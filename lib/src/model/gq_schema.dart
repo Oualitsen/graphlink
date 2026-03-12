@@ -1,9 +1,9 @@
-import 'package:retrofit_graphql/src/excpetions/parse_exception.dart';
-import 'package:retrofit_graphql/src/model/gq_directive.dart';
-import 'package:retrofit_graphql/src/model/gq_directives_mixin.dart';
-import 'package:retrofit_graphql/src/model/gq_queries.dart';
-import 'package:retrofit_graphql/src/model/gq_token.dart';
-import 'package:retrofit_graphql/src/model/token_info.dart';
+import 'package:graphlink/src/excpetions/parse_exception.dart';
+import 'package:graphlink/src/model/gq_directive.dart';
+import 'package:graphlink/src/model/gq_directives_mixin.dart';
+import 'package:graphlink/src/model/gq_queries.dart';
+import 'package:graphlink/src/model/gq_token.dart';
+import 'package:graphlink/src/model/token_info.dart';
 
 class GQSchema extends GQExtensibleToken with GQDirectivesMixin {
   final Map<GQQueryType, TokenInfo> _schemaMap = {};

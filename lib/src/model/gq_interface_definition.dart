@@ -1,4 +1,4 @@
-import 'package:retrofit_graphql/src/model/gq_type_definition.dart';
+import 'package:graphlink/src/model/gq_type_definition.dart';
 
 class GQInterfaceDefinition extends GQTypeDefinition {
   final bool fromUnion;
