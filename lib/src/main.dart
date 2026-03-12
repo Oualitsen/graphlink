@@ -332,7 +332,12 @@ Future<Set<String>> generateClientClasses(
 Future<Set<String>> generateClientClassesJava(
     GQGrammar grammar, GeneratorConfig config, DateTime started,
     {String? pack, noClient = false}) async {
-  final serializer = JavaSerializer(grammar, generateJsonMethods: true);
+  final serializer = JavaSerializer(
+    grammar,
+    generateJsonMethods: true,
+    immutableInputFields: true,
+    immutableTypeFields: true,
+  );
   final dcs = JavaClientSerializer(grammar, serializer);
   final List<Future<File>> futures = [];
   final destinationDir = config.outputDir;
@@ -417,6 +422,8 @@ Future<Set<String>> generateServerClasses(
     typesAsRecords: config.serverConfig?.spring?.typeAsRecord ?? false,
     inputsCheckForNulls: true,
     typesCheckForNulls: grammar.mode == CodeGenerationMode.client,
+    immutableInputFields: true,
+    immutableTypeFields: false,
   );
   final springSerializer = SpringServerSerializer(grammar,
       javaSerializer: serializer,

@@ -95,7 +95,7 @@ void main() {
     var user = g.getTypeByName("User")!;
 
     var idField = user.fields.where((f) => f.name.token == "id").first;
-    var id = javaSerialzer.serializeField(idField);
+    var id = javaSerialzer.serializeField(idField, false);
     expect(id, stringContainsInOrder(["@Getter", "@Setter", "private String id"]));
 
     var ibase = g.interfaces["IBase"]!;
@@ -122,7 +122,7 @@ void main() {
     var javaSerialzer = JavaSerializer(g);
     var user = g.getTypeByName("User")!;
     var idField = user.fields.where((f) => f.name.token == "id").first;
-    var id = javaSerialzer.serializeField(idField);
+    var id = javaSerialzer.serializeField(idField, false);
     expect(id, "private String id;");
   });
 
@@ -288,7 +288,7 @@ void main() {
     expect(parsed is Success, true);
 
     var user = g.inputs["UserInput"];
-    var javaSerialzer = JavaSerializer(g);
+    var javaSerialzer = JavaSerializer(g, immutableInputFields: false, immutableTypeFields: false);
     var class_ = javaSerialzer.serializeInputDefinition(user!, "");
 
     expect(
@@ -423,7 +423,7 @@ void main() {
     expect(parsed is Success, true);
 
     var userInput = g.inputs['UserInput']!;
-    var serializer = JavaSerializer(g);
+    var serializer = JavaSerializer(g, immutableInputFields: false, immutableTypeFields: false);
     var serializedInput = serializer.serializeInputDefinition(userInput, "com.myorg");
     // nullcheck on contrcutor
     var lines = serializedInput
@@ -490,7 +490,7 @@ void main() {
     expect(parsed is Success, true);
 
     var userInput = g.inputs['UserInput']!;
-    var serializer = JavaSerializer(g);
+    var serializer = JavaSerializer(g, immutableInputFields: false, immutableTypeFields: false);
     var serializedInput = serializer.serializeInputDefinition(userInput, "com.myorg");
     // no nullcheck on contrcutor primitives
     var lines = serializedInput
@@ -506,5 +506,45 @@ void main() {
     expect(lines, containsAllInOrder(['public int getAge() {', 'return age;', '}']));
 
     // no nullcheck on setter id
+  });
+
+  test("serialize input: final field with no getter when immutableInputFields = true", () {
+    final GQGrammar g = GQGrammar(typeMap: {}, mode: CodeGenerationMode.server);
+    var parsed = g.parse('''
+    input UserInput {
+      age: String
+    }
+''');
+
+    expect(parsed is Success, true);
+
+    var userInput = g.inputs['UserInput']!;
+    var serializer = JavaSerializer(g, immutableInputFields: true, immutableTypeFields: false);
+    var serializedInput = serializer.serializeInputDefinition(userInput, "com.myorg");
+
+    print(serializedInput);
+    expect(serializedInput, contains("private final String age;"));
+    expect(serializedInput, contains("public String getAge()"));
+    expect(serializedInput, isNot(contains("public void setAge")));
+  });
+
+  test("serialize type: final field with no getter when immutableTypeFields = true", () {
+    final GQGrammar g = GQGrammar(typeMap: {}, mode: CodeGenerationMode.server);
+    var parsed = g.parse('''
+    type UserInput {
+      age: String
+    }
+''');
+
+    expect(parsed is Success, true);
+
+    var userInput = g.types['UserInput']!;
+    var serializer = JavaSerializer(g, immutableInputFields: true, immutableTypeFields: true);
+    var serializedInput = serializer.serializeTypeDefinition(userInput, "com.myorg");
+
+    print(serializedInput);
+    expect(serializedInput, contains("private final String age;"));
+    expect(serializedInput, contains("public String getAge()"));
+    expect(serializedInput, isNot(contains("public void setAge")));
   });
 }

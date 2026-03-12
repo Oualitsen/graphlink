@@ -36,14 +36,14 @@ abstract class GqSerializer {
 
   String doSerializeEnumValue(GQEnumValue value);
 
-  String serializeField(GQField def) {
+  String serializeField(GQField def, bool immutable) {
     if (shouldSkipSerialization(directives: def.getDirectives(), mode: mode)) {
       return "";
     }
-    return doSerializeField(def);
+    return doSerializeField(def, immutable);
   }
 
-  String doSerializeField(GQField def);
+  String doSerializeField(GQField def, bool immutable);
   String serializeType(GQType def, bool forceNullable, [bool asArray = false]);
 
   String serializeInputDefinition(GQInputDefinition def, String importPrefix) {

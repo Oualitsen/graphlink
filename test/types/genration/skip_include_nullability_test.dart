@@ -13,33 +13,27 @@ void main() async {
     var parser = g.buildFrom(g.fullGrammar().end());
 
     var parsed = parser.parse(
-        File("test/types/genration/skip_include_nullability_test.graphql")
-            .readAsStringSync());
+        File("test/types/genration/skip_include_nullability_test.graphql").readAsStringSync());
     expect(parsed is Success, true);
     GQQueryDefinition products = g.queries["products"]!;
     var productTypeDef = products.getGeneratedTypeDefinition();
-    GQField getProduct = productTypeDef.fields
-        .where((field) => field.name.token == "getProduct")
-        .first;
+    GQField getProduct =
+        productTypeDef.fields.where((field) => field.name.token == "getProduct").first;
 
     var getProductType = g.projectedTypes[getProduct.type.token]!;
-    var nameField =
-        getProductType.fields.where((element) => element.name.token == "name").first;
+    var nameField = getProductType.fields.where((element) => element.name.token == "name").first;
     expect(nameField.type.nullable, false);
     var serilaizer = DartSerializer(g);
-    expect(serilaizer.serializeField(nameField), contains("String?"));
+    expect(serilaizer.serializeField(nameField, true), contains("String?"));
 
-    GQField getProductList = productTypeDef.fields
-        .where((field) => field.name.token == "getProductList")
-        .first;
+    GQField getProductList =
+        productTypeDef.fields.where((field) => field.name.token == "getProductList").first;
 
-    var getProductListType =
-        g.projectedTypes[getProductList.type.inlineType.token]!;
-    var descriptionField = getProductListType.fields
-        .where((element) => element.name.token == "description")
-        .first;
+    var getProductListType = g.projectedTypes[getProductList.type.inlineType.token]!;
+    var descriptionField =
+        getProductListType.fields.where((element) => element.name.token == "description").first;
     expect(descriptionField.type.nullable, false);
     var serializer = DartSerializer(g);
-    expect(serializer.serializeField(descriptionField), contains("String?"));
+    expect(serializer.serializeField(descriptionField, true), contains("String?"));
   });
 }

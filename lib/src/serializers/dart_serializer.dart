@@ -83,11 +83,18 @@ class DartSerializer extends GqSerializer {
   }
 
   @override
-  String doSerializeField(GQField def) {
+  String doSerializeField(GQField def, bool immutable) {
     final type = def.type;
     final name = def.name;
     final hasInculeOrSkipDiretives = def.hasInculeOrSkipDiretives;
-    return "${serializeDecorators(def.getDirectives())}final ${serializeType(type, hasInculeOrSkipDiretives)} $name;";
+    final builder = StringBuffer(serializeDecorators(def.getDirectives()));
+    if (immutable) {
+      builder.write("final ");
+    } else {
+      builder.write(" ");
+    }
+    builder.write("${serializeType(type, hasInculeOrSkipDiretives)} $name;");
+    return builder.toString();
   }
 
   @override
@@ -112,7 +119,7 @@ class DartSerializer extends GqSerializer {
       buffer.writeln(decorators.trim());
     }
     var inputClass = codeGenUtils.createClass(className: def.token, statements: [
-      ...def.getSerializableFields(grammar.mode).map((e) => serializeField(e)),
+      ...def.getSerializableFields(grammar.mode).map((e) => serializeField(e, true)),
       codeGenUtils.createMethod(
           methodName: def.token,
           namedArguments: true,
@@ -283,7 +290,7 @@ class DartSerializer extends GqSerializer {
       className: token,
       baseClassNames: interfaceNames.toList(),
       statements: [
-        ...def.getSerializableFields(grammar.mode).map((e) => serializeField(e)),
+        ...def.getSerializableFields(grammar.mode).map((e) => serializeField(e, true)),
         codeGenUtils.createMethod(
             methodName: token,
             namedArguments: false,

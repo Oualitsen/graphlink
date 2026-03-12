@@ -8,7 +8,8 @@ import 'package:petitparser/petitparser.dart';
 void main() {
   test("testDecorators", () {
     final GQGrammar g = GQGrammar(identityFields: ["id"]);
-    final text = File("test/serializers/dart/types/type_serialization_decorators_test.graphql").readAsStringSync();
+    final text = File("test/serializers/dart/types/type_serialization_decorators_test.graphql")
+        .readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
 
@@ -20,12 +21,13 @@ void main() {
     var idField = user.fields.where((f) => f.name.token == "id").first;
     var nameField = user.fields.where((f) => f.name.token == "name").first;
     var middleNameField = user.fields.where((f) => f.name.token == "middleName").first;
-    var id = dartSerialzer.serializeField(idField);
-    var nameSerial = dartSerialzer.serializeField(nameField);
-    var middleNameFieldSerial = dartSerialzer.serializeField(middleNameField);
+    var id = dartSerialzer.serializeField(idField, true);
+    var nameSerial = dartSerialzer.serializeField(nameField, true);
+    var middleNameFieldSerial = dartSerialzer.serializeField(middleNameField, true);
     expect(id, stringContainsInOrder(["@Getter", "@Setter", "final String id;"]));
     expect(nameSerial, stringContainsInOrder(["@Getter", "@Setter", "final String name;"]));
-    expect(middleNameFieldSerial, stringContainsInOrder(['@Getter("value")', 'final String? middleName;']));
+    expect(middleNameFieldSerial,
+        stringContainsInOrder(['@Getter("value")', 'final String? middleName;']));
 
     var ibase = g.interfaces["IBase"]!;
 

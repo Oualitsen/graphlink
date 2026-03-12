@@ -62,7 +62,7 @@ void main() {
     var parsed = parser.parse(text);
 
     expect(parsed is Success, true);
-    var javaSerialzer = JavaSerializer(g);
+    var javaSerialzer = JavaSerializer(g, immutableTypeFields: false, immutableInputFields: false);
 
     var user = g.inputs["UserInput"]!;
     var userSerial = javaSerialzer.serializeInputDefinition(user, "");

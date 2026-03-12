@@ -74,6 +74,8 @@ class JavaSerializer extends GqSerializer {
   final bool typesAsRecords;
   final bool typesCheckForNulls;
   final bool inputsCheckForNulls;
+  final bool immutableInputFields;
+  final bool immutableTypeFields;
   final codeGenUtils = JavaCodeGenUtils();
   @override
   final bool generateJsonMethods;
@@ -84,6 +86,8 @@ class JavaSerializer extends GqSerializer {
     this.generateJsonMethods = false,
     this.typesCheckForNulls = false,
     this.inputsCheckForNulls = true,
+    this.immutableInputFields = true,
+    this.immutableTypeFields = false,
   }) {
     _initAnnotations();
   }
@@ -149,7 +153,7 @@ class JavaSerializer extends GqSerializer {
   }
 
   @override
-  String doSerializeField(GQField def) {
+  String doSerializeField(GQField def, bool immutable) {
     final type = def.type;
     final name = def.name;
     final hasInculeOrSkipDiretives = def.hasInculeOrSkipDiretives;
@@ -158,8 +162,11 @@ class JavaSerializer extends GqSerializer {
     if (decorators.isNotEmpty) {
       buffer.writeln(decorators.trim());
     }
-    buffer.write(
-        'private ${serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray)} $name;');
+    buffer.write("private ");
+    if (immutable) {
+      buffer.write("final ");
+    }
+    buffer.write('${serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray)} $name;');
     return buffer.toString();
   }
 
@@ -255,19 +262,22 @@ class JavaSerializer extends GqSerializer {
       return buffer.toString();
     }
     var class_ = codeGenUtils.createClass(className: def.tokenInfo.token, statements: [
-      ...def.getSerializableFields(grammar.mode).map((e) => serializeField(e)),
+      ...def
+          .getSerializableFields(grammar.mode)
+          .map((e) => serializeField(e, immutableInputFields)),
       "",
       generateContructor(def.token, [], "public", def, checkForNulls: inputsCheckForNulls),
       "",
       generateContructor(def.token, def.getSerializableFields(grammar.mode), "private", def,
           checkForNulls: inputsCheckForNulls),
-      generateBuilder(def.token, def.getSerializableFields(grammar.mode)),
+      generateBuilder(def.token, def.getSerializableFields(grammar.mode), true),
       ...def
           .getSerializableFields(grammar.mode)
           .map((e) => serializeGetter(e, def, checkForNulls: inputsCheckForNulls)),
-      ...def
-          .getSerializableFields(grammar.mode)
-          .map((e) => serializeSetter(e, def, checkForNulls: inputsCheckForNulls)),
+      ...def.getSerializableFields(grammar.mode).where((field) {
+        //check for the next directive here
+        return !immutableInputFields;
+      }).map((e) => serializeSetter(e, def, checkForNulls: inputsCheckForNulls)),
       if (generateJsonMethods) ...[
         generateToJson(def.getSerializableFields(grammar.mode), def),
         generateFromJson(def.getSerializableFields(mode), def.token, def)
@@ -454,7 +464,7 @@ class JavaSerializer extends GqSerializer {
     return buffer.toString();
   }
 
-  String generateBuilder(String name, List<GQField> fields) {
+  String generateBuilder(String name, List<GQField> fields, bool forInput) {
     if (fields.isEmpty) {
       return "";
     }
@@ -471,7 +481,8 @@ class JavaSerializer extends GqSerializer {
       ...fields
           .map((field) => GQField(
               name: field.name, type: field.type, arguments: field.arguments, directives: []))
-          .map(serializeField),
+          .map((field) =>
+              serializeField(field, forInput ? immutableInputFields : immutableTypeFields)),
       "",
       ...fields.map((e) => codeGenUtils.createMethod(
           returnType: 'public Builder',
@@ -619,21 +630,22 @@ class JavaSerializer extends GqSerializer {
     }
     buffer.writeln(codeGenUtils
         .createClass(className: token.token, interfaceNames: interfaceNames.toList(), statements: [
-      ...def.getSerializableFields(grammar.mode).map((e) => serializeField(e)),
+      ...def.getSerializableFields(grammar.mode).map((e) => serializeField(e, immutableTypeFields)),
       "",
       generateContructor(def.token, [], "public", def, checkForNulls: typesCheckForNulls),
       "",
       generateContructor(def.token, def.getSerializableFields(grammar.mode), "private", def),
       "",
-      generateBuilder(def.token, def.getSerializableFields(grammar.mode)),
+      generateBuilder(def.token, def.getSerializableFields(grammar.mode), false),
       "",
       ...def
           .getSerializableFields(grammar.mode)
           .map((e) => serializeGetter(e, def, checkForNulls: typesCheckForNulls)),
       "",
-      ...def
-          .getSerializableFields(grammar.mode)
-          .map((e) => serializeSetter(e, def, checkForNulls: typesCheckForNulls)),
+      ...def.getSerializableFields(grammar.mode).where((field) {
+        // @TODO check for mutable directive
+        return !immutableTypeFields;
+      }).map((e) => serializeSetter(e, def, checkForNulls: typesCheckForNulls)),
       generateEqualsAndHashCode(def),
       if (generateJsonMethods) ...[
         generateFromJson(def.getSerializableFields(grammar.mode), def.token, def),

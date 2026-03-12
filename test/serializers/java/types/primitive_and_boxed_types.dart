@@ -7,7 +7,6 @@ import 'package:petitparser/petitparser.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 
 void main() {
-  
   test("test serializeGetterDeclaration when Boolean is Object", () {
     final GQGrammar g = GQGrammar(identityFields: [
       "id"
@@ -106,8 +105,8 @@ void main() {
     var age = person.fields.where((f) => f.name.token == "age").first;
     var age2 = person.fields.where((f) => f.name.token == "age2").first;
 
-    var ageSerial = javaSerialzer.serializeField(age);
-    var age2Serial = javaSerialzer.serializeField(age2);
+    var ageSerial = javaSerialzer.serializeField(age, false);
+    var age2Serial = javaSerialzer.serializeField(age2, false);
     expect(ageSerial, "private Integer age;");
     expect(age2Serial, "private int age2;");
   });

@@ -33,8 +33,10 @@ class GeneratorConfig {
       identityFields: List<String>.from(json['identityFields'] ?? []),
       typeMappings: Map<String, String>.from(json['typeMappings'] ?? {}),
       outputDir: json['outputDir'] ?? 'src/main/java',
-      serverConfig: json['serverConfig'] != null ? ServerConfig.fromJson(json['serverConfig']) : null,
-      clientConfig: json['clientConfig'] != null ? ClientConfig.fromJson(json['clientConfig']) : null,
+      serverConfig:
+          json['serverConfig'] != null ? ServerConfig.fromJson(json['serverConfig']) : null,
+      clientConfig:
+          json['clientConfig'] != null ? ClientConfig.fromJson(json['clientConfig']) : null,
     );
   }
 }
@@ -63,38 +65,44 @@ class SpringServerConfig {
   final bool generateSchema;
   final bool injectDataFetching;
   final String? schemaTargetPath;
+  final bool immutableInputFields;
+  final bool immutableTypeFields;
 
-  SpringServerConfig(
-      {required this.basePackage,
-      required this.generateControllers,
-      required this.generateInputs,
-      required this.generateTypes,
-      required this.generateRepositories,
-      required this.inputAsRecord,
-      required this.typeAsRecord,
-      required this.generateSchema,
-      required this.injectDataFetching,
-      this.schemaTargetPath})
-      : assert(
+  SpringServerConfig({
+    required this.basePackage,
+    required this.generateControllers,
+    required this.generateInputs,
+    required this.generateTypes,
+    required this.generateRepositories,
+    required this.inputAsRecord,
+    required this.typeAsRecord,
+    required this.generateSchema,
+    required this.injectDataFetching,
+    required this.immutableInputFields,
+    required this.immutableTypeFields,
+    this.schemaTargetPath,
+  }) : assert(
           !generateSchema ||
               (schemaTargetPath != null &&
-                  (schemaTargetPath.endsWith('.graphql') || schemaTargetPath.endsWith('.graphqls'))),
+                  (schemaTargetPath.endsWith('.graphql') ||
+                      schemaTargetPath.endsWith('.graphqls'))),
           'schemaTargetPath must be a non-null path ending with .graphql or .graphqls when generateSchema is true',
         );
 
   factory SpringServerConfig.fromJson(Map<String, dynamic> json) {
     return SpringServerConfig(
-      basePackage: json['basePackage'],
-      generateControllers: json['generateControllers'] ?? true,
-      generateInputs: json['generateInputs'] ?? true,
-      generateTypes: json['generateTypes'] ?? true,
-      generateRepositories: json['generateRepositories'] ?? false,
-      inputAsRecord: json['inputAsRecord'] ?? false,
-      typeAsRecord: json['typeAsRecord'] ?? false,
-      generateSchema: json['generateSchema'] ?? false,
-      schemaTargetPath: json['schemaTargetPath'],
-      injectDataFetching: json['injectDataFetching'] as bool? ?? false
-    );
+        basePackage: json['basePackage'],
+        generateControllers: json['generateControllers'] ?? true,
+        generateInputs: json['generateInputs'] ?? true,
+        generateTypes: json['generateTypes'] ?? true,
+        generateRepositories: json['generateRepositories'] ?? false,
+        inputAsRecord: json['inputAsRecord'] ?? false,
+        typeAsRecord: json['typeAsRecord'] ?? false,
+        generateSchema: json['generateSchema'] ?? false,
+        immutableInputFields: json['immutableInputFields'] ?? true,
+        immutableTypeFields: json['immutableTypeFields'] ?? false,
+        schemaTargetPath: json['schemaTargetPath'],
+        injectDataFetching: json['injectDataFetching'] as bool? ?? false);
   }
 }
 
@@ -110,6 +118,8 @@ class ClientConfig {
   final String? appLocalizationsImport;
   final bool generateUiTypes;
   final bool generateUiInputs;
+  final bool immutableInputFields;
+  final bool immutableTypeFields;
 
   ClientConfig({
     required this.targetLanguage,
@@ -123,6 +133,8 @@ class ClientConfig {
     this.appLocalizationsImport,
     this.generateUiInputs = false,
     this.generateUiTypes = false,
+    this.immutableInputFields = true,
+    this.immutableTypeFields = true,
   });
 
   factory ClientConfig.fromJson(Map<String, dynamic> json) {
@@ -138,6 +150,8 @@ class ClientConfig {
       appLocalizationsImport: json['appLocalizationsImport'] as String?,
       generateUiInputs: (json['generateUiInputs'] as bool?) ?? false,
       generateUiTypes: (json['generateUiTypes'] as bool?) ?? false,
+      immutableInputFields: (json['immutableInputFields'] as bool?) ?? true,
+      immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
     );
   }
 }
