@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:graphlink/src/gq_grammar_cache_extension.dart';
 import 'package:logger/logger.dart';
 import 'package:graphlink/src/excpetions/parse_exception.dart';
 import 'package:graphlink/src/extensions.dart';
@@ -138,7 +139,7 @@ class GQGrammar extends GrammarDefinition {
   final String? defaultAlias;
   final bool operationNameAsParameter;
   final List<String> identityFields;
-
+  final int? defaultCacheTTL;
   late final GraphqSerializer serializer;
 
   GQGrammar({
@@ -158,6 +159,7 @@ class GQGrammar extends GrammarDefinition {
     this.identityFields = const [],
     this.defaultAlias,
     this.mode = CodeGenerationMode.client,
+    this.defaultCacheTTL,
   }) : assert(
           !autoGenerateQueries || generateAllFieldsFragments,
           'autoGenerateQueries can only be true if generateAllFieldsFragments is also true',
@@ -293,6 +295,13 @@ class GQGrammar extends GrammarDefinition {
       addClientTypesToProjectedTypes();
       updateFragmentAllTypesDependencies();
       generateViews();
+      // cache handling
+      checkGqCacheDirectives();
+      if (defaultCacheTTL != null) {
+        applyDefaultCacheToQueries(defaultCacheTTL!);
+      }
+      applyCachesToQueries();
+      applyNoCachesToQueries();
     } else {
       handleRepositories(true);
       generateServicesAndControllers();

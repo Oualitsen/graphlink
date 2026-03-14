@@ -827,7 +827,7 @@ extension GQGrammarExtension on GQGrammar {
 
   void generateQueries(GQTypeDefinition def, GQQueryType queryType) {
     for (var field in def.fields) {
-      generateForField(field, queryType);
+      _generateForField(field, queryType);
     }
   }
 
@@ -848,7 +848,7 @@ extension GQGrammarExtension on GQGrammar {
     return fragName;
   }
 
-  void generateForField(GQField field, GQQueryType queryType) {
+  void _generateForField(GQField field, GQQueryType queryType) {
     GQFragmentBlockDefinition? block;
     if (typeRequiresProjection(field.type)) {
       final fragName = generateAllFieldFragment(field.type);
@@ -866,9 +866,12 @@ extension GQGrammarExtension on GQGrammar {
       return GQArgumentValue(arg.tokenInfo, "\$${arg.tokenInfo}");
     }).toList();
     var queryElement = GQQueryElement(field.name, [], block, argValues, defaultAlias?.toToken());
+    var directives = queryType == GQQueryType.query
+        ? field.getDirectives().where((e) => [gqCache, gqNoCache].contains(e.token)).toList()
+        : <GQDirectiveValue>[];
     final def = GQQueryDefinition(
         field.name,
-        [],
+        directives,
         field.arguments
             .map((e) => GQArgumentDefinition("\$${e.tokenInfo}".toToken(), e.type, [],
                 initialValue: e.initialValue))

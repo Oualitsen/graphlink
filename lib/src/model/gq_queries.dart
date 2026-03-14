@@ -1,6 +1,7 @@
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/gq_grammar.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+import 'package:graphlink/src/model/gq_cache_definition.dart';
 import 'package:graphlink/src/model/gq_directive.dart';
 import 'package:graphlink/src/model/gq_argument.dart';
 import 'package:graphlink/src/model/gq_field.dart';
@@ -19,9 +20,19 @@ class GQQueryDefinition extends GQToken with GQDirectivesMixin {
   final List<GQArgumentDefinition> arguments;
   final List<GQQueryElement> elements;
   final GQQueryType type; //query|mutation|subscription
+  GqCacheDefinition? _cacheDefinition;
   Set<GQFragmentDefinitionBase>? _allFrags;
 
   GQTypeDefinition? _gqTypeDefinition;
+
+  set cacheDefinition(GqCacheDefinition? cacheDefinition) {
+    _cacheDefinition = cacheDefinition;
+    for (var e in elements) {
+      e.cacheDefinition ??= cacheDefinition;
+    }
+  }
+
+  GqCacheDefinition? get cacheDefinition => _cacheDefinition;
 
   Set<String> get fragmentNames {
     return elements.expand((e) => e.fragmentNames).toSet();
@@ -121,6 +132,7 @@ class GQQueryElement extends GQToken with GQDirectivesMixin {
 
   final List<GQArgumentValue> arguments;
   final TokenInfo? alias;
+  GqCacheDefinition? cacheDefinition;
 
   ///
   ///This is unknown on parse time. It is filled on run time.

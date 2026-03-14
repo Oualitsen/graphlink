@@ -58,4 +58,8 @@ mixin GQDirectivesMixin {
   GQDirectiveValue? getDirectiveByName(String name) {
     return _directives[name];
   }
+
+  bool hasDirective(String name) {
+    return _directives.containsKey(name);
+  }
 }

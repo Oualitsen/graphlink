@@ -82,3 +82,11 @@ const gqAnnotation = "gqAnnotation";
 const gqApplyOnFields = "gqApplyOnFields";
 const gqOnClient = "gqOnClient";
 const gqOnServer = "gqOnServer";
+
+///
+/// cache annotations
+///
+const gqCache = "@gqCache";
+const gqCacheTTL = "ttl";
+const gqCacheTag = "tag";
+const gqNoCache = "@gqNoCache";
