@@ -2,6 +2,7 @@ import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/gq_grammar.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gq_argument.dart';
+import 'package:graphlink/src/model/gq_cache_definition.dart';
 import 'package:graphlink/src/model/gq_directive.dart';
 import 'package:graphlink/src/model/gq_enum_definition.dart';
 import 'package:graphlink/src/model/gq_field.dart';
@@ -325,7 +326,47 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
     return """${def.type.name} ${def.tokenInfo}${serializeListText(def.arguments.map(serializeArgumentDefinition).toList(), join: ",")}${serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}{${serializeListText(def.elements.map(serializeQueryElement).toList(), join: " ", withParenthesis: false)}}""";
   }
 
+  List<DividedQuery> divideQueryDefinition(GQQueryDefinition def, GQGrammar grammar) {
+    var result = <DividedQuery>[];
+    for (var element in def.elements) {
+      final operationName = '${def.token}_${element.alias ?? ''}_${element.token}';
+      var serialQuery = serializeQueryElement(element);
+      final dq = DividedQuery(
+        query: serialQuery,
+        operationName: operationName,
+        cache: element.cacheDefinition,
+        elementKey: element.alias?.token ?? element.token,
+        variables: [...element.arguments.map((e) => e.value?.toString() ?? '')],
+        fragmentNames: element.getFragmentsAndDependecies(grammar).map((e) => e.token).toSet(),
+        argumentDeclarations:
+            element.arguments.map((arg) => "${arg.value}: ${serializeType(arg.type)}").toList(),
+      );
+      result.add(dq);
+    }
+    return result;
+  }
+
   String serializeQueryElement(GQQueryElement def) {
     return """${def.escapedToken}${serializeListText(def.arguments.map(serializeArgumentValue).toList(), join: ",")}${serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}${def.block != null ? serializeBlock(def.block!) : ''}""";
   }
+}
+
+class DividedQuery {
+  final String query;
+  final String operationName;
+  final GqCacheDefinition? cache;
+  final List<String> variables;
+  final String elementKey;
+  final Set<String> fragmentNames;
+  final List<String> argumentDeclarations;
+
+  DividedQuery({
+    required this.query,
+    required this.operationName,
+    required this.cache,
+    required this.variables,
+    required this.elementKey,
+    required this.fragmentNames,
+    required this.argumentDeclarations,
+  });
 }

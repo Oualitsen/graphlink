@@ -27,6 +27,19 @@ abstract class CodeGenUtilsBase {
       required String negativeStatement});
 
   String createMethod({String? returnType, required String methodName, List<String>? arguments});
+
+  String tryCatchFinally({
+    required List<String> tryStatements,
+    String? catchVariable,
+    List<String>? catchStatements,
+    List<String>? finallyStatements,
+  });
+
+  String forEachLoop({
+    required String variable,
+    required String iterable,
+    required List<String> statements,
+  });
 }
 
 class DartCodeGenUtils implements CodeGenUtilsBase {
@@ -130,19 +143,24 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
       required String methodName,
       List<String>? arguments,
       bool namedArguments = true,
-      List<String>? statements}) {
+      List<String>? statements,
+      bool async = false}) {
     var buffer = StringBuffer();
     if (returnType != null) {
       buffer.write(returnType);
       buffer.write(" ");
     }
     buffer.write(methodName);
+
     if (arguments != null) {
       buffer.write(parentheses(namedArguments && arguments.isNotEmpty
           ? [
               block([arguments.join(",\n")]),
             ]
           : arguments));
+    }
+    if (async) {
+      buffer.write(" async");
     }
     if (statements != null) {
       buffer.write(" ");
@@ -189,6 +207,40 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
     if (methods != null && methods.isNotEmpty) {
       methods.forEach(buffer.writeln);
     }
+    return buffer.toString();
+  }
+
+  @override
+  String tryCatchFinally({
+    required List<String> tryStatements,
+    String? catchVariable,
+    List<String>? catchStatements,
+    List<String>? finallyStatements,
+  }) {
+    var buffer = StringBuffer();
+    buffer.write("try ");
+    buffer.write(block(tryStatements));
+    if (catchStatements != null) {
+      final variable = catchVariable ?? "e";
+      buffer.write(" catch ($variable) ");
+      buffer.write(block(catchStatements));
+    }
+    if (finallyStatements != null) {
+      buffer.write(" finally ");
+      buffer.write(block(finallyStatements));
+    }
+    return buffer.toString();
+  }
+
+  @override
+  String forEachLoop({
+    required String variable,
+    required String iterable,
+    required List<String> statements,
+  }) {
+    var buffer = StringBuffer();
+    buffer.write("for (var $variable in $iterable) ");
+    buffer.write(block(statements));
     return buffer.toString();
   }
 }
@@ -372,6 +424,40 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
       if (methods != null) ...methods,
     ]));
 
+    return buffer.toString();
+  }
+
+  @override
+  String tryCatchFinally({
+    required List<String> tryStatements,
+    String? catchVariable,
+    List<String>? catchStatements,
+    List<String>? finallyStatements,
+  }) {
+    var buffer = StringBuffer();
+    buffer.write("try ");
+    buffer.write(block(tryStatements));
+    if (catchStatements != null) {
+      final variable = catchVariable ?? "e";
+      buffer.write(" catch (Exception $variable) ");
+      buffer.write(block(catchStatements));
+    }
+    if (finallyStatements != null) {
+      buffer.write(" finally ");
+      buffer.write(block(finallyStatements));
+    }
+    return buffer.toString();
+  }
+
+  @override
+  String forEachLoop({
+    required String variable,
+    required String iterable,
+    required List<String> statements,
+  }) {
+    var buffer = StringBuffer();
+    buffer.write("for (var $variable : $iterable) ");
+    buffer.write(block(statements));
     return buffer.toString();
   }
 }
