@@ -153,6 +153,12 @@ class GQQueryElement extends GQToken with GQDirectivesMixin {
     return _getFragmentNamesByBlock(block!);
   }
 
+  Set<GQFragmentDefinitionBase> getFragmentsAndDependecies(GQGrammar g) {
+    var frags = fragmentNames.map((e) => g.getFragmentByName(e)!).toSet();
+    var _allFrags = {...frags, ...frags.expand((e) => e.dependecies)};
+    return _allFrags;
+  }
+
   Set<String> _getFragmentNamesByBlock(GQFragmentBlockDefinition block) {
     var set1 = block.projections.values
         .where((element) => element.isFragmentReference)
