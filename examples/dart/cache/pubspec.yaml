@@ -10,5 +10,6 @@ environment:
 dependencies:
   graphlink:
     path: ../../../
+  http: ^1.2.0
 
 
