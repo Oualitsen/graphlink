@@ -866,9 +866,8 @@ extension GQGrammarExtension on GQGrammar {
       return GQArgumentValue(arg.tokenInfo, "\$${arg.tokenInfo}");
     }).toList();
     var queryElement = GQQueryElement(field.name, [], block, argValues, defaultAlias?.toToken());
-    var directives = queryType == GQQueryType.query
-        ? field.getDirectives().where((e) => [gqCache, gqNoCache].contains(e.token)).toList()
-        : <GQDirectiveValue>[];
+    var directives =
+        field.getDirectives().where((e) => [gqCache, gqNoCache].contains(e.token)).toList();
     final def = GQQueryDefinition(
         field.name,
         directives,

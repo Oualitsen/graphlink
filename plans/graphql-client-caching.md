@@ -6,6 +6,8 @@ Add opt-in, statically generated caching support to the Dart GraphQL client.
 Cache behavior is declared at the **resolver level** (individual fields within a query) via custom directives, with an optional global config fallback.
 The cache implementation is fully generated — no external dependencies required.
 
+GraphLink uses **granular caching**: within a single query containing multiple resolvers, each resolver is evaluated independently. Some resolvers can be served from cache while others hit the network — all in the same request cycle. The final response is always a merged result of cached and freshly fetched data.
+
 ---
 
 ## Goals
@@ -54,6 +56,16 @@ query UsersQuery($page: Page) {
 
 Resolvers without `@gqCache` are **always fetched from the network**, even when sibling resolvers are cached.
 
+**Generator validation:** Using `@gqCache` on a mutation or subscription field is a **generation-time error**:
+
+```
+Error: @gqCache is not allowed on mutations (CreateUser.createUser).
+       Mutations change server state — caching their response would silently skip the write.
+
+Error: @gqCache is not allowed on subscriptions (OnUserCreated.userCreated).
+       Subscriptions are event streams — there is no single response to cache.
+```
+
 ---
 
 ### `@gqNoCache`
@@ -71,7 +83,7 @@ query MarketQuery {
 
 ### `@gqInvalidate`
 
-Applied to mutations. Invalidates all cached resolvers matching the given tags, **after successful response only** (errors do not trigger invalidation).
+Applied to **queries, mutations, and subscriptions**. Evicts all cached resolvers matching the given tags.
 
 ```graphql
 mutation CreateUser @gqInvalidate(tags: ["users"]) {
@@ -84,6 +96,27 @@ mutation CreateUser @gqInvalidate(tags: ["users"]) {
 | Param  | Type       | Required | Description                                 |
 |--------|------------|----------|---------------------------------------------|
 | `tags` | `[String]` | Yes      | List of tags whose cached resolvers to evict |
+
+**Timing differs by operation type:**
+
+| Applied to   | When invalidation fires                                      |
+|--------------|--------------------------------------------------------------|
+| Query        | **Before** the query executes — forces a cache miss on matching resolvers, ensuring a fresh network fetch |
+| Mutation     | **After** successful response — errors do not trigger invalidation |
+| Subscription | **On each data event** — errors do not trigger invalidation  |
+
+Query example — force-refresh `drivers` cache every time this query runs:
+
+```graphql
+query DriversQuery($page: Page) @gqInvalidate(tags: ["drivers"]) {
+  getDrivers(page: $page) @gqCache(ttl: 120, tag: "drivers") {
+    firstName
+    lastName
+  }
+}
+```
+
+This evicts `drivers` entries before execution, so `getDrivers` always sees a cache miss and hits the network, then re-populates the cache with the fresh response.
 
 ---
 
@@ -125,9 +158,11 @@ UsersQuery.getDrivers:{"page":{"number":1}}
 
 ---
 
-## Partial Query Execution — Core Mechanic
+## Partial Query Execution — Core Mechanic (Granular Caching)
 
-This is the central design decision. Since `@gqCache` is resolver-level, a query may have a mix of cache hits, misses, and non-cached resolvers.
+This is the central design decision. GraphLink resolves caching at the **resolver level, not the query level**: within a single query, each resolver is independently checked against the cache. The result is that one resolver may be served from cache while a sibling resolver fires a network request — all transparently within one `client.usersQuery()` call.
+
+Since `@gqCache` is resolver-level, a query may have a mix of cache hits, misses, and non-cached resolvers.
 
 ### Resolver states
 
@@ -318,6 +353,44 @@ success? → YES → for each tag in @gqInvalidate:
                    → remove from _cacheExpiry and _tagIndex
          → NO  → do nothing, cache remains untouched
 ```
+
+---
+
+## Subscription Cache Invalidation
+
+`@gqInvalidate` is also supported on subscriptions. The semantics are the same as mutations — each incoming event that is **not an error** triggers tag-based invalidation. This ensures that any query caches affected by server-side changes are evicted as events arrive.
+
+```graphql
+subscription OnUserCreated @gqInvalidate(tags: ["users"]) {
+  userCreated {
+    id
+    username
+  }
+}
+```
+
+### Behavior
+
+- Invalidation fires on **each received event**, not on subscription start or close.
+- Error events (stream errors or GraphQL errors in the event payload) do **not** trigger invalidation — same rule as mutations.
+- The subscription itself is never cached; only the tags it references are evicted from the query cache.
+
+### Subscription Invalidation Flow
+
+```
+subscription event received
+    ↓
+event is a data event (no error)?
+    → YES → for each tag in @gqInvalidate:
+               → find all keys in _tagIndex[tag]
+               → call cache.deleteCache(key) for each
+               → remove from _cacheExpiry and _tagIndex
+    → NO  → do nothing, cache remains untouched
+    ↓
+yield event to caller as normal
+```
+
+The invalidation is **fire-and-forget** relative to the stream — it does not delay or alter the event delivered to the caller.
 
 ---
 
