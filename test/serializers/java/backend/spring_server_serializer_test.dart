@@ -4,7 +4,7 @@ import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/serializers/language.dart';
 import 'package:graphlink/src/serializers/spring_server_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {
@@ -19,8 +19,8 @@ void main() {
   };
 
   test("test backend handlers 1", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     final text =
         File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
@@ -71,8 +71,8 @@ void main() {
   });
 
   test("test backend handlers 2", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     final text =
         File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
@@ -123,8 +123,8 @@ void main() {
   });
 
   test("test backend handlers when shcema generation is on", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     final text =
         File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
@@ -177,8 +177,8 @@ void main() {
   });
 
   test("test controller/service returning skipped type ", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     final text =
         File("test/serializers/java/backend/spring_server_serializer2.graphql").readAsStringSync();
@@ -207,8 +207,8 @@ void main() {
   });
 
   test("test controller/service returning skipped type (batch mapping) ", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     final text =
         File("test/serializers/java/backend/spring_server_serializer2.graphql").readAsStringSync();
@@ -230,8 +230,8 @@ void main() {
   });
 
   test("test controller/service returning skipped type with no mapTo 1", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     final text =
         File("test/serializers/java/backend/spring_server_serializer2.graphql").readAsStringSync();
@@ -259,8 +259,8 @@ void main() {
   });
 
   test("test controller/service returning skipped type with no mapTo 2", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     final text =
         File("test/serializers/java/backend/spring_server_serializer2.graphql").readAsStringSync();
@@ -288,8 +288,8 @@ void main() {
   });
 
   test("test backend handlers with DataFetchingEnvironment injection", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     final text =
         File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
@@ -319,8 +319,8 @@ void main() {
   });
 
   test("test serialize Service (User Service)", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     final text =
         File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
@@ -345,8 +345,8 @@ void main() {
   });
 
   test("test serialize Service (Car Service)", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     final text =
         File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
@@ -367,8 +367,8 @@ void main() {
   });
 
   test("test serialize Service with DataFetchingEnvironment", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     final text =
         File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
@@ -390,8 +390,8 @@ void main() {
   });
 
   test("test serialize Handler", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     final text =
         File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
@@ -417,8 +417,8 @@ void main() {
       'void': 'void',
     };
 
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     const text = '''
   scalar void
@@ -429,7 +429,7 @@ void main() {
  
 
   type Mutation {
-    deleteUser: void ${gqServiceName}(name: "UserService")
+    deleteUser: void ${glServiceName}(name: "UserService")
   }
 
 ''';

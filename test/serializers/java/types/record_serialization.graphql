@@ -1,18 +1,18 @@
 
 directive @JsonProperty(
     value: String!
-    gqAnnotation: Boolean = true
-    gqClass: String = "@com.fasterxml.jackson.annotation.JsonProperty"
-    gqOnClient: Boolean = true
-    gqOnServer: Boolean = true
+    glAnnotation: Boolean = true
+    glClass: String = "@com.fasterxml.jackson.annotation.JsonProperty"
+    glOnClient: Boolean = true
+    glOnServer: Boolean = true
 
 ) on OBJECT | INPUT_OBJECT | INTERFACE | FIELD_DEFINITION
 
 directive @FieldNameConstants(
-    gqAnnotation: Boolean = true
-    gqClass: String = "@lombok.experimental.FieldNameConstants"
-    gqOnClient: Boolean = true
-    gqOnServer: Boolean = true
+    glAnnotation: Boolean = true
+    glClass: String = "@lombok.experimental.FieldNameConstants"
+    glOnClient: Boolean = true
+    glOnServer: Boolean = true
 
 ) on OBJECT | INPUT_OBJECT | INTERFACE
 

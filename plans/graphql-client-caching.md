@@ -101,11 +101,13 @@ mutation CreateUser @gqInvalidate(tags: ["users"]) {
 
 | Applied to   | When invalidation fires                                      |
 |--------------|--------------------------------------------------------------|
-| Query        | **Before** the query executes — forces a cache miss on matching resolvers, ensuring a fresh network fetch |
+| Query        | **After** successful response — fresh data is already in cache, sibling tags are then marked stale. Errors do not trigger invalidation. |
 | Mutation     | **After** successful response — errors do not trigger invalidation |
 | Subscription | **On each data event** — errors do not trigger invalidation  |
 
-Query example — force-refresh `drivers` cache every time this query runs:
+Queries and mutations share the same rule: **invalidate after success, never on error.** Running invalidation before a query fetch would bust related caches before the new data is available, causing unnecessary misses for concurrent callers. Running it after ensures the fresh response is cached first.
+
+Query example — re-fresh `drivers` and related caches after every successful fetch:
 
 ```graphql
 query DriversQuery($page: Page) @gqInvalidate(tags: ["drivers"]) {
@@ -116,7 +118,7 @@ query DriversQuery($page: Page) @gqInvalidate(tags: ["drivers"]) {
 }
 ```
 
-This evicts `drivers` entries before execution, so `getDrivers` always sees a cache miss and hits the network, then re-populates the cache with the fresh response.
+This fetches fresh data, re-populates the `getDrivers` cache entry, then evicts any other cached resolvers tagged `"drivers"`.
 
 ---
 
@@ -252,34 +254,31 @@ Future<UsersQueryResponse> usersQuery(Page page) async {
 
 ---
 
-## `GraphLinkCache` Interface
+## `GraphLinkCacheStore` Interface
 
 A minimal storage interface. Users can implement it to plug in any backend.
 
 ```dart
-abstract class GraphLinkCache {
-  void cache(String key, String value);
-  String? getCache(String key);
-  void deleteCache(String key);
+abstract class GraphLinkCacheStore {
+  Future<void> set(String key, String value);
+  Future<String?> get(String key);
+  Future<void> invalidate(String key);
+  Future<void> invalidateAll();
 }
 ```
 
-**Three methods, nothing more.** No TTL, no tags, no expiry — those are the generated layer's concern.
+**Four async methods, nothing more.** No TTL, no tags, no expiry — those are the generated layer's concern.
 
 ### Default generated implementation
 
 ```dart
-class InMemoryGraphLinkCache implements GraphLinkCache {
-  final Map<String, String> _store = {};
+class InMemoryGraphLinkCacheStore implements GraphLinkCacheStore {
+  final _store = <String, String>{};
 
-  @override
-  void cache(String key, String value) => _store[key] = value;
-
-  @override
-  String? getCache(String key) => _store[key];
-
-  @override
-  void deleteCache(String key) => _store.remove(key);
+  @override Future<void> set(String key, String value) async => _store[key] = value;
+  @override Future<String?> get(String key) async => _store[key];
+  @override Future<void> invalidate(String key) async => _store.remove(key);
+  @override Future<void> invalidateAll() async => _store.clear();
 }
 ```
 
@@ -289,17 +288,38 @@ Users can replace it by passing their own implementation to the client construct
 
 ## TTL & Expiry — Generated Layer Responsibility
 
-TTL tracking lives in the generated client, not in `GraphLinkCache`:
-
-```dart
-// Internal to generated client — not exposed to user
-final Map<String, DateTime> _cacheExpiry = {};
-final Map<String, Set<String>> _tagIndex = {};  // tag → set of cache keys
-```
+TTL tracking lives in the generated client via `CacheEntry`, not in `GraphLinkCacheStore`:
 
 `_getIfValid(key, variables)` checks expiry before reading:
-- Expired → call `cache.deleteCache(key)`, return null (treat as miss)
+- Expired → call `store.invalidate(key)`, return null (treat as miss)
 - Valid → return deserialized value
+
+---
+
+## Tag Index — Stored Inside the Cache
+
+The tag index is **not** kept in memory. Instead it is stored as regular entries in `GraphLinkCacheStore` under reserved keys:
+
+```
+__tag__persons  →  ["UsersQuery.getUsers:abc123", "UsersQuery.getDrivers:def456"]
+```
+
+**On cache write** (resolver with `tag: "persons"`):
+1. `store.get("__tag__persons")` — read current index
+2. Append the new cache key to the list
+3. `store.set("__tag__persons", updatedList)` — write back
+
+**On tag invalidation** (`invalidateTag("persons")`):
+1. `store.get("__tag__persons")` — read the index
+2. `store.invalidate(key)` for each key in the list
+3. `store.invalidate("__tag__persons")` — remove the index entry itself
+
+**Why this approach:**
+- Survives app restarts — the index lives in the same persistent store as the data
+- Works identically for in-memory and any persistent backend
+- `invalidateAll()` wipes everything including tag indexes automatically — no special handling needed
+- No `keys()` scan required — tag lookups are direct `get` calls
+- Overhead: one extra `get` + `set` per cache write for tagged resolvers
 
 ---
 

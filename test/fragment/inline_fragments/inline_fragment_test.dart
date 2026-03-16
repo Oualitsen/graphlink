@@ -2,15 +2,16 @@ import 'dart:io';
 
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
-final GQGrammar g = GQGrammar();
+final GLGrammar g = GLGrammar();
 
 void main() async {
   test("inline fragment test 1", () {
-    final text = File("test/fragment/inline_fragments/inline_fragment_test.graphql").readAsStringSync();
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
+    final text =
+        File("test/fragment/inline_fragments/inline_fragment_test.graphql").readAsStringSync();
+    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true);
     var parsed = g.parse(text);
     expect(parsed is Success, true);
     var serialize = DartSerializer(g);
@@ -21,8 +22,9 @@ void main() async {
   });
 
   test("inline fragment test 2", () {
-    final text = File("test/fragment/inline_fragments/inline_fragment_test2.graphql").readAsStringSync();
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
+    final text =
+        File("test/fragment/inline_fragments/inline_fragment_test2.graphql").readAsStringSync();
+    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true);
     var parsed = g.parse(text);
     expect(parsed is Success, true);
     var serialize = DartSerializer(g);

@@ -14,7 +14,7 @@ type User implements UserBase {
 
     username: String
 
-    password: String! @gqSkipOnClient
+    password: String! @glSkipOnClient
 }
 
 type Address {

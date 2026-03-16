@@ -7,15 +7,15 @@ type User {
     id: ID!
     name: String!
     middleName: String
-    cars: [Car!]!  @gqSkipOnServer
+    cars: [Car!]!  @glSkipOnServer
 }
 
 type Car {
     make: String!
     model: String!
-    userId: ID! @gqSkipOnClient
-    owner: Owner! @gqSkipOnServer
-    ownerId: ID! @gqSkipOnClient
+    userId: ID! @glSkipOnClient
+    owner: Owner! @glSkipOnServer
+    ownerId: ID! @glSkipOnClient
 }
 
 type Owner {
@@ -28,8 +28,8 @@ type Query {
    getUserById(id: ID!): User
    getUsers(name: String, middle: String): [User!]!
    getCarById(id: ID!): Car!
-   getAzuls: Int! @gqServiceName(name: "AzulService")
-   countCars: Int! @gqServiceName(name: "CarService")
+   getAzuls: Int! @glServiceName(name: "AzulService")
+   countCars: Int! @glServiceName(name: "CarService")
 
 }
 

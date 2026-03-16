@@ -7,7 +7,7 @@ type Notif implements BasicEntity  {
     id: ID!
     ownsMission: Boolean!
     missionId: String
-    ownerId: String! @gqSkipOnClient
+    ownerId: String! @glSkipOnClient
 }
 
 type Query {

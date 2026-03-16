@@ -1,10 +1,9 @@
-
 import 'package:build/build.dart';
 import 'package:glob/glob.dart';
 import 'package:logger/logger.dart';
 import 'package:petitparser/core.dart';
 import 'package:graphlink/src/config.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:graphlink/src/main.dart';
 import 'package:yaml/yaml.dart';
 
@@ -39,7 +38,7 @@ class GraphlinkGeneratorBuilder implements Builder {
     options.config.entries.where((element) => element.value is String).forEach((e) {
       map[e.key] = e.value as String;
     });
-    var g = GQGrammar(
+    var g = GLGrammar(
       typeMap: map,
       generateAllFieldsFragments: options.config["generateAllFieldsFragments"] as bool? ?? false,
       nullableFieldsRequired: options.config["nullableFieldsRequired"] as bool? ?? false,
@@ -51,11 +50,17 @@ class GraphlinkGeneratorBuilder implements Builder {
 
     var schema = await readSchema(buildStep);
     var parsed = g.parse(schema);
-    if(parsed is Success) {
-      await generateClientClasses(g, GeneratorConfig(schemaPaths: [], mode: "client", identityFields: g.identityFields,
-     typeMappings: map, outputDir: outputDir), now);
+    if (parsed is Success) {
+      await generateClientClasses(
+          g,
+          GeneratorConfig(
+              schemaPaths: [],
+              mode: "client",
+              identityFields: g.identityFields,
+              typeMappings: map,
+              outputDir: outputDir),
+          now);
     }
-   
   }
 
   Future<void> initAssets(BuildStep buildStep) async {

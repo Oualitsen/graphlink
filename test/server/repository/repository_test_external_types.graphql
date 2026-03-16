@@ -1,6 +1,6 @@
 
-directive @gqRepository(gqType: String!, gqIdType: String!) on INTERFACE
-directive @gqExternal(gqClass: String!) on OBJECT | INPUT_OBJECT
+directive @glRepository(glType: String!, glIdType: String!) on INTERFACE
+directive @glExternal(glClass: String!) on OBJECT | INPUT_OBJECT
 
 
 type User {
@@ -9,11 +9,11 @@ type User {
     middleName: String
 }
 
-scalar Pagebale @gqExternal(gqClass: "org.springframework.data.domain.Pageable")
+scalar Pagebale @glExternal(glClass: "org.springframework.data.domain.Pageable")
 
-scalar ExternalUser @gqExternal(gqClass: "com.mycompany.ExternalUser")
+scalar ExternalUser @glExternal(glClass: "com.mycompany.ExternalUser")
 
-interface UserRepository @gqRepository(gqIdType: "id", gqType: "User") {
+interface UserRepository @glRepository(glIdType: "id", glType: "User") {
     findAll(pagebale: Pagebale!): [ExternalUser!]!
     countElements: Int!
 }

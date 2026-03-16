@@ -1,8 +1,8 @@
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
-final GQGrammar g = GQGrammar();
+final GLGrammar g = GLGrammar();
 
 void main() {
   test("Single quote String token", () {
@@ -52,7 +52,7 @@ void main() {
   });
 
   test("Boolean token test", () {
-    var g = GQGrammar();
+    var g = GLGrammar();
     var parser = g.buildFrom(g.boolean().end());
     var result = parser.parse("true");
     expect(result is Success, true);

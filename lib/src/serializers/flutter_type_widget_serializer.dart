@@ -1,22 +1,21 @@
 import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/gq_grammar.dart';
-import 'package:graphlink/src/model/gq_enum_definition.dart';
-import 'package:graphlink/src/model/gq_field.dart';
-import 'package:graphlink/src/model/gq_type_definition.dart';
+import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/model/gl_enum_definition.dart';
+import 'package:graphlink/src/model/gl_field.dart';
+import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
-import 'package:graphlink/src/ui/flutter/gq_type_view.dart';
+import 'package:graphlink/src/ui/flutter/gl_type_view.dart';
 
 class FlutterTypeWidgetSerializer {
-  final GQGrammar grammar;
+  final GLGrammar grammar;
   final DartSerializer serializer;
   final bool useApplocalisation;
   final codeGenUtils = DartCodeGenUtils();
 
-  FlutterTypeWidgetSerializer(
-      this.grammar, this.serializer, this.useApplocalisation);
+  FlutterTypeWidgetSerializer(this.grammar, this.serializer, this.useApplocalisation);
 
-  List<String> getDeclarations(GQTypeDefinition type) {
+  List<String> getDeclarations(GLTypeDefinition type) {
     var fields = type.getSerializableFields(grammar.mode);
     var result = <String>[
       'final ${type.token} value;',
@@ -34,8 +33,9 @@ class FlutterTypeWidgetSerializer {
       'final bool verticalLayout;',
       'final GQFieldViewType viewType;',
       // generate list containers
-      ...fields.where((f) => f.type.isList).map((e) =>
-          'final Widget Function(List<Widget> children)? ${containerVar(e)};')
+      ...fields
+          .where((f) => f.type.isList)
+          .map((e) => 'final Widget Function(List<Widget> children)? ${containerVar(e)};')
     ];
 
     return result;
@@ -45,7 +45,7 @@ class FlutterTypeWidgetSerializer {
     return '${typeName}Widget';
   }
 
-  String serializeType(GQTypeView typeView, String importPrefix) {
+  String serializeType(GLTypeView typeView, String importPrefix) {
     final type = typeView.type;
     var fields = type.getSerializableFields(grammar.mode);
     var buffer = StringBuffer();
@@ -108,59 +108,49 @@ Widget _wrapWidget(Widget label, Widget value) {
 ''';
   }
 
-  String serializeConstructor(String widgetName, List<GQField> fields) {
-    var m = codeGenUtils.createMethod(
-        methodName: widgetName,
-        returnType: 'const',
-        arguments: [
-          'super.key,',
-          'required this.value,',
-          // orders
-          for (var i = 0, field = fields[i]; i < fields.length; i++)
-            'this.${orderVar(field)} = ${i},',
-          // visibility
-          for (var i = 0, field = fields[i]; i < fields.length; i++)
-            'this.${visibleVar(field)} = true,',
-          // field labels
-          for (var field in fields) 'this.${labelVar(field)},',
-          // replacement widgets
-          for (var field in fields) 'this.${widgetVar(field)},',
-          // transformers
-          ...fields
-              .where((f) => grammar.isNonProjectableType(f.type.token))
-              .map((field) => 'this.${transVar(field)},'),
-          // viewType
-          'this.viewType = GQFieldViewType.labelValueRow,',
-          'this.labelFlex = 1,',
-          'this.valueFlex = 1,',
-          'this.spaceBetween = 10.0,',
-          // styles
-          'this.labelStyle,',
-          'this.valueStyle,',
-          'this.verticalLayout = true,',
-          ...fields
-              .where((f) => f.type.isList)
-              .map((e) => 'this.${containerVar(e)},')
-        ]);
+  String serializeConstructor(String widgetName, List<GLField> fields) {
+    var m = codeGenUtils.createMethod(methodName: widgetName, returnType: 'const', arguments: [
+      'super.key,',
+      'required this.value,',
+      // orders
+      for (var i = 0, field = fields[i]; i < fields.length; i++) 'this.${orderVar(field)} = ${i},',
+      // visibility
+      for (var i = 0, field = fields[i]; i < fields.length; i++)
+        'this.${visibleVar(field)} = true,',
+      // field labels
+      for (var field in fields) 'this.${labelVar(field)},',
+      // replacement widgets
+      for (var field in fields) 'this.${widgetVar(field)},',
+      // transformers
+      ...fields
+          .where((f) => grammar.isNonProjectableType(f.type.token))
+          .map((field) => 'this.${transVar(field)},'),
+      // viewType
+      'this.viewType = GQFieldViewType.labelValueRow,',
+      'this.labelFlex = 1,',
+      'this.valueFlex = 1,',
+      'this.spaceBetween = 10.0,',
+      // styles
+      'this.labelStyle,',
+      'this.valueStyle,',
+      'this.verticalLayout = true,',
+      ...fields.where((f) => f.type.isList).map((e) => 'this.${containerVar(e)},')
+    ]);
     return "${m};";
   }
 
-  String serializeBuildMethod(List<GQField> fields) {
+  String serializeBuildMethod(List<GLField> fields) {
     var methodStatements = <String>[
       'final ${widgetsVar} = <MapEntry<Widget, int>>[];',
       ...fields.map((field) {
-        return codeGenUtils
-            .ifStatement(condition: visibleVar(field), ifBlockStatements: [
-          codeGenUtils.ifStatement(
-              condition: '${widgetVar(field)} != null',
-              ifBlockStatements: [
-                '${widgetsVar}.add(MapEntry(${widgetVar(field)}!, ${orderVar(field)}));'
-              ],
-              elseBlockStatements: [
-                'final valueWidget = ${_generateValueWidget(field, null)};',
-                'final labelWidget = _wrapWidget(_createLabelWidget("${field.name.token}", context), valueWidget);',
-                '${widgetsVar}.add(MapEntry(labelWidget, ${orderVar(field)}));'
-              ])
+        return codeGenUtils.ifStatement(condition: visibleVar(field), ifBlockStatements: [
+          codeGenUtils.ifStatement(condition: '${widgetVar(field)} != null', ifBlockStatements: [
+            '${widgetsVar}.add(MapEntry(${widgetVar(field)}!, ${orderVar(field)}));'
+          ], elseBlockStatements: [
+            'final valueWidget = ${_generateValueWidget(field, null)};',
+            'final labelWidget = _wrapWidget(_createLabelWidget("${field.name.token}", context), valueWidget);',
+            '${widgetsVar}.add(MapEntry(labelWidget, ${orderVar(field)}));'
+          ])
         ]);
       })
     ];
@@ -187,7 +177,7 @@ Widget _wrapWidget(Widget label, Widget value) {
     return buffer.toString();
   }
 
-  String _generateValueWidget(GQField field, GQField? original) {
+  String _generateValueWidget(GLField field, GLField? original) {
     var buffer = StringBuffer();
     var type = field.type.token;
 
@@ -198,23 +188,24 @@ Widget _wrapWidget(Widget label, Widget value) {
     } else {
       valueName = field.name.token;
     }
-    String dot = targetField.type.nullable ?  "!.": ".";
+    String dot = targetField.type.nullable ? "!." : ".";
 
     if (field.type.isList) {
       // handle list of values
-      var newField = GQField(
+      var newField = GLField(
           name: "e".toToken(),
           type: field.type.inlineType,
           arguments: field.arguments,
           directives: field.getDirectives());
-      final mapToList =
-          "map((e) => ${_generateValueWidget(newField, field)}).toList())";
+      final mapToList = "map((e) => ${_generateValueWidget(newField, field)}).toList())";
       var ternaryOp = codeGenUtils.ternaryOp(
           condition: "${containerVar(field)} != null",
-          positiveStatement:
-              "${containerVar(field)}!(${valueName}${dot}${mapToList}",
+          positiveStatement: "${containerVar(field)}!(${valueName}${dot}${mapToList}",
           negativeStatement: "Column(children: ${valueName}${dot}${mapToList}");
-          var nullValueCheck = codeGenUtils.ternaryOp(condition: '${valueName} != null', positiveStatement: "(${ternaryOp})", negativeStatement: 'SizedBox.shrink()');
+      var nullValueCheck = codeGenUtils.ternaryOp(
+          condition: '${valueName} != null',
+          positiveStatement: "(${ternaryOp})",
+          negativeStatement: 'SizedBox.shrink()');
       buffer.write(nullValueCheck);
 
       return buffer.toString();
@@ -234,7 +225,6 @@ Widget _wrapWidget(Widget label, Widget value) {
       if (grammar.isEnum(type)) {
         buffer.write('_getGenderValue(context, ${valueName})');
       } else {
-        
         switch (serialType) {
           case 'String':
           case 'String?':
@@ -257,76 +247,68 @@ Widget _wrapWidget(Widget label, Widget value) {
     return buffer.toString();
   }
 
-  String generateEnumValueFor(GQEnumDefinition def) {
-    return codeGenUtils.method(
-        returnType: "String",
-        methodName: "_get${def.token}Value",
-        arguments: [
-          'BuildContext context',
-          '${def.token}? value'
-        ],
-        statements: [
-          if (useApplocalisation) ...[
-            'final lang = AppLocalizations.of(context)!;',
-            codeGenUtils.switchStatement(
-                expression: 'value',
-                cases: [
-                  ...def.values.map(
-                    (val) => DartCaseStatement(
-                        caseValue: "${def.token}.${val.value.token}",
-                        statement:
-                            'return lang.${def.token.firstLow}${val.value.token.firstUp};'),
-                  ),
-                ],
-                defaultStatement: 'return lang.${def.token.firstLow}Null;')
-          ] else
-            'return value.toJson();'
-        ]);
+  String generateEnumValueFor(GLEnumDefinition def) {
+    return codeGenUtils
+        .method(returnType: "String", methodName: "_get${def.token}Value", arguments: [
+      'BuildContext context',
+      '${def.token}? value'
+    ], statements: [
+      if (useApplocalisation) ...[
+        'final lang = AppLocalizations.of(context)!;',
+        codeGenUtils.switchStatement(
+            expression: 'value',
+            cases: [
+              ...def.values.map(
+                (val) => DartCaseStatement(
+                    caseValue: "${def.token}.${val.value.token}",
+                    statement: 'return lang.${def.token.firstLow}${val.value.token.firstUp};'),
+              ),
+            ],
+            defaultStatement: 'return lang.${def.token.firstLow}Null;')
+      ] else
+        'return value.toJson();'
+    ]);
   }
 
   String serializeGetInBetweenWidget() {
-    return codeGenUtils.method(
-        returnType: "Widget?",
-        methodName: "_getInBetweenWidget",
-        statements: [
-          codeGenUtils.ifStatement(
-              condition: "spaceBetween <= 0",
-              ifBlockStatements: ["return null;"]),
-          codeGenUtils.ifStatement(
-              condition: "verticalLayout",
-              ifBlockStatements: ["return SizedBox(height: spaceBetween);"]),
-          "return SizedBox(width: spaceBetween);"
-        ]);
+    return codeGenUtils
+        .method(returnType: "Widget?", methodName: "_getInBetweenWidget", statements: [
+      codeGenUtils.ifStatement(condition: "spaceBetween <= 0", ifBlockStatements: ["return null;"]),
+      codeGenUtils.ifStatement(
+          condition: "verticalLayout",
+          ifBlockStatements: ["return SizedBox(height: spaceBetween);"]),
+      "return SizedBox(width: spaceBetween);"
+    ]);
   }
 
-  String containerVar(GQField field) {
+  String containerVar(GLField field) {
     return "${field.name}Conatiner";
   }
 
-  String visibleVar(GQField field) {
+  String visibleVar(GLField field) {
     return "${field.name}Visible";
   }
 
-  String labelVar(GQField field) {
+  String labelVar(GLField field) {
     return "${field.name}Label";
   }
 
-  String widgetVar(GQField field) {
+  String widgetVar(GLField field) {
     return "${field.name}Widget";
   }
 
-  String orderVar(GQField field) {
+  String orderVar(GLField field) {
     return "${field.name}Order";
   }
 
-  String transVar(GQField field) {
+  String transVar(GLField field) {
     return "${field.name}Transformer";
   }
 
   String get widgetsVar => "\$\$widgets";
   String get childrenVar => "\$\$children";
 
-  String serializeGetLabel(GQTypeDefinition type) {
+  String serializeGetLabel(GLTypeDefinition type) {
     var fields = type.getSerializableFields(grammar.mode);
     var methodStatements = <String>["String result;"];
     if (useApplocalisation) {
@@ -340,13 +322,10 @@ Widget _wrapWidget(Widget label, Widget value) {
       } else {
         b.write('fieldName;');
       }
-      return DartCaseStatement(
-          caseValue: '"${field.name.token}"', statement: b.toString());
+      return DartCaseStatement(caseValue: '"${field.name.token}"', statement: b.toString());
     }).toList();
     methodStatements.add(codeGenUtils.switchStatement(
-        expression: 'fieldName',
-        cases: cases,
-        defaultStatement: 'result = fieldName;'));
+        expression: 'fieldName', cases: cases, defaultStatement: 'result = fieldName;'));
     methodStatements.add('return result;');
     return codeGenUtils.method(
         returnType: "String",

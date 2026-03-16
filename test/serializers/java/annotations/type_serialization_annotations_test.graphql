@@ -1,5 +1,5 @@
 
-directive @gqDecorators(
+directive @glDecorators(
     value: [String!]!
     applyOnClient: Boolean = true
     applyOnServer: Boolean = true
@@ -11,36 +11,36 @@ directive @gqDecorators(
 
 
 directive @Getter(
-    gqOnClient: Boolean = false
-    gqOnServer: Boolean = true
-    gqAnnotation: Boolean = true
-    gqClass: String = "@lombok.Getter"
+    glOnClient: Boolean = false
+    glOnServer: Boolean = true
+    glAnnotation: Boolean = true
+    glClass: String = "@lombok.Getter"
 ) on FIELD_DEFINITION | OBJECT | INPUT_OBJECT | ENUM | ENUM_VALUE | INTERFACE
 
 directive @Query(
     value: String!
-    gqOnClient: Boolean = false
-    gqOnServer: Boolean = true
-    gqAnnotation: Boolean = true
-    gqClass: String = "@Query"
+    glOnClient: Boolean = false
+    glOnServer: Boolean = true
+    glAnnotation: Boolean = true
+    glClass: String = "@Query"
     native: Boolean = false
 ) on FIELD_DEFINITION | OBJECT | INPUT_OBJECT | ENUM | ENUM_VALUE | INTERFACE 
 
 directive @Json(
     value: String!
-    gqOnClient: Boolean = false
-    gqOnServer: Boolean = true
-    gqAnnotation: Boolean = true
-    gqClass: String = "@Json"
+    glOnClient: Boolean = false
+    glOnServer: Boolean = true
+    glAnnotation: Boolean = true
+    glClass: String = "@Json"
 ) on FIELD_DEFINITION | OBJECT | INPUT_OBJECT | ENUM | ENUM_VALUE | INTERFACE 
 
 
 directive @LoggedIn(
     value: String!
-    gqOnClient: Boolean = false
-    gqOnServer: Boolean = true
-    gqAnnotation: Boolean = true
-    gqClass: String = "@LoggedIn"
+    glOnClient: Boolean = false
+    glOnServer: Boolean = true
+    glAnnotation: Boolean = true
+    glClass: String = "@LoggedIn"
 ) on FIELD_DEFINITION | OBJECT | INPUT_OBJECT | ENUM | ENUM_VALUE | INTERFACE 
 
 enum Gender @Getter {

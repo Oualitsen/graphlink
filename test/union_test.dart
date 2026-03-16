@@ -1,29 +1,29 @@
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/serializers/graphq_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
-import 'package:graphlink/src/model/gq_union.dart';
+import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/model/gl_union.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {
   test("Union serialization", () {
-    final GQGrammar g = GQGrammar();
-    final serialzer = GraphqSerializer(g);
+    final GLGrammar g = GLGrammar();
+    final serialzer = GLGraphqSerializer(g);
     var union = GQUnionDefinition("type".toToken(), false, ["User".toToken()], []);
 
     expect(serialzer.serializeUnionDefinition(union), "union type = User");
   });
 
   test("Union serialization with multiple types", () {
-    final GQGrammar g = GQGrammar();
-    final serialzer = GraphqSerializer(g);
+    final GLGrammar g = GLGrammar();
+    final serialzer = GLGraphqSerializer(g);
     var union =
         GQUnionDefinition("type".toToken(), false, ["User".toToken(), "Client".toToken()], []);
     expect(serialzer.serializeUnionDefinition(union), "union type = User | Client");
   });
 
   test("Parse union 1", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parser = g.buildFrom<GQUnionDefinition>(g.unionDefinition().end());
     var result = parser.parse('''
@@ -35,7 +35,7 @@ void main() {
   });
 
   test("Parse union 2", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parser = g.buildFrom<GQUnionDefinition>(g.unionDefinition().end());
     var result = parser.parse('''

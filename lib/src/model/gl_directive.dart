@@ -1,0 +1,151 @@
+import 'package:graphlink/src/constants.dart';
+import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/model/gl_argument.dart';
+import 'package:graphlink/src/model/gl_token.dart';
+import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+import 'package:graphlink/src/model/token_info.dart';
+
+class GLDirectiveDefinition {
+  final TokenInfo name;
+  final List<GLArgumentDefinition> arguments;
+  final Set<GLDirectiveScope> scopes;
+  final bool repeatable;
+
+  GLDirectiveDefinition(this.name, this.arguments, this.scopes, this.repeatable);
+}
+
+enum GLDirectiveScope {
+// ignore: constant_identifier_names
+  QUERY,
+  // ignore: constant_identifier_names
+  MUTATION,
+  // ignore: constant_identifier_names
+  SUBSCRIPTION,
+  // ignore: constant_identifier_names
+  FIELD_DEFINITION,
+  // ignore: constant_identifier_names
+  FIELD,
+  // ignore: constant_identifier_names
+  FRAGMENT_DEFINITION,
+  // ignore: constant_identifier_names
+  FRAGMENT_SPREAD,
+  // ignore: constant_identifier_names
+  INLINE_FRAGMENT,
+  // ignore: constant_identifier_names
+  SCHEMA,
+  // ignore: constant_identifier_names
+  SCALAR,
+  // ignore: constant_identifier_names
+  OBJECT,
+
+  // ignore: constant_identifier_names
+  ARGUMENT_DEFINITION,
+  // ignore: constant_identifier_names
+  INTERFACE,
+  // ignore: constant_identifier_names
+  UNION,
+  // ignore: constant_identifier_names
+  ENUM_VALUE,
+  // ignore: constant_identifier_names
+  ENUM,
+
+  // ignore: constant_identifier_names
+  INPUT_OBJECT,
+  // ignore: constant_identifier_names
+  INPUT_FIELD_DEFINITION,
+  // ignore: constant_identifier_names
+  VARIABLE_DEFINITION
+// ignore: constant_identifier_names
+}
+
+class GLDirectiveValue extends GLToken {
+  final List<GLDirectiveScope> locations;
+  final Map<String, GQArgumentValue> _argsMap = {};
+
+  ///
+  /// helps with the schema serialization
+  ///
+  final bool generated;
+
+  GLDirectiveValue(super.tokenInfo, this.locations, List<GQArgumentValue> arguments,
+      {required this.generated}) {
+    _addArgument(arguments);
+  }
+
+  void _addArgument(List<GQArgumentValue> arguments) {
+    for (var arg in arguments) {
+      _argsMap[arg.token] = arg;
+    }
+  }
+
+  void setDefualtArguments(List<GLArgumentDefinition> args) {
+    List<GQArgumentValue> argsToAdd = [];
+    for (var argDef in args) {
+      var argValue = _argsMap[argDef.token];
+      if (argValue == null && argDef.initialValue != null) {
+        var newArgValue = GQArgumentValue(argDef.tokenInfo, argDef.initialValue);
+        _argsMap[argDef.token] = newArgValue;
+        argsToAdd.add(newArgValue);
+      }
+    }
+    _addArgument(argsToAdd);
+  }
+
+  Object? getArgValue(String name) {
+    var arg = _argsMap[name];
+    return arg?.value;
+  }
+
+  bool getArgValueAsBool(String name) {
+    var arg = getArgValue(name);
+    if (arg == null) {
+      return false;
+    }
+    return arg is bool ? arg : false;
+  }
+
+  String? getArgValueAsString(String name) {
+    var value = getArgValue(name);
+    if (value == null) {
+      return null;
+    }
+    return (value as String).removeQuotes();
+  }
+
+  GQArgumentValue? getArgumentByName(String name) {
+    return _argsMap[name];
+  }
+
+  void addArg(String name, Object? value) {
+    _argsMap[name] = GQArgumentValue(TokenInfo.ofString(name), value);
+  }
+
+  List<GQArgumentValue> getArguments() {
+    return _argsMap.values.toList();
+  }
+
+  static GLDirectiveValue createDirectiveValue(
+      {required String directiveName,
+      required bool generated,
+      List<GQArgumentValue> args = const []}) {
+    return GLDirectiveValue(TokenInfo.ofString(directiveName), [], args, generated: generated);
+  }
+
+  static GLDirectiveValue createGqDecorators({
+    required List<String> decorators,
+    bool applyOnServer = true,
+    bool applyOnClient = true,
+    String? import,
+  }) {
+    return GLDirectiveValue(
+        TokenInfo.ofString(glDecorators),
+        [],
+        [
+          GQArgumentValue(TokenInfo.ofString("value"), decorators.map((s) => '"$s"').toList()),
+          GQArgumentValue(TokenInfo.ofString(glApplyOnServer), applyOnServer),
+          GQArgumentValue(TokenInfo.ofString(glApplyOnClient), applyOnClient),
+          if (import != null) GQArgumentValue(TokenInfo.ofString(glImport), import),
+        ],
+        generated: true);
+  }
+}

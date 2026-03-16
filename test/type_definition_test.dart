@@ -1,10 +1,10 @@
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {
   test("Type test", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parser = g.buildFrom(g.typeDefinition().end());
     var result = parser.parse('''
@@ -36,7 +36,7 @@ void main() {
   });
 
   test("Type test with arguments", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parser = g.buildFrom(g.typeDefinition().end());
     var result = parser.parse('''

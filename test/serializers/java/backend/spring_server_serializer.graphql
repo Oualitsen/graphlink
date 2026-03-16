@@ -7,16 +7,16 @@ type User {
     id: ID!
     name: String!
     middleName: String
-    cars: [Car!]!  @gqSkipOnServer
-    password: String! @gqSkipOnClient
+    cars: [Car!]!  @glSkipOnServer
+    password: String! @glSkipOnClient
 }
 
 type Car {
     make: String!
     model: String!
-    userId: ID! @gqSkipOnClient
-    owner: Owner! @gqSkipOnServer
-    ownerId: ID! @gqSkipOnClient
+    userId: ID! @glSkipOnClient
+    owner: Owner! @glSkipOnServer
+    ownerId: ID! @glSkipOnClient
 }
 
 type Owner {
@@ -31,15 +31,15 @@ type Query {
    getUserById(id: ID!): User
    getUsers(name: String, middle: String): [User!]!
    getCarById(id: ID!): Car!
-   getCarCount(userId: ID!): Int! @gqServiceName(name: "CarService")
-   getUserCount: Int! @gqServiceName(name: "UserService")
+   getCarCount(userId: ID!): Int! @glServiceName(name: "CarService")
+   getUserCount: Int! @glServiceName(name: "UserService")
    getSomethingCount: Int!
 
 }
 
 type Subscription {
     watchUser(userId: ID!): User! 
-    watchCars(userId: ID!): [Car]! @gqServiceName(name: "User")
+    watchCars(userId: ID!): [Car]! @glServiceName(name: "User")
 }
 
   

@@ -2,13 +2,13 @@ import 'dart:io';
 
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {
   test("equals hascode on type", () {
     final text = File("test/equals_hashcode_test/equals_hashcode.graphql").readAsStringSync();
-    var g = GQGrammar(identityFields: ["id"]);
+    var g = GLGrammar(identityFields: ["id"]);
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
     expect(parsed is Success, true);

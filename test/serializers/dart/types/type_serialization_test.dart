@@ -3,12 +3,12 @@ import 'dart:io';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:graphlink/src/serializers/language.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {
   test("dart test skipOn mode = client", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], mode: CodeGenerationMode.client);
+    final GLGrammar g = GLGrammar(identityFields: ["id"], mode: CodeGenerationMode.client);
 
     final text = File("test/serializers/dart/types/type_serialization_skip_on_test.graphql")
         .readAsStringSync();
@@ -22,7 +22,7 @@ void main() {
   });
 
   test("dart test skipOn mode = server", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], mode: CodeGenerationMode.server);
+    final GLGrammar g = GLGrammar(identityFields: ["id"], mode: CodeGenerationMode.server);
 
     final text = File("test/serializers/dart/types/type_serialization_skip_on_test.graphql")
         .readAsStringSync();
@@ -47,7 +47,7 @@ void main() {
   });
 
   test("Dart type serialization", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"]);
+    final GLGrammar g = GLGrammar(identityFields: ["id"]);
     final text =
         File("test/serializers/dart/types/type_serialization_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -71,7 +71,7 @@ void main() {
   });
 
   test("Dart input serialization", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"]);
+    final GLGrammar g = GLGrammar(identityFields: ["id"]);
     final text =
         File("test/serializers/dart/types/type_serialization_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -99,7 +99,7 @@ void main() {
   });
 
   test("Dart interface serialization", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"]);
+    final GLGrammar g = GLGrammar(identityFields: ["id"]);
     final text =
         File("test/serializers/dart/types/interface_serialization_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -117,7 +117,7 @@ void main() {
   });
 
   test("Dart interface implementing one interface serialization", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"]);
+    final GLGrammar g = GLGrammar(identityFields: ["id"]);
     final text =
         File("test/serializers/dart/types/interface_serialization_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -136,7 +136,7 @@ void main() {
   });
 
   test("Dart interface implementing multiple interface serialization", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"]);
+    final GLGrammar g = GLGrammar(identityFields: ["id"]);
     final text =
         File("test/serializers/dart/types/interface_serialization_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());

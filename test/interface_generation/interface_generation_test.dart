@@ -1,15 +1,16 @@
 import 'dart:io';
 
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
-final GQGrammar g = GQGrammar();
+final GLGrammar g = GLGrammar();
 
 void main() async {
   test("Should generate all implemented interfaces", () {
-    final text = File("test/interface_generation/interface_generation_test.graphql").readAsStringSync();
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
+    final text =
+        File("test/interface_generation/interface_generation_test.graphql").readAsStringSync();
+    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
     expect(parsed is Success, true);

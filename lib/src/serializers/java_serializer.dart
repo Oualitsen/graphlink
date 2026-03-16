@@ -1,20 +1,20 @@
 import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
-import 'package:graphlink/src/model/gq_argument.dart';
-import 'package:graphlink/src/model/gq_directive.dart';
-import 'package:graphlink/src/model/gq_enum_definition.dart';
-import 'package:graphlink/src/model/gq_field.dart';
-import 'package:graphlink/src/model/gq_input_definition.dart';
-import 'package:graphlink/src/model/gq_interface_definition.dart';
-import 'package:graphlink/src/model/gq_token.dart';
-import 'package:graphlink/src/model/gq_token_with_fields.dart';
-import 'package:graphlink/src/model/gq_type.dart';
-import 'package:graphlink/src/model/gq_type_definition.dart';
+import 'package:graphlink/src/model/gl_argument.dart';
+import 'package:graphlink/src/model/gl_directive.dart';
+import 'package:graphlink/src/model/gl_enum_definition.dart';
+import 'package:graphlink/src/model/gl_field.dart';
+import 'package:graphlink/src/model/gl_input_definition.dart';
+import 'package:graphlink/src/model/gl_interface_definition.dart';
+import 'package:graphlink/src/model/gl_token.dart';
+import 'package:graphlink/src/model/gl_token_with_fields.dart';
+import 'package:graphlink/src/model/gl_type.dart';
+import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/serializers/annotation_serializer.dart';
-import 'package:graphlink/src/serializers/gq_serializer.dart';
+import 'package:graphlink/src/serializers/gl_serializer.dart';
 import 'package:graphlink/src/utils.dart';
 
 const _toList = "collect(Collectors.toList())";
@@ -69,7 +69,7 @@ String _mapOf(String key, String type) {
   return '${_map}<${key}, ${type}>';
 }
 
-class JavaSerializer extends GqSerializer {
+class JavaSerializer extends GLSerializer {
   final bool inputsAsRecords;
   final bool typesAsRecords;
   final bool typesCheckForNulls;
@@ -97,12 +97,12 @@ class JavaSerializer extends GqSerializer {
         (val) => AnnotationSerializer.serializeAnnotation(val, multiLineString: false));
   }
 
-  String serializeAnnotation(GQDirectiveValue value) {
+  String serializeAnnotation(GLDirectiveValue value) {
     return AnnotationSerializer.serializeAnnotation(value, multiLineString: false);
   }
 
   @override
-  String doSerializeEnumDefinition(GQEnumDefinition def) {
+  String doSerializeEnumDefinition(GLEnumDefinition def) {
     var buffer = StringBuffer();
     var decorators = serializeDecorators(def.getDirectives());
     if (decorators.isNotEmpty) {
@@ -118,7 +118,7 @@ class JavaSerializer extends GqSerializer {
     return buffer.toString();
   }
 
-  String serializeToJsonForEnum(GQEnumDefinition def) {
+  String serializeToJsonForEnum(GLEnumDefinition def) {
     if (!generateJsonMethods) {
       return "";
     }
@@ -129,7 +129,7 @@ class JavaSerializer extends GqSerializer {
     );
   }
 
-  String serializeFromJsonForEnum(GQEnumDefinition def) {
+  String serializeFromJsonForEnum(GLEnumDefinition def) {
     if (!generateJsonMethods) {
       return "";
     }
@@ -153,7 +153,7 @@ class JavaSerializer extends GqSerializer {
   }
 
   @override
-  String doSerializeField(GQField def, bool immutable) {
+  String doSerializeField(GLField def, bool immutable) {
     final type = def.type;
     final name = def.name;
     final hasInculeOrSkipDiretives = def.hasInculeOrSkipDiretives;
@@ -170,7 +170,7 @@ class JavaSerializer extends GqSerializer {
     return buffer.toString();
   }
 
-  String serializeArgument(GQArgumentDefinition arg) {
+  String serializeArgument(GLArgumentDefinition arg) {
     var type = arg.type;
     var name = arg.tokenInfo;
     var decorators = serializeDecorators(arg.getDirectives(), joiner: " ");
@@ -181,7 +181,7 @@ class JavaSerializer extends GqSerializer {
     return result;
   }
 
-  String serializeArgumentField(GQField def,
+  String serializeArgumentField(GLField def,
       {bool withDecorators = false, String decoratorJoiner = "\n"}) {
     final type = def.type;
     final name = def.name;
@@ -206,32 +206,32 @@ class JavaSerializer extends GqSerializer {
   }
 
   String serializeTypeReactive({
-    required GQType gqType,
+    required GQType glType,
     bool forceNullable = false,
     bool asArray = false,
     bool reactive = false,
-    required GQToken? context,
+    required GLToken? context,
   }) {
-    if (gqType is GQListType) {
+    if (glType is GQListType) {
       if (reactive) {
         context?.addImport(JavaImports.flux);
-        return "Flux<${convertPrimitiveToBoxed(serializeTypeReactive(gqType: gqType.inlineType, context: context))}>";
+        return "Flux<${convertPrimitiveToBoxed(serializeTypeReactive(glType: glType.inlineType, context: context))}>";
       }
       if (asArray) {
-        return "${serializeType(gqType.inlineType, false, asArray)}[]";
+        return "${serializeType(glType.inlineType, false, asArray)}[]";
       } else {
         context?.addImport(importList);
-        return _listOf(convertPrimitiveToBoxed(serializeType(gqType.inlineType, false)));
+        return _listOf(convertPrimitiveToBoxed(serializeType(glType.inlineType, false)));
       }
     }
-    final token = gqType.token;
+    final token = glType.token;
 
     var type = getTypeNameFromGQExternal(token) ?? token;
     if (reactive) {
       context?.addImport(JavaImports.mono);
       return "Mono<${convertPrimitiveToBoxed(type)}>";
     }
-    if (typeIsJavaPrimitive(type) && (gqType.nullable || forceNullable)) {
+    if (typeIsJavaPrimitive(type) && (glType.nullable || forceNullable)) {
       return convertPrimitiveToBoxed(type);
     }
     return type;
@@ -243,7 +243,7 @@ class JavaSerializer extends GqSerializer {
     var context = grammar.getTokenByKey(token);
     return serializeTypeReactive(
       context: context,
-      gqType: def,
+      glType: def,
       forceNullable: forceNullable,
       asArray: asArray,
       reactive: false,
@@ -251,7 +251,7 @@ class JavaSerializer extends GqSerializer {
   }
 
   @override
-  String doSerializeInputDefinition(GQInputDefinition def) {
+  String doSerializeInputDefinition(GLInputDefinition def) {
     final decorators = serializeDecorators(def.getDirectives());
     var buffer = StringBuffer();
     if (decorators.isNotEmpty) {
@@ -302,7 +302,7 @@ class JavaSerializer extends GqSerializer {
     return _javaNumberMethods[serializeType(type, false)]!;
   }
 
-  String getFromJsonCall(GQField field, String varName, int depth, GQToken context,
+  String getFromJsonCall(GLField field, String varName, int depth, GLToken context,
       [GQType? type]) {
     type ??= field.type;
     String callMapDotGet = depth == 0 ? '.get("${field.name.token}")' : '';
@@ -345,7 +345,7 @@ class JavaSerializer extends GqSerializer {
     return nullCheckStatement.isEmpty ? result : '$nullCheckStatement $result';
   }
 
-  String generateFromJson(List<GQField> fields, String token, GQToken context) {
+  String generateFromJson(List<GLField> fields, String token, GLToken context) {
     var buffer = StringBuffer();
 
     buffer.writeln(
@@ -367,7 +367,7 @@ class JavaSerializer extends GqSerializer {
     return buffer.toString();
   }
 
-  String generateToJson(List<GQField> fields, GQToken context) {
+  String generateToJson(List<GLField> fields, GLToken context) {
     var buffer = StringBuffer();
     context.addImport(JavaImports.hashMap);
     context.addImport(JavaImports.map);
@@ -386,7 +386,7 @@ class JavaSerializer extends GqSerializer {
     return buffer.toString();
   }
 
-  String fieldToJson(GQField field, GQToken context) {
+  String fieldToJson(GLField field, GLToken context) {
     var buffer = StringBuffer();
     var toJosnCall = callToJson(field, field.type, field.name.token, 0, context);
     buffer.write(toJosnCall);
@@ -400,12 +400,12 @@ class JavaSerializer extends GqSerializer {
     return "${variable}.${method}";
   }
 
-  String callToJson(GQField field, GQType type, String variableName, int index, GQToken context) {
+  String callToJson(GLField field, GQType type, String variableName, int index, GLToken context) {
     if (type.isList) {
       var inlineType = type.inlineType;
       String varName = "e${index}";
       var inlineCallToJson = callToJson(field, inlineType, varName, index + 1, context);
-      if (field.getDirectiveByName(gqArray) != null) {
+      if (field.getDirectiveByName(glArray) != null) {
         // array
         String method =
             "Stream.of(${variableName}).map(${varName} -> ${inlineCallToJson}).${_toList}";
@@ -431,7 +431,7 @@ class JavaSerializer extends GqSerializer {
     return variableName;
   }
 
-  String generateContructor(String name, List<GQField> fields, String? modifier, GQToken context,
+  String generateContructor(String name, List<GLField> fields, String? modifier, GLToken context,
       {bool checkForNulls = false}) {
     String nullCheck = "";
     if (checkForNulls) {
@@ -464,7 +464,7 @@ class JavaSerializer extends GqSerializer {
     return buffer.toString();
   }
 
-  String generateBuilder(String name, List<GQField> fields, bool forInput) {
+  String generateBuilder(String name, List<GLField> fields, bool forInput) {
     if (fields.isEmpty) {
       return "";
     }
@@ -479,7 +479,7 @@ class JavaSerializer extends GqSerializer {
     buffer.writeln();
     buffer.writeln(codeGenUtils.createClass(staticClass: true, className: 'Builder', statements: [
       ...fields
-          .map((field) => GQField(
+          .map((field) => GLField(
               name: field.name, type: field.type, arguments: field.arguments, directives: []))
           .map((field) =>
               serializeField(field, forInput ? immutableInputFields : immutableTypeFields)),
@@ -499,7 +499,7 @@ class JavaSerializer extends GqSerializer {
     return buffer.toString();
   }
 
-  String serializeGetter(GQField field, GQToken context, {bool checkForNulls = false}) {
+  String serializeGetter(GLField field, GLToken context, {bool checkForNulls = false}) {
     if (checkForNulls) {
       context.addImport(JavaImports.objects);
     }
@@ -514,7 +514,7 @@ class JavaSerializer extends GqSerializer {
         ]);
   }
 
-  String serializeMethod(GQField field, {String? modifier}) {
+  String serializeMethod(GLField field, {String? modifier}) {
     var buffer = StringBuffer();
     var decorators = serializeDecorators(field.getDirectives());
     var args = serializeListText(field.arguments.map(serializeArgument).toList(),
@@ -532,9 +532,9 @@ class JavaSerializer extends GqSerializer {
 
   String serializeRecord(
     String recordName,
-    List<GQField> fields,
+    List<GLField> fields,
     Set<String> interfaceNames,
-    GQToken context,
+    GLToken context,
   ) {
     return codeGenUtils.createRecord(
         recordName: recordName,
@@ -550,7 +550,7 @@ class JavaSerializer extends GqSerializer {
         ]);
   }
 
-  String serializeGetterDeclaration(GQField field,
+  String serializeGetterDeclaration(GLField field,
       {bool skipModifier = false, bool asProperty = false}) {
     var returnType = serializeType(field.type, false);
     var result = serializeType(field.type, false, field.serialzeAsArray);
@@ -588,7 +588,7 @@ class JavaSerializer extends GqSerializer {
     return "$prefix${name.firstUp}";
   }
 
-  String serializeSetter(GQField field, GQToken context, {bool checkForNulls = false}) {
+  String serializeSetter(GLField field, GLToken context, {bool checkForNulls = false}) {
     if (checkForNulls) {
       context.addImport(JavaImports.objects);
     }
@@ -606,16 +606,16 @@ class JavaSerializer extends GqSerializer {
   }
 
   @override
-  String doSerializeTypeDefinition(GQTypeDefinition def) {
+  String doSerializeTypeDefinition(GLTypeDefinition def) {
     if (def is GQInterfaceDefinition) {
       return serializeInterface(def,
-          getters: def.getDirectiveByName(gqInterfaceFieldAsProperties) == null);
+          getters: def.getDirectiveByName(glInterfaceFieldAsProperties) == null);
     } else {
       return _doSerializeTypeDefinition(def);
     }
   }
 
-  String _doSerializeTypeDefinition(GQTypeDefinition def) {
+  String _doSerializeTypeDefinition(GLTypeDefinition def) {
     final token = def.tokenInfo;
     final interfaceNames = def.interfaceNames.map((e) => e.token).toSet();
 
@@ -655,7 +655,7 @@ class JavaSerializer extends GqSerializer {
     return buffer.toString();
   }
 
-  String generateEqualsAndHashCode(GQTypeDefinition def) {
+  String generateEqualsAndHashCode(GLTypeDefinition def) {
     var fieldsToInclude = def.getIdentityFields(grammar);
     if (fieldsToInclude.isNotEmpty) {
       return equalsHascodeCode(def, fieldsToInclude);
@@ -663,7 +663,7 @@ class JavaSerializer extends GqSerializer {
     return "";
   }
 
-  String equalsHascodeCode(GQTypeDefinition def, Set<String> fields) {
+  String equalsHascodeCode(GLTypeDefinition def, Set<String> fields) {
     final token = def.tokenInfo;
     def.addImport("java.util.Objects");
     var buffer = StringBuffer();
@@ -691,7 +691,7 @@ class JavaSerializer extends GqSerializer {
     return buffer.toString();
   }
 
-  String _serializeInterfaceField(GQField f, bool getters) {
+  String _serializeInterfaceField(GLField f, bool getters) {
     var buffer = StringBuffer();
     var fieldDecorators = serializeDecorators(f.getDirectives(), joiner: "\n");
     if (fieldDecorators.isNotEmpty) {
@@ -720,7 +720,7 @@ class JavaSerializer extends GqSerializer {
       buffer.writeln(decorators.trim());
     }
     bool generateJsonConverstionMethods =
-        generateJsonMethods && interface.getDirectiveByName(gqInterfaceFieldAsProperties) == null;
+        generateJsonMethods && interface.getDirectiveByName(glInterfaceFieldAsProperties) == null;
     if (generateJsonConverstionMethods) {
       interface.addImport(JavaImports.map);
     }
@@ -738,7 +738,7 @@ class JavaSerializer extends GqSerializer {
     return buffer.toString();
   }
 
-  String _serializeFromJsonForInterface(String token, Set<GQTypeDefinition> subTypes) {
+  String _serializeFromJsonForInterface(String token, Set<GLTypeDefinition> subTypes) {
     if (subTypes.isEmpty || !generateJsonMethods) {
       return "";
     }
@@ -761,12 +761,12 @@ class JavaSerializer extends GqSerializer {
   }
 
   @override
-  String getFileNameFor(GQToken token) {
+  String getFileNameFor(GLToken token) {
     return "${token.token}.java";
   }
 
   @override
-  String serializeImportToken(GQToken token, String importPrefix) {
+  String serializeImportToken(GLToken token, String importPrefix) {
     String? path;
 
     if (grammar.enums.containsKey(token.token)) {

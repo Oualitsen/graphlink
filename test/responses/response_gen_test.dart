@@ -1,11 +1,10 @@
-
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() async {
   test("should generate Response when 'type Query' has one field only", () {
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
+    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
     var parsed = g.parse('''
   type Person {
     id: String
@@ -25,6 +24,7 @@ void main() async {
   
 ''');
     expect(parsed is Success, true);
-    expect(g.projectedTypes.keys, containsAll(['GetPersonResponse', 'CreatePersonResponse', 'WatchPersonResponse']));
+    expect(g.projectedTypes.keys,
+        containsAll(['GetPersonResponse', 'CreatePersonResponse', 'WatchPersonResponse']));
   });
 }

@@ -14,7 +14,7 @@ type Car {
     model: String!
 }
 
-type UserCar  @gqSkipOnServer(mapTo: "User") {
+type UserCar  @glSkipOnServer(mapTo: "User") {
     car: Car 
     user: User! 
 }
@@ -26,17 +26,17 @@ type Owner {
     name: String
 }
 
-type OwnerWithAnimal @gqSkipOnServer(mapTo: "Owner") {
+type OwnerWithAnimal @glSkipOnServer(mapTo: "Owner") {
     owner: Owner!
     animal: Animal
 }
 
-type OwnerWithAnimal2 @gqSkipOnServer(batch: false) {
+type OwnerWithAnimal2 @glSkipOnServer(batch: false) {
     owner: Owner!
     animal: Animal
 }
 
-type OwnerWithAnimal3 @gqSkipOnServer() {
+type OwnerWithAnimal3 @glSkipOnServer() {
     owner: Owner!
     animal: Animal
 }

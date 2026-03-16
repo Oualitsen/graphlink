@@ -25,7 +25,7 @@ type Query {
 }
 
 query getProduct($id: ID!) {
-    getProduct @gqTypeName(name: "MyProduct") @gqEqualsHashcode(fields: ["id", "name"]) {
+    getProduct @glTypeName(name: "MyProduct") @glEqualsHashcode(fields: ["id", "name"]) {
         id name price
     }   
 

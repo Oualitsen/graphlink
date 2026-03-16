@@ -1,7 +1,7 @@
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 
-const gqApplyOnServer = "applyOnServer";
-const gqApplyOnClient = "applyOnClient";
+const glApplyOnServer = "applyOnServer";
+const glApplyOnClient = "applyOnClient";
 
 const fileHeadComment = """
 // GENERATED CODE - DO NOT MODIFY BY HAND. ANY MODIFICATION WILL BE LOST ON NEXT GENERATION
@@ -19,57 +19,57 @@ const graphqlHeadComment = """
 """;
 
 const clientTypes = {
-  'GQPayload',
-  'GQError',
-  'GQErrorLocation',
-  'GQSubscriptionPayload',
-  'GQSubscriptionErrorMessage',
-  'GQSubscriptionMessage'
+  'GraphLinkPayload',
+  'GraphLinkError',
+  'GraphLinkErrorLocation',
+  'GraphLinkSubscriptionPayload',
+  'GraphLinkSubscriptionErrorMessage',
+  'GraphLinkSubscriptionMessage'
 };
-const clientInterfaces = {'GQSubscriptionErrorMessageBase', 'GQWebSocketAdapter'};
+const clientInterfaces = {'GraphLinkSubscriptionErrorMessageBase', 'GraphLinkGraphLinkWebSocketAdapter'};
 
 const javaClientAdapterNoParamSync = '''
 interface GQClientAdapter 
-${gqDecorators}(${gqDecoratorsArgumentName}: ["@FunctionalInterface"], ${gqApplyOnClient}: true, ${gqApplyOnServer}: false)
-${gqInterfaceFieldAsProperties} ${gqInternal} {
+${glDecorators}(${glDecoratorsArgumentName}: ["@FunctionalInterface"], ${glApplyOnClient}: true, ${glApplyOnServer}: false)
+${glInterfaceFieldAsProperties} ${glInternal} {
     execute(payload: String!): String!
 }
 ''';
 
 const javaClientAdapterWithParamSync = '''
 interface GQClientAdapter 
-${gqDecorators}(${gqDecoratorsArgumentName}: ["@FunctionalInterface"], ${gqApplyOnClient}: true, ${gqApplyOnServer}: false)
-${gqInterfaceFieldAsProperties} ${gqInternal} {
+${glDecorators}(${glDecoratorsArgumentName}: ["@FunctionalInterface"], ${glApplyOnClient}: true, ${glApplyOnServer}: false)
+${glInterfaceFieldAsProperties} ${glInternal} {
     execute(payload: String!, operationName: String!): String!
 }
 ''';
 
 const javaJsonEncoderDecorder = '''
-  scalar gqlJavaMap ${gqExternal}(gqClass: "Map<String, Object>", ${gqImport}: "${JavaImports.map}")
-  scalar gqlJavaObject ${gqExternal}(gqClass: "Object")
+  scalar gqlJavaMap ${glExternal}(glClass: "Map<String, Object>", ${glImport}: "${JavaImports.map}")
+  scalar gqlJavaObject ${glExternal}(glClass: "Object")
 
   interface GQJsonEncoder
-  ${gqDecorators}(${gqDecoratorsArgumentName}: ["@FunctionalInterface"], ${gqApplyOnClient}: true, ${gqApplyOnServer}: false)
-   ${gqInterfaceFieldAsProperties} ${gqInternal} {
+  ${glDecorators}(${glDecoratorsArgumentName}: ["@FunctionalInterface"], ${glApplyOnClient}: true, ${glApplyOnServer}: false)
+   ${glInterfaceFieldAsProperties} ${glInternal} {
     encode(json: gqlJavaObject!): String!
   }
 
   interface GQJsonDecoder 
-  ${gqDecorators}(${gqDecoratorsArgumentName}: ["@FunctionalInterface"], ${gqApplyOnClient}: true, ${gqApplyOnServer}: false)
-   ${gqInterfaceFieldAsProperties} ${gqInternal} {
+  ${glDecorators}(${glDecoratorsArgumentName}: ["@FunctionalInterface"], ${glApplyOnClient}: true, ${glApplyOnServer}: false)
+   ${glInterfaceFieldAsProperties} ${glInternal} {
      decode(json: String!): gqlJavaMap!
   }
 
 ''';
 
-const javaWebSocketAdapter = '''
-scalar void ${gqExternal}(gqClass: "void")
-scalar Consumer ${gqExternal}(gqClass: "Consumer<String>", gqImport: "java.util.function.Consumer")
-scalar VoidConsumer ${gqExternal}(gqClass: "Consumer<Void>", gqImport: "java.util.function.Consumer")
-scalar ThrowableConsumer ${gqExternal}(gqClass: "Consumer<Throwable>", gqImport: "java.util.function.Consumer")
-scalar GQException ${gqExternal}(gqClass: "GQClient.GQException")
+const javaGraphLinkWebSocketAdapter = '''
+scalar void ${glExternal}(glClass: "void")
+scalar Consumer ${glExternal}(glClass: "Consumer<String>", glImport: "java.util.function.Consumer")
+scalar VoidConsumer ${glExternal}(glClass: "Consumer<Void>", glImport: "java.util.function.Consumer")
+scalar ThrowableConsumer ${glExternal}(glClass: "Consumer<Throwable>", glImport: "java.util.function.Consumer")
+scalar GQException ${glExternal}(glClass: "GQClient.GQException")
 
-interface GQWebSocketAdapter ${gqInterfaceFieldAsProperties} ${gqInternal} {
+interface GraphLinkGraphLinkWebSocketAdapter ${glInterfaceFieldAsProperties} ${glInternal} {
    connect(onConnect: VoidConsumer!, onFailure: ThrowableConsumer): void!
    onMessage(message: Consumer!): void!
    sendMessage(message: String!): void!
@@ -83,29 +83,29 @@ String getClientObjects([String lang = 'Dart']) {
     dynamicValue = "Object";
   }
   return '''
-scalar gqlMapStrObj ${gqExternal}(gqClass: "Map<String, ${dynamicValue}>")
-scalar dynamicValue ${gqExternal}(gqClass: "${dynamicValue}")
+scalar gqlMapStrObj ${glExternal}(glClass: "Map<String, ${dynamicValue}>")
+scalar dynamicValue ${glExternal}(glClass: "${dynamicValue}")
 
 
-type GQPayload ${gqInternal} {
+type GraphLinkPayload ${glInternal} {
   query: String!
   operationName: String!
   variables: gqlMapStrObj!
 }
 
-type GQError ${gqInternal} {
+type GraphLinkError ${glInternal} {
   message: String!
   path: [dynamicValue!]
   extensions: gqlMapStrObj
-  locations: [GQErrorLocation!]
+  locations: [GraphLinkErrorLocation!]
 }
 
-type GQErrorLocation ${gqInternal} {
+type GraphLinkErrorLocation ${glInternal} {
   line: Int!
   column: Int!
 }
 
-type GQSubscriptionPayload ${gqInternal} {
+type GraphLinkSubscriptionPayload ${glInternal} {
   query: String
   operationName: String
   variables: gqlMapStrObj
@@ -113,21 +113,21 @@ type GQSubscriptionPayload ${gqInternal} {
 }
 
 
-interface GQSubscriptionErrorMessageBase ${gqInternal} {
+interface GraphLinkSubscriptionErrorMessageBase ${glInternal} {
   type: String
   id: String
 }
 
-type GQSubscriptionErrorMessage implements GQSubscriptionErrorMessageBase ${gqInternal} {
+type GraphLinkSubscriptionErrorMessage implements GraphLinkSubscriptionErrorMessageBase ${glInternal} {
   id: String
   type: String
-  payload: [GQError!]
+  payload: [GraphLinkError!]
 }
 
-type GQSubscriptionMessage implements GQSubscriptionErrorMessageBase ${gqInternal} {
+type GraphLinkSubscriptionMessage implements GraphLinkSubscriptionErrorMessageBase ${glInternal} {
   id: String
   type: String
-  payload: GQSubscriptionPayload
+  payload: GraphLinkSubscriptionPayload
 }
 
 enum GQAckStatus {none progress acknoledged }

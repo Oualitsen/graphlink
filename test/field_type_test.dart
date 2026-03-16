@@ -1,11 +1,11 @@
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {
   test("non nullable type test", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parser = g.buildFrom(g.typeTokenDefinition().end());
     var result = parser.parse('''
@@ -19,7 +19,7 @@ void main() {
   });
 
   test("nullable type test", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parser = g.buildFrom(g.simpleTypeTokenDefinition().end());
     var result = parser.parse('''
@@ -28,6 +28,6 @@ void main() {
     expect(result is Success, true);
     expect(result.value.nullable, true);
     var serializer = DartSerializer(g);
-    expect(serializer.serializeType(result.value, false) , "String?");
+    expect(serializer.serializeType(result.value, false), "String?");
   });
 }

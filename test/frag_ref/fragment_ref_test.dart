@@ -1,15 +1,15 @@
 import 'dart:io';
 
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
-final GQGrammar g = GQGrammar();
+final GLGrammar g = GLGrammar();
 
 void main() async {
   test("fragment projection test 1", () {
     final text = File("test/frag_ref/fragment_ref.graphql").readAsStringSync();
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
+    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true);
     var parser = g.buildFrom(g.fullGrammar().end());
     var parsed = parser.parse(text);
     expect(parsed is Success, true);

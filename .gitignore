@@ -33,6 +33,7 @@
 .fvm/
 lib/generated
 example/lib/generated
+examples/**/lib/generated
 
 # Web related
 lib/generated_plugin_registrant.dart

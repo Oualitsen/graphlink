@@ -4,7 +4,7 @@ import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/serializers/language.dart';
 import 'package:graphlink/src/serializers/spring_server_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {
@@ -19,8 +19,8 @@ void main() {
   };
 
   test("test schema mapping generation", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     var parsed = g.parse('''
   
@@ -28,15 +28,15 @@ type User {
     id: ID!
     name: String!
     middleName: String
-    cars: Car! @gqSkipOnServer(batch: false)
+    cars: Car! @glSkipOnServer(batch: false)
 }
 
 type Car {
     make: String!
     model: String!
-    userId: ID! @gqSkipOnClient
-    owner: Owner! @gqSkipOnServer(batch: false)
-    ownerId: ID! @gqSkipOnClient
+    userId: ID! @glSkipOnClient
+    owner: Owner! @glSkipOnServer(batch: false)
+    ownerId: ID! @glSkipOnClient
 }
 
 type Owner {
@@ -78,7 +78,7 @@ type Query {
   });
 
   test("Service should not have identity schema mapping", () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g = GLGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     final text = File("test/batch_mappging/batch_mappging2.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -92,7 +92,7 @@ type Query {
   });
 
   test("Controller should implement identity on BatchMappings ", () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g = GLGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     final text = File("test/batch_mappging/batch_mappging2.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -113,7 +113,7 @@ type Query {
   });
 
   test("Controller should implement identity on SchemaMappings ", () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g = GLGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     final text = File("test/batch_mappging/batch_mappging3.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -128,10 +128,10 @@ type Query {
   });
 
   test("Should generate batch mapping when batch = true", () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g = GLGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     const text = '''
-type ConversationUnread ${gqSkipOnServer}(mapTo: "ConversationView", batch: true) {
+type ConversationUnread ${glSkipOnServer}(mapTo: "ConversationView", batch: true) {
     view: ConversationView!
     unread: Int!
 }
@@ -155,10 +155,10 @@ type Query {
   });
 
   test("Should not generate batch mapping when batch = false", () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g = GLGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     const text = '''
-type ConversationUnread ${gqSkipOnServer}(mapTo: "ConversationView", batch: false) {
+type ConversationUnread ${glSkipOnServer}(mapTo: "ConversationView", batch: false) {
     view: ConversationView!
     unread: Int!
 }
@@ -180,12 +180,12 @@ type Query {
   });
 
   test("should inject DataFetchingEnvironment for mappings when injectDataFetching = true", () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g = GLGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
     var serializer = SpringServerSerializer(g, injectDataFetching: true);
     const text = '''
     type User {
       name: String!
-      car: Car ${gqSkipOnServer}
+      car: Car ${glSkipOnServer}
     }
     type Car {
       model: String!

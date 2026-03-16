@@ -1,11 +1,11 @@
 
 
 
-directive @gqSkipOnServer()
+directive @glSkipOnServer()
 on FIELD|FIELD_DEFINITION|OBJECT|INTERFACE|INPUT_OBJECT|INPUT_FIELD_DEFINITION
 
 
-directive @gqSkipOnClient()
+directive @glSkipOnClient()
 on FIELD|FIELD_DEFINITION|OBJECT|INTERFACE|INPUT_OBJECT|INPUT_FIELD_DEFINITION
     
 type User {
@@ -14,8 +14,8 @@ type User {
     name: String!
     middleName: String
 
-    companyId: String! @gqSkipOnClient()
-    company: Company! @gqSkipOnServer()
+    companyId: String! @glSkipOnClient()
+    company: Company! @glSkipOnServer()
 }
 
 type Company {
@@ -24,15 +24,15 @@ type Company {
 }
 
 
-type SkipType @gqSkipOnServer() {
+type SkipType @glSkipOnServer() {
     id: String!
 }
 
-enum Gender @gqSkipOnServer() {
+enum Gender @glSkipOnServer() {
     male, female
 }
 
-input SkipInput @gqSkipOnServer(){
+input SkipInput @glSkipOnServer(){
     name: String!
 }
 

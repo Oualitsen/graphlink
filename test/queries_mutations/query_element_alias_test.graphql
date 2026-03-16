@@ -9,7 +9,7 @@ type Query {
   getDriver: Driver!
 }
 
-query getDriver @gqTypeName(name: "DriverResponse") {
+query getDriver @glTypeName(name: "DriverResponse") {
  driver: getDriver {
     name 
   }

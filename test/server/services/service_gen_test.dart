@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:graphlink/src/serializers/language.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {
@@ -17,7 +17,8 @@ void main() {
   };
 
   test("test schema mapping generation2", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     final text = File("test/server/services/service_gen.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());

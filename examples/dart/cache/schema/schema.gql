@@ -1,4 +1,4 @@
-directive @gqCache(ttl: Int!, tag: String) on QUERY | MUTATION | FIELD | FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR | SCHEMA
+directive @glCache(ttl: Int!, tag: String) on QUERY | MUTATION | FIELD | FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR | SCHEMA
 
 type Owner {
   id: ID!
@@ -36,8 +36,12 @@ type Mutation {
   createOwner(input: CreateOwnerInput!): Owner!
   createCar(input: CreateCarInput!): Car!
 }
+
+type Subscription {
+  counter: Int!
+}
 query getCarAndOwner($carId: ID!, $ownerId: ID!)  {
-  car: getCar(id: $carId) @gqCache(ttl: 60, tag: "carAndOwner") {
+  car: getCar(id: $carId) @glCache(ttl: 60, tag: "carAndOwner") {
     ... _all_fields
   }
 

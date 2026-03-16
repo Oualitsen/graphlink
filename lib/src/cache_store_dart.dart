@@ -1,10 +1,8 @@
 const graphLinkCacheStore = '''abstract class GraphLinkCacheStore {
   Future<void> set(String key, String value);
   Future<String?> get(String key);
-  Future<Set<String>> keys();
   Future<void> invalidate(String key);
   Future<void> invalidateAll();
-  
 }''';
 
 const inMemoryGraphLinkCacheStore =
@@ -22,11 +20,6 @@ const inMemoryGraphLinkCacheStore =
   }
 
   @override
-  Future<Set<String>> keys() async {
-    return _store.keys.toSet();
-  }
-
-  @override
   Future<void> invalidate(String key) async {
     _store.remove(key);
   }
@@ -38,7 +31,7 @@ const inMemoryGraphLinkCacheStore =
 }''';
 
 const partialQuery = '''
-class PartialQuery {
+class _GraphLinkPartialQuery {
   final String query;
   final Map<String, dynamic> variables;
   final int ttl;
@@ -50,7 +43,7 @@ class PartialQuery {
   late final String? cacheKey;
 
 
-  PartialQuery({
+  _GraphLinkPartialQuery({
     required this.query,
     required this.variables,
     required this.ttl,
@@ -85,24 +78,50 @@ class PartialQuery {
   }
 }
 ''';
-const cacheEntry = '''
-class CacheEntry {
-  final String data;
-  final int expiry;
+const tagEntry = '''
+class _GraphLinkTagEntry {
+  final Set<String> keys = {};
 
-  CacheEntry(this.data, this.expiry);
+  _GraphLinkTagEntry(Set<String> keys) {
+    this.keys.addAll(keys);
+  }
 
-  factory CacheEntry.fromJson(Map<String, dynamic> json) {
-    return CacheEntry(json[\'data\'] as String, json[\'expiry\'] as int);
+  factory _GraphLinkTagEntry.fromJson(Map<String, dynamic> json) {
+    return _GraphLinkTagEntry((json['keys'] as List).cast<String>().toSet());
   }
 
   Map<String, dynamic> toJson() {
-    return {\'data\': data, \'expiry\': expiry};
+    return {'keys': keys.toList()};
   }
 
   String encode() => jsonEncode(toJson());
 
-  static CacheEntry decode(String raw) => CacheEntry.fromJson(jsonDecode(raw));
+  static _GraphLinkTagEntry decode(String raw) => _GraphLinkTagEntry.fromJson(jsonDecode(raw));
+
+  void add(String key) => keys.add(key);
+
+  void remove(String key) => keys.remove(key);
+}
+''';
+
+const cacheEntry = '''
+class _GraphLinkCacheEntry {
+  final String data;
+  final int expiry;
+
+  _GraphLinkCacheEntry(this.data, this.expiry);
+
+  factory _GraphLinkCacheEntry.fromJson(Map<String, dynamic> json) {
+    return _GraphLinkCacheEntry(json['data'] as String, json['expiry'] as int);
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'data': data, 'expiry': expiry};
+  }
+
+  String encode() => jsonEncode(toJson());
+
+  static _GraphLinkCacheEntry decode(String raw) => _GraphLinkCacheEntry.fromJson(jsonDecode(raw));
 
   bool get isExpired => DateTime.now().millisecondsSinceEpoch > expiry;
 }

@@ -1,11 +1,11 @@
 import 'package:test/test.dart';
-import 'package:graphlink/src/model/gq_fragment.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/model/gl_fragment.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {
   test("Fragment field test", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parser = g.buildFrom(g.projectionFieldField().end());
     var result = parser.parse('''
@@ -18,7 +18,7 @@ void main() {
   });
 
   test("Fragment field with alias test 1", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parser = g.buildFrom(g.projectionFieldField().end());
     var result = parser.parse('''
@@ -33,7 +33,7 @@ void main() {
   });
 
   test("Fragment field with alias test 2", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parser = g.buildFrom(g.projectionFieldField().end());
     var result = parser.parse('''
@@ -51,7 +51,7 @@ void main() {
   });
 
   test("inline Fragment ", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parser = g.buildFrom(g.inlineFragment().end());
     var result = parser.parse('''
@@ -66,7 +66,7 @@ void main() {
   });
 
   test("Fragment Value", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parser = g.buildFrom(g.fragmentReference().end());
     var result = parser.parse('''
@@ -76,7 +76,7 @@ void main() {
   });
 
   test("Inline fragment or fragment value", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parser = g.buildFrom(g.fragmentValue().end());
     var result = parser.parse('''
@@ -94,7 +94,7 @@ void main() {
   });
 
   test("fragmentField test", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parser = g.buildFrom(g.fragmentField().end());
     var result = parser.parse('''
@@ -120,7 +120,7 @@ void main() {
   });
 
   test("Fragment Definitions 1", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parser = g.buildFrom(g.fragmentDefinition().end());
     var result = parser.parse('''
@@ -139,7 +139,7 @@ void main() {
   });
 
   test("Fragment Definitions 2", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
     var parser = g.buildFrom(g.fragmentDefinition().end());
     parser.parse('''
         
@@ -156,7 +156,7 @@ void main() {
 
   test("plainFragmentField List Test", () {
     //plainFragmentField()
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
     var parser = g.buildFrom(g.projectionFieldField().plus().end());
     var result = parser.parse('''
           id  

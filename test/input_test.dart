@@ -1,10 +1,10 @@
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {
   test("Input  test", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parser = g.buildFrom(g.inputDefinition().end());
     var result = parser.parse('''
@@ -32,7 +32,7 @@ void main() {
   });
 
   test("Field test with init", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parser = g.buildFrom(g.field(canBeInitialized: true, acceptsArguments: false).end());
     var result = parser.parse('''
@@ -43,7 +43,7 @@ void main() {
   });
 
   test("Field test without init", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parser = g.buildFrom(g.field(canBeInitialized: false, acceptsArguments: false).end());
     var result = parser.parse('''

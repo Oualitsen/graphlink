@@ -1,7 +1,6 @@
-
 import 'package:graphlink/src/excpetions/parse_exception.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 
 void main() {
   final typeMapping = {
@@ -14,140 +13,153 @@ void main() {
     "Long": "Long"
   };
 
-  test("Parse error type implements interface but does not declare a field",
-      () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping);
+  test("Parse error type implements interface but does not declare a field", () {
+    final GLGrammar g = GLGrammar(typeMap: typeMapping);
 
-    expect(() => g.parse('''
+    expect(
+      () => g.parse('''
     interface IBase {
       id: String
     }
     type User implements IBase{
       name: String
     }
-'''), throwsA(
+'''),
+      throwsA(
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
           contains("Type User implements IBase but does not declare field id line: 4 column: 10"),
         ),
-      ),);
+      ),
+    );
   });
 
-  test("Exception when scalar has already been defined",
-      () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping);
+  test("Exception when scalar has already been defined", () {
+    final GLGrammar g = GLGrammar(typeMap: typeMapping);
 
-    expect(() => g.parse('''
+    expect(
+      () => g.parse('''
     scalar Long
     scalar Long
-'''), throwsA(
+'''),
+      throwsA(
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
           contains("Scalar Long has already been declared line: 2 column: 12"),
         ),
-      ),);
+      ),
+    );
   });
 
-  test("Exception when directive has already been defined",
-      () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping);
+  test("Exception when directive has already been defined", () {
+    final GLGrammar g = GLGrammar(typeMap: typeMapping);
 
-    expect(() => g.parse('''
+    expect(
+      () => g.parse('''
     directive @Getter on OBJECT
     directive @Getter on INTERFACE
-'''), throwsA(
+'''),
+      throwsA(
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
           contains("Directive @Getter has already been declared line: 2 column: 16"),
         ),
-      ),);
+      ),
+    );
   });
 
+  test("Exception when enum has already been defined", () {
+    final GLGrammar g = GLGrammar(typeMap: typeMapping);
 
-   test("Exception when enum has already been defined",
-      () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping);
-
-    expect(() => g.parse('''
+    expect(
+      () => g.parse('''
     enum Gender {male, female}
     enum Gender {unspecified}
-'''), throwsA(
+'''),
+      throwsA(
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
           contains("Enum Gender has already been declared line: 2 column: 10"),
         ),
-      ),);
+      ),
+    );
   });
 
-  test("Exception when interface has already been defined",
-      () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping);
+  test("Exception when interface has already been defined", () {
+    final GLGrammar g = GLGrammar(typeMap: typeMapping);
 
-    expect(() => g.parse('''
+    expect(
+      () => g.parse('''
     interface Interface1 {
       id: String
     }
     interface Interface1 {
       name: String
     }
-'''), throwsA(
+'''),
+      throwsA(
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
           contains("Interface Interface1 has already been declared line: 4 column: 15"),
         ),
-      ),);
+      ),
+    );
   });
 
-  test("Exception when type has already been defined",
-      () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping);
+  test("Exception when type has already been defined", () {
+    final GLGrammar g = GLGrammar(typeMap: typeMapping);
 
-    expect(() => g.parse('''
+    expect(
+      () => g.parse('''
     type User {
       id: String
     }
     type User {
       name: String
     }
-'''), throwsA(
+'''),
+      throwsA(
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
           contains("Type User has already been declared line: 4 column: 10"),
         ),
-      ),);
+      ),
+    );
   });
 
-  test("Exception when input has already been defined",
-      () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping);
+  test("Exception when input has already been defined", () {
+    final GLGrammar g = GLGrammar(typeMap: typeMapping);
 
-    expect(() => g.parse('''
+    expect(
+      () => g.parse('''
     input UserInput {
       id: String
     }
     input UserInput {
       name: String
     }
-'''), throwsA(
+'''),
+      throwsA(
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
           contains("Input UserInput has already been declared line: 4 column: 11"),
         ),
-      ),);
+      ),
+    );
   });
 
-  test("Exception when union has already been defined",
-      () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping);
+  test("Exception when union has already been defined", () {
+    final GLGrammar g = GLGrammar(typeMap: typeMapping);
 
-    expect(() => g.parse('''
+    expect(
+      () => g.parse('''
     type Type1 {
       id: String
     }
@@ -163,21 +175,22 @@ void main() {
     }
     union MyUnion = Typ3 | Type3
 
-'''), throwsA(
+'''),
+      throwsA(
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
           contains("Union MyUnion has already been declared line: 14 column: 11"),
         ),
-      ),);
+      ),
+    );
   });
-  
 
-  test("Exception when fragment has already been defined",
-      () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping);
+  test("Exception when fragment has already been defined", () {
+    final GLGrammar g = GLGrammar(typeMap: typeMapping);
 
-    expect(() => g.parse('''
+    expect(
+      () => g.parse('''
     type User {
       id: String
     }
@@ -187,20 +200,22 @@ void main() {
     }
     fragment Frag1 on City {name}
 
-'''), throwsA(
+'''),
+      throwsA(
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
           contains("Fragment Frag1 has already been declared line: 8 column: 14"),
         ),
-      ),);
+      ),
+    );
   });
 
-   test("Exception when query has already been defined",
-      () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping);
+  test("Exception when query has already been defined", () {
+    final GLGrammar g = GLGrammar(typeMap: typeMapping);
 
-    expect(() => g.parse('''
+    expect(
+      () => g.parse('''
     type Query {
       findUser: User
     }
@@ -222,57 +237,62 @@ void main() {
       }
     }
 
-'''), throwsA(
+'''),
+      throwsA(
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
           contains("Query GetUser has already been declared line: 16 column: 11"),
         ),
-      ),);
+      ),
+    );
   });
 
-   test("Exception when input is not defined",
-      () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping);
+  test("Exception when input is not defined", () {
+    final GLGrammar g = GLGrammar(typeMap: typeMapping);
 
-    expect(() => g.parse('''
+    expect(
+      () => g.parse('''
     input UserInput {
       name: String
       city: CityInput
     }
 
-'''), throwsA(
+'''),
+      throwsA(
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
           contains("CityInput is not a scalar, input or enum line: 3 column: 7"),
         ),
-      ),);
+      ),
+    );
   });
 
-   test("Exception when type is not defined",
-      () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping);
-    expect(() => g.parse('''
+  test("Exception when type is not defined", () {
+    final GLGrammar g = GLGrammar(typeMap: typeMapping);
+    expect(
+      () => g.parse('''
     type UserInput {
       name: String
       city: City
     }
-'''), throwsA(
+'''),
+      throwsA(
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
           contains("City is not a scalar, enum, type, interface or union line: 3 column: 7"),
         ),
-      ),);
+      ),
+    );
   });
 
+  test("Exception when query argument not found", () {
+    final GLGrammar g = GLGrammar(typeMap: typeMapping);
 
-  test("Exception when query argument not found",
-      () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping);
-
-    expect(() => g.parse('''
+    expect(
+      () => g.parse('''
     type User {
       name: String
     }
@@ -284,20 +304,22 @@ void main() {
           name
         }
     }
-'''), throwsA(
+'''),
+      throwsA(
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
           contains("Argument \$invalid was not declared line: 8 column: 17"),
         ),
-      ),);
+      ),
+    );
   });
 
-  test("Exception when schema is already defined",
-      () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping);
+  test("Exception when schema is already defined", () {
+    final GLGrammar g = GLGrammar(typeMap: typeMapping);
 
-    expect(() => g.parse('''
+    expect(
+      () => g.parse('''
     schema  {
       query: Query
     }
@@ -311,20 +333,21 @@ void main() {
     schema  {
       query: Query2
     }
-'''), throwsA(
+'''),
+      throwsA(
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
           contains("A schema has already been defined line: 11 column: 5"),
         ),
-      ),);
+      ),
+    );
   });
 
-
-  test("Exception when projection is required but not found",
-      () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping);
-    expect(() => g.parse('''
+  test("Exception when projection is required but not found", () {
+    final GLGrammar g = GLGrammar(typeMap: typeMapping);
+    expect(
+      () => g.parse('''
     type User {
       id: String
       name: String
@@ -343,19 +366,22 @@ void main() {
       }
     }
     
-'''), throwsA(
+'''),
+      throwsA(
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
-          contains("Field 'city' of type 'User' must have a selection of subfield  line: 15 column: 12"),
+          contains(
+              "Field 'city' of type 'User' must have a selection of subfield  line: 15 column: 12"),
         ),
-      ),);
+      ),
+    );
   });
 
-  test("Exception when projection is not required but found",
-      () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping);
-    expect(() => g.parse('''
+  test("Exception when projection is not required but found", () {
+    final GLGrammar g = GLGrammar(typeMap: typeMapping);
+    expect(
+      () => g.parse('''
     type User {
       id: String
       name: String
@@ -375,22 +401,23 @@ void main() {
         }
       }
     }
-'''), throwsA(
+'''),
+      throwsA(
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
-          contains("Field 'id' of type 'User' should not have a selection of subfields  line: 15 column: 9"),
+          contains(
+              "Field 'id' of type 'User' should not have a selection of subfields  line: 15 column: 9"),
         ),
-      ),);
+      ),
+    );
   });
 
+  test("Exception when inline projection on a given type does not implement the target type", () {
+    final GLGrammar g = GLGrammar(typeMap: typeMapping);
 
-   test("Exception when inline projection on a given type does not implement the target type",
-      () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping);
-
-
-    expect(() => g.parse('''
+    expect(
+      () => g.parse('''
     interface Animal {
       sound: String
     }
@@ -427,22 +454,22 @@ void main() {
         }
       }
     }
-'''), throwsA(
+'''),
+      throwsA(
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
           contains("Type 'Human' does not implement 'Animal' line: 21 column: 18"),
         ),
-      ),);
+      ),
+    );
   });
 
+  test("Exception when inline projection on a given type does not implement the target type 2", () {
+    final GLGrammar g = GLGrammar(typeMap: typeMapping);
 
-  test("Exception when inline projection on a given type does not implement the target type 2",
-      () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping);
-
-
-    expect(() => g.parse('''
+    expect(
+      () => g.parse('''
     type Dog  {
       sound: String
       name: String
@@ -466,20 +493,21 @@ void main() {
         
       }
     }
-'''), throwsA(
+'''),
+      throwsA(
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
           contains("Type 'Dog' does not implement 'Cat' line: 13 column: 15"),
         ),
-      ),);
+      ),
+    );
   });
-  
 
-   test("Exception when fragment is applied to the wrong type",
-      () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping);
-    expect(() => g.parse('''
+  test("Exception when fragment is applied to the wrong type", () {
+    final GLGrammar g = GLGrammar(typeMap: typeMapping);
+    expect(
+      () => g.parse('''
     type User {
       id: String
       name: String
@@ -501,19 +529,21 @@ void main() {
         ... CityFragment
       }
     }
-'''), throwsA(
+'''),
+      throwsA(
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
           contains("Fragment CityFragment cannot be applied to type User line: 13 column: 14"),
         ),
-      ),);
+      ),
+    );
   });
 
-  test("Exception when projection is not required but found",
-      () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping);
-    expect(() => g.parse('''
+  test("Exception when projection is not required but found", () {
+    final GLGrammar g = GLGrammar(typeMap: typeMapping);
+    expect(
+      () => g.parse('''
     type User {
       id: String
       name: String
@@ -535,19 +565,21 @@ void main() {
         ... UserFrag
       }
     }
-'''), throwsA(
+'''),
+      throwsA(
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
           contains("Could not find field 'name2' on type 'User' line: 14 column: 15"),
         ),
-      ),);
+      ),
+    );
   });
 
-  test("Exception when fragment projection conatins an undeclared field",
-      () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping);
-    expect(() => g.parse('''
+  test("Exception when fragment projection conatins an undeclared field", () {
+    final GLGrammar g = GLGrammar(typeMap: typeMapping);
+    expect(
+      () => g.parse('''
     type User {
       id: String
       name: String
@@ -574,20 +606,21 @@ void main() {
         ... UserFrag
       }
     }
-'''), throwsA(
+'''),
+      throwsA(
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
           contains("Could not find field 'zip2' on type 'City' line: 13 column: 15"),
         ),
-      ),);
+      ),
+    );
   });
 
-
-  test("Exception on duplicate field defition on query",
-      () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping);
-    expect(() => g.parse('''
+  test("Exception on duplicate field defition on query", () {
+    final GLGrammar g = GLGrammar(typeMap: typeMapping);
+    expect(
+      () => g.parse('''
     type User {
       id: String
       name: String
@@ -613,20 +646,23 @@ void main() {
         id
       }
     }
-'''), throwsA(
+'''),
+      throwsA(
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
-          contains("Duplicate field defition on type GetUserResponse, field: getUser line: 22 column: 7"),
+          contains(
+              "Duplicate field defition on type GetUserResponse, field: getUser line: 22 column: 7"),
         ),
-      ),);
+      ),
+    );
   });
 
-  test("Exception on duplicate query definition",
-      () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping);
-   
-    expect(() => g.parse('''
+  test("Exception on duplicate query definition", () {
+    final GLGrammar g = GLGrammar(typeMap: typeMapping);
+
+    expect(
+      () => g.parse('''
     type User {
       id: String
       name: String
@@ -654,21 +690,22 @@ void main() {
         zipcode
       }
     }
-'''), throwsA(
+'''),
+      throwsA(
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
           contains("Query GetUser has already been declared line: 23 column: 11"),
         ),
-      ),);
+      ),
+    );
   });
 
+  test("Exception on different objects with same name", () {
+    final GLGrammar g = GLGrammar(typeMap: typeMapping);
 
-  test("Exception on different objects with same name",
-      () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping);
-   
-    expect(() => g.parse('''
+    expect(
+      () => g.parse('''
     type User {
       id: String
       name: String
@@ -687,47 +724,50 @@ void main() {
     }
 
     query GetUser {
-      getUser @gqTypeName(name: "Data") {
+      getUser @glTypeName(name: "Data") {
         id
       }
     }
     query GetUser2 {
-      getCity @gqTypeName(name: "Data") {
+      getCity @glTypeName(name: "Data") {
         zipcode
       }
     }
-'''), throwsA(
+'''),
+      throwsA(
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
-          contains("You have names two object the same name 'Data' but have diffrent fields. Data_1.fields are: [[id: String]], Data_2.fields are: [[zipcode: String]]. Please consider renaming one of them line: 19 column: 27"),
+          contains(
+              "You have names two object the same name 'Data' but have diffrent fields. Data_1.fields are: [[id: String]], Data_2.fields are: [[zipcode: String]]. Please consider renaming one of them line: 19 column: 27"),
         ),
-      ),);
+      ),
+    );
   });
 
-
-  test("Exception on interface implement undefined interface",
-      () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping);
-    expect(() => g.parse('''
+  test("Exception on interface implement undefined interface", () {
+    final GLGrammar g = GLGrammar(typeMap: typeMapping);
+    expect(
+      () => g.parse('''
     interface BasicEntity implements IBase {
       id: String
     }
-'''), throwsA(
+'''),
+      throwsA(
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
           contains("Interface IBase is not found line: 1 column: 38"),
         ),
-      ),);
+      ),
+    );
   });
 
+  test("Exception on interface implement more than once", () {
+    final GLGrammar g = GLGrammar(typeMap: typeMapping);
 
-  test("Exception on interface implement more than once",
-      () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping);
-   
-    expect(() => g.parse('''
+    expect(
+      () => g.parse('''
     interface BasicEntity implements IBase & IBase {
       id: String
       name: String
@@ -736,12 +776,14 @@ void main() {
     interface IBase {
       name: String
     }
-'''), throwsA(
+'''),
+      throwsA(
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
           contains("interface IBase has been implemented more than once line: 1 column: 46"),
         ),
-      ),);
+      ),
+    );
   });
 }

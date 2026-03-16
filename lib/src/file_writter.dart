@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:graphlink/src/config.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:graphlink/src/io_utils.dart';
 import 'package:graphlink/src/serializers/graphq_serializer.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
@@ -10,7 +10,7 @@ import 'package:graphlink/src/serializers/spring_server_serializer.dart';
 import 'package:graphlink/src/utils.dart';
 
 class FileWritter {
-  final GQGrammar grammar;
+  final GLGrammar grammar;
   final GeneratorConfig config;
   final JavaSerializer serializer;
   late final SpringServerSerializer springSerializer;
@@ -32,7 +32,7 @@ class FileWritter {
   }
 
   Future<Set<String>> generateServerClasses(
-      GQGrammar grammar, DateTime started, bool dolarEscape) async {
+      GLGrammar grammar, DateTime started, bool dolarEscape) async {
     final springConfig = config.serverConfig!.spring!;
     final destinationDir = config.outputDir;
 
@@ -58,7 +58,7 @@ class FileWritter {
     }
 
     if (springConfig.generateSchema) {
-      var text = GraphqSerializer(grammar).generateSchema();
+      var text = GLGraphqSerializer(grammar).generateSchema();
       var r = saveSource(data: text, path: springConfig.schemaTargetPath!, graphqlSource: true);
       futures.add(r);
     }

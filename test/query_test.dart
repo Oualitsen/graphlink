@@ -1,11 +1,11 @@
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
-import 'package:graphlink/src/model/gq_queries.dart';
+import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {
   test("Query  element", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parser = g.buildFrom(g.queryElement().end());
     var result = parser.parse('''
@@ -18,9 +18,9 @@ void main() {
   });
 
   test("Query definition test", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
-    var parser = g.buildFrom(g.queryDefinition(GQQueryType.query).end());
+    var parser = g.buildFrom(g.queryDefinition(GLQueryType.query).end());
     var result = parser.parse('''
       
       query AdType(\$id: String!) {
@@ -34,9 +34,9 @@ void main() {
   });
 
   test("Query definition test 2", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
-    var parser = g.buildFrom(g.queryDefinition(GQQueryType.mutation).end());
+    var parser = g.buildFrom(g.queryDefinition(GLQueryType.mutation).end());
     var result = parser.parse('''
       
       mutation AdType(\$id: String!) {
@@ -50,9 +50,9 @@ void main() {
   });
 
   test("Query definition test 3", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
-    var parser = g.buildFrom(g.queryDefinition(GQQueryType.query).end());
+    var parser = g.buildFrom(g.queryDefinition(GLQueryType.query).end());
     var result = parser.parse('''
       
       query AdType(\$id: String!) {
@@ -66,9 +66,9 @@ void main() {
   });
 
   test("Query definition test 4", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
-    var parser = g.buildFrom(g.queryDefinition(GQQueryType.subscription).end());
+    var parser = g.buildFrom(g.queryDefinition(GLQueryType.subscription).end());
     var result = parser.parse('''
       subscription AdType(\$id: String!) {
         adType(id: \$id, name: "Ramdane") {
@@ -81,9 +81,9 @@ void main() {
   });
 
   test("subscription test", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
-    var parser = g.buildFrom(g.queryDefinition(GQQueryType.subscription).end());
+    var parser = g.buildFrom(g.queryDefinition(GLQueryType.subscription).end());
     var result = parser.parse('''
       subscription AdType(\$id: String!) {
         adType(id: \$id, name: "Ramdane") {

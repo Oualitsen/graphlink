@@ -1,10 +1,10 @@
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {
   test("Directive value  test", () {
-    final g = GQGrammar();
+    final g = GLGrammar();
     var parser = g.buildFrom(g.directiveValue().end());
     var result = parser.parse('''
       @skip(if: true)
@@ -21,7 +21,7 @@ void main() {
   });
 
   test("Directive scopes test", () {
-    final g = GQGrammar();
+    final g = GLGrammar();
     var parser = g.buildFrom(g.directiveScopes().end());
     var result = parser.parse('''
     SCALAR|OBJECT|INTERFACE | ARGUMENT_DEFINITION
@@ -30,7 +30,7 @@ void main() {
   });
 
   test("Directive definition test", () {
-    final g = GQGrammar();
+    final g = GLGrammar();
     var parser = g.buildFrom(g.directiveDefinition().end());
     var result = parser.parse('''
     directive @test(test: String!, arg2: [String!]! ) on INTERFACE | ARGUMENT_DEFINITION
@@ -39,7 +39,7 @@ void main() {
   });
 
   test("Directive definition test2", () {
-    final g = GQGrammar();
+    final g = GLGrammar();
     var parser = g.buildFrom(g.directiveDefinition().end());
     var result = parser.parse('''
     directive @gqDecorator(value: String) on  OBJECT | INPUT_OBJECT| FIELD_DEFINITION | FIELD
@@ -48,7 +48,7 @@ void main() {
   });
 
   test("Directive definition repeatable test", () {
-    final g = GQGrammar();
+    final g = GLGrammar();
     var parser = g.buildFrom(g.directiveDefinition().end());
     var result = parser.parse('''
     directive @gqDecorator(value: String) repeatable on  OBJECT | INPUT_OBJECT| FIELD_DEFINITION | FIELD
