@@ -223,6 +223,32 @@ void main() {
     expect(countCache.ttl, 6000);
   });
 
+  test("gqCache directive validation when tag is invalid", () {
+    final GQGrammar g = GQGrammar(
+      autoGenerateQueries: true,
+      generateAllFieldsFragments: true,
+    );
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Query {
+    getPerson: Person ${gqCache}(ttl: 5000, tag: "invalid tag!")
+  }
+''';
+
+    expect(
+      () => g.parse(text),
+      throwsA(isA<ParseException>().having(
+        (e) => e.errorMessage,
+        'errorMessage',
+        contains('tag on @gqCache directives should be alphanumeric with underscores only! found: invalid tag!'),
+      )),
+    );
+  });
+
   test("nocahce should override cache", () {
     final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
