@@ -272,7 +272,6 @@ class DartClientSerializer extends ClientSerilaizer {
           "final payload = _buildPayload(remainingQueries, operationName, '${_grammar.serializer.serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}');",
           'final responseText = await _getFromSource(payload);',
           'final response = _parseToObjectAndCache(responseText, responseMap, ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson, remaining);',
-          // let's cache the data
           'return response;'
         ]);
   }

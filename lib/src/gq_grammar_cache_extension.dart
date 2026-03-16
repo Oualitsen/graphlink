@@ -5,6 +5,8 @@ import 'package:graphlink/src/model/gq_cache_definition.dart';
 import 'package:graphlink/src/model/gq_directive.dart';
 import 'package:graphlink/src/model/gq_queries.dart';
 
+final _cacheTagRegExp = RegExp(r'^[a-zA-Z0-9_]+$');
+
 extension GQGrammarCacheExtension on GQGrammar {
   ///
   /// checks all gqCache directves
@@ -22,6 +24,14 @@ extension GQGrammarCacheExtension on GQGrammar {
         throw ParseException(
             "${gqCacheTTL} on $gqCache directives should be a positive integer! found: ${ttlObject}",
             info: directive.tokenInfo);
+      }
+      var tag = directive.getArgValueAsString(gqCacheTag);
+      if (tag != null) {
+        if (!_cacheTagRegExp.hasMatch(tag)) {
+          throw ParseException(
+              "${gqCacheTag} on $gqCache directives should be alphanumeric with underscores only! found: $tag",
+              info: directive.tokenInfo);
+        }
       }
     });
   }
