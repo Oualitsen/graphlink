@@ -489,4 +489,161 @@ void main() {
       )),
     );
   });
+
+  test("gqCacheInvalidate should fail when no args provided", () {
+    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Mutation {
+    createPerson: Person @gqCacheInvalidate()
+  }
+''';
+
+    expect(
+      () => g.parse(text),
+      throwsA(isA<ParseException>().having(
+        (e) => e.errorMessage,
+        'errorMessage',
+        contains(
+            '$gqCacheInvalidate requires either $gqCacheArgAll: true or a non-empty $gqCacheTagList'),
+      )),
+    );
+  });
+
+  test("gqCacheInvalidate should fail when all is false and tags is empty", () {
+    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Mutation {
+    createPerson: Person @gqCacheInvalidate(all: false)
+  }
+''';
+
+    expect(
+      () => g.parse(text),
+      throwsA(isA<ParseException>().having(
+        (e) => e.errorMessage,
+        'errorMessage',
+        contains(
+            '$gqCacheInvalidate requires either $gqCacheArgAll: true or a non-empty $gqCacheTagList'),
+      )),
+    );
+  });
+
+  test("gqCacheInvalidate should fail when all is not a boolean", () {
+    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Mutation {
+    createPerson: Person @gqCacheInvalidate(all: "yes")
+  }
+''';
+
+    expect(
+      () => g.parse(text),
+      throwsA(isA<ParseException>().having(
+        (e) => e.errorMessage,
+        'errorMessage',
+        contains('$gqCacheArgAll on $gqCacheInvalidate must be a boolean'),
+      )),
+    );
+  });
+
+  test("gqCacheInvalidate should pass with all: true", () {
+    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Mutation {
+    createPerson: Person @gqCacheInvalidate(all: true)
+  }
+''';
+
+    expect(() => g.parse(text), returnsNormally);
+  });
+
+  test("gqCacheInvalidate should fail when tags contains a non-string element", () {
+    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Mutation {
+    createPerson: Person @gqCacheInvalidate(tags: ["persons", 12])
+  }
+''';
+
+    expect(
+      () => g.parse(text),
+      throwsA(isA<ParseException>().having(
+        (e) => e.errorMessage,
+        'errorMessage',
+        contains('$gqCacheTagList on $gqCacheInvalidate must contain only strings'),
+      )),
+    );
+  });
+
+  test("gqCacheInvalidate should pass with non-empty tags", () {
+    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Query {
+    getPersons: Person @gqCache(ttl: 300, tag: "persons")
+  }
+
+  type Mutation {
+    createPerson: Person @gqCacheInvalidate(tags: ["persons"])
+  }
+''';
+
+    expect(() => g.parse(text), returnsNormally);
+  });
+
+  test("gqCacheInvalidate should fail when tag is not declared on any gqCache directive", () {
+    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Query {
+    getPersons: Person @gqCache(ttl: 300, tag: "persons")
+  }
+
+  type Mutation {
+    createPerson: Person @gqCacheInvalidate(tags: ["undeclaredTag"])
+  }
+''';
+
+    expect(
+      () => g.parse(text),
+      throwsA(isA<ParseException>().having(
+        (e) => e.errorMessage,
+        'errorMessage',
+        contains('Tag "undeclaredTag" used in $gqCacheInvalidate is not declared on any $gqCache directive'),
+      )),
+    );
+  });
 }

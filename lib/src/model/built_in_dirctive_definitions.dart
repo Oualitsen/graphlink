@@ -90,3 +90,6 @@ const gqCache = "@gqCache";
 const gqCacheTTL = "ttl";
 const gqCacheTag = "tag";
 const gqNoCache = "@gqNoCache";
+const gqCacheInvalidate = "@gqCacheInvalidate";
+const gqCacheTagList = "tags";
+const gqCacheArgAll = "all";
