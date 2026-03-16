@@ -1,11 +1,11 @@
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {
   test("Dart enum to json", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parsed = g.parse('''
   enum Gender {male, female}
@@ -24,12 +24,12 @@ void main() {
           'return "male";',
           'case female:',
           'return "female";',
-              '}',
+          '}',
         ]));
   });
 
   test("Dart enum from json", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parsed = g.parse('''
   enum Gender {male, female}
@@ -55,7 +55,7 @@ void main() {
   });
 
   test("input tojson", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parsed = g.parse('''
   scalar Long
@@ -105,7 +105,7 @@ void main() {
   });
 
   test("input tojson list of lists", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parsed = g.parse('''
   scalar Long
@@ -131,7 +131,7 @@ void main() {
   });
 
   test("type tojson", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parsed = g.parse('''
   scalar Long
@@ -179,7 +179,7 @@ void main() {
   });
 
   test("input fromJson", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parsed = g.parse('''
   scalar Long
@@ -206,7 +206,8 @@ void main() {
     expect(parsed is Success, true);
     var userInput = g.inputs["UserInput"]!;
     var serializer = DartSerializer(g);
-    var inputSerial = serializer.generateFromJson(userInput.getSerializableFields(g.mode), userInput.token);
+    var inputSerial =
+        serializer.generateFromJson(userInput.getSerializableFields(g.mode), userInput.token);
     expect(
       inputSerial.split("\n").map((e) => e.trim()),
       containsAllInOrder([
@@ -232,7 +233,7 @@ void main() {
   });
 
   test("type fromJson", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parsed = g.parse('''
   scalar Long
@@ -285,7 +286,7 @@ void main() {
   });
 
   test("interface fromJson", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parsed = g.parse('''
   interface BasicEntity {

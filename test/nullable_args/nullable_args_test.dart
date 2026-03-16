@@ -1,18 +1,18 @@
 import 'dart:io';
 
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/model/gq_field.dart';
-import 'package:graphlink/src/model/gq_type.dart';
+import 'package:graphlink/src/model/gl_field.dart';
+import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
 import 'package:logger/logger.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() async {
   test("Nullable Arguments", () {
     var logger = Logger();
-    final GQGrammar g = GQGrammar(nullableFieldsRequired: false);
+    final GLGrammar g = GLGrammar(nullableFieldsRequired: false);
     logger.i("________________________________________init______________________");
 
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -34,11 +34,13 @@ void main() async {
     expect(types, isNot(contains("required this.middleName")));
   });
   test("toContructoDeclaration test ", () {
-    final GQGrammar g1 = GQGrammar(nullableFieldsRequired: false);
+    final GLGrammar g1 = GLGrammar(nullableFieldsRequired: false);
     final nullableString = GQType("String".toToken(), true);
     final nonNullableString = GQType("String".toToken(), false);
-    final nullableField = GQField(name: "name".toToken(), type: nullableString, arguments: [], directives: []);
-    final nonNullableField = GQField(name: "name".toToken(), type: nonNullableString, arguments: [], directives: []);
+    final nullableField =
+        GLField(name: "name".toToken(), type: nullableString, arguments: [], directives: []);
+    final nonNullableField =
+        GLField(name: "name".toToken(), type: nonNullableString, arguments: [], directives: []);
     var serializer1 = DartSerializer(g1);
 
     var dartContructorTypeNullable = serializer1.toConstructorDeclaration(nullableField);
@@ -47,7 +49,7 @@ void main() async {
     expect(dartContructorTypeNullable, "this.name");
     expect(dartContructorTypeNonNullable, "required this.name");
 
-    final GQGrammar g2 = GQGrammar(nullableFieldsRequired: true);
+    final GLGrammar g2 = GLGrammar(nullableFieldsRequired: true);
     var serializer2 = DartSerializer(g2);
 
     var dartContructorTypeNullable2 = serializer2.toConstructorDeclaration(nullableField);

@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:graphlink/src/serializers/language.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 
@@ -18,7 +18,7 @@ void main() {
   };
 
   test("input serialization as records", () {
-    final GQGrammar g = GQGrammar(
+    final GLGrammar g = GLGrammar(
       identityFields: ["id"],
       typeMap: typeMapping,
       mode: CodeGenerationMode.server,
@@ -42,7 +42,7 @@ void main() {
   });
 
   test("type serialization as records", () {
-    final GQGrammar g = GQGrammar(
+    final GLGrammar g = GLGrammar(
       identityFields: ["id"],
       typeMap: typeMapping,
       mode: CodeGenerationMode.server,
@@ -65,7 +65,7 @@ void main() {
   });
 
   test("type serialization as records with decorators", () {
-    final GQGrammar g = GQGrammar(
+    final GLGrammar g = GLGrammar(
       identityFields: ["id"],
       typeMap: typeMapping,
       mode: CodeGenerationMode.server,
@@ -91,7 +91,7 @@ void main() {
   });
 
   test("input serialization as records with decorators", () {
-    final GQGrammar g = GQGrammar(
+    final GLGrammar g = GLGrammar(
       identityFields: ["id"],
       typeMap: typeMapping,
       mode: CodeGenerationMode.server,
@@ -116,7 +116,7 @@ void main() {
   });
 
   test("interface serialization when types as records", () {
-    final GQGrammar g = GQGrammar(
+    final GLGrammar g = GLGrammar(
       identityFields: ["id"],
       typeMap: typeMapping,
       mode: CodeGenerationMode.server,
@@ -139,7 +139,7 @@ void main() {
   });
 
   test("type serialization records when implementing interfaces", () {
-    final GQGrammar g = GQGrammar(
+    final GLGrammar g = GLGrammar(
       identityFields: ["id"],
       typeMap: typeMapping,
       mode: CodeGenerationMode.server,

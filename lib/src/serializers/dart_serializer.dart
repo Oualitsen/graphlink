@@ -1,19 +1,19 @@
 import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/gq_grammar.dart';
-import 'package:graphlink/src/model/gq_enum_definition.dart';
-import 'package:graphlink/src/model/gq_field.dart';
-import 'package:graphlink/src/model/gq_input_definition.dart';
-import 'package:graphlink/src/model/gq_interface_definition.dart';
-import 'package:graphlink/src/model/gq_token.dart';
-import 'package:graphlink/src/model/gq_token_with_fields.dart';
-import 'package:graphlink/src/model/gq_type.dart';
-import 'package:graphlink/src/model/gq_type_definition.dart';
+import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/model/gl_enum_definition.dart';
+import 'package:graphlink/src/model/gl_field.dart';
+import 'package:graphlink/src/model/gl_input_definition.dart';
+import 'package:graphlink/src/model/gl_interface_definition.dart';
+import 'package:graphlink/src/model/gl_token.dart';
+import 'package:graphlink/src/model/gl_token_with_fields.dart';
+import 'package:graphlink/src/model/gl_type.dart';
+import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/serializers/annotation_serializer.dart';
-import 'package:graphlink/src/serializers/gq_serializer.dart';
-import 'package:graphlink/src/ui/flutter/gq_type_view.dart';
+import 'package:graphlink/src/serializers/gl_serializer.dart';
+import 'package:graphlink/src/ui/flutter/gl_type_view.dart';
 
-class DartSerializer extends GqSerializer {
+class DartSerializer extends GLSerializer {
   final codeGenUtils = DartCodeGenUtils();
   @override
   final bool generateJsonMethods;
@@ -26,7 +26,7 @@ class DartSerializer extends GqSerializer {
   }
 
   @override
-  String doSerializeEnumDefinition(GQEnumDefinition def) {
+  String doSerializeEnumDefinition(GLEnumDefinition def) {
     var buffer = StringBuffer();
     var decorators = serializeDecorators(def.getDirectives());
     if (decorators.isNotEmpty) {
@@ -83,7 +83,7 @@ class DartSerializer extends GqSerializer {
   }
 
   @override
-  String doSerializeField(GQField def, bool immutable) {
+  String doSerializeField(GLField def, bool immutable) {
     final type = def.type;
     final name = def.name;
     final hasInculeOrSkipDiretives = def.hasInculeOrSkipDiretives;
@@ -112,7 +112,7 @@ class DartSerializer extends GqSerializer {
   }
 
   @override
-  String doSerializeInputDefinition(GQInputDefinition def) {
+  String doSerializeInputDefinition(GLInputDefinition def) {
     var buffer = StringBuffer();
     var decorators = serializeDecorators(def.getDirectives());
     if (decorators.isNotEmpty) {
@@ -137,7 +137,7 @@ class DartSerializer extends GqSerializer {
     return buffer.toString();
   }
 
-  String toConstructorDeclaration(GQField field) {
+  String toConstructorDeclaration(GLField field) {
     if (grammar.nullableFieldsRequired || !field.type.nullable) {
       return "required this.${field.name}";
     } else {
@@ -145,7 +145,7 @@ class DartSerializer extends GqSerializer {
     }
   }
 
-  String generateFromJson(List<GQField> fields, String token) {
+  String generateFromJson(List<GLField> fields, String token) {
     if (!generateJsonMethods) {
       return "";
     }
@@ -168,7 +168,7 @@ class DartSerializer extends GqSerializer {
     return buffer.toString();
   }
 
-  String generateToJson(List<GQField> fields) {
+  String generateToJson(List<GLField> fields) {
     var buffer = StringBuffer();
 
     buffer.writeln(codeGenUtils.method(
@@ -182,14 +182,14 @@ class DartSerializer extends GqSerializer {
     return buffer.toString();
   }
 
-  String fieldToJson(GQField field) {
+  String fieldToJson(GLField field) {
     var buffer = StringBuffer("'${field.name}': ");
     var toJosnCall = callToJson(field, field.type, 0);
     buffer.write("${field.name}${toJosnCall}");
     return buffer.toString();
   }
 
-  String fieldFromJson(GQField field) {
+  String fieldFromJson(GLField field) {
     var buffer = StringBuffer('${field.name}: ');
     var toJosnCall = callFromJson("json['${field.name}']", field, field.type, 0);
     buffer.write(toJosnCall);
@@ -234,7 +234,7 @@ class DartSerializer extends GqSerializer {
     return result;
   }
 
-  String callFromJson(String variable, GQField field, GQType type, int index) {
+  String callFromJson(String variable, GLField field, GQType type, int index) {
     String fromJsonCall;
     String dot = type.nullable ? "?." : ".";
     fromJsonCall = castDynamicToType(variable, type);
@@ -246,7 +246,7 @@ class DartSerializer extends GqSerializer {
     return fromJsonCall;
   }
 
-  String callToJson(GQField field, GQType type, int index) {
+  String callToJson(GLField field, GQType type, int index) {
     var fieldType = field.type.inlineType;
     String toJsonCall;
     String dot = type.nullable ? "?." : ".";
@@ -265,7 +265,7 @@ class DartSerializer extends GqSerializer {
   }
 
   @override
-  String doSerializeTypeDefinition(GQTypeDefinition def) {
+  String doSerializeTypeDefinition(GLTypeDefinition def) {
     if (def is GQInterfaceDefinition) {
       return serializeInterface(def);
     } else {
@@ -273,10 +273,10 @@ class DartSerializer extends GqSerializer {
     }
   }
 
-  String _doSerializeTypeDefinition(GQTypeDefinition def) {
+  String _doSerializeTypeDefinition(GLTypeDefinition def) {
     final token = def.token;
     final implementations =
-        def is GQInterfaceDefinition ? def.implementations : <GQTypeDefinition>{};
+        def is GQInterfaceDefinition ? def.implementations : <GLTypeDefinition>{};
 
     final interfaceNames = def.interfaceNames.map((e) => e.token).toSet();
     interfaceNames.addAll(implementations.map((e) => e.token));
@@ -305,7 +305,7 @@ class DartSerializer extends GqSerializer {
     return buffer.toString();
   }
 
-  String generateEqualsAndHashCode(GQTypeDefinition def) {
+  String generateEqualsAndHashCode(GLTypeDefinition def) {
     var fieldsToInclude = def.getIdentityFields(grammar);
     if (fieldsToInclude.isNotEmpty) {
       return equalsHascodeCode(def, fieldsToInclude);
@@ -313,7 +313,7 @@ class DartSerializer extends GqSerializer {
     return "";
   }
 
-  String equalsHascodeCode(GQTypeDefinition def, Set<String> fields) {
+  String equalsHascodeCode(GLTypeDefinition def, Set<String> fields) {
     final token = def.tokenInfo;
     var buffer = StringBuffer();
     buffer.writeln('@override');
@@ -339,7 +339,7 @@ class DartSerializer extends GqSerializer {
     return buffer.toString();
   }
 
-  String serializeContructorArgs(GQTypeDefinition def, GQGrammar grammar) {
+  String serializeContructorArgs(GLTypeDefinition def, GLGrammar grammar) {
     var fields = def.getSerializableFields(grammar.mode);
     if (fields.isEmpty) {
       return "";
@@ -366,7 +366,7 @@ class DartSerializer extends GqSerializer {
 
   String _serializeFromJsonForInterface(
     String token,
-    Set<GQTypeDefinition> implementations,
+    Set<GLTypeDefinition> implementations,
   ) {
     return codeGenUtils.createMethod(
         returnType: 'static ${token}',
@@ -423,27 +423,27 @@ class DartSerializer extends GqSerializer {
     return buffer.toString();
   }
 
-  String serializeGetterDeclaration(GQField field) {
+  String serializeGetterDeclaration(GLField field) {
     return """${serializeType(field.type, false)} get ${field.name}""";
   }
 
   @override
-  String getFileNameFor(GQToken token) {
+  String getFileNameFor(GLToken token) {
     return "${token.token.toSnakeCase()}.dart";
   }
 
   @override
-  String serializeImportToken(GQToken token, String importPrefix) {
+  String serializeImportToken(GLToken token, String importPrefix) {
     String? init;
-    if (token is GQEnumDefinition) {
+    if (token is GLEnumDefinition) {
       init = "enums/${getFileNameFor(token)}";
     } else if (token is GQInterfaceDefinition) {
       init = "interfaces/${getFileNameFor(token)}";
-    } else if (token is GQTypeDefinition) {
+    } else if (token is GLTypeDefinition) {
       init = "types/${getFileNameFor(token)}";
-    } else if (token is GQInputDefinition) {
+    } else if (token is GLInputDefinition) {
       init = "inputs/${getFileNameFor(token)}";
-    } else if (token is GQTypeView) {
+    } else if (token is GLTypeView) {
       init = "widgets/${getFileNameFor(token)}";
     }
 

@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:graphlink/src/serializers/language.dart';
 import 'package:graphlink/src/serializers/spring_server_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 
@@ -19,8 +19,8 @@ void main() {
   };
 
   test("test list as array", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.client);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.client);
 
     final text = File("test/serializers/java/types/type_serialization_list_as_array.graphql")
         .readAsStringSync();
@@ -38,8 +38,8 @@ void main() {
   });
 
   test("test skipOn mode = client", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.client);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.client);
 
     final text = File("test/serializers/java/types/type_serialization_skip_on_test.graphql")
         .readAsStringSync();
@@ -55,8 +55,8 @@ void main() {
   });
 
   test("test skipOn mode = server", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     final text = File("test/serializers/java/types/type_serialization_skip_on_test.graphql")
         .readAsStringSync();
@@ -83,7 +83,7 @@ void main() {
   });
 
   test("testDecorators 2", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final GLGrammar g = GLGrammar(identityFields: ["id"], typeMap: typeMapping);
     final text = File("test/serializers/java/types/type_serialization_decorators_test.graphql")
         .readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -113,7 +113,7 @@ void main() {
   });
 
   test("serializeField", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final GLGrammar g = GLGrammar(identityFields: ["id"], typeMap: typeMapping);
     final text =
         File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -127,7 +127,7 @@ void main() {
   });
 
   test("serializeArgument", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final GLGrammar g = GLGrammar(identityFields: ["id"], typeMap: typeMapping);
     final text =
         File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -141,7 +141,7 @@ void main() {
   });
 
   test("serializeType", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final GLGrammar g = GLGrammar(identityFields: ["id"], typeMap: typeMapping);
     final text =
         File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -158,7 +158,7 @@ void main() {
   });
 
   test("serializeEnumDefinition", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final GLGrammar g = GLGrammar(identityFields: ["id"], typeMap: typeMapping);
     final text =
         File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -172,7 +172,7 @@ void main() {
   });
 
   test("serializeGetterDeclaration", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final GLGrammar g = GLGrammar(identityFields: ["id"], typeMap: typeMapping);
     final text =
         File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -194,7 +194,7 @@ void main() {
   });
 
   test("serializeSetter", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final GLGrammar g = GLGrammar(identityFields: ["id"], typeMap: typeMapping);
     final text =
         File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -225,7 +225,7 @@ void main() {
   });
 
   test("serializeGetter", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final GLGrammar g = GLGrammar(identityFields: ["id"], typeMap: typeMapping);
     final text =
         File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -255,7 +255,7 @@ void main() {
   });
 
   test("Java type serialization", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final GLGrammar g = GLGrammar(identityFields: ["id"], typeMap: typeMapping);
     final text =
         File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -280,7 +280,7 @@ void main() {
   });
 
   test("Java input serialization", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final GLGrammar g = GLGrammar(identityFields: ["id"], typeMap: typeMapping);
     final text =
         File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -304,7 +304,7 @@ void main() {
   });
 
   test("Java interface serialization", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final GLGrammar g = GLGrammar(identityFields: ["id"], typeMap: typeMapping);
     final text =
         File("test/serializers/java/types/interface_serialization_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -322,7 +322,7 @@ void main() {
   });
 
   test("Java interface implementing one interface serialization", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final GLGrammar g = GLGrammar(identityFields: ["id"], typeMap: typeMapping);
     final text =
         File("test/serializers/java/types/interface_serialization_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -341,7 +341,7 @@ void main() {
   });
 
   test("Java interface implementing multiple interface serialization", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final GLGrammar g = GLGrammar(identityFields: ["id"], typeMap: typeMapping);
     final text =
         File("test/serializers/java/types/interface_serialization_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -359,8 +359,8 @@ void main() {
   });
 
   test("Repository serialization", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
     final text = File("test/serializers/java/types/repository_serialization_test.graphql")
         .readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -380,15 +380,15 @@ void main() {
   });
 
   test("decorators on interfaces ", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
     var parsed = g.parse('''
     directive @Id(
-    gqClass: String = "Id",
-    gqImport: String = "org.springframework.data.annotation.Id",
-    gqOnClient: Boolean = false,
-    gqOnServer: Boolean = true,
-    gqAnnotation: Boolean = true
+    glClass: String = "Id",
+    glImport: String = "org.springframework.data.annotation.Id",
+    glOnClient: Boolean = false,
+    glOnServer: Boolean = true,
+    glAnnotation: Boolean = true
 )
  on FIELD_DEFINITION | FIELD
 
@@ -412,7 +412,7 @@ void main() {
   });
 
   test("serialize input with null checks", () {
-    final GQGrammar g = GQGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g = GLGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
     var parsed = g.parse('''
     input UserInput {
       id: ID
@@ -479,7 +479,7 @@ void main() {
       "Null": "null",
       "Long": "Long"
     };
-    final GQGrammar g = GQGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g = GLGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
     var parsed = g.parse('''
     input UserInput {
       
@@ -509,7 +509,7 @@ void main() {
   });
 
   test("serialize input: final field with no getter when immutableInputFields = true", () {
-    final GQGrammar g = GQGrammar(typeMap: {}, mode: CodeGenerationMode.server);
+    final GLGrammar g = GLGrammar(typeMap: {}, mode: CodeGenerationMode.server);
     var parsed = g.parse('''
     input UserInput {
       age: String
@@ -529,7 +529,7 @@ void main() {
   });
 
   test("serialize type: final field with no getter when immutableTypeFields = true", () {
-    final GQGrammar g = GQGrammar(typeMap: {}, mode: CodeGenerationMode.server);
+    final GLGrammar g = GLGrammar(typeMap: {}, mode: CodeGenerationMode.server);
     var parsed = g.parse('''
     type UserInput {
       age: String

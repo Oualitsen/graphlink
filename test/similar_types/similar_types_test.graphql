@@ -12,11 +12,11 @@ type Query {
 }
 
 query getProduct($id: ID!) {
-    getProduct @gqTypeName(name: "Prduct1") {
+    getProduct @glTypeName(name: "Prduct1") {
         id name price
     }   
 
-    getProductById(id: $id) @gqTypeName(name: "Prduct2") {
+    getProductById(id: $id) @glTypeName(name: "Prduct2") {
         name price id
     }
 }

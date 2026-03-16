@@ -1,19 +1,19 @@
 import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
-import 'package:graphlink/src/model/gq_token_with_fields.dart';
+import 'package:graphlink/src/model/gl_token_with_fields.dart';
 import 'package:graphlink/src/serializers/client_serializers/dart_client_serializer.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:graphlink/src/serializers/language.dart';
 import 'package:graphlink/src/serializers/spring_server_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() async {
   test("type depends on type", () {
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
+    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true);
     var parsed = g.parse('''
   type Person {
     id: String
@@ -29,7 +29,7 @@ void main() async {
   });
 
   test("type depends on interface", () {
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
+    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true);
     var parsed = g.parse('''
   type Person {
     id: String
@@ -47,7 +47,7 @@ void main() async {
   });
 
   test("imports list", () {
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
+    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true);
     var parsed = g.parse('''
   type Person {
     id: String
@@ -63,7 +63,7 @@ void main() async {
   });
 
   test("type depends on enum", () {
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
+    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true);
     var parsed = g.parse('''
   type Person {
     id: String
@@ -77,7 +77,7 @@ void main() async {
   });
 
   test("interface depends on type, interface and enum", () {
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
+    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true);
     var parsed = g.parse('''
   interface Animal {
     name: String
@@ -101,7 +101,7 @@ void main() async {
   });
 
   test("type/interface depend on interfaces (inplementations)", () {
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
+    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true);
     var parsed = g.parse('''
   interface Animal {
     name: String
@@ -118,7 +118,7 @@ void main() async {
   });
 
   test("input depends on input and enum", () {
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
+    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true);
     var parsed = g.parse('''
   input PersonInput {
     name: String
@@ -137,15 +137,15 @@ void main() async {
   });
 
   test("input depends on directive import", () {
-    final GQGrammar g =
-        GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
     var parsed = g.parse('''
   directive @FieldNameConstants(
-    gqAnnotation: Boolean = true
-    gqClass: String = "@FieldNameConstants"
-    gqImport: String = "lombok.experimental.FieldNameConstants"
-    gqOnClient: Boolean = false
-    gqOnServer: Boolean = true
+    glAnnotation: Boolean = true
+    glClass: String = "@FieldNameConstants"
+    glImport: String = "lombok.experimental.FieldNameConstants"
+    glOnClient: Boolean = false
+    glOnServer: Boolean = true
 
 ) on OBJECT | INPUT_OBJECT | INTERFACE
 
@@ -160,15 +160,15 @@ void main() async {
   });
 
   test("input depends on directive import on field", () {
-    final GQGrammar g =
-        GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
     var parsed = g.parse('''
   directive @FieldNameConstants(
-    gqAnnotation: Boolean = true
-    gqClass: String = "@FieldNameConstants"
-    gqImport: String = "lombok.experimental.FieldNameConstants"
-    gqOnClient: Boolean = false
-    gqOnServer: Boolean = true
+    glAnnotation: Boolean = true
+    glClass: String = "@FieldNameConstants"
+    glImport: String = "lombok.experimental.FieldNameConstants"
+    glOnClient: Boolean = false
+    glOnServer: Boolean = true
 
 ) on OBJECT | INPUT_OBJECT | INTERFACE
 
@@ -183,15 +183,15 @@ void main() async {
   });
 
   test("type depends on directive import", () {
-    final GQGrammar g =
-        GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
     var parsed = g.parse('''
   directive @FieldNameConstants(
-    gqAnnotation: Boolean = true
-    gqClass: String = "@FieldNameConstants"
-    gqImport: String = "lombok.experimental.FieldNameConstants"
-    gqOnClient: Boolean = false
-    gqOnServer: Boolean = true
+    glAnnotation: Boolean = true
+    glClass: String = "@FieldNameConstants"
+    glImport: String = "lombok.experimental.FieldNameConstants"
+    glOnClient: Boolean = false
+    glOnServer: Boolean = true
 
 ) on OBJECT | INPUT_OBJECT | INTERFACE
 
@@ -206,15 +206,15 @@ void main() async {
   });
 
   test("type depends on directive import on field", () {
-    final GQGrammar g =
-        GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
     var parsed = g.parse('''
   directive @FieldNameConstants(
-    gqAnnotation: Boolean = true
-    gqClass: String = "@FieldNameConstants"
-    gqImport: String = "lombok.experimental.FieldNameConstants"
-    gqOnClient: Boolean = false
-    gqOnServer: Boolean = true
+    glAnnotation: Boolean = true
+    glClass: String = "@FieldNameConstants"
+    glImport: String = "lombok.experimental.FieldNameConstants"
+    glOnClient: Boolean = false
+    glOnServer: Boolean = true
 
 ) on OBJECT | INPUT_OBJECT | INTERFACE
 
@@ -229,15 +229,15 @@ void main() async {
   });
 
   test("handle imports on repository", () {
-    final GQGrammar g =
-        GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
     var parsed = g.parse('''
-  directive @gqRepository(
-    gqType: String!
-    gqIdType: String!
-    gqImport: String = "org.springframework.data.mongodb.repository.MongoRepository"
-    gqClass: String = "MongoRepository"
-    gqOnServer: Boolean = true
+  directive @glRepository(
+    glType: String!
+    glIdType: String!
+    glImport: String = "org.springframework.data.mongodb.repository.MongoRepository"
+    glClass: String = "MongoRepository"
+    glOnServer: Boolean = true
 ) on INTERFACE
 
 directive @gqQuery(
@@ -247,18 +247,18 @@ directive @gqQuery(
     delete: Boolean
     fields: String
     sort: String
-    gqClass: String = "@Query"
-    gqImport: String = "org.springframework.data.mongodb.repository.Query"
-    gqOnClient: Boolean = false
-    gqOnServer: Boolean = true
-    gqAnnotation: Boolean = true
+    glClass: String = "@Query"
+    glImport: String = "org.springframework.data.mongodb.repository.Query"
+    glOnClient: Boolean = false
+    glOnServer: Boolean = true
+    glAnnotation: Boolean = true
 ) on FIELD_DEFINITION
 
   type Person {
     name: String 
   }
 
-  interface PersonRepo @gqRepository(gqIdType: "String", gqType: "Person") {
+  interface PersonRepo @glRepository(glIdType: "String", glType: "Person") {
     countById(id: String): Int @gqQuery(value: "{'_id': ?0}")
   }
   
@@ -277,22 +277,22 @@ directive @gqQuery(
   });
 
   test("handle imports on repository 2", () {
-    final GQGrammar g =
-        GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
     var parsed = g.parse('''
-  directive @gqRepository(
-    gqType: String!
-    gqIdType: String!
-    gqImport: String = "org.springframework.data.mongodb.repository.MongoRepository"
-    gqClass: String = "MongoRepository"
+  directive @glRepository(
+    glType: String!
+    glIdType: String!
+    glImport: String = "org.springframework.data.mongodb.repository.MongoRepository"
+    glClass: String = "MongoRepository"
 ) on INTERFACE
 
 
-  type Person @gqExternal(gqClass: "ExternalPerson", gqImport: "myorg.ExternalPerson") {
+  type Person @glExternal(glClass: "ExternalPerson", glImport: "myorg.ExternalPerson") {
     name: String 
   }
 
-  interface PersonRepo @gqRepository(gqIdType: "String", gqType: "Person") {
+  interface PersonRepo @glRepository(glIdType: "String", glType: "Person") {
     _: Int 
   }
   
@@ -303,15 +303,15 @@ directive @gqQuery(
     expect(repo.getImports(g), containsAll(["myorg.ExternalPerson"]));
   });
 
-  test("handle imports on gqExternal fields", () {
-    final GQGrammar g =
-        GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+  test("handle imports on glExternal fields", () {
+    final GLGrammar g =
+        GLGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
     var parsed = g.parse('''
-  directive @gqRepository(
-    gqType: String!
-    gqIdType: String!
-    gqImport: String = "org.springframework.data.mongodb.repository.MongoRepository"
-    gqClass: String = "MongoRepository"
+  directive @glRepository(
+    glType: String!
+    glIdType: String!
+    glImport: String = "org.springframework.data.mongodb.repository.MongoRepository"
+    glClass: String = "MongoRepository"
 ) on INTERFACE
 
 directive @gqQuery(
@@ -321,22 +321,22 @@ directive @gqQuery(
     delete: Boolean
     fields: String
     sort: String
-    gqClass: String = "@Query"
-    gqImport: String = "org.springframework.data.mongodb.repository.Query"
-    gqOnClient: Boolean = false
-    gqOnServer: Boolean = true
-    gqAnnotation: Boolean = true
+    glClass: String = "@Query"
+    glImport: String = "org.springframework.data.mongodb.repository.Query"
+    glOnClient: Boolean = false
+    glOnServer: Boolean = true
+    glAnnotation: Boolean = true
 ) on FIELD_DEFINITION
 
   type Person {
     name: String 
   }
 
-  input Pageable @gqExternal(gqClass: "Pageaable", gqImport: "org.myorg.Pagagble") {
+  input Pageable @glExternal(glClass: "Pageaable", glImport: "org.myorg.Pagagble") {
     _: Int
   }
 
-  interface PersonRepo @gqRepository(gqIdType: "String", gqType: "Person") {
+  interface PersonRepo @glRepository(glIdType: "String", glType: "Person") {
     findById(id: String): Person @gqQuery(value: "{'_id': ?0}")
     findByName(id: String, pageable: Pageable): [Person!]!
   }
@@ -351,8 +351,8 @@ directive @gqQuery(
   });
 
   test("controller must depend on service", () {
-    final GQGrammar g =
-        GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
     var parsed = g.parse('''
   type Person {
     name: String 
@@ -368,21 +368,21 @@ directive @gqQuery(
 
   test("Repository should import org.springframework.stereotype.Repository after serialization",
       () {
-    final GQGrammar g =
-        GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
     var parsed = g.parse('''
-  directive @gqRepository(
-    gqType: String!
-    gqIdType: String!
-    gqImport: String = "org.springframework.data.mongodb.repository.MongoRepository"
-    gqClass: String = "MongoRepository"
+  directive @glRepository(
+    glType: String!
+    glIdType: String!
+    glImport: String = "org.springframework.data.mongodb.repository.MongoRepository"
+    glClass: String = "MongoRepository"
 ) on INTERFACE
 
   type Person {
     name: String 
   }
 
-  interface PersonRepo @gqRepository(gqIdType: "String", gqType: "Person") {
+  interface PersonRepo @glRepository(glIdType: "String", glType: "Person") {
     findById(id: String): Person
   }
   
@@ -395,8 +395,8 @@ directive @gqQuery(
   });
 
   test("Should not import skipped objects", () {
-    final GQGrammar g =
-        GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
     var parsed = g.parse('''
   
   type Person {
@@ -404,7 +404,7 @@ directive @gqQuery(
     car: Car
   }
 
-  type Car @gqSkipOnServer {
+  type Car @glSkipOnServer {
     name: String
   }
 
@@ -415,12 +415,12 @@ directive @gqQuery(
     expect(person.getImportDependecies(g).map((e) => e.token), isNot(contains("Car")));
   });
 
-  test("gqImport import", () {
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
+  test("glImport import", () {
+    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true);
     var parsed = g.parse('''
-directive @gqExternal(gqClass: String!, gqImport: String!) on  OBJECT|INPUT_OBJECT
+directive @glExternal(glClass: String!, glImport: String!) on  OBJECT|INPUT_OBJECT
 
-  input Pageable @gqExternal(gqClass: "Pageable", gqImport: "org.springframework.data.domain.Pageable") {
+  input Pageable @glExternal(glClass: "Pageable", glImport: "org.springframework.data.domain.Pageable") {
     _: Int #dummy
   }
 
@@ -436,13 +436,13 @@ directive @gqExternal(gqClass: String!, gqImport: String!) on  OBJECT|INPUT_OBJE
   });
 
   test("service should import mapping dependecies", () {
-    final GQGrammar g =
-        GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
     var parsed = g.parse('''
 
  type Car {
   name: String
-  owner: Person @gqSkipOnServer
+  owner: Person @glSkipOnServer
  }
  type Person {
   name: String
@@ -459,11 +459,11 @@ directive @gqExternal(gqClass: String!, gqImport: String!) on  OBJECT|INPUT_OBJE
   });
 
   test("service should import arguments event when type is skipped", () {
-    final GQGrammar g =
-        GQGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
     var parsed = g.parse('''
 
- type Car @gqSkipOnServer {
+ type Car @glSkipOnServer {
   name: String
  }
 
@@ -473,7 +473,7 @@ directive @gqExternal(gqClass: String!, gqImport: String!) on  OBJECT|INPUT_OBJE
 }
 
  type Query {
-  getCars(page: PagingInfo!): [Car!]! @gqServiceName(name: "MyService")
+  getCars(page: PagingInfo!): [Car!]! @glServiceName(name: "MyService")
  }
 
 ''');
@@ -483,7 +483,7 @@ directive @gqExternal(gqClass: String!, gqImport: String!) on  OBJECT|INPUT_OBJE
   });
 
   test("interface must import implementations when fromJson is present", () {
-    final GQGrammar g = GQGrammar(
+    final GLGrammar g = GLGrammar(
         generateAllFieldsFragments: true,
         mode: CodeGenerationMode.client,
         autoGenerateQueries: true);
@@ -511,7 +511,7 @@ type Cat implements Animal {
   });
 
   test("Client should import responses", () {
-    final GQGrammar g = GQGrammar(
+    final GLGrammar g = GLGrammar(
         generateAllFieldsFragments: true,
         mode: CodeGenerationMode.client,
         autoGenerateQueries: true);
@@ -538,7 +538,7 @@ type Cat  {
   });
 
   test("Client should import inputs", () {
-    final GQGrammar g = GQGrammar(
+    final GLGrammar g = GLGrammar(
         generateAllFieldsFragments: true,
         mode: CodeGenerationMode.client,
         autoGenerateQueries: true);
@@ -566,7 +566,7 @@ type Cat  {
   });
 
   test("Client should import enums", () {
-    final GQGrammar g = GQGrammar(
+    final GLGrammar g = GLGrammar(
         generateAllFieldsFragments: true,
         mode: CodeGenerationMode.client,
         autoGenerateQueries: true);
@@ -589,7 +589,7 @@ type Query {
   });
 
   test("Client should import subscription classes/eumms", () {
-    final GQGrammar g = GQGrammar(
+    final GLGrammar g = GLGrammar(
         generateAllFieldsFragments: true,
         mode: CodeGenerationMode.client,
         autoGenerateQueries: true);
@@ -610,16 +610,16 @@ type Subscrtipion {
     expect(
         clientGen.getImportDependecies(g).map((e) => e.token),
         containsAll([
-          "GQSubscriptionPayload",
+          "GraphLinkSubscriptionPayload",
           "GQAckStatus",
-          "GQSubscriptionErrorMessageBase",
-          "GQSubscriptionErrorMessage",
-          "GQSubscriptionMessage"
+          "GraphLinkSubscriptionErrorMessageBase",
+          "GraphLinkSubscriptionErrorMessage",
+          "GraphLinkSubscriptionMessage"
         ]));
   });
 
   test("import should be skipped on skip mode", () {
-    final GQGrammar g = GQGrammar(
+    final GLGrammar g = GLGrammar(
         generateAllFieldsFragments: true,
         mode: CodeGenerationMode.server,
         autoGenerateQueries: true);
@@ -629,7 +629,7 @@ type Subscrtipion {
 enum Gender {male, female}
 type Person  {
   name: String
-  gender: Gender @gqSkipOnServer
+  gender: Gender @glSkipOnServer
 }
 ''');
     var person = g.types['Person']!;
@@ -638,7 +638,7 @@ type Person  {
   });
 
   test("import should be skipped on skip mode on directives", () {
-    final GQGrammar g = GQGrammar(
+    final GLGrammar g = GLGrammar(
         generateAllFieldsFragments: true,
         mode: CodeGenerationMode.client,
         autoGenerateQueries: true);
@@ -647,11 +647,11 @@ type Person  {
   ${getClientObjects()}
 
   directive @Id(
-    gqClass: String = "Id",
-    gqImport: String = "org.springframework.data.annotation.Id",
-    gqOnClient: Boolean = false,
-    gqOnServer: Boolean = true,
-    gqAnnotation: Boolean = true
+    glClass: String = "Id",
+    glImport: String = "org.springframework.data.annotation.Id",
+    glOnClient: Boolean = false,
+    glOnServer: Boolean = true,
+    glAnnotation: Boolean = true
 )
  on FIELD_DEFINITION | FIELD
 
@@ -666,7 +666,7 @@ type Person  {
   });
 
   test("import should be skipped on skip mode on directives", () {
-    final GQGrammar g = GQGrammar(
+    final GLGrammar g = GLGrammar(
         generateAllFieldsFragments: true,
         mode: CodeGenerationMode.client,
         autoGenerateQueries: true);
@@ -675,11 +675,11 @@ type Person  {
   ${getClientObjects()}
 
   directive @FieldNameConstants(
-    gqAnnotation: Boolean = true
-    gqClass: String = "@FieldNameConstants"
-    gqImport: String = "lombok.experimental.FieldNameConstants"
-    gqOnClient: Boolean = false
-    gqOnServer: Boolean = true
+    glAnnotation: Boolean = true
+    glClass: String = "@FieldNameConstants"
+    glImport: String = "lombok.experimental.FieldNameConstants"
+    glOnClient: Boolean = false
+    glOnServer: Boolean = true
 
 ) on OBJECT | INPUT_OBJECT | INTERFACE
 
@@ -693,29 +693,29 @@ type Person @FieldNameConstants  {
   });
 
   test("services and repos should not import related class imports", () {
-    final GQGrammar g = GQGrammar(mode: CodeGenerationMode.server);
+    final GLGrammar g = GLGrammar(mode: CodeGenerationMode.server);
 
     var parsed = g.parse('''
   ${getClientObjects()}
 
   directive @FieldNameConstants(
-    gqAnnotation: Boolean = true
-    gqClass: String = "@FieldNameConstants"
-    gqImport: String = "lombok.experimental.FieldNameConstants"
-    gqOnClient: Boolean = false
-    gqOnServer: Boolean = true
+    glAnnotation: Boolean = true
+    glClass: String = "@FieldNameConstants"
+    glImport: String = "lombok.experimental.FieldNameConstants"
+    glOnClient: Boolean = false
+    glOnServer: Boolean = true
 ) on OBJECT | INPUT_OBJECT | INTERFACE
 
 type Person @FieldNameConstants  {
   id: String 
 }
 
-interface PersonRepository @gqRepository(gqIdType: "String", gqType: "Person") {
+interface PersonRepository @glRepository(glIdType: "String", glType: "Person") {
   _: Int
 }
 
 type Query {
-  findPerson: Person @gqServiceName(name: "MainService")
+  findPerson: Person @glServiceName(name: "MainService")
 }
 ''');
     expect(parsed is Success, true);
@@ -733,12 +733,12 @@ type Query {
   });
 
   test("mapping service should import batch dependecies", () {
-    final GQGrammar g = GQGrammar(mode: CodeGenerationMode.server);
+    final GLGrammar g = GLGrammar(mode: CodeGenerationMode.server);
 
     var parsed = g.parse('''
   ${getClientObjects()}
 
-  type PersonCar @gqSkipOnServer(mapTo: "Person") {
+  type PersonCar @glSkipOnServer(mapTo: "Person") {
     person: Person!
     car: Car
   }
@@ -749,7 +749,7 @@ type Query {
     make: String
   }
   type Query {
-    findPerson: [PersonCar!]! @gqServiceName(name: "MainService")  ### it should be a batch with a skipped Type response
+    findPerson: [PersonCar!]! @glServiceName(name: "MainService")  ### it should be a batch with a skipped Type response
   }
 ''');
     expect(parsed is Success, true);
@@ -759,12 +759,12 @@ type Query {
   });
 
   test("mapping service should import batch dependecies recursive", () {
-    final GQGrammar g = GQGrammar(mode: CodeGenerationMode.server);
+    final GLGrammar g = GLGrammar(mode: CodeGenerationMode.server);
 
     var parsed = g.parse('''
   ${getClientObjects()}
 
-  type PersonCar @gqSkipOnServer(mapTo: "Person") {
+  type PersonCar @glSkipOnServer(mapTo: "Person") {
     person: Person!
     car: Car
     vehicle: Vehicle
@@ -779,13 +779,13 @@ type Query {
     name: String
   }
 
-  type Vehicle @gqSkipOnServer(mapTo: "Car") {
+  type Vehicle @glSkipOnServer(mapTo: "Car") {
     car: Car!
     owner: Owner
   }
 
   type Query {
-    findPerson: [PersonCar!]! @gqServiceName(name: "MainService") 
+    findPerson: [PersonCar!]! @glServiceName(name: "MainService") 
   }
 ''');
     expect(parsed is Success, true);
@@ -797,7 +797,7 @@ type Query {
   });
 
   test("mapping should import mapped to dependecies", () {
-    final GQGrammar g = GQGrammar(mode: CodeGenerationMode.server);
+    final GLGrammar g = GLGrammar(mode: CodeGenerationMode.server);
 
     var parsed = g.parse('''
   ${getClientObjects()}
@@ -806,7 +806,7 @@ type Query {
     lastName: String
   }
 
-  type PersonDTO ${gqSkipOnServer}(mapTo: "Person") {
+  type PersonDTO ${glSkipOnServer}(mapTo: "Person") {
     age: Int!
   }
 
@@ -822,11 +822,11 @@ type Query {
   });
 
   test("services and controllers should import mapped to dependecies", () {
-    final GQGrammar g = GQGrammar(mode: CodeGenerationMode.server);
+    final GLGrammar g = GLGrammar(mode: CodeGenerationMode.server);
 
     var parsed = g.parse('''
   ${getClientObjects()}
-  type ConversationUnread @gqSkipOnServer(mapTo: "ConversationView") {
+  type ConversationUnread @glSkipOnServer(mapTo: "ConversationView") {
     view: ConversationView!
     unread: Int!
   }
@@ -837,7 +837,7 @@ type Query {
   }
 
   type Query {
-    getConversationById(id: ID!): ConversationUnread! @gqServiceName(name: "MessageService")
+    getConversationById(id: ID!): ConversationUnread! @glServiceName(name: "MessageService")
   }
   
 ''');
@@ -850,7 +850,7 @@ type Query {
   });
 
   test("service should import DataFetchingEnvironment when serialized", () {
-    final GQGrammar g = GQGrammar(mode: CodeGenerationMode.server);
+    final GLGrammar g = GLGrammar(mode: CodeGenerationMode.server);
 
     var parsed = g.parse('''
   ${getClientObjects()}
@@ -862,7 +862,7 @@ type Query {
   }
 
   type Query {
-    getPerson: Person! @gqServiceName(name: "PersonService")
+    getPerson: Person! @glServiceName(name: "PersonService")
   }
   
 ''');
@@ -876,7 +876,7 @@ type Query {
   });
 
   test("controller should import DataFetchingEnvironment when serialized", () {
-    final GQGrammar g = GQGrammar(mode: CodeGenerationMode.server);
+    final GLGrammar g = GLGrammar(mode: CodeGenerationMode.server);
 
     var parsed = g.parse('''
   ${getClientObjects()}
@@ -888,7 +888,7 @@ type Query {
   }
 
   type Query {
-    getPerson: Person! @gqServiceName(name: "PersonService")
+    getPerson: Person! @glServiceName(name: "PersonService")
   }
   
 ''');
@@ -900,7 +900,7 @@ type Query {
   });
 
   test("Java interface should import java.util.map when json methods are serialized", () {
-    final GQGrammar g = GQGrammar(mode: CodeGenerationMode.server);
+    final GLGrammar g = GLGrammar(mode: CodeGenerationMode.server);
 
     var parsed = g.parse('''
   ${getClientObjects()}
@@ -916,7 +916,7 @@ type Query {
   }
 
   type Query {
-    getPerson: Person! @gqServiceName(name: "PersonService")
+    getPerson: Person! @glServiceName(name: "PersonService")
   }
   
 ''');
@@ -928,7 +928,7 @@ type Query {
   });
 
   test("controller must import @Argument", () {
-    final GQGrammar g = GQGrammar(mode: CodeGenerationMode.server);
+    final GLGrammar g = GLGrammar(mode: CodeGenerationMode.server);
 
     var parsed = g.parse('''
   ${getClientObjects()}
@@ -940,7 +940,7 @@ type Query {
   }
 
   type Query {
-    getPersonById(id: String!): Person! @gqServiceName(name: "PersonService")
+    getPersonById(id: String!): Person! @glServiceName(name: "PersonService")
   }
   
 ''');

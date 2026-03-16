@@ -5,10 +5,10 @@ import 'package:glob/glob.dart';
 import 'package:glob/list_local_fs.dart';
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/constants.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:graphlink/src/io_utils.dart';
-import 'package:graphlink/src/model/gq_interface_definition.dart';
-import 'package:graphlink/src/model/gq_type_definition.dart';
+import 'package:graphlink/src/model/gl_interface_definition.dart';
+import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/serializers/client_serializers/dart_client_serializer.dart';
 import 'package:graphlink/src/serializers/client_serializers/java_client_serializer.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
@@ -225,15 +225,15 @@ position: ${failures.first.position}
 
 final _lastGeneratedFiles = <String>{};
 
-GQGrammar createGrammar(GeneratorConfig config) {
+GLGrammar createGrammar(GeneratorConfig config) {
   var mode = config.getMode();
   if (mode == CodeGenerationMode.server) {
-    return GQGrammar(
+    return GLGrammar(
         mode: mode, typeMap: config.typeMappings!, identityFields: config.identityFields);
   } else {
     var clientConfig = config.clientConfig;
 
-    return GQGrammar(
+    return GLGrammar(
       mode: mode,
       typeMap: config.typeMappings!,
       identityFields: config.identityFields,
@@ -247,7 +247,7 @@ GQGrammar createGrammar(GeneratorConfig config) {
 }
 
 Future<Set<String>> generateClientClasses(
-    GQGrammar grammar, GeneratorConfig config, DateTime started,
+    GLGrammar grammar, GeneratorConfig config, DateTime started,
     {String? pack, noClient = false}) async {
   final serializer = DartSerializer(grammar, generateJsonMethods: true);
   final dcs = DartClientSerializer(grammar, serializer);
@@ -279,7 +279,7 @@ Future<Set<String>> generateClientClasses(
     futures.add(r);
   });
 
-  var allProjectedTypes = <String, GQTypeDefinition>{};
+  var allProjectedTypes = <String, GLTypeDefinition>{};
   allProjectedTypes.addAll(grammar.projectedTypes);
   allProjectedTypes.addAll(grammar.projectedInterfaces);
   allProjectedTypes.forEach((k, def) {
@@ -316,7 +316,7 @@ Future<Set<String>> generateClientClasses(
     String client = dcs.generateClient(prefix);
     var r = writeToFile(
         data: client,
-        fileName: 'GQClient${dcs.fileExtension}',
+        fileName: 'GraphLinkClient${dcs.fileExtension}',
         subdir: 'client',
         imports: [],
         destinationDir: destinationDir);
@@ -330,7 +330,7 @@ Future<Set<String>> generateClientClasses(
 }
 
 Future<Set<String>> generateClientClassesJava(
-    GQGrammar grammar, GeneratorConfig config, DateTime started,
+    GLGrammar grammar, GeneratorConfig config, DateTime started,
     {String? pack, noClient = false}) async {
   final serializer = JavaSerializer(
     grammar,
@@ -369,7 +369,7 @@ Future<Set<String>> generateClientClassesJava(
     futures.add(r);
   });
 
-  var allProjectedTypes = <String, GQTypeDefinition>{};
+  var allProjectedTypes = <String, GLTypeDefinition>{};
   allProjectedTypes.addAll(grammar.projectedTypes);
   allProjectedTypes.addAll(grammar.projectedInterfaces);
   ['GQClientAdapter', 'GQJsonEncoder', 'GQJsonDecoder']
@@ -396,7 +396,7 @@ Future<Set<String>> generateClientClassesJava(
     String client = dcs.generateClient(prefix);
     var r = writeToFile(
       data: client,
-      fileName: 'GQClient${dcs.fileExtension}',
+      fileName: 'GraphLinkClient${dcs.fileExtension}',
       subdir: 'client',
       imports: [],
       destinationDir: destinationDir,
@@ -412,7 +412,7 @@ Future<Set<String>> generateClientClassesJava(
 }
 
 Future<Set<String>> generateServerClasses(
-    GQGrammar grammar, GeneratorConfig config, DateTime started) async {
+    GLGrammar grammar, GeneratorConfig config, DateTime started) async {
   final springConfig = config.serverConfig!.spring!;
   final packageName = springConfig.basePackage;
   final destinationDir = config.outputDir;
@@ -521,7 +521,7 @@ Future<Set<String>> generateServerClasses(
   });
 
   if (springConfig.generateSchema) {
-    var text = GraphqSerializer(grammar).generateSchema();
+    var text = GLGraphqSerializer(grammar).generateSchema();
     var r = saveSource(data: text, path: springConfig.schemaTargetPath!, graphqlSource: true);
     futures.add(r);
   }

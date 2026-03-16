@@ -2,13 +2,13 @@ import 'dart:io';
 
 import 'package:graphlink/src/serializers/language.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 
 void main() {
   test("test serializeGetterDeclaration when Boolean is Object", () {
-    final GQGrammar g = GQGrammar(identityFields: [
+    final GLGrammar g = GLGrammar(identityFields: [
       "id"
     ], typeMap: {
       "ID": "String",
@@ -33,7 +33,7 @@ void main() {
   });
 
   test("test serializeGetterDeclaration when Boolean is a primitive", () {
-    final GQGrammar g = GQGrammar(identityFields: [
+    final GLGrammar g = GLGrammar(identityFields: [
       "id"
     ], typeMap: {
       "ID": "String",
@@ -58,7 +58,7 @@ void main() {
   });
 
   test("test boxed types", () {
-    final GQGrammar g = GQGrammar(identityFields: [
+    final GLGrammar g = GLGrammar(identityFields: [
       "id"
     ], typeMap: {
       "ID": "String",
@@ -84,7 +84,7 @@ void main() {
   });
 
   test("primitive types to boxed types when nullable", () {
-    final GQGrammar g = GQGrammar(identityFields: [
+    final GLGrammar g = GLGrammar(identityFields: [
       "id"
     ], typeMap: {
       "ID": "String",

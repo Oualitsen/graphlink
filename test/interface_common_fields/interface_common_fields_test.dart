@@ -2,15 +2,16 @@ import 'dart:io';
 
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
-final GQGrammar g = GQGrammar();
+final GLGrammar g = GLGrammar();
 
 void main() async {
   test("common interface fields 1", () {
-    final text = File("test/interface_common_fields/interface_common_fields_test.graphql").readAsStringSync();
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
+    final text = File("test/interface_common_fields/interface_common_fields_test.graphql")
+        .readAsStringSync();
+    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true);
 
     var parsed = g.parse(text);
     expect(parsed is Success, true);
@@ -21,8 +22,9 @@ void main() async {
   });
 
   test("common interface fields 2", () {
-    final text = File("test/interface_common_fields/interface_common_fields_test2.graphql").readAsStringSync();
-    final GQGrammar g = GQGrammar(autoGenerateQueries: false, generateAllFieldsFragments: true);
+    final text = File("test/interface_common_fields/interface_common_fields_test2.graphql")
+        .readAsStringSync();
+    final GLGrammar g = GLGrammar(autoGenerateQueries: false, generateAllFieldsFragments: true);
 
     var parsed = g.parse(text);
     expect(parsed is Success, true);
@@ -34,8 +36,9 @@ void main() async {
   });
 
   test("common interface fields 3", () {
-    final text = File("test/interface_common_fields/interface_common_fields_test3.graphql").readAsStringSync();
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
+    final text = File("test/interface_common_fields/interface_common_fields_test3.graphql")
+        .readAsStringSync();
+    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
 
     var parsed = g.parse(text);
     expect(parsed is Success, true);
@@ -48,8 +51,9 @@ void main() async {
   });
 
   test("common interface (union) fields 1", () {
-    final text = File("test/interface_common_fields/interface_common_fields_union_test.graphql").readAsStringSync();
-    final GQGrammar g = GQGrammar();
+    final text = File("test/interface_common_fields/interface_common_fields_union_test.graphql")
+        .readAsStringSync();
+    final GLGrammar g = GLGrammar();
 
     var parsed = g.parse(text);
 
@@ -64,8 +68,9 @@ void main() async {
   });
 
   test("common interface (union) fields 2", () {
-    final text = File("test/interface_common_fields/interface_common_fields_union_test2.graphql").readAsStringSync();
-    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+    final text = File("test/interface_common_fields/interface_common_fields_union_test2.graphql")
+        .readAsStringSync();
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
     var parsed = g.parse(text);
     expect(parsed is Success, true);
     var vehicle = g.projectedInterfaces["Vehicle"]!;

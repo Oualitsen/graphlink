@@ -2,15 +2,14 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 import 'package:logger/logger.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() async {
   test("Input transformation 1", () {
     var logger = Logger();
-    final GQGrammar g = GQGrammar();
-    logger.i(
-        "________________________________________init______________________");
+    final GLGrammar g = GLGrammar();
+    logger.i("________________________________________init______________________");
 
     var parser = g.buildFrom(g.fullGrammar().end());
     logger.i("reading file");

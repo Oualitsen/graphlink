@@ -1,4 +1,4 @@
-directive @gqCache(ttl: Int!, tag: String) on QUERY | MUTATION | FIELD | FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR | SCHEMA
+directive @glCache(ttl: Int!, tag: String) on QUERY | MUTATION | FIELD | FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR | SCHEMA
 
 type Owner {
     id: ID!

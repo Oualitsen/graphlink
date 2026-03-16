@@ -1,11 +1,11 @@
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 import 'package:petitparser/debug.dart';
 
 void main() {
   test("Fragment value test", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parser = g.buildFrom(g.fragmentBlock().end());
     var result = parser.parse('''
@@ -17,7 +17,7 @@ void main() {
   });
 
   test("Plain fragment field test", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parser = g.buildFrom(g.fragmentBlock().end());
     var result = trace(parser).parse('''

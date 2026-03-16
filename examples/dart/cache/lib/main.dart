@@ -1,11 +1,12 @@
 import 'package:graphlink_cache_example/generated/inputs/create_car_input.dart';
 import 'package:graphlink_cache_example/generated/inputs/create_owner_input.dart';
+import 'package:graphlink_cache_example/ws_adapter.dart';
 import 'package:http/http.dart' as http;
-import 'package:graphlink_cache_example/generated/client/GQClient.dart';
+import 'package:graphlink_cache_example/generated/client/GraphLinkClient.dart';
 
 const _serverUrl = 'http://localhost:8080/graphql';
 
-Future<String> graphqlAdapter(String payload) async {
+Future<String> graphLinkAdapter(String payload) async {
   final response = await http.post(
     Uri.parse(_serverUrl),
     headers: {'Content-Type': 'application/json'},
@@ -18,7 +19,7 @@ Future<String> graphqlAdapter(String payload) async {
 }
 
 void main(List<String> args) async {
-  final client = GQClient(graphqlAdapter, null);
+  final client = GraphLinkClient(graphLinkAdapter, SimpleWebSocketAdapter("http://localhost:8080/graphql"), null);
 
   // Create an owner
   final ownerResponse = await client.mutations.createOwner(

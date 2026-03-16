@@ -2,12 +2,12 @@ import 'dart:io';
 
 import 'package:graphlink/src/excpetions/parse_exception.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() async {
   test("name_generation_fail_on_same_name_diffrent_types_test", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parser = g.buildFrom(g.fullGrammar().end());
 

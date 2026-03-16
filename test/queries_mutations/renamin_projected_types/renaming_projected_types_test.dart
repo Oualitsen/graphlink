@@ -1,18 +1,18 @@
 import 'dart:io';
 
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() async {
   test("renaming projected types test", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parser = g.buildFrom(g.fullGrammar().end());
 
-    final text = File(
-            "test/queries_mutations/renamin_projected_types/renaming_projected_types_test.graphql")
-        .readAsStringSync();
+    final text =
+        File("test/queries_mutations/renamin_projected_types/renaming_projected_types_test.graphql")
+            .readAsStringSync();
     var parsed = parser.parse(text);
 
     expect(parsed is Success, true);
@@ -21,7 +21,7 @@ void main() async {
 
     expect(productInput.token, contains("MyProductInput"));
     //renamed responses
-    expect(g.queries["getAllProducts"]!.getGeneratedTypeDefinition().token,
-        equals("MyProductResp"));
+    expect(
+        g.queries["getAllProducts"]!.getGeneratedTypeDefinition().token, equals("MyProductResp"));
   });
 }

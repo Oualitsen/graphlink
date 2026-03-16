@@ -1,9 +1,9 @@
-import 'package:graphlink/src/model/gq_queries.dart';
+import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
-final GQGrammar g = GQGrammar();
+final GLGrammar g = GLGrammar();
 
 void main() {
   test("Schema element  test", () {
@@ -14,7 +14,7 @@ void main() {
     
     ''');
     expect(result is Success, true);
-    expect(result.value.type, GQQueryType.mutation);
+    expect(result.value.type, GLQueryType.mutation);
     expect(result.value.name.token, "Test2");
   });
 

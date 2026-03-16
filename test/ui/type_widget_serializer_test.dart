@@ -4,12 +4,12 @@ import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/serializers/language.dart';
 import 'package:graphlink/src/utils.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 const outputDir = "../my_web_app/lib/generated";
 
-getConfig(GQGrammar g) {
+getConfig(GLGrammar g) {
   return GeneratorConfig(
       schemaPaths: [],
       mode: g.mode.name,
@@ -28,7 +28,10 @@ getConfig(GQGrammar g) {
 
 void main() {
   test("UI View gen", () async {
-    var g = GQGrammar(autoGenerateQueries: true, mode: CodeGenerationMode.client, generateAllFieldsFragments: true);
+    var g = GLGrammar(
+        autoGenerateQueries: true,
+        mode: CodeGenerationMode.client,
+        generateAllFieldsFragments: true);
     var result = g.parse('''
   type SingleLabelData {
     name: String!
@@ -45,7 +48,10 @@ void main() {
   });
 
   test("UI View gen enum", () async {
-    var g = GQGrammar(autoGenerateQueries: true, mode: CodeGenerationMode.client, generateAllFieldsFragments: true);
+    var g = GLGrammar(
+        autoGenerateQueries: true,
+        mode: CodeGenerationMode.client,
+        generateAllFieldsFragments: true);
     var result = g.parse('''
 enum Gender {male, female}
   type WidgetEnumValue {
@@ -63,7 +69,10 @@ enum Gender {male, female}
   });
 
   test("UI View gen nullable", () async {
-    var g = GQGrammar(autoGenerateQueries: true, mode: CodeGenerationMode.client, generateAllFieldsFragments: true);
+    var g = GLGrammar(
+        autoGenerateQueries: true,
+        mode: CodeGenerationMode.client,
+        generateAllFieldsFragments: true);
     var result = g.parse('''
   type SingleLabelDataNullable {
     name: String
@@ -80,7 +89,10 @@ enum Gender {male, female}
   });
 
   test("UI View gen when field is not a string", () async {
-    var g = GQGrammar(autoGenerateQueries: true, mode: CodeGenerationMode.client, generateAllFieldsFragments: true);
+    var g = GLGrammar(
+        autoGenerateQueries: true,
+        mode: CodeGenerationMode.client,
+        generateAllFieldsFragments: true);
     var result = g.parse('''
   type SingleLabelDataNumber {
     age: Int!
@@ -97,7 +109,10 @@ enum Gender {male, female}
   });
 
   test("UI View gen when field is a list", () async {
-    var g = GQGrammar(autoGenerateQueries: true, mode: CodeGenerationMode.client, generateAllFieldsFragments: true);
+    var g = GLGrammar(
+        autoGenerateQueries: true,
+        mode: CodeGenerationMode.client,
+        generateAllFieldsFragments: true);
     var result = g.parse('''
   type ListLabelData {
     names: [String!]!
@@ -114,7 +129,10 @@ enum Gender {male, female}
   });
 
   test("UI View gen when field is a nullable list", () async {
-    var g = GQGrammar(autoGenerateQueries: true, mode: CodeGenerationMode.client, generateAllFieldsFragments: true);
+    var g = GLGrammar(
+        autoGenerateQueries: true,
+        mode: CodeGenerationMode.client,
+        generateAllFieldsFragments: true);
     var result = g.parse('''
   type NullableListLabelData {
     names: [String]
@@ -131,7 +149,10 @@ enum Gender {male, female}
   });
 
   test("UI View gen when field is another type", () async {
-    var g = GQGrammar(autoGenerateQueries: true, mode: CodeGenerationMode.client, generateAllFieldsFragments: true);
+    var g = GLGrammar(
+        autoGenerateQueries: true,
+        mode: CodeGenerationMode.client,
+        generateAllFieldsFragments: true);
     var result = g.parse('''
   type Driver {
     car: Car
@@ -152,7 +173,10 @@ enum Gender {male, female}
   });
 
   test("UI View gen when field is another type as List", () async {
-    var g = GQGrammar(autoGenerateQueries: true, mode: CodeGenerationMode.client, generateAllFieldsFragments: true);
+    var g = GLGrammar(
+        autoGenerateQueries: true,
+        mode: CodeGenerationMode.client,
+        generateAllFieldsFragments: true);
     var result = g.parse('''
   type Driver2 {
     cars: [Car2]
@@ -173,7 +197,10 @@ enum Gender {male, female}
   });
 
   test("UI View DriverWidget should import CarWidget", () async {
-    var g = GQGrammar(autoGenerateQueries: true, mode: CodeGenerationMode.client, generateAllFieldsFragments: true);
+    var g = GLGrammar(
+        autoGenerateQueries: true,
+        mode: CodeGenerationMode.client,
+        generateAllFieldsFragments: true);
     var result = g.parse('''
   type Driver {
     cars: [Car]
@@ -195,9 +222,12 @@ enum Gender {male, female}
   });
 
   test("UI View should not generate for @internal", () async {
-    var g = GQGrammar(autoGenerateQueries: true, mode: CodeGenerationMode.client, generateAllFieldsFragments: true);
+    var g = GLGrammar(
+        autoGenerateQueries: true,
+        mode: CodeGenerationMode.client,
+        generateAllFieldsFragments: true);
     var result = g.parse('''
-  type Person ${gqInternal} {
+  type Person ${glInternal} {
     name: String!
   }
 
@@ -207,7 +237,10 @@ enum Gender {male, female}
   });
 
   test("UI View should not generate for Graphql Responses", () async {
-    var g = GQGrammar(autoGenerateQueries: true, mode: CodeGenerationMode.client, generateAllFieldsFragments: true);
+    var g = GLGrammar(
+        autoGenerateQueries: true,
+        mode: CodeGenerationMode.client,
+        generateAllFieldsFragments: true);
     var result = g.parse('''
   type Person  {
     name: String!

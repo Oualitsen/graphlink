@@ -4,12 +4,12 @@ import 'package:graphlink/src/excpetions/parse_exception.dart';
 import 'package:graphlink/src/serializers/client_serializers/dart_client_serializer.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() async {
   test("example2 test", () {
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
+    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true);
 
     var parser = g.buildFrom(g.fullGrammar().end());
 
@@ -27,7 +27,7 @@ void main() async {
   });
 
   test("depedecy_cycle_detection_test_indirect_dependency2", () {
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
+    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true);
 
     var parser = g.buildFrom(g.fullGrammar().end());
 
@@ -38,7 +38,7 @@ void main() async {
   });
 
   test("client should not contain Instance of", () {
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
+    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
     final text = File("test/example2/schema.graphql").readAsStringSync();
     var result = g.parse(text);
     expect(result is Success, true);

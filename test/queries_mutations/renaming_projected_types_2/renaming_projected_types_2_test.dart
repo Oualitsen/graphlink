@@ -1,12 +1,12 @@
 import 'dart:io';
 
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() async {
   test("renaming_projected_types_2", () {
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true);
+    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true);
 
     var parser = g.buildFrom(g.fullGrammar().end());
 

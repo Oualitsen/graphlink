@@ -1,11 +1,11 @@
 import 'package:graphlink/src/cache_store_dart.dart';
 import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/gq_grammar.dart';
-import 'package:graphlink/src/model/gq_queries.dart';
-import 'package:graphlink/src/model/gq_type.dart';
-import 'package:graphlink/src/serializers/gq_client_serilaizer.dart';
-import 'package:graphlink/src/serializers/gq_serializer.dart';
+import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/model/gl_queries.dart';
+import 'package:graphlink/src/model/gl_type.dart';
+import 'package:graphlink/src/serializers/gl_client_serilaizer.dart';
+import 'package:graphlink/src/serializers/gl_serializer.dart';
 import 'package:graphlink/src/serializers/graphq_serializer.dart';
 
 const _operationNameParam = "operationName";
@@ -13,11 +13,11 @@ const _cacheStoreRef = 'store';
 const _cacheStoreClassName = 'GraphLinkCacheStore';
 const _inMemorycacheStoreClassName = 'InMemoryGraphLinkCacheStore';
 
-class DartClientSerializer extends ClientSerilaizer {
-  final GQGrammar _grammar;
+class DartClientSerializer extends GLClientSerilaizer {
+  final GLGrammar _grammar;
   final codeGenUtils = DartCodeGenUtils();
 
-  DartClientSerializer(this._grammar, GqSerializer dartSerializer) : super(dartSerializer);
+  DartClientSerializer(this._grammar, GLSerializer dartSerializer) : super(dartSerializer);
 
   @override
   String generateClient(String importPrefix) {
@@ -39,7 +39,7 @@ class DartClientSerializer extends ClientSerilaizer {
     buffer.writeln(inMemoryGraphLinkCacheStore);
     buffer.writeln();
 
-    GQQueryType.values
+    GLQueryType.values
         .map((e) => generateQueriesClassByType(e))
         .where((e) => e != null)
         .map((e) => e!)
@@ -47,18 +47,18 @@ class DartClientSerializer extends ClientSerilaizer {
       buffer.writeln(line);
     });
 
-    buffer.writeln(codeGenUtils.createClass(className: 'GQClient', statements: [
+    buffer.writeln(codeGenUtils.createClass(className: 'GraphLinkClient', statements: [
       'final _fragmMap = <String, String>{};',
-      if (_grammar.hasQueries) 'late final ${classNameFromType(GQQueryType.query)} queries;',
-      if (_grammar.hasMutations) 'late final ${classNameFromType(GQQueryType.mutation)} mutations;',
+      if (_grammar.hasQueries) 'late final ${classNameFromType(GLQueryType.query)} queries;',
+      if (_grammar.hasMutations) 'late final ${classNameFromType(GLQueryType.mutation)} mutations;',
       if (_grammar.hasSubscriptions)
-        'late final ${classNameFromType(GQQueryType.subscription)} subscriptions;',
+        'late final ${classNameFromType(GLQueryType.subscription)} subscriptions;',
       'late final $_cacheStoreClassName $_cacheStoreRef;',
       codeGenUtils.createMethod(
-        methodName: 'GQClient',
+        methodName: 'GraphLinkClient',
         arguments: [
           _adapterDeclaration(),
-          if (_grammar.hasSubscriptions) 'WebSocketAdapter wsAdapter',
+          if (_grammar.hasSubscriptions) 'GraphLinkWebSocketAdapter wsAdapter',
           '$_cacheStoreClassName? $_cacheStoreRef'
         ],
         namedArguments: false,
@@ -67,11 +67,11 @@ class DartClientSerializer extends ClientSerilaizer {
               "_fragmMap['${value.tokenInfo}'] = '${_grammar.serializer.serializeFragmentDefinitionBase(value)}';"),
           'this.$_cacheStoreRef = $_cacheStoreRef ?? $_inMemorycacheStoreClassName();',
           if (_grammar.hasQueries)
-            "queries = ${classNameFromType(GQQueryType.query)}(adapter, _fragmMap, this.${_cacheStoreRef});",
+            "queries = ${classNameFromType(GLQueryType.query)}(adapter, _fragmMap, this.${_cacheStoreRef});",
           if (_grammar.hasMutations)
-            "mutations = ${classNameFromType(GQQueryType.mutation)}(adapter, _fragmMap, this.${_cacheStoreRef});",
+            "mutations = ${classNameFromType(GLQueryType.mutation)}(adapter, _fragmMap, this.${_cacheStoreRef});",
           if (_grammar.hasSubscriptions)
-            "subscriptions = ${classNameFromType(GQQueryType.subscription)}(wsAdapter, _fragmMap, this.${_cacheStoreRef});",
+            "subscriptions = ${classNameFromType(GLQueryType.subscription)}(wsAdapter, _fragmMap, this.${_cacheStoreRef});",
         ],
       ),
     ]));
@@ -87,7 +87,7 @@ class DartClientSerializer extends ClientSerilaizer {
     return 'Future<String> Function(String payload) adapter';
   }
 
-  String? generateQueriesClassByType(GQQueryType type) {
+  String? generateQueriesClassByType(GLQueryType type) {
     var queries = _grammar.queries.values;
     var queryList =
         queries.where((element) => element.type == type && _grammar.hasQueryType(type)).toList();
@@ -104,123 +104,129 @@ class DartClientSerializer extends ClientSerilaizer {
           arguments: _declareConstructorArgs(type),
           namedArguments: false,
           statements: [
-            if (type == GQQueryType.subscription) '_handler = _SubscriptionHandler(adapter);',
+            if (type == GLQueryType.subscription) '_handler = _SubscriptionHandler(adapter);',
           ]),
-      ...queryList.map((e) => type == GQQueryType.query ? queryToMethod(e) : mutationToMethod(e)),
-      codeGenUtils.createMethod(
-          methodName: "_getFromSource",
-          async: true,
-          namedArguments: false,
-          arguments: ['GQPayload payload'],
-          returnType: 'Future<String>',
-          statements: [
-            'var result = await _adapter(json.encode(payload.toJson()));',
-            'return result;'
-          ]),
-      codeGenUtils.createMethod(
-          returnType: "GQPayload",
-          namedArguments: false,
-          methodName: "_buildPayload",
-          arguments: [
-            "List<PartialQuery> partQueries",
-            "String operationName",
-            "String directives"
-          ],
-          statements: [
-            "final Map<String, dynamic> variables = {};",
-            codeGenUtils.forEachLoop(
-                variable: "partQuery",
-                iterable: "partQueries",
-                statements: ["variables.addAll(partQuery.variables);"]),
-            'final queryBuilder = StringBuffer("query \${operationName}");',
-            'final args = partQueries.expand((e) => e.argumentDeclarations).toSet();',
-            codeGenUtils.ifStatement(condition: 'args.isNotEmpty', ifBlockStatements: [
-              'queryBuilder.write("(");',
-              'queryBuilder.writeAll(args, ", ");',
-              'queryBuilder.write(")");'
+      ...queryList.map((e) => type == GLQueryType.query ? queryToMethod(e) : mutationToMethod(e)),
+      if (type == GLQueryType.query)
+        codeGenUtils.createMethod(
+            methodName: "_getFromSource",
+            async: true,
+            namedArguments: false,
+            arguments: ['GraphLinkPayload payload'],
+            returnType: 'Future<String>',
+            statements: [
+              'var result = await _adapter(json.encode(payload.toJson()));',
+              'return result;'
             ]),
-            codeGenUtils.ifStatement(
-                condition: 'directives.isNotEmpty',
-                ifBlockStatements: ['queryBuilder.write(directives);']),
-            'queryBuilder.write("{");',
-            codeGenUtils.forEachLoop(variable: 'partQuery', iterable: 'partQueries', statements: [
-              'queryBuilder.write(partQuery.query);',
-            ]),
-            'queryBuilder.write("}");',
-            'final fragments = partQueries.expand((e) => e.fragmentNames).toSet().map((fragName) => fragmentMap[fragName]!).join();',
-            'queryBuilder.write(fragments);',
-            'return GQPayload(query: queryBuilder.toString(), operationName: operationName, variables: variables);',
-          ]),
-      codeGenUtils.createMethod(
-          methodName: "_getFromCache",
-          async: true,
-          namedArguments: false,
-          arguments: ['String key'],
-          returnType: 'Future<String?>',
-          statements: [
-            'var result = await ${_cacheStoreRef}.get(key);',
-            codeGenUtils.ifStatement(condition: 'result != null', ifBlockStatements: [
-              'var entryMap = jsonDecode(result);',
-              'var entry = CacheEntry.fromJson(entryMap);',
+      if (type == GLQueryType.query)
+        codeGenUtils.createMethod(
+            returnType: "GraphLinkPayload",
+            namedArguments: false,
+            methodName: "_buildPayload",
+            arguments: [
+              "List<_GraphLinkPartialQuery> partQueries",
+              "String operationName",
+              "String directives"
+            ],
+            statements: [
+              "final Map<String, dynamic> variables = {};",
+              codeGenUtils.forEachLoop(
+                  variable: "partQuery",
+                  iterable: "partQueries",
+                  statements: ["variables.addAll(partQuery.variables);"]),
+              'final queryBuilder = StringBuffer("query \${operationName}");',
+              'final args = partQueries.expand((e) => e.argumentDeclarations).toSet();',
+              codeGenUtils.ifStatement(condition: 'args.isNotEmpty', ifBlockStatements: [
+                'queryBuilder.write("(");',
+                'queryBuilder.writeAll(args, ", ");',
+                'queryBuilder.write(")");'
+              ]),
               codeGenUtils.ifStatement(
-                  condition: 'entry.isExpired',
-                  ifBlockStatements: ['${_cacheStoreRef}.invalidate(key);', 'return null;'],
-                  elseBlockStatements: ["return entry.data;"]),
+                  condition: 'directives.isNotEmpty',
+                  ifBlockStatements: ['queryBuilder.write(directives);']),
+              'queryBuilder.write("{");',
+              codeGenUtils.forEachLoop(variable: 'partQuery', iterable: 'partQueries', statements: [
+                'queryBuilder.write(partQuery.query);',
+              ]),
+              'queryBuilder.write("}");',
+              'final fragments = partQueries.expand((e) => e.fragmentNames).toSet().map((fragName) => fragmentMap[fragName]!).join();',
+              'queryBuilder.write(fragments);',
+              'return GraphLinkPayload(query: queryBuilder.toString(), operationName: operationName, variables: variables);',
             ]),
-            'return null;'
-          ]),
-      codeGenUtils.createMethod(
-          methodName: '_parseToObjectAndCache<T>',
-          arguments: [
-            'String data',
-            'Map<String, dynamic> cachedResponse',
-            'T Function(Map<String, dynamic> json) parser',
-            'Set<PartialQuery> remainingQueries',
-          ],
-          returnType: 'T',
-          namedArguments: false,
-          statements: [
-            'final result = jsonDecode(data);',
-            codeGenUtils.ifStatement(condition: 'result.containsKey("errors")', ifBlockStatements: [
-              'throw result["errors"].map((error) => GQError.fromJson(error)).toList();'
+      if (type == GLQueryType.query)
+        codeGenUtils.createMethod(
+            methodName: "_getFromCache",
+            async: true,
+            namedArguments: false,
+            arguments: ['String key'],
+            returnType: 'Future<String?>',
+            statements: [
+              'var result = await ${_cacheStoreRef}.get(key);',
+              codeGenUtils.ifStatement(condition: 'result != null', ifBlockStatements: [
+                'var entryMap = jsonDecode(result);',
+                'var entry = _GraphLinkCacheEntry.fromJson(entryMap);',
+                codeGenUtils.ifStatement(
+                    condition: 'entry.isExpired',
+                    ifBlockStatements: ['${_cacheStoreRef}.invalidate(key);', 'return null;'],
+                    elseBlockStatements: ["return entry.data;"]),
+              ]),
+              'return null;'
             ]),
-            'final dataMap = result["data"] as Map<String, dynamic>;',
-            codeGenUtils.forEachLoop(variable: 'q', iterable: 'remainingQueries', statements: [
+      if (type == GLQueryType.query)
+        codeGenUtils.createMethod(
+            methodName: '_parseToObjectAndCache<T>',
+            arguments: [
+              'String data',
+              'Map<String, dynamic> cachedResponse',
+              'T Function(Map<String, dynamic> json) parser',
+              'Set<_GraphLinkPartialQuery> remainingQueries',
+            ],
+            returnType: 'T',
+            namedArguments: false,
+            statements: [
+              'final result = jsonDecode(data);',
               codeGenUtils.ifStatement(
-                  condition: 'q.ttl > 0 && dataMap[q.elementKey] != null',
+                  condition: 'result.containsKey("errors")',
                   ifBlockStatements: [
-                    'final entry = CacheEntry(jsonEncode(dataMap[q.elementKey]), DateTime.now().millisecondsSinceEpoch + q.ttl * 1000);',
-                    '${_cacheStoreRef}.set(q.cacheKey!, jsonEncode(entry.toJson()));'
-                  ])
-            ]),
-            'return parser.call(dataMap);'
-          ])
+                    'throw result["errors"].map((error) => GraphLinkError.fromJson(error)).toList();'
+                  ]),
+              'final dataMap = result["data"] as Map<String, dynamic>;',
+              codeGenUtils.forEachLoop(variable: 'q', iterable: 'remainingQueries', statements: [
+                codeGenUtils.ifStatement(
+                    condition: 'q.ttl > 0 && dataMap[q.elementKey] != null',
+                    ifBlockStatements: [
+                      'final entry = _GraphLinkCacheEntry(jsonEncode(dataMap[q.elementKey]), DateTime.now().millisecondsSinceEpoch + q.ttl * 1000);',
+                      '${_cacheStoreRef}.set(q.cacheKey!, jsonEncode(entry.toJson()));'
+                    ])
+              ]),
+              'return parser.call(dataMap);'
+            ])
     ]);
   }
 
-  List<String> _declareConstructorArgs(GQQueryType type) {
-    if (type == GQQueryType.subscription) {
-      return ['WebSocketAdapter adapter', 'this.fragmentMap', 'this.${_cacheStoreRef}'];
+  List<String> _declareConstructorArgs(GLQueryType type) {
+    if (type == GLQueryType.subscription) {
+      return ['GraphLinkWebSocketAdapter adapter', 'this.fragmentMap', 'this.${_cacheStoreRef}'];
     }
     return ['this._adapter', 'this.fragmentMap', 'this.${_cacheStoreRef}'];
   }
 
-  String declareAdapter(GQQueryType type) {
+  String declareAdapter(GLQueryType type) {
     switch (type) {
-      case GQQueryType.query:
-      case GQQueryType.mutation:
+      case GLQueryType.query:
+      case GLQueryType.mutation:
         return "final Future<String> Function(String payload${_grammar.operationNameAsParameter ? ', String $_operationNameParam' : ''}) _adapter;";
-      case GQQueryType.subscription:
+      case GLQueryType.subscription:
         return "late final _SubscriptionHandler _handler;";
     }
   }
 
-  String mutationToMethod(GQQueryDefinition def) {
+  String mutationToMethod(GLQueryDefinition def) {
     return codeGenUtils.createMethod(
         returnType: returnTypeByQueryType(def),
         methodName: def.tokenInfo.token,
         arguments: getArguments(def),
-        async: true,
+        async: def.type != GLQueryType.subscription,
         statements: [
           "const operationName = '${def.tokenInfo}';",
           if (def.fragments(_grammar).isNotEmpty) ...[
@@ -233,12 +239,12 @@ class DartClientSerializer extends ClientSerilaizer {
           else
             "final query = '''${_grammar.serializer.serializeQueryDefinition(def)} \${fragsValues}''';",
           generateVariables(def),
-          "final payload = GQPayload(query: query, operationName: operationName, variables: variables);",
+          "final payload = GraphLinkPayload(query: query, operationName: operationName, variables: variables);",
           _serializeAdapterCall(def)
         ]);
   }
 
-  String queryToMethod(GQQueryDefinition def) {
+  String queryToMethod(GLQueryDefinition def) {
     return codeGenUtils.createMethod(
         returnType: returnTypeByQueryType(def),
         methodName: def.tokenInfo.token,
@@ -285,7 +291,7 @@ class DartClientSerializer extends ClientSerilaizer {
     }
     varBuffer.write("}");
     return '''
-PartialQuery(
+_GraphLinkPartialQuery(
   query: '${e.query}',
   operationName: "${e.operationName}",
   cacheTag: "${e.cache?.tag}",
@@ -298,7 +304,7 @@ PartialQuery(
 ''';
   }
 
-  String generateVariables(GQQueryDefinition def) {
+  String generateVariables(GLQueryDefinition def) {
     var buffer = StringBuffer("final variables = <String, dynamic>{");
     buffer.writeln();
     def.arguments
@@ -310,8 +316,8 @@ PartialQuery(
     return buffer.toString();
   }
 
-  String _serializeAdapterCall(GQQueryDefinition def) {
-    if (def.type == GQQueryType.subscription) {
+  String _serializeAdapterCall(GLQueryDefinition def) {
+    if (def.type == GLQueryType.subscription) {
       return """
 return _handler.handle(payload).map((e) => ${def.getGeneratedTypeDefinition().tokenInfo.token}.fromJson(e));
     """
@@ -322,7 +328,7 @@ return _handler.handle(payload).map((e) => ${def.getGeneratedTypeDefinition().to
 return _adapter(json.encode(payload.toJson())${_grammar.operationNameAsParameter ? ', operationName' : ''}).asStream().map((response) {
     Map<String, dynamic> result = jsonDecode(response);
     if (result.containsKey("errors")) {
-      throw result["errors"].map((error) => GQError.fromJson(error)).toList();
+      throw result["errors"].map((error) => GraphLinkError.fromJson(error)).toList();
     }
     var data = result["data"];
     return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson(data);
@@ -330,7 +336,7 @@ return _adapter(json.encode(payload.toJson())${_grammar.operationNameAsParameter
 """;
   }
 
-  String _serializeArgumentValue(GQQueryDefinition def, String argName) {
+  String _serializeArgumentValue(GLQueryDefinition def, String argName) {
     var arg = def.findByName(argName);
     return _callToJson(arg.dartArgumentName, arg.type);
   }
@@ -361,7 +367,7 @@ return _adapter(json.encode(payload.toJson())${_grammar.operationNameAsParameter
     return "";
   }
 
-  List<String> getArguments(GQQueryDefinition def) {
+  List<String> getArguments(GLQueryDefinition def) {
     if (def.arguments.isEmpty) {
       return [];
     }
@@ -371,10 +377,10 @@ return _adapter(json.encode(payload.toJson())${_grammar.operationNameAsParameter
         .toList();
   }
 
-  String returnTypeByQueryType(GQQueryDefinition def) {
+  String returnTypeByQueryType(GLQueryDefinition def) {
     var gen = def.getGeneratedTypeDefinition();
 
-    if (def.type == GQQueryType.subscription) {
+    if (def.type == GLQueryType.subscription) {
       return "Stream<${gen.tokenInfo.token}>";
     }
     return "Future<${gen.tokenInfo.token}>";
@@ -446,11 +452,11 @@ class _SubscriptionHandler {
   final _random = Random();
   final Map<String, StreamController<Map<String, dynamic>>> _map = {};
   final Map<String, StreamSubscription> _subs = {};
-  final WebSocketAdapter adapter;
+  final GraphLinkWebSocketAdapter adapter;
 
-  final connectionInit = jsonEncode(GQSubscriptionErrorMessage(type: GraphqlWsMessageTypes.connectionInit).toJson());
-  final pingMessage = jsonEncode(GQSubscriptionErrorMessage(type: GraphqlWsMessageTypes.ping).toJson());
-  final pongMessage = jsonEncode(GQSubscriptionErrorMessage(type: GraphqlWsMessageTypes.pong).toJson());
+  final connectionInit = jsonEncode(GraphLinkSubscriptionErrorMessage(type: GraphqlWsMessageTypes.connectionInit).toJson());
+  final pingMessage = jsonEncode(GraphLinkSubscriptionErrorMessage(type: GraphqlWsMessageTypes.ping).toJson());
+  final pongMessage = jsonEncode(GraphLinkSubscriptionErrorMessage(type: GraphqlWsMessageTypes.pong).toJson());
 
   _SubscriptionHandler(this.adapter);
 
@@ -474,9 +480,9 @@ class _SubscriptionHandler {
           return _onMessageStream.map((event) {
             var decoded = jsonDecode(event);
             if (decoded is Map<String, dynamic>) {
-              return GQSubscriptionMessage.fromJson(decoded);
+              return GraphLinkSubscriptionMessage.fromJson(decoded);
             } else {
-              return GQSubscriptionErrorMessage(payload: decoded);
+              return GraphLinkSubscriptionErrorMessage(payload: decoded);
             }
           }).map((event) {
             switch (event.type) {
@@ -485,7 +491,7 @@ class _SubscriptionHandler {
                 return _StreamSink(sendMessage: adapter.sendMessage, stream: _onMessageStream);
               case GraphqlWsMessageTypes.error:
                 _ackStatus = GQAckStatus.none;
-                throw (event as GQSubscriptionErrorMessage).payload!;
+                throw (event as GraphLinkSubscriptionErrorMessage).payload!;
               default:
                 return _StreamSink(sendMessage: adapter.sendMessage, stream: _onMessageStream);
             }
@@ -507,7 +513,7 @@ class _SubscriptionHandler {
     return controller;
   }
 
-  Stream<Map<String, dynamic>> handle(GQPayload pl) {
+  Stream<Map<String, dynamic>> handle(GraphLinkPayload pl) {
     String uuid = _generateUuid();
     var controller = _createStremController(uuid);
 
@@ -517,10 +523,10 @@ class _SubscriptionHandler {
           .where((event) => event.id == uuid)
           .listen((msg) => _handleMessage(msg, uuid));
       _subs[uuid] = sub;
-      var message = GQSubscriptionMessage(
+      var message = GraphLinkSubscriptionMessage(
           id: uuid,
           type: GraphqlWsMessageTypes.subscribe,
-          payload: GQSubscriptionPayload(
+          payload: GraphLinkSubscriptionPayload(
             query: pl.query,
             operationName: pl.operationName,
             variables: pl.variables,
@@ -532,14 +538,14 @@ class _SubscriptionHandler {
     return controller.stream;
   }
 
-  GQSubscriptionErrorMessageBase _parseEvent(String event) {
+  GraphLinkSubscriptionErrorMessageBase _parseEvent(String event) {
     var map = jsonDecode(event);
     var payload = map["payload"];
-    GQSubscriptionErrorMessageBase result;
+    GraphLinkSubscriptionErrorMessageBase result;
     if (payload is Map) {
-      result = GQSubscriptionMessage.fromJson(map);
+      result = GraphLinkSubscriptionMessage.fromJson(map);
     } else {
-      result = GQSubscriptionErrorMessage.fromJson(map);
+      result = GraphLinkSubscriptionErrorMessage.fromJson(map);
     }
     return result;
   }
@@ -552,7 +558,7 @@ class _SubscriptionHandler {
     adapter.sendMessage(pongMessage);
   }
 
-  void _handleMessage(GQSubscriptionErrorMessageBase msg, String uuid) {
+  void _handleMessage(GraphLinkSubscriptionErrorMessageBase msg, String uuid) {
     var controller = _map[uuid]!;
     switch (msg.type!) {
       case GraphqlWsMessageTypes.ping:
@@ -562,13 +568,13 @@ class _SubscriptionHandler {
         _sendPongMessage();
         break;
       case GraphqlWsMessageTypes.next:
-        controller.add((msg as GQSubscriptionMessage).payload!.data!);
+        controller.add((msg as GraphLinkSubscriptionMessage).payload!.data!);
         break;
       case GraphqlWsMessageTypes.complete:
         _removeController(uuid);
         break;
       case GraphqlWsMessageTypes.error:
-        var errorMsg = msg as GQSubscriptionErrorMessage;
+        var errorMsg = msg as GraphLinkSubscriptionErrorMessage;
         var ctrl = _map[uuid]!;
         ctrl.addError(errorMsg.payload as Object);
         _removeController(uuid);
@@ -618,7 +624,7 @@ class _StreamSink {
 """;
 
 const _webSocketAdapter = """
-abstract class WebSocketAdapter {
+abstract class GraphLinkWebSocketAdapter {
   Future<void> onConnectionReady();
 
   Stream<String> get onMessageStream;

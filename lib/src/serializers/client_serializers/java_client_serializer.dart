@@ -1,12 +1,12 @@
 import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/gq_grammar.dart';
-import 'package:graphlink/src/model/gq_queries.dart';
-import 'package:graphlink/src/model/gq_token.dart';
-import 'package:graphlink/src/model/gq_type.dart';
-import 'package:graphlink/src/serializers/gq_client_serilaizer.dart';
-import 'package:graphlink/src/serializers/gq_serializer.dart';
+import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/model/gl_queries.dart';
+import 'package:graphlink/src/model/gl_token.dart';
+import 'package:graphlink/src/model/gl_type.dart';
+import 'package:graphlink/src/serializers/gl_client_serilaizer.dart';
+import 'package:graphlink/src/serializers/gl_serializer.dart';
 import 'package:graphlink/src/serializers/graphq_serializer.dart';
 
 const clientName = 'GQClient';
@@ -15,14 +15,14 @@ const clientExceptionNameRef = '${clientName}.${clientExceptionName}';
 const gqSubscriptionListenerName = 'GQSubscriptionListener';
 const gqSubscriptionListenerRef = '${clientName}.${gqSubscriptionListenerName}';
 
-class JavaClientSerializer extends ClientSerilaizer {
-  final GQGrammar _grammar;
+class JavaClientSerializer extends GLClientSerilaizer {
+  final GLGrammar _grammar;
   final codeGenUtils = JavaCodeGenUtils();
 
-  final GraphqSerializer gqlSerializer;
+  final GLGraphqSerializer gqlSerializer;
 
-  JavaClientSerializer(this._grammar, GqSerializer serializer)
-      : gqlSerializer = GraphqSerializer(_grammar, false),
+  JavaClientSerializer(this._grammar, GLSerializer serializer)
+      : gqlSerializer = GLGraphqSerializer(_grammar, false),
         super(serializer);
 
   @override
@@ -51,34 +51,34 @@ class JavaClientSerializer extends ClientSerilaizer {
       'final GQClientAdapter adapter;',
       'final GQJsonEncoder encoder;',
       'final GQJsonDecoder decoder;',
-      if (_grammar.hasQueries) 'public final ${classNameFromType(GQQueryType.query)} queries;',
+      if (_grammar.hasQueries) 'public final ${classNameFromType(GLQueryType.query)} queries;',
       if (_grammar.hasMutations)
-        'public final ${classNameFromType(GQQueryType.mutation)} mutations;',
+        'public final ${classNameFromType(GLQueryType.mutation)} mutations;',
       if (_grammar.hasSubscriptions)
-        'public final ${classNameFromType(GQQueryType.subscription)} subscriptions;',
+        'public final ${classNameFromType(GLQueryType.subscription)} subscriptions;',
       codeGenUtils.createMethod(
         returnType: "public",
         methodName: clientName,
         arguments: [
           _adapterDeclaration(),
-          if (_grammar.hasSubscriptions) 'GQWebSocketAdapter wsAdapter'
+          if (_grammar.hasSubscriptions) 'GraphLinkGraphLinkWebSocketAdapter wsAdapter'
         ],
         statements: [
           'this.adapter = adapter;',
           'this.encoder = encoder;',
           'this.decoder = decoder;',
           if (_grammar.hasQueries)
-            "queries = new ${classNameFromType(GQQueryType.query)}(adapter, _fragmMap, encoder, decoder);",
+            "queries = new ${classNameFromType(GLQueryType.query)}(adapter, _fragmMap, encoder, decoder);",
           if (_grammar.hasMutations)
-            "mutations = new ${classNameFromType(GQQueryType.mutation)}(adapter, _fragmMap, encoder, decoder);",
+            "mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, _fragmMap, encoder, decoder);",
           if (_grammar.hasSubscriptions)
-            "subscriptions = new ${classNameFromType(GQQueryType.subscription)}(wsAdapter, _fragmMap, encoder, decoder);",
+            "subscriptions = new ${classNameFromType(GLQueryType.subscription)}(wsAdapter, _fragmMap, encoder, decoder);",
           ..._grammar.fragments.values.map((value) =>
               '_fragmMap.put("${value.tokenInfo}", "${gqlSerializer.serializeFragmentDefinitionBase(value)}");'),
         ],
       ),
       '',
-      ...GQQueryType.values
+      ...GLQueryType.values
           .map((e) => generateQueriesClassByType(e))
           .where((e) => e != null)
           .map((e) => e!),
@@ -86,10 +86,10 @@ class JavaClientSerializer extends ClientSerilaizer {
         staticClass: true,
         className: "${clientExceptionName} extends RuntimeException",
         statements: [
-          'private final List<GQError> errors;',
+          'private final List<GraphLinkError> errors;',
           codeGenUtils
               .createMethod(returnType: 'public', methodName: clientExceptionName, arguments: [
-            'List<GQError> errors',
+            'List<GraphLinkError> errors',
           ], statements: [
             'this.errors = errors;'
           ]),
@@ -101,7 +101,7 @@ class JavaClientSerializer extends ClientSerilaizer {
             'errors = Collections.emptyList();'
           ]),
           codeGenUtils.createMethod(
-              returnType: 'public List<GQError>',
+              returnType: 'public List<GraphLinkError>',
               methodName: 'getErrors',
               arguments: [],
               statements: ['return errors;']),
@@ -112,7 +112,7 @@ class JavaClientSerializer extends ClientSerilaizer {
                 'List<?> errors'
               ],
               statements: [
-                'return new ${clientExceptionName}(errors.stream().map(e -> GQError.fromJson((Map<String, Object>)e)).collect(Collectors.toList()));'
+                'return new ${clientExceptionName}(errors.stream().map(e -> GraphLinkError.fromJson((Map<String, Object>)e)).collect(Collectors.toList()));'
               ])
         ],
       ),
@@ -127,7 +127,7 @@ class JavaClientSerializer extends ClientSerilaizer {
     return 'GQClientAdapter adapter, GQJsonEncoder encoder, GQJsonDecoder decoder';
   }
 
-  String? generateQueriesClassByType(GQQueryType type) {
+  String? generateQueriesClassByType(GLQueryType type) {
     var queries = _grammar.queries.values;
     var queryList =
         queries.where((element) => element.type == type && _grammar.hasQueryType(type)).toList();
@@ -150,17 +150,17 @@ class JavaClientSerializer extends ClientSerilaizer {
             'this.fragmentMap = fragmentMap;',
             'this.encoder = encoder;',
             'this.decoder = decoder;',
-            if (type == GQQueryType.subscription)
+            if (type == GLQueryType.subscription)
               '_handler = new SubscriptionHandler(adapter, decoder, encoder);',
           ]),
       ...queryList.map((e) => queryToMethod(e))
     ]);
   }
 
-  List<String> _declareConstructorArgs(GQQueryType type) {
-    if (type == GQQueryType.subscription) {
+  List<String> _declareConstructorArgs(GLQueryType type) {
+    if (type == GLQueryType.subscription) {
       return [
-        'GQWebSocketAdapter adapter',
+        'GraphLinkGraphLinkWebSocketAdapter adapter',
         'Map<String, String> fragmentMap',
         'GQJsonEncoder encoder',
         'GQJsonDecoder decoder',
@@ -174,17 +174,17 @@ class JavaClientSerializer extends ClientSerilaizer {
     ];
   }
 
-  List<String> declareAdapter(GQQueryType type) {
+  List<String> declareAdapter(GLQueryType type) {
     switch (type) {
-      case GQQueryType.query:
-      case GQQueryType.mutation:
+      case GLQueryType.query:
+      case GLQueryType.mutation:
         return ["final GQClientAdapter adapter;"];
-      case GQQueryType.subscription:
-        return ["final SubscriptionHandler _handler;", "final GQWebSocketAdapter adapter;"];
+      case GLQueryType.subscription:
+        return ["final SubscriptionHandler _handler;", "final GraphLinkGraphLinkWebSocketAdapter adapter;"];
     }
   }
 
-  String queryToMethod(GQQueryDefinition def) {
+  String queryToMethod(GLQueryDefinition def) {
     return codeGenUtils.createMethod(
         returnType: 'public ${returnTypeByQueryType(def)}',
         methodName: def.tokenInfo.token,
@@ -199,7 +199,7 @@ class JavaClientSerializer extends ClientSerilaizer {
         ]);
   }
 
-  String generateVariables(GQQueryDefinition def) {
+  String generateVariables(GLQueryDefinition def) {
     var buffer = StringBuffer("Map<String, Object> variables = new HashMap<>();");
     buffer.writeln();
     def.arguments
@@ -210,8 +210,8 @@ class JavaClientSerializer extends ClientSerilaizer {
     return buffer.toString();
   }
 
-  String _serializeAdapterCall(GQQueryDefinition def) {
-    if (def.type == GQQueryType.subscription) {
+  String _serializeAdapterCall(GLQueryDefinition def) {
+    if (def.type == GLQueryType.subscription) {
       var method = codeGenUtils.createMethod(
           methodName:
               '${gqSubscriptionListenerRef}<Map<String, Object>> rawListener = new ${gqSubscriptionListenerRef}<Map<String, Object>>',
@@ -253,7 +253,7 @@ class JavaClientSerializer extends ClientSerilaizer {
     ].join("\n");
   }
 
-  String _serializeArgumentValue(GQQueryDefinition def, String argName) {
+  String _serializeArgumentValue(GLQueryDefinition def, String argName) {
     var arg = def.findByName(argName);
     return _callToJson(arg.dartArgumentName, arg.type);
   }
@@ -284,7 +284,7 @@ class JavaClientSerializer extends ClientSerilaizer {
     return "";
   }
 
-  List<String> getArguments(GQQueryDefinition def) {
+  List<String> getArguments(GLQueryDefinition def) {
     List<String> result;
     if (def.arguments.isEmpty) {
       result = [];
@@ -292,16 +292,16 @@ class JavaClientSerializer extends ClientSerilaizer {
     result = def.arguments
         .map((e) => "${serializer.serializeType(e.type, false)} ${e.dartArgumentName}")
         .toList();
-    if (def.type == GQQueryType.subscription) {
+    if (def.type == GLQueryType.subscription) {
       result.add('${gqSubscriptionListenerRef}<${def.typeDefinition?.token}> listener');
     }
     return result;
   }
 
-  String returnTypeByQueryType(GQQueryDefinition def) {
+  String returnTypeByQueryType(GLQueryDefinition def) {
     var gen = def.getGeneratedTypeDefinition();
 
-    if (def.type == GQQueryType.subscription) {
+    if (def.type == GLQueryType.subscription) {
       return "void";
     }
     return gen.tokenInfo.token;
@@ -319,11 +319,11 @@ $_subscriptionHandler
   String get fileExtension => '.java';
 
   @override
-  Set<GQToken> getImportDependecies(GQGrammar g) {
+  Set<GLToken> getImportDependecies(GLGrammar g) {
     var result = {...super.getImportDependecies(g)};
     result.addAll(
         ['GQJsonEncoder', 'GQJsonDecoder', 'GQClientAdapter'].map((e) => g.getTypeByName(e)!));
-    var adapter = g.getTokenByKey('GQWebSocketAdapter');
+    var adapter = g.getTokenByKey('GraphLinkGraphLinkWebSocketAdapter');
     if (adapter != null) {
       result.add(adapter);
     }
@@ -392,13 +392,13 @@ class SubscriptionHandler {
   private final Map<String, ${gqSubscriptionListenerRef}<Map<String, Object>>> listeners = new HashMap<>();
   private final Map<String, GQPayload> payloadsToHandle = new HashMap<>();
 
-  private final GQWebSocketAdapter adapter;
+  private final GraphLinkGraphLinkWebSocketAdapter adapter;
   private final GQJsonDecoder decoder;
   private final GQJsonEncoder encoder;
   private GQAckStatus ackStatus = GQAckStatus.none;
 
 
-  SubscriptionHandler(GQWebSocketAdapter adapter, GQJsonDecoder decoder, GQJsonEncoder encoder) {
+  SubscriptionHandler(GraphLinkGraphLinkWebSocketAdapter adapter, GQJsonDecoder decoder, GQJsonEncoder encoder) {
     this.adapter = adapter;
     this.decoder = decoder;
     this.encoder = encoder;
@@ -406,14 +406,14 @@ class SubscriptionHandler {
   }
 
   String getConnectionInit(String id) {
-    return encoder.encode(GQSubscriptionMessage.builder()
+    return encoder.encode(GraphLinkSubscriptionMessage.builder()
         .type(org.gqlclient.generated.client.GraphqlWsMessageTypes.connectionInit)
         .id(id)
         .build());
   }
 
   String getPongMessage(String id) {
-    return encoder.encode(GQSubscriptionMessage.builder()
+    return encoder.encode(GraphLinkSubscriptionMessage.builder()
         .type(org.gqlclient.generated.client.GraphqlWsMessageTypes.pong)
         .id(id)
         .build());
@@ -421,13 +421,13 @@ class SubscriptionHandler {
 
   String getSubscriptionMessage(String id) {
     GQPayload payload = payloadsToHandle.get(id);
-    GQSubscriptionPayload subscriptionPayload = GQSubscriptionPayload.builder()
+    GraphLinkSubscriptionPayload subscriptionPayload = GraphLinkSubscriptionPayload.builder()
         .query(payload.getQuery())
         .operationName(payload.getOperationName())
         .variables(payload.getVariables())
 
         .build();
-    return encoder.encode(GQSubscriptionMessage.builder()
+    return encoder.encode(GraphLinkSubscriptionMessage.builder()
         .type(org.gqlclient.generated.client.GraphqlWsMessageTypes.subscribe)
         .payload(subscriptionPayload)
         .id(id)
@@ -470,14 +470,14 @@ class SubscriptionHandler {
   }
 
 
-  private GQSubscriptionErrorMessageBase parseEvent(String event) {
+  private GraphLinkSubscriptionErrorMessageBase parseEvent(String event) {
     Map<String, Object> map = decoder.decode(event);
     Object payload = map.get("payload");
-    GQSubscriptionErrorMessageBase result;
+    GraphLinkSubscriptionErrorMessageBase result;
     if (payload instanceof Map) {
-      result = GQSubscriptionMessage.fromJson(map);
+      result = GraphLinkSubscriptionMessage.fromJson(map);
     } else {
-      result = GQSubscriptionErrorMessage.fromJson(map);
+      result = GraphLinkSubscriptionErrorMessage.fromJson(map);
     }
     return result;
   }
@@ -493,7 +493,7 @@ class SubscriptionHandler {
 
 
   public void onMessage(String message) {
-    GQSubscriptionErrorMessageBase event = parseEvent(message);
+    GraphLinkSubscriptionErrorMessageBase event = parseEvent(message);
     String type = event.getType();
     switch (type) {
       case org.gqlclient.generated.client.GraphqlWsMessageTypes.connectionAck:
@@ -506,11 +506,11 @@ class SubscriptionHandler {
         adapter.sendMessage(getPongMessage(event.getId()));
         break;
       case org.gqlclient.generated.client.GraphqlWsMessageTypes.next:
-        handleNextMessage((GQSubscriptionMessage) event);
+        handleNextMessage((GraphLinkSubscriptionMessage) event);
         break;
       case org.gqlclient.generated.client.GraphqlWsMessageTypes.error:
         System.out.println("Evenet class = "+ event.getClass());
-        handleError((GQSubscriptionErrorMessage)event);
+        handleError((GraphLinkSubscriptionErrorMessage)event);
         break;
       case org.gqlclient.generated.client.GraphqlWsMessageTypes.complete:
         handleComplete(event.getId());
@@ -518,7 +518,7 @@ class SubscriptionHandler {
     }
   }
 
-  void handleError(GQSubscriptionErrorMessage error) {
+  void handleError(GraphLinkSubscriptionErrorMessage error) {
     ${gqSubscriptionListenerRef}<Map<String, Object>> listener;
     synchronized (listeners) {
       listener = listeners.remove(error.getId());
@@ -551,7 +551,7 @@ class SubscriptionHandler {
 
   }
 
-  private void handleNextMessage(GQSubscriptionMessage message) {
+  private void handleNextMessage(GraphLinkSubscriptionMessage message) {
     String id = message.getId();
     // no need for synchronization!
     ${gqSubscriptionListenerRef}<Map<String, Object>> listener = listeners.get(id);

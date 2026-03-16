@@ -46,7 +46,7 @@ type Query {
 
 query getProducts($pageIndex: PageIndex!) {
 
-  getProducts(pageIndex: $pageIndex)  @gqTypeName(name: "Product")  {
+  getProducts(pageIndex: $pageIndex)  @glTypeName(name: "Product")  {
    ... _all_fields_Product
   }
 
@@ -55,12 +55,12 @@ query getProducts($pageIndex: PageIndex!) {
 }
 
 query getBrand {
-  getBrand @gqTypeName(name: "Brand") {
+  getBrand @glTypeName(name: "Brand") {
     ... _all_fields_Brand
   }
 }
 
-query getAllProducts @gqTypeName(name: "MyProductResp") {
+query getAllProducts @glTypeName(name: "MyProductResp") {
   getAllProducts  {
    ... _all_fields_Product
   }

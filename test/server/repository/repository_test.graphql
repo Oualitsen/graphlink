@@ -1,5 +1,5 @@
 
-directive @gqRepository(gqType: String!, gqIdType: String!) on INTERFACE
+directive @glRepository(glType: String!, glIdType: String!) on INTERFACE
 
 
 
@@ -22,11 +22,11 @@ type Car {
     ownerId: ID!
 }
 
-interface UserRepository @gqRepository(gqIdType: "id", gqType: "User") {
+interface UserRepository @glRepository(glIdType: "id", glType: "User") {
     _: String
 }
 
-interface CarRepository @gqRepository(gqIdType: "id", gqType: "Car") {
+interface CarRepository @glRepository(glIdType: "id", glType: "Car") {
     _: String
 }
 

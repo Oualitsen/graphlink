@@ -1,9 +1,9 @@
 import 'dart:math';
 
-import 'package:graphlink/src/gq_grammar.dart';
-import 'package:graphlink/src/model/gq_directive.dart';
+import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
-import 'package:graphlink/src/model/gq_directives_mixin.dart';
+import 'package:graphlink/src/model/gl_directives_mixin.dart';
 import 'package:graphlink/src/serializers/language.dart';
 
 String serializeListText(List<String>? list, {String join = ",", bool withParenthesis = true}) {
@@ -19,8 +19,8 @@ String serializeListText(List<String>? list, {String join = ",", bool withParent
   return result.trim();
 }
 
-String? getFqcnFromDirective(GQDirectiveValue value) {
-  var fqcn = value.getArgValueAsString(gqClass);
+String? getFqcnFromDirective(GLDirectiveValue value) {
+  var fqcn = value.getArgValueAsString(glClass);
   if (fqcn != null && !fqcn.startsWith("@")) {
     fqcn = "@$fqcn";
   }
@@ -53,13 +53,15 @@ String formatUnformattedGraphQL(String unformattedGraphQL) {
   return formattedGraphQL.trim();
 }
 
-String? getNameValueFromDirectives(Iterable<GQDirectiveValue> directives) {
-  var dirs = directives.where((element) => GQGrammar.directivesToSkip.contains(element.token));
+String? getNameValueFromDirectives(Iterable<GLDirectiveValue> directives) {
+  var dirs = directives.where((element) => GLGrammar.directivesToSkip.contains(element.token));
   if (dirs.isEmpty) {
     return null;
   }
-  var name =
-      dirs.first.getArguments().firstWhere((arg) => arg.token == gqTypeNameDirectiveArgumentName).value as String;
+  var name = dirs.first
+      .getArguments()
+      .firstWhere((arg) => arg.token == glTypeNameDirectiveArgumentName)
+      .value as String;
   return name.replaceAll("\"", "");
 }
 
@@ -127,23 +129,26 @@ String formatElapsedTime(DateTime startDate) {
 }
 
 const _map = <CodeGenerationMode, String>{
-  CodeGenerationMode.client: gqSkipOnClient,
-  CodeGenerationMode.server: gqSkipOnServer,
+  CodeGenerationMode.client: glSkipOnClient,
+  CodeGenerationMode.server: glSkipOnServer,
 };
 
-bool shouldSkipSerialization({required List<GQDirectiveValue> directives, required CodeGenerationMode mode}) {
+bool shouldSkipSerialization(
+    {required List<GLDirectiveValue> directives, required CodeGenerationMode mode}) {
   String token = _map[mode]!;
   var skipOnList = directives.where((d) => d.token == token).toList();
   return skipOnList.isNotEmpty;
 }
 
-List<T> filterSerialization<T extends GQDirectivesMixin>(Iterable<T> list, CodeGenerationMode mode) {
-  return list.where((element) => !shouldSkipSerialization(directives: element.getDirectives(), mode: mode)).toList();
+List<T> filterSerialization<T extends GLDirectivesMixin>(
+    Iterable<T> list, CodeGenerationMode mode) {
+  return list
+      .where((element) => !shouldSkipSerialization(directives: element.getDirectives(), mode: mode))
+      .toList();
 }
 
-bool shouldSkip(GQDirectivesMixin mixin, CodeGenerationMode mode) {
+bool shouldSkip(GLDirectivesMixin mixin, CodeGenerationMode mode) {
   return shouldSkipSerialization(directives: mixin.getDirectives(), mode: mode);
 }
-
 
 String widgetName(String typeName) => "${typeName}Widget";

@@ -1,16 +1,15 @@
 import 'dart:io';
 
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() async {
   test("Input transformation 2", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
     var parser = g.buildFrom(g.fullGrammar().end());
 
-    final text =
-        File("test/interface/interface_schema.graphql").readAsStringSync();
+    final text = File("test/interface/interface_schema.graphql").readAsStringSync();
 
     var parsed = parser.parse(text);
     expect(parsed is Success, true);
@@ -20,8 +19,7 @@ void main() async {
 
     final i2 = g.interfaces["AddressInput1"]!;
     expect(i2.fieldNames, containsAll(["street", "wilayaId", "city"]));
-    expect(i2.fieldNames,
-        isNot(containsAll(["firstName1", "lastName1", "middleName1"])));
+    expect(i2.fieldNames, isNot(containsAll(["firstName1", "lastName1", "middleName1"])));
     expect(i2.getInterfaceNames(), contains("UserInput1"));
   });
 }

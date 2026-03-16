@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void saveToFile(String data, String fileName) {
@@ -12,7 +12,7 @@ void saveToFile(String data, String fileName) {
 
 void main() {
   test("Java enum to json", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parsed = g.parse('''
   enum Gender {male, female}
@@ -31,7 +31,7 @@ void main() {
   });
 
   test("Java enum from json", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parsed = g.parse('''
   enum Gender {male, female}
@@ -50,7 +50,7 @@ void main() {
   });
 
   test("Java input tojson", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parsed = g.parse('''
   scalar Long
@@ -104,14 +104,14 @@ void main() {
   });
 
   test("Java input tojson list as array", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parsed = g.parse('''
   enum Gender {male, female}
   input UserInput {
-    names: [String!]! ${gqArray}
-    genderList: [Gender] ${gqArray}
-    genderList2: [[Gender!]] ${gqArray}
+    names: [String!]! ${glArray}
+    genderList: [Gender] ${glArray}
+    genderList2: [[Gender!]] ${glArray}
   }
 ''');
     expect(parsed is Success, true);
@@ -134,7 +134,7 @@ void main() {
   });
 
   test("Java input tojson list of lists", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parsed = g.parse('''
   scalar Long
@@ -162,7 +162,7 @@ void main() {
   });
 
   test("Java type tojson", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parsed = g.parse('''
   scalar Long
@@ -201,7 +201,7 @@ void main() {
   });
 
   test("Java input fromJson nullable string", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parsed = g.parse('''
   input UserInput {
@@ -227,7 +227,7 @@ void main() {
   });
 
   test("Java input fromJson non nullable string", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parsed = g.parse('''
   input UserInput {
@@ -253,7 +253,7 @@ void main() {
   });
 
   test("Java input fromJson list of  nonnullable string", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parsed = g.parse('''
   input UserInput {
@@ -279,7 +279,7 @@ void main() {
   });
 
   test("Java input fromJson number", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parsed = g.parse('''
   input UserInput {
@@ -305,7 +305,7 @@ void main() {
   });
 
   test("Java input fromJson list of numbers", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parsed = g.parse('''
   input UserInput {
@@ -330,7 +330,7 @@ void main() {
   });
 
   test("Java input fromJson enum", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parsed = g.parse('''
   enum Gender {male female}
@@ -356,7 +356,7 @@ void main() {
   });
 
   test("Java input fromJson list of enum", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parsed = g.parse('''
   enum Gender {male female}
@@ -382,7 +382,7 @@ void main() {
   });
 
   test("Java input fromJson input", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parsed = g.parse('''
   input AgeInput {
@@ -410,7 +410,7 @@ void main() {
   });
 
   test("Java input fromJson input", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parsed = g.parse('''
   input AgeInput {
@@ -438,7 +438,7 @@ void main() {
   });
 
   test("Java interface fromJson", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parsed = g.parse('''
   interface BasicEntity {

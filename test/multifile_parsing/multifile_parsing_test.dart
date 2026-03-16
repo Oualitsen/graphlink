@@ -1,22 +1,22 @@
 import 'package:graphlink/src/excpetions/parse_exception.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() async {
   test("empty text parsing 1", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
     var parsed = g.parse("");
     expect(parsed is Success, true);
   });
 
   test("parseFile with validate test 1", () async {
     const fileName = "test/multifile_parsing/schema1.graphql";
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
     expect(() async {
       await g.parseFile(fileName, validate: true);
     }, throwsA(isA<ParseException>()));
-    final GQGrammar g2 = GQGrammar();
+    final GLGrammar g2 = GLGrammar();
     var parsed = await g2.parseFile(fileName, validate: false);
     expect(parsed is Success, true);
   });
@@ -24,7 +24,7 @@ void main() async {
   test("multiple file parsing 3", () async {
     const fileName = "test/multifile_parsing/schema1.graphql";
     const fileName2 = "test/multifile_parsing/schema2.graphql";
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parsed = await g.parseFiles([fileName, fileName2]);
     expect(parsed.length, 2);
@@ -38,7 +38,7 @@ void main() async {
   test("merging Query, Mutation and Subscription types 1", () async {
     const fileName = "test/multifile_parsing/schema_with_queries1.graphql";
     const fileName2 = "test/multifile_parsing/schema_with_queries2.graphql";
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parsed = await g.parseFiles([fileName, fileName2]);
     expect(parsed.length, 2);
@@ -55,7 +55,7 @@ void main() async {
   });
 
   test("fail on merging other than Query, Mutation and Subscription types", () async {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     expect(() => g.parse('''
   type User {

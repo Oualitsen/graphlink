@@ -1,56 +1,56 @@
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
-import 'package:graphlink/src/model/gq_argument.dart';
-import 'package:graphlink/src/model/gq_cache_definition.dart';
-import 'package:graphlink/src/model/gq_directive.dart';
-import 'package:graphlink/src/model/gq_enum_definition.dart';
-import 'package:graphlink/src/model/gq_field.dart';
-import 'package:graphlink/src/model/gq_fragment.dart';
-import 'package:graphlink/src/model/gq_input_definition.dart';
-import 'package:graphlink/src/model/gq_interface_definition.dart';
-import 'package:graphlink/src/model/gq_queries.dart';
-import 'package:graphlink/src/model/gq_scalar_definition.dart';
-import 'package:graphlink/src/model/gq_schema.dart';
-import 'package:graphlink/src/model/gq_type.dart';
-import 'package:graphlink/src/model/gq_type_definition.dart';
-import 'package:graphlink/src/model/gq_union.dart';
+import 'package:graphlink/src/model/gl_argument.dart';
+import 'package:graphlink/src/model/gl_cache_definition.dart';
+import 'package:graphlink/src/model/gl_directive.dart';
+import 'package:graphlink/src/model/gl_enum_definition.dart';
+import 'package:graphlink/src/model/gl_field.dart';
+import 'package:graphlink/src/model/gl_fragment.dart';
+import 'package:graphlink/src/model/gl_input_definition.dart';
+import 'package:graphlink/src/model/gl_interface_definition.dart';
+import 'package:graphlink/src/model/gl_queries.dart';
+import 'package:graphlink/src/model/gl_scalar_definition.dart';
+import 'package:graphlink/src/model/gl_schema.dart';
+import 'package:graphlink/src/model/gl_type.dart';
+import 'package:graphlink/src/model/gl_type_definition.dart';
+import 'package:graphlink/src/model/gl_union.dart';
 import 'package:graphlink/src/serializers/language.dart';
 import 'package:graphlink/src/utils.dart';
 
 const _skippedDirectives = {
-  gqDecorators,
-  gqSkipOnServer,
-  gqSkipOnClient,
-  gqArray,
-  gqServiceName,
-  gqTypeNameDirective,
-  gqEqualsHashcode,
-  gqExternal,
-  gqRepository
+  glDecorators,
+  glSkipOnServer,
+  glSkipOnClient,
+  glArray,
+  glServiceName,
+  glTypeNameDirective,
+  glEqualsHashcode,
+  glExternal,
+  glRepository
 };
 
-bool _shouldSkipDriectiveDefinition(GQDirectiveDefinition def) {
+bool _shouldSkipDriectiveDefinition(GLDirectiveDefinition def) {
   return _skippedDirectives.contains(def.name.token) ||
       def.arguments
-          .where((arg) => arg.token == gqAnnotation && arg.type.token == "Boolean")
+          .where((arg) => arg.token == glAnnotation && arg.type.token == "Boolean")
           .isNotEmpty;
 }
 
-bool _shouldSkipDriectiveValue(GQDirectiveValue def) {
+bool _shouldSkipDriectiveValue(GLDirectiveValue def) {
   return _skippedDirectives.contains(def.token) ||
-      GQGrammar.directivesToSkip.contains(def.token) ||
-      def.getArgValue(gqAnnotation) == true;
+      GLGrammar.directivesToSkip.contains(def.token) ||
+      def.getArgValue(glAnnotation) == true;
 }
 
 // this is for skipping generating objects that should be hidden from the client
 const clientMode = CodeGenerationMode.client;
 
-class GraphqSerializer {
-  final GQGrammar grammar;
+class GLGraphqSerializer {
+  final GLGrammar grammar;
   final bool escapeDolar;
 
-  GraphqSerializer(this.grammar, [this.escapeDolar = true]);
+  GLGraphqSerializer(this.grammar, [this.escapeDolar = true]);
 
   String generateSchema() {
     final buffer = StringBuffer();
@@ -106,18 +106,18 @@ class GraphqSerializer {
     return buffer.toString();
   }
 
-  String serializeScalarDefinition(GQScalarDefinition def) {
+  String serializeScalarDefinition(GLScalarDefinition def) {
     return '''
 scalar ${def.tokenInfo} ${serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}
 '''
         .trim();
   }
 
-  String serializeDirectiveValueList(List<GQDirectiveValue> values) {
+  String serializeDirectiveValueList(List<GLDirectiveValue> values) {
     return values.map(serializeDirectiveValue).join(" ");
   }
 
-  String serializeDirectiveValue(GQDirectiveValue value) {
+  String serializeDirectiveValue(GLDirectiveValue value) {
     if (_shouldSkipDriectiveValue(value)) {
       return '';
     }
@@ -127,7 +127,7 @@ scalar ${def.tokenInfo} ${serializeDirectiveValueList(def.getDirectives(skipGene
     return "${value.tokenInfo}$args";
   }
 
-  String serializeDirectiveDefinition(GQDirectiveDefinition def) {
+  String serializeDirectiveDefinition(GLDirectiveDefinition def) {
     // check if we should skip some directives
     if (_shouldSkipDriectiveDefinition(def)) {
       return '';
@@ -138,7 +138,7 @@ directive ${def.name}${serializeDirectiveArgs(def.arguments)} on ${def.scopes.ma
         .trim();
   }
 
-  String serializeDirectiveArgs(List<GQArgumentDefinition> arguments) {
+  String serializeDirectiveArgs(List<GLArgumentDefinition> arguments) {
     if (arguments.isEmpty) {
       return "";
     }
@@ -146,7 +146,7 @@ directive ${def.name}${serializeDirectiveArgs(def.arguments)} on ${def.scopes.ma
     return "($result)";
   }
 
-  String serializeArgumentDefinition(GQArgumentDefinition def) {
+  String serializeArgumentDefinition(GLArgumentDefinition def) {
     var buffer = StringBuffer("${_escapeDolar(def.token)}: ${serializeType(def.type)}");
     if (def.initialValue != null) {
       buffer.write(" = ${def.initialValue}");
@@ -162,15 +162,15 @@ directive ${def.name}${serializeDirectiveArgs(def.arguments)} on ${def.scopes.ma
   }
 
   String serializeSchemaDefinition(GQSchema schema) {
-    var inner = GQQueryType.values
+    var inner = GLQueryType.values
         .where((value) => grammar.types.containsKey(schema.getByQueryType(value)))
         .map((value) {
       switch (value) {
-        case GQQueryType.query:
+        case GLQueryType.query:
           return "query: ${schema.getByQueryType(value)}";
-        case GQQueryType.mutation:
+        case GLQueryType.mutation:
           return "mutation: ${schema.getByQueryType(value)}";
-        case GQQueryType.subscription:
+        case GLQueryType.subscription:
           return "subscription: ${schema.getByQueryType(value)}";
       }
     });
@@ -185,7 +185,7 @@ ${inner.join("\n").ident()}
         .trim();
   }
 
-  String serializeInputDefinition(GQInputDefinition def, CodeGenerationMode mode) {
+  String serializeInputDefinition(GLInputDefinition def, CodeGenerationMode mode) {
     return '''
 input ${def.tokenInfo} ${serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}{
 ${def.getSerializableFields(mode, skipGenerated: true).map(serializeField).map((e) => e.ident()).join("\n")}
@@ -193,7 +193,7 @@ ${def.getSerializableFields(mode, skipGenerated: true).map(serializeField).map((
 ''';
   }
 
-  String serializeTypeDefinition(GQTypeDefinition def, CodeGenerationMode mode) {
+  String serializeTypeDefinition(GLTypeDefinition def, CodeGenerationMode mode) {
     String type;
     Iterable<String> interfaces =
         def.getInterfaceNames().where((i) => !grammar.interfaces[i]!.fromUnion);
@@ -223,7 +223,7 @@ ${def.getSerializableFields(mode, skipGenerated: true).map(serializeField).map((
     return result.toString();
   }
 
-  String serializeEnumDefinition(GQEnumDefinition def) {
+  String serializeEnumDefinition(GLEnumDefinition def) {
     return '''
 enum ${def.tokenInfo} ${serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}{
 ${"\t"}${def.values.map(serializeEnumValue).join(" ")}
@@ -238,24 +238,24 @@ ${enumValue.value} ${serializeDirectiveValueList(enumValue.getDirectives(skipGen
         .trim();
   }
 
-  String serializeField(GQField field) {
+  String serializeField(GLField field) {
     return '''
 ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${serializeDirectiveValueList(field.getDirectives(skipGenerated: true))}
 '''
         .trim();
   }
 
-  String serializeType(GQType gqType, {bool forceNullable = false}) {
-    String nullableText = forceNullable ? '' : _getNullableText(gqType.nullable);
-    if (gqType.isList) {
-      return "[${serializeType(gqType.inlineType)}]${nullableText}";
+  String serializeType(GQType glType, {bool forceNullable = false}) {
+    String nullableText = forceNullable ? '' : _getNullableText(glType.nullable);
+    if (glType.isList) {
+      return "[${serializeType(glType.inlineType)}]${nullableText}";
     }
-    return "${gqType.tokenInfo}${nullableText}";
+    return "${glType.tokenInfo}${nullableText}";
   }
 
   String _getNullableText(bool nullable) => nullable ? "" : "!";
 
-  String serializeArgs(List<GQArgumentDefinition> arguments) {
+  String serializeArgs(List<GLArgumentDefinition> arguments) {
     if (arguments.isEmpty) {
       return "";
     }
@@ -284,7 +284,7 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
     return """fragment ${def.fragmentName} on ${def.onTypeName}${serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}${serializeBlock(def.block)}""";
   }
 
-  String serializeFragmentDefinitionBase(GQFragmentDefinitionBase def) {
+  String serializeFragmentDefinitionBase(GLFragmentDefinitionBase def) {
     if (def is GQFragmentDefinition) {
       return serializeFragmentDefinition(def);
     } else if (def is GQInlineFragmentDefinition) {
@@ -322,11 +322,11 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
     return "union ${def.tokenInfo} = ${serializeListText(def.typeNames.map((e) => e.token).toList(), withParenthesis: false, join: " | ")}";
   }
 
-  String serializeQueryDefinition(GQQueryDefinition def) {
+  String serializeQueryDefinition(GLQueryDefinition def) {
     return """${def.type.name} ${def.tokenInfo}${serializeListText(def.arguments.map(serializeArgumentDefinition).toList(), join: ",")}${serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}{${serializeListText(def.elements.map(serializeQueryElement).toList(), join: " ", withParenthesis: false)}}""";
   }
 
-  List<DividedQuery> divideQueryDefinition(GQQueryDefinition def, GQGrammar grammar) {
+  List<DividedQuery> divideQueryDefinition(GLQueryDefinition def, GLGrammar grammar) {
     var result = <DividedQuery>[];
     for (var element in def.elements) {
       final operationName = '${def.token}_${element.alias ?? ''}_${element.token}';
@@ -346,7 +346,7 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
     return result;
   }
 
-  String serializeQueryElement(GQQueryElement def) {
+  String serializeQueryElement(GLQueryElement def) {
     return """${def.escapedToken}${serializeListText(def.arguments.map(serializeArgumentValue).toList(), join: ",")}${serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}${def.block != null ? serializeBlock(def.block!) : ''}""";
   }
 }
@@ -354,7 +354,7 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
 class DividedQuery {
   final String query;
   final String operationName;
-  final GqCacheDefinition? cache;
+  final GLCacheDefinition? cache;
   final List<String> variables;
   final String elementKey;
   final Set<String> fragmentNames;

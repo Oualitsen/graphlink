@@ -1,26 +1,26 @@
 import 'package:petitparser/petitparser.dart';
 import 'package:graphlink/src/excpetions/parse_exception.dart';
-import 'package:graphlink/src/model/gq_queries.dart';
+import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 
 void main() {
   test("extend scalar test", () {
-    final g = GQGrammar(generateAllFieldsFragments: true);
+    final g = GLGrammar(generateAllFieldsFragments: true);
     var result = g.parse('''
-    extend scalar void @gqServiceName(name: "TestService")
+    extend scalar void @glServiceName(name: "TestService")
     scalar void
   ''');
 
     expect(result is Success, true);
     var scalar = g.scalars['void']!;
-    expect(scalar.getDirectiveByName('@gqServiceName'), isNotNull);
+    expect(scalar.getDirectiveByName('@glServiceName'), isNotNull);
   });
 
   test("extend enum test", () {
-    final g = GQGrammar(generateAllFieldsFragments: true);
+    final g = GLGrammar(generateAllFieldsFragments: true);
     var result = g.parse('''
-    extend enum Animal  @gqServiceName(name: "TestService")  {
+    extend enum Animal  @glServiceName(name: "TestService")  {
       horse
     }
     enum Animal {
@@ -30,14 +30,14 @@ void main() {
 
     expect(result is Success, true);
     var animal = g.enums['Animal']!;
-    expect(animal.getDirectiveByName('@gqServiceName'), isNotNull);
+    expect(animal.getDirectiveByName('@glServiceName'), isNotNull);
     expect(animal.values.map((e) => e.value.token), containsAll(['dog', 'cat', 'horse']));
   });
 
   test("extend input test", () {
-    final g = GQGrammar(generateAllFieldsFragments: true);
+    final g = GLGrammar(generateAllFieldsFragments: true);
     var result = g.parse('''
-    extend input UserInput @gqServiceName(name: "TestService"){
+    extend input UserInput @glServiceName(name: "TestService"){
       password: String
     }
 
@@ -53,16 +53,16 @@ void main() {
 
     expect(result is Success, true);
     var userInput = g.inputs['UserInput']!;
-    expect(userInput.getDirectiveByName('@gqServiceName'), isNotNull);
+    expect(userInput.getDirectiveByName('@glServiceName'), isNotNull);
     expect(userInput.fields.map((e) => e.name.token), containsAll(['password', 'username']));
     var password = userInput.getFieldByName("password")!;
     expect(password.getDirectiveByName("@gqHide"), isNotNull);
   });
 
   test("extend type test", () {
-    final g = GQGrammar(generateAllFieldsFragments: true);
+    final g = GLGrammar(generateAllFieldsFragments: true);
     var result = g.parse('''
-    extend type User @gqServiceName(name: "TestService"){
+    extend type User @glServiceName(name: "TestService"){
       password: String
     }
 
@@ -78,16 +78,16 @@ void main() {
 
     expect(result is Success, true);
     var userInput = g.types['User']!;
-    expect(userInput.getDirectiveByName('@gqServiceName'), isNotNull);
+    expect(userInput.getDirectiveByName('@glServiceName'), isNotNull);
     expect(userInput.fields.map((e) => e.name.token), containsAll(['password', 'username']));
     var password = userInput.getFieldByName("password")!;
     expect(password.getDirectiveByName("@gqHide"), isNotNull);
   });
 
   test("extend interface test", () {
-    final g = GQGrammar(generateAllFieldsFragments: true);
+    final g = GLGrammar(generateAllFieldsFragments: true);
     var result = g.parse('''
-    extend interface User @gqServiceName(name: "TestService"){
+    extend interface User @glServiceName(name: "TestService"){
       password: String
     }
 
@@ -103,14 +103,14 @@ void main() {
 
     expect(result is Success, true);
     var userInput = g.interfaces['User']!;
-    expect(userInput.getDirectiveByName('@gqServiceName'), isNotNull);
+    expect(userInput.getDirectiveByName('@glServiceName'), isNotNull);
     expect(userInput.fields.map((e) => e.name.token), containsAll(['password', 'username']));
     var password = userInput.getFieldByName("password")!;
     expect(password.getDirectiveByName("@gqHide"), isNotNull);
   });
 
   test("extend union test", () {
-    final g = GQGrammar(generateAllFieldsFragments: true);
+    final g = GLGrammar(generateAllFieldsFragments: true);
     var result = g.parse('''
     type type1 {
       name: String
@@ -138,7 +138,7 @@ void main() {
   });
 
   test("extend schema test", () {
-    final g = GQGrammar(generateAllFieldsFragments: true);
+    final g = GLGrammar(generateAllFieldsFragments: true);
     var result = g.parse('''
     schema {
       query: TestQuery
@@ -159,13 +159,13 @@ void main() {
 
     expect(result is Success, true);
     var schema = g.schema;
-    expect(schema.getByQueryType(GQQueryType.query), "TestQuery");
-    expect(schema.getByQueryType(GQQueryType.mutation), "TestMutation");
+    expect(schema.getByQueryType(GLQueryType.query), "TestQuery");
+    expect(schema.getByQueryType(GLQueryType.mutation), "TestMutation");
     expect(schema.getDirectiveByName("@auth"), isNotNull);
   });
 
   test("throw when when trying to change the type of a field", () {
-    final g = GQGrammar(generateAllFieldsFragments: true);
+    final g = GLGrammar(generateAllFieldsFragments: true);
 
     expect(
       () => g.parse('''
@@ -188,7 +188,7 @@ void main() {
   });
 
   test("throw when when trying to change the type of a field nullability", () {
-    final g = GQGrammar(generateAllFieldsFragments: true);
+    final g = GLGrammar(generateAllFieldsFragments: true);
 
     expect(
       () => g.parse('''
@@ -211,7 +211,7 @@ void main() {
   });
 
   test("throw when when trying to change field arguments", () {
-    final g = GQGrammar(generateAllFieldsFragments: true);
+    final g = GLGrammar(generateAllFieldsFragments: true);
 
     expect(
       () => g.parse('''
@@ -234,7 +234,7 @@ void main() {
   });
 
   test("throw when when trying to change field argument types", () {
-    final g = GQGrammar(generateAllFieldsFragments: true);
+    final g = GLGrammar(generateAllFieldsFragments: true);
 
     expect(
       () => g.parse('''
@@ -257,7 +257,7 @@ void main() {
   });
 
   test("throw when when trying to change field argument nullability", () {
-    final g = GQGrammar(generateAllFieldsFragments: true);
+    final g = GLGrammar(generateAllFieldsFragments: true);
 
     expect(
       () => g.parse('''
