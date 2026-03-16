@@ -1,46 +1,46 @@
 ///
 /// Adds a code such as annotations as a prefix to the generated code
 ///
-const gqDecorators = "@gqDecorators";
+const glDecorators = "@glDecorators";
 
 ///
 /// Skips generating on server
 ///
-const gqSkipOnServer = "@gqSkipOnServer";
-const gqMapTo = "mapTo";
+const glSkipOnServer = "@glSkipOnServer";
+const glMapTo = "mapTo";
 
 ///
 /// Argument to generate a batch mapping, defaults to true
 ///
-const gqBatch = "batch";
+const glBatch = "batch";
 
 ///
 /// Skips generating on client
 ///
-const gqSkipOnClient = "@gqSkipOnClient";
+const glSkipOnClient = "@glSkipOnClient";
 
 ///
 /// Generates lists as array on languages that support arrays.
 ///
-const gqArray = "@gqArray";
+const glArray = "@glArray";
 
 ///
 /// Adds methods to a Service with a given name.
 /// By default, a service name is generated based the return type of the query/mutation/subscription
 ///
-const gqServiceName = "@gqServiceName";
-const gqServiceNameArg = "name";
+const glServiceName = "@glServiceName";
+const glServiceNameArg = "name";
 
 ///
 /// Applied only on client.
 /// Generates a class with the given name if possible.
 ///
-const gqTypeNameDirective = "@gqTypeName";
+const glTypeNameDirective = "@glTypeName";
 
 ///
 /// Generates equals and hashcode
 ///
-const gqEqualsHashcode = "@gqEqualsHashcode";
+const glEqualsHashcode = "@glEqualsHashcode";
 
 const includeDirective = "@include";
 
@@ -49,47 +49,47 @@ const skipDirective = "@skip";
 ///
 /// Generates a spring data jpa.
 ///
-const gqRepository = "@gqRepository";
-const gqType = "gqType";
-const gqIdType = "gqIdType";
-const gqExternal = "@gqExternal";
-const gqInterfaceFieldAsProperties = "@gqInterfaceFieldAsProperties";
+const glRepository = "@glRepository";
+const glType = "glType";
+const glIdType = "glIdType";
+const glExternal = "@glExternal";
+const glInterfaceFieldAsProperties = "@glInterfaceFieldAsProperties";
 
 ///
 /// Used for internally generated objects
 /// Any object with this decorator will be sikpped in all fields fragment generation, ui generation
 /// and other stuff in the future
 ///
-const gqInternal = "@gqInternal";
+const glInternal = "@glInternal";
 
 ///
 /// When a method (from query/mutation/subscription) is decorated with this directive,
 /// the controller will call a validation method named validateXXX before calling the service method.
 ///
 
-const gqValidate = "@gqValidate";
-const gqValidateMethodPrefix = "validate";
+const glValidate = "@glValidate";
+const glValidateMethodPrefix = "validate";
 
-const gqExternalArg = gqClass;
-const gqClass = "gqClass";
-const gqImport = "gqImport";
+const glExternalArg = glClass;
+const glClass = "glClass";
+const glImport = "glImport";
 
-const gqTypeNameDirectiveArgumentName = "name";
-const gqEqualsHashcodeArgumentName = "fields";
-const gqDecoratorsArgumentName = "value";
+const glTypeNameDirectiveArgumentName = "name";
+const glEqualsHashcodeArgumentName = "fields";
+const glDecoratorsArgumentName = "value";
 
-const gqAnnotation = "gqAnnotation";
-const gqApplyOnFields = "gqApplyOnFields";
-const gqOnClient = "gqOnClient";
-const gqOnServer = "gqOnServer";
+const glAnnotation = "glAnnotation";
+const glApplyOnFields = "glApplyOnFields";
+const glOnClient = "glOnClient";
+const glOnServer = "glOnServer";
 
 ///
 /// cache annotations
 ///
-const gqCache = "@gqCache";
-const gqCacheTTL = "ttl";
-const gqCacheTag = "tag";
-const gqNoCache = "@gqNoCache";
-const gqCacheInvalidate = "@gqCacheInvalidate";
-const gqCacheTagList = "tags";
-const gqCacheArgAll = "all";
+const glCache = "@glCache";
+const glCacheTTL = "ttl";
+const glCacheTag = "tag";
+const glNoCache = "@glNoCache";
+const glCacheInvalidate = "@glCacheInvalidate";
+const glCacheTagList = "tags";
+const glCacheArgAll = "all";

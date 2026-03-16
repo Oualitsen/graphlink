@@ -3,12 +3,12 @@ import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/main.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 const outputDir = "../gql-test-projects/gqlJavaClient/src/main/java/org/gqlclient/generated";
 
-getConfig(GQGrammar g) {
+getConfig(GLGrammar g) {
   return GeneratorConfig(
       schemaPaths: [],
       mode: g.mode.name,
@@ -26,17 +26,17 @@ getConfig(GQGrammar g) {
 
 void main() async {
   test("generate java client", () async {
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
+    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
     var parsed = g.parse('''
   ${getClientObjects("Java")}
   ${javaJsonEncoderDecorder}
   ${javaClientAdapterNoParamSync}
-  ${javaWebSocketAdapter}
+  ${javaGraphLinkWebSocketAdapter}
  
 
- directive @gqServiceName(name: String) on FIELD_DEFINITION
-directive @gqSkipOnServer(mapTo: String, batch: Boolean) on FIELD_DEFINITION|OBJECT
-directive @gqSkipOnClient on FIELD_DEFINITION|OBJECT
+ directive @glServiceName(name: String) on FIELD_DEFINITION
+directive @glSkipOnServer(mapTo: String, batch: Boolean) on FIELD_DEFINITION|OBJECT
+directive @glSkipOnClient on FIELD_DEFINITION|OBJECT
 
 type Car {
     make: String
@@ -60,8 +60,8 @@ enum Gender {
 }
 
 type Query {
-    getCarsByUserId(userId: String!): [Car!]! @gqServiceName(name: "CarService")
-    getUser: User! @gqServiceName(name: "CarService")
+    getCarsByUserId(userId: String!): [Car!]! @glServiceName(name: "CarService")
+    getUser: User! @glServiceName(name: "CarService")
 }
 
 type Mutation {
@@ -80,7 +80,7 @@ type Subscription {
   });
 
   test("GQJsonEncoder serialization", () {
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
+    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
     var parsed = g.parse('''
   ${javaJsonEncoderDecorder}
 ''');
@@ -99,7 +99,7 @@ type Subscription {
   });
 
   test("GQJsonDecoder serialization", () {
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
+    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
     var parsed = g.parse('''
   ${javaJsonEncoderDecorder}
 ''');
@@ -119,7 +119,7 @@ type Subscription {
   });
 
   test("GQClientAdapter serialization async", () {
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
+    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
     var parsed = g.parse('''
   ${javaClientAdapterNoParamSync}
 ''');

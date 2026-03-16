@@ -2,12 +2,12 @@ import 'dart:io';
 
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {
   test("testDecorators", () {
-    final GQGrammar g = GQGrammar(identityFields: ["id"]);
+    final GLGrammar g = GLGrammar(identityFields: ["id"]);
     final text = File("test/serializers/dart/types/type_serialization_decorators_test.graphql")
         .readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());

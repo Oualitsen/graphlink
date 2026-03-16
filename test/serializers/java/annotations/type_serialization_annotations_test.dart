@@ -6,7 +6,7 @@ import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:graphlink/src/serializers/language.dart';
 import 'package:graphlink/src/serializers/spring_server_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 
@@ -22,8 +22,8 @@ void main() {
   };
 
   test("test get annotations", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
     final text =
         File("test/serializers/java/annotations/type_serialization_annotations_test.graphql")
             .readAsStringSync();
@@ -37,8 +37,8 @@ void main() {
   });
 
   test("test annotation serialization", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
     final text =
         File("test/serializers/java/annotations/type_serialization_annotations_test.graphql")
             .readAsStringSync();
@@ -53,8 +53,8 @@ void main() {
   });
 
   test("test annotations on inputs and input fields", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
     final text =
         File("test/serializers/java/annotations/type_serialization_annotations_test.graphql")
             .readAsStringSync();
@@ -78,8 +78,8 @@ void main() {
   });
 
   test("test annotations on interfaces and its fields", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
     final text =
         File("test/serializers/java/annotations/type_serialization_annotations_test.graphql")
             .readAsStringSync();
@@ -103,8 +103,8 @@ void main() {
   });
 
   test("test annotations on types", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
     final text =
         File("test/serializers/java/annotations/type_serialization_annotations_test.graphql")
             .readAsStringSync();
@@ -128,8 +128,8 @@ void main() {
   });
 
   test("test annotations on enums and enum values", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
     final text =
         File("test/serializers/java/annotations/type_serialization_annotations_test.graphql")
             .readAsStringSync();
@@ -148,7 +148,7 @@ void main() {
   });
 
   test("annotations on controllers", () {
-    final GQGrammar g = GQGrammar(identityFields: [
+    final GLGrammar g = GLGrammar(identityFields: [
       "id"
     ], typeMap: {
       "ID": "String",
@@ -174,13 +174,13 @@ void main() {
   });
 
   test("annotations on interfaces", () {
-    final GQGrammar g = GQGrammar(mode: CodeGenerationMode.server);
+    final GLGrammar g = GLGrammar(mode: CodeGenerationMode.server);
     var parsed = g.parse('''
-    directive @Id(gqClass: String = "Id",
-     gqImport: String = "org.springframework.data.annotation.Id",
-    gqOnClient: Boolean = false,
-    gqOnServer: Boolean = true,
-    gqAnnotation: Boolean = true
+    directive @Id(glClass: String = "Id",
+     glImport: String = "org.springframework.data.annotation.Id",
+    glOnClient: Boolean = false,
+    glOnServer: Boolean = true,
+    glAnnotation: Boolean = true
       )
  on FIELD_DEFINITION | FIELD
  
@@ -205,33 +205,33 @@ void main() {
     print(dartSerialzer.serializeTypeDefinition(iface, "com.myorg"));
   });
 
-  test("annotations gqApplyOnFields", () {
-    final GQGrammar g = GQGrammar(mode: CodeGenerationMode.server);
+  test("annotations glApplyOnFields", () {
+    final GLGrammar g = GLGrammar(mode: CodeGenerationMode.server);
     var parsed = g.parse('''
     directive @auth(
-      gqClass: String = "Auth",
-      gqOnClient: Boolean = false,
-      gqOnServer: Boolean = true,
-      gqAnnotation: Boolean = true
-      gqApplyOnFields: Boolean = false
+      glClass: String = "Auth",
+      glOnClient: Boolean = false,
+      glOnServer: Boolean = true,
+      glAnnotation: Boolean = true
+      glApplyOnFields: Boolean = false
       )
  on FIELD_DEFINITION | FIELD
 
  directive @auth2(
-      gqClass: String = "Auth2",
-      gqOnClient: Boolean = false,
-      gqOnServer: Boolean = true,
-      gqAnnotation: Boolean = true
-      gqApplyOnFields: Boolean = false
+      glClass: String = "Auth2",
+      glOnClient: Boolean = false,
+      glOnServer: Boolean = true,
+      glAnnotation: Boolean = true
+      glApplyOnFields: Boolean = false
       )
  on FIELD_DEFINITION | FIELD
 
- type Query @auth(gqApplyOnFields: true) {
-  countUsers: Int ${gqServiceName}(name: "MainService")
+ type Query @auth(glApplyOnFields: true) {
+  countUsers: Int ${glServiceName}(name: "MainService")
  }
 
- extend type Query @auth2(gqApplyOnFields: true) {
-  countAnimals: Int ${gqServiceName}(name: "MainService")
+ extend type Query @auth2(glApplyOnFields: true) {
+  countAnimals: Int ${glServiceName}(name: "MainService")
  }
  
  

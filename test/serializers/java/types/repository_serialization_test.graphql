@@ -1,6 +1,6 @@
 
-directive @gqRepository(
-  gqClass: String = "org.springframework.data.mongodb.repository.MongoRepository"
+directive @glRepository(
+  glClass: String = "org.springframework.data.mongodb.repository.MongoRepository"
 ) on FIELD_DEFINITION
 
 directive @gqQuery(
@@ -10,18 +10,18 @@ directive @gqQuery(
   countProjection: String
   name: String
   countName: String
-  gqClass: String = "org.springframework.data.jpa.repository.Query"
-  gqAnnotation: Boolean = true
-  gqOnClient: Boolean = false
-  gqOnServer: Boolean = true
+  glClass: String = "org.springframework.data.jpa.repository.Query"
+  glAnnotation: Boolean = true
+  glOnClient: Boolean = false
+  glOnServer: Boolean = true
 ) on FIELD_DEFINITION
 
 directive @gqParam(
   name: String!
-  gqClass: String = "org.springframework.data.repository.query.Param",
-  gqAnnotation: Boolean = true
-  gqOnClient: Boolean = false
-  gqOnServer: Boolean = true
+  glClass: String = "org.springframework.data.repository.query.Param",
+  glAnnotation: Boolean = true
+  glOnClient: Boolean = false
+  glOnServer: Boolean = true
 ) on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION
 
 type User {
@@ -29,7 +29,7 @@ type User {
     name: String
 }
 
-interface UserRepository @gqRepository(gqType: "User", gqIdType: "String") @gqJpaQuery() {
+interface UserRepository @glRepository(glType: "User", glIdType: "String") @gqJpaQuery() {
     _: String
 
     findById(id: ID! @gqParam(value: "id")): User @gqQuery(value: """

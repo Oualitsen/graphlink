@@ -1,12 +1,12 @@
 import 'package:graphlink/src/serializers/client_serializers/dart_client_serializer.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {
   test("query methods should be comma separated", () {
-    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {

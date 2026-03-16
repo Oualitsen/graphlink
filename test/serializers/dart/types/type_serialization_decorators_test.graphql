@@ -1,5 +1,5 @@
 
-directive @gqDecorators(
+directive @glDecorators(
   value: [String!]!
   applyOnClient: Boolean = true
   applyOnServer: Boolean = true
@@ -7,27 +7,27 @@ directive @gqDecorators(
 
 
 enum Gender 
-@gqDecorators(value: ["@Logger"])
+@glDecorators(value: ["@Logger"])
 {
     male, female
 }
 
 interface IBase 
-@gqDecorators(value: ["@Logger"])
+@glDecorators(value: ["@Logger"])
 
  {
     id: String!
 }
 
-input UserInput @gqDecorators(value: ["@Input"]) {
+input UserInput @glDecorators(value: ["@Input"]) {
     name: String!
 }
     
-type User @gqDecorators(value: ["@Logger"]) {
+type User @glDecorators(value: ["@Logger"]) {
 
-    id: String! @gqDecorators(value: ["@Getter", "@Setter"])
-    name: String! @gqDecorators(value: ["""@Getter""", """@Setter"""])
-    middleName: String @gqDecorators(value: ["""@Getter("value")"""])
+    id: String! @glDecorators(value: ["@Getter", "@Setter"])
+    name: String! @glDecorators(value: ["""@Getter""", """@Setter"""])
+    middleName: String @glDecorators(value: ["""@Getter("value")"""])
     married: Boolean!
     listExample: [String!]!
 }

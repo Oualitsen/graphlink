@@ -1,12 +1,12 @@
 import 'dart:io';
 
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() async {
   test("projections_test", () {
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
+    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
 
     var parser = g.buildFrom(g.fullGrammar().end());
 
@@ -23,8 +23,8 @@ void main() async {
     expect(state != null, true);
   });
 
-  test("projections_test2 on gqSkipOnClient", () {
-    final GQGrammar g = GQGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
+  test("projections_test2 on glSkipOnClient", () {
+    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
 
     var parser = g.buildFrom(g.fullGrammar().end());
 

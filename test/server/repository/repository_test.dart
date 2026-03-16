@@ -5,7 +5,7 @@ import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/serializers/language.dart';
 import 'package:graphlink/src/serializers/spring_server_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {
@@ -20,8 +20,8 @@ void main() {
   };
 
   test("handle repositories", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     final text = File("test/server/repository/repository_test.graphql").readAsStringSync();
     var parser = g.buildFrom(g.fullGrammar().end());
@@ -36,8 +36,8 @@ void main() {
   });
 
   test("external types/inputs serialization", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     final text =
         File("test/server/repository/repository_test_external_types.graphql").readAsStringSync();
@@ -48,11 +48,11 @@ void main() {
     var type = g.scalars["ExternalUser"]!;
     var input = g.scalars["Pagebale"]!;
 
-    expect(type.getDirectiveByName(gqSkipOnClient), isNotNull);
-    expect(type.getDirectiveByName(gqSkipOnServer), isNotNull);
+    expect(type.getDirectiveByName(glSkipOnClient), isNotNull);
+    expect(type.getDirectiveByName(glSkipOnServer), isNotNull);
 
-    expect(input.getDirectiveByName(gqSkipOnClient), isNotNull);
-    expect(input.getDirectiveByName(gqSkipOnServer), isNotNull);
+    expect(input.getDirectiveByName(glSkipOnClient), isNotNull);
+    expect(input.getDirectiveByName(glSkipOnServer), isNotNull);
 
     var userRepository = g.repositories["UserRepository"]!;
 
@@ -66,14 +66,14 @@ void main() {
   });
 
   test("check type == null", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     const text = """
         type User {
           id: ID!
         }
-        interface UserRepository @gqRepository(gqIdType: "id") {
+        interface UserRepository @glRepository(glIdType: "id") {
           _: String
         }
         """;
@@ -84,21 +84,21 @@ void main() {
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
-          contains('gqType is required on @gqRepository directive line: 4 column: 35'),
+          contains('glType is required on @glRepository directive line: 4 column: 35'),
         ),
       ),
     );
   });
 
   test("check id = null", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     const text = """
         type User {
           id: String!
         }
-        interface UserRepository @gqRepository(gqType: "User") {
+        interface UserRepository @glRepository(glType: "User") {
           _: String
         }
         """;
@@ -109,15 +109,15 @@ void main() {
         isA<ParseException>().having(
           (e) => e.message,
           'message',
-          contains("gqIdType is required on @gqRepository directive"),
+          contains("glIdType is required on @glRepository directive"),
         ),
       ),
     );
   });
 
   test("should serialize directives on methods", () {
-    final GQGrammar g =
-        GQGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLGrammar g =
+        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     const text = """
       directive @gqQuery(
@@ -127,17 +127,17 @@ void main() {
         delete: Boolean
         fields: String
         sort: String
-        gqClass: String = "@Query"
-        gqImport: String = "org.springframework.data.mongodb.repository.Query"
-        gqOnClient: Boolean = false
-        gqOnServer: Boolean = true
-        gqAnnotation: Boolean = true
+        glClass: String = "@Query"
+        glImport: String = "org.springframework.data.mongodb.repository.Query"
+        glOnClient: Boolean = false
+        glOnServer: Boolean = true
+        glAnnotation: Boolean = true
     ) on FIELD_DEFINITION
 
         type User {
           id: ID!
         }
-        interface UserRepository @gqRepository(gqIdType: "id", gqType: "User") {
+        interface UserRepository @glRepository(glIdType: "id", glType: "User") {
           findUsers: [User!]! @gqQuery(value: "select * from User")
         }
         """;

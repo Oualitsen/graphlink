@@ -9,7 +9,7 @@ type Car {
     model: String
 }
 
-type UserWithCar @gqSkipOnServer(mapTo: "User") {
+type UserWithCar @glSkipOnServer(mapTo: "User") {
     user: User!
     car: Car
 }

@@ -1,10 +1,10 @@
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {
   test("Object value test 1", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parser = g.buildFrom(g.scalarDefinition().end());
     var result = parser.parse("""
@@ -15,7 +15,7 @@ void main() {
   });
 
   test("Object value test 2", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parser = g.buildFrom(g.scalarDefinition().end());
     var result = parser.parse("""

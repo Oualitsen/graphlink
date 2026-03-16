@@ -41,13 +41,13 @@ type Query {
 
 
 
-query getProductsQuery($pageIndex: PageIndex!, $id: ID!) @gqTypeName(name: "Ahmed") {
+query getProductsQuery($pageIndex: PageIndex!, $id: ID!) @glTypeName(name: "Ahmed") {
 
   getProducts(pageIndex: $pageIndex)    {
     id, name, price, wasPrice
   }
 
-  getProductById(id: $id) @gqTypeName(name: "Prod") {
+  getProductById(id: $id) @glTypeName(name: "Prod") {
     id, name, price, wasPrice
   }
 

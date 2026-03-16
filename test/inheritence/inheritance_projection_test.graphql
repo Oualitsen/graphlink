@@ -29,11 +29,11 @@ type Query {
 }
 
 query getUser {
-  myUser:getUser @gqTypeName(name: "MyUser") {
-    ... on Admin @gqTypeName(name: "AdminEEEE") {
+  myUser:getUser @glTypeName(name: "MyUser") {
+    ... on Admin @glTypeName(name: "AdminEEEE") {
       firstName lastName username
     }
-    ... on Assistant @gqTypeName(name: "Assistant222") {
+    ... on Assistant @glTypeName(name: "Assistant222") {
     firstName lastName  username password
     }
   } 

@@ -21,7 +21,7 @@ type Brand {
   
 }
 
-input ProductInput @gqTypeName(name: "MyProductInput"){
+input ProductInput @glTypeName(name: "MyProductInput"){
   name: String!
   price: Float!
   wasPrice: Float
@@ -49,7 +49,7 @@ type Mutation {
 
 query getProducts($pageIndex: PageIndex!) {
 
-  getProducts(pageIndex: $pageIndex) @gqTypeName(name: "MyProduct123")  {
+  getProducts(pageIndex: $pageIndex) @glTypeName(name: "MyProduct123")  {
     id, name, price, wasPrice
   }
 
@@ -57,21 +57,21 @@ query getProducts($pageIndex: PageIndex!) {
 
 }
 
-query getAllProducts @gqTypeName(name: "MyProductResp") {
-  getAllProducts @gqTypeName(name: "MyProduct") {
+query getAllProducts @glTypeName(name: "MyProductResp") {
+  getAllProducts @glTypeName(name: "MyProduct") {
     id name 
   }
 }
 
 
-mutation createProduct($input: ProductInput!) @gqTypeName(name: "ProductCreationResponse") {
-  createProduct(input: $input) @gqTypeName(name: "AhmedProduct") {
-    id name   brand @gqTypeName(name: "MyBrand"){
+mutation createProduct($input: ProductInput!) @glTypeName(name: "ProductCreationResponse") {
+  createProduct(input: $input) @glTypeName(name: "AhmedProduct") {
+    id name   brand @glTypeName(name: "MyBrand"){
       ...BrandFragment
     }
   }
 
-  p2: createProduct(input: $input) @gqTypeName(name: "AhmedProduct2") {
+  p2: createProduct(input: $input) @glTypeName(name: "AhmedProduct2") {
     id name   brand {
       ...BrandFragment
     }
@@ -92,7 +92,7 @@ mutation deleteProduct($id: ID!, $id2: Int) {
 scalar Long
 
 fragment ProductFragment on Product {
-  price brand  @gqTypeName(name: "Tozzz") {
+  price brand  @glTypeName(name: "Tozzz") {
     ...BrandFragment   
   }
 }

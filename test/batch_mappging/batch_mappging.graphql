@@ -7,15 +7,15 @@ type User {
     id: ID!
     name: String!
     middleName: String
-    cars: [Car!]!  @gqSkipOnServer
+    cars: [Car!]!  @glSkipOnServer
 }
 
 type Car {
     make: String!
     model: String!
-    userId: ID! @gqSkipOnClient
-    owner: Owner! @gqSkipOnServer
-    ownerId: ID! @gqSkipOnClient
+    userId: ID! @glSkipOnClient
+    owner: Owner! @glSkipOnServer
+    ownerId: ID! @glSkipOnClient
 }
 
 type Owner {

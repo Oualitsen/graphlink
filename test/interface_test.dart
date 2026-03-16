@@ -1,8 +1,8 @@
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
-final GQGrammar g = GQGrammar();
+final GLGrammar g = GLGrammar();
 
 void main() {
   test("Implements fields", () {

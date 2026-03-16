@@ -1,13 +1,13 @@
 import 'package:graphlink/src/excpetions/parse_exception.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
-import 'package:graphlink/src/model/gq_queries.dart';
+import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {
-  test("gqCache directive validation when ttl is invalid", () {
-    final GQGrammar g = GQGrammar(
+  test("glCache directive validation when ttl is invalid", () {
+    final GLGrammar g = GLGrammar(
       autoGenerateQueries: true,
       generateAllFieldsFragments: true,
     );
@@ -19,7 +19,7 @@ void main() {
   }
 
   type Query {
-    getPerson: Person ${gqCache}(ttl: "invaidValue")
+    getPerson: Person ${glCache}(ttl: "invaidValue")
   }
 ''';
 
@@ -28,13 +28,13 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains('ttl on @gqCache directives should be a positive integer! found: "invaidValue"'),
+        contains('ttl on @glCache directives should be a positive integer! found: "invaidValue"'),
       )),
     );
   });
 
-  test("gqCache directive validation when ttl is null", () {
-    final GQGrammar g = GQGrammar(
+  test("glCache directive validation when ttl is null", () {
+    final GLGrammar g = GLGrammar(
       autoGenerateQueries: true,
       generateAllFieldsFragments: true,
     );
@@ -46,7 +46,7 @@ void main() {
   }
 
   type Query {
-    getPerson: Person ${gqCache}()
+    getPerson: Person ${glCache}()
   }
 ''';
 
@@ -55,13 +55,13 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains('ttl is required on @gqCache directives line: 7 column: 24'),
+        contains('ttl is required on @glCache directives line: 7 column: 24'),
       )),
     );
   });
 
   test("default cache should be applied", () {
-    final GQGrammar g = GQGrammar(
+    final GLGrammar g = GLGrammar(
       autoGenerateQueries: true,
       generateAllFieldsFragments: true,
       defaultCacheTTL: 5000,
@@ -80,7 +80,7 @@ void main() {
 
     var parsed = g.parse(text);
     expect(parsed is Success, true);
-    GQQueryDefinition getPerson = g.queries['getPerson']!;
+    GLQueryDefinition getPerson = g.queries['getPerson']!;
     var getPersonCache = getPerson.cacheDefinition;
     expect(getPersonCache, isNotNull);
     expect(getPersonCache!.ttl, 5000);
@@ -93,7 +93,7 @@ void main() {
   });
 
   test("default cache should be applied on custom queries", () {
-    final GQGrammar g = GQGrammar(
+    final GLGrammar g = GLGrammar(
       autoGenerateQueries: true,
       generateAllFieldsFragments: true,
       defaultCacheTTL: 5000,
@@ -120,7 +120,7 @@ void main() {
 
     var parsed = g.parse(text);
     expect(parsed is Success, true);
-    GQQueryDefinition myGetPerson = g.queries['MyGetPerson']!;
+    GLQueryDefinition myGetPerson = g.queries['MyGetPerson']!;
     var cache = myGetPerson.cacheDefinition;
     expect(cache, isNotNull);
     expect(cache!.ttl, 5000);
@@ -133,7 +133,7 @@ void main() {
   });
 
   test("cache should be applied on query root element and its children", () {
-    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -144,7 +144,7 @@ void main() {
     getPerson: Person 
   }
 
-  query MyQuery @gqCache(ttl: 5000, tag: "Person") {
+  query MyQuery @glCache(ttl: 5000, tag: "Person") {
     getPerson  {
       id
     }
@@ -153,7 +153,7 @@ void main() {
 
     var parsed = g.parse(text);
     expect(parsed is Success, true);
-    GQQueryDefinition myQuery = g.queries['MyQuery']!;
+    GLQueryDefinition myQuery = g.queries['MyQuery']!;
     var cache = myQuery.cacheDefinition;
     expect(cache, isNotNull);
     expect(cache!.ttl, 5000);
@@ -166,7 +166,7 @@ void main() {
   });
 
   test("cache should be applied on auto generated queries", () {
-    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -174,14 +174,14 @@ void main() {
   }
 
   type Query {
-    getPerson: Person @gqCache(ttl: 5000, tag: "Person")
+    getPerson: Person @glCache(ttl: 5000, tag: "Person")
   }
  
 ''';
 
     var parsed = g.parse(text);
     expect(parsed is Success, true);
-    GQQueryDefinition getPerson = g.queries['getPerson']!;
+    GLQueryDefinition getPerson = g.queries['getPerson']!;
     var cache = getPerson.cacheDefinition;
     expect(cache, isNotNull);
     expect(cache!.ttl, 5000);
@@ -189,7 +189,7 @@ void main() {
   });
 
   test("cache on child elements must override root cache", () {
-    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -201,17 +201,17 @@ void main() {
     count: Int
   }
 
-  query MyQuery @gqCache(ttl: 5000, tag: "Person") {
+  query MyQuery @glCache(ttl: 5000, tag: "Person") {
     getPerson {
       id
     }
-    count @gqCache(ttl: 6000, tag: "PersonCount")
+    count @glCache(ttl: 6000, tag: "PersonCount")
   }
 ''';
 
     var parsed = g.parse(text);
     expect(parsed is Success, true);
-    GQQueryDefinition myQuery = g.queries['MyQuery']!;
+    GLQueryDefinition myQuery = g.queries['MyQuery']!;
     var rootCahce = myQuery.cacheDefinition;
     expect(rootCahce, isNotNull);
     expect(rootCahce!.tag, "Person");
@@ -223,8 +223,8 @@ void main() {
     expect(countCache.ttl, 6000);
   });
 
-  test("gqCache directive validation when tag is invalid", () {
-    final GQGrammar g = GQGrammar(
+  test("glCache directive validation when tag is invalid", () {
+    final GLGrammar g = GLGrammar(
       autoGenerateQueries: true,
       generateAllFieldsFragments: true,
     );
@@ -235,7 +235,7 @@ void main() {
   }
 
   type Query {
-    getPerson: Person ${gqCache}(ttl: 5000, tag: "invalid tag!")
+    getPerson: Person ${glCache}(ttl: 5000, tag: "invalid tag!")
   }
 ''';
 
@@ -245,13 +245,13 @@ void main() {
         (e) => e.errorMessage,
         'errorMessage',
         contains(
-            'tag on @gqCache directives should be alphanumeric with underscores only! found: invalid tag!'),
+            'tag on @glCache directives should be alphanumeric with underscores only! found: invalid tag!'),
       )),
     );
   });
 
   test("nocahce should override cache", () {
-    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -263,17 +263,17 @@ void main() {
     count: Int
   }
 
-  query MyQuery @gqCache(ttl: 5000, tag: "Person") {
-    getPerson @gqNoCache {
+  query MyQuery @glCache(ttl: 5000, tag: "Person") {
+    getPerson @glNoCache {
       id
     }
-    count @gqCache(ttl: 6000, tag: "PersonCount")
+    count @glCache(ttl: 6000, tag: "PersonCount")
   }
 ''';
 
     var parsed = g.parse(text);
     expect(parsed is Success, true);
-    GQQueryDefinition myQuery = g.queries['MyQuery']!;
+    GLQueryDefinition myQuery = g.queries['MyQuery']!;
     var rootCahce = myQuery.cacheDefinition;
     expect(rootCahce, isNotNull);
     expect(rootCahce!.tag, "Person");
@@ -282,8 +282,8 @@ void main() {
     expect(getPersonElement.cacheDefinition, isNull);
   });
 
-  test("gqCache should not be applied to mutations (schema-level)", () {
-    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+  test("glCache should not be applied to mutations (schema-level)", () {
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -291,7 +291,7 @@ void main() {
   }
 
   type Mutation {
-    createPerson: Person @gqCache(ttl: 10)
+    createPerson: Person @glCache(ttl: 10)
   }
 ''';
 
@@ -300,117 +300,13 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains('$gqCache is not allowed on mutations or subscriptions'),
+        contains('$glCache is not allowed on mutations or subscriptions'),
       )),
     );
   });
 
-  test("gqCache should not be applied to mutations (explicit mutation declaration)", () {
-    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
-
-    const text = '''
-  type Person {
-    id: ID!
-  }
-
-  type Mutation {
-    createPerson: Person
-  }
-
-  mutation CreatePerson {
-    createPerson @gqCache(ttl: 10) {
-      id
-    }
-  }
-''';
-
-    expect(
-      () => g.parse(text),
-      throwsA(isA<ParseException>().having(
-        (e) => e.errorMessage,
-        'errorMessage',
-        contains('$gqCache is not allowed on mutations or subscriptions'),
-      )),
-    );
-  });
-
-  test("gqCache should not be applied to subscriptions (schema-level)", () {
-    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
-
-    const text = '''
-  type Person {
-    id: ID!
-  }
-
-  type Subscription {
-    onPersonCreated: Person @gqCache(ttl: 10)
-  }
-''';
-
-    expect(
-      () => g.parse(text),
-      throwsA(isA<ParseException>().having(
-        (e) => e.errorMessage,
-        'errorMessage',
-        contains('$gqCache is not allowed on mutations or subscriptions'),
-      )),
-    );
-  });
-
-  test("gqCache should not be applied to subscriptions (explicit subscription declaration)", () {
-    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
-
-    const text = '''
-  type Person {
-    id: ID!
-  }
-
-  type Subscription {
-    onPersonCreated: Person
-  }
-
-  subscription OnPersonCreated {
-    onPersonCreated @gqCache(ttl: 10) {
-      id
-    }
-  }
-''';
-
-    expect(
-      () => g.parse(text),
-      throwsA(isA<ParseException>().having(
-        (e) => e.errorMessage,
-        'errorMessage',
-        contains('$gqCache is not allowed on mutations or subscriptions'),
-      )),
-    );
-  });
-
-  test("gqNoCache should not be applied to mutations (schema-level)", () {
-    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
-
-    const text = '''
-  type Person {
-    id: ID!
-  }
-
-  type Mutation {
-    createPerson: Person @gqNoCache
-  }
-''';
-
-    expect(
-      () => g.parse(text),
-      throwsA(isA<ParseException>().having(
-        (e) => e.errorMessage,
-        'errorMessage',
-        contains('$gqNoCache is not allowed on mutations or subscriptions'),
-      )),
-    );
-  });
-
-  test("gqNoCache should not be applied to mutations (explicit mutation declaration)", () {
-    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+  test("glCache should not be applied to mutations (explicit mutation declaration)", () {
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -422,7 +318,7 @@ void main() {
   }
 
   mutation CreatePerson {
-    createPerson @gqNoCache {
+    createPerson @glCache(ttl: 10) {
       id
     }
   }
@@ -433,13 +329,13 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains('$gqNoCache is not allowed on mutations or subscriptions'),
+        contains('$glCache is not allowed on mutations or subscriptions'),
       )),
     );
   });
 
-  test("gqNoCache should not be applied to subscriptions (schema-level)", () {
-    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+  test("glCache should not be applied to subscriptions (schema-level)", () {
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -447,7 +343,7 @@ void main() {
   }
 
   type Subscription {
-    onPersonCreated: Person @gqNoCache
+    onPersonCreated: Person @glCache(ttl: 10)
   }
 ''';
 
@@ -456,13 +352,13 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains('$gqNoCache is not allowed on mutations or subscriptions'),
+        contains('$glCache is not allowed on mutations or subscriptions'),
       )),
     );
   });
 
-  test("gqNoCache should not be applied to subscriptions (explicit subscription declaration)", () {
-    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+  test("glCache should not be applied to subscriptions (explicit subscription declaration)", () {
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -474,7 +370,7 @@ void main() {
   }
 
   subscription OnPersonCreated {
-    onPersonCreated @gqNoCache {
+    onPersonCreated @glCache(ttl: 10) {
       id
     }
   }
@@ -485,13 +381,13 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains('$gqNoCache is not allowed on mutations or subscriptions'),
+        contains('$glCache is not allowed on mutations or subscriptions'),
       )),
     );
   });
 
-  test("gqCacheInvalidate should fail when no args provided", () {
-    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+  test("glNoCache should not be applied to mutations (schema-level)", () {
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -499,7 +395,111 @@ void main() {
   }
 
   type Mutation {
-    createPerson: Person @gqCacheInvalidate()
+    createPerson: Person @glNoCache
+  }
+''';
+
+    expect(
+      () => g.parse(text),
+      throwsA(isA<ParseException>().having(
+        (e) => e.errorMessage,
+        'errorMessage',
+        contains('$glNoCache is not allowed on mutations or subscriptions'),
+      )),
+    );
+  });
+
+  test("glNoCache should not be applied to mutations (explicit mutation declaration)", () {
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Mutation {
+    createPerson: Person
+  }
+
+  mutation CreatePerson {
+    createPerson @glNoCache {
+      id
+    }
+  }
+''';
+
+    expect(
+      () => g.parse(text),
+      throwsA(isA<ParseException>().having(
+        (e) => e.errorMessage,
+        'errorMessage',
+        contains('$glNoCache is not allowed on mutations or subscriptions'),
+      )),
+    );
+  });
+
+  test("glNoCache should not be applied to subscriptions (schema-level)", () {
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Subscription {
+    onPersonCreated: Person @glNoCache
+  }
+''';
+
+    expect(
+      () => g.parse(text),
+      throwsA(isA<ParseException>().having(
+        (e) => e.errorMessage,
+        'errorMessage',
+        contains('$glNoCache is not allowed on mutations or subscriptions'),
+      )),
+    );
+  });
+
+  test("glNoCache should not be applied to subscriptions (explicit subscription declaration)", () {
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Subscription {
+    onPersonCreated: Person
+  }
+
+  subscription OnPersonCreated {
+    onPersonCreated @glNoCache {
+      id
+    }
+  }
+''';
+
+    expect(
+      () => g.parse(text),
+      throwsA(isA<ParseException>().having(
+        (e) => e.errorMessage,
+        'errorMessage',
+        contains('$glNoCache is not allowed on mutations or subscriptions'),
+      )),
+    );
+  });
+
+  test("glCacheInvalidate should fail when no args provided", () {
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Mutation {
+    createPerson: Person @glCacheInvalidate()
   }
 ''';
 
@@ -509,13 +509,13 @@ void main() {
         (e) => e.errorMessage,
         'errorMessage',
         contains(
-            '$gqCacheInvalidate requires either $gqCacheArgAll: true or a non-empty $gqCacheTagList'),
+            '$glCacheInvalidate requires either $glCacheArgAll: true or a non-empty $glCacheTagList'),
       )),
     );
   });
 
-  test("gqCacheInvalidate should fail when all is false and tags is empty", () {
-    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+  test("glCacheInvalidate should fail when all is false and tags is empty", () {
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -523,7 +523,7 @@ void main() {
   }
 
   type Mutation {
-    createPerson: Person @gqCacheInvalidate(all: false)
+    createPerson: Person @glCacheInvalidate(all: false)
   }
 ''';
 
@@ -533,13 +533,13 @@ void main() {
         (e) => e.errorMessage,
         'errorMessage',
         contains(
-            '$gqCacheInvalidate requires either $gqCacheArgAll: true or a non-empty $gqCacheTagList'),
+            '$glCacheInvalidate requires either $glCacheArgAll: true or a non-empty $glCacheTagList'),
       )),
     );
   });
 
-  test("gqCacheInvalidate should fail when all is not a boolean", () {
-    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+  test("glCacheInvalidate should fail when all is not a boolean", () {
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -547,7 +547,7 @@ void main() {
   }
 
   type Mutation {
-    createPerson: Person @gqCacheInvalidate(all: "yes")
+    createPerson: Person @glCacheInvalidate(all: "yes")
   }
 ''';
 
@@ -556,13 +556,13 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains('$gqCacheArgAll on $gqCacheInvalidate must be a boolean'),
+        contains('$glCacheArgAll on $glCacheInvalidate must be a boolean'),
       )),
     );
   });
 
-  test("gqCacheInvalidate should pass with all: true", () {
-    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+  test("glCacheInvalidate should pass with all: true", () {
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -570,15 +570,15 @@ void main() {
   }
 
   type Mutation {
-    createPerson: Person @gqCacheInvalidate(all: true)
+    createPerson: Person @glCacheInvalidate(all: true)
   }
 ''';
 
     expect(() => g.parse(text), returnsNormally);
   });
 
-  test("gqCacheInvalidate should fail when tags contains a non-string element", () {
-    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+  test("glCacheInvalidate should fail when tags contains a non-string element", () {
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -586,7 +586,7 @@ void main() {
   }
 
   type Mutation {
-    createPerson: Person @gqCacheInvalidate(tags: ["persons", 12])
+    createPerson: Person @glCacheInvalidate(tags: ["persons", 12])
   }
 ''';
 
@@ -595,13 +595,13 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains('$gqCacheTagList on $gqCacheInvalidate must contain only strings'),
+        contains('$glCacheTagList on $glCacheInvalidate must contain only strings'),
       )),
     );
   });
 
-  test("gqCacheInvalidate should pass with non-empty tags", () {
-    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+  test("glCacheInvalidate should pass with non-empty tags", () {
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -609,19 +609,19 @@ void main() {
   }
 
   type Query {
-    getPersons: Person @gqCache(ttl: 300, tag: "persons")
+    getPersons: Person @glCache(ttl: 300, tag: "persons")
   }
 
   type Mutation {
-    createPerson: Person @gqCacheInvalidate(tags: ["persons"])
+    createPerson: Person @glCacheInvalidate(tags: ["persons"])
   }
 ''';
 
     expect(() => g.parse(text), returnsNormally);
   });
 
-  test("gqCacheInvalidate should fail when tag is not declared on any gqCache directive", () {
-    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+  test("glCacheInvalidate should fail when tag is not declared on any glCache directive", () {
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -629,11 +629,11 @@ void main() {
   }
 
   type Query {
-    getPersons: Person @gqCache(ttl: 300, tag: "persons")
+    getPersons: Person @glCache(ttl: 300, tag: "persons")
   }
 
   type Mutation {
-    createPerson: Person @gqCacheInvalidate(tags: ["undeclaredTag"])
+    createPerson: Person @glCacheInvalidate(tags: ["undeclaredTag"])
   }
 ''';
 
@@ -642,7 +642,8 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains('Tag "undeclaredTag" used in $gqCacheInvalidate is not declared on any $gqCache directive'),
+        contains(
+            'Tag "undeclaredTag" used in $glCacheInvalidate is not declared on any $glCache directive'),
       )),
     );
   });

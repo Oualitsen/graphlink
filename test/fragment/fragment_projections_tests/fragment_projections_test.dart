@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() async {
@@ -9,18 +9,16 @@ void main() async {
     const folderPath = "test/fragment/fragment_projections_tests";
 
     test("Simple projection", () {
-      final GQGrammar g = GQGrammar();
+      final GLGrammar g = GLGrammar();
 
-      final text = File("$folderPath/simple_projection_schema.graphql")
-          .readAsStringSync();
+      final text = File("$folderPath/simple_projection_schema.graphql").readAsStringSync();
 
       final parser = g.buildFrom(g.fullGrammar().end());
       final parsed = parser.parse(text);
 
       expect(parsed is Success, true);
       var type = g.typedFragments["PersonFragment"];
-      var fieldNames =
-          type!.fragment.block.projections.values.map((e) => e.token);
+      var fieldNames = type!.fragment.block.projections.values.map((e) => e.token);
       expect(fieldNames, containsAll(["firstName", "lastName", "middleName"]));
       expect(fieldNames, isNot(containsAll(["age"])));
     });
@@ -28,17 +26,16 @@ void main() async {
     test("Block test", () {
       final text = File("$folderPath/block_schema.graphql").readAsStringSync();
 
-      final GQGrammar g = GQGrammar();
+      final GLGrammar g = GLGrammar();
       final parser = g.buildFrom(g.fullGrammar().end());
       final parsed = parser.parse(text);
       expect(parsed is Success, true);
     });
 
     test("Fragment reference", () {
-      final text = File("$folderPath/fragment_reference_schema.graphql")
-          .readAsStringSync();
+      final text = File("$folderPath/fragment_reference_schema.graphql").readAsStringSync();
 
-      final GQGrammar g = GQGrammar();
+      final GLGrammar g = GLGrammar();
       final parser = g.buildFrom(g.fullGrammar().end());
       final parsed = parser.parse(text);
       expect(parsed is Success, true);
@@ -47,7 +44,7 @@ void main() async {
   group("Fragment tests", () {
     test("Fragments test 2", () async {
       final text = File("test/fragment/fragments.graphql").readAsStringSync();
-      final GQGrammar g = GQGrammar();
+      final GLGrammar g = GLGrammar();
       var parser = g.buildFrom(g.fullGrammar().end());
 
       var parsed = parser.parse(text);
@@ -57,16 +54,15 @@ void main() async {
     });
 
     test("Fragemnt Dependecies Test 2", () {
-      final GQGrammar g = GQGrammar();
+      final GLGrammar g = GLGrammar();
       var parser = g.buildFrom(g.fullGrammar().end());
 
-      var parsed = parser.parse(
-          File("test/fragment/fragment_dependecy.graphql").readAsStringSync());
+      var parsed =
+          parser.parse(File("test/fragment/fragment_dependecy.graphql").readAsStringSync());
       expect(parsed is Success, true);
 
       final frag = g.fragments["AddressFragment"]!;
-      expect(
-          frag.dependecies.map((e) => e.token), containsAll(["StateFragment"]));
+      expect(frag.dependecies.map((e) => e.token), containsAll(["StateFragment"]));
       expect(g.fragments.length, greaterThanOrEqualTo(2));
     });
   });

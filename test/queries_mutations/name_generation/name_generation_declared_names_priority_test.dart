@@ -1,12 +1,12 @@
 import 'dart:io';
 
 import 'package:test/test.dart';
-import 'package:graphlink/src/gq_grammar.dart';
+import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() async {
   test("name_generation_declared_names_priority_test", () {
-    final GQGrammar g = GQGrammar();
+    final GLGrammar g = GLGrammar();
 
     var parser = g.buildFrom(g.fullGrammar().end());
 
@@ -23,10 +23,7 @@ void main() async {
             .toList(),
         containsAll(["P1"]));
 
-    expect(
-        g.projectedTypes.keys
-            .where((element) => element != "ProductResponse")
-            .toList(),
+    expect(g.projectedTypes.keys.where((element) => element != "ProductResponse").toList(),
         hasLength(2));
   });
 }

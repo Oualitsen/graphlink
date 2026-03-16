@@ -1,12 +1,12 @@
 
 
 
-directive @gqArray()
+directive @glArray()
 on FIELD|FIELD_DEFINITION
   
 type User {
-    array: [String!]! @gqArray
-    arrayOfArrays: [[String!]!]! @gqArray
+    array: [String!]! @glArray
+    arrayOfArrays: [[String!]!]! @glArray
 
     listOfLists: [[String!]!]!
 }
