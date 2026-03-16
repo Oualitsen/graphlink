@@ -291,6 +291,8 @@ class GQGrammar extends GrammarDefinition {
       // cache handling — must run before createProjectedTypes to catch errors early
       checkCacheOnMutationsAndSubscriptions();
       checkGqCacheDirectives();
+      checkGqCacheInvalidateDirectives();
+      checkGqCacheTags();
       createProjectedTypes();
       updateInterfaceCommonFields();
       fillProjectedInterfaces();

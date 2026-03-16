@@ -71,6 +71,79 @@ extension GQGrammarCacheExtension on GQGrammar {
   }
 
   ///
+  /// The goal is check the existance of tags tageted by gqCacheInvalidate directive
+  ///
+
+  void checkGqCacheTags() {
+    final allTags = directiveValues
+        .where((val) => val.token == gqCache)
+        .map((e) => e.getArgValueAsString(gqCacheTag))
+        .where((e) => e != null)
+        .map((e) => e!)
+        .toSet();
+    directiveValues
+        .where((d) => d.token == gqCacheInvalidate)
+        .where((e) => e.getArgValue(gqCacheTagList) != null)
+        .forEach((directive) {
+      var tagList = (directive.getArgValue(gqCacheTagList) as List).cast<String>();
+      for (var tag in tagList) {
+        if (!allTags.contains(tag)) {
+          throw ParseException(
+            "Tag \"$tag\" used in $gqCacheInvalidate is not declared on any $gqCache directive",
+            info: directive.tokenInfo,
+          );
+        }
+      }
+    });
+  }
+
+  void checkGqCacheInvalidateDirectives() {
+    directiveValues.where((d) => d.token == gqCacheInvalidate).forEach((directive) {
+      var all = directive.getArgValue(gqCacheArgAll);
+      var tags = directive.getArgValue(gqCacheTagList);
+
+      if (all != null && all is! bool) {
+        throw ParseException(
+          "$gqCacheArgAll on $gqCacheInvalidate must be a boolean! found: $all",
+          info: directive.tokenInfo,
+        );
+      }
+
+      if (tags != null && tags is! List) {
+        throw ParseException(
+          "$gqCacheTagList on $gqCacheInvalidate must be a list of strings! found: $tags",
+          info: directive.tokenInfo,
+        );
+      }
+
+      final allArg = all as bool?;
+      final tagsList = tags as List?;
+
+      if ((allArg == null || allArg == false) && (tagsList == null || tagsList.isEmpty)) {
+        throw ParseException(
+          "$gqCacheInvalidate requires either $gqCacheArgAll: true or a non-empty $gqCacheTagList",
+          info: directive.tokenInfo,
+        );
+      }
+      if (tagsList != null && tagsList.isNotEmpty) {
+        for (var i = 0; i < tagsList.length; i++) {
+          var element = tagsList[i];
+          if (element is! String) {
+            throw ParseException(
+              "$gqCacheTagList on $gqCacheInvalidate must contain only strings! found: $element",
+              info: directive.tokenInfo,
+            );
+          }
+          var trimmed = element.startsWith('"') && element.endsWith('"')
+              ? element.substring(1, element.length - 1)
+              : element;
+          tagsList[i] = trimmed;
+        }
+      }
+    });
+  }
+
+  ///
   ///Applies the default cache to all queries
   void applyDefaultCacheToQueries(int defaultTTL) {
     queries.values.where((q) => q.type == GQQueryType.query).forEach((query) {
