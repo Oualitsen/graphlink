@@ -288,6 +288,9 @@ class GQGrammar extends GrammarDefinition {
       fillTypedFragments();
       validateProjections();
       updateFragmentDependencies();
+      // cache handling — must run before createProjectedTypes to catch errors early
+      checkCacheOnMutationsAndSubscriptions();
+      checkGqCacheDirectives();
       createProjectedTypes();
       updateInterfaceCommonFields();
       fillProjectedInterfaces();
@@ -295,8 +298,6 @@ class GQGrammar extends GrammarDefinition {
       addClientTypesToProjectedTypes();
       updateFragmentAllTypesDependencies();
       generateViews();
-      // cache handling
-      checkGqCacheDirectives();
       if (defaultCacheTTL != null) {
         applyDefaultCacheToQueries(defaultCacheTTL!);
       }

@@ -244,7 +244,8 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains('tag on @gqCache directives should be alphanumeric with underscores only! found: invalid tag!'),
+        contains(
+            'tag on @gqCache directives should be alphanumeric with underscores only! found: invalid tag!'),
       )),
     );
   });
@@ -279,5 +280,213 @@ void main() {
     expect(rootCahce.ttl, 5000);
     var getPersonElement = myQuery.elements.where((e) => e.token == "getPerson").first;
     expect(getPersonElement.cacheDefinition, isNull);
+  });
+
+  test("gqCache should not be applied to mutations (schema-level)", () {
+    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Mutation {
+    createPerson: Person @gqCache(ttl: 10)
+  }
+''';
+
+    expect(
+      () => g.parse(text),
+      throwsA(isA<ParseException>().having(
+        (e) => e.errorMessage,
+        'errorMessage',
+        contains('$gqCache is not allowed on mutations or subscriptions'),
+      )),
+    );
+  });
+
+  test("gqCache should not be applied to mutations (explicit mutation declaration)", () {
+    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Mutation {
+    createPerson: Person
+  }
+
+  mutation CreatePerson {
+    createPerson @gqCache(ttl: 10) {
+      id
+    }
+  }
+''';
+
+    expect(
+      () => g.parse(text),
+      throwsA(isA<ParseException>().having(
+        (e) => e.errorMessage,
+        'errorMessage',
+        contains('$gqCache is not allowed on mutations or subscriptions'),
+      )),
+    );
+  });
+
+  test("gqCache should not be applied to subscriptions (schema-level)", () {
+    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Subscription {
+    onPersonCreated: Person @gqCache(ttl: 10)
+  }
+''';
+
+    expect(
+      () => g.parse(text),
+      throwsA(isA<ParseException>().having(
+        (e) => e.errorMessage,
+        'errorMessage',
+        contains('$gqCache is not allowed on mutations or subscriptions'),
+      )),
+    );
+  });
+
+  test("gqCache should not be applied to subscriptions (explicit subscription declaration)", () {
+    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Subscription {
+    onPersonCreated: Person
+  }
+
+  subscription OnPersonCreated {
+    onPersonCreated @gqCache(ttl: 10) {
+      id
+    }
+  }
+''';
+
+    expect(
+      () => g.parse(text),
+      throwsA(isA<ParseException>().having(
+        (e) => e.errorMessage,
+        'errorMessage',
+        contains('$gqCache is not allowed on mutations or subscriptions'),
+      )),
+    );
+  });
+
+  test("gqNoCache should not be applied to mutations (schema-level)", () {
+    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Mutation {
+    createPerson: Person @gqNoCache
+  }
+''';
+
+    expect(
+      () => g.parse(text),
+      throwsA(isA<ParseException>().having(
+        (e) => e.errorMessage,
+        'errorMessage',
+        contains('$gqNoCache is not allowed on mutations or subscriptions'),
+      )),
+    );
+  });
+
+  test("gqNoCache should not be applied to mutations (explicit mutation declaration)", () {
+    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Mutation {
+    createPerson: Person
+  }
+
+  mutation CreatePerson {
+    createPerson @gqNoCache {
+      id
+    }
+  }
+''';
+
+    expect(
+      () => g.parse(text),
+      throwsA(isA<ParseException>().having(
+        (e) => e.errorMessage,
+        'errorMessage',
+        contains('$gqNoCache is not allowed on mutations or subscriptions'),
+      )),
+    );
+  });
+
+  test("gqNoCache should not be applied to subscriptions (schema-level)", () {
+    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Subscription {
+    onPersonCreated: Person @gqNoCache
+  }
+''';
+
+    expect(
+      () => g.parse(text),
+      throwsA(isA<ParseException>().having(
+        (e) => e.errorMessage,
+        'errorMessage',
+        contains('$gqNoCache is not allowed on mutations or subscriptions'),
+      )),
+    );
+  });
+
+  test("gqNoCache should not be applied to subscriptions (explicit subscription declaration)", () {
+    final GQGrammar g = GQGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Subscription {
+    onPersonCreated: Person
+  }
+
+  subscription OnPersonCreated {
+    onPersonCreated @gqNoCache {
+      id
+    }
+  }
+''';
+
+    expect(
+      () => g.parse(text),
+      throwsA(isA<ParseException>().having(
+        (e) => e.errorMessage,
+        'errorMessage',
+        contains('$gqNoCache is not allowed on mutations or subscriptions'),
+      )),
+    );
   });
 }

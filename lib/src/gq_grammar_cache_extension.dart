@@ -3,11 +3,45 @@ import 'package:graphlink/src/gq_grammar.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gq_cache_definition.dart';
 import 'package:graphlink/src/model/gq_directive.dart';
+import 'package:graphlink/src/model/gq_directives_mixin.dart';
 import 'package:graphlink/src/model/gq_queries.dart';
+import 'package:graphlink/src/model/gq_token.dart';
 
 final _cacheTagRegExp = RegExp(r'^[a-zA-Z0-9_]+$');
 
 extension GQGrammarCacheExtension on GQGrammar {
+  ///
+  ///gqCache/gqNoCache should not be applied to mutations or subscriptions
+  ///
+  void checkCacheOnMutationsAndSubscriptions() {
+    queries.values.where((e) => e.type != GQQueryType.query).forEach((q) {
+      _checkForCacheExistanceAndThrow(q);
+      _checkCacheOnMutationsAndSubscriptionsElements(q.elements);
+    });
+  }
+
+  void _checkCacheOnMutationsAndSubscriptionsElements(List<GQQueryElement> elements) {
+    elements.forEach(_checkForCacheExistanceAndThrow);
+  }
+
+  void _checkForCacheExistanceAndThrow(GQDirectivesMixin e) {
+    final token = e as GQToken;
+    if (e.hasDirective(gqCache)) {
+      throw ParseException(
+        "$gqCache is not allowed on mutations or subscriptions — "
+        "caching their response would silently skip writes or has no meaning on event streams.",
+        info: token.tokenInfo,
+      );
+    }
+    if (e.hasDirective(gqNoCache)) {
+      throw ParseException(
+        "$gqNoCache is not allowed on mutations or subscriptions — "
+        "these operations are never cached.",
+        info: token.tokenInfo,
+      );
+    }
+  }
+
   ///
   /// checks all gqCache directves
   /// ttl should not be null
