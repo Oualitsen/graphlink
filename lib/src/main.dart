@@ -228,8 +228,7 @@ final _lastGeneratedFiles = <String>{};
 GLGrammar createGrammar(GeneratorConfig config) {
   var mode = config.getMode();
   if (mode == CodeGenerationMode.server) {
-    return GLGrammar(
-        mode: mode, typeMap: config.typeMappings!, identityFields: config.identityFields);
+    return GLGrammar(mode: mode, typeMap: config.typeMappings!, identityFields: config.identityFields);
   } else {
     var clientConfig = config.clientConfig;
 
@@ -246,8 +245,7 @@ GLGrammar createGrammar(GeneratorConfig config) {
   }
 }
 
-Future<Set<String>> generateClientClasses(
-    GLGrammar grammar, GeneratorConfig config, DateTime started,
+Future<Set<String>> generateClientClasses(GLGrammar grammar, GeneratorConfig config, DateTime started,
     {String? pack, noClient = false}) async {
   final serializer = DartSerializer(grammar, generateJsonMethods: true);
   final dcs = DartClientSerializer(grammar, serializer);
@@ -283,7 +281,7 @@ Future<Set<String>> generateClientClasses(
   allProjectedTypes.addAll(grammar.projectedTypes);
   allProjectedTypes.addAll(grammar.projectedInterfaces);
   allProjectedTypes.forEach((k, def) {
-    final subdir = def is GQInterfaceDefinition ? "interfaces" : "types";
+    final subdir = def is GLInterfaceDefinition ? "interfaces" : "types";
 
     var text = serializer.serializeTypeDefinition(def, prefix);
     var r = writeToFile(
@@ -329,8 +327,7 @@ Future<Set<String>> generateClientClasses(
   return paths;
 }
 
-Future<Set<String>> generateClientClassesJava(
-    GLGrammar grammar, GeneratorConfig config, DateTime started,
+Future<Set<String>> generateClientClassesJava(GLGrammar grammar, GeneratorConfig config, DateTime started,
     {String? pack, noClient = false}) async {
   final serializer = JavaSerializer(
     grammar,
@@ -372,14 +369,12 @@ Future<Set<String>> generateClientClassesJava(
   var allProjectedTypes = <String, GLTypeDefinition>{};
   allProjectedTypes.addAll(grammar.projectedTypes);
   allProjectedTypes.addAll(grammar.projectedInterfaces);
-  ['GQClientAdapter', 'GQJsonEncoder', 'GQJsonDecoder']
-      .map((e) => grammar.interfaces[e]!)
-      .forEach((def) {
+  ['GQClientAdapter', 'GQJsonEncoder', 'GQJsonDecoder'].map((e) => grammar.interfaces[e]!).forEach((def) {
     allProjectedTypes[def.token] = def;
   });
 
   allProjectedTypes.forEach((k, def) {
-    final subdir = def is GQInterfaceDefinition ? "interfaces" : "types";
+    final subdir = def is GLInterfaceDefinition ? "interfaces" : "types";
     var text = serializer.serializeTypeDefinition(def, prefix);
     var r = writeToFile(
       data: text,
@@ -411,8 +406,7 @@ Future<Set<String>> generateClientClassesJava(
   return paths;
 }
 
-Future<Set<String>> generateServerClasses(
-    GLGrammar grammar, GeneratorConfig config, DateTime started) async {
+Future<Set<String>> generateServerClasses(GLGrammar grammar, GeneratorConfig config, DateTime started) async {
   final springConfig = config.serverConfig!.spring!;
   final packageName = springConfig.basePackage;
   final destinationDir = config.outputDir;

@@ -52,10 +52,8 @@ class JavaClientSerializer extends GLClientSerilaizer {
       'final GQJsonEncoder encoder;',
       'final GQJsonDecoder decoder;',
       if (_grammar.hasQueries) 'public final ${classNameFromType(GLQueryType.query)} queries;',
-      if (_grammar.hasMutations)
-        'public final ${classNameFromType(GLQueryType.mutation)} mutations;',
-      if (_grammar.hasSubscriptions)
-        'public final ${classNameFromType(GLQueryType.subscription)} subscriptions;',
+      if (_grammar.hasMutations) 'public final ${classNameFromType(GLQueryType.mutation)} mutations;',
+      if (_grammar.hasSubscriptions) 'public final ${classNameFromType(GLQueryType.subscription)} subscriptions;',
       codeGenUtils.createMethod(
         returnType: "public",
         methodName: clientName,
@@ -78,23 +76,18 @@ class JavaClientSerializer extends GLClientSerilaizer {
         ],
       ),
       '',
-      ...GLQueryType.values
-          .map((e) => generateQueriesClassByType(e))
-          .where((e) => e != null)
-          .map((e) => e!),
+      ...GLQueryType.values.map((e) => generateQueriesClassByType(e)).where((e) => e != null).map((e) => e!),
       codeGenUtils.createClass(
         staticClass: true,
         className: "${clientExceptionName} extends RuntimeException",
         statements: [
           'private final List<GraphLinkError> errors;',
-          codeGenUtils
-              .createMethod(returnType: 'public', methodName: clientExceptionName, arguments: [
+          codeGenUtils.createMethod(returnType: 'public', methodName: clientExceptionName, arguments: [
             'List<GraphLinkError> errors',
           ], statements: [
             'this.errors = errors;'
           ]),
-          codeGenUtils
-              .createMethod(returnType: 'private', methodName: clientExceptionName, arguments: [
+          codeGenUtils.createMethod(returnType: 'private', methodName: clientExceptionName, arguments: [
             'Exception ex',
           ], statements: [
             'super(ex);',
@@ -105,15 +98,11 @@ class JavaClientSerializer extends GLClientSerilaizer {
               methodName: 'getErrors',
               arguments: [],
               statements: ['return errors;']),
-          codeGenUtils.createMethod(
-              returnType: 'static ${clientExceptionName}',
-              methodName: 'of',
-              arguments: [
-                'List<?> errors'
-              ],
-              statements: [
-                'return new ${clientExceptionName}(errors.stream().map(e -> GraphLinkError.fromJson((Map<String, Object>)e)).collect(Collectors.toList()));'
-              ])
+          codeGenUtils.createMethod(returnType: 'static ${clientExceptionName}', methodName: 'of', arguments: [
+            'List<?> errors'
+          ], statements: [
+            'return new ${clientExceptionName}(errors.stream().map(e -> GraphLinkError.fromJson((Map<String, Object>)e)).collect(Collectors.toList()));'
+          ])
         ],
       ),
       if (_grammar.hasSubscriptions) _gqSubscriptionListener
@@ -129,14 +118,12 @@ class JavaClientSerializer extends GLClientSerilaizer {
 
   String? generateQueriesClassByType(GLQueryType type) {
     var queries = _grammar.queries.values;
-    var queryList =
-        queries.where((element) => element.type == type && _grammar.hasQueryType(type)).toList();
+    var queryList = queries.where((element) => element.type == type && _grammar.hasQueryType(type)).toList();
     if (queryList.isEmpty) {
       return null;
     }
 
-    return codeGenUtils
-        .createClass(staticClass: true, className: classNameFromType(type), statements: [
+    return codeGenUtils.createClass(staticClass: true, className: classNameFromType(type), statements: [
       ...declareAdapter(type),
       "final Map<String, String> fragmentMap;",
       "final GQJsonEncoder encoder;",
@@ -150,8 +137,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
             'this.fragmentMap = fragmentMap;',
             'this.encoder = encoder;',
             'this.decoder = decoder;',
-            if (type == GLQueryType.subscription)
-              '_handler = new SubscriptionHandler(adapter, decoder, encoder);',
+            if (type == GLQueryType.subscription) '_handler = new SubscriptionHandler(adapter, decoder, encoder);',
           ]),
       ...queryList.map((e) => queryToMethod(e))
     ]);
@@ -203,8 +189,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
     var buffer = StringBuffer("Map<String, Object> variables = new HashMap<>();");
     buffer.writeln();
     def.arguments
-        .map((e) =>
-            'variables.put("${e.dartArgumentName}", ${_serializeArgumentValue(def, e.token)});')
+        .map((e) => 'variables.put("${e.dartArgumentName}", ${_serializeArgumentValue(def, e.token)});')
         .forEach(buffer.writeln);
 
     return buffer.toString();
@@ -244,8 +229,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
       "String encodedPayload = encoder.encode(payload);",
       "String responseText = adapter.execute(encodedPayload);",
       "Map<String, Object> decodedResponse = decoder.decode(responseText);",
-      codeGenUtils
-          .ifStatement(condition: 'decodedResponse.containsKey("errors")', ifBlockStatements: [
+      codeGenUtils.ifStatement(condition: 'decodedResponse.containsKey("errors")', ifBlockStatements: [
         'throw ${clientExceptionName}.of((List)decodedResponse.get("errors"));'
       ], elseBlockStatements: [
         'return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson((Map<String, Object>)decodedResponse.get("data"));'
@@ -258,7 +242,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
     return _callToJson(arg.dartArgumentName, arg.type);
   }
 
-  String _callToJson(String argName, GQType type) {
+  String _callToJson(String argName, GLType type) {
     if (_grammar.inputTypeRequiresProjection(type)) {
       if (type.isList) {
         return "$argName${_getNullableText(type)}.map((e) => ${_callToJson("e", type.inlineType)}).toList()";
@@ -277,7 +261,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
     }
   }
 
-  String _getNullableText(GQType type) {
+  String _getNullableText(GLType type) {
     if (type.nullable) {
       return "?";
     }
@@ -289,9 +273,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
     if (def.arguments.isEmpty) {
       result = [];
     }
-    result = def.arguments
-        .map((e) => "${serializer.serializeType(e.type, false)} ${e.dartArgumentName}")
-        .toList();
+    result = def.arguments.map((e) => "${serializer.serializeType(e.type, false)} ${e.dartArgumentName}").toList();
     if (def.type == GLQueryType.subscription) {
       result.add('${gqSubscriptionListenerRef}<${def.typeDefinition?.token}> listener');
     }
@@ -321,8 +303,7 @@ $_subscriptionHandler
   @override
   Set<GLToken> getImportDependecies(GLGrammar g) {
     var result = {...super.getImportDependecies(g)};
-    result.addAll(
-        ['GQJsonEncoder', 'GQJsonDecoder', 'GQClientAdapter'].map((e) => g.getTypeByName(e)!));
+    result.addAll(['GQJsonEncoder', 'GQJsonDecoder', 'GQClientAdapter'].map((e) => g.getTypeByName(e)!));
     var adapter = g.getTokenByKey('GraphLinkGraphLinkWebSocketAdapter');
     if (adapter != null) {
       result.add(adapter);

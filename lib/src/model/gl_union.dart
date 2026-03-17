@@ -4,10 +4,9 @@ import 'package:graphlink/src/model/gl_directives_mixin.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/token_info.dart';
 
-class GQUnionDefinition extends GLExtensibleToken with GLDirectivesMixin {
+class GLUnionDefinition extends GLExtensibleToken with GLDirectivesMixin {
   final Map<String, TokenInfo> _typeNames = {};
-  GQUnionDefinition(
-      super.name, super.extension, List<TokenInfo> typeNames, List<GLDirectiveValue> directives) {
+  GLUnionDefinition(super.name, super.extension, List<TokenInfo> typeNames, List<GLDirectiveValue> directives) {
     typeNames.forEach(addTypeName);
     directives.forEach(addDirective);
   }
@@ -23,7 +22,7 @@ class GQUnionDefinition extends GLExtensibleToken with GLDirectivesMixin {
 
   @override
   void merge<T extends GLExtensibleToken>(T other) {
-    if (other is GQUnionDefinition) {
+    if (other is GLUnionDefinition) {
       other.typeNames.forEach(addTypeName);
       other.getDirectives().forEach(addDirective);
     }

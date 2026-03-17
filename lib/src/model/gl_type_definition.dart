@@ -11,7 +11,7 @@ import 'package:graphlink/src/serializers/graphq_serializer.dart';
 
 class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
   final Set<TokenInfo> _interfaceNames = {};
-  final Set<GQInterfaceDefinition> _interfaces = {};
+  final Set<GLInterfaceDefinition> _interfaces = {};
   final bool nameDeclared;
   final GLTypeDefinition? derivedFromType;
 
@@ -31,7 +31,7 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
     interfaceNames.forEach(addInterfaceName);
   }
 
-  Set<GQInterfaceDefinition> get interfaces => Set.unmodifiable(_interfaces);
+  Set<GLInterfaceDefinition> get interfaces => Set.unmodifiable(_interfaces);
   Set<TokenInfo> get interfaceNames => Set.unmodifiable(_interfaceNames);
   Set<String> get originalTokens => Set.unmodifiable(_originalTokens);
 
@@ -39,7 +39,7 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
     _interfaceNames.add(token);
   }
 
-  void addInterface(GQInterfaceDefinition iface) {
+  void addInterface(GLInterfaceDefinition iface) {
     _interfaces.add(iface);
     addInterfaceName(iface.tokenInfo);
   }
@@ -69,8 +69,7 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
   String getHash(GLGrammar g) {
     var serilaize = GLGraphqSerializer(g);
     return getSerializableFields(g.mode)
-        .map((f) =>
-            "${f.name}:${serilaize.serializeType(f.type, forceNullable: f.hasInculeOrSkipDiretives)}")
+        .map((f) => "${f.name}:${serilaize.serializeType(f.type, forceNullable: f.hasInculeOrSkipDiretives)}")
         .join(",");
   }
 
@@ -95,8 +94,7 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
     return [...fields];
   }
 
-  bool containsInteface(String interfaceName) =>
-      interfaceNames.where((e) => e.token == interfaceName).isNotEmpty;
+  bool containsInteface(String interfaceName) => interfaceNames.where((e) => e.token == interfaceName).isNotEmpty;
 
   Set<String> getInterfaceNames() => interfaceNames.map((e) => e.token).toSet();
 

@@ -25,7 +25,7 @@ abstract class GLSerializer {
     return serializeWithImport(def, importPrefix, doSerializeEnumDefinition(def));
   }
 
-  String serialzeEnumValue(GQEnumValue value) {
+  String serialzeEnumValue(GLEnumValue value) {
     if (shouldSkipSerialization(directives: value.getDirectives(), mode: mode)) {
       return "";
     }
@@ -34,7 +34,7 @@ abstract class GLSerializer {
 
   String doSerializeEnumDefinition(GLEnumDefinition def);
 
-  String doSerializeEnumValue(GQEnumValue value);
+  String doSerializeEnumValue(GLEnumValue value);
 
   String serializeField(GLField def, bool immutable) {
     if (shouldSkipSerialization(directives: def.getDirectives(), mode: mode)) {
@@ -44,7 +44,7 @@ abstract class GLSerializer {
   }
 
   String doSerializeField(GLField def, bool immutable);
-  String serializeType(GQType def, bool forceNullable, [bool asArray = false]);
+  String serializeType(GLType def, bool forceNullable, [bool asArray = false]);
 
   String serializeInputDefinition(GLInputDefinition def, String importPrefix) {
     if (shouldSkipSerialization(directives: def.getDirectives(), mode: mode)) {
@@ -80,8 +80,7 @@ abstract class GLSerializer {
         grammar.enums[token] ??
         grammar.scalars[token];
     typeWithDirectives = typeWithDirectives as GLDirectivesMixin?;
-    var result =
-        typeWithDirectives?.getDirectiveByName(glExternal)?.getArgValueAsString(glExternalArg);
+    var result = typeWithDirectives?.getDirectiveByName(glExternal)?.getArgValueAsString(glExternalArg);
     if (result == null) {
       // check on typeMap
       return grammar.typeMap[token];
@@ -105,7 +104,7 @@ abstract class GLSerializer {
 
   String serializeImports(GLToken token, String importPrefix) {
     var deps = token.getImportDependecies(grammar);
-    if (token is GQInterfaceDefinition && generateJsonMethods) {
+    if (token is GLInterfaceDefinition && generateJsonMethods) {
       deps = {...deps, ...token.implementations};
     }
     var imports = token.getImports(grammar);

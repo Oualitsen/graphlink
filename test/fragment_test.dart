@@ -12,7 +12,7 @@ void main() {
       name
     ''');
     expect(result is Success, true);
-    GQProjection value = result.value;
+    GLProjection value = result.value;
     expect(value.token, "name");
     expect(value.alias, null);
   });
