@@ -1,59 +1,59 @@
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/token_info.dart';
 
-class GQType extends GLToken {
+class GLType extends GLToken {
   final bool nullable;
 
-  GQType(super.tokenInfo, this.nullable);
+  GLType(super.tokenInfo, this.nullable);
 
   @override
   bool operator ==(Object other) {
-    if (other is GQType) {
+    if (other is GLType) {
       return tokenInfo.token == other.tokenInfo.token && nullable == other.nullable;
     }
     return false;
   }
 
-  GQType get inlineType => this;
-  GQType get firstType => this;
+  GLType get inlineType => this;
+  GLType get firstType => this;
 
-  bool get isList => this is GQListType;
+  bool get isList => this is GLListType;
 
   bool get isNotList => !isList;
 
   @override
   int get hashCode => Object.hash(tokenInfo.token, nullable);
 
-  GQType ofNewName(TokenInfo name) {
-    return GQType(name, nullable);
+  GLType ofNewName(TokenInfo name) {
+    return GLType(name, nullable);
   }
 }
 
-class GQListType extends GQType {
+class GLListType extends GLType {
   ///this could be an instance of GQListType
-  final GQType type;
-  GQListType(this.type, bool nullable) : super(type.tokenInfo, nullable);
+  final GLType type;
+  GLListType(this.type, bool nullable) : super(type.tokenInfo, nullable);
 
   @override
-  GQType get inlineType => type;
+  GLType get inlineType => type;
 
   @override
-  GQType ofNewName(TokenInfo name) {
-    return GQListType(type.ofNewName(name), nullable);
+  GLType ofNewName(TokenInfo name) {
+    return GLListType(type.ofNewName(name), nullable);
   }
 
   ///
   /// a recursive way to find the first TYPE even if this is a list of list of list .... of list of TYPE
   ///
   @override
-  GQType get firstType => type.firstType;
+  GLType get firstType => type.firstType;
 
   @override
   int get hashCode => Object.hash(tokenInfo.token, type, nullable);
 
   @override
   bool operator ==(Object other) {
-    if (other is GQListType) {
+    if (other is GLListType) {
       return type == other.type && nullable == other.nullable;
     }
     return false;

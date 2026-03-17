@@ -32,9 +32,7 @@ const _skippedDirectives = {
 
 bool _shouldSkipDriectiveDefinition(GLDirectiveDefinition def) {
   return _skippedDirectives.contains(def.name.token) ||
-      def.arguments
-          .where((arg) => arg.token == glAnnotation && arg.type.token == "Boolean")
-          .isNotEmpty;
+      def.arguments.where((arg) => arg.token == glAnnotation && arg.type.token == "Boolean").isNotEmpty;
 }
 
 bool _shouldSkipDriectiveValue(GLDirectiveValue def) {
@@ -68,10 +66,8 @@ class GLGraphqSerializer {
 
     /// directives
 
-    var directiveDefinitions = grammar.directiveDefinitions.values
-        .map(serializeDirectiveDefinition)
-        .where((s) => s.isNotEmpty)
-        .join("\n");
+    var directiveDefinitions =
+        grammar.directiveDefinitions.values.map(serializeDirectiveDefinition).where((s) => s.isNotEmpty).join("\n");
 
     buffer.writeln(directiveDefinitions);
 
@@ -94,9 +90,7 @@ class GLGraphqSerializer {
         .join("\n");
     buffer.writeln(interfacesSerial);
     // enums
-    var enumsSerial = filterSerialization(grammar.enums.values, clientMode)
-        .map(serializeEnumDefinition)
-        .join("\n");
+    var enumsSerial = filterSerialization(grammar.enums.values, clientMode).map(serializeEnumDefinition).join("\n");
     buffer.writeln(enumsSerial);
 
     //unions
@@ -122,8 +116,7 @@ scalar ${def.tokenInfo} ${serializeDirectiveValueList(def.getDirectives(skipGene
       return '';
     }
     var arguments = value.getArguments();
-    var args =
-        arguments.isEmpty ? "" : "(${arguments.map((e) => serializeArgumentValue(e)).join(", ")})";
+    var args = arguments.isEmpty ? "" : "(${arguments.map((e) => serializeArgumentValue(e)).join(", ")})";
     return "${value.tokenInfo}$args";
   }
 
@@ -161,10 +154,9 @@ directive ${def.name}${serializeDirectiveArgs(def.arguments)} on ${def.scopes.ma
     return token;
   }
 
-  String serializeSchemaDefinition(GQSchema schema) {
-    var inner = GLQueryType.values
-        .where((value) => grammar.types.containsKey(schema.getByQueryType(value)))
-        .map((value) {
+  String serializeSchemaDefinition(GLSchema schema) {
+    var inner =
+        GLQueryType.values.where((value) => grammar.types.containsKey(schema.getByQueryType(value))).map((value) {
       switch (value) {
         case GLQueryType.query:
           return "query: ${schema.getByQueryType(value)}";
@@ -195,9 +187,8 @@ ${def.getSerializableFields(mode, skipGenerated: true).map(serializeField).map((
 
   String serializeTypeDefinition(GLTypeDefinition def, CodeGenerationMode mode) {
     String type;
-    Iterable<String> interfaces =
-        def.getInterfaceNames().where((i) => !grammar.interfaces[i]!.fromUnion);
-    if (def is GQInterfaceDefinition) {
+    Iterable<String> interfaces = def.getInterfaceNames().where((i) => !grammar.interfaces[i]!.fromUnion);
+    if (def is GLInterfaceDefinition) {
       type = "interface";
     } else {
       type = "type";
@@ -214,11 +205,8 @@ ${def.getSerializableFields(mode, skipGenerated: true).map(serializeField).map((
       result.write(directives);
     }
     result.writeln(" {");
-    result.writeln(def
-        .getSerializableFields(mode, skipGenerated: true)
-        .map(serializeField)
-        .map((e) => e.ident())
-        .join("\n"));
+    result.writeln(
+        def.getSerializableFields(mode, skipGenerated: true).map(serializeField).map((e) => e.ident()).join("\n"));
     result.write("}");
     return result.toString();
   }
@@ -231,7 +219,7 @@ ${"\t"}${def.values.map(serializeEnumValue).join(" ")}
 ''';
   }
 
-  String serializeEnumValue(GQEnumValue enumValue) {
+  String serializeEnumValue(GLEnumValue enumValue) {
     return '''
 ${enumValue.value} ${serializeDirectiveValueList(enumValue.getDirectives(skipGenerated: true))}
 '''
@@ -245,7 +233,7 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
         .trim();
   }
 
-  String serializeType(GQType glType, {bool forceNullable = false}) {
+  String serializeType(GLType glType, {bool forceNullable = false}) {
     String nullableText = forceNullable ? '' : _getNullableText(glType.nullable);
     if (glType.isList) {
       return "[${serializeType(glType.inlineType)}]${nullableText}";
@@ -263,7 +251,7 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
     return "($result)";
   }
 
-  String serializeArgumentValue(GQArgumentValue value) {
+  String serializeArgumentValue(GLArgumentValue value) {
     var token = _escapeDolar(value.token);
     String val = "${value.value}";
     if (escapeDolar) {
@@ -272,29 +260,29 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
     return '${token}: ${val}';
   }
 
-  String serializeInlineFragment(GQInlineFragmentDefinition def) {
+  String serializeInlineFragment(GLInlineFragmentDefinition def) {
     return """... on ${def.onTypeName} ${serializeDirectiveValueList(def.getDirectives(skipGenerated: true))} ${serializeBlock(def.block)} """;
   }
 
-  String serializeBlock(GQFragmentBlockDefinition def) {
+  String serializeBlock(GLFragmentBlockDefinition def) {
     return """{${serializeListText(def.projections.values.map(serializeProjection).toList(), join: " ", withParenthesis: false)}}""";
   }
 
-  String serializeFragmentDefinition(GQFragmentDefinition def) {
+  String serializeFragmentDefinition(GLFragmentDefinition def) {
     return """fragment ${def.fragmentName} on ${def.onTypeName}${serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}${serializeBlock(def.block)}""";
   }
 
   String serializeFragmentDefinitionBase(GLFragmentDefinitionBase def) {
-    if (def is GQFragmentDefinition) {
+    if (def is GLFragmentDefinition) {
       return serializeFragmentDefinition(def);
-    } else if (def is GQInlineFragmentDefinition) {
+    } else if (def is GLInlineFragmentDefinition) {
       return serializeInlineFragment(def);
     }
     throw "serialization of ${def.tokenInfo} is not supported yet";
   }
 
-  String serializeProjection(GQProjection proj) {
-    if (proj is GQInlineFragmentsProjection) {
+  String serializeProjection(GLProjection proj) {
+    if (proj is GLInlineFragmentsProjection) {
       return serializeListText(proj.inlineFragments.map(serializeInlineFragment).toList(),
           join: " ", withParenthesis: false);
     }
@@ -318,7 +306,7 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
     return buffer.toString();
   }
 
-  String serializeUnionDefinition(GQUnionDefinition def) {
+  String serializeUnionDefinition(GLUnionDefinition def) {
     return "union ${def.tokenInfo} = ${serializeListText(def.typeNames.map((e) => e.token).toList(), withParenthesis: false, join: " | ")}";
   }
 
@@ -338,8 +326,7 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
         elementKey: element.alias?.token ?? element.token,
         variables: [...element.arguments.map((e) => e.value?.toString() ?? '')],
         fragmentNames: element.getFragmentsAndDependecies(grammar).map((e) => e.token).toSet(),
-        argumentDeclarations:
-            element.arguments.map((arg) => "${arg.value}: ${serializeType(arg.type)}").toList(),
+        argumentDeclarations: element.arguments.map((arg) => "${arg.value}: ${serializeType(arg.type)}").toList(),
       );
       result.add(dq);
     }

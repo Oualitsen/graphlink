@@ -8,10 +8,9 @@ import 'package:graphlink/src/model/gl_token.dart';
 ///
 
 class GLArgumentDefinition extends GLToken with GLDirectivesMixin {
-  final GQType type;
+  final GLType type;
   final Object? initialValue;
-  GLArgumentDefinition(super.tokenInfo, this.type, List<GLDirectiveValue> directives,
-      {this.initialValue}) {
+  GLArgumentDefinition(super.tokenInfo, this.type, List<GLDirectiveValue> directives, {this.initialValue}) {
     directives.forEach(addDirective);
   }
 
@@ -27,11 +26,11 @@ class GLArgumentDefinition extends GLToken with GLDirectivesMixin {
 ///  some thing like function(if: true, name: "Ahmed" ...)
 ///
 
-class GQArgumentValue extends GLToken {
+class GLArgumentValue extends GLToken {
   Object? value;
   //this is not know at parse type, it must be set only once the grammer parsing is done.
-  late final GQType type;
-  GQArgumentValue(super.tokenInfo, this.value);
+  late final GLType type;
+  GLArgumentValue(super.tokenInfo, this.value);
 
   @override
   String toString() {

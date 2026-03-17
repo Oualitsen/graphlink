@@ -88,7 +88,6 @@ const glOnServer = "glOnServer";
 ///
 const glCache = "@glCache";
 const glCacheTTL = "ttl";
-const glCacheTag = "tag";
 const glNoCache = "@glNoCache";
 const glCacheInvalidate = "@glCacheInvalidate";
 const glCacheTagList = "tags";

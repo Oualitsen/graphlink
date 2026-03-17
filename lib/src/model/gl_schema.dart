@@ -5,10 +5,10 @@ import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/token_info.dart';
 
-class GQSchema extends GLExtensibleToken with GLDirectivesMixin {
+class GLSchema extends GLExtensibleToken with GLDirectivesMixin {
   final Map<GLQueryType, TokenInfo> _schemaMap = {};
 
-  GQSchema(
+  GLSchema(
     super.tokenInfo,
     super.extension, {
     required List<SchemaElement> operationTypes,
@@ -20,8 +20,7 @@ class GQSchema extends GLExtensibleToken with GLDirectivesMixin {
 
   void addSchemaElement(SchemaElement element) {
     if (_schemaMap.containsKey(element.type)) {
-      throw ParseException("Schema already contains a definition for ${element.type}",
-          info: element.name);
+      throw ParseException("Schema already contains a definition for ${element.type}", info: element.name);
     }
     _schemaMap[element.type] = element.name;
   }
@@ -39,7 +38,7 @@ class GQSchema extends GLExtensibleToken with GLDirectivesMixin {
 
   @override
   void merge<T extends GLExtensibleToken>(T other) {
-    if (other is GQSchema) {
+    if (other is GLSchema) {
       other.getDirectives().forEach(addDirective);
       other._schemaMap.forEach((key, value) {
         addSchemaElement(SchemaElement(key, value));

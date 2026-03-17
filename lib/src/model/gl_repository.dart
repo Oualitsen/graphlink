@@ -5,7 +5,7 @@ import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_token_with_fields.dart';
 
-class GLRepository extends GQInterfaceDefinition {
+class GLRepository extends GLInterfaceDefinition {
   GLRepository({
     required super.name,
     required super.nameDeclared,
@@ -15,7 +15,7 @@ class GLRepository extends GQInterfaceDefinition {
     required super.extension,
   }) : super();
 
-  static GLRepository of(GQInterfaceDefinition iface) {
+  static GLRepository of(GLInterfaceDefinition iface) {
     return GLRepository(
       name: iface.tokenInfo,
       nameDeclared: iface.nameDeclared,
@@ -49,8 +49,7 @@ class GLRepository extends GQInterfaceDefinition {
     if (key != null) {
       var token = g.getTokenByKey(key);
       if (token is GLDirectivesMixin) {
-        return GLTokenWithFields.extractImports(token as GLDirectivesMixin, g.mode,
-            skipOwnImports: true);
+        return GLTokenWithFields.extractImports(token as GLDirectivesMixin, g.mode, skipOwnImports: true);
       }
     }
     return {};

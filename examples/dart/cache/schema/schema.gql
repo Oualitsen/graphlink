@@ -1,4 +1,4 @@
-directive @glCache(ttl: Int!, tag: String) on QUERY | MUTATION | FIELD | FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR | SCHEMA
+directive @glCache(ttl: Int!, tags: [String!]) on QUERY | MUTATION | FIELD | FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR | SCHEMA
 
 type Owner {
   id: ID!
@@ -31,7 +31,7 @@ type Query {
   getOwner(id: ID!): Owner
   getCar(id: ID!): Car! @glCache(ttl: 60)
   getCarsCount: Int! @glCache(ttl: 60)
-  getCarName(id: ID!): String! @glCache(ttl: 60)
+  getCarName(id: ID!): String! @glCache(ttl: 60, tags:["test"])
 }
 
 type Mutation {

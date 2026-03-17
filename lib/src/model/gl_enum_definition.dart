@@ -5,11 +5,11 @@ import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/token_info.dart';
 
 class GLEnumDefinition extends GLExtensibleToken with GLDirectivesMixin {
-  final Map<String, GQEnumValue> _values = {};
+  final Map<String, GLEnumValue> _values = {};
 
   GLEnumDefinition(
       {required TokenInfo token,
-      required Iterable<GQEnumValue> values,
+      required Iterable<GLEnumValue> values,
       required List<GLDirectiveValue> directives,
       required bool extension})
       : super(token, extension) {
@@ -18,12 +18,11 @@ class GLEnumDefinition extends GLExtensibleToken with GLDirectivesMixin {
     directives.forEach(addDirective);
   }
 
-  List<GQEnumValue> get values => _values.values.toList();
+  List<GLEnumValue> get values => _values.values.toList();
 
-  void addValue(GQEnumValue value) {
+  void addValue(GLEnumValue value) {
     if (_values.containsKey(value.token)) {
-      throw ParseException("${value.token} already defined on enum ${token}",
-          info: value.tokenInfo);
+      throw ParseException("${value.token} already defined on enum ${token}", info: value.tokenInfo);
     }
     _values[value.token] = value;
   }
@@ -37,13 +36,11 @@ class GLEnumDefinition extends GLExtensibleToken with GLDirectivesMixin {
   }
 }
 
-class GQEnumValue extends GLToken with GLDirectivesMixin {
+class GLEnumValue extends GLToken with GLDirectivesMixin {
   final TokenInfo value;
   final String? comment;
 
-  GQEnumValue(
-      {required this.value, required this.comment, required List<GLDirectiveValue> directives})
-      : super(value) {
+  GLEnumValue({required this.value, required this.comment, required List<GLDirectiveValue> directives}) : super(value) {
     directives.forEach(addDirective);
   }
 }
