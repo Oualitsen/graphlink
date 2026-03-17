@@ -30,6 +30,8 @@ input CreateCarInput {
 type Query {
     getOwner(id: ID!): Owner
     getCar(id: ID!): Car
+    getCarsCount: Int!
+    getCarName(id: ID!): String
 }
 
 type Mutation {

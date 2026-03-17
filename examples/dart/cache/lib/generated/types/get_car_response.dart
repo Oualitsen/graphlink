@@ -8,17 +8,17 @@ import 'package:graphlink_cache_example/generated/types/car.dart';
 
 
 class GetCarResponse {
-   final Car? getCar;
-   GetCarResponse({this.getCar});
+   final Car getCar;
+   GetCarResponse({required this.getCar});
    Map<String, dynamic> toJson() {
       return {
-         'getCar': getCar?.toJson(),
+         'getCar': getCar.toJson(),
       };
    }
 
    static GetCarResponse fromJson(Map<String, dynamic> json) {
       return GetCarResponse(
-         getCar: json['getCar'] == null ? null : Car.fromJson(json['getCar'] as Map<String, dynamic>),
+         getCar: Car.fromJson(json['getCar'] as Map<String, dynamic>),
       );
    }
 
