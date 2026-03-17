@@ -23,6 +23,18 @@ public class CarController {
         return dataStore.findCar(id).orElse(null);
     }
 
+    @QueryMapping
+    public int getCarsCount() {
+        System.out.println("getting cars count");
+        return dataStore.countCars();
+    }
+
+    @QueryMapping
+    public String getCarName(@Argument String id) {
+        System.out.println("getting car name for id = " + id);
+        return dataStore.findCarName(id).orElse(null);
+    }
+
     @MutationMapping
     public Car createCar(@Argument CreateCarInput input) {
         return dataStore.saveCar(input.make(), input.model(), input.year(), input.ownerId());

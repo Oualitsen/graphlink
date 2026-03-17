@@ -39,11 +39,7 @@ class DartClientSerializer extends GLClientSerilaizer {
     buffer.writeln(inMemoryGraphLinkCacheStore);
     buffer.writeln();
 
-    GLQueryType.values
-        .map((e) => generateQueriesClassByType(e))
-        .where((e) => e != null)
-        .map((e) => e!)
-        .forEach((line) {
+    GLQueryType.values.map((e) => generateQueriesClassByType(e)).where((e) => e != null).map((e) => e!).forEach((line) {
       buffer.writeln(line);
     });
 
@@ -51,8 +47,7 @@ class DartClientSerializer extends GLClientSerilaizer {
       'final _fragmMap = <String, String>{};',
       if (_grammar.hasQueries) 'late final ${classNameFromType(GLQueryType.query)} queries;',
       if (_grammar.hasMutations) 'late final ${classNameFromType(GLQueryType.mutation)} mutations;',
-      if (_grammar.hasSubscriptions)
-        'late final ${classNameFromType(GLQueryType.subscription)} subscriptions;',
+      if (_grammar.hasSubscriptions) 'late final ${classNameFromType(GLQueryType.subscription)} subscriptions;',
       'late final $_cacheStoreClassName $_cacheStoreRef;',
       codeGenUtils.createMethod(
         methodName: 'GraphLinkClient',
@@ -89,8 +84,7 @@ class DartClientSerializer extends GLClientSerilaizer {
 
   String? generateQueriesClassByType(GLQueryType type) {
     var queries = _grammar.queries.values;
-    var queryList =
-        queries.where((element) => element.type == type && _grammar.hasQueryType(type)).toList();
+    var queryList = queries.where((element) => element.type == type && _grammar.hasQueryType(type)).toList();
     if (queryList.isEmpty) {
       return null;
     }
@@ -114,10 +108,7 @@ class DartClientSerializer extends GLClientSerilaizer {
             namedArguments: false,
             arguments: ['GraphLinkPayload payload'],
             returnType: 'Future<String>',
-            statements: [
-              'var result = await _adapter(json.encode(payload.toJson()));',
-              'return result;'
-            ]),
+            statements: ['var result = await _adapter(json.encode(payload.toJson()));', 'return result;']),
       if (type == GLQueryType.query)
         codeGenUtils.createMethod(
             returnType: "GraphLinkPayload",
@@ -142,8 +133,7 @@ class DartClientSerializer extends GLClientSerilaizer {
                 'queryBuilder.write(")");'
               ]),
               codeGenUtils.ifStatement(
-                  condition: 'directives.isNotEmpty',
-                  ifBlockStatements: ['queryBuilder.write(directives);']),
+                  condition: 'directives.isNotEmpty', ifBlockStatements: ['queryBuilder.write(directives);']),
               'queryBuilder.write("{");',
               codeGenUtils.forEachLoop(variable: 'partQuery', iterable: 'partQueries', statements: [
                 'queryBuilder.write(partQuery.query);',
@@ -185,19 +175,15 @@ class DartClientSerializer extends GLClientSerilaizer {
             namedArguments: false,
             statements: [
               'final result = jsonDecode(data);',
-              codeGenUtils.ifStatement(
-                  condition: 'result.containsKey("errors")',
-                  ifBlockStatements: [
-                    'throw result["errors"].map((error) => GraphLinkError.fromJson(error)).toList();'
-                  ]),
+              codeGenUtils.ifStatement(condition: 'result.containsKey("errors")', ifBlockStatements: [
+                'throw result["errors"].map((error) => GraphLinkError.fromJson(error)).toList();'
+              ]),
               'final dataMap = result["data"] as Map<String, dynamic>;',
               codeGenUtils.forEachLoop(variable: 'q', iterable: 'remainingQueries', statements: [
-                codeGenUtils.ifStatement(
-                    condition: 'q.ttl > 0 && dataMap[q.elementKey] != null',
-                    ifBlockStatements: [
-                      'final entry = _GraphLinkCacheEntry(jsonEncode(dataMap[q.elementKey]), DateTime.now().millisecondsSinceEpoch + q.ttl * 1000);',
-                      '${_cacheStoreRef}.set(q.cacheKey!, jsonEncode(entry.toJson()));'
-                    ])
+                codeGenUtils.ifStatement(condition: 'q.ttl > 0 && dataMap[q.elementKey] != null', ifBlockStatements: [
+                  'final entry = _GraphLinkCacheEntry(jsonEncode(dataMap[q.elementKey]), DateTime.now().millisecondsSinceEpoch + q.ttl * 1000);',
+                  '${_cacheStoreRef}.set(q.cacheKey!, jsonEncode(entry.toJson()));'
+                ])
               ]),
               'return parser.call(dataMap);'
             ])
@@ -259,21 +245,18 @@ class DartClientSerializer extends GLClientSerilaizer {
           'final partailQueries = ${_grammar.serializer.divideQueryDefinition(def, _grammar).map((e) => serialzePartialQuery(e)).toList()};',
           'final responseMap = <String, dynamic>{};',
           'final cacheFetchFutures = <Future>[];',
-          codeGenUtils.forEachLoop(
-              variable: "partQuery",
-              iterable: "partailQueries.where((e) => e.ttl > 0)",
-              statements: [
-                "cacheFetchFutures.add(_getFromCache(partQuery.cacheKey!)",
-                ".asStream().where((e) => e != null).first.then((data) ${codeGenUtils.block([
-                      'responseMap[partQuery.elementKey] = data;'
-                    ])}));"
-              ]),
+          codeGenUtils
+              .forEachLoop(variable: "partQuery", iterable: "partailQueries.where((e) => e.ttl > 0)", statements: [
+            "cacheFetchFutures.add(_getFromCache(partQuery.cacheKey!)",
+            ".asStream().where((e) => e != null).map((e) => e!).first.then((data) ${codeGenUtils.block([
+                  'responseMap[partQuery.elementKey] = jsonDecode(data);'
+                ])}));"
+          ]),
           'await Future.wait(cacheFetchFutures.map((f) => f.catchError((_) => null)));',
           'var remaining = partailQueries.where((e) => !responseMap.containsKey(e.elementKey)).toSet();',
-          codeGenUtils.ifStatement(condition: 'remaining.isEmpty', ifBlockStatements: [
-            'final dataMap = {"data": responseMap};',
-            'return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson(dataMap);'
-          ]),
+          codeGenUtils.ifStatement(
+              condition: 'remaining.isEmpty',
+              ifBlockStatements: ['return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson(responseMap);']),
           "final remainingQueries = partailQueries.where((e) => !responseMap.containsKey(e.elementKey)).toList();",
           "final payload = _buildPayload(remainingQueries, operationName, '${_grammar.serializer.serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}');",
           'final responseText = await _getFromSource(payload);',
@@ -307,9 +290,7 @@ _GraphLinkPartialQuery(
   String generateVariables(GLQueryDefinition def) {
     var buffer = StringBuffer("final variables = <String, dynamic>{");
     buffer.writeln();
-    def.arguments
-        .map((e) => "'${e.dartArgumentName}': ${_serializeArgumentValue(def, e.token)},")
-        .forEach((line) {
+    def.arguments.map((e) => "'${e.dartArgumentName}': ${_serializeArgumentValue(def, e.token)},").forEach((line) {
       buffer.writeln(line.ident());
     });
     buffer.writeln("};");

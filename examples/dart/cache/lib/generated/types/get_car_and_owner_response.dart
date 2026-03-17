@@ -9,19 +9,19 @@ import 'package:graphlink_cache_example/generated/types/owner.dart';
 
 
 class GetCarAndOwnerResponse {
-   final Car? car;
+   final Car car;
    final Owner? getOwner;
-   GetCarAndOwnerResponse({this.car, this.getOwner});
+   GetCarAndOwnerResponse({required this.car, this.getOwner});
    Map<String, dynamic> toJson() {
       return {
-         'car': car?.toJson(),
+         'car': car.toJson(),
          'getOwner': getOwner?.toJson(),
       };
    }
 
    static GetCarAndOwnerResponse fromJson(Map<String, dynamic> json) {
       return GetCarAndOwnerResponse(
-         car: json['car'] == null ? null : Car.fromJson(json['car'] as Map<String, dynamic>),
+         car: Car.fromJson(json['car'] as Map<String, dynamic>),
          getOwner: json['getOwner'] == null ? null : Owner.fromJson(json['getOwner'] as Map<String, dynamic>),
       );
    }
