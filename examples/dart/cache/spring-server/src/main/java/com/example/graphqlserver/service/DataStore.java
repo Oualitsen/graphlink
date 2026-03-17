@@ -44,4 +44,12 @@ public class DataStore {
         cars.put(id, car);
         return car;
     }
+
+    public int countCars() {
+        return cars.size();
+    }
+
+    public Optional<String> findCarName(String id) {
+        return Optional.ofNullable(cars.get(id)).map(c -> c.make() + " " + c.model());
+    }
 }

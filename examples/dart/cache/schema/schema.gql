@@ -29,7 +29,9 @@ input CreateCarInput {
 
 type Query {
   getOwner(id: ID!): Owner
-  getCar(id: ID!): Car
+  getCar(id: ID!): Car! @glCache(ttl: 60)
+  getCarsCount: Int! @glCache(ttl: 60)
+  getCarName(id: ID!): String! @glCache(ttl: 60)
 }
 
 type Mutation {
