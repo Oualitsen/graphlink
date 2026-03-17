@@ -18,8 +18,7 @@ void main() async {
 
       expect(parsed is Success, true);
       var frag = g.fragments["userFrag"]!;
-      expect(frag.dependecies.map((e) => (e as GQFragmentDefinition).fragmentName),
-          contains("beFrag"));
+      expect(frag.dependecies.map((e) => (e as GLFragmentDefinition).fragmentName), contains("beFrag"));
     });
   });
   group("Fragment tests", () {
@@ -38,13 +37,11 @@ void main() async {
       final GLGrammar g = GLGrammar();
       var parser = g.buildFrom(g.fullGrammar().end());
 
-      var parsed =
-          parser.parse(File("test/fragment/fragment_dependecy.graphql").readAsStringSync());
+      var parsed = parser.parse(File("test/fragment/fragment_dependecy.graphql").readAsStringSync());
       expect(parsed is Success, true);
 
       final frag = g.fragments["AddressFragment"]!;
-      expect(frag.dependecies.map((e) => (e as GQFragmentDefinition).fragmentName),
-          containsAll(["StateFragment"]));
+      expect(frag.dependecies.map((e) => (e as GLFragmentDefinition).fragmentName), containsAll(["StateFragment"]));
       expect(g.fragments.length, greaterThanOrEqualTo(2));
     });
   });

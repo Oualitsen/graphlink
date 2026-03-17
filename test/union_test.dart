@@ -9,7 +9,7 @@ void main() {
   test("Union serialization", () {
     final GLGrammar g = GLGrammar();
     final serialzer = GLGraphqSerializer(g);
-    var union = GQUnionDefinition("type".toToken(), false, ["User".toToken()], []);
+    var union = GLUnionDefinition("type".toToken(), false, ["User".toToken()], []);
 
     expect(serialzer.serializeUnionDefinition(union), "union type = User");
   });
@@ -17,15 +17,14 @@ void main() {
   test("Union serialization with multiple types", () {
     final GLGrammar g = GLGrammar();
     final serialzer = GLGraphqSerializer(g);
-    var union =
-        GQUnionDefinition("type".toToken(), false, ["User".toToken(), "Client".toToken()], []);
+    var union = GLUnionDefinition("type".toToken(), false, ["User".toToken(), "Client".toToken()], []);
     expect(serialzer.serializeUnionDefinition(union), "union type = User | Client");
   });
 
   test("Parse union 1", () {
     final GLGrammar g = GLGrammar();
 
-    var parser = g.buildFrom<GQUnionDefinition>(g.unionDefinition().end());
+    var parser = g.buildFrom<GLUnionDefinition>(g.unionDefinition().end());
     var result = parser.parse('''
     union MyTyp = User | Client
     ''');
@@ -37,7 +36,7 @@ void main() {
   test("Parse union 2", () {
     final GLGrammar g = GLGrammar();
 
-    var parser = g.buildFrom<GQUnionDefinition>(g.unionDefinition().end());
+    var parser = g.buildFrom<GLUnionDefinition>(g.unionDefinition().end());
     var result = parser.parse('''
     union type = User
     ''');

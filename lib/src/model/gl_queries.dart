@@ -40,18 +40,13 @@ class GLQueryDefinition extends GLToken with GLDirectivesMixin {
 
   Set<GLFragmentDefinitionBase> fragments(GLGrammar g) {
     if (_allFrags == null) {
-      var frags = fragmentNames
-          .map((e) => g.getFragmentByName(e))
-          .where((e) => e != null)
-          .map((e) => e!)
-          .toSet();
+      var frags = fragmentNames.map((e) => g.getFragmentByName(e)).where((e) => e != null).map((e) => e!).toSet();
       _allFrags = {...frags, ...frags.expand((e) => e.dependecies)};
     }
     return _allFrags!;
   }
 
-  GLQueryDefinition(super.tokenInfo, List<GLDirectiveValue> directives, this.arguments,
-      this.elements, this.type) {
+  GLQueryDefinition(super.tokenInfo, List<GLDirectiveValue> directives, this.arguments, this.elements, this.type) {
     directives.forEach(addDirective);
     checkVariables();
   }
@@ -128,16 +123,16 @@ class GLQueryDefinition extends GLToken with GLDirectivesMixin {
 }
 
 class GLQueryElement extends GLToken with GLDirectivesMixin {
-  final GQFragmentBlockDefinition? block;
+  final GLFragmentBlockDefinition? block;
 
-  final List<GQArgumentValue> arguments;
+  final List<GLArgumentValue> arguments;
   final TokenInfo? alias;
   GLCacheDefinition? cacheDefinition;
 
   ///
   ///This is unknown on parse time. It is filled on run time.
   ///
-  late final GQType returnType;
+  late final GLType returnType;
 
   ///
   ///This is unknown on parse time. It is filled on run time.
@@ -159,11 +154,9 @@ class GLQueryElement extends GLToken with GLDirectivesMixin {
     return _allFrags;
   }
 
-  Set<String> _getFragmentNamesByBlock(GQFragmentBlockDefinition block) {
-    var set1 = block.projections.values
-        .where((element) => element.isFragmentReference)
-        .map((e) => e.fragmentName!)
-        .toSet();
+  Set<String> _getFragmentNamesByBlock(GLFragmentBlockDefinition block) {
+    var set1 =
+        block.projections.values.where((element) => element.isFragmentReference).map((e) => e.fragmentName!).toSet();
     var set2 = block.projections.values
         .where((element) => !element.isFragmentReference && element.block != null)
         .map((e) => e.block!)
@@ -172,23 +165,21 @@ class GLQueryElement extends GLToken with GLDirectivesMixin {
     return {...set1, ...set2};
   }
 
-  GQType _getReturnProjectedType(GLTypeDefinition? projectedType, GQType returnType) {
+  GLType _getReturnProjectedType(GLTypeDefinition? projectedType, GLType returnType) {
     if (projectedType == null) {
       return returnType;
     } else {
-      if (returnType is GQListType) {
-        return GQListType(
-            _getReturnProjectedType(projectedType, returnType.type), returnType.nullable);
+      if (returnType is GLListType) {
+        return GLListType(_getReturnProjectedType(projectedType, returnType.type), returnType.nullable);
       } else {
-        return GQType(projectedType.tokenInfo, returnType.nullable);
+        return GLType(projectedType.tokenInfo, returnType.nullable);
       }
     }
   }
 
-  GQType get returnProjectedType => _getReturnProjectedType(projectedType, returnType);
+  GLType get returnProjectedType => _getReturnProjectedType(projectedType, returnType);
 
-  GLQueryElement(
-      super.tokenInfo, List<GLDirectiveValue> directives, this.block, this.arguments, this.alias) {
+  GLQueryElement(super.tokenInfo, List<GLDirectiveValue> directives, this.block, this.arguments, this.alias) {
     directives.forEach(addDirective);
   }
 

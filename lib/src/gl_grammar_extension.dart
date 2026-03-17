@@ -117,15 +117,13 @@ extension GLGrammarExtension on GLGrammar {
     }
   }
 
-  void handleGqExternal() {
+  void handleGLExternal() {
     [...inputs.values, ...types.values, ...interfaces.values, ...scalars.values, ...enums.values]
         .map((f) => f as GLDirectivesMixin)
         .where((t) => t.getDirectiveByName(glExternal) != null)
         .forEach((f) {
-      f.addDirectiveIfAbsent(
-          GLDirectiveValue.createDirectiveValue(directiveName: glSkipOnClient, generated: true));
-      f.addDirectiveIfAbsent(
-          GLDirectiveValue.createDirectiveValue(directiveName: glSkipOnServer, generated: true));
+      f.addDirectiveIfAbsent(GLDirectiveValue.createDirectiveValue(directiveName: glSkipOnClient, generated: true));
+      f.addDirectiveIfAbsent(GLDirectiveValue.createDirectiveValue(directiveName: glSkipOnServer, generated: true));
     });
   }
 
@@ -146,7 +144,7 @@ extension GLGrammarExtension on GLGrammar {
     return enums.values.where(_filterByMode).toList();
   }
 
-  List<GQInterfaceDefinition> getSerializableInterfaces() {
+  List<GLInterfaceDefinition> getSerializableInterfaces() {
     return interfaces.values.where(_filterByMode).toList();
   }
 
@@ -161,14 +159,10 @@ extension GLGrammarExtension on GLGrammar {
 
   void skipFieldOfSkipOnServerTypes() {
     types.values.where((t) => t.getDirectiveByName(glSkipOnServer) != null).forEach((t) {
-      var argValues = t
-          .getDirectiveByName(glSkipOnServer)!
-          .getArguments()
-          .where((e) => e.token != glMapTo)
-          .toList();
+      var argValues = t.getDirectiveByName(glSkipOnServer)!.getArguments().where((e) => e.token != glMapTo).toList();
       for (var f in t.fields) {
-        f.addDirectiveIfAbsent(GLDirectiveValue.createDirectiveValue(
-            directiveName: glSkipOnServer, generated: true, args: argValues));
+        f.addDirectiveIfAbsent(
+            GLDirectiveValue.createDirectiveValue(directiveName: glSkipOnServer, generated: true, args: argValues));
       }
     });
   }
@@ -186,8 +180,8 @@ extension GLGrammarExtension on GLGrammar {
   void _doGenerateServices(List<GLField> fields, GLQueryType type) {
     for (var field in fields) {
       var name = _getServiceName(field);
-      var service = services[name] ??= GLService(
-          name: name.toToken(), nameDeclared: true, directives: [], fields: [], interfaceNames: {});
+      var service = services[name] ??=
+          GLService(name: name.toToken(), nameDeclared: true, directives: [], fields: [], interfaceNames: {});
       service.addField(field);
       service.setFieldType(field.name.token, type);
 
@@ -208,8 +202,7 @@ extension GLGrammarExtension on GLGrammar {
   }
 
   String _getServiceName(GLField field, [String suffix = "Service"]) {
-    var serviceName =
-        field.getDirectiveByName(glServiceName)?.getArgValueAsString(glServiceNameArg);
+    var serviceName = field.getDirectiveByName(glServiceName)?.getArgValueAsString(glServiceNameArg);
     if (serviceName == null) {
       if (typeRequiresProjection(field.type)) {
         serviceName = "${field.type.token.firstUp}$suffix";
@@ -227,8 +220,7 @@ extension GLGrammarExtension on GLGrammar {
     var mapsTo = type.getDirectiveByName(glSkipOnServer)?.getArgValueAsString(glMapTo);
     var skipOnServerFields = type.getSkipOnServerFields();
     if (mapsTo != null) {
-      var list =
-          skipOnServerFields.where((e) => e.type.token == mapsTo && e.type.isNotList).toList();
+      var list = skipOnServerFields.where((e) => e.type.token == mapsTo && e.type.isNotList).toList();
       if (list.length == 1) {
         return list.first;
       }
@@ -248,12 +240,7 @@ extension GLGrammarExtension on GLGrammar {
       if (serviceMappings.isNotEmpty) {
         var serviceName = serviceMappingName(type.token);
         var service = services[serviceName] ??
-            GLService(
-                name: serviceName.toToken(),
-                nameDeclared: false,
-                fields: [],
-                directives: [],
-                interfaceNames: {});
+            GLService(name: serviceName.toToken(), nameDeclared: false, fields: [], directives: [], interfaceNames: {});
         serviceMappings.forEach(service.addMapping);
         services[serviceName] = service;
 
@@ -346,10 +333,7 @@ extension GLGrammarExtension on GLGrammar {
   }
 
   void proparageAnnotationsOnFields() {
-    extensibleTokens.values
-        .expand((e) => e.data)
-        .whereType<GLTokenWithFields>()
-        .forEach(_propagateAnnotations);
+    extensibleTokens.values.expand((e) => e.data).whereType<GLTokenWithFields>().forEach(_propagateAnnotations);
   }
 
   void mergeTokens() {
@@ -394,7 +378,7 @@ extension GLGrammarExtension on GLGrammar {
   void convertUnionsToInterfaces() {
     //
     unions.forEach((k, union) {
-      var interfaceDef = GQInterfaceDefinition(
+      var interfaceDef = GLInterfaceDefinition(
         name: union.tokenInfo,
         nameDeclared: false,
         fields: getUnionFields(union),
@@ -416,8 +400,7 @@ extension GLGrammarExtension on GLGrammar {
     for (var arg in element.arguments) {
       var list = query.arguments.where((a) => a.token == arg.value).toList();
       if (list.isEmpty) {
-        throw ParseException("Could not find argument ${arg.value} on query ${query.tokenInfo}",
-            info: arg.tokenInfo);
+        throw ParseException("Could not find argument ${arg.value} on query ${query.tokenInfo}", info: arg.tokenInfo);
       }
       arg.type = list.first.type;
     }
@@ -426,8 +409,8 @@ extension GLGrammarExtension on GLGrammar {
   fillQueryElementsReturnType() {
     queries.forEach((name, queryDefinition) {
       for (var element in queryDefinition.elements) {
-        element.returnType = getTypeFromFieldName(
-            element.token, schema.getByQueryType(queryDefinition.type), element.tokenInfo);
+        element.returnType =
+            getTypeFromFieldName(element.token, schema.getByQueryType(queryDefinition.type), element.tokenInfo);
         fillQueryElementArgumentTypes(element, queryDefinition);
       }
     });
@@ -437,35 +420,32 @@ extension GLGrammarExtension on GLGrammar {
     return queries.values.expand((q) => q.elements).toList();
   }
 
-  GQType getFieldType(TokenInfo fieldNameToken, String typeName) {
+  GLType getFieldType(TokenInfo fieldNameToken, String typeName) {
     var fieldName = fieldNameToken.token;
     var onType = getType(fieldNameToken.ofNewName(typeName));
 
     var result = onType.fields.where((element) => element.name.token == fieldName);
     if (result.isEmpty && fieldName != GLGrammar.typename) {
-      throw ParseException("Could not find field '$fieldName' on type '$typeName'",
-          info: fieldNameToken);
+      throw ParseException("Could not find field '$fieldName' on type '$typeName'", info: fieldNameToken);
     } else {
       if (result.isNotEmpty) {
         return result.first.type;
       } else {
-        return GQType(getLangType("String").toToken(), false);
+        return GLType(getLangType("String").toToken(), false);
       }
     }
   }
 
   void updateFragmentAllTypesDependencies() {
     fragments.forEach((key, fragment) {
-      fragment.block.projections.values
-          .where((projection) => projection.block == null)
-          .forEach((projection) {
+      fragment.block.projections.values.where((projection) => projection.block == null).forEach((projection) {
         handleFragmentDepenecy(fragment, projection);
       });
     });
   }
 
-  void handleFragmentDepenecy(GLFragmentDefinitionBase fragment, GQProjection projection) {
-    if (projection is GQInlineFragmentsProjection) {
+  void handleFragmentDepenecy(GLFragmentDefinitionBase fragment, GLProjection projection) {
+    if (projection is GLInlineFragmentsProjection) {
       for (var inlineFrag in projection.inlineFragments) {
         inlineFrag.block.projections.forEach((k, proj) {
           if (projection.block == null) {
@@ -486,13 +466,12 @@ extension GLGrammarExtension on GLGrammar {
     }
   }
 
-  GQType getTypeFromFieldName(String fieldName, String typeName, TokenInfo fieldToken) {
+  GLType getTypeFromFieldName(String fieldName, String typeName, TokenInfo fieldToken) {
     var type = getType(fieldToken.ofNewName(typeName));
 
     var fields = type.fields.where((element) => element.name.token == fieldName).toList();
     if (fields.isEmpty) {
-      throw ParseException("$typeName does not declare a field with name $fieldName",
-          info: type.tokenInfo);
+      throw ParseException("$typeName does not declare a field with name $fieldName", info: type.tokenInfo);
     }
     return fields.first.type;
   }
@@ -510,25 +489,24 @@ extension GLGrammarExtension on GLGrammar {
     });
   }
 
-  GQFragmentDefinition createAllFieldsFragment(GLTypeDefinition typeDefinition) {
+  GLFragmentDefinition createAllFieldsFragment(GLTypeDefinition typeDefinition) {
     var key = typeDefinition.token;
 
     var allFieldsKey = allFieldsFragmentName(key);
     if (fragments[allFieldsKey] != null) {
-      throw ParseException("Fragment $allFieldsKey is Already defined",
-          info: fragments[allFieldsKey]!.tokenInfo);
+      throw ParseException("Fragment $allFieldsKey is Already defined", info: fragments[allFieldsKey]!.tokenInfo);
     }
-    if (typeDefinition is GQInterfaceDefinition) {
+    if (typeDefinition is GLInterfaceDefinition) {
       var projection = _createProjectionForInterface(typeDefinition);
-      var block = GQFragmentBlockDefinition([projection]);
-      return GQFragmentDefinition(allFieldsKey.toToken(), typeDefinition.tokenInfo, block, []);
+      var block = GLFragmentBlockDefinition([projection]);
+      return GLFragmentDefinition(allFieldsKey.toToken(), typeDefinition.tokenInfo, block, []);
     } else {
-      return GQFragmentDefinition(
+      return GLFragmentDefinition(
           allFieldsKey.toToken(),
           typeDefinition.tokenInfo,
-          GQFragmentBlockDefinition(typeDefinition
+          GLFragmentBlockDefinition(typeDefinition
               .getSerializableFields(mode)
-              .map((field) => GQProjection(
+              .map((field) => GLProjection(
                     fragmentName: null,
                     token: field.name,
                     alias: null,
@@ -555,15 +533,14 @@ extension GLGrammarExtension on GLGrammar {
     return "${allFields}_$token";
   }
 
-  GQFragmentBlockDefinition? createAllFieldBlock(GLField field) {
+  GLFragmentBlockDefinition? createAllFieldBlock(GLField field) {
     if (!typeRequiresProjection(field.type)) {
       return null;
     }
-    return GQFragmentBlockDefinition([
-      GQProjection(
+    return GLFragmentBlockDefinition([
+      GLProjection(
         fragmentName: allFieldsFragmentName(field.type.inlineType.token),
-        token: field.type.inlineType.tokenInfo
-            .ofNewName(allFieldsFragmentName(field.type.inlineType.token)),
+        token: field.type.inlineType.tokenInfo.ofNewName(allFieldsFragmentName(field.type.inlineType.token)),
         alias: null,
         block: null,
         directives: [],
@@ -590,10 +567,10 @@ extension GLGrammarExtension on GLGrammar {
 
   void fillProjectedInterfaces() {
     for (var iface in tempProjectedInterfaces.values) {
-      var projections = iface.fields.map((field) => GQProjection(
-          fragmentName: null, token: field.name, alias: null, block: null, directives: []));
+      var projections = iface.fields.map(
+          (field) => GLProjection(fragmentName: null, token: field.name, alias: null, block: null, directives: []));
       var newName = _generateName(iface.derivedFromType!.token, projections, []);
-      var newIface = GQInterfaceDefinition(
+      var newIface = GLInterfaceDefinition(
         name: iface.tokenInfo.ofNewName(newName.value),
         nameDeclared: newName.declared,
         fields: iface.fields,
@@ -602,7 +579,7 @@ extension GLGrammarExtension on GLGrammar {
         extension: false,
       );
       iface.implementations.forEach(newIface.addImplementation);
-      var added = addToProjectedTypes(newIface) as GQInterfaceDefinition;
+      var added = addToProjectedTypes(newIface) as GLInterfaceDefinition;
       iface.implementations.forEach(added.addImplementation);
       for (var impl in added.implementations) {
         impl.addInterface(added);
@@ -632,7 +609,7 @@ extension GLGrammarExtension on GLGrammar {
     for (var type in clientInterfaces) {
       var result = types[type] ?? interfaces[type];
       if (result != null) {
-        if (result is GQInterfaceDefinition) {
+        if (result is GLInterfaceDefinition) {
           projectedInterfaces[type] = result;
         } else {
           projectedTypes[type] = result;
@@ -641,7 +618,7 @@ extension GLGrammarExtension on GLGrammar {
     }
   }
 
-  List<GLField> _getCommonInterfaceFields(GQInterfaceDefinition def) {
+  List<GLField> _getCommonInterfaceFields(GLInterfaceDefinition def) {
     // search in projected types, types that have implemented this interface
     var types = def.implementations;
     if (types.isEmpty) {
@@ -683,8 +660,7 @@ extension GLGrammarExtension on GLGrammar {
     queries.forEach((key, query) {
       var projectedType = query.getGeneratedTypeDefinition();
       if (projectedTypes.containsKey(projectedType.token)) {
-        throw ParseException(
-            "Type ${projectedType.tokenInfo.token} has already been defined, please rename it",
+        throw ParseException("Type ${projectedType.tokenInfo.token} has already been defined, please rename it",
             info: projectedType.tokenInfo);
       }
       var def = addToProjectedTypes(projectedType);
@@ -696,12 +672,11 @@ extension GLGrammarExtension on GLGrammar {
     var type = element.returnType;
     var block = element.block!;
     var onType = getType(type.inlineType.tokenInfo);
-    return createProjectedType(
-        type: onType, projectionMap: block.projections, directives: element.getDirectives());
+    return createProjectedType(type: onType, projectionMap: block.projections, directives: element.getDirectives());
   }
 
   GLTypeDefinition addToProjectedTypes(GLTypeDefinition definition, {bool similarityCheck = true}) {
-    var targetStore = definition is GQInterfaceDefinition ? projectedInterfaces : projectedTypes;
+    var targetStore = definition is GLInterfaceDefinition ? projectedInterfaces : projectedTypes;
     if (definition.nameDeclared) {
       var type = targetStore[definition.token];
       if (type == null) {
@@ -712,7 +687,7 @@ extension GLGrammarExtension on GLGrammar {
               var currentDef = targetStore[e.token];
               if (currentDef != null) {
                 currentDef.interfaceNames.forEach(definition.addInterfaceName);
-                if (currentDef is GQInterfaceDefinition && definition is GQInterfaceDefinition) {
+                if (currentDef is GLInterfaceDefinition && definition is GLInterfaceDefinition) {
                   currentDef.implementations.forEach(definition.addImplementation);
                 }
               }
@@ -727,13 +702,12 @@ extension GLGrammarExtension on GLGrammar {
       } else {
         if (type.isSimilarTo(definition, this)) {
           type.addOriginalToken(definition.token);
-          if (type is GQInterfaceDefinition && definition is GQInterfaceDefinition) {
+          if (type is GLInterfaceDefinition && definition is GLInterfaceDefinition) {
             definition.implementations.forEach(type.addImplementation);
           }
           return type;
         } else {
-          var typeTokenInfo =
-              type.getDirectiveByName(glTypeNameDirective)?.getArgumentByName('name')?.tokenInfo;
+          var typeTokenInfo = type.getDirectiveByName(glTypeNameDirective)?.getArgumentByName('name')?.tokenInfo;
           throw ParseException(
               "You have names two object the same name '${definition.tokenInfo}' but have diffrent fields. ${definition.tokenInfo}_1.fields are: [${type.fields.map((f) => "${f.name}: ${serializer.serializeType(f.type)}").toList()}], ${definition.tokenInfo}_2.fields are: [${definition.fields.map((f) => "${f.name}: ${serializer.serializeType(f.type)}").toList()}]. Please consider renaming one of them",
               info: typeTokenInfo ?? type.tokenInfo);
@@ -748,11 +722,11 @@ extension GLGrammarExtension on GLGrammar {
         var first = similarDefinitions.first;
         first.addOriginalToken(definition.token);
         definition.interfaceNames.forEach(first.addInterfaceName);
-        if (definition is GQInterfaceDefinition && first is GQInterfaceDefinition) {
+        if (definition is GLInterfaceDefinition && first is GLInterfaceDefinition) {
           definition.implementations.forEach(first.addImplementation);
         }
         targetStore[first.token] = first;
-        if (first is GQInterfaceDefinition && definition is GQInterfaceDefinition) {
+        if (first is GLInterfaceDefinition && definition is GLInterfaceDefinition) {
           definition.implementations.forEach(first.addImplementation);
         }
         return first;
@@ -766,13 +740,13 @@ extension GLGrammarExtension on GLGrammar {
   }
 
   List<GLTypeDefinition> findSimilarTo(GLTypeDefinition definition) {
-    var store = definition is GQInterfaceDefinition
+    var store = definition is GLInterfaceDefinition
         ? [...projectedInterfaces.values, ...interfaces.values]
         : [...projectedTypes.values, ...typesWithNoResolvers];
     return store.where((element) => element.isSimilarTo(definition, this)).toList();
   }
 
-  String getUniqueName(Iterable<GQProjection> projections) {
+  String getUniqueName(Iterable<GLProjection> projections) {
     //@Todo check the inline fragment case.
     var keys = projections
         .map((e) => e.token)
@@ -785,7 +759,7 @@ extension GLGrammarExtension on GLGrammar {
   }
 
   GeneratedTypeName _generateName(
-      String originalName, Iterable<GQProjection> projections, List<GLDirectiveValue> directives) {
+      String originalName, Iterable<GLProjection> projections, List<GLDirectiveValue> directives) {
     String? name = getNameValueFromDirectives(directives);
 
     if (name != null) {
@@ -831,15 +805,15 @@ extension GLGrammarExtension on GLGrammar {
     }
   }
 
-  String generateAllFieldFragment(GQType type) {
+  String generateAllFieldFragment(GLType type) {
     // check if type is an interface
 
     if (interfaces.containsKey(type.token)) {
       var iface = interfaces[type.token]!;
-      GQProjection projection = _createProjectionForInterface(iface);
+      GLProjection projection = _createProjectionForInterface(iface);
 
-      var block = GQFragmentBlockDefinition([projection]);
-      var frag = GQInlineFragmentDefinition(iface.tokenInfo, block, []);
+      var block = GLFragmentBlockDefinition([projection]);
+      var frag = GLInlineFragmentDefinition(iface.tokenInfo, block, []);
       addFragmentDefinition(frag);
       return frag.token;
     }
@@ -849,64 +823,54 @@ extension GLGrammarExtension on GLGrammar {
   }
 
   void _generateForField(GLField field, GLQueryType queryType) {
-    GQFragmentBlockDefinition? block;
+    GLFragmentBlockDefinition? block;
     if (typeRequiresProjection(field.type)) {
       final fragName = generateAllFieldFragment(field.type);
-      block = GQFragmentBlockDefinition([
-        GQProjection(
-            fragmentName: fragName,
-            token: fragName.toToken(),
-            alias: null,
-            block: null,
-            directives: [])
-      ]);
+      block = GLFragmentBlockDefinition(
+          [GLProjection(fragmentName: fragName, token: fragName.toToken(), alias: null, block: null, directives: [])]);
     }
 
     var argValues = field.arguments.map((arg) {
-      return GQArgumentValue(arg.tokenInfo, "\$${arg.tokenInfo}");
+      return GLArgumentValue(arg.tokenInfo, "\$${arg.tokenInfo}");
     }).toList();
     var queryElement = GLQueryElement(field.name, [], block, argValues, defaultAlias?.toToken());
-    var directives =
-        field.getDirectives().where((e) => [glCache, glNoCache].contains(e.token)).toList();
+    var directives = field.getDirectives().where((e) => [glCache, glNoCache].contains(e.token)).toList();
     final def = GLQueryDefinition(
         field.name,
         directives,
         field.arguments
-            .map((e) => GLArgumentDefinition("\$${e.tokenInfo}".toToken(), e.type, [],
-                initialValue: e.initialValue))
+            .map((e) => GLArgumentDefinition("\$${e.tokenInfo}".toToken(), e.type, [], initialValue: e.initialValue))
             .toList(),
         [queryElement],
         queryType);
     addQueryDefinitionSkipIfExists(def);
   }
 
-  GQProjection _createProjectionForInterface(GQInterfaceDefinition interface) {
+  GLProjection _createProjectionForInterface(GLInterfaceDefinition interface) {
     var types = getTypesImplementing(interface);
-    var inlineFrags = <GQInlineFragmentDefinition>[];
+    var inlineFrags = <GLInlineFragmentDefinition>[];
 
     types.map((t) {
       var token = t.tokenInfo.ofNewName("${allFields}_${t.token}");
-      var inlineDef = GQInlineFragmentDefinition(
+      var inlineDef = GLInlineFragmentDefinition(
           t.tokenInfo,
-          GQFragmentBlockDefinition([
-            GQProjection(
-                fragmentName: token.token, token: token, alias: null, block: null, directives: [])
-          ]),
+          GLFragmentBlockDefinition(
+              [GLProjection(fragmentName: token.token, token: token, alias: null, block: null, directives: [])]),
           []);
       inlineFrags.add(inlineDef);
       addFragmentDefinition(inlineDef);
     }).toList();
 
-    return GQInlineFragmentsProjection(inlineFragments: inlineFrags);
+    return GLInlineFragmentsProjection(inlineFragments: inlineFrags);
   }
 
-  List<GLTypeDefinition> getProjectdeTypesImplementing(GQInterfaceDefinition def) {
+  List<GLTypeDefinition> getProjectdeTypesImplementing(GLInterfaceDefinition def) {
     return projectedTypes.values.where((pt) {
       return pt.getInterfaceNames().contains(def.token);
     }).toList();
   }
 
-  List<GLTypeDefinition> getTypesImplementing(GQInterfaceDefinition def) {
+  List<GLTypeDefinition> getTypesImplementing(GLInterfaceDefinition def) {
     var result = <GLTypeDefinition>[];
     types.forEach((k, v) {
       if (v.implements(def.token)) {
@@ -918,10 +882,10 @@ extension GLGrammarExtension on GLGrammar {
 
   GLTypeDefinition createProjectedType({
     required GLTypeDefinition type,
-    required Map<String, GQProjection> projectionMap,
+    required Map<String, GLProjection> projectionMap,
     required List<GLDirectiveValue> directives,
   }) {
-    if (type is GQInterfaceDefinition) {
+    if (type is GLInterfaceDefinition) {
       var implementationTypes = getTypesImplementing(type);
       GLTypeDefinition? result;
       for (var it in implementationTypes) {
@@ -952,8 +916,8 @@ extension GLGrammarExtension on GLGrammar {
     );
   }
 
-  GQInterfaceDefinition _createNewInterface(GQInterfaceDefinition original) {
-    return GQInterfaceDefinition(
+  GLInterfaceDefinition _createNewInterface(GLInterfaceDefinition original) {
+    return GLInterfaceDefinition(
       name: generateUuid().toToken(),
       nameDeclared: false,
       fields: [],
@@ -964,8 +928,8 @@ extension GLGrammarExtension on GLGrammar {
     );
   }
 
-  GLTypeDefinition _createNewType(GeneratedTypeName name, List<GLField> fields,
-      List<GLDirectiveValue> directives, GLTypeDefinition? realType) {
+  GLTypeDefinition _createNewType(
+      GeneratedTypeName name, List<GLField> fields, List<GLDirectiveValue> directives, GLTypeDefinition? realType) {
     return GLTypeDefinition(
       name: name.value.toToken(),
       nameDeclared: name.declared,
@@ -979,7 +943,7 @@ extension GLGrammarExtension on GLGrammar {
 
   GLTypeDefinition createProjectedTypeOnType({
     required GLTypeDefinition type,
-    required Map<String, GQProjection> projectionMap,
+    required Map<String, GLProjection> projectionMap,
     required List<GLDirectiveValue> directives,
     required String onTypeName,
   }) {
@@ -1007,18 +971,15 @@ extension GLGrammarExtension on GLGrammar {
     return addToProjectedTypes(newType);
   }
 
-  Map<String, GQProjection> _collectProjection(
-      Map<String, GQProjection> projections, String onTypeName) {
-    var result = <String, GQProjection>{};
+  Map<String, GLProjection> _collectProjection(Map<String, GLProjection> projections, String onTypeName) {
+    var result = <String, GLProjection>{};
     projections.forEach((k, v) {
       if (v.isFragmentReference) {
         var fragment = getFragmentByName(v.fragmentName!)!;
         var r = _collectProjection(fragment.block.projections, onTypeName);
         result.addAll(r);
-      } else if (v is GQInlineFragmentsProjection) {
-        v.inlineFragments
-            .where((inline) => inline.onTypeName.token == onTypeName)
-            .forEach((inline) {
+      } else if (v is GLInlineFragmentsProjection) {
+        v.inlineFragments.where((inline) => inline.onTypeName.token == onTypeName).forEach((inline) {
           var r = _collectProjection(inline.block.projections, onTypeName);
           result.addAll(r);
         });
@@ -1029,7 +990,7 @@ extension GLGrammarExtension on GLGrammar {
     return result;
   }
 
-  GLField _applyProjectionToField(GLField field, GQProjection projection,
+  GLField _applyProjectionToField(GLField field, GLProjection projection,
       [List<GLDirectiveValue> fieldDirectives = const []]) {
     final TokenInfo fieldName = projection.alias ?? field.name;
     var block = projection.block;
@@ -1041,7 +1002,7 @@ extension GLGrammarExtension on GLGrammar {
         projectionMap: block.projections,
         directives: fieldDirectives,
       );
-      var fieldInlineType = GQType(generatedType.tokenInfo, field.type.nullable);
+      var fieldInlineType = GLType(generatedType.tokenInfo, field.type.nullable);
 
       return GLField(
         name: fieldName,
@@ -1059,11 +1020,11 @@ extension GLGrammarExtension on GLGrammar {
     );
   }
 
-  GQType _createTypeFrom(GQType orig, GQType inline) {
-    if (orig is GQListType) {
-      return GQListType(_createTypeFrom(orig.type, inline), orig.nullable);
+  GLType _createTypeFrom(GLType orig, GLType inline) {
+    if (orig is GLListType) {
+      return GLListType(_createTypeFrom(orig.type, inline), orig.nullable);
     }
-    return GQType(inline.tokenInfo, orig.inlineType.nullable);
+    return GLType(inline.tokenInfo, orig.inlineType.nullable);
   }
 
   String getLangType(String typeName) {
@@ -1082,19 +1043,16 @@ extension GLGrammarExtension on GLGrammar {
         .where((d) {
           switch (mode) {
             case CodeGenerationMode.client:
-              return d.getArguments().where((arg) => arg.token == glApplyOnClient).first.value
-                  as bool;
+              return d.getArguments().where((arg) => arg.token == glApplyOnClient).first.value as bool;
             case CodeGenerationMode.server:
-              return d.getArguments().where((arg) => arg.token == glApplyOnServer).first.value
-                  as bool;
+              return d.getArguments().where((arg) => arg.token == glApplyOnServer).first.value as bool;
           }
         })
         .map((d) {
           return d.getArguments().where((arg) => arg.token == "value").first;
         })
         .map((d) {
-          var decoratorValues =
-              (d.value as List).map((e) => e as String).map((str) => str.removeQuotes()).toList();
+          var decoratorValues = (d.value as List).map((e) => e as String).map((str) => str.removeQuotes()).toList();
           return decoratorValues;
         })
         .expand((inner) => inner)
@@ -1106,7 +1064,7 @@ extension GLGrammarExtension on GLGrammar {
     final queryTypeNames = GLQueryType.values.map((t) => schema.getByQueryType(t)).toSet();
     projectedTypes.values
         .where((t) =>
-            t is! GQInterfaceDefinition &&
+            t is! GLInterfaceDefinition &&
             !queryTypeNames.contains(t.token) &&
             t.getDirectiveByName(glInternal) == null)
         .map((t) => GLTypeView(type: t))
@@ -1121,7 +1079,7 @@ extension GLGrammarExtension on GLGrammar {
           values: ['listTile', 'reversedListTile', 'labelValueRow']
               .map((e) => e.toToken())
               .map(
-                (e) => GQEnumValue(value: e, comment: null, directives: []),
+                (e) => GLEnumValue(value: e, comment: null, directives: []),
               )
               .toList(),
           directives: []));

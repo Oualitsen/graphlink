@@ -5,8 +5,7 @@ const graphLinkCacheStore = '''abstract class GraphLinkCacheStore {
   Future<void> invalidateAll();
 }''';
 
-const inMemoryGraphLinkCacheStore =
-    '''class InMemoryGraphLinkCacheStore implements GraphLinkCacheStore {
+const inMemoryGraphLinkCacheStore = '''class InMemoryGraphLinkCacheStore implements GraphLinkCacheStore {
   final _store = <String, String>{};
 
   @override
@@ -35,7 +34,7 @@ class _GraphLinkPartialQuery {
   final String query;
   final Map<String, dynamic> variables;
   final int ttl;
-  final String? cacheTag;
+  final List<String>? tags;
   final String operationName;
   final String elementKey;
   final Set<String> fragmentNames;
@@ -47,7 +46,7 @@ class _GraphLinkPartialQuery {
     required this.query,
     required this.variables,
     required this.ttl,
-    required this.cacheTag,
+    required this.tags,
     required this.operationName,
     required this.elementKey,
     required this.fragmentNames,

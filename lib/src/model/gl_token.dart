@@ -30,7 +30,7 @@ abstract class GLExtensibleToken extends GLToken {
   void merge<T extends GLExtensibleToken>(T other);
 }
 
-class GQExtensibleTokenList {
+class GLExtensibleTokenList {
   final List<GLExtensibleToken> _data = [];
   bool parsedOriginal = false;
 

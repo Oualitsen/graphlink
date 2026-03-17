@@ -277,7 +277,7 @@ class DartClientSerializer extends GLClientSerilaizer {
 _GraphLinkPartialQuery(
   query: '${e.query}',
   operationName: "${e.operationName}",
-  cacheTag: "${e.cache?.tag}",
+  tags: ${e.cache?.tags?.map((e) => e.quote()).toList()},
   ttl: ${e.cache?.ttl ?? 0},
   elementKey: '${e.elementKey}',
   fragmentNames: ${e.fragmentNames.map((e) => '"${e}"').toSet()},
@@ -322,7 +322,7 @@ return _adapter(json.encode(payload.toJson())${_grammar.operationNameAsParameter
     return _callToJson(arg.dartArgumentName, arg.type);
   }
 
-  String _callToJson(String argName, GQType type) {
+  String _callToJson(String argName, GLType type) {
     if (_grammar.inputTypeRequiresProjection(type)) {
       if (type.isList) {
         return "$argName${_getNullableText(type)}.map((e) => ${_callToJson("e", type.inlineType)}).toList()";
@@ -341,7 +341,7 @@ return _adapter(json.encode(payload.toJson())${_grammar.operationNameAsParameter
     }
   }
 
-  String _getNullableText(GQType type) {
+  String _getNullableText(GLType type) {
     if (type.nullable) {
       return "?";
     }

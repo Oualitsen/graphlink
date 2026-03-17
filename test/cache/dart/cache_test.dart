@@ -84,11 +84,11 @@ void main() {
     var getPersonCache = getPerson.cacheDefinition;
     expect(getPersonCache, isNotNull);
     expect(getPersonCache!.ttl, 5000);
-    expect(getPersonCache.tag, isNull);
+    expect(getPersonCache.tags, isNull);
     for (var elem in getPerson.elements) {
       expect(elem.cacheDefinition, isNotNull);
       expect(elem.cacheDefinition!.ttl, 5000);
-      expect(elem.cacheDefinition!.tag, isNull);
+      expect(elem.cacheDefinition!.tags, isNull);
     }
   });
 
@@ -124,11 +124,11 @@ void main() {
     var cache = myGetPerson.cacheDefinition;
     expect(cache, isNotNull);
     expect(cache!.ttl, 5000);
-    expect(cache.tag, isNull);
+    expect(cache.tags, isNull);
     for (var elem in myGetPerson.elements) {
       expect(elem.cacheDefinition, isNotNull);
       expect(elem.cacheDefinition!.ttl, 5000);
-      expect(elem.cacheDefinition!.tag, isNull);
+      expect(elem.cacheDefinition!.tags, isNull);
     }
   });
 
@@ -144,7 +144,7 @@ void main() {
     getPerson: Person 
   }
 
-  query MyQuery @glCache(ttl: 5000, tag: "Person") {
+  query MyQuery @glCache(ttl: 5000, tags: ["Person"]) {
     getPerson  {
       id
     }
@@ -157,12 +157,12 @@ void main() {
     var cache = myQuery.cacheDefinition;
     expect(cache, isNotNull);
     expect(cache!.ttl, 5000);
-    expect(cache.tag, "Person");
+    expect(cache.tags, contains("Person"));
     var qeuryElement = myQuery.elements.first;
     var elementCache = qeuryElement.cacheDefinition;
     expect(elementCache, isNotNull);
     expect(elementCache!.ttl, 5000);
-    expect(elementCache.tag, "Person");
+    expect(elementCache.tags, contains("Person"));
   });
 
   test("cache should be applied on auto generated queries", () {
@@ -174,7 +174,7 @@ void main() {
   }
 
   type Query {
-    getPerson: Person @glCache(ttl: 5000, tag: "Person")
+    getPerson: Person @glCache(ttl: 5000, tags: ["Person"])
   }
  
 ''';
@@ -185,7 +185,7 @@ void main() {
     var cache = getPerson.cacheDefinition;
     expect(cache, isNotNull);
     expect(cache!.ttl, 5000);
-    expect(cache.tag, "Person");
+    expect(cache.tags?.first, "Person");
   });
 
   test("cache on child elements must override root cache", () {
@@ -201,11 +201,11 @@ void main() {
     count: Int
   }
 
-  query MyQuery @glCache(ttl: 5000, tag: "Person") {
+  query MyQuery @glCache(ttl: 5000, tags: ["Person"]) {
     getPerson {
       id
     }
-    count @glCache(ttl: 6000, tag: "PersonCount")
+    count @glCache(ttl: 6000, tags: ["PersonCount"])
   }
 ''';
 
@@ -214,12 +214,12 @@ void main() {
     GLQueryDefinition myQuery = g.queries['MyQuery']!;
     var rootCahce = myQuery.cacheDefinition;
     expect(rootCahce, isNotNull);
-    expect(rootCahce!.tag, "Person");
+    expect(rootCahce!.tags?.first, "Person");
     expect(rootCahce.ttl, 5000);
     var countElement = myQuery.elements.where((e) => e.token == "count").first;
     var countCache = countElement.cacheDefinition;
     expect(countCache, isNotNull);
-    expect(countCache!.tag, "PersonCount");
+    expect(countCache!.tags?.first, "PersonCount");
     expect(countCache.ttl, 6000);
   });
 
@@ -235,7 +235,7 @@ void main() {
   }
 
   type Query {
-    getPerson: Person ${glCache}(ttl: 5000, tag: "invalid tag!")
+    getPerson: Person ${glCache}(ttl: 5000, tags: ["invalid tag!"])
   }
 ''';
 
@@ -244,8 +244,7 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains(
-            'tag on @glCache directives should be alphanumeric with underscores only! found: invalid tag!'),
+        contains('tag on @glCache directives should be alphanumeric with underscores only! found: invalid tag!'),
       )),
     );
   });
@@ -263,11 +262,11 @@ void main() {
     count: Int
   }
 
-  query MyQuery @glCache(ttl: 5000, tag: "Person") {
+  query MyQuery @glCache(ttl: 5000, tags: ["Person"]) {
     getPerson @glNoCache {
       id
     }
-    count @glCache(ttl: 6000, tag: "PersonCount")
+    count @glCache(ttl: 6000, tags: ["PersonCount"])
   }
 ''';
 
@@ -276,7 +275,7 @@ void main() {
     GLQueryDefinition myQuery = g.queries['MyQuery']!;
     var rootCahce = myQuery.cacheDefinition;
     expect(rootCahce, isNotNull);
-    expect(rootCahce!.tag, "Person");
+    expect(rootCahce!.tags?.first, "Person");
     expect(rootCahce.ttl, 5000);
     var getPersonElement = myQuery.elements.where((e) => e.token == "getPerson").first;
     expect(getPersonElement.cacheDefinition, isNull);
@@ -508,8 +507,7 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains(
-            '$glCacheInvalidate requires either $glCacheArgAll: true or a non-empty $glCacheTagList'),
+        contains('$glCacheInvalidate requires either $glCacheArgAll: true or a non-empty $glCacheTagList'),
       )),
     );
   });
@@ -532,8 +530,7 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains(
-            '$glCacheInvalidate requires either $glCacheArgAll: true or a non-empty $glCacheTagList'),
+        contains('$glCacheInvalidate requires either $glCacheArgAll: true or a non-empty $glCacheTagList'),
       )),
     );
   });
@@ -609,7 +606,7 @@ void main() {
   }
 
   type Query {
-    getPersons: Person @glCache(ttl: 300, tag: "persons")
+    getPersons: Person @glCache(ttl: 300, tags: ["persons"])
   }
 
   type Mutation {
@@ -629,7 +626,7 @@ void main() {
   }
 
   type Query {
-    getPersons: Person @glCache(ttl: 300, tag: "persons")
+    getPersons: Person @glCache(ttl: 300, tags: ["persons"])
   }
 
   type Mutation {
@@ -642,8 +639,31 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains(
-            'Tag "undeclaredTag" used in $glCacheInvalidate is not declared on any $glCache directive'),
+        contains('Tag "undeclaredTag" used in $glCacheInvalidate is not declared on any $glCache directive'),
+      )),
+    );
+  });
+
+  test("glCache should fail when tag value is an empty string", () {
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Query {
+    getPersons: Person @glCache(ttl: 300, tags: [""])
+  }
+
+''';
+
+    expect(
+      () => g.parse(text),
+      throwsA(isA<ParseException>().having(
+        (e) => e.errorMessage,
+        'errorMessage',
+        contains('tag on @glCache directives should be alphanumeric with underscores only! found:  line: 6 column: 25'),
       )),
     );
   });

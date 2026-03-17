@@ -35,12 +35,10 @@ void main() async {
   });
   test("toContructoDeclaration test ", () {
     final GLGrammar g1 = GLGrammar(nullableFieldsRequired: false);
-    final nullableString = GQType("String".toToken(), true);
-    final nonNullableString = GQType("String".toToken(), false);
-    final nullableField =
-        GLField(name: "name".toToken(), type: nullableString, arguments: [], directives: []);
-    final nonNullableField =
-        GLField(name: "name".toToken(), type: nonNullableString, arguments: [], directives: []);
+    final nullableString = GLType("String".toToken(), true);
+    final nonNullableString = GLType("String".toToken(), false);
+    final nullableField = GLField(name: "name".toToken(), type: nullableString, arguments: [], directives: []);
+    final nonNullableField = GLField(name: "name".toToken(), type: nonNullableString, arguments: [], directives: []);
     var serializer1 = DartSerializer(g1);
 
     var dartContructorTypeNullable = serializer1.toConstructorDeclaration(nullableField);

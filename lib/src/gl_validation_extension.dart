@@ -25,9 +25,7 @@ extension GLValidationExtension on GLGrammar {
   void _validateInputRef(GLInputDefinition def) {
     for (var field in def.fields) {
       var typeToken = field.type.token;
-      if (!scalars.containsKey(typeToken) &&
-          !inputs.containsKey(typeToken) &&
-          !enums.containsKey(typeToken)) {
+      if (!scalars.containsKey(typeToken) && !inputs.containsKey(typeToken) && !enums.containsKey(typeToken)) {
         throw ParseException("$typeToken is not a scalar, input or enum", info: field.name);
       }
     }
@@ -45,14 +43,11 @@ extension GLValidationExtension on GLGrammar {
           !interfaces.containsKey(typeToken) &&
           !unions.containsKey(typeToken) &&
           !enums.containsKey(typeToken)) {
-        throw ParseException("$typeToken is not a scalar, enum, type, interface or union",
-            info: field.name);
+        throw ParseException("$typeToken is not a scalar, enum, type, interface or union", info: field.name);
       }
       for (var arg in field.arguments) {
         var argToken = arg.type.token;
-        if (!scalars.containsKey(argToken) &&
-            !inputs.containsKey(argToken) &&
-            !enums.containsKey(argToken)) {
+        if (!scalars.containsKey(argToken) && !inputs.containsKey(argToken) && !enums.containsKey(argToken)) {
           throw ParseException("$argToken is not a scalar, enum, or input", info: field.name);
         }
       }
@@ -72,16 +67,14 @@ extension GLValidationExtension on GLGrammar {
     });
   }
 
-  void validateProjection(
-      GQProjection projection, TokenInfo onTypeNameToken, String? fragmentName) {
+  void validateProjection(GLProjection projection, TokenInfo onTypeNameToken, String? fragmentName) {
     final typeName = onTypeNameToken.token;
     var type = getType(onTypeNameToken);
-    if (projection is GQInlineFragmentsProjection) {
+    if (projection is GLInlineFragmentsProjection) {
       //handl for interface
       projection.inlineFragments.map((e) => e.onTypeName).map((e) => getType(e)).forEach((type) {
         if (!type.containsInteface(typeName) && type.token != typeName) {
-          throw ParseException("Type '${type.tokenInfo}' does not implement '${typeName}'",
-              info: onTypeNameToken);
+          throw ParseException("Type '${type.tokenInfo}' does not implement '${typeName}'", info: onTypeNameToken);
         }
       });
 
@@ -93,20 +86,16 @@ extension GLValidationExtension on GLGrammar {
       return;
     }
     if (projection.isFragmentReference) {
-      GLFragmentDefinitionBase fragment =
-          getFragment(projection.token, projection.tokenInfo, typeName);
-      if (fragment.onTypeName.token != type.token &&
-          !type.containsInteface(fragment.onTypeName.token)) {
-        throw ParseException(
-            "Fragment ${fragment.tokenInfo} cannot be applied to type ${type.tokenInfo}",
+      GLFragmentDefinitionBase fragment = getFragment(projection.token, projection.tokenInfo, typeName);
+      if (fragment.onTypeName.token != type.token && !type.containsInteface(fragment.onTypeName.token)) {
+        throw ParseException("Fragment ${fragment.tokenInfo} cannot be applied to type ${type.tokenInfo}",
             info: fragment.tokenInfo);
       }
       if (projection.token == allFields) {
         projection.fragmentName = '${allFields}_$typeName';
       }
     } else {
-      var requiresProjection =
-          fieldRequiresProjection(projection.tokenInfo, onTypeNameToken, projection.tokenInfo);
+      var requiresProjection = fieldRequiresProjection(projection.tokenInfo, onTypeNameToken, projection.tokenInfo);
 
       if (requiresProjection && projection.block == null) {
         throw ParseException(
@@ -140,16 +129,16 @@ extension GLValidationExtension on GLGrammar {
 
   bool fieldRequiresProjection(TokenInfo fieldNameToken, TokenInfo onTypeName, TokenInfo info) {
     checkIfDefined(onTypeName);
-    GQType type = getFieldType(fieldNameToken, onTypeName.token);
+    GLType type = getFieldType(fieldNameToken, onTypeName.token);
     return typeRequiresProjection(type);
   }
 
-  bool typeRequiresProjection(GQType type) {
+  bool typeRequiresProjection(GLType type) {
     final name = type.inlineType.token;
     return types.containsKey(name) || interfaces.containsKey(name) || unions.containsKey(name);
   }
 
-  bool inputTypeRequiresProjection(GQType type) {
+  bool inputTypeRequiresProjection(GLType type) {
     return inputs[type.token] != null;
   }
 
@@ -164,8 +153,7 @@ extension GLValidationExtension on GLGrammar {
 
   void checkFragmentDefinition(GLFragmentDefinitionBase fragment) {
     if (fragments.containsKey(fragment.token)) {
-      throw ParseException("Fragment ${fragment.tokenInfo} has already been declared",
-          info: fragment.tokenInfo);
+      throw ParseException("Fragment ${fragment.tokenInfo} has already been declared", info: fragment.tokenInfo);
     }
   }
 
@@ -177,15 +165,13 @@ extension GLValidationExtension on GLGrammar {
 
   void checkInputDefinition(GLInputDefinition input) {
     if (checkExtensionToken(input, input.declaredName, inputs)) {
-      throw ParseException("Input ${input.tokenInfo} has already been declared",
-          info: input.tokenInfo);
+      throw ParseException("Input ${input.tokenInfo} has already been declared", info: input.tokenInfo);
     }
   }
 
-  void checkUnitionDefinition(GQUnionDefinition union) {
+  void checkUnitionDefinition(GLUnionDefinition union) {
     if (checkExtensionToken(union, union.token, unions)) {
-      throw ParseException("Union ${union.tokenInfo} has already been declared",
-          info: union.tokenInfo);
+      throw ParseException("Union ${union.tokenInfo} has already been declared", info: union.tokenInfo);
     }
   }
 
@@ -195,11 +181,9 @@ extension GLValidationExtension on GLGrammar {
       var requiresProjection = typeRequiresProjection(inlineType);
       //check if projection should be applied
       if (requiresProjection && element.block == null) {
-        throw ParseException("A projection is need on ${inlineType.tokenInfo}",
-            info: inlineType.tokenInfo);
+        throw ParseException("A projection is need on ${inlineType.tokenInfo}", info: inlineType.tokenInfo);
       } else if (!requiresProjection && element.block != null) {
-        throw ParseException("A projection is not need on ${inlineType.tokenInfo}",
-            info: inlineType.tokenInfo);
+        throw ParseException("A projection is not need on ${inlineType.tokenInfo}", info: inlineType.tokenInfo);
       }
 
       if (element.block != null) {
@@ -211,7 +195,7 @@ extension GLValidationExtension on GLGrammar {
 
   void validateQueryProjection(GLQueryElement element) {
     var type = element.returnType;
-    GQFragmentBlockDefinition? block = element.block;
+    GLFragmentBlockDefinition? block = element.block;
     if (block == null) {
       return;
     }
@@ -221,7 +205,7 @@ extension GLValidationExtension on GLGrammar {
     });
   }
 
-  void checkRepository(GQInterfaceDefinition interface) {
+  void checkRepository(GLInterfaceDefinition interface) {
     var repo = interface.getDirectiveByName(glRepository)!;
     var typeName = repo.getArgValueAsString(glType);
     if (typeName == null) {
@@ -230,14 +214,12 @@ extension GLValidationExtension on GLGrammar {
 
     var idType = repo.getArgValueAsString(glIdType);
     if (idType == null) {
-      throw ParseException("$glIdType is required on $glRepository directive",
-          info: repo.tokenInfo);
+      throw ParseException("$glIdType is required on $glRepository directive", info: repo.tokenInfo);
     }
 
     var type = types[typeName];
     if (type == null) {
-      throw ParseException(
-          "Type '$typeName' referenced by directive '$glRepository' is not defined or skipped",
+      throw ParseException("Type '$typeName' referenced by directive '$glRepository' is not defined or skipped",
           info: repo.tokenInfo);
     }
   }
@@ -249,8 +231,7 @@ extension GLValidationExtension on GLGrammar {
     }
   }
 
-  bool checkExtensionToken(
-      GLExtensibleToken token, String key, Map<String, GLExtensibleToken> map) {
+  bool checkExtensionToken(GLExtensibleToken token, String key, Map<String, GLExtensibleToken> map) {
     if (token.extension || !extensibleTokens.containsKey(key)) {
       return false;
     }
@@ -260,8 +241,7 @@ extension GLValidationExtension on GLGrammar {
 
   void checkSacalarDefinition(GLScalarDefinition scalar) {
     if (checkExtensionToken(scalar, scalar.token, scalars)) {
-      throw ParseException("Scalar ${scalar.token} has already been declared",
-          info: scalar.tokenInfo);
+      throw ParseException("Scalar ${scalar.token} has already been declared", info: scalar.tokenInfo);
     }
   }
 
@@ -271,10 +251,9 @@ extension GLValidationExtension on GLGrammar {
     }
   }
 
-  void checkInterfaceDefinition(GQInterfaceDefinition interface) {
+  void checkInterfaceDefinition(GLInterfaceDefinition interface) {
     if (checkExtensionToken(interface, interface.token, interfaces)) {
-      throw ParseException("Interface ${interface.tokenInfo} has already been declared",
-          info: interface.tokenInfo);
+      throw ParseException("Interface ${interface.tokenInfo} has already been declared", info: interface.tokenInfo);
     }
   }
 
@@ -284,8 +263,7 @@ extension GLValidationExtension on GLGrammar {
       return;
     }
     if (checkExtensionToken(type, type.token, types)) {
-      throw ParseException("Type ${type.tokenInfo} has already been declared",
-          info: type.tokenInfo);
+      throw ParseException("Type ${type.tokenInfo} has already been declared", info: type.tokenInfo);
     }
   }
 
@@ -332,7 +310,7 @@ extension GLValidationExtension on GLGrammar {
   void _addExtensibleToken(GLExtensibleToken token) {
     var list = extensibleTokens[token.token];
     if (list == null) {
-      list = GQExtensibleTokenList();
+      list = GLExtensibleTokenList();
       extensibleTokens[token.token] = list;
     }
     list.addToken(token);
@@ -348,7 +326,7 @@ extension GLValidationExtension on GLGrammar {
     fragments[fragment.token] = fragment;
   }
 
-  void addUnionDefinition(GQUnionDefinition union) {
+  void addUnionDefinition(GLUnionDefinition union) {
     checkUnitionDefinition(union);
     _addOrMerge(union, union.token, unions);
   }
@@ -363,7 +341,7 @@ extension GLValidationExtension on GLGrammar {
     _addOrMerge(type, type.token, types);
   }
 
-  void addInterfaceDefinition(GQInterfaceDefinition interface) {
+  void addInterfaceDefinition(GLInterfaceDefinition interface) {
     checkInterfaceDefinition(interface);
     _addOrMerge(interface, interface.token, interfaces);
   }
@@ -380,8 +358,7 @@ extension GLValidationExtension on GLGrammar {
 
   void addQueryDefinitionSkipIfExists(GLQueryDefinition definition) {
     if (queries.containsKey(definition.token)) {
-      logger
-          .i("${definition.type} ${definition.tokenInfo} is already defined, skipping generation");
+      logger.i("${definition.type} ${definition.tokenInfo} is already defined, skipping generation");
       return;
     }
     queries[definition.token] = definition;
@@ -400,7 +377,7 @@ extension GLValidationExtension on GLGrammar {
     interfaces.removeWhere((k, _) => repositories.containsKey(k));
   }
 
-  List<GLField> getUnionFields(GQUnionDefinition def) {
+  List<GLField> getUnionFields(GLUnionDefinition def) {
     var fields = <String, int>{};
     var result = <GLField>[];
     def.typeNames.map((e) => getType(e)).expand((e) => e.getFields()).forEach((e) {
@@ -417,7 +394,7 @@ extension GLValidationExtension on GLGrammar {
     return result;
   }
 
-  void defineSchema(GQSchema schema) {
+  void defineSchema(GLSchema schema) {
     if (schemaInitialized && !schema.extension) {
       throw ParseException("A schema has already been defined", info: schema.tokenInfo);
     }
@@ -460,7 +437,7 @@ extension GLValidationExtension on GLGrammar {
     return frag;
   }
 
-  GQInterfaceDefinition getInterface(String name, TokenInfo info) {
+  GLInterfaceDefinition getInterface(String name, TokenInfo info) {
     final type = interfaces[name];
     if (type == null) {
       throw ParseException("Interface $name is not found", info: info);

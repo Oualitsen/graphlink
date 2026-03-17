@@ -1,6 +1,6 @@
 class GLCacheDefinition {
   final int ttl;
-  final String? tag;
+  final List<String>? tags;
 
-  GLCacheDefinition(this.ttl, this.tag);
+  GLCacheDefinition(this.ttl, this.tags);
 }

@@ -8,7 +8,7 @@ import 'package:graphlink/src/model/token_info.dart';
 
 class GLField with GLDirectivesMixin {
   final TokenInfo name;
-  final GQType type;
+  final GLType type;
   final Object? initialValue;
   final String? documentation;
   final Map<String, GLArgumentDefinition> _arguments = {};
@@ -69,8 +69,7 @@ class GLField with GLDirectivesMixin {
     for (var arg in arguments) {
       var otherArg = other.getArgumentByName(arg.token)!;
       if (arg.type != otherArg.type) {
-        throw ParseException("You cannot alter argument type in an extension",
-            info: otherArg.tokenInfo);
+        throw ParseException("You cannot alter argument type in an extension", info: otherArg.tokenInfo);
       }
     }
   }

@@ -42,31 +42,67 @@ extension GLGrammarCacheExtension on GLGrammar {
     }
   }
 
+  void fixTagListValues() {
+    for (var directive in directiveValues) {
+      _stripTagQuotes(directive);
+    }
+  }
+
+  void validateTagValues() {
+    for (var directive in directiveValues) {
+      _validateTagValues(directive);
+    }
+  }
+
+  void _stripTagQuotes(GLDirectiveValue? value) {
+    if (value == null) return;
+    var tags = value.getArgValue(glCacheTagList);
+    if (tags == null || tags is! List) return;
+    for (var i = 0; i < tags.length; i++) {
+      var tag = tags[i];
+      if (tag is String && tag.startsWith('"') && tag.endsWith('"')) {
+        tags[i] = tag.substring(1, tag.length - 1);
+      }
+    }
+  }
+
+  void _validateTagValues(GLDirectiveValue? value) {
+    if (value == null) return;
+    var tags = value.getArgValue(glCacheTagList);
+    if (tags == null || tags is! List) return;
+    for (var tag in tags) {
+      if (tag is! String) {
+        throw ParseException(
+          "$glCacheTagList on ${value.token} must contain only strings! found: $tag",
+          info: value.tokenInfo,
+        );
+      }
+      if (!_cacheTagRegExp.hasMatch(tag)) {
+        throw ParseException(
+          "tag on ${value.token} directives should be alphanumeric with underscores only! found: $tag",
+          info: value.tokenInfo,
+        );
+      }
+    }
+  }
+
   ///
   /// checks all glCache directves
   /// ttl should not be null
   /// ttl should be an integer
-  void checkGqCacheDirectives() {
+  void checkGLCacheDirectives() {
     directiveValues.where((d) => d.token == glCache).forEach((directive) {
       // check TTL is not null
       var ttlObject = directive.getArgValue(glCacheTTL);
       if (ttlObject == null) {
-        throw ParseException("${glCacheTTL} is required on $glCache directives",
-            info: directive.tokenInfo);
+        throw ParseException("${glCacheTTL} is required on $glCache directives", info: directive.tokenInfo);
       }
       if (ttlObject is! int || ttlObject < 0) {
-        throw ParseException(
-            "${glCacheTTL} on $glCache directives should be a positive integer! found: ${ttlObject}",
+        throw ParseException("${glCacheTTL} on $glCache directives should be a positive integer! found: ${ttlObject}",
             info: directive.tokenInfo);
       }
-      var tag = directive.getArgValueAsString(glCacheTag);
-      if (tag != null) {
-        if (!_cacheTagRegExp.hasMatch(tag)) {
-          throw ParseException(
-              "${glCacheTag} on $glCache directives should be alphanumeric with underscores only! found: $tag",
-              info: directive.tokenInfo);
-        }
-      }
+
+      var tagsList = directive.getArgValue(glCacheTagList);
     });
   }
 
@@ -74,12 +110,13 @@ extension GLGrammarCacheExtension on GLGrammar {
   /// The goal is check the existance of tags tageted by glCacheInvalidate directive
   ///
 
-  void checkGqCacheTags() {
+  void checkGLCacheTags() {
     final allTags = directiveValues
         .where((val) => val.token == glCache)
-        .map((e) => e.getArgValueAsString(glCacheTag))
+        .map((e) => e.getArgValue(glCacheTagList))
         .where((e) => e != null)
         .map((e) => e!)
+        .expand((e) => (e as List).cast<String>())
         .toSet();
     directiveValues
         .where((d) => d.token == glCacheInvalidate)
@@ -97,7 +134,7 @@ extension GLGrammarCacheExtension on GLGrammar {
     });
   }
 
-  void checkGqCacheInvalidateDirectives() {
+  void checkGLCacheInvalidateDirectives() {
     directiveValues.where((d) => d.token == glCacheInvalidate).forEach((directive) {
       var all = directive.getArgValue(glCacheArgAll);
       var tags = directive.getArgValue(glCacheTagList);
@@ -124,21 +161,6 @@ extension GLGrammarCacheExtension on GLGrammar {
           "$glCacheInvalidate requires either $glCacheArgAll: true or a non-empty $glCacheTagList",
           info: directive.tokenInfo,
         );
-      }
-      if (tagsList != null && tagsList.isNotEmpty) {
-        for (var i = 0; i < tagsList.length; i++) {
-          var element = tagsList[i];
-          if (element is! String) {
-            throw ParseException(
-              "$glCacheTagList on $glCacheInvalidate must contain only strings! found: $element",
-              info: directive.tokenInfo,
-            );
-          }
-          var trimmed = element.startsWith('"') && element.endsWith('"')
-              ? element.substring(1, element.length - 1)
-              : element;
-          tagsList[i] = trimmed;
-        }
       }
     });
   }
@@ -170,7 +192,7 @@ extension GLGrammarCacheExtension on GLGrammar {
 
   GLCacheDefinition fromDirective(GLDirectiveValue val) {
     return GLCacheDefinition(
-        val.getArgValue(glCacheTTL) as int, val.getArgValueAsString(glCacheTag));
+        val.getArgValue(glCacheTTL) as int, (val.getArgValue(glCacheTagList) as List?)?.cast<String>());
   }
 
   /// removes default applied cache on queries having @glNoCache

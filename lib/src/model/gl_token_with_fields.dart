@@ -26,8 +26,7 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
 
   void addField(GLField field) {
     if (_fieldMap.containsKey(field.name.token)) {
-      throw ParseException("Duplicate field defition on type ${tokenInfo}, field: ${field.name}",
-          info: field.name);
+      throw ParseException("Duplicate field defition on type ${tokenInfo}, field: ${field.name}", info: field.name);
     }
     _fieldMap[field.name.token] = field;
   }
@@ -62,13 +61,12 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
       if (fieldName == GLGrammar.typename) {
         return GLField(
           name: fieldName.toToken(),
-          type: GQType(g.getLangType("String").toToken(), false),
+          type: GLType(g.getLangType("String").toToken(), false),
           arguments: [],
           directives: [],
         );
       } else {
-        throw ParseException("Could not find field '$fieldName' on type ${tokenInfo}",
-            info: tokenInfo);
+        throw ParseException("Could not find field '$fieldName' on type ${tokenInfo}", info: tokenInfo);
       }
     }
     return field;
@@ -86,8 +84,7 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
 
   List<GLField> getSerializableFields(CodeGenerationMode mode, {bool skipGenerated = false}) {
     return fields
-        .where((f) => !shouldSkipSerialization(
-            directives: f.getDirectives(skipGenerated: skipGenerated), mode: mode))
+        .where((f) => !shouldSkipSerialization(directives: f.getDirectives(skipGenerated: skipGenerated), mode: mode))
         .toList();
   }
 
@@ -161,8 +158,7 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
           result.addAll(extractImports(arg as GLDirectivesMixin, g.mode, skipOwnImports: false));
           var argToken = g.getTokenByKey(arg.type.token);
           if (argToken != null && argToken is GLDirectivesMixin) {
-            result.addAll(
-                extractImports(argToken as GLDirectivesMixin, g.mode, skipOwnImports: true));
+            result.addAll(extractImports(argToken as GLDirectivesMixin, g.mode, skipOwnImports: true));
           }
         }
       }
@@ -171,8 +167,7 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
     return result;
   }
 
-  static Set<String> extractImports(GLDirectivesMixin dir, CodeGenerationMode mode,
-      {bool skipOwnImports = false}) {
+  static Set<String> extractImports(GLDirectivesMixin dir, CodeGenerationMode mode, {bool skipOwnImports = false}) {
     var result = <String>{};
     // is it external ?
     var external = dir.getDirectiveByName(glExternal);

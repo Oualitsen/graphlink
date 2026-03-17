@@ -1,6 +1,6 @@
 import 'package:graphlink/src/model/gl_type_definition.dart';
 
-class GQInterfaceDefinition extends GLTypeDefinition {
+class GLInterfaceDefinition extends GLTypeDefinition {
   final bool fromUnion;
 
   ///
@@ -9,7 +9,7 @@ class GQInterfaceDefinition extends GLTypeDefinition {
   ///
   final Set<GLTypeDefinition> _implementations = {};
 
-  GQInterfaceDefinition({
+  GLInterfaceDefinition({
     required super.name,
     required super.nameDeclared,
     required super.fields,

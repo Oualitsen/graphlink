@@ -60,30 +60,29 @@ enum GLDirectiveScope {
 
 class GLDirectiveValue extends GLToken {
   final List<GLDirectiveScope> locations;
-  final Map<String, GQArgumentValue> _argsMap = {};
+  final Map<String, GLArgumentValue> _argsMap = {};
 
   ///
   /// helps with the schema serialization
   ///
   final bool generated;
 
-  GLDirectiveValue(super.tokenInfo, this.locations, List<GQArgumentValue> arguments,
-      {required this.generated}) {
+  GLDirectiveValue(super.tokenInfo, this.locations, List<GLArgumentValue> arguments, {required this.generated}) {
     _addArgument(arguments);
   }
 
-  void _addArgument(List<GQArgumentValue> arguments) {
+  void _addArgument(List<GLArgumentValue> arguments) {
     for (var arg in arguments) {
       _argsMap[arg.token] = arg;
     }
   }
 
   void setDefualtArguments(List<GLArgumentDefinition> args) {
-    List<GQArgumentValue> argsToAdd = [];
+    List<GLArgumentValue> argsToAdd = [];
     for (var argDef in args) {
       var argValue = _argsMap[argDef.token];
       if (argValue == null && argDef.initialValue != null) {
-        var newArgValue = GQArgumentValue(argDef.tokenInfo, argDef.initialValue);
+        var newArgValue = GLArgumentValue(argDef.tokenInfo, argDef.initialValue);
         _argsMap[argDef.token] = newArgValue;
         argsToAdd.add(newArgValue);
       }
@@ -112,22 +111,20 @@ class GLDirectiveValue extends GLToken {
     return (value as String).removeQuotes();
   }
 
-  GQArgumentValue? getArgumentByName(String name) {
+  GLArgumentValue? getArgumentByName(String name) {
     return _argsMap[name];
   }
 
   void addArg(String name, Object? value) {
-    _argsMap[name] = GQArgumentValue(TokenInfo.ofString(name), value);
+    _argsMap[name] = GLArgumentValue(TokenInfo.ofString(name), value);
   }
 
-  List<GQArgumentValue> getArguments() {
+  List<GLArgumentValue> getArguments() {
     return _argsMap.values.toList();
   }
 
   static GLDirectiveValue createDirectiveValue(
-      {required String directiveName,
-      required bool generated,
-      List<GQArgumentValue> args = const []}) {
+      {required String directiveName, required bool generated, List<GLArgumentValue> args = const []}) {
     return GLDirectiveValue(TokenInfo.ofString(directiveName), [], args, generated: generated);
   }
 
@@ -141,10 +138,10 @@ class GLDirectiveValue extends GLToken {
         TokenInfo.ofString(glDecorators),
         [],
         [
-          GQArgumentValue(TokenInfo.ofString("value"), decorators.map((s) => '"$s"').toList()),
-          GQArgumentValue(TokenInfo.ofString(glApplyOnServer), applyOnServer),
-          GQArgumentValue(TokenInfo.ofString(glApplyOnClient), applyOnClient),
-          if (import != null) GQArgumentValue(TokenInfo.ofString(glImport), import),
+          GLArgumentValue(TokenInfo.ofString("value"), decorators.map((s) => '"$s"').toList()),
+          GLArgumentValue(TokenInfo.ofString(glApplyOnServer), applyOnServer),
+          GLArgumentValue(TokenInfo.ofString(glApplyOnClient), applyOnClient),
+          if (import != null) GLArgumentValue(TokenInfo.ofString(glImport), import),
         ],
         generated: true);
   }

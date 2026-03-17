@@ -9,7 +9,7 @@ import 'package:graphlink/src/model/gl_shcema_mapping.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 
-class GLService extends GQInterfaceDefinition {
+class GLService extends GLInterfaceDefinition {
   final Map<String, GLQueryType> _fieldType = {};
   final Map<String, GLSchemaMapping> _mappings = {};
 
@@ -37,8 +37,7 @@ class GLService extends GQInterfaceDefinition {
   }
 
   List<GLSchemaMapping> get mappings => _mappings.values.toList();
-  List<GLSchemaMapping> get serviceMapping =>
-      _mappings.values.where((e) => !e.forbid && !e.identity).toList();
+  List<GLSchemaMapping> get serviceMapping => _mappings.values.where((e) => !e.forbid && !e.identity).toList();
 
   @override
   Set<GLToken> getImportDependecies(GLGrammar g) {
@@ -77,9 +76,7 @@ class GLService extends GQInterfaceDefinition {
 
   GLToken? _getMappedTo(GLGrammar g, GLToken? token) {
     if (token is GLDirectivesMixin) {
-      var mappedTo = (token as GLDirectivesMixin)
-          .getDirectiveByName(glSkipOnServer)
-          ?.getArgValueAsString(glMapTo);
+      var mappedTo = (token as GLDirectivesMixin).getDirectiveByName(glSkipOnServer)?.getArgValueAsString(glMapTo);
       if (filterDependecy(g.types[mappedTo], g)) {
         return g.types[mappedTo];
       }
