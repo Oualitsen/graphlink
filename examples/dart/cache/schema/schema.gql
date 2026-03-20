@@ -31,23 +31,30 @@ type Query {
   getOwner(id: ID!): Owner
   getCar(id: ID!): Car! @glCache(ttl: 60)
   getCarsCount: Int! @glCache(ttl: 60)
-  getCarName(id: ID!): String! @glCache(ttl: 60, tags:["test"])
+  getCarName(id: ID!): String! 
 }
 
 type Mutation {
-  createOwner(input: CreateOwnerInput!): Owner!
-  createCar(input: CreateCarInput!): Car!
+  createOwner(input: CreateOwnerInput!): Owner! @glCacheInvalidate(tags: ["persons"])
+  createCar(input: CreateCarInput!): Car! @glCacheInvalidate(tags: ["cars"])
+}
+
+mutation createCar2($input: CreateCarInput!) {
+  createCar(input: $input) @glCacheInvalidate(tags: ["cars"]) {
+    id
+  }
 }
 
 type Subscription {
-  counter: Int!
+  counter: Int! 
 }
-query getCarAndOwner($carId: ID!, $ownerId: ID!)  {
-  car: getCar(id: $carId) @glCache(ttl: 60, tag: "carAndOwner") {
+query getCarAndOwner($carId: ID!, $ownerId: ID!) @glCache(ttl: 60, tags: ["data"]) {
+  car: getCar(id: $carId) @glCache(ttl: 60, tags: ["cars"]) {
     ... _all_fields
   }
 
-  getOwner(id: $ownerId) {
+  getOwner(id: $ownerId)  @glCache(ttl: 60, tags: ["persons"]) {
     ... _all_fields
   }
 }
+

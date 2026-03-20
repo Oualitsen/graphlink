@@ -833,11 +833,12 @@ extension GLGrammarExtension on GLGrammar {
     var argValues = field.arguments.map((arg) {
       return GLArgumentValue(arg.tokenInfo, "\$${arg.tokenInfo}");
     }).toList();
-    var queryElement = GLQueryElement(field.name, [], block, argValues, defaultAlias?.toToken());
-    var directives = field.getDirectives().where((e) => [glCache, glNoCache].contains(e.token)).toList();
+    const inheritedDirectives = [glCache, glNoCache, glCacheInvalidate];
+    var directives = field.getDirectives().where((e) => inheritedDirectives.contains(e.token)).toList();
+    var queryElement = GLQueryElement(field.name, directives, block, argValues, defaultAlias?.toToken());
     final def = GLQueryDefinition(
         field.name,
-        directives,
+        [],
         field.arguments
             .map((e) => GLArgumentDefinition("\$${e.tokenInfo}".toToken(), e.type, [], initialValue: e.initialValue))
             .toList(),

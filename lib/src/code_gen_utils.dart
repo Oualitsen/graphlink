@@ -4,15 +4,10 @@ abstract class CodeGenUtilsBase {
   String block(List<String>? statements);
 
   String ifStatement(
-      {required String condition,
-      required List<String> ifBlockStatements,
-      List<String>? elseBlockStatements});
+      {required String condition, required List<String> ifBlockStatements, List<String>? elseBlockStatements});
 
   String method(
-      {required String returnType,
-      required methodName,
-      List<String>? arguments,
-      required List<String> statements});
+      {required String returnType, required methodName, List<String>? arguments, required List<String> statements});
 
   String parentheses(List<String>? elements);
 
@@ -21,10 +16,7 @@ abstract class CodeGenUtilsBase {
     required List<CaseStatement> cases,
     String? defaultStatement,
   });
-  String ternaryOp(
-      {required String condition,
-      required String positiveStatement,
-      required String negativeStatement});
+  String ternaryOp({required String condition, required String positiveStatement, required String negativeStatement});
 
   String createMethod({String? returnType, required String methodName, List<String>? arguments});
 
@@ -56,9 +48,7 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
 
   @override
   String ifStatement(
-      {required String condition,
-      required List<String> ifBlockStatements,
-      List<String>? elseBlockStatements}) {
+      {required String condition, required List<String> ifBlockStatements, List<String>? elseBlockStatements}) {
     var buffer = StringBuffer();
     buffer.write("if");
     buffer.write(parentheses([condition]));
@@ -73,10 +63,7 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
 
   @override
   String method(
-      {required String returnType,
-      required methodName,
-      List<String>? arguments,
-      required List<String> statements}) {
+      {required String returnType, required methodName, List<String>? arguments, required List<String> statements}) {
     var buffer = StringBuffer();
     buffer.write(returnType);
     buffer.write(" ");
@@ -125,10 +112,7 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
   }
 
   @override
-  String ternaryOp(
-      {required String condition,
-      required String positiveStatement,
-      required String negativeStatement}) {
+  String ternaryOp({required String condition, required String positiveStatement, required String negativeStatement}) {
     var buffer = StringBuffer(condition);
     buffer.write(" ? ");
     buffer.write(positiveStatement);
@@ -171,8 +155,29 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
     return buffer.toString();
   }
 
-  String createClass(
-      {required String className, required List<String> statements, List<String>? baseClassNames}) {
+  String createConstructor({
+    required String className,
+    List<String>? arguments,
+    List<String>? superArguments,
+    List<String>? statements,
+  }) {
+    var buffer = StringBuffer();
+    buffer.write(className);
+    buffer.write(parentheses(arguments));
+    if (superArguments != null) {
+      buffer.write(" : super");
+      buffer.write(parentheses(superArguments));
+    }
+    if (statements != null) {
+      buffer.write(" ");
+      buffer.write(block(statements));
+    } else {
+      buffer.write(";");
+    }
+    return buffer.toString();
+  }
+
+  String createClass({required String className, required List<String> statements, List<String>? baseClassNames}) {
     var buffer = StringBuffer();
     buffer.write("class ${className} ");
     if (baseClassNames != null && baseClassNames.isNotEmpty) {
@@ -185,9 +190,7 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
   }
 
   String createInterface(
-      {required String className,
-      required List<String> statements,
-      List<String>? baseInterfaceNames}) {
+      {required String className, required List<String> statements, List<String>? baseInterfaceNames}) {
     var buffer = StringBuffer();
     buffer.write("abstract class ${className}");
     if (baseInterfaceNames != null && baseInterfaceNames.isNotEmpty) {
@@ -198,8 +201,7 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
     return buffer.toString();
   }
 
-  String createEnum(
-      {required String enumName, required List<String> enumValues, List<String>? methods}) {
+  String createEnum({required String enumName, required List<String> enumValues, List<String>? methods}) {
     var buffer = StringBuffer();
     buffer.write("enum ${enumName}");
     buffer.write(enumValues.join(", "));
@@ -243,6 +245,10 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
     buffer.write(block(statements));
     return buffer.toString();
   }
+
+  String then({required String varName, required List<String> statements}) {
+    return ".then(($varName) ${block(statements)})";
+  }
 }
 
 class JavaCodeGenUtils implements CodeGenUtilsBase {
@@ -259,9 +265,7 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
 
   @override
   String ifStatement(
-      {required String condition,
-      required List<String> ifBlockStatements,
-      List<String>? elseBlockStatements}) {
+      {required String condition, required List<String> ifBlockStatements, List<String>? elseBlockStatements}) {
     var buffer = StringBuffer();
     buffer.write("if");
     buffer.write(parentheses([condition]));
@@ -276,10 +280,7 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
 
   @override
   String method(
-      {required String returnType,
-      required methodName,
-      List<String>? arguments,
-      required List<String> statements}) {
+      {required String returnType, required methodName, List<String>? arguments, required List<String> statements}) {
     var buffer = StringBuffer();
     buffer.write(returnType);
     buffer.write(" ");
@@ -328,10 +329,7 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
   }
 
   @override
-  String ternaryOp(
-      {required String condition,
-      required String positiveStatement,
-      required String negativeStatement}) {
+  String ternaryOp({required String condition, required String positiveStatement, required String negativeStatement}) {
     var buffer = StringBuffer(condition);
     buffer.write(" ? ");
     buffer.write(positiveStatement);
@@ -342,10 +340,7 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
 
   @override
   String createMethod(
-      {String? returnType,
-      required String methodName,
-      List<String>? arguments,
-      List<String>? statements}) {
+      {String? returnType, required String methodName, List<String>? arguments, List<String>? statements}) {
     var buffer = StringBuffer();
     if (returnType != null) {
       buffer.write("${returnType} ");
@@ -399,9 +394,7 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
   }
 
   String createInterface(
-      {required String interfaceName,
-      required List<String> statements,
-      List<String>? interfaceNames}) {
+      {required String interfaceName, required List<String> statements, List<String>? interfaceNames}) {
     var buffer = StringBuffer();
     buffer.write("public interface ${interfaceName}");
     if (interfaceNames != null && interfaceNames.isNotEmpty) {
@@ -413,8 +406,7 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
     return buffer.toString();
   }
 
-  String createEnum(
-      {required String enumName, required List<String> enumValues, List<String>? methods}) {
+  String createEnum({required String enumName, required List<String> enumValues, List<String>? methods}) {
     var buffer = StringBuffer();
     buffer.write("public enum ${enumName} ");
 

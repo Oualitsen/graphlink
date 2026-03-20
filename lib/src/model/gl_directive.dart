@@ -128,6 +128,38 @@ class GLDirectiveValue extends GLToken {
     return GLDirectiveValue(TokenInfo.ofString(directiveName), [], args, generated: generated);
   }
 
+  static GLDirectiveValue createDefaultCacheDirectiveValue(TokenInfo tokenInfo, int defaultTTL) {
+    return GLDirectiveValue(
+        tokenInfo.ofNewName(glCache),
+        [],
+        [
+          GLArgumentValue(tokenInfo.ofNewName(glCacheTTL), defaultTTL),
+        ],
+        generated: true);
+  }
+
+  static GLDirectiveValue createCacheDirective(TokenInfo tokenInfo, int ttl, List<String> tags) {
+    return GLDirectiveValue(
+        tokenInfo.ofNewName(glCache),
+        [],
+        [
+          GLArgumentValue(tokenInfo.ofNewName(glCacheTTL), ttl),
+          GLArgumentValue(tokenInfo.ofNewName(glCacheTagList), tags),
+        ],
+        generated: true);
+  }
+
+  static GLDirectiveValue createInvalidateCacheDirective(TokenInfo tokenInfo, bool all, List<String> tags) {
+    return GLDirectiveValue(
+        tokenInfo.ofNewName(glCache),
+        [],
+        [
+          GLArgumentValue(tokenInfo.ofNewName(glCacheArgAll), all),
+          GLArgumentValue(tokenInfo.ofNewName(glCacheTagList), all ? [] : tags),
+        ],
+        generated: true);
+  }
+
   static GLDirectiveValue createGqDecorators({
     required List<String> decorators,
     bool applyOnServer = true,
