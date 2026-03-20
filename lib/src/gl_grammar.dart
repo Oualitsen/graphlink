@@ -280,6 +280,7 @@ class GLGrammar extends GrammarDefinition {
       fixTagListValues();
       validateTagValues();
       checkCacheOnMutationsAndSubscriptions();
+      checkCacheInvalidateOnQueriesAndSubscriptions();
       checkGLCacheDirectives();
       checkGLCacheInvalidateDirectives();
       checkGLCacheTags();
@@ -293,8 +294,8 @@ class GLGrammar extends GrammarDefinition {
       if (defaultCacheTTL != null) {
         applyDefaultCacheToQueries(defaultCacheTTL!);
       }
-      applyCachesToQueries();
-      applyNoCachesToQueries();
+      propagateCacheTags();
+      propagateInvalidateCacheTags();
     } else {
       handleRepositories(true);
       generateServicesAndControllers();

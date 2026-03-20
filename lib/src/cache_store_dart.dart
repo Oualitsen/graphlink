@@ -34,7 +34,7 @@ class _GraphLinkPartialQuery {
   final String query;
   final Map<String, dynamic> variables;
   final int ttl;
-  final List<String>? tags;
+  final List<String> tags;
   final String operationName;
   final String elementKey;
   final Set<String> fragmentNames;
@@ -103,6 +103,18 @@ class _GraphLinkTagEntry {
 }
 ''';
 
+const glLock = '''
+class _Lock {
+  Future<void> _last = Future.value();
+
+  Future<T> synchronized<T>(Future<T> Function() fn) {
+    final next = _last.then((_) => fn());
+    _last = next.then((_) {}, onError: (_) {});
+    return next;
+  }
+}
+''';
+
 const cacheEntry = '''
 class _GraphLinkCacheEntry {
   final String data;
@@ -119,8 +131,6 @@ class _GraphLinkCacheEntry {
   }
 
   String encode() => jsonEncode(toJson());
-
-  static _GraphLinkCacheEntry decode(String raw) => _GraphLinkCacheEntry.fromJson(jsonDecode(raw));
 
   bool get isExpired => DateTime.now().millisecondsSinceEpoch > expiry;
 }

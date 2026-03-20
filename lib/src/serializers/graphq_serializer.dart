@@ -2,7 +2,6 @@ import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/gl_grammar.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
-import 'package:graphlink/src/model/gl_cache_definition.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
 import 'package:graphlink/src/model/gl_field.dart';
@@ -27,7 +26,9 @@ const _skippedDirectives = {
   glTypeNameDirective,
   glEqualsHashcode,
   glExternal,
-  glRepository
+  glRepository,
+  glCache,
+  glCacheInvalidate,
 };
 
 bool _shouldSkipDriectiveDefinition(GLDirectiveDefinition def) {
@@ -38,7 +39,7 @@ bool _shouldSkipDriectiveDefinition(GLDirectiveDefinition def) {
 bool _shouldSkipDriectiveValue(GLDirectiveValue def) {
   return _skippedDirectives.contains(def.token) ||
       GLGrammar.directivesToSkip.contains(def.token) ||
-      def.getArgValue(glAnnotation) == true;
+      def.getArgValueAsBool(glAnnotation);
 }
 
 // this is for skipping generating objects that should be hidden from the client
@@ -322,7 +323,8 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
       final dq = DividedQuery(
         query: serialQuery,
         operationName: operationName,
-        cache: element.cacheDefinition,
+        cacheTTL: element.cacheTTL,
+        tags: element.cacheTags,
         elementKey: element.alias?.token ?? element.token,
         variables: [...element.arguments.map((e) => e.value?.toString() ?? '')],
         fragmentNames: element.getFragmentsAndDependecies(grammar).map((e) => e.token).toSet(),
@@ -341,19 +343,21 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
 class DividedQuery {
   final String query;
   final String operationName;
-  final GLCacheDefinition? cache;
   final List<String> variables;
   final String elementKey;
   final Set<String> fragmentNames;
   final List<String> argumentDeclarations;
+  final int cacheTTL;
+  final List<String> tags;
 
   DividedQuery({
     required this.query,
     required this.operationName,
-    required this.cache,
     required this.variables,
     required this.elementKey,
     required this.fragmentNames,
     required this.argumentDeclarations,
+    required this.cacheTTL,
+    required this.tags,
   });
 }
