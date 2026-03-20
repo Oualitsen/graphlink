@@ -81,14 +81,11 @@ void main() {
     var parsed = g.parse(text);
     expect(parsed is Success, true);
     GLQueryDefinition getPerson = g.queries['getPerson']!;
-    var getPersonCache = getPerson.cacheDefinition;
-    expect(getPersonCache, isNotNull);
-    expect(getPersonCache!.ttl, 5000);
-    expect(getPersonCache.tags, isNull);
+    expect(getPerson.cacheTTL, 5000);
+    expect(getPerson.cacheTags, isEmpty);
     for (var elem in getPerson.elements) {
-      expect(elem.cacheDefinition, isNotNull);
-      expect(elem.cacheDefinition!.ttl, 5000);
-      expect(elem.cacheDefinition!.tags, isNull);
+      expect(elem.cacheTTL, 5000);
+      expect(elem.cacheTags, isEmpty);
     }
   });
 
@@ -121,14 +118,12 @@ void main() {
     var parsed = g.parse(text);
     expect(parsed is Success, true);
     GLQueryDefinition myGetPerson = g.queries['MyGetPerson']!;
-    var cache = myGetPerson.cacheDefinition;
-    expect(cache, isNotNull);
-    expect(cache!.ttl, 5000);
-    expect(cache.tags, isNull);
+
+    expect(myGetPerson.cacheTTL, 5000);
+    expect(myGetPerson.cacheTags, isEmpty);
     for (var elem in myGetPerson.elements) {
-      expect(elem.cacheDefinition, isNotNull);
-      expect(elem.cacheDefinition!.ttl, 5000);
-      expect(elem.cacheDefinition!.tags, isNull);
+      expect(elem.cacheTTL, 5000);
+      expect(elem.cacheTags, isEmpty);
     }
   });
 
@@ -154,15 +149,113 @@ void main() {
     var parsed = g.parse(text);
     expect(parsed is Success, true);
     GLQueryDefinition myQuery = g.queries['MyQuery']!;
-    var cache = myQuery.cacheDefinition;
-    expect(cache, isNotNull);
-    expect(cache!.ttl, 5000);
-    expect(cache.tags, contains("Person"));
+    expect(myQuery.cacheTTL, 5000);
+    expect(myQuery.cacheTags, contains("Person"));
     var qeuryElement = myQuery.elements.first;
-    var elementCache = qeuryElement.cacheDefinition;
-    expect(elementCache, isNotNull);
-    expect(elementCache!.ttl, 5000);
-    expect(elementCache.tags, contains("Person"));
+    expect(qeuryElement.cacheTTL, 5000);
+    expect(qeuryElement.cacheTags, contains("Person"));
+  });
+
+  test("cache tags should be propagated to element level with union operation", () {
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Query {
+    getPerson: Person 
+  }
+
+  query MyQuery @glCache(ttl: 5000, tags: ["generic"]) {
+    # following should end up with tags generic and specific
+    getPerson  @glCache(ttl: 6000, tags: ["specific"]){ 
+      id
+    }
+  }
+''';
+
+    var parsed = g.parse(text);
+    expect(parsed is Success, true);
+    GLQueryDefinition myQuery = g.queries['MyQuery']!;
+    expect(myQuery.cacheTTL, 5000);
+    expect(myQuery.cacheTags, contains("generic"));
+    var qeuryElement = myQuery.elements.first;
+    expect(qeuryElement.cacheTTL, 6000);
+    expect(qeuryElement.cacheTags, containsAll(["specific", "generic"]));
+  });
+
+  test("invalidate cache tags should be propagated to element level with union operation", () {
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Query {
+    getPerson: Person 
+  }
+
+  type Mutation {
+    createPerson: Person
+    
+  }
+
+  query MyQuery @glCache(ttl: 5000, tags: ["generic"]) {
+    # following should end up with tags generic and specific
+    getPerson  @glCache(ttl: 6000, tags: ["specific"]){ 
+      id
+    }
+  }
+  mutation CrPeron @glCacheInvalidate(tags: ["generic"]) {
+    createPerson @glCacheInvalidate(tags: ["specific"]) {id}
+  }
+''';
+
+    var parsed = g.parse(text);
+    expect(parsed is Success, true);
+    GLQueryDefinition myQuery = g.queries['CrPeron']!;
+    expect(myQuery.invalidateCacheTags, contains("generic"));
+    var qeuryElement = myQuery.elements.first;
+    expect(qeuryElement.invalidateCacheTags, containsAll(["specific", "generic"]));
+  });
+
+  test("invalidate all cache  should be propagated to element level", () {
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Query {
+    getPerson: Person 
+  }
+
+  type Mutation {
+    createPerson: Person
+    
+  }
+
+  query MyQuery @glCache(ttl: 5000, tags: ["generic"]) {
+    # following should end up with tags generic and specific
+    getPerson  @glCache(ttl: 6000, tags: ["specific"]){ 
+      id
+    }
+  }
+  mutation CrPeron @glCacheInvalidate(all: true) {
+    createPerson @glCacheInvalidate(tags: ["specific"]) {id}
+  }
+''';
+
+    var parsed = g.parse(text);
+    expect(parsed is Success, true);
+    GLQueryDefinition myQuery = g.queries['CrPeron']!;
+    expect(myQuery.cacheInvalidateAll, true);
+    var qeuryElement = myQuery.elements.first;
+    expect(qeuryElement.cacheInvalidateAll, true);
   });
 
   test("cache should be applied on auto generated queries", () {
@@ -182,10 +275,9 @@ void main() {
     var parsed = g.parse(text);
     expect(parsed is Success, true);
     GLQueryDefinition getPerson = g.queries['getPerson']!;
-    var cache = getPerson.cacheDefinition;
-    expect(cache, isNotNull);
-    expect(cache!.ttl, 5000);
-    expect(cache.tags?.first, "Person");
+    final getPersonElement = getPerson.elements.first;
+    expect(getPersonElement.cacheTTL, 5000);
+    expect(getPersonElement.cacheTags, ["Person"]);
   });
 
   test("cache on child elements must override root cache", () {
@@ -212,15 +304,11 @@ void main() {
     var parsed = g.parse(text);
     expect(parsed is Success, true);
     GLQueryDefinition myQuery = g.queries['MyQuery']!;
-    var rootCahce = myQuery.cacheDefinition;
-    expect(rootCahce, isNotNull);
-    expect(rootCahce!.tags?.first, "Person");
-    expect(rootCahce.ttl, 5000);
+    expect(myQuery.cacheTags.first, "Person");
+    expect(myQuery.cacheTTL, 5000);
     var countElement = myQuery.elements.where((e) => e.token == "count").first;
-    var countCache = countElement.cacheDefinition;
-    expect(countCache, isNotNull);
-    expect(countCache!.tags?.first, "PersonCount");
-    expect(countCache.ttl, 6000);
+    expect(countElement.cacheTags.first, "PersonCount");
+    expect(countElement.cacheTTL, 6000);
   });
 
   test("glCache directive validation when tag is invalid", () {
@@ -273,12 +361,11 @@ void main() {
     var parsed = g.parse(text);
     expect(parsed is Success, true);
     GLQueryDefinition myQuery = g.queries['MyQuery']!;
-    var rootCahce = myQuery.cacheDefinition;
-    expect(rootCahce, isNotNull);
-    expect(rootCahce!.tags?.first, "Person");
-    expect(rootCahce.ttl, 5000);
+    expect(myQuery.cacheTags.first, "Person");
+    expect(myQuery.cacheTTL, 5000);
     var getPersonElement = myQuery.elements.where((e) => e.token == "getPerson").first;
-    expect(getPersonElement.cacheDefinition, isNull);
+    expect(getPersonElement.cacheTTL, 0);
+    expect(getPersonElement.cacheTags, isEmpty);
   });
 
   test("glCache should not be applied to mutations (schema-level)", () {
@@ -664,6 +751,112 @@ void main() {
         (e) => e.errorMessage,
         'errorMessage',
         contains('tag on @glCache directives should be alphanumeric with underscores only! found:  line: 6 column: 25'),
+      )),
+    );
+  });
+
+  // --------
+
+  test("glInvalidateCache should not be applied to queries (schema-level)", () {
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Query {
+    getPerson: Person @glCacheInvalidate(all: true)
+  }
+''';
+
+    expect(
+      () => g.parse(text),
+      throwsA(isA<ParseException>().having(
+        (e) => e.errorMessage,
+        'errorMessage',
+        contains('$glCacheInvalidate is not allowed on queries or subscriptions'),
+      )),
+    );
+  });
+
+  test("glInvalidateCache should not be applied to quries (explicit mutation declaration)", () {
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Query {
+    getPerson: Person
+  }
+
+  query getPerson {
+    getPerson @glCacheInvalidate(all: true) {
+      id
+    }
+  }
+''';
+
+    expect(
+      () => g.parse(text),
+      throwsA(isA<ParseException>().having(
+        (e) => e.errorMessage,
+        'errorMessage',
+        contains('$glCacheInvalidate is not allowed on queries or subscriptions'),
+      )),
+    );
+  });
+
+  test("glCacheInvalidate should not be applied to subscriptions (schema-level)", () {
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Subscription {
+    onPersonCreated: Person @glCacheInvalidate(all: true)
+  }
+''';
+
+    expect(
+      () => g.parse(text),
+      throwsA(isA<ParseException>().having(
+        (e) => e.errorMessage,
+        'errorMessage',
+        contains('$glCacheInvalidate is not allowed on queries or subscriptions'),
+      )),
+    );
+  });
+
+  test("glCacheInvalidate should not be applied to subscriptions (explicit subscription declaration)", () {
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Subscription {
+    onPersonCreated: Person
+  }
+
+  subscription OnPersonCreated {
+    onPersonCreated @glCacheInvalidate(all: true) {
+      id
+    }
+  }
+''';
+
+    expect(
+      () => g.parse(text),
+      throwsA(isA<ParseException>().having(
+        (e) => e.errorMessage,
+        'errorMessage',
+        contains('$glCacheInvalidate is not allowed on queries or subscriptions'),
       )),
     );
   });

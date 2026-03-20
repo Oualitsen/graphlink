@@ -2,7 +2,7 @@ import 'package:graphlink_cache_example/generated/inputs/create_car_input.dart';
 import 'package:graphlink_cache_example/generated/inputs/create_owner_input.dart';
 import 'package:graphlink_cache_example/ws_adapter.dart';
 import 'package:http/http.dart' as http;
-import 'package:graphlink_cache_example/generated/client/GraphLinkClient.dart';
+import 'package:graphlink_cache_example/generated/client/graph_link_client.dart';
 
 const _serverUrl = 'http://localhost:8080/graphql';
 

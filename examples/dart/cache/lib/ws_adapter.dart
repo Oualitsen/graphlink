@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:graphlink_cache_example/generated/client/GraphLinkClient.dart';
+import 'package:graphlink_cache_example/generated/client/graph_link_client.dart';
 
 class SimpleWebSocketAdapter extends GraphLinkWebSocketAdapter {
   final String url;

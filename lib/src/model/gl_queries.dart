@@ -1,7 +1,6 @@
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/gl_grammar.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
-import 'package:graphlink/src/model/gl_cache_definition.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_field.dart';
@@ -20,19 +19,9 @@ class GLQueryDefinition extends GLToken with GLDirectivesMixin {
   final List<GLArgumentDefinition> arguments;
   final List<GLQueryElement> elements;
   final GLQueryType type; //query|mutation|subscription
-  GLCacheDefinition? _cacheDefinition;
   Set<GLFragmentDefinitionBase>? _allFrags;
 
   GLTypeDefinition? _gqTypeDefinition;
-
-  set cacheDefinition(GLCacheDefinition? cacheDefinition) {
-    _cacheDefinition = cacheDefinition;
-    for (var e in elements) {
-      e.cacheDefinition ??= cacheDefinition;
-    }
-  }
-
-  GLCacheDefinition? get cacheDefinition => _cacheDefinition;
 
   Set<String> get fragmentNames {
     return elements.expand((e) => e.fragmentNames).toSet();
@@ -120,6 +109,50 @@ class GLQueryDefinition extends GLToken with GLDirectivesMixin {
   }
 
   GLArgumentDefinition findByName(String name) => arguments.where((arg) => arg.token == name).first;
+
+  void applyDefaultCache(int defaultTTL) {
+    if (type != GLQueryType.query) {
+      throw ParseException("You cannot apply cache to ${type}", info: tokenInfo);
+    }
+    if (!hasDirective(glCache) && !hasDirective(glNoCache)) {
+      addDirective(GLDirectiveValue.createDefaultCacheDirectiveValue(tokenInfo, defaultTTL));
+    }
+    for (final element in elements) {
+      element.applyDefaultCache(defaultTTL);
+    }
+  }
+
+  int get cacheTTL {
+    var cache = getDirectiveByName(glCache);
+    if (cache == null) {
+      return 0;
+    }
+    return cache.getArgValue(glCacheTTL) as int? ?? 0;
+  }
+
+  List<String> get cacheTags {
+    var cache = getDirectiveByName(glCache);
+    if (cache == null) {
+      return [];
+    }
+    return (cache.getArgValue(glCacheTagList) as List? ?? []).cast<String>();
+  }
+
+  List<String> get invalidateCacheTags {
+    var cacheDir = getDirectiveByName(glCacheInvalidate);
+    if (cacheDir == null) {
+      return [];
+    }
+    return (cacheDir.getArgValue(glCacheTagList) as List? ?? []).cast<String>();
+  }
+
+  bool get cacheInvalidateAll {
+    var cache = getDirectiveByName(glCacheInvalidate);
+    if (cache == null) {
+      return false;
+    }
+    return cache.getArgValueAsBool(glCacheArgAll);
+  }
 }
 
 class GLQueryElement extends GLToken with GLDirectivesMixin {
@@ -127,7 +160,6 @@ class GLQueryElement extends GLToken with GLDirectivesMixin {
 
   final List<GLArgumentValue> arguments;
   final TokenInfo? alias;
-  GLCacheDefinition? cacheDefinition;
 
   ///
   ///This is unknown on parse time. It is filled on run time.
@@ -150,8 +182,31 @@ class GLQueryElement extends GLToken with GLDirectivesMixin {
 
   Set<GLFragmentDefinitionBase> getFragmentsAndDependecies(GLGrammar g) {
     var frags = fragmentNames.map((e) => g.getFragmentByName(e)!).toSet();
-    var _allFrags = {...frags, ...frags.expand((e) => e.dependecies)};
-    return _allFrags;
+    return {...frags, ...frags.expand((e) => e.dependecies)};
+  }
+
+  List<String> get cacheTags {
+    var cacheDir = getDirectiveByName(glCache);
+    if (cacheDir == null) {
+      return [];
+    }
+    return (cacheDir.getArgValue(glCacheTagList) as List? ?? []).cast<String>();
+  }
+
+  List<String> get invalidateCacheTags {
+    var cacheDir = getDirectiveByName(glCacheInvalidate);
+    if (cacheDir == null) {
+      return [];
+    }
+    return (cacheDir.getArgValue(glCacheTagList) as List? ?? []).cast<String>();
+  }
+
+  int get cacheTTL {
+    var cacheDir = getDirectiveByName(glCache);
+    if (cacheDir == null) {
+      return 0;
+    }
+    return (cacheDir.getArgValue(glCacheTTL) as int?) ?? 0;
   }
 
   Set<String> _getFragmentNamesByBlock(GLFragmentBlockDefinition block) {
@@ -191,5 +246,54 @@ class GLQueryElement extends GLToken with GLDirectivesMixin {
   String get nonEscapedToken {
     var aliasText = alias == null ? '' : "$alias:";
     return "$aliasText$tokenInfo";
+  }
+
+  void applyDefaultCache(int defaultTTL) {
+    if (!hasDirective(glCache) && !hasDirective(glNoCache)) {
+      addDirective(GLDirectiveValue.createDefaultCacheDirectiveValue(tokenInfo, defaultTTL));
+    }
+  }
+
+  void propagateCache(int ttl, List<String> tags) {
+    if (hasDirective(glNoCache)) {
+      return;
+    }
+    if (!hasDirective(glCache)) {
+      addDirective(GLDirectiveValue.createCacheDirective(tokenInfo, ttl, tags));
+    } else {
+      // union of tags
+      var cache = getDirectiveByName(glCache)!;
+      var newTags = {...cacheTags, ...tags}.toList();
+      cache.addArg(glCacheTagList, newTags);
+    }
+  }
+
+  void propagateInvalidateCache(bool invalidateAll, List<String> tags) {
+    if (!hasDirective(glCacheInvalidate)) {
+      addDirective(GLDirectiveValue.createInvalidateCacheDirective(tokenInfo, invalidateAll, tags));
+    } else {
+      // union of tags
+      var cache = getDirectiveByName(glCacheInvalidate)!;
+      if (cache.getArgValueAsBool(glCacheArgAll)) {
+        // no need to add the tags as the invalidation will be on the whole cache
+        return;
+      }
+      if (invalidateAll) {
+        cache.addArg(glCacheArgAll, invalidateAll);
+        // reset tags
+        cache.addArg(glCacheTagList, []);
+        return;
+      }
+      var newTags = {...invalidateCacheTags, ...tags}.toList();
+      cache.addArg(glCacheTagList, newTags);
+    }
+  }
+
+  bool get cacheInvalidateAll {
+    var cache = getDirectiveByName(glCacheInvalidate);
+    if (cache == null) {
+      return false;
+    }
+    return cache.getArgValueAsBool(glCacheArgAll);
   }
 }

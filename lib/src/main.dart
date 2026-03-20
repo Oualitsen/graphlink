@@ -314,7 +314,7 @@ Future<Set<String>> generateClientClasses(GLGrammar grammar, GeneratorConfig con
     String client = dcs.generateClient(prefix);
     var r = writeToFile(
         data: client,
-        fileName: 'GraphLinkClient${dcs.fileExtension}',
+        fileName: 'graph_link_client${dcs.fileExtension}',
         subdir: 'client',
         imports: [],
         destinationDir: destinationDir);

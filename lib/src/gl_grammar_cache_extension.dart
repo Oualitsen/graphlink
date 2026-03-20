@@ -1,7 +1,6 @@
 import 'package:graphlink/src/excpetions/parse_exception.dart';
 import 'package:graphlink/src/gl_grammar.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
-import 'package:graphlink/src/model/gl_cache_definition.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_directives_mixin.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
@@ -20,6 +19,17 @@ extension GLGrammarCacheExtension on GLGrammar {
     });
   }
 
+  void checkCacheInvalidateOnQueriesAndSubscriptions() {
+    queries.values.where((e) => e.type != GLQueryType.mutation).forEach((q) {
+      _checkForCacheInvalidateExistanceAndThrow(q);
+      _checkInvalidateCacheOnMutationsAndSubscriptionsElements(q.elements);
+    });
+  }
+
+  void _checkInvalidateCacheOnMutationsAndSubscriptionsElements(List<GLQueryElement> elements) {
+    elements.forEach(_checkForCacheInvalidateExistanceAndThrow);
+  }
+
   void _checkCacheOnMutationsAndSubscriptionsElements(List<GLQueryElement> elements) {
     elements.forEach(_checkForCacheExistanceAndThrow);
   }
@@ -33,10 +43,21 @@ extension GLGrammarCacheExtension on GLGrammar {
         info: token.tokenInfo,
       );
     }
+
     if (e.hasDirective(glNoCache)) {
       throw ParseException(
         "$glNoCache is not allowed on mutations or subscriptions — "
         "these operations are never cached.",
+        info: token.tokenInfo,
+      );
+    }
+  }
+
+  void _checkForCacheInvalidateExistanceAndThrow(GLDirectivesMixin e) {
+    final token = e as GLToken;
+    if (e.hasDirective(glCacheInvalidate)) {
+      throw ParseException(
+        "$glCacheInvalidate is not allowed on queries or subscriptions",
         info: token.tokenInfo,
       );
     }
@@ -101,8 +122,6 @@ extension GLGrammarCacheExtension on GLGrammar {
         throw ParseException("${glCacheTTL} on $glCache directives should be a positive integer! found: ${ttlObject}",
             info: directive.tokenInfo);
       }
-
-      var tagsList = directive.getArgValue(glCacheTagList);
     });
   }
 
@@ -111,13 +130,7 @@ extension GLGrammarCacheExtension on GLGrammar {
   ///
 
   void checkGLCacheTags() {
-    final allTags = directiveValues
-        .where((val) => val.token == glCache)
-        .map((e) => e.getArgValue(glCacheTagList))
-        .where((e) => e != null)
-        .map((e) => e!)
-        .expand((e) => (e as List).cast<String>())
-        .toSet();
+    final allTags = getAllCacheTags();
     directiveValues
         .where((d) => d.token == glCacheInvalidate)
         .where((e) => e.getArgValue(glCacheTagList) != null)
@@ -169,45 +182,42 @@ extension GLGrammarCacheExtension on GLGrammar {
   ///Applies the default cache to all queries
   void applyDefaultCacheToQueries(int defaultTTL) {
     queries.values.where((q) => q.type == GLQueryType.query).forEach((query) {
-      query.cacheDefinition = GLCacheDefinition(defaultTTL, null);
+      query.applyDefaultCache(defaultTTL);
     });
   }
 
-  ///
-  ///applies cache to queries having glCache directive and override default
-  void applyCachesToQueries() {
-    queries.values.where((q) => q.type == GLQueryType.query).forEach((query) {
-      if (query.hasDirective(glCache)) {
-        query.cacheDefinition = fromDirective(query.getDirectiveByName(glCache)!);
+  void propagateCacheTags() {
+    queries.values.where((q) => q.type == GLQueryType.query).where((q) => q.hasDirective(glCache)).forEach((q) {
+      final cache = q.getDirectiveByName(glCache)!;
+      final ttl = cache.getArgValue(glCacheTTL) as int;
+      final tags = (cache.getArgValue(glCacheTagList) as List? ?? []).cast<String>();
+      for (final elm in q.elements) {
+        elm.propagateCache(ttl, tags);
       }
-      _applyCacheToQueryElements(query);
     });
   }
 
-  void _applyCacheToQueryElements(GLQueryDefinition def) {
-    def.elements.where((e) => e.hasDirective(glCache)).forEach((e) {
-      e.cacheDefinition = fromDirective(e.getDirectiveByName(glCache)!);
-    });
-  }
-
-  GLCacheDefinition fromDirective(GLDirectiveValue val) {
-    return GLCacheDefinition(
-        val.getArgValue(glCacheTTL) as int, (val.getArgValue(glCacheTagList) as List?)?.cast<String>());
-  }
-
-  /// removes default applied cache on queries having @glNoCache
-  void applyNoCachesToQueries() {
-    queries.values.where((q) => q.type == GLQueryType.query).forEach((query) {
-      if (query.hasDirective(glNoCache)) {
-        query.cacheDefinition = null;
+  void propagateInvalidateCacheTags() {
+    queries.values
+        .where((q) => q.type == GLQueryType.mutation)
+        .where((q) => q.hasDirective(glCacheInvalidate))
+        .forEach((q) {
+      final cache = q.getDirectiveByName(glCacheInvalidate)!;
+      final tags = (cache.getArgValue(glCacheTagList) as List? ?? []).cast<String>();
+      final invalidateAll = cache.getArgValueAsBool(glCacheArgAll);
+      for (final elm in q.elements) {
+        elm.propagateInvalidateCache(invalidateAll, tags);
       }
-      _applyNoCachesToQuerieElements(query);
     });
   }
 
-  void _applyNoCachesToQuerieElements(GLQueryDefinition def) {
-    def.elements.where((e) => e.hasDirective(glNoCache)).forEach((e) {
-      e.cacheDefinition = null;
-    });
+  Set<String> getAllCacheTags() {
+    return directiveValues
+        .where((val) => val.token == glCache)
+        .map((e) => e.getArgValue(glCacheTagList))
+        .where((e) => e != null)
+        .map((e) => e!)
+        .expand((e) => (e as List).cast<String>())
+        .toSet();
   }
 }
