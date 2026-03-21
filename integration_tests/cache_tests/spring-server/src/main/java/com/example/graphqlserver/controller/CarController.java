@@ -24,6 +24,18 @@ public class CarController {
     }
 
     @QueryMapping
+    public Car getCarStale(@Argument String id) {
+        System.out.println("getCarStale:" + id);
+        return dataStore.findCar(id).orElse(null);
+    }
+
+    @QueryMapping
+    public Car getCarExpiring(@Argument String id) {
+        System.out.println("getCarExpiring:" + id);
+        return dataStore.findCar(id).orElse(null);
+    }
+
+    @QueryMapping
     public int getCarsCount() {
         System.out.println("getCarsCount");
         return dataStore.countCars();

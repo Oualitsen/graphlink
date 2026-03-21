@@ -92,3 +92,4 @@ const glNoCache = "@glNoCache";
 const glCacheInvalidate = "@glCacheInvalidate";
 const glCacheTagList = "tags";
 const glCacheArgAll = "all";
+const glCacheArgStaleIfOffline = "staleIfOffline";

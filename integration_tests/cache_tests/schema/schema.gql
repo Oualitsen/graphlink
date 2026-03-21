@@ -1,4 +1,4 @@
-directive @glCache(ttl: Int!, tags: [String!]) on QUERY | MUTATION | FIELD | FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR | SCHEMA
+directive @glCache(ttl: Int!, tags: [String!], staleIfOffline: Boolean) on QUERY | MUTATION | FIELD | FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR | SCHEMA
 directive @glCacheInvalidate(tags: [String!], all: Boolean) on QUERY | MUTATION | FIELD | FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR | SCHEMA
 
 type Owner {
@@ -31,6 +31,8 @@ input CreateCarInput {
 type Query {
   getOwner(id: ID!): Owner
   getCar(id: ID!): Car! @glCache(ttl: 60, tags: ["cars"])
+  getCarStale(id: ID!): Car! @glCache(ttl: 1, tags: ["cars"], staleIfOffline: true)
+  getCarExpiring(id: ID!): Car! @glCache(ttl: 1, tags: ["cars"])
   getCarsCount: Int! @glCache(ttl: 60)
   getCarName(id: ID!): String!
 }

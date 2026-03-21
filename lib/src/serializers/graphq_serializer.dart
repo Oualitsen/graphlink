@@ -329,6 +329,7 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
         variables: [...element.arguments.map((e) => e.value?.toString() ?? '')],
         fragmentNames: element.getFragmentsAndDependecies(grammar).map((e) => e.token).toSet(),
         argumentDeclarations: element.arguments.map((arg) => "${arg.value}: ${serializeType(arg.type)}").toList(),
+        staleIfOffline: element.getDirectiveByName(glCache)?.getArgValueAsBool(glCacheArgStaleIfOffline) ?? false,
       );
       result.add(dq);
     }
@@ -349,6 +350,7 @@ class DividedQuery {
   final List<String> argumentDeclarations;
   final int cacheTTL;
   final List<String> tags;
+  final bool staleIfOffline;
 
   DividedQuery({
     required this.query,
@@ -359,5 +361,6 @@ class DividedQuery {
     required this.argumentDeclarations,
     required this.cacheTTL,
     required this.tags,
+    required this.staleIfOffline,
   });
 }

@@ -28,6 +28,8 @@ input CreateCarInput {
 type Query {
     getOwner(id: ID!): Owner
     getCar(id: ID!): Car
+    getCarStale(id: ID!): Car
+    getCarExpiring(id: ID!): Car
     getCarsCount: Int!
     getCarName(id: ID!): String
 }
