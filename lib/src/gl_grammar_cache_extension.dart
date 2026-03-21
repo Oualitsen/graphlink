@@ -139,6 +139,13 @@ extension GLGrammarCacheExtension on GLGrammar {
         throw ParseException("${glCacheTTL} on $glCache directives should be a positive integer! found: ${ttlObject}",
             info: directive.tokenInfo);
       }
+      final staleIfOffline = directive.getArgValue(glCacheArgStaleIfOffline);
+      if (staleIfOffline != null && staleIfOffline is! bool) {
+        throw ParseException(
+          "$glCacheArgStaleIfOffline on $glCache must be a boolean! found: $staleIfOffline",
+          info: directive.tokenInfo,
+        );
+      }
     });
   }
 

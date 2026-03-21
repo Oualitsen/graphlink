@@ -39,6 +39,7 @@ class _GraphLinkPartialQuery {
   final String elementKey;
   final Set<String> fragmentNames;
   final List<String> argumentDeclarations;
+  final bool staleIfOffline;
   late final String? cacheKey;
 
 
@@ -51,6 +52,7 @@ class _GraphLinkPartialQuery {
     required this.elementKey,
     required this.fragmentNames,
     required this.argumentDeclarations,
+    required this.staleIfOffline,
   }) {
     if (ttl == 0) {
       cacheKey = null;
@@ -119,8 +121,11 @@ const cacheEntry = '''
 class _GraphLinkCacheEntry {
   final String data;
   final int expiry;
+  final bool stale;
 
-  _GraphLinkCacheEntry(this.data, this.expiry);
+  _GraphLinkCacheEntry(this.data, this.expiry) : stale = false;
+
+  _GraphLinkCacheEntry._(this.data, this.expiry, this.stale);
 
   factory _GraphLinkCacheEntry.fromJson(Map<String, dynamic> json) {
     return _GraphLinkCacheEntry(json['data'] as String, json['expiry'] as int);
@@ -133,5 +138,8 @@ class _GraphLinkCacheEntry {
   String encode() => jsonEncode(toJson());
 
   bool get isExpired => DateTime.now().millisecondsSinceEpoch > expiry;
+
+  _GraphLinkCacheEntry asStale() =>
+      _GraphLinkCacheEntry._(data, expiry, true);
 }
 ''';
