@@ -366,13 +366,13 @@ class DartClientSerializer extends GLClientSerilaizer {
   String _serializeInvalidationCall(GLQueryDefinition def) {
     for (var e in def.elements) {
       if (e.cacheInvalidateAll) {
-        return 'store.invalidateAll();';
+        return 'await store.invalidateAll();';
       }
     }
 
     var tags = def.elements.expand((e) => e.invalidateCacheTags).toSet();
     if (tags.isNotEmpty) {
-      return '_invalidateByTags(${tags.map((e) => e.quote()).toList()});';
+      return 'await _invalidateByTags(${tags.map((e) => e.quote()).toList()});';
     }
     return '// no tag to invalidate';
   }
@@ -421,16 +421,14 @@ return _handler.handle(payload)
           .ident();
     }
     return """
-return _adapter(json.encode(payload.toJson())${_grammar.operationNameAsParameter ? ', operationName' : ''}).asStream().map((response) {
-    Map<String, dynamic> result = jsonDecode(response);
-    if (result.containsKey("errors")) {
-      throw result["errors"].map((error) => GraphLinkError.fromJson(error)).toList();
-    }
-    var data = result["data"];
-    final responseObject = ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson(data);
-    ${_serializeInvalidationCall(def)}
-    return responseObject;
-}).first;
+final response = await _adapter(json.encode(payload.toJson())${_grammar.operationNameAsParameter ? ', operationName' : ''});
+Map<String, dynamic> result = jsonDecode(response);
+if (result.containsKey("errors")) {
+  throw result["errors"].map((error) => GraphLinkError.fromJson(error)).toList();
+}
+var data = result["data"];
+${_serializeInvalidationCall(def)}
+return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson(data);
 """;
   }
 

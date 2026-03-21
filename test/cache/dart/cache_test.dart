@@ -860,4 +860,62 @@ void main() {
       )),
     );
   });
+
+  test("glCache and glNoCache should not be applied to same query at the same time (explicit declaration)", () {
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Query {
+    getPerson: Person
+  }
+
+  query GetPerson {
+    getPerson @glCache(ttl: 40) @glNoCache {
+      id
+    }
+  }
+''';
+
+    expect(
+      () => g.parse(text),
+      throwsA(isA<ParseException>().having(
+        (e) => e.errorMessage,
+        'errorMessage',
+        contains("$glCache AND $glNoCache on the same query? Incredible. You're the human equivalent of a merge conflict."),
+      )),
+    );
+  });
+
+  test("glCache and glNoCache should not be applied to same query at the same time (implicit declaration)", () {
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Query {
+    getPerson: Person @glCache(ttl: 40) @glNoCache
+  }
+
+  query GetPerson {
+    getPerson {
+      id
+    }
+  }
+''';
+
+    expect(
+      () => g.parse(text),
+      throwsA(isA<ParseException>().having(
+        (e) => e.errorMessage,
+        'errorMessage',
+        contains("$glCache AND $glNoCache on the same query? Incredible. You're the human equivalent of a merge conflict."),
+      )),
+    );
+  });
 }
