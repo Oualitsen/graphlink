@@ -17,6 +17,8 @@ import 'package:graphlink_cache_integration_tests/generated/types/graph_link_sub
 import 'package:graphlink_cache_integration_tests/generated/types/get_car_and_owner_response.dart';
 import 'package:graphlink_cache_integration_tests/generated/types/get_owner_response.dart';
 import 'package:graphlink_cache_integration_tests/generated/types/get_car_response.dart';
+import 'package:graphlink_cache_integration_tests/generated/types/get_car_stale_response.dart';
+import 'package:graphlink_cache_integration_tests/generated/types/get_car_expiring_response.dart';
 import 'package:graphlink_cache_integration_tests/generated/types/get_cars_count_response.dart';
 import 'package:graphlink_cache_integration_tests/generated/types/get_car_name_response.dart';
 import 'package:graphlink_cache_integration_tests/generated/types/create_owner_response.dart';
@@ -30,8 +32,11 @@ const tagKeyPrefix = '__tag__';
 class _GraphLinkCacheEntry {
   final String data;
   final int expiry;
+  final bool stale;
 
-  _GraphLinkCacheEntry(this.data, this.expiry);
+  _GraphLinkCacheEntry(this.data, this.expiry) : stale = false;
+
+  _GraphLinkCacheEntry._(this.data, this.expiry, this.stale);
 
   factory _GraphLinkCacheEntry.fromJson(Map<String, dynamic> json) {
     return _GraphLinkCacheEntry(json['data'] as String, json['expiry'] as int);
@@ -44,6 +49,9 @@ class _GraphLinkCacheEntry {
   String encode() => jsonEncode(toJson());
 
   bool get isExpired => DateTime.now().millisecondsSinceEpoch > expiry;
+
+  _GraphLinkCacheEntry asStale() =>
+      _GraphLinkCacheEntry._(data, expiry, true);
 }
 
 
@@ -92,6 +100,7 @@ class _GraphLinkPartialQuery {
   final String elementKey;
   final Set<String> fragmentNames;
   final List<String> argumentDeclarations;
+  final bool staleIfOffline;
   late final String? cacheKey;
 
 
@@ -104,6 +113,7 @@ class _GraphLinkPartialQuery {
     required this.elementKey,
     required this.fragmentNames,
     required this.argumentDeclarations,
+    required this.staleIfOffline,
   }) {
     if (ttl == 0) {
       cacheKey = null;
@@ -187,6 +197,7 @@ class GraphLinkQueries extends _ResolverBase {
         variables: {
       'carId': variables['carId'],
       },
+        staleIfOffline: false
       )
       , _GraphLinkPartialQuery(
         query: 'getOwner(id: \$ownerId){..._all_fields_Owner}',
@@ -199,14 +210,20 @@ class GraphLinkQueries extends _ResolverBase {
         variables: {
       'ownerId': variables['ownerId'],
       },
+        staleIfOffline: false
       )
       ];
       final responseMap = <String, dynamic>{};
+      final staleData = <String, dynamic>{};
       final cacheFetchFutures = <Future>[];
       for (var partQuery in partialQueries.where((e) => e.ttl > 0)) {
-         cacheFetchFutures.add(_getFromCache(partQuery.cacheKey!, partQuery.tags)
-         .asStream().where((e) => e != null).map((e) => e!).first.then((data) {
-            responseMap[partQuery.elementKey] = jsonDecode(data);
+         cacheFetchFutures.add(_getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)
+         .asStream().where((e) => e != null).map((e) => e!).first.then((entry) {
+            if(entry.stale) {
+               staleData[partQuery.elementKey] = jsonDecode(entry.data);
+            } else {
+               responseMap[partQuery.elementKey] = jsonDecode(entry.data);
+            }
          }));
       }
       await Future.wait(cacheFetchFutures.map((f) => f.catchError((_) => null)));
@@ -216,8 +233,17 @@ class GraphLinkQueries extends _ResolverBase {
       }
       final remainingQueries = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).toList();
       final payload = _buildPayload(remainingQueries, operationName, '');
-      final responseText = await _getFromSource(payload);
-      return _parseToObjectAndCache(responseText, responseMap, GetCarAndOwnerResponse.fromJson, remaining);
+      try {
+         final responseText = await _getFromSource(payload);
+         return _parseToObjectAndCache(responseText, responseMap, GetCarAndOwnerResponse.fromJson, remaining);
+      } catch (exception) {
+         responseMap.addAll(staleData);
+         final remainingCount = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).length;
+         if(remainingCount > 0) {
+            throw exception;
+         }
+         return GetCarAndOwnerResponse.fromJson(responseMap);
+      }
    }
    Future<GetOwnerResponse> getOwner({
       required String id
@@ -238,14 +264,20 @@ class GraphLinkQueries extends _ResolverBase {
         variables: {
       'id': variables['id'],
       },
+        staleIfOffline: false
       )
       ];
       final responseMap = <String, dynamic>{};
+      final staleData = <String, dynamic>{};
       final cacheFetchFutures = <Future>[];
       for (var partQuery in partialQueries.where((e) => e.ttl > 0)) {
-         cacheFetchFutures.add(_getFromCache(partQuery.cacheKey!, partQuery.tags)
-         .asStream().where((e) => e != null).map((e) => e!).first.then((data) {
-            responseMap[partQuery.elementKey] = jsonDecode(data);
+         cacheFetchFutures.add(_getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)
+         .asStream().where((e) => e != null).map((e) => e!).first.then((entry) {
+            if(entry.stale) {
+               staleData[partQuery.elementKey] = jsonDecode(entry.data);
+            } else {
+               responseMap[partQuery.elementKey] = jsonDecode(entry.data);
+            }
          }));
       }
       await Future.wait(cacheFetchFutures.map((f) => f.catchError((_) => null)));
@@ -255,8 +287,17 @@ class GraphLinkQueries extends _ResolverBase {
       }
       final remainingQueries = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).toList();
       final payload = _buildPayload(remainingQueries, operationName, '');
-      final responseText = await _getFromSource(payload);
-      return _parseToObjectAndCache(responseText, responseMap, GetOwnerResponse.fromJson, remaining);
+      try {
+         final responseText = await _getFromSource(payload);
+         return _parseToObjectAndCache(responseText, responseMap, GetOwnerResponse.fromJson, remaining);
+      } catch (exception) {
+         responseMap.addAll(staleData);
+         final remainingCount = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).length;
+         if(remainingCount > 0) {
+            throw exception;
+         }
+         return GetOwnerResponse.fromJson(responseMap);
+      }
    }
    Future<GetCarResponse> getCar({
       required String id
@@ -277,14 +318,20 @@ class GraphLinkQueries extends _ResolverBase {
         variables: {
       'id': variables['id'],
       },
+        staleIfOffline: false
       )
       ];
       final responseMap = <String, dynamic>{};
+      final staleData = <String, dynamic>{};
       final cacheFetchFutures = <Future>[];
       for (var partQuery in partialQueries.where((e) => e.ttl > 0)) {
-         cacheFetchFutures.add(_getFromCache(partQuery.cacheKey!, partQuery.tags)
-         .asStream().where((e) => e != null).map((e) => e!).first.then((data) {
-            responseMap[partQuery.elementKey] = jsonDecode(data);
+         cacheFetchFutures.add(_getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)
+         .asStream().where((e) => e != null).map((e) => e!).first.then((entry) {
+            if(entry.stale) {
+               staleData[partQuery.elementKey] = jsonDecode(entry.data);
+            } else {
+               responseMap[partQuery.elementKey] = jsonDecode(entry.data);
+            }
          }));
       }
       await Future.wait(cacheFetchFutures.map((f) => f.catchError((_) => null)));
@@ -294,8 +341,125 @@ class GraphLinkQueries extends _ResolverBase {
       }
       final remainingQueries = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).toList();
       final payload = _buildPayload(remainingQueries, operationName, '');
-      final responseText = await _getFromSource(payload);
-      return _parseToObjectAndCache(responseText, responseMap, GetCarResponse.fromJson, remaining);
+      try {
+         final responseText = await _getFromSource(payload);
+         return _parseToObjectAndCache(responseText, responseMap, GetCarResponse.fromJson, remaining);
+      } catch (exception) {
+         responseMap.addAll(staleData);
+         final remainingCount = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).length;
+         if(remainingCount > 0) {
+            throw exception;
+         }
+         return GetCarResponse.fromJson(responseMap);
+      }
+   }
+   Future<GetCarStaleResponse> getCarStale({
+      required String id
+   }) async {
+      const operationName = 'getCarStale';
+      final variables = <String, dynamic>{
+         'id': id,
+      };
+
+      final partialQueries = [_GraphLinkPartialQuery(
+        query: 'getCarStale(id: \$id){..._all_fields_Car}',
+        operationName: "getCarStale__getCarStale",
+        tags: ["cars"],
+        ttl: 1,
+        elementKey: 'getCarStale',
+        fragmentNames: {"_all_fields_Car"},
+        argumentDeclarations: ["\$id: ID!"],
+        variables: {
+      'id': variables['id'],
+      },
+        staleIfOffline: true
+      )
+      ];
+      final responseMap = <String, dynamic>{};
+      final staleData = <String, dynamic>{};
+      final cacheFetchFutures = <Future>[];
+      for (var partQuery in partialQueries.where((e) => e.ttl > 0)) {
+         cacheFetchFutures.add(_getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)
+         .asStream().where((e) => e != null).map((e) => e!).first.then((entry) {
+            if(entry.stale) {
+               staleData[partQuery.elementKey] = jsonDecode(entry.data);
+            } else {
+               responseMap[partQuery.elementKey] = jsonDecode(entry.data);
+            }
+         }));
+      }
+      await Future.wait(cacheFetchFutures.map((f) => f.catchError((_) => null)));
+      var remaining = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).toSet();
+      if(remaining.isEmpty) {
+         return GetCarStaleResponse.fromJson(responseMap);
+      }
+      final remainingQueries = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).toList();
+      final payload = _buildPayload(remainingQueries, operationName, '');
+      try {
+         final responseText = await _getFromSource(payload);
+         return _parseToObjectAndCache(responseText, responseMap, GetCarStaleResponse.fromJson, remaining);
+      } catch (exception) {
+         responseMap.addAll(staleData);
+         final remainingCount = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).length;
+         if(remainingCount > 0) {
+            throw exception;
+         }
+         return GetCarStaleResponse.fromJson(responseMap);
+      }
+   }
+   Future<GetCarExpiringResponse> getCarExpiring({
+      required String id
+   }) async {
+      const operationName = 'getCarExpiring';
+      final variables = <String, dynamic>{
+         'id': id,
+      };
+
+      final partialQueries = [_GraphLinkPartialQuery(
+        query: 'getCarExpiring(id: \$id){..._all_fields_Car}',
+        operationName: "getCarExpiring__getCarExpiring",
+        tags: ["cars"],
+        ttl: 1,
+        elementKey: 'getCarExpiring',
+        fragmentNames: {"_all_fields_Car"},
+        argumentDeclarations: ["\$id: ID!"],
+        variables: {
+      'id': variables['id'],
+      },
+        staleIfOffline: false
+      )
+      ];
+      final responseMap = <String, dynamic>{};
+      final staleData = <String, dynamic>{};
+      final cacheFetchFutures = <Future>[];
+      for (var partQuery in partialQueries.where((e) => e.ttl > 0)) {
+         cacheFetchFutures.add(_getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)
+         .asStream().where((e) => e != null).map((e) => e!).first.then((entry) {
+            if(entry.stale) {
+               staleData[partQuery.elementKey] = jsonDecode(entry.data);
+            } else {
+               responseMap[partQuery.elementKey] = jsonDecode(entry.data);
+            }
+         }));
+      }
+      await Future.wait(cacheFetchFutures.map((f) => f.catchError((_) => null)));
+      var remaining = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).toSet();
+      if(remaining.isEmpty) {
+         return GetCarExpiringResponse.fromJson(responseMap);
+      }
+      final remainingQueries = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).toList();
+      final payload = _buildPayload(remainingQueries, operationName, '');
+      try {
+         final responseText = await _getFromSource(payload);
+         return _parseToObjectAndCache(responseText, responseMap, GetCarExpiringResponse.fromJson, remaining);
+      } catch (exception) {
+         responseMap.addAll(staleData);
+         final remainingCount = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).length;
+         if(remainingCount > 0) {
+            throw exception;
+         }
+         return GetCarExpiringResponse.fromJson(responseMap);
+      }
    }
    Future<GetCarsCountResponse> getCarsCount() async {
       const operationName = 'getCarsCount';
@@ -311,14 +475,20 @@ class GraphLinkQueries extends _ResolverBase {
         fragmentNames: {},
         argumentDeclarations: [],
         variables: {},
+        staleIfOffline: false
       )
       ];
       final responseMap = <String, dynamic>{};
+      final staleData = <String, dynamic>{};
       final cacheFetchFutures = <Future>[];
       for (var partQuery in partialQueries.where((e) => e.ttl > 0)) {
-         cacheFetchFutures.add(_getFromCache(partQuery.cacheKey!, partQuery.tags)
-         .asStream().where((e) => e != null).map((e) => e!).first.then((data) {
-            responseMap[partQuery.elementKey] = jsonDecode(data);
+         cacheFetchFutures.add(_getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)
+         .asStream().where((e) => e != null).map((e) => e!).first.then((entry) {
+            if(entry.stale) {
+               staleData[partQuery.elementKey] = jsonDecode(entry.data);
+            } else {
+               responseMap[partQuery.elementKey] = jsonDecode(entry.data);
+            }
          }));
       }
       await Future.wait(cacheFetchFutures.map((f) => f.catchError((_) => null)));
@@ -328,8 +498,17 @@ class GraphLinkQueries extends _ResolverBase {
       }
       final remainingQueries = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).toList();
       final payload = _buildPayload(remainingQueries, operationName, '');
-      final responseText = await _getFromSource(payload);
-      return _parseToObjectAndCache(responseText, responseMap, GetCarsCountResponse.fromJson, remaining);
+      try {
+         final responseText = await _getFromSource(payload);
+         return _parseToObjectAndCache(responseText, responseMap, GetCarsCountResponse.fromJson, remaining);
+      } catch (exception) {
+         responseMap.addAll(staleData);
+         final remainingCount = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).length;
+         if(remainingCount > 0) {
+            throw exception;
+         }
+         return GetCarsCountResponse.fromJson(responseMap);
+      }
    }
    Future<GetCarNameResponse> getCarName({
       required String id
@@ -350,14 +529,20 @@ class GraphLinkQueries extends _ResolverBase {
         variables: {
       'id': variables['id'],
       },
+        staleIfOffline: false
       )
       ];
       final responseMap = <String, dynamic>{};
+      final staleData = <String, dynamic>{};
       final cacheFetchFutures = <Future>[];
       for (var partQuery in partialQueries.where((e) => e.ttl > 0)) {
-         cacheFetchFutures.add(_getFromCache(partQuery.cacheKey!, partQuery.tags)
-         .asStream().where((e) => e != null).map((e) => e!).first.then((data) {
-            responseMap[partQuery.elementKey] = jsonDecode(data);
+         cacheFetchFutures.add(_getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)
+         .asStream().where((e) => e != null).map((e) => e!).first.then((entry) {
+            if(entry.stale) {
+               staleData[partQuery.elementKey] = jsonDecode(entry.data);
+            } else {
+               responseMap[partQuery.elementKey] = jsonDecode(entry.data);
+            }
          }));
       }
       await Future.wait(cacheFetchFutures.map((f) => f.catchError((_) => null)));
@@ -367,12 +552,20 @@ class GraphLinkQueries extends _ResolverBase {
       }
       final remainingQueries = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).toList();
       final payload = _buildPayload(remainingQueries, operationName, '');
-      final responseText = await _getFromSource(payload);
-      return _parseToObjectAndCache(responseText, responseMap, GetCarNameResponse.fromJson, remaining);
+      try {
+         final responseText = await _getFromSource(payload);
+         return _parseToObjectAndCache(responseText, responseMap, GetCarNameResponse.fromJson, remaining);
+      } catch (exception) {
+         responseMap.addAll(staleData);
+         final remainingCount = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).length;
+         if(remainingCount > 0) {
+            throw exception;
+         }
+         return GetCarNameResponse.fromJson(responseMap);
+      }
    }
    Future<String> _getFromSource(GraphLinkPayload payload) async {
-      var result = await _adapter(json.encode(payload.toJson()));
-      return result;
+      return await _adapter(json.encode(payload.toJson()));
    }
    GraphLinkPayload _buildPayload(List<_GraphLinkPartialQuery> partQueries, String operationName, String directives) {
       final Map<String, dynamic> variables = {};
@@ -473,19 +666,22 @@ class _ResolverBase {
    final GraphLinkCacheStore store;
    final Map<String, _Lock> _tagLocks;
    _ResolverBase(this.fragmentMap, this.store, this._tagLocks);
-   Future<String?> _getFromCache(String key, List<String> tags) async {
+   Future<_GraphLinkCacheEntry?> _getFromCache(String key, List<String> tags, bool staleIfOffline) async {
       var result = await store.get(key);
       if(result != null) {
          var entryMap = jsonDecode(result);
          var entry = _GraphLinkCacheEntry.fromJson(entryMap);
          if(entry.isExpired) {
+            if(staleIfOffline) {
+               return entry.asStale();
+            }
             store.invalidate(key);
-            if(tags.isEmpty) {
+            if(tags.isNotEmpty) {
                _removeKeyFromTags(key, tags);
             }
             return null;
          } else {
-            return entry.data;
+            return entry;
          }
       }
       return null;

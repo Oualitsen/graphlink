@@ -6,6 +6,29 @@ import 'package:graphlink/src/gl_grammar.dart';
 import 'package:petitparser/petitparser.dart';
 
 void main() {
+  test("glCache staleIfOffline must be a boolean", () {
+    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+
+    const text = '''
+  type Person {
+    id: ID!
+  }
+
+  type Query {
+    getPerson: Person $glCache(ttl: 60, staleIfOffline: "yes")
+  }
+''';
+
+    expect(
+      () => g.parse(text),
+      throwsA(isA<ParseException>().having(
+        (e) => e.errorMessage,
+        'errorMessage',
+        contains('$glCacheArgStaleIfOffline on $glCache must be a boolean! found: "yes"'),
+      )),
+    );
+  });
+
   test("glCache directive validation when ttl is invalid", () {
     final GLGrammar g = GLGrammar(
       autoGenerateQueries: true,

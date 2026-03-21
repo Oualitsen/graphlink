@@ -62,21 +62,22 @@ class DartClientSerializer extends GLClientSerilaizer {
           methodName: "_getFromCache",
           async: true,
           namedArguments: false,
-          arguments: ['String key', 'List<String> tags'],
-          returnType: 'Future<String?>',
+          arguments: ['String key', 'List<String> tags', 'bool staleIfOffline'],
+          returnType: 'Future<_GraphLinkCacheEntry?>',
           statements: [
             'var result = await store.get(key);',
             codeGenUtils.ifStatement(condition: 'result != null', ifBlockStatements: [
               'var entryMap = jsonDecode(result);',
               'var entry = _GraphLinkCacheEntry.fromJson(entryMap);',
               codeGenUtils.ifStatement(condition: 'entry.isExpired', ifBlockStatements: [
+                codeGenUtils.ifStatement(condition: 'staleIfOffline', ifBlockStatements: ['return entry.asStale();']),
                 'store.invalidate(key);',
-                codeGenUtils.ifStatement(condition: 'tags.isEmpty', ifBlockStatements: [
+                codeGenUtils.ifStatement(condition: 'tags.isNotEmpty', ifBlockStatements: [
                   '_removeKeyFromTags(key, tags);',
                 ]),
                 'return null;',
               ], elseBlockStatements: [
-                "return entry.data;"
+                "return entry;"
               ]),
             ]),
             'return null;'
@@ -222,7 +223,7 @@ class DartClientSerializer extends GLClientSerilaizer {
             namedArguments: false,
             arguments: ['GraphLinkPayload payload'],
             returnType: 'Future<String>',
-            statements: ['var result = await _adapter(json.encode(payload.toJson()));', 'return result;']),
+            statements: ['return await _adapter(json.encode(payload.toJson()));']),
         codeGenUtils.createMethod(
             returnType: "GraphLinkPayload",
             namedArguments: false,
@@ -343,12 +344,16 @@ class DartClientSerializer extends GLClientSerilaizer {
 
           'final partialQueries = ${_grammar.serializer.divideQueryDefinition(def, _grammar).map((e) => serialzePartialQuery(e)).toList()};',
           'final responseMap = <String, dynamic>{};',
+          'final staleData = <String, dynamic>{};',
           'final cacheFetchFutures = <Future>[];',
           codeGenUtils
               .forEachLoop(variable: "partQuery", iterable: "partialQueries.where((e) => e.ttl > 0)", statements: [
-            "cacheFetchFutures.add(_getFromCache(partQuery.cacheKey!, partQuery.tags)",
-            ".asStream().where((e) => e != null).map((e) => e!).first.then((data) ${codeGenUtils.block([
-                  'responseMap[partQuery.elementKey] = jsonDecode(data);'
+            "cacheFetchFutures.add(_getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)",
+            ".asStream().where((e) => e != null).map((e) => e!).first.then((entry) ${codeGenUtils.block([
+                  codeGenUtils.ifStatement(
+                      condition: 'entry.stale',
+                      ifBlockStatements: ['staleData[partQuery.elementKey] = jsonDecode(entry.data);'],
+                      elseBlockStatements: ['responseMap[partQuery.elementKey] = jsonDecode(entry.data);'])
                 ])}));"
           ]),
           'await Future.wait(cacheFetchFutures.map((f) => f.catchError((_) => null)));',
@@ -358,8 +363,17 @@ class DartClientSerializer extends GLClientSerilaizer {
               ifBlockStatements: ['return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson(responseMap);']),
           "final remainingQueries = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).toList();",
           "final payload = _buildPayload(remainingQueries, operationName, '${_grammar.serializer.serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}');",
-          'final responseText = await _getFromSource(payload);',
-          'return _parseToObjectAndCache(responseText, responseMap, ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson, remaining);',
+          codeGenUtils.tryCatchFinally(tryStatements: [
+            'final responseText = await _getFromSource(payload);',
+            'return _parseToObjectAndCache(responseText, responseMap, ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson, remaining);',
+          ], catchStatements: [
+            "responseMap.addAll(staleData);",
+            'final remainingCount = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).length;',
+            codeGenUtils.ifStatement(condition: 'remainingCount > 0', ifBlockStatements: [
+              "throw exception;",
+            ]),
+            'return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson(responseMap);'
+          ], catchVariable: 'exception'),
         ]);
   }
 
@@ -395,6 +409,7 @@ _GraphLinkPartialQuery(
   fragmentNames: ${e.fragmentNames.map((e) => '"${e}"').toSet()},
   argumentDeclarations: ${e.argumentDeclarations.map((e) => '"${e.dolarEscape()}"').toList()},
   variables: ${varBuffer},
+  staleIfOffline: ${e.staleIfOffline}
 )
 ''';
   }
