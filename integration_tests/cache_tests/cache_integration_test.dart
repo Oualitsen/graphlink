@@ -12,8 +12,10 @@ const _jarPath = 'spring-server/target/graphql-server-0.0.1-SNAPSHOT.jar';
 
 late Process _serverProcess;
 int _serverCallCount = 0;
+bool _simulateOffline = false;
 
 Future<String> _countingAdapter(String payload) async {
+  if (_simulateOffline) throw Exception('Network unreachable');
   _serverCallCount++;
   final response = await http.post(
     Uri.parse(_serverUrl),
@@ -58,6 +60,7 @@ void main() {
 
   setUp(() {
     _serverCallCount = 0;
+    _simulateOffline = false;
     client = GraphLinkClient(_countingAdapter, null);
   });
 
@@ -121,6 +124,45 @@ void main() {
       _serverCallCount,
       equals(1),
       reason: 'only the car sub-query should hit the server; getOwner is still cached',
+    );
+  });
+
+  test('getCarStale returns stale data when network fails after cache expires', () async {
+    final created = await client.mutations.createCar(
+      input: CreateCarInput(make: 'Ford', model: 'Focus', year: 2020),
+    );
+    final carId = created.createCar.id;
+
+    // warm the cache (TTL = 1 second)
+    final fresh = await client.queries.getCarStale(id: carId);
+    expect(fresh.getCarStale.id, equals(carId));
+
+    // let the cache entry expire
+    await Future.delayed(const Duration(seconds: 2));
+
+    // go offline — staleIfOffline: true should return the expired entry
+    _simulateOffline = true;
+    final stale = await client.queries.getCarStale(id: carId);
+    expect(stale.getCarStale.id, equals(carId));
+  });
+
+  test('getCarExpiring throws when network fails after cache expires', () async {
+    final created = await client.mutations.createCar(
+      input: CreateCarInput(make: 'Ford', model: 'Focus', year: 2020),
+    );
+    final carId = created.createCar.id;
+
+    // warm the cache (TTL = 1 second)
+    await client.queries.getCarExpiring(id: carId);
+
+    // let the cache entry expire
+    await Future.delayed(const Duration(seconds: 2));
+
+    // go offline — staleIfOffline defaults to false, so it should throw
+    _simulateOffline = true;
+    expect(
+      () => client.queries.getCarExpiring(id: carId),
+      throwsA(anything),
     );
   });
 
