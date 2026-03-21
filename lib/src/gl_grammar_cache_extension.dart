@@ -19,6 +19,23 @@ extension GLGrammarCacheExtension on GLGrammar {
     });
   }
 
+  void checkCacheAndNoCacheConflict() {
+    queries.values.where((q) => q.type == GLQueryType.query).forEach((q) {
+      _checkForCacheAndNoCacheConflict(q);
+      q.elements.forEach(_checkForCacheAndNoCacheConflict);
+    });
+  }
+
+  void _checkForCacheAndNoCacheConflict(GLDirectivesMixin e) {
+    if (e.hasDirective(glCache) && e.hasDirective(glNoCache)) {
+      final token = e as GLToken;
+      throw ParseException(
+        "$glCache AND $glNoCache on the same query? Incredible. You're the human equivalent of a merge conflict.",
+        info: token.tokenInfo,
+      );
+    }
+  }
+
   void checkCacheInvalidateOnQueriesAndSubscriptions() {
     queries.values.where((e) => e.type != GLQueryType.mutation).forEach((q) {
       _checkForCacheInvalidateExistanceAndThrow(q);

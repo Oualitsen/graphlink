@@ -279,6 +279,7 @@ class GLGrammar extends GrammarDefinition {
       // cache handling — must run before createProjectedTypes to catch errors early
       fixTagListValues();
       validateTagValues();
+      checkCacheAndNoCacheConflict();
       checkCacheOnMutationsAndSubscriptions();
       checkCacheInvalidateOnQueriesAndSubscriptions();
       checkGLCacheDirectives();

@@ -1,0 +1,15 @@
+name: graphlink_cache_integration_tests
+description: End-to-end integration tests for GraphLink cache functionality.
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ">=2.19.0 <4.0.0"
+
+dependencies:
+  graphlink:
+    path: ../../
+  http: ^1.2.0
+
+dev_dependencies:
+  test: ^1.24.0

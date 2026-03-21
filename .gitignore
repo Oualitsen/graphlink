@@ -49,3 +49,7 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Integration tests — Java build artifacts
+integration_tests/**/*.jar
+integration_tests/**/target/
+
