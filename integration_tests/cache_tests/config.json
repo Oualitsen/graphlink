@@ -1,0 +1,29 @@
+{
+    "schemaPaths": [
+        "schema/*.gql"
+    ],
+    "mode": "client",
+    "identityFields": [],
+    "typeMappings": {
+        "ID": "String",
+        "String": "String",
+        "Float": "double",
+        "Int": "int",
+        "Boolean": "bool",
+        "Null": "null"
+    },
+    "outputDir": "lib/generated",
+    "clientConfig": {
+        "targetLanguage": "dart",
+        "packageName": "graphlink_cache_integration_tests",
+        "generateAllFieldsFragments": true,
+        "nullableFieldsRequired": false,
+        "autoGenerateQueries": true,
+        "autoGenerateQueriesDefaultAlias": "data",
+        "operationNameAsParameter": false,
+        "generateUiTypes": false,
+        "generateUiInputs": false,
+        "immutableInputFields": true,
+        "immutableTypeFields": true
+    }
+}

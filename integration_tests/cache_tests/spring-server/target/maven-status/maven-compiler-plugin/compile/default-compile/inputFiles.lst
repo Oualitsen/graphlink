@@ -1,0 +1,8 @@
+/Users/ramdane/projects/Retrofit-Graphql-For-Dart/integration_tests/cache_tests/spring-server/src/main/java/com/example/graphqlserver/GraphqlServerApplication.java
+/Users/ramdane/projects/Retrofit-Graphql-For-Dart/integration_tests/cache_tests/spring-server/src/main/java/com/example/graphqlserver/controller/CarController.java
+/Users/ramdane/projects/Retrofit-Graphql-For-Dart/integration_tests/cache_tests/spring-server/src/main/java/com/example/graphqlserver/controller/OwnerController.java
+/Users/ramdane/projects/Retrofit-Graphql-For-Dart/integration_tests/cache_tests/spring-server/src/main/java/com/example/graphqlserver/input/CreateCarInput.java
+/Users/ramdane/projects/Retrofit-Graphql-For-Dart/integration_tests/cache_tests/spring-server/src/main/java/com/example/graphqlserver/input/CreateOwnerInput.java
+/Users/ramdane/projects/Retrofit-Graphql-For-Dart/integration_tests/cache_tests/spring-server/src/main/java/com/example/graphqlserver/model/Car.java
+/Users/ramdane/projects/Retrofit-Graphql-For-Dart/integration_tests/cache_tests/spring-server/src/main/java/com/example/graphqlserver/model/Owner.java
+/Users/ramdane/projects/Retrofit-Graphql-For-Dart/integration_tests/cache_tests/spring-server/src/main/java/com/example/graphqlserver/service/DataStore.java
