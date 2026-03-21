@@ -1,0 +1,40 @@
+directive @glCache(ttl: Int!, tag: String) on QUERY | MUTATION | FIELD | FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR | SCHEMA
+
+type Owner {
+    id: ID!
+    name: String!
+    email: String!
+    cars: [Car!]!
+}
+
+type Car {
+    id: ID!
+    make: String!
+    model: String!
+    year: Int!
+    ownerId: ID
+}
+
+input CreateOwnerInput {
+    name: String!
+    email: String!
+}
+
+input CreateCarInput {
+    make: String!
+    model: String!
+    year: Int!
+    ownerId: ID
+}
+
+type Query {
+    getOwner(id: ID!): Owner
+    getCar(id: ID!): Car
+    getCarsCount: Int!
+    getCarName(id: ID!): String
+}
+
+type Mutation {
+    createOwner(input: CreateOwnerInput!): Owner!
+    createCar(input: CreateCarInput!): Car!
+}

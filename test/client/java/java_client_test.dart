@@ -16,12 +16,12 @@ getConfig(GLGrammar g) {
       typeMappings: g.typeMap,
       outputDir: outputDir,
       clientConfig: ClientConfig(
-          targetLanguage: "java",
-          generateAllFieldsFragments: g.generateAllFieldsFragments,
-          nullableFieldsRequired: false,
-          autoGenerateQueries: g.autoGenerateQueries,
-          operationNameAsParameter: false,
-          packageName: "org.gqlclient.generated"));
+          java: JavaClientConfig(
+            packageName: "org.gqlclient.generated",
+            generateAllFieldsFragments: g.generateAllFieldsFragments,
+            nullableFieldsRequired: false,
+            autoGenerateQueries: g.autoGenerateQueries,
+            operationNameAsParameter: false)));
 }
 
 void main() async {

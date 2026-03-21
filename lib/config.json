@@ -23,13 +23,14 @@
     }
   },
   "clientConfig": {
-    "targetLanguage": "dart",
-    "generateAllFieldsFragments": false,
-    "nullableFieldsRequired": false,
-    "autoGenerateQueries": false,
-    "autoGenerateQueriesDefaultAlias": null,
-    "operationNameAsParameter": false,
-    "immutableInputFields": true,
-    "immutableTypeFields": true
+    "dart": {
+      "generateAllFieldsFragments": false,
+      "nullableFieldsRequired": false,
+      "autoGenerateQueries": false,
+      "autoGenerateQueriesDefaultAlias": null,
+      "operationNameAsParameter": false,
+      "immutableInputFields": true,
+      "immutableTypeFields": true
+    }
   }
 }

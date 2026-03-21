@@ -17,13 +17,13 @@ getConfig(GLGrammar g) {
       typeMappings: g.typeMap,
       outputDir: outputDir,
       clientConfig: ClientConfig(
-          appLocalizationsImport: 'package:my_web_app/generated/i18n/app_localizations.dart',
-          targetLanguage: "dart",
-          generateAllFieldsFragments: g.generateAllFieldsFragments,
-          nullableFieldsRequired: false,
-          autoGenerateQueries: g.autoGenerateQueries,
-          operationNameAsParameter: false,
-          packageName: "my_web_app"));
+          dart: DartClientConfig(
+            appLocalizationsImport: 'package:my_web_app/generated/i18n/app_localizations.dart',
+            generateAllFieldsFragments: g.generateAllFieldsFragments,
+            nullableFieldsRequired: false,
+            autoGenerateQueries: g.autoGenerateQueries,
+            operationNameAsParameter: false,
+            packageName: "my_web_app")));
 }
 
 void main() {

@@ -196,7 +196,11 @@ void handleGeneration(GeneratorConfig config) async {
 
   final grammar = createGrammar(config);
   try {
-    var extra = grammar.mode == CodeGenerationMode.client ? getClientObjects("dart") : null;
+    var extra = grammar.mode == CodeGenerationMode.client
+        ? (config.clientConfig?.java != null
+            ? getClientObjects("Java") + javaJsonEncoderDecorder + javaClientAdapterNoParamSync
+            : getClientObjects("dart"))
+        : null;
     var result = await grammar.parseFiles(filePaths, extraGql: extra);
     var failures = result.whereType<Failure>().toList();
     if (failures.isNotEmpty) {
@@ -214,7 +218,11 @@ position: ${failures.first.position}
     if (mode == CodeGenerationMode.server) {
       await generateServerClasses(grammar, config, now);
     } else if (mode == CodeGenerationMode.client) {
-      await generateClientClasses(grammar, config, now);
+      if (config.clientConfig?.java != null) {
+        await generateClientClassesJava(grammar, config, now);
+      } else {
+        await generateClientClasses(grammar, config, now);
+      }
     }
   } catch (ex, st) {
     // ignore parse errors
@@ -230,17 +238,18 @@ GLGrammar createGrammar(GeneratorConfig config) {
   if (mode == CodeGenerationMode.server) {
     return GLGrammar(mode: mode, typeMap: config.typeMappings!, identityFields: config.identityFields);
   } else {
-    var clientConfig = config.clientConfig;
+    final dart = config.clientConfig?.dart;
+    final java = config.clientConfig?.java;
 
     return GLGrammar(
       mode: mode,
       typeMap: config.typeMappings!,
       identityFields: config.identityFields,
-      generateAllFieldsFragments: clientConfig?.generateAllFieldsFragments ?? false,
-      nullableFieldsRequired: clientConfig?.nullableFieldsRequired ?? false,
-      autoGenerateQueries: clientConfig?.autoGenerateQueries ?? false,
-      defaultAlias: clientConfig?.defaultAlias,
-      operationNameAsParameter: clientConfig?.operationNameAsParameter ?? false,
+      generateAllFieldsFragments: dart?.generateAllFieldsFragments ?? java?.generateAllFieldsFragments ?? false,
+      nullableFieldsRequired: dart?.nullableFieldsRequired ?? java?.nullableFieldsRequired ?? false,
+      autoGenerateQueries: dart?.autoGenerateQueries ?? java?.autoGenerateQueries ?? false,
+      defaultAlias: dart?.defaultAlias,
+      operationNameAsParameter: dart?.operationNameAsParameter ?? java?.operationNameAsParameter ?? false,
     );
   }
 }
@@ -251,7 +260,7 @@ Future<Set<String>> generateClientClasses(GLGrammar grammar, GeneratorConfig con
   final dcs = DartClientSerializer(grammar, serializer);
   final List<Future<File>> futures = [];
   final destinationDir = config.outputDir;
-  final packageName = config.clientConfig?.packageName;
+  final packageName = config.clientConfig?.dart?.packageName;
   final prefix = "package:${packageName}/${(pack ?? config.outputDir).replaceFirst("lib/", "")}";
   final viewSerializeer = FlutterTypeWidgetSerializer(grammar, serializer, true);
   grammar.enums.forEach((k, def) {
@@ -292,9 +301,9 @@ Future<Set<String>> generateClientClasses(GLGrammar grammar, GeneratorConfig con
         destinationDir: destinationDir);
     futures.add(r);
   });
-  if (config.clientConfig?.generateUiTypes ?? false) {
+  if (config.clientConfig?.dart?.generateUiTypes ?? false) {
     grammar.views.forEach((k, def) {
-      var appLocImport = config.clientConfig?.appLocalizationsImport;
+      var appLocImport = config.clientConfig?.dart?.appLocalizationsImport;
       // @TODO add an assertion here
       if (appLocImport != null) {
         def.addImport(appLocImport);
@@ -338,7 +347,7 @@ Future<Set<String>> generateClientClassesJava(GLGrammar grammar, GeneratorConfig
   final dcs = JavaClientSerializer(grammar, serializer);
   final List<Future<File>> futures = [];
   final destinationDir = config.outputDir;
-  final packageName = config.clientConfig?.packageName;
+  final packageName = config.clientConfig?.java?.packageName;
   final prefix = packageName ?? '';
   grammar.enums.forEach((k, def) {
     var text = serializer.serializeEnumDefinition(def, "");
@@ -369,7 +378,9 @@ Future<Set<String>> generateClientClassesJava(GLGrammar grammar, GeneratorConfig
   var allProjectedTypes = <String, GLTypeDefinition>{};
   allProjectedTypes.addAll(grammar.projectedTypes);
   allProjectedTypes.addAll(grammar.projectedInterfaces);
-  ['GQClientAdapter', 'GQJsonEncoder', 'GQJsonDecoder'].map((e) => grammar.interfaces[e]!).forEach((def) {
+  ['GraphLinkClientAdapter', 'GraphLinkJsonEncoder', 'GraphLinkJsonDecoder']
+      .map((e) => grammar.interfaces[e]!)
+      .forEach((def) {
     allProjectedTypes[def.token] = def;
   });
 
