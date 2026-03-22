@@ -50,10 +50,64 @@ Future<void> main(List<String> arguments) async {
 
   if (args['help'] as bool) {
     stdout.write('''
-Usage: glink [options]
+Usage: glink -c <config.json> [options]
 
 Options:
 ${parser.usage}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ config.json reference
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Top-level
+  schemaPaths      string[]  Glob patterns for schema files
+                             e.g. ["schema/*.gql"]
+  mode             string    "client" or "server"
+  outputDir        string    Directory where files are generated
+  typeMappings     object    Scalar → language type mappings
+                             e.g. { "ID": "String", "Float": "Double" }
+  identityFields   string[]  Fields used for equals/hashCode  e.g. ["id"]
+
+━━ mode: client ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+clientConfig.dart
+  packageName                     string  Dart package name used in imports
+  generateAllFieldsFragments      bool    Generate _all_fields fragments          [false]
+  nullableFieldsRequired          bool    Nullable fields required in ctors       [false]
+  autoGenerateQueries             bool    Auto-generate queries from schema        [false]
+  autoGenerateQueriesDefaultAlias string  Default alias for auto-generated queries
+  operationNameAsParameter        bool    Pass operation name as a parameter      [false]
+  generateUiTypes                 bool    Generate Flutter UI type widgets        [false]
+  generateUiInputs                bool    Generate Flutter UI input widgets       [false]
+  immutableInputFields            bool    Generate input fields as final          [true]
+  immutableTypeFields             bool    Generate type fields as final           [true]
+
+clientConfig.java
+  packageName                     string  Java package name (required)
+  generateAllFieldsFragments      bool    Generate _all_fields fragments          [false]
+  nullableFieldsRequired          bool    Nullable fields required                [false]
+  autoGenerateQueries             bool    Auto-generate queries from schema        [false]
+  operationNameAsParameter        bool    Pass operation name as a parameter      [false]
+  immutableInputFields            bool    Generate input fields as final          [true]
+  immutableTypeFields             bool    Generate type fields as final           [true]
+
+━━ mode: server ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+serverConfig.spring
+  basePackage           string  Java base package name (required)
+  generateControllers   bool    Generate Spring controllers                       [true]
+  generateInputs        bool    Generate input classes                            [true]
+  generateTypes         bool    Generate type classes                             [true]
+  generateRepositories  bool    Generate repository interfaces                    [false]
+  inputAsRecord         bool    Generate inputs as Java records                   [false]
+  typeAsRecord          bool    Generate types as Java records                    [false]
+  generateSchema        bool    Copy schema file to outputDir                     [false]
+  schemaTargetPath      string  Target path for schema (required if generateSchema)
+  injectDataFetching    bool    Inject @SchemaMapping data-fetching annotations   [false]
+  immutableInputFields  bool    Generate input fields as final                    [true]
+  immutableTypeFields   bool    Generate type fields as final                     [false]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ''');
     exit(0);
   }
