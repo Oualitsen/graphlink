@@ -7,10 +7,12 @@ Define your GraphQL schema once. GraphLink wires both ends: on the front you cal
 ## Table of Contents
 
 1. [Installation](#installation)
-2. [Code Generation](#code-generation)
-3. [GraphQL Client](#graphql-client)
-4. [Generate Code with Build Runner](#generate-code-with-build-runner)
-5. [License](#license)
+2. [Configuration](#configuration)
+3. [Code Generation](#code-generation)
+4. [GraphQL Client](#graphql-client)
+5. [Caching](#caching)
+6. [Generate Code with Build Runner](#generate-code-with-build-runner)
+7. [License](#license)
 
 ## Installation
 
@@ -30,19 +32,52 @@ To add **GraphLink** to your project, follow these steps:
 
 ## Getting Started
 
-To begin using GraphLink in your project, make sure to follow these initial steps:
+1. **Define your GraphQL schema** — GraphLink reads it and generates all the boilerplate for you.
+2. **Configure** how and where to generate code (see [Configuration](#configuration)).
+3. **Run the generator** — you get a fully-typed client ready to use.
 
-1. **GraphQL Schema**:
+---
 
-   - Ensure you have a well-defined GraphQL schema that outlines your data structures and operations.
-   You usually get it from your backend server.
+## Configuration
 
-2. **Configuration**:
+GraphLink supports two configuration styles.
 
-   - Configure GraphLink by specifying the path to your GraphQL schema and any custom type mappings in the `build.yaml` file.
-   Here is an example of `build.yaml`
+### `config.json` (recommended for Java / CLI)
 
+Create a `config.json` next to your schema:
+
+```json
+{
+    "schemaPaths": ["schema/*.gql"],
+    "mode": "client",
+    "typeMappings": {
+        "ID": "String",
+        "Float": "Double",
+        "Int": "Integer",
+        "Boolean": "Boolean"
+    },
+    "outputDir": "src/main/java/com/example/generated",
+    "clientConfig": {
+        "java": {
+            "packageName": "com.example.generated",
+            "generateAllFieldsFragments": true,
+            "autoGenerateQueries": true,
+            "immutableInputFields": true,
+            "immutableTypeFields": true
+        }
+    }
+}
 ```
+
+Then generate:
+
+```bash
+dart run lib/generate.dart
+```
+
+### `build.yaml` (Dart / Flutter projects)
+
+```yaml
 targets:
   $default:
     builders:
@@ -52,24 +87,17 @@ targets:
           include:
             - lib/**/*.graphql
         options:
-        # following are going to be mappings between scalars and dart types
-          Long: int
           ID: String
           generateAllFieldsFragments: true
           nullableFieldsRequired: false
-          # needs "generateAllFieldsFragments" = true
-          # This feature allows to generate all queries without having to declare them.
-          # You can still declare custom queries even if this is enabled
           autoGenerateQueries: true
-          autoGenerateQueriesDefaultAlias: "data"
 ```
 
-3. **Generate Dart Code**:
+Then generate:
 
-   - Use GraphLink to automatically generate necessary Dart classes based on your schema, queries, mutations, and subscriptions.
-
-4. **GraphQL Client**:
-   - The tool automatically creates a GraphQL client to handle mutations, queries and subscriptions efficiently.
+```bash
+flutter pub run build_runner build -d
+```
 
 ## Code Generation
 
@@ -151,6 +179,91 @@ The client.queries.getUser method sends a GraphQL query to the server, and the r
 4. **Error Handling**:
 
    The generated client includes error handling mechanisms for GraphQL errors and exceptions.
+
+## Caching
+
+GraphLink has built-in client-side caching for both Dart and Java clients. You control it directly in your schema using two directives.
+
+### `@glCache` — cache a query result
+
+```graphql
+type Query {
+  getCar(id: ID!): Car! @glCache(ttl: 60, tags: ["cars"])
+}
+```
+
+| argument | description |
+|---|---|
+| `ttl` | How long (in seconds) the result stays fresh |
+| `tags` | Groups this entry belongs to — used for targeted invalidation |
+| `staleIfOffline` | If `true`, return the expired entry when the network is unavailable instead of throwing |
+
+### `@glCacheInvalidate` — bust cache entries on a mutation
+
+```graphql
+type Mutation {
+  createCar(input: CreateCarInput!): Car! @glCacheInvalidate(tags: ["cars"])
+}
+```
+
+After `createCar` completes, all cache entries tagged `"cars"` are evicted. The next `getCar` call will hit the network.
+
+Use `all: true` to wipe the entire cache:
+
+```graphql
+  resetEverything: Boolean! @glCacheInvalidate(all: true)
+```
+
+### Partial query caching
+
+You can annotate individual fields inside a compound query. GraphLink caches each field independently and only fetches the ones that are missing or expired:
+
+```graphql
+query getCarAndOwner($carId: ID!, $ownerId: ID!) @glCache(ttl: 60, tags: ["data"]) {
+  car: getCar(id: $carId)   @glCache(ttl: 60, tags: ["cars"]) { ... _all_fields }
+  getOwner(id: $ownerId)    @glCache(ttl: 60, tags: ["persons"]) { ... _all_fields }
+}
+```
+
+If you call `createCar` (which invalidates `"cars"`), the next `getCarAndOwner` call fetches only the car from the server — the owner is still served from cache.
+
+### Dart usage
+
+```dart
+// First call — hits the server
+final result = await client.queries.getCar(id: '42');
+
+// Second call — served from cache
+final cached = await client.queries.getCar(id: '42');
+
+// This mutation invalidates the "cars" tag
+await client.mutations.createCar(input: CreateCarInput(make: 'Toyota', model: 'Camry', year: 2023));
+
+// Next call hits the server again
+final fresh = await client.queries.getCar(id: '42');
+```
+
+### Java usage
+
+```java
+GraphLinkClient client = new GraphLinkClient(adapter, encoder, decoder, null);
+
+// First call — hits the server
+GetCarResponse result = client.queries.getCar("42");
+
+// Second call — served from cache
+GetCarResponse cached = client.queries.getCar("42");
+
+// This mutation invalidates the "cars" tag
+client.mutations.createCar(CreateCarInput.builder().make("Toyota").model("Camry").year(2023).build());
+
+// Next call hits the server again
+GetCarResponse fresh = client.queries.getCar("42");
+```
+
+By default an `InMemoryGraphLinkCacheStore` is used. Pass your own `GraphLinkCacheStore` implementation to the client constructor to use a persistent or shared store.
+
+---
 
 ## Generate Code with Build Runner:
 

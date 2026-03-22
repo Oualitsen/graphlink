@@ -47,29 +47,25 @@
     - Generates code for unions
     - Generates == and hashcode method using either:
         1. @gqEqualsHashcode(fields: ["field1", "field2"])
-        2. on build.yaml 
+        2. on build.yaml
         identityFields: ["field1", "field2"]
-    Note: In case of Unions and Interfaces, the Retrofit Graphql generates empty interfaces instead of base classes.  
+    Note: In case of Unions and Interfaces, the Retrofit Graphql generates empty interfaces instead of base classes.
 ## 3.0.1 - 2025-05-21
     - Fixed some minor bugs
 
 ## 3.1.0 - 2025-05-21
     - Generates all implemented interfaces
 
-## 4.1.0 - 2026-03-12
-  - Project renamed to **GraphLink** (package: `graphlink`, CLI: `glink`)
-  - Migrating from `retrofit_graphql`: update your `pubspec.yaml` and `build.yaml` references from `retrofit_graphql` to `graphlink`
-
 ## 4.0.0 - 2026-03-12
   ### Java / Spring Boot code generation
   - Generates Java types, inputs, enums with `toJson`/`fromJson` methods
   - Generates Java client serializer
   - Generates Spring for GraphQL controllers and service interfaces
-  - Generates repository interfaces (`@gqRepository`)
+  - Generates repository interfaces (`@glRepository`)
   - Generates null checks on inputs and types
   - Generates Java records support
   - Generates annotations on controllers
-  - Validates backend inputs (`@gqValidateInput`)
+  - Validates backend inputs (`@glValidateInput`)
   - Injects data-fetching on mappings
   - Generates schema mappings (identity, refactored)
 
@@ -80,11 +76,11 @@
   - Fixes response generation for single-element queries
 
   ### New directives
-  - `@gqDecorators` — attach decorators to generated classes
-  - `@gqSkipOnServer` / `@gqSkipOnClient` — skip fields/types per target
-  - `@gqArray` — serialize GraphQL lists as arrays (Java)
-  - `@gqInternal` — skip internal objects from processing
-  - `@gqExternal` — mark external types
+  - `@glDecorators` — attach decorators to generated classes
+  - `@glSkipOnServer` / `@glSkipOnClient` — skip fields/types per target
+  - `@glArray` — serialize GraphQL lists as arrays (Java)
+  - `@glInternal` — skip internal objects from processing
+  - `@glExternal` — mark external types
   - `extend` keyword support
   - `repeatable` keyword support for directives
   - Directives can now apply to fields
@@ -101,8 +97,26 @@
   - Schema generation support
   - Annotation serialization on controllers
   - Interface directive inheritance
-  - `all_fields` projection skips `@gqSkipOnClient` fields
+  - `all_fields` projection skips `@glSkipOnClient` fields
   - Wildcard maps/lists instead of `List<Object>` / `Map<Object, Object>`
   - Java primitives auto-boxed when nullable
   - Multiple subscription fixes
   - Various import and serialization bug fixes
+
+## 4.1.0 - 2026-03-12
+  - Project renamed to **GraphLink** (package: `graphlink`, CLI: `glink`)
+  - Migrating from `retrofit_graphql`: update your `pubspec.yaml` and `build.yaml` references from `retrofit_graphql` to `graphlink`
+
+## 4.2.0 - 2026-03-22
+  ### Client-side caching (Dart & Java)
+  - New `@glCache(ttl, tags, staleIfOffline)` directive — cache any query or field with a TTL and optional tag groups
+  - New `@glCacheInvalidate(tags, all)` directive — invalidate tagged cache entries on mutations
+  - Partial query caching: compound queries are split per field; only the uncached fields hit the network
+  - `staleIfOffline: true` returns expired cache entries when the network is unavailable instead of throwing
+  - Java: generates `ResolverBase`, `GraphLinkCacheEntry`, `GraphLinkTagEntry`, `GraphLinkPartialQuery` helper classes
+  - Java: generates thread-safe cache helpers using `ReentrantLock` per tag
+  - Java integration tests mirroring the Dart cache integration test suite
+
+  ### Configuration
+  - New `config.json` CLI-based configuration (alternative to `build.yaml`) — use with `dart run lib/generate.dart`
+  - `clientConfig.java` block for Java-specific options (`packageName`, `immutableInputFields`, `immutableTypeFields`, etc.)
