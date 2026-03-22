@@ -16,14 +16,7 @@ class GraphlinkGeneratorBuilder implements Builder {
   static final inputFiles2 = Glob('lib/**/*.graphqls');
   GraphlinkGeneratorBuilder(this.options);
   static const outputDir = 'lib/generated';
-  final map = {
-    "ID": "String",
-    "String": "String",
-    "Float": "double",
-    "Int": "int",
-    "Boolean": "bool",
-    "Null": "null"
-  };
+  final map = {"ID": "String", "String": "String", "Float": "double", "Int": "int", "Boolean": "bool", "Null": "null"};
   final List<AssetId> assets = [];
 
   @override
@@ -51,7 +44,7 @@ class GraphlinkGeneratorBuilder implements Builder {
     var schema = await readSchema(buildStep);
     var parsed = g.parse(schema);
     if (parsed is Success) {
-      await generateClientClasses(
+      await generateDartClientClasses(
           g,
           GeneratorConfig(
               schemaPaths: [],

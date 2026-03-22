@@ -1,7 +1,9 @@
+import 'package:graphlink/src/cache_store_java.dart';
 import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/gl_grammar_cache_extension.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_type.dart';
@@ -10,10 +12,10 @@ import 'package:graphlink/src/serializers/gl_serializer.dart';
 import 'package:graphlink/src/serializers/graphq_serializer.dart';
 
 const clientName = 'GraphLinkClient';
-const clientExceptionName = 'GLinkException';
-const clientExceptionNameRef = '${clientName}.${clientExceptionName}';
+const clientExceptionName = 'GraphLinkException';
+const clientExceptionNameRef = clientExceptionName;
 const _subscriptionListenerName = 'GraphLinkSubscriptionListener';
-const _subscriptionListenerRef = '${clientName}.${_subscriptionListenerName}';
+const _subscriptionListenerRef = _subscriptionListenerName;
 
 class JavaClientSerializer extends GLClientSerilaizer {
   final GLGrammar _grammar;
@@ -33,14 +35,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
     for (var i in [
       JavaImports.map,
       JavaImports.hashMap,
-      JavaImports.list,
-      JavaImports.collectors,
-      JavaImports.arrays,
-      JavaImports.collections,
-      if (_grammar.hasSubscriptions) ...[
-        JavaImports.uuid,
-        JavaImports.arrayList,
-      ]
+      JavaImports.objects,
     ]) {
       buffer.writeln('import ${i};');
     }
@@ -48,72 +43,62 @@ class JavaClientSerializer extends GLClientSerilaizer {
 
     buffer.writeln(codeGenUtils.createClass(className: clientName, statements: [
       'final Map<String, String> _fragmMap = new HashMap<>();',
-      'final GraphLinkClientAdapter adapter;',
-      'final GraphLinkJsonEncoder encoder;',
-      'final GraphLinkJsonDecoder decoder;',
       if (_grammar.hasQueries) 'public final ${classNameFromType(GLQueryType.query)} queries;',
       if (_grammar.hasMutations) 'public final ${classNameFromType(GLQueryType.mutation)} mutations;',
       if (_grammar.hasSubscriptions) 'public final ${classNameFromType(GLQueryType.subscription)} subscriptions;',
       codeGenUtils.createMethod(
+        methodName: clientName,
+        returnType: 'public',
+        statements: [
+          if (_grammar.hasSubscriptions)
+            'this(adapter, encoder, decoder, null, wsAdapter);'
+          else
+            'this(adapter, encoder, decoder, null);',
+        ],
+        arguments: [
+          _adapterDeclaration(false),
+          if (_grammar.hasSubscriptions) 'GraphLinkGraphLinkWebSocketAdapter wsAdapter'
+        ],
+      ),
+      codeGenUtils.createMethod(
         returnType: "public",
         methodName: clientName,
         arguments: [
-          _adapterDeclaration(),
+          _adapterDeclaration(true),
           if (_grammar.hasSubscriptions) 'GraphLinkGraphLinkWebSocketAdapter wsAdapter'
         ],
         statements: [
-          'this.adapter = adapter;',
-          'this.encoder = encoder;',
-          'this.decoder = decoder;',
+          codeGenUtils.ifStatement(
+            condition: 'store == null',
+            ifBlockStatements: ['store = new InMemoryGraphLinkCacheStore();'],
+          ),
+          "Objects.requireNonNull(adapter);",
+          "Objects.requireNonNull(encoder);",
+          "Objects.requireNonNull(decoder);",
+          if (_grammar.hasSubscriptions) "Objects.requireNonNull(wsAdapter);",
           if (_grammar.hasQueries)
-            "queries = new ${classNameFromType(GLQueryType.query)}(adapter, _fragmMap, encoder, decoder);",
+            "queries = new ${classNameFromType(GLQueryType.query)}(adapter, _fragmMap, encoder, decoder, store);",
           if (_grammar.hasMutations)
-            "mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, _fragmMap, encoder, decoder);",
+            "mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, _fragmMap, encoder, decoder, store);",
           if (_grammar.hasSubscriptions)
-            "subscriptions = new ${classNameFromType(GLQueryType.subscription)}(wsAdapter, _fragmMap, encoder, decoder);",
+            "subscriptions = new ${classNameFromType(GLQueryType.subscription)}(wsAdapter, _fragmMap, encoder, decoder, store);",
           ..._grammar.fragments.values.map((value) =>
               '_fragmMap.put("${value.tokenInfo}", "${gqlSerializer.serializeFragmentDefinitionBase(value)}");'),
         ],
       ),
-      '',
-      ...GLQueryType.values.map((e) => generateQueriesClassByType(e)).where((e) => e != null).map((e) => e!),
-      codeGenUtils.createClass(
-        staticClass: true,
-        className: "${clientExceptionName} extends RuntimeException",
-        statements: [
-          'private final List<GraphLinkError> errors;',
-          codeGenUtils.createMethod(returnType: 'public', methodName: clientExceptionName, arguments: [
-            'List<GraphLinkError> errors',
-          ], statements: [
-            'this.errors = errors;'
-          ]),
-          codeGenUtils.createMethod(returnType: 'private', methodName: clientExceptionName, arguments: [
-            'Exception ex',
-          ], statements: [
-            'super(ex);',
-            'errors = Collections.emptyList();'
-          ]),
-          codeGenUtils.createMethod(
-              returnType: 'public List<GraphLinkError>',
-              methodName: 'getErrors',
-              arguments: [],
-              statements: ['return errors;']),
-          codeGenUtils.createMethod(returnType: 'static ${clientExceptionName}', methodName: 'of', arguments: [
-            'List<?> errors'
-          ], statements: [
-            'return new ${clientExceptionName}(errors.stream().map(e -> GraphLinkError.fromJson((Map<String, Object>)e)).collect(Collectors.toList()));'
-          ])
-        ],
-      ),
-      if (_grammar.hasSubscriptions) _gqSubscriptionListener
     ]));
 
     buffer.writeln(serializeSubscriptions().ident());
     return buffer.toString();
   }
 
-  String _adapterDeclaration() {
-    return 'GraphLinkClientAdapter adapter, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder';
+  String _adapterDeclaration(bool withStore) {
+    return [
+      'GraphLinkClientAdapter adapter',
+      'GraphLinkJsonEncoder encoder',
+      'GraphLinkJsonDecoder decoder',
+      if (withStore) 'GraphLinkCacheStore store',
+    ].join(", ");
   }
 
   String? generateQueriesClassByType(GLQueryType type) {
@@ -123,40 +108,72 @@ class JavaClientSerializer extends GLClientSerilaizer {
       return null;
     }
 
-    return codeGenUtils.createClass(staticClass: true, className: classNameFromType(type), statements: [
+    return codeGenUtils
+        .createClass(staticClass: false, className: "${classNameFromType(type)} extends ResolverBase", statements: [
       ...declareAdapter(type),
-      "final Map<String, String> fragmentMap;",
-      "final GraphLinkJsonEncoder encoder;",
-      "final GraphLinkJsonDecoder decoder;",
       codeGenUtils.createMethod(
           returnType: 'public',
           methodName: classNameFromType(type),
           arguments: _declareConstructorArgs(type),
           statements: [
+            'super(fragmentMap, store, encoder, decoder);',
             'this.adapter = adapter;',
-            'this.fragmentMap = fragmentMap;',
-            'this.encoder = encoder;',
-            'this.decoder = decoder;',
             if (type == GLQueryType.subscription) '_handler = new SubscriptionHandler(adapter, decoder, encoder);',
           ]),
-      ...queryList.map((e) => queryToMethod(e))
+      ...queryList.where((e) => e.type == GLQueryType.query || e.type == GLQueryType.subscription).map(queryToMethod),
+      ...queryList.where((e) => e.type == GLQueryType.mutation).map(mutationToMethod),
+      if (type == GLQueryType.query) codeGenUtils.createMethod(
+        returnType: 'private GraphLinkPayload',
+        methodName: 'buildPayload',
+        arguments: ['List<GraphLinkPartialQuery> partQueries', 'String operationName', 'String directives'],
+        statements: [
+          'Map<String, Object> variables = new HashMap<>();',
+          codeGenUtils.forEachLoop(variable: 'partQuery', iterable: 'partQueries', statements: [
+            'variables.putAll(partQuery.variables);',
+          ]),
+          'StringBuilder queryBuilder = new StringBuilder("query " + operationName);',
+          'Set<String> args = new HashSet<>();',
+          codeGenUtils.forEachLoop(variable: 'partQuery', iterable: 'partQueries', statements: [
+            'args.addAll(partQuery.argumentDeclarations);',
+          ]),
+          codeGenUtils.ifStatement(condition: '!args.isEmpty()', ifBlockStatements: [
+            'queryBuilder.append("(");',
+            'queryBuilder.append(String.join(", ", args));',
+            'queryBuilder.append(")");',
+          ]),
+          codeGenUtils.ifStatement(condition: '!directives.isEmpty()', ifBlockStatements: [
+            'queryBuilder.append(directives);',
+          ]),
+          'queryBuilder.append("{");',
+          codeGenUtils.forEachLoop(variable: 'partQuery', iterable: 'partQueries', statements: [
+            'queryBuilder.append(partQuery.query);',
+          ]),
+          'queryBuilder.append("}");',
+          'Set<String> fragmentNames = new HashSet<>();',
+          codeGenUtils.forEachLoop(variable: 'partQuery', iterable: 'partQueries', statements: [
+            'fragmentNames.addAll(partQuery.fragmentNames);',
+          ]),
+          'StringBuilder fragmentsBuilder = new StringBuilder();',
+          codeGenUtils.forEachLoop(variable: 'fragName', iterable: 'fragmentNames', statements: [
+            'fragmentsBuilder.append(fragmentMap.get(fragName));',
+          ]),
+          'queryBuilder.append(fragmentsBuilder);',
+          'return GraphLinkPayload.builder().query(queryBuilder.toString()).operationName(operationName).variables(variables).build();',
+        ],
+      ),
     ]);
   }
 
   List<String> _declareConstructorArgs(GLQueryType type) {
-    if (type == GLQueryType.subscription) {
-      return [
-        'GraphLinkGraphLinkWebSocketAdapter adapter',
-        'Map<String, String> fragmentMap',
-        'GraphLinkJsonEncoder encoder',
-        'GraphLinkJsonDecoder decoder',
-      ];
-    }
     return [
-      'GraphLinkClientAdapter adapter',
+      if (type == GLQueryType.subscription)
+        'GraphLinkGraphLinkWebSocketAdapter adapter'
+      else
+        'GraphLinkClientAdapter adapter',
       'Map<String, String> fragmentMap',
       'GraphLinkJsonEncoder encoder',
       'GraphLinkJsonDecoder decoder',
+      'GraphLinkCacheStore store',
     ];
   }
 
@@ -164,21 +181,126 @@ class JavaClientSerializer extends GLClientSerilaizer {
     switch (type) {
       case GLQueryType.query:
       case GLQueryType.mutation:
-        return ["final GraphLinkClientAdapter adapter;"];
+        return ["private final GraphLinkClientAdapter adapter;"];
       case GLQueryType.subscription:
-        return ["final SubscriptionHandler _handler;", "final GraphLinkGraphLinkWebSocketAdapter adapter;"];
+        return [
+          "private final SubscriptionHandler _handler;",
+          "private final GraphLinkGraphLinkWebSocketAdapter adapter;"
+        ];
     }
   }
 
   String queryToMethod(GLQueryDefinition def) {
+    final dividedQueries = gqlSerializer.divideQueryDefinition(def, _grammar);
+    final directives = gqlSerializer.serializeDirectiveValueList(def.getDirectives(skipGenerated: true));
+    final returnType = def.getGeneratedTypeDefinition().tokenInfo.token;
+
     return codeGenUtils.createMethod(
         returnType: 'public ${returnTypeByQueryType(def)}',
         methodName: def.tokenInfo.token,
         arguments: getArguments(def),
         statements: [
           'String operationName = "${def.tokenInfo}";',
-          "List<String> fragsValues = Arrays.asList(${def.fragments(_grammar).map((e) => 'fragmentMap.get("${e.token}")').join(", ")});",
-          'String query = "${gqlSerializer.serializeQueryDefinition(def)} " + String.join(" ", fragsValues);',
+          generateVariables(def),
+          'List<GraphLinkPartialQuery> partialQueries = new ArrayList<>();',
+          ...dividedQueries.map(serializePartialQueryJava),
+          'Map<String, Object> responseMap = new HashMap<>();',
+          'Map<String, Object> staleData = new HashMap<>();',
+          codeGenUtils.forEachLoop(variable: 'partQuery', iterable: 'partialQueries', statements: [
+            codeGenUtils.ifStatement(condition: 'partQuery.ttl > 0', ifBlockStatements: [
+              codeGenUtils.tryCatchFinally(
+                tryStatements: [
+                  'GraphLinkCacheEntry entry = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline);',
+                  codeGenUtils.ifStatement(condition: 'entry != null', ifBlockStatements: [
+                    codeGenUtils.ifStatement(
+                      condition: 'entry.stale',
+                      ifBlockStatements: ['staleData.put(partQuery.elementKey, decoder.decode(entry.data));'],
+                      elseBlockStatements: ['responseMap.put(partQuery.elementKey, decoder.decode(entry.data));'],
+                    ),
+                  ]),
+                ],
+                catchStatements: [],
+                catchVariable: 'ignored',
+              ),
+            ]),
+          ]),
+          'List<GraphLinkPartialQuery> remaining = new ArrayList<>();',
+          codeGenUtils.forEachLoop(variable: 'partQuery', iterable: 'partialQueries', statements: [
+            codeGenUtils.ifStatement(condition: '!responseMap.containsKey(partQuery.elementKey)', ifBlockStatements: [
+              'remaining.add(partQuery);',
+            ]),
+          ]),
+          codeGenUtils.ifStatement(condition: 'remaining.isEmpty()', ifBlockStatements: [
+            'return $returnType.fromJson(responseMap);',
+          ]),
+          'GraphLinkPayload payload = buildPayload(remaining, operationName, "$directives");',
+          codeGenUtils.tryCatchFinally(
+            tryStatements: [
+              'String responseText = adapter.execute(encoder.encode(payload));',
+              'return parseToObjectAndCache(responseText, responseMap, $returnType::fromJson, remaining);',
+            ],
+            catchStatements: [
+              'responseMap.putAll(staleData);',
+              'long remainingCount = partialQueries.stream().filter(e -> !responseMap.containsKey(e.elementKey)).count();',
+              codeGenUtils.ifStatement(condition: 'remainingCount > 0', ifBlockStatements: [
+                'if (exception instanceof RuntimeException) throw (RuntimeException) exception;',
+                'throw new RuntimeException(exception);',
+              ]),
+              'return $returnType.fromJson(responseMap);',
+            ],
+            catchVariable: 'exception',
+          ),
+        ]);
+  }
+
+  String serializePartialQueryJava(DividedQuery e) {
+    final tagsStr = e.tags.isEmpty
+        ? 'new ArrayList<>()'
+        : 'Arrays.asList(${e.tags.map((t) => '"$t"').join(', ')})';
+    final fragNamesStr = e.fragmentNames.isEmpty
+        ? 'new HashSet<>()'
+        : 'new HashSet<>(Arrays.asList(${e.fragmentNames.map((f) => '"$f"').join(', ')}))';
+    final argDeclsStr = e.argumentDeclarations.isEmpty
+        ? 'new ArrayList<>()'
+        : 'Arrays.asList(${e.argumentDeclarations.map((a) => '"$a"').join(', ')})';
+    final queryStr = e.query.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
+
+    final buffer = StringBuffer();
+    buffer.writeln('{');
+    buffer.writeln('  Map<String, Object> pqVars = new HashMap<>();');
+    for (var v in e.variables) {
+      final argName = v.substring(1);
+      buffer.writeln('  pqVars.put("$argName", variables.get("$argName"));');
+    }
+    buffer.writeln('  partialQueries.add(new GraphLinkPartialQuery(');
+    buffer.writeln('    "$queryStr",');
+    buffer.writeln('    pqVars,');
+    buffer.writeln('    ${e.cacheTTL},');
+    buffer.writeln('    $tagsStr,');
+    buffer.writeln('    "${e.operationName}",');
+    buffer.writeln('    "${e.elementKey}",');
+    buffer.writeln('    $fragNamesStr,');
+    buffer.writeln('    $argDeclsStr,');
+    buffer.writeln('    ${e.staleIfOffline},');
+    buffer.writeln('    encoder');
+    buffer.writeln('  ));');
+    buffer.write('}');
+    return buffer.toString();
+  }
+
+  String mutationToMethod(GLQueryDefinition def) {
+    final frags = def.fragments(_grammar);
+    return codeGenUtils.createMethod(
+        returnType: 'public ${returnTypeByQueryType(def)}',
+        methodName: def.tokenInfo.token,
+        arguments: getArguments(def),
+        statements: [
+          'String operationName = "${def.tokenInfo}";',
+          if (frags.isNotEmpty) ...[
+            'List<String> fragsValues = Arrays.asList(${frags.map((e) => 'fragmentMap.get("${e.token}")').join(", ")});',
+            'String query = "${gqlSerializer.serializeQueryDefinition(def)} " + String.join(" ", fragsValues);',
+          ] else
+            'String query = "${gqlSerializer.serializeQueryDefinition(def)}";',
           generateVariables(def),
           "GraphLinkPayload payload = GraphLinkPayload.builder().query(query).operationName(operationName).variables(variables).build();",
           _serializeAdapterCall(def)
@@ -196,35 +318,17 @@ class JavaClientSerializer extends GLClientSerilaizer {
   }
 
   String _serializeAdapterCall(GLQueryDefinition def) {
-    if (def.type == GLQueryType.subscription) {
-      var method = codeGenUtils.createMethod(
-          methodName:
-              '${_subscriptionListenerRef}<Map<String, Object>> rawListener = new ${_subscriptionListenerRef}<Map<String, Object>>',
-          statements: [
-            '@Override',
-            codeGenUtils.createMethod(
-              returnType: 'public void',
-              methodName: 'onMessage',
-              arguments: ['Map<String, Object> response'],
-              statements: ['listener.onMessage(${def.typeDefinition?.token}.fromJson(response));'],
-            ),
-            '@Override',
-            codeGenUtils.createMethod(
-              returnType: 'public void',
-              methodName: 'onComplete',
-              arguments: [],
-              statements: ['listener.onComplete();'],
-            ),
-            '@Override',
-            codeGenUtils.createMethod(
-              returnType: 'public void',
-              methodName: 'onError',
-              arguments: ['${clientExceptionNameRef} error'],
-              statements: ['listener.onError(error);'],
-            )
-          ]);
-      return ['${method};', '_handler.handlePayload(payload, rawListener);'].join('\n');
+    switch (def.type) {
+      case GLQueryType.query:
+        return _serializeQueryAdapterCall(def);
+      case GLQueryType.mutation:
+        return _serializeMutationAdapterCall(def);
+      case GLQueryType.subscription:
+        return _serializeSubscriptionAdapterCall(def);
     }
+  }
+
+  String _serializeQueryAdapterCall(GLQueryDefinition def) {
     return [
       "String encodedPayload = encoder.encode(payload);",
       "String responseText = adapter.execute(encodedPayload);",
@@ -235,6 +339,63 @@ class JavaClientSerializer extends GLClientSerilaizer {
         'return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson((Map<String, Object>)decodedResponse.get("data"));'
       ])
     ].join("\n");
+  }
+
+  String _serializeMutationAdapterCall(GLQueryDefinition def) {
+    return [
+      "String encodedPayload = encoder.encode(payload);",
+      "String responseText = adapter.execute(encodedPayload);",
+      "Map<String, Object> decodedResponse = decoder.decode(responseText);",
+      codeGenUtils.ifStatement(condition: 'decodedResponse.containsKey("errors")', ifBlockStatements: [
+        'throw ${clientExceptionName}.of((List)decodedResponse.get("errors"));',
+      ]),
+      'Map<String, Object> data = (Map<String, Object>) decodedResponse.get("data");',
+      _serializeInvalidationCall(def),
+      'return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson(data);',
+    ].join("\n");
+  }
+
+  String _serializeInvalidationCall(GLQueryDefinition def) {
+    for (var e in def.elements) {
+      if (e.cacheInvalidateAll) {
+        return 'store.invalidateAll();';
+      }
+    }
+    final tags = def.elements.expand((e) => e.invalidateCacheTags).toSet();
+    if (tags.isNotEmpty) {
+      return 'invalidateByTags(Arrays.asList(${tags.map((e) => '"$e"').join(', ')}));';
+    }
+    return '// no tag to invalidate';
+  }
+
+  String _serializeSubscriptionAdapterCall(GLQueryDefinition def) {
+    var method = codeGenUtils.createMethod(
+        methodName:
+            '${_subscriptionListenerRef}<Map<String, Object>> rawListener = new ${_subscriptionListenerRef}<Map<String, Object>>',
+        statements: [
+          '@Override',
+          codeGenUtils.createMethod(
+            returnType: 'public void',
+            methodName: 'onMessage',
+            arguments: ['Map<String, Object> response'],
+            statements: ['listener.onMessage(${def.typeDefinition?.token}.fromJson(response));'],
+          ),
+          '@Override',
+          codeGenUtils.createMethod(
+            returnType: 'public void',
+            methodName: 'onComplete',
+            arguments: [],
+            statements: ['listener.onComplete();'],
+          ),
+          '@Override',
+          codeGenUtils.createMethod(
+            returnType: 'public void',
+            methodName: 'onError',
+            arguments: ['${clientExceptionNameRef} error'],
+            statements: ['listener.onError(error);'],
+          )
+        ]);
+    return ['${method};', '_handler.handlePayload(payload, rawListener);'].join('\n');
   }
 
   String _serializeArgumentValue(GLQueryDefinition def, String argName) {
@@ -290,12 +451,306 @@ class JavaClientSerializer extends GLClientSerilaizer {
   }
 
   String serializeSubscriptions() {
-    if (!_grammar.hasSubscriptions) {
-      return "";
+    return "";
+  }
+
+  String generateResolverBaseFile(String importPrefix) {
+    final buffer = StringBuffer();
+    for (var i in [
+      JavaImports.map,
+      JavaImports.list,
+      JavaImports.hashMap,
+      JavaImports.hashSet,
+      JavaImports.reentrantLock,
+      JavaImports.function,
+    ]) {
+      buffer.writeln('import $i;');
     }
-    return """
-$_subscriptionHandler
-""";
+    buffer.writeln(serializeImports(_grammar, importPrefix));
+
+    final allTags = _grammar.getAllCacheTags();
+
+    buffer.writeln(codeGenUtils.createClass(
+      className: 'ResolverBase',
+      statements: [
+        'protected final Map<String, String> fragmentMap;',
+        'protected final GraphLinkCacheStore store;',
+        'protected final GraphLinkJsonEncoder encoder;',
+        'protected final GraphLinkJsonDecoder decoder;',
+        'private final Map<String, ReentrantLock> tagLocks = new HashMap<>();',
+        codeGenUtils.createMethod(
+          methodName: 'ResolverBase',
+          arguments: [
+            'Map<String, String> fragmentMap',
+            'GraphLinkCacheStore store',
+            'GraphLinkJsonEncoder encoder',
+            'GraphLinkJsonDecoder decoder',
+          ],
+          statements: [
+            'this.fragmentMap = fragmentMap;',
+            'this.store = store;',
+            'this.encoder = encoder;',
+            'this.decoder = decoder;',
+            'String[] tags = {${allTags.map((t) => '"$t"').join(', ')}};',
+            codeGenUtils.forEachLoop(variable: 'tag', iterable: 'tags', statements: [
+              'tagLocks.put(tag, new ReentrantLock());',
+            ]),
+          ],
+        ),
+        codeGenUtils.createMethod(
+          returnType: 'protected <T> T',
+          methodName: 'parseToObjectAndCache',
+          arguments: [
+            'String data',
+            'Map<String, Object> cachedResponse',
+            'Function<Map<String, Object>, T> parser',
+            'List<GraphLinkPartialQuery> remainingQueries',
+          ],
+          statements: [
+            'Map<String, Object> result = decoder.decode(data);',
+            codeGenUtils.ifStatement(condition: 'result.containsKey("errors")', ifBlockStatements: [
+              'throw ${clientExceptionName}.of((List) result.get("errors"));',
+            ]),
+            'Map<String, Object> dataMap = (Map<String, Object>) result.get("data");',
+            codeGenUtils.forEachLoop(variable: 'q', iterable: 'remainingQueries', statements: [
+              codeGenUtils.ifStatement(
+                  condition: 'q.ttl > 0 && dataMap.get(q.elementKey) != null',
+                  ifBlockStatements: [
+                    'GraphLinkCacheEntry entry = new GraphLinkCacheEntry(encoder.encode(dataMap.get(q.elementKey)), System.currentTimeMillis() + q.ttl * 1000L);',
+                    'store.set(q.cacheKey, encoder.encode(entry.toJson()));',
+                    codeGenUtils.ifStatement(condition: '!q.tags.isEmpty()', ifBlockStatements: [
+                      'addKeyToTags(q.cacheKey, q.tags);',
+                    ]),
+                  ]),
+            ]),
+            'dataMap.putAll(cachedResponse);',
+            'return parser.apply(dataMap);',
+          ],
+        ),
+        codeGenUtils.createMethod(
+          returnType: 'private String',
+          methodName: 'tagKey',
+          arguments: ['String tag'],
+          statements: ['return "__tag__" + tag;'],
+        ),
+        codeGenUtils.createMethod(
+          returnType: 'GraphLinkCacheEntry',
+          methodName: 'getFromCache',
+          arguments: ['String key', 'List<String> tags', 'boolean staleIfOffline'],
+          statements: [
+            'String result = store.get(key);',
+            codeGenUtils.ifStatement(condition: 'result != null', ifBlockStatements: [
+              'Map<String, Object> entryMap = decoder.decode(result);',
+              'GraphLinkCacheEntry entry = GraphLinkCacheEntry.fromJson(entryMap);',
+              codeGenUtils.ifStatement(condition: 'entry.isExpired()', ifBlockStatements: [
+                codeGenUtils.ifStatement(condition: 'staleIfOffline', ifBlockStatements: ['return entry.asStale();']),
+                'store.invalidate(key);',
+                codeGenUtils
+                    .ifStatement(condition: '!tags.isEmpty()', ifBlockStatements: ['removeKeyFromTags(key, tags);']),
+                'return null;',
+              ], elseBlockStatements: [
+                'return entry;',
+              ]),
+            ]),
+            'return null;',
+          ],
+        ),
+        codeGenUtils.createMethod(
+          returnType: 'void',
+          methodName: 'invalidateByTags',
+          arguments: ['List<String> tags'],
+          statements: [
+            codeGenUtils.forEachLoop(variable: 'tag', iterable: 'tags', statements: [
+              'String tKey = tagKey(tag);',
+              'ReentrantLock lock = tagLocks.get(tag);',
+              'lock.lock();',
+              codeGenUtils.tryCatchFinally(tryStatements: [
+                'String data = store.get(tKey);',
+                codeGenUtils.ifStatement(condition: 'data != null', ifBlockStatements: [
+                  'GraphLinkTagEntry entry = GraphLinkTagEntry.fromJson(decoder.decode(data));',
+                  codeGenUtils.forEachLoop(variable: 'k', iterable: 'entry.keys', statements: ['store.invalidate(k);']),
+                  'store.invalidate(tKey);',
+                ]),
+              ], finallyStatements: [
+                'lock.unlock();',
+              ]),
+            ]),
+          ],
+        ),
+        codeGenUtils.createMethod(
+          returnType: 'void',
+          methodName: 'addKeyToTags',
+          arguments: ['String key', 'List<String> tags'],
+          statements: [
+            codeGenUtils.forEachLoop(variable: 'tag', iterable: 'tags', statements: [
+              'String tKey = tagKey(tag);',
+              'ReentrantLock lock = tagLocks.get(tag);',
+              'lock.lock();',
+              codeGenUtils.tryCatchFinally(tryStatements: [
+                'String data = store.get(tKey);',
+                'GraphLinkTagEntry entry = data != null ? GraphLinkTagEntry.fromJson(decoder.decode(data)) : new GraphLinkTagEntry(new HashSet<>());',
+                'entry.add(key);',
+                'store.set(tKey, encoder.encode(entry.toJson()));',
+              ], finallyStatements: [
+                'lock.unlock();',
+              ]),
+            ]),
+          ],
+        ),
+        codeGenUtils.createMethod(
+          returnType: 'void',
+          methodName: 'removeKeyFromTags',
+          arguments: ['String key', 'List<String> tags'],
+          statements: [
+            codeGenUtils.forEachLoop(variable: 'tag', iterable: 'tags', statements: [
+              'String tKey = tagKey(tag);',
+              'ReentrantLock lock = tagLocks.computeIfAbsent(tag, k -> new ReentrantLock());',
+              'lock.lock();',
+              codeGenUtils.tryCatchFinally(tryStatements: [
+                'String data = store.get(tKey);',
+                codeGenUtils.ifStatement(condition: 'data != null', ifBlockStatements: [
+                  'GraphLinkTagEntry entry = GraphLinkTagEntry.fromJson(decoder.decode(data));',
+                  'entry.remove(key);',
+                  codeGenUtils.ifStatement(
+                    condition: 'entry.keys.isEmpty()',
+                    ifBlockStatements: ['store.invalidate(tKey);'],
+                    elseBlockStatements: ['store.set(tKey, encoder.encode(entry.toJson()));'],
+                  ),
+                ]),
+              ], finallyStatements: [
+                'lock.unlock();',
+              ]),
+            ]),
+          ],
+        ),
+      ],
+    ));
+    return buffer.toString();
+  }
+
+  String? generateQueriesClassFile(GLQueryType type, String importPrefix) {
+    final classBody = generateQueriesClassByType(type);
+    if (classBody == null) return null;
+    final buffer = StringBuffer();
+    for (var i in [
+      JavaImports.map,
+      JavaImports.hashMap,
+      JavaImports.list,
+      JavaImports.arrayList,
+      JavaImports.arrays,
+      if (type == GLQueryType.query) ...[
+        JavaImports.set,
+        JavaImports.hashSet,
+      ],
+      if (type == GLQueryType.subscription) ...[
+        JavaImports.uuid,
+      ],
+    ]) {
+      buffer.writeln('import $i;');
+    }
+    buffer.writeln(serializeImports(_grammar, importPrefix));
+    buffer.writeln(classBody);
+    return buffer.toString();
+  }
+
+  String generateGraphLinkCacheEntryFile() {
+    return '${['import ${JavaImports.map};', 'import ${JavaImports.hashMap};'].join('\n')}\n\n${cacheEntry.trim()}';
+  }
+
+  String generateGraphLinkTagEntryFile() {
+    return '${[
+      'import ${JavaImports.map};',
+      'import ${JavaImports.hashMap};',
+      'import ${JavaImports.set};',
+      'import ${JavaImports.hashSet};',
+      'import ${JavaImports.list};',
+      'import ${JavaImports.arrayList};'
+    ].join('\n')}\n\n${tagEntry.trim()}';
+  }
+
+  String generateGraphLinkPartialQueryFile(String importPrefix) {
+    return '${[
+      'import ${JavaImports.map};',
+      'import ${JavaImports.hashMap};',
+      'import ${JavaImports.list};',
+      'import ${JavaImports.set};',
+      'import ${JavaImports.treeMap};',
+    ].join('\n')}\n${serializeImports(_grammar, importPrefix)}\n${partialQuery.trim()}';
+  }
+
+  String generateGraphLinkCacheStoreFile() {
+    return graphLinkCacheStore.trim();
+  }
+
+  String generateInMemoryGraphLinkCacheStoreFile() {
+    return 'import ${JavaImports.concurrentHashMap};\n\n${inMemoryGraphLinkCacheStore.trim()}';
+  }
+
+  String generateSubscriptionListenerFile() {
+    return _gqSubscriptionListener.trim();
+  }
+
+  String generateGraphqlWsMessageTypesFile() {
+    return _graphqlWsMessageTypesClass.trim();
+  }
+
+  String generateSubscriptionHandlerFile(String importPrefix) {
+    final buffer = StringBuffer();
+    for (var i in [
+      JavaImports.map,
+      JavaImports.hashMap,
+      JavaImports.list,
+      JavaImports.arrayList,
+      JavaImports.uuid,
+    ]) {
+      buffer.writeln('import $i;');
+    }
+    buffer.writeln(serializeImports(_grammar, importPrefix));
+    buffer.writeln(serializer.serializeImportToken(_grammar.enums['GraphLinkAckStatus']!, importPrefix));
+    buffer.writeln(_subscriptionHandlerClass.trim());
+    return buffer.toString();
+  }
+
+  String get exceptionFileName => '$clientExceptionName.java';
+
+  String generateGraphLinkExceptionFile(String importPrefix) {
+    final buffer = StringBuffer();
+    for (var i in [JavaImports.list, JavaImports.collections, JavaImports.collectors, JavaImports.map]) {
+      buffer.writeln('import $i;');
+    }
+    final errorToken = _grammar.getTokenByKey('GraphLinkError');
+    if (errorToken != null) {
+      buffer.writeln(serializer.serializeImportToken(errorToken, importPrefix));
+    }
+    buffer.writeln();
+    buffer.writeln(codeGenUtils.createClass(
+      className: '$clientExceptionName extends RuntimeException',
+      statements: [
+        'private final List<GraphLinkError> errors;',
+        codeGenUtils.createMethod(returnType: 'public', methodName: clientExceptionName, arguments: [
+          'List<GraphLinkError> errors',
+        ], statements: [
+          'this.errors = errors;'
+        ]),
+        codeGenUtils.createMethod(returnType: 'private', methodName: clientExceptionName, arguments: [
+          'Exception ex',
+        ], statements: [
+          'super(ex);',
+          'errors = Collections.emptyList();'
+        ]),
+        codeGenUtils.createMethod(
+            returnType: 'public List<GraphLinkError>',
+            methodName: 'getErrors',
+            arguments: [],
+            statements: ['return errors;']),
+        codeGenUtils.createMethod(returnType: 'static $clientExceptionName', methodName: 'of', arguments: [
+          'List<?> errors'
+        ], statements: [
+          'return new $clientExceptionName(errors.stream().map(e -> GraphLinkError.fromJson((Map<String, Object>)e)).collect(Collectors.toList()));'
+        ]),
+      ],
+    ));
+    return buffer.toString();
   }
 
   String get fileExtension => '.java';
@@ -321,9 +776,8 @@ public interface ${_subscriptionListenerName}<T> {
 }
 ''';
 
-const _subscriptionHandler = '''
-
-class GraphqlWsMessageTypes {
+const _graphqlWsMessageTypesClass = '''
+public class GraphqlWsMessageTypes {
   /// Client initializes connection.
   /// Example: { "type": "connection_init", "payload": { "authToken": "abc123" } }
   public static final String connectionInit = "connection_init";
@@ -366,9 +820,10 @@ class GraphqlWsMessageTypes {
   /// Example: { "id": "1", "type": "complete" }
   public static final String complete = "complete";
 }
+''';
 
-
-class SubscriptionHandler {
+const _subscriptionHandlerClass = '''
+public class SubscriptionHandler {
 
   // we have to think about synchronization here
   private final Map<String, ${_subscriptionListenerRef}<Map<String, Object>>> listeners = new HashMap<>();
@@ -547,5 +1002,4 @@ class SubscriptionHandler {
 
 
 }
-
 ''';

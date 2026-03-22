@@ -107,7 +107,21 @@ class SpringServerConfig {
 }
 
 class ClientConfig {
-  final String targetLanguage; // e.g., "dart"
+  final DartClientConfig? dart;
+  final JavaClientConfig? java;
+
+  ClientConfig({this.dart, this.java})
+      : assert(dart != null || java != null, 'ClientConfig must have at least one of dart or java');
+
+  factory ClientConfig.fromJson(Map<String, dynamic> json) {
+    return ClientConfig(
+      dart: json['dart'] != null ? DartClientConfig.fromJson(json['dart']) : null,
+      java: json['java'] != null ? JavaClientConfig.fromJson(json['java']) : null,
+    );
+  }
+}
+
+class DartClientConfig {
   final bool generateAllFieldsFragments;
   final bool nullableFieldsRequired;
   final bool autoGenerateQueries;
@@ -121,15 +135,14 @@ class ClientConfig {
   final bool immutableInputFields;
   final bool immutableTypeFields;
 
-  ClientConfig({
-    required this.targetLanguage,
+  DartClientConfig({
     required this.generateAllFieldsFragments,
     required this.nullableFieldsRequired,
     required this.autoGenerateQueries,
     this.autoGenerateQueriesDefaultAlias,
     required this.operationNameAsParameter,
     this.defaultAlias,
-    required this.packageName,
+    this.packageName,
     this.appLocalizationsImport,
     this.generateUiInputs = false,
     this.generateUiTypes = false,
@@ -137,9 +150,8 @@ class ClientConfig {
     this.immutableTypeFields = true,
   });
 
-  factory ClientConfig.fromJson(Map<String, dynamic> json) {
-    return ClientConfig(
-      targetLanguage: json['targetLanguage'] ?? 'dart',
+  factory DartClientConfig.fromJson(Map<String, dynamic> json) {
+    return DartClientConfig(
       generateAllFieldsFragments: json['generateAllFieldsFragments'] ?? false,
       nullableFieldsRequired: json['nullableFieldsRequired'] ?? false,
       autoGenerateQueries: json['autoGenerateQueries'] ?? false,
@@ -150,6 +162,38 @@ class ClientConfig {
       appLocalizationsImport: json['appLocalizationsImport'] as String?,
       generateUiInputs: (json['generateUiInputs'] as bool?) ?? false,
       generateUiTypes: (json['generateUiTypes'] as bool?) ?? false,
+      immutableInputFields: (json['immutableInputFields'] as bool?) ?? true,
+      immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
+    );
+  }
+}
+
+class JavaClientConfig {
+  final String packageName;
+  final bool generateAllFieldsFragments;
+  final bool nullableFieldsRequired;
+  final bool autoGenerateQueries;
+  final bool operationNameAsParameter;
+  final bool immutableInputFields;
+  final bool immutableTypeFields;
+
+  JavaClientConfig({
+    required this.packageName,
+    this.generateAllFieldsFragments = false,
+    this.nullableFieldsRequired = false,
+    this.autoGenerateQueries = false,
+    this.operationNameAsParameter = false,
+    this.immutableInputFields = true,
+    this.immutableTypeFields = true,
+  });
+
+  factory JavaClientConfig.fromJson(Map<String, dynamic> json) {
+    return JavaClientConfig(
+      packageName: json['packageName'] as String,
+      generateAllFieldsFragments: (json['generateAllFieldsFragments'] as bool?) ?? false,
+      nullableFieldsRequired: (json['nullableFieldsRequired'] as bool?) ?? false,
+      autoGenerateQueries: (json['autoGenerateQueries'] as bool?) ?? false,
+      operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
       immutableInputFields: (json['immutableInputFields'] as bool?) ?? true,
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
     );

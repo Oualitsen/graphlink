@@ -14,16 +14,17 @@
     },
     "outputDir": "lib/generated",
     "clientConfig": {
-        "targetLanguage": "dart",
-        "packageName": "graphlink_cache_integration_tests",
-        "generateAllFieldsFragments": true,
-        "nullableFieldsRequired": false,
-        "autoGenerateQueries": true,
-        "autoGenerateQueriesDefaultAlias": "data",
-        "operationNameAsParameter": false,
-        "generateUiTypes": false,
-        "generateUiInputs": false,
-        "immutableInputFields": true,
-        "immutableTypeFields": true
+        "dart": {
+            "packageName": "graphlink_cache_integration_tests",
+            "generateAllFieldsFragments": true,
+            "nullableFieldsRequired": false,
+            "autoGenerateQueries": true,
+            "autoGenerateQueriesDefaultAlias": "data",
+            "operationNameAsParameter": false,
+            "generateUiTypes": false,
+            "generateUiInputs": false,
+            "immutableInputFields": true,
+            "immutableTypeFields": true
+        }
     }
 }

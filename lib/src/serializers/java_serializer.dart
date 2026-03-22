@@ -262,9 +262,10 @@ class JavaSerializer extends GLSerializer {
     var class_ = codeGenUtils.createClass(className: def.tokenInfo.token, statements: [
       ...def.getSerializableFields(grammar.mode).map((e) => serializeField(e, immutableInputFields)),
       "",
-      generateContructor(def.token, [], "public", def, checkForNulls: inputsCheckForNulls),
+      if (!immutableInputFields) generateContructor(def.token, [], "public", def, checkForNulls: inputsCheckForNulls),
       "",
-      generateContructor(def.token, def.getSerializableFields(grammar.mode), "private", def,
+      generateContructor(
+          def.token, def.getSerializableFields(grammar.mode), immutableInputFields ? "public" : "private", def,
           checkForNulls: inputsCheckForNulls),
       generateBuilder(def.token, def.getSerializableFields(grammar.mode), true),
       ...def
@@ -468,7 +469,7 @@ class JavaSerializer extends GLSerializer {
     buffer.writeln(codeGenUtils.createClass(staticClass: true, className: 'Builder', statements: [
       ...fields
           .map((field) => GLField(name: field.name, type: field.type, arguments: field.arguments, directives: []))
-          .map((field) => serializeField(field, forInput ? immutableInputFields : immutableTypeFields)),
+          .map((field) => serializeField(field, false)),
       "",
       ...fields.map((e) => codeGenUtils.createMethod(
           returnType: 'public Builder',
@@ -606,9 +607,10 @@ class JavaSerializer extends GLSerializer {
         .writeln(codeGenUtils.createClass(className: token.token, interfaceNames: interfaceNames.toList(), statements: [
       ...def.getSerializableFields(grammar.mode).map((e) => serializeField(e, immutableTypeFields)),
       "",
-      generateContructor(def.token, [], "public", def, checkForNulls: typesCheckForNulls),
+      if (!immutableTypeFields) generateContructor(def.token, [], "public", def, checkForNulls: typesCheckForNulls),
       "",
-      generateContructor(def.token, def.getSerializableFields(grammar.mode), "private", def),
+      generateContructor(
+          def.token, def.getSerializableFields(grammar.mode), immutableTypeFields ? "public" : "private", def),
       "",
       generateBuilder(def.token, def.getSerializableFields(grammar.mode), false),
       "",
