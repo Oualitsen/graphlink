@@ -29,7 +29,7 @@ const clientTypes = {
 const clientInterfaces = {'GraphLinkSubscriptionErrorMessageBase', 'GraphLinkGraphLinkWebSocketAdapter'};
 
 const javaClientAdapterNoParamSync = '''
-interface GQClientAdapter 
+interface GraphLinkClientAdapter 
 ${glDecorators}(${glDecoratorsArgumentName}: ["@FunctionalInterface"], ${glApplyOnClient}: true, ${glApplyOnServer}: false)
 ${glInterfaceFieldAsProperties} ${glInternal} {
     execute(payload: String!): String!
@@ -37,7 +37,7 @@ ${glInterfaceFieldAsProperties} ${glInternal} {
 ''';
 
 const javaClientAdapterWithParamSync = '''
-interface GQClientAdapter 
+interface GraphLinkClientAdapter 
 ${glDecorators}(${glDecoratorsArgumentName}: ["@FunctionalInterface"], ${glApplyOnClient}: true, ${glApplyOnServer}: false)
 ${glInterfaceFieldAsProperties} ${glInternal} {
     execute(payload: String!, operationName: String!): String!
@@ -48,13 +48,13 @@ const javaJsonEncoderDecorder = '''
   scalar gqlJavaMap ${glExternal}(glClass: "Map<String, Object>", ${glImport}: "${JavaImports.map}")
   scalar gqlJavaObject ${glExternal}(glClass: "Object")
 
-  interface GQJsonEncoder
+  interface GraphLinkJsonEncoder
   ${glDecorators}(${glDecoratorsArgumentName}: ["@FunctionalInterface"], ${glApplyOnClient}: true, ${glApplyOnServer}: false)
    ${glInterfaceFieldAsProperties} ${glInternal} {
     encode(json: gqlJavaObject!): String!
   }
 
-  interface GQJsonDecoder 
+  interface GraphLinkJsonDecoder 
   ${glDecorators}(${glDecoratorsArgumentName}: ["@FunctionalInterface"], ${glApplyOnClient}: true, ${glApplyOnServer}: false)
    ${glInterfaceFieldAsProperties} ${glInternal} {
      decode(json: String!): gqlJavaMap!
@@ -67,7 +67,7 @@ scalar void ${glExternal}(glClass: "void")
 scalar Consumer ${glExternal}(glClass: "Consumer<String>", glImport: "java.util.function.Consumer")
 scalar VoidConsumer ${glExternal}(glClass: "Consumer<Void>", glImport: "java.util.function.Consumer")
 scalar ThrowableConsumer ${glExternal}(glClass: "Consumer<Throwable>", glImport: "java.util.function.Consumer")
-scalar GQException ${glExternal}(glClass: "GQClient.GQException")
+scalar GraphLinkException ${glExternal}(glClass: "GraphLinkException")
 
 interface GraphLinkGraphLinkWebSocketAdapter ${glInterfaceFieldAsProperties} ${glInternal} {
    connect(onConnect: VoidConsumer!, onFailure: ThrowableConsumer): void!
@@ -130,7 +130,7 @@ type GraphLinkSubscriptionMessage implements GraphLinkSubscriptionErrorMessageBa
   payload: GraphLinkSubscriptionPayload
 }
 
-enum GQAckStatus {none progress acknoledged }
+enum GraphLinkAckStatus {none progress acknoledged }
 
 ''';
 }
@@ -149,6 +149,12 @@ class JavaImports {
   static const arrays = "java.util.Arrays";
   static const collections = "java.util.Collections";
   static const uuid = "java.util.UUID";
+  static const concurrentHashMap = "java.util.concurrent.ConcurrentHashMap";
+  static const reentrantLock = "java.util.concurrent.locks.ReentrantLock";
+  static const treeMap = "java.util.TreeMap";
+  static const function = "java.util.function.Function";
+  static const set = "java.util.Set";
+  static const hashSet = "java.util.HashSet";
 }
 
 class SpringImports {
@@ -161,8 +167,6 @@ class SpringImports {
   static const batchMapping = "org.springframework.graphql.data.method.annotation.BatchMapping";
   static const schemaMapping = "org.springframework.graphql.data.method.annotation.SchemaMapping";
   static const queryMapping = "org.springframework.graphql.data.method.annotation.QueryMapping";
-  static const mutationMapping =
-      "org.springframework.graphql.data.method.annotation.MutationMapping";
-  static const subscriptionMapping =
-      "org.springframework.graphql.data.method.annotation.SubscriptionMapping";
+  static const mutationMapping = "org.springframework.graphql.data.method.annotation.MutationMapping";
+  static const subscriptionMapping = "org.springframework.graphql.data.method.annotation.SubscriptionMapping";
 }

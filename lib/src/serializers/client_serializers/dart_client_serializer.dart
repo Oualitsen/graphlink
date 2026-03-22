@@ -282,6 +282,7 @@ class DartClientSerializer extends GLClientSerilaizer {
                   ]),
                 ])
               ]),
+              'dataMap.addAll(cachedResponse);',
               'return parser.call(dataMap);'
             ]),
       ],
