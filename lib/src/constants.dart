@@ -67,7 +67,7 @@ scalar void ${glExternal}(glClass: "void")
 scalar Consumer ${glExternal}(glClass: "Consumer<String>", glImport: "java.util.function.Consumer")
 scalar VoidConsumer ${glExternal}(glClass: "Consumer<Void>", glImport: "java.util.function.Consumer")
 scalar ThrowableConsumer ${glExternal}(glClass: "Consumer<Throwable>", glImport: "java.util.function.Consumer")
-scalar GLinkException ${glExternal}(glClass: "GraphLinkClient.GLinkException")
+scalar GraphLinkException ${glExternal}(glClass: "GraphLinkException")
 
 interface GraphLinkGraphLinkWebSocketAdapter ${glInterfaceFieldAsProperties} ${glInternal} {
    connect(onConnect: VoidConsumer!, onFailure: ThrowableConsumer): void!
@@ -149,6 +149,12 @@ class JavaImports {
   static const arrays = "java.util.Arrays";
   static const collections = "java.util.Collections";
   static const uuid = "java.util.UUID";
+  static const concurrentHashMap = "java.util.concurrent.ConcurrentHashMap";
+  static const reentrantLock = "java.util.concurrent.locks.ReentrantLock";
+  static const treeMap = "java.util.TreeMap";
+  static const function = "java.util.function.Function";
+  static const set = "java.util.Set";
+  static const hashSet = "java.util.HashSet";
 }
 
 class SpringImports {

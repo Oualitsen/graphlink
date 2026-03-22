@@ -18,20 +18,17 @@ getConfig(GLGrammar g) {
       outputDir: outputDir,
       clientConfig: ClientConfig(
           dart: DartClientConfig(
-            appLocalizationsImport: 'package:my_web_app/generated/i18n/app_localizations.dart',
-            generateAllFieldsFragments: g.generateAllFieldsFragments,
-            nullableFieldsRequired: false,
-            autoGenerateQueries: g.autoGenerateQueries,
-            operationNameAsParameter: false,
-            packageName: "my_web_app")));
+              appLocalizationsImport: 'package:my_web_app/generated/i18n/app_localizations.dart',
+              generateAllFieldsFragments: g.generateAllFieldsFragments,
+              nullableFieldsRequired: false,
+              autoGenerateQueries: g.autoGenerateQueries,
+              operationNameAsParameter: false,
+              packageName: "my_web_app")));
 }
 
 void main() {
   test("UI View gen", () async {
-    var g = GLGrammar(
-        autoGenerateQueries: true,
-        mode: CodeGenerationMode.client,
-        generateAllFieldsFragments: true);
+    var g = GLGrammar(autoGenerateQueries: true, mode: CodeGenerationMode.client, generateAllFieldsFragments: true);
     var result = g.parse('''
   type SingleLabelData {
     name: String!
@@ -44,14 +41,11 @@ void main() {
 ''');
 
     expect(result is Success, true);
-    await generateClientClasses(g, getConfig(g), DateTime.now(), pack: 'lib/generated');
+    await generateDartClientClasses(g, getConfig(g), DateTime.now(), pack: 'lib/generated');
   });
 
   test("UI View gen enum", () async {
-    var g = GLGrammar(
-        autoGenerateQueries: true,
-        mode: CodeGenerationMode.client,
-        generateAllFieldsFragments: true);
+    var g = GLGrammar(autoGenerateQueries: true, mode: CodeGenerationMode.client, generateAllFieldsFragments: true);
     var result = g.parse('''
 enum Gender {male, female}
   type WidgetEnumValue {
@@ -65,14 +59,11 @@ enum Gender {male, female}
 ''');
 
     expect(result is Success, true);
-    await generateClientClasses(g, getConfig(g), DateTime.now(), pack: 'lib/generated');
+    await generateDartClientClasses(g, getConfig(g), DateTime.now(), pack: 'lib/generated');
   });
 
   test("UI View gen nullable", () async {
-    var g = GLGrammar(
-        autoGenerateQueries: true,
-        mode: CodeGenerationMode.client,
-        generateAllFieldsFragments: true);
+    var g = GLGrammar(autoGenerateQueries: true, mode: CodeGenerationMode.client, generateAllFieldsFragments: true);
     var result = g.parse('''
   type SingleLabelDataNullable {
     name: String
@@ -85,14 +76,11 @@ enum Gender {male, female}
 ''');
 
     expect(result is Success, true);
-    await generateClientClasses(g, getConfig(g), DateTime.now(), pack: 'lib/generated');
+    await generateDartClientClasses(g, getConfig(g), DateTime.now(), pack: 'lib/generated');
   });
 
   test("UI View gen when field is not a string", () async {
-    var g = GLGrammar(
-        autoGenerateQueries: true,
-        mode: CodeGenerationMode.client,
-        generateAllFieldsFragments: true);
+    var g = GLGrammar(autoGenerateQueries: true, mode: CodeGenerationMode.client, generateAllFieldsFragments: true);
     var result = g.parse('''
   type SingleLabelDataNumber {
     age: Int!
@@ -105,14 +93,11 @@ enum Gender {male, female}
 ''');
 
     expect(result is Success, true);
-    await generateClientClasses(g, getConfig(g), DateTime.now(), pack: 'lib/generated');
+    await generateDartClientClasses(g, getConfig(g), DateTime.now(), pack: 'lib/generated');
   });
 
   test("UI View gen when field is a list", () async {
-    var g = GLGrammar(
-        autoGenerateQueries: true,
-        mode: CodeGenerationMode.client,
-        generateAllFieldsFragments: true);
+    var g = GLGrammar(autoGenerateQueries: true, mode: CodeGenerationMode.client, generateAllFieldsFragments: true);
     var result = g.parse('''
   type ListLabelData {
     names: [String!]!
@@ -125,14 +110,11 @@ enum Gender {male, female}
 ''');
 
     expect(result is Success, true);
-    await generateClientClasses(g, getConfig(g), DateTime.now(), pack: 'lib/generated');
+    await generateDartClientClasses(g, getConfig(g), DateTime.now(), pack: 'lib/generated');
   });
 
   test("UI View gen when field is a nullable list", () async {
-    var g = GLGrammar(
-        autoGenerateQueries: true,
-        mode: CodeGenerationMode.client,
-        generateAllFieldsFragments: true);
+    var g = GLGrammar(autoGenerateQueries: true, mode: CodeGenerationMode.client, generateAllFieldsFragments: true);
     var result = g.parse('''
   type NullableListLabelData {
     names: [String]
@@ -145,14 +127,11 @@ enum Gender {male, female}
 ''');
 
     expect(result is Success, true);
-    await generateClientClasses(g, getConfig(g), DateTime.now(), pack: 'lib/generated');
+    await generateDartClientClasses(g, getConfig(g), DateTime.now(), pack: 'lib/generated');
   });
 
   test("UI View gen when field is another type", () async {
-    var g = GLGrammar(
-        autoGenerateQueries: true,
-        mode: CodeGenerationMode.client,
-        generateAllFieldsFragments: true);
+    var g = GLGrammar(autoGenerateQueries: true, mode: CodeGenerationMode.client, generateAllFieldsFragments: true);
     var result = g.parse('''
   type Driver {
     car: Car
@@ -169,14 +148,11 @@ enum Gender {male, female}
 ''');
 
     expect(result is Success, true);
-    await generateClientClasses(g, getConfig(g), DateTime.now(), pack: 'lib/generated');
+    await generateDartClientClasses(g, getConfig(g), DateTime.now(), pack: 'lib/generated');
   });
 
   test("UI View gen when field is another type as List", () async {
-    var g = GLGrammar(
-        autoGenerateQueries: true,
-        mode: CodeGenerationMode.client,
-        generateAllFieldsFragments: true);
+    var g = GLGrammar(autoGenerateQueries: true, mode: CodeGenerationMode.client, generateAllFieldsFragments: true);
     var result = g.parse('''
   type Driver2 {
     cars: [Car2]
@@ -193,14 +169,11 @@ enum Gender {male, female}
 ''');
 
     expect(result is Success, true);
-    await generateClientClasses(g, getConfig(g), DateTime.now(), pack: 'lib/generated');
+    await generateDartClientClasses(g, getConfig(g), DateTime.now(), pack: 'lib/generated');
   });
 
   test("UI View DriverWidget should import CarWidget", () async {
-    var g = GLGrammar(
-        autoGenerateQueries: true,
-        mode: CodeGenerationMode.client,
-        generateAllFieldsFragments: true);
+    var g = GLGrammar(autoGenerateQueries: true, mode: CodeGenerationMode.client, generateAllFieldsFragments: true);
     var result = g.parse('''
   type Driver {
     cars: [Car]
@@ -222,10 +195,7 @@ enum Gender {male, female}
   });
 
   test("UI View should not generate for @internal", () async {
-    var g = GLGrammar(
-        autoGenerateQueries: true,
-        mode: CodeGenerationMode.client,
-        generateAllFieldsFragments: true);
+    var g = GLGrammar(autoGenerateQueries: true, mode: CodeGenerationMode.client, generateAllFieldsFragments: true);
     var result = g.parse('''
   type Person ${glInternal} {
     name: String!
@@ -237,10 +207,7 @@ enum Gender {male, female}
   });
 
   test("UI View should not generate for Graphql Responses", () async {
-    var g = GLGrammar(
-        autoGenerateQueries: true,
-        mode: CodeGenerationMode.client,
-        generateAllFieldsFragments: true);
+    var g = GLGrammar(autoGenerateQueries: true, mode: CodeGenerationMode.client, generateAllFieldsFragments: true);
     var result = g.parse('''
   type Person  {
     name: String!

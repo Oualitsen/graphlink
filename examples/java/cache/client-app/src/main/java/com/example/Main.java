@@ -55,7 +55,7 @@ public class Main {
             }
         };
 
-        GraphLinkClient client = new GraphLinkClient(adapter, encoder, decoder);
+        GraphLinkClient client = new GraphLinkClient(adapter, encoder, decoder, null);
 
         // --- create a car ---
         var created = client.mutations.createCar(CreateCarInput.builder().make("Toyota").model("Camry").year(2023).build());

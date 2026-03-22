@@ -17,11 +17,11 @@ getConfig(GLGrammar g) {
       outputDir: outputDir,
       clientConfig: ClientConfig(
           java: JavaClientConfig(
-            packageName: "org.gqlclient.generated",
-            generateAllFieldsFragments: g.generateAllFieldsFragments,
-            nullableFieldsRequired: false,
-            autoGenerateQueries: g.autoGenerateQueries,
-            operationNameAsParameter: false)));
+              packageName: "org.gqlclient.generated",
+              generateAllFieldsFragments: g.generateAllFieldsFragments,
+              nullableFieldsRequired: false,
+              autoGenerateQueries: g.autoGenerateQueries,
+              operationNameAsParameter: false)));
 }
 
 void main() async {
@@ -75,8 +75,7 @@ type Subscription {
  
 ''');
     expect(parsed is Success, true);
-    await generateClientClassesJava(g, getConfig(g), DateTime.now(),
-        pack: 'org.gqlclient.generated');
+    await generateJavaClientClasses(g, getConfig(g), DateTime.now(), pack: 'org.gqlclient.generated');
   });
 
   test("GQJsonEncoder serialization", () {

@@ -4,29 +4,31 @@
 // Pub.dev https://pub.dev/packages/graphlink
 // ignore_for_file: camel_case_types, constant_identifier_names, unused_import, non_constant_identifier_names
 
-package com.example.generated.client;
+package dev.graphlink.test.generated.client;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Objects;
-import com.example.generated.types.GraphLinkPayload;
-import com.example.generated.types.GraphLinkError;
-import com.example.generated.types.GraphLinkSubscriptionPayload;
-import com.example.generated.interfaces.GraphLinkSubscriptionErrorMessageBase;
-import com.example.generated.types.GraphLinkSubscriptionErrorMessage;
-import com.example.generated.types.GraphLinkSubscriptionMessage;
-import com.example.generated.types.GetCarAndOwnerResponse;
-import com.example.generated.types.GetOwnerResponse;
-import com.example.generated.types.GetCarResponse;
-import com.example.generated.types.GetCarsCountResponse;
-import com.example.generated.types.GetCarNameResponse;
-import com.example.generated.types.CreateOwnerResponse;
-import com.example.generated.types.CreateCarResponse;
-import com.example.generated.inputs.CreateOwnerInput;
-import com.example.generated.inputs.CreateCarInput;
-import com.example.generated.interfaces.GraphLinkJsonEncoder;
-import com.example.generated.interfaces.GraphLinkJsonDecoder;
-import com.example.generated.interfaces.GraphLinkClientAdapter;
-import com.example.generated.interfaces.GraphLinkGraphLinkWebSocketAdapter;
+import dev.graphlink.test.generated.types.GraphLinkPayload;
+import dev.graphlink.test.generated.types.GraphLinkError;
+import dev.graphlink.test.generated.types.GraphLinkSubscriptionPayload;
+import dev.graphlink.test.generated.interfaces.GraphLinkSubscriptionErrorMessageBase;
+import dev.graphlink.test.generated.types.GraphLinkSubscriptionErrorMessage;
+import dev.graphlink.test.generated.types.GraphLinkSubscriptionMessage;
+import dev.graphlink.test.generated.types.GetCarAndOwnerResponse;
+import dev.graphlink.test.generated.types.GetOwnerResponse;
+import dev.graphlink.test.generated.types.GetCarResponse;
+import dev.graphlink.test.generated.types.GetCarStaleResponse;
+import dev.graphlink.test.generated.types.GetCarExpiringResponse;
+import dev.graphlink.test.generated.types.GetCarsCountResponse;
+import dev.graphlink.test.generated.types.GetCarNameResponse;
+import dev.graphlink.test.generated.types.CreateOwnerResponse;
+import dev.graphlink.test.generated.types.CreateCarResponse;
+import dev.graphlink.test.generated.inputs.CreateOwnerInput;
+import dev.graphlink.test.generated.inputs.CreateCarInput;
+import dev.graphlink.test.generated.interfaces.GraphLinkJsonEncoder;
+import dev.graphlink.test.generated.interfaces.GraphLinkJsonDecoder;
+import dev.graphlink.test.generated.interfaces.GraphLinkClientAdapter;
+import dev.graphlink.test.generated.interfaces.GraphLinkGraphLinkWebSocketAdapter;
 
 public class GraphLinkClient {
    final Map<String, String> _fragmMap = new HashMap<>();

@@ -10,6 +10,7 @@ import 'package:graphlink/src/io_utils.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/serializers/client_serializers/dart_client_serializer.dart';
+import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/serializers/client_serializers/java_client_serializer.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:graphlink/src/serializers/flutter_type_widget_serializer.dart';
@@ -196,11 +197,7 @@ void handleGeneration(GeneratorConfig config) async {
 
   final grammar = createGrammar(config);
   try {
-    var extra = grammar.mode == CodeGenerationMode.client
-        ? (config.clientConfig?.java != null
-            ? getClientObjects("Java") + javaJsonEncoderDecorder + javaClientAdapterNoParamSync
-            : getClientObjects("dart"))
-        : null;
+    var extra = _buildExtraGql(grammar, config);
     var result = await grammar.parseFiles(filePaths, extraGql: extra);
     var failures = result.whereType<Failure>().toList();
     if (failures.isNotEmpty) {
@@ -219,9 +216,9 @@ position: ${failures.first.position}
       await generateServerClasses(grammar, config, now);
     } else if (mode == CodeGenerationMode.client) {
       if (config.clientConfig?.java != null) {
-        await generateClientClassesJava(grammar, config, now);
+        await generateJavaClientClasses(grammar, config, now);
       } else {
-        await generateClientClasses(grammar, config, now);
+        await generateDartClientClasses(grammar, config, now);
       }
     }
   } catch (ex, st) {
@@ -232,6 +229,19 @@ position: ${failures.first.position}
 }
 
 final _lastGeneratedFiles = <String>{};
+
+String? _buildExtraGql(GLGrammar grammar, GeneratorConfig config) {
+  if (grammar.mode != CodeGenerationMode.client) return null;
+  if (config.clientConfig?.java != null) {
+    return [
+      getClientObjects("Java"),
+      javaJsonEncoderDecorder,
+      javaClientAdapterNoParamSync,
+      javaGraphLinkWebSocketAdapter,
+    ].join();
+  }
+  return getClientObjects("dart");
+}
 
 GLGrammar createGrammar(GeneratorConfig config) {
   var mode = config.getMode();
@@ -254,10 +264,10 @@ GLGrammar createGrammar(GeneratorConfig config) {
   }
 }
 
-Future<Set<String>> generateClientClasses(GLGrammar grammar, GeneratorConfig config, DateTime started,
+Future<Set<String>> generateDartClientClasses(GLGrammar grammar, GeneratorConfig config, DateTime started,
     {String? pack, noClient = false}) async {
   final serializer = DartSerializer(grammar, generateJsonMethods: true);
-  final dcs = DartClientSerializer(grammar, serializer);
+  final clientSerializer = DartClientSerializer(grammar, serializer);
   final List<Future<File>> futures = [];
   final destinationDir = config.outputDir;
   final packageName = config.clientConfig?.dart?.packageName;
@@ -320,10 +330,10 @@ Future<Set<String>> generateClientClasses(GLGrammar grammar, GeneratorConfig con
   }
 
   if (!noClient) {
-    String client = dcs.generateClient(prefix);
+    String client = clientSerializer.generateClient(prefix);
     var r = writeToFile(
         data: client,
-        fileName: 'graph_link_client${dcs.fileExtension}',
+        fileName: 'graph_link_client${clientSerializer.fileExtension}',
         subdir: 'client',
         imports: [],
         destinationDir: destinationDir);
@@ -336,7 +346,7 @@ Future<Set<String>> generateClientClasses(GLGrammar grammar, GeneratorConfig con
   return paths;
 }
 
-Future<Set<String>> generateClientClassesJava(GLGrammar grammar, GeneratorConfig config, DateTime started,
+Future<Set<String>> generateJavaClientClasses(GLGrammar grammar, GeneratorConfig config, DateTime started,
     {String? pack, noClient = false}) async {
   final serializer = JavaSerializer(
     grammar,
@@ -344,7 +354,7 @@ Future<Set<String>> generateClientClassesJava(GLGrammar grammar, GeneratorConfig
     immutableInputFields: true,
     immutableTypeFields: true,
   );
-  final dcs = JavaClientSerializer(grammar, serializer);
+  final clientSerializer = JavaClientSerializer(grammar, serializer);
   final List<Future<File>> futures = [];
   final destinationDir = config.outputDir;
   final packageName = config.clientConfig?.java?.packageName;
@@ -399,16 +409,114 @@ Future<Set<String>> generateClientClassesJava(GLGrammar grammar, GeneratorConfig
   });
 
   if (!noClient) {
-    String client = dcs.generateClient(prefix);
+    String client = clientSerializer.generateClient(prefix);
     var r = writeToFile(
       data: client,
-      fileName: 'GraphLinkClient${dcs.fileExtension}',
+      fileName: 'GraphLinkClient${clientSerializer.fileExtension}',
       subdir: 'client',
       imports: [],
       destinationDir: destinationDir,
       packageName: packageName,
     );
     futures.add(r);
+
+    futures.add(writeToFile(
+      data: clientSerializer.generateResolverBaseFile(prefix),
+      fileName: 'ResolverBase.java',
+      subdir: 'client',
+      imports: [],
+      destinationDir: destinationDir,
+      packageName: packageName,
+    ));
+    for (var type in GLQueryType.values) {
+      final content = clientSerializer.generateQueriesClassFile(type, prefix);
+      if (content != null) {
+        futures.add(writeToFile(
+          data: content,
+          fileName: '${clientSerializer.classNameFromType(type)}.java',
+          subdir: 'client',
+          imports: [],
+          destinationDir: destinationDir,
+          packageName: packageName,
+        ));
+      }
+    }
+
+    futures.add(writeToFile(
+      data: clientSerializer.generateGraphLinkPartialQueryFile(prefix),
+      fileName: 'GraphLinkPartialQuery.java',
+      subdir: 'client',
+      imports: [],
+      destinationDir: destinationDir,
+      packageName: packageName,
+    ));
+    futures.add(writeToFile(
+      data: clientSerializer.generateGraphLinkCacheEntryFile(),
+      fileName: 'GraphLinkCacheEntry.java',
+      subdir: 'client',
+      imports: [],
+      destinationDir: destinationDir,
+      packageName: packageName,
+    ));
+    futures.add(writeToFile(
+      data: clientSerializer.generateGraphLinkTagEntryFile(),
+      fileName: 'GraphLinkTagEntry.java',
+      subdir: 'client',
+      imports: [],
+      destinationDir: destinationDir,
+      packageName: packageName,
+    ));
+    futures.add(writeToFile(
+      data: clientSerializer.generateGraphLinkCacheStoreFile(),
+      fileName: 'GraphLinkCacheStore.java',
+      subdir: 'client',
+      imports: [],
+      destinationDir: destinationDir,
+      packageName: packageName,
+    ));
+    futures.add(writeToFile(
+      data: clientSerializer.generateInMemoryGraphLinkCacheStoreFile(),
+      fileName: 'InMemoryGraphLinkCacheStore.java',
+      subdir: 'client',
+      imports: [],
+      destinationDir: destinationDir,
+      packageName: packageName,
+    ));
+    futures.add(writeToFile(
+      data: clientSerializer.generateGraphLinkExceptionFile(prefix),
+      fileName: clientSerializer.exceptionFileName,
+      subdir: 'client',
+      imports: [],
+      destinationDir: destinationDir,
+      packageName: packageName,
+    ));
+
+    if (grammar.hasSubscriptions) {
+      futures.add(writeToFile(
+        data: clientSerializer.generateSubscriptionListenerFile(),
+        fileName: 'GraphLinkSubscriptionListener.java',
+        subdir: 'client',
+        imports: [],
+        destinationDir: destinationDir,
+        packageName: packageName,
+      ));
+      futures.add(writeToFile(
+        data: clientSerializer.generateGraphqlWsMessageTypesFile(),
+        fileName: 'GraphqlWsMessageTypes.java',
+        subdir: 'client',
+        imports: [],
+        destinationDir: destinationDir,
+        packageName: packageName,
+      ));
+      futures.add(writeToFile(
+        data: clientSerializer.generateSubscriptionHandlerFile(prefix),
+        fileName: 'SubscriptionHandler.java',
+        subdir: 'client',
+        imports: [],
+        destinationDir: destinationDir,
+        packageName: packageName,
+      ));
+    }
   }
   var result = await Future.wait(futures);
   stdout.writeln("Generated ${futures.length} files in ${formatElapsedTime(started)}");
