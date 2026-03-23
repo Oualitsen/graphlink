@@ -17,8 +17,6 @@ jobs:
             artifact: glink-linux-x86_64
           - os: windows-latest
             artifact: glink-windows-x86_64.exe
-          - os: macos-13
-            artifact: glink-macos-x86_64
           - os: macos-latest
             artifact: glink-macos-arm64
 
@@ -69,6 +67,5 @@ jobs:
           files: |
             dist/glink-linux-x86_64
             dist/glink-windows-x86_64.exe
-            dist/glink-macos-x86_64
             dist/glink-macos-arm64
             dist/checksums.sha256
