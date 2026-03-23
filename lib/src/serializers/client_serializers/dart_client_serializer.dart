@@ -18,7 +18,8 @@ class DartClientSerializer extends GLClientSerilaizer {
   final GLGrammar _grammar;
   final codeGenUtils = DartCodeGenUtils();
 
-  DartClientSerializer(this._grammar, GLSerializer dartSerializer) : super(dartSerializer);
+  DartClientSerializer(this._grammar, GLSerializer dartSerializer)
+      : super(dartSerializer);
 
   @override
   String generateClient(String importPrefix) {
@@ -46,11 +47,16 @@ class DartClientSerializer extends GLClientSerilaizer {
     buffer.writeln(inMemoryGraphLinkCacheStore);
     buffer.writeln();
 
-    GLQueryType.values.map((e) => generateQueriesClassByType(e)).where((e) => e != null).map((e) => e!).forEach((line) {
+    GLQueryType.values
+        .map((e) => generateQueriesClassByType(e))
+        .where((e) => e != null)
+        .map((e) => e!)
+        .forEach((line) {
       buffer.writeln(line);
     });
 
-    buffer.writeln(codeGenUtils.createClass(className: "_ResolverBase", statements: [
+    buffer.writeln(
+        codeGenUtils.createClass(className: "_ResolverBase", statements: [
       'final Map<String, String> fragmentMap;',
       'final GraphLinkCacheStore store;',
       'final Map<String, _Lock> _tagLocks;',
@@ -66,19 +72,27 @@ class DartClientSerializer extends GLClientSerilaizer {
           returnType: 'Future<_GraphLinkCacheEntry?>',
           statements: [
             'var result = await store.get(key);',
-            codeGenUtils.ifStatement(condition: 'result != null', ifBlockStatements: [
+            codeGenUtils
+                .ifStatement(condition: 'result != null', ifBlockStatements: [
               'var entryMap = jsonDecode(result);',
               'var entry = _GraphLinkCacheEntry.fromJson(entryMap);',
-              codeGenUtils.ifStatement(condition: 'entry.isExpired', ifBlockStatements: [
-                codeGenUtils.ifStatement(condition: 'staleIfOffline', ifBlockStatements: ['return entry.asStale();']),
-                'store.invalidate(key);',
-                codeGenUtils.ifStatement(condition: 'tags.isNotEmpty', ifBlockStatements: [
-                  '_removeKeyFromTags(key, tags);',
-                ]),
-                'return null;',
-              ], elseBlockStatements: [
-                "return entry;"
-              ]),
+              codeGenUtils.ifStatement(
+                  condition: 'entry.isExpired',
+                  ifBlockStatements: [
+                    codeGenUtils.ifStatement(
+                        condition: 'staleIfOffline',
+                        ifBlockStatements: ['return entry.asStale();']),
+                    'store.invalidate(key);',
+                    codeGenUtils.ifStatement(
+                        condition: 'tags.isNotEmpty',
+                        ifBlockStatements: [
+                          '_removeKeyFromTags(key, tags);',
+                        ]),
+                    'return null;',
+                  ],
+                  elseBlockStatements: [
+                    "return entry;"
+                  ]),
             ]),
             'return null;'
           ]),
@@ -89,17 +103,22 @@ class DartClientSerializer extends GLClientSerilaizer {
           returnType: "Future<void>",
           async: true,
           statements: [
-            codeGenUtils.forEachLoop(variable: 'tag', iterable: 'tags', statements: [
+            codeGenUtils
+                .forEachLoop(variable: 'tag', iterable: 'tags', statements: [
               'final tagKey = "\${tagKeyPrefix}\${tag}";',
               'final lock = _tagLocks[tag]!;',
               'await lock.synchronized(() async',
               codeGenUtils.block([
                 'final data = await store.get(tagKey);',
-                codeGenUtils.ifStatement(condition: "data != null", ifBlockStatements: [
+                codeGenUtils
+                    .ifStatement(condition: "data != null", ifBlockStatements: [
                   'final entry = _GraphLinkTagEntry.decode(data);',
-                  codeGenUtils.forEachLoop(variable: 'key', iterable: 'entry.keys', statements: [
-                    'await store.invalidate(key);',
-                  ]),
+                  codeGenUtils.forEachLoop(
+                      variable: 'key',
+                      iterable: 'entry.keys',
+                      statements: [
+                        'await store.invalidate(key);',
+                      ]),
                   'await store.invalidate(tagKey);'
                 ])
               ]),
@@ -113,7 +132,8 @@ class DartClientSerializer extends GLClientSerilaizer {
           returnType: "Future<void>",
           async: true,
           statements: [
-            codeGenUtils.forEachLoop(variable: 'tag', iterable: 'tags', statements: [
+            codeGenUtils
+                .forEachLoop(variable: 'tag', iterable: 'tags', statements: [
               'final tagKey = "\${tagKeyPrefix}\${tag}";',
               'final lock = _tagLocks[tag]!;',
               'await lock.synchronized(() async',
@@ -133,19 +153,25 @@ class DartClientSerializer extends GLClientSerilaizer {
           returnType: "Future<void>",
           async: true,
           statements: [
-            codeGenUtils.forEachLoop(variable: 'tag', iterable: 'tags', statements: [
+            codeGenUtils
+                .forEachLoop(variable: 'tag', iterable: 'tags', statements: [
               'final tagKey = "\${tagKeyPrefix}\${tag}";',
               'final lock = _tagLocks.putIfAbsent(tag, () => _Lock());',
               'await lock.synchronized(() async',
               codeGenUtils.block([
                 'final data = await store.get(tagKey);',
-                codeGenUtils.ifStatement(condition: "data != null", ifBlockStatements: [
+                codeGenUtils
+                    .ifStatement(condition: "data != null", ifBlockStatements: [
                   'final entry = _GraphLinkTagEntry.decode(data);',
                   'entry.remove(key);',
                   codeGenUtils.ifStatement(
                       condition: 'entry.keys.isEmpty',
-                      ifBlockStatements: ['await store.invalidate(tagKey);'],
-                      elseBlockStatements: ['await store.set(tagKey, entry.encode());'])
+                      ifBlockStatements: [
+                        'await store.invalidate(tagKey);'
+                      ],
+                      elseBlockStatements: [
+                        'await store.set(tagKey, entry.encode());'
+                      ])
                 ])
               ]),
               ');'
@@ -153,12 +179,16 @@ class DartClientSerializer extends GLClientSerilaizer {
           ])
     ]));
 
-    buffer.writeln(codeGenUtils.createClass(className: 'GraphLinkClient', statements: [
+    buffer.writeln(
+        codeGenUtils.createClass(className: 'GraphLinkClient', statements: [
       'final _fragmMap = <String, String>{};',
       'final _tagLocks = <String, _Lock>{};',
-      if (_grammar.hasQueries) 'late final ${classNameFromType(GLQueryType.query)} queries;',
-      if (_grammar.hasMutations) 'late final ${classNameFromType(GLQueryType.mutation)} mutations;',
-      if (_grammar.hasSubscriptions) 'late final ${classNameFromType(GLQueryType.subscription)} subscriptions;',
+      if (_grammar.hasQueries)
+        'late final ${classNameFromType(GLQueryType.query)} queries;',
+      if (_grammar.hasMutations)
+        'late final ${classNameFromType(GLQueryType.mutation)} mutations;',
+      if (_grammar.hasSubscriptions)
+        'late final ${classNameFromType(GLQueryType.subscription)} subscriptions;',
       'late final $_cacheStoreClassName store;',
       codeGenUtils.createMethod(
         methodName: 'GraphLinkClient',
@@ -173,7 +203,10 @@ class DartClientSerializer extends GLClientSerilaizer {
               "_fragmMap['${value.tokenInfo}'] = '${_grammar.serializer.serializeFragmentDefinitionBase(value)}';"),
           'this.store = store ?? $_inMemorycacheStoreClassName();',
           'final tags = ${_grammar.getAllCacheTags().map((e) => e.quote()).toList()};',
-          codeGenUtils.forEachLoop(variable: 'tag', iterable: 'tags', statements: ['_tagLocks[tag] = _Lock();']),
+          codeGenUtils.forEachLoop(
+              variable: 'tag',
+              iterable: 'tags',
+              statements: ['_tagLocks[tag] = _Lock();']),
           if (_grammar.hasQueries)
             "queries = ${classNameFromType(GLQueryType.query)}(adapter, _fragmMap, this.store, _tagLocks);",
           if (_grammar.hasMutations)
@@ -197,101 +230,129 @@ class DartClientSerializer extends GLClientSerilaizer {
 
   String? generateQueriesClassByType(GLQueryType type) {
     var queries = _grammar.queries.values;
-    var queryList = queries.where((element) => element.type == type && _grammar.hasQueryType(type)).toList();
+    var queryList = queries
+        .where((element) => element.type == type && _grammar.hasQueryType(type))
+        .toList();
     if (queryList.isEmpty) {
       return null;
     }
 
-    return codeGenUtils.createClass(className: "${classNameFromType(type)} extends _ResolverBase", statements: [
-      declareAdapter(type),
-      codeGenUtils.createConstructor(
-          className: classNameFromType(type),
-          arguments: _declareConstructorArgs(type),
-          superArguments: [
-            'fragmentMap',
-            'store',
-            '_tagLocks'
+    return codeGenUtils.createClass(
+        className: "${classNameFromType(type)} extends _ResolverBase",
+        statements: [
+          declareAdapter(type),
+          codeGenUtils.createConstructor(
+              className: classNameFromType(type),
+              arguments: _declareConstructorArgs(type),
+              superArguments: [
+                'fragmentMap',
+                'store',
+                '_tagLocks'
+              ],
+              statements: [
+                if (type == GLQueryType.subscription)
+                  '_handler = _SubscriptionHandler(adapter);',
+              ]),
+          ...queryList.map((e) => type == GLQueryType.query
+              ? queryToMethod(e)
+              : mutationToMethod(e)),
+          if (type == GLQueryType.query) ...[
+            codeGenUtils.createMethod(
+                methodName: "_getFromSource",
+                async: true,
+                namedArguments: false,
+                arguments: ['GraphLinkPayload payload'],
+                returnType: 'Future<String>',
+                statements: [
+                  'return await _adapter(json.encode(payload.toJson()));'
+                ]),
+            codeGenUtils.createMethod(
+                returnType: "GraphLinkPayload",
+                namedArguments: false,
+                methodName: "_buildPayload",
+                arguments: [
+                  "List<_GraphLinkPartialQuery> partQueries",
+                  "String operationName",
+                  "String directives"
+                ],
+                statements: [
+                  "final Map<String, dynamic> variables = {};",
+                  codeGenUtils.forEachLoop(
+                      variable: "partQuery",
+                      iterable: "partQueries",
+                      statements: ["variables.addAll(partQuery.variables);"]),
+                  'final queryBuilder = StringBuffer("query \${operationName}");',
+                  'final args = partQueries.expand((e) => e.argumentDeclarations).toSet();',
+                  codeGenUtils.ifStatement(
+                      condition: 'args.isNotEmpty',
+                      ifBlockStatements: [
+                        'queryBuilder.write("(");',
+                        'queryBuilder.writeAll(args, ", ");',
+                        'queryBuilder.write(")");'
+                      ]),
+                  codeGenUtils.ifStatement(
+                      condition: 'directives.isNotEmpty',
+                      ifBlockStatements: ['queryBuilder.write(directives);']),
+                  'queryBuilder.write("{");',
+                  codeGenUtils.forEachLoop(
+                      variable: 'partQuery',
+                      iterable: 'partQueries',
+                      statements: [
+                        'queryBuilder.write(partQuery.query);',
+                      ]),
+                  'queryBuilder.write("}");',
+                  'final fragments = partQueries.expand((e) => e.fragmentNames).toSet().map((fragName) => fragmentMap[fragName]!).join();',
+                  'queryBuilder.write(fragments);',
+                  'return GraphLinkPayload(query: queryBuilder.toString(), operationName: operationName, variables: variables);',
+                ]),
+            codeGenUtils.createMethod(
+                methodName: '_parseToObjectAndCache<T>',
+                arguments: [
+                  'String data',
+                  'Map<String, dynamic> cachedResponse',
+                  'T Function(Map<String, dynamic> json) parser',
+                  'Set<_GraphLinkPartialQuery> remainingQueries',
+                ],
+                returnType: 'T',
+                namedArguments: false,
+                statements: [
+                  'final result = jsonDecode(data);',
+                  codeGenUtils.ifStatement(
+                      condition: 'result.containsKey("errors")',
+                      ifBlockStatements: [
+                        'throw result["errors"].map((error) => GraphLinkError.fromJson(error)).toList();'
+                      ]),
+                  'final dataMap = result["data"] as Map<String, dynamic>;',
+                  codeGenUtils.forEachLoop(
+                      variable: 'q',
+                      iterable: 'remainingQueries',
+                      statements: [
+                        codeGenUtils.ifStatement(
+                            condition:
+                                'q.ttl > 0 && dataMap[q.elementKey] != null',
+                            ifBlockStatements: [
+                              'final entry = _GraphLinkCacheEntry(jsonEncode(dataMap[q.elementKey]), DateTime.now().millisecondsSinceEpoch + q.ttl * 1000);',
+                              'store.set(q.cacheKey!, jsonEncode(entry.toJson()));',
+                              codeGenUtils.ifStatement(
+                                  condition: 'q.tags.isNotEmpty',
+                                  ifBlockStatements: [
+                                    '_addKeyToTags(q.cacheKey!, q.tags);',
+                                  ]),
+                            ])
+                      ]),
+                  'dataMap.addAll(cachedResponse);',
+                  'return parser.call(dataMap);'
+                ]),
           ],
-          statements: [
-            if (type == GLQueryType.subscription) '_handler = _SubscriptionHandler(adapter);',
-          ]),
-      ...queryList.map((e) => type == GLQueryType.query ? queryToMethod(e) : mutationToMethod(e)),
-      if (type == GLQueryType.query) ...[
-        codeGenUtils.createMethod(
-            methodName: "_getFromSource",
-            async: true,
-            namedArguments: false,
-            arguments: ['GraphLinkPayload payload'],
-            returnType: 'Future<String>',
-            statements: ['return await _adapter(json.encode(payload.toJson()));']),
-        codeGenUtils.createMethod(
-            returnType: "GraphLinkPayload",
-            namedArguments: false,
-            methodName: "_buildPayload",
-            arguments: [
-              "List<_GraphLinkPartialQuery> partQueries",
-              "String operationName",
-              "String directives"
-            ],
-            statements: [
-              "final Map<String, dynamic> variables = {};",
-              codeGenUtils.forEachLoop(
-                  variable: "partQuery",
-                  iterable: "partQueries",
-                  statements: ["variables.addAll(partQuery.variables);"]),
-              'final queryBuilder = StringBuffer("query \${operationName}");',
-              'final args = partQueries.expand((e) => e.argumentDeclarations).toSet();',
-              codeGenUtils.ifStatement(condition: 'args.isNotEmpty', ifBlockStatements: [
-                'queryBuilder.write("(");',
-                'queryBuilder.writeAll(args, ", ");',
-                'queryBuilder.write(")");'
-              ]),
-              codeGenUtils.ifStatement(
-                  condition: 'directives.isNotEmpty', ifBlockStatements: ['queryBuilder.write(directives);']),
-              'queryBuilder.write("{");',
-              codeGenUtils.forEachLoop(variable: 'partQuery', iterable: 'partQueries', statements: [
-                'queryBuilder.write(partQuery.query);',
-              ]),
-              'queryBuilder.write("}");',
-              'final fragments = partQueries.expand((e) => e.fragmentNames).toSet().map((fragName) => fragmentMap[fragName]!).join();',
-              'queryBuilder.write(fragments);',
-              'return GraphLinkPayload(query: queryBuilder.toString(), operationName: operationName, variables: variables);',
-            ]),
-        codeGenUtils.createMethod(
-            methodName: '_parseToObjectAndCache<T>',
-            arguments: [
-              'String data',
-              'Map<String, dynamic> cachedResponse',
-              'T Function(Map<String, dynamic> json) parser',
-              'Set<_GraphLinkPartialQuery> remainingQueries',
-            ],
-            returnType: 'T',
-            namedArguments: false,
-            statements: [
-              'final result = jsonDecode(data);',
-              codeGenUtils.ifStatement(condition: 'result.containsKey("errors")', ifBlockStatements: [
-                'throw result["errors"].map((error) => GraphLinkError.fromJson(error)).toList();'
-              ]),
-              'final dataMap = result["data"] as Map<String, dynamic>;',
-              codeGenUtils.forEachLoop(variable: 'q', iterable: 'remainingQueries', statements: [
-                codeGenUtils.ifStatement(condition: 'q.ttl > 0 && dataMap[q.elementKey] != null', ifBlockStatements: [
-                  'final entry = _GraphLinkCacheEntry(jsonEncode(dataMap[q.elementKey]), DateTime.now().millisecondsSinceEpoch + q.ttl * 1000);',
-                  'store.set(q.cacheKey!, jsonEncode(entry.toJson()));',
-                  codeGenUtils.ifStatement(condition: 'q.tags.isNotEmpty', ifBlockStatements: [
-                    '_addKeyToTags(q.cacheKey!, q.tags);',
-                  ]),
-                ])
-              ]),
-              'dataMap.addAll(cachedResponse);',
-              'return parser.call(dataMap);'
-            ]),
-      ],
-    ]);
+        ]);
   }
 
   List<String> _declareConstructorArgs(GLQueryType type) {
     return [
-      if (type == GLQueryType.subscription) 'GraphLinkWebSocketAdapter adapter' else 'this._adapter',
+      if (type == GLQueryType.subscription)
+        'GraphLinkWebSocketAdapter adapter'
+      else
+        'this._adapter',
       'Map<String, String> fragmentMap',
       'GraphLinkCacheStore store',
       'Map<String, _Lock> _tagLocks'
@@ -347,21 +408,29 @@ class DartClientSerializer extends GLClientSerilaizer {
           'final responseMap = <String, dynamic>{};',
           'final staleData = <String, dynamic>{};',
           'final cacheFetchFutures = <Future>[];',
-          codeGenUtils
-              .forEachLoop(variable: "partQuery", iterable: "partialQueries.where((e) => e.ttl > 0)", statements: [
-            "cacheFetchFutures.add(_getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)",
-            ".asStream().where((e) => e != null).map((e) => e!).first.then((entry) ${codeGenUtils.block([
-                  codeGenUtils.ifStatement(
-                      condition: 'entry.stale',
-                      ifBlockStatements: ['staleData[partQuery.elementKey] = jsonDecode(entry.data);'],
-                      elseBlockStatements: ['responseMap[partQuery.elementKey] = jsonDecode(entry.data);'])
-                ])}));"
-          ]),
+          codeGenUtils.forEachLoop(
+              variable: "partQuery",
+              iterable: "partialQueries.where((e) => e.ttl > 0)",
+              statements: [
+                "cacheFetchFutures.add(_getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)",
+                ".asStream().where((e) => e != null).map((e) => e!).first.then((entry) ${codeGenUtils.block([
+                      codeGenUtils.ifStatement(
+                          condition: 'entry.stale',
+                          ifBlockStatements: [
+                            'staleData[partQuery.elementKey] = jsonDecode(entry.data);'
+                          ],
+                          elseBlockStatements: [
+                            'responseMap[partQuery.elementKey] = jsonDecode(entry.data);'
+                          ])
+                    ])}));"
+              ]),
           'await Future.wait(cacheFetchFutures.map((f) => f.catchError((_) => null)));',
           'var remaining = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).toSet();',
           codeGenUtils.ifStatement(
               condition: 'remaining.isEmpty',
-              ifBlockStatements: ['return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson(responseMap);']),
+              ifBlockStatements: [
+                'return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson(responseMap);'
+              ]),
           "final remainingQueries = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).toList();",
           "final payload = _buildPayload(remainingQueries, operationName, '${_grammar.serializer.serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}');",
           codeGenUtils.tryCatchFinally(tryStatements: [
@@ -370,9 +439,11 @@ class DartClientSerializer extends GLClientSerilaizer {
           ], catchStatements: [
             "responseMap.addAll(staleData);",
             'final remainingCount = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).length;',
-            codeGenUtils.ifStatement(condition: 'remainingCount > 0', ifBlockStatements: [
-              "throw exception;",
-            ]),
+            codeGenUtils.ifStatement(
+                condition: 'remainingCount > 0',
+                ifBlockStatements: [
+                  "throw exception;",
+                ]),
             'return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson(responseMap);'
           ], catchVariable: 'exception'),
         ]);
@@ -418,7 +489,10 @@ _GraphLinkPartialQuery(
   String generateVariables(GLQueryDefinition def) {
     var buffer = StringBuffer("final variables = <String, dynamic>{");
     buffer.writeln();
-    def.arguments.map((e) => "'${e.dartArgumentName}': ${_serializeArgumentValue(def, e.token)},").forEach((line) {
+    def.arguments
+        .map((e) =>
+            "'${e.dartArgumentName}': ${_serializeArgumentValue(def, e.token)},")
+        .forEach((line) {
       buffer.writeln(line.ident());
     });
     buffer.writeln("};");
@@ -484,7 +558,8 @@ return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson(data);
       return [];
     }
     return def.arguments
-        .map((e) => "${serializer.serializeType(e.type, false)} ${e.dartArgumentName}")
+        .map((e) =>
+            "${serializer.serializeType(e.type, false)} ${e.dartArgumentName}")
         .map((e) => "required $e")
         .toList();
   }
@@ -572,7 +647,7 @@ class _SubscriptionHandler {
 
   _SubscriptionHandler(this.adapter);
 
-  var _ackStatus = GQAckStatus.none;
+  var _ackStatus = GraphLinkAckStatus.none;
 
   Stream<String> get _onMessageStream {
     var stream = adapter.onMessageStream;
@@ -584,9 +659,9 @@ class _SubscriptionHandler {
 
   Future<_StreamSink> _initWs() async {
     switch (_ackStatus) {
-      case GQAckStatus.none:
+      case GraphLinkAckStatus.none:
         {
-          _ackStatus = GQAckStatus.progress;
+          _ackStatus = GraphLinkAckStatus.progress;
           await adapter.onConnectionReady();
           adapter.sendMessage(connectionInit);
           return _onMessageStream.map((event) {
@@ -599,18 +674,18 @@ class _SubscriptionHandler {
           }).map((event) {
             switch (event.type) {
               case GraphqlWsMessageTypes.connectionAck:
-                _ackStatus = GQAckStatus.acknoledged;
+                _ackStatus = GraphLinkAckStatus.acknoledged;
                 return _StreamSink(sendMessage: adapter.sendMessage, stream: _onMessageStream);
               case GraphqlWsMessageTypes.error:
-                _ackStatus = GQAckStatus.none;
+                _ackStatus = GraphLinkAckStatus.none;
                 throw (event as GraphLinkSubscriptionErrorMessage).payload!;
               default:
                 return _StreamSink(sendMessage: adapter.sendMessage, stream: _onMessageStream);
             }
           }).first;
         }
-      case GQAckStatus.progress:
-      case GQAckStatus.acknoledged:
+      case GraphLinkAckStatus.progress:
+      case GraphLinkAckStatus.acknoledged:
         return _StreamSink(sendMessage: adapter.sendMessage, stream: _onMessageStream);
     }
   }
@@ -700,7 +775,7 @@ class _SubscriptionHandler {
     _map.remove(uuid)?.close();
     if (_map.isEmpty) {
       adapter.close();
-      _ackStatus = GQAckStatus.none;
+      _ackStatus = GraphLinkAckStatus.none;
     }
   }
 

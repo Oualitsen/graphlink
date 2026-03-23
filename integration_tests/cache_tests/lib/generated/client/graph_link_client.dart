@@ -10,7 +10,7 @@ import 'dart:math';
 import 'package:graphlink_cache_integration_tests/generated/types/graph_link_payload.dart';
 import 'package:graphlink_cache_integration_tests/generated/types/graph_link_error.dart';
 import 'package:graphlink_cache_integration_tests/generated/types/graph_link_subscription_payload.dart';
-import 'package:graphlink_cache_integration_tests/generated/enums/gqack_status.dart';
+import 'package:graphlink_cache_integration_tests/generated/enums/graph_link_ack_status.dart';
 import 'package:graphlink_cache_integration_tests/generated/interfaces/graph_link_subscription_error_message_base.dart';
 import 'package:graphlink_cache_integration_tests/generated/types/graph_link_subscription_error_message.dart';
 import 'package:graphlink_cache_integration_tests/generated/types/graph_link_subscription_message.dart';
@@ -606,6 +606,7 @@ class GraphLinkQueries extends _ResolverBase {
             }
          }
       }
+      dataMap.addAll(cachedResponse);
       return parser.call(dataMap);
    }
 }
