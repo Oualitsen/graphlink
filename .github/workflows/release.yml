@@ -1,0 +1,74 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact: glink-linux-x86_64
+          - os: windows-latest
+            artifact: glink-windows-x86_64.exe
+          - os: macos-13
+            artifact: glink-macos-x86_64
+          - os: macos-latest
+            artifact: glink-macos-arm64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - run: dart pub get
+
+      - name: Compile binary
+        run: dart compile exe lib/src/main.dart -o ${{ matrix.artifact }}
+
+      - name: Compute checksum (Linux / macOS)
+        if: runner.os != 'Windows'
+        run: sha256sum ${{ matrix.artifact }} > ${{ matrix.artifact }}.sha256
+
+      - name: Compute checksum (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash "${{ matrix.artifact }}" -Algorithm SHA256).Hash.ToLower()
+          Set-Content -Path "${{ matrix.artifact }}.sha256" -Value "$hash  ${{ matrix.artifact }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            ${{ matrix.artifact }}
+            ${{ matrix.artifact }}.sha256
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Combine checksums
+        run: cat dist/*.sha256 > dist/checksums.sha256
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            dist/glink-linux-x86_64
+            dist/glink-windows-x86_64.exe
+            dist/glink-macos-x86_64
+            dist/glink-macos-arm64
+            dist/checksums.sha256
