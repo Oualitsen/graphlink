@@ -27,7 +27,7 @@ abstract class GLClientSerilaizer {
       "GraphLinkPayload",
       "GraphLinkError",
       "GraphLinkSubscriptionPayload",
-      "GQAckStatus",
+      "GraphLinkAckStatus",
       "GraphLinkSubscriptionErrorMessageBase",
       "GraphLinkSubscriptionErrorMessage",
       "GraphLinkSubscriptionMessage",

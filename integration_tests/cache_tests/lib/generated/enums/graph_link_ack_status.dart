@@ -6,7 +6,7 @@
 
 
 
-enum GQAckStatus {
+enum GraphLinkAckStatus {
    none, progress, acknoledged;
    String toJson() {
       switch(this) {
@@ -21,7 +21,7 @@ enum GQAckStatus {
 
       }
    }
-   static GQAckStatus fromJson(String value) {
+   static GraphLinkAckStatus fromJson(String value) {
       switch(value) {
          case "none":
             return none;
@@ -33,7 +33,7 @@ enum GQAckStatus {
             return acknoledged;
 
          default:
-            throw ArgumentError("Invalid GQAckStatus: $value");
+            throw ArgumentError("Invalid GraphLinkAckStatus: $value");
       }
    }
 }
