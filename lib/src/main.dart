@@ -24,6 +24,8 @@ import 'dart:convert';
 
 import 'package:graphlink/src/utils.dart';
 
+const String appVersion = String.fromEnvironment('version', defaultValue: 'dev');
+
 Future<void> main(List<String> arguments) async {
   final parser = ArgParser()
     ..addOption(
@@ -38,6 +40,12 @@ Future<void> main(List<String> arguments) async {
       negatable: false,
     )
     ..addFlag(
+      'version',
+      abbr: 'v',
+      help: 'Print version',
+      negatable: false,
+    )
+    ..addFlag(
       'help',
       abbr: 'h',
       help: 'Show this help message',
@@ -47,6 +55,11 @@ Future<void> main(List<String> arguments) async {
   final args = parser.parse(arguments);
 
   final watch = args['watch'] as bool;
+
+  if (args['version'] as bool) {
+    stdout.writeln('glink v$appVersion');
+    exit(0);
+  }
 
   if (args['help'] as bool) {
     stdout.write('''
