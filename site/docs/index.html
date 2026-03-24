@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documentation — GraphLink</title>
+  <meta name="description" content="Complete GraphLink documentation — from installation and first schema to Dart/Flutter clients, Java clients, Spring Boot server generation, and built-in caching.">
+  <link rel="canonical" href="https://graphlink.dev/docs/">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/docs.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+</head>
+<body class="docs-page">
+
+<nav class="nav scrolled" id="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      GraphLink
+    </a>
+    <ul class="nav-links">
+      <li><a href="../index.html#features">Features</a></li>
+      <li><a href="index.html" class="active">Docs</a></li>
+      <li><a href="../index.html#roadmap">Roadmap</a></li>
+      <li><a href="https://github.com/Oualitsen/graphlink" class="nav-github" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        GitHub
+      </a></li>
+    </ul>
+    <a href="../index.html#quick-start" class="btn-nav">Get Started</a>
+  </div>
+</nav>
+
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Introduction</span>
+      <a href="index.html" class="sidebar-link active">Overview</a>
+      <a href="philosophy.html" class="sidebar-link">Philosophy</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Getting Started</span>
+      <a href="getting-started.html" class="sidebar-link">Installation &amp; First Schema</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Frontend Clients</span>
+      <a href="dart-client.html" class="sidebar-link">Dart / Flutter</a>
+      <a href="java-client.html" class="sidebar-link">Java</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Backend</span>
+      <a href="spring-server.html" class="sidebar-link">Spring Boot</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Features</span>
+      <a href="caching.html" class="sidebar-link">Caching</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Reference</span>
+      <a href="directives.html" class="sidebar-link">Directives</a>
+      <a href="configuration.html" class="sidebar-link">Configuration</a>
+    </div>
+  </aside>
+
+  <main class="docs-content">
+    <div class="breadcrumb">
+      <a href="../index.html">Home</a>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-current">Documentation</span>
+    </div>
+
+    <h1 class="doc-title">Documentation</h1>
+    <p class="doc-lead">Everything you need to know about GraphLink — from first schema to production deployment.</p>
+
+    <!-- Cards grid -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:56px;">
+
+      <a href="philosophy.html" style="display:flex;flex-direction:column;gap:10px;padding:24px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);text-decoration:none;transition:border-color .15s,background .15s;" onmouseover="this.style.borderColor='var(--primary)';this.style.background='var(--primary-dim)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--card)'">
+        <div style="width:36px;height:36px;border-radius:8px;background:var(--primary-dim);display:flex;align-items:center;justify-content:center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        </div>
+        <div>
+          <div style="font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:4px;">Philosophy</div>
+          <div style="font-size:.83rem;color:var(--text-2);line-height:1.6;">Why pure code generation? Why no runtime abstractions? Why only what the server needs?</div>
+        </div>
+        <span style="font-size:.8rem;color:var(--primary);margin-top:auto;">Read →</span>
+      </a>
+
+      <a href="getting-started.html" style="display:flex;flex-direction:column;gap:10px;padding:24px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);text-decoration:none;transition:border-color .15s,background .15s;" onmouseover="this.style.borderColor='var(--primary)';this.style.background='var(--primary-dim)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--card)'">
+        <div style="width:36px;height:36px;border-radius:8px;background:var(--primary-dim);display:flex;align-items:center;justify-content:center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+        </div>
+        <div>
+          <div style="font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:4px;">Getting Started</div>
+          <div style="font-size:.83rem;color:var(--text-2);line-height:1.6;">Install the CLI, write your first schema, run the generator. Zero to generated code in 5 minutes.</div>
+        </div>
+        <span style="font-size:.8rem;color:var(--primary);margin-top:auto;">Read →</span>
+      </a>
+
+      <a href="dart-client.html" style="display:flex;flex-direction:column;gap:10px;padding:24px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);text-decoration:none;transition:border-color .15s,background .15s;" onmouseover="this.style.borderColor='var(--primary)';this.style.background='var(--primary-dim)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--card)'">
+        <div style="width:36px;height:36px;border-radius:8px;background:rgba(84,182,255,0.1);display:flex;align-items:center;justify-content:center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        </div>
+        <div>
+          <div style="font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:4px;">Dart / Flutter Client</div>
+          <div style="font-size:.83rem;color:var(--text-2);line-height:1.6;">Typed queries, mutations, and subscriptions. Adapter pattern — bring your own HTTP client.</div>
+        </div>
+        <span style="font-size:.8rem;color:var(--primary);margin-top:auto;">Read →</span>
+      </a>
+
+      <a href="java-client.html" style="display:flex;flex-direction:column;gap:10px;padding:24px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);text-decoration:none;transition:border-color .15s,background .15s;" onmouseover="this.style.borderColor='var(--primary)';this.style.background='var(--primary-dim)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--card)'">
+        <div style="width:36px;height:36px;border-radius:8px;background:rgba(249,115,22,0.1);display:flex;align-items:center;justify-content:center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <div>
+          <div style="font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:4px;">Java Client</div>
+          <div style="font-size:.83rem;color:var(--text-2);line-height:1.6;">No generics. No casting. Jackson or any JSON library. Builder pattern on all inputs.</div>
+        </div>
+        <span style="font-size:.8rem;color:var(--primary);margin-top:auto;">Read →</span>
+      </a>
+
+      <a href="spring-server.html" style="display:flex;flex-direction:column;gap:10px;padding:24px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);text-decoration:none;transition:border-color .15s,background .15s;" onmouseover="this.style.borderColor='var(--primary)';this.style.background='var(--primary-dim)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--card)'">
+        <div style="width:36px;height:36px;border-radius:8px;background:rgba(61,214,140,0.1);display:flex;align-items:center;justify-content:center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <div>
+          <div style="font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:4px;">Spring Boot</div>
+          <div style="font-size:.83rem;color:var(--text-2);line-height:1.6;">Generated controllers, service interfaces, types, inputs, and enums. Just implement the service.</div>
+        </div>
+        <span style="font-size:.8rem;color:var(--primary);margin-top:auto;">Read →</span>
+      </a>
+
+      <a href="caching.html" style="display:flex;flex-direction:column;gap:10px;padding:24px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);text-decoration:none;transition:border-color .15s,background .15s;" onmouseover="this.style.borderColor='var(--primary)';this.style.background='var(--primary-dim)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--card)'">
+        <div style="width:36px;height:36px;border-radius:8px;background:rgba(251,191,36,0.1);display:flex;align-items:center;justify-content:center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        </div>
+        <div>
+          <div style="font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:4px;">Caching</div>
+          <div style="font-size:.83rem;color:var(--text-2);line-height:1.6;">@glCache and @glCacheInvalidate directives. Tag-based invalidation. Partial query caching.</div>
+        </div>
+        <span style="font-size:.8rem;color:var(--primary);margin-top:auto;">Read →</span>
+      </a>
+
+    </div>
+
+    <h2>The schema used throughout these docs</h2>
+    <p>All examples in this documentation use the following schema. It covers every major GraphLink feature: types, enums, inputs, queries, mutations, subscriptions, and cache directives.</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">schema.graphql</span>
+        <span class="doc-code-lang">GraphQL</span>
+      </div>
+      <pre><code class="language-graphql">enum FuelType {
+  GASOLINE
+  DIESEL
+  ELECTRIC
+  HYBRID
+}
+
+type Person {
+  id: ID!
+  name: String!
+  email: String!
+  vehicles: [Vehicle!]!
+}
+
+type Vehicle {
+  id: ID!
+  brand: String!
+  model: String!
+  year: Int!
+  fuelType: FuelType!
+  ownerId: ID
+}
+
+input AddPersonInput {
+  name: String!
+  email: String!
+}
+
+input AddVehicleInput {
+  brand: String!
+  model: String!
+  year: Int!
+  fuelType: FuelType!
+  ownerId: ID
+}
+
+type Query {
+  getPerson(id: ID!): Person
+  getVehicle(id: ID!): Vehicle!  @glCache(ttl: 120, tags: ["vehicles"])
+  listVehicles: [Vehicle!]!      @glCache(ttl: 60,  tags: ["vehicles"])
+}
+
+type Mutation {
+  addPerson(input: AddPersonInput!): Person!
+  addVehicle(input: AddVehicleInput!): Vehicle! @glCacheInvalidate(tags: ["vehicles"])
+}
+
+type Subscription {
+  vehicleAdded: Vehicle!
+}</code></pre>
+    </div>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">ℹ</span>
+      <p><strong>What this schema exercises</strong><br>
+      <code>FuelType</code> is an enum — GraphLink generates serialization in both directions. <code>Person</code> and <code>Vehicle</code> are types with nullable/non-nullable fields. <code>AddPersonInput</code> and <code>AddVehicleInput</code> are input types. <code>getVehicle</code> and <code>listVehicles</code> use <code>@glCache</code> with tags. <code>addVehicle</code> uses <code>@glCacheInvalidate</code> — when it runs, all entries tagged <code>"vehicles"</code> are evicted. <code>vehicleAdded</code> is a subscription backed by a WebSocket connection.</p>
+    </div>
+
+    <nav class="doc-nav-footer">
+      <div></div>
+      <a href="philosophy.html" class="doc-nav-btn next">
+        <span class="doc-nav-label">Next</span>
+        <span class="doc-nav-title">Philosophy →</span>
+      </a>
+    </nav>
+  </main>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a href="../index.html" class="logo"><svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>GraphLink</a>
+        <p>GraphQL code generation for Dart, Flutter, and Java.<br>Open source — MIT License.</p>
+        <div class="footer-links">
+          <a href="https://github.com/Oualitsen/graphlink" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://pub.dev/packages/graphlink" target="_blank" rel="noopener">pub.dev</a>
+          <a href="https://github.com/Oualitsen/graphlink/releases" target="_blank" rel="noopener">Releases</a>
+          <a href="https://github.com/Oualitsen/graphlink/issues" target="_blank" rel="noopener">Issues</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2024 GraphLink · MIT License</p>
+      <p class="footer-tagline">Your schema is already the contract. Let GraphLink write the rest.</p>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+<script src="../js/main.js"></script>
+<script src="../js/docs.js"></script>
+</body>
+</html>

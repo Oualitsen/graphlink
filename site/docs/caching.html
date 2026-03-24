@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Caching — GraphLink Docs</title>
+  <meta name="description" content="GraphLink's built-in caching: @glCache and @glCacheInvalidate directives, TTL, tag-based invalidation, partial query caching, staleIfOffline, and custom cache stores.">
+  <link rel="canonical" href="https://graphlink.dev/docs/caching.html">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/docs.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+</head>
+<body class="docs-page">
+
+<nav class="nav scrolled" id="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      GraphLink
+    </a>
+    <ul class="nav-links">
+      <li><a href="../index.html#features">Features</a></li>
+      <li><a href="index.html" class="active">Docs</a></li>
+      <li><a href="../index.html#roadmap">Roadmap</a></li>
+      <li><a href="https://github.com/Oualitsen/graphlink" class="nav-github" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        GitHub
+      </a></li>
+    </ul>
+    <a href="../index.html#quick-start" class="btn-nav">Get Started</a>
+  </div>
+</nav>
+
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Introduction</span>
+      <a href="index.html" class="sidebar-link">Overview</a>
+      <a href="philosophy.html" class="sidebar-link">Philosophy</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Getting Started</span>
+      <a href="getting-started.html" class="sidebar-link">Installation &amp; First Schema</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Frontend Clients</span>
+      <a href="dart-client.html" class="sidebar-link">Dart / Flutter</a>
+      <a href="java-client.html" class="sidebar-link">Java</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Backend</span>
+      <a href="spring-server.html" class="sidebar-link">Spring Boot</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Features</span>
+      <a href="caching.html" class="sidebar-link active">Caching</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Reference</span>
+      <a href="directives.html" class="sidebar-link">Directives</a>
+      <a href="configuration.html" class="sidebar-link">Configuration</a>
+    </div>
+  </aside>
+
+  <main class="docs-content">
+    <div class="breadcrumb">
+      <a href="../index.html">Home</a>
+      <span class="breadcrumb-sep">›</span>
+      <a href="index.html">Docs</a>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-current">Caching</span>
+    </div>
+
+    <h1 class="doc-title">Built-In Caching</h1>
+    <p class="doc-lead">Cache control belongs in the schema, not scattered across your application code.</p>
+
+    <h2>How it works</h2>
+    <p>GraphLink caching is opt-in and declared entirely at the schema level using two directives: <code>@glCache</code> on queries and <code>@glCacheInvalidate</code> on mutations. The generated client handles all cache logic automatically — reading from cache, writing to cache, and evicting entries on mutation. No application code is needed to enable or configure caching.</p>
+    <p>The cache operates on the client side. It stores serialized response data keyed by operation name + variables. The server never knows about client-side caching.</p>
+
+    <h2>@glCache — caching a query</h2>
+    <p>Annotate any query field with <code>@glCache</code> to have its response cached:</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">@glCache directive</span>
+        <span class="doc-code-lang">GraphQL</span>
+      </div>
+      <pre><code class="language-graphql">type Query {
+  # Cache for 120 seconds, tagged "vehicles"
+  getVehicle(id: ID!): Vehicle! @glCache(ttl: 120, tags: ["vehicles"])
+
+  # Cache for 60 seconds, same tag group
+  listVehicles: [Vehicle!]! @glCache(ttl: 60, tags: ["vehicles"])
+
+  # Cache for 300 seconds, no tags (cannot be tag-invalidated)
+  getStaticConfig: AppConfig! @glCache(ttl: 300)
+
+  # Cache with staleIfOffline — serve stale data if network fails
+  getUserProfile(id: ID!): UserProfile @glCache(ttl: 60, staleIfOffline: true)
+}</code></pre>
+    </div>
+
+    <table class="doc-table">
+      <thead>
+        <tr><th>Argument</th><th>Type</th><th>Required</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>ttl</code></td><td><code>Int</code></td><td>Yes</td><td>Time-to-live in seconds. After this duration, the entry is considered expired and the next call will hit the server.</td></tr>
+        <tr><td><code>tags</code></td><td><code>[String!]</code></td><td>No</td><td>List of tags to associate with this cache entry. Used for group invalidation via <code>@glCacheInvalidate</code>.</td></tr>
+        <tr><td><code>staleIfOffline</code></td><td><code>Boolean</code></td><td>No</td><td>If <code>true</code>, serve the expired cached value when the network call fails instead of throwing.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Cache keys</h2>
+    <p>Cache entries are keyed by a combination of the operation name and the serialized variables. The key is computed as an FNV1a hash of <code>operationName + JSON(variables)</code>. This means:</p>
+    <ul>
+      <li><code>getVehicle("42")</code> and <code>getVehicle("99")</code> produce different cache entries</li>
+      <li><code>getVehicle("42")</code> called twice produces the same cache key — the second call returns the cached result</li>
+      <li><code>listVehicles()</code> (no variables) always produces the same cache key regardless of call site</li>
+    </ul>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">ℹ</span>
+      <p><strong>Per-argument caching</strong><br>Each unique argument combination gets its own cache entry. Calling <code>getVehicle</code> with 100 different IDs stores 100 separate cache entries. All of them share the <code>"vehicles"</code> tag, so a single <code>addVehicle</code> mutation invalidates all 100 at once.</p>
+    </div>
+
+    <h2>@glCacheInvalidate — busting the cache</h2>
+    <p>Annotate a mutation with <code>@glCacheInvalidate</code> to automatically evict cache entries when the mutation succeeds:</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">@glCacheInvalidate directive</span>
+        <span class="doc-code-lang">GraphQL</span>
+      </div>
+      <pre><code class="language-graphql">type Mutation {
+  # Evicts all cache entries tagged "vehicles"
+  addVehicle(input: AddVehicleInput!): Vehicle! @glCacheInvalidate(tags: ["vehicles"])
+
+  # Evicts entries tagged "vehicles" AND "persons"
+  transferVehicle(vehicleId: ID!, newOwnerId: ID!): Vehicle!
+    @glCacheInvalidate(tags: ["vehicles", "persons"])
+
+  # Wipes the ENTIRE cache
+  resetAllData: Boolean! @glCacheInvalidate(all: true)
+}</code></pre>
+    </div>
+
+    <table class="doc-table">
+      <thead>
+        <tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>tags</code></td><td><code>[String!]</code></td><td>Evict all cache entries that were stored with any of these tags.</td></tr>
+        <tr><td><code>all</code></td><td><code>Boolean</code></td><td>When <code>true</code>, evict the entire cache regardless of tags.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Tag-based invalidation</h2>
+    <p>Tags are labels you attach to cache entries at write time. When you later invalidate a tag, all entries carrying that tag are evicted simultaneously.</p>
+    <p>This allows a single mutation to invalidate many different cached queries at once, even if those queries have different operation names and different variable sets:</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">Tag invalidation in action</span>
+        <span class="doc-code-lang">GraphQL</span>
+      </div>
+      <pre><code class="language-graphql">type Query {
+  getVehicle(id: ID!): Vehicle!   @glCache(ttl: 120, tags: ["vehicles"])
+  listVehicles: [Vehicle!]!       @glCache(ttl: 60,  tags: ["vehicles"])
+  getFleet(ownerId: ID!): [Vehicle!]! @glCache(ttl: 90, tags: ["vehicles"])
+}
+
+type Mutation {
+  # One mutation invalidates ALL three queries above
+  addVehicle(input: AddVehicleInput!): Vehicle! @glCacheInvalidate(tags: ["vehicles"])
+  updateVehicle(id: ID!, input: AddVehicleInput!): Vehicle! @glCacheInvalidate(tags: ["vehicles"])
+  deleteVehicle(id: ID!): Boolean! @glCacheInvalidate(tags: ["vehicles"])
+}</code></pre>
+    </div>
+
+    <p>After calling <code>addVehicle</code>, the next call to <code>getVehicle</code>, <code>listVehicles</code>, or <code>getFleet</code> will always go to the server — no stale data.</p>
+
+    <h2>Partial query caching</h2>
+    <p>This is GraphLink's most powerful caching feature. When a query returns multiple aliased fields, each field can carry its own <code>@glCache</code> directive. The client fetches each field independently and caches them separately.</p>
+    <p>The result: if one tag is invalidated, only the affected portion of the query is re-fetched. The rest is still served from cache.</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">Partial caching — schema</span>
+        <span class="doc-code-lang">GraphQL</span>
+      </div>
+      <pre><code class="language-graphql">type Query {
+  # These two aliases will be cached separately
+  vehicle: Vehicle! @glCache(ttl: 120, tags: ["vehicles"])
+  owner:   Person!  @glCache(ttl: 300, tags: ["persons"])
+}</code></pre>
+    </div>
+
+    <p>Here is what happens step by step:</p>
+    <ol style="margin:0 0 16px 20px;display:flex;flex-direction:column;gap:8px;">
+      <li style="font-size:.93rem;color:var(--text-2);line-height:1.7;"><strong style="color:var(--text)">First call</strong> — both <code>vehicle</code> and <code>owner</code> are cache misses. The client sends requests to the server for both. Results are stored: <code>vehicle</code> tagged <code>["vehicles"]</code>, <code>owner</code> tagged <code>["persons"]</code>.</li>
+      <li style="font-size:.93rem;color:var(--text-2);line-height:1.7;"><strong style="color:var(--text)">Second call (within TTL)</strong> — both hits. No network requests.</li>
+      <li style="font-size:.93rem;color:var(--text-2);line-height:1.7;"><strong style="color:var(--text)">addVehicle mutation runs</strong> — <code>@glCacheInvalidate(tags: ["vehicles"])</code> evicts the <code>vehicle</code> entry. The <code>owner</code> entry is unaffected.</li>
+      <li style="font-size:.93rem;color:var(--text-2);line-height:1.7;"><strong style="color:var(--text)">Third call</strong> — <code>vehicle</code> is a miss (re-fetched from server). <code>owner</code> is still a hit (served from cache). One network request instead of two.</li>
+    </ol>
+
+    <p>Partial query caching is especially valuable in dashboard or profile screens that combine volatile data (frequently updated) with stable data (rarely changed). The stable portion never leaves the cache even when the volatile portion is invalidated.</p>
+
+    <h2>staleIfOffline</h2>
+    <p>When <code>staleIfOffline: true</code> is set on a cached query and the cache entry has expired, GraphLink attempts a server request. If that request fails (network error, timeout, server unreachable), it falls back to the expired cached value instead of throwing an exception.</p>
+    <p>This is especially useful on mobile apps where network connectivity is unreliable. Users see slightly outdated data rather than an error screen:</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">staleIfOffline example</span>
+        <span class="doc-code-lang">GraphQL</span>
+      </div>
+      <pre><code class="language-graphql">type Query {
+  # If expired and network fails, return the last known value
+  getUserProfile(id: ID!): UserProfile @glCache(ttl: 60, staleIfOffline: true)
+
+  # Without staleIfOffline — throws on network failure after TTL
+  getVehicle(id: ID!): Vehicle! @glCache(ttl: 120)
+}</code></pre>
+    </div>
+
+    <h2>Custom cache store</h2>
+    <p>The default cache store is <code>InMemoryGraphLinkCacheStore</code>. It is an in-process, non-persistent LRU map. For most apps this is sufficient. If you need persistence, cross-process sharing, or custom eviction, implement the <code>GraphLinkCacheStore</code> interface:</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">GraphLinkCacheStore interface (generated)</span>
+        <span class="doc-code-lang">Java</span>
+      </div>
+      <pre><code class="language-java">public interface GraphLinkCacheStore {
+    // Store an entry with its TTL (in seconds) and tags
+    void set(String key, Object value, int ttl, List&lt;String&gt; tags);
+
+    // Retrieve a cached entry, or null if expired/absent
+    Object get(String key);
+
+    // Evict all entries matching any of the given tags
+    void invalidate(List&lt;String&gt; tags);
+
+    // Evict all entries in the store
+    void invalidateAll();
+}</code></pre>
+    </div>
+
+    <p>Examples of custom implementations you might write:</p>
+    <ul>
+      <li><strong>SharedPreferences (Flutter)</strong> — persist cache across app restarts on mobile</li>
+      <li><strong>Redis-backed (Java)</strong> — share cache across multiple service instances</li>
+      <li><strong>Encrypted store</strong> — encrypt sensitive data at rest on device</li>
+      <li><strong>Size-limited LRU</strong> — evict least-recently-used entries when a size cap is reached</li>
+    </ul>
+
+    <p>Pass the custom store as the last argument to the client constructor:</p>
+
+    <div class="doc-tabgroup">
+      <div class="doc-tabs">
+        <button class="doc-tab active">Dart</button>
+        <button class="doc-tab">Java</button>
+      </div>
+      <div class="doc-tab-content active">
+        <pre><code class="language-dart">// Pass custom store to the client
+final client = GraphLinkClient(
+  graphLinkAdapter,
+  SimpleWebSocketAdapter('ws://localhost:8080/graphql'),
+  MyCustomCacheStore(), // implements GraphLinkCacheStore
+);</code></pre>
+      </div>
+      <div class="doc-tab-content">
+        <pre><code class="language-java">// Pass custom store to the client
+GraphLinkClient client = new GraphLinkClient(
+    adapter, encoder, decoder,
+    new MyRedisCacheStore(redisClient) // implements GraphLinkCacheStore
+);</code></pre>
+      </div>
+    </div>
+
+    <h2>Dart usage — full cache flow</h2>
+    <p>Here is the complete caching lifecycle in Dart, step by step:</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">Cache flow in Dart</span>
+        <span class="doc-code-lang">Dart</span>
+      </div>
+      <pre><code class="language-dart">// 1. First call — cache miss, hits the server
+//    Result stored with key=hash("getVehicle"+"42"), ttl=120s, tags=["vehicles"]
+final res1 = await client.queries.getVehicle(id: '42');
+print(res1.getVehicle.brand); // Toyota — from server
+
+// 2. Second call within 120s — cache hit, no network request
+final res2 = await client.queries.getVehicle(id: '42');
+print(res2.getVehicle.brand); // Toyota — from cache
+
+// 3. Different ID — separate cache entry
+final res3 = await client.queries.getVehicle(id: '99');
+print(res3.getVehicle.brand); // Honda — from server (different cache key)
+
+// 4. Mutation — @glCacheInvalidate(tags: ["vehicles"]) evicts all "vehicles" entries
+//    Both '42' and '99' entries are evicted
+final added = await client.mutations.addVehicle(
+  input: AddVehicleInput(brand: 'Ford', model: 'Focus', year: 2024, fuelType: FuelType.GASOLINE),
+);
+
+// 5. After mutation — cache miss again for all "vehicles" entries
+final res5 = await client.queries.getVehicle(id: '42');
+print(res5.getVehicle.brand); // Toyota — from server again (cache was cleared)</code></pre>
+    </div>
+
+    <h2>Java usage — full cache flow</h2>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">Cache flow in Java</span>
+        <span class="doc-code-lang">Java</span>
+      </div>
+      <pre><code class="language-java">// 1. First call — cache miss, hits the server
+GetVehicleResponse res1 = client.queries.getVehicle("42");
+System.out.println(res1.getGetVehicle().getBrand()); // Toyota — from server
+
+// 2. Second call within 120s — cache hit, no network
+GetVehicleResponse res2 = client.queries.getVehicle("42");
+System.out.println(res2.getGetVehicle().getBrand()); // Toyota — from cache
+
+// 3. List query — its own cache entry (ttl=60, tags=["vehicles"])
+ListVehiclesResponse list1 = client.queries.listVehicles();
+System.out.println(list1.getListVehicles().size()); // 3 — from server
+
+// 4. Mutation — evicts all "vehicles" cache entries
+AddVehicleResponse added = client.mutations.addVehicle(
+    AddVehicleInput.builder()
+        .brand("Ford").model("Focus").year(2024)
+        .fuelType(FuelType.GASOLINE).build()
+);
+
+// 5. After mutation — getVehicle("42") and listVehicles() both miss cache
+GetVehicleResponse res5 = client.queries.getVehicle("42");
+System.out.println(res5.getGetVehicle().getBrand()); // Toyota — from server again
+
+ListVehiclesResponse list2 = client.queries.listVehicles();
+System.out.println(list2.getListVehicles().size()); // 4 — from server (includes new Ford)</code></pre>
+    </div>
+
+    <nav class="doc-nav-footer">
+      <a href="spring-server.html" class="doc-nav-btn prev">
+        <span class="doc-nav-label">← Previous</span>
+        <span class="doc-nav-title">Spring Boot</span>
+      </a>
+      <a href="directives.html" class="doc-nav-btn next">
+        <span class="doc-nav-label">Next</span>
+        <span class="doc-nav-title">Directives Reference →</span>
+      </a>
+    </nav>
+  </main>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a href="../index.html" class="logo"><svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>GraphLink</a>
+        <p>GraphQL code generation for Dart, Flutter, and Java.<br>Open source — MIT License.</p>
+        <div class="footer-links">
+          <a href="https://github.com/Oualitsen/graphlink" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://pub.dev/packages/graphlink" target="_blank" rel="noopener">pub.dev</a>
+          <a href="https://github.com/Oualitsen/graphlink/releases" target="_blank" rel="noopener">Releases</a>
+          <a href="https://github.com/Oualitsen/graphlink/issues" target="_blank" rel="noopener">Issues</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2024 GraphLink · MIT License</p>
+      <p class="footer-tagline">Your schema is already the contract. Let GraphLink write the rest.</p>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+<script src="../js/main.js"></script>
+<script src="../js/docs.js"></script>
+</body>
+</html>

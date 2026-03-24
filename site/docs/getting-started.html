@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Getting Started — GraphLink Docs</title>
+  <meta name="description" content="Install the GraphLink CLI, write your first GraphQL schema, configure the generator, and run it to produce type-safe Dart and Java code in under 5 minutes.">
+  <link rel="canonical" href="https://graphlink.dev/docs/getting-started.html">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/docs.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+</head>
+<body class="docs-page">
+
+<nav class="nav scrolled" id="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      GraphLink
+    </a>
+    <ul class="nav-links">
+      <li><a href="../index.html#features">Features</a></li>
+      <li><a href="index.html" class="active">Docs</a></li>
+      <li><a href="../index.html#roadmap">Roadmap</a></li>
+      <li><a href="https://github.com/Oualitsen/graphlink" class="nav-github" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        GitHub
+      </a></li>
+    </ul>
+    <a href="../index.html#quick-start" class="btn-nav">Get Started</a>
+  </div>
+</nav>
+
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Introduction</span>
+      <a href="index.html" class="sidebar-link">Overview</a>
+      <a href="philosophy.html" class="sidebar-link">Philosophy</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Getting Started</span>
+      <a href="getting-started.html" class="sidebar-link active">Installation &amp; First Schema</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Frontend Clients</span>
+      <a href="dart-client.html" class="sidebar-link">Dart / Flutter</a>
+      <a href="java-client.html" class="sidebar-link">Java</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Backend</span>
+      <a href="spring-server.html" class="sidebar-link">Spring Boot</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Features</span>
+      <a href="caching.html" class="sidebar-link">Caching</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Reference</span>
+      <a href="directives.html" class="sidebar-link">Directives</a>
+      <a href="configuration.html" class="sidebar-link">Configuration</a>
+    </div>
+  </aside>
+
+  <main class="docs-content">
+    <div class="breadcrumb">
+      <a href="../index.html">Home</a>
+      <span class="breadcrumb-sep">›</span>
+      <a href="index.html">Docs</a>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-current">Getting Started</span>
+    </div>
+
+    <h1 class="doc-title">Getting Started</h1>
+    <p class="doc-lead">From zero to generated code in under 5 minutes.</p>
+
+    <h2>Step 1 — Download the CLI</h2>
+    <p>The GraphLink CLI is distributed as a single self-contained binary called <code>glink</code>. No runtime, no package manager, no JVM required.</p>
+
+    <div class="doc-tabgroup">
+      <div class="doc-tabs">
+        <button class="doc-tab active">Linux / macOS</button>
+        <button class="doc-tab">Windows</button>
+        <button class="doc-tab">Manual</button>
+      </div>
+      <div class="doc-tab-content active">
+        <pre><code class="language-bash"># Download the latest release
+curl -fsSL https://github.com/Oualitsen/graphlink/releases/latest/download/glink-linux-x64 -o glink
+
+# Make it executable
+chmod +x glink
+
+# Move to your PATH
+sudo mv glink /usr/local/bin/glink
+
+# Verify
+glink --version</code></pre>
+      </div>
+      <div class="doc-tab-content">
+        <pre><code class="language-powershell"># Download via PowerShell
+Invoke-WebRequest `
+  -Uri "https://github.com/Oualitsen/graphlink/releases/latest/download/glink-windows-x64.exe" `
+  -OutFile "glink.exe"
+
+# Add to PATH or run from current directory
+.\glink.exe --version</code></pre>
+      </div>
+      <div class="doc-tab-content">
+        <pre><code class="language-text">Visit: https://github.com/Oualitsen/graphlink/releases/latest
+
+Download the binary for your platform:
+  glink-linux-x64      — Linux (x86_64)
+  glink-linux-arm64    — Linux (ARM64 / Raspberry Pi)
+  glink-macos-x64      — macOS (Intel)
+  glink-macos-arm64    — macOS (Apple Silicon)
+  glink-windows-x64.exe — Windows (x86_64)
+
+Place the binary somewhere on your PATH and make it executable.</code></pre>
+      </div>
+    </div>
+
+    <h2>Step 2 — Write your schema</h2>
+    <p>Create a <code>schema/</code> directory and save your GraphQL schema as one or more <code>.graphql</code> or <code>.gql</code> files. Here is the schema used throughout this documentation:</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">schema/schema.graphql</span>
+        <span class="doc-code-lang">GraphQL</span>
+      </div>
+      <pre><code class="language-graphql"># An enum — GraphLink generates serialization in both directions
+enum FuelType {
+  GASOLINE
+  DIESEL
+  ELECTRIC
+  HYBRID
+}
+
+# A type — generates a model class with fromJson/toJson (Dart) or builder + getters (Java)
+type Person {
+  id: ID!        # ID maps to String in both Dart and Java
+  name: String!
+  email: String!
+  vehicles: [Vehicle!]!  # nested list — fully typed
+}
+
+type Vehicle {
+  id: ID!
+  brand: String!
+  model: String!
+  year: Int!
+  fuelType: FuelType!
+  ownerId: ID    # nullable — String? in Dart, @Nullable String in Java
+}
+
+# Input types — generate immutable input classes with builders
+input AddPersonInput {
+  name: String!
+  email: String!
+}
+
+input AddVehicleInput {
+  brand: String!
+  model: String!
+  year: Int!
+  fuelType: FuelType!
+  ownerId: ID
+}
+
+# Queries — @glCache caches the result; ttl in seconds; tags for group invalidation
+type Query {
+  getPerson(id: ID!): Person                              # returns nullable Person
+  getVehicle(id: ID!): Vehicle!  @glCache(ttl: 120, tags: ["vehicles"])
+  listVehicles: [Vehicle!]!      @glCache(ttl: 60,  tags: ["vehicles"])
+}
+
+# Mutations — @glCacheInvalidate evicts all entries with matching tags on success
+type Mutation {
+  addPerson(input: AddPersonInput!): Person!
+  addVehicle(input: AddVehicleInput!): Vehicle! @glCacheInvalidate(tags: ["vehicles"])
+}
+
+# Subscriptions — backed by a WebSocket connection
+type Subscription {
+  vehicleAdded: Vehicle!
+}</code></pre>
+    </div>
+
+    <p>The schema above exercises every major GraphLink feature: types, enums, input types, nullable vs non-nullable fields, nested lists, and caching directives.</p>
+
+    <h2>Step 3 — Configure the generator</h2>
+    <p>Create a <code>config.json</code> file in your project root. The config tells GraphLink where to find the schema, where to write output, and what language/framework to target.</p>
+
+    <div class="doc-tabgroup">
+      <div class="doc-tabs">
+        <button class="doc-tab active">Dart / Flutter</button>
+        <button class="doc-tab">Java client</button>
+        <button class="doc-tab">Spring Boot</button>
+      </div>
+      <div class="doc-tab-content active">
+        <pre><code class="language-json">{
+  "schemaPaths": ["schema/*.graphql"],
+  "mode": "client",
+  "typeMappings": {
+    "ID":      "String",
+    "String":  "String",
+    "Float":   "double",
+    "Int":     "int",
+    "Boolean": "bool",
+    "Null":    "null"
+  },
+  "outputDir": "lib/generated",
+  "clientConfig": {
+    "dart": {
+      "packageName": "my_app",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "nullableFieldsRequired": false,
+      "immutableInputFields": true,
+      "immutableTypeFields": true
+    }
+  }
+}</code></pre>
+      </div>
+      <div class="doc-tab-content">
+        <pre><code class="language-json">{
+  "schemaPaths": ["schema/*.graphql"],
+  "mode": "client",
+  "typeMappings": {
+    "ID":      "String",
+    "String":  "String",
+    "Float":   "Double",
+    "Int":     "Integer",
+    "Boolean": "Boolean",
+    "Null":    "null"
+  },
+  "outputDir": "src/main/java/com/example/generated",
+  "clientConfig": {
+    "java": {
+      "packageName": "com.example.generated",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "nullableFieldsRequired": false,
+      "immutableInputFields": true,
+      "immutableTypeFields": true
+    }
+  }
+}</code></pre>
+      </div>
+      <div class="doc-tab-content">
+        <pre><code class="language-json">{
+  "schemaPaths": ["schema/*.graphql"],
+  "mode": "server",
+  "typeMappings": {
+    "ID":      "String",
+    "String":  "String",
+    "Float":   "Double",
+    "Int":     "Integer",
+    "Boolean": "Boolean",
+    "Null":    "null"
+  },
+  "outputDir": "src/main/java/com/example/generated",
+  "serverConfig": {
+    "spring": {
+      "basePackage": "com.example.generated",
+      "generateControllers": true,
+      "generateInputs": true,
+      "generateTypes": true,
+      "generateRepositories": false,
+      "immutableInputFields": true,
+      "immutableTypeFields": false
+    }
+  }
+}</code></pre>
+      </div>
+    </div>
+
+    <h3>Key configuration options explained</h3>
+    <table class="doc-table">
+      <thead>
+        <tr><th>Key</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>schemaPaths</code></td><td>Glob patterns for schema files. You can split the schema across multiple files.</td></tr>
+        <tr><td><code>mode</code></td><td><code>"client"</code> generates client code; <code>"server"</code> generates Spring Boot scaffolding.</td></tr>
+        <tr><td><code>typeMappings</code></td><td>Maps GraphQL scalar types to language types. Add entries for custom scalars.</td></tr>
+        <tr><td><code>outputDir</code></td><td>Where to write generated files. Existing files are overwritten.</td></tr>
+        <tr><td><code>generateAllFieldsFragments</code></td><td>Generates a <code>_all_fields_TypeName</code> fragment per type, used by <code>autoGenerateQueries</code>.</td></tr>
+        <tr><td><code>autoGenerateQueries</code></td><td>Generates query strings for every Query/Mutation/Subscription field automatically.</td></tr>
+        <tr><td><code>immutableInputFields</code></td><td>Input class fields are <code>final</code> (Dart) or <code>final</code> (Java). Inputs become builder-only.</td></tr>
+        <tr><td><code>immutableTypeFields</code></td><td>Response type fields are final. For Spring server, set to <code>false</code> so Spring can set fields.</td></tr>
+        <tr><td><code>generateControllers</code></td><td>Spring only. Generates <code>@Controller</code> classes wired with <code>@QueryMapping</code> etc.</td></tr>
+        <tr><td><code>generateRepositories</code></td><td>Spring only. Generates JpaRepository interfaces for types annotated with <code>@glRepository</code>.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Step 4 — Run the generator</h2>
+    <p>Point <code>glink</code> at your config file and let it run:</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">Terminal</span>
+        <span class="doc-code-lang">bash</span>
+      </div>
+      <pre><code class="language-bash">glink -c config.json</code></pre>
+    </div>
+
+    <p>For the Dart client config, the generator produces 21 files. For the Java client, 38 files. For Spring Boot, 9 files. Here is the Dart output tree:</p>
+
+    <div class="doc-filetree">
+      <div class="ft-dir">lib/generated/</div>
+      <div class="ft-dir" style="padding-left:20px;">client/</div>
+      <span class="ft-file" style="padding-left:40px;">graph_link_client.dart</span>
+      <div class="ft-dir" style="padding-left:20px;">enums/</div>
+      <span class="ft-file" style="padding-left:40px;">fuel_type.dart</span>
+      <div class="ft-dir" style="padding-left:20px;">inputs/</div>
+      <span class="ft-file" style="padding-left:40px;">add_person_input.dart</span>
+      <span class="ft-file" style="padding-left:40px;">add_vehicle_input.dart</span>
+      <div class="ft-dir" style="padding-left:20px;">types/</div>
+      <span class="ft-file" style="padding-left:40px;">vehicle.dart</span>
+      <span class="ft-file" style="padding-left:40px;">person.dart</span>
+      <span class="ft-file" style="padding-left:40px;">get_vehicle_response.dart</span>
+      <span class="ft-file" style="padding-left:40px;">list_vehicles_response.dart</span>
+      <span class="ft-file" style="padding-left:40px;">get_person_response.dart</span>
+      <span class="ft-file" style="padding-left:40px;">add_vehicle_response.dart</span>
+      <span class="ft-file" style="padding-left:40px;">add_person_response.dart</span>
+      <span class="ft-file" style="padding-left:40px;">vehicle_added_response.dart</span>
+      <span class="ft-file" style="padding-left:40px;">graph_link_error.dart</span>
+      <span class="ft-file" style="padding-left:40px;">graph_link_payload.dart</span>
+      <span class="ft-count" style="padding-left:40px;">... + 6 internal support files</span>
+    </div>
+
+    <p>And the Spring Boot output:</p>
+
+    <div class="doc-filetree">
+      <div class="ft-dir">src/main/java/com/example/generated/</div>
+      <div class="ft-dir" style="padding-left:20px;">controllers/</div>
+      <span class="ft-file hl" style="padding-left:40px;">PersonServiceController.java</span>
+      <span class="ft-file hl" style="padding-left:40px;">VehicleServiceController.java</span>
+      <div class="ft-dir" style="padding-left:20px;">services/</div>
+      <span class="ft-file hl" style="padding-left:40px;">PersonService.java</span>
+      <span class="ft-file hl" style="padding-left:40px;">VehicleService.java</span>
+      <div class="ft-dir" style="padding-left:20px;">types/</div>
+      <span class="ft-file" style="padding-left:40px;">Person.java</span>
+      <span class="ft-file" style="padding-left:40px;">Vehicle.java</span>
+      <div class="ft-dir" style="padding-left:20px;">inputs/</div>
+      <span class="ft-file" style="padding-left:40px;">AddPersonInput.java</span>
+      <span class="ft-file" style="padding-left:40px;">AddVehicleInput.java</span>
+      <div class="ft-dir" style="padding-left:20px;">enums/</div>
+      <span class="ft-file" style="padding-left:40px;">FuelType.java</span>
+    </div>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">ℹ</span>
+      <p>Highlighted files (<span style="color:var(--green)">✨</span>) are the ones you interact with. Controllers are generated and never touched. Service interfaces are implemented by you. Types, inputs, and enums are plain data classes.</p>
+    </div>
+
+    <h2>Step 5 — What just happened?</h2>
+    <p>The generator processed each section of your schema and produced a corresponding set of files:</p>
+
+    <h3>Types → model classes</h3>
+    <p><code>type Vehicle</code> became <code>vehicle.dart</code> (Dart) and <code>Vehicle.java</code> (Java). Each has all fields, a constructor, and JSON serialization. In Dart, fields are final and the constructor uses named parameters with <code>required</code>. In Java, an inner <code>Builder</code> class is generated.</p>
+
+    <h3>Enums → enum classes with serialization</h3>
+    <p><code>enum FuelType</code> became <code>fuel_type.dart</code> and <code>FuelType.java</code>, each with <code>toJson()</code> and <code>fromJson()</code> methods that map to and from the GraphQL string representation.</p>
+
+    <h3>Inputs → immutable input classes</h3>
+    <p><code>input AddVehicleInput</code> became <code>add_vehicle_input.dart</code> and <code>AddVehicleInput.java</code>. Required fields are enforced at construction time. The Java version uses a builder with <code>Objects.requireNonNull</code> for required fields.</p>
+
+    <h3>Queries/Mutations/Subscriptions → response types + client</h3>
+    <p>Each operation generates a response wrapper (e.g. <code>GetVehicleResponse</code>) that holds the typed result. The <code>GraphLinkClient</code> class exposes <code>client.queries</code>, <code>client.mutations</code>, and <code>client.subscriptions</code> with one method per operation.</p>
+
+    <h3>Cache directives → wired into the client automatically</h3>
+    <p>The <code>@glCache</code> and <code>@glCacheInvalidate</code> directives you wrote in the schema are reflected in the generated client code. No application-level code is needed to enable caching.</p>
+
+    <h2>Watch mode</h2>
+    <p>During development, add <code>-w</code> to watch your schema files and regenerate automatically on every save:</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">Terminal</span>
+        <span class="doc-code-lang">bash</span>
+      </div>
+      <pre><code class="language-bash">glink -c config.json -w
+
+# Output:
+# Watching schema/*.graphql for changes...
+# [14:32:01] Change detected in schema/schema.graphql
+# [14:32:01] Regenerating... done (21 files, 312ms)</code></pre>
+    </div>
+
+    <p>This integrates naturally with Flutter's hot reload workflow — schema change, save, and your Dart types are updated before you switch back to the emulator.</p>
+
+    <h2>Next steps</h2>
+    <p>You now have generated code. The next step depends on your target:</p>
+    <ul>
+      <li><a href="dart-client.html">Dart / Flutter client</a> — set up the adapter, initialize the client, make queries</li>
+      <li><a href="java-client.html">Java client</a> — wire up Jackson or Gson, make type-safe calls</li>
+      <li><a href="spring-server.html">Spring Boot server</a> — implement the generated service interfaces, run your app</li>
+      <li><a href="caching.html">Caching</a> — understand TTL, tags, and partial query caching in depth</li>
+    </ul>
+
+    <nav class="doc-nav-footer">
+      <a href="philosophy.html" class="doc-nav-btn prev">
+        <span class="doc-nav-label">← Previous</span>
+        <span class="doc-nav-title">Philosophy</span>
+      </a>
+      <a href="dart-client.html" class="doc-nav-btn next">
+        <span class="doc-nav-label">Next</span>
+        <span class="doc-nav-title">Dart / Flutter Client →</span>
+      </a>
+    </nav>
+  </main>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a href="../index.html" class="logo"><svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>GraphLink</a>
+        <p>GraphQL code generation for Dart, Flutter, and Java.<br>Open source — MIT License.</p>
+        <div class="footer-links">
+          <a href="https://github.com/Oualitsen/graphlink" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://pub.dev/packages/graphlink" target="_blank" rel="noopener">pub.dev</a>
+          <a href="https://github.com/Oualitsen/graphlink/releases" target="_blank" rel="noopener">Releases</a>
+          <a href="https://github.com/Oualitsen/graphlink/issues" target="_blank" rel="noopener">Issues</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2024 GraphLink · MIT License</p>
+      <p class="footer-tagline">Your schema is already the contract. Let GraphLink write the rest.</p>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+<script src="../js/main.js"></script>
+<script src="../js/docs.js"></script>
+</body>
+</html>
