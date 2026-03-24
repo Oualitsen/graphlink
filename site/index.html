@@ -6,7 +6,7 @@
 
   <!-- ── Primary SEO ─────────────────────────────────── -->
   <title>GraphLink — GraphQL Code Generation for Dart, Flutter & Java</title>
-  <meta name="description" content="GraphLink generates type-safe client and server code from a GraphQL schema for Dart, Flutter, Java, and Spring Boot. No boilerplate. No generics. No schema drift. Free and open source.">
+  <meta name="description" content="GraphLink generates type-safe client and server code from a GraphQL schema for Dart, Flutter, Java, and Spring Boot. In production: 72% of Spring Boot files and 21.5% of Flutter code are generated. No boilerplate. No generics. Free and open source.">
   <meta name="keywords" content="GraphQL code generation, Dart GraphQL client, Flutter GraphQL, Java GraphQL client, Spring Boot GraphQL, glink, graphlink, codegen, type-safe GraphQL">
   <meta name="author" content="GraphLink">
   <link rel="canonical" href="https://graphlink.dev/">
@@ -16,7 +16,7 @@
   <meta property="og:url"         content="https://graphlink.dev/">
   <meta property="og:site_name"   content="GraphLink">
   <meta property="og:title"       content="GraphLink — GraphQL Code Generation for Dart & Java">
-  <meta property="og:description" content="Define your GraphQL schema once. GraphLink generates type-safe client and server code for Dart/Flutter and Java/Spring Boot. No boilerplate. No generics.">
+  <meta property="og:description" content="Define your GraphQL schema once. In production: 72% of Spring Boot files generated, 21.5% of Flutter codebase generated. No boilerplate. No generics. Free and open source.">
   <meta property="og:image"       content="https://graphlink.dev/og-image.png">
   <meta property="og:image:width"  content="1200">
   <meta property="og:image:height" content="630">
@@ -25,7 +25,7 @@
   <!-- ── Twitter Card ───────────────────────────────────── -->
   <meta name="twitter:card"        content="summary_large_image">
   <meta name="twitter:title"       content="GraphLink — GraphQL Code Generation for Dart & Java">
-  <meta name="twitter:description" content="Define your GraphQL schema once. GraphLink generates type-safe client and server code for Dart/Flutter and Java/Spring Boot.">
+  <meta name="twitter:description" content="Define your GraphQL schema once. In production: 72% of Spring Boot files and 21.5% of Flutter code are generated. No boilerplate. No generics.">
   <meta name="twitter:image"       content="https://graphlink.dev/og-image.png">
 
   <!-- ── JSON-LD Structured Data ───────────────────────── -->
@@ -38,7 +38,7 @@
         "@id": "https://graphlink.dev/#app",
         "name": "GraphLink",
         "alternateName": "glink",
-        "description": "GraphLink is a command-line code generation tool that reads a GraphQL schema and generates fully type-safe client and server code for Dart, Flutter, Java, and Spring Boot. It eliminates boilerplate data classes, serializers, query strings, and HTTP wiring. Generated Java code requires no generics at the call site.",
+        "description": "GraphLink is a command-line code generation tool that reads a GraphQL schema and generates fully type-safe client and server code for Dart, Flutter, Java, and Spring Boot. It eliminates boilerplate data classes, serializers, query strings, and HTTP wiring. Generated Java code requires no generics at the call site. In production: 72% of Spring Boot files and 64% of lines are generated; 21.5% of a full Flutter codebase is generated.",
         "applicationCategory": "DeveloperApplication",
         "applicationSubCategory": "Code Generation Tool",
         "operatingSystem": "Linux, macOS, Windows",
@@ -196,7 +196,7 @@
         </div>
         <p class="hero-note">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          Production-tested across multiple real-world applications.
+          In production: 72% of Spring Boot files &amp; 21.5% of a full Flutter codebase are generated — zero hand-written boilerplate.
         </p>
       </div>
 
@@ -259,6 +259,36 @@ System.out.println(
           </div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ STATS BAR ══════════════════════════════ -->
+  <section class="stats-bar">
+    <div class="container">
+      <p class="stats-bar-label">Measured in production — multi-tenant SaaS, dialysis clinic management platform</p>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span class="stat-number">72%</span>
+          <span class="stat-desc">of Spring Boot files are generated</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number">64%</span>
+          <span class="stat-desc">of Spring Boot lines are generated</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number">21.5%</span>
+          <span class="stat-desc">of Flutter codebase is generated</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number">135</span>
+          <span class="stat-desc">hand-written files in a full Spring Boot app</span>
+        </div>
+      </div>
+      <p class="stats-context">
+        Only <strong>135 files (~11.8k lines)</strong> were written by hand in the entire Spring Boot backend.
+        GraphLink wrote the rest — controllers, service interfaces, DTOs, input classes, repositories, and batch mappings.
+        Every generated file compiles, ships, and runs with <strong>zero runtime dependency</strong> on GraphLink.
+      </p>
     </div>
   </section>
 
@@ -375,9 +405,9 @@ System.out.println(
   <!-- ═══════════════════════ BEFORE / AFTER ════════════════════════════ -->
   <section class="section compare-section" id="compare">
     <div class="container">
-      <p class="section-label">The numbers</p>
+      <p class="section-label">Before &amp; after</p>
       <h2 class="section-title">See the Difference</h2>
-      <p class="section-subtitle">A single query on a <code>User</code> type with three fields. Here is every line you write with and without GraphLink.</p>
+      <p class="section-subtitle">A single query on a <code>User</code> type with three fields. Multiply this by every query in your app — then you understand why 64% of a real Spring Boot codebase is generated.</p>
 
       <div class="compare-tabs">
         <button class="compare-tab active" data-target="java">Java</button>
@@ -902,7 +932,8 @@ glink -c config.json -w</code></pre>
         <details class="faq-item">
           <summary class="faq-q">Is GraphLink production-ready?</summary>
           <div class="faq-a">
-            <p>Yes. GraphLink has been used in production across multiple real-world applications. The generated code is idiomatic, readable, and fully debuggable — it looks exactly like code you would have written by hand. There is no runtime magic and no hidden abstraction layer.</p>
+            <p>Yes. GraphLink is used in production in a large multi-tenant SaaS platform (dialysis clinic management). In that project, <strong>72% of Spring Boot files and 64% of lines are generated</strong> — only 135 files (~11.8k lines) were written by hand across the entire backend. On the Flutter side, <strong>21.5% of the codebase is generated</strong>, covering all DTOs, input classes, enums, and GraphQL client wiring.</p>
+            <p>The generated code is idiomatic, readable, and fully debuggable — it looks exactly like code you would have written by hand. There is no runtime magic, no hidden abstraction layer, and no dependency on GraphLink at runtime.</p>
           </div>
         </details>
 
