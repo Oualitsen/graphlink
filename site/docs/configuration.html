@@ -224,13 +224,13 @@
           <td><code>generateAllFieldsFragments</code></td>
           <td><code>boolean</code></td>
           <td><code>false</code></td>
-          <td>Generates a named fragment per type (<code>_all_fields_TypeName</code>) selecting all fields. Required for <code>autoGenerateQueries</code>.</td>
+          <td>Generates a named fragment per type (<code>_all_fields_TypeName</code>) selecting all fields. Required for <code>autoGenerateQueries</code>. <strong>Will fail if the schema contains a type cycle</strong> — see warning below.</td>
         </tr>
         <tr>
           <td><code>autoGenerateQueries</code></td>
           <td><code>boolean</code></td>
           <td><code>false</code></td>
-          <td>Automatically builds query strings for every operation using <code>_all_fields</code> fragments. When <code>true</code>, you never write query strings by hand.</td>
+          <td>Automatically builds query strings for every operation using <code>_all_fields</code> fragments. When <code>true</code>, you never write query strings by hand. Requires <code>generateAllFieldsFragments: true</code> and a cycle-free schema.</td>
         </tr>
         <tr>
           <td><code>nullableFieldsRequired</code></td>
@@ -253,6 +253,63 @@
       </tbody>
     </table>
 
+    <div class="callout callout-warning">
+      <span class="callout-icon">⚠️</span>
+      <div>
+        <p><strong>Schema cycles and <code>generateAllFieldsFragments</code></strong></p>
+        <p>If your schema contains a type cycle — for example <code>Person</code> has a field <code>vehicles: [Vehicle!]!</code> and <code>Vehicle</code> has a field <code>owner: Person!</code> — the generator will fail at parse time with:</p>
+        <div class="doc-code bare" style="margin: 12px 0;">
+          <pre><code class="language-bash">Unhandled exception:
+Dependecy Cycle _all_fields_Person -> _all_fields_Vehicle -> _all_fields_Person
+at file: schema.gql line: 10 column: 10</code></pre>
+        </div>
+        <p>This happens because <code>_all_fields_Person</code> must include all fields of <code>Person</code>, which includes <code>vehicles</code>, whose <code>_all_fields_Vehicle</code> fragment in turn includes <code>owner</code>, which references <code>_all_fields_Person</code> again — an infinite loop.</p>
+        <p><strong>This is a known limitation with no planned fix.</strong> The recommended solution is to break the cycle in the schema itself by introducing a projection type that omits the back-reference:</p>
+        <div class="doc-code">
+          <div class="doc-code-header">
+            <span class="doc-code-label">Cyclic schema — fails with generateAllFieldsFragments: true</span>
+            <span class="doc-code-lang">GraphQL</span>
+          </div>
+          <pre><code class="language-graphql">type Person {
+  id: ID!
+  name: String!
+  vehicles: [Vehicle!]!   # Vehicle references Person → cycle
+}
+
+type Vehicle {
+  id: ID!
+  brand: String!
+  owner: Person!          # back-reference creates the cycle
+}</code></pre>
+        </div>
+        <div class="doc-code">
+          <div class="doc-code-header">
+            <span class="doc-code-label">Fixed schema — break the cycle with a projection type</span>
+            <span class="doc-code-lang">GraphQL</span>
+          </div>
+          <pre><code class="language-graphql"># Projection type — same fields as Person, but no vehicles field
+type PersonInfo {
+  id: ID!
+  name: String!
+}
+
+type Person {
+  id: ID!
+  name: String!
+  vehicles: [Vehicle!]!
+}
+
+type Vehicle {
+  id: ID!
+  brand: String!
+  owner: PersonInfo!      # references PersonInfo, not Person → no cycle
+}</code></pre>
+        </div>
+        <p><code>_all_fields_Vehicle</code> now depends on <code>_all_fields_PersonInfo</code>, which has no further type references. The cycle is broken and generation succeeds.</p>
+        <p>If breaking the cycle is not possible, set both <code>generateAllFieldsFragments</code> and <code>autoGenerateQueries</code> to <code>false</code> and write your query strings manually.</p>
+      </div>
+    </div>
+
     <h2>Java client options (<code>clientConfig.java</code>)</h2>
 
     <table class="doc-table">
@@ -270,7 +327,7 @@
           <td><code>generateAllFieldsFragments</code></td>
           <td><code>boolean</code></td>
           <td><code>false</code></td>
-          <td>Same as Dart — generates <code>_all_fields</code> fragments per type.</td>
+          <td>Same as Dart — generates <code>_all_fields</code> fragments per type. <strong>Will fail if the schema contains a type cycle</strong> — see warning below.</td>
         </tr>
         <tr>
           <td><code>autoGenerateQueries</code></td>
