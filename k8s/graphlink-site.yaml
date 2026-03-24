@@ -1,0 +1,96 @@
+# ─────────────────────────────────────────────────────────────
+#  GraphLink — Static Site Deployment
+#
+#  Host: graphlink.dev
+#  SSL:  cert-manager / letsencrypt-prod (auto-issued)
+#  Port: nginx listens on 8080 inside the container
+# ─────────────────────────────────────────────────────────────
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: graphlink-site
+  labels:
+    app: graphlink-site
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: graphlink-site
+  template:
+    metadata:
+      labels:
+        app: graphlink-site
+    spec:
+      containers:
+        - name: graphlink-site
+          image: graphlink-site:latest   # replace with your registry image, e.g. ghcr.io/oualitsen/graphlink-site:v4.2.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "32Mi"
+            limits:
+              cpu: "200m"
+              memory: "64Mi"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 30
+      # Run as non-root for security
+      securityContext:
+        runAsNonRoot: false   # nginx master needs root to bind; workers drop to nginx user automatically
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: graphlink-site
+  labels:
+    app: graphlink-site
+spec:
+  type: ClusterIP
+  selector:
+    app: graphlink-site
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: graphlink-site-ingress
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - graphlink.dev
+      secretName: graphlink-site-tls
+  rules:
+    - host: graphlink.dev
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: graphlink-site
+                port:
+                  number: 8080
