@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Philosophy — GraphLink Docs</title>
+  <meta name="description" content="The GraphLink philosophy: pure code generation, no runtime abstractions, schema as single source of truth, and only the fields the server actually needs.">
+  <link rel="canonical" href="https://graphlink.dev/docs/philosophy.html">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/docs.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+</head>
+<body class="docs-page">
+
+<nav class="nav scrolled" id="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      GraphLink
+    </a>
+    <ul class="nav-links">
+      <li><a href="../index.html#features">Features</a></li>
+      <li><a href="index.html" class="active">Docs</a></li>
+      <li><a href="../index.html#roadmap">Roadmap</a></li>
+      <li><a href="https://github.com/Oualitsen/graphlink" class="nav-github" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        GitHub
+      </a></li>
+    </ul>
+    <a href="../index.html#quick-start" class="btn-nav">Get Started</a>
+  </div>
+</nav>
+
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Introduction</span>
+      <a href="index.html" class="sidebar-link">Overview</a>
+      <a href="philosophy.html" class="sidebar-link active">Philosophy</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Getting Started</span>
+      <a href="getting-started.html" class="sidebar-link">Installation &amp; First Schema</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Frontend Clients</span>
+      <a href="dart-client.html" class="sidebar-link">Dart / Flutter</a>
+      <a href="java-client.html" class="sidebar-link">Java</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Backend</span>
+      <a href="spring-server.html" class="sidebar-link">Spring Boot</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Features</span>
+      <a href="caching.html" class="sidebar-link">Caching</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Reference</span>
+      <a href="directives.html" class="sidebar-link">Directives</a>
+      <a href="configuration.html" class="sidebar-link">Configuration</a>
+    </div>
+  </aside>
+
+  <main class="docs-content">
+    <div class="breadcrumb">
+      <a href="../index.html">Home</a>
+      <span class="breadcrumb-sep">›</span>
+      <a href="index.html">Docs</a>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-current">Philosophy</span>
+    </div>
+
+    <h1 class="doc-title">The GraphLink Philosophy</h1>
+    <p class="doc-lead">Pure code generation. No runtime abstractions. Only what the server needs.</p>
+
+    <h2>What pure code generation means</h2>
+    <p>GraphLink is a code generator, not a runtime library. When you run <code>glink -c config.json</code>, it reads your schema and writes ordinary Dart or Java source files. Those files have zero dependency on GraphLink itself — no base classes to extend, no interfaces to implement, no runtime to ship.</p>
+    <p>Every generated class is plain Dart or plain Java. A generated <code>Vehicle</code> class in Dart is just a Dart class with fields, a constructor, <code>fromJson</code>, and <code>toJson</code>. A generated <code>Vehicle.java</code> is just a POJO with a builder. You could hand-write these classes yourself; GraphLink simply writes them faster and keeps them in sync with your schema.</p>
+    <p><strong>Delete GraphLink from your project tomorrow and everything still compiles.</strong> There is nothing to uninstall, no peer dependency to satisfy, no API surface that could be deprecated. The generated code is yours.</p>
+
+    <div class="callout callout-success">
+      <span class="callout-icon">✓</span>
+      <p><strong>The practical implication</strong><br>
+      You can upgrade GraphLink independently of your app. You can audit every line of code that runs in production. You can add methods to generated classes without fighting a framework. You own the output.</p>
+    </div>
+
+    <h2>Only what the server needs</h2>
+    <p>This is one of the most important design decisions in GraphLink, and it directly affects Spring Boot compatibility.</p>
+    <p>Many GraphQL clients (such as ferry in Dart) serialize the <em>entire schema document</em> and send it with every request. This includes type definitions, directives, fragment definitions, comments, and whitespace. On the wire this looks like:</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">What other clients send</span>
+        <span class="doc-code-lang">JSON</span>
+      </div>
+      <pre><code class="language-json">{
+  "query": "fragment _all_fields_Vehicle on Vehicle { id brand model year fuelType ownerId } query getVehicle($id: ID!) { getVehicle(id: $id) { ...  _all_fields_Vehicle } }",
+  "variables": { "id": "42" }
+}</code></pre>
+    </div>
+
+    <p>Spring Boot's <code>graphql-java</code> validates the query document on every request. If the client sends fragment definitions for types or fields that the server doesn't know about — or just sends unnecessary bulk — the server may reject the request or log validation warnings.</p>
+    <p>GraphLink generates minimal, precise query strings. The client sends exactly the fields needed for the response type, no fragment boilerplate, no extra definitions:</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">What GraphLink sends</span>
+        <span class="doc-code-lang">JSON</span>
+      </div>
+      <pre><code class="language-json">{
+  "query": "query getVehicle($id: ID!) { getVehicle(id: $id) { id brand model year fuelType ownerId } }",
+  "variables": { "id": "42" }
+}</code></pre>
+    </div>
+
+    <p>This is a significant operational difference. It means GraphLink clients work out-of-the-box with strict Spring Boot GraphQL servers, with AWS AppSync, and with any other server that validates incoming documents carefully.</p>
+
+    <h2>The schema is the single source of truth</h2>
+    <p>In a typical project without code generation, the same concept is expressed in three places: the GraphQL schema, the data transfer objects (DTOs) in the server language, and the model classes in the client language. When the schema changes, all three must be updated manually. When they get out of sync — which they always do — you get runtime errors, not compile-time errors.</p>
+    <p>GraphLink collapses all three into one. You edit the schema. You re-run the generator. Every DTO, every model class, every query string, every serializer is immediately regenerated and consistent. Schema drift becomes impossible.</p>
+    <p>This also means code review is simpler: a schema change in a pull request implies a corresponding regeneration of client and server code. Reviewers can read the schema diff and know immediately what changed.</p>
+
+    <h2>No generics at the Java call site</h2>
+    <p>Most Java GraphQL clients force you to carry type information through generics. A typical query call looks like:</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">Other clients — the generic soup</span>
+        <span class="doc-code-lang">Java</span>
+      </div>
+      <pre><code class="language-java">// What you write with most clients
+GraphQLResponse&lt;Map&lt;String, Object&gt;&gt; response =
+    client.query(new SimpleGraphQLRequest&lt;&gt;(
+        QUERY_STRING,
+        variables,
+        new TypeReference&lt;GraphQLResponse&lt;Map&lt;String, Object&gt;&gt;&gt;() {}
+    ));
+Vehicle vehicle = objectMapper.convertValue(
+    response.getData().get("getVehicle"), Vehicle.class
+);</code></pre>
+    </div>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">GraphLink — no generics, no casting</span>
+        <span class="doc-code-lang">Java</span>
+      </div>
+      <pre><code class="language-java">// What you write with GraphLink
+GetVehicleResponse res = client.queries.getVehicle("42");
+System.out.println(res.getGetVehicle().getBrand());</code></pre>
+    </div>
+
+    <p>GraphLink generates a specific <code>getVehicle(String id)</code> method that returns a specific <code>GetVehicleResponse</code> type. The compiler knows the exact return type. There are no anonymous <code>TypeReference</code> subclasses, no unchecked casts, no <code>Map&lt;String, Object&gt;</code> to navigate manually.</p>
+
+    <h2>Framework agnostic</h2>
+    <p>GraphLink generates the logic — the query strings, the serialization, the client wiring — but it never dictates how you make HTTP requests. You provide the transport as a simple function:</p>
+    <ul>
+      <li>In Dart: <code>Future&lt;String&gt; Function(String payload)</code></li>
+      <li>In Java: a <code>@FunctionalInterface</code> that takes a JSON string and returns a JSON string</li>
+    </ul>
+    <p>This means you can use <code>http</code>, <code>dio</code>, <code>OkHttp</code>, Spring's <code>WebClient</code>, a mock, or anything else. The generated client does not import any HTTP library. You swap the transport at construction time. This makes testing trivial — pass a function that returns a hardcoded JSON string and you have a complete mock client.</p>
+
+    <h2>How it compares</h2>
+    <p>GraphLink occupies a distinct position in the GraphQL tooling landscape. Here is a direct comparison with popular alternatives:</p>
+
+    <table class="doc-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>GraphLink</th>
+          <th>ferry (Dart)</th>
+          <th>Apollo (JS/Kotlin)</th>
+          <th>Manual code</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Runtime dependency in app</td>
+          <td><strong style="color:var(--green)">None</strong></td>
+          <td>Yes (ferry, gql)</td>
+          <td>Yes (Apollo runtime)</td>
+          <td>None</td>
+        </tr>
+        <tr>
+          <td>Sends whole schema on request</td>
+          <td><strong style="color:var(--green)">No</strong></td>
+          <td>Yes</td>
+          <td>Partial</td>
+          <td>No</td>
+        </tr>
+        <tr>
+          <td>Generics at Java call site</td>
+          <td><strong style="color:var(--green)">No</strong></td>
+          <td>N/A</td>
+          <td>Yes</td>
+          <td>Yes</td>
+        </tr>
+        <tr>
+          <td>Server-side generation</td>
+          <td><strong style="color:var(--green)">Yes</strong></td>
+          <td>No</td>
+          <td>Partial</td>
+          <td>Manual</td>
+        </tr>
+        <tr>
+          <td>Java client support</td>
+          <td><strong style="color:var(--green)">Yes</strong></td>
+          <td>No</td>
+          <td>Kotlin only</td>
+          <td>Manual</td>
+        </tr>
+        <tr>
+          <td>Caching directives in schema</td>
+          <td><strong style="color:var(--green)">Yes</strong></td>
+          <td>No</td>
+          <td>No</td>
+          <td>No</td>
+        </tr>
+        <tr>
+          <td>Partial query caching</td>
+          <td><strong style="color:var(--green)">Yes</strong></td>
+          <td>No</td>
+          <td>No</td>
+          <td>No</td>
+        </tr>
+        <tr>
+          <td>Spring Boot controller gen</td>
+          <td><strong style="color:var(--green)">Yes</strong></td>
+          <td>No</td>
+          <td>No</td>
+          <td>Manual</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <nav class="doc-nav-footer">
+      <a href="index.html" class="doc-nav-btn prev">
+        <span class="doc-nav-label">← Previous</span>
+        <span class="doc-nav-title">Overview</span>
+      </a>
+      <a href="getting-started.html" class="doc-nav-btn next">
+        <span class="doc-nav-label">Next</span>
+        <span class="doc-nav-title">Getting Started →</span>
+      </a>
+    </nav>
+  </main>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a href="../index.html" class="logo"><svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>GraphLink</a>
+        <p>GraphQL code generation for Dart, Flutter, and Java.<br>Open source — MIT License.</p>
+        <div class="footer-links">
+          <a href="https://github.com/Oualitsen/graphlink" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://pub.dev/packages/graphlink" target="_blank" rel="noopener">pub.dev</a>
+          <a href="https://github.com/Oualitsen/graphlink/releases" target="_blank" rel="noopener">Releases</a>
+          <a href="https://github.com/Oualitsen/graphlink/issues" target="_blank" rel="noopener">Issues</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2024 GraphLink · MIT License</p>
+      <p class="footer-tagline">Your schema is already the contract. Let GraphLink write the rest.</p>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+<script src="../js/main.js"></script>
+<script src="../js/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spring Boot Server — GraphLink Docs</title>
+  <meta name="description" content="GraphLink generates the complete Spring Boot GraphQL scaffolding from your schema — controllers, service interfaces, types, inputs, enums. Implement the service, nothing else.">
+  <link rel="canonical" href="https://graphlink.dev/docs/spring-server.html">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/docs.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+</head>
+<body class="docs-page">
+
+<nav class="nav scrolled" id="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      GraphLink
+    </a>
+    <ul class="nav-links">
+      <li><a href="../index.html#features">Features</a></li>
+      <li><a href="index.html" class="active">Docs</a></li>
+      <li><a href="../index.html#roadmap">Roadmap</a></li>
+      <li><a href="https://github.com/Oualitsen/graphlink" class="nav-github" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        GitHub
+      </a></li>
+    </ul>
+    <a href="../index.html#quick-start" class="btn-nav">Get Started</a>
+  </div>
+</nav>
+
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Introduction</span>
+      <a href="index.html" class="sidebar-link">Overview</a>
+      <a href="philosophy.html" class="sidebar-link">Philosophy</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Getting Started</span>
+      <a href="getting-started.html" class="sidebar-link">Installation &amp; First Schema</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Frontend Clients</span>
+      <a href="dart-client.html" class="sidebar-link">Dart / Flutter</a>
+      <a href="java-client.html" class="sidebar-link">Java</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Backend</span>
+      <a href="spring-server.html" class="sidebar-link active">Spring Boot</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Features</span>
+      <a href="caching.html" class="sidebar-link">Caching</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Reference</span>
+      <a href="directives.html" class="sidebar-link">Directives</a>
+      <a href="configuration.html" class="sidebar-link">Configuration</a>
+    </div>
+  </aside>
+
+  <main class="docs-content">
+    <div class="breadcrumb">
+      <a href="../index.html">Home</a>
+      <span class="breadcrumb-sep">›</span>
+      <a href="index.html">Docs</a>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-current">Spring Boot</span>
+    </div>
+
+    <h1 class="doc-title">Spring Boot Server</h1>
+    <p class="doc-lead">GraphLink generates the entire Spring Boot scaffolding from your schema — controllers, service interfaces, types, inputs, and enums.</p>
+
+    <h2>Server mode config</h2>
+    <p>Set <code>"mode": "server"</code> and provide a <code>"spring"</code> section under <code>serverConfig</code>. The key options:</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">spring-config.json</span>
+        <span class="doc-code-lang">JSON</span>
+      </div>
+      <pre><code class="language-json">{
+  "schemaPaths": ["schema/*.graphql"],
+  "mode": "server",
+  "typeMappings": {
+    "ID":      "String",
+    "String":  "String",
+    "Float":   "Double",
+    "Int":     "Integer",
+    "Boolean": "Boolean",
+    "Null":    "null"
+  },
+  "outputDir": "src/main/java/com/example/generated",
+  "serverConfig": {
+    "spring": {
+      "basePackage":          "com.example.generated",
+      "generateControllers":  true,
+      "generateInputs":       true,
+      "generateTypes":        true,
+      "generateRepositories": false,
+      "immutableInputFields": true,
+      "immutableTypeFields":  false
+    }
+  }
+}</code></pre>
+    </div>
+
+    <table class="doc-table">
+      <thead>
+        <tr><th>Option</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>generateControllers</code></td><td>Generates <code>@Controller</code> classes with <code>@QueryMapping</code>, <code>@MutationMapping</code>, <code>@SubscriptionMapping</code>, and <code>@Argument</code> on parameters.</td></tr>
+        <tr><td><code>generateInputs</code></td><td>Generates input classes from <code>input</code> type definitions.</td></tr>
+        <tr><td><code>generateTypes</code></td><td>Generates entity/response classes from <code>type</code> definitions.</td></tr>
+        <tr><td><code>generateRepositories</code></td><td>When <code>true</code>, generates JPA <code>Repository</code> interfaces for types annotated with <code>@glRepository</code>.</td></tr>
+        <tr><td><code>immutableInputFields</code></td><td>Input class fields are <code>final</code>. Recommended: <code>true</code>.</td></tr>
+        <tr><td><code>immutableTypeFields</code></td><td>Type class fields are <code>final</code>. Set to <code>false</code> for Spring Boot — Spring's GraphQL runtime sets fields via setters.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>What gets generated</h2>
+    <p>For the example schema, the generator produces 9 files. Here is the complete output tree:</p>
+
+    <div class="doc-filetree">
+      <div class="ft-dir">src/main/java/com/example/generated/</div>
+      <div class="ft-dir" style="padding-left:20px;">controllers/</div>
+      <span class="ft-file hl" style="padding-left:40px;">PersonServiceController.java</span>
+      <span class="ft-file hl" style="padding-left:40px;">VehicleServiceController.java</span>
+      <div class="ft-dir" style="padding-left:20px;">services/</div>
+      <span class="ft-file hl" style="padding-left:40px;">PersonService.java</span>
+      <span class="ft-file hl" style="padding-left:40px;">VehicleService.java</span>
+      <div class="ft-dir" style="padding-left:20px;">types/</div>
+      <span class="ft-file" style="padding-left:40px;">Person.java</span>
+      <span class="ft-file" style="padding-left:40px;">Vehicle.java</span>
+      <div class="ft-dir" style="padding-left:20px;">inputs/</div>
+      <span class="ft-file" style="padding-left:40px;">AddPersonInput.java</span>
+      <span class="ft-file" style="padding-left:40px;">AddVehicleInput.java</span>
+      <div class="ft-dir" style="padding-left:20px;">enums/</div>
+      <span class="ft-file" style="padding-left:40px;">FuelType.java</span>
+    </div>
+
+    <p>Highlighted files are the ones you interact with. Controllers are generated and never touched by hand. Service interfaces are what you implement. Types, inputs, and enums are data classes.</p>
+
+    <h2>Types and inputs</h2>
+    <p>Server-side types are mutable — they have getters and setters, not final fields. This is required because Spring's GraphQL runtime deserializes JSON into these classes using reflection.</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">generated/types/Vehicle.java — server version (mutable)</span>
+        <span class="doc-code-lang">Java</span>
+      </div>
+      <pre><code class="language-java">public class Vehicle {
+   private String id;
+   private String brand;
+   private String model;
+   private Integer year;
+   private FuelType fuelType;
+   private String ownerId;
+
+   public Vehicle() {}
+
+   public String getId() { return id; }
+   public void setId(String id) { this.id = id; }
+
+   public String getBrand() { return brand; }
+   public void setBrand(String brand) { this.brand = brand; }
+
+   public String getModel() { return model; }
+   public void setModel(String model) { this.model = model; }
+
+   public Integer getYear() { return year; }
+   public void setYear(Integer year) { this.year = year; }
+
+   public FuelType getFuelType() { return fuelType; }
+   public void setFuelType(FuelType fuelType) { this.fuelType = fuelType; }
+
+   public String getOwnerId() { return ownerId; }
+   public void setOwnerId(String ownerId) { this.ownerId = ownerId; }
+}</code></pre>
+    </div>
+
+    <p>Input classes on the server use the same structure as the client — they can be immutable since Spring maps query arguments into them at the framework level using constructors or builders. Note that <code>immutableTypeFields: false</code> applies to <code>type</code> definitions only; input classes follow <code>immutableInputFields</code>.</p>
+
+    <h2>Service interfaces</h2>
+    <p>For each group of operations sharing a root type, GraphLink generates one service interface. The <code>VehicleService</code> interface covers every operation that involves a <code>Vehicle</code> return type:</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">generated/services/VehicleService.java</span>
+        <span class="doc-code-lang">Java</span>
+      </div>
+      <pre><code class="language-java">public interface VehicleService {
+   Vehicle getVehicle(String id);
+   List&lt;Vehicle&gt; listVehicles();
+   Vehicle addVehicle(AddVehicleInput input);
+   Flux&lt;Vehicle&gt; vehicleAdded();
+}</code></pre>
+    </div>
+
+    <p>Observe the return types:</p>
+    <ul>
+      <li>Queries return the domain type directly — <code>Vehicle</code>, not <code>Optional&lt;Vehicle&gt;</code> or <code>Mono&lt;Vehicle&gt;</code></li>
+      <li>Subscriptions return <code>Flux&lt;T&gt;</code> — a Project Reactor reactive stream</li>
+      <li>The method signatures exactly mirror the schema declarations</li>
+    </ul>
+
+    <p>You implement this interface and annotate your implementation with <code>@Service</code>. You do not touch the generated controller.</p>
+
+    <h2>Controllers</h2>
+    <p>The generated controller is the glue between Spring's GraphQL runtime and your service. It is fully annotated and delegates every call to the service interface. You never need to modify it:</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">generated/controllers/VehicleServiceController.java</span>
+        <span class="doc-code-lang">Java</span>
+      </div>
+      <pre><code class="language-java">@Controller()
+public class VehicleServiceController {
+   private final VehicleService vehicleService;
+
+   public VehicleServiceController(VehicleService vehicleService) {
+      this.vehicleService = vehicleService;
+   }
+
+   @QueryMapping()
+   public Vehicle getVehicle(@Argument() String id) {
+      return vehicleService.getVehicle(id);
+   }
+
+   @QueryMapping()
+   public List&lt;Vehicle&gt; listVehicles() {
+      return vehicleService.listVehicles();
+   }
+
+   @MutationMapping()
+   public Vehicle addVehicle(@Argument() AddVehicleInput input) {
+      return vehicleService.addVehicle(input);
+   }
+
+   @SubscriptionMapping()
+   public Flux&lt;Vehicle&gt; vehicleAdded() {
+      return vehicleService.vehicleAdded();
+   }
+}</code></pre>
+    </div>
+
+    <p>Spring's <code>@QueryMapping</code>, <code>@MutationMapping</code>, and <code>@SubscriptionMapping</code> use the method name to map to the schema field by convention. <code>@Argument</code> on method parameters maps GraphQL arguments to Java parameters by name.</p>
+
+    <h2>Implementing the service</h2>
+    <p>Create a <code>@Service</code> class in your own package (not in the <code>generated</code> package) that implements the generated interface:</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">com/example/service/VehicleServiceImpl.java — your code</span>
+        <span class="doc-code-lang">Java</span>
+      </div>
+      <pre><code class="language-java">package com.example.service;
+
+import com.example.generated.services.VehicleService;
+import com.example.generated.types.Vehicle;
+import com.example.generated.inputs.AddVehicleInput;
+import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Sinks;
+import java.util.List;
+
+@Service
+public class VehicleServiceImpl implements VehicleService {
+
+    private final VehicleRepository vehicleRepository;
+    // A sink for pushing subscription events
+    private final Sinks.Many&lt;Vehicle&gt; vehicleSink =
+        Sinks.many().multicast().onBackpressureBuffer();
+
+    public VehicleServiceImpl(VehicleRepository vehicleRepository) {
+        this.vehicleRepository = vehicleRepository;
+    }
+
+    @Override
+    public Vehicle getVehicle(String id) {
+        return vehicleRepository.findById(id).orElse(null);
+    }
+
+    @Override
+    public List&lt;Vehicle&gt; listVehicles() {
+        return vehicleRepository.findAll();
+    }
+
+    @Override
+    public Vehicle addVehicle(AddVehicleInput input) {
+        Vehicle v = new Vehicle();
+        v.setBrand(input.getBrand());
+        v.setModel(input.getModel());
+        v.setYear(input.getYear());
+        v.setFuelType(input.getFuelType());
+        v.setOwnerId(input.getOwnerId());
+        Vehicle saved = vehicleRepository.save(v);
+        // Push to all active subscriptions
+        vehicleSink.tryEmitNext(saved);
+        return saved;
+    }
+
+    @Override
+    public Flux&lt;Vehicle&gt; vehicleAdded() {
+        return vehicleSink.asFlux();
+    }
+}</code></pre>
+    </div>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">ℹ</span>
+      <p><strong>Keep generated code separate</strong><br>
+      Put your implementations in a separate package from the generated code (e.g. <code>com.example.service</code> vs <code>com.example.generated</code>). This way, re-running the generator never overwrites your business logic.</p>
+    </div>
+
+    <h2>Subscriptions with Reactor</h2>
+    <p>Spring Boot GraphQL uses Project Reactor for subscriptions. The service interface returns <code>Flux&lt;T&gt;</code> — a reactive stream that emits items over time.</p>
+    <p>The recommended approach is <code>Sinks.Many</code>: a thread-safe construct that lets you push items from anywhere in your application (e.g. from a mutation handler, a message queue consumer, or a scheduled job):</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">Push-based subscription with Sinks</span>
+        <span class="doc-code-lang">Java</span>
+      </div>
+      <pre><code class="language-java">// Declare a multicast sink — supports multiple concurrent subscribers
+private final Sinks.Many&lt;Vehicle&gt; vehicleSink =
+    Sinks.many().multicast().onBackpressureBuffer();
+
+// In vehicleAdded() — return the flux backed by the sink
+@Override
+public Flux&lt;Vehicle&gt; vehicleAdded() {
+    return vehicleSink.asFlux();
+}
+
+// When a new vehicle is saved, push it to all subscribers
+vehicleSink.tryEmitNext(savedVehicle);
+
+// When the application shuts down (optional)
+vehicleSink.tryEmitComplete();</code></pre>
+    </div>
+
+    <p><code>Sinks.many().multicast()</code> allows multiple GraphQL subscribers to receive the same events simultaneously. Each client that subscribes to <code>vehicleAdded</code> gets its own subscription to the flux.</p>
+
+    <h2>Validation with @glValidate</h2>
+    <p>Add <code>@glValidate</code> to a mutation in your schema to instruct GraphLink to generate a <code>validateX()</code> method in the service interface. The controller calls this method before the main method, giving you a place to throw validation exceptions before any business logic runs.</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">Schema with @glValidate</span>
+        <span class="doc-code-lang">GraphQL</span>
+      </div>
+      <pre><code class="language-graphql">type Mutation {
+  addVehicle(input: AddVehicleInput!): Vehicle! @glValidate
+}</code></pre>
+    </div>
+
+    <p>With <code>@glValidate</code> on <code>addVehicle</code>, the generated service interface gains an extra method:</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">Generated VehicleService.java — with @glValidate</span>
+        <span class="doc-code-lang">Java</span>
+      </div>
+      <pre><code class="language-java">public interface VehicleService {
+   // Called first by the controller — throw here to abort the mutation
+   void validateAddVehicle(AddVehicleInput input);
+
+   Vehicle addVehicle(AddVehicleInput input);
+   List&lt;Vehicle&gt; listVehicles();
+   Vehicle getVehicle(String id);
+   Flux&lt;Vehicle&gt; vehicleAdded();
+}</code></pre>
+    </div>
+
+    <p>The generated controller calls <code>validateAddVehicle</code> before <code>addVehicle</code>. In your implementation, throw any exception to abort:</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">Implementing the validation method</span>
+        <span class="doc-code-lang">Java</span>
+      </div>
+      <pre><code class="language-java">@Override
+public void validateAddVehicle(AddVehicleInput input) {
+    if (input.getBrand() == null || input.getBrand().isBlank()) {
+        throw new IllegalArgumentException("Brand must not be blank");
+    }
+    if (input.getYear() &lt; 1886 || input.getYear() &gt; 2100) {
+        throw new IllegalArgumentException("Year out of valid range");
+    }
+    // Add any additional business-rule validation here
+}
+
+@Override
+public Vehicle addVehicle(AddVehicleInput input) {
+    // Only reached if validateAddVehicle did not throw
+    // ...
+}</code></pre>
+    </div>
+
+    <nav class="doc-nav-footer">
+      <a href="java-client.html" class="doc-nav-btn prev">
+        <span class="doc-nav-label">← Previous</span>
+        <span class="doc-nav-title">Java Client</span>
+      </a>
+      <a href="caching.html" class="doc-nav-btn next">
+        <span class="doc-nav-label">Next</span>
+        <span class="doc-nav-title">Caching →</span>
+      </a>
+    </nav>
+  </main>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a href="../index.html" class="logo"><svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>GraphLink</a>
+        <p>GraphQL code generation for Dart, Flutter, and Java.<br>Open source — MIT License.</p>
+        <div class="footer-links">
+          <a href="https://github.com/Oualitsen/graphlink" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://pub.dev/packages/graphlink" target="_blank" rel="noopener">pub.dev</a>
+          <a href="https://github.com/Oualitsen/graphlink/releases" target="_blank" rel="noopener">Releases</a>
+          <a href="https://github.com/Oualitsen/graphlink/issues" target="_blank" rel="noopener">Issues</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2024 GraphLink · MIT License</p>
+      <p class="footer-tagline">Your schema is already the contract. Let GraphLink write the rest.</p>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+<script src="../js/main.js"></script>
+<script src="../js/docs.js"></script>
+</body>
+</html>

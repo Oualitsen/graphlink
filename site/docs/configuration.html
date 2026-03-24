@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuration Reference — GraphLink Docs</title>
+  <meta name="description" content="Complete configuration reference for GraphLink: all config.json options for client mode (Dart and Java) and server mode (Spring Boot).">
+  <link rel="canonical" href="https://graphlink.dev/docs/configuration.html">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/docs.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+</head>
+<body class="docs-page">
+
+<nav class="nav scrolled" id="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      GraphLink
+    </a>
+    <ul class="nav-links">
+      <li><a href="../index.html#features">Features</a></li>
+      <li><a href="index.html" class="active">Docs</a></li>
+      <li><a href="../index.html#roadmap">Roadmap</a></li>
+      <li><a href="https://github.com/Oualitsen/graphlink" class="nav-github" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        GitHub
+      </a></li>
+    </ul>
+    <a href="../index.html#quick-start" class="btn-nav">Get Started</a>
+  </div>
+</nav>
+
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Introduction</span>
+      <a href="index.html" class="sidebar-link">Overview</a>
+      <a href="philosophy.html" class="sidebar-link">Philosophy</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Getting Started</span>
+      <a href="getting-started.html" class="sidebar-link">Installation &amp; First Schema</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Frontend Clients</span>
+      <a href="dart-client.html" class="sidebar-link">Dart / Flutter</a>
+      <a href="java-client.html" class="sidebar-link">Java</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Backend</span>
+      <a href="spring-server.html" class="sidebar-link">Spring Boot</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Features</span>
+      <a href="caching.html" class="sidebar-link">Caching</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Reference</span>
+      <a href="directives.html" class="sidebar-link">Directives</a>
+      <a href="configuration.html" class="sidebar-link active">Configuration</a>
+    </div>
+  </aside>
+
+  <main class="docs-content">
+    <div class="breadcrumb">
+      <a href="../index.html">Home</a>
+      <span class="breadcrumb-sep">›</span>
+      <a href="index.html">Docs</a>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-current">Configuration</span>
+    </div>
+
+    <h1 class="doc-title">Configuration Reference</h1>
+    <p class="doc-lead">Every option in <code>config.json</code>, explained.</p>
+
+    <h2>Complete examples</h2>
+    <p>Here are fully annotated configs for all three targets. Each is a valid, working configuration for the example schema used throughout this documentation.</p>
+
+    <div class="doc-tabgroup">
+      <div class="doc-tabs">
+        <button class="doc-tab active">Dart / Flutter</button>
+        <button class="doc-tab">Java client</button>
+        <button class="doc-tab">Spring Boot</button>
+      </div>
+      <div class="doc-tab-content active">
+        <pre><code class="language-json">{
+  "schemaPaths": ["schema/*.graphql"],
+  "mode": "client",
+  "typeMappings": {
+    "ID":      "String",
+    "String":  "String",
+    "Float":   "double",
+    "Int":     "int",
+    "Boolean": "bool",
+    "Null":    "null"
+  },
+  "outputDir": "lib/generated",
+  "clientConfig": {
+    "dart": {
+      "packageName": "my_app",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "nullableFieldsRequired": false,
+      "immutableInputFields": true,
+      "immutableTypeFields": true
+    }
+  }
+}</code></pre>
+      </div>
+      <div class="doc-tab-content">
+        <pre><code class="language-json">{
+  "schemaPaths": ["schema/*.graphql"],
+  "mode": "client",
+  "typeMappings": {
+    "ID":      "String",
+    "String":  "String",
+    "Float":   "Double",
+    "Int":     "Integer",
+    "Boolean": "Boolean",
+    "Null":    "null"
+  },
+  "outputDir": "src/main/java/com/example/generated",
+  "clientConfig": {
+    "java": {
+      "packageName": "com.example.generated",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "nullableFieldsRequired": false,
+      "immutableInputFields": true,
+      "immutableTypeFields": true
+    }
+  }
+}</code></pre>
+      </div>
+      <div class="doc-tab-content">
+        <pre><code class="language-json">{
+  "schemaPaths": ["schema/*.graphql"],
+  "mode": "server",
+  "typeMappings": {
+    "ID":      "String",
+    "String":  "String",
+    "Float":   "Double",
+    "Int":     "Integer",
+    "Boolean": "Boolean",
+    "Null":    "null"
+  },
+  "outputDir": "src/main/java/com/example/generated",
+  "serverConfig": {
+    "spring": {
+      "basePackage": "com.example.generated",
+      "generateControllers": true,
+      "generateInputs": true,
+      "generateTypes": true,
+      "generateRepositories": false,
+      "immutableInputFields": true,
+      "immutableTypeFields": false
+    }
+  }
+}</code></pre>
+      </div>
+    </div>
+
+    <h2>Top-level options</h2>
+
+    <table class="doc-table">
+      <thead>
+        <tr><th>Key</th><th>Type</th><th>Required</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>schemaPaths</code></td>
+          <td><code>string[]</code></td>
+          <td>Yes</td>
+          <td>Array of glob patterns for schema files. Supports <code>*.graphql</code>, <code>*.gql</code>, and any glob syntax. Patterns are resolved relative to the config file's directory.</td>
+        </tr>
+        <tr>
+          <td><code>mode</code></td>
+          <td><code>"client" | "server"</code></td>
+          <td>Yes</td>
+          <td><code>"client"</code> generates type-safe client code. <code>"server"</code> generates Spring Boot scaffolding (controllers, service interfaces, types).</td>
+        </tr>
+        <tr>
+          <td><code>typeMappings</code></td>
+          <td><code>object</code></td>
+          <td>Yes</td>
+          <td>Maps GraphQL scalar names to target language type names. Built-in scalars (<code>ID</code>, <code>String</code>, <code>Int</code>, <code>Float</code>, <code>Boolean</code>) must be mapped. Add custom scalars here.</td>
+        </tr>
+        <tr>
+          <td><code>outputDir</code></td>
+          <td><code>string</code></td>
+          <td>Yes</td>
+          <td>Directory where generated files are written. Created if it doesn't exist. All generated files in this directory are overwritten on each run.</td>
+        </tr>
+        <tr>
+          <td><code>clientConfig</code></td>
+          <td><code>object</code></td>
+          <td>When <code>mode: "client"</code></td>
+          <td>Contains a <code>"dart"</code> or <code>"java"</code> key with language-specific options.</td>
+        </tr>
+        <tr>
+          <td><code>serverConfig</code></td>
+          <td><code>object</code></td>
+          <td>When <code>mode: "server"</code></td>
+          <td>Contains a <code>"spring"</code> key with server-specific options.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Dart client options (<code>clientConfig.dart</code>)</h2>
+
+    <table class="doc-table">
+      <thead>
+        <tr><th>Key</th><th>Type</th><th>Default</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>packageName</code></td>
+          <td><code>string</code></td>
+          <td>—</td>
+          <td>Your Dart package name (from <code>pubspec.yaml</code>). Used in generated import paths. Required.</td>
+        </tr>
+        <tr>
+          <td><code>generateAllFieldsFragments</code></td>
+          <td><code>boolean</code></td>
+          <td><code>false</code></td>
+          <td>Generates a named fragment per type (<code>_all_fields_TypeName</code>) selecting all fields. Required for <code>autoGenerateQueries</code>.</td>
+        </tr>
+        <tr>
+          <td><code>autoGenerateQueries</code></td>
+          <td><code>boolean</code></td>
+          <td><code>false</code></td>
+          <td>Automatically builds query strings for every operation using <code>_all_fields</code> fragments. When <code>true</code>, you never write query strings by hand.</td>
+        </tr>
+        <tr>
+          <td><code>nullableFieldsRequired</code></td>
+          <td><code>boolean</code></td>
+          <td><code>false</code></td>
+          <td>When <code>true</code>, nullable fields are also <code>required</code> in constructors (but still <code>T?</code> typed). When <code>false</code>, nullable fields are optional constructor parameters.</td>
+        </tr>
+        <tr>
+          <td><code>immutableInputFields</code></td>
+          <td><code>boolean</code></td>
+          <td><code>true</code></td>
+          <td>Makes input class fields <code>final</code>. Strongly recommended.</td>
+        </tr>
+        <tr>
+          <td><code>immutableTypeFields</code></td>
+          <td><code>boolean</code></td>
+          <td><code>true</code></td>
+          <td>Makes response type class fields <code>final</code>. Strongly recommended for client code.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Java client options (<code>clientConfig.java</code>)</h2>
+
+    <table class="doc-table">
+      <thead>
+        <tr><th>Key</th><th>Type</th><th>Default</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>packageName</code></td>
+          <td><code>string</code></td>
+          <td>—</td>
+          <td>Base Java package for generated classes (e.g. <code>"com.example.generated"</code>). Required. Subpackages (<code>.types</code>, <code>.inputs</code>, <code>.enums</code>, <code>.client</code>) are created automatically.</td>
+        </tr>
+        <tr>
+          <td><code>generateAllFieldsFragments</code></td>
+          <td><code>boolean</code></td>
+          <td><code>false</code></td>
+          <td>Same as Dart — generates <code>_all_fields</code> fragments per type.</td>
+        </tr>
+        <tr>
+          <td><code>autoGenerateQueries</code></td>
+          <td><code>boolean</code></td>
+          <td><code>false</code></td>
+          <td>Generates query string constants for every schema operation.</td>
+        </tr>
+        <tr>
+          <td><code>nullableFieldsRequired</code></td>
+          <td><code>boolean</code></td>
+          <td><code>false</code></td>
+          <td>Controls whether nullable fields require explicit <code>null</code> in builders.</td>
+        </tr>
+        <tr>
+          <td><code>immutableInputFields</code></td>
+          <td><code>boolean</code></td>
+          <td><code>true</code></td>
+          <td>Makes input fields <code>final</code> with <code>Objects.requireNonNull</code> for required fields.</td>
+        </tr>
+        <tr>
+          <td><code>immutableTypeFields</code></td>
+          <td><code>boolean</code></td>
+          <td><code>true</code></td>
+          <td>Makes response type fields <code>final</code> (no setters). Set <code>false</code> for Spring server types.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Spring Boot options (<code>serverConfig.spring</code>)</h2>
+
+    <table class="doc-table">
+      <thead>
+        <tr><th>Key</th><th>Type</th><th>Default</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>basePackage</code></td>
+          <td><code>string</code></td>
+          <td>—</td>
+          <td>Base Java package for all generated server files. Required.</td>
+        </tr>
+        <tr>
+          <td><code>generateControllers</code></td>
+          <td><code>boolean</code></td>
+          <td><code>true</code></td>
+          <td>Generates <code>@Controller</code> classes with Spring GraphQL annotations (<code>@QueryMapping</code>, <code>@MutationMapping</code>, <code>@SubscriptionMapping</code>, <code>@Argument</code>).</td>
+        </tr>
+        <tr>
+          <td><code>generateInputs</code></td>
+          <td><code>boolean</code></td>
+          <td><code>true</code></td>
+          <td>Generates Java classes for all <code>input</code> type definitions in the schema.</td>
+        </tr>
+        <tr>
+          <td><code>generateTypes</code></td>
+          <td><code>boolean</code></td>
+          <td><code>true</code></td>
+          <td>Generates Java classes for all <code>type</code> definitions (excluding <code>Query</code>, <code>Mutation</code>, <code>Subscription</code>).</td>
+        </tr>
+        <tr>
+          <td><code>generateRepositories</code></td>
+          <td><code>boolean</code></td>
+          <td><code>false</code></td>
+          <td>Generates <code>JpaRepository</code> interfaces for types annotated with <code>@glRepository</code>.</td>
+        </tr>
+        <tr>
+          <td><code>immutableInputFields</code></td>
+          <td><code>boolean</code></td>
+          <td><code>true</code></td>
+          <td>Makes server-side input fields <code>final</code>.</td>
+        </tr>
+        <tr>
+          <td><code>immutableTypeFields</code></td>
+          <td><code>boolean</code></td>
+          <td><code>false</code></td>
+          <td>Controls whether type class fields have setters. Must be <code>false</code> for Spring's GraphQL runtime to set fields via reflection. Set <code>true</code> only if you handle deserialization yourself.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>typeMappings — custom scalars</h2>
+    <p>GraphQL supports custom scalars for types like <code>Date</code>, <code>DateTime</code>, <code>BigDecimal</code>, <code>URL</code>, etc. Add them to <code>typeMappings</code> to control the generated language type:</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">Custom scalar mappings — Java</span>
+        <span class="doc-code-lang">JSON</span>
+      </div>
+      <pre><code class="language-json">{
+  "typeMappings": {
+    "ID":         "String",
+    "String":     "String",
+    "Float":      "Double",
+    "Int":        "Integer",
+    "Boolean":    "Boolean",
+    "Null":       "null",
+    "DateTime":   "OffsetDateTime",
+    "BigDecimal": "BigDecimal",
+    "URL":        "String",
+    "Long":       "Long",
+    "UUID":       "UUID"
+  }
+}</code></pre>
+    </div>
+
+    <p>For scalars that require an import statement, use the <code>@glExternal</code> directive on the scalar definition in your schema instead. See the <a href="directives.html#glExternal">@glExternal directive</a> for details.</p>
+
+    <h2>Running the CLI</h2>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">CLI usage</span>
+        <span class="doc-code-lang">bash</span>
+      </div>
+      <pre><code class="language-bash"># Generate once
+glink -c config.json
+
+# Watch mode — regenerate on schema file changes
+glink -c config.json -w
+
+# Print version
+glink --version
+
+# Print help
+glink --help</code></pre>
+    </div>
+
+    <p>The <code>-c</code> / <code>--config</code> flag is the only required argument. Paths in the config file (<code>schemaPaths</code>, <code>outputDir</code>) are resolved relative to the config file's location, not the current working directory. This means you can run <code>glink</code> from any directory as long as you provide the correct path to the config file.</p>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">ℹ</span>
+      <p><strong>Multiple configs in one project</strong><br>
+      A monorepo with a Dart frontend and a Java Spring backend can have two separate config files — <code>dart-config.json</code> and <code>spring-config.json</code>. Run both: <code>glink -c dart-config.json &amp;&amp; glink -c spring-config.json</code>. Both read the same schema; each writes to its own output directory.</p>
+    </div>
+
+    <nav class="doc-nav-footer">
+      <a href="directives.html" class="doc-nav-btn prev">
+        <span class="doc-nav-label">← Previous</span>
+        <span class="doc-nav-title">Directives Reference</span>
+      </a>
+      <div></div>
+    </nav>
+  </main>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a href="../index.html" class="logo"><svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>GraphLink</a>
+        <p>GraphQL code generation for Dart, Flutter, and Java.<br>Open source — MIT License.</p>
+        <div class="footer-links">
+          <a href="https://github.com/Oualitsen/graphlink" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://pub.dev/packages/graphlink" target="_blank" rel="noopener">pub.dev</a>
+          <a href="https://github.com/Oualitsen/graphlink/releases" target="_blank" rel="noopener">Releases</a>
+          <a href="https://github.com/Oualitsen/graphlink/issues" target="_blank" rel="noopener">Issues</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2024 GraphLink · MIT License</p>
+      <p class="footer-tagline">Your schema is already the contract. Let GraphLink write the rest.</p>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+<script src="../js/main.js"></script>
+<script src="../js/docs.js"></script>
+</body>
+</html>

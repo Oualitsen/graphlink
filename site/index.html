@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ── Primary SEO ─────────────────────────────────── -->
+  <title>GraphLink — GraphQL Code Generation for Dart, Flutter & Java</title>
+  <meta name="description" content="GraphLink generates type-safe client and server code from a GraphQL schema for Dart, Flutter, Java, and Spring Boot. No boilerplate. No generics. No schema drift. Free and open source.">
+  <meta name="keywords" content="GraphQL code generation, Dart GraphQL client, Flutter GraphQL, Java GraphQL client, Spring Boot GraphQL, glink, graphlink, codegen, type-safe GraphQL">
+  <meta name="author" content="GraphLink">
+  <link rel="canonical" href="https://graphlink.dev/">
+
+  <!-- ── Open Graph (social sharing) ───────────────────── -->
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://graphlink.dev/">
+  <meta property="og:site_name"   content="GraphLink">
+  <meta property="og:title"       content="GraphLink — GraphQL Code Generation for Dart & Java">
+  <meta property="og:description" content="Define your GraphQL schema once. GraphLink generates type-safe client and server code for Dart/Flutter and Java/Spring Boot. No boilerplate. No generics.">
+  <meta property="og:image"       content="https://graphlink.dev/og-image.png">
+  <meta property="og:image:width"  content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale"      content="en_US">
+
+  <!-- ── Twitter Card ───────────────────────────────────── -->
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:title"       content="GraphLink — GraphQL Code Generation for Dart & Java">
+  <meta name="twitter:description" content="Define your GraphQL schema once. GraphLink generates type-safe client and server code for Dart/Flutter and Java/Spring Boot.">
+  <meta name="twitter:image"       content="https://graphlink.dev/og-image.png">
+
+  <!-- ── JSON-LD Structured Data ───────────────────────── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://graphlink.dev/#app",
+        "name": "GraphLink",
+        "alternateName": "glink",
+        "description": "GraphLink is a command-line code generation tool that reads a GraphQL schema and generates fully type-safe client and server code for Dart, Flutter, Java, and Spring Boot. It eliminates boilerplate data classes, serializers, query strings, and HTTP wiring. Generated Java code requires no generics at the call site.",
+        "applicationCategory": "DeveloperApplication",
+        "applicationSubCategory": "Code Generation Tool",
+        "operatingSystem": "Linux, macOS, Windows",
+        "programmingLanguage": ["Dart", "Java", "Flutter", "Spring Boot"],
+        "featureList": [
+          "Type-safe GraphQL client generation for Dart and Java",
+          "Spring Boot server code generation (controllers, services, repositories)",
+          "Built-in client-side caching via @glCache and @glCacheInvalidate schema directives",
+          "Tag-based cache invalidation",
+          "Partial query caching with per-field TTL",
+          "WebSocket subscription support",
+          "Watch mode for live schema file monitoring",
+          "No generics at the Java call site",
+          "No runtime dependency on GraphLink in generated code",
+          "TypeScript support in development"
+        ],
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "license": "https://opensource.org/licenses/MIT",
+        "url": "https://graphlink.dev/",
+        "downloadUrl": "https://github.com/Oualitsen/graphlink/releases/latest",
+        "softwareVersion": "4.2.0",
+        "releaseNotes": "https://github.com/Oualitsen/graphlink/releases",
+        "codeRepository": "https://github.com/Oualitsen/graphlink",
+        "isAccessibleForFree": true
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://graphlink.dev/#faq",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is GraphLink?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "GraphLink is an open-source command-line tool that reads a GraphQL schema and generates fully type-safe client and server code for Dart, Flutter, Java, and Spring Boot. It eliminates boilerplate data classes, JSON serializers, query strings, and HTTP wiring so developers can focus on business logic."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does GraphLink require any runtime dependency in the generated code?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. The generated code has zero runtime dependency on GraphLink. If you stop using GraphLink, the generated files continue to compile and work exactly as before. You own the output completely."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does the Java generated code use generics?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. GraphLink generates fully-resolved return types for every query and mutation. The call site reads like ordinary Java: client.queries.getUser(id).getUser() — no TypeReference, no casting, no generic parameters."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What languages and frameworks does GraphLink support?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "GraphLink currently supports Dart and Flutter for client generation, and Java and Spring Boot for both client and server generation. TypeScript support is currently in development. Go and Kotlin targets are planned based on community demand."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How does GraphLink caching work?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "GraphLink implements client-side caching via two GraphQL schema directives: @glCache(ttl, tags) to cache a query result with a time-to-live and optional tags, and @glCacheInvalidate(tags) to evict tagged cache entries when a mutation succeeds. Caching can also be applied at the field level inside a compound query, so each field is cached independently with its own TTL."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How do I install GraphLink?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Download the prebuilt binary for your platform (Linux, macOS, Windows) from the GitHub Releases page at github.com/Oualitsen/graphlink/releases/latest. Make it executable and place it on your PATH. Then create a config.json pointing at your schema files and run: glink -c config.json"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I use watch mode to auto-regenerate code when the schema changes?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Run glink -c config.json -w to start watch mode. GraphLink monitors your schema files and automatically regenerates all output files whenever a change is detected."
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- ═══════════════════════════════ NAV ═══════════════════════════════ -->
+  <nav class="nav" id="nav">
+    <div class="nav-inner">
+      <a href="#" class="logo">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
+        GraphLink
+      </a>
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#caching">Caching</a></li>
+        <li><a href="#quick-start">Quick Start</a></li>
+        <li><a href="docs/index.html">Docs</a></li>
+        <li><a href="#roadmap">Roadmap</a></li>
+        <li>
+          <a href="https://github.com/Oualitsen/graphlink" class="nav-github" target="_blank" rel="noopener">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+            GitHub
+          </a>
+        </li>
+      </ul>
+      <a href="#quick-start" class="btn-nav">Get Started</a>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════════ HERO ══════════════════════════════ -->
+  <section class="hero" id="hero">
+    <div class="hero-bg-grid"></div>
+    <div class="container hero-container">
+      <div class="hero-text">
+        <div class="hero-badge">
+          <span class="badge-dot"></span>
+          Open Source · MIT · v4.2.0
+        </div>
+        <h1 class="hero-title">
+          Your GraphQL Schema<br>
+          <span class="gradient-text">Is Already the Contract.</span>
+        </h1>
+        <p class="hero-subtitle">
+          GraphLink reads your schema and generates fully typed client and server code for
+          <strong>Dart&nbsp;/&nbsp;Flutter</strong> and <strong>Java&nbsp;/&nbsp;Spring Boot</strong>.
+          No boilerplate. No generics. No drift between schema and code.
+        </p>
+        <div class="hero-ctas">
+          <a href="#quick-start" class="btn-primary">Get Started</a>
+          <a href="docs/index.html" class="btn-secondary">Read the Docs</a>
+          <a href="https://github.com/Oualitsen/graphlink" class="btn-secondary" target="_blank" rel="noopener">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+            Star on GitHub
+          </a>
+        </div>
+        <p class="hero-note">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          Production-tested across multiple real-world applications.
+        </p>
+      </div>
+
+      <div class="hero-visual">
+        <div class="code-showcase">
+          <div class="code-panel schema-panel">
+            <div class="code-header">
+              <div class="window-dots">
+                <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+              </div>
+              <span class="filename">schema.graphql</span>
+            </div>
+            <pre class="code-scroll"><code class="language-graphql">type Query {
+  getUser(id: ID!): User!
+    @glCache(ttl: 300, tags: ["users"])
+}
+
+type Mutation {
+  updateUser(
+    id: ID!, input: UserInput!
+  ): User! @glCacheInvalidate(tags: ["users"])
+}
+
+type User {
+  id: ID!
+  name: String!
+  email: String!
+}</code></pre>
+          </div>
+
+          <div class="showcase-arrow">
+            <div class="arrow-line"></div>
+            <span class="arrow-label">glink generate</span>
+            <div class="arrow-head">▶</div>
+          </div>
+
+          <div class="code-panel output-panel">
+            <div class="code-header output-header">
+              <div class="window-dots green">
+                <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+              </div>
+              <div class="hero-lang-tabs">
+                <button class="hero-lang-tab active" data-lang="dart">Dart</button>
+                <button class="hero-lang-tab" data-lang="java">Java</button>
+              </div>
+            </div>
+            <pre class="lang-pane code-scroll active" data-lang="dart"><code class="language-dart">// Fully typed. Zero boilerplate.
+final res = await client.queries
+    .getUser(id: '42');
+
+// res.getUser is a typed User — no casting
+print(res.getUser.name);</code></pre>
+            <pre class="lang-pane code-scroll" data-lang="java"><code class="language-java">// No generics. No casting. Just types.
+GetUserResponse res =
+    client.queries.getUser("42");
+
+// res.getUser() returns a typed User
+System.out.println(
+    res.getUser().getName());</code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════ PAIN ══════════════════════════════ -->
+  <section class="section pain-section" id="problem">
+    <div class="container">
+      <p class="section-label">Sound familiar?</p>
+      <h2 class="section-title">The GraphQL Tax Nobody Talks About</h2>
+      <p class="section-subtitle">
+        GraphQL is great for describing your API. But between the schema and your first real call,
+        there is a wall of repetitive, error-prone code that has nothing to do with your business logic.
+      </p>
+      <div class="pain-grid">
+        <div class="pain-card">
+          <span class="pain-icon">⚠️</span>
+          <h3>Duplicate type definitions</h3>
+          <p>You define <code>User</code> in your schema, then again as a Java class, then again as a Dart model. Three places. Three chances to drift.</p>
+        </div>
+        <div class="pain-card">
+          <span class="pain-icon">💥</span>
+          <h3>Schema drift in production</h3>
+          <p>A field gets renamed on the backend. The app crashes. The client model was never updated. The schema was the truth — nobody told the code.</p>
+        </div>
+        <div class="pain-card">
+          <span class="pain-icon">😤</span>
+          <h3>Generic soup in Java</h3>
+          <p>Some GraphQL clients force you to pass <code>TypeReference&lt;Response&lt;GetUserData&gt;&gt;</code> every single call. For every single query.</p>
+        </div>
+        <div class="pain-card">
+          <span class="pain-icon">🔁</span>
+          <h3>Adding a field = 5 file edits</h3>
+          <p>Schema, data class, fromJson, toJson, query string. Every new field is a five-stop tour of your codebase — and one missed stop breaks everything.</p>
+        </div>
+        <div class="pain-card">
+          <span class="pain-icon">⏱️</span>
+          <h3>Serialization by hand, forever</h3>
+          <p>Writing <code>fromJson</code> / <code>toJson</code> for the 50th time this year. You know you should automate this. You haven't gotten around to it.</p>
+        </div>
+        <div class="pain-card">
+          <span class="pain-icon">🔌</span>
+          <h3>WebSocket subscriptions are a project</h3>
+          <p>Connecting, handshaking, reconnecting, parsing frames. A full afternoon for something that should be one method call.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ HOW IT WORKS ═══════════════════════════ -->
+  <section class="section hiw-section" id="how-it-works">
+    <div class="container">
+      <p class="section-label">The fix</p>
+      <h2 class="section-title">Define Once. Generate Everything.</h2>
+      <p class="section-subtitle">
+        GraphLink turns your schema into production-ready code in seconds.
+        The output is readable, idiomatic, and has no runtime dependency on GraphLink.
+      </p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-body">
+            <h3>Write your GraphQL schema</h3>
+            <p>Define your types, queries, mutations, subscriptions. Add <code>@glCache</code> where you want built-in caching. The schema is your only source of truth.</p>
+          </div>
+        </div>
+        <div class="step-connector"><div class="connector-line"></div></div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-body">
+            <h3>Run one command</h3>
+            <p>Run <code>glink -c config.json</code>. Point it at your schema, pick your target language, and GraphLink writes all the files. That is the entire workflow.</p>
+          </div>
+        </div>
+        <div class="step-connector"><div class="connector-line"></div></div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-body">
+            <h3>Call fully-typed, generated code</h3>
+            <p>Your IDE sees the generated types immediately. Queries are methods. Responses are typed objects. Subscriptions are streams. No wiring needed.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="generated-files-box">
+        <p class="gen-label">What a medium-complexity schema generates:</p>
+        <div class="file-tree">
+          <div class="file-group">
+            <span class="file-dir">types/</span>
+            <span class="file-item">User.dart</span>
+            <span class="file-item">Post.dart</span>
+            <span class="file-item">Comment.dart</span>
+            <span class="file-item dim">…</span>
+          </div>
+          <div class="file-group">
+            <span class="file-dir">inputs/</span>
+            <span class="file-item">CreatePostInput.dart</span>
+            <span class="file-item">UpdateUserInput.dart</span>
+          </div>
+          <div class="file-group">
+            <span class="file-dir">enums/</span>
+            <span class="file-item">UserRole.dart</span>
+            <span class="file-item">PostStatus.dart</span>
+          </div>
+          <div class="file-group">
+            <span class="file-dir">client/</span>
+            <span class="file-item highlight">GraphLinkClient.dart</span>
+          </div>
+        </div>
+        <p class="gen-note">All generated files are yours. No hidden runtime. Stop using GraphLink any time — the files keep working.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════ BEFORE / AFTER ════════════════════════════ -->
+  <section class="section compare-section" id="compare">
+    <div class="container">
+      <p class="section-label">The numbers</p>
+      <h2 class="section-title">See the Difference</h2>
+      <p class="section-subtitle">A single query on a <code>User</code> type with three fields. Here is every line you write with and without GraphLink.</p>
+
+      <div class="compare-tabs">
+        <button class="compare-tab active" data-target="java">Java</button>
+        <button class="compare-tab" data-target="dart">Dart</button>
+      </div>
+
+      <!-- Java comparison -->
+      <div class="compare-group active" id="compare-java">
+        <div class="compare-panels">
+          <div class="compare-panel before-panel">
+            <div class="panel-header">
+              <span class="panel-label bad">Without GraphLink</span>
+              <span class="line-badge">~65 lines</span>
+            </div>
+            <pre><code class="language-java">// 1. Write the query string manually
+String GET_USER = """
+    query GetUser($id: ID!) {
+      getUser(id: $id) { id name email }
+    }
+""";
+
+// 2. Write the data class manually
+public class User {
+    private String id;
+    private String name;
+    private String email;
+
+    public String getId()   { return id; }
+    public void setId(String id) { this.id = id; }
+    public String getName() { return name; }
+    public void setName(String n) { this.name = n; }
+    public String getEmail() { return email; }
+    public void setEmail(String e) { this.email = e; }
+}
+
+// 3. Write the response wrapper manually
+public class GetUserData {
+    private User getUser;
+    public User getGetUser() { return getUser; }
+    public void setGetUser(User u) { this.getUser = u; }
+}
+
+// 4. Execute — with generics
+GraphQLResponse&lt;GetUserData&gt; response = client.execute(
+    GET_USER,
+    Map.of("id", userId),
+    new TypeReference&lt;GraphQLResponse&lt;GetUserData&gt;&gt;() {}
+);
+User user = response.getData().getGetUser();</code></pre>
+          </div>
+
+          <div class="compare-panel after-panel">
+            <div class="panel-header">
+              <span class="panel-label good">With GraphLink</span>
+              <span class="line-badge saved">0 written · ~120 generated</span>
+            </div>
+            <pre><code class="language-java">// That's it.
+User user = client.queries
+    .getUser(userId)
+    .getUser();</code></pre>
+            <div class="after-callout">
+              <strong>No generics. No TypeReference. No casting.</strong><br>
+              Just a method call that returns exactly the type you expect.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dart comparison -->
+      <div class="compare-group" id="compare-dart">
+        <div class="compare-panels">
+          <div class="compare-panel before-panel">
+            <div class="panel-header">
+              <span class="panel-label bad">Without GraphLink</span>
+              <span class="line-badge">~50 lines</span>
+            </div>
+            <pre><code class="language-dart">// 1. Write the data class manually
+class User {
+  final String id;
+  final String name;
+  final String email;
+
+  User({
+    required this.id,
+    required this.name,
+    required this.email,
+  });
+
+  factory User.fromJson(Map&lt;String, dynamic&gt; json) =&gt; User(
+    id: json['id'] as String,
+    name: json['name'] as String,
+    email: json['email'] as String,
+  );
+
+  Map&lt;String, dynamic&gt; toJson() =&gt; {
+    'id': id, 'name': name, 'email': email,
+  };
+}
+
+// 2. Write the query string manually
+const getUserQuery = r'''
+  query GetUser($id: ID!) {
+    getUser(id: $id) { id name email }
+  }
+''';
+
+// 3. Write the HTTP call and parse manually
+final resp = await http.post(
+  Uri.parse(graphqlUrl),
+  headers: {'Content-Type': 'application/json'},
+  body: jsonEncode({
+    'query': getUserQuery,
+    'variables': {'id': userId},
+  }),
+);
+final data = jsonDecode(resp.body);
+final user = User.fromJson(
+  data['data']['getUser'] as Map&lt;String, dynamic&gt;,
+);</code></pre>
+          </div>
+
+          <div class="compare-panel after-panel">
+            <div class="panel-header">
+              <span class="panel-label good">With GraphLink</span>
+              <span class="line-badge saved">0 written · ~80 generated</span>
+            </div>
+            <pre><code class="language-dart">// That's it.
+final res = await client.queries
+    .getUser(id: userId);
+
+final user = res.getUser; // typed User</code></pre>
+            <div class="after-callout">
+              <strong>No fromJson. No query strings. No HTTP wiring.</strong><br>
+              GraphLink generates and maintains all of it, forever in sync with your schema.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════════════════════════ FEATURES ════════════════════════════ -->
+  <section class="section features-section" id="features">
+    <div class="container">
+      <p class="section-label">What you get</p>
+      <h2 class="section-title">More Than You Expected</h2>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🎯</div>
+          <h3>Type-Safe Client</h3>
+          <p>Every query and mutation becomes a typed method call. Arguments are named parameters. Responses are typed classes. Your IDE autocompletes everything.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⚙️</div>
+          <h3>Full Server Generation</h3>
+          <p>For Spring Boot: generates controllers, service interfaces, and repository stubs. Not skeleton stubs — real, compilable code ready for your business logic.</p>
+        </div>
+        <div class="feature-card feature-highlight">
+          <div class="feature-icon">💾</div>
+          <h3>Built-In Caching</h3>
+          <p>Cache behavior lives in the schema via two directives — not scattered across your client code. Tag-based invalidation. Partial query caching. Offline fallback.</p>
+          <a href="#caching" class="feature-more">See how it works →</a>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">👁️</div>
+          <h3>Watch Mode</h3>
+          <p>Run with <code>-w</code> and GraphLink watches your schema files. Every save triggers instant regeneration. Your IDE sees the updated types without restarting.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔌</div>
+          <h3>WebSocket Subscriptions</h3>
+          <p>Subscriptions are generated alongside queries and mutations. Connection, handshake, message parsing, reconnection — all handled in the generated client.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔓</div>
+          <h3>Zero Lock-In</h3>
+          <p>Generated code has no runtime dependency on GraphLink. Stop using it any time — the files keep compiling and working. You own every line of the output.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════════════════════════ CACHING ════════════════════════════ -->
+  <section class="section caching-section" id="caching">
+    <div class="container">
+      <p class="section-label">Unique to GraphLink</p>
+      <h2 class="section-title">Cache Control Lives in the Schema</h2>
+      <p class="section-subtitle">
+        Most GraphQL clients require you to configure caching in application code —
+        separate from the schema, spread across components. GraphLink puts it exactly where the data contract lives.
+      </p>
+
+      <div class="caching-layout">
+        <div class="caching-code">
+          <div class="code-panel">
+            <div class="code-header">
+              <div class="window-dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+              <span class="filename">schema.graphql</span>
+            </div>
+            <pre><code class="language-graphql">type Query {
+  # Cached 5 min, tagged "cars"
+  getCar(id: ID!): Car!
+    @glCache(ttl: 300, tags: ["cars"])
+
+  # Each field cached independently
+  getCarAndOwner(
+    carId: ID!, ownerId: ID!
+  ): CarAndOwner! @glCache(ttl: 60) {
+    car: getCar(id: $carId)
+      @glCache(ttl: 300, tags: ["cars"])
+    owner: getOwner(id: $ownerId)
+      @glCache(ttl: 120, tags: ["owners"])
+  }
+}
+
+type Mutation {
+  # Busts all "cars" entries on success
+  createCar(input: CreateCarInput!): Car!
+    @glCacheInvalidate(tags: ["cars"])
+}</code></pre>
+          </div>
+        </div>
+
+        <div class="caching-features">
+          <div class="cache-feat">
+            <div class="cache-feat-icon">⏱</div>
+            <div>
+              <h4><code>ttl</code> — Time to live</h4>
+              <p>Entries expire after this many seconds. First call hits the network. Subsequent calls are served from cache with no extra code.</p>
+            </div>
+          </div>
+          <div class="cache-feat">
+            <div class="cache-feat-icon">🏷</div>
+            <div>
+              <h4><code>tags</code> — Targeted invalidation</h4>
+              <p>Tag related entries together. A single mutation can evict an entire group. Unrelated cache entries are untouched and stay warm.</p>
+            </div>
+          </div>
+          <div class="cache-feat">
+            <div class="cache-feat-icon">🧩</div>
+            <div>
+              <h4>Partial query caching</h4>
+              <p>Each field in a compound query has its own TTL. GraphLink fetches only what is missing or expired. If only "cars" is invalidated, "owners" is still served from cache.</p>
+            </div>
+          </div>
+          <div class="cache-feat">
+            <div class="cache-feat-icon">📴</div>
+            <div>
+              <h4><code>staleIfOffline</code> — Offline resilience</h4>
+              <p>Return the expired entry when the network is unavailable instead of throwing. One flag in the schema. Zero extra code in your app.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ NO GENERICS ════════════════════════════ -->
+  <section class="section no-generics-section" id="no-generics">
+    <div class="container">
+      <div class="ng-box">
+        <div class="ng-badge">For Java developers</div>
+        <h2>No Generics at the Call Site. Ever.</h2>
+        <p>
+          You've used Java GraphQL clients that require a
+          <code>TypeReference&lt;GraphQLResponse&lt;GetUserData&gt;&gt;</code>
+          on every single call. GraphLink generates fully-resolved return types.
+          The call site reads like ordinary Java code — because it is.
+        </p>
+
+        <div class="ng-compare">
+          <div class="ng-before">
+            <span class="ng-label bad">Other clients</span>
+            <pre><code class="language-java">GraphQLResponse&lt;GetUserData&gt; res = client.execute(
+    GetUserQuery.builder().id("42").build(),
+    new TypeReference&lt;GraphQLResponse&lt;GetUserData&gt;&gt;() {}
+);
+User user = res.getData().getGetUser();</code></pre>
+          </div>
+          <div class="ng-arrow">→</div>
+          <div class="ng-after">
+            <span class="ng-label good">GraphLink</span>
+            <pre><code class="language-java">User user = client.queries
+    .getUser("42").getUser();</code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ QUICK START ════════════════════════════ -->
+  <section class="section qs-section" id="quick-start">
+    <div class="container">
+      <p class="section-label">Get running</p>
+      <h2 class="section-title">Up in 5 Minutes</h2>
+
+      <div class="qs-tabs">
+        <button class="qs-tab active" data-qs="flutter">Dart / Flutter</button>
+        <button class="qs-tab" data-qs="java">Java / Spring Boot</button>
+      </div>
+
+      <!-- Dart / Flutter -->
+      <div class="qs-content active" id="qs-flutter">
+        <div class="qs-step">
+          <span class="qs-num">1</span>
+          <div class="qs-body">
+            <h4>Download the CLI binary</h4>
+            <div class="code-block">
+              <pre><code class="language-bash"># Download for your platform from GitHub Releases:
+# github.com/Oualitsen/graphlink/releases/latest
+#
+# Linux:   glink-linux-x86_64
+# macOS:   glink-macos-arm64
+# Windows: glink-windows-x86_64.exe
+
+chmod +x glink-linux-x86_64
+mv glink-linux-x86_64 /usr/local/bin/glink</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="qs-step">
+          <span class="qs-num">2</span>
+          <div class="qs-body">
+            <h4>Create <code>config.json</code></h4>
+            <div class="code-block">
+              <pre><code class="language-json">{
+  "schemaPaths": ["lib/**/*.graphql"],
+  "mode": "client",
+  "typeMappings": {
+    "ID": "String",
+    "Float": "double",
+    "Int": "int",
+    "Boolean": "bool"
+  },
+  "outputDir": "lib/generated",
+  "clientConfig": {
+    "dart": {
+      "packageName": "my_app",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true
+    }
+  }
+}</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="qs-step">
+          <span class="qs-num">3</span>
+          <div class="qs-body">
+            <h4>Generate</h4>
+            <div class="code-block">
+              <button class="copy-btn" data-copy="glink -c config.json">Copy</button>
+              <pre><code class="language-bash">glink -c config.json
+
+# Or watch mode — regenerates on every schema save:
+glink -c config.json -w</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Java / Spring Boot -->
+      <div class="qs-content" id="qs-java">
+        <div class="qs-step">
+          <span class="qs-num">1</span>
+          <div class="qs-body">
+            <h4>Download the CLI binary</h4>
+            <div class="code-block">
+              <pre><code class="language-bash"># Download for your platform from GitHub Releases:
+# github.com/Oualitsen/graphlink/releases/latest
+#
+# Linux:   glink-linux-x86_64
+# macOS:   glink-macos-arm64
+# Windows: glink-windows-x86_64.exe
+
+chmod +x glink-linux-x86_64
+mv glink-linux-x86_64 /usr/local/bin/glink</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="qs-step">
+          <span class="qs-num">2</span>
+          <div class="qs-body">
+            <h4>Create <code>config.json</code></h4>
+            <div class="code-block">
+              <pre><code class="language-json">{
+  "schemaPaths": ["schema/*.gql"],
+  "mode": "client",
+  "typeMappings": {
+    "ID": "String",
+    "Float": "Double",
+    "Int": "Integer",
+    "Boolean": "Boolean"
+  },
+  "outputDir": "src/main/java/com/example/generated",
+  "clientConfig": {
+    "java": {
+      "packageName": "com.example.generated",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true
+    }
+  }
+}</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="qs-step">
+          <span class="qs-num">3</span>
+          <div class="qs-body">
+            <h4>Generate</h4>
+            <div class="code-block">
+              <button class="copy-btn" data-copy="glink -c config.json">Copy</button>
+              <pre><code class="language-bash">glink -c config.json
+
+# Or watch mode — regenerates on every schema save:
+glink -c config.json -w</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════ ROADMAP ═════════════════════════════ -->
+  <section class="section roadmap-section" id="roadmap">
+    <div class="container">
+      <p class="section-label">What's coming</p>
+      <h2 class="section-title">Growing With the Ecosystem</h2>
+      <p class="section-subtitle">
+        GraphLink is actively developed. The next major target is <strong>TypeScript</strong> —
+        bringing the same zero-boilerplate experience to JavaScript/TypeScript frontends and Node.js backends.
+        Go and Kotlin targets will follow based on community demand.
+      </p>
+
+      <div class="roadmap-grid">
+        <div class="rm-card done">
+          <span class="rm-status done">✓ Available</span>
+          <h4>Dart / Flutter Client</h4>
+          <p>Full client with queries, mutations, subscriptions, and built-in caching.</p>
+        </div>
+        <div class="rm-card done">
+          <span class="rm-status done">✓ Available</span>
+          <h4>Java Client</h4>
+          <p>Type-safe client with no generics at the call site and builder-pattern inputs.</p>
+        </div>
+        <div class="rm-card done">
+          <span class="rm-status done">✓ Available</span>
+          <h4>Spring Boot Server</h4>
+          <p>Controllers, service interfaces, and repository stubs generated from schema.</p>
+        </div>
+        <div class="rm-card active">
+          <span class="rm-status active">🔧 In Development</span>
+          <h4>TypeScript Client</h4>
+          <p>Type-safe client for React, Vue, Angular, and Node.js. Same zero-boilerplate philosophy.</p>
+        </div>
+        <div class="rm-card planned">
+          <span class="rm-status planned">📋 Planned</span>
+          <h4>Express / Node.js Server</h4>
+          <p>Server-side code generation for Node.js GraphQL backends.</p>
+        </div>
+        <div class="rm-card planned">
+          <span class="rm-status planned">📋 On Demand</span>
+          <h4>Go &amp; Kotlin</h4>
+          <p>Additional targets based on community demand. Star the repo to show interest.</p>
+        </div>
+      </div>
+
+      <div class="roadmap-cta">
+        <p>Need a language or framework not on the list?</p>
+        <a href="https://github.com/Oualitsen/graphlink/issues/new" class="btn-secondary" target="_blank" rel="noopener">Request a target →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════ FAQ ════════════════════════════ -->
+  <section class="section faq-section" id="faq">
+    <div class="container">
+      <p class="section-label">Common questions</p>
+      <h2 class="section-title">Frequently Asked Questions</h2>
+
+      <div class="faq-list">
+        <details class="faq-item" open>
+          <summary class="faq-q">Does the generated code have a runtime dependency on GraphLink?</summary>
+          <div class="faq-a">
+            <p>No. The generated code has zero runtime dependency on GraphLink. If you stop using GraphLink tomorrow, every generated file continues to compile and work exactly as before. You own the output completely — it is ordinary Dart or Java code.</p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-q">Does the Java client use generics at the call site?</summary>
+          <div class="faq-a">
+            <p>Never. GraphLink generates fully-resolved return types for every query and mutation. The call site is just <code>client.queries.getUser(id).getUser()</code> — no <code>TypeReference</code>, no casting, no generic parameters. Other Java GraphQL clients often force you to pass <code>new TypeReference&lt;GraphQLResponse&lt;GetUserData&gt;&gt;(){}</code> on every single call. GraphLink does not.</p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-q">What happens when I add a field to the schema?</summary>
+          <div class="faq-a">
+            <p>Run <code>glink -c config.json</code> again (or let watch mode pick it up automatically). All affected files are regenerated and your new field is immediately available as a typed property. You edit one file — the schema — and GraphLink handles the rest.</p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-q">How does the built-in caching work?</summary>
+          <div class="faq-a">
+            <p>Cache behavior is declared directly in the schema using two directives. <code>@glCache(ttl: 300, tags: ["cars"])</code> caches a query result for 300 seconds under the tag <code>"cars"</code>. <code>@glCacheInvalidate(tags: ["cars"])</code> on a mutation evicts all entries tagged <code>"cars"</code> when the mutation succeeds. You can also apply <code>@glCache</code> to individual fields inside a compound query so each field is cached independently with its own TTL — if one tag is invalidated, the others stay warm.</p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-q">What languages and frameworks are supported?</summary>
+          <div class="faq-a">
+            <p>Currently: <strong>Dart and Flutter</strong> (client), <strong>Java</strong> (client), and <strong>Spring Boot</strong> (server — controllers, services, repositories). <strong>TypeScript</strong> support is actively in development. Go and Kotlin targets are planned based on community demand.</p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-q">Is GraphLink production-ready?</summary>
+          <div class="faq-a">
+            <p>Yes. GraphLink has been used in production across multiple real-world applications. The generated code is idiomatic, readable, and fully debuggable — it looks exactly like code you would have written by hand. There is no runtime magic and no hidden abstraction layer.</p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-q">Can I use GraphLink with an existing project?</summary>
+          <div class="faq-a">
+            <p>Yes. Point <code>schemaPaths</code> in your <code>config.json</code> at your existing <code>.graphql</code> files and set <code>outputDir</code> to wherever you want the generated files. GraphLink does not modify any of your existing source files.</p>
+          </div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════ FOOTER ════════════════════════════ -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a href="#" class="logo">
+            <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+            GraphLink
+          </a>
+          <p>GraphQL code generation for Dart, Flutter, and Java.<br>Open source — MIT License.</p>
+          <div class="footer-links">
+            <a href="https://github.com/Oualitsen/graphlink" target="_blank" rel="noopener">GitHub</a>
+            <a href="https://pub.dev/packages/graphlink" target="_blank" rel="noopener">pub.dev</a>
+            <a href="https://github.com/Oualitsen/graphlink/releases" target="_blank" rel="noopener">Releases</a>
+            <a href="https://github.com/Oualitsen/graphlink/issues" target="_blank" rel="noopener">Issues</a>
+          </div>
+        </div>
+
+        <div class="footer-nav">
+          <h5>Documentation</h5>
+          <ul>
+            <li><a href="docs/index.html">Overview</a></li>
+            <li><a href="docs/philosophy.html">Philosophy</a></li>
+            <li><a href="docs/getting-started.html">Getting Started</a></li>
+            <li><a href="docs/dart-client.html">Dart / Flutter</a></li>
+            <li><a href="docs/java-client.html">Java Client</a></li>
+            <li><a href="docs/spring-server.html">Spring Boot</a></li>
+            <li><a href="docs/caching.html">Caching</a></li>
+            <li><a href="docs/configuration.html">Configuration</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-contact">
+          <h5>Get in Touch</h5>
+          <p>Found a bug? Have a question? Want to contribute? The best place to reach us is GitHub.</p>
+          <a href="https://github.com/Oualitsen/graphlink/issues/new" class="btn-secondary small" target="_blank" rel="noopener">Open an Issue</a>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>© 2024 GraphLink · Built with Dart · MIT License</p>
+        <p class="footer-tagline">Your schema is already the contract. Let GraphLink write the rest.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-dart.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-graphql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

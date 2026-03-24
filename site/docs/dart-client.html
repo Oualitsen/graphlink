@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dart / Flutter Client — GraphLink Docs</title>
+  <meta name="description" content="Use the generated GraphLink Dart client in Flutter or Dart apps. Adapter pattern, typed queries, mutations, subscriptions, and built-in caching.">
+  <link rel="canonical" href="https://graphlink.dev/docs/dart-client.html">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/docs.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+</head>
+<body class="docs-page">
+
+<nav class="nav scrolled" id="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      GraphLink
+    </a>
+    <ul class="nav-links">
+      <li><a href="../index.html#features">Features</a></li>
+      <li><a href="index.html" class="active">Docs</a></li>
+      <li><a href="../index.html#roadmap">Roadmap</a></li>
+      <li><a href="https://github.com/Oualitsen/graphlink" class="nav-github" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        GitHub
+      </a></li>
+    </ul>
+    <a href="../index.html#quick-start" class="btn-nav">Get Started</a>
+  </div>
+</nav>
+
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Introduction</span>
+      <a href="index.html" class="sidebar-link">Overview</a>
+      <a href="philosophy.html" class="sidebar-link">Philosophy</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Getting Started</span>
+      <a href="getting-started.html" class="sidebar-link">Installation &amp; First Schema</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Frontend Clients</span>
+      <a href="dart-client.html" class="sidebar-link active">Dart / Flutter</a>
+      <a href="java-client.html" class="sidebar-link">Java</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Backend</span>
+      <a href="spring-server.html" class="sidebar-link">Spring Boot</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Features</span>
+      <a href="caching.html" class="sidebar-link">Caching</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-group-label">Reference</span>
+      <a href="directives.html" class="sidebar-link">Directives</a>
+      <a href="configuration.html" class="sidebar-link">Configuration</a>
+    </div>
+  </aside>
+
+  <main class="docs-content">
+    <div class="breadcrumb">
+      <a href="../index.html">Home</a>
+      <span class="breadcrumb-sep">›</span>
+      <a href="index.html">Docs</a>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-current">Dart / Flutter Client</span>
+    </div>
+
+    <h1 class="doc-title">Dart / Flutter Client</h1>
+    <p class="doc-lead">A fully typed GraphQL client generated directly from your schema.</p>
+
+    <h2>The adapter pattern</h2>
+    <p>GraphLink is completely agnostic about how HTTP requests are made. The generated <code>GraphLinkClient</code> takes a single function as its HTTP adapter — a <code>Future&lt;String&gt; Function(String payload)</code>. This function receives a JSON string (the GraphQL request body) and must return a JSON string (the server response body).</p>
+    <p>This design lets you use any HTTP client you prefer, without GraphLink importing or depending on any of them. Here are examples with the two most popular Dart HTTP packages:</p>
+
+    <div class="doc-tabgroup">
+      <div class="doc-tabs">
+        <button class="doc-tab active">http package</button>
+        <button class="doc-tab">dio package</button>
+      </div>
+      <div class="doc-tab-content active">
+        <pre><code class="language-dart">import 'package:http/http.dart' as http;
+
+Future&lt;String&gt; graphLinkAdapter(String payload) async {
+  final response = await http.post(
+    Uri.parse('http://localhost:8080/graphql'),
+    headers: {'Content-Type': 'application/json'},
+    body: payload,
+  );
+  return response.body;
+}</code></pre>
+      </div>
+      <div class="doc-tab-content">
+        <pre><code class="language-dart">import 'package:dio/dio.dart';
+
+final _dio = Dio();
+
+Future&lt;String&gt; graphLinkAdapter(String payload) async {
+  final response = await _dio.post&lt;String&gt;(
+    'http://localhost:8080/graphql',
+    data: payload,
+    options: Options(
+      contentType: 'application/json',
+      responseType: ResponseType.plain,
+    ),
+  );
+  return response.data!;
+}</code></pre>
+      </div>
+    </div>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">ℹ</span>
+      <p><strong>Testing made easy</strong><br>Because the adapter is just a function, you can pass a mock in tests: <code>(payload) async =&gt; '{"data":{"getVehicle":{"id":"1","brand":"Toyota","model":"Camry","year":2023,"fuelType":"GASOLINE","ownerId":null}}}'</code>. No HTTP mocking library needed.</p>
+    </div>
+
+    <h2>Initializing the client</h2>
+    <p>The <code>GraphLinkClient</code> constructor takes three parameters: the HTTP adapter, an optional WebSocket adapter (needed only for subscriptions), and an optional cache store (uses in-memory by default).</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">main.dart — client setup</span>
+        <span class="doc-code-lang">Dart</span>
+      </div>
+      <pre><code class="language-dart">import 'generated/client/graph_link_client.dart';
+
+// HTTP adapter (required)
+Future&lt;String&gt; graphLinkAdapter(String payload) async {
+  final response = await http.post(
+    Uri.parse('http://localhost:8080/graphql'),
+    headers: {'Content-Type': 'application/json'},
+    body: payload,
+  );
+  return response.body;
+}
+
+// Create the client
+// - First arg: HTTP adapter (required)
+// - Second arg: WebSocket adapter (optional, for subscriptions)
+// - Third arg: Cache store (null = use InMemoryGraphLinkCacheStore)
+final client = GraphLinkClient(
+  graphLinkAdapter,
+  SimpleWebSocketAdapter('ws://localhost:8080/graphql'),
+  null,
+);</code></pre>
+    </div>
+
+    <p>If you do not need subscriptions, pass <code>null</code> for the WebSocket adapter. If you need a custom cache backend (e.g. SharedPreferences on Flutter for persistent caching), pass a <code>GraphLinkCacheStore</code> implementation as the third argument.</p>
+
+    <h2>Queries</h2>
+    <p>All queries are accessible via <code>client.queries</code>. Each operation becomes a method with typed parameters and a typed return value.</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">Fetching a vehicle by ID</span>
+        <span class="doc-code-lang">Dart</span>
+      </div>
+      <pre><code class="language-dart">// getVehicle returns GetVehicleResponse — never null (Vehicle! in schema)
+final res = await client.queries.getVehicle(id: '42');
+
+// res.getVehicle is a typed Vehicle object
+print(res.getVehicle.brand);   // Toyota
+print(res.getVehicle.model);   // Camry
+print(res.getVehicle.year);    // 2023
+print(res.getVehicle.fuelType); // FuelType.GASOLINE</code></pre>
+    </div>
+
+    <p>The generated <code>GetVehicleResponse</code> type looks like this:</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">generated/types/get_vehicle_response.dart</span>
+        <span class="doc-code-lang">Dart</span>
+      </div>
+      <pre><code class="language-dart">class GetVehicleResponse {
+   final Vehicle getVehicle;
+   GetVehicleResponse({required this.getVehicle});
+   static GetVehicleResponse fromJson(Map&lt;String, dynamic&gt; json) {
+      return GetVehicleResponse(
+         getVehicle: Vehicle.fromJson(json['getVehicle'] as Map&lt;String, dynamic&gt;),
+      );
+   }
+}</code></pre>
+    </div>
+
+    <h3>List queries</h3>
+    <p>List queries work the same way. The response type holds a <code>List&lt;Vehicle&gt;</code>:</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">Fetching all vehicles</span>
+        <span class="doc-code-lang">Dart</span>
+      </div>
+      <pre><code class="language-dart">final res = await client.queries.listVehicles();
+
+// res.listVehicles is List&lt;Vehicle&gt; — fully typed
+for (final vehicle in res.listVehicles) {
+  print('${vehicle.brand} ${vehicle.model} (${vehicle.year})');
+}</code></pre>
+    </div>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">generated/types/list_vehicles_response.dart</span>
+        <span class="doc-code-lang">Dart</span>
+      </div>
+      <pre><code class="language-dart">class ListVehiclesResponse {
+   final List&lt;Vehicle&gt; listVehicles;
+   ListVehiclesResponse({required this.listVehicles});
+   static ListVehiclesResponse fromJson(Map&lt;String, dynamic&gt; json) {
+      return ListVehiclesResponse(
+         listVehicles: (json['listVehicles'] as List&lt;dynamic&gt;)
+             .map((e) =&gt; Vehicle.fromJson(e as Map&lt;String, dynamic&gt;)).toList(),
+      );
+   }
+}</code></pre>
+    </div>
+
+    <h2>Nullable queries</h2>
+    <p>When the schema declares a query with a nullable return type (no <code>!</code>), the response wrapper field is also nullable. This matches the schema precisely:</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">getPerson — nullable result</span>
+        <span class="doc-code-lang">Dart</span>
+      </div>
+      <pre><code class="language-dart">// Schema: getPerson(id: ID!): Person   &lt;-- no ! on Person
+final res = await client.queries.getPerson(id: '99');
+
+// res.getPerson is Person? — use null-aware access
+if (res.getPerson != null) {
+  print(res.getPerson!.name);
+}
+
+// Or with null-safe chaining
+print(res.getPerson?.email ?? 'Not found');</code></pre>
+    </div>
+
+    <h2>Mutations</h2>
+    <p>Mutations live under <code>client.mutations</code> and follow the same pattern. Input types are passed as named parameters:</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">Adding a vehicle</span>
+        <span class="doc-code-lang">Dart</span>
+      </div>
+      <pre><code class="language-dart">import 'generated/inputs/add_vehicle_input.dart';
+import 'generated/enums/fuel_type.dart';
+
+final added = await client.mutations.addVehicle(
+  input: AddVehicleInput(
+    brand: 'Toyota',
+    model: 'Camry',
+    year: 2023,
+    fuelType: FuelType.GASOLINE,
+    // ownerId is nullable — omit it or pass null
+  ),
+);
+
+print(added.addVehicle.id);    // server-assigned ID
+print(added.addVehicle.brand); // Toyota</code></pre>
+    </div>
+
+    <p>The generated <code>AddVehicleInput</code> class enforces required fields at construction time through Dart's named required parameters:</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">generated/inputs/add_vehicle_input.dart</span>
+        <span class="doc-code-lang">Dart</span>
+      </div>
+      <pre><code class="language-dart">class AddVehicleInput {
+   final String brand;
+   final String model;
+   final int year;
+   final FuelType fuelType;
+   final String? ownerId;
+   AddVehicleInput({
+      required this.brand, required this.model,
+      required this.year, required this.fuelType, this.ownerId
+   });
+   Map&lt;String, dynamic&gt; toJson() {
+      return { 'brand': brand, 'model': model, 'year': year,
+               'fuelType': fuelType.toJson(), 'ownerId': ownerId };
+   }
+}</code></pre>
+    </div>
+
+    <h2>Subscriptions</h2>
+    <p>Subscriptions are available under <code>client.subscriptions</code> and return a <code>Stream</code>. You must provide a WebSocket adapter when constructing the client.</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">Subscribing to new vehicles</span>
+        <span class="doc-code-lang">Dart</span>
+      </div>
+      <pre><code class="language-dart">// vehicleAdded() returns Stream&lt;VehicleAddedResponse&gt;
+final subscription = client.subscriptions.vehicleAdded().listen((event) {
+  final vehicle = event.vehicleAdded;
+  print('New vehicle arrived: ${vehicle.brand} ${vehicle.model}');
+  print('Year: ${vehicle.year}, Fuel: ${vehicle.fuelType}');
+});
+
+// Cancel when done (e.g. when the widget is disposed in Flutter)
+subscription.cancel();</code></pre>
+    </div>
+
+    <p>The <code>SimpleWebSocketAdapter</code> is a basic implementation bundled with the generated client code. For Flutter, you can use the generated adapter directly. For more advanced scenarios (reconnect logic, auth headers on WS), you can implement the <code>GraphLinkWebSocketAdapter</code> interface yourself.</p>
+
+    <h2>Error handling</h2>
+    <p>If the server returns a GraphQL error, the generated client throws a <code>GraphLinkException</code> containing the list of errors from the response. Wrap calls in a try/catch:</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">Error handling</span>
+        <span class="doc-code-lang">Dart</span>
+      </div>
+      <pre><code class="language-dart">import 'generated/types/graph_link_error.dart';
+
+try {
+  final res = await client.queries.getVehicle(id: 'bad-id');
+  print(res.getVehicle.brand);
+} on GraphLinkException catch (e) {
+  for (final error in e.errors) {
+    print('GraphQL error: ${error.message}');
+    if (error.locations != null) {
+      for (final loc in error.locations!) {
+        print('  at line ${loc.line}, column ${loc.column}');
+      }
+    }
+  }
+} catch (e) {
+  // Network error, timeout, etc.
+  print('Request failed: $e');
+}</code></pre>
+    </div>
+
+    <h2>The _all_fields fragment</h2>
+    <p>When <code>generateAllFieldsFragments: true</code> is set in the config, GraphLink generates a named fragment for every type in the schema. For example, for <code>Vehicle</code> it generates a fragment <code>_all_fields_Vehicle</code> that selects every field.</p>
+    <p>The <code>autoGenerateQueries: true</code> option uses these fragments to automatically build the query strings for every operation. Instead of writing query strings by hand, GraphLink inlines the fields from the fragment. This means you never have to maintain query strings manually — when you add a field to a type in the schema, the generated client automatically fetches that field.</p>
+    <p>You can also reference <code>_all_fields_Vehicle</code> by name in any hand-written queries you add to the schema. Use the shorthand <code>... _all_fields</code> and GraphLink resolves it to the appropriate type-specific fragment based on the field's return type.</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">Using _all_fields in a custom query</span>
+        <span class="doc-code-lang">GraphQL</span>
+      </div>
+      <pre><code class="language-graphql">type Query {
+  # GraphLink resolves _all_fields to _all_fields_Vehicle for this field
+  getVehicle(id: ID!): Vehicle! @glCache(ttl: 120, tags: ["vehicles"])
+}</code></pre>
+    </div>
+
+    <nav class="doc-nav-footer">
+      <a href="getting-started.html" class="doc-nav-btn prev">
+        <span class="doc-nav-label">← Previous</span>
+        <span class="doc-nav-title">Getting Started</span>
+      </a>
+      <a href="java-client.html" class="doc-nav-btn next">
+        <span class="doc-nav-label">Next</span>
+        <span class="doc-nav-title">Java Client →</span>
+      </a>
+    </nav>
+  </main>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a href="../index.html" class="logo"><svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>GraphLink</a>
+        <p>GraphQL code generation for Dart, Flutter, and Java.<br>Open source — MIT License.</p>
+        <div class="footer-links">
+          <a href="https://github.com/Oualitsen/graphlink" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://pub.dev/packages/graphlink" target="_blank" rel="noopener">pub.dev</a>
+          <a href="https://github.com/Oualitsen/graphlink/releases" target="_blank" rel="noopener">Releases</a>
+          <a href="https://github.com/Oualitsen/graphlink/issues" target="_blank" rel="noopener">Issues</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2024 GraphLink · MIT License</p>
+      <p class="footer-tagline">Your schema is already the contract. Let GraphLink write the rest.</p>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+<script src="../js/main.js"></script>
+<script src="../js/docs.js"></script>
+</body>
+</html>
