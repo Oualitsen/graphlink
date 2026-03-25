@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
         - name: graphlink-site
-          image: graphlink-site:latest   # replace with your registry image, e.g. ghcr.io/oualitsen/graphlink-site:v4.2.0
+          image: ghcr.io/oualitsen/graphlink-site:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
@@ -69,6 +69,7 @@ spec:
       targetPort: 8080
 
 ---
+# Main ingress — graphlink.dev
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -85,6 +86,34 @@ spec:
       secretName: graphlink-site-tls
   rules:
     - host: graphlink.dev
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: graphlink-site
+                port:
+                  number: 8080
+
+---
+# www redirect — 301 from www.graphlink.dev → graphlink.dev
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: graphlink-site-www-redirect
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/permanent-redirect: "https://graphlink.dev$request_uri"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - www.graphlink.dev
+      secretName: graphlink-site-www-tls
+  rules:
+    - host: www.graphlink.dev
       http:
         paths:
           - path: /

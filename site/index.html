@@ -66,7 +66,11 @@
         "softwareVersion": "4.2.0",
         "releaseNotes": "https://github.com/Oualitsen/graphlink/releases",
         "codeRepository": "https://github.com/Oualitsen/graphlink",
-        "isAccessibleForFree": true
+        "isAccessibleForFree": true,
+        "sameAs": [
+          "https://github.com/Oualitsen/graphlink",
+          "https://pub.dev/packages/retrofit_graphql"
+        ]
       },
       {
         "@type": "FAQPage",
@@ -127,6 +131,38 @@
               "@type": "Answer",
               "text": "Yes. Run glink -c config.json -w to start watch mode. GraphLink monitors your schema files and automatically regenerates all output files whenever a change is detected."
             }
+          },
+          {
+            "@type": "Question",
+            "name": "How does GraphLink compare to Apollo Codegen?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Apollo Codegen targets TypeScript frontends. GraphLink targets Dart/Flutter clients, Java clients, and Spring Boot servers. GraphLink's Java output requires no generics at the call site — unlike standard Java GraphQL clients that require TypeReference<GraphQLResponse<T>> on every call. GraphLink also generates server-side Spring Boot code, which Apollo Codegen does not."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How does GraphLink compare to ferry for Flutter?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "ferry sends the entire schema to the server, which breaks Spring Boot's strict GraphQL schema validation. GraphLink generates precise queries containing only the requested fields, making it compatible with Spring Boot out of the box. GraphLink also generates the server side (Spring Boot controllers, service interfaces), while ferry is client-only."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What is the glink command?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "glink is the command-line binary for GraphLink. Download it from github.com/Oualitsen/graphlink/releases/latest for Linux, macOS, or Windows. Run glink -c config.json to generate once, glink -c config.json -w for watch mode, and glink -v to print the version."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does GraphLink work offline or without internet?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "The glink CLI binary works completely offline — it reads your local schema files and writes generated files to disk with no network calls. The generated client code supports offline scenarios via the staleIfOffline option on @glCache: when the network is unavailable, the client returns the last cached response instead of throwing an error."
+            }
           }
         ]
       }
@@ -134,6 +170,8 @@
   }
   </script>
 
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="alternate" type="text/plain" title="GraphLink for LLMs" href="/llms.txt">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
