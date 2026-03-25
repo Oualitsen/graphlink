@@ -106,6 +106,6 @@ type Mutation {
 - Website: https://graphlink.dev/
 - Docs: https://graphlink.dev/docs/index.html
 - GitHub: https://github.com/Oualitsen/graphlink
-- pub.dev: https://pub.dev/packages/graphlink
+- pub.dev: https://pub.dev/packages/retrofit_graphql
 - Issues: https://github.com/Oualitsen/graphlink/issues
 - Releases: https://github.com/Oualitsen/graphlink/releases
