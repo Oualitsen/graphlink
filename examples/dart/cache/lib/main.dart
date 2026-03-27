@@ -52,9 +52,9 @@ Future<void> createAndFetchCars(GraphLinkClient client) async {
 }
 
 void main(List<String> args) async {
-  final client = GraphLinkClient(graphLinkAdapter, SimpleWebSocketAdapter("ws://localhost:8080/graphql"), null);
+  final client = GraphLinkClient(graphLinkAdapter,
+      SimpleWebSocketAdapter("ws://localhost:8080/graphql"), null);
   await createAndFetchCars(client);
-  return;
   // Create an owner
   final ownerResponse = await client.mutations.createOwner(
     input: CreateOwnerInput(name: 'John Doe', email: 'john@example.com'),
@@ -64,14 +64,17 @@ void main(List<String> args) async {
 
   // Create a car for that owner
   final carResponse = await client.mutations.createCar(
-    input: CreateCarInput(make: 'Toyota', model: 'Camry', year: 2023, ownerId: owner.id),
+    input: CreateCarInput(
+        make: 'Toyota', model: 'Camry', year: 2023, ownerId: owner.id),
   );
   var car = carResponse.createCar;
   print('Created car: ${car.id} - ${car.make} ${car.model}');
 
   // Query both together
-  final result = await client.queries.getCarAndOwner(carId: car.id, ownerId: owner.id);
+  final result =
+      await client.queries.getCarAndOwner(carId: car.id, ownerId: owner.id);
   print('getCarAndOwner result: ${result.toJson()}');
-  var result2 = await client.queries.getCarAndOwner(carId: car.id, ownerId: owner.id);
+  var result2 =
+      await client.queries.getCarAndOwner(carId: car.id, ownerId: owner.id);
   print('getCarAndOwner result: ${result2.toJson()}');
 }
