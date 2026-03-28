@@ -3,12 +3,12 @@ import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/main.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gl_grammar.dart';
-import 'package:petitparser/petitparser.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
-const outputDir = "../gql-test-projects/gqlJavaClient/src/main/java/org/gqlclient/generated";
+const outputDir =
+    "../gql-test-projects/gqlJavaClient/src/main/java/org/gqlclient/generated";
 
-getConfig(GLGrammar g) {
+getConfig(GLParser g) {
   return GeneratorConfig(
       schemaPaths: [],
       mode: g.mode.name,
@@ -26,8 +26,9 @@ getConfig(GLGrammar g) {
 
 void main() async {
   test("generate java client", () async {
-    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
-    var parsed = g.parse('''
+    final GLParser g =
+        GLParser(generateAllFieldsFragments: true, autoGenerateQueries: true);
+    g.parse('''
   ${getClientObjects("Java")}
   ${javaJsonEncoderDecorder}
   ${javaClientAdapterNoParamSync}
@@ -74,19 +75,22 @@ type Subscription {
 
  
 ''');
-    expect(parsed is Success, true);
-    await generateJavaClientClasses(g, getConfig(g), DateTime.now(), pack: 'org.gqlclient.generated');
+
+    await generateJavaClientClasses(g, getConfig(g), DateTime.now(),
+        pack: 'org.gqlclient.generated');
   });
 
   test("GraphLinkJsonEncoder serialization", () {
-    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
-    var parsed = g.parse('''
+    final GLParser g =
+        GLParser(generateAllFieldsFragments: true, autoGenerateQueries: true);
+    g.parse('''
   ${javaJsonEncoderDecorder}
 ''');
-    expect(parsed is Success, true);
+
     var serializer = JavaSerializer(g);
 
-    var serial = serializer.serializeTypeDefinition(g.interfaces['GraphLinkJsonEncoder']!, 'com.myorg');
+    var serial = serializer.serializeTypeDefinition(
+        g.interfaces['GraphLinkJsonEncoder']!, 'com.myorg');
     expect(
         serial.split("\n").map((e) => e.trim()).where((e) => e.isNotEmpty),
         containsAllInOrder([
@@ -98,14 +102,16 @@ type Subscription {
   });
 
   test("GraphLinkJsonDecoder serialization", () {
-    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
-    var parsed = g.parse('''
+    final GLParser g =
+        GLParser(generateAllFieldsFragments: true, autoGenerateQueries: true);
+    g.parse('''
   ${javaJsonEncoderDecorder}
 ''');
-    expect(parsed is Success, true);
+
     var serializer = JavaSerializer(g);
 
-    var serial = serializer.serializeTypeDefinition(g.interfaces['GraphLinkJsonDecoder']!, 'com.myorg');
+    var serial = serializer.serializeTypeDefinition(
+        g.interfaces['GraphLinkJsonDecoder']!, 'com.myorg');
     expect(
         serial.split("\n").map((e) => e.trim()).where((e) => e.isNotEmpty),
         containsAllInOrder([
@@ -118,14 +124,16 @@ type Subscription {
   });
 
   test("GraphLinkClientAdapter serialization async", () {
-    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
-    var parsed = g.parse('''
+    final GLParser g =
+        GLParser(generateAllFieldsFragments: true, autoGenerateQueries: true);
+    g.parse('''
   ${javaClientAdapterNoParamSync}
 ''');
-    expect(parsed is Success, true);
+
     var serializer = JavaSerializer(g);
 
-    var serial = serializer.serializeTypeDefinition(g.interfaces['GraphLinkClientAdapter']!, 'com.myorg');
+    var serial = serializer.serializeTypeDefinition(
+        g.interfaces['GraphLinkClientAdapter']!, 'com.myorg');
     expect(
         serial.split("\n").map((e) => e.trim()).where((e) => e.isNotEmpty),
         containsAllInOrder([

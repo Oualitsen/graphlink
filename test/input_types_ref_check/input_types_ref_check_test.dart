@@ -1,10 +1,10 @@
 import 'package:graphlink/src/excpetions/parse_exception.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 void main() async {
   test("input reference check (AddressInput) is not defined", () async {
-    final GLGrammar g = GLGrammar();
+    final GLParser g = GLParser();
     String data = '''
   input UserInput {
     firstName: String!
@@ -18,7 +18,7 @@ void main() async {
   });
 
   test("type reference check (Address) is not defined", () async {
-    final GLGrammar g = GLGrammar();
+    final GLParser g = GLParser();
     String data = '''
   type User {
     firstName: String!
@@ -32,7 +32,7 @@ void main() async {
   });
 
   test("interface reference check (Address) is not defined", () async {
-    final GLGrammar g = GLGrammar();
+    final GLParser g = GLParser();
     String data = '''
   interface User {
     firstName: String!

@@ -180,7 +180,7 @@ Replaces `GrammarDefinition`. Holds the token list and a cursor, exposes helper 
 class GLParser {
   final List<GLLexerToken> _tokens;
   final GLLexer _lexer;
-  final GLGrammar grammar;
+  final GLParser grammar;
   int _pos = 0;
 
   GLParser(this._tokens, this._lexer, this.grammar);

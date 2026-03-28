@@ -2,6 +2,7 @@ import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/excpetions/parse_exception.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_controller.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
@@ -28,7 +29,7 @@ const String allFieldsFragmentsFileName = "allFieldsFragments";
 
 const allFields = '_all_fields';
 
-extension GLGrammarExtension on GLGrammar {
+extension GLGrammarExtension on GLParser {
   GLToken? getTokenByKey(String key) {
     GLToken? token;
 
@@ -845,7 +846,7 @@ extension GLGrammarExtension on GLGrammar {
     //@Todo check the inline fragment case.
     var keys = projections
         .map((e) => e.token)
-        .where((t) => !t.endsWith("\*"))
+        .where((t) => !t.endsWith("*"))
         .where((t) => t != GLGrammar.typename)
         .toSet()
         .toList();

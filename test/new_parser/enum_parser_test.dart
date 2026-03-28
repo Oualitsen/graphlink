@@ -1,68 +1,83 @@
 import 'package:graphlink/src/excpetions/parse_exception.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:test/test.dart';
-import 'parser_test_helper.dart';
 
 void main() {
   group('GLParser — enum definitions', () {
     test('simple enum', () {
-      final grammar = parse('enum Status { ACTIVE INACTIVE }');
-      expect(grammar.enums.containsKey('Status'), true);
-      expect(grammar.enums['Status']!.values.length, 2);
+      final parser = GLParser();
+      parser.parse('enum Status { ACTIVE INACTIVE }', validate: false);
+      expect(parser.enums.containsKey('Status'), true);
+      expect(parser.enums['Status']!.values.length, 2);
     });
 
     test('extended enum', () {
-      final grammar = parse('extend enum Status { ACTIVE }');
-      expect(grammar.enums['Status']!.extension, true);
+      final parser = GLParser();
+      parser.parse('extend enum Status { ACTIVE }', validate: false);
+      expect(parser.enums['Status']!.extension, true);
     });
 
     test('enum with documentation', () {
-      final grammar = parse('"Represents a status" enum Status { ACTIVE }');
-      expect(grammar.enums['Status']!.documentation, '"Represents a status"');
+      final parser = GLParser();
+      parser.parse('"Represents a status" enum Status { ACTIVE }',
+          validate: false);
+      expect(parser.enums['Status']!.documentation, '"Represents a status"');
     });
 
     test('enum with block string documentation', () {
-      final grammar = parse('"""Represents a status""" enum Status { ACTIVE }');
-      expect(grammar.enums['Status']!.documentation, '"""Represents a status"""');
+      final parser = GLParser();
+      parser.parse('"""Represents a status""" enum Status { ACTIVE }',
+          validate: false);
+      expect(
+          parser.enums['Status']!.documentation, '"""Represents a status"""');
     });
 
     test('enum with directive', () {
-      final grammar = parse('enum Status @deprecated { ACTIVE }');
-      expect(grammar.enums['Status']!.getDirectives().first.token, 'deprecated');
+      final parser = GLParser();
+      parser.parse('enum Status @deprecated { ACTIVE }', validate: false);
+      expect(
+          parser.enums['Status']!.getDirectives().first.token, '@deprecated');
     });
 
     test('enum value with documentation', () {
-      final grammar = parse('''
+      final parser = GLParser();
+      parser.parse('''
         enum Status {
           "The user is active"
           ACTIVE
           INACTIVE
         }
-      ''');
-      final values = grammar.enums['Status']!.values;
+      ''', validate: false);
+      final values = parser.enums['Status']!.values;
       final active = values.firstWhere((v) => v.token == 'ACTIVE');
       expect(active.documentation, '"The user is active"');
     });
 
     test('enum value with block string documentation', () {
-      final grammar = parse('''
+      final parser = GLParser();
+      parser.parse('''
         enum Status {
           """The user is active"""
           ACTIVE
         }
-      ''');
-      final active = grammar.enums['Status']!.values.first;
+      ''', validate: false);
+      final active = parser.enums['Status']!.values.first;
       expect(active.documentation, '"""The user is active"""');
     });
 
     test('enum value with directive', () {
-      final grammar = parse('enum Status { ACTIVE @deprecated(reason: "use ENABLED") }');
-      final active = grammar.enums['Status']!.values.first;
-      expect(active.getDirectives().first.token, 'deprecated');
-      expect(active.getDirectives().first.getArgValue('reason'), '"use ENABLED"');
+      final parser = GLParser();
+      parser.parse('enum Status { ACTIVE @deprecated(reason: "use ENABLED") }',
+          validate: false);
+      final active = parser.enums['Status']!.values.first;
+      expect(active.getDirectives().first.token, '@deprecated');
+      expect(
+          active.getDirectives().first.getArgValue('reason'), '"use ENABLED"');
     });
 
     test('full enum with documentation and documented values', () {
-      final grammar = parse('''
+      final parser = GLParser();
+      parser.parse('''
         """Represents the status of an order"""
         enum OrderStatus @deprecated {
           "Order has been placed"
@@ -76,14 +91,15 @@ void main() {
           COMPLETED
           CANCELLED
         }
-      ''');
-      final e = grammar.enums['OrderStatus']!;
+      ''', validate: false);
+      final e = parser.enums['OrderStatus']!;
       expect(e.documentation, '"""Represents the status of an order"""');
-      expect(e.getDirectives().first.token, 'deprecated');
+      expect(e.getDirectives().first.token, '@deprecated');
       expect(e.values.length, 5);
       final pending = e.values.firstWhere((v) => v.token == 'PENDING');
       expect(pending.documentation, '"Order has been placed"');
-      expect(pending.getDirectives().first.getArgValue('reason'), '"use CREATED instead"');
+      expect(pending.getDirectives().first.getArgValue('reason'),
+          '"use CREATED instead"');
       final processing = e.values.firstWhere((v) => v.token == 'PROCESSING');
       expect(processing.documentation, '"""Order is being processed"""');
       final created = e.values.firstWhere((v) => v.token == 'CREATED');
@@ -92,28 +108,29 @@ void main() {
 
     test('duplicate enum value throws', () {
       expect(
-        () => parse('enum Status { ACTIVE ACTIVE }'),
+        () =>
+            GLParser().parse('enum Status { ACTIVE ACTIVE }', validate: false),
         throwsA(isA<ParseException>()),
       );
     });
 
     test('missing enum name throws', () {
       expect(
-        () => parse('enum { ACTIVE }'),
+        () => GLParser().parse('enum { ACTIVE }', validate: false),
         throwsA(isA<ParseException>()),
       );
     });
 
     test('missing closing brace throws', () {
       expect(
-        () => parse('enum Status { ACTIVE'),
+        () => GLParser().parse('enum Status { ACTIVE', validate: false),
         throwsA(isA<ParseException>()),
       );
     });
 
     test('missing opening brace throws', () {
       expect(
-        () => parse('enum Status ACTIVE }'),
+        () => GLParser().parse('enum Status ACTIVE }', validate: false),
         throwsA(isA<ParseException>()),
       );
     });

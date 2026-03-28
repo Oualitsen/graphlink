@@ -1,5 +1,5 @@
 import 'package:graphlink/src/excpetions/parse_exception.dart';
-import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
@@ -17,7 +17,7 @@ import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/gl_union.dart';
 import 'package:graphlink/src/model/token_info.dart';
 
-extension GLValidationExtension on GLGrammar {
+extension GLValidationExtension on GLParser {
   void validateInputReferences() {
     inputs.values.forEach(_validateInputRef);
   }

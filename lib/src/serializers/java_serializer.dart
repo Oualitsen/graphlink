@@ -2,6 +2,7 @@ import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
@@ -93,11 +94,13 @@ class JavaSerializer extends GLSerializer {
   }
 
   void _initAnnotations() {
-    grammar.handleAnnotations((val) => AnnotationSerializer.serializeAnnotation(val, multiLineString: false));
+    grammar.handleAnnotations((val) =>
+        AnnotationSerializer.serializeAnnotation(val, multiLineString: false));
   }
 
   String serializeAnnotation(GLDirectiveValue value) {
-    return AnnotationSerializer.serializeAnnotation(value, multiLineString: false);
+    return AnnotationSerializer.serializeAnnotation(value,
+        multiLineString: false);
   }
 
   @override
@@ -112,7 +115,10 @@ class JavaSerializer extends GLSerializer {
     var enum_ = codeGenUtils.createEnum(
         enumName: def.token,
         enumValues: def.values.map((e) => doSerializeEnumValue(e)).toList(),
-        methods: [if (fromJson.isNotEmpty) fromJson, if (toJson.isNotEmpty) toJson]);
+        methods: [
+          if (fromJson.isNotEmpty) fromJson,
+          if (toJson.isNotEmpty) toJson
+        ]);
     buffer.writeln(enum_);
     return buffer.toString();
   }
@@ -137,7 +143,9 @@ class JavaSerializer extends GLSerializer {
       returnType: "public static ${def.token}",
       methodName: "fromJson",
       arguments: ["String value"],
-      statements: ["return Optional.ofNullable(value).map(${def.token}::valueOf).orElse(null);"],
+      statements: [
+        "return Optional.ofNullable(value).map(${def.token}::valueOf).orElse(null);"
+      ],
     );
   }
 
@@ -165,7 +173,8 @@ class JavaSerializer extends GLSerializer {
     if (immutable) {
       buffer.write("final ");
     }
-    buffer.write('${serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray)} $name;');
+    buffer.write(
+        '${serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray)} $name;');
     return buffer.toString();
   }
 
@@ -180,19 +189,22 @@ class JavaSerializer extends GLSerializer {
     return result;
   }
 
-  String serializeArgumentField(GLField def, {bool withDecorators = false, String decoratorJoiner = "\n"}) {
+  String serializeArgumentField(GLField def,
+      {bool withDecorators = false, String decoratorJoiner = "\n"}) {
     final type = def.type;
     final name = def.name;
     final hasInculeOrSkipDiretives = def.hasInculeOrSkipDiretives;
     final buffer = StringBuffer();
     if (withDecorators) {
-      var decorators = serializeDecorators(def.getDirectives(), joiner: decoratorJoiner);
+      var decorators =
+          serializeDecorators(def.getDirectives(), joiner: decoratorJoiner);
       if (decorators.trim().isNotEmpty) {
         buffer.write(decorators);
         buffer.write(decoratorJoiner);
       }
     }
-    buffer.write(serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray));
+    buffer.write(
+        serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray));
     buffer.write(" ");
     buffer.write(name);
     return buffer.toString();
@@ -219,7 +231,8 @@ class JavaSerializer extends GLSerializer {
         return "${serializeType(glType.inlineType, false, asArray)}[]";
       } else {
         context?.addImport(importList);
-        return _listOf(convertPrimitiveToBoxed(serializeType(glType.inlineType, false)));
+        return _listOf(
+            convertPrimitiveToBoxed(serializeType(glType.inlineType, false)));
       }
     }
     final token = glType.token;
@@ -259,22 +272,27 @@ class JavaSerializer extends GLSerializer {
       buffer.writeln(serializeRecord(def.token, def.fields, {}, def));
       return buffer.toString();
     }
-    var class_ = codeGenUtils.createClass(className: def.tokenInfo.token, statements: [
-      ...def.getSerializableFields(grammar.mode).map((e) => serializeField(e, immutableInputFields)),
-      "",
-      if (!immutableInputFields) generateContructor(def.token, [], "public", def, checkForNulls: inputsCheckForNulls),
-      "",
-      generateContructor(
-          def.token, def.getSerializableFields(grammar.mode), immutableInputFields ? "public" : "private", def,
-          checkForNulls: inputsCheckForNulls),
-      generateBuilder(def.token, def.getSerializableFields(grammar.mode), true),
+    var class_ =
+        codeGenUtils.createClass(className: def.tokenInfo.token, statements: [
       ...def
           .getSerializableFields(grammar.mode)
-          .map((e) => serializeGetter(e, def, checkForNulls: inputsCheckForNulls)),
+          .map((e) => serializeField(e, immutableInputFields)),
+      "",
+      if (!immutableInputFields)
+        generateContructor(def.token, [], "public", def,
+            checkForNulls: inputsCheckForNulls),
+      "",
+      generateContructor(def.token, def.getSerializableFields(grammar.mode),
+          immutableInputFields ? "public" : "private", def,
+          checkForNulls: inputsCheckForNulls),
+      generateBuilder(def.token, def.getSerializableFields(grammar.mode), true),
+      ...def.getSerializableFields(grammar.mode).map(
+          (e) => serializeGetter(e, def, checkForNulls: inputsCheckForNulls)),
       ...def.getSerializableFields(grammar.mode).where((field) {
         //check for the next directive here
         return !immutableInputFields;
-      }).map((e) => serializeSetter(e, def, checkForNulls: inputsCheckForNulls)),
+      }).map(
+          (e) => serializeSetter(e, def, checkForNulls: inputsCheckForNulls)),
       if (generateJsonMethods) ...[
         generateToJson(def.getSerializableFields(grammar.mode), def),
         generateFromJson(def.getSerializableFields(mode), def.token, def)
@@ -299,10 +317,13 @@ class JavaSerializer extends GLSerializer {
     return _javaNumberMethods[serializeType(type, false)]!;
   }
 
-  String getFromJsonCall(GLField field, String varName, int depth, GLToken context, [GLType? type]) {
+  String getFromJsonCall(
+      GLField field, String varName, int depth, GLToken context,
+      [GLType? type]) {
     type ??= field.type;
     String callMapDotGet = depth == 0 ? '.get("${field.name.token}")' : '';
-    String nullCheckStatement = type.nullable ? '${varName}${callMapDotGet} == null ? null :' : '';
+    String nullCheckStatement =
+        type.nullable ? '${varName}${callMapDotGet} == null ? null :' : '';
 
     if (type.isList) {
       var newVarName = '${varName}${depth}';
@@ -325,16 +346,20 @@ class JavaSerializer extends GLSerializer {
       return finalResult;
     }
     String result;
-    if (grammar.isNonProjectableType(type.token) && !grammar.isEnum(type.token) && !grammar.isInput(type.token)) {
+    if (grammar.isNonProjectableType(type.token) &&
+        !grammar.isEnum(type.token) &&
+        !grammar.isInput(type.token)) {
       if (_isNumber(type)) {
-        result = '((Number)${varName}${callMapDotGet}).${_numberValueMethod(type)}';
+        result =
+            '((Number)${varName}${callMapDotGet}).${_numberValueMethod(type)}';
       } else {
         result = '(${serializeType(type, false)})${varName}${callMapDotGet}';
       }
     } else if (grammar.isEnum(type.token)) {
       result = '${type.token}.fromJson((String)${varName}${callMapDotGet})';
     } else {
-      result = '${type.token}.fromJson((${_mapOf('String', 'Object')})${varName}${callMapDotGet})';
+      result =
+          '${type.token}.fromJson((${_mapOf('String', 'Object')})${varName}${callMapDotGet})';
     }
     return nullCheckStatement.isEmpty ? result : '$nullCheckStatement $result';
   }
@@ -343,19 +368,23 @@ class JavaSerializer extends GLSerializer {
     var buffer = StringBuffer();
 
     buffer.writeln(
-      codeGenUtils.createMethod(returnType: "public static ${token}", methodName: "fromJson", arguments: [
-        '${_mapOf('String', 'Object')} json'
-      ], statements: [
-        "return new ${token}(",
-        ...fields.map((field) {
-          var statement = getFromJsonCall(field, 'json', 0, context);
-          if (field != fields.last) {
-            return "${statement},";
-          }
-          return statement;
-        }),
-        ");"
-      ]),
+      codeGenUtils.createMethod(
+          returnType: "public static ${token}",
+          methodName: "fromJson",
+          arguments: [
+            '${_mapOf('String', 'Object')} json'
+          ],
+          statements: [
+            "return new ${token}(",
+            ...fields.map((field) {
+              var statement = getFromJsonCall(field, 'json', 0, context);
+              if (field != fields.last) {
+                return "${statement},";
+              }
+              return statement;
+            }),
+            ");"
+          ]),
     );
     return buffer.toString();
   }
@@ -366,11 +395,15 @@ class JavaSerializer extends GLSerializer {
     context.addImport(JavaImports.map);
 
     buffer.writeln(
-      codeGenUtils.createMethod(returnType: "public ${_mapOf('String', 'Object')}", methodName: "toJson", statements: [
-        "${_mapOf('String', 'Object')} map = new HashMap<>();",
-        ...fields.map((field) => 'map.put("${field.name}", ${fieldToJson(field, context)});'),
-        'return map;'
-      ]),
+      codeGenUtils.createMethod(
+          returnType: "public ${_mapOf('String', 'Object')}",
+          methodName: "toJson",
+          statements: [
+            "${_mapOf('String', 'Object')} map = new HashMap<>();",
+            ...fields.map((field) =>
+                'map.put("${field.name}", ${fieldToJson(field, context)});'),
+            'return map;'
+          ]),
     );
 
     return buffer.toString();
@@ -378,7 +411,8 @@ class JavaSerializer extends GLSerializer {
 
   String fieldToJson(GLField field, GLToken context) {
     var buffer = StringBuffer();
-    var toJosnCall = callToJson(field, field.type, field.name.token, 0, context);
+    var toJosnCall =
+        callToJson(field, field.type, field.name.token, 0, context);
     buffer.write(toJosnCall);
     return buffer.toString();
   }
@@ -390,14 +424,17 @@ class JavaSerializer extends GLSerializer {
     return "${variable}.${method}";
   }
 
-  String callToJson(GLField field, GLType type, String variableName, int index, GLToken context) {
+  String callToJson(GLField field, GLType type, String variableName, int index,
+      GLToken context) {
     if (type.isList) {
       var inlineType = type.inlineType;
       String varName = "e${index}";
-      var inlineCallToJson = callToJson(field, inlineType, varName, index + 1, context);
+      var inlineCallToJson =
+          callToJson(field, inlineType, varName, index + 1, context);
       if (field.getDirectiveByName(glArray) != null) {
         // array
-        String method = "Stream.of(${variableName}).map(${varName} -> ${inlineCallToJson}).${_toList}";
+        String method =
+            "Stream.of(${variableName}).map(${varName} -> ${inlineCallToJson}).${_toList}";
         context.addImport(JavaImports.stream);
         return "${variableName} == null ? null : $method";
       } else {
@@ -420,7 +457,8 @@ class JavaSerializer extends GLSerializer {
     return variableName;
   }
 
-  String generateContructor(String name, List<GLField> fields, String? modifier, GLToken context,
+  String generateContructor(
+      String name, List<GLField> fields, String? modifier, GLToken context,
       {bool checkForNulls = false}) {
     String nullCheck = "";
     if (checkForNulls) {
@@ -430,7 +468,8 @@ class JavaSerializer extends GLSerializer {
           .toList();
 
       if (checkingFields.isNotEmpty) {
-        nullCheck = serializeListText(checkingFields, join: "\n", withParenthesis: false);
+        nullCheck = serializeListText(checkingFields,
+            join: "\n", withParenthesis: false);
         context.addImport(JavaImports.objects);
       }
     }
@@ -445,8 +484,10 @@ class JavaSerializer extends GLSerializer {
       buffer.writeln(nullCheck.ident());
     }
     if (fields.isNotEmpty) {
-      buffer.writeln(serializeListText(fields.map((e) => "this.${e.name} = ${e.name};").toList(),
-              join: "\n", withParenthesis: false)
+      buffer.writeln(serializeListText(
+              fields.map((e) => "this.${e.name} = ${e.name};").toList(),
+              join: "\n",
+              withParenthesis: false)
           .ident());
     }
     buffer.writeln("}");
@@ -466,9 +507,14 @@ class JavaSerializer extends GLSerializer {
     ));
 
     buffer.writeln();
-    buffer.writeln(codeGenUtils.createClass(staticClass: true, className: 'Builder', statements: [
+    buffer.writeln(codeGenUtils
+        .createClass(staticClass: true, className: 'Builder', statements: [
       ...fields
-          .map((field) => GLField(name: field.name, type: field.type, arguments: field.arguments, directives: []))
+          .map((field) => GLField(
+              name: field.name,
+              type: field.type,
+              arguments: field.arguments,
+              directives: []))
           .map((field) => serializeField(field, false)),
       "",
       ...fields.map((e) => codeGenUtils.createMethod(
@@ -480,13 +526,16 @@ class JavaSerializer extends GLSerializer {
       codeGenUtils.createMethod(
           returnType: 'public $name',
           methodName: 'build',
-          statements: ['return new $name(${fields.map((e) => e.name).join(", ")});']),
+          statements: [
+            'return new $name(${fields.map((e) => e.name).join(", ")});'
+          ]),
     ]));
 
     return buffer.toString();
   }
 
-  String serializeGetter(GLField field, GLToken context, {bool checkForNulls = false}) {
+  String serializeGetter(GLField field, GLToken context,
+      {bool checkForNulls = false}) {
     if (checkForNulls) {
       context.addImport(JavaImports.objects);
     }
@@ -495,7 +544,9 @@ class JavaSerializer extends GLSerializer {
         returnType: "public ${returnType}",
         methodName: _getterName(field.name.token, returnType == "boolean"),
         statements: [
-          if (checkForNulls && !field.type.nullable && !_isPrimitiveType(field.type))
+          if (checkForNulls &&
+              !field.type.nullable &&
+              !_isPrimitiveType(field.type))
             'Objects.requireNonNull(${field.name});',
           'return ${field.name};'
         ]);
@@ -504,8 +555,12 @@ class JavaSerializer extends GLSerializer {
   String serializeMethod(GLField field, {String? modifier}) {
     var buffer = StringBuffer();
     var decorators = serializeDecorators(field.getDirectives());
-    var args = serializeListText(field.arguments.map(serializeArgument).toList(), withParenthesis: false, join: ", ");
-    var result = "${serializeType(field.type, false, field.serialzeAsArray)} ${field.name}($args)";
+    var args = serializeListText(
+        field.arguments.map(serializeArgument).toList(),
+        withParenthesis: false,
+        join: ", ");
+    var result =
+        "${serializeType(field.type, false, field.serialzeAsArray)} ${field.name}($args)";
     if (modifier != null) {
       result = "$modifier $result";
     }
@@ -524,20 +579,28 @@ class JavaSerializer extends GLSerializer {
   ) {
     return codeGenUtils.createRecord(
         recordName: recordName,
-        components: fields.map((f) => serializeArgumentField(f, withDecorators: true, decoratorJoiner: " ")).toList(),
+        components: fields
+            .map((f) => serializeArgumentField(f,
+                withDecorators: true, decoratorJoiner: " "))
+            .toList(),
         interfaces: interfaceNames.toList(),
         statements: [
-          if (generateJsonMethods) ...[generateToJson(fields, context), generateFromJson(fields, recordName, context)]
+          if (generateJsonMethods) ...[
+            generateToJson(fields, context),
+            generateFromJson(fields, recordName, context)
+          ]
         ]);
   }
 
-  String serializeGetterDeclaration(GLField field, {bool skipModifier = false, bool asProperty = false}) {
+  String serializeGetterDeclaration(GLField field,
+      {bool skipModifier = false, bool asProperty = false}) {
     var returnType = serializeType(field.type, false);
     var result = serializeType(field.type, false, field.serialzeAsArray);
     if (asProperty) {
       result = "$result ${field.name}";
     } else {
-      result = "$result ${_getterName(field.name.token, returnType == "boolean")}";
+      result =
+          "$result ${_getterName(field.name.token, returnType == "boolean")}";
     }
     result = "$result()";
     if (skipModifier) {
@@ -568,23 +631,32 @@ class JavaSerializer extends GLSerializer {
     return "$prefix${name.firstUp}";
   }
 
-  String serializeSetter(GLField field, GLToken context, {bool checkForNulls = false}) {
+  String serializeSetter(GLField field, GLToken context,
+      {bool checkForNulls = false}) {
     if (checkForNulls) {
       context.addImport(JavaImports.objects);
     }
-    return codeGenUtils.createMethod(returnType: 'public void', methodName: _setterName(field.name.token), arguments: [
-      serializeArgumentField(field)
-    ], statements: [
-      if (checkForNulls && !field.type.nullable && !_isPrimitiveType(field.type))
-        'Objects.requireNonNull(${field.name});',
-      "this.${field.name} = ${field.name};"
-    ]);
+    return codeGenUtils.createMethod(
+        returnType: 'public void',
+        methodName: _setterName(field.name.token),
+        arguments: [
+          serializeArgumentField(field)
+        ],
+        statements: [
+          if (checkForNulls &&
+              !field.type.nullable &&
+              !_isPrimitiveType(field.type))
+            'Objects.requireNonNull(${field.name});',
+          "this.${field.name} = ${field.name};"
+        ]);
   }
 
   @override
   String doSerializeTypeDefinition(GLTypeDefinition def) {
     if (def is GLInterfaceDefinition) {
-      return serializeInterface(def, getters: def.getDirectiveByName(glInterfaceFieldAsProperties) == null);
+      return serializeInterface(def,
+          getters:
+              def.getDirectiveByName(glInterfaceFieldAsProperties) == null);
     } else {
       return _doSerializeTypeDefinition(def);
     }
@@ -600,32 +672,43 @@ class JavaSerializer extends GLSerializer {
       buffer.writeln(decorators.trim());
     }
     if (typesAsRecords) {
-      buffer.writeln(serializeRecord(def.token, def.fields, interfaceNames, def));
+      buffer
+          .writeln(serializeRecord(def.token, def.fields, interfaceNames, def));
       return buffer.toString();
     }
-    buffer
-        .writeln(codeGenUtils.createClass(className: token.token, interfaceNames: interfaceNames.toList(), statements: [
-      ...def.getSerializableFields(grammar.mode).map((e) => serializeField(e, immutableTypeFields)),
-      "",
-      if (!immutableTypeFields) generateContructor(def.token, [], "public", def, checkForNulls: typesCheckForNulls),
-      "",
-      generateContructor(
-          def.token, def.getSerializableFields(grammar.mode), immutableTypeFields ? "public" : "private", def),
-      "",
-      generateBuilder(def.token, def.getSerializableFields(grammar.mode), false),
-      "",
-      ...def.getSerializableFields(grammar.mode).map((e) => serializeGetter(e, def, checkForNulls: typesCheckForNulls)),
-      "",
-      ...def.getSerializableFields(grammar.mode).where((field) {
-        // @TODO check for mutable directive
-        return !immutableTypeFields;
-      }).map((e) => serializeSetter(e, def, checkForNulls: typesCheckForNulls)),
-      generateEqualsAndHashCode(def),
-      if (generateJsonMethods) ...[
-        generateFromJson(def.getSerializableFields(grammar.mode), def.token, def),
-        generateToJson(def.getSerializableFields(grammar.mode), def)
-      ]
-    ]));
+    buffer.writeln(codeGenUtils.createClass(
+        className: token.token,
+        interfaceNames: interfaceNames.toList(),
+        statements: [
+          ...def
+              .getSerializableFields(grammar.mode)
+              .map((e) => serializeField(e, immutableTypeFields)),
+          "",
+          if (!immutableTypeFields)
+            generateContructor(def.token, [], "public", def,
+                checkForNulls: typesCheckForNulls),
+          "",
+          generateContructor(def.token, def.getSerializableFields(grammar.mode),
+              immutableTypeFields ? "public" : "private", def),
+          "",
+          generateBuilder(
+              def.token, def.getSerializableFields(grammar.mode), false),
+          "",
+          ...def.getSerializableFields(grammar.mode).map((e) =>
+              serializeGetter(e, def, checkForNulls: typesCheckForNulls)),
+          "",
+          ...def.getSerializableFields(grammar.mode).where((field) {
+            // @TODO check for mutable directive
+            return !immutableTypeFields;
+          }).map((e) =>
+              serializeSetter(e, def, checkForNulls: typesCheckForNulls)),
+          generateEqualsAndHashCode(def),
+          if (generateJsonMethods) ...[
+            generateFromJson(
+                def.getSerializableFields(grammar.mode), def.token, def),
+            generateToJson(def.getSerializableFields(grammar.mode), def)
+          ]
+        ]));
     return buffer.toString();
   }
 
@@ -642,20 +725,28 @@ class JavaSerializer extends GLSerializer {
     def.addImport("java.util.Objects");
     var buffer = StringBuffer();
     buffer.writeln('@Override');
-    buffer.writeln(codeGenUtils.createMethod(returnType: "public boolean", methodName: "equals", arguments: [
-      'Object o'
-    ], statements: [
-      codeGenUtils.ifStatement(condition: '!(o instanceof $token)', ifBlockStatements: ['return false;']),
-      '$token o2 = ($token) o;',
-      'return ${fields.map((e) => "Objects.equals($e, o2.$e);").join(" && ")}'
-    ]));
+    buffer.writeln(codeGenUtils.createMethod(
+        returnType: "public boolean",
+        methodName: "equals",
+        arguments: [
+          'Object o'
+        ],
+        statements: [
+          codeGenUtils.ifStatement(
+              condition: '!(o instanceof $token)',
+              ifBlockStatements: ['return false;']),
+          '$token o2 = ($token) o;',
+          'return ${fields.map((e) => "Objects.equals($e, o2.$e);").join(" && ")}'
+        ]));
 
     buffer.writeln();
     buffer.writeln('@Override');
 
     buffer.writeln(
       codeGenUtils.createMethod(
-          returnType: 'public int', methodName: 'hashCode', statements: ['return Objects.hash(${fields.join(", ")});']),
+          returnType: 'public int',
+          methodName: 'hashCode',
+          statements: ['return Objects.hash(${fields.join(", ")});']),
     );
 
     return buffer.toString();
@@ -669,7 +760,9 @@ class JavaSerializer extends GLSerializer {
     }
     if (getters) {
       if (typesAsRecords) {
-        buffer.write(serializeGetterDeclaration(f, skipModifier: true, asProperty: true).ident());
+        buffer.write(
+            serializeGetterDeclaration(f, skipModifier: true, asProperty: true)
+                .ident());
       } else {
         buffer.write(serializeGetterDeclaration(f, skipModifier: true).ident());
       }
@@ -680,7 +773,8 @@ class JavaSerializer extends GLSerializer {
     return buffer.toString();
   }
 
-  String serializeInterface(GLInterfaceDefinition interface, {required bool getters}) {
+  String serializeInterface(GLInterfaceDefinition interface,
+      {required bool getters}) {
     final token = interface.tokenInfo;
     final interfaces = interface.interfaces;
     final fields = interface.getSerializableFields(grammar.mode);
@@ -689,8 +783,8 @@ class JavaSerializer extends GLSerializer {
     if (decorators.isNotEmpty) {
       buffer.writeln(decorators.trim());
     }
-    bool generateJsonConverstionMethods =
-        generateJsonMethods && interface.getDirectiveByName(glInterfaceFieldAsProperties) == null;
+    bool generateJsonConverstionMethods = generateJsonMethods &&
+        interface.getDirectiveByName(glInterfaceFieldAsProperties) == null;
     if (generateJsonConverstionMethods) {
       interface.addImport(JavaImports.map);
     }
@@ -702,25 +796,31 @@ class JavaSerializer extends GLSerializer {
           if (generateJsonConverstionMethods) ...[
             "",
             "Map<String, Object> toJson();",
-            _serializeFromJsonForInterface(interface.token, interface.implementations)
+            _serializeFromJsonForInterface(
+                interface.token, interface.implementations)
           ]
         ]));
     return buffer.toString();
   }
 
-  String _serializeFromJsonForInterface(String token, Set<GLTypeDefinition> subTypes) {
+  String _serializeFromJsonForInterface(
+      String token, Set<GLTypeDefinition> subTypes) {
     if (subTypes.isEmpty || !generateJsonMethods) {
       return "";
     }
-    var buffer = StringBuffer("static ${token} fromJson(${_mapOf("String", "Object")} json) {");
+    var buffer = StringBuffer(
+        "static ${token} fromJson(${_mapOf("String", "Object")} json) {");
     buffer.writeln();
 
     buffer.writeln('String typename = (String)json.get("__typename");'.ident());
     buffer.writeln("switch(typename) {".ident());
     for (var st in subTypes) {
-      String typeNameValue = st.derivedFromType?.tokenInfo.token ?? st.tokenInfo.token;
+      String typeNameValue =
+          st.derivedFromType?.tokenInfo.token ?? st.tokenInfo.token;
       String currentToken = st.tokenInfo.token;
-      buffer.writeln('case "${typeNameValue}": return ${currentToken}.fromJson(json);'.ident(2));
+      buffer.writeln(
+          'case "${typeNameValue}": return ${currentToken}.fromJson(json);'
+              .ident(2));
     }
     buffer.writeln(
         'default: throw new RuntimeException(String.format("Invalid type %s. %s does not implement $token or not defined", typename, typename));'
@@ -741,9 +841,11 @@ class JavaSerializer extends GLSerializer {
 
     if (grammar.enums.containsKey(token.token)) {
       path = "enums.${token.token}";
-    } else if (grammar.interfaces.containsKey(token.token) || grammar.projectedInterfaces.containsKey(token.token)) {
+    } else if (grammar.interfaces.containsKey(token.token) ||
+        grammar.projectedInterfaces.containsKey(token.token)) {
       path = "interfaces.${token.token}";
-    } else if (grammar.types.containsKey(token.token) || grammar.projectedTypes.containsKey(token.token)) {
+    } else if (grammar.types.containsKey(token.token) ||
+        grammar.projectedTypes.containsKey(token.token)) {
       path = "types.${token.token}";
     } else if (grammar.inputs.containsKey(token.token)) {
       path = "inputs.${token.token}";

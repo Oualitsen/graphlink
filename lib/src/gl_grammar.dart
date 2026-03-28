@@ -1,4 +1,3 @@
-import 'package:graphlink/src/gl_grammar_cache_extension.dart';
 import 'package:graphlink/src/model/gl_logical_file.dart';
 import 'package:logger/logger.dart';
 import 'package:graphlink/src/excpetions/parse_exception.dart';
@@ -29,9 +28,7 @@ import 'package:graphlink/src/serializers/language.dart';
 import 'package:graphlink/src/ui/flutter/gl_type_view.dart';
 import 'package:graphlink/src/utils.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
-import 'package:graphlink/src/gl_grammar_extension.dart';
 export 'package:graphlink/src/gl_grammar_extension.dart';
-import 'package:graphlink/src/gl_validation_extension.dart';
 export 'package:graphlink/src/gl_validation_extension.dart';
 
 class GLGrammar extends GrammarDefinition {
@@ -175,7 +172,7 @@ class GLGrammar extends GrammarDefinition {
           !autoGenerateQueries || generateAllFieldsFragments,
           'autoGenerateQueries can only be true if generateAllFieldsFragments is also true',
         ) {
-    serializer = GLGraphqSerializer(this);
+    // serializer = GLGraphqSerializer(this);
   }
 
   void addSchemaMapping(GLSchemaMapping mapping) {
@@ -265,10 +262,10 @@ class GLGrammar extends GrammarDefinition {
               ].toChoiceParser())
           .star()
           .map((value) {
-        validateSemantics();
+        //   validateSemantics();
         return value;
       });
-
+/*
   void validateSemantics() {
     if (!_validate) {
       return;
@@ -324,6 +321,7 @@ class GLGrammar extends GrammarDefinition {
       generateSchemaMappings();
     }
   }
+  */
 
   Parser<T> token<T>(Parser<T> input) {
     return input.trim(
@@ -423,7 +421,7 @@ class GLGrammar extends GrammarDefinition {
         derivedFromType: null,
         extension: ext != null,
       );
-      addTypeDefinition(type);
+      //   addTypeDefinition(type);
       return type;
     });
   }
@@ -453,7 +451,7 @@ class GLGrammar extends GrammarDefinition {
         directives: directives,
         extension: extension != null,
       );
-      addInputDefinition(input);
+      //  addInputDefinition(input);
       return input;
     });
   }
@@ -541,7 +539,7 @@ class GLGrammar extends GrammarDefinition {
         interfaceNames: parentNames ?? {},
         extension: extension != null,
       );
-      addInterfaceDefinition(interface);
+      //   addInterfaceDefinition(interface);
       return interface;
     });
   }
@@ -567,7 +565,7 @@ class GLGrammar extends GrammarDefinition {
             values: enumValues,
             directives: directives,
             extension: extension != null);
-        addEnumDefinition(enumDef);
+        //     addEnumDefinition(enumDef);
         return enumDef;
       });
 
@@ -580,7 +578,7 @@ class GLGrammar extends GrammarDefinition {
               name.ofNewName(name.token.trim()), [], args ?? [],
               generated: false))
           .map((directiveValue) {
-        addDirectiveValue(directiveValue);
+        //   addDirectiveValue(directiveValue);
         return directiveValue;
       });
 
@@ -602,7 +600,7 @@ class GLGrammar extends GrammarDefinition {
           .map4((name, args, repeatable, scopes) => GLDirectiveDefinition(
               name, args ?? [], scopes, repeatable != null))
           .map((definition) {
-        addDirectiveDefinition(definition);
+        //    addDirectiveDefinition(definition);
         return definition;
       });
 
@@ -744,7 +742,7 @@ class GLGrammar extends GrammarDefinition {
   Parser<String> singleLineStringToken() {
     final quote = char('"');
     final escape = (char('\\') & any()).flatten(); // e.g., \" or \\ or \n
-    final normalChar = pattern('^\\\"\n\r');
+    final normalChar = pattern('^\\"\n\r');
 
     final content = (escape | normalChar).star().flatten();
 
@@ -844,7 +842,7 @@ class GLGrammar extends GrammarDefinition {
         var extension = array[0] != null;
         var scalar = GLScalarDefinition(
             token: scalarName, directives: array[3], extension: extension);
-        addScalarDefinition(scalar);
+        //   addScalarDefinition(scalar);
         return scalar;
       });
 
@@ -859,7 +857,7 @@ class GLGrammar extends GrammarDefinition {
         .map4((extension, tokenInfo, directives, list) {
       var schema = GLSchema(tokenInfo, extension != null,
           operationTypes: list ?? [], directives: directives);
-      defineSchema(schema);
+      //defineSchema(schema);
       return schema;
     });
   }
@@ -921,7 +919,7 @@ class GLGrammar extends GrammarDefinition {
         projection.block!,
         projection.getDirectives(),
       );
-      addFragmentDefinition(def);
+      //  addFragmentDefinition(def);
       return def;
     });
   }
@@ -946,7 +944,7 @@ class GLGrammar extends GrammarDefinition {
         .map4((name, typeName, directiveValues, block) =>
             GLFragmentDefinition(name, typeName, block, directiveValues))
         .map((f) {
-      addFragmentDefinition(f);
+      //   addFragmentDefinition(f);
       return f;
     });
   }
@@ -970,7 +968,7 @@ class GLGrammar extends GrammarDefinition {
             [if (type1 != null) type1, ...types],
             directives))
         .map((value) {
-      addUnionDefinition(value);
+      // addUnionDefinition(value);
       return value;
     });
   }
@@ -1014,7 +1012,7 @@ class GLGrammar extends GrammarDefinition {
       ),
     )
         .map((value) {
-      addQueryDefinition(value);
+      //     addQueryDefinition(value);
       return value;
     });
   }

@@ -1,15 +1,14 @@
-import 'package:petitparser/petitparser.dart';
 import 'package:graphlink/src/serializers/graphq_serializer.dart';
 import 'package:graphlink/src/serializers/language.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
-final GLGrammar g = GLGrammar();
+final GLParser g = GLParser();
 
 void main() {
   test("serialize directive definition with different argument types@@", () {
-    final g = GLGrammar(generateAllFieldsFragments: true);
-    var result = g.parse('''
+    final g = GLParser(generateAllFieldsFragments: true);
+    g.parse('''
 
     type User {
       id: String
@@ -21,7 +20,7 @@ void main() {
       name: String
     }
   ''');
-    expect(result is Success, true);
+
     final serializer = GLGraphqSerializer(g);
 
     var schema = serializer.generateSchema();
@@ -31,8 +30,8 @@ void main() {
   });
 
   test("serialize directive definition with different argument types", () {
-    final g = GLGrammar(generateAllFieldsFragments: true);
-    var result = g.parse('''
+    final g = GLParser(generateAllFieldsFragments: true);
+    g.parse('''
     directive @myDirective(value: User!) on OBJECT
     directive @myDirective2(value: [String!]!) on OBJECT
     directive @myDirective3(value: [User!]!) on OBJECT
@@ -44,24 +43,25 @@ void main() {
       age: Int
     }
   ''');
-    expect(result is Success, true);
+
     final serializer = GLGraphqSerializer(g);
-    var myDirective =
-        serializer.serializeDirectiveDefinition(g.directiveDefinitions["@myDirective"]!);
+    var myDirective = serializer
+        .serializeDirectiveDefinition(g.directiveDefinitions["@myDirective"]!);
     expect(myDirective, "directive @myDirective(value: User!) on OBJECT");
 
-    var myDirective2 =
-        serializer.serializeDirectiveDefinition(g.directiveDefinitions["@myDirective2"]!);
-    expect(myDirective2, "directive @myDirective2(value: [String!]!) on OBJECT");
+    var myDirective2 = serializer
+        .serializeDirectiveDefinition(g.directiveDefinitions["@myDirective2"]!);
+    expect(
+        myDirective2, "directive @myDirective2(value: [String!]!) on OBJECT");
 
-    var myDirective3 =
-        serializer.serializeDirectiveDefinition(g.directiveDefinitions["@myDirective3"]!);
+    var myDirective3 = serializer
+        .serializeDirectiveDefinition(g.directiveDefinitions["@myDirective3"]!);
     expect(myDirective3, "directive @myDirective3(value: [User!]!) on OBJECT");
   });
 
   test("serialize directive values with different argument types", () {
-    final g = GLGrammar(generateAllFieldsFragments: true);
-    var result = g.parse('''
+    final g = GLParser(generateAllFieldsFragments: true);
+    g.parse('''
     directive @myDirective(value: User!) on OBJECT
     directive @myDirective2(value: [String!]!) on OBJECT
     directive @myDirective3(value: [User!]!) on OBJECT
@@ -73,25 +73,30 @@ void main() {
       age: Int
     }
   ''');
-    expect(result is Success, true);
+
     final serializer = GLGraphqSerializer(g);
     var user = g.getTypeByName("User")!;
-    var myDirective = user.getFieldByName("id")!.getDirectiveByName("@myDirective")!;
+    var myDirective =
+        user.getFieldByName("id")!.getDirectiveByName("@myDirective")!;
     var myDirectiveSerial = serializer.serializeDirectiveValue(myDirective);
-    expect(myDirectiveSerial, '@myDirective(value: {name: "ramdane", age: 12, id: "test"})');
+    expect(myDirectiveSerial,
+        '@myDirective(value: {name: "ramdane", age: 12, id: "test"})');
 
-    var myDirective2 = user.getFieldByName("name")!.getDirectiveByName("@myDirective2")!;
+    var myDirective2 =
+        user.getFieldByName("name")!.getDirectiveByName("@myDirective2")!;
     var myDirectiveSerial2 = serializer.serializeDirectiveValue(myDirective2);
     expect(myDirectiveSerial2, '@myDirective2(value: ["azul", "fellawen"])');
 
-    var myDirective3 = user.getFieldByName("lastName")!.getDirectiveByName("@myDirective3")!;
+    var myDirective3 =
+        user.getFieldByName("lastName")!.getDirectiveByName("@myDirective3")!;
     var myDirectiveSerial3 = serializer.serializeDirectiveValue(myDirective3);
-    expect(myDirectiveSerial3, '@myDirective3(value: [{name: "ramdane", age: 12, id: "test"}])');
+    expect(myDirectiveSerial3,
+        '@myDirective3(value: [{name: "ramdane", age: 12, id: "test"}])');
   });
 
   test("serializeSchemaDefinition - all root types", () async {
-    final g = GLGrammar(generateAllFieldsFragments: true);
-    var result = g.parse('''
+    final g = GLParser(generateAllFieldsFragments: true);
+    g.parse('''
     type Query {
       getValue: Int
     }
@@ -104,19 +109,24 @@ void main() {
       watchValue: Int
     }
   ''');
-    expect(result is Success, true);
+
     final serializer = GLGraphqSerializer(g);
     var serial = serializer.serializeSchemaDefinition(g.schema);
     expect(
       serial.split("\n").map((str) => str.trim()),
-      containsAllInOrder(
-          ["schema {", "query: Query", "mutation: Mutation", "subscription: Subscription", "}"]),
+      containsAllInOrder([
+        "schema {",
+        "query: Query",
+        "mutation: Mutation",
+        "subscription: Subscription",
+        "}"
+      ]),
     );
   });
 
   test("serializeSchemaDefinition - no Query", () async {
-    final g = GLGrammar(generateAllFieldsFragments: true);
-    var result = g.parse('''
+    final g = GLParser(generateAllFieldsFragments: true);
+    g.parse('''
     type Mutation {
       updateValue: Int
     }
@@ -125,19 +135,24 @@ void main() {
       watchValue: Int
     }
   ''');
-    expect(result is Success, true);
+
     final serializer = GLGraphqSerializer(g);
     var serial = serializer.serializeSchemaDefinition(g.schema);
     expect(serial.contains("query"), isFalse);
     expect(
       serial.split("\n").map((str) => str.trim()),
-      containsAllInOrder(["schema {", "mutation: Mutation", "subscription: Subscription", "}"]),
+      containsAllInOrder([
+        "schema {",
+        "mutation: Mutation",
+        "subscription: Subscription",
+        "}"
+      ]),
     );
   });
 
   test("serializeSchemaDefinition - no Mutation", () async {
-    final g = GLGrammar(generateAllFieldsFragments: true);
-    var result = g.parse('''
+    final g = GLParser(generateAllFieldsFragments: true);
+    g.parse('''
     type Query {
       getValue: Int
     }
@@ -146,19 +161,20 @@ void main() {
       watchValue: Int
     }
   ''');
-    expect(result is Success, true);
+
     final serializer = GLGraphqSerializer(g);
     var serial = serializer.serializeSchemaDefinition(g.schema);
     expect(serial.contains("mutation"), isFalse);
     expect(
       serial.split("\n").map((str) => str.trim()),
-      containsAllInOrder(["schema {", "query: Query", "subscription: Subscription", "}"]),
+      containsAllInOrder(
+          ["schema {", "query: Query", "subscription: Subscription", "}"]),
     );
   });
 
   test("serializeSchemaDefinition - no Subscription", () async {
-    final g = GLGrammar(generateAllFieldsFragments: true);
-    var result = g.parse('''
+    final g = GLParser(generateAllFieldsFragments: true);
+    g.parse('''
     type Query {
       getValue: Int
     }
@@ -167,54 +183,57 @@ void main() {
       updateValue: Int
     }
   ''');
-    expect(result is Success, true);
+
     final serializer = GLGraphqSerializer(g);
     var serial = serializer.serializeSchemaDefinition(g.schema);
     expect(serial.contains("subscription"), isFalse);
     expect(
       serial.split("\n").map((str) => str.trim()),
-      containsAllInOrder(["schema {", "query: Query", "mutation: Mutation", "}"]),
+      containsAllInOrder(
+          ["schema {", "query: Query", "mutation: Mutation", "}"]),
     );
   });
 
   test("serializeSchemaDefinition - no root types defined", () async {
-    final g = GLGrammar(generateAllFieldsFragments: true);
-    var result = g.parse('''
+    final g = GLParser(generateAllFieldsFragments: true);
+    g.parse('''
     type Something {
       name: String
     }
   ''');
-    expect(result is Success, true);
+
     final serializer = GLGraphqSerializer(g);
     var serial = serializer.serializeSchemaDefinition(g.schema);
     expect(serial.trim().isEmpty, true);
   });
 
   test("serializeScalarDefinition test", () async {
-    final g = GLGrammar(generateAllFieldsFragments: true);
-    var result = g.parse('''
+    final g = GLParser(generateAllFieldsFragments: true);
+    g.parse('''
   scalar Long
 ''');
-    expect(result is Success, true);
+
     final serializer = GLGraphqSerializer(g);
     var serial = serializer.serializeScalarDefinition(g.scalars["Long"]!);
     expect(serial, "scalar Long");
   });
 
   test("serializeDirectiveDefinition test", () async {
-    final g = GLGrammar(generateAllFieldsFragments: true);
-    var result = g.parse('''
+    final g = GLParser(generateAllFieldsFragments: true);
+    g.parse('''
     directive @myDirective(arg1: String) on FIELD_DEFINITION|OBJECT
 ''');
-    expect(result is Success, true);
+
     final serializer = GLGraphqSerializer(g);
-    var serial = serializer.serializeDirectiveDefinition(g.directiveDefinitions["@myDirective"]!);
-    expect(serial.trim(), "directive @myDirective(arg1: String) on FIELD_DEFINITION | OBJECT");
+    var serial = serializer
+        .serializeDirectiveDefinition(g.directiveDefinitions["@myDirective"]!);
+    expect(serial.trim(),
+        "directive @myDirective(arg1: String) on FIELD_DEFINITION | OBJECT");
   });
 
   test("serializeInputDefinition test", () async {
-    final g = GLGrammar(generateAllFieldsFragments: true);
-    var result = g.parse('''
+    final g = GLParser(generateAllFieldsFragments: true);
+    g.parse('''
     input UserInput {
       id: String
       name: String
@@ -222,20 +241,27 @@ void main() {
       age: Int
     }
 ''');
-    expect(result is Success, true);
+
     final serializer = GLGraphqSerializer(g);
-    var serial =
-        serializer.serializeInputDefinition(g.inputs["UserInput"]!, CodeGenerationMode.client);
+    var serial = serializer.serializeInputDefinition(
+        g.inputs["UserInput"]!, CodeGenerationMode.client);
     expect(
       serial.split("\n").map((str) => str.trim()),
-      containsAllInOrder(
-          ["input UserInput {", "id: String", "name: String", "lastName: String", "age: Int", "}"]),
+      containsAllInOrder([
+        "input UserInput {",
+        "id: String",
+        "name: String",
+        "lastName: String",
+        "age: Int",
+        "}"
+      ]),
     );
   });
 
   test("serializeTypeDefinition test", () async {
-    final g = GLGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
-    var result = g.parse('''
+    final g = GLParser(
+        generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+    g.parse('''
     type User {
       id: String
       name: String
@@ -248,7 +274,7 @@ void main() {
       id: ID!
     }
 ''');
-    expect(result is Success, true);
+
     final serializer = GLGraphqSerializer(g);
     var serial = serializer.generateSchema();
     // should seriaze skip on client types
@@ -270,8 +296,9 @@ void main() {
   });
 
   test("serializeTypeDefinition implements one interface", () async {
-    final g = GLGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
-    var result = g.parse('''
+    final g = GLParser(
+        generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+    g.parse('''
     interface IBase {
       id: String
     }
@@ -287,7 +314,7 @@ void main() {
       id: ID!
     }
 ''');
-    expect(result is Success, true);
+
     final serializer = GLGraphqSerializer(g);
     var serial = serializer.generateSchema();
     // should seriaze skip on client types
@@ -309,8 +336,9 @@ void main() {
   });
 
   test("serializeTypeDefinition implements multiple interfaces", () async {
-    final g = GLGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
-    var result = g.parse('''
+    final g = GLParser(
+        generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+    g.parse('''
     interface IBase {
       id: String
     }
@@ -330,7 +358,7 @@ void main() {
       id: ID!
     }
 ''');
-    expect(result is Success, true);
+
     final serializer = GLGraphqSerializer(g);
     var serial = serializer.generateSchema();
     // should seriaze skip on client types
@@ -352,8 +380,9 @@ void main() {
   });
 
   test("serializeInterfaceDefinition test", () async {
-    final g = GLGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
-    var result = g.parse('''
+    final g = GLParser(
+        generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+    g.parse('''
     interface User  {
       id: String
       name: String
@@ -366,7 +395,7 @@ void main() {
       id: ID!
     }
 ''');
-    expect(result is Success, true);
+
     final serializer = GLGraphqSerializer(g);
     var serial = serializer.generateSchema();
 
@@ -387,8 +416,9 @@ void main() {
   });
 
   test("serializeInterfaceDefinition imlements one interface", () async {
-    final g = GLGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
-    var result = g.parse('''
+    final g = GLParser(
+        generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+    g.parse('''
 interface IBase {
       id: String
     }
@@ -404,7 +434,7 @@ interface IBase {
       id: ID!
     }
 ''');
-    expect(result is Success, true);
+
     final serializer = GLGraphqSerializer(g);
     var serial = serializer.generateSchema();
 
@@ -425,8 +455,9 @@ interface IBase {
   });
 
   test("serializeInterfaceDefinition imlements multiple interfaces", () async {
-    final g = GLGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
-    var result = g.parse('''
+    final g = GLParser(
+        generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+    g.parse('''
 interface IBase {
       id: String
     }
@@ -446,7 +477,7 @@ interface IBase {
       id: ID!
     }
 ''');
-    expect(result is Success, true);
+
     final serializer = GLGraphqSerializer(g);
     var serial = serializer.generateSchema();
 
@@ -467,11 +498,12 @@ interface IBase {
   });
 
   test("serializeEnumDefinition test", () async {
-    final g = GLGrammar(generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
-    var result = g.parse('''
+    final g = GLParser(
+        generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+    g.parse('''
     enum Gender {male, female}
 ''');
-    expect(result is Success, true);
+
     final serializer = GLGraphqSerializer(g);
     var serial = serializer.serializeEnumDefinition(g.enums["Gender"]!);
     expect(

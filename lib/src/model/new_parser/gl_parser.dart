@@ -1,5 +1,4 @@
 import 'package:graphlink/src/excpetions/parse_exception.dart';
-import 'package:graphlink/src/gl_grammar.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_fragment.dart';
@@ -10,6 +9,7 @@ import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_scalar_definition.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
+import 'package:graphlink/src/model/gl_shcema_mapping.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_union.dart';
@@ -18,21 +18,176 @@ import 'package:graphlink/src/model/new_parser/gl_lexter_token.dart';
 import 'package:graphlink/src/model/gl_logical_file.dart';
 import 'package:graphlink/src/model/new_parser/gl_token_type.dart';
 import 'package:graphlink/src/model/token_info.dart';
+import 'package:graphlink/src/serializers/language.dart';
 import 'package:graphlink/src/utils.dart';
+import 'package:logger/logger.dart';
+
+import 'package:graphlink/src/gl_grammar_cache_extension.dart';
+import 'package:graphlink/src/gl_grammar_extension.dart';
+import 'package:graphlink/src/gl_validation_extension.dart';
+import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/model/gl_controller.dart';
+import 'package:graphlink/src/model/gl_repository.dart';
+import 'package:graphlink/src/model/gl_service.dart';
+import 'package:graphlink/src/model/gl_token.dart';
+import 'package:graphlink/src/serializers/graphq_serializer.dart';
+import 'package:graphlink/src/ui/flutter/gl_type_view.dart';
+import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+export 'package:graphlink/src/gl_grammar_extension.dart';
+export 'package:graphlink/src/gl_validation_extension.dart';
 
 class GLParser {
-  final List<GLLexerToken> _tokens;
-  final GLLexer _lexer;
-  final GLGrammar grammar;
+  late GLLexer _lexer;
   int _pos = 0;
 
-  GLParser(this._tokens, this._lexer, this.grammar);
+  bool annotationsProcessed = false;
+  var logger = Logger();
+  static const typename = "__typename";
+  static final typenameField = GLField(
+      name: typename.toToken(),
+      type: GLType("String".toToken(), false),
+      arguments: [],
+      directives: []);
 
-  GLLexerToken peek() => _tokens[_pos];
+  // used to skip serialization
+  final builtInScalars = {"ID", "Boolean", "Int", "Float", "String", "null"};
 
-  GLLexerToken peekNext() => _tokens[_pos + 1];
+  final Map<String, GLScalarDefinition> scalars = {
+    "ID": GLScalarDefinition(
+        token: "ID".toToken(), directives: [], extension: false),
+    "Boolean": GLScalarDefinition(
+        token: "Boolean".toToken(), directives: [], extension: false),
+    "Int": GLScalarDefinition(
+        token: "Int".toToken(), directives: [], extension: false),
+    "Float": GLScalarDefinition(
+        token: "Float".toToken(), directives: [], extension: false),
+    "String": GLScalarDefinition(
+        token: "String".toToken(), directives: [], extension: false),
+    "null": GLScalarDefinition(
+        token: "null".toToken(), directives: [], extension: false)
+  };
+  final Map<String, GLFragmentDefinitionBase> fragments = {};
+  final Map<String, GLTypedFragment> typedFragments = {};
 
-  GLLexerToken consume() => _tokens[_pos++];
+  final Map<String, GLSchemaMapping> _schemaMappings = {};
+
+  late final Map<String, String> typeMap;
+  late final CodeGenerationMode mode;
+
+  static const directivesToSkip = [glTypeNameDirective, glEqualsHashcode];
+
+  final Map<String, GLDirectiveDefinition> directives = {
+    includeDirective: GLDirectiveDefinition(
+      includeDirective.toToken(),
+      [
+        GLArgumentDefinition(
+            "if".toToken(), GLType("Boolean".toToken(), false), [])
+      ],
+      {GLDirectiveScope.FIELD},
+      false,
+    ),
+    skipDirective: GLDirectiveDefinition(
+      skipDirective.toToken(),
+      [
+        GLArgumentDefinition(
+            "if".toToken(), GLType("Boolean".toToken(), false), [])
+      ],
+      {GLDirectiveScope.FIELD},
+      false,
+    ),
+    glTypeNameDirective: GLDirectiveDefinition(
+      glTypeNameDirective.toToken(),
+      [
+        GLArgumentDefinition(glTypeNameDirectiveArgumentName.toToken(),
+            GLType("String".toToken(), false), [])
+      ],
+      {
+        GLDirectiveScope.INPUT_OBJECT,
+        GLDirectiveScope.FRAGMENT_DEFINITION,
+        GLDirectiveScope.QUERY,
+        GLDirectiveScope.MUTATION,
+        GLDirectiveScope.SUBSCRIPTION,
+      },
+      false,
+    ),
+    glEqualsHashcode: GLDirectiveDefinition(
+      glEqualsHashcode.toToken(),
+      [
+        GLArgumentDefinition(glEqualsHashcodeArgumentName.toToken(),
+            GLType("[String]".toToken(), false), [])
+      ],
+      {GLDirectiveScope.OBJECT},
+      false,
+    ),
+  };
+
+  bool _validate = true;
+
+  ///
+  /// key is the type name
+  /// and value gives a fragment that has references of all fields
+  ///
+  final Map<String, GLUnionDefinition> unions = {};
+  final Map<String, GLInputDefinition> inputs = {};
+  final Map<String, GLTypeDefinition> types = {};
+  final Map<String, GLInterfaceDefinition> interfaces = {};
+  final Map<String, GLRepository> repositories = {};
+  final Map<String, GLQueryDefinition> queries = {};
+  final Map<String, GLEnumDefinition> enums = {};
+  final Map<String, GLTypeDefinition> projectedTypes = {};
+  final Map<String, GLInterfaceDefinition> projectedInterfaces = {};
+  final Map<String, GLInterfaceDefinition> tempProjectedInterfaces = {};
+  final Map<String, GLDirectiveDefinition> directiveDefinitions = {};
+  final Map<String, GLService> services = {};
+  final Map<String, GLController> controllers = {};
+  final Map<String, GLTypeView> views = {};
+
+  final Map<String, GLExtensibleTokenList> extensibleTokens = {};
+
+  final List<GLDirectiveValue> directiveValues = [];
+
+  GLSchema schema = GLSchema(TokenInfo.ofString("schema"), false,
+      operationTypes: [], directives: []);
+  bool schemaInitialized = false;
+  final bool generateAllFieldsFragments;
+  final bool nullableFieldsRequired;
+  final bool autoGenerateQueries;
+  final String? defaultAlias;
+  final bool operationNameAsParameter;
+  final List<String> identityFields;
+  final int? defaultCacheTTL;
+  late final GLGraphqSerializer serializer;
+
+  GLParser({
+    this.typeMap = const {
+      "ID": "String",
+      "String": "String",
+      "Float": "double",
+      "Int": "int",
+      "Boolean": "bool",
+      "Null": "null",
+      "Long": "int"
+    },
+    this.generateAllFieldsFragments = false,
+    this.nullableFieldsRequired = false,
+    this.autoGenerateQueries = false,
+    this.operationNameAsParameter = false,
+    this.identityFields = const [],
+    this.defaultAlias,
+    this.mode = CodeGenerationMode.client,
+    this.defaultCacheTTL,
+  }) : assert(
+          !autoGenerateQueries || generateAllFieldsFragments,
+          'autoGenerateQueries can only be true if generateAllFieldsFragments is also true',
+        ) {
+    serializer = GLGraphqSerializer(this);
+  }
+
+  GLLexerToken peek() => _lexer.tokens[_pos];
+
+  GLLexerToken peekNext() => _lexer.tokens[_pos + 1];
+
+  GLLexerToken consume() => _lexer.tokens[_pos++];
 
   GLLexerToken expect(GLTokenType type) {
     final t = peek();
@@ -50,40 +205,156 @@ class GLParser {
     return consume();
   }
 
+  void validateSemantics() {
+    if (!_validate) {
+      return;
+    }
+    validateInputReferences();
+    validateTypeReferences();
+    convertUnionsToInterfaces();
+    fillInterfaceImplementations();
+    setDirectivesDefaultValues();
+    proparageAnnotationsOnFields();
+    mergeTokens();
+    updateInterfaceReferences();
+    checkInterfaceInheritance();
+    skipFieldOfSkipOnServerTypes();
+    handleGLExternal();
+    if (mode == CodeGenerationMode.client) {
+      handleRepositories(false);
+      if (generateAllFieldsFragments) {
+        createAllFieldsFragments();
+        if (autoGenerateQueries) {
+          generateQueryDefinitions();
+        }
+      }
+      checkFragmentRefs();
+      fillQueryElementsReturnType();
+      fillTypedFragments();
+      validateProjections();
+      updateFragmentDependencies();
+      // cache handling — must run before createProjectedTypes to catch errors early
+      fixTagListValues();
+      validateTagValues();
+      checkCacheAndNoCacheConflict();
+      checkCacheOnMutationsAndSubscriptions();
+      checkCacheInvalidateOnQueriesAndSubscriptions();
+      checkGLCacheDirectives();
+      checkGLCacheInvalidateDirectives();
+      checkGLCacheTags();
+      createProjectedTypes();
+      updateInterfaceCommonFields();
+      fillProjectedInterfaces();
+      cleanProjectedInterfacesImplementations();
+      addClientTypesToProjectedTypes();
+      updateFragmentAllTypesDependencies();
+      generateViews();
+      if (defaultCacheTTL != null) {
+        applyDefaultCacheToQueries(defaultCacheTTL!);
+      }
+      propagateCacheTags();
+      propagateInvalidateCacheTags();
+    } else {
+      handleRepositories(true);
+      generateServicesAndControllers();
+      generateSchemaMappings();
+    }
+  }
+
+  void addSchemaMapping(GLSchemaMapping mapping) {
+    var m = _schemaMappings[mapping.key];
+
+    ///
+    /// replace existing mapping when
+    /// current mapping does not exist
+    /// current mapping has batch is null
+    /// current mapping has batch is false and new mapping has mapping == true
+    ///
+    if (m == null || m.batch == null || (m.batch == false && m.batch == true)) {
+      _schemaMappings[mapping.key] = mapping;
+    }
+  }
+
+  GLSchemaMapping? getMappingByName(String name) => _schemaMappings[name];
+
+  List<GLSchemaMapping> getAllMappingsByType(String typeName) =>
+      _schemaMappings.values.where((e) => e.type.token == typeName).toList();
+  List<GLSchemaMapping> getServiceMappingByType(String typeName) =>
+      _schemaMappings.values
+          .where((e) => e.type.token == typeName && !e.forbid && !e.identity)
+          .toList();
+
+  List<GLSchemaMapping> getSchemaMappings(GLTypeDefinition def) {
+    return _schemaMappings.values.where((e) => e.type == def).toList();
+  }
+
+  bool get hasSubscriptions => hasQueryType(GLQueryType.subscription);
+  bool get hasQueries => hasQueryType(GLQueryType.query);
+  bool get hasMutations => hasQueryType(GLQueryType.mutation);
+
+  bool hasQueryType(GLQueryType type) =>
+      queries.values.where((query) => query.type == type).isNotEmpty;
+
+  String? lastParsedFile;
+
   bool check(GLTokenType type) => peek().type == type;
 
   bool checkAny(List<GLTokenType> types) => types.contains(peek().type);
 
   GLLexerToken? tryConsume(GLTokenType type) => check(type) ? consume() : null;
 
+  static final _nameTypes = <GLTokenType>{
+    GLTokenType.identifier,
+    ...keywords.values,
+  };
+
+  /// Returns true for tokens that are valid in name positions (identifiers and
+  /// contextual keywords). In GraphQL, keywords are not globally reserved and
+  /// may appear as field names, type names, argument names, etc.
+  bool _isName(GLTokenType type) => _nameTypes.contains(type);
+
+  GLLexerToken expectName() {
+    final t = peek();
+    if (_isName(t.type)) return consume();
+    final loc = _lexer.locationOf(t.offset);
+    throw ParseException(
+      "Expected name but got '${t.value}'",
+      info: TokenInfo(
+          token: t.value,
+          line: loc.line,
+          column: loc.column,
+          fileName: _lexer.fileName),
+    );
+  }
+
   TokenInfo tokenInfoOf(GLLexerToken token) => TokenInfo.ofLexer(token, _lexer);
 
-  static void parse(GLGrammar grammar, String text, {bool validate = true}) {
-    final lexer = GLLexer(text);
-    final tokens = lexer.tokenize();
-    GLParser(tokens, lexer, grammar).doParse(validate: validate);
+  void parse(String text, {bool validate = true}) {
+    _pos = 0;
+    _lexer = GLLexer(text);
+    _lexer.tokenize();
+    doParse(validate: validate);
   }
 
-  static void parseAndValidate(GLGrammar grammar, String text) {
-    parse(grammar, text, validate: true);
+  void parseAndValidate(String text) {
+    parse(text, validate: true);
   }
 
-  static void parseFile(GLGrammar grammar, GLLogicalFile file,
-      {bool validate = true}) {
-    grammar.lastParsedFile = file.path;
-    final lexer = GLLexer(file.data, fileName: file.path);
-    final tokens = lexer.tokenize();
-    GLParser(tokens, lexer, grammar).doParse(validate: validate);
+  void parseFile(GLLogicalFile file, {bool validate = true}) {
+    _pos = 0;
+    lastParsedFile = file.path;
+    _lexer = GLLexer(file.data, fileName: file.path);
+    _lexer.tokenize();
+    doParse(validate: validate);
   }
 
-  static void parseFiles(GLGrammar grammar, List<GLLogicalFile> files,
-      {String? extraGql}) {
+  void parseFiles(List<GLLogicalFile> files, {String? extraGql}) {
     for (var i = 0; i < files.length; i++) {
       final isLast = i == files.length - 1;
-      parseFile(grammar, files[i], validate: extraGql == null && isLast);
+      parseFile(files[i], validate: extraGql == null && isLast);
     }
     if (extraGql != null) {
-      parseAndValidate(grammar, extraGql);
+      parseAndValidate(extraGql);
     }
   }
 
@@ -91,7 +362,7 @@ class GLParser {
     while (!check(GLTokenType.eof)) {
       _parseDefinition();
     }
-    if (validate) grammar.validateSemantics();
+    if (validate) validateSemantics();
   }
 
   void _parseDefinition() {
@@ -157,7 +428,7 @@ class GLParser {
   void _parseTypeDefinition(
       {required bool isExtension, String? documentation}) {
     expect(GLTokenType.kwType);
-    final name = expect(GLTokenType.identifier);
+    final name = expectName();
     final interfaceNames = _parseImplementsClause();
     final directives = _parseDirectiveValueList(GLDirectiveScope.OBJECT);
     expect(GLTokenType.openBrace);
@@ -168,7 +439,7 @@ class GLParser {
           acceptsArguments: true,
           fieldScope: GLDirectiveScope.FIELD_DEFINITION));
     }
-    grammar.addTypeDefinition(GLTypeDefinition(
+    addTypeDefinition(GLTypeDefinition(
       name: TokenInfo.ofLexer(name, _lexer),
       nameDeclared: false,
       fields: fields,
@@ -183,9 +454,16 @@ class GLParser {
   Set<TokenInfo> _parseImplementsClause() {
     if (tryConsume(GLTokenType.kwImplements) == null) return {};
     final names = <TokenInfo>{};
-    names.add(TokenInfo.ofLexer(expect(GLTokenType.identifier), _lexer));
+    names.add(TokenInfo.ofLexer(expectName(), _lexer));
     while (tryConsume(GLTokenType.amp) != null) {
-      names.add(TokenInfo.ofLexer(expect(GLTokenType.identifier), _lexer));
+      final name = TokenInfo.ofLexer(expectName(), _lexer);
+      final exists = names.where((e) => e.token == name.token).isNotEmpty;
+      if (exists) {
+        throw ParseException(
+            "interface ${name.token} has been implemented more than once",
+            info: name);
+      }
+      names.add(name);
     }
     return names;
   }
@@ -193,7 +471,7 @@ class GLParser {
   void _parseInputDefinition(
       {required bool isExtension, String? documentation}) {
     expect(GLTokenType.kwInput);
-    final name = expect(GLTokenType.identifier);
+    final name = expectName();
     final directives = _parseDirectiveValueList(GLDirectiveScope.INPUT_OBJECT);
     expect(GLTokenType.openBrace);
     final fields = <GLField>[];
@@ -208,7 +486,7 @@ class GLParser {
     final inputName = nameFromDirective != null
         ? nameToken.ofNewName(nameFromDirective)
         : nameToken;
-    grammar.addInputDefinition(GLInputDefinition(
+    addInputDefinition(GLInputDefinition(
       name: inputName,
       declaredName: name.value,
       fields: fields,
@@ -223,7 +501,7 @@ class GLParser {
       required bool acceptsArguments,
       required GLDirectiveScope fieldScope}) {
     final doc = _parseDocumentation();
-    final name = expect(GLTokenType.identifier);
+    final name = expectName();
     final args = acceptsArguments
         ? _parseArgumentDefinitions()
         : <GLArgumentDefinition>[];
@@ -249,7 +527,7 @@ class GLParser {
     expect(GLTokenType.openParen);
     final args = <GLArgumentDefinition>[];
     while (tryConsume(GLTokenType.closeParen) == null) {
-      final name = expect(GLTokenType.identifier);
+      final name = expectName();
       expect(GLTokenType.colon);
       final type = _parseType();
       Object? defaultValue;
@@ -273,7 +551,7 @@ class GLParser {
       final nullable = tryConsume(GLTokenType.bang) == null;
       return GLListType(inner, nullable);
     }
-    final name = expect(GLTokenType.identifier);
+    final name = expectName();
     final nullable = tryConsume(GLTokenType.bang) == null;
     return GLType(TokenInfo.ofLexer(name, _lexer), nullable);
   }
@@ -281,7 +559,7 @@ class GLParser {
   void _parseInterfaceDefinition(
       {required bool isExtension, String? documentation}) {
     expect(GLTokenType.kwInterface);
-    final name = expect(GLTokenType.identifier);
+    final name = expectName();
     final interfaceNames = _parseImplementsClause();
     final directives = _parseDirectiveValueList(GLDirectiveScope.INTERFACE);
     expect(GLTokenType.openBrace);
@@ -292,7 +570,7 @@ class GLParser {
           acceptsArguments: true,
           fieldScope: GLDirectiveScope.FIELD_DEFINITION));
     }
-    grammar.addInterfaceDefinition(GLInterfaceDefinition(
+    addInterfaceDefinition(GLInterfaceDefinition(
       name: TokenInfo.ofLexer(name, _lexer),
       nameDeclared: false,
       fields: fields,
@@ -306,7 +584,7 @@ class GLParser {
   void _parseEnumDefinition(
       {required bool isExtension, String? documentation}) {
     expect(GLTokenType.kwEnum);
-    var name = expect(GLTokenType.identifier);
+    var name = expectName();
     var directiveValues = _parseDirectiveValueList(GLDirectiveScope.ENUM);
     expect(GLTokenType.openBrace);
     var enumDefinition = GLEnumDefinition(
@@ -319,12 +597,12 @@ class GLParser {
       final GLEnumValue enumValue = _parseEnumValue();
       enumDefinition.addValue(enumValue);
     }
-    grammar.addEnumDefinition(enumDefinition);
+    addEnumDefinition(enumDefinition);
   }
 
   GLEnumValue _parseEnumValue() {
     final doc = _parseDocumentation();
-    final value = expect(GLTokenType.identifier);
+    final value = expectName();
     final directives = _parseDirectiveValueList(GLDirectiveScope.ENUM_VALUE);
     return GLEnumValue(
         value: TokenInfo.ofLexer(value, _lexer),
@@ -335,14 +613,14 @@ class GLParser {
   void _parseScalarDefinition(
       {required bool isExtension, String? documentation}) {
     expect(GLTokenType.kwScalar);
-    var name = expect(GLTokenType.identifier);
+    var name = expectName();
     var directives = _parseDirectiveValueList(GLDirectiveScope.SCALAR);
     var scalarDef = GLScalarDefinition(
         token: TokenInfo.ofLexer(name, _lexer),
         directives: directives,
         extension: isExtension,
         documentation: documentation);
-    grammar.addScalarDefinition(scalarDef);
+    addScalarDefinition(scalarDef);
   }
 
   List<GLDirectiveValue> _parseDirectiveValueList(GLDirectiveScope scope) {
@@ -355,12 +633,12 @@ class GLParser {
 
   GLDirectiveValue _parseDirectiveValue(GLDirectiveScope scope) {
     expect(GLTokenType.at);
-    var identifier = expect(GLTokenType.identifier);
+    var identifier = expectName();
     var arguments = _parseDirectiveArguments();
     final value = GLDirectiveValue(
         TokenInfo.ofLexer(identifier, _lexer), [scope], arguments,
         generated: false);
-    grammar.addDirectiveValue(value);
+    addDirectiveValue(value);
     return value;
   }
 
@@ -371,7 +649,7 @@ class GLParser {
     var list = <GLArgumentValue>[];
     expect(GLTokenType.openParen);
     while (tryConsume(GLTokenType.closeParen) == null) {
-      var token = expect(GLTokenType.identifier);
+      var token = expectName();
       expect(GLTokenType.colon);
       var initialValue = _parseInitialValue();
       list.add(GLArgumentValue(TokenInfo.ofLexer(token, _lexer), initialValue));
@@ -391,6 +669,7 @@ class GLParser {
       case GLTokenType.blockString:
       case GLTokenType.identifier:
         return consume().value;
+
       case GLTokenType.int_:
         return int.parse(consume().value);
       case GLTokenType.float_:
@@ -410,6 +689,7 @@ class GLParser {
       case GLTokenType.openBracket:
         return _parseList();
       default:
+        if (_isName(nextToken.type)) return consume().value;
         throw _lexer.errorAt(nextToken.offset, "Unexpected input");
     }
   }
@@ -418,7 +698,7 @@ class GLParser {
     expect(GLTokenType.openBrace);
     var result = <String, Object?>{};
     while (tryConsume(GLTokenType.closeBrace) == null) {
-      var key = expect(GLTokenType.identifier);
+      var key = expectName();
       expect(GLTokenType.colon);
       result[key.value] = _parseObject();
     }
@@ -437,17 +717,16 @@ class GLParser {
   void _parseUnionDefinition(
       {required bool isExtension, String? documentation}) {
     expect(GLTokenType.kwUnion);
-    final name = expect(GLTokenType.identifier);
+    final name = expectName();
     final directives = _parseDirectiveValueList(GLDirectiveScope.UNION);
     final typeNames = <TokenInfo>[];
     if (tryConsume(GLTokenType.equals) != null) {
-      typeNames.add(TokenInfo.ofLexer(expect(GLTokenType.identifier), _lexer));
+      typeNames.add(TokenInfo.ofLexer(expectName(), _lexer));
       while (tryConsume(GLTokenType.pipe) != null) {
-        typeNames
-            .add(TokenInfo.ofLexer(expect(GLTokenType.identifier), _lexer));
+        typeNames.add(TokenInfo.ofLexer(expectName(), _lexer));
       }
     }
-    grammar.addUnionDefinition(GLUnionDefinition(
+    addUnionDefinition(GLUnionDefinition(
         TokenInfo.ofLexer(name, _lexer), isExtension, typeNames, directives,
         documentation: documentation));
   }
@@ -455,12 +734,12 @@ class GLParser {
   void _parseDirectiveDefinition({String? documentation}) {
     expect(GLTokenType.kwDirective);
     expect(GLTokenType.at);
-    final name = expect(GLTokenType.identifier);
+    final name = expectName();
     final args = _parseArgumentDefinitions();
     final repeatable = tryConsume(GLTokenType.kwRepeatable) != null;
     expect(GLTokenType.kwOn);
     final scopes = _parseDirectiveScopes();
-    grammar.addDirectiveDefinition(GLDirectiveDefinition(
+    addDirectiveDefinition(GLDirectiveDefinition(
       TokenInfo.ofLexer(name, _lexer),
       args,
       scopes,
@@ -479,7 +758,7 @@ class GLParser {
   }
 
   GLDirectiveScope _parseDirectiveScope() {
-    final token = expect(GLTokenType.identifier);
+    final token = expectName();
     final scope = GLDirectiveScope.values.asNameMap()[token.value];
     if (scope == null) {
       throw _lexer.errorAt(
@@ -490,13 +769,13 @@ class GLParser {
 
   void _parseFragmentDefinition({String? documentation}) {
     expect(GLTokenType.kwFragment);
-    final name = expect(GLTokenType.identifier);
+    final name = expectName();
     expect(GLTokenType.kwOn);
-    final typeName = expect(GLTokenType.identifier);
+    final typeName = expectName();
     final directives =
         _parseDirectiveValueList(GLDirectiveScope.FRAGMENT_DEFINITION);
     final block = _parseFragmentBlock();
-    grammar.addFragmentDefinition(GLFragmentDefinition(
+    addFragmentDefinition(GLFragmentDefinition(
       TokenInfo.ofLexer(name, _lexer),
       TokenInfo.ofLexer(typeName, _lexer),
       block,
@@ -524,20 +803,20 @@ class GLParser {
       while (check(GLTokenType.spread) && peekNext().type == GLTokenType.kwOn) {
         expect(GLTokenType.spread);
         expect(GLTokenType.kwOn);
-        final typeName = expect(GLTokenType.identifier);
+        final typeName = expectName();
         final directives =
             _parseDirectiveValueList(GLDirectiveScope.INLINE_FRAGMENT);
         final block = _parseFragmentBlock();
         final def = GLInlineFragmentDefinition(
             TokenInfo.ofLexer(typeName, _lexer), block, directives);
-        grammar.addFragmentDefinition(def);
+        addFragmentDefinition(def);
         inlineFragments.add(def);
       }
       return GLInlineFragmentsProjection(inlineFragments: inlineFragments);
     }
     // Fragment spread: ...FragmentName @directives*
     expect(GLTokenType.spread);
-    final name = expect(GLTokenType.identifier);
+    final name = expectName();
     final directives =
         _parseDirectiveValueList(GLDirectiveScope.FRAGMENT_SPREAD);
     return GLProjection(
@@ -552,12 +831,11 @@ class GLParser {
   GLProjection _parseFieldProjection() {
     // Detect alias: identifier followed by colon
     TokenInfo? alias;
-    if (peek().type == GLTokenType.identifier &&
-        peekNext().type == GLTokenType.colon) {
+    if (_isName(peek().type) && peekNext().type == GLTokenType.colon) {
       alias = TokenInfo.ofLexer(consume(), _lexer);
       consume(); // consume colon
     }
-    final name = expect(GLTokenType.identifier);
+    final name = expectName();
     final directives = _parseDirectiveValueList(GLDirectiveScope.FIELD);
     GLFragmentBlockDefinition? block;
     if (check(GLTokenType.openBrace)) {
@@ -595,7 +873,7 @@ class GLParser {
       default:
         throw _lexer.errorAt(keywordToken.offset, "Expected operation type");
     }
-    final name = expect(GLTokenType.identifier);
+    final name = expectName();
     final args = _parseArgumentDefinitions();
     final directives = _parseDirectiveValueList(operationScope);
     expect(GLTokenType.openBrace);
@@ -611,7 +889,7 @@ class GLParser {
       throw _lexer.errorAt(keywordToken.offset,
           "Subscription operations must have exactly one root field");
     }
-    grammar.addQueryDefinition(GLQueryDefinition(
+    addQueryDefinition(GLQueryDefinition(
       TokenInfo.ofLexer(name, _lexer),
       directives,
       args,
@@ -622,12 +900,11 @@ class GLParser {
 
   GLQueryElement _parseQueryElement() {
     TokenInfo? alias;
-    if (peek().type == GLTokenType.identifier &&
-        peekNext().type == GLTokenType.colon) {
+    if (_isName(peek().type) && peekNext().type == GLTokenType.colon) {
       alias = TokenInfo.ofLexer(consume(), _lexer);
       consume(); // consume colon
     }
-    final name = expect(GLTokenType.identifier);
+    final name = expectName();
     final args = _parseArgumentValues();
     final directives = _parseDirectiveValueList(GLDirectiveScope.FIELD);
     GLFragmentBlockDefinition? block;
@@ -646,7 +923,7 @@ class GLParser {
     expect(GLTokenType.openParen);
     final args = <GLArgumentValue>[];
     while (tryConsume(GLTokenType.closeParen) == null) {
-      final name = expect(GLTokenType.identifier);
+      final name = expectName();
       expect(GLTokenType.colon);
       final value = _parseObject();
       args.add(GLArgumentValue(TokenInfo.ofLexer(name, _lexer), value));
@@ -664,7 +941,7 @@ class GLParser {
         operationTypes.add(_parseSchemaElement());
       }
     }
-    grammar.defineSchema(GLSchema(
+    defineSchema(GLSchema(
       TokenInfo.ofLexer(schemaToken, _lexer),
       isExtension,
       operationTypes: operationTypes,
@@ -694,7 +971,7 @@ class GLParser {
             token.offset, "Expected 'query', 'mutation', or 'subscription'");
     }
     expect(GLTokenType.colon);
-    final name = expect(GLTokenType.identifier);
+    final name = expectName();
     return SchemaElement(type, TokenInfo.ofLexer(name, _lexer));
   }
 

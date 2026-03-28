@@ -5,7 +5,7 @@ import 'package:glob/glob.dart';
 import 'package:glob/list_local_fs.dart';
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/constants.dart';
-import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/io_utils.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
@@ -25,7 +25,8 @@ import 'dart:convert';
 import 'package:graphlink/src/gl_grammar_io.dart' as grammar_io;
 import 'package:graphlink/src/utils.dart';
 
-const String appVersion = String.fromEnvironment('version', defaultValue: 'dev');
+const String appVersion =
+    String.fromEnvironment('version', defaultValue: 'dev');
 
 Future<void> main(List<String> arguments) async {
   final parser = ArgParser()
@@ -157,7 +158,8 @@ ${parser.usage}
   try {
     config = GeneratorConfig.fromJson(json);
     if (!["server", "client"].contains(config.mode)) {
-      stderr.writeln('❌ Error parsing config: mode must be one of "server" or "client"');
+      stderr.writeln(
+          '❌ Error parsing config: mode must be one of "server" or "client"');
     }
   } catch (e) {
     stderr.writeln('❌ Error parsing config: $e');
@@ -266,8 +268,8 @@ void handleGeneration(GeneratorConfig config) async {
   final grammar = createGrammar(config);
   try {
     var extra = _buildExtraGql(grammar, config);
-    final logicalFiles = await Future.wait(
-        filePaths.map((p) => grammar_io.readLogicalFile(p)));
+    final logicalFiles =
+        await Future.wait(filePaths.map((p) => grammar_io.readLogicalFile(p)));
     var result = grammar_io.parseFiles(grammar, logicalFiles, extraGql: extra);
     var failures = result.whereType<Failure>().toList();
     if (failures.isNotEmpty) {
@@ -300,8 +302,8 @@ position: ${failures.first.position}
 
 final _lastGeneratedFiles = <String>{};
 
-String? _buildExtraGql(GLGrammar grammar, GeneratorConfig config) {
-  if (grammar.mode != CodeGenerationMode.client) return null;
+String? _buildExtraGql(GLParser parser, GeneratorConfig config) {
+  if (parser.mode != CodeGenerationMode.client) return null;
   if (config.clientConfig?.java != null) {
     return [
       getClientObjects("Java"),
@@ -313,37 +315,48 @@ String? _buildExtraGql(GLGrammar grammar, GeneratorConfig config) {
   return getClientObjects("dart");
 }
 
-GLGrammar createGrammar(GeneratorConfig config) {
+GLParser createGrammar(GeneratorConfig config) {
   var mode = config.getMode();
   if (mode == CodeGenerationMode.server) {
-    return GLGrammar(mode: mode, typeMap: config.typeMappings!, identityFields: config.identityFields);
+    return GLParser(
+        mode: mode,
+        typeMap: config.typeMappings!,
+        identityFields: config.identityFields);
   } else {
     final dart = config.clientConfig?.dart;
     final java = config.clientConfig?.java;
 
-    return GLGrammar(
+    return GLParser(
       mode: mode,
       typeMap: config.typeMappings!,
       identityFields: config.identityFields,
-      generateAllFieldsFragments: dart?.generateAllFieldsFragments ?? java?.generateAllFieldsFragments ?? false,
-      nullableFieldsRequired: dart?.nullableFieldsRequired ?? java?.nullableFieldsRequired ?? false,
-      autoGenerateQueries: dart?.autoGenerateQueries ?? java?.autoGenerateQueries ?? false,
+      generateAllFieldsFragments: dart?.generateAllFieldsFragments ??
+          java?.generateAllFieldsFragments ??
+          false,
+      nullableFieldsRequired:
+          dart?.nullableFieldsRequired ?? java?.nullableFieldsRequired ?? false,
+      autoGenerateQueries:
+          dart?.autoGenerateQueries ?? java?.autoGenerateQueries ?? false,
       defaultAlias: dart?.defaultAlias,
-      operationNameAsParameter: dart?.operationNameAsParameter ?? java?.operationNameAsParameter ?? false,
+      operationNameAsParameter: dart?.operationNameAsParameter ??
+          java?.operationNameAsParameter ??
+          false,
     );
   }
 }
 
-Future<Set<String>> generateDartClientClasses(GLGrammar grammar, GeneratorConfig config, DateTime started,
+Future<Set<String>> generateDartClientClasses(
+    GLParser parser, GeneratorConfig config, DateTime started,
     {String? pack, noClient = false}) async {
-  final serializer = DartSerializer(grammar, generateJsonMethods: true);
-  final clientSerializer = DartClientSerializer(grammar, serializer);
+  final serializer = DartSerializer(parser, generateJsonMethods: true);
+  final clientSerializer = DartClientSerializer(parser, serializer);
   final List<Future<File>> futures = [];
   final destinationDir = config.outputDir;
   final packageName = config.clientConfig?.dart?.packageName;
-  final prefix = "package:${packageName}/${(pack ?? config.outputDir).replaceFirst("lib/", "")}";
-  final viewSerializeer = FlutterTypeWidgetSerializer(grammar, serializer, true);
-  grammar.enums.forEach((k, def) {
+  final prefix =
+      "package:${packageName}/${(pack ?? config.outputDir).replaceFirst("lib/", "")}";
+  final viewSerializeer = FlutterTypeWidgetSerializer(parser, serializer, true);
+  parser.enums.forEach((k, def) {
     var text = serializer.serializeEnumDefinition(def, "");
     var r = writeToFile(
       data: text,
@@ -355,7 +368,7 @@ Future<Set<String>> generateDartClientClasses(GLGrammar grammar, GeneratorConfig
     futures.add(r);
   });
 
-  grammar.inputs.forEach((k, def) {
+  parser.inputs.forEach((k, def) {
     var text = serializer.serializeInputDefinition(def, prefix);
     var r = writeToFile(
         data: text,
@@ -367,8 +380,8 @@ Future<Set<String>> generateDartClientClasses(GLGrammar grammar, GeneratorConfig
   });
 
   var allProjectedTypes = <String, GLTypeDefinition>{};
-  allProjectedTypes.addAll(grammar.projectedTypes);
-  allProjectedTypes.addAll(grammar.projectedInterfaces);
+  allProjectedTypes.addAll(parser.projectedTypes);
+  allProjectedTypes.addAll(parser.projectedInterfaces);
   allProjectedTypes.forEach((k, def) {
     final subdir = def is GLInterfaceDefinition ? "interfaces" : "types";
 
@@ -382,7 +395,7 @@ Future<Set<String>> generateDartClientClasses(GLGrammar grammar, GeneratorConfig
     futures.add(r);
   });
   if (config.clientConfig?.dart?.generateUiTypes ?? false) {
-    grammar.views.forEach((k, def) {
+    parser.views.forEach((k, def) {
       var appLocImport = config.clientConfig?.dart?.appLocalizationsImport;
       // @TODO add an assertion here
       if (appLocImport != null) {
@@ -410,26 +423,28 @@ Future<Set<String>> generateDartClientClasses(GLGrammar grammar, GeneratorConfig
     futures.add(r);
   }
   var result = await Future.wait(futures);
-  stdout.writeln("Generated ${futures.length} files in ${formatElapsedTime(started)}");
+  stdout.writeln(
+      "Generated ${futures.length} files in ${formatElapsedTime(started)}");
   var paths = result.map((f) => f.path).toSet();
   await cleanUpObsoleteFiles(paths);
   return paths;
 }
 
-Future<Set<String>> generateJavaClientClasses(GLGrammar grammar, GeneratorConfig config, DateTime started,
+Future<Set<String>> generateJavaClientClasses(
+    GLParser parser, GeneratorConfig config, DateTime started,
     {String? pack, noClient = false}) async {
   final serializer = JavaSerializer(
-    grammar,
+    parser,
     generateJsonMethods: true,
     immutableInputFields: true,
     immutableTypeFields: true,
   );
-  final clientSerializer = JavaClientSerializer(grammar, serializer);
+  final clientSerializer = JavaClientSerializer(parser, serializer);
   final List<Future<File>> futures = [];
   final destinationDir = config.outputDir;
   final packageName = config.clientConfig?.java?.packageName;
   final prefix = packageName ?? '';
-  grammar.enums.forEach((k, def) {
+  parser.enums.forEach((k, def) {
     var text = serializer.serializeEnumDefinition(def, "");
     var r = writeToFile(
       data: text,
@@ -442,7 +457,7 @@ Future<Set<String>> generateJavaClientClasses(GLGrammar grammar, GeneratorConfig
     futures.add(r);
   });
 
-  grammar.inputs.forEach((k, def) {
+  parser.inputs.forEach((k, def) {
     var text = serializer.serializeInputDefinition(def, prefix);
     var r = writeToFile(
       data: text,
@@ -456,10 +471,10 @@ Future<Set<String>> generateJavaClientClasses(GLGrammar grammar, GeneratorConfig
   });
 
   var allProjectedTypes = <String, GLTypeDefinition>{};
-  allProjectedTypes.addAll(grammar.projectedTypes);
-  allProjectedTypes.addAll(grammar.projectedInterfaces);
+  allProjectedTypes.addAll(parser.projectedTypes);
+  allProjectedTypes.addAll(parser.projectedInterfaces);
   ['GraphLinkClientAdapter', 'GraphLinkJsonEncoder', 'GraphLinkJsonDecoder']
-      .map((e) => grammar.interfaces[e]!)
+      .map((e) => parser.interfaces[e]!)
       .forEach((def) {
     allProjectedTypes[def.token] = def;
   });
@@ -561,7 +576,7 @@ Future<Set<String>> generateJavaClientClasses(GLGrammar grammar, GeneratorConfig
       packageName: packageName,
     ));
 
-    if (grammar.hasSubscriptions) {
+    if (parser.hasSubscriptions) {
       futures.add(writeToFile(
         data: clientSerializer.generateSubscriptionListenerFile(),
         fileName: 'GraphLinkSubscriptionListener.java',
@@ -589,13 +604,15 @@ Future<Set<String>> generateJavaClientClasses(GLGrammar grammar, GeneratorConfig
     }
   }
   var result = await Future.wait(futures);
-  stdout.writeln("Generated ${futures.length} files in ${formatElapsedTime(started)}");
+  stdout.writeln(
+      "Generated ${futures.length} files in ${formatElapsedTime(started)}");
   var paths = result.map((f) => f.path).toSet();
   await cleanUpObsoleteFiles(paths);
   return paths;
 }
 
-Future<Set<String>> generateServerClasses(GLGrammar grammar, GeneratorConfig config, DateTime started) async {
+Future<Set<String>> generateServerClasses(
+    GLParser grammar, GeneratorConfig config, DateTime started) async {
   final springConfig = config.serverConfig!.spring!;
   final packageName = springConfig.basePackage;
   final destinationDir = config.outputDir;
@@ -611,7 +628,8 @@ Future<Set<String>> generateServerClasses(GLGrammar grammar, GeneratorConfig con
   final springSerializer = SpringServerSerializer(grammar,
       javaSerializer: serializer,
       generateSchema: springConfig.generateSchema,
-      injectDataFetching: config.serverConfig?.spring?.injectDataFetching ?? false);
+      injectDataFetching:
+          config.serverConfig?.spring?.injectDataFetching ?? false);
   final List<Future<File>> futures = [];
   const fileExtension = ".java";
 
@@ -705,12 +723,14 @@ Future<Set<String>> generateServerClasses(GLGrammar grammar, GeneratorConfig con
 
   if (springConfig.generateSchema) {
     var text = GLGraphqSerializer(grammar).generateSchema();
-    var r = saveSource(data: text, path: springConfig.schemaTargetPath!, graphqlSource: true);
+    var r = saveSource(
+        data: text, path: springConfig.schemaTargetPath!, graphqlSource: true);
     futures.add(r);
   }
 
   var result = await Future.wait(futures);
-  stdout.writeln("Generated ${futures.length} files in ${formatElapsedTime(started)}");
+  stdout.writeln(
+      "Generated ${futures.length} files in ${formatElapsedTime(started)}");
   var paths = result.map((f) => f.path).toSet();
   await cleanUpObsoleteFiles(paths);
   return paths;
