@@ -6,26 +6,30 @@ import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
 import 'package:logger/logger.dart';
-import 'package:graphlink/src/gl_grammar.dart';
-import 'package:petitparser/petitparser.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 void main() async {
   test("Nullable Arguments", () {
     var logger = Logger();
-    final GLGrammar g = GLGrammar(nullableFieldsRequired: false);
-    logger.i("________________________________________init______________________");
+    final GLParser g = GLParser(nullableFieldsRequired: false);
+    logger.i(
+        "________________________________________init______________________");
 
-    var parser = g.buildFrom(g.fullGrammar().end());
     logger.i("reading file");
 
-    final text = File("test/nullable_args/nullable_args_test.graphql").readAsStringSync();
+    final text = File("test/nullable_args/nullable_args_test.graphql")
+        .readAsStringSync();
     logger.i("file read $test");
 
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+    g.parse(text);
+
     var serializer = DartSerializer(g);
-    var types = g.types.values.map((t) => serializer.serializeTypeDefinition(t, "")).join("\n");
-    var inputs = g.inputs.values.map((t) => serializer.serializeInputDefinition(t, "")).join("\n");
+    var types = g.types.values
+        .map((t) => serializer.serializeTypeDefinition(t, ""))
+        .join("\n");
+    var inputs = g.inputs.values
+        .map((t) => serializer.serializeInputDefinition(t, ""))
+        .join("\n");
 
     expect(inputs, contains("this.middleName"));
     expect(inputs, isNot(contains("required this.middleName")));
@@ -34,24 +38,36 @@ void main() async {
     expect(types, isNot(contains("required this.middleName")));
   });
   test("toContructoDeclaration test ", () {
-    final GLGrammar g1 = GLGrammar(nullableFieldsRequired: false);
+    final GLParser g1 = GLParser(nullableFieldsRequired: false);
     final nullableString = GLType("String".toToken(), true);
     final nonNullableString = GLType("String".toToken(), false);
-    final nullableField = GLField(name: "name".toToken(), type: nullableString, arguments: [], directives: []);
-    final nonNullableField = GLField(name: "name".toToken(), type: nonNullableString, arguments: [], directives: []);
+    final nullableField = GLField(
+        name: "name".toToken(),
+        type: nullableString,
+        arguments: [],
+        directives: []);
+    final nonNullableField = GLField(
+        name: "name".toToken(),
+        type: nonNullableString,
+        arguments: [],
+        directives: []);
     var serializer1 = DartSerializer(g1);
 
-    var dartContructorTypeNullable = serializer1.toConstructorDeclaration(nullableField);
-    var dartContructorTypeNonNullable = serializer1.toConstructorDeclaration(nonNullableField);
+    var dartContructorTypeNullable =
+        serializer1.toConstructorDeclaration(nullableField);
+    var dartContructorTypeNonNullable =
+        serializer1.toConstructorDeclaration(nonNullableField);
 
     expect(dartContructorTypeNullable, "this.name");
     expect(dartContructorTypeNonNullable, "required this.name");
 
-    final GLGrammar g2 = GLGrammar(nullableFieldsRequired: true);
+    final GLParser g2 = GLParser(nullableFieldsRequired: true);
     var serializer2 = DartSerializer(g2);
 
-    var dartContructorTypeNullable2 = serializer2.toConstructorDeclaration(nullableField);
-    var dartContructorTypeNonNullable2 = serializer2.toConstructorDeclaration(nonNullableField);
+    var dartContructorTypeNullable2 =
+        serializer2.toConstructorDeclaration(nullableField);
+    var dartContructorTypeNonNullable2 =
+        serializer2.toConstructorDeclaration(nonNullableField);
 
     expect(dartContructorTypeNullable2, "required this.name");
     expect(dartContructorTypeNonNullable2, "required this.name");

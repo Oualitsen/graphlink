@@ -2,8 +2,7 @@ import 'dart:io';
 
 import 'package:graphlink/src/serializers/language.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gl_grammar.dart';
-import 'package:petitparser/petitparser.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 void main() {
   final typeMapping = {
@@ -17,15 +16,18 @@ void main() {
   };
 
   test("test schema mapping generation2", () {
-    final GLGrammar g =
-        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLParser g = GLParser(
+        identityFields: ["id"],
+        typeMap: typeMapping,
+        mode: CodeGenerationMode.server);
 
-    final text = File("test/server/services/service_gen.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
+    final text =
+        File("test/server/services/service_gen.graphql").readAsStringSync();
 
-    expect(parsed is Success, true);
-    expect(g.services.keys, containsAll(["UserService", "CarService", "AzulService"]));
+    g.parse(text);
+
+    expect(g.services.keys,
+        containsAll(["UserService", "CarService", "AzulService"]));
 
     var userService = g.services["UserService"]!;
     var carService = g.services["CarService"]!;

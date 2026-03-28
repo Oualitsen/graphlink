@@ -1,18 +1,16 @@
 import 'dart:io';
 
 import 'package:test/test.dart';
-import 'package:graphlink/src/gl_grammar.dart';
-import 'package:petitparser/petitparser.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
-final GLGrammar g = GLGrammar();
+final GLParser g = GLParser();
 
 void main() async {
   test("fragment projection test 1", () {
     final text = File("test/frag_ref/fragment_ref.graphql").readAsStringSync();
-    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true);
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+    final GLParser g = GLParser(generateAllFieldsFragments: true);
+
+    g.parse(text);
 
     var product = g.types['Product']!;
     expect(product.fieldNames, containsAll(["make", "name", "variant"]));

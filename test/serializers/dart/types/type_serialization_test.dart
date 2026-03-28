@@ -3,18 +3,19 @@ import 'dart:io';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:graphlink/src/serializers/language.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gl_grammar.dart';
-import 'package:petitparser/petitparser.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 void main() {
   test("dart test skipOn mode = client", () {
-    final GLGrammar g = GLGrammar(identityFields: ["id"], mode: CodeGenerationMode.client);
+    final GLParser g =
+        GLParser(identityFields: ["id"], mode: CodeGenerationMode.client);
 
-    final text = File("test/serializers/dart/types/type_serialization_skip_on_test.graphql")
+    final text = File(
+            "test/serializers/dart/types/type_serialization_skip_on_test.graphql")
         .readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+
+    g.parse(text);
+
     var javaSerialzer = DartSerializer(g);
     var user = g.getTypeByName("User")!;
     var result = javaSerialzer.serializeTypeDefinition(user, "");
@@ -22,20 +23,23 @@ void main() {
   });
 
   test("dart test skipOn mode = server", () {
-    final GLGrammar g = GLGrammar(identityFields: ["id"], mode: CodeGenerationMode.server);
+    final GLParser g =
+        GLParser(identityFields: ["id"], mode: CodeGenerationMode.server);
 
-    final text = File("test/serializers/dart/types/type_serialization_skip_on_test.graphql")
+    final text = File(
+            "test/serializers/dart/types/type_serialization_skip_on_test.graphql")
         .readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+
+    g.parse(text);
+
     var javaSerialzer = DartSerializer(g);
     var user = g.getTypeByName("User")!;
     var result = javaSerialzer.serializeTypeDefinition(user, "");
     expect(result, isNot(contains("Company company")));
 
     var input = g.inputs["SkipInput"]!;
-    var skippedInputSerialized = javaSerialzer.serializeInputDefinition(input, "");
+    var skippedInputSerialized =
+        javaSerialzer.serializeInputDefinition(input, "");
     expect(skippedInputSerialized, "");
 
     var enum_ = g.enums["Gender"]!;
@@ -47,12 +51,12 @@ void main() {
   });
 
   test("Dart type serialization", () {
-    final GLGrammar g = GLGrammar(identityFields: ["id"]);
+    final GLParser g = GLParser(identityFields: ["id"]);
     final text =
-        File("test/serializers/dart/types/type_serialization_test.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+        File("test/serializers/dart/types/type_serialization_test.graphql")
+            .readAsStringSync();
+
+    g.parse(text);
 
     var user = g.getTypeByName("User")!;
     var dartSerialzer = DartSerializer(g);
@@ -71,12 +75,12 @@ void main() {
   });
 
   test("Dart input serialization", () {
-    final GLGrammar g = GLGrammar(identityFields: ["id"]);
+    final GLParser g = GLParser(identityFields: ["id"]);
     final text =
-        File("test/serializers/dart/types/type_serialization_test.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+        File("test/serializers/dart/types/type_serialization_test.graphql")
+            .readAsStringSync();
+
+    g.parse(text);
 
     var user = g.inputs["UserInput"];
     var dartSerialzer = DartSerializer(g);
@@ -99,12 +103,12 @@ void main() {
   });
 
   test("Dart interface serialization", () {
-    final GLGrammar g = GLGrammar(identityFields: ["id"]);
+    final GLParser g = GLParser(identityFields: ["id"]);
     final text =
-        File("test/serializers/dart/types/interface_serialization_test.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+        File("test/serializers/dart/types/interface_serialization_test.graphql")
+            .readAsStringSync();
+
+    g.parse(text);
 
     var entity = g.interfaces["Interface1"]!;
     var dartSerialzer = DartSerializer(g);
@@ -117,12 +121,12 @@ void main() {
   });
 
   test("Dart interface implementing one interface serialization", () {
-    final GLGrammar g = GLGrammar(identityFields: ["id"]);
+    final GLParser g = GLParser(identityFields: ["id"]);
     final text =
-        File("test/serializers/dart/types/interface_serialization_test.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+        File("test/serializers/dart/types/interface_serialization_test.graphql")
+            .readAsStringSync();
+
+    g.parse(text);
 
     var entity = g.interfaces["Interface2"]!;
     var dartSerialzer = DartSerializer(g);
@@ -136,17 +140,18 @@ void main() {
   });
 
   test("Dart interface implementing multiple interface serialization", () {
-    final GLGrammar g = GLGrammar(identityFields: ["id"]);
+    final GLParser g = GLParser(identityFields: ["id"]);
     final text =
-        File("test/serializers/dart/types/interface_serialization_test.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+        File("test/serializers/dart/types/interface_serialization_test.graphql")
+            .readAsStringSync();
+
+    g.parse(text);
 
     var entity = g.interfaces["Interface3"]!;
     var dartSerialzer = DartSerializer(g);
     var class_ = dartSerialzer.serializeInterface(entity).trim();
-    expect(class_, startsWith("abstract class Interface3 extends IBase, IBase2 {"));
+    expect(class_,
+        startsWith("abstract class Interface3 extends IBase, IBase2 {"));
     expect(class_, endsWith("}"));
     for (var e in entity.fields) {
       expect(class_, contains(dartSerialzer.serializeGetterDeclaration(e)));

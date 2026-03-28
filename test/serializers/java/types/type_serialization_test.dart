@@ -3,8 +3,7 @@ import 'dart:io';
 import 'package:graphlink/src/serializers/language.dart';
 import 'package:graphlink/src/serializers/spring_server_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gl_grammar.dart';
-import 'package:petitparser/petitparser.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 
 void main() {
@@ -19,15 +18,17 @@ void main() {
   };
 
   test("test list as array", () {
-    final GLGrammar g =
-        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.client);
+    final GLParser g = GLParser(
+        identityFields: ["id"],
+        typeMap: typeMapping,
+        mode: CodeGenerationMode.client);
 
-    final text = File("test/serializers/java/types/type_serialization_list_as_array.graphql")
+    final text = File(
+            "test/serializers/java/types/type_serialization_list_as_array.graphql")
         .readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
 
-    expect(parsed is Success, true);
+    g.parse(text);
+
     var javaSerialzer = JavaSerializer(g);
 
     var userServer = g.getTypeByName("User")!;
@@ -38,15 +39,17 @@ void main() {
   });
 
   test("test skipOn mode = client", () {
-    final GLGrammar g =
-        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.client);
+    final GLParser g = GLParser(
+        identityFields: ["id"],
+        typeMap: typeMapping,
+        mode: CodeGenerationMode.client);
 
-    final text = File("test/serializers/java/types/type_serialization_skip_on_test.graphql")
+    final text = File(
+            "test/serializers/java/types/type_serialization_skip_on_test.graphql")
         .readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
 
-    expect(parsed is Success, true);
+    g.parse(text);
+
     var javaSerialzer = JavaSerializer(g);
 
     var userServer = g.getTypeByName("User")!;
@@ -55,15 +58,17 @@ void main() {
   });
 
   test("test skipOn mode = server", () {
-    final GLGrammar g =
-        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLParser g = GLParser(
+        identityFields: ["id"],
+        typeMap: typeMapping,
+        mode: CodeGenerationMode.server);
 
-    final text = File("test/serializers/java/types/type_serialization_skip_on_test.graphql")
+    final text = File(
+            "test/serializers/java/types/type_serialization_skip_on_test.graphql")
         .readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
 
-    expect(parsed is Success, true);
+    g.parse(text);
+
     var javaSerialzer = JavaSerializer(g);
 
     var userServer = g.getTypeByName("User")!;
@@ -71,7 +76,8 @@ void main() {
     expect(result, isNot(contains("Company company")));
 
     var input = g.inputs["SkipInput"]!;
-    var skippedInputSerialized = javaSerialzer.serializeInputDefinition(input, "");
+    var skippedInputSerialized =
+        javaSerialzer.serializeInputDefinition(input, "");
     expect(skippedInputSerialized, "");
 
     var enum_ = g.enums["Gender"]!;
@@ -83,20 +89,21 @@ void main() {
   });
 
   test("testDecorators 2", () {
-    final GLGrammar g = GLGrammar(identityFields: ["id"], typeMap: typeMapping);
-    final text = File("test/serializers/java/types/type_serialization_decorators_test.graphql")
+    final GLParser g = GLParser(identityFields: ["id"], typeMap: typeMapping);
+    final text = File(
+            "test/serializers/java/types/type_serialization_decorators_test.graphql")
         .readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
 
-    expect(parsed is Success, true);
+    g.parse(text);
+
     var javaSerialzer = JavaSerializer(g);
 
     var user = g.getTypeByName("User")!;
 
     var idField = user.fields.where((f) => f.name.token == "id").first;
     var id = javaSerialzer.serializeField(idField, false);
-    expect(id, stringContainsInOrder(["@Getter", "@Setter", "private String id"]));
+    expect(
+        id, stringContainsInOrder(["@Getter", "@Setter", "private String id"]));
 
     var ibase = g.interfaces["IBase"]!;
 
@@ -113,12 +120,13 @@ void main() {
   });
 
   test("serializeField", () {
-    final GLGrammar g = GLGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final GLParser g = GLParser(identityFields: ["id"], typeMap: typeMapping);
     final text =
-        File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+        File("test/serializers/java/types/type_serialization_test.graphql")
+            .readAsStringSync();
+
+    g.parse(text);
+
     var javaSerialzer = JavaSerializer(g);
     var user = g.getTypeByName("User")!;
     var idField = user.fields.where((f) => f.name.token == "id").first;
@@ -127,12 +135,13 @@ void main() {
   });
 
   test("serializeArgument", () {
-    final GLGrammar g = GLGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final GLParser g = GLParser(identityFields: ["id"], typeMap: typeMapping);
     final text =
-        File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+        File("test/serializers/java/types/type_serialization_test.graphql")
+            .readAsStringSync();
+
+    g.parse(text);
+
     var javaSerialzer = JavaSerializer(g);
     var user = g.getTypeByName("User")!;
     var idField = user.fields.where((f) => f.name.token == "id").first;
@@ -141,16 +150,18 @@ void main() {
   });
 
   test("serializeType", () {
-    final GLGrammar g = GLGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final GLParser g = GLParser(identityFields: ["id"], typeMap: typeMapping);
     final text =
-        File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+        File("test/serializers/java/types/type_serialization_test.graphql")
+            .readAsStringSync();
+
+    g.parse(text);
+
     var javaSerialzer = JavaSerializer(g);
     var user = g.getTypeByName("User")!;
     var idField = user.fields.where((f) => f.name.token == "id").first;
-    var listExample = user.fields.where((f) => f.name.token == "listExample").first;
+    var listExample =
+        user.fields.where((f) => f.name.token == "listExample").first;
     var id = javaSerialzer.serializeType(idField.type, false);
     var list = javaSerialzer.serializeType(listExample.type, false);
     expect(id, "String");
@@ -158,12 +169,13 @@ void main() {
   });
 
   test("serializeEnumDefinition", () {
-    final GLGrammar g = GLGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final GLParser g = GLParser(identityFields: ["id"], typeMap: typeMapping);
     final text =
-        File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+        File("test/serializers/java/types/type_serialization_test.graphql")
+            .readAsStringSync();
+
+    g.parse(text);
+
     var javaSerialzer = JavaSerializer(g, generateJsonMethods: true);
     var genderEnum = g.enums["Gender"]!;
     var enum_ = javaSerialzer.serializeEnumDefinition(genderEnum, "");
@@ -172,39 +184,45 @@ void main() {
   });
 
   test("serializeGetterDeclaration", () {
-    final GLGrammar g = GLGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final GLParser g = GLParser(identityFields: ["id"], typeMap: typeMapping);
     final text =
-        File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+        File("test/serializers/java/types/type_serialization_test.graphql")
+            .readAsStringSync();
+
+    g.parse(text);
+
     var javaSerialzer = JavaSerializer(g);
 
     var user = g.getTypeByName("User")!;
     var idField = user.fields.where((f) => f.name.token == "id").first;
-    var marriedField = user.fields.where((f) => f.name.token == "married").first;
+    var marriedField =
+        user.fields.where((f) => f.name.token == "married").first;
 
     var getterWithoutModifier =
         javaSerialzer.serializeGetterDeclaration(idField, skipModifier: true);
-    var getterWithModifier = javaSerialzer.serializeGetterDeclaration(idField, skipModifier: false);
-    var marriedGetter = javaSerialzer.serializeGetterDeclaration(marriedField, skipModifier: false);
+    var getterWithModifier =
+        javaSerialzer.serializeGetterDeclaration(idField, skipModifier: false);
+    var marriedGetter = javaSerialzer.serializeGetterDeclaration(marriedField,
+        skipModifier: false);
     expect(getterWithoutModifier, "String getId()");
     expect(getterWithModifier, "public String getId()");
     expect(marriedGetter, "public Boolean getMarried()");
   });
 
   test("serializeSetter", () {
-    final GLGrammar g = GLGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final GLParser g = GLParser(identityFields: ["id"], typeMap: typeMapping);
     final text =
-        File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+        File("test/serializers/java/types/type_serialization_test.graphql")
+            .readAsStringSync();
+
+    g.parse(text);
+
     var javaSerialzer = JavaSerializer(g);
 
     var user = g.getTypeByName("User")!;
     var idField = user.fields.where((f) => f.name.token == "id").first;
-    var middleName = user.fields.where((f) => f.name.token == "middleName").first;
+    var middleName =
+        user.fields.where((f) => f.name.token == "middleName").first;
 
     var setId = javaSerialzer.serializeSetter(idField, user);
     var setMiddleName = javaSerialzer.serializeSetter(middleName, user);
@@ -220,30 +238,34 @@ void main() {
 
     expect(
       setId.split("\n").map((e) => e.trim()),
-      containsAllInOrder(['public void setId(String id) {', 'this.id = id;', '}']),
+      containsAllInOrder(
+          ['public void setId(String id) {', 'this.id = id;', '}']),
     );
   });
 
   test("serializeGetter", () {
-    final GLGrammar g = GLGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final GLParser g = GLParser(identityFields: ["id"], typeMap: typeMapping);
     final text =
-        File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+        File("test/serializers/java/types/type_serialization_test.graphql")
+            .readAsStringSync();
+
+    g.parse(text);
+
     var javaSerialzer = JavaSerializer(g);
 
     var user = g.getTypeByName("User")!;
     var idField = user.fields.where((f) => f.name.token == "id").first;
     var married = user.fields.where((f) => f.name.token == "married").first;
-    var middleName = user.fields.where((f) => f.name.token == "middleName").first;
+    var middleName =
+        user.fields.where((f) => f.name.token == "middleName").first;
 
     var getId = javaSerialzer.serializeGetter(idField, user);
     var isMarried = javaSerialzer.serializeGetter(married, user);
     var middleNameText = javaSerialzer.serializeGetter(middleName, user);
     print(getId);
 
-    expect(getId, stringContainsInOrder(["public String getId() {", "return id;", "}"]));
+    expect(getId,
+        stringContainsInOrder(["public String getId() {", "return id;", "}"]));
     expect(
         middleNameText,
         stringContainsInOrder([
@@ -251,16 +273,19 @@ void main() {
           "return middleName;",
           "}",
         ]));
-    expect(isMarried, stringContainsInOrder(["public Boolean getMarried() {", "return married;"]));
+    expect(
+        isMarried,
+        stringContainsInOrder(
+            ["public Boolean getMarried() {", "return married;"]));
   });
 
   test("Java type serialization", () {
-    final GLGrammar g = GLGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final GLParser g = GLParser(identityFields: ["id"], typeMap: typeMapping);
     final text =
-        File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+        File("test/serializers/java/types/type_serialization_test.graphql")
+            .readAsStringSync();
+
+    g.parse(text);
 
     var user = g.getTypeByName("User")!;
     var javaSerialzer = JavaSerializer(g);
@@ -280,15 +305,16 @@ void main() {
   });
 
   test("Java input serialization", () {
-    final GLGrammar g = GLGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final GLParser g = GLParser(identityFields: ["id"], typeMap: typeMapping);
     final text =
-        File("test/serializers/java/types/type_serialization_test.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+        File("test/serializers/java/types/type_serialization_test.graphql")
+            .readAsStringSync();
+
+    g.parse(text);
 
     var user = g.inputs["UserInput"];
-    var javaSerialzer = JavaSerializer(g, immutableInputFields: false, immutableTypeFields: false);
+    var javaSerialzer = JavaSerializer(g,
+        immutableInputFields: false, immutableTypeFields: false);
     var class_ = javaSerialzer.serializeInputDefinition(user!, "");
 
     expect(
@@ -304,12 +330,12 @@ void main() {
   });
 
   test("Java interface serialization", () {
-    final GLGrammar g = GLGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final GLParser g = GLParser(identityFields: ["id"], typeMap: typeMapping);
     final text =
-        File("test/serializers/java/types/interface_serialization_test.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+        File("test/serializers/java/types/interface_serialization_test.graphql")
+            .readAsStringSync();
+
+    g.parse(text);
 
     var entity = g.interfaces["Interface1"]!;
     var javaSerialzer = JavaSerializer(g);
@@ -317,17 +343,20 @@ void main() {
     expect(class_, startsWith("public interface Interface1 {"));
     expect(class_, endsWith("}"));
     for (var e in entity.fields) {
-      expect(class_, contains(javaSerialzer.serializeGetterDeclaration(e, skipModifier: true)));
+      expect(
+          class_,
+          contains(
+              javaSerialzer.serializeGetterDeclaration(e, skipModifier: true)));
     }
   });
 
   test("Java interface implementing one interface serialization", () {
-    final GLGrammar g = GLGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final GLParser g = GLParser(identityFields: ["id"], typeMap: typeMapping);
     final text =
-        File("test/serializers/java/types/interface_serialization_test.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+        File("test/serializers/java/types/interface_serialization_test.graphql")
+            .readAsStringSync();
+
+    g.parse(text);
 
     var entity = g.interfaces["Interface2"]!;
     var javaSerialzer = JavaSerializer(g);
@@ -336,36 +365,46 @@ void main() {
     expect(class_, startsWith("public interface Interface2 extends IBase {"));
     expect(class_, endsWith("}"));
     for (var e in entity.fields) {
-      expect(class_, contains(javaSerialzer.serializeGetterDeclaration(e, skipModifier: true)));
+      expect(
+          class_,
+          contains(
+              javaSerialzer.serializeGetterDeclaration(e, skipModifier: true)));
     }
   });
 
   test("Java interface implementing multiple interface serialization", () {
-    final GLGrammar g = GLGrammar(identityFields: ["id"], typeMap: typeMapping);
+    final GLParser g = GLParser(identityFields: ["id"], typeMap: typeMapping);
     final text =
-        File("test/serializers/java/types/interface_serialization_test.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+        File("test/serializers/java/types/interface_serialization_test.graphql")
+            .readAsStringSync();
+
+    g.parse(text);
 
     var entity = g.interfaces["Interface3"]!;
     var javaSerialzer = JavaSerializer(g);
     var class_ = javaSerialzer.serializeInterface(entity, getters: true).trim();
-    expect(class_, startsWith("public interface Interface3 extends IBase, IBase2 {"));
+    expect(class_,
+        startsWith("public interface Interface3 extends IBase, IBase2 {"));
     expect(class_, endsWith("}"));
     for (var e in entity.fields) {
-      expect(class_, contains(javaSerialzer.serializeGetterDeclaration(e, skipModifier: true)));
+      expect(
+          class_,
+          contains(
+              javaSerialzer.serializeGetterDeclaration(e, skipModifier: true)));
     }
   });
 
   test("Repository serialization", () {
-    final GLGrammar g =
-        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
-    final text = File("test/serializers/java/types/repository_serialization_test.graphql")
+    final GLParser g = GLParser(
+        identityFields: ["id"],
+        typeMap: typeMapping,
+        mode: CodeGenerationMode.server);
+    final text = File(
+            "test/serializers/java/types/repository_serialization_test.graphql")
         .readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+
+    g.parse(text);
+
     var repo = g.repositories["UserRepository"]!;
     var serialzer = SpringServerSerializer(g);
     var repoSerial = serialzer.serializeRepository(repo, "com.myorg");
@@ -380,9 +419,11 @@ void main() {
   });
 
   test("decorators on interfaces ", () {
-    final GLGrammar g =
-        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
-    var parsed = g.parse('''
+    final GLParser g = GLParser(
+        identityFields: ["id"],
+        typeMap: typeMapping,
+        mode: CodeGenerationMode.server);
+    g.parse('''
     directive @Id(
     glClass: String = "Id",
     glImport: String = "org.springframework.data.annotation.Id",
@@ -403,8 +444,6 @@ void main() {
 
 ''');
 
-    expect(parsed is Success, true);
-
     var user = g.getTypeByName("User")!;
     var serializer = JavaSerializer(g);
 
@@ -412,19 +451,20 @@ void main() {
   });
 
   test("serialize input with null checks", () {
-    final GLGrammar g = GLGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
-    var parsed = g.parse('''
+    final GLParser g =
+        GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    g.parse('''
     input UserInput {
       id: ID
       name: String!
     }
 ''');
 
-    expect(parsed is Success, true);
-
     var userInput = g.inputs['UserInput']!;
-    var serializer = JavaSerializer(g, immutableInputFields: false, immutableTypeFields: false);
-    var serializedInput = serializer.serializeInputDefinition(userInput, "com.myorg");
+    var serializer = JavaSerializer(g,
+        immutableInputFields: false, immutableTypeFields: false);
+    var serializedInput =
+        serializer.serializeInputDefinition(userInput, "com.myorg");
     // nullcheck on contrcutor
     var lines = serializedInput
         .split('\n')
@@ -458,7 +498,10 @@ void main() {
         ]));
 
     // no nullcheck on setter id
-    expect(lines, containsAllInOrder(['public void setId(String id) {', 'this.id = id;']));
+    expect(
+        lines,
+        containsAllInOrder(
+            ['public void setId(String id) {', 'this.id = id;']));
 
     // no nullcheck on getter id
     expect(
@@ -479,48 +522,58 @@ void main() {
       "Null": "null",
       "Long": "Long"
     };
-    final GLGrammar g = GLGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
-    var parsed = g.parse('''
+    final GLParser g =
+        GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    g.parse('''
     input UserInput {
       
       age: Int!
     }
 ''');
 
-    expect(parsed is Success, true);
-
     var userInput = g.inputs['UserInput']!;
-    var serializer = JavaSerializer(g, immutableInputFields: false, immutableTypeFields: false);
-    var serializedInput = serializer.serializeInputDefinition(userInput, "com.myorg");
+    var serializer = JavaSerializer(g,
+        immutableInputFields: false, immutableTypeFields: false);
+    var serializedInput =
+        serializer.serializeInputDefinition(userInput, "com.myorg");
     // no nullcheck on contrcutor primitives
     var lines = serializedInput
         .split('\n')
         .where((element) => element.isNotEmpty)
         .map((e) => e.trim())
         .toList();
-    expect(lines, containsAllInOrder(['private UserInput(int age) {', 'this.age = age;', '}']));
+    expect(
+        lines,
+        containsAllInOrder(
+            ['private UserInput(int age) {', 'this.age = age;', '}']));
     // no nullcheck on setter
-    expect(lines, containsAllInOrder(['public void setAge(int age) {', 'this.age = age;', '}']));
+    expect(
+        lines,
+        containsAllInOrder(
+            ['public void setAge(int age) {', 'this.age = age;', '}']));
 
     // no nullcheck on getter
-    expect(lines, containsAllInOrder(['public int getAge() {', 'return age;', '}']));
+    expect(lines,
+        containsAllInOrder(['public int getAge() {', 'return age;', '}']));
 
     // no nullcheck on setter id
   });
 
-  test("serialize input: final field with no getter when immutableInputFields = true", () {
-    final GLGrammar g = GLGrammar(typeMap: {}, mode: CodeGenerationMode.server);
-    var parsed = g.parse('''
+  test(
+      "serialize input: final field with no getter when immutableInputFields = true",
+      () {
+    final GLParser g = GLParser(typeMap: {}, mode: CodeGenerationMode.server);
+    g.parse('''
     input UserInput {
       age: String
     }
 ''');
 
-    expect(parsed is Success, true);
-
     var userInput = g.inputs['UserInput']!;
-    var serializer = JavaSerializer(g, immutableInputFields: true, immutableTypeFields: false);
-    var serializedInput = serializer.serializeInputDefinition(userInput, "com.myorg");
+    var serializer = JavaSerializer(g,
+        immutableInputFields: true, immutableTypeFields: false);
+    var serializedInput =
+        serializer.serializeInputDefinition(userInput, "com.myorg");
 
     print(serializedInput);
     expect(serializedInput, contains("private final String age;"));
@@ -528,19 +581,21 @@ void main() {
     expect(serializedInput, isNot(contains("public void setAge")));
   });
 
-  test("serialize type: final field with no getter when immutableTypeFields = true", () {
-    final GLGrammar g = GLGrammar(typeMap: {}, mode: CodeGenerationMode.server);
-    var parsed = g.parse('''
+  test(
+      "serialize type: final field with no getter when immutableTypeFields = true",
+      () {
+    final GLParser g = GLParser(typeMap: {}, mode: CodeGenerationMode.server);
+    g.parse('''
     type UserInput {
       age: String
     }
 ''');
 
-    expect(parsed is Success, true);
-
     var userInput = g.types['UserInput']!;
-    var serializer = JavaSerializer(g, immutableInputFields: true, immutableTypeFields: true);
-    var serializedInput = serializer.serializeTypeDefinition(userInput, "com.myorg");
+    var serializer = JavaSerializer(g,
+        immutableInputFields: true, immutableTypeFields: true);
+    var serializedInput =
+        serializer.serializeTypeDefinition(userInput, "com.myorg");
 
     print(serializedInput);
     expect(serializedInput, contains("private final String age;"));

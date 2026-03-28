@@ -1,16 +1,17 @@
 import 'package:graphlink/src/constants.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gl_grammar.dart';
-import 'package:petitparser/petitparser.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 void main() async {
-  test("should not generate all_field_framents on client objects such as GraphLinkPayload", () {
-    final GLGrammar g = GLGrammar(
+  test(
+      "should not generate all_field_framents on client objects such as GraphLinkPayload",
+      () {
+    final GLParser g = GLParser(
       nullableFieldsRequired: false,
       generateAllFieldsFragments: true,
       autoGenerateQueries: true,
     );
-    var parsed = g.parse('''
+    g.parse('''
 ${getClientObjects()}
 
   type Person {
@@ -20,7 +21,8 @@ ${getClientObjects()}
     getPerson: Person
   }
 ''');
-    expect(parsed is Success, true);
-    expect(g.fragments.keys.where((e) => e.startsWith('_all_fields_GQ')), isEmpty);
+
+    expect(
+        g.fragments.keys.where((e) => e.startsWith('_all_fields_GQ')), isEmpty);
   });
 }

@@ -13,6 +13,7 @@ class GLSchema extends GLExtensibleToken with GLDirectivesMixin {
     super.extension, {
     required List<SchemaElement> operationTypes,
     required List<GLDirectiveValue> directives,
+    super.documentation,
   }) {
     directives.forEach(addDirective);
     operationTypes.forEach(addSchemaElement);

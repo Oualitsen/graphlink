@@ -2,17 +2,18 @@ import 'dart:io';
 
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gl_grammar.dart';
-import 'package:petitparser/petitparser.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 void main() {
   test("equals hascode on type", () {
-    final text = File("test/equals_hashcode_test/equals_hashcode.graphql").readAsStringSync();
-    var g = GLGrammar(identityFields: ["id"]);
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
-    expect(g.projectedTypes.keys, containsAll(["MyProduct", "Entity", "OtherEntity"]));
+    final text = File("test/equals_hashcode_test/equals_hashcode.graphql")
+        .readAsStringSync();
+    var g = GLParser(identityFields: ["id"]);
+
+    g.parse(text);
+
+    expect(g.projectedTypes.keys,
+        containsAll(["MyProduct", "Entity", "OtherEntity"]));
     var entity = g.projectedTypes["Entity"]!;
     var serializer = DartSerializer(g);
     var entityDart = serializer.serializeTypeDefinition(entity, "");
@@ -24,7 +25,8 @@ void main() {
     var serilaizer = DartSerializer(g);
     var productDart = serilaizer.serializeTypeDefinition(myProduct, "");
     print(productDart);
-    expect(productDart, contains("int get hashCode => Object.hashAll([id, name]);"));
+    expect(productDart,
+        contains("int get hashCode => Object.hashAll([id, name]);"));
 
     // should not contain
     var otherEntity = g.projectedTypes["OtherEntity"]!;

@@ -1,4 +1,4 @@
-import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_directives_mixin.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
@@ -27,7 +27,7 @@ class GLRepository extends GLInterfaceDefinition {
   }
 
   @override
-  Set<GLToken> getImportDependecies(GLGrammar g) {
+  Set<GLToken> getImportDependecies(GLParser g) {
     var result = {...super.getImportDependecies(g)};
     var repoDir = getDirectiveByName(glRepository)!;
     var token1 = _addDepency(g, repoDir.getArgValueAsString(glType));
@@ -37,7 +37,7 @@ class GLRepository extends GLInterfaceDefinition {
   }
 
   @override
-  Set<String> getImports(GLGrammar g) {
+  Set<String> getImports(GLParser g) {
     var result = {...super.getImports(g)};
     var repoDir = getDirectiveByName(glRepository)!;
     result.addAll(_extractImports(repoDir.getArgValueAsString(glType), g));
@@ -45,17 +45,19 @@ class GLRepository extends GLInterfaceDefinition {
     return result;
   }
 
-  Set<String> _extractImports(String? key, GLGrammar g) {
+  Set<String> _extractImports(String? key, GLParser g) {
     if (key != null) {
       var token = g.getTokenByKey(key);
       if (token is GLDirectivesMixin) {
-        return GLTokenWithFields.extractImports(token as GLDirectivesMixin, g.mode, skipOwnImports: true);
+        return GLTokenWithFields.extractImports(
+            token as GLDirectivesMixin, g.mode,
+            skipOwnImports: true);
       }
     }
     return {};
   }
 
-  GLToken? _addDepency(GLGrammar g, String? key) {
+  GLToken? _addDepency(GLParser g, String? key) {
     if (key == null) {
       return null;
     }

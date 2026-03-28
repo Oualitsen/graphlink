@@ -1,12 +1,11 @@
 import 'package:test/test.dart';
-import 'package:graphlink/src/gl_grammar.dart';
-import 'package:petitparser/petitparser.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 void main() {
   test("Enum init test", () {
-    final g = GLGrammar();
+    final g = GLParser();
 
-    var result = g.parse('''
+    g.parse('''
       enum Gender  {
         male female
       }
@@ -14,6 +13,5 @@ void main() {
         getGender(value: Gender! = male): Gender
       }
     ''');
-    expect(result is Success, true);
   });
 }

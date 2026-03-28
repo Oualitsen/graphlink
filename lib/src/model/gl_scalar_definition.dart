@@ -8,7 +8,8 @@ class GLScalarDefinition extends GLExtensibleToken with GLDirectivesMixin {
     required TokenInfo token,
     required List<GLDirectiveValue> directives,
     required bool extension,
-  }) : super(token, extension) {
+    String? documentation,
+  }) : super(token, extension, documentation: documentation) {
     directives.forEach(addDirective);
   }
 

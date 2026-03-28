@@ -9,11 +9,14 @@ import 'package:graphlink_cache_integration_tests/generated/interfaces/graph_lin
 
 
 class GraphLinkSubscriptionErrorMessage implements GraphLinkSubscriptionErrorMessageBase {
-   final String? id;
-   final String? type;
+   @override
+  final String? id;
+   @override
+  final String? type;
    final List<GraphLinkError>? payload;
    GraphLinkSubscriptionErrorMessage({this.id, this.type, this.payload});
-   Map<String, dynamic> toJson() {
+   @override
+  Map<String, dynamic> toJson() {
       return {
          'id': id,
          'type': type,

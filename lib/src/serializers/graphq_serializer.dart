@@ -1,5 +1,5 @@
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
@@ -33,12 +33,15 @@ const _skippedDirectives = {
 
 bool _shouldSkipDriectiveDefinition(GLDirectiveDefinition def) {
   return _skippedDirectives.contains(def.name.token) ||
-      def.arguments.where((arg) => arg.token == glAnnotation && arg.type.token == "Boolean").isNotEmpty;
+      def.arguments
+          .where(
+              (arg) => arg.token == glAnnotation && arg.type.token == "Boolean")
+          .isNotEmpty;
 }
 
 bool _shouldSkipDriectiveValue(GLDirectiveValue def) {
   return _skippedDirectives.contains(def.token) ||
-      GLGrammar.directivesToSkip.contains(def.token) ||
+      GLParser.directivesToSkip.contains(def.token) ||
       def.getArgValueAsBool(glAnnotation);
 }
 
@@ -46,56 +49,62 @@ bool _shouldSkipDriectiveValue(GLDirectiveValue def) {
 const clientMode = CodeGenerationMode.client;
 
 class GLGraphqSerializer {
-  final GLGrammar grammar;
+  final GLParser parser;
   final bool escapeDolar;
 
-  GLGraphqSerializer(this.grammar, [this.escapeDolar = true]);
+  GLGraphqSerializer(this.parser, [this.escapeDolar = true]);
 
   String generateSchema() {
     final buffer = StringBuffer();
 
     ///schema
-    buffer.writeln(serializeSchemaDefinition(grammar.schema));
+    buffer.writeln(serializeSchemaDefinition(parser.schema));
 
     /// sacalars
 
-    var scalars = filterSerialization(grammar.scalars.values, clientMode)
-        .where((s) => !grammar.builtInScalars.contains(s.token))
+    var scalars = filterSerialization(parser.scalars.values, clientMode)
+        .where((s) => !parser.builtInScalars.contains(s.token))
         .map(serializeScalarDefinition)
         .join("\n");
     buffer.writeln(scalars);
 
     /// directives
 
-    var directiveDefinitions =
-        grammar.directiveDefinitions.values.map(serializeDirectiveDefinition).where((s) => s.isNotEmpty).join("\n");
+    var directiveDefinitions = parser.directiveDefinitions.values
+        .map(serializeDirectiveDefinition)
+        .where((s) => s.isNotEmpty)
+        .join("\n");
 
     buffer.writeln(directiveDefinitions);
 
     // inputs
-    var inputSerial = filterSerialization(grammar.inputs.values, clientMode)
+    var inputSerial = filterSerialization(parser.inputs.values, clientMode)
         .map((e) => serializeInputDefinition(e, clientMode))
         .join("\n");
     buffer.writeln(inputSerial);
 
     // types
-    var typesSerial = filterSerialization(grammar.types.values, clientMode)
+    var typesSerial = filterSerialization(parser.types.values, clientMode)
         .map((e) => serializeTypeDefinition(e, clientMode))
         .join("\n");
     buffer.writeln(typesSerial);
     // interfaces
 
-    var interfacesSerial = filterSerialization(grammar.interfaces.values, clientMode)
-        .where((i) => !i.fromUnion)
-        .map((e) => serializeTypeDefinition(e, clientMode))
-        .join("\n");
+    var interfacesSerial =
+        filterSerialization(parser.interfaces.values, clientMode)
+            .where((i) => !i.fromUnion)
+            .map((e) => serializeTypeDefinition(e, clientMode))
+            .join("\n");
     buffer.writeln(interfacesSerial);
     // enums
-    var enumsSerial = filterSerialization(grammar.enums.values, clientMode).map(serializeEnumDefinition).join("\n");
+    var enumsSerial = filterSerialization(parser.enums.values, clientMode)
+        .map(serializeEnumDefinition)
+        .join("\n");
     buffer.writeln(enumsSerial);
 
     //unions
-    var unionSerial = grammar.unions.values.map(serializeUnionDefinition).join("\n");
+    var unionSerial =
+        parser.unions.values.map(serializeUnionDefinition).join("\n");
     buffer.writeln(unionSerial);
 
     return buffer.toString();
@@ -117,7 +126,9 @@ scalar ${def.tokenInfo} ${serializeDirectiveValueList(def.getDirectives(skipGene
       return '';
     }
     var arguments = value.getArguments();
-    var args = arguments.isEmpty ? "" : "(${arguments.map((e) => serializeArgumentValue(e)).join(", ")})";
+    var args = arguments.isEmpty
+        ? ""
+        : "(${arguments.map((e) => serializeArgumentValue(e)).join(", ")})";
     return "${value.tokenInfo}$args";
   }
 
@@ -141,7 +152,8 @@ directive ${def.name}${serializeDirectiveArgs(def.arguments)} on ${def.scopes.ma
   }
 
   String serializeArgumentDefinition(GLArgumentDefinition def) {
-    var buffer = StringBuffer("${_escapeDolar(def.token)}: ${serializeType(def.type)}");
+    var buffer =
+        StringBuffer("${_escapeDolar(def.token)}: ${serializeType(def.type)}");
     if (def.initialValue != null) {
       buffer.write(" = ${def.initialValue}");
     }
@@ -156,8 +168,10 @@ directive ${def.name}${serializeDirectiveArgs(def.arguments)} on ${def.scopes.ma
   }
 
   String serializeSchemaDefinition(GLSchema schema) {
-    var inner =
-        GLQueryType.values.where((value) => grammar.types.containsKey(schema.getByQueryType(value))).map((value) {
+    var inner = GLQueryType.values
+        .where(
+            (value) => parser.types.containsKey(schema.getByQueryType(value)))
+        .map((value) {
       switch (value) {
         case GLQueryType.query:
           return "query: ${schema.getByQueryType(value)}";
@@ -178,7 +192,8 @@ ${inner.join("\n").ident()}
         .trim();
   }
 
-  String serializeInputDefinition(GLInputDefinition def, CodeGenerationMode mode) {
+  String serializeInputDefinition(
+      GLInputDefinition def, CodeGenerationMode mode) {
     return '''
 input ${def.tokenInfo} ${serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}{
 ${def.getSerializableFields(mode, skipGenerated: true).map(serializeField).map((e) => e.ident()).join("\n")}
@@ -186,9 +201,11 @@ ${def.getSerializableFields(mode, skipGenerated: true).map(serializeField).map((
 ''';
   }
 
-  String serializeTypeDefinition(GLTypeDefinition def, CodeGenerationMode mode) {
+  String serializeTypeDefinition(
+      GLTypeDefinition def, CodeGenerationMode mode) {
     String type;
-    Iterable<String> interfaces = def.getInterfaceNames().where((i) => !grammar.interfaces[i]!.fromUnion);
+    Iterable<String> interfaces =
+        def.getInterfaceNames().where((i) => !parser.interfaces[i]!.fromUnion);
     if (def is GLInterfaceDefinition) {
       type = "interface";
     } else {
@@ -200,14 +217,18 @@ ${def.getSerializableFields(mode, skipGenerated: true).map(serializeField).map((
       result.write(" implements ");
       result.write(interfaces.join(" & "));
     }
-    var directives = serializeDirectiveValueList(def.getDirectives(skipGenerated: true));
+    var directives =
+        serializeDirectiveValueList(def.getDirectives(skipGenerated: true));
     if (directives.isNotEmpty) {
       result.write(" ");
       result.write(directives);
     }
     result.writeln(" {");
-    result.writeln(
-        def.getSerializableFields(mode, skipGenerated: true).map(serializeField).map((e) => e.ident()).join("\n"));
+    result.writeln(def
+        .getSerializableFields(mode, skipGenerated: true)
+        .map(serializeField)
+        .map((e) => e.ident())
+        .join("\n"));
     result.write("}");
     return result.toString();
   }
@@ -235,7 +256,8 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
   }
 
   String serializeType(GLType glType, {bool forceNullable = false}) {
-    String nullableText = forceNullable ? '' : _getNullableText(glType.nullable);
+    String nullableText =
+        forceNullable ? '' : _getNullableText(glType.nullable);
     if (glType.isList) {
       return "[${serializeType(glType.inlineType)}]${nullableText}";
     }
@@ -284,8 +306,10 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
 
   String serializeProjection(GLProjection proj) {
     if (proj is GLInlineFragmentsProjection) {
-      return serializeListText(proj.inlineFragments.map(serializeInlineFragment).toList(),
-          join: " ", withParenthesis: false);
+      return serializeListText(
+          proj.inlineFragments.map(serializeInlineFragment).toList(),
+          join: " ",
+          withParenthesis: false);
     }
     final buffer = StringBuffer();
     if (proj.isFragmentReference) {
@@ -298,7 +322,8 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
       buffer.write(proj.targetToken);
     }
     if (proj.getDirectives(skipGenerated: true).isNotEmpty) {
-      buffer.write(serializeDirectiveValueList(proj.getDirectives(skipGenerated: true)));
+      buffer.write(
+          serializeDirectiveValueList(proj.getDirectives(skipGenerated: true)));
     }
 
     if (proj.block != null) {
@@ -315,10 +340,12 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
     return """${def.type.name} ${def.tokenInfo}${serializeListText(def.arguments.map(serializeArgumentDefinition).toList(), join: ",")}${serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}{${serializeListText(def.elements.map(serializeQueryElement).toList(), join: " ", withParenthesis: false)}}""";
   }
 
-  List<DividedQuery> divideQueryDefinition(GLQueryDefinition def, GLGrammar grammar) {
+  List<DividedQuery> divideQueryDefinition(
+      GLQueryDefinition def, GLParser grammar) {
     var result = <DividedQuery>[];
     for (var element in def.elements) {
-      final operationName = '${def.token}_${element.alias ?? ''}_${element.token}';
+      final operationName =
+          '${def.token}_${element.alias ?? ''}_${element.token}';
       var serialQuery = serializeQueryElement(element);
       final dq = DividedQuery(
         query: serialQuery,
@@ -327,9 +354,17 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
         tags: element.cacheTags,
         elementKey: element.alias?.token ?? element.token,
         variables: [...element.arguments.map((e) => e.value?.toString() ?? '')],
-        fragmentNames: element.getFragmentsAndDependecies(grammar).map((e) => e.token).toSet(),
-        argumentDeclarations: element.arguments.map((arg) => "${arg.value}: ${serializeType(arg.type)}").toList(),
-        staleIfOffline: element.getDirectiveByName(glCache)?.getArgValueAsBool(glCacheArgStaleIfOffline) ?? false,
+        fragmentNames: element
+            .getFragmentsAndDependecies(grammar)
+            .map((e) => e.token)
+            .toSet(),
+        argumentDeclarations: element.arguments
+            .map((arg) => "${arg.value}: ${serializeType(arg.type)}")
+            .toList(),
+        staleIfOffline: element
+                .getDirectiveByName(glCache)
+                ?.getArgValueAsBool(glCacheArgStaleIfOffline) ??
+            false,
       );
       result.add(dq);
     }

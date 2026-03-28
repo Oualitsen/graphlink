@@ -1,5 +1,5 @@
 import 'package:graphlink/src/excpetions/parse_exception.dart';
-import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_directives_mixin.dart';
@@ -8,7 +8,7 @@ import 'package:graphlink/src/model/gl_token.dart';
 
 final _cacheTagRegExp = RegExp(r'^[a-zA-Z0-9_]+$');
 
-extension GLGrammarCacheExtension on GLGrammar {
+extension GLGrammarCacheExtension on GLParser {
   ///
   ///glCache/glNoCache should not be applied to mutations or subscriptions
   ///
@@ -43,11 +43,13 @@ extension GLGrammarCacheExtension on GLGrammar {
     });
   }
 
-  void _checkInvalidateCacheOnMutationsAndSubscriptionsElements(List<GLQueryElement> elements) {
+  void _checkInvalidateCacheOnMutationsAndSubscriptionsElements(
+      List<GLQueryElement> elements) {
     elements.forEach(_checkForCacheInvalidateExistanceAndThrow);
   }
 
-  void _checkCacheOnMutationsAndSubscriptionsElements(List<GLQueryElement> elements) {
+  void _checkCacheOnMutationsAndSubscriptionsElements(
+      List<GLQueryElement> elements) {
     elements.forEach(_checkForCacheExistanceAndThrow);
   }
 
@@ -133,10 +135,12 @@ extension GLGrammarCacheExtension on GLGrammar {
       // check TTL is not null
       var ttlObject = directive.getArgValue(glCacheTTL);
       if (ttlObject == null) {
-        throw ParseException("${glCacheTTL} is required on $glCache directives", info: directive.tokenInfo);
+        throw ParseException("${glCacheTTL} is required on $glCache directives",
+            info: directive.tokenInfo);
       }
       if (ttlObject is! int || ttlObject < 0) {
-        throw ParseException("${glCacheTTL} on $glCache directives should be a positive integer! found: ${ttlObject}",
+        throw ParseException(
+            "${glCacheTTL} on $glCache directives should be a positive integer! found: ${ttlObject}",
             info: directive.tokenInfo);
       }
       final staleIfOffline = directive.getArgValue(glCacheArgStaleIfOffline);
@@ -159,7 +163,8 @@ extension GLGrammarCacheExtension on GLGrammar {
         .where((d) => d.token == glCacheInvalidate)
         .where((e) => e.getArgValue(glCacheTagList) != null)
         .forEach((directive) {
-      var tagList = (directive.getArgValue(glCacheTagList) as List).cast<String>();
+      var tagList =
+          (directive.getArgValue(glCacheTagList) as List).cast<String>();
       for (var tag in tagList) {
         if (!allTags.contains(tag)) {
           throw ParseException(
@@ -172,7 +177,9 @@ extension GLGrammarCacheExtension on GLGrammar {
   }
 
   void checkGLCacheInvalidateDirectives() {
-    directiveValues.where((d) => d.token == glCacheInvalidate).forEach((directive) {
+    directiveValues
+        .where((d) => d.token == glCacheInvalidate)
+        .forEach((directive) {
       var all = directive.getArgValue(glCacheArgAll);
       var tags = directive.getArgValue(glCacheTagList);
 
@@ -193,7 +200,8 @@ extension GLGrammarCacheExtension on GLGrammar {
       final allArg = all as bool?;
       final tagsList = tags as List?;
 
-      if ((allArg == null || allArg == false) && (tagsList == null || tagsList.isEmpty)) {
+      if ((allArg == null || allArg == false) &&
+          (tagsList == null || tagsList.isEmpty)) {
         throw ParseException(
           "$glCacheInvalidate requires either $glCacheArgAll: true or a non-empty $glCacheTagList",
           info: directive.tokenInfo,
@@ -211,10 +219,14 @@ extension GLGrammarCacheExtension on GLGrammar {
   }
 
   void propagateCacheTags() {
-    queries.values.where((q) => q.type == GLQueryType.query).where((q) => q.hasDirective(glCache)).forEach((q) {
+    queries.values
+        .where((q) => q.type == GLQueryType.query)
+        .where((q) => q.hasDirective(glCache))
+        .forEach((q) {
       final cache = q.getDirectiveByName(glCache)!;
       final ttl = cache.getArgValue(glCacheTTL) as int;
-      final tags = (cache.getArgValue(glCacheTagList) as List? ?? []).cast<String>();
+      final tags =
+          (cache.getArgValue(glCacheTagList) as List? ?? []).cast<String>();
       for (final elm in q.elements) {
         elm.propagateCache(ttl, tags);
       }
@@ -227,7 +239,8 @@ extension GLGrammarCacheExtension on GLGrammar {
         .where((q) => q.hasDirective(glCacheInvalidate))
         .forEach((q) {
       final cache = q.getDirectiveByName(glCacheInvalidate)!;
-      final tags = (cache.getArgValue(glCacheTagList) as List? ?? []).cast<String>();
+      final tags =
+          (cache.getArgValue(glCacheTagList) as List? ?? []).cast<String>();
       final invalidateAll = cache.getArgValueAsBool(glCacheArgAll);
       for (final elm in q.elements) {
         elm.propagateInvalidateCache(invalidateAll, tags);

@@ -4,8 +4,7 @@ import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/serializers/language.dart';
 import 'package:graphlink/src/serializers/spring_server_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gl_grammar.dart';
-import 'package:petitparser/petitparser.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 void main() {
   final typeMapping = {
@@ -19,15 +18,17 @@ void main() {
   };
 
   test("test backend handlers 1", () {
-    final GLGrammar g =
-        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLParser g = GLParser(
+        identityFields: ["id"],
+        typeMap: typeMapping,
+        mode: CodeGenerationMode.server);
 
     final text =
-        File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
+        File("test/serializers/java/backend/spring_server_serializer.graphql")
+            .readAsStringSync();
 
-    expect(parsed is Success, true);
+    g.parse(text);
+
     var serverSerialzer = SpringServerSerializer(g);
     var userCtrl = g.controllers["UserServiceController"]!;
     var result = serverSerialzer.serializeController(userCtrl, "myorg");
@@ -71,15 +72,17 @@ void main() {
   });
 
   test("test backend handlers 2", () {
-    final GLGrammar g =
-        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLParser g = GLParser(
+        identityFields: ["id"],
+        typeMap: typeMapping,
+        mode: CodeGenerationMode.server);
 
     final text =
-        File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
+        File("test/serializers/java/backend/spring_server_serializer.graphql")
+            .readAsStringSync();
 
-    expect(parsed is Success, true);
+    g.parse(text);
+
     var serverSerialzer = SpringServerSerializer(g);
     var userUser = g.controllers["UserServiceController"]!;
     var result = serverSerialzer.serializeController(userUser, "");
@@ -123,15 +126,17 @@ void main() {
   });
 
   test("test backend handlers when shcema generation is on", () {
-    final GLGrammar g =
-        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLParser g = GLParser(
+        identityFields: ["id"],
+        typeMap: typeMapping,
+        mode: CodeGenerationMode.server);
 
     final text =
-        File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
+        File("test/serializers/java/backend/spring_server_serializer.graphql")
+            .readAsStringSync();
 
-    expect(parsed is Success, true);
+    g.parse(text);
+
     var serverSerialzer = SpringServerSerializer(g, generateSchema: true);
     var userUser = g.controllers["UserServiceController"]!;
     var result = serverSerialzer.serializeController(userUser, "");
@@ -177,15 +182,17 @@ void main() {
   });
 
   test("test controller/service returning skipped type ", () {
-    final GLGrammar g =
-        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLParser g = GLParser(
+        identityFields: ["id"],
+        typeMap: typeMapping,
+        mode: CodeGenerationMode.server);
 
     final text =
-        File("test/serializers/java/backend/spring_server_serializer2.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
+        File("test/serializers/java/backend/spring_server_serializer2.graphql")
+            .readAsStringSync();
 
-    expect(parsed is Success, true);
+    g.parse(text);
+
     var userCarService = g.services["UserCarService"]!;
     var userCarCtrl = g.controllers["UserCarServiceController"]!;
 
@@ -207,44 +214,55 @@ void main() {
   });
 
   test("test controller/service returning skipped type (batch mapping) ", () {
-    final GLGrammar g =
-        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLParser g = GLParser(
+        identityFields: ["id"],
+        typeMap: typeMapping,
+        mode: CodeGenerationMode.server);
 
     final text =
-        File("test/serializers/java/backend/spring_server_serializer2.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
+        File("test/serializers/java/backend/spring_server_serializer2.graphql")
+            .readAsStringSync();
 
-    expect(parsed is Success, true);
+    g.parse(text);
+
     var serialzer = SpringServerSerializer(g);
 
     var ownerAnimalService = g.services["OwnerWithAnimalService"]!;
-    var ownerAnimalMappingService = g.services[g.serviceMappingName("OwnerWithAnimal")]!;
+    var ownerAnimalMappingService =
+        g.services[g.serviceMappingName("OwnerWithAnimal")]!;
     var ownerServiceSerial = serialzer.serializeService(ownerAnimalService, "");
-    var ownerServiceMappingSerial = serialzer.serializeService(ownerAnimalMappingService, "");
+    var ownerServiceMappingSerial =
+        serialzer.serializeService(ownerAnimalMappingService, "");
 
-    expect(ownerServiceSerial, stringContainsInOrder(["List<Owner> getOwnwers();"]));
+    expect(ownerServiceSerial,
+        stringContainsInOrder(["List<Owner> getOwnwers();"]));
 
-    expect(ownerServiceMappingSerial,
-        stringContainsInOrder(["Map<Owner, Animal> ownerWithAnimalAnimal(List<Owner> value);"]));
+    expect(
+        ownerServiceMappingSerial,
+        stringContainsInOrder(
+            ["Map<Owner, Animal> ownerWithAnimalAnimal(List<Owner> value);"]));
   });
 
   test("test controller/service returning skipped type with no mapTo 1", () {
-    final GLGrammar g =
-        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLParser g = GLParser(
+        identityFields: ["id"],
+        typeMap: typeMapping,
+        mode: CodeGenerationMode.server);
 
     final text =
-        File("test/serializers/java/backend/spring_server_serializer2.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
+        File("test/serializers/java/backend/spring_server_serializer2.graphql")
+            .readAsStringSync();
 
-    expect(parsed is Success, true);
+    g.parse(text);
+
     var serialzer = SpringServerSerializer(g);
 
     var ownerAnimalService = g.services["OwnerWithAnimal2Service"]!;
-    var ownerAnimalMappingService = g.services[g.serviceMappingName("OwnerWithAnimal2")]!;
+    var ownerAnimalMappingService =
+        g.services[g.serviceMappingName("OwnerWithAnimal2")]!;
     var ownerServiceSerial = serialzer.serializeService(ownerAnimalService, "");
-    var ownerServiceMappingSerial = serialzer.serializeService(ownerAnimalMappingService, "");
+    var ownerServiceMappingSerial =
+        serialzer.serializeService(ownerAnimalMappingService, "");
     expect(
         ownerServiceSerial,
         stringContainsInOrder([
@@ -259,21 +277,25 @@ void main() {
   });
 
   test("test controller/service returning skipped type with no mapTo 2", () {
-    final GLGrammar g =
-        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLParser g = GLParser(
+        identityFields: ["id"],
+        typeMap: typeMapping,
+        mode: CodeGenerationMode.server);
 
     final text =
-        File("test/serializers/java/backend/spring_server_serializer2.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
+        File("test/serializers/java/backend/spring_server_serializer2.graphql")
+            .readAsStringSync();
 
-    expect(parsed is Success, true);
+    g.parse(text);
+
     var serialzer = SpringServerSerializer(g);
 
     var ownerAnimalService = g.services["OwnerWithAnimal3Service"]!;
-    var ownerAnimalServiceMapping = g.services[g.serviceMappingName("OwnerWithAnimal3")]!;
+    var ownerAnimalServiceMapping =
+        g.services[g.serviceMappingName("OwnerWithAnimal3")]!;
     var ownerServiceSerial = serialzer.serializeService(ownerAnimalService, "");
-    var ownerServiceMappingSerial = serialzer.serializeService(ownerAnimalServiceMapping, "");
+    var ownerServiceMappingSerial =
+        serialzer.serializeService(ownerAnimalServiceMapping, "");
     expect(
         ownerServiceSerial,
         stringContainsInOrder([
@@ -288,15 +310,17 @@ void main() {
   });
 
   test("test backend handlers with DataFetchingEnvironment injection", () {
-    final GLGrammar g =
-        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLParser g = GLParser(
+        identityFields: ["id"],
+        typeMap: typeMapping,
+        mode: CodeGenerationMode.server);
 
     final text =
-        File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
+        File("test/serializers/java/backend/spring_server_serializer.graphql")
+            .readAsStringSync();
 
-    expect(parsed is Success, true);
+    g.parse(text);
+
     var serverSerialzer = SpringServerSerializer(g, injectDataFetching: true);
     var userCtrl = g.controllers["UserServiceController"]!;
     var result = serverSerialzer.serializeController(userCtrl, "");
@@ -319,15 +343,17 @@ void main() {
   });
 
   test("test serialize Service (User Service)", () {
-    final GLGrammar g =
-        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLParser g = GLParser(
+        identityFields: ["id"],
+        typeMap: typeMapping,
+        mode: CodeGenerationMode.server);
 
     final text =
-        File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
+        File("test/serializers/java/backend/spring_server_serializer.graphql")
+            .readAsStringSync();
 
-    expect(parsed is Success, true);
+    g.parse(text);
+
     var serverSerialzer = SpringServerSerializer(g);
     var userService = g.services["UserService"]!;
     var serializedService = serverSerialzer.serializeService(userService, "");
@@ -345,15 +371,17 @@ void main() {
   });
 
   test("test serialize Service (Car Service)", () {
-    final GLGrammar g =
-        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLParser g = GLParser(
+        identityFields: ["id"],
+        typeMap: typeMapping,
+        mode: CodeGenerationMode.server);
 
     final text =
-        File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
+        File("test/serializers/java/backend/spring_server_serializer.graphql")
+            .readAsStringSync();
 
-    expect(parsed is Success, true);
+    g.parse(text);
+
     var serverSerialzer = SpringServerSerializer(g);
 
     var carService = g.services["CarService"]!;
@@ -367,15 +395,17 @@ void main() {
   });
 
   test("test serialize Service with DataFetchingEnvironment", () {
-    final GLGrammar g =
-        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLParser g = GLParser(
+        identityFields: ["id"],
+        typeMap: typeMapping,
+        mode: CodeGenerationMode.server);
 
     final text =
-        File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
+        File("test/serializers/java/backend/spring_server_serializer.graphql")
+            .readAsStringSync();
 
-    expect(parsed is Success, true);
+    g.parse(text);
+
     var serverSerialzer = SpringServerSerializer(g, injectDataFetching: true);
 
     var carService = g.services["CarService"]!;
@@ -390,15 +420,17 @@ void main() {
   });
 
   test("test serialize Handler", () {
-    final GLGrammar g =
-        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLParser g = GLParser(
+        identityFields: ["id"],
+        typeMap: typeMapping,
+        mode: CodeGenerationMode.server);
 
     final text =
-        File("test/serializers/java/backend/spring_server_serializer.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
+        File("test/serializers/java/backend/spring_server_serializer.graphql")
+            .readAsStringSync();
 
-    expect(parsed is Success, true);
+    g.parse(text);
+
     var serverSerialzer = SpringServerSerializer(g);
     var userService = g.services["UserService"]!;
     var serializedService = serverSerialzer.serializeService(userService, "");
@@ -417,8 +449,10 @@ void main() {
       'void': 'void',
     };
 
-    final GLGrammar g =
-        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLParser g = GLParser(
+        identityFields: ["id"],
+        typeMap: typeMapping,
+        mode: CodeGenerationMode.server);
 
     const text = '''
   scalar void
@@ -434,18 +468,18 @@ void main() {
 
 ''';
 
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
+    g.parse(text);
 
-    expect(parsed is Success, true);
     var serverSerialzer = SpringServerSerializer(g);
     var userController = g.controllers["UserServiceController"]!;
 
-    var controllerSerial = serverSerialzer.serializeController(userController, "com.myorg");
+    var controllerSerial =
+        serverSerialzer.serializeController(userController, "com.myorg");
 
     print(controllerSerial);
     expect(controllerSerial, contains('serService.deleteUser();'));
-    expect(controllerSerial, isNot(contains('return userService.deleteUser();')));
+    expect(
+        controllerSerial, isNot(contains('return userService.deleteUser();')));
 
     print("DONE");
   });

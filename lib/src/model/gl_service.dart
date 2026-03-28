@@ -1,5 +1,5 @@
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_controller.dart';
 import 'package:graphlink/src/model/gl_directives_mixin.dart';
@@ -37,10 +37,11 @@ class GLService extends GLInterfaceDefinition {
   }
 
   List<GLSchemaMapping> get mappings => _mappings.values.toList();
-  List<GLSchemaMapping> get serviceMapping => _mappings.values.where((e) => !e.forbid && !e.identity).toList();
+  List<GLSchemaMapping> get serviceMapping =>
+      _mappings.values.where((e) => !e.forbid && !e.identity).toList();
 
   @override
-  Set<GLToken> getImportDependecies(GLGrammar g) {
+  Set<GLToken> getImportDependecies(GLParser g) {
     var mappings = this is GLController ? this.mappings : serviceMapping;
     if (mappings.isEmpty) {
       return super.getImportDependecies(g);
@@ -74,9 +75,11 @@ class GLService extends GLInterfaceDefinition {
     return result;
   }
 
-  GLToken? _getMappedTo(GLGrammar g, GLToken? token) {
+  GLToken? _getMappedTo(GLParser g, GLToken? token) {
     if (token is GLDirectivesMixin) {
-      var mappedTo = (token as GLDirectivesMixin).getDirectiveByName(glSkipOnServer)?.getArgValueAsString(glMapTo);
+      var mappedTo = (token as GLDirectivesMixin)
+          .getDirectiveByName(glSkipOnServer)
+          ?.getArgValueAsString(glMapTo);
       if (filterDependecy(g.types[mappedTo], g)) {
         return g.types[mappedTo];
       }
@@ -84,7 +87,7 @@ class GLService extends GLInterfaceDefinition {
     return null;
   }
 
-  List<GLToken> _getTokenFields(GLToken? typeToken, GLGrammar g) {
+  List<GLToken> _getTokenFields(GLToken? typeToken, GLParser g) {
     if (typeToken == null || typeToken is! GLTypeDefinition) {
       return [];
     }
@@ -92,7 +95,8 @@ class GLService extends GLInterfaceDefinition {
     var result = <GLToken>[];
     // get all fields that are skipped on server
 
-    var fields = typeToken.fields.where((f) => f.getDirectiveByName(glSkipOnServer) != null);
+    var fields = typeToken.fields
+        .where((f) => f.getDirectiveByName(glSkipOnServer) != null);
     for (var f in fields) {
       var token = g.getTokenByKey(f.type.token);
       if (filterDependecy(token, g)) {
