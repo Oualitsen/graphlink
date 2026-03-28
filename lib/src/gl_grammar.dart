@@ -1,6 +1,5 @@
-import 'dart:io';
-
 import 'package:graphlink/src/gl_grammar_cache_extension.dart';
+import 'package:graphlink/src/model/gl_logical_file.dart';
 import 'package:logger/logger.dart';
 import 'package:graphlink/src/excpetions/parse_exception.dart';
 import 'package:graphlink/src/extensions.dart';
@@ -225,27 +224,22 @@ class GLGrammar extends GrammarDefinition {
     return parse(text);
   }
 
-  Result parse(String text) {
+  Result parse(String text, {bool validate = true}) {
+    _validate = validate;
     var parser = buildFrom(fullGrammar().end());
     return parser.parse(text);
   }
 
-  Future<Result> parseFile(String path, {bool validate = true}) async {
-    lastParsedFile = path;
-    var text = await File(path).readAsString();
-    _validate = validate;
-    var result = parse(text);
-    return result;
+  Result parseFile(GLLogicalFile file, {bool validate = true}) {
+    lastParsedFile = file.path;
+    return parse(file.data, validate: validate);
   }
 
-  Future<List<Result>> parseFiles(List<String> paths,
-      {String? extraGql}) async {
+  List<Result> parseFiles(List<GLLogicalFile> files, {String? extraGql}) {
     var result = <Result>[];
-
-    for (var path in paths) {
-      var parseResult = await parseFile(path,
-          validate: extraGql == null && path == paths.last);
-      result.add(parseResult);
+    for (var i = 0; i < files.length; i++) {
+      final isLast = i == files.length - 1;
+      result.add(parseFile(files[i], validate: extraGql == null && isLast));
     }
     if (extraGql != null) {
       result.add(parseAndValidate(extraGql));
@@ -271,11 +265,11 @@ class GLGrammar extends GrammarDefinition {
               ].toChoiceParser())
           .star()
           .map((value) {
-        _validateSemantics();
+        validateSemantics();
         return value;
       });
 
-  void _validateSemantics() {
+  void validateSemantics() {
     if (!_validate) {
       return;
     }
@@ -562,7 +556,7 @@ class GLGrammar extends GrammarDefinition {
                           ref1(token, identifier()), directiveValueList())
                       .map3((comment, value, directives) => GLEnumValue(
                           value: value,
-                          comment: comment,
+                          documentation: comment,
                           directives: directives))
                       .plus(),
                   ref0(closeBrace))
@@ -586,7 +580,7 @@ class GLGrammar extends GrammarDefinition {
               name.ofNewName(name.token.trim()), [], args ?? [],
               generated: false))
           .map((directiveValue) {
-        addDiectiveValue(directiveValue);
+        addDirectiveValue(directiveValue);
         return directiveValue;
       });
 

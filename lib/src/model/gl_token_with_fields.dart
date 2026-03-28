@@ -20,7 +20,7 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
   List<GLField>? _skipOnClientFields;
   List<GLField>? _skipOnServerFields;
 
-  GLTokenWithFields(super.tokenInfo, super.extension, List<GLField> allFields) {
+  GLTokenWithFields(super.tokenInfo, super.extension, List<GLField> allFields, {super.documentation}) {
     allFields.forEach(addField);
   }
 

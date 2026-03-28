@@ -25,7 +25,8 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
     required List<GLDirectiveValue> directives,
     required this.derivedFromType,
     required bool extension,
-  }) : super(name, extension, fields) {
+    String? documentation,
+  }) : super(name, extension, fields, documentation: documentation) {
     directives.forEach(addDirective);
     fields.sort((f1, f2) => f1.name.token.compareTo(f2.name.token));
     interfaceNames.forEach(addInterfaceName);

@@ -12,8 +12,9 @@ class GLInputDefinition extends GLTokenWithFields with GLDirectivesMixin {
       required TokenInfo name,
       required this.declaredName,
       required List<GLField> fields,
-      required bool extension})
-      : super(name, extension, fields) {
+      required bool extension,
+      String? documentation})
+      : super(name, extension, fields, documentation: documentation) {
     directives.forEach(addDirective);
   }
 

@@ -22,6 +22,7 @@ import 'package:graphlink/src/serializers/spring_server_serializer.dart';
 import 'package:args/args.dart';
 import 'dart:convert';
 
+import 'package:graphlink/src/gl_grammar_io.dart' as grammar_io;
 import 'package:graphlink/src/utils.dart';
 
 const String appVersion = String.fromEnvironment('version', defaultValue: 'dev');
@@ -265,7 +266,9 @@ void handleGeneration(GeneratorConfig config) async {
   final grammar = createGrammar(config);
   try {
     var extra = _buildExtraGql(grammar, config);
-    var result = await grammar.parseFiles(filePaths, extraGql: extra);
+    final logicalFiles = await Future.wait(
+        filePaths.map((p) => grammar_io.readLogicalFile(p)));
+    var result = grammar_io.parseFiles(grammar, logicalFiles, extraGql: extra);
     var failures = result.whereType<Failure>().toList();
     if (failures.isNotEmpty) {
       for (var f in failures) {

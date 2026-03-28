@@ -1,4 +1,6 @@
 import 'package:petitparser/petitparser.dart';
+import 'package:graphlink/src/model/new_parser/gl_lexer.dart';
+import 'package:graphlink/src/model/new_parser/gl_lexter_token.dart';
 
 class TokenInfo {
   final int column;
@@ -10,6 +12,15 @@ class TokenInfo {
 
   static TokenInfo of(Token token, String? fileName) {
     return TokenInfo(token: token.value, line: token.line, column: token.column, fileName: fileName);
+  }
+
+  static TokenInfo ofLexer(GLLexerToken token, GLLexer lexer) {
+    final loc = lexer.locationOf(token.offset);
+    return TokenInfo(
+        token: token.value,
+        line: loc.line,
+        column: loc.column,
+        fileName: lexer.fileName);
   }
 
   static TokenInfo ofString(String token) {

@@ -10,8 +10,9 @@ class GLDirectiveDefinition {
   final List<GLArgumentDefinition> arguments;
   final Set<GLDirectiveScope> scopes;
   final bool repeatable;
+  final String? documentation;
 
-  GLDirectiveDefinition(this.name, this.arguments, this.scopes, this.repeatable);
+  GLDirectiveDefinition(this.name, this.arguments, this.scopes, this.repeatable, {this.documentation});
 }
 
 enum GLDirectiveScope {

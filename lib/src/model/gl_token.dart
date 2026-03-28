@@ -25,7 +25,8 @@ abstract class GLToken {
 
 abstract class GLExtensibleToken extends GLToken {
   final bool extension;
-  GLExtensibleToken(super.tokenInfo, this.extension);
+  final String? documentation;
+  GLExtensibleToken(super.tokenInfo, this.extension, {this.documentation});
 
   void merge<T extends GLExtensibleToken>(T other);
 }
