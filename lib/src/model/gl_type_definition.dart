@@ -67,12 +67,16 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
     return _interfaceNames.where((i) => i.token == interfaceName).isNotEmpty;
   }
 
+  String? _cachedHash;
+
   String getHash(GLParser g) {
+    if (_cachedHash != null) return _cachedHash!;
     var serilaize = GLGraphqSerializer(g);
-    return getSerializableFields(g.mode)
+    _cachedHash = getSerializableFields(g.mode)
         .map((f) =>
             "${f.name}:${serilaize.serializeType(f.type, forceNullable: f.hasInculeOrSkipDiretives)}")
         .join(",");
+    return _cachedHash!;
   }
 
   Set<String> getIdentityFields(GLParser g) {

@@ -121,7 +121,7 @@ class GLParser {
     ),
   };
 
-  bool _validate = true;
+  final bool _validate = true;
 
   ///
   /// key is the type name

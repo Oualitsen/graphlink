@@ -17,7 +17,6 @@ import 'package:graphlink/src/serializers/flutter_type_widget_serializer.dart';
 import 'package:graphlink/src/serializers/graphq_serializer.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:graphlink/src/serializers/language.dart';
-import 'package:petitparser/petitparser.dart';
 import 'package:graphlink/src/serializers/spring_server_serializer.dart';
 import 'package:args/args.dart';
 import 'dart:convert';
@@ -270,18 +269,7 @@ void handleGeneration(GeneratorConfig config) async {
     var extra = _buildExtraGql(grammar, config);
     final logicalFiles =
         await Future.wait(filePaths.map((p) => grammar_io.readLogicalFile(p)));
-    var result = grammar_io.parseFiles(grammar, logicalFiles, extraGql: extra);
-    var failures = result.whereType<Failure>().toList();
-    if (failures.isNotEmpty) {
-      for (var f in failures) {
-        stderr.writeln("at file ${grammar.lastParsedFile}: ${f.message}");
-      }
-
-      throw """
-messasge: ${failures.first.message}
-position: ${failures.first.position}
-""";
-    }
+    grammar_io.parseFiles(grammar, logicalFiles, extraGql: extra);
 
     var mode = config.getMode();
     if (mode == CodeGenerationMode.server) {

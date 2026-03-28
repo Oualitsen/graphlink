@@ -29,6 +29,9 @@ const String allFieldsFragmentsFileName = "allFieldsFragments";
 
 const allFields = '_all_fields';
 
+final Map<String, List<GLTypeDefinition>> _typeHashIndex = {};
+final Map<String, List<GLTypeDefinition>> _interfaceHashIndex = {};
+
 extension GLGrammarExtension on GLParser {
   GLToken? getTokenByKey(String key) {
     GLToken? token;
@@ -724,6 +727,16 @@ extension GLGrammarExtension on GLParser {
   }
 
   void createProjectedTypes() {
+    _typeHashIndex.clear();
+    _interfaceHashIndex.clear();
+    // pre-populate index with static schema types so findSimilarTo covers them
+    for (var t in typesWithNoResolvers) {
+      _typeHashIndex.putIfAbsent(t.getHash(this), () => []).add(t);
+    }
+    for (var i in interfaces.values) {
+      _interfaceHashIndex.putIfAbsent(i.getHash(this), () => []).add(i);
+    }
+
     final allEmenets = getAllElements();
     allEmenets.where((e) => e.block != null).forEach((element) {
       var newType = createProjectedTypeForQuery(element);
@@ -830,16 +843,17 @@ extension GLGrammarExtension on GLParser {
     String key = definition.token;
     targetStore[key] = definition;
     definition.addOriginalToken(key);
+    final index = definition is GLInterfaceDefinition ? _interfaceHashIndex : _typeHashIndex;
+    index.putIfAbsent(definition.getHash(this), () => []).add(definition);
     return targetStore[key]!;
   }
 
   List<GLTypeDefinition> findSimilarTo(GLTypeDefinition definition) {
-    var store = definition is GLInterfaceDefinition
-        ? [...projectedInterfaces.values, ...interfaces.values]
-        : [...projectedTypes.values, ...typesWithNoResolvers];
-    return store
-        .where((element) => element.isSimilarTo(definition, this))
-        .toList();
+    final index = definition is GLInterfaceDefinition ? _interfaceHashIndex : _typeHashIndex;
+    final hash = definition.getHash(this);
+    final candidates = index[hash];
+    if (candidates == null) return [];
+    return candidates.where((e) => e.isSimilarTo(definition, this)).toList();
   }
 
   String getUniqueName(Iterable<GLProjection> projections) {

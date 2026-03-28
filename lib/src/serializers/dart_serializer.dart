@@ -124,21 +124,17 @@ class DartSerializer extends GLSerializer {
     if (decorators.isNotEmpty) {
       buffer.writeln(decorators.trim());
     }
+    final fields = def.getSerializableFields(grammar.mode);
     var inputClass =
         codeGenUtils.createClass(className: def.token, statements: [
-      ...def
-          .getSerializableFields(grammar.mode)
-          .map((e) => serializeField(e, true)),
+      ...fields.map((e) => serializeField(e, true)),
       codeGenUtils.createMethod(
           methodName: def.token,
           namedArguments: true,
-          arguments: def
-              .getSerializableFields(grammar.mode)
-              .map((e) => toConstructorDeclaration(e))
-              .toList()),
+          arguments: fields.map((e) => toConstructorDeclaration(e)).toList()),
       if (generateJsonMethods) ...[
-        generateToJson(def.getSerializableFields(mode)),
-        generateFromJson(def.getSerializableFields(mode), def.token)
+        generateToJson(fields),
+        generateFromJson(fields, def.token)
       ]
     ]);
 
@@ -303,22 +299,21 @@ class DartSerializer extends GLSerializer {
     if (decorators.isNotEmpty) {
       buffer.writeln(decorators);
     }
+    final fields = def.getSerializableFields(grammar.mode);
     var equalsHascodeCode = generateEqualsAndHashCode(def);
     buffer.writeln(codeGenUtils.createClass(
       className: token,
       baseClassNames: interfaceNames.toList(),
       statements: [
-        ...def
-            .getSerializableFields(grammar.mode)
-            .map((e) => serializeField(e, true)),
+        ...fields.map((e) => serializeField(e, true)),
         codeGenUtils.createMethod(
             methodName: token,
             namedArguments: false,
-            arguments: [serializeContructorArgs(def, grammar)]),
+            arguments: [serializeContructorArgs(fields)]),
         if (equalsHascodeCode.isNotEmpty) equalsHascodeCode,
         if (generateJsonMethods) ...[
-          generateToJson(def.getSerializableFields(mode)),
-          generateFromJson(def.getSerializableFields(mode), def.token)
+          generateToJson(fields),
+          generateFromJson(fields, def.token)
         ]
       ],
     ));
@@ -361,8 +356,7 @@ class DartSerializer extends GLSerializer {
     return buffer.toString();
   }
 
-  String serializeContructorArgs(GLTypeDefinition def, GLParser grammar) {
-    var fields = def.getSerializableFields(grammar.mode);
+  String serializeContructorArgs(List<GLField> fields) {
     if (fields.isEmpty) {
       return "";
     }
