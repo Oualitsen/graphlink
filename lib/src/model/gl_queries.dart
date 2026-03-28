@@ -1,5 +1,5 @@
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
@@ -27,15 +27,20 @@ class GLQueryDefinition extends GLToken with GLDirectivesMixin {
     return elements.expand((e) => e.fragmentNames).toSet();
   }
 
-  Set<GLFragmentDefinitionBase> fragments(GLGrammar g) {
+  Set<GLFragmentDefinitionBase> fragments(GLParser g) {
     if (_allFrags == null) {
-      var frags = fragmentNames.map((e) => g.getFragmentByName(e)).where((e) => e != null).map((e) => e!).toSet();
+      var frags = fragmentNames
+          .map((e) => g.getFragmentByName(e))
+          .where((e) => e != null)
+          .map((e) => e!)
+          .toSet();
       _allFrags = {...frags, ...frags.expand((e) => e.dependecies)};
     }
     return _allFrags!;
   }
 
-  GLQueryDefinition(super.tokenInfo, List<GLDirectiveValue> directives, this.arguments, this.elements, this.type) {
+  GLQueryDefinition(super.tokenInfo, List<GLDirectiveValue> directives,
+      this.arguments, this.elements, this.type) {
     directives.forEach(addDirective);
     checkVariables();
   }
@@ -53,7 +58,8 @@ class GLQueryDefinition extends GLToken with GLDirectivesMixin {
       if ("${arg.value}".startsWith("\$")) {
         var check = checkValue("${arg.value}");
         if (!check) {
-          throw ParseException("Argument ${arg.value} was not declared", info: arg.tokenInfo);
+          throw ParseException("Argument ${arg.value} was not declared",
+              info: arg.tokenInfo);
         }
       }
     }
@@ -80,7 +86,8 @@ class GLQueryDefinition extends GLToken with GLDirectivesMixin {
         derivedFromType: null,
         extension: false,
       );
-      gqDef.addDirective(GLDirectiveValue(glInternal.toToken(), [], [], generated: true));
+      gqDef.addDirective(
+          GLDirectiveValue(glInternal.toToken(), [], [], generated: true));
     }
     return gqDef;
   }
@@ -92,7 +99,8 @@ class GLQueryDefinition extends GLToken with GLDirectivesMixin {
   GLTypeDefinition? get typeDefinition => _gqTypeDefinition;
 
   String _getGeneratedTypeName() {
-    return getNameValueFromDirectives(getDirectives()) ?? "${tokenInfo.token.firstUp}Response";
+    return getNameValueFromDirectives(getDirectives()) ??
+        "${tokenInfo.token.firstUp}Response";
   }
 
   List<GLField> _generateFields() {
@@ -108,14 +116,17 @@ class GLQueryDefinition extends GLToken with GLDirectivesMixin {
         .toList();
   }
 
-  GLArgumentDefinition findByName(String name) => arguments.where((arg) => arg.token == name).first;
+  GLArgumentDefinition findByName(String name) =>
+      arguments.where((arg) => arg.token == name).first;
 
   void applyDefaultCache(int defaultTTL) {
     if (type != GLQueryType.query) {
-      throw ParseException("You cannot apply cache to ${type}", info: tokenInfo);
+      throw ParseException("You cannot apply cache to ${type}",
+          info: tokenInfo);
     }
     if (!hasDirective(glCache) && !hasDirective(glNoCache)) {
-      addDirective(GLDirectiveValue.createDefaultCacheDirectiveValue(tokenInfo, defaultTTL));
+      addDirective(GLDirectiveValue.createDefaultCacheDirectiveValue(
+          tokenInfo, defaultTTL));
     }
     for (final element in elements) {
       element.applyDefaultCache(defaultTTL);
@@ -180,7 +191,7 @@ class GLQueryElement extends GLToken with GLDirectivesMixin {
     return _getFragmentNamesByBlock(block!);
   }
 
-  Set<GLFragmentDefinitionBase> getFragmentsAndDependecies(GLGrammar g) {
+  Set<GLFragmentDefinitionBase> getFragmentsAndDependecies(GLParser g) {
     var frags = fragmentNames.map((e) => g.getFragmentByName(e)!).toSet();
     return {...frags, ...frags.expand((e) => e.dependecies)};
   }
@@ -210,31 +221,39 @@ class GLQueryElement extends GLToken with GLDirectivesMixin {
   }
 
   Set<String> _getFragmentNamesByBlock(GLFragmentBlockDefinition block) {
-    var set1 =
-        block.projections.values.where((element) => element.isFragmentReference).map((e) => e.fragmentName!).toSet();
+    var set1 = block.projections.values
+        .where((element) => element.isFragmentReference)
+        .map((e) => e.fragmentName!)
+        .toSet();
     var set2 = block.projections.values
-        .where((element) => !element.isFragmentReference && element.block != null)
+        .where(
+            (element) => !element.isFragmentReference && element.block != null)
         .map((e) => e.block!)
         .expand((element) => _getFragmentNamesByBlock(element))
         .toSet();
     return {...set1, ...set2};
   }
 
-  GLType _getReturnProjectedType(GLTypeDefinition? projectedType, GLType returnType) {
+  GLType _getReturnProjectedType(
+      GLTypeDefinition? projectedType, GLType returnType) {
     if (projectedType == null) {
       return returnType;
     } else {
       if (returnType is GLListType) {
-        return GLListType(_getReturnProjectedType(projectedType, returnType.type), returnType.nullable);
+        return GLListType(
+            _getReturnProjectedType(projectedType, returnType.type),
+            returnType.nullable);
       } else {
         return GLType(projectedType.tokenInfo, returnType.nullable);
       }
     }
   }
 
-  GLType get returnProjectedType => _getReturnProjectedType(projectedType, returnType);
+  GLType get returnProjectedType =>
+      _getReturnProjectedType(projectedType, returnType);
 
-  GLQueryElement(super.tokenInfo, List<GLDirectiveValue> directives, this.block, this.arguments, this.alias) {
+  GLQueryElement(super.tokenInfo, List<GLDirectiveValue> directives, this.block,
+      this.arguments, this.alias) {
     directives.forEach(addDirective);
   }
 
@@ -250,7 +269,8 @@ class GLQueryElement extends GLToken with GLDirectivesMixin {
 
   void applyDefaultCache(int defaultTTL) {
     if (!hasDirective(glCache) && !hasDirective(glNoCache)) {
-      addDirective(GLDirectiveValue.createDefaultCacheDirectiveValue(tokenInfo, defaultTTL));
+      addDirective(GLDirectiveValue.createDefaultCacheDirectiveValue(
+          tokenInfo, defaultTTL));
     }
   }
 
@@ -270,7 +290,8 @@ class GLQueryElement extends GLToken with GLDirectivesMixin {
 
   void propagateInvalidateCache(bool invalidateAll, List<String> tags) {
     if (!hasDirective(glCacheInvalidate)) {
-      addDirective(GLDirectiveValue.createInvalidateCacheDirective(tokenInfo, invalidateAll, tags));
+      addDirective(GLDirectiveValue.createInvalidateCacheDirective(
+          tokenInfo, invalidateAll, tags));
     } else {
       // union of tags
       var cache = getDirectiveByName(glCacheInvalidate)!;

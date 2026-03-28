@@ -1,9 +1,8 @@
 import 'package:build/build.dart';
 import 'package:glob/glob.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:logger/logger.dart';
-import 'package:petitparser/core.dart';
 import 'package:graphlink/src/config.dart';
-import 'package:graphlink/src/gl_grammar.dart';
 import 'package:graphlink/src/main.dart';
 import 'package:yaml/yaml.dart';
 
@@ -16,7 +15,14 @@ class GraphlinkGeneratorBuilder implements Builder {
   static final inputFiles2 = Glob('lib/**/*.graphqls');
   GraphlinkGeneratorBuilder(this.options);
   static const outputDir = 'lib/generated';
-  final map = {"ID": "String", "String": "String", "Float": "double", "Int": "int", "Boolean": "bool", "Null": "null"};
+  final map = {
+    "ID": "String",
+    "String": "String",
+    "Float": "double",
+    "Int": "int",
+    "Boolean": "bool",
+    "Null": "null"
+  };
   final List<AssetId> assets = [];
 
   @override
@@ -28,32 +34,37 @@ class GraphlinkGeneratorBuilder implements Builder {
   Future<void> build(BuildStep buildStep) async {
     final now = DateTime.now();
     await initAssets(buildStep);
-    options.config.entries.where((element) => element.value is String).forEach((e) {
+    options.config.entries
+        .where((element) => element.value is String)
+        .forEach((e) {
       map[e.key] = e.value as String;
     });
-    var g = GLGrammar(
+    var g = GLParser(
       typeMap: map,
-      generateAllFieldsFragments: options.config["generateAllFieldsFragments"] as bool? ?? false,
-      nullableFieldsRequired: options.config["nullableFieldsRequired"] as bool? ?? false,
-      autoGenerateQueries: options.config["autoGenerateQueries"] as bool? ?? false,
+      generateAllFieldsFragments:
+          options.config["generateAllFieldsFragments"] as bool? ?? false,
+      nullableFieldsRequired:
+          options.config["nullableFieldsRequired"] as bool? ?? false,
+      autoGenerateQueries:
+          options.config["autoGenerateQueries"] as bool? ?? false,
       defaultAlias: options.config["defaultAlias"],
-      operationNameAsParameter: options.config["operationNameAsParameter"] as bool? ?? false,
-      identityFields: (options.config["identityFields"] as YamlList?)?.cast<String>() ?? [],
+      operationNameAsParameter:
+          options.config["operationNameAsParameter"] as bool? ?? false,
+      identityFields:
+          (options.config["identityFields"] as YamlList?)?.cast<String>() ?? [],
     );
 
     var schema = await readSchema(buildStep);
-    var parsed = g.parse(schema);
-    if (parsed is Success) {
-      await generateDartClientClasses(
-          g,
-          GeneratorConfig(
-              schemaPaths: [],
-              mode: "client",
-              identityFields: g.identityFields,
-              typeMappings: map,
-              outputDir: outputDir),
-          now);
-    }
+    g.parse(schema);
+    await generateDartClientClasses(
+        g,
+        GeneratorConfig(
+            schemaPaths: [],
+            mode: "client",
+            identityFields: g.identityFields,
+            typeMappings: map,
+            outputDir: outputDir),
+        now);
   }
 
   Future<void> initAssets(BuildStep buildStep) async {
@@ -66,7 +77,8 @@ class GraphlinkGeneratorBuilder implements Builder {
   }
 
   Future<String> readSchema(BuildStep buildStep) async {
-    final contents = await Future.wait(assets.map((asset) => buildStep.readAsString(asset)));
+    final contents =
+        await Future.wait(assets.map((asset) => buildStep.readAsString(asset)));
     final schema = contents.join("\n");
     return schema;
   }

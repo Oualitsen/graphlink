@@ -1,11 +1,10 @@
 import 'dart:io';
 
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/language.dart';
 import 'package:graphlink/src/serializers/spring_server_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gl_grammar.dart';
-import 'package:petitparser/petitparser.dart';
 
 void main() {
   final typeMapping = {
@@ -19,10 +18,12 @@ void main() {
   };
 
   test("test schema mapping generation", () {
-    final GLGrammar g =
-        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLParser g = GLParser(
+        identityFields: ["id"],
+        typeMap: typeMapping,
+        mode: CodeGenerationMode.server);
 
-    var parsed = g.parse('''
+    g.parse('''
   
 type User {
     id: ID!
@@ -54,11 +55,14 @@ type Query {
 
 ''');
 
-    expect(parsed is Success, true);
     var mappings = g.controllers.values.expand((s) => s.mappings).toList();
-    var mappingKeys = g.controllers.values.expand((s) => s.mappings).map((e) => e.key).toList();
+    var mappingKeys = g.controllers.values
+        .expand((s) => s.mappings)
+        .map((e) => e.key)
+        .toList();
 
-    expect(mappingKeys, containsAll(["carOwner", "userCars", "carUserId", "carOwnerId"]));
+    expect(mappingKeys,
+        containsAll(["carOwner", "userCars", "carUserId", "carOwnerId"]));
 
     var carOwner = mappings.where((e) => e.key == "carOwner").first;
 
@@ -78,26 +82,29 @@ type Query {
   });
 
   test("Service should not have identity schema mapping", () {
-    final GLGrammar g = GLGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLParser g =
+        GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
 
-    final text = File("test/batch_mappging/batch_mappging2.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+    final text =
+        File("test/batch_mappging/batch_mappging2.graphql").readAsStringSync();
+
+    g.parse(text);
 
     var springSerializer = SpringServerSerializer(g);
     var serice = g.services["UserWithCarService"]!;
     var serviceSerial = springSerializer.serializeService(serice, "");
-    expect(serviceSerial, isNot(contains("Map<User, User> userWithCarUser(List<User> value);")));
+    expect(serviceSerial,
+        isNot(contains("Map<User, User> userWithCarUser(List<User> value);")));
   });
 
   test("Controller should implement identity on BatchMappings ", () {
-    final GLGrammar g = GLGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLParser g =
+        GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
 
-    final text = File("test/batch_mappging/batch_mappging2.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+    final text =
+        File("test/batch_mappging/batch_mappging2.graphql").readAsStringSync();
+
+    g.parse(text);
 
     var springSerializer = SpringServerSerializer(g);
     var ctrl = g.controllers[g.controllerMappingName("UserWithCar")]!;
@@ -113,22 +120,29 @@ type Query {
   });
 
   test("Controller should implement identity on SchemaMappings ", () {
-    final GLGrammar g = GLGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLParser g =
+        GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
 
-    final text = File("test/batch_mappging/batch_mappging3.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+    final text =
+        File("test/batch_mappging/batch_mappging3.graphql").readAsStringSync();
+
+    g.parse(text);
 
     var springSerializer = SpringServerSerializer(g);
     var ctrl = g.controllers[g.controllerMappingName("UserWithCar")]!;
     var serviceSerial = springSerializer.serializeController(ctrl, "");
-    expect(serviceSerial,
-        stringContainsInOrder(["public User userWithCarUser(User value) {", "return value;", "}"]));
+    expect(
+        serviceSerial,
+        stringContainsInOrder([
+          "public User userWithCarUser(User value) {",
+          "return value;",
+          "}"
+        ]));
   });
 
   test("Should generate batch mapping when batch = true", () {
-    final GLGrammar g = GLGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLParser g =
+        GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     const text = '''
 type ConversationUnread ${glSkipOnServer}(mapTo: "ConversationView", batch: true) {
@@ -146,16 +160,16 @@ type Query {
 
 
 ''';
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+
+    g.parse(text);
 
     var mapping = g.getMappingByName("conversationUnreadUnread")!;
     expect(mapping.batch, isTrue);
   });
 
   test("Should not generate batch mapping when batch = false", () {
-    final GLGrammar g = GLGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLParser g =
+        GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
 
     const text = '''
 type ConversationUnread ${glSkipOnServer}(mapTo: "ConversationView", batch: false) {
@@ -171,16 +185,18 @@ type Query {
   getConverstation: ConversationUnread
 }
 ''';
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+
+    g.parse(text);
 
     var mapping2 = g.getMappingByName("conversationUnreadUnread")!;
     expect(mapping2.batch, isFalse);
   });
 
-  test("should inject DataFetchingEnvironment for mappings when injectDataFetching = true", () {
-    final GLGrammar g = GLGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
+  test(
+      "should inject DataFetchingEnvironment for mappings when injectDataFetching = true",
+      () {
+    final GLParser g =
+        GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
     var serializer = SpringServerSerializer(g, injectDataFetching: true);
     const text = '''
     type User {
@@ -194,13 +210,14 @@ type Query {
       getUser: User
     }
 ''';
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
+
+    g.parse(text);
+
     var mappingService = g.services[g.serviceMappingName('User')]!;
     var mappingController = g.controllers[g.controllerMappingName('User')]!;
     var serialService = serializer.serializeService(mappingService, "myOrg");
-    var serialController = serializer.serializeController(mappingController, "myOrg");
+    var serialController =
+        serializer.serializeController(mappingController, "myOrg");
     expect(
         serialService,
         contains(
@@ -209,7 +226,9 @@ type Query {
         serialController,
         contains(
             'Map<User, Car> userCar(List<User> value, DataFetchingEnvironment dataFetchingEnvironment)'));
-    expect(serialController,
-        contains(' return userSchemaMappingsService.userCar(value, dataFetchingEnvironment);'));
+    expect(
+        serialController,
+        contains(
+            ' return userSchemaMappingsService.userCar(value, dataFetchingEnvironment);'));
   });
 }

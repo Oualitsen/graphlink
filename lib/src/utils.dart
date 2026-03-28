@@ -6,7 +6,8 @@ import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_directives_mixin.dart';
 import 'package:graphlink/src/serializers/language.dart';
 
-String serializeListText(List<String>? list, {String join = ",", bool withParenthesis = true}) {
+String serializeListText(List<String>? list,
+    {String join = ",", bool withParenthesis = true}) {
   if (list == null || list.isEmpty) {
     return '';
   }
@@ -54,7 +55,8 @@ String formatUnformattedGraphQL(String unformattedGraphQL) {
 }
 
 String? getNameValueFromDirectives(Iterable<GLDirectiveValue> directives) {
-  var dirs = directives.where((element) => GLGrammar.directivesToSkip.contains(element.token));
+  var dirs = directives
+      .where((element) => GLGrammar.directivesToSkip.contains(element.token));
   if (dirs.isEmpty) {
     return null;
   }
@@ -134,7 +136,8 @@ const _map = <CodeGenerationMode, String>{
 };
 
 bool shouldSkipSerialization(
-    {required List<GLDirectiveValue> directives, required CodeGenerationMode mode}) {
+    {required List<GLDirectiveValue> directives,
+    required CodeGenerationMode mode}) {
   String token = _map[mode]!;
   var skipOnList = directives.where((d) => d.token == token).toList();
   return skipOnList.isNotEmpty;
@@ -143,7 +146,8 @@ bool shouldSkipSerialization(
 List<T> filterSerialization<T extends GLDirectivesMixin>(
     Iterable<T> list, CodeGenerationMode mode) {
   return list
-      .where((element) => !shouldSkipSerialization(directives: element.getDirectives(), mode: mode))
+      .where((element) => !shouldSkipSerialization(
+          directives: element.getDirectives(), mode: mode))
       .toList();
 }
 

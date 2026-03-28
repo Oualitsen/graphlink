@@ -1,15 +1,14 @@
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gl_grammar.dart';
-import 'package:petitparser/petitparser.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
-final GLGrammar g = GLGrammar();
+final GLParser g = GLParser();
 
 void main() async {
   test("createProjectedType 1", () {
-    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true);
-    var parsed = g.parse('''
+    final GLParser g = GLParser(generateAllFieldsFragments: true);
+    g.parse('''
   type Person {
     id: String
     name: String
@@ -25,16 +24,18 @@ void main() async {
   }
 
 ''');
-    expect(parsed is Success, true);
+
     var block = g.queries['getPerson']!.elements.first.block!;
     var type = g.getType("Person".toToken());
     var newType = g.createProjectedType(
-        type: type, projectionMap: block.projections, directives: type.getDirectives());
+        type: type,
+        projectionMap: block.projections,
+        directives: type.getDirectives());
   });
 
   test("createProjectedType 2", () {
-    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true);
-    var parsed = g.parse('''
+    final GLParser g = GLParser(generateAllFieldsFragments: true);
+    g.parse('''
   type Person {
     id: String
     name: String
@@ -70,18 +71,17 @@ void main() async {
   }
 
 ''');
-    expect(parsed is Success, true);
 
     var serializer = DartSerializer(g);
-    g.projectedTypes.values.forEach((pt) {
+    for (var pt in g.projectedTypes.values) {
       print("############## ${pt.token} ###########");
       print(serializer.serializeTypeDefinition(pt, ""));
-    });
+    }
   });
 
   test("createProjectedType 3", () {
-    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true);
-    var parsed = g.parse('''
+    final GLParser g = GLParser(generateAllFieldsFragments: true);
+    g.parse('''
   type Person {
     id: String
     name: String
@@ -127,18 +127,17 @@ void main() async {
   }
 
 ''');
-    expect(parsed is Success, true);
 
     var serializer = DartSerializer(g);
-    g.projectedTypes.values.forEach((pt) {
+    for (var pt in g.projectedTypes.values) {
       print("############## ${pt.token} ###########2");
       print(serializer.serializeTypeDefinition(pt, ""));
-    });
+    }
   });
 
   test("createProjectedType 4", () {
-    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true);
-    var parsed = g.parse('''
+    final GLParser g = GLParser(generateAllFieldsFragments: true);
+    g.parse('''
   type Person {
     id: String
     name: String
@@ -157,17 +156,17 @@ void main() async {
   }
 
 ''');
-    expect(parsed is Success, true);
+
     var serializer = DartSerializer(g);
-    g.projectedTypes.values.forEach((pt) {
+    for (var pt in g.projectedTypes.values) {
       print("############## ${pt.token} ###########");
       print(serializer.serializeTypeDefinition(pt, ""));
-    });
+    }
   });
 
   test("createProjectedType 5 (Projected Interfaces)", () {
-    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true);
-    var parsed = g.parse('''
+    final GLParser g = GLParser(generateAllFieldsFragments: true);
+    g.parse('''
   interface BasicEntity {
     id: String!
     creationDate: String
@@ -212,15 +211,20 @@ void main() async {
 
 
 ''');
-    expect(parsed is Success, true);
+
     var serializer = DartSerializer(g);
     var iface1 = g.projectedInterfaces['BasicEntity_creationDate_id']!;
     var iface2 = g.projectedInterfaces['BasicEntity_id']!;
-    expect(iface1.implementations.map((e) => e.token),
-        containsAll(['Person_creationDate_firstName_id', 'Car_creationDate_id_model']));
     expect(
-        iface2.implementations.map((e) => e.token), containsAll(['Person_firstName_id_lastName']));
-    for (var pt in [...g.projectedTypes.values, ...g.projectedInterfaces.values]) {
+        iface1.implementations.map((e) => e.token),
+        containsAll(
+            ['Person_creationDate_firstName_id', 'Car_creationDate_id_model']));
+    expect(iface2.implementations.map((e) => e.token),
+        containsAll(['Person_firstName_id_lastName']));
+    for (var pt in [
+      ...g.projectedTypes.values,
+      ...g.projectedInterfaces.values
+    ]) {
       if (!pt.token.endsWith('Response')) {
         print(serializer.serializeTypeDefinition(pt, ""));
       }

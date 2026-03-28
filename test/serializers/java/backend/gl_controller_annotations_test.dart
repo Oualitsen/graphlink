@@ -2,8 +2,7 @@ import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/serializers/language.dart';
 import 'package:graphlink/src/serializers/spring_server_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gl_grammar.dart';
-import 'package:petitparser/petitparser.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 void main() {
   final typeMapping = {
@@ -18,8 +17,8 @@ void main() {
   };
 
   test("Controller method should serialize annotations", () {
-    final g = GLGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
-    var parsed = g.parse('''
+    final g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    g.parse('''
       directive @preAuthorize(value: String, glAnnotation: Boolean = true, glOnServer: boolean = true, glClass: String! = "PreAuthorize", glImport: String! = "org.springframework.security.access.prepost.PreAuthorize") on FIELD_DEFINITION
       type Person {
         id: ID!
@@ -29,17 +28,23 @@ void main() {
         getPerson(id: String): Person ${glServiceName}(${glServiceNameArg}: "PersonService") @preAuthorize(value: "hasRole('USER')") 
       }
     ''');
-    expect(parsed is Success, isTrue);
+
     // this line is needed for the test to pass! do not remote it.
     var personServiceController = g.controllers['PersonServiceController']!;
 
     // needed for converting controller's annotations to decorators
-    SpringServerSerializer(g).serializeController(personServiceController, "com.myorg");
-    expect(personServiceController.getImports(g),
-        containsAll(['org.springframework.security.access.prepost.PreAuthorize']));
+    SpringServerSerializer(g)
+        .serializeController(personServiceController, "com.myorg");
+    expect(
+        personServiceController.getImports(g),
+        containsAll(
+            ['org.springframework.security.access.prepost.PreAuthorize']));
     var getPerson = personServiceController.getFieldByName('getPerson')!;
 
-    var preAuth = getPerson.getDirectives().where((e) => e.token == glDecorators).toList();
+    var preAuth = getPerson
+        .getDirectives()
+        .where((e) => e.token == glDecorators)
+        .toList();
     String value = (preAuth.first.getArgValue("value") as List<String>).first;
 
     expect(value, '''"@PreAuthorize(value = "hasRole('USER')")"''');

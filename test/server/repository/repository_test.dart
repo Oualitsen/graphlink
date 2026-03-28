@@ -5,8 +5,7 @@ import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/serializers/language.dart';
 import 'package:graphlink/src/serializers/spring_server_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gl_grammar.dart';
-import 'package:petitparser/petitparser.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 void main() {
   final typeMapping = {
@@ -20,31 +19,35 @@ void main() {
   };
 
   test("handle repositories", () {
-    final GLGrammar g =
-        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLParser g = GLParser(
+        identityFields: ["id"],
+        typeMap: typeMapping,
+        mode: CodeGenerationMode.server);
 
-    final text = File("test/server/repository/repository_test.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
+    final text = File("test/server/repository/repository_test.graphql")
+        .readAsStringSync();
 
-    expect(parsed is Success, true);
+    g.parse(text);
 
     expect(g.interfaces.keys, contains("Entity"));
     expect(g.interfaces.keys, hasLength(1));
-    expect(g.repositories.keys, containsAll(["UserRepository", "CarRepository"]));
+    expect(
+        g.repositories.keys, containsAll(["UserRepository", "CarRepository"]));
     expect(g.repositories, hasLength(2));
   });
 
   test("external types/inputs serialization", () {
-    final GLGrammar g =
-        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLParser g = GLParser(
+        identityFields: ["id"],
+        typeMap: typeMapping,
+        mode: CodeGenerationMode.server);
 
     final text =
-        File("test/server/repository/repository_test_external_types.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
+        File("test/server/repository/repository_test_external_types.graphql")
+            .readAsStringSync();
 
-    expect(parsed is Success, true);
+    g.parse(text);
+
     var type = g.scalars["ExternalUser"]!;
     var input = g.scalars["Pagebale"]!;
 
@@ -66,8 +69,10 @@ void main() {
   });
 
   test("check type == null", () {
-    final GLGrammar g =
-        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLParser g = GLParser(
+        identityFields: ["id"],
+        typeMap: typeMapping,
+        mode: CodeGenerationMode.server);
 
     const text = """
         type User {
@@ -77,22 +82,25 @@ void main() {
           _: String
         }
         """;
-    var parser = g.buildFrom(g.fullGrammar().end());
+
     expect(
-      () => parser.parse(text),
+      () => g.parse(text),
       throwsA(
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
-          contains('glType is required on @glRepository directive line: 4 column: 35'),
+          contains(
+              'glType is required on @glRepository directive line: 4 column: 35'),
         ),
       ),
     );
   });
 
   test("check id = null", () {
-    final GLGrammar g =
-        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLParser g = GLParser(
+        identityFields: ["id"],
+        typeMap: typeMapping,
+        mode: CodeGenerationMode.server);
 
     const text = """
         type User {
@@ -102,9 +110,9 @@ void main() {
           _: String
         }
         """;
-    var parser = g.buildFrom(g.fullGrammar().end());
+
     expect(
-      () => parser.parse(text),
+      () => g.parse(text),
       throwsA(
         isA<ParseException>().having(
           (e) => e.message,
@@ -116,8 +124,10 @@ void main() {
   });
 
   test("should serialize directives on methods", () {
-    final GLGrammar g =
-        GLGrammar(identityFields: ["id"], typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final GLParser g = GLParser(
+        identityFields: ["id"],
+        typeMap: typeMapping,
+        mode: CodeGenerationMode.server);
 
     const text = """
       directive @gqQuery(
@@ -141,12 +151,16 @@ void main() {
           findUsers: [User!]! @gqQuery(value: "select * from User")
         }
         """;
-    var parsed = g.parse(text);
-    expect(parsed is Success, true);
+    g.parse(text);
+
     var springSerializer = SpringServerSerializer(g);
     var userRepo = g.repositories["UserRepository"]!;
     var repoSerial = springSerializer.serializeRepository(userRepo, "myorg");
-    expect(repoSerial.split("\n").map((e) => e.trim()),
-        containsAll(['@Query(value = "select * from User")', 'List<User> findUsers();']));
+    expect(
+        repoSerial.split("\n").map((e) => e.trim()),
+        containsAll([
+          '@Query(value = "select * from User")',
+          'List<User> findUsers();'
+        ]));
   });
 }

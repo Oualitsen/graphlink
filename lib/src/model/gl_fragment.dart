@@ -1,6 +1,6 @@
 import 'package:graphlink/src/excpetions/parse_exception.dart';
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_directives_mixin.dart';
 import 'package:graphlink/src/model/gl_token.dart';
@@ -58,16 +58,21 @@ abstract class GLFragmentDefinitionBase extends GLToken with GLDirectivesMixin {
 }
 
 class GLInlineFragmentDefinition extends GLFragmentDefinitionBase {
-  GLInlineFragmentDefinition(TokenInfo onTypeName, GLFragmentBlockDefinition block, List<GLDirectiveValue> directives)
+  GLInlineFragmentDefinition(TokenInfo onTypeName,
+      GLFragmentBlockDefinition block, List<GLDirectiveValue> directives)
       : super(
           "Inline_${generateUuid('_')}".toToken(),
           onTypeName,
           block,
           directives,
         ) {
-    if (!block.projections.containsKey(GLGrammar.typename)) {
-      block.projections[GLGrammar.typename] = GLProjection(
-          fragmentName: null, token: TokenInfo.ofString(GLGrammar.typename), alias: null, block: null, directives: []);
+    if (!block.projections.containsKey(GLParser.typename)) {
+      block.projections[GLParser.typename] = GLProjection(
+          fragmentName: null,
+          token: TokenInfo.ofString(GLParser.typename),
+          alias: null,
+          block: null,
+          directives: []);
     }
   }
 
@@ -82,7 +87,9 @@ class GLFragmentDefinition extends GLFragmentDefinitionBase {
 
   final String fragmentName;
 
-  GLFragmentDefinition(super.token, super.onTypeName, super.block, super.directives) : fragmentName = token.token;
+  GLFragmentDefinition(
+      super.token, super.onTypeName, super.block, super.directives)
+      : fragmentName = token.token;
 
   @override
   String generateName() {
@@ -142,7 +149,9 @@ class GLProjection extends GLToken with GLDirectivesMixin {
 
   String get actualName => alias?.token ?? targetToken;
 
-  String get targetToken => tokenInfo.token == allFields && fragmentName != null ? fragmentName! : tokenInfo.token;
+  String get targetToken => tokenInfo.token == allFields && fragmentName != null
+      ? fragmentName!
+      : tokenInfo.token;
 
   getDependecies(Map<String, GLFragmentDefinitionBase> map, TreeNode node) {
     if (isFragmentReference) {
@@ -152,13 +161,19 @@ class GLProjection extends GLToken with GLDirectivesMixin {
         if (!node.contains(targetToken)) {
           child = node.addChild(targetToken);
         } else {
-          throw ParseException("Dependecy Cycle ${[targetToken, ...node.getParents()].join(" -> ")}", info: tokenInfo);
+          throw ParseException(
+              "Dependecy Cycle ${[
+                targetToken,
+                ...node.getParents()
+              ].join(" -> ")}",
+              info: tokenInfo);
         }
 
         GLFragmentDefinitionBase? frag = map[targetToken];
 
         if (frag == null) {
-          throw ParseException("Fragment $tokenInfo is not defined", info: tokenInfo);
+          throw ParseException("Fragment $tokenInfo is not defined",
+              info: tokenInfo);
         } else {
           frag.block.getDependecies(map, child);
         }
@@ -169,7 +184,8 @@ class GLProjection extends GLToken with GLDirectivesMixin {
 
         var myBlock = block;
         if (myBlock == null) {
-          throw ParseException("Inline Fragment must have a body", info: tokenInfo);
+          throw ParseException("Inline Fragment must have a body",
+              info: tokenInfo);
         }
         myBlock.getDependecies(map, node);
       }
@@ -192,7 +208,7 @@ class GLFragmentBlockDefinition {
     }
   }
 
-  Map<String, GLProjection> getAllProjections(GLGrammar grammar) {
+  Map<String, GLProjection> getAllProjections(GLParser grammar) {
     var result = <String, GLProjection>{};
     projections.forEach((key, value) {
       if (value.isFragmentReference) {
@@ -209,12 +225,15 @@ class GLFragmentBlockDefinition {
   GLProjection getProjection(TokenInfo token) {
     final p = projections[token.token];
     if (p == null) {
-      throw ParseException("Could not find projection with name is ${token.token}", info: token);
+      throw ParseException(
+          "Could not find projection with name is ${token.token}",
+          info: token);
     }
     return p;
   }
 
-  void getDependecies(Map<String, GLFragmentDefinitionBase> map, TreeNode node) {
+  void getDependecies(
+      Map<String, GLFragmentDefinitionBase> map, TreeNode node) {
     var projectionList = projections.values;
     for (var projection in projectionList) {
       projection.getDependecies(map, node);
@@ -223,7 +242,7 @@ class GLFragmentBlockDefinition {
 
   String? _uniqueName;
 
-  String getUniqueName(GLGrammar g) {
+  String getUniqueName(GLParser g) {
     if (_uniqueName != null) {
       return _uniqueName!;
     }
@@ -233,10 +252,10 @@ class GLFragmentBlockDefinition {
     return _uniqueName!;
   }
 
-  List<String> _getKeys(GLGrammar g) {
+  List<String> _getKeys(GLParser g) {
     var key = <String>[];
     projections.forEach((k, v) {
-      if (k != GLGrammar.typename) {
+      if (k != GLParser.typename) {
         if (v.isFragmentReference) {
           var frag = g.getFragment(v.targetToken, v.tokenInfo);
           var currKey = frag.block._getKeys(g);
@@ -250,6 +269,8 @@ class GLFragmentBlockDefinition {
   }
 
   List<GLProjection> getFragmentReferences() {
-    return projections.values.where((projection) => projection.isFragmentReference).toList();
+    return projections.values
+        .where((projection) => projection.isFragmentReference)
+        .toList();
   }
 }

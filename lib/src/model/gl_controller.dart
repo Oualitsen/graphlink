@@ -1,5 +1,5 @@
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_service.dart';
 import 'package:graphlink/src/model/gl_token.dart';
@@ -28,14 +28,15 @@ class GLController extends GLService {
       var validationDirective = f.getDirectiveByName(glValidate);
       if (validationDirective == null || !validationDirective.generated) {
         ctrl.addField(f);
-        ctrl.setFieldType(f.name.token, service.getTypeByFieldName(f.name.token)!);
+        ctrl.setFieldType(
+            f.name.token, service.getTypeByFieldName(f.name.token)!);
       }
     }
     return ctrl;
   }
 
   @override
-  Set<GLToken> getImportDependecies(GLGrammar g) {
+  Set<GLToken> getImportDependecies(GLParser g) {
     var result = {...super.getImportDependecies(g)};
     result.add(g.services[serviceName]!);
     return result;

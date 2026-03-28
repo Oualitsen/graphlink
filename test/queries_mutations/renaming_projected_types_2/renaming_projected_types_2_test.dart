@@ -1,21 +1,17 @@
 import 'dart:io';
 
 import 'package:test/test.dart';
-import 'package:graphlink/src/gl_grammar.dart';
-import 'package:petitparser/petitparser.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 void main() async {
   test("renaming_projected_types_2", () {
-    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true);
-
-    var parser = g.buildFrom(g.fullGrammar().end());
+    final GLParser g = GLParser(generateAllFieldsFragments: true);
 
     final text = File(
             "test/queries_mutations/renaming_projected_types_2/renaming_projected_types_2_test.graphql")
         .readAsStringSync();
-    var parsed = parser.parse(text);
+    g.parse(text);
 
-    expect(parsed is Success, true);
     var product = g.projectedTypes["Product"]!;
     var list = g.findSimilarTo(product);
     expect(list, isNotEmpty);

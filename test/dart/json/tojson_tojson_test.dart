@@ -1,16 +1,15 @@
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gl_grammar.dart';
-import 'package:petitparser/petitparser.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 void main() {
   test("Dart enum to json", () {
-    final GLGrammar g = GLGrammar();
+    final GLParser g = GLParser();
 
-    var parsed = g.parse('''
+    g.parse('''
   enum Gender {male, female}
 ''');
-    expect(parsed is Success, true);
+
     var gender = g.enums["Gender"]!;
     var serializer = DartSerializer(g);
     var genderSerial = serializer.serializeEnumDefinition(gender, "");
@@ -29,12 +28,12 @@ void main() {
   });
 
   test("Dart enum from json", () {
-    final GLGrammar g = GLGrammar();
+    final GLParser g = GLParser();
 
-    var parsed = g.parse('''
+    g.parse('''
   enum Gender {male, female}
 ''');
-    expect(parsed is Success, true);
+
     var gender = g.enums["Gender"]!;
     var serializer = DartSerializer(g);
     var genderSerial = serializer.serializeEnumDefinition(gender, "");
@@ -55,9 +54,9 @@ void main() {
   });
 
   test("input tojson", () {
-    final GLGrammar g = GLGrammar();
+    final GLParser g = GLParser();
 
-    var parsed = g.parse('''
+    g.parse('''
   scalar Long
   enum Gender {male, female}
   input CityInput {
@@ -78,10 +77,11 @@ void main() {
     cities: [CityInput]
   }
 ''');
-    expect(parsed is Success, true);
+
     var userInput = g.inputs["UserInput"]!;
     var serializer = DartSerializer(g);
-    var toJsonSerial = serializer.generateToJson(userInput.getSerializableFields(g.mode));
+    var toJsonSerial =
+        serializer.generateToJson(userInput.getSerializableFields(g.mode));
     expect(
       toJsonSerial.split("\n").map((e) => e.trim()),
       containsAllInOrder([
@@ -105,9 +105,9 @@ void main() {
   });
 
   test("input tojson list of lists", () {
-    final GLGrammar g = GLGrammar();
+    final GLParser g = GLParser();
 
-    var parsed = g.parse('''
+    g.parse('''
   scalar Long
   enum Gender {male, female}
   
@@ -115,10 +115,11 @@ void main() {
     genders: [[Gender]]
   }
 ''');
-    expect(parsed is Success, true);
+
     var userInput = g.inputs["UserInput"]!;
     var serializer = DartSerializer(g);
-    var toJsonSerial = serializer.generateToJson(userInput.getSerializableFields(g.mode));
+    var toJsonSerial =
+        serializer.generateToJson(userInput.getSerializableFields(g.mode));
 
     expect(
         toJsonSerial.split("\n").map((e) => e.trim()),
@@ -131,9 +132,9 @@ void main() {
   });
 
   test("type tojson", () {
-    final GLGrammar g = GLGrammar();
+    final GLParser g = GLParser();
 
-    var parsed = g.parse('''
+    g.parse('''
   scalar Long
   enum Gender {male, female}
   type City {
@@ -153,10 +154,11 @@ void main() {
     cities: [City]
   }
 ''');
-    expect(parsed is Success, true);
+
     var useer = g.types["User"]!;
     var serializer = DartSerializer(g);
-    var toJsonSerial = serializer.generateToJson(useer.getSerializableFields(g.mode));
+    var toJsonSerial =
+        serializer.generateToJson(useer.getSerializableFields(g.mode));
     expect(
       toJsonSerial.split("\n").map((e) => e.trim()),
       containsAllInOrder([
@@ -179,9 +181,9 @@ void main() {
   });
 
   test("input fromJson", () {
-    final GLGrammar g = GLGrammar();
+    final GLParser g = GLParser();
 
-    var parsed = g.parse('''
+    g.parse('''
   scalar Long
   enum Gender {male, female}
   input CityInput {
@@ -203,11 +205,11 @@ void main() {
     doubleCities: [[CityInput]]
   }
 ''');
-    expect(parsed is Success, true);
+
     var userInput = g.inputs["UserInput"]!;
     var serializer = DartSerializer(g);
-    var inputSerial =
-        serializer.generateFromJson(userInput.getSerializableFields(g.mode), userInput.token);
+    var inputSerial = serializer.generateFromJson(
+        userInput.getSerializableFields(g.mode), userInput.token);
     expect(
       inputSerial.split("\n").map((e) => e.trim()),
       containsAllInOrder([
@@ -233,9 +235,9 @@ void main() {
   });
 
   test("type fromJson", () {
-    final GLGrammar g = GLGrammar();
+    final GLParser g = GLParser();
 
-    var parsed = g.parse('''
+    g.parse('''
   scalar Long
   enum Gender {male, female}
   type City {
@@ -257,10 +259,11 @@ void main() {
     doubleCities: [[City]]
   }
 ''');
-    expect(parsed is Success, true);
+
     var user = g.types["User"]!;
     var serializer = DartSerializer(g);
-    var userSerial = serializer.generateFromJson(user.getSerializableFields(g.mode), user.token);
+    var userSerial = serializer.generateFromJson(
+        user.getSerializableFields(g.mode), user.token);
     expect(
       userSerial.split("\n").map((e) => e.trim()),
       containsAllInOrder([
@@ -286,9 +289,9 @@ void main() {
   });
 
   test("interface fromJson", () {
-    final GLGrammar g = GLGrammar();
+    final GLParser g = GLParser();
 
-    var parsed = g.parse('''
+    g.parse('''
   interface BasicEntity {
     id: ID!
   }
@@ -304,7 +307,7 @@ void main() {
     ownerId: ID!
   }
 ''');
-    expect(parsed is Success, true);
+
     var user = g.interfaces["BasicEntity"]!;
     var serializer = DartSerializer(g);
     var userSerial = serializer.serializeInterface(user);

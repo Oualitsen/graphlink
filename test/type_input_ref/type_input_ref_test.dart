@@ -1,10 +1,10 @@
 import 'package:graphlink/src/excpetions/parse_exception.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 void main() {
   test("should throw when argument references a type", () {
-    var g = GLGrammar();
+    var g = GLParser();
     var text = '''
 type Car {
   name: String
@@ -27,7 +27,7 @@ type Query {
   });
 
   test("should throw when argument references an interface", () {
-    var g = GLGrammar();
+    var g = GLParser();
     var text = '''
 interface Car {
   name: String

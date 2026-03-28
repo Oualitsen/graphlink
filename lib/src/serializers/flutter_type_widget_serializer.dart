@@ -1,6 +1,6 @@
 import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
@@ -8,12 +8,13 @@ import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:graphlink/src/ui/flutter/gl_type_view.dart';
 
 class FlutterTypeWidgetSerializer {
-  final GLGrammar grammar;
+  final GLParser grammar;
   final DartSerializer serializer;
   final bool useApplocalisation;
   final codeGenUtils = DartCodeGenUtils();
 
-  FlutterTypeWidgetSerializer(this.grammar, this.serializer, this.useApplocalisation);
+  FlutterTypeWidgetSerializer(
+      this.grammar, this.serializer, this.useApplocalisation);
 
   List<String> getDeclarations(GLTypeDefinition type) {
     var fields = type.getSerializableFields(grammar.mode);
@@ -33,9 +34,8 @@ class FlutterTypeWidgetSerializer {
       'final bool verticalLayout;',
       'final GQFieldViewType viewType;',
       // generate list containers
-      ...fields
-          .where((f) => f.type.isList)
-          .map((e) => 'final Widget Function(List<Widget> children)? ${containerVar(e)};')
+      ...fields.where((f) => f.type.isList).map((e) =>
+          'final Widget Function(List<Widget> children)? ${containerVar(e)};')
     ];
 
     return result;
@@ -109,11 +109,13 @@ Widget _wrapWidget(Widget label, Widget value) {
   }
 
   String serializeConstructor(String widgetName, List<GLField> fields) {
-    var m = codeGenUtils.createMethod(methodName: widgetName, returnType: 'const', arguments: [
+    var m = codeGenUtils
+        .createMethod(methodName: widgetName, returnType: 'const', arguments: [
       'super.key,',
       'required this.value,',
       // orders
-      for (var i = 0, field = fields[i]; i < fields.length; i++) 'this.${orderVar(field)} = ${i},',
+      for (var i = 0, field = fields[i]; i < fields.length; i++)
+        'this.${orderVar(field)} = ${i},',
       // visibility
       for (var i = 0, field = fields[i]; i < fields.length; i++)
         'this.${visibleVar(field)} = true,',
@@ -134,7 +136,9 @@ Widget _wrapWidget(Widget label, Widget value) {
       'this.labelStyle,',
       'this.valueStyle,',
       'this.verticalLayout = true,',
-      ...fields.where((f) => f.type.isList).map((e) => 'this.${containerVar(e)},')
+      ...fields
+          .where((f) => f.type.isList)
+          .map((e) => 'this.${containerVar(e)},')
     ]);
     return "${m};";
   }
@@ -143,14 +147,18 @@ Widget _wrapWidget(Widget label, Widget value) {
     var methodStatements = <String>[
       'final ${widgetsVar} = <MapEntry<Widget, int>>[];',
       ...fields.map((field) {
-        return codeGenUtils.ifStatement(condition: visibleVar(field), ifBlockStatements: [
-          codeGenUtils.ifStatement(condition: '${widgetVar(field)} != null', ifBlockStatements: [
-            '${widgetsVar}.add(MapEntry(${widgetVar(field)}!, ${orderVar(field)}));'
-          ], elseBlockStatements: [
-            'final valueWidget = ${_generateValueWidget(field, null)};',
-            'final labelWidget = _wrapWidget(_createLabelWidget("${field.name.token}", context), valueWidget);',
-            '${widgetsVar}.add(MapEntry(labelWidget, ${orderVar(field)}));'
-          ])
+        return codeGenUtils
+            .ifStatement(condition: visibleVar(field), ifBlockStatements: [
+          codeGenUtils.ifStatement(
+              condition: '${widgetVar(field)} != null',
+              ifBlockStatements: [
+                '${widgetsVar}.add(MapEntry(${widgetVar(field)}!, ${orderVar(field)}));'
+              ],
+              elseBlockStatements: [
+                'final valueWidget = ${_generateValueWidget(field, null)};',
+                'final labelWidget = _wrapWidget(_createLabelWidget("${field.name.token}", context), valueWidget);',
+                '${widgetsVar}.add(MapEntry(labelWidget, ${orderVar(field)}));'
+              ])
         ]);
       })
     ];
@@ -197,10 +205,12 @@ Widget _wrapWidget(Widget label, Widget value) {
           type: field.type.inlineType,
           arguments: field.arguments,
           directives: field.getDirectives());
-      final mapToList = "map((e) => ${_generateValueWidget(newField, field)}).toList())";
+      final mapToList =
+          "map((e) => ${_generateValueWidget(newField, field)}).toList())";
       var ternaryOp = codeGenUtils.ternaryOp(
           condition: "${containerVar(field)} != null",
-          positiveStatement: "${containerVar(field)}!(${valueName}${dot}${mapToList}",
+          positiveStatement:
+              "${containerVar(field)}!(${valueName}${dot}${mapToList}",
           negativeStatement: "Column(children: ${valueName}${dot}${mapToList}");
       var nullValueCheck = codeGenUtils.ternaryOp(
           condition: '${valueName} != null',
@@ -248,37 +258,45 @@ Widget _wrapWidget(Widget label, Widget value) {
   }
 
   String generateEnumValueFor(GLEnumDefinition def) {
-    return codeGenUtils
-        .method(returnType: "String", methodName: "_get${def.token}Value", arguments: [
-      'BuildContext context',
-      '${def.token}? value'
-    ], statements: [
-      if (useApplocalisation) ...[
-        'final lang = AppLocalizations.of(context)!;',
-        codeGenUtils.switchStatement(
-            expression: 'value',
-            cases: [
-              ...def.values.map(
-                (val) => DartCaseStatement(
-                    caseValue: "${def.token}.${val.value.token}",
-                    statement: 'return lang.${def.token.firstLow}${val.value.token.firstUp};'),
-              ),
-            ],
-            defaultStatement: 'return lang.${def.token.firstLow}Null;')
-      ] else
-        'return value.toJson();'
-    ]);
+    return codeGenUtils.method(
+        returnType: "String",
+        methodName: "_get${def.token}Value",
+        arguments: [
+          'BuildContext context',
+          '${def.token}? value'
+        ],
+        statements: [
+          if (useApplocalisation) ...[
+            'final lang = AppLocalizations.of(context)!;',
+            codeGenUtils.switchStatement(
+                expression: 'value',
+                cases: [
+                  ...def.values.map(
+                    (val) => DartCaseStatement(
+                        caseValue: "${def.token}.${val.value.token}",
+                        statement:
+                            'return lang.${def.token.firstLow}${val.value.token.firstUp};'),
+                  ),
+                ],
+                defaultStatement: 'return lang.${def.token.firstLow}Null;')
+          ] else
+            'return value.toJson();'
+        ]);
   }
 
   String serializeGetInBetweenWidget() {
-    return codeGenUtils
-        .method(returnType: "Widget?", methodName: "_getInBetweenWidget", statements: [
-      codeGenUtils.ifStatement(condition: "spaceBetween <= 0", ifBlockStatements: ["return null;"]),
-      codeGenUtils.ifStatement(
-          condition: "verticalLayout",
-          ifBlockStatements: ["return SizedBox(height: spaceBetween);"]),
-      "return SizedBox(width: spaceBetween);"
-    ]);
+    return codeGenUtils.method(
+        returnType: "Widget?",
+        methodName: "_getInBetweenWidget",
+        statements: [
+          codeGenUtils.ifStatement(
+              condition: "spaceBetween <= 0",
+              ifBlockStatements: ["return null;"]),
+          codeGenUtils.ifStatement(
+              condition: "verticalLayout",
+              ifBlockStatements: ["return SizedBox(height: spaceBetween);"]),
+          "return SizedBox(width: spaceBetween);"
+        ]);
   }
 
   String containerVar(GLField field) {
@@ -322,10 +340,13 @@ Widget _wrapWidget(Widget label, Widget value) {
       } else {
         b.write('fieldName;');
       }
-      return DartCaseStatement(caseValue: '"${field.name.token}"', statement: b.toString());
+      return DartCaseStatement(
+          caseValue: '"${field.name.token}"', statement: b.toString());
     }).toList();
     methodStatements.add(codeGenUtils.switchStatement(
-        expression: 'fieldName', cases: cases, defaultStatement: 'result = fieldName;'));
+        expression: 'fieldName',
+        cases: cases,
+        defaultStatement: 'result = fieldName;'));
     methodStatements.add('return result;');
     return codeGenUtils.method(
         returnType: "String",

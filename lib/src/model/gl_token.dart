@@ -1,4 +1,4 @@
-import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/token_info.dart';
 
 abstract class GLToken {
@@ -14,18 +14,19 @@ abstract class GLToken {
     _staticImports.add(import);
   }
 
-  Set<String> getImports(GLGrammar g) {
+  Set<String> getImports(GLParser g) {
     return staticImports;
   }
 
-  Set<GLToken> getImportDependecies(GLGrammar g) {
+  Set<GLToken> getImportDependecies(GLParser g) {
     return Set.unmodifiable([]);
   }
 }
 
 abstract class GLExtensibleToken extends GLToken {
   final bool extension;
-  GLExtensibleToken(super.tokenInfo, this.extension);
+  final String? documentation;
+  GLExtensibleToken(super.tokenInfo, this.extension, {this.documentation});
 
   void merge<T extends GLExtensibleToken>(T other);
 }

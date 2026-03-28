@@ -11,8 +11,9 @@ class GLEnumDefinition extends GLExtensibleToken with GLDirectivesMixin {
       {required TokenInfo token,
       required Iterable<GLEnumValue> values,
       required List<GLDirectiveValue> directives,
-      required bool extension})
-      : super(token, extension) {
+      required bool extension,
+      String? documentation})
+      : super(token, extension, documentation: documentation) {
     values.forEach(addValue);
 
     directives.forEach(addDirective);
@@ -22,7 +23,8 @@ class GLEnumDefinition extends GLExtensibleToken with GLDirectivesMixin {
 
   void addValue(GLEnumValue value) {
     if (_values.containsKey(value.token)) {
-      throw ParseException("${value.token} already defined on enum ${token}", info: value.tokenInfo);
+      throw ParseException("${value.token} already defined on enum ${token}",
+          info: value.tokenInfo);
     }
     _values[value.token] = value;
   }
@@ -38,9 +40,13 @@ class GLEnumDefinition extends GLExtensibleToken with GLDirectivesMixin {
 
 class GLEnumValue extends GLToken with GLDirectivesMixin {
   final TokenInfo value;
-  final String? comment;
+  final String? documentation;
 
-  GLEnumValue({required this.value, required this.comment, required List<GLDirectiveValue> directives}) : super(value) {
+  GLEnumValue(
+      {required this.value,
+      required this.documentation,
+      required List<GLDirectiveValue> directives})
+      : super(value) {
     directives.forEach(addDirective);
   }
 }

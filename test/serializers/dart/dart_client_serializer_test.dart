@@ -1,12 +1,12 @@
 import 'package:graphlink/src/serializers/client_serializers/dart_client_serializer.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gl_grammar.dart';
-import 'package:petitparser/petitparser.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 void main() {
   test("query methods should be comma separated", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -20,13 +20,14 @@ void main() {
 
 ''';
 
-    var parsed = g.parse(text);
-    expect(parsed is Success, true);
+    g.parse(text);
+
     var serializer = DartSerializer(g);
     var clientSerializer = DartClientSerializer(g, serializer);
 
     var client = clientSerializer.generateClient("package");
-    var lines = client.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty);
+    var lines =
+        client.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty);
     expect(
         lines,
         containsAllInOrder([

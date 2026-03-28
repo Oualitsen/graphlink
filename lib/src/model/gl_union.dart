@@ -6,7 +6,7 @@ import 'package:graphlink/src/model/token_info.dart';
 
 class GLUnionDefinition extends GLExtensibleToken with GLDirectivesMixin {
   final Map<String, TokenInfo> _typeNames = {};
-  GLUnionDefinition(super.name, super.extension, List<TokenInfo> typeNames, List<GLDirectiveValue> directives) {
+  GLUnionDefinition(super.name, super.extension, List<TokenInfo> typeNames, List<GLDirectiveValue> directives, {super.documentation}) {
     typeNames.forEach(addTypeName);
     directives.forEach(addDirective);
   }

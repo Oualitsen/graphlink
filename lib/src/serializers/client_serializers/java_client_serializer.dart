@@ -2,7 +2,7 @@ import 'package:graphlink/src/cache_store_java.dart';
 import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/gl_grammar_cache_extension.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_token.dart';
@@ -18,7 +18,7 @@ const _subscriptionListenerName = 'GraphLinkSubscriptionListener';
 const _subscriptionListenerRef = _subscriptionListenerName;
 
 class JavaClientSerializer extends GLClientSerilaizer {
-  final GLGrammar _grammar;
+  final GLParser _grammar;
   final codeGenUtils = JavaCodeGenUtils();
 
   final GLGraphqSerializer gqlSerializer;
@@ -43,9 +43,12 @@ class JavaClientSerializer extends GLClientSerilaizer {
 
     buffer.writeln(codeGenUtils.createClass(className: clientName, statements: [
       'final Map<String, String> _fragmMap = new HashMap<>();',
-      if (_grammar.hasQueries) 'public final ${classNameFromType(GLQueryType.query)} queries;',
-      if (_grammar.hasMutations) 'public final ${classNameFromType(GLQueryType.mutation)} mutations;',
-      if (_grammar.hasSubscriptions) 'public final ${classNameFromType(GLQueryType.subscription)} subscriptions;',
+      if (_grammar.hasQueries)
+        'public final ${classNameFromType(GLQueryType.query)} queries;',
+      if (_grammar.hasMutations)
+        'public final ${classNameFromType(GLQueryType.mutation)} mutations;',
+      if (_grammar.hasSubscriptions)
+        'public final ${classNameFromType(GLQueryType.subscription)} subscriptions;',
       codeGenUtils.createMethod(
         methodName: clientName,
         returnType: 'public',
@@ -57,7 +60,8 @@ class JavaClientSerializer extends GLClientSerilaizer {
         ],
         arguments: [
           _adapterDeclaration(false),
-          if (_grammar.hasSubscriptions) 'GraphLinkGraphLinkWebSocketAdapter wsAdapter'
+          if (_grammar.hasSubscriptions)
+            'GraphLinkGraphLinkWebSocketAdapter wsAdapter'
         ],
       ),
       codeGenUtils.createMethod(
@@ -65,7 +69,8 @@ class JavaClientSerializer extends GLClientSerilaizer {
         methodName: clientName,
         arguments: [
           _adapterDeclaration(true),
-          if (_grammar.hasSubscriptions) 'GraphLinkGraphLinkWebSocketAdapter wsAdapter'
+          if (_grammar.hasSubscriptions)
+            'GraphLinkGraphLinkWebSocketAdapter wsAdapter'
         ],
         statements: [
           codeGenUtils.ifStatement(
@@ -103,65 +108,100 @@ class JavaClientSerializer extends GLClientSerilaizer {
 
   String? generateQueriesClassByType(GLQueryType type) {
     var queries = _grammar.queries.values;
-    var queryList = queries.where((element) => element.type == type && _grammar.hasQueryType(type)).toList();
+    var queryList = queries
+        .where((element) => element.type == type && _grammar.hasQueryType(type))
+        .toList();
     if (queryList.isEmpty) {
       return null;
     }
 
-    return codeGenUtils
-        .createClass(staticClass: false, className: "${classNameFromType(type)} extends ResolverBase", statements: [
-      ...declareAdapter(type),
-      codeGenUtils.createMethod(
-          returnType: 'public',
-          methodName: classNameFromType(type),
-          arguments: _declareConstructorArgs(type),
-          statements: [
-            'super(fragmentMap, store, encoder, decoder);',
-            'this.adapter = adapter;',
-            if (type == GLQueryType.subscription) '_handler = new SubscriptionHandler(adapter, decoder, encoder);',
-          ]),
-      ...queryList.where((e) => e.type == GLQueryType.query || e.type == GLQueryType.subscription).map(queryToMethod),
-      ...queryList.where((e) => e.type == GLQueryType.mutation).map(mutationToMethod),
-      if (type == GLQueryType.query) codeGenUtils.createMethod(
-        returnType: 'private GraphLinkPayload',
-        methodName: 'buildPayload',
-        arguments: ['List<GraphLinkPartialQuery> partQueries', 'String operationName', 'String directives'],
+    return codeGenUtils.createClass(
+        staticClass: false,
+        className: "${classNameFromType(type)} extends ResolverBase",
         statements: [
-          'Map<String, Object> variables = new HashMap<>();',
-          codeGenUtils.forEachLoop(variable: 'partQuery', iterable: 'partQueries', statements: [
-            'variables.putAll(partQuery.variables);',
-          ]),
-          'StringBuilder queryBuilder = new StringBuilder("query " + operationName);',
-          'Set<String> args = new HashSet<>();',
-          codeGenUtils.forEachLoop(variable: 'partQuery', iterable: 'partQueries', statements: [
-            'args.addAll(partQuery.argumentDeclarations);',
-          ]),
-          codeGenUtils.ifStatement(condition: '!args.isEmpty()', ifBlockStatements: [
-            'queryBuilder.append("(");',
-            'queryBuilder.append(String.join(", ", args));',
-            'queryBuilder.append(")");',
-          ]),
-          codeGenUtils.ifStatement(condition: '!directives.isEmpty()', ifBlockStatements: [
-            'queryBuilder.append(directives);',
-          ]),
-          'queryBuilder.append("{");',
-          codeGenUtils.forEachLoop(variable: 'partQuery', iterable: 'partQueries', statements: [
-            'queryBuilder.append(partQuery.query);',
-          ]),
-          'queryBuilder.append("}");',
-          'Set<String> fragmentNames = new HashSet<>();',
-          codeGenUtils.forEachLoop(variable: 'partQuery', iterable: 'partQueries', statements: [
-            'fragmentNames.addAll(partQuery.fragmentNames);',
-          ]),
-          'StringBuilder fragmentsBuilder = new StringBuilder();',
-          codeGenUtils.forEachLoop(variable: 'fragName', iterable: 'fragmentNames', statements: [
-            'fragmentsBuilder.append(fragmentMap.get(fragName));',
-          ]),
-          'queryBuilder.append(fragmentsBuilder);',
-          'return GraphLinkPayload.builder().query(queryBuilder.toString()).operationName(operationName).variables(variables).build();',
-        ],
-      ),
-    ]);
+          ...declareAdapter(type),
+          codeGenUtils.createMethod(
+              returnType: 'public',
+              methodName: classNameFromType(type),
+              arguments: _declareConstructorArgs(type),
+              statements: [
+                'super(fragmentMap, store, encoder, decoder);',
+                'this.adapter = adapter;',
+                if (type == GLQueryType.subscription)
+                  '_handler = new SubscriptionHandler(adapter, decoder, encoder);',
+              ]),
+          ...queryList
+              .where((e) =>
+                  e.type == GLQueryType.query ||
+                  e.type == GLQueryType.subscription)
+              .map(queryToMethod),
+          ...queryList
+              .where((e) => e.type == GLQueryType.mutation)
+              .map(mutationToMethod),
+          if (type == GLQueryType.query)
+            codeGenUtils.createMethod(
+              returnType: 'private GraphLinkPayload',
+              methodName: 'buildPayload',
+              arguments: [
+                'List<GraphLinkPartialQuery> partQueries',
+                'String operationName',
+                'String directives'
+              ],
+              statements: [
+                'Map<String, Object> variables = new HashMap<>();',
+                codeGenUtils.forEachLoop(
+                    variable: 'partQuery',
+                    iterable: 'partQueries',
+                    statements: [
+                      'variables.putAll(partQuery.variables);',
+                    ]),
+                'StringBuilder queryBuilder = new StringBuilder("query " + operationName);',
+                'Set<String> args = new HashSet<>();',
+                codeGenUtils.forEachLoop(
+                    variable: 'partQuery',
+                    iterable: 'partQueries',
+                    statements: [
+                      'args.addAll(partQuery.argumentDeclarations);',
+                    ]),
+                codeGenUtils.ifStatement(
+                    condition: '!args.isEmpty()',
+                    ifBlockStatements: [
+                      'queryBuilder.append("(");',
+                      'queryBuilder.append(String.join(", ", args));',
+                      'queryBuilder.append(")");',
+                    ]),
+                codeGenUtils.ifStatement(
+                    condition: '!directives.isEmpty()',
+                    ifBlockStatements: [
+                      'queryBuilder.append(directives);',
+                    ]),
+                'queryBuilder.append("{");',
+                codeGenUtils.forEachLoop(
+                    variable: 'partQuery',
+                    iterable: 'partQueries',
+                    statements: [
+                      'queryBuilder.append(partQuery.query);',
+                    ]),
+                'queryBuilder.append("}");',
+                'Set<String> fragmentNames = new HashSet<>();',
+                codeGenUtils.forEachLoop(
+                    variable: 'partQuery',
+                    iterable: 'partQueries',
+                    statements: [
+                      'fragmentNames.addAll(partQuery.fragmentNames);',
+                    ]),
+                'StringBuilder fragmentsBuilder = new StringBuilder();',
+                codeGenUtils.forEachLoop(
+                    variable: 'fragName',
+                    iterable: 'fragmentNames',
+                    statements: [
+                      'fragmentsBuilder.append(fragmentMap.get(fragName));',
+                    ]),
+                'queryBuilder.append(fragmentsBuilder);',
+                'return GraphLinkPayload.builder().query(queryBuilder.toString()).operationName(operationName).variables(variables).build();',
+              ],
+            ),
+        ]);
   }
 
   List<String> _declareConstructorArgs(GLQueryType type) {
@@ -192,7 +232,8 @@ class JavaClientSerializer extends GLClientSerilaizer {
 
   String queryToMethod(GLQueryDefinition def) {
     final dividedQueries = gqlSerializer.divideQueryDefinition(def, _grammar);
-    final directives = gqlSerializer.serializeDirectiveValueList(def.getDirectives(skipGenerated: true));
+    final directives = gqlSerializer
+        .serializeDirectiveValueList(def.getDirectives(skipGenerated: true));
     final returnType = def.getGeneratedTypeDefinition().tokenInfo.token;
 
     return codeGenUtils.createMethod(
@@ -206,33 +247,51 @@ class JavaClientSerializer extends GLClientSerilaizer {
           ...dividedQueries.map(serializePartialQueryJava),
           'Map<String, Object> responseMap = new HashMap<>();',
           'Map<String, Object> staleData = new HashMap<>();',
-          codeGenUtils.forEachLoop(variable: 'partQuery', iterable: 'partialQueries', statements: [
-            codeGenUtils.ifStatement(condition: 'partQuery.ttl > 0', ifBlockStatements: [
-              codeGenUtils.tryCatchFinally(
-                tryStatements: [
-                  'GraphLinkCacheEntry entry = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline);',
-                  codeGenUtils.ifStatement(condition: 'entry != null', ifBlockStatements: [
-                    codeGenUtils.ifStatement(
-                      condition: 'entry.stale',
-                      ifBlockStatements: ['staleData.put(partQuery.elementKey, decoder.decode(entry.data));'],
-                      elseBlockStatements: ['responseMap.put(partQuery.elementKey, decoder.decode(entry.data));'],
-                    ),
-                  ]),
-                ],
-                catchStatements: [],
-                catchVariable: 'ignored',
-              ),
-            ]),
-          ]),
+          codeGenUtils.forEachLoop(
+              variable: 'partQuery',
+              iterable: 'partialQueries',
+              statements: [
+                codeGenUtils.ifStatement(
+                    condition: 'partQuery.ttl > 0',
+                    ifBlockStatements: [
+                      codeGenUtils.tryCatchFinally(
+                        tryStatements: [
+                          'GraphLinkCacheEntry entry = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline);',
+                          codeGenUtils.ifStatement(
+                              condition: 'entry != null',
+                              ifBlockStatements: [
+                                codeGenUtils.ifStatement(
+                                  condition: 'entry.stale',
+                                  ifBlockStatements: [
+                                    'staleData.put(partQuery.elementKey, decoder.decode(entry.data));'
+                                  ],
+                                  elseBlockStatements: [
+                                    'responseMap.put(partQuery.elementKey, decoder.decode(entry.data));'
+                                  ],
+                                ),
+                              ]),
+                        ],
+                        catchStatements: [],
+                        catchVariable: 'ignored',
+                      ),
+                    ]),
+              ]),
           'List<GraphLinkPartialQuery> remaining = new ArrayList<>();',
-          codeGenUtils.forEachLoop(variable: 'partQuery', iterable: 'partialQueries', statements: [
-            codeGenUtils.ifStatement(condition: '!responseMap.containsKey(partQuery.elementKey)', ifBlockStatements: [
-              'remaining.add(partQuery);',
-            ]),
-          ]),
-          codeGenUtils.ifStatement(condition: 'remaining.isEmpty()', ifBlockStatements: [
-            'return $returnType.fromJson(responseMap);',
-          ]),
+          codeGenUtils.forEachLoop(
+              variable: 'partQuery',
+              iterable: 'partialQueries',
+              statements: [
+                codeGenUtils.ifStatement(
+                    condition: '!responseMap.containsKey(partQuery.elementKey)',
+                    ifBlockStatements: [
+                      'remaining.add(partQuery);',
+                    ]),
+              ]),
+          codeGenUtils.ifStatement(
+              condition: 'remaining.isEmpty()',
+              ifBlockStatements: [
+                'return $returnType.fromJson(responseMap);',
+              ]),
           'GraphLinkPayload payload = buildPayload(remaining, operationName, "$directives");',
           codeGenUtils.tryCatchFinally(
             tryStatements: [
@@ -242,10 +301,12 @@ class JavaClientSerializer extends GLClientSerilaizer {
             catchStatements: [
               'responseMap.putAll(staleData);',
               'long remainingCount = partialQueries.stream().filter(e -> !responseMap.containsKey(e.elementKey)).count();',
-              codeGenUtils.ifStatement(condition: 'remainingCount > 0', ifBlockStatements: [
-                'if (exception instanceof RuntimeException) throw (RuntimeException) exception;',
-                'throw new RuntimeException(exception);',
-              ]),
+              codeGenUtils.ifStatement(
+                  condition: 'remainingCount > 0',
+                  ifBlockStatements: [
+                    'if (exception instanceof RuntimeException) throw (RuntimeException) exception;',
+                    'throw new RuntimeException(exception);',
+                  ]),
               'return $returnType.fromJson(responseMap);',
             ],
             catchVariable: 'exception',
@@ -308,10 +369,12 @@ class JavaClientSerializer extends GLClientSerilaizer {
   }
 
   String generateVariables(GLQueryDefinition def) {
-    var buffer = StringBuffer("Map<String, Object> variables = new HashMap<>();");
+    var buffer =
+        StringBuffer("Map<String, Object> variables = new HashMap<>();");
     buffer.writeln();
     def.arguments
-        .map((e) => 'variables.put("${e.dartArgumentName}", ${_serializeArgumentValue(def, e.token)});')
+        .map((e) =>
+            'variables.put("${e.dartArgumentName}", ${_serializeArgumentValue(def, e.token)});')
         .forEach(buffer.writeln);
 
     return buffer.toString();
@@ -333,11 +396,14 @@ class JavaClientSerializer extends GLClientSerilaizer {
       "String encodedPayload = encoder.encode(payload);",
       "String responseText = adapter.execute(encodedPayload);",
       "Map<String, Object> decodedResponse = decoder.decode(responseText);",
-      codeGenUtils.ifStatement(condition: 'decodedResponse.containsKey("errors")', ifBlockStatements: [
-        'throw ${clientExceptionName}.of((List)decodedResponse.get("errors"));'
-      ], elseBlockStatements: [
-        'return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson((Map<String, Object>)decodedResponse.get("data"));'
-      ])
+      codeGenUtils.ifStatement(
+          condition: 'decodedResponse.containsKey("errors")',
+          ifBlockStatements: [
+            'throw ${clientExceptionName}.of((List)decodedResponse.get("errors"));'
+          ],
+          elseBlockStatements: [
+            'return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson((Map<String, Object>)decodedResponse.get("data"));'
+          ])
     ].join("\n");
   }
 
@@ -346,9 +412,11 @@ class JavaClientSerializer extends GLClientSerilaizer {
       "String encodedPayload = encoder.encode(payload);",
       "String responseText = adapter.execute(encodedPayload);",
       "Map<String, Object> decodedResponse = decoder.decode(responseText);",
-      codeGenUtils.ifStatement(condition: 'decodedResponse.containsKey("errors")', ifBlockStatements: [
-        'throw ${clientExceptionName}.of((List)decodedResponse.get("errors"));',
-      ]),
+      codeGenUtils.ifStatement(
+          condition: 'decodedResponse.containsKey("errors")',
+          ifBlockStatements: [
+            'throw ${clientExceptionName}.of((List)decodedResponse.get("errors"));',
+          ]),
       'Map<String, Object> data = (Map<String, Object>) decodedResponse.get("data");',
       _serializeInvalidationCall(def),
       'return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson(data);',
@@ -378,7 +446,9 @@ class JavaClientSerializer extends GLClientSerilaizer {
             returnType: 'public void',
             methodName: 'onMessage',
             arguments: ['Map<String, Object> response'],
-            statements: ['listener.onMessage(${def.typeDefinition?.token}.fromJson(response));'],
+            statements: [
+              'listener.onMessage(${def.typeDefinition?.token}.fromJson(response));'
+            ],
           ),
           '@Override',
           codeGenUtils.createMethod(
@@ -395,7 +465,8 @@ class JavaClientSerializer extends GLClientSerilaizer {
             statements: ['listener.onError(error);'],
           )
         ]);
-    return ['${method};', '_handler.handlePayload(payload, rawListener);'].join('\n');
+    return ['${method};', '_handler.handlePayload(payload, rawListener);']
+        .join('\n');
   }
 
   String _serializeArgumentValue(GLQueryDefinition def, String argName) {
@@ -434,9 +505,13 @@ class JavaClientSerializer extends GLClientSerilaizer {
     if (def.arguments.isEmpty) {
       result = [];
     }
-    result = def.arguments.map((e) => "${serializer.serializeType(e.type, false)} ${e.dartArgumentName}").toList();
+    result = def.arguments
+        .map((e) =>
+            "${serializer.serializeType(e.type, false)} ${e.dartArgumentName}")
+        .toList();
     if (def.type == GLQueryType.subscription) {
-      result.add('${_subscriptionListenerRef}<${def.typeDefinition?.token}> listener');
+      result.add(
+          '${_subscriptionListenerRef}<${def.typeDefinition?.token}> listener');
     }
     return result;
   }
@@ -492,7 +567,8 @@ class JavaClientSerializer extends GLClientSerilaizer {
             'this.encoder = encoder;',
             'this.decoder = decoder;',
             'String[] tags = {${allTags.map((t) => '"$t"').join(', ')}};',
-            codeGenUtils.forEachLoop(variable: 'tag', iterable: 'tags', statements: [
+            codeGenUtils
+                .forEachLoop(variable: 'tag', iterable: 'tags', statements: [
               'tagLocks.put(tag, new ReentrantLock());',
             ]),
           ],
@@ -508,21 +584,29 @@ class JavaClientSerializer extends GLClientSerilaizer {
           ],
           statements: [
             'Map<String, Object> result = decoder.decode(data);',
-            codeGenUtils.ifStatement(condition: 'result.containsKey("errors")', ifBlockStatements: [
-              'throw ${clientExceptionName}.of((List) result.get("errors"));',
-            ]),
+            codeGenUtils.ifStatement(
+                condition: 'result.containsKey("errors")',
+                ifBlockStatements: [
+                  'throw ${clientExceptionName}.of((List) result.get("errors"));',
+                ]),
             'Map<String, Object> dataMap = (Map<String, Object>) result.get("data");',
-            codeGenUtils.forEachLoop(variable: 'q', iterable: 'remainingQueries', statements: [
-              codeGenUtils.ifStatement(
-                  condition: 'q.ttl > 0 && dataMap.get(q.elementKey) != null',
-                  ifBlockStatements: [
-                    'GraphLinkCacheEntry entry = new GraphLinkCacheEntry(encoder.encode(dataMap.get(q.elementKey)), System.currentTimeMillis() + q.ttl * 1000L);',
-                    'store.set(q.cacheKey, encoder.encode(entry.toJson()));',
-                    codeGenUtils.ifStatement(condition: '!q.tags.isEmpty()', ifBlockStatements: [
-                      'addKeyToTags(q.cacheKey, q.tags);',
-                    ]),
-                  ]),
-            ]),
+            codeGenUtils.forEachLoop(
+                variable: 'q',
+                iterable: 'remainingQueries',
+                statements: [
+                  codeGenUtils.ifStatement(
+                      condition:
+                          'q.ttl > 0 && dataMap.get(q.elementKey) != null',
+                      ifBlockStatements: [
+                        'GraphLinkCacheEntry entry = new GraphLinkCacheEntry(encoder.encode(dataMap.get(q.elementKey)), System.currentTimeMillis() + q.ttl * 1000L);',
+                        'store.set(q.cacheKey, encoder.encode(entry.toJson()));',
+                        codeGenUtils.ifStatement(
+                            condition: '!q.tags.isEmpty()',
+                            ifBlockStatements: [
+                              'addKeyToTags(q.cacheKey, q.tags);',
+                            ]),
+                      ]),
+                ]),
             'dataMap.putAll(cachedResponse);',
             'return parser.apply(dataMap);',
           ],
@@ -536,21 +620,32 @@ class JavaClientSerializer extends GLClientSerilaizer {
         codeGenUtils.createMethod(
           returnType: 'GraphLinkCacheEntry',
           methodName: 'getFromCache',
-          arguments: ['String key', 'List<String> tags', 'boolean staleIfOffline'],
+          arguments: [
+            'String key',
+            'List<String> tags',
+            'boolean staleIfOffline'
+          ],
           statements: [
             'String result = store.get(key);',
-            codeGenUtils.ifStatement(condition: 'result != null', ifBlockStatements: [
+            codeGenUtils
+                .ifStatement(condition: 'result != null', ifBlockStatements: [
               'Map<String, Object> entryMap = decoder.decode(result);',
               'GraphLinkCacheEntry entry = GraphLinkCacheEntry.fromJson(entryMap);',
-              codeGenUtils.ifStatement(condition: 'entry.isExpired()', ifBlockStatements: [
-                codeGenUtils.ifStatement(condition: 'staleIfOffline', ifBlockStatements: ['return entry.asStale();']),
-                'store.invalidate(key);',
-                codeGenUtils
-                    .ifStatement(condition: '!tags.isEmpty()', ifBlockStatements: ['removeKeyFromTags(key, tags);']),
-                'return null;',
-              ], elseBlockStatements: [
-                'return entry;',
-              ]),
+              codeGenUtils.ifStatement(
+                  condition: 'entry.isExpired()',
+                  ifBlockStatements: [
+                    codeGenUtils.ifStatement(
+                        condition: 'staleIfOffline',
+                        ifBlockStatements: ['return entry.asStale();']),
+                    'store.invalidate(key);',
+                    codeGenUtils.ifStatement(
+                        condition: '!tags.isEmpty()',
+                        ifBlockStatements: ['removeKeyFromTags(key, tags);']),
+                    'return null;',
+                  ],
+                  elseBlockStatements: [
+                    'return entry;',
+                  ]),
             ]),
             'return null;',
           ],
@@ -560,15 +655,20 @@ class JavaClientSerializer extends GLClientSerilaizer {
           methodName: 'invalidateByTags',
           arguments: ['List<String> tags'],
           statements: [
-            codeGenUtils.forEachLoop(variable: 'tag', iterable: 'tags', statements: [
+            codeGenUtils
+                .forEachLoop(variable: 'tag', iterable: 'tags', statements: [
               'String tKey = tagKey(tag);',
               'ReentrantLock lock = tagLocks.get(tag);',
               'lock.lock();',
               codeGenUtils.tryCatchFinally(tryStatements: [
                 'String data = store.get(tKey);',
-                codeGenUtils.ifStatement(condition: 'data != null', ifBlockStatements: [
+                codeGenUtils
+                    .ifStatement(condition: 'data != null', ifBlockStatements: [
                   'GraphLinkTagEntry entry = GraphLinkTagEntry.fromJson(decoder.decode(data));',
-                  codeGenUtils.forEachLoop(variable: 'k', iterable: 'entry.keys', statements: ['store.invalidate(k);']),
+                  codeGenUtils.forEachLoop(
+                      variable: 'k',
+                      iterable: 'entry.keys',
+                      statements: ['store.invalidate(k);']),
                   'store.invalidate(tKey);',
                 ]),
               ], finallyStatements: [
@@ -582,7 +682,8 @@ class JavaClientSerializer extends GLClientSerilaizer {
           methodName: 'addKeyToTags',
           arguments: ['String key', 'List<String> tags'],
           statements: [
-            codeGenUtils.forEachLoop(variable: 'tag', iterable: 'tags', statements: [
+            codeGenUtils
+                .forEachLoop(variable: 'tag', iterable: 'tags', statements: [
               'String tKey = tagKey(tag);',
               'ReentrantLock lock = tagLocks.get(tag);',
               'lock.lock();',
@@ -602,19 +703,23 @@ class JavaClientSerializer extends GLClientSerilaizer {
           methodName: 'removeKeyFromTags',
           arguments: ['String key', 'List<String> tags'],
           statements: [
-            codeGenUtils.forEachLoop(variable: 'tag', iterable: 'tags', statements: [
+            codeGenUtils
+                .forEachLoop(variable: 'tag', iterable: 'tags', statements: [
               'String tKey = tagKey(tag);',
               'ReentrantLock lock = tagLocks.computeIfAbsent(tag, k -> new ReentrantLock());',
               'lock.lock();',
               codeGenUtils.tryCatchFinally(tryStatements: [
                 'String data = store.get(tKey);',
-                codeGenUtils.ifStatement(condition: 'data != null', ifBlockStatements: [
+                codeGenUtils
+                    .ifStatement(condition: 'data != null', ifBlockStatements: [
                   'GraphLinkTagEntry entry = GraphLinkTagEntry.fromJson(decoder.decode(data));',
                   'entry.remove(key);',
                   codeGenUtils.ifStatement(
                     condition: 'entry.keys.isEmpty()',
                     ifBlockStatements: ['store.invalidate(tKey);'],
-                    elseBlockStatements: ['store.set(tKey, encoder.encode(entry.toJson()));'],
+                    elseBlockStatements: [
+                      'store.set(tKey, encoder.encode(entry.toJson()));'
+                    ],
                   ),
                 ]),
               ], finallyStatements: [
@@ -654,7 +759,10 @@ class JavaClientSerializer extends GLClientSerilaizer {
   }
 
   String generateGraphLinkCacheEntryFile() {
-    return '${['import ${JavaImports.map};', 'import ${JavaImports.hashMap};'].join('\n')}\n\n${cacheEntry.trim()}';
+    return '${[
+      'import ${JavaImports.map};',
+      'import ${JavaImports.hashMap};'
+    ].join('\n')}\n\n${cacheEntry.trim()}';
   }
 
   String generateGraphLinkTagEntryFile() {
@@ -706,7 +814,8 @@ class JavaClientSerializer extends GLClientSerilaizer {
       buffer.writeln('import $i;');
     }
     buffer.writeln(serializeImports(_grammar, importPrefix));
-    buffer.writeln(serializer.serializeImportToken(_grammar.enums['GraphLinkAckStatus']!, importPrefix));
+    buffer.writeln(serializer.serializeImportToken(
+        _grammar.enums['GraphLinkAckStatus']!, importPrefix));
     buffer.writeln(_subscriptionHandlerClass.trim());
     return buffer.toString();
   }
@@ -715,7 +824,12 @@ class JavaClientSerializer extends GLClientSerilaizer {
 
   String generateGraphLinkExceptionFile(String importPrefix) {
     final buffer = StringBuffer();
-    for (var i in [JavaImports.list, JavaImports.collections, JavaImports.collectors, JavaImports.map]) {
+    for (var i in [
+      JavaImports.list,
+      JavaImports.collections,
+      JavaImports.collectors,
+      JavaImports.map
+    ]) {
       buffer.writeln('import $i;');
     }
     final errorToken = _grammar.getTokenByKey('GraphLinkError');
@@ -727,27 +841,39 @@ class JavaClientSerializer extends GLClientSerilaizer {
       className: '$clientExceptionName extends RuntimeException',
       statements: [
         'private final List<GraphLinkError> errors;',
-        codeGenUtils.createMethod(returnType: 'public', methodName: clientExceptionName, arguments: [
-          'List<GraphLinkError> errors',
-        ], statements: [
-          'this.errors = errors;'
-        ]),
-        codeGenUtils.createMethod(returnType: 'private', methodName: clientExceptionName, arguments: [
-          'Exception ex',
-        ], statements: [
-          'super(ex);',
-          'errors = Collections.emptyList();'
-        ]),
+        codeGenUtils.createMethod(
+            returnType: 'public',
+            methodName: clientExceptionName,
+            arguments: [
+              'List<GraphLinkError> errors',
+            ],
+            statements: [
+              'this.errors = errors;'
+            ]),
+        codeGenUtils.createMethod(
+            returnType: 'private',
+            methodName: clientExceptionName,
+            arguments: [
+              'Exception ex',
+            ],
+            statements: [
+              'super(ex);',
+              'errors = Collections.emptyList();'
+            ]),
         codeGenUtils.createMethod(
             returnType: 'public List<GraphLinkError>',
             methodName: 'getErrors',
             arguments: [],
             statements: ['return errors;']),
-        codeGenUtils.createMethod(returnType: 'static $clientExceptionName', methodName: 'of', arguments: [
-          'List<?> errors'
-        ], statements: [
-          'return new $clientExceptionName(errors.stream().map(e -> GraphLinkError.fromJson((Map<String, Object>)e)).collect(Collectors.toList()));'
-        ]),
+        codeGenUtils.createMethod(
+            returnType: 'static $clientExceptionName',
+            methodName: 'of',
+            arguments: [
+              'List<?> errors'
+            ],
+            statements: [
+              'return new $clientExceptionName(errors.stream().map(e -> GraphLinkError.fromJson((Map<String, Object>)e)).collect(Collectors.toList()));'
+            ]),
       ],
     ));
     return buffer.toString();
@@ -756,10 +882,13 @@ class JavaClientSerializer extends GLClientSerilaizer {
   String get fileExtension => '.java';
 
   @override
-  Set<GLToken> getImportDependecies(GLGrammar g) {
+  Set<GLToken> getImportDependecies(GLParser g) {
     var result = {...super.getImportDependecies(g)};
-    result.addAll(
-        ['GraphLinkJsonEncoder', 'GraphLinkJsonDecoder', 'GraphLinkClientAdapter'].map((e) => g.getTypeByName(e)!));
+    result.addAll([
+      'GraphLinkJsonEncoder',
+      'GraphLinkJsonDecoder',
+      'GraphLinkClientAdapter'
+    ].map((e) => g.getTypeByName(e)!));
     var adapter = g.getTokenByKey('GraphLinkGraphLinkWebSocketAdapter');
     if (adapter != null) {
       result.add(adapter);

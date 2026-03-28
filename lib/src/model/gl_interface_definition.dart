@@ -18,6 +18,7 @@ class GLInterfaceDefinition extends GLTypeDefinition {
     this.fromUnion = false,
     super.derivedFromType,
     required super.extension,
+    super.documentation,
   });
 
   @override

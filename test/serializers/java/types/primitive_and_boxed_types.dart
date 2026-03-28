@@ -2,13 +2,12 @@ import 'dart:io';
 
 import 'package:graphlink/src/serializers/language.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gl_grammar.dart';
-import 'package:petitparser/petitparser.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 
 void main() {
   test("test serializeGetterDeclaration when Boolean is Object", () {
-    final GLGrammar g = GLGrammar(identityFields: [
+    final GLParser g = GLParser(identityFields: [
       "id"
     ], typeMap: {
       "ID": "String",
@@ -19,21 +18,22 @@ void main() {
       "Null": "null",
       "Long": "Long"
     }, mode: CodeGenerationMode.server);
-    final text = File("test/serializers/java/types/boolean_getter_test.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
+    final text = File("test/serializers/java/types/boolean_getter_test.graphql")
+        .readAsStringSync();
 
-    expect(parsed is Success, true);
+    g.parse(text);
+
     var javaSerialzer = JavaSerializer(g);
     var person = g.getTypeByName("Person")!;
     var aged = person.fields.where((f) => f.name.token == "aged").first;
 
-    var agedDeclaration = javaSerialzer.serializeGetterDeclaration(aged, skipModifier: true);
+    var agedDeclaration =
+        javaSerialzer.serializeGetterDeclaration(aged, skipModifier: true);
     expect(agedDeclaration, "Boolean getAged()");
   });
 
   test("test serializeGetterDeclaration when Boolean is a primitive", () {
-    final GLGrammar g = GLGrammar(identityFields: [
+    final GLParser g = GLParser(identityFields: [
       "id"
     ], typeMap: {
       "ID": "String",
@@ -44,21 +44,22 @@ void main() {
       "Null": "null",
       "Long": "Long"
     }, mode: CodeGenerationMode.server);
-    final text = File("test/serializers/java/types/boolean_getter_test.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
+    final text = File("test/serializers/java/types/boolean_getter_test.graphql")
+        .readAsStringSync();
 
-    expect(parsed is Success, true);
+    g.parse(text);
+
     var javaSerialzer = JavaSerializer(g);
     var person = g.getTypeByName("Person")!;
     var aged = person.fields.where((f) => f.name.token == "aged").first;
 
-    var agedDeclaration = javaSerialzer.serializeGetterDeclaration(aged, skipModifier: true);
+    var agedDeclaration =
+        javaSerialzer.serializeGetterDeclaration(aged, skipModifier: true);
     expect(agedDeclaration, "boolean isAged()");
   });
 
   test("test boxed types", () {
-    final GLGrammar g = GLGrammar(identityFields: [
+    final GLParser g = GLParser(identityFields: [
       "id"
     ], typeMap: {
       "ID": "String",
@@ -69,22 +70,23 @@ void main() {
       "Null": "null",
       "Long": "Long"
     }, mode: CodeGenerationMode.server);
-    final text = File("test/serializers/java/types/boxed_types.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
+    final text = File("test/serializers/java/types/boxed_types.graphql")
+        .readAsStringSync();
 
-    expect(parsed is Success, true);
+    g.parse(text);
+
     var javaSerialzer = JavaSerializer(g);
     var person = g.getTypeByName("Person")!;
     var ids = person.fields.where((f) => f.name.token == "ids").first;
 
-    var idsSerial = javaSerialzer.serializeGetterDeclaration(ids, skipModifier: true);
+    var idsSerial =
+        javaSerialzer.serializeGetterDeclaration(ids, skipModifier: true);
 
     expect(idsSerial, "java.util.List<Integer> getIds()");
   });
 
   test("primitive types to boxed types when nullable", () {
-    final GLGrammar g = GLGrammar(identityFields: [
+    final GLParser g = GLParser(identityFields: [
       "id"
     ], typeMap: {
       "ID": "String",
@@ -95,11 +97,11 @@ void main() {
       "Null": "null",
       "Long": "Long"
     }, mode: CodeGenerationMode.server);
-    final text = File("test/serializers/java/types/boxed_types.graphql").readAsStringSync();
-    var parser = g.buildFrom(g.fullGrammar().end());
-    var parsed = parser.parse(text);
+    final text = File("test/serializers/java/types/boxed_types.graphql")
+        .readAsStringSync();
 
-    expect(parsed is Success, true);
+    g.parse(text);
+
     var javaSerialzer = JavaSerializer(g);
     var person = g.getTypeByName("Person")!;
     var age = person.fields.where((f) => f.name.token == "age").first;

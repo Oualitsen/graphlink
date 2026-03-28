@@ -1,4 +1,4 @@
-import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
 import 'package:graphlink/src/model/gl_field.dart';
@@ -13,7 +13,7 @@ import 'package:graphlink/src/utils.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 
 abstract class GLSerializer {
-  final GLGrammar grammar;
+  final GLParser grammar;
   late final CodeGenerationMode mode;
   bool get generateJsonMethods;
   GLSerializer(this.grammar) : mode = grammar.mode;
@@ -22,11 +22,13 @@ abstract class GLSerializer {
     if (shouldSkipSerialization(directives: def.getDirectives(), mode: mode)) {
       return "";
     }
-    return serializeWithImport(def, importPrefix, doSerializeEnumDefinition(def));
+    return serializeWithImport(
+        def, importPrefix, doSerializeEnumDefinition(def));
   }
 
   String serialzeEnumValue(GLEnumValue value) {
-    if (shouldSkipSerialization(directives: value.getDirectives(), mode: mode)) {
+    if (shouldSkipSerialization(
+        directives: value.getDirectives(), mode: mode)) {
       return "";
     }
     return doSerializeEnumValue(value);
@@ -50,7 +52,8 @@ abstract class GLSerializer {
     if (shouldSkipSerialization(directives: def.getDirectives(), mode: mode)) {
       return "";
     }
-    return serializeWithImport(def, importPrefix, doSerializeInputDefinition(def));
+    return serializeWithImport(
+        def, importPrefix, doSerializeInputDefinition(def));
   }
 
   String doSerializeInputDefinition(GLInputDefinition def);
@@ -59,13 +62,16 @@ abstract class GLSerializer {
     if (shouldSkipSerialization(directives: def.getDirectives(), mode: mode)) {
       return "";
     }
-    return serializeWithImport(def, importPrefix, doSerializeTypeDefinition(def));
+    return serializeWithImport(
+        def, importPrefix, doSerializeTypeDefinition(def));
   }
 
   String doSerializeTypeDefinition(GLTypeDefinition def);
 
-  String serializeDecorators(List<GLDirectiveValue> list, {String joiner = "\n"}) {
-    var decorators = GLGrammarExtension.extractDecorators(directives: list, mode: grammar.mode);
+  String serializeDecorators(List<GLDirectiveValue> list,
+      {String joiner = "\n"}) {
+    var decorators = GLGrammarExtension.extractDecorators(
+        directives: list, mode: grammar.mode);
     if (decorators.isEmpty) {
       return "";
     }
@@ -80,7 +86,9 @@ abstract class GLSerializer {
         grammar.enums[token] ??
         grammar.scalars[token];
     typeWithDirectives = typeWithDirectives as GLDirectivesMixin?;
-    var result = typeWithDirectives?.getDirectiveByName(glExternal)?.getArgValueAsString(glExternalArg);
+    var result = typeWithDirectives
+        ?.getDirectiveByName(glExternal)
+        ?.getArgValueAsString(glExternalArg);
     if (result == null) {
       // check on typeMap
       return grammar.typeMap[token];

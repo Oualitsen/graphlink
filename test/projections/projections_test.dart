@@ -1,18 +1,17 @@
 import 'dart:io';
 
 import 'package:test/test.dart';
-import 'package:graphlink/src/gl_grammar.dart';
-import 'package:petitparser/petitparser.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 void main() async {
   test("projections_test", () {
-    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
+    final GLParser g =
+        GLParser(generateAllFieldsFragments: true, autoGenerateQueries: true);
 
-    var parser = g.buildFrom(g.fullGrammar().end());
+    final text =
+        File("test/projections/projections_test.graphql").readAsStringSync();
+    g.parse(text);
 
-    final text = File("test/projections/projections_test.graphql").readAsStringSync();
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
     var user = g.projectedTypes["User"];
     var address = g.projectedTypes["Address"];
     var state = g.projectedTypes["State"];
@@ -24,13 +23,13 @@ void main() async {
   });
 
   test("projections_test2 on glSkipOnClient", () {
-    final GLGrammar g = GLGrammar(generateAllFieldsFragments: true, autoGenerateQueries: true);
+    final GLParser g =
+        GLParser(generateAllFieldsFragments: true, autoGenerateQueries: true);
 
-    var parser = g.buildFrom(g.fullGrammar().end());
+    final text =
+        File("test/projections/projections2_test.graphql").readAsStringSync();
+    g.parse(text);
 
-    final text = File("test/projections/projections2_test.graphql").readAsStringSync();
-    var parsed = parser.parse(text);
-    expect(parsed is Success, true);
     var projectedTypes = g.projectedTypes;
     expect(projectedTypes.keys, contains("Notif"));
   });

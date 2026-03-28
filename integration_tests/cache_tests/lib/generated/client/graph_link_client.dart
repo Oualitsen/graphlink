@@ -174,8 +174,7 @@ class InMemoryGraphLinkCacheStore implements GraphLinkCacheStore {
 
 class GraphLinkQueries extends _ResolverBase {
    final Future<String> Function(String payload) _adapter;
-   GraphLinkQueries(this._adapter, Map<String, String> fragmentMap, GraphLinkCacheStore store, Map<String, _Lock> _tagLocks) : super(fragmentMap, store, _tagLocks) {
-   }
+   GraphLinkQueries(this._adapter, Map<String, String> fragmentMap, GraphLinkCacheStore store, Map<String, _Lock> _tagLocks) : super(fragmentMap, store, _tagLocks);
    Future<GetCarAndOwnerResponse> getCarAndOwner({
       required String carId,
       required String ownerId
@@ -240,7 +239,7 @@ class GraphLinkQueries extends _ResolverBase {
          responseMap.addAll(staleData);
          final remainingCount = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).length;
          if(remainingCount > 0) {
-            throw exception;
+            rethrow;
          }
          return GetCarAndOwnerResponse.fromJson(responseMap);
       }
@@ -294,7 +293,7 @@ class GraphLinkQueries extends _ResolverBase {
          responseMap.addAll(staleData);
          final remainingCount = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).length;
          if(remainingCount > 0) {
-            throw exception;
+            rethrow;
          }
          return GetOwnerResponse.fromJson(responseMap);
       }
@@ -348,7 +347,7 @@ class GraphLinkQueries extends _ResolverBase {
          responseMap.addAll(staleData);
          final remainingCount = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).length;
          if(remainingCount > 0) {
-            throw exception;
+            rethrow;
          }
          return GetCarResponse.fromJson(responseMap);
       }
@@ -402,7 +401,7 @@ class GraphLinkQueries extends _ResolverBase {
          responseMap.addAll(staleData);
          final remainingCount = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).length;
          if(remainingCount > 0) {
-            throw exception;
+            rethrow;
          }
          return GetCarStaleResponse.fromJson(responseMap);
       }
@@ -456,7 +455,7 @@ class GraphLinkQueries extends _ResolverBase {
          responseMap.addAll(staleData);
          final remainingCount = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).length;
          if(remainingCount > 0) {
-            throw exception;
+            rethrow;
          }
          return GetCarExpiringResponse.fromJson(responseMap);
       }
@@ -505,7 +504,7 @@ class GraphLinkQueries extends _ResolverBase {
          responseMap.addAll(staleData);
          final remainingCount = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).length;
          if(remainingCount > 0) {
-            throw exception;
+            rethrow;
          }
          return GetCarsCountResponse.fromJson(responseMap);
       }
@@ -559,7 +558,7 @@ class GraphLinkQueries extends _ResolverBase {
          responseMap.addAll(staleData);
          final remainingCount = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).length;
          if(remainingCount > 0) {
-            throw exception;
+            rethrow;
          }
          return GetCarNameResponse.fromJson(responseMap);
       }
@@ -612,8 +611,7 @@ class GraphLinkQueries extends _ResolverBase {
 }
 class GraphLinkMutations extends _ResolverBase {
    final Future<String> Function(String payload) _adapter;
-   GraphLinkMutations(this._adapter, Map<String, String> fragmentMap, GraphLinkCacheStore store, Map<String, _Lock> _tagLocks) : super(fragmentMap, store, _tagLocks) {
-   }
+   GraphLinkMutations(this._adapter, Map<String, String> fragmentMap, GraphLinkCacheStore store, Map<String, _Lock> _tagLocks) : super(fragmentMap, store, _tagLocks);
    Future<CreateOwnerResponse> createOwner({
       required CreateOwnerInput input
    }) async {

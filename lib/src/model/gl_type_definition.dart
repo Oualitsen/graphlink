@@ -1,4 +1,4 @@
-import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_directives_mixin.dart';
@@ -25,7 +25,8 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
     required List<GLDirectiveValue> directives,
     required this.derivedFromType,
     required bool extension,
-  }) : super(name, extension, fields) {
+    String? documentation,
+  }) : super(name, extension, fields, documentation: documentation) {
     directives.forEach(addDirective);
     fields.sort((f1, f2) => f1.name.token.compareTo(f2.name.token));
     interfaceNames.forEach(addInterfaceName);
@@ -51,7 +52,7 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
   ///
   ///check is the two definitions will produce the same object structure
   ///
-  bool isSimilarTo(GLTypeDefinition other, GLGrammar g) {
+  bool isSimilarTo(GLTypeDefinition other, GLParser g) {
     var dft = derivedFromType;
     var otherDft = other.derivedFromType;
     if (otherDft != null) {
@@ -66,14 +67,19 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
     return _interfaceNames.where((i) => i.token == interfaceName).isNotEmpty;
   }
 
-  String getHash(GLGrammar g) {
+  String? _cachedHash;
+
+  String getHash(GLParser g) {
+    if (_cachedHash != null) return _cachedHash!;
     var serilaize = GLGraphqSerializer(g);
-    return getSerializableFields(g.mode)
-        .map((f) => "${f.name}:${serilaize.serializeType(f.type, forceNullable: f.hasInculeOrSkipDiretives)}")
+    _cachedHash = getSerializableFields(g.mode)
+        .map((f) =>
+            "${f.name}:${serilaize.serializeType(f.type, forceNullable: f.hasInculeOrSkipDiretives)}")
         .join(",");
+    return _cachedHash!;
   }
 
-  Set<String> getIdentityFields(GLGrammar g) {
+  Set<String> getIdentityFields(GLParser g) {
     var directive = getDirectiveByName(glEqualsHashcode);
     if (directive != null) {
       var directiveFields = (directive.getArguments().first.value as List)
@@ -94,12 +100,13 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
     return [...fields];
   }
 
-  bool containsInteface(String interfaceName) => interfaceNames.where((e) => e.token == interfaceName).isNotEmpty;
+  bool containsInteface(String interfaceName) =>
+      interfaceNames.where((e) => e.token == interfaceName).isNotEmpty;
 
   Set<String> getInterfaceNames() => interfaceNames.map((e) => e.token).toSet();
 
   @override
-  Set<GLToken> getImportDependecies(GLGrammar g) {
+  Set<GLToken> getImportDependecies(GLParser g) {
     var result = {...super.getImportDependecies(g)};
 
     for (var iface in _interfaces) {

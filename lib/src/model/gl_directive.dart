@@ -10,8 +10,14 @@ class GLDirectiveDefinition {
   final List<GLArgumentDefinition> arguments;
   final Set<GLDirectiveScope> scopes;
   final bool repeatable;
+  final String? documentation;
 
-  GLDirectiveDefinition(this.name, this.arguments, this.scopes, this.repeatable);
+  GLDirectiveDefinition(
+      TokenInfo name, this.arguments, this.scopes, this.repeatable,
+      {this.documentation})
+      : name = name.token.startsWith('@')
+            ? name
+            : name.ofNewName("@${name.token}");
 }
 
 enum GLDirectiveScope {
@@ -67,7 +73,12 @@ class GLDirectiveValue extends GLToken {
   ///
   final bool generated;
 
-  GLDirectiveValue(super.tokenInfo, this.locations, List<GLArgumentValue> arguments, {required this.generated}) {
+  GLDirectiveValue(
+      TokenInfo tokenInfo, this.locations, List<GLArgumentValue> arguments,
+      {required this.generated})
+      : super(tokenInfo.token.startsWith('@')
+            ? tokenInfo
+            : tokenInfo.ofNewName('@${tokenInfo.token}')) {
     _addArgument(arguments);
   }
 
@@ -82,7 +93,8 @@ class GLDirectiveValue extends GLToken {
     for (var argDef in args) {
       var argValue = _argsMap[argDef.token];
       if (argValue == null && argDef.initialValue != null) {
-        var newArgValue = GLArgumentValue(argDef.tokenInfo, argDef.initialValue);
+        var newArgValue =
+            GLArgumentValue(argDef.tokenInfo, argDef.initialValue);
         _argsMap[argDef.token] = newArgValue;
         argsToAdd.add(newArgValue);
       }
@@ -124,11 +136,15 @@ class GLDirectiveValue extends GLToken {
   }
 
   static GLDirectiveValue createDirectiveValue(
-      {required String directiveName, required bool generated, List<GLArgumentValue> args = const []}) {
-    return GLDirectiveValue(TokenInfo.ofString(directiveName), [], args, generated: generated);
+      {required String directiveName,
+      required bool generated,
+      List<GLArgumentValue> args = const []}) {
+    return GLDirectiveValue(TokenInfo.ofString(directiveName), [], args,
+        generated: generated);
   }
 
-  static GLDirectiveValue createDefaultCacheDirectiveValue(TokenInfo tokenInfo, int defaultTTL) {
+  static GLDirectiveValue createDefaultCacheDirectiveValue(
+      TokenInfo tokenInfo, int defaultTTL) {
     return GLDirectiveValue(
         tokenInfo.ofNewName(glCache),
         [],
@@ -138,7 +154,8 @@ class GLDirectiveValue extends GLToken {
         generated: true);
   }
 
-  static GLDirectiveValue createCacheDirective(TokenInfo tokenInfo, int ttl, List<String> tags) {
+  static GLDirectiveValue createCacheDirective(
+      TokenInfo tokenInfo, int ttl, List<String> tags) {
     return GLDirectiveValue(
         tokenInfo.ofNewName(glCache),
         [],
@@ -149,7 +166,8 @@ class GLDirectiveValue extends GLToken {
         generated: true);
   }
 
-  static GLDirectiveValue createInvalidateCacheDirective(TokenInfo tokenInfo, bool all, List<String> tags) {
+  static GLDirectiveValue createInvalidateCacheDirective(
+      TokenInfo tokenInfo, bool all, List<String> tags) {
     return GLDirectiveValue(
         tokenInfo.ofNewName(glCache),
         [],
@@ -170,10 +188,12 @@ class GLDirectiveValue extends GLToken {
         TokenInfo.ofString(glDecorators),
         [],
         [
-          GLArgumentValue(TokenInfo.ofString("value"), decorators.map((s) => '"$s"').toList()),
+          GLArgumentValue(TokenInfo.ofString("value"),
+              decorators.map((s) => '"$s"').toList()),
           GLArgumentValue(TokenInfo.ofString(glApplyOnServer), applyOnServer),
           GLArgumentValue(TokenInfo.ofString(glApplyOnClient), applyOnClient),
-          if (import != null) GLArgumentValue(TokenInfo.ofString(glImport), import),
+          if (import != null)
+            GLArgumentValue(TokenInfo.ofString(glImport), import),
         ],
         generated: true);
   }

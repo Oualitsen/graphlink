@@ -3,8 +3,7 @@ import 'dart:io';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gl_grammar.dart';
-import 'package:petitparser/petitparser.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 void saveToFile(String data, String fileName) {
   File(fileName).writeAsStringSync(data);
@@ -12,12 +11,12 @@ void saveToFile(String data, String fileName) {
 
 void main() {
   test("Java enum to json", () {
-    final GLGrammar g = GLGrammar();
+    final GLParser g = GLParser();
 
-    var parsed = g.parse('''
+    g.parse('''
   enum Gender {male, female}
 ''');
-    expect(parsed is Success, true);
+
     var gender = g.enums["Gender"]!;
     var serializer = JavaSerializer(g, generateJsonMethods: true);
     var genderSerial = serializer.serializeEnumDefinition(gender, "");
@@ -31,12 +30,12 @@ void main() {
   });
 
   test("Java enum from json", () {
-    final GLGrammar g = GLGrammar();
+    final GLParser g = GLParser();
 
-    var parsed = g.parse('''
+    g.parse('''
   enum Gender {male, female}
 ''');
-    expect(parsed is Success, true);
+
     var gender = g.enums["Gender"]!;
     var serializer = JavaSerializer(g, generateJsonMethods: true);
     var genderSerial = serializer.serializeEnumDefinition(gender, "");
@@ -50,9 +49,9 @@ void main() {
   });
 
   test("Java input tojson", () {
-    final GLGrammar g = GLGrammar();
+    final GLParser g = GLParser();
 
-    var parsed = g.parse('''
+    g.parse('''
   scalar Long
   enum Gender {male, female}
   input CityInput {
@@ -74,7 +73,7 @@ void main() {
     city2: CityInput!
   }
 ''');
-    expect(parsed is Success, true);
+
     var userInput = g.inputs["UserInput"]!;
     var serializer = JavaSerializer(g, generateJsonMethods: true);
     var inputSerial = serializer.doSerializeInputDefinition(userInput);
@@ -104,9 +103,9 @@ void main() {
   });
 
   test("Java input tojson list as array", () {
-    final GLGrammar g = GLGrammar();
+    final GLParser g = GLParser();
 
-    var parsed = g.parse('''
+    g.parse('''
   enum Gender {male, female}
   input UserInput {
     names: [String!]! ${glArray}
@@ -114,7 +113,7 @@ void main() {
     genderList2: [[Gender!]] ${glArray}
   }
 ''');
-    expect(parsed is Success, true);
+
     var userInput = g.inputs["UserInput"]!;
     var serializer = JavaSerializer(g, generateJsonMethods: true);
     var inputSerial = serializer.generateToJson(userInput.fields, userInput);
@@ -134,9 +133,9 @@ void main() {
   });
 
   test("Java input tojson list of lists", () {
-    final GLGrammar g = GLGrammar();
+    final GLParser g = GLParser();
 
-    var parsed = g.parse('''
+    g.parse('''
   scalar Long
   enum Gender {male, female}
   
@@ -144,7 +143,7 @@ void main() {
     genders: [[Gender]]
   }
 ''');
-    expect(parsed is Success, true);
+
     var userInput = g.inputs["UserInput"]!;
     var serializer = JavaSerializer(g, generateJsonMethods: true);
     var inputSerial = serializer.doSerializeInputDefinition(userInput);
@@ -162,9 +161,9 @@ void main() {
   });
 
   test("Java type tojson", () {
-    final GLGrammar g = GLGrammar();
+    final GLParser g = GLParser();
 
-    var parsed = g.parse('''
+    g.parse('''
   scalar Long
   enum Gender {male, female}
   type City {
@@ -184,7 +183,7 @@ void main() {
     cities: [City]
   }
 ''');
-    expect(parsed is Success, true);
+
     var useer = g.types["User"]!;
     var serializer = JavaSerializer(g, generateJsonMethods: true);
     var userSerial = serializer.doSerializeTypeDefinition(useer);
@@ -201,14 +200,14 @@ void main() {
   });
 
   test("Java input fromJson nullable string", () {
-    final GLGrammar g = GLGrammar();
+    final GLParser g = GLParser();
 
-    var parsed = g.parse('''
+    g.parse('''
   input UserInput {
     name: String
   }
 ''');
-    expect(parsed is Success, true);
+
     var userInput = g.inputs["UserInput"]!;
 
     var serializer = JavaSerializer(g, generateJsonMethods: true);
@@ -227,14 +226,14 @@ void main() {
   });
 
   test("Java input fromJson non nullable string", () {
-    final GLGrammar g = GLGrammar();
+    final GLParser g = GLParser();
 
-    var parsed = g.parse('''
+    g.parse('''
   input UserInput {
     name: String!
   }
 ''');
-    expect(parsed is Success, true);
+
     var userInput = g.inputs["UserInput"]!;
 
     var serializer = JavaSerializer(g, generateJsonMethods: true);
@@ -253,14 +252,14 @@ void main() {
   });
 
   test("Java input fromJson list of  nonnullable string", () {
-    final GLGrammar g = GLGrammar();
+    final GLParser g = GLParser();
 
-    var parsed = g.parse('''
+    g.parse('''
   input UserInput {
     name: [String!]!
   }
 ''');
-    expect(parsed is Success, true);
+
     var userInput = g.inputs["UserInput"]!;
 
     var serializer = JavaSerializer(g, generateJsonMethods: true);
@@ -279,14 +278,14 @@ void main() {
   });
 
   test("Java input fromJson number", () {
-    final GLGrammar g = GLGrammar();
+    final GLParser g = GLParser();
 
-    var parsed = g.parse('''
+    g.parse('''
   input UserInput {
     age: Int!
   }
 ''');
-    expect(parsed is Success, true);
+
     var userInput = g.inputs["UserInput"]!;
 
     var serializer = JavaSerializer(g, generateJsonMethods: true);
@@ -305,14 +304,14 @@ void main() {
   });
 
   test("Java input fromJson list of numbers", () {
-    final GLGrammar g = GLGrammar();
+    final GLParser g = GLParser();
 
-    var parsed = g.parse('''
+    g.parse('''
   input UserInput {
     age: [Int!]!
   }
 ''');
-    expect(parsed is Success, true);
+
     var userInput = g.inputs["UserInput"]!;
 
     var serializer = JavaSerializer(g, generateJsonMethods: true);
@@ -330,15 +329,15 @@ void main() {
   });
 
   test("Java input fromJson enum", () {
-    final GLGrammar g = GLGrammar();
+    final GLParser g = GLParser();
 
-    var parsed = g.parse('''
+    g.parse('''
   enum Gender {male female}
   input UserInput {
     gender: Gender!
   }
 ''');
-    expect(parsed is Success, true);
+
     var userInput = g.inputs["UserInput"]!;
 
     var serializer = JavaSerializer(g, generateJsonMethods: true);
@@ -356,15 +355,15 @@ void main() {
   });
 
   test("Java input fromJson list of enum", () {
-    final GLGrammar g = GLGrammar();
+    final GLParser g = GLParser();
 
-    var parsed = g.parse('''
+    g.parse('''
   enum Gender {male female}
   input UserInput {
     gender: [Gender!]!
   }
 ''');
-    expect(parsed is Success, true);
+
     var userInput = g.inputs["UserInput"]!;
 
     var serializer = JavaSerializer(g, generateJsonMethods: true);
@@ -382,9 +381,9 @@ void main() {
   });
 
   test("Java input fromJson input", () {
-    final GLGrammar g = GLGrammar();
+    final GLParser g = GLParser();
 
-    var parsed = g.parse('''
+    g.parse('''
   input AgeInput {
     age: Int!
   }
@@ -392,7 +391,7 @@ void main() {
     age: AgeInput!
   }
 ''');
-    expect(parsed is Success, true);
+
     var userInput = g.inputs["UserInput"]!;
 
     var serializer = JavaSerializer(g, generateJsonMethods: true);
@@ -410,9 +409,9 @@ void main() {
   });
 
   test("Java input fromJson input", () {
-    final GLGrammar g = GLGrammar();
+    final GLParser g = GLParser();
 
-    var parsed = g.parse('''
+    g.parse('''
   input AgeInput {
     age: Int!
   }
@@ -420,7 +419,7 @@ void main() {
     age: [AgeInput!]!
   }
 ''');
-    expect(parsed is Success, true);
+
     var userInput = g.inputs["UserInput"]!;
 
     var serializer = JavaSerializer(g, generateJsonMethods: true);
@@ -438,9 +437,9 @@ void main() {
   });
 
   test("Java interface fromJson", () {
-    final GLGrammar g = GLGrammar();
+    final GLParser g = GLParser();
 
-    var parsed = g.parse('''
+    g.parse('''
   interface BasicEntity {
     id: ID!
   }
@@ -456,7 +455,7 @@ void main() {
     ownerId: ID!
   }
 ''');
-    expect(parsed is Success, true);
+
     var user = g.interfaces["BasicEntity"]!;
     var serializer = JavaSerializer(g, generateJsonMethods: true);
     var userSerial = serializer.serializeInterface(user, getters: true);

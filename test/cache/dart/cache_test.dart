@@ -2,12 +2,12 @@ import 'package:graphlink/src/excpetions/parse_exception.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gl_grammar.dart';
-import 'package:petitparser/petitparser.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 void main() {
   test("glCache staleIfOffline must be a boolean", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -24,13 +24,14 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains('$glCacheArgStaleIfOffline on $glCache must be a boolean! found: "yes"'),
+        contains(
+            '$glCacheArgStaleIfOffline on $glCache must be a boolean! found: "yes"'),
       )),
     );
   });
 
   test("glCache directive validation when ttl is invalid", () {
-    final GLGrammar g = GLGrammar(
+    final GLParser g = GLParser(
       autoGenerateQueries: true,
       generateAllFieldsFragments: true,
     );
@@ -51,13 +52,14 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains('ttl on @glCache directives should be a positive integer! found: "invaidValue"'),
+        contains(
+            'ttl on @glCache directives should be a positive integer! found: "invaidValue"'),
       )),
     );
   });
 
   test("glCache directive validation when ttl is null", () {
-    final GLGrammar g = GLGrammar(
+    final GLParser g = GLParser(
       autoGenerateQueries: true,
       generateAllFieldsFragments: true,
     );
@@ -84,7 +86,7 @@ void main() {
   });
 
   test("default cache should be applied", () {
-    final GLGrammar g = GLGrammar(
+    final GLParser g = GLParser(
       autoGenerateQueries: true,
       generateAllFieldsFragments: true,
       defaultCacheTTL: 5000,
@@ -101,8 +103,8 @@ void main() {
   }
 ''';
 
-    var parsed = g.parse(text);
-    expect(parsed is Success, true);
+    g.parse(text);
+
     GLQueryDefinition getPerson = g.queries['getPerson']!;
     expect(getPerson.cacheTTL, 5000);
     expect(getPerson.cacheTags, isEmpty);
@@ -113,7 +115,7 @@ void main() {
   });
 
   test("default cache should be applied on custom queries", () {
-    final GLGrammar g = GLGrammar(
+    final GLParser g = GLParser(
       autoGenerateQueries: true,
       generateAllFieldsFragments: true,
       defaultCacheTTL: 5000,
@@ -138,8 +140,8 @@ void main() {
   }
 ''';
 
-    var parsed = g.parse(text);
-    expect(parsed is Success, true);
+    g.parse(text);
+
     GLQueryDefinition myGetPerson = g.queries['MyGetPerson']!;
 
     expect(myGetPerson.cacheTTL, 5000);
@@ -151,7 +153,8 @@ void main() {
   });
 
   test("cache should be applied on query root element and its children", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -169,8 +172,8 @@ void main() {
   }
 ''';
 
-    var parsed = g.parse(text);
-    expect(parsed is Success, true);
+    g.parse(text);
+
     GLQueryDefinition myQuery = g.queries['MyQuery']!;
     expect(myQuery.cacheTTL, 5000);
     expect(myQuery.cacheTags, contains("Person"));
@@ -179,8 +182,10 @@ void main() {
     expect(qeuryElement.cacheTags, contains("Person"));
   });
 
-  test("cache tags should be propagated to element level with union operation", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+  test("cache tags should be propagated to element level with union operation",
+      () {
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -199,8 +204,8 @@ void main() {
   }
 ''';
 
-    var parsed = g.parse(text);
-    expect(parsed is Success, true);
+    g.parse(text);
+
     GLQueryDefinition myQuery = g.queries['MyQuery']!;
     expect(myQuery.cacheTTL, 5000);
     expect(myQuery.cacheTags, contains("generic"));
@@ -209,8 +214,11 @@ void main() {
     expect(qeuryElement.cacheTags, containsAll(["specific", "generic"]));
   });
 
-  test("invalidate cache tags should be propagated to element level with union operation", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+  test(
+      "invalidate cache tags should be propagated to element level with union operation",
+      () {
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -237,16 +245,18 @@ void main() {
   }
 ''';
 
-    var parsed = g.parse(text);
-    expect(parsed is Success, true);
+    g.parse(text);
+
     GLQueryDefinition myQuery = g.queries['CrPeron']!;
     expect(myQuery.invalidateCacheTags, contains("generic"));
     var qeuryElement = myQuery.elements.first;
-    expect(qeuryElement.invalidateCacheTags, containsAll(["specific", "generic"]));
+    expect(
+        qeuryElement.invalidateCacheTags, containsAll(["specific", "generic"]));
   });
 
   test("invalidate all cache  should be propagated to element level", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -273,8 +283,8 @@ void main() {
   }
 ''';
 
-    var parsed = g.parse(text);
-    expect(parsed is Success, true);
+    g.parse(text);
+
     GLQueryDefinition myQuery = g.queries['CrPeron']!;
     expect(myQuery.cacheInvalidateAll, true);
     var qeuryElement = myQuery.elements.first;
@@ -282,7 +292,8 @@ void main() {
   });
 
   test("cache should be applied on auto generated queries", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -295,8 +306,8 @@ void main() {
  
 ''';
 
-    var parsed = g.parse(text);
-    expect(parsed is Success, true);
+    g.parse(text);
+
     GLQueryDefinition getPerson = g.queries['getPerson']!;
     final getPersonElement = getPerson.elements.first;
     expect(getPersonElement.cacheTTL, 5000);
@@ -304,7 +315,8 @@ void main() {
   });
 
   test("cache on child elements must override root cache", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -324,8 +336,8 @@ void main() {
   }
 ''';
 
-    var parsed = g.parse(text);
-    expect(parsed is Success, true);
+    g.parse(text);
+
     GLQueryDefinition myQuery = g.queries['MyQuery']!;
     expect(myQuery.cacheTags.first, "Person");
     expect(myQuery.cacheTTL, 5000);
@@ -335,7 +347,7 @@ void main() {
   });
 
   test("glCache directive validation when tag is invalid", () {
-    final GLGrammar g = GLGrammar(
+    final GLParser g = GLParser(
       autoGenerateQueries: true,
       generateAllFieldsFragments: true,
     );
@@ -355,13 +367,15 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains('tag on @glCache directives should be alphanumeric with underscores only! found: invalid tag!'),
+        contains(
+            'tag on @glCache directives should be alphanumeric with underscores only! found: invalid tag!'),
       )),
     );
   });
 
   test("nocahce should override cache", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -381,18 +395,20 @@ void main() {
   }
 ''';
 
-    var parsed = g.parse(text);
-    expect(parsed is Success, true);
+    g.parse(text);
+
     GLQueryDefinition myQuery = g.queries['MyQuery']!;
     expect(myQuery.cacheTags.first, "Person");
     expect(myQuery.cacheTTL, 5000);
-    var getPersonElement = myQuery.elements.where((e) => e.token == "getPerson").first;
+    var getPersonElement =
+        myQuery.elements.where((e) => e.token == "getPerson").first;
     expect(getPersonElement.cacheTTL, 0);
     expect(getPersonElement.cacheTags, isEmpty);
   });
 
   test("glCache should not be applied to mutations (schema-level)", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -414,8 +430,11 @@ void main() {
     );
   });
 
-  test("glCache should not be applied to mutations (explicit mutation declaration)", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+  test(
+      "glCache should not be applied to mutations (explicit mutation declaration)",
+      () {
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -444,7 +463,8 @@ void main() {
   });
 
   test("glCache should not be applied to subscriptions (schema-level)", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -466,8 +486,11 @@ void main() {
     );
   });
 
-  test("glCache should not be applied to subscriptions (explicit subscription declaration)", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+  test(
+      "glCache should not be applied to subscriptions (explicit subscription declaration)",
+      () {
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -496,7 +519,8 @@ void main() {
   });
 
   test("glNoCache should not be applied to mutations (schema-level)", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -518,8 +542,11 @@ void main() {
     );
   });
 
-  test("glNoCache should not be applied to mutations (explicit mutation declaration)", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+  test(
+      "glNoCache should not be applied to mutations (explicit mutation declaration)",
+      () {
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -548,7 +575,8 @@ void main() {
   });
 
   test("glNoCache should not be applied to subscriptions (schema-level)", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -570,8 +598,11 @@ void main() {
     );
   });
 
-  test("glNoCache should not be applied to subscriptions (explicit subscription declaration)", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+  test(
+      "glNoCache should not be applied to subscriptions (explicit subscription declaration)",
+      () {
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -600,7 +631,8 @@ void main() {
   });
 
   test("glCacheInvalidate should fail when no args provided", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -617,13 +649,15 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains('$glCacheInvalidate requires either $glCacheArgAll: true or a non-empty $glCacheTagList'),
+        contains(
+            '$glCacheInvalidate requires either $glCacheArgAll: true or a non-empty $glCacheTagList'),
       )),
     );
   });
 
   test("glCacheInvalidate should fail when all is false and tags is empty", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -640,13 +674,15 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains('$glCacheInvalidate requires either $glCacheArgAll: true or a non-empty $glCacheTagList'),
+        contains(
+            '$glCacheInvalidate requires either $glCacheArgAll: true or a non-empty $glCacheTagList'),
       )),
     );
   });
 
   test("glCacheInvalidate should fail when all is not a boolean", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -669,7 +705,8 @@ void main() {
   });
 
   test("glCacheInvalidate should pass with all: true", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -684,8 +721,10 @@ void main() {
     expect(() => g.parse(text), returnsNormally);
   });
 
-  test("glCacheInvalidate should fail when tags contains a non-string element", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+  test("glCacheInvalidate should fail when tags contains a non-string element",
+      () {
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -702,13 +741,15 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains('$glCacheTagList on $glCacheInvalidate must contain only strings'),
+        contains(
+            '$glCacheTagList on $glCacheInvalidate must contain only strings'),
       )),
     );
   });
 
   test("glCacheInvalidate should pass with non-empty tags", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -727,8 +768,11 @@ void main() {
     expect(() => g.parse(text), returnsNormally);
   });
 
-  test("glCacheInvalidate should fail when tag is not declared on any glCache directive", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+  test(
+      "glCacheInvalidate should fail when tag is not declared on any glCache directive",
+      () {
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -749,13 +793,15 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains('Tag "undeclaredTag" used in $glCacheInvalidate is not declared on any $glCache directive'),
+        contains(
+            'Tag "undeclaredTag" used in $glCacheInvalidate is not declared on any $glCache directive'),
       )),
     );
   });
 
   test("glCache should fail when tag value is an empty string", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -773,7 +819,8 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains('tag on @glCache directives should be alphanumeric with underscores only! found:  line: 6 column: 25'),
+        contains(
+            'tag on @glCache directives should be alphanumeric with underscores only! found:  line: 6 column: 25'),
       )),
     );
   });
@@ -781,7 +828,8 @@ void main() {
   // --------
 
   test("glInvalidateCache should not be applied to queries (schema-level)", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -798,13 +846,17 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains('$glCacheInvalidate is not allowed on queries or subscriptions'),
+        contains(
+            '$glCacheInvalidate is not allowed on queries or subscriptions'),
       )),
     );
   });
 
-  test("glInvalidateCache should not be applied to quries (explicit mutation declaration)", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+  test(
+      "glInvalidateCache should not be applied to quries (explicit mutation declaration)",
+      () {
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -827,13 +879,17 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains('$glCacheInvalidate is not allowed on queries or subscriptions'),
+        contains(
+            '$glCacheInvalidate is not allowed on queries or subscriptions'),
       )),
     );
   });
 
-  test("glCacheInvalidate should not be applied to subscriptions (schema-level)", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+  test(
+      "glCacheInvalidate should not be applied to subscriptions (schema-level)",
+      () {
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -850,13 +906,17 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains('$glCacheInvalidate is not allowed on queries or subscriptions'),
+        contains(
+            '$glCacheInvalidate is not allowed on queries or subscriptions'),
       )),
     );
   });
 
-  test("glCacheInvalidate should not be applied to subscriptions (explicit subscription declaration)", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+  test(
+      "glCacheInvalidate should not be applied to subscriptions (explicit subscription declaration)",
+      () {
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -879,13 +939,17 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains('$glCacheInvalidate is not allowed on queries or subscriptions'),
+        contains(
+            '$glCacheInvalidate is not allowed on queries or subscriptions'),
       )),
     );
   });
 
-  test("glCache and glNoCache should not be applied to same query at the same time (explicit declaration)", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+  test(
+      "glCache and glNoCache should not be applied to same query at the same time (explicit declaration)",
+      () {
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -908,13 +972,17 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains("$glCache AND $glNoCache on the same query? Incredible. You're the human equivalent of a merge conflict."),
+        contains(
+            "$glCache AND $glNoCache on the same query? Incredible. You're the human equivalent of a merge conflict."),
       )),
     );
   });
 
-  test("glCache and glNoCache should not be applied to same query at the same time (implicit declaration)", () {
-    final GLGrammar g = GLGrammar(autoGenerateQueries: true, generateAllFieldsFragments: true);
+  test(
+      "glCache and glNoCache should not be applied to same query at the same time (implicit declaration)",
+      () {
+    final GLParser g =
+        GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
 
     const text = '''
   type Person {
@@ -937,7 +1005,8 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains("$glCache AND $glNoCache on the same query? Incredible. You're the human equivalent of a merge conflict."),
+        contains(
+            "$glCache AND $glNoCache on the same query? Incredible. You're the human equivalent of a merge conflict."),
       )),
     );
   });

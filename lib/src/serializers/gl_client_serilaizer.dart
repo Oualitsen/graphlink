@@ -1,4 +1,4 @@
-import 'package:graphlink/src/gl_grammar.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
@@ -21,7 +21,7 @@ abstract class GLClientSerilaizer {
     }
   }
 
-  Set<GLToken> getImportDependecies(GLGrammar g) {
+  Set<GLToken> getImportDependecies(GLParser g) {
     var result = <GLToken>[];
     [
       "GraphLinkPayload",
@@ -55,7 +55,7 @@ abstract class GLClientSerilaizer {
     return Set.unmodifiable(result);
   }
 
-  String serializeImports(GLGrammar g, String importPrefix) {
+  String serializeImports(GLParser g, String importPrefix) {
     var buffer = StringBuffer();
     var deps = getImportDependecies(g);
     for (var dep in deps) {

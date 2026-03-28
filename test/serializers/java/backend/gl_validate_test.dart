@@ -2,8 +2,7 @@ import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/serializers/language.dart';
 import 'package:graphlink/src/serializers/spring_server_serializer.dart';
 import 'package:test/test.dart';
-import 'package:graphlink/src/gl_grammar.dart';
-import 'package:petitparser/petitparser.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 void main() {
   final typeMapping = {
@@ -17,9 +16,10 @@ void main() {
     "void": "void"
   };
 
-  test("Service should contain two methods getPerson and validateGetPerson", () {
-    final g = GLGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
-    var parsed = g.parse('''
+  test("Service should contain two methods getPerson and validateGetPerson",
+      () {
+    final g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    g.parse('''
       type Person {
         id: ID!
         name: String!
@@ -28,7 +28,7 @@ void main() {
         getPerson: Person ${glServiceName}(${glServiceNameArg}: "PersonService") ${glValidate}
       }
     ''');
-    expect(parsed is Success, isTrue);
+
     var personService = g.services['PersonService']!;
     expect(personService.fields.length, 2);
     expect(personService.getFieldByName('getPerson'), isNotNull);
@@ -36,8 +36,8 @@ void main() {
   });
 
   test("Service should serialize validation method as returning void", () {
-    final g = GLGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
-    var parsed = g.parse('''
+    final g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    g.parse('''
       type Person {
         id: ID!
         name: String!
@@ -49,22 +49,28 @@ void main() {
         getPerson(searchQuery: SearchQuery!): Person ${glServiceName}(${glServiceNameArg}: "PersonService") ${glValidate}
       }
     ''');
-    expect(parsed is Success, isTrue);
+
     var personService = g.services['PersonService']!;
     var springSerializer = SpringServerSerializer(g);
-    var serialzedService = springSerializer.serializeService(personService, 'com.myorg');
+    var serialzedService =
+        springSerializer.serializeService(personService, 'com.myorg');
 
     expect(
-        serialzedService.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty),
+        serialzedService
+            .split('\n')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty),
         containsAllInOrder([
           'Person getPerson(SearchQuery searchQuery);',
           'void validateGetPerson(SearchQuery searchQuery);'
         ]));
   });
 
-  test("Service should serialize validation method as returning void when datafetching is on", () {
-    final g = GLGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
-    var parsed = g.parse('''
+  test(
+      "Service should serialize validation method as returning void when datafetching is on",
+      () {
+    final g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    g.parse('''
       type Person {
         id: ID!
         name: String!
@@ -76,22 +82,27 @@ void main() {
         getPerson(searchQuery: SearchQuery!): Person ${glServiceName}(${glServiceNameArg}: "PersonService") ${glValidate}
       }
     ''');
-    expect(parsed is Success, isTrue);
+
     var personService = g.services['PersonService']!;
     var springSerializer = SpringServerSerializer(g, injectDataFetching: true);
-    var serialzedService = springSerializer.serializeService(personService, 'com.myorg');
+    var serialzedService =
+        springSerializer.serializeService(personService, 'com.myorg');
     expect(
-        serialzedService.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty),
+        serialzedService
+            .split('\n')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty),
         containsAllInOrder([
           'Person getPerson(SearchQuery searchQuery, DataFetchingEnvironment dataFetchingEnvironment);',
           'void validateGetPerson(SearchQuery searchQuery, DataFetchingEnvironment dataFetchingEnvironment);'
         ]));
   });
 
-  test("Controller method should call validation method before calling target service methods.",
+  test(
+      "Controller method should call validation method before calling target service methods.",
       () {
-    final g = GLGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
-    var parsed = g.parse('''
+    final g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    g.parse('''
       type Person {
         id: ID!
         name: String!
@@ -103,12 +114,16 @@ void main() {
         getPerson(searchQuery: SearchQuery!): Person ${glServiceName}(${glServiceNameArg}: "PersonService") ${glValidate}
       }
     ''');
-    expect(parsed is Success, isTrue);
+
     var personController = g.controllers['PersonServiceController']!;
     var springSerializer = SpringServerSerializer(g);
-    var serializedController = springSerializer.serializeController(personController, 'com.myorg');
+    var serializedController =
+        springSerializer.serializeController(personController, 'com.myorg');
     expect(
-        serializedController.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty),
+        serializedController
+            .split('\n')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty),
         containsAllInOrder([
           'public Person getPerson(@Argument() SearchQuery searchQuery) {',
           'personService.validateGetPerson(searchQuery);',
@@ -119,8 +134,8 @@ void main() {
   test(
       "Controller method should call validation method before calling target service methods when injectDataFetching on",
       () {
-    final g = GLGrammar(typeMap: typeMapping, mode: CodeGenerationMode.server);
-    var parsed = g.parse('''
+    final g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    g.parse('''
       type Person {
         id: ID!
         name: String!
@@ -132,12 +147,16 @@ void main() {
         getPerson(searchQuery: SearchQuery!): Person ${glServiceName}(${glServiceNameArg}: "PersonService") ${glValidate}
       }
     ''');
-    expect(parsed is Success, isTrue);
+
     var personController = g.controllers['PersonServiceController']!;
     var springSerializer = SpringServerSerializer(g, injectDataFetching: true);
-    var serializedController = springSerializer.serializeController(personController, 'com.myorg');
+    var serializedController =
+        springSerializer.serializeController(personController, 'com.myorg');
     expect(
-        serializedController.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty),
+        serializedController
+            .split('\n')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty),
         containsAllInOrder([
           'public Person getPerson(@Argument() SearchQuery searchQuery, DataFetchingEnvironment dataFetchingEnvironment) {',
           'personService.validateGetPerson(searchQuery, dataFetchingEnvironment);',
