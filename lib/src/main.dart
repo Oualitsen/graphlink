@@ -337,7 +337,9 @@ Future<Set<String>> generateDartClientClasses(
     GLParser parser, GeneratorConfig config, DateTime started,
     {String? pack, noClient = false}) async {
   final serializer = DartSerializer(parser, generateJsonMethods: true);
-  final clientSerializer = DartClientSerializer(parser, serializer);
+  final clientSerializer = DartClientSerializer(parser, serializer,
+      generateAdapters: config.clientConfig?.dart?.generateAdapters ?? true,
+      httpAdapter: config.clientConfig?.dart?.httpAdapter ?? 'http');
   final List<Future<File>> futures = [];
   final destinationDir = config.outputDir;
   final packageName = config.clientConfig?.dart?.packageName;
@@ -409,6 +411,28 @@ Future<Set<String>> generateDartClientClasses(
         imports: [],
         destinationDir: destinationDir);
     futures.add(r);
+
+    if (config.clientConfig?.dart?.generateAdapters ?? true) {
+      final useDio = (config.clientConfig?.dart?.httpAdapter ?? 'http') == 'dio';
+      futures.add(writeToFile(
+          data: useDio
+              ? clientSerializer.generateDioAdapterFile()
+              : clientSerializer.generateHttpAdapterFile(),
+          fileName: useDio
+              ? 'graph_link_dio_adapter${clientSerializer.fileExtension}'
+              : 'graph_link_http_adapter${clientSerializer.fileExtension}',
+          subdir: 'client',
+          imports: [],
+          destinationDir: destinationDir));
+      if (parser.hasSubscriptions) {
+        futures.add(writeToFile(
+            data: clientSerializer.generateDefaultWebSocketAdapterFile(),
+            fileName: 'graph_link_websocket_adapter${clientSerializer.fileExtension}',
+            subdir: 'client',
+            imports: [],
+            destinationDir: destinationDir));
+      }
+    }
   }
   var result = await Future.wait(futures);
   stdout.writeln(

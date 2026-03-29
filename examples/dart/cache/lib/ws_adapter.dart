@@ -11,7 +11,7 @@ class SimpleWebSocketAdapter extends GraphLinkWebSocketAdapter {
   SimpleWebSocketAdapter(this.url);
 
   @override
-  Future<void> onConnectionReady() async {
+  Future<void> connect() async {
     _socket = await WebSocket.connect(url);
     _socket!.listen(
       (data) => _controller.add(data as String),
@@ -24,12 +24,12 @@ class SimpleWebSocketAdapter extends GraphLinkWebSocketAdapter {
   Stream<String> get onMessageStream => _controller.stream;
 
   @override
-  void sendMessage(String message) {
+  Future<void> sendMessage(String message) async {
     _socket?.add(message);
   }
 
   @override
-  void close() {
+  Future<void> close() async {
     _socket?.close();
   }
 }
