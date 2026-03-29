@@ -11,5 +11,6 @@ dependencies:
   graphlink:
     path: ../../../
   http: ^1.2.0
+  dio: ^5.9.2
 
 

@@ -15,10 +15,15 @@ const _inMemorycacheStoreClassName = 'InMemoryGraphLinkCacheStore';
 
 class DartClientSerializer extends GLClientSerilaizer {
   final GLParser _parser;
+  final bool generateAdapters;
+  final String httpAdapter;
   final codeGenUtils = DartCodeGenUtils();
 
-  DartClientSerializer(this._parser, GLSerializer dartSerializer)
+  DartClientSerializer(this._parser, GLSerializer dartSerializer,
+      {this.generateAdapters = true, this.httpAdapter = 'http'})
       : super(dartSerializer);
+
+  bool get _useDio => httpAdapter == 'dio';
 
   @override
   String generateClient(String importPrefix) {
@@ -28,6 +33,14 @@ class DartClientSerializer extends GLClientSerilaizer {
     buffer.writeln("import 'dart:convert';");
     buffer.writeln("import 'dart:async';");
     buffer.writeln("import 'dart:math';");
+    if (generateAdapters) {
+      buffer.writeln(_useDio
+          ? "import 'graph_link_dio_adapter.dart';"
+          : "import 'graph_link_http_adapter.dart';");
+    }
+    if (generateAdapters && _parser.hasSubscriptions) {
+      buffer.writeln("import 'graph_link_websocket_adapter.dart';");
+    }
     buffer.writeln(imports);
 
     buffer.writeln();
@@ -192,11 +205,11 @@ class DartClientSerializer extends GLClientSerilaizer {
       codeGenUtils.createMethod(
         methodName: 'GraphLinkClient',
         arguments: [
-          _adapterDeclaration(),
-          if (_parser.hasSubscriptions) 'GraphLinkWebSocketAdapter wsAdapter',
+          'required ${_adapterDeclaration()}',
+          if (_parser.hasSubscriptions) 'required GraphLinkWebSocketAdapter wsAdapter',
           '$_cacheStoreClassName? store'
         ],
-        namedArguments: false,
+        namedArguments: true,
         statements: [
           ..._parser.fragments.values.map((value) =>
               "_fragmMap['${value.tokenInfo}'] = '${_parser.serializer.serializeFragmentDefinitionBase(value)}';"),
@@ -214,10 +227,55 @@ class DartClientSerializer extends GLClientSerilaizer {
             "subscriptions = ${classNameFromType(GLQueryType.subscription)}(wsAdapter, _fragmMap, this.store, _tagLocks);",
         ],
       ),
+      if (_parser.hasSubscriptions && generateAdapters)
+        _fromUrlConstructor(),
+      if (generateAdapters)
+        _withHttpConstructor(),
     ]));
 
     buffer.writeln(serializeSubscriptions().ident());
     return buffer.toString();
+  }
+
+  String _withHttpConstructor() {
+    final wsParams = _parser.hasSubscriptions
+        ? 'required String wsUrl,\n  Future<String?> Function()? wsTokenProvider,'
+        : '';
+    final wsArg = _parser.hasSubscriptions
+        ? 'wsAdapter: DefaultGraphLinkWebSocketAdapter(url: wsUrl, tokenProvider: wsTokenProvider),'
+        : '';
+    final adapterClass = _useDio ? 'GraphLinkDioAdapter' : 'GraphLinkHttpAdapter';
+    final extraParams = _useDio ? '' : 'Map<String, String> httpHeaders = const {},';
+    final adapterArgs = _useDio
+        ? 'url: url, tokenProvider: tokenProvider'
+        : 'url: url, tokenProvider: tokenProvider, headers: httpHeaders';
+    return '''
+GraphLinkClient.withHttp({
+  required String url,
+  $wsParams
+  Future<String?> Function()? tokenProvider,
+  $extraParams
+  $_cacheStoreClassName? store,
+}) : this(
+  adapter: $adapterClass($adapterArgs).call,
+  $wsArg
+  store: store,
+);''';
+  }
+
+  String _fromUrlConstructor() {
+    final adapterDecl = _adapterDeclaration();
+    return '''
+GraphLinkClient.fromUrl({
+  required $adapterDecl,
+  required String wsUrl,
+  Future<String?> Function()? wsTokenProvider,
+  $_cacheStoreClassName? store,
+}) : this(
+  adapter: adapter,
+  wsAdapter: DefaultGraphLinkWebSocketAdapter(url: wsUrl, tokenProvider: wsTokenProvider),
+  store: store,
+);''';
   }
 
   String _adapterDeclaration() {
@@ -584,6 +642,101 @@ $_webSocketAdapter
   }
 
   String get fileExtension => '.dart';
+
+  String generateHttpAdapterFile() {
+    final extraParam = _parser.operationNameAsParameter ? ', String operationName' : '';
+    return """
+import 'dart:async';
+import 'package:http/http.dart' as http;
+
+class GraphLinkHttpAdapter {
+  final String url;
+  final Future<String?> Function()? tokenProvider;
+  final Map<String, String> headers;
+
+  GraphLinkHttpAdapter({
+    required this.url,
+    this.tokenProvider,
+    this.headers = const {},
+  });
+
+  Future<String> call(String payload$extraParam) async {
+    final token = await tokenProvider?.call();
+    final requestHeaders = {
+      'Content-Type': 'application/json',
+      ...headers,
+      if (token != null) 'Authorization': 'Bearer \\\$token',
+    };
+    final response = await http.post(
+      Uri.parse(url),
+      body: payload,
+      headers: requestHeaders,
+    );
+    return response.body;
+  }
+}
+""";
+  }
+
+  String generateDioAdapterFile() {
+    final extraParam = _parser.operationNameAsParameter ? ', String operationName' : '';
+    return """
+import 'dart:async';
+import 'dart:convert';
+import 'package:dio/dio.dart';
+
+class GraphLinkDioAdapter {
+  final String url;
+  final Dio dio;
+
+  GraphLinkDioAdapter({
+    required this.url,
+    Dio? dio,
+    Future<String?> Function()? tokenProvider,
+    List<Interceptor> interceptors = const [],
+    BaseOptions? options,
+  }) : dio = dio ?? Dio(options ?? BaseOptions(contentType: 'application/json')) {
+    if (dio == null) {
+      if (tokenProvider != null) {
+        this.dio.interceptors.add(_TokenInterceptor(tokenProvider));
+      }
+      this.dio.interceptors.addAll(interceptors);
+    }
+  }
+
+  Future<String> call(String payload$extraParam) async {
+    final response = await dio.post<dynamic>(url, data: payload);
+    final data = response.data;
+    return data is String ? data : jsonEncode(data);
+  }
+}
+
+class _TokenInterceptor extends Interceptor {
+  final Future<String?> Function() _tokenProvider;
+
+  _TokenInterceptor(this._tokenProvider);
+
+  @override
+  Future<void> onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+    final token = await _tokenProvider();
+    if (token != null) {
+      options.headers['Authorization'] = 'Bearer \\\$token';
+    }
+    handler.next(options);
+  }
+}
+""";
+  }
+
+  String generateDefaultWebSocketAdapterFile() {
+    return """
+import 'dart:async';
+import 'package:web_socket_channel/web_socket_channel.dart';
+import 'graph_link_client.dart';
+
+$_defaultWebSocketAdapter
+""";
+  }
 }
 
 const _subscriptionHandler = """
@@ -638,54 +791,91 @@ class _SubscriptionHandler {
   final _random = Random();
   final Map<String, StreamController<Map<String, dynamic>>> _map = {};
   final Map<String, StreamSubscription> _subs = {};
+  final Map<String, GraphLinkPayload> _payloads = {};
   final GraphLinkWebSocketAdapter adapter;
 
-  final connectionInit = jsonEncode(GraphLinkSubscriptionErrorMessage(type: GraphqlWsMessageTypes.connectionInit).toJson());
-  final pingMessage = jsonEncode(GraphLinkSubscriptionErrorMessage(type: GraphqlWsMessageTypes.ping).toJson());
   final pongMessage = jsonEncode(GraphLinkSubscriptionErrorMessage(type: GraphqlWsMessageTypes.pong).toJson());
 
-  _SubscriptionHandler(this.adapter);
-
-  var _ackStatus = GraphLinkAckStatus.none;
-
-  Stream<String> get _onMessageStream {
-    var stream = adapter.onMessageStream;
-    if (stream.isBroadcast) {
-      return stream;
-    }
-    return stream.asBroadcastStream();
+  _SubscriptionHandler(this.adapter) {
+    adapter.onReconnect.listen((_) => _onReconnect());
   }
 
-  Future<_StreamSink> _initWs() async {
-    switch (_ackStatus) {
-      case GraphLinkAckStatus.none:
-        {
-          _ackStatus = GraphLinkAckStatus.progress;
-          await adapter.onConnectionReady();
-          adapter.sendMessage(connectionInit);
-          return _onMessageStream.map((event) {
-            var decoded = jsonDecode(event);
-            if (decoded is Map<String, dynamic>) {
-              return GraphLinkSubscriptionMessage.fromJson(decoded);
-            } else {
-              return GraphLinkSubscriptionErrorMessage(payload: decoded);
-            }
-          }).map((event) {
-            switch (event.type) {
-              case GraphqlWsMessageTypes.connectionAck:
-                _ackStatus = GraphLinkAckStatus.acknoledged;
-                return _StreamSink(sendMessage: adapter.sendMessage, stream: _onMessageStream);
-              case GraphqlWsMessageTypes.error:
-                _ackStatus = GraphLinkAckStatus.none;
-                throw (event as GraphLinkSubscriptionErrorMessage).payload!;
-              default:
-                return _StreamSink(sendMessage: adapter.sendMessage, stream: _onMessageStream);
-            }
-          }).first;
-        }
-      case GraphLinkAckStatus.progress:
-      case GraphLinkAckStatus.acknoledged:
-        return _StreamSink(sendMessage: adapter.sendMessage, stream: _onMessageStream);
+  Completer<_StreamSink>? _sinkCompleter;
+
+  late final Stream<String> _onMessageStream = () {
+    var stream = adapter.onMessageStream;
+    return stream.isBroadcast ? stream : stream.asBroadcastStream();
+  }();
+
+  Future<_StreamSink> _initWs() {
+    if (_sinkCompleter != null) return _sinkCompleter!.future;
+    _sinkCompleter = Completer();
+    _connect();
+    return _sinkCompleter!.future;
+  }
+
+  Future<void> _connect() async {
+    try {
+      await adapter.connect();
+      _sinkCompleter!.complete(await _doHandshake());
+    } catch (e) {
+      _sinkCompleter!.completeError(e);
+      _sinkCompleter = null;
+    }
+  }
+
+  Future<_StreamSink> _doHandshake() async {
+    final payload = await adapter.connectionInitPayload();
+    final initMsg = jsonEncode({
+      'type': GraphqlWsMessageTypes.connectionInit,
+      if (payload != null) 'payload': payload,
+    });
+    await adapter.sendMessage(initMsg);
+    await _onMessageStream
+        .map(_parseEvent)
+        .firstWhere((msg) => msg.type == GraphqlWsMessageTypes.connectionAck);
+    return _StreamSink(sendMessage: adapter.sendMessage, stream: _onMessageStream);
+  }
+
+  Future<void> _onReconnect() async {
+    if (_payloads.isEmpty) return;
+    for (final sub in _subs.values) {
+      await sub.cancel();
+    }
+    _subs.clear();
+    _sinkCompleter = Completer();
+    try {
+      final sink = await _doHandshake();
+      _sinkCompleter!.complete(sink);
+      await _resubscribeAll(sink);
+    } catch (e) {
+      _sinkCompleter!.completeError(e);
+      _sinkCompleter = null;
+      for (final uuid in List.from(_payloads.keys)) {
+        _map[uuid]?.addError(e);
+        _removeController(uuid);
+      }
+    }
+  }
+
+  Future<void> _resubscribeAll(_StreamSink sink) async {
+    for (final entry in Map.from(_payloads).entries) {
+      final uuid = entry.key as String;
+      if (!_map.containsKey(uuid)) continue;
+      final sub = sink.stream
+          .map(_parseEvent)
+          .where((event) => event.id == uuid)
+          .listen((msg) => _handleMessage(msg, uuid));
+      _subs[uuid] = sub;
+      final message = GraphLinkSubscriptionMessage(
+          id: uuid,
+          type: GraphqlWsMessageTypes.subscribe,
+          payload: GraphLinkSubscriptionPayload(
+            query: entry.value.query,
+            operationName: entry.value.operationName,
+            variables: entry.value.variables,
+          ));
+      await sink.sendMessage(json.encode(message.toJson()));
     }
   }
 
@@ -702,8 +892,9 @@ class _SubscriptionHandler {
   Stream<Map<String, dynamic>> handle(GraphLinkPayload pl) {
     String uuid = _generateUuid();
     var controller = _createStremController(uuid);
+    _payloads[uuid] = pl;
 
-    _initWs().then((streamSink) {
+    _initWs().then((streamSink) async {
       var sub = streamSink.stream
           .map(_parseEvent)
           .where((event) => event.id == uuid)
@@ -717,8 +908,10 @@ class _SubscriptionHandler {
             operationName: pl.operationName,
             variables: pl.variables,
           ));
-
-      streamSink.sendMessage(json.encode(message.toJson()));
+      await streamSink.sendMessage(json.encode(message.toJson()));
+    }).catchError((e) {
+      controller.addError(e);
+      _removeController(uuid);
     });
 
     return controller.stream;
@@ -727,31 +920,17 @@ class _SubscriptionHandler {
   GraphLinkSubscriptionErrorMessageBase _parseEvent(String event) {
     var map = jsonDecode(event);
     var payload = map["payload"];
-    GraphLinkSubscriptionErrorMessageBase result;
     if (payload is Map) {
-      result = GraphLinkSubscriptionMessage.fromJson(map);
-    } else {
-      result = GraphLinkSubscriptionErrorMessage.fromJson(map);
+      return GraphLinkSubscriptionMessage.fromJson(map);
     }
-    return result;
-  }
-
-  void _sendPingMessage() {
-    adapter.sendMessage(pingMessage);
-  }
-
-  void _sendPongMessage() {
-    adapter.sendMessage(pongMessage);
+    return GraphLinkSubscriptionErrorMessage.fromJson(map);
   }
 
   void _handleMessage(GraphLinkSubscriptionErrorMessageBase msg, String uuid) {
     var controller = _map[uuid]!;
     switch (msg.type!) {
       case GraphqlWsMessageTypes.ping:
-        _sendPingMessage();
-        break;
-      case GraphqlWsMessageTypes.pong:
-        _sendPongMessage();
+        adapter.sendMessage(pongMessage);
         break;
       case GraphqlWsMessageTypes.next:
         controller.add((msg as GraphLinkSubscriptionMessage).payload!.data!);
@@ -761,8 +940,7 @@ class _SubscriptionHandler {
         break;
       case GraphqlWsMessageTypes.error:
         var errorMsg = msg as GraphLinkSubscriptionErrorMessage;
-        var ctrl = _map[uuid]!;
-        ctrl.addError(errorMsg.payload as Object);
+        controller.addError(errorMsg.payload as Object);
         _removeController(uuid);
         break;
       default:
@@ -772,9 +950,10 @@ class _SubscriptionHandler {
   void _removeController(String uuid) {
     _subs.remove(uuid)?.cancel();
     _map.remove(uuid)?.close();
+    _payloads.remove(uuid);
     if (_map.isEmpty) {
       adapter.close();
-      _ackStatus = GraphLinkAckStatus.none;
+      _sinkCompleter = null;
     }
   }
 
@@ -802,7 +981,7 @@ class _SubscriptionHandler {
 
 const _streamSink = """
 class _StreamSink {
-  final Function(String) sendMessage;
+  final Future<void> Function(String) sendMessage;
   final Stream<String> stream;
 
   _StreamSink({required this.sendMessage, required this.stream});
@@ -811,12 +990,102 @@ class _StreamSink {
 
 const _webSocketAdapter = """
 abstract class GraphLinkWebSocketAdapter {
-  Future<void> onConnectionReady();
+  Future<void> connect();
 
   Stream<String> get onMessageStream;
 
-  void sendMessage(String message);
+  Future<void> sendMessage(String message);
 
-  void close();
+  Future<void> close();
+
+  // Override to pass auth token or any connection metadata
+  Future<Map<String, dynamic>?> connectionInitPayload() async => null;
+
+  // Fires after a successful reconnect; used by the handler to re-subscribe
+  Stream<void> get onReconnect => const Stream.empty();
+}
+""";
+
+const _defaultWebSocketAdapter = """
+class DefaultGraphLinkWebSocketAdapter extends GraphLinkWebSocketAdapter {
+  final String url;
+  final Future<String?> Function()? tokenProvider;
+  final Duration initialReconnectDelay;
+  final Duration maxReconnectDelay;
+
+  WebSocketChannel? _channel;
+  final _messageController = StreamController<String>.broadcast();
+  final _reconnectController = StreamController<void>.broadcast();
+  bool _closed = false;
+  int _reconnectAttempts = 0;
+
+  DefaultGraphLinkWebSocketAdapter({
+    required this.url,
+    this.tokenProvider,
+    this.initialReconnectDelay = const Duration(seconds: 1),
+    this.maxReconnectDelay = const Duration(seconds: 30),
+  });
+
+  @override
+  Future<void> connect() async {
+    _closed = false;
+    await _connectOnce();
+  }
+
+  Future<void> _connectOnce() async {
+    _channel = WebSocketChannel.connect(Uri.parse(url));
+    await _channel!.ready;
+    _channel!.stream.listen(
+      (msg) => _messageController.add(msg as String),
+      onError: (_) => _scheduleReconnect(),
+      onDone: _scheduleReconnect,
+      cancelOnError: true,
+    );
+  }
+
+  Duration get _nextDelay {
+    final ms = initialReconnectDelay.inMilliseconds * (1 << _reconnectAttempts.clamp(0, 5));
+    return Duration(milliseconds: ms.clamp(0, maxReconnectDelay.inMilliseconds));
+  }
+
+  void _scheduleReconnect() {
+    if (_closed) return;
+    final delay = _nextDelay;
+    _reconnectAttempts++;
+    Future.delayed(delay, () async {
+      if (_closed) return;
+      try {
+        await _connectOnce();
+        _reconnectAttempts = 0;
+        _reconnectController.add(null);
+      } catch (_) {
+        _scheduleReconnect();
+      }
+    });
+  }
+
+  @override
+  Stream<String> get onMessageStream => _messageController.stream;
+
+  @override
+  Stream<void> get onReconnect => _reconnectController.stream;
+
+  @override
+  Future<Map<String, dynamic>?> connectionInitPayload() async {
+    final token = await tokenProvider?.call();
+    if (token == null) return null;
+    return {'Authorization': 'Bearer \$token'};
+  }
+
+  @override
+  Future<void> sendMessage(String message) async => _channel!.sink.add(message);
+
+  @override
+  Future<void> close() async {
+    _closed = true;
+    await _channel?.sink.close();
+    await _messageController.close();
+    await _reconnectController.close();
+  }
 }
 """;

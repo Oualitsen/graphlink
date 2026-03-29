@@ -1,22 +1,9 @@
 import 'package:graphlink_cache_example/generated/inputs/create_car_input.dart';
 import 'package:graphlink_cache_example/generated/inputs/create_owner_input.dart';
-import 'package:graphlink_cache_example/ws_adapter.dart';
-import 'package:http/http.dart' as http;
 import 'package:graphlink_cache_example/generated/client/graph_link_client.dart';
 
 const _serverUrl = 'http://localhost:8080/graphql';
-
-Future<String> graphLinkAdapter(String payload) async {
-  final response = await http.post(
-    Uri.parse(_serverUrl),
-    headers: {'Content-Type': 'application/json'},
-    body: payload,
-  );
-  if (response.statusCode != 200) {
-    throw Exception('Server error: ${response.statusCode} ${response.body}');
-  }
-  return response.body;
-}
+const _wsUrl = '"ws://localhost:8080/graphql"';
 
 Future<void> createAndFetchCars(GraphLinkClient client) async {
   final carIds = <String>[];
@@ -52,8 +39,7 @@ Future<void> createAndFetchCars(GraphLinkClient client) async {
 }
 
 void main(List<String> args) async {
-  final client = GraphLinkClient(graphLinkAdapter,
-      SimpleWebSocketAdapter("ws://localhost:8080/graphql"), null);
+  final client = GraphLinkClient.withHttp(url: _serverUrl, wsUrl: _wsUrl);
   await createAndFetchCars(client);
   // Create an owner
   final ownerResponse = await client.mutations.createOwner(

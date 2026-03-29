@@ -134,6 +134,8 @@ class DartClientConfig {
   final bool generateUiInputs;
   final bool immutableInputFields;
   final bool immutableTypeFields;
+  final bool generateAdapters;
+  final String httpAdapter; // "http" or "dio"
 
   DartClientConfig({
     required this.generateAllFieldsFragments,
@@ -148,6 +150,8 @@ class DartClientConfig {
     this.generateUiTypes = false,
     this.immutableInputFields = true,
     this.immutableTypeFields = true,
+    this.generateAdapters = true,
+    this.httpAdapter = 'http',
   });
 
   factory DartClientConfig.fromJson(Map<String, dynamic> json) {
@@ -164,6 +168,8 @@ class DartClientConfig {
       generateUiTypes: (json['generateUiTypes'] as bool?) ?? false,
       immutableInputFields: (json['immutableInputFields'] as bool?) ?? true,
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
+      generateAdapters: (json['generateAdapters'] as bool?) ?? true,
+      httpAdapter: (json['httpAdapter'] as String?) ?? 'http',
     );
   }
 }
