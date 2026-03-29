@@ -24,7 +24,8 @@
             "generateUiTypes": false,
             "generateUiInputs": false,
             "immutableInputFields": true,
-            "immutableTypeFields": true
+            "immutableTypeFields": true,
+            "httpAdapter": "dio"   
         }
     }
 }
