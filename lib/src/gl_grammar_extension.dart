@@ -337,8 +337,11 @@ extension GLGrammarExtension on GLParser {
                 directives: typeField.getDirectives());
           }
         }
+        var typeFieldBatch = typeField
+            .getDirectiveByName(glSkipOnServer)
+            ?.getArgValue(glBatch) as bool?;
         var identity = identityField == typeField;
-        var batch = identity ? false : fieldBacth ?? typeBatch;
+        var batch = identity ? false : typeFieldBatch ?? fieldBacth ?? typeBatch;
         var schemaMapping = GLSchemaMapping(
           type: type,
           field: targetField,

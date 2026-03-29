@@ -24,9 +24,9 @@ type Query {
 
   getProductsByPriceRange(min: Float!, max: Float!): [Product!]!
 
-  getAllProducts(): [Product!]!
+  getAllProducts: [Product!]!
 
-  getCounts(): [[Product!]!]!
+  getCounts: [[Product!]!]!
 
 }
 

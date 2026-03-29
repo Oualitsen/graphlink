@@ -11,6 +11,7 @@ import java.util.Objects;
 import com.example.generated.types.GraphLinkPayload;
 import com.example.generated.types.GraphLinkError;
 import com.example.generated.types.GraphLinkSubscriptionPayload;
+import com.example.generated.enums.GraphLinkAckStatus;
 import com.example.generated.interfaces.GraphLinkSubscriptionErrorMessageBase;
 import com.example.generated.types.GraphLinkSubscriptionErrorMessage;
 import com.example.generated.types.GraphLinkSubscriptionMessage;
