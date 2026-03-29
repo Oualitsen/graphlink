@@ -321,14 +321,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.9.0"
-  petitparser:
-    dependency: "direct main"
-    description:
-      name: petitparser
-      sha256: eeb2d1428ee7f4170e2bd498827296a18d4e7fc462b71727d111c0ac7707cfa6
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.0.1"
   pool:
     dependency: transitive
     description:

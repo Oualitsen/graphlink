@@ -1,9 +1,9 @@
 import 'dart:math';
 
-import 'package:graphlink/src/gl_grammar.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_directives_mixin.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/language.dart';
 
 String serializeListText(List<String>? list,
@@ -56,7 +56,7 @@ String formatUnformattedGraphQL(String unformattedGraphQL) {
 
 String? getNameValueFromDirectives(Iterable<GLDirectiveValue> directives) {
   var dirs = directives
-      .where((element) => GLGrammar.directivesToSkip.contains(element.token));
+      .where((element) => GLParser.directivesToSkip.contains(element.token));
   if (dirs.isEmpty) {
     return null;
   }
