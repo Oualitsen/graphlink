@@ -8,6 +8,7 @@ package com.example.generated.client;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.function.Supplier;
 import com.example.generated.types.GraphLinkPayload;
 import com.example.generated.types.GraphLinkError;
 import com.example.generated.types.GraphLinkSubscriptionPayload;
@@ -22,31 +23,54 @@ import com.example.generated.types.GetCarsCountResponse;
 import com.example.generated.types.GetCarNameResponse;
 import com.example.generated.types.CreateOwnerResponse;
 import com.example.generated.types.CreateCarResponse;
+import com.example.generated.types.OnCarCreatedResponse;
+import com.example.generated.types.OnOwnerCreatedResponse;
 import com.example.generated.inputs.CreateOwnerInput;
 import com.example.generated.inputs.CreateCarInput;
 import com.example.generated.interfaces.GraphLinkJsonEncoder;
 import com.example.generated.interfaces.GraphLinkJsonDecoder;
 import com.example.generated.interfaces.GraphLinkClientAdapter;
-import com.example.generated.interfaces.GraphLinkGraphLinkWebSocketAdapter;
 
+import com.example.generated.interfaces.GraphLinkWebSocketAdapter;
 public class GraphLinkClient {
    final Map<String, String> _fragmMap = new HashMap<>();
    public final GraphLinkQueries queries;
    public final GraphLinkMutations mutations;
-   public GraphLinkClient(GraphLinkClientAdapter adapter, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder) {
-      this(adapter, encoder, decoder, null);
+   public final GraphLinkSubscriptions subscriptions;
+   public GraphLinkClient(GraphLinkClientAdapter adapter, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder, GraphLinkWebSocketAdapter wsAdapter) {
+      this(adapter, encoder, decoder, null, wsAdapter);
    }
-   public GraphLinkClient(GraphLinkClientAdapter adapter, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder, GraphLinkCacheStore store) {
+   public GraphLinkClient(GraphLinkClientAdapter adapter, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder, GraphLinkCacheStore store, GraphLinkWebSocketAdapter wsAdapter) {
       if(store == null) {
          store = new InMemoryGraphLinkCacheStore();
       }
       Objects.requireNonNull(adapter);
       Objects.requireNonNull(encoder);
       Objects.requireNonNull(decoder);
+      Objects.requireNonNull(wsAdapter);
       queries = new GraphLinkQueries(adapter, _fragmMap, encoder, decoder, store);
       mutations = new GraphLinkMutations(adapter, _fragmMap, encoder, decoder, store);
+      subscriptions = new GraphLinkSubscriptions(wsAdapter, _fragmMap, encoder, decoder, store);
       _fragmMap.put("_all_fields_Owner", "fragment _all_fields_Owner on Owner{id name email cars{..._all_fields_Car}}");
       _fragmMap.put("_all_fields_Car", "fragment _all_fields_Car on Car{id make model year ownerId}");
+   }
+   public GraphLinkClient(String url, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder) {
+      this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws")));
+   }
+   public GraphLinkClient(String url, Supplier<Map<String, String>> headersProvider, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder) {
+      this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"), headersProvider));
+   }
+   public GraphLinkClient(String url, String wsUrl, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder) {
+      this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(wsUrl));
+   }
+   public GraphLinkClient(String url, String wsUrl, Supplier<Map<String, String>> headersProvider, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder) {
+      this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider));
+   }
+   public GraphLinkClient(String url) {
+      this(url, new JacksonGraphLinkJsonCodec(), new JacksonGraphLinkJsonCodec());
+   }
+   public GraphLinkClient(String url, String wsUrl) {
+      this(url, wsUrl, new JacksonGraphLinkJsonCodec(), new JacksonGraphLinkJsonCodec());
    }
 }
 

@@ -28,7 +28,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
         super(serializer);
 
   @override
-  String generateClient(String importPrefix) {
+  String generateClient(String importPrefix, {bool hasDefaultAdapters = true}) {
     var imports = serializeImports(_grammar, importPrefix);
 
     var buffer = StringBuffer();
@@ -36,10 +36,14 @@ class JavaClientSerializer extends GLClientSerilaizer {
       JavaImports.map,
       JavaImports.hashMap,
       JavaImports.objects,
+      JavaImports.supplier,
     ]) {
       buffer.writeln('import ${i};');
     }
     buffer.writeln(imports);
+    if (_grammar.hasSubscriptions && importPrefix.isNotEmpty) {
+      buffer.writeln('import ${importPrefix}.interfaces.GraphLinkWebSocketAdapter;');
+    }
 
     buffer.writeln(codeGenUtils.createClass(className: clientName, statements: [
       'final Map<String, String> _fragmMap = new HashMap<>();',
@@ -61,7 +65,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
         arguments: [
           _adapterDeclaration(false),
           if (_grammar.hasSubscriptions)
-            'GraphLinkGraphLinkWebSocketAdapter wsAdapter'
+            'GraphLinkWebSocketAdapter wsAdapter'
         ],
       ),
       codeGenUtils.createMethod(
@@ -70,7 +74,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
         arguments: [
           _adapterDeclaration(true),
           if (_grammar.hasSubscriptions)
-            'GraphLinkGraphLinkWebSocketAdapter wsAdapter'
+            'GraphLinkWebSocketAdapter wsAdapter'
         ],
         statements: [
           codeGenUtils.ifStatement(
@@ -91,10 +95,85 @@ class JavaClientSerializer extends GLClientSerilaizer {
               '_fragmMap.put("${value.tokenInfo}", "${gqlSerializer.serializeFragmentDefinitionBase(value)}");'),
         ],
       ),
+      if (hasDefaultAdapters) ..._convenienceConstructors(),
     ]));
 
     buffer.writeln(serializeSubscriptions().ident());
     return buffer.toString();
+  }
+
+  List<String> _convenienceConstructors() {
+    final encoderDecoderArgs = [
+      'GraphLinkJsonEncoder encoder',
+      'GraphLinkJsonDecoder decoder',
+    ];
+    const defaultCodec = 'new JacksonGraphLinkJsonCodec()';
+
+    if (!_grammar.hasSubscriptions) {
+      return [
+        codeGenUtils.createMethod(
+          returnType: 'public',
+          methodName: clientName,
+          arguments: ['String url', ...encoderDecoderArgs],
+          statements: ['this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, null);'],
+        ),
+        codeGenUtils.createMethod(
+          returnType: 'public',
+          methodName: clientName,
+          arguments: ['String url', 'Supplier<Map<String, String>> headersProvider', ...encoderDecoderArgs],
+          statements: ['this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, null);'],
+        ),
+        // Default encoder/decoder (Jackson)
+        codeGenUtils.createMethod(
+          returnType: 'public',
+          methodName: clientName,
+          arguments: ['String url'],
+          statements: ['this(url, $defaultCodec, $defaultCodec);'],
+        ),
+      ];
+    }
+
+    return [
+      // Option A — single URL, ws derived by replacing http→ws
+      codeGenUtils.createMethod(
+        returnType: 'public',
+        methodName: clientName,
+        arguments: ['String url', ...encoderDecoderArgs],
+        statements: ['this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws")));'],
+      ),
+      codeGenUtils.createMethod(
+        returnType: 'public',
+        methodName: clientName,
+        arguments: ['String url', 'Supplier<Map<String, String>> headersProvider', ...encoderDecoderArgs],
+        statements: ['this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"), headersProvider));'],
+      ),
+      // Option B — explicit wsUrl
+      codeGenUtils.createMethod(
+        returnType: 'public',
+        methodName: clientName,
+        arguments: ['String url', 'String wsUrl', ...encoderDecoderArgs],
+        statements: ['this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(wsUrl));'],
+      ),
+      codeGenUtils.createMethod(
+        returnType: 'public',
+        methodName: clientName,
+        arguments: ['String url', 'String wsUrl', 'Supplier<Map<String, String>> headersProvider', ...encoderDecoderArgs],
+        statements: ['this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider));'],
+      ),
+      // Default encoder/decoder (Jackson)
+      codeGenUtils.createMethod(
+        returnType: 'public',
+        methodName: clientName,
+        arguments: ['String url'],
+        statements: ['this(url, $defaultCodec, $defaultCodec);'],
+      ),
+      codeGenUtils.createMethod(
+        returnType: 'public',
+        methodName: clientName,
+        arguments: ['String url', 'String wsUrl'],
+        statements: ['this(url, wsUrl, $defaultCodec, $defaultCodec);'],
+      ),
+    ];
   }
 
   String _adapterDeclaration(bool withStore) {
@@ -117,7 +196,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
 
     return codeGenUtils.createClass(
         staticClass: false,
-        className: "${classNameFromType(type)} extends ResolverBase",
+        className: "${classNameFromType(type)} extends GraphLinkResolverBase",
         statements: [
           ...declareAdapter(type),
           codeGenUtils.createMethod(
@@ -128,13 +207,14 @@ class JavaClientSerializer extends GLClientSerilaizer {
                 'super(fragmentMap, store, encoder, decoder);',
                 'this.adapter = adapter;',
                 if (type == GLQueryType.subscription)
-                  '_handler = new SubscriptionHandler(adapter, decoder, encoder);',
+                  '_handler = new GraphLinkSubscriptionHandler(adapter, decoder, encoder);',
               ]),
           ...queryList
-              .where((e) =>
-                  e.type == GLQueryType.query ||
-                  e.type == GLQueryType.subscription)
+              .where((e) => e.type == GLQueryType.query)
               .map(queryToMethod),
+          ...queryList
+              .where((e) => e.type == GLQueryType.subscription)
+              .map(subscriptionToMethod),
           ...queryList
               .where((e) => e.type == GLQueryType.mutation)
               .map(mutationToMethod),
@@ -207,7 +287,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
   List<String> _declareConstructorArgs(GLQueryType type) {
     return [
       if (type == GLQueryType.subscription)
-        'GraphLinkGraphLinkWebSocketAdapter adapter'
+        'GraphLinkWebSocketAdapter adapter'
       else
         'GraphLinkClientAdapter adapter',
       'Map<String, String> fragmentMap',
@@ -224,8 +304,8 @@ class JavaClientSerializer extends GLClientSerilaizer {
         return ["private final GraphLinkClientAdapter adapter;"];
       case GLQueryType.subscription:
         return [
-          "private final SubscriptionHandler _handler;",
-          "private final GraphLinkGraphLinkWebSocketAdapter adapter;"
+          "private final GraphLinkSubscriptionHandler _handler;",
+          "private final GraphLinkWebSocketAdapter adapter;"
         ];
     }
   }
@@ -365,6 +445,25 @@ class JavaClientSerializer extends GLClientSerilaizer {
           generateVariables(def),
           "GraphLinkPayload payload = GraphLinkPayload.builder().query(query).operationName(operationName).variables(variables).build();",
           _serializeAdapterCall(def)
+        ]);
+  }
+
+  String subscriptionToMethod(GLQueryDefinition def) {
+    final frags = def.fragments(_grammar);
+    return codeGenUtils.createMethod(
+        returnType: 'public ${returnTypeByQueryType(def)}',
+        methodName: def.tokenInfo.token,
+        arguments: getArguments(def),
+        statements: [
+          'String operationName = "${def.tokenInfo}";',
+          if (frags.isNotEmpty) ...[
+            'List<String> fragsValues = Arrays.asList(${frags.map((e) => 'fragmentMap.get("${e.token}")').join(", ")});',
+            'String query = "${gqlSerializer.serializeQueryDefinition(def)} " + String.join(" ", fragsValues);',
+          ] else
+            'String query = "${gqlSerializer.serializeQueryDefinition(def)}";',
+          generateVariables(def),
+          "GraphLinkPayload payload = GraphLinkPayload.builder().query(query).operationName(operationName).variables(variables).build();",
+          _serializeSubscriptionAdapterCall(def),
         ]);
   }
 
@@ -529,7 +628,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
     return "";
   }
 
-  String generateResolverBaseFile(String importPrefix) {
+  String generateGraphLinkResolverBaseFile(String importPrefix) {
     final buffer = StringBuffer();
     for (var i in [
       JavaImports.map,
@@ -546,7 +645,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
     final allTags = _grammar.getAllCacheTags();
 
     buffer.writeln(codeGenUtils.createClass(
-      className: 'ResolverBase',
+      className: 'GraphLinkResolverBase',
       statements: [
         'protected final Map<String, String> fragmentMap;',
         'protected final GraphLinkCacheStore store;',
@@ -554,7 +653,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
         'protected final GraphLinkJsonDecoder decoder;',
         'private final Map<String, ReentrantLock> tagLocks = new HashMap<>();',
         codeGenUtils.createMethod(
-          methodName: 'ResolverBase',
+          methodName: 'GraphLinkResolverBase',
           arguments: [
             'Map<String, String> fragmentMap',
             'GraphLinkCacheStore store',
@@ -749,11 +848,15 @@ class JavaClientSerializer extends GLClientSerilaizer {
       ],
       if (type == GLQueryType.subscription) ...[
         JavaImports.uuid,
+        JavaImports.hashSet,
       ],
     ]) {
       buffer.writeln('import $i;');
     }
     buffer.writeln(serializeImports(_grammar, importPrefix));
+    if (type == GLQueryType.subscription && importPrefix.isNotEmpty) {
+      buffer.writeln('import ${importPrefix}.interfaces.GraphLinkWebSocketAdapter;');
+    }
     buffer.writeln(classBody);
     return buffer.toString();
   }
@@ -802,20 +905,22 @@ class JavaClientSerializer extends GLClientSerilaizer {
     return _graphqlWsMessageTypesClass.trim();
   }
 
-  String generateSubscriptionHandlerFile(String importPrefix) {
+  String generateGraphLinkSubscriptionHandlerFile(String importPrefix) {
     final buffer = StringBuffer();
     for (var i in [
       JavaImports.map,
       JavaImports.hashMap,
       JavaImports.list,
       JavaImports.arrayList,
+      JavaImports.collections,
       JavaImports.uuid,
     ]) {
       buffer.writeln('import $i;');
     }
     buffer.writeln(serializeImports(_grammar, importPrefix));
-    buffer.writeln(serializer.serializeImportToken(
-        _grammar.enums['GraphLinkAckStatus']!, importPrefix));
+    if (importPrefix.isNotEmpty) {
+      buffer.writeln('import ${importPrefix}.interfaces.GraphLinkWebSocketAdapter;');
+    }
     buffer.writeln(_subscriptionHandlerClass.trim());
     return buffer.toString();
   }
@@ -889,11 +994,106 @@ class JavaClientSerializer extends GLClientSerilaizer {
       'GraphLinkJsonDecoder',
       'GraphLinkClientAdapter'
     ].map((e) => g.getTypeByName(e)!));
-    var adapter = g.getTokenByKey('GraphLinkGraphLinkWebSocketAdapter');
-    if (adapter != null) {
-      result.add(adapter);
-    }
     return result;
+  }
+
+  String generateWebSocketAdapterFile() {
+    return javaWebSocketAdapter.trim();
+  }
+
+  String generateJsonCodecFile(String codec, String importPrefix) {
+    final buffer = StringBuffer();
+    if (codec == 'jackson') {
+      buffer.writeln('import com.fasterxml.jackson.databind.ObjectMapper;');
+    } else {
+      buffer.writeln('import com.google.gson.Gson;');
+    }
+    buffer.writeln('import ${JavaImports.map};');
+    if (importPrefix.isNotEmpty) {
+      buffer.writeln('import ${importPrefix}.interfaces.GraphLinkJsonEncoder;');
+      buffer.writeln('import ${importPrefix}.interfaces.GraphLinkJsonDecoder;');
+    }
+    buffer.writeln(codec == 'jackson'
+        ? _jacksonCodecClass.trim()
+        : _gsonCodecClass.trim());
+    return buffer.toString();
+  }
+
+  String generateDefaultClientAdapterFile(String flavor, String importPrefix) {
+    final buffer = StringBuffer();
+    if (flavor == 'okhttp') {
+      for (var i in [
+        'okhttp3.MediaType',
+        'okhttp3.OkHttpClient',
+        'okhttp3.Request',
+        'okhttp3.RequestBody',
+        'okhttp3.Response',
+      ]) {
+        buffer.writeln('import $i;');
+      }
+    } else {
+      for (var i in [
+        'java.net.URI',
+        'java.net.http.HttpClient',
+        'java.net.http.HttpRequest',
+        'java.net.http.HttpResponse',
+      ]) {
+        buffer.writeln('import $i;');
+      }
+    }
+    buffer.writeln('import ${JavaImports.map};');
+    buffer.writeln('import ${JavaImports.supplier};');
+    if (importPrefix.isNotEmpty) {
+      buffer.writeln('import ${importPrefix}.interfaces.GraphLinkClientAdapter;');
+    }
+    buffer.writeln(flavor == 'okhttp'
+        ? _defaultClientAdapterOkHttp.trim()
+        : _defaultClientAdapterJava11.trim());
+    return buffer.toString();
+  }
+
+  String generateDefaultWebSocketAdapterFile(String flavor, String importPrefix) {
+    final buffer = StringBuffer();
+    if (flavor == 'okhttp') {
+      for (var i in [
+        'okhttp3.OkHttpClient',
+        'okhttp3.Request',
+        'okhttp3.Response',
+        'okhttp3.WebSocket',
+        'okhttp3.WebSocketListener',
+      ]) {
+        buffer.writeln('import $i;');
+      }
+    } else {
+      for (var i in [
+        'java.net.URI',
+        'java.net.http.HttpClient',
+        'java.net.http.WebSocket',
+        'java.util.concurrent.CompletableFuture',
+        'java.util.concurrent.CompletionStage',
+      ]) {
+        buffer.writeln('import $i;');
+      }
+    }
+    for (var i in [
+      JavaImports.hashMap,
+      JavaImports.map,
+      'java.util.concurrent.Executors',
+      'java.util.concurrent.ScheduledExecutorService',
+      'java.util.concurrent.TimeUnit',
+      'java.util.concurrent.atomic.AtomicInteger',
+      JavaImports.consumer,
+      JavaImports.supplier,
+    ]) {
+      buffer.writeln('import $i;');
+    }
+    if (importPrefix.isNotEmpty) {
+      buffer.writeln('import ${importPrefix}.interfaces.GraphLinkWebSocketAdapter;');
+    }
+    buffer.writeln(flavor == 'okhttp'
+        ? _defaultWsAdapterOkHttp.trim()
+        : _defaultWsAdapterJava11.trim());
+    return buffer.toString();
   }
 }
 
@@ -952,30 +1152,32 @@ public class GraphqlWsMessageTypes {
 ''';
 
 const _subscriptionHandlerClass = '''
-public class SubscriptionHandler {
+public class GraphLinkSubscriptionHandler {
 
-  // we have to think about synchronization here
   private final Map<String, ${_subscriptionListenerRef}<Map<String, Object>>> listeners = new HashMap<>();
   private final Map<String, GraphLinkPayload> payloadsToHandle = new HashMap<>();
+  private final Map<String, GraphLinkPayload> activePayloads = new HashMap<>();
 
-  private final GraphLinkGraphLinkWebSocketAdapter adapter;
+  private final GraphLinkWebSocketAdapter adapter;
   private final GraphLinkJsonDecoder decoder;
   private final GraphLinkJsonEncoder encoder;
   private GraphLinkAckStatus ackStatus = GraphLinkAckStatus.none;
 
-
-  SubscriptionHandler(GraphLinkGraphLinkWebSocketAdapter adapter, GraphLinkJsonDecoder decoder, GraphLinkJsonEncoder encoder) {
+  GraphLinkSubscriptionHandler(GraphLinkWebSocketAdapter adapter, GraphLinkJsonDecoder decoder, GraphLinkJsonEncoder encoder) {
     this.adapter = adapter;
     this.decoder = decoder;
     this.encoder = encoder;
-    adapter.onMessage(this::onMessage);
+    adapter.setMessageListener(this::onMessage);
+    adapter.setReconnectListener(this::handleReconnect);
   }
 
   String getConnectionInit(String id) {
-    return encoder.encode(GraphLinkSubscriptionMessage.builder()
-        .type(GraphqlWsMessageTypes.connectionInit)
-        .id(id)
-        .build());
+    Map<String, Object> initPayload = adapter.connectionInitPayload();
+    Map<String, Object> message = new HashMap<>();
+    message.put("type", GraphqlWsMessageTypes.connectionInit);
+    if (id != null) message.put("id", id);
+    if (initPayload != null) message.put("payload", initPayload);
+    return encoder.encode(message);
   }
 
   String getPongMessage(String id) {
@@ -985,13 +1187,11 @@ public class SubscriptionHandler {
         .build());
   }
 
-  String getSubscriptionMessage(String id) {
-    GraphLinkPayload payload = payloadsToHandle.get(id);
+  String getSubscriptionMessage(String id, GraphLinkPayload payload) {
     GraphLinkSubscriptionPayload subscriptionPayload = GraphLinkSubscriptionPayload.builder()
         .query(payload.getQuery())
         .operationName(payload.getOperationName())
         .variables(payload.getVariables())
-
         .build();
     return encoder.encode(GraphLinkSubscriptionMessage.builder()
         .type(GraphqlWsMessageTypes.subscribe)
@@ -1000,63 +1200,53 @@ public class SubscriptionHandler {
         .build());
   }
 
-
-  public synchronized void initConnection(String id, GraphLinkPayload payload) {
-    switch (ackStatus) {
-      case none:
-        addPayload(id, payload);
-        ackStatus = GraphLinkAckStatus.progress;
-        adapter.connect((obj) -> {
-          String connectionInit = getConnectionInit(id);
-          System.out.println("Sending connectionInit = " + connectionInit);
-          adapter.sendMessage(connectionInit);
-        }, (t) -> {
-          System.out.println("Connection failed!");
-        });
-        //
-        break;
-      case progress:
-        System.out.println("in progress ....");
-        addPayload(id, payload);
-        break;
-      case acknoledged:
-        adapter.sendMessage(getSubscriptionMessage(id));
-        break;
+  public void initConnection(String id, GraphLinkPayload payload) {
+    boolean shouldConnect = false;
+    boolean shouldSend = false;
+    synchronized (this) {
+      switch (ackStatus) {
+        case none:
+          payloadsToHandle.put(id, payload);
+          ackStatus = GraphLinkAckStatus.progress;
+          shouldConnect = true;
+          break;
+        case progress:
+          payloadsToHandle.put(id, payload);
+          break;
+        case acknoledged:
+          shouldSend = true;
+          break;
+      }
+    }
+    if (shouldConnect) {
+      adapter.connect(() -> {
+        adapter.sendMessage(getConnectionInit(id));
+      }, (t) -> {
+        notifyAllListenersOfError(t);
+      });
+    } else if (shouldSend) {
+      adapter.sendMessage(getSubscriptionMessage(id, payload));
     }
   }
-
-  private void addPayload(String id, GraphLinkPayload payload) {
-    synchronized (payloadsToHandle) {
-      payloadsToHandle.put(id, payload);
-    }
-  }
-
-  GraphLinkPayload getPayload(String id) {
-    return payloadsToHandle.get(id);
-  }
-
 
   private GraphLinkSubscriptionErrorMessageBase parseEvent(String event) {
     Map<String, Object> map = decoder.decode(event);
     Object payload = map.get("payload");
-    GraphLinkSubscriptionErrorMessageBase result;
     if (payload instanceof Map) {
-      result = GraphLinkSubscriptionMessage.fromJson(map);
+      return GraphLinkSubscriptionMessage.fromJson(map);
     } else {
-      result = GraphLinkSubscriptionErrorMessage.fromJson(map);
+      return GraphLinkSubscriptionErrorMessage.fromJson(map);
     }
-    return result;
   }
-
 
   public void handlePayload(GraphLinkPayload payload, ${_subscriptionListenerRef}<Map<String, Object>> listener) {
     String uuid = UUID.randomUUID().toString();
-    synchronized (listeners) {
+    synchronized (this) {
       listeners.put(uuid, listener);
+      activePayloads.put(uuid, payload);
     }
     initConnection(uuid, payload);
   }
-
 
   public void onMessage(String message) {
     GraphLinkSubscriptionErrorMessageBase event = parseEvent(message);
@@ -1066,7 +1256,6 @@ public class SubscriptionHandler {
         handleConnectionAck();
         break;
       case GraphqlWsMessageTypes.subscribe:
-        System.out.println("handle subscription here " + event.getId());
         break;
       case GraphqlWsMessageTypes.ping:
         adapter.sendMessage(getPongMessage(event.getId()));
@@ -1075,8 +1264,7 @@ public class SubscriptionHandler {
         handleNextMessage((GraphLinkSubscriptionMessage) event);
         break;
       case GraphqlWsMessageTypes.error:
-        System.out.println("Evenet class = "+ event.getClass());
-        handleError((GraphLinkSubscriptionErrorMessage)event);
+        handleError((GraphLinkSubscriptionErrorMessage) event);
         break;
       case GraphqlWsMessageTypes.complete:
         handleComplete(event.getId());
@@ -1086,10 +1274,10 @@ public class SubscriptionHandler {
 
   void handleError(GraphLinkSubscriptionErrorMessage error) {
     ${_subscriptionListenerRef}<Map<String, Object>> listener;
-    synchronized (listeners) {
+    synchronized (this) {
       listener = listeners.remove(error.getId());
+      activePayloads.remove(error.getId());
     }
-
     if (listener != null) {
       listener.onError(new ${clientExceptionNameRef}(error.getPayload()));
     }
@@ -1097,38 +1285,425 @@ public class SubscriptionHandler {
 
   void handleComplete(String id) {
     ${_subscriptionListenerRef}<Map<String, Object>> removedListener;
-    synchronized (listeners) {
+    synchronized (this) {
       removedListener = listeners.remove(id);
+      activePayloads.remove(id);
     }
-    if(removedListener != null) {
+    if (removedListener != null) {
       removedListener.onComplete();
     }
   }
 
-  synchronized void  handleConnectionAck() {
-    this.ackStatus = GraphLinkAckStatus.acknoledged;
-    List<String> handledPayloadIds = new ArrayList<>(payloadsToHandle.size());
-    this.payloadsToHandle.forEach((uuid, payload) -> {
-      adapter.sendMessage(getSubscriptionMessage(uuid));
-      handledPayloadIds.add(uuid);
-    });
+  private void notifyAllListenersOfError(Throwable t) {
+    List<${_subscriptionListenerRef}<Map<String, Object>>> snapshot;
+    synchronized (this) {
+      snapshot = new ArrayList<>(listeners.values());
+      listeners.clear();
+      activePayloads.clear();
+      payloadsToHandle.clear();
+      ackStatus = GraphLinkAckStatus.none;
+    }
+    ${clientExceptionNameRef} error = ${clientExceptionNameRef}.of(Collections.singletonList(Collections.singletonMap("message", t.getMessage())));
+    for (${_subscriptionListenerRef}<Map<String, Object>> listener : snapshot) {
+      listener.onError(error);
+    }
+  }
 
-    handledPayloadIds.forEach(payloadsToHandle::remove);
+  private void handleReconnect() {
+    Map<String, GraphLinkPayload> snapshot;
+    synchronized (this) {
+      snapshot = new HashMap<>(activePayloads);
+      ackStatus = snapshot.isEmpty() ? GraphLinkAckStatus.none : GraphLinkAckStatus.progress;
+      payloadsToHandle.putAll(snapshot);
+    }
+    if (!snapshot.isEmpty()) {
+      String firstId = snapshot.keySet().iterator().next();
+      adapter.sendMessage(getConnectionInit(firstId));
+    }
+  }
 
+  void handleConnectionAck() {
+    List<Map.Entry<String, GraphLinkPayload>> entries;
+    synchronized (this) {
+      this.ackStatus = GraphLinkAckStatus.acknoledged;
+      entries = new ArrayList<>(payloadsToHandle.entrySet());
+      payloadsToHandle.clear();
+    }
+    for (Map.Entry<String, GraphLinkPayload> entry : entries) {
+      adapter.sendMessage(getSubscriptionMessage(entry.getKey(), entry.getValue()));
+    }
   }
 
   private void handleNextMessage(GraphLinkSubscriptionMessage message) {
     String id = message.getId();
-    // no need for synchronization!
-    ${_subscriptionListenerRef}<Map<String, Object>> listener = listeners.get(id);
+    ${_subscriptionListenerRef}<Map<String, Object>> listener;
+    synchronized (this) {
+      listener = listeners.get(id);
+    }
     if (listener != null) {
-
-      System.out.println(
-          "Should call the lister here with data = " + message.getPayload().getData());
       listener.onMessage(message.getPayload().getData());
     }
   }
 
+}
+''';
 
+const _defaultWsAdapterJava11 = '''
+public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapter {
+
+  private static final int MAX_BACKOFF_EXPONENT = 5;
+
+  private final String url;
+  private final Supplier<Map<String, String>> headersProvider;
+  private final HttpClient httpClient = HttpClient.newHttpClient();
+  private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+  private volatile WebSocket webSocket;
+  private volatile Consumer<String> messageListener;
+  private volatile Runnable reconnectListener;
+  private final AtomicInteger reconnectAttempts = new AtomicInteger(0);
+
+  public DefaultGraphLinkWebSocketAdapter(String url) {
+    this(url, null);
+  }
+
+  public DefaultGraphLinkWebSocketAdapter(String url, Supplier<Map<String, String>> headersProvider) {
+    this.url = url;
+    this.headersProvider = headersProvider;
+  }
+
+  @Override
+  public void connect(Runnable onConnect, Consumer<Throwable> onFailure) {
+    reconnectAttempts.set(0);
+    connectInternal(onConnect, onFailure);
+  }
+
+  private void connectInternal(Runnable onConnect, Consumer<Throwable> onFailure) {
+    java.net.http.WebSocket.Builder wsBuilder = httpClient.newWebSocketBuilder()
+        .header("Sec-WebSocket-Protocol", "graphql-transport-ws");
+    if (headersProvider != null) {
+      Map<String, String> h = headersProvider.get();
+      if (h != null) h.forEach(wsBuilder::header);
+    }
+    wsBuilder.buildAsync(URI.create(url), new WebSocket.Listener() {
+          private final StringBuilder buffer = new StringBuilder();
+
+          @Override
+          public void onOpen(WebSocket ws) {
+            webSocket = ws;
+            ws.request(1);
+            onConnect.run();
+          }
+
+          @Override
+          public CompletionStage<?> onText(WebSocket ws, CharSequence data, boolean last) {
+            buffer.append(data);
+            ws.request(1);
+            if (last) {
+              String message = buffer.toString();
+              buffer.setLength(0);
+              Consumer<String> listener = messageListener;
+              if (listener != null) listener.accept(message);
+            }
+            return CompletableFuture.completedFuture(null);
+          }
+
+          @Override
+          public CompletionStage<?> onClose(WebSocket ws, int statusCode, String reason) {
+            scheduleReconnect(onFailure);
+            return CompletableFuture.completedFuture(null);
+          }
+
+          @Override
+          public void onError(WebSocket ws, Throwable error) {
+            scheduleReconnect(onFailure);
+          }
+        });
+  }
+
+  private void scheduleReconnect(Consumer<Throwable> onFailure) {
+    int attempts = reconnectAttempts.incrementAndGet();
+    long delaySeconds = (long) Math.pow(2, Math.min(attempts, MAX_BACKOFF_EXPONENT));
+    scheduler.schedule(() -> connectInternal(() -> {
+      Runnable listener = reconnectListener;
+      if (listener != null) listener.run();
+    }, onFailure), delaySeconds, TimeUnit.SECONDS);
+  }
+
+  @Override
+  public void setMessageListener(Consumer<String> listener) {
+    this.messageListener = listener;
+  }
+
+  @Override
+  public void sendMessage(String message) {
+    WebSocket ws = webSocket;
+    if (ws != null) ws.sendText(message, true);
+  }
+
+  @Override
+  public void close() {
+    scheduler.shutdownNow();
+    WebSocket ws = webSocket;
+    if (ws != null) ws.sendClose(WebSocket.NORMAL_CLOSURE, "");
+  }
+
+  @Override
+  public Map<String, Object> connectionInitPayload() {
+    if (headersProvider == null) return null;
+    Map<String, String> headers = headersProvider.get();
+    if (headers == null || headers.isEmpty()) return null;
+    return new HashMap<>(headers);
+  }
+
+  @Override
+  public void setReconnectListener(Runnable onReconnect) {
+    this.reconnectListener = onReconnect;
+  }
+}
+''';
+
+const _defaultWsAdapterOkHttp = '''
+public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapter {
+
+  private static final int MAX_BACKOFF_EXPONENT = 5;
+
+  private final String url;
+  private final Supplier<Map<String, String>> headersProvider;
+  private final OkHttpClient httpClient;
+  private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+  private volatile WebSocket webSocket;
+  private volatile Consumer<String> messageListener;
+  private volatile Runnable reconnectListener;
+  private final AtomicInteger reconnectAttempts = new AtomicInteger(0);
+
+  public DefaultGraphLinkWebSocketAdapter(String url) {
+    this(url, null);
+  }
+
+  public DefaultGraphLinkWebSocketAdapter(String url, Supplier<Map<String, String>> headersProvider) {
+    this.url = url;
+    this.headersProvider = headersProvider;
+    this.httpClient = new OkHttpClient();
+  }
+
+  protected Request buildRequest() {
+    Request.Builder builder = new Request.Builder()
+        .url(url)
+        .header("Sec-WebSocket-Protocol", "graphql-transport-ws");
+    if (headersProvider != null) {
+      Map<String, String> headers = headersProvider.get();
+      if (headers != null) headers.forEach(builder::header);
+    }
+    return builder.build();
+  }
+
+  @Override
+  public void connect(Runnable onConnect, Consumer<Throwable> onFailure) {
+    reconnectAttempts.set(0);
+    connectInternal(onConnect, onFailure);
+  }
+
+  private void connectInternal(Runnable onConnect, Consumer<Throwable> onFailure) {
+    httpClient.newWebSocket(buildRequest(), new WebSocketListener() {
+      @Override
+      public void onOpen(WebSocket ws, Response response) {
+        webSocket = ws;
+        onConnect.run();
+      }
+
+      @Override
+      public void onMessage(WebSocket ws, String text) {
+        Consumer<String> listener = messageListener;
+        if (listener != null) listener.accept(text);
+      }
+
+      @Override
+      public void onClosed(WebSocket ws, int code, String reason) {
+        scheduleReconnect(onFailure);
+      }
+
+      @Override
+      public void onFailure(WebSocket ws, Throwable t, Response response) {
+        scheduleReconnect(onFailure);
+      }
+    });
+  }
+
+  private void scheduleReconnect(Consumer<Throwable> onFailure) {
+    int attempts = reconnectAttempts.incrementAndGet();
+    long delaySeconds = (long) Math.pow(2, Math.min(attempts, MAX_BACKOFF_EXPONENT));
+    scheduler.schedule(() -> connectInternal(() -> {
+      Runnable listener = reconnectListener;
+      if (listener != null) listener.run();
+    }, onFailure), delaySeconds, TimeUnit.SECONDS);
+  }
+
+  @Override
+  public void setMessageListener(Consumer<String> listener) {
+    this.messageListener = listener;
+  }
+
+  @Override
+  public void sendMessage(String message) {
+    WebSocket ws = webSocket;
+    if (ws != null) ws.send(message);
+  }
+
+  @Override
+  public void close() {
+    scheduler.shutdownNow();
+    WebSocket ws = webSocket;
+    if (ws != null) ws.close(1000, null);
+  }
+
+  @Override
+  public Map<String, Object> connectionInitPayload() {
+    if (headersProvider == null) return null;
+    Map<String, String> headers = headersProvider.get();
+    if (headers == null || headers.isEmpty()) return null;
+    return new HashMap<>(headers);
+  }
+
+  @Override
+  public void setReconnectListener(Runnable onReconnect) {
+    this.reconnectListener = onReconnect;
+  }
+}
+''';
+
+const _defaultClientAdapterJava11 = '''
+public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter {
+
+  private final String url;
+  private final Supplier<Map<String, String>> headersProvider;
+  private final HttpClient httpClient = HttpClient.newHttpClient();
+
+  public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider) {
+    this.url = url;
+    this.headersProvider = headersProvider;
+  }
+
+  public DefaultGraphLinkClientAdapter(String url) {
+    this(url, null);
+  }
+
+  @Override
+  public String execute(String payload) {
+    try {
+      HttpRequest.Builder builder = HttpRequest.newBuilder()
+          .uri(URI.create(url))
+          .header("Content-Type", "application/json")
+          .POST(HttpRequest.BodyPublishers.ofString(payload));
+      if (headersProvider != null) {
+        Map<String, String> headers = headersProvider.get();
+        if (headers != null) headers.forEach(builder::header);
+      }
+      HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+      return response.body();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+}
+''';
+
+const _defaultClientAdapterOkHttp = '''
+public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter {
+
+  private static final MediaType JSON = MediaType.get("application/json");
+
+  private final String url;
+  private final Supplier<Map<String, String>> headersProvider;
+  private final OkHttpClient httpClient;
+
+  public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider) {
+    this.url = url;
+    this.headersProvider = headersProvider;
+    this.httpClient = new OkHttpClient();
+  }
+
+  public DefaultGraphLinkClientAdapter(String url) {
+    this(url, null);
+  }
+
+  @Override
+  public String execute(String payload) {
+    try {
+      Request.Builder builder = new Request.Builder()
+          .url(url)
+          .post(RequestBody.create(payload, JSON));
+      if (headersProvider != null) {
+        Map<String, String> headers = headersProvider.get();
+        if (headers != null) headers.forEach(builder::header);
+      }
+      try (Response response = httpClient.newCall(builder.build()).execute()) {
+        return response.body().string();
+      }
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+}
+''';
+
+const _jacksonCodecClass = '''
+public class JacksonGraphLinkJsonCodec implements GraphLinkJsonEncoder, GraphLinkJsonDecoder {
+
+  private final ObjectMapper mapper;
+
+  public JacksonGraphLinkJsonCodec() {
+    this(new ObjectMapper());
+  }
+
+  public JacksonGraphLinkJsonCodec(ObjectMapper mapper) {
+    this.mapper = mapper;
+  }
+
+  @Override
+  public String encode(Object obj) {
+    try {
+      return mapper.writeValueAsString(obj);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public Map<String, Object> decode(String json) {
+    try {
+      return mapper.readValue(json, Map.class);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+}
+''';
+
+const _gsonCodecClass = '''
+public class GsonGraphLinkJsonCodec implements GraphLinkJsonEncoder, GraphLinkJsonDecoder {
+
+  private final Gson gson;
+
+  public GsonGraphLinkJsonCodec() {
+    this(new Gson());
+  }
+
+  public GsonGraphLinkJsonCodec(Gson gson) {
+    this.gson = gson;
+  }
+
+  @Override
+  public String encode(Object obj) {
+    return gson.toJson(obj);
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public Map<String, Object> decode(String json) {
+    return gson.fromJson(json, Map.class);
+  }
 }
 ''';

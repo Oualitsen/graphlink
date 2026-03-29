@@ -1,5 +1,11 @@
 import 'package:graphlink/src/serializers/language.dart';
 
+enum DartHttpAdapter { http, dio, none }
+
+enum JavaWsAdapter { java11, okhttp, none }
+
+enum JavaJsonCodec { jackson, gson, none }
+
 class GeneratorConfig {
   final List<String> schemaPaths;
   final String mode; // "server" or "client"
@@ -135,7 +141,7 @@ class DartClientConfig {
   final bool immutableInputFields;
   final bool immutableTypeFields;
   final bool generateAdapters;
-  final String httpAdapter; // "http" or "dio"
+  final DartHttpAdapter httpAdapter;
 
   DartClientConfig({
     required this.generateAllFieldsFragments,
@@ -151,7 +157,7 @@ class DartClientConfig {
     this.immutableInputFields = true,
     this.immutableTypeFields = true,
     this.generateAdapters = true,
-    this.httpAdapter = 'http',
+    this.httpAdapter = DartHttpAdapter.http,
   });
 
   factory DartClientConfig.fromJson(Map<String, dynamic> json) {
@@ -169,7 +175,10 @@ class DartClientConfig {
       immutableInputFields: (json['immutableInputFields'] as bool?) ?? true,
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
       generateAdapters: (json['generateAdapters'] as bool?) ?? true,
-      httpAdapter: (json['httpAdapter'] as String?) ?? 'http',
+      httpAdapter: DartHttpAdapter.values.firstWhere(
+        (e) => e.name == json['httpAdapter'],
+        orElse: () => DartHttpAdapter.http,
+      ),
     );
   }
 }
@@ -182,6 +191,8 @@ class JavaClientConfig {
   final bool operationNameAsParameter;
   final bool immutableInputFields;
   final bool immutableTypeFields;
+  final JavaWsAdapter wsAdapter;
+  final JavaJsonCodec jsonCodec;
 
   JavaClientConfig({
     required this.packageName,
@@ -191,6 +202,8 @@ class JavaClientConfig {
     this.operationNameAsParameter = false,
     this.immutableInputFields = true,
     this.immutableTypeFields = true,
+    this.wsAdapter = JavaWsAdapter.java11,
+    this.jsonCodec = JavaJsonCodec.jackson,
   });
 
   factory JavaClientConfig.fromJson(Map<String, dynamic> json) {
@@ -202,6 +215,14 @@ class JavaClientConfig {
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
       immutableInputFields: (json['immutableInputFields'] as bool?) ?? true,
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
+      wsAdapter: JavaWsAdapter.values.firstWhere(
+        (e) => e.name == json['wsAdapter'],
+        orElse: () => JavaWsAdapter.java11,
+      ),
+      jsonCodec: JavaJsonCodec.values.firstWhere(
+        (e) => e.name == json['jsonCodec'],
+        orElse: () => JavaJsonCodec.jackson,
+      ),
     );
   }
 }
