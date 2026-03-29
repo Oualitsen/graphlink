@@ -1,7 +1,6 @@
 import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/gl_grammar.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
