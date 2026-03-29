@@ -1,7 +1,6 @@
 import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/excpetions/parse_exception.dart';
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/gl_grammar.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_controller.dart';
@@ -480,7 +479,7 @@ extension GLGrammarExtension on GLParser {
 
     var result =
         onType.fields.where((element) => element.name.token == fieldName);
-    if (result.isEmpty && fieldName != GLGrammar.typename) {
+    if (result.isEmpty && fieldName != GLParser.typename) {
       throw ParseException(
           "Could not find field '$fieldName' on type '$typeName'",
           info: fieldNameToken);
@@ -843,13 +842,17 @@ extension GLGrammarExtension on GLParser {
     String key = definition.token;
     targetStore[key] = definition;
     definition.addOriginalToken(key);
-    final index = definition is GLInterfaceDefinition ? _interfaceHashIndex : _typeHashIndex;
+    final index = definition is GLInterfaceDefinition
+        ? _interfaceHashIndex
+        : _typeHashIndex;
     index.putIfAbsent(definition.getHash(this), () => []).add(definition);
     return targetStore[key]!;
   }
 
   List<GLTypeDefinition> findSimilarTo(GLTypeDefinition definition) {
-    final index = definition is GLInterfaceDefinition ? _interfaceHashIndex : _typeHashIndex;
+    final index = definition is GLInterfaceDefinition
+        ? _interfaceHashIndex
+        : _typeHashIndex;
     final hash = definition.getHash(this);
     final candidates = index[hash];
     if (candidates == null) return [];
@@ -861,7 +864,7 @@ extension GLGrammarExtension on GLParser {
     var keys = projections
         .map((e) => e.token)
         .where((t) => !t.endsWith("*"))
-        .where((t) => t != GLGrammar.typename)
+        .where((t) => t != GLParser.typename)
         .toSet()
         .toList();
     keys.sort();
