@@ -60,7 +60,6 @@ type Query {
         .expand((s) => s.mappings)
         .map((e) => e.key)
         .toList();
-
     expect(mappingKeys,
         containsAll(["carOwner", "userCars", "carUserId", "carOwnerId"]));
 
@@ -72,7 +71,7 @@ type Query {
     expect(carOwner.field.name.token, "owner");
 
     var userCars = mappings.where((e) => e.key == "userCars").first;
-    expect(userCars.isBatch, true);
+    expect(userCars.isBatch, false);
     expect(userCars.type.token, "User");
     expect(userCars.field.type.token, "Car");
     expect(userCars.field.name.token, "cars");
@@ -197,11 +196,10 @@ type Query {
       () {
     final GLParser g =
         GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
-    var serializer = SpringServerSerializer(g, injectDataFetching: true);
     const text = '''
     type User {
       name: String!
-      car: Car ${glSkipOnServer}
+      car: Car ${glSkipOnServer}(batch: true)
     }
     type Car {
       model: String!
@@ -212,12 +210,14 @@ type Query {
 ''';
 
     g.parse(text);
+    var serializer = SpringServerSerializer(g, injectDataFetching: true);
 
     var mappingService = g.services[g.serviceMappingName('User')]!;
     var mappingController = g.controllers[g.controllerMappingName('User')]!;
     var serialService = serializer.serializeService(mappingService, "myOrg");
     var serialController =
         serializer.serializeController(mappingController, "myOrg");
+    print(serialService);
     expect(
         serialService,
         contains(
@@ -229,6 +229,6 @@ type Query {
     expect(
         serialController,
         contains(
-            ' return userSchemaMappingsService.userCar(value, dataFetchingEnvironment);'));
+            'return userSchemaMappingsService.userCar(value, dataFetchingEnvironment);'));
   });
 }

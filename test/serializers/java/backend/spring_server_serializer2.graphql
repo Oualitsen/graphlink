@@ -26,7 +26,7 @@ type Owner {
     name: String
 }
 
-type OwnerWithAnimal @glSkipOnServer(mapTo: "Owner") {
+type OwnerWithAnimal @glSkipOnServer(mapTo: "Owner", batch: true) {
     owner: Owner!
     animal: Animal
 }
@@ -36,7 +36,7 @@ type OwnerWithAnimal2 @glSkipOnServer(batch: false) {
     animal: Animal
 }
 
-type OwnerWithAnimal3 @glSkipOnServer() {
+type OwnerWithAnimal3 @glSkipOnServer(batch: true) {
     owner: Owner!
     animal: Animal
 }

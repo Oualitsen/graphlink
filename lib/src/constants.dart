@@ -26,7 +26,10 @@ const clientTypes = {
   'GraphLinkSubscriptionErrorMessage',
   'GraphLinkSubscriptionMessage'
 };
-const clientInterfaces = {'GraphLinkSubscriptionErrorMessageBase', 'GraphLinkGraphLinkWebSocketAdapter'};
+const clientInterfaces = {
+  'GraphLinkSubscriptionErrorMessageBase',
+  'GraphLinkGraphLinkWebSocketAdapter'
+};
 
 const javaClientAdapterNoParamSync = '''
 interface GraphLinkClientAdapter 
@@ -73,7 +76,7 @@ interface GraphLinkGraphLinkWebSocketAdapter ${glInterfaceFieldAsProperties} ${g
    connect(onConnect: VoidConsumer!, onFailure: ThrowableConsumer): void!
    onMessage(message: Consumer!): void!
    sendMessage(message: String!): void!
-   close(): void!
+   close: void!
 }
 ''';
 
@@ -159,14 +162,22 @@ class JavaImports {
 
 class SpringImports {
   static const controller = "org.springframework.stereotype.Controller";
-  static const gqlArgument = "org.springframework.graphql.data.method.annotation.Argument";
-  static const gqlDataFetchingEnvironment = "graphql.schema.DataFetchingEnvironment";
+  static const gqlArgument =
+      "org.springframework.graphql.data.method.annotation.Argument";
+  static const gqlDataFetchingEnvironment =
+      "graphql.schema.DataFetchingEnvironment";
   static const gqlGraphQLException = "graphql.GraphQLException";
   static const repository = "org.springframework.stereotype.Repository";
-  static const jpaRepository = "org.springframework.data.jpa.repository.JpaRepository";
-  static const batchMapping = "org.springframework.graphql.data.method.annotation.BatchMapping";
-  static const schemaMapping = "org.springframework.graphql.data.method.annotation.SchemaMapping";
-  static const queryMapping = "org.springframework.graphql.data.method.annotation.QueryMapping";
-  static const mutationMapping = "org.springframework.graphql.data.method.annotation.MutationMapping";
-  static const subscriptionMapping = "org.springframework.graphql.data.method.annotation.SubscriptionMapping";
+  static const jpaRepository =
+      "org.springframework.data.jpa.repository.JpaRepository";
+  static const batchMapping =
+      "org.springframework.graphql.data.method.annotation.BatchMapping";
+  static const schemaMapping =
+      "org.springframework.graphql.data.method.annotation.SchemaMapping";
+  static const queryMapping =
+      "org.springframework.graphql.data.method.annotation.QueryMapping";
+  static const mutationMapping =
+      "org.springframework.graphql.data.method.annotation.MutationMapping";
+  static const subscriptionMapping =
+      "org.springframework.graphql.data.method.annotation.SubscriptionMapping";
 }

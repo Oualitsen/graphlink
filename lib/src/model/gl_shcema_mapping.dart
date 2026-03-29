@@ -11,7 +11,7 @@ class GLSchemaMapping {
   ///
   final bool? batch;
 
-  bool get isBatch => batch ?? true;
+  bool get isBatch => batch ?? false;
 
   ///
   /// when true, a @SchemaMapping should be generated to forbid access to field.

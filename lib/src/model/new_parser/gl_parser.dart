@@ -263,15 +263,17 @@ class GLParser {
 
   void addSchemaMapping(GLSchemaMapping mapping) {
     var m = _schemaMappings[mapping.key];
-
-    ///
-    /// replace existing mapping when
-    /// current mapping does not exist
-    /// current mapping has batch is null
-    /// current mapping has batch is false and new mapping has mapping == true
-    ///
-    if (m == null || m.batch == null || (m.batch == false && m.batch == true)) {
+    if (m == null || m.batch == null) {
       _schemaMappings[mapping.key] = mapping;
+      return;
+    }
+    if (mapping.batch != null && m.batch != mapping.batch) {
+      throw ParseException(
+        "Conflicting batch settings for mapping '${mapping.key}': "
+        "one source requires batch: ${m.batch}, another requires batch: ${mapping.batch}. "
+        "Add an explicit @glSkipOnServer(batch: ...) on the '${mapping.field.name}' field of '${mapping.type.token}' to resolve the conflict.",
+        info: mapping.field.name,
+      );
     }
   }
 
@@ -502,6 +504,20 @@ class GLParser {
       required GLDirectiveScope fieldScope}) {
     final doc = _parseDocumentation();
     final name = expectName();
+    if (acceptsArguments &&
+        check(GLTokenType.openParen) &&
+        peekNext().type == GLTokenType.closeParen) {
+      final t = peekNext();
+      final loc = _lexer.locationOf(t.offset);
+      throw ParseException(
+        "Argument list cannot be empty; remove the parentheses or add at least one argument",
+        info: TokenInfo(
+            token: t.value,
+            line: loc.line,
+            column: loc.column,
+            fileName: _lexer.fileName),
+      );
+    }
     final args = acceptsArguments
         ? _parseArgumentDefinitions()
         : <GLArgumentDefinition>[];

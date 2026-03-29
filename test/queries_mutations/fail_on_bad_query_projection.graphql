@@ -9,7 +9,7 @@ type Product {
 
 
 type Query {
-  getAllProducts(): [Product!]!
+  getAllProducts: [Product!]!
 }
 
 query Product($pageIndex: PageIndex!) {

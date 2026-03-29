@@ -28,7 +28,7 @@ void main() async {
   test("generate java client", () async {
     final GLParser g =
         GLParser(generateAllFieldsFragments: true, autoGenerateQueries: true);
-    g.parse('''
+    var text = '''
   ${getClientObjects("Java")}
   ${javaJsonEncoderDecorder}
   ${javaClientAdapterNoParamSync}
@@ -74,10 +74,15 @@ type Subscription {
 }
 
  
-''');
+''';
+    g.parse(text);
 
-    await generateJavaClientClasses(g, getConfig(g), DateTime.now(),
+    var result = await generateJavaClientClasses(
+        g, getConfig(g), DateTime.now(),
         pack: 'org.gqlclient.generated');
+    result.forEach((text) {
+      print(text);
+    });
   });
 
   test("GraphLinkJsonEncoder serialization", () {

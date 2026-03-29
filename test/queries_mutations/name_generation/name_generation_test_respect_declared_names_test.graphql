@@ -32,9 +32,9 @@ type Query {
   getProducts(pageIndex: PageIndex): [Product!]!
   getProductById(id: ID!): Product!
 
-  getAllProducts(): [Product!]!
+  getAllProducts: [Product!]!
 
-  getCount(): Int!
+  getCount: Int!
 
 
 }

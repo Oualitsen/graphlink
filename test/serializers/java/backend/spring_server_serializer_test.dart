@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:graphlink/src/excpetions/parse_exception.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/serializers/language.dart';
 import 'package:graphlink/src/serializers/spring_server_serializer.dart';
@@ -482,5 +483,77 @@ void main() {
         controllerSerial, isNot(contains('return userService.deleteUser();')));
 
     print("DONE");
+  });
+
+  test(
+      'field with arguments on non-root type without @glSkipOnServer throws on serializer construction',
+      () {
+    final g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    g.parse('''
+      type Query { getUser: User }
+      type User {
+        vehicles(year: Int): [String]
+      }
+    ''');
+    expect(
+      () => SpringServerSerializer(g),
+      throwsA(isA<ParseException>()),
+    );
+  });
+
+  test(
+      'field with arguments and batch: true throws on serializer construction',
+      () {
+    final g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    g.parse('''
+      type Query { getUser: User }
+      type User {
+        vehicles(year: Int): [String] @glSkipOnServer(batch: true)
+      }
+    ''');
+    expect(
+      () => SpringServerSerializer(g),
+      throwsA(isA<ParseException>()),
+    );
+  });
+
+  test('field with arguments and batch: false is valid', () {
+    final g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    g.parse('''
+      type Query { getUser: User }
+      type User {
+        vehicles(year: Int): [String] @glSkipOnServer(batch: false)
+      }
+    ''');
+    expect(() => SpringServerSerializer(g), returnsNormally);
+  });
+
+  test('field with arguments on root type (Query) does not throw', () {
+    final g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    g.parse('''
+      type Query {
+        getUser(id: String): User
+      }
+      type User { name: String }
+    ''');
+    expect(() => SpringServerSerializer(g), returnsNormally);
+  });
+
+  test('schema mapping with field arguments prints generated code', () {
+    final g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    g.parse('''
+      type Query { getUser: User }
+      type User {
+        name: String
+        vehicles(year: Int, category: String): [Vehicle!]! @glSkipOnServer(batch: false)
+      }
+      type Vehicle {
+        id: String
+      }
+    ''');
+    final serializer = SpringServerSerializer(g);
+    final ctrl = g.controllers[g.controllerMappingName('User')]!;
+    final result = serializer.serializeController(ctrl, 'com.example');
+    print(result);
   });
 }
