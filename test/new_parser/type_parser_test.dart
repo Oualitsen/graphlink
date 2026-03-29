@@ -85,6 +85,14 @@ void main() {
       expect(field.type.firstType.nullable, false);
     });
 
+    test('field with empty parentheses throws', () {
+      expect(
+        () => GLParser()
+            .parse('type User { vehicles(): [Vehicle!]! }', validate: false),
+        throwsA(isA<ParseException>()),
+      );
+    });
+
     test('field with argument', () {
       final parser = GLParser();
       parser.parse('type User { posts(limit: Int): [String] }',

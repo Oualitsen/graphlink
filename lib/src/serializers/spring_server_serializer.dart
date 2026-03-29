@@ -42,6 +42,7 @@ class SpringServerSerializer {
             JavaSerializer(grammar,
                 inputsCheckForNulls: true,
                 typesCheckForNulls: grammar.mode == CodeGenerationMode.client) {
+    _validateFieldArguments();
     _annotateRepositories();
     _annotateControllers();
     grammar.convertAnnotationsToDecorators(
@@ -61,6 +62,34 @@ class SpringServerSerializer {
     return grammar.services.values.map((service) {
       return serializeService(service, importPrefix);
     }).toList();
+  }
+
+  void _validateFieldArguments() {
+    final rootTypeNames =
+        GLQueryType.values.map((e) => grammar.schema.getByQueryType(e)).toSet();
+    grammar.types.values
+        .where((type) => !rootTypeNames.contains(type.token))
+        .forEach((type) {
+      for (var field in type.fields) {
+        if (field.arguments.isEmpty) continue;
+        final skipOnServer = field.getDirectiveByName(glSkipOnServer);
+        if (skipOnServer == null) {
+          throw ParseException(
+            "Field '${field.name}' on type '${type.token}' has arguments but is missing $glSkipOnServer — "
+            "add $glSkipOnServer(batch: false) to generate a @SchemaMapping for it",
+            info: field.name,
+          );
+        }
+        final batch = skipOnServer.getArgValue(glBatch) as bool?;
+        if (batch == true) {
+          throw ParseException(
+            "Field '${field.name}' on type '${type.token}' has arguments and cannot use @BatchMapping — "
+            "change to $glSkipOnServer(batch: false) to generate a @SchemaMapping instead",
+            info: field.name,
+          );
+        }
+      }
+    });
   }
 
   void _annotateRepositories() {
@@ -249,7 +278,9 @@ class SpringServerSerializer {
       '',
       ...mappings
           .map((m) => serializeMappingImplMethodHeader(m, service,
-              skipAnnotation: true, skipQualifier: true))
+              skipAnnotation: true,
+              skipQualifier: true,
+              annotateArguments: false))
           .map((e) => "${e};")
     ]));
     return buffer.toString();
@@ -355,6 +386,9 @@ class SpringServerSerializer {
 
     final statement =
         StringBuffer('return $serviceInstanceName.${mapping.key}(value');
+    for (var arg in mapping.field.arguments) {
+      statement.write(', ${arg.tokenInfo}');
+    }
     if (injectDataFetching) {
       statement.write(', dataFetchingEnvironment');
     }
@@ -431,7 +465,9 @@ Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(serializer.se
 
   String serializeMappingImplMethodHeader(
       GLSchemaMapping mapping, GLToken context,
-      {bool skipAnnotation = false, bool skipQualifier = false}) {
+      {bool skipAnnotation = false,
+      bool skipQualifier = false,
+      bool annotateArguments = true}) {
     var buffer = StringBuffer();
     if (!skipAnnotation) {
       buffer.writeln(_getAnnotation(mapping, context));
@@ -441,6 +477,15 @@ Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(serializer.se
     }
     buffer.write(
         "${_getReturnType(mapping, context)} ${mapping.key}(${_getMappingArgument(mapping, context)}");
+    for (var arg in mapping.field.arguments) {
+      final argType = serializer.serializeType(arg.type, false);
+      if (annotateArguments) {
+        context.addImport(SpringImports.gqlArgument);
+        buffer.write(', @Argument $argType ${arg.tokenInfo}');
+      } else {
+        buffer.write(', $argType ${arg.tokenInfo}');
+      }
+    }
     if (injectDataFetching) {
       context.addImport(SpringImports.gqlDataFetchingEnvironment);
       buffer.write(', DataFetchingEnvironment dataFetchingEnvironment)');
