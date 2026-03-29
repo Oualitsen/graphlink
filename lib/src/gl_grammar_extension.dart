@@ -24,6 +24,15 @@ import 'package:graphlink/src/ui/flutter/gl_type_view.dart';
 import 'package:graphlink/src/utils.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 
+/// Deterministic djb2 hash — same input always produces the same output.
+int _djb2(String s) {
+  int hash = 5381;
+  for (final c in s.codeUnits) {
+    hash = (((hash << 5) + hash) + c) & 0xFFFFFFFF;
+  }
+  return hash;
+}
+
 const String allFieldsFragmentsFileName = "allFieldsFragments";
 
 const allFields = '_all_fields';
@@ -871,7 +880,17 @@ extension GLGrammarExtension on GLParser {
         .toSet()
         .toList();
     keys.sort();
-    return keys.join("_");
+
+    final pascalKeys =
+        keys.map((k) => k.isEmpty ? k : k[0].toUpperCase() + k.substring(1));
+
+    if (keys.length <= 3) {
+      return pascalKeys.join();
+    }
+
+    final prefix = pascalKeys.take(3).join();
+    final hash = _djb2(keys.join('_')).toRadixString(36);
+    return '${prefix}_$hash';
   }
 
   GeneratedTypeName _generateName(String originalName,
