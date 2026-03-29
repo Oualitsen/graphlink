@@ -77,12 +77,8 @@ type Subscription {
 ''';
     g.parse(text);
 
-    var result = await generateJavaClientClasses(
-        g, getConfig(g), DateTime.now(),
+    await generateJavaClientClasses(g, getConfig(g), DateTime.now(),
         pack: 'org.gqlclient.generated');
-    result.forEach((text) {
-      print(text);
-    });
   });
 
   test("GraphLinkJsonEncoder serialization", () {

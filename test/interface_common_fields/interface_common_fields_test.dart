@@ -15,7 +15,7 @@ void main() async {
 
     g.parse(text);
 
-    var basicEntityInterface = g.projectedInterfaces["BasicEntity_id"]!;
+    var basicEntityInterface = g.projectedInterfaces["BasicEntity_Id"]!;
     expect(basicEntityInterface.fieldNames.length, 1);
     expect(basicEntityInterface.fieldNames, containsAll(["id"]));
     expect(basicEntityInterface.implementations.length, 2);

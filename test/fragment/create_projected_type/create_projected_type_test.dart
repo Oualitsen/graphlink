@@ -213,14 +213,14 @@ void main() async {
 ''');
 
     var serializer = DartSerializer(g);
-    var iface1 = g.projectedInterfaces['BasicEntity_creationDate_id']!;
-    var iface2 = g.projectedInterfaces['BasicEntity_id']!;
+    var iface1 = g.projectedInterfaces['BasicEntity_CreationDateId']!;
+    var iface2 = g.projectedInterfaces['BasicEntity_Id']!;
     expect(
         iface1.implementations.map((e) => e.token),
         containsAll(
-            ['Person_creationDate_firstName_id', 'Car_creationDate_id_model']));
+            ['Person_CreationDateFirstNameId', 'Car_CreationDateIdModel']));
     expect(iface2.implementations.map((e) => e.token),
-        containsAll(['Person_firstName_id_lastName']));
+        containsAll(['Person_FirstNameIdLastName']));
     for (var pt in [
       ...g.projectedTypes.values,
       ...g.projectedInterfaces.values

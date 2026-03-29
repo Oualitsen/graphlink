@@ -12,6 +12,6 @@ void main() {
     g.parse(text);
 
     expect(g.projectedTypes.keys,
-        containsAll(["Cat", "Dog_age_ownerName", "Animal"]));
+        containsAll(["Cat", "Dog_AgeOwnerName", "Animal"]));
   });
 }
