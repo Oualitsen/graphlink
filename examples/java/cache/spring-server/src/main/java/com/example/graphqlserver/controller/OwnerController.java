@@ -3,6 +3,7 @@ package com.example.graphqlserver.controller;
 import com.example.graphqlserver.input.CreateOwnerInput;
 import com.example.graphqlserver.model.Owner;
 import com.example.graphqlserver.service.DataStore;
+import com.example.graphqlserver.service.SubscriptionPublisher;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
@@ -12,9 +13,11 @@ import org.springframework.stereotype.Controller;
 public class OwnerController {
 
     private final DataStore dataStore;
+    private final SubscriptionPublisher publisher;
 
-    public OwnerController(DataStore dataStore) {
+    public OwnerController(DataStore dataStore, SubscriptionPublisher publisher) {
         this.dataStore = dataStore;
+        this.publisher = publisher;
     }
 
     @QueryMapping
@@ -25,6 +28,8 @@ public class OwnerController {
 
     @MutationMapping
     public Owner createOwner(@Argument CreateOwnerInput input) {
-        return dataStore.saveOwner(input.name(), input.email());
+        Owner owner = dataStore.saveOwner(input.name(), input.email());
+        publisher.publishOwner(owner);
+        return owner;
     }
 }

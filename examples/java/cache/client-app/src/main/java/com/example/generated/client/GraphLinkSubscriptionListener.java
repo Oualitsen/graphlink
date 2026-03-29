@@ -4,16 +4,10 @@
 // Pub.dev https://pub.dev/packages/graphlink
 // ignore_for_file: camel_case_types, constant_identifier_names, unused_import, non_constant_identifier_names
 
-package com.example.generated.interfaces;
-import java.util.function.Consumer;
-
-
-public interface GraphLinkGraphLinkWebSocketAdapter {
-      void connect(Consumer<Void> onConnect, Consumer<Throwable> onFailure);
-      void onMessage(Consumer<String> message);
-      void sendMessage(String message);
-      void close();
+package com.example.generated.client;
+public interface GraphLinkSubscriptionListener<T> {
+  void onMessage(T response) ;
+  default void  onComplete(){}
+  default void  onError(GraphLinkException error) {}
 }
-
-
 

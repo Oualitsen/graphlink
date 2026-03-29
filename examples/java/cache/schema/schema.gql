@@ -40,6 +40,11 @@ type Mutation {
   createCar(input: CreateCarInput!): Car! @glCacheInvalidate(tags: ["cars"])
 }
 
+type Subscription {
+  onCarCreated: Car!
+  onOwnerCreated: Owner!
+}
+
 query getCarAndOwner($carId: ID!, $ownerId: ID!) @glCache(ttl: 60, tags: ["data"]) {
   car: getCar(id: $carId) @glCache(ttl: 60, tags: ["cars"]) {
     ... _all_fields
