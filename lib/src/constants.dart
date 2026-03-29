@@ -28,7 +28,6 @@ const clientTypes = {
 };
 const clientInterfaces = {
   'GraphLinkSubscriptionErrorMessageBase',
-  'GraphLinkGraphLinkWebSocketAdapter'
 };
 
 const javaClientAdapterNoParamSync = '''
@@ -71,12 +70,27 @@ scalar Consumer ${glExternal}(glClass: "Consumer<String>", glImport: "java.util.
 scalar VoidConsumer ${glExternal}(glClass: "Consumer<Void>", glImport: "java.util.function.Consumer")
 scalar ThrowableConsumer ${glExternal}(glClass: "Consumer<Throwable>", glImport: "java.util.function.Consumer")
 scalar GraphLinkException ${glExternal}(glClass: "GraphLinkException")
+''';
 
-interface GraphLinkGraphLinkWebSocketAdapter ${glInterfaceFieldAsProperties} ${glInternal} {
-   connect(onConnect: VoidConsumer!, onFailure: ThrowableConsumer): void!
-   onMessage(message: Consumer!): void!
-   sendMessage(message: String!): void!
-   close: void!
+const javaWebSocketAdapter = '''
+import java.util.Map;
+import java.util.function.Consumer;
+
+public interface GraphLinkWebSocketAdapter {
+
+   void connect(Runnable onConnect, Consumer<Throwable> onFailure);
+
+   void setMessageListener(Consumer<String> listener);
+
+   void sendMessage(String message);
+
+   void close();
+
+   // Override to pass auth token or any connection metadata sent in connection_init
+   default Map<String, Object> connectionInitPayload() { return null; }
+
+   // Fires after a successful reconnect; used by the handler to re-subscribe
+   default void setReconnectListener(Runnable onReconnect) {}
 }
 ''';
 
@@ -156,6 +170,8 @@ class JavaImports {
   static const reentrantLock = "java.util.concurrent.locks.ReentrantLock";
   static const treeMap = "java.util.TreeMap";
   static const function = "java.util.function.Function";
+  static const supplier = "java.util.function.Supplier";
+  static const consumer = "java.util.function.Consumer";
   static const set = "java.util.Set";
   static const hashSet = "java.util.HashSet";
 }

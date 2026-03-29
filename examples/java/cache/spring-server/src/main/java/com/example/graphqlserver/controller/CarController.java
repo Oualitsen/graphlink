@@ -3,6 +3,7 @@ package com.example.graphqlserver.controller;
 import com.example.graphqlserver.input.CreateCarInput;
 import com.example.graphqlserver.model.Car;
 import com.example.graphqlserver.service.DataStore;
+import com.example.graphqlserver.service.SubscriptionPublisher;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
@@ -12,9 +13,11 @@ import org.springframework.stereotype.Controller;
 public class CarController {
 
     private final DataStore dataStore;
+    private final SubscriptionPublisher publisher;
 
-    public CarController(DataStore dataStore) {
+    public CarController(DataStore dataStore, SubscriptionPublisher publisher) {
         this.dataStore = dataStore;
+        this.publisher = publisher;
     }
 
     @QueryMapping
@@ -37,6 +40,8 @@ public class CarController {
 
     @MutationMapping
     public Car createCar(@Argument CreateCarInput input) {
-        return dataStore.saveCar(input.make(), input.model(), input.year(), input.ownerId());
+        Car car = dataStore.saveCar(input.make(), input.model(), input.year(), input.ownerId());
+        publisher.publishCar(car);
+        return car;
     }
 }

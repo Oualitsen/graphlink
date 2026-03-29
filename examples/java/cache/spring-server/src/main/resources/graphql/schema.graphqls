@@ -38,3 +38,8 @@ type Mutation {
     createOwner(input: CreateOwnerInput!): Owner!
     createCar(input: CreateCarInput!): Car!
 }
+
+type Subscription {
+    onCarCreated: Car!
+    onOwnerCreated: Owner!
+}

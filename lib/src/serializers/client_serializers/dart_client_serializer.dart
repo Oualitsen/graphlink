@@ -1,5 +1,6 @@
 import 'package:graphlink/src/cache_store_dart.dart';
 import 'package:graphlink/src/code_gen_utils.dart';
+import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/gl_grammar_cache_extension.dart';
@@ -16,14 +17,14 @@ const _inMemorycacheStoreClassName = 'InMemoryGraphLinkCacheStore';
 class DartClientSerializer extends GLClientSerilaizer {
   final GLParser _parser;
   final bool generateAdapters;
-  final String httpAdapter;
+  final DartHttpAdapter httpAdapter;
   final codeGenUtils = DartCodeGenUtils();
 
   DartClientSerializer(this._parser, GLSerializer dartSerializer,
-      {this.generateAdapters = true, this.httpAdapter = 'http'})
+      {this.generateAdapters = true, this.httpAdapter = DartHttpAdapter.http})
       : super(dartSerializer);
 
-  bool get _useDio => httpAdapter == 'dio';
+  bool get _useDio => httpAdapter == DartHttpAdapter.dio;
 
   @override
   String generateClient(String importPrefix) {
@@ -239,22 +240,18 @@ class DartClientSerializer extends GLClientSerilaizer {
 
   String _withHttpConstructor() {
     final wsParams = _parser.hasSubscriptions
-        ? 'required String wsUrl,\n  Future<String?> Function()? wsTokenProvider,'
+        ? 'required String wsUrl,\n  Future<Map<String, String>?> Function()? wsHeadersProvider,'
         : '';
     final wsArg = _parser.hasSubscriptions
-        ? 'wsAdapter: DefaultGraphLinkWebSocketAdapter(url: wsUrl, tokenProvider: wsTokenProvider),'
+        ? 'wsAdapter: DefaultGraphLinkWebSocketAdapter(url: wsUrl, headersProvider: wsHeadersProvider),'
         : '';
     final adapterClass = _useDio ? 'GraphLinkDioAdapter' : 'GraphLinkHttpAdapter';
-    final extraParams = _useDio ? '' : 'Map<String, String> httpHeaders = const {},';
-    final adapterArgs = _useDio
-        ? 'url: url, tokenProvider: tokenProvider'
-        : 'url: url, tokenProvider: tokenProvider, headers: httpHeaders';
+    final adapterArgs = 'url: url, headersProvider: headersProvider';
     return '''
 GraphLinkClient.withHttp({
   required String url,
   $wsParams
-  Future<String?> Function()? tokenProvider,
-  $extraParams
+  Future<Map<String, String>?> Function()? headersProvider,
   $_cacheStoreClassName? store,
 }) : this(
   adapter: $adapterClass($adapterArgs).call,
@@ -269,11 +266,11 @@ GraphLinkClient.withHttp({
 GraphLinkClient.fromUrl({
   required $adapterDecl,
   required String wsUrl,
-  Future<String?> Function()? wsTokenProvider,
+  Future<Map<String, String>?> Function()? wsHeadersProvider,
   $_cacheStoreClassName? store,
 }) : this(
   adapter: adapter,
-  wsAdapter: DefaultGraphLinkWebSocketAdapter(url: wsUrl, tokenProvider: wsTokenProvider),
+  wsAdapter: DefaultGraphLinkWebSocketAdapter(url: wsUrl, headersProvider: wsHeadersProvider),
   store: store,
 );''';
   }
@@ -651,21 +648,18 @@ import 'package:http/http.dart' as http;
 
 class GraphLinkHttpAdapter {
   final String url;
-  final Future<String?> Function()? tokenProvider;
-  final Map<String, String> headers;
+  final Future<Map<String, String>?> Function()? headersProvider;
 
   GraphLinkHttpAdapter({
     required this.url,
-    this.tokenProvider,
-    this.headers = const {},
+    this.headersProvider,
   });
 
   Future<String> call(String payload$extraParam) async {
-    final token = await tokenProvider?.call();
+    final extraHeaders = await headersProvider?.call();
     final requestHeaders = {
       'Content-Type': 'application/json',
-      ...headers,
-      if (token != null) 'Authorization': 'Bearer \\\$token',
+      if (extraHeaders != null) ...extraHeaders,
     };
     final response = await http.post(
       Uri.parse(url),
@@ -692,13 +686,13 @@ class GraphLinkDioAdapter {
   GraphLinkDioAdapter({
     required this.url,
     Dio? dio,
-    Future<String?> Function()? tokenProvider,
+    Future<Map<String, String>?> Function()? headersProvider,
     List<Interceptor> interceptors = const [],
     BaseOptions? options,
   }) : dio = dio ?? Dio(options ?? BaseOptions(contentType: 'application/json')) {
     if (dio == null) {
-      if (tokenProvider != null) {
-        this.dio.interceptors.add(_TokenInterceptor(tokenProvider));
+      if (headersProvider != null) {
+        this.dio.interceptors.add(_HeadersInterceptor(headersProvider));
       }
       this.dio.interceptors.addAll(interceptors);
     }
@@ -711,16 +705,16 @@ class GraphLinkDioAdapter {
   }
 }
 
-class _TokenInterceptor extends Interceptor {
-  final Future<String?> Function() _tokenProvider;
+class _HeadersInterceptor extends Interceptor {
+  final Future<Map<String, String>?> Function() _headersProvider;
 
-  _TokenInterceptor(this._tokenProvider);
+  _HeadersInterceptor(this._headersProvider);
 
   @override
   Future<void> onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
-    final token = await _tokenProvider();
-    if (token != null) {
-      options.headers['Authorization'] = 'Bearer \\\$token';
+    final headers = await _headersProvider();
+    if (headers != null) {
+      options.headers.addAll(headers);
     }
     handler.next(options);
   }
@@ -1009,7 +1003,7 @@ abstract class GraphLinkWebSocketAdapter {
 const _defaultWebSocketAdapter = """
 class DefaultGraphLinkWebSocketAdapter extends GraphLinkWebSocketAdapter {
   final String url;
-  final Future<String?> Function()? tokenProvider;
+  final Future<Map<String, String>?> Function()? headersProvider;
   final Duration initialReconnectDelay;
   final Duration maxReconnectDelay;
 
@@ -1021,7 +1015,7 @@ class DefaultGraphLinkWebSocketAdapter extends GraphLinkWebSocketAdapter {
 
   DefaultGraphLinkWebSocketAdapter({
     required this.url,
-    this.tokenProvider,
+    this.headersProvider,
     this.initialReconnectDelay = const Duration(seconds: 1),
     this.maxReconnectDelay = const Duration(seconds: 30),
   });
@@ -1072,9 +1066,9 @@ class DefaultGraphLinkWebSocketAdapter extends GraphLinkWebSocketAdapter {
 
   @override
   Future<Map<String, dynamic>?> connectionInitPayload() async {
-    final token = await tokenProvider?.call();
-    if (token == null) return null;
-    return {'Authorization': 'Bearer \$token'};
+    final headers = await headersProvider?.call();
+    if (headers == null || headers.isEmpty) return null;
+    return headers;
   }
 
   @override

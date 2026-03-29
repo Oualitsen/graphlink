@@ -297,7 +297,7 @@ String? _buildExtraGql(GLParser parser, GeneratorConfig config) {
       getClientObjects("Java"),
       javaJsonEncoderDecorder,
       javaClientAdapterNoParamSync,
-      javaGraphLinkWebSocketAdapter,
+      javaGraphLinkWebSocketAdapter,  // scalars only now, no interface
     ].join();
   }
   return getClientObjects("dart");
@@ -339,7 +339,7 @@ Future<Set<String>> generateDartClientClasses(
   final serializer = DartSerializer(parser, generateJsonMethods: true);
   final clientSerializer = DartClientSerializer(parser, serializer,
       generateAdapters: config.clientConfig?.dart?.generateAdapters ?? true,
-      httpAdapter: config.clientConfig?.dart?.httpAdapter ?? 'http');
+      httpAdapter: config.clientConfig?.dart?.httpAdapter ?? DartHttpAdapter.http);
   final List<Future<File>> futures = [];
   final destinationDir = config.outputDir;
   final packageName = config.clientConfig?.dart?.packageName;
@@ -413,17 +413,19 @@ Future<Set<String>> generateDartClientClasses(
     futures.add(r);
 
     if (config.clientConfig?.dart?.generateAdapters ?? true) {
-      final useDio = (config.clientConfig?.dart?.httpAdapter ?? 'http') == 'dio';
-      futures.add(writeToFile(
-          data: useDio
-              ? clientSerializer.generateDioAdapterFile()
-              : clientSerializer.generateHttpAdapterFile(),
-          fileName: useDio
-              ? 'graph_link_dio_adapter${clientSerializer.fileExtension}'
-              : 'graph_link_http_adapter${clientSerializer.fileExtension}',
-          subdir: 'client',
-          imports: [],
-          destinationDir: destinationDir));
+      final httpAdapter = config.clientConfig?.dart?.httpAdapter ?? DartHttpAdapter.http;
+      if (httpAdapter != DartHttpAdapter.none) {
+        futures.add(writeToFile(
+            data: httpAdapter == DartHttpAdapter.dio
+                ? clientSerializer.generateDioAdapterFile()
+                : clientSerializer.generateHttpAdapterFile(),
+            fileName: httpAdapter == DartHttpAdapter.dio
+                ? 'graph_link_dio_adapter${clientSerializer.fileExtension}'
+                : 'graph_link_http_adapter${clientSerializer.fileExtension}',
+            subdir: 'client',
+            imports: [],
+            destinationDir: destinationDir));
+      }
       if (parser.hasSubscriptions) {
         futures.add(writeToFile(
             data: clientSerializer.generateDefaultWebSocketAdapterFile(),
@@ -505,8 +507,11 @@ Future<Set<String>> generateJavaClientClasses(
     futures.add(r);
   });
 
+  final wsAdapter = config.clientConfig?.java?.wsAdapter ?? JavaWsAdapter.java11;
+  final jsonCodec = config.clientConfig?.java?.jsonCodec ?? JavaJsonCodec.jackson;
+
   if (!noClient) {
-    String client = clientSerializer.generateClient(prefix);
+    String client = clientSerializer.generateClient(prefix, hasDefaultAdapters: wsAdapter != JavaWsAdapter.none);
     var r = writeToFile(
       data: client,
       fileName: 'GraphLinkClient${clientSerializer.fileExtension}',
@@ -518,8 +523,8 @@ Future<Set<String>> generateJavaClientClasses(
     futures.add(r);
 
     futures.add(writeToFile(
-      data: clientSerializer.generateResolverBaseFile(prefix),
-      fileName: 'ResolverBase.java',
+      data: clientSerializer.generateGraphLinkResolverBaseFile(prefix),
+      fileName: 'GraphLinkResolverBase.java',
       subdir: 'client',
       imports: [],
       destinationDir: destinationDir,
@@ -588,7 +593,39 @@ Future<Set<String>> generateJavaClientClasses(
       packageName: packageName,
     ));
 
+    if (wsAdapter != JavaWsAdapter.none) {
+      futures.add(writeToFile(
+        data: clientSerializer.generateDefaultClientAdapterFile(wsAdapter.name, prefix),
+        fileName: 'DefaultGraphLinkClientAdapter.java',
+        subdir: 'client',
+        imports: [],
+        destinationDir: destinationDir,
+        packageName: packageName,
+      ));
+    }
+
+    if (jsonCodec != JavaJsonCodec.none) {
+      futures.add(writeToFile(
+        data: clientSerializer.generateJsonCodecFile(jsonCodec.name, prefix),
+        fileName: jsonCodec == JavaJsonCodec.jackson
+            ? 'JacksonGraphLinkJsonCodec.java'
+            : 'GsonGraphLinkJsonCodec.java',
+        subdir: 'client',
+        imports: [],
+        destinationDir: destinationDir,
+        packageName: packageName,
+      ));
+    }
+
     if (parser.hasSubscriptions) {
+      futures.add(writeToFile(
+        data: clientSerializer.generateWebSocketAdapterFile(),
+        fileName: 'GraphLinkWebSocketAdapter.java',
+        subdir: 'interfaces',
+        imports: [],
+        destinationDir: destinationDir,
+        packageName: packageName,
+      ));
       futures.add(writeToFile(
         data: clientSerializer.generateSubscriptionListenerFile(),
         fileName: 'GraphLinkSubscriptionListener.java',
@@ -606,13 +643,23 @@ Future<Set<String>> generateJavaClientClasses(
         packageName: packageName,
       ));
       futures.add(writeToFile(
-        data: clientSerializer.generateSubscriptionHandlerFile(prefix),
-        fileName: 'SubscriptionHandler.java',
+        data: clientSerializer.generateGraphLinkSubscriptionHandlerFile(prefix),
+        fileName: 'GraphLinkSubscriptionHandler.java',
         subdir: 'client',
         imports: [],
         destinationDir: destinationDir,
         packageName: packageName,
       ));
+      if (wsAdapter != JavaWsAdapter.none) {
+        futures.add(writeToFile(
+          data: clientSerializer.generateDefaultWebSocketAdapterFile(wsAdapter.name, prefix),
+          fileName: 'DefaultGraphLinkWebSocketAdapter.java',
+          subdir: 'client',
+          imports: [],
+          destinationDir: destinationDir,
+          packageName: packageName,
+        ));
+      }
     }
   }
   var result = await Future.wait(futures);

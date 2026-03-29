@@ -25,20 +25,21 @@ import com.example.generated.types.GetCarsCountResponse;
 import com.example.generated.types.GetCarNameResponse;
 import com.example.generated.types.CreateOwnerResponse;
 import com.example.generated.types.CreateCarResponse;
+import com.example.generated.types.OnCarCreatedResponse;
+import com.example.generated.types.OnOwnerCreatedResponse;
 import com.example.generated.inputs.CreateOwnerInput;
 import com.example.generated.inputs.CreateCarInput;
 import com.example.generated.interfaces.GraphLinkJsonEncoder;
 import com.example.generated.interfaces.GraphLinkJsonDecoder;
 import com.example.generated.interfaces.GraphLinkClientAdapter;
-import com.example.generated.interfaces.GraphLinkGraphLinkWebSocketAdapter;
 
-public class ResolverBase {
+public class GraphLinkResolverBase {
    protected final Map<String, String> fragmentMap;
    protected final GraphLinkCacheStore store;
    protected final GraphLinkJsonEncoder encoder;
    protected final GraphLinkJsonDecoder decoder;
    private final Map<String, ReentrantLock> tagLocks = new HashMap<>();
-   ResolverBase(Map<String, String> fragmentMap, GraphLinkCacheStore store, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder) {
+   GraphLinkResolverBase(Map<String, String> fragmentMap, GraphLinkCacheStore store, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder) {
       this.fragmentMap = fragmentMap;
       this.store = store;
       this.encoder = encoder;
