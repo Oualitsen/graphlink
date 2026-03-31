@@ -107,6 +107,8 @@
   - Project renamed to **GraphLink** (package: `graphlink`, CLI: `glink`)
   - Migrating from `retrofit_graphql`: update your `pubspec.yaml` and `build.yaml` references from `retrofit_graphql` to `graphlink`
 
+
+
 ## 4.2.0 - 2026-03-22
   ### Client-side caching (Dart & Java)
   - New `@glCache(ttl, tags, staleIfOffline)` directive — cache any query or field with a TTL and optional tag groups
@@ -120,3 +122,17 @@
   ### Configuration
   - New `config.json` CLI-based configuration (alternative to `build.yaml`) — use with `dart run lib/generate.dart`
   - `clientConfig.java` block for Java-specific options (`packageName`, `immutableInputFields`, `immutableTypeFields`, etc.)
+
+## 4.3.0 - 2026-03-31
+  ### New features
+  - New built-in GraphQL parser — replaces `petit_parser` dependency (removed)
+  - Default type adapters for Dart client serializer
+  - Default type adapters for Java client serializer
+  - Enum initial/default values support
+  - Spring Boot: schema mapping methods now support arguments
+
+  ### Fixes & improvements
+  - Code generation is now ~4x faster
+  - Fixed FNV1a hash JS compatibility in Dart cache store
+  - Internal unique-name refactor for more consistent generated class names
+  - Updated Java server example
