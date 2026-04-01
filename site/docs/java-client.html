@@ -4,21 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Java Client — GraphLink Docs</title>
-  <meta name="description" content="Use the generated GraphLink Java client for type-safe GraphQL queries with no generics, no casting, and no TypeReference boilerplate. Works with Jackson or any JSON library.">
+  <meta name="description" content="Use the generated GraphLink Java client for type-safe GraphQL queries. Generated Java 11 and OkHttp adapters, Jackson/Gson codecs, convenience constructors — from one-liner to full control.">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://graphlink.dev/docs/java-client.html">
   <meta property="og:site_name" content="GraphLink">
   <meta property="og:title" content="Java Client — GraphLink Docs">
-  <meta property="og:description" content="Generated Java GraphQL client with no generics at the call site. No TypeReference, no casting — just client.queries.getUser(id).getUser().">
+  <meta property="og:description" content="Generated Java GraphQL client with no generics. Generated Java 11/OkHttp adapters, Jackson/Gson codecs, and convenience constructors — new GraphLinkClient(url) is all you need.">
   <meta property="og:image" content="https://graphlink.dev/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Java Client — GraphLink Docs">
-  <meta name="twitter:description" content="Java GraphQL client with no generics at the call site. No TypeReference boilerplate — fully typed responses from a generated client.">
+  <meta name="twitter:description" content="Generated Java GraphQL client — no generics, no TypeReference. Generated Java 11/OkHttp adapters and Jackson codec mean a one-liner new GraphLinkClient(url) is enough.">
   <meta name="twitter:image" content="https://graphlink.dev/og-image.png">
   <link rel="canonical" href="https://graphlink.dev/docs/java-client.html">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="alternate" type="text/plain" title="GraphLink for LLMs" href="/llms.txt">
-  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/styles.css?v=4.3.0">
   <link rel="stylesheet" href="../css/docs.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
   <script type="application/ld+json">
@@ -108,101 +108,106 @@
     <h1 class="doc-title">Java Client</h1>
     <p class="doc-lead">Type-safe. No generics. No casting. Works with any JSON library.</p>
 
-    <h2>Three generated interfaces</h2>
-    <p>Instead of hardcoding a dependency on Jackson, Gson, or OkHttp, GraphLink generates three <code>@FunctionalInterface</code> types that you implement with lambdas. This means you choose your JSON library at construction time, and the generated code imports nothing external.</p>
+    <h2>Generated adapters</h2>
+    <p>GraphLink generates concrete adapter classes into your <code>client/</code> folder — no external GraphLink runtime, no boilerplate. Which adapters are generated is controlled by two options in <code>config.json</code>:</p>
 
     <div class="doc-code">
       <div class="doc-code-header">
-        <span class="doc-code-label">generated/interfaces/GraphLinkClientAdapter.java</span>
-        <span class="doc-code-lang">Java</span>
+        <span class="doc-code-label">config.json — adapter options</span>
+        <span class="doc-code-lang">JSON</span>
       </div>
-      <pre><code class="language-java">// Executes an HTTP request.
-// Receives the full JSON body as a String, returns the JSON response body as a String.
-@FunctionalInterface
-public interface GraphLinkClientAdapter {
-    String execute(String payload);
+      <pre><code class="language-json">{
+  "clientConfig": {
+    "java": {
+      "packageName": "com.example.generated",
+      "wsAdapter": "java11",
+      "jsonCodec": "jackson"
+    }
+  }
 }</code></pre>
     </div>
 
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">generated/interfaces/GraphLinkJsonEncoder.java &amp; GraphLinkJsonDecoder.java</span>
-        <span class="doc-code-lang">Java</span>
+    <p><strong><code>wsAdapter</code></strong> — controls which WebSocket adapter is generated:</p>
+    <ul>
+      <li><code>"java11"</code> (default) — generates <code>DefaultGraphLinkWebSocketAdapter</code> using Java 11's built-in <code>java.net.http.WebSocket</code>. Zero external dependencies. Supports exponential-backoff auto-reconnect, an optional <code>Supplier&lt;Map&lt;String,String&gt;&gt;</code> for auth headers, and automatically forwards those headers as the <code>connection_init</code> payload so your server can authenticate the WebSocket handshake.</li>
+      <li><code>"okhttp"</code> — generates the same interface implemented with OkHttp's WebSocket client instead. Choose this if OkHttp is already in your dependency tree.</li>
+      <li><code>"none"</code> — no WebSocket adapter is generated. Use this if you do not need subscriptions.</li>
+    </ul>
+
+    <p><strong><code>jsonCodec</code></strong> — controls which JSON codec is generated:</p>
+    <ul>
+      <li><code>"jackson"</code> (default) — generates <code>JacksonGraphLinkJsonCodec</code> implementing both <code>GraphLinkJsonEncoder</code> and <code>GraphLinkJsonDecoder</code>.</li>
+      <li><code>"gson"</code> — generates <code>GsonGraphLinkJsonCodec</code> instead.</li>
+      <li><code>"none"</code> — no codec class is generated; supply your own lambdas.</li>
+    </ul>
+
+    <p>Additionally, <code>DefaultGraphLinkClientAdapter</code> is always generated (when <code>wsAdapter</code> is not <code>"none"</code>). It uses Java 11's <code>HttpClient</code> for HTTP requests and accepts the same optional headers provider as the WebSocket adapter.</p>
+
+    <h2>Initializing the client</h2>
+    <p>The generated <code>GraphLinkClient</code> ships with several constructors that progressively add control. Start with the simplest one that fits your needs:</p>
+
+    <div class="doc-tabgroup">
+      <div class="doc-tabs">
+        <button class="doc-tab active">one-liner</button>
+        <button class="doc-tab">with auth headers</button>
+        <button class="doc-tab">custom codec</button>
+        <button class="doc-tab">full control</button>
       </div>
-      <pre><code class="language-java">// Serializes a Map/Object to a JSON string
-@FunctionalInterface
-public interface GraphLinkJsonEncoder {
-    String encode(Object json);
-}
+      <div class="doc-tab-content active">
+        <pre><code class="language-java">import com.example.generated.client.GraphLinkClient;
 
-// Deserializes a JSON string to Map&lt;String, Object&gt;
-@FunctionalInterface
-public interface GraphLinkJsonDecoder {
-    Map&lt;String, Object&gt; decode(String json);
-}</code></pre>
-    </div>
-
-    <p>All three are <code>@FunctionalInterface</code>, so they can be assigned directly from lambdas. There is no base class to extend and no annotation processor to run.</p>
-
-    <h2>Setting up with Jackson</h2>
-    <p>Jackson is the most common choice. Here is the complete wiring from start to finish:</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">Main.java — Jackson setup</span>
-        <span class="doc-code-lang">Java</span>
+// Simplest setup — Jackson + Java 11 HttpClient + auto-derives wsUrl.
+// wsUrl is derived by replacing "http" with "ws" in the provided URL.
+GraphLinkClient client = new GraphLinkClient("http://localhost:8080/graphql");</code></pre>
       </div>
-      <pre><code class="language-java">import com.fasterxml.jackson.databind.ObjectMapper;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+      <div class="doc-tab-content">
+        <pre><code class="language-java">// Dynamic auth headers on every request — token is fetched fresh each time.
+Supplier&lt;Map&lt;String, String&gt;&gt; headers = () -> Map.of(
+    "Authorization", "Bearer " + tokenService.getToken()
+);
 
-ObjectMapper mapper = new ObjectMapper();
-HttpClient http = HttpClient.newHttpClient();
+// wsUrl auto-derived; both HTTP and WebSocket adapters receive the headers.
+GraphLinkClient client = new GraphLinkClient(
+    "http://localhost:8080/graphql",
+    headers,
+    new JacksonGraphLinkJsonCodec(),
+    new JacksonGraphLinkJsonCodec()
+);</code></pre>
+      </div>
+      <div class="doc-tab-content">
+        <pre><code class="language-java">// Use a different JSON library — e.g. Gson.
+GraphLinkJsonEncoder encoder = obj -> gson.toJson(obj);
+GraphLinkJsonDecoder decoder = json -> gson.fromJson(json, Map.class);
 
-// Encode: Object (Map) -> JSON string
+// Explicit wsUrl + custom codec.
+GraphLinkClient client = new GraphLinkClient(
+    "http://localhost:8080/graphql",
+    "ws://localhost:8080/graphql",
+    encoder,
+    decoder
+);</code></pre>
+      </div>
+      <div class="doc-tab-content">
+        <pre><code class="language-java">// Full manual wiring — bring your own adapter, encoder, decoder, and cache store.
+GraphLinkClientAdapter adapter = payload -> { /* custom HTTP logic */ };
 GraphLinkJsonEncoder encoder = obj -> mapper.writeValueAsString(obj);
-
-// Decode: JSON string -> Map&lt;String, Object&gt;
 GraphLinkJsonDecoder decoder = json -> mapper.readValue(json, Map.class);
+GraphLinkWebSocketAdapter wsAdapter = new DefaultGraphLinkWebSocketAdapter(
+    "ws://localhost:8080/graphql"
+);
 
-// HTTP adapter: JSON string -> JSON string
-GraphLinkClientAdapter adapter = payload -> {
-    HttpRequest request = HttpRequest.newBuilder()
-        .uri(URI.create("http://localhost:8080/graphql"))
-        .header("Content-Type", "application/json")
-        .POST(HttpRequest.BodyPublishers.ofString(payload))
-        .build();
-    HttpResponse&lt;String&gt; response =
-        http.send(request, HttpResponse.BodyHandlers.ofString());
-    return response.body();
-};</code></pre>
+GraphLinkClient client = new GraphLinkClient(
+    adapter, encoder, decoder, myCacheStore, wsAdapter
+);</code></pre>
+      </div>
     </div>
 
     <div class="callout callout-info">
       <span class="callout-icon">ℹ</span>
-      <p><strong>Any JSON library works</strong><br>Replace <code>ObjectMapper</code> with <code>Gson</code>, <code>Moshi</code>, or <code>org.json</code>. The interfaces accept a <code>String</code> and return a <code>String</code> or <code>Map</code> — nothing is library-specific. The encoder/decoder lambdas are the only place where your JSON library appears.</p>
+      <p><strong>Any JSON library works</strong><br>The three generated interfaces (<code>GraphLinkClientAdapter</code>, <code>GraphLinkJsonEncoder</code>, <code>GraphLinkJsonDecoder</code>) are all <code>@FunctionalInterface</code> — assign them from lambdas using Gson, Moshi, or any other library. Jackson is only the default for the convenience constructors.</p>
     </div>
 
-    <h2>Initializing the client</h2>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">Creating the GraphLinkClient</span>
-        <span class="doc-code-lang">Java</span>
-      </div>
-      <pre><code class="language-java">import com.example.generated.client.GraphLinkClient;
-
-// Parameters:
-//   1. adapter  — the HTTP transport function
-//   2. encoder  — JSON serializer
-//   3. decoder  — JSON deserializer
-//   4. store    — cache store (null = use InMemoryGraphLinkCacheStore)
-GraphLinkClient client = new GraphLinkClient(adapter, encoder, decoder, null);</code></pre>
-    </div>
-
-    <p>Pass a custom <code>GraphLinkCacheStore</code> as the fourth argument if you need a persistent cache (e.g. Redis-backed) or a custom eviction policy. See the <a href="caching.html">Caching</a> page for details.</p>
+    <p>Pass a custom <code>GraphLinkCacheStore</code> in the full constructor if you need a persistent or shared cache (e.g. Redis-backed). See the <a href="caching.html">Caching</a> page for details.</p>
 
     <h2>Queries — no generics</h2>
     <p>This is the core difference from every other Java GraphQL client. There are no <code>TypeReference</code> anonymous classes, no unchecked casts, no raw <code>Map</code> navigation. Each query method has a concrete return type:</p>
@@ -365,9 +370,26 @@ vehicles.stream()
     <p>The generated <code>GetVehicleResponse.fromJson()</code> navigates into the <code>data</code> object and deserializes <code>getVehicle</code> as a <code>Vehicle</code>. From your code's perspective, you simply call <code>res.getGetVehicle()</code> — the JSON unwrapping is invisible.</p>
     <p>Notice the double "get" in <code>getGetVehicle()</code> — the first is the Java getter prefix, the second is the operation name. This is consistent and predictable: the method name is always <code>get</code> + the operation name with a capital first letter.</p>
 
+    <h2>Subscriptions</h2>
+    <p>Subscriptions are available via <code>client.subscriptions</code> and use the <code>GraphLinkWebSocketAdapter</code> interface. The generated <code>DefaultGraphLinkWebSocketAdapter</code> implements this interface out of the box — no extra setup is needed as long as <code>wsAdapter</code> is not <code>"none"</code> in your config.</p>
+
+    <div class="doc-code">
+      <div class="doc-code-header">
+        <span class="doc-code-label">Subscribing to new cars</span>
+        <span class="doc-code-lang">Java</span>
+      </div>
+      <pre><code class="language-java">// client already holds a DefaultGraphLinkWebSocketAdapter — just subscribe
+client.subscriptions.onCarCreated(event -> {
+    OnCarCreatedResponse res = event;
+    System.out.println("New car: " + res.getOnCarCreated().getMake());
+});</code></pre>
+    </div>
+
+    <p>The generated WebSocket adapter (Java 11 or OkHttp) handles the <a href="https://github.com/enisdenjo/graphql-ws/blob/master/PROTOCOL.md" target="_blank" rel="noopener">graphql-ws subprotocol</a> automatically — connection init, ping/pong, and exponential-backoff reconnect on disconnect. If a <code>headersProvider</code> is supplied, the headers are forwarded in the <code>connection_init</code> payload so the server can authenticate the WebSocket session.</p>
+
     <div class="callout callout-info">
       <span class="callout-icon">ℹ</span>
-      <p><strong>Subscription support in Java</strong><br>The Java client also generates subscription support via <code>client.subscriptions</code>. Subscriptions use a <code>GraphLinkGraphLinkWebSocketAdapter</code> (generated interface). Provide your own WebSocket adapter implementation when constructing the client for subscription support.</p>
+      <p><strong>Deriving the WebSocket URL</strong><br>The convenience constructors that take only an HTTP URL automatically derive the WebSocket URL by replacing <code>http</code> with <code>ws</code> (and <code>https</code> with <code>wss</code>). Pass an explicit <code>wsUrl</code> if your WebSocket endpoint differs from the HTTP endpoint.</p>
     </div>
 
     <nav class="doc-nav-footer">
@@ -406,7 +428,7 @@ vehicles.stream()
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
-<script src="../js/main.js"></script>
-<script src="../js/docs.js"></script>
+<script src="../js/main.js?v=4.3.0"></script>
+<script src="../js/docs.js?v=4.3.0"></script>
 </body>
 </html>

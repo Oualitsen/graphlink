@@ -21,7 +21,9 @@
             "autoGenerateQueries": true,
             "operationNameAsParameter": false,
             "immutableInputFields": true,
-            "immutableTypeFields": true
+            "immutableTypeFields": true,
+            "wsAdapter": "java11",
+            "jsonCodec": "jackson"
         }
     }
 }

@@ -176,7 +176,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/styles.css?v=4.3.0">
 </head>
 <body>
 
@@ -213,7 +213,7 @@
       <div class="hero-text">
         <div class="hero-badge">
           <span class="badge-dot"></span>
-          Open Source · MIT · v4.2.0
+          Open Source · MIT · v4.3.0
         </div>
         <h1 class="hero-title">
           Your GraphQL Schema<br>
@@ -745,7 +745,8 @@ User user = res.getData().getGetUser();</code></pre>
 
       <div class="qs-tabs">
         <button class="qs-tab active" data-qs="flutter">Dart / Flutter</button>
-        <button class="qs-tab" data-qs="java">Java / Spring Boot</button>
+        <button class="qs-tab" data-qs="java">Java Client</button>
+        <button class="qs-tab" data-qs="spring">Spring Boot Server</button>
       </div>
 
       <!-- Dart / Flutter -->
@@ -810,7 +811,7 @@ glink -c config.json -w</code></pre>
         </div>
       </div>
 
-      <!-- Java / Spring Boot -->
+      <!-- Java Client -->
       <div class="qs-content" id="qs-java">
         <div class="qs-step">
           <span class="qs-num">1</span>
@@ -850,6 +851,70 @@ mv glink-linux-x86_64 /usr/local/bin/glink</code></pre>
       "packageName": "com.example.generated",
       "generateAllFieldsFragments": true,
       "autoGenerateQueries": true
+    }
+  }
+}</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="qs-step">
+          <span class="qs-num">3</span>
+          <div class="qs-body">
+            <h4>Generate</h4>
+            <div class="code-block">
+              <button class="copy-btn" data-copy="glink -c config.json">Copy</button>
+              <pre><code class="language-bash">glink -c config.json
+
+# Or watch mode — regenerates on every schema save:
+glink -c config.json -w</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Spring Boot Server -->
+      <div class="qs-content" id="qs-spring">
+        <div class="qs-step">
+          <span class="qs-num">1</span>
+          <div class="qs-body">
+            <h4>Download the CLI binary</h4>
+            <div class="code-block">
+              <pre><code class="language-bash"># Download for your platform from GitHub Releases:
+# github.com/Oualitsen/graphlink/releases/latest
+#
+# Linux:   glink-linux-x86_64
+# macOS:   glink-macos-arm64
+# Windows: glink-windows-x86_64.exe
+
+chmod +x glink-linux-x86_64
+mv glink-linux-x86_64 /usr/local/bin/glink</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="qs-step">
+          <span class="qs-num">2</span>
+          <div class="qs-body">
+            <h4>Create <code>config.json</code></h4>
+            <div class="code-block">
+              <pre><code class="language-json">{
+  "schemaPaths": ["src/main/resources/graphql/*.graphqls"],
+  "mode": "server",
+  "typeMappings": {
+    "ID": "String",
+    "Float": "Double",
+    "Int": "Integer",
+    "Boolean": "Boolean"
+  },
+  "outputDir": "src/main/java/com/example/generated",
+  "serverConfig": {
+    "spring": {
+      "basePackage": "com.example.generated",
+      "generateControllers": true,
+      "generateInputs": true,
+      "generateTypes": true,
+      "generateRepositories": false
     }
   }
 }</code></pre>
@@ -1040,6 +1105,6 @@ glink -c config.json -w</code></pre>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
-  <script src="js/main.js"></script>
+  <script src="js/main.js?v=4.3.0"></script>
 </body>
 </html>
