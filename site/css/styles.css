@@ -434,8 +434,8 @@ code[class*="language-"] { font-size: 0.78rem !important; }
   color: #fff;
 }
 
-.lang-pane { display: none; }
-.lang-pane.active { display: block; }
+.output-panel pre[data-lang] { display: none !important; }
+.output-panel pre[data-lang].active { display: block !important; }
 
 /* ── Pain section ───────────────────────────────────── */
 .pain-section { background: var(--surface); }

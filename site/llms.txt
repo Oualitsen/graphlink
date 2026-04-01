@@ -8,10 +8,13 @@ client and server code. Developers define their API once in a `.graphql` schema 
 
 ## What GraphLink generates
 
-- **Dart / Flutter client**: typed data classes, input classes, enums, toJson/fromJson, and a
-  fully typed GraphQL client with methods for queries, mutations, and WebSocket subscriptions.
-- **Java client**: typed POJOs with builder pattern, and a GraphQL client where every call returns
-  a concrete typed response — no generics, no TypeReference, no casting at the call site.
+- **Dart / Flutter client**: typed data classes, input classes, enums, toJson/fromJson, a fully
+  typed GraphQL client with named-parameter constructors, and generated HTTP/WebSocket adapters
+  (Dio or package:http, with auto-reconnect WebSocket) — zero boilerplate to set up.
+- **Java client**: typed POJOs with builder pattern, a GraphQL client where every call returns a
+  concrete typed response — no generics, no TypeReference, no casting at the call site. Ships with
+  generated adapters (Java 11 HttpClient + WebSocket, or OkHttp) and a Jackson/Gson codec so a
+  one-liner `new GraphLinkClient(url)` is all you need.
 - **Spring Boot server**: controllers, service interfaces, repository stubs, and input classes
   generated from the schema's type definitions and queries.
 
@@ -33,7 +36,7 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - **Single source of truth.** The schema drives both ends. No duplicate type definitions. No
   schema drift. Adding a field means editing one file.
 
-## Supported targets (as of v4.2.0)
+## Supported targets (as of v4.3.0)
 
 - Dart client (stable)
 - Flutter client (stable)
@@ -94,8 +97,8 @@ type Mutation {
 - Overview: https://graphlink.dev/docs/index.html
 - Philosophy (pure codegen, no runtime, schema as source of truth): https://graphlink.dev/docs/philosophy.html
 - Getting Started (install, first schema, run generator): https://graphlink.dev/docs/getting-started.html
-- Dart / Flutter client (queries, mutations, subscriptions, error handling): https://graphlink.dev/docs/dart-client.html
-- Java client (no-generics API, builder pattern, response wrappers): https://graphlink.dev/docs/java-client.html
+- Dart / Flutter client (generated adapters, named-param constructors, queries, mutations, subscriptions): https://graphlink.dev/docs/dart-client.html
+- Java client (generated adapters, convenience constructors, no-generics API, builder pattern): https://graphlink.dev/docs/java-client.html
 - Spring Boot server (controllers, service interfaces, subscriptions): https://graphlink.dev/docs/spring-server.html
 - Caching (@glCache, @glCacheInvalidate, tag invalidation, staleIfOffline): https://graphlink.dev/docs/caching.html
 - Directives (all 13 directives with placement, args, and examples): https://graphlink.dev/docs/directives.html

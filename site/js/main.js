@@ -16,9 +16,11 @@ document.querySelectorAll('.hero-lang-tab').forEach(tab => {
     document.querySelectorAll('.hero-lang-tab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
 
-    document.querySelectorAll('.lang-pane').forEach(pane => {
+    document.querySelectorAll('.output-panel pre[data-lang]').forEach(pane => {
       pane.classList.toggle('active', pane.dataset.lang === lang);
     });
+
+    Prism.highlightAll();
   });
 });
 
