@@ -54,6 +54,10 @@ class GLField with GLDirectivesMixin {
   bool get hasInculeOrSkipDiretives => _containsSkipOrIncludeDirective ??=
       getDirectives().where((d) => [includeDirective, skipDirective].contains(d.token)).isNotEmpty;
 
+  /// Returns the target field name from @glMapField, or null if not declared.
+  String? get mapFieldTo =>
+      getDirectiveByName(glMapField)?.getArgValueAsString(glMapFieldTo);
+
   bool get serialzeAsArray {
     _isArray ??= getDirectives().where((e) => e.token == glArray).isNotEmpty;
     return _isArray!;

@@ -170,4 +170,27 @@ void main() {
         contains(
             "MyType(String id, String creationDate, String name) implements Entity"));
   });
+
+  test("input record with @glMapsTo generates toXxx and fromXxx methods", () {
+    final GLParser g = GLParser(
+      identityFields: ["id"],
+      typeMap: typeMapping,
+      mode: CodeGenerationMode.server,
+    );
+    final text =
+        File("test/serializers/java/types/record_serialization.graphql")
+            .readAsStringSync();
+
+    g.parse(text);
+
+    var javaSerial =
+        JavaSerializer(g, inputsAsRecords: true, typesAsRecords: true);
+
+    var input = g.inputs["CreateAddressInput"]!;
+    var inputSerial = javaSerial.serializeInputDefinition(input, "");
+
+    expect(inputSerial, contains("public record CreateAddressInput("));
+    expect(inputSerial, contains("public Address toAddress()"));
+    expect(inputSerial, contains("public static CreateAddressInput fromAddress("));
+  });
 }

@@ -1,0 +1,300 @@
+directive @glMapsTo(type: String!) on INPUT_OBJECT
+directive @glMapField(to: String!) on INPUT_FIELD_DEFINITION
+
+# ---------------------------------------------------------------------------
+# Case 1 — All fields match by name, no extras
+# CreateAddressInput maps cleanly to Address with no params needed.
+# ---------------------------------------------------------------------------
+
+type Address {
+  street: String!
+  city: String!
+  country: String!
+}
+
+input CreateAddressInput @glMapsTo(type: "Address") {
+  street: String!
+  city: String!
+  country: String!
+}
+
+# ---------------------------------------------------------------------------
+# Case 2 — @glMapField aliases
+# Source uses short names; target uses full names.
+# ---------------------------------------------------------------------------
+
+type Person {
+  id: ID!
+  firstName: String!
+  lastName: String!
+  email: String!
+}
+
+input CreatePersonInput @glMapsTo(type: "Person") {
+  fname: String!  @glMapField(to: "firstName")
+  lname: String!  @glMapField(to: "lastName")
+  email: String!
+  # id is missing → required param in toXxx()
+}
+
+# ---------------------------------------------------------------------------
+# Case 3 — Nullability mismatch (nullable source → non-null target)
+# role is nullable in input but non-null in User → defaultRole param.
+# ---------------------------------------------------------------------------
+
+type User {
+  id: ID!
+  username: String!
+  role: String!
+}
+
+input CreateUserInput @glMapsTo(type: "User") {
+  username: String!
+  role: String    # nullable in input, non-null in User → defaultRole param
+  # id missing → required param
+}
+
+# ---------------------------------------------------------------------------
+# Case 4 — Fields only on input (not on target) are silently ignored
+# password and confirmPassword live on the input only and must not appear
+# in toXxx() assignments. id is missing from input → required param.
+# ---------------------------------------------------------------------------
+
+type Account {
+  id: ID!
+  email: String!
+  displayName: String!
+}
+
+input RegisterAccountInput @glMapsTo(type: "Account") {
+  email: String!
+  displayName: String!
+  password: String!         # input-only — ignored in toAccount()
+  confirmPassword: String!  # input-only — ignored in toAccount()
+  # id missing → required param
+}
+
+# ---------------------------------------------------------------------------
+# Case 5 — Mix: alias + nullability mismatch + missing field
+# The most complex scenario combining all three.
+# ---------------------------------------------------------------------------
+
+type Product {
+  id: ID!
+  title: String!
+  priceInCents: Int!
+  stock: Int!
+  categoryId: ID!
+}
+
+input CreateProductInput @glMapsTo(type: "Product") {
+  name: String!               @glMapField(to: "title")
+  price: Int!                 @glMapField(to: "priceInCents")
+  stock: Int                  # nullable → non-null → defaultStock param
+  catId: ID!                  @glMapField(to: "categoryId")
+  # id missing → required param
+  internalNote: String        # input-only — ignored
+}
+
+# ---------------------------------------------------------------------------
+# Case 6 — Lists
+#
+# Covers:
+#   a) [String!]!  → scalar list, non-null              → direct copy
+#   b) [String!]   → scalar list, nullable               → direct copy (nullable)
+#   c) [TagInput!]! → mapped input list, non-null        → .map((e) => e.toTag()).toList()
+#   d) [TagInput!]  → mapped input list, nullable        → ?.map(...).toList()
+#   e) [PhoneInput!]! → unmapped input list, non-null   → required param
+#   f) [PhoneInput!]  → unmapped input list, nullable   → required param (nullable)
+# ---------------------------------------------------------------------------
+
+# Target for mapped input list (case c/d)
+type Tag {
+  id: ID!
+  label: String!
+}
+
+input TagInput @glMapsTo(type: "Tag") {
+  id: ID!
+  label: String!
+}
+
+# Unmapped input — no @glMapsTo (case e/f)
+type Phone {
+  number: String!
+  countryCode: String!
+}
+
+input PhoneInput {
+  number: String!
+  countryCode: String!
+}
+
+type Order {
+  id: ID!
+  keywords: [String!]!        # a: non-null scalar list
+  notes: [String!]            # b: nullable scalar list
+  tags: [Tag!]!               # c: non-null mapped input list
+  optionalTags: [Tag!]        # d: nullable mapped input list
+  phones: [Phone!]!           # e: non-null unmapped input list
+  optionalPhones: [Phone!]    # f: nullable unmapped input list
+}
+
+input CreateOrderInput @glMapsTo(type: "Order") {
+  keywords: [String!]!        # a → direct copy
+  notes: [String!]            # b → direct copy (nullable)
+  tags: [TagInput!]!          # c → .map((e) => e.toTag()).toList()
+  optionalTags: [TagInput!]   # d → ?.map((e) => e.toTag()).toList()
+  phones: [PhoneInput!]!      # e → required param (unmapped)
+  optionalPhones: [PhoneInput!] # f → required param (nullable, unmapped)
+  # id missing → required param
+}
+
+# ---------------------------------------------------------------------------
+# Case 9 — Nested mapped input list where the nested toXxx() requires params
+#
+# ItemTagInput maps to ItemTag. ItemTag.labels is non-null but ItemTagInput.labels
+# is nullable → toItemTag() gets required defaultLabels, fromItemTag() gets
+# optional defaultLabels = const [].
+#
+# CartItemInput maps to CartItem and holds [ItemTagInput!]!.
+# Because toItemTag() has required params it cannot be called inside a map lambda.
+# Therefore tags is promoted to a required param in toCartItem():
+#   required List<ItemTag> tags
+# The caller must pre-convert. fromCartItem() can still auto-map because
+# fromItemTag() only has optional default params.
+# ---------------------------------------------------------------------------
+
+type ItemTag {
+  id: ID!
+  labels: [String!]!   # non-null on type
+}
+
+input ItemTagInput @glMapsTo(type: "ItemTag") {
+  id: ID!
+  labels: [String!]    # nullable in input → toItemTag() requires defaultLabels
+                       #                   → fromItemTag() gets defaultLabels = const []
+}
+
+type CartItem {
+  id: ID!
+  tags: [ItemTag!]!
+}
+
+input CartItemInput @glMapsTo(type: "CartItem") {
+  id: ID!
+  tags: [ItemTagInput!]!  # toItemTag() has required params → tags becomes required
+                          # param in toCartItem(); fromCartItem() auto-maps via lambda
+}
+
+# ---------------------------------------------------------------------------
+# Case 10 — List of list of mapped input objects
+#
+# Cell elements are nullable in the type ([Cell]) but non-null in the input
+# ([CellInput!]). The inner list is nullable, the outer list is non-null.
+#
+# toGrid():   cells → cells.map((e0) => e0?.map((e1) => e1.toCell()).toList()).toList()
+# fromGrid(): nullable Cell? elements cannot feed a non-null CellInput! slot
+#             directly — generation behaviour TBD.
+# ---------------------------------------------------------------------------
+
+type Cell {
+  value: String!
+}
+
+input CellInput @glMapsTo(type: "Cell") {
+  value: String!
+}
+
+type Grid {
+  cells: [[Cell]]!    # outer non-null, inner nullable, elements nullable
+}
+
+input GridInput @glMapsTo(type: "Grid") {
+  cells: [[CellInput!]]!  # outer non-null, inner nullable, elements non-null
+}
+
+# ---------------------------------------------------------------------------
+# Minimal Query/Mutation to keep the schema valid
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Case 7 — List of scalars (String), one field each, all nullability combos
+# ---------------------------------------------------------------------------
+
+# [String!]! → [String!]!  — both non-null, direct copy
+type ScalarListA { tags: [String!]! }
+input ScalarListInputA @glMapsTo(type: "ScalarListA") { tags: [String!]! }
+
+# [String!] → [String!]!  — nullable source → non-null target, default param
+type ScalarListB { tags: [String!]! }
+input ScalarListInputB @glMapsTo(type: "ScalarListB") { tags: [String!] }
+
+# [String!]! → [String!]  — non-null source → nullable target, direct copy
+type ScalarListC { tags: [String!] }
+input ScalarListInputC @glMapsTo(type: "ScalarListC") { tags: [String!]! }
+
+# [String!] → [String!]  — both nullable, direct copy
+type ScalarListD { tags: [String!] }
+input ScalarListInputD @glMapsTo(type: "ScalarListD") { tags: [String!] }
+
+# ---------------------------------------------------------------------------
+# Case 8 — List of enums, one field each, all nullability combos
+# ---------------------------------------------------------------------------
+
+enum Status { ACTIVE INACTIVE PENDING }
+
+# [Status!]! → [Status!]!  — both non-null, direct copy
+type EnumListA { statuses: [Status!]! }
+input EnumListInputA @glMapsTo(type: "EnumListA") { statuses: [Status!]! }
+
+# [Status!] → [Status!]!  — nullable source → non-null target, default param
+type EnumListB { statuses: [Status!]! }
+input EnumListInputB @glMapsTo(type: "EnumListB") { statuses: [Status!] }
+
+# [Status!]! → [Status!]  — non-null source → nullable target, direct copy
+type EnumListC { statuses: [Status!] }
+input EnumListInputC @glMapsTo(type: "EnumListC") { statuses: [Status!]! }
+
+# [Status!] → [Status!]  — both nullable, direct copy
+type EnumListD { statuses: [Status!] }
+input EnumListInputD @glMapsTo(type: "EnumListD") { statuses: [Status!] }
+
+# ---------------------------------------------------------------------------
+type Query {
+  getAddress(id: ID!): Address
+  getPerson(id: ID!): Person
+  getUser(id: ID!): User
+  getAccount(id: ID!): Account
+  getProduct(id: ID!): Product
+  getOrder(id: ID!): Order
+  getScalarListA(id: ID!): ScalarListA
+  getScalarListB(id: ID!): ScalarListB
+  getScalarListC(id: ID!): ScalarListC
+  getScalarListD(id: ID!): ScalarListD
+  getEnumListA(id: ID!): EnumListA
+  getEnumListB(id: ID!): EnumListB
+  getEnumListC(id: ID!): EnumListC
+  getEnumListD(id: ID!): EnumListD
+  getCartItem(id: ID!): CartItem
+  getGrid(id: ID!): Grid
+}
+
+type Mutation {
+  createAddress(input: CreateAddressInput!): Address!
+  createPerson(input: CreatePersonInput!): Person!
+  createUser(input: CreateUserInput!): User!
+  registerAccount(input: RegisterAccountInput!): Account!
+  createProduct(input: CreateProductInput!): Product!
+  createOrder(input: CreateOrderInput!): Order!
+  createScalarListA(input: ScalarListInputA!): ScalarListA!
+  createScalarListB(input: ScalarListInputB!): ScalarListB!
+  createScalarListC(input: ScalarListInputC!): ScalarListC!
+  createScalarListD(input: ScalarListInputD!): ScalarListD!
+  createEnumListA(input: EnumListInputA!): EnumListA!
+  createEnumListB(input: EnumListInputB!): EnumListB!
+  createEnumListC(input: EnumListInputC!): EnumListC!
+  createEnumListD(input: EnumListInputD!): EnumListD!
+  createCartItem(input: CartItemInput!): CartItem!
+  createGrid(input: GridInput!): Grid!
+}

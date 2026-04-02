@@ -1,5 +1,7 @@
 import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/gl_grammar_maps_to_extension.dart';
+import 'package:graphlink/src/model/gl_input_mapping.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
 import 'package:graphlink/src/model/gl_field.dart';
@@ -125,6 +127,7 @@ class DartSerializer extends GLSerializer {
       buffer.writeln(decorators.trim());
     }
     final fields = def.getSerializableFields(grammar.mode);
+    final mappingMethods = generateMappingMethods(def);
     var inputClass =
         codeGenUtils.createClass(className: def.token, statements: [
       ...fields.map((e) => serializeField(e, true)),
@@ -135,11 +138,180 @@ class DartSerializer extends GLSerializer {
       if (generateJsonMethods) ...[
         generateToJson(fields),
         generateFromJson(fields, def.token)
-      ]
+      ],
+      if (mappingMethods.isNotEmpty) mappingMethods,
     ]);
 
     buffer.writeln(inputClass);
     return buffer.toString();
+  }
+
+  /// Generates toXxx() and fromXxx() methods for [def] if it declares @glMapsTo.
+  /// Returns an empty string if the directive is not present.
+  String generateMappingMethods(GLInputDefinition def) {
+    final plan = grammar.resolveInputMappingPlan(def);
+    if (plan == null) return '';
+    final targetType = def.mapsToType!;
+    final buffer = StringBuffer(_generateToMethod(def, plan, targetType));
+    buffer.writeln();
+    buffer.writeln();
+    buffer.writeln(_generateFromMethod(def, plan, targetType));
+    return buffer.toString();
+  }
+
+  String _generateToMethod(
+      GLInputDefinition def, MappingPlan plan, String targetType) {
+    final params = [
+      ...plan.requiredParams.map(
+        (f) =>
+            'required ${serializeType(f.targetField.type, false)} ${f.targetField.name.token}',
+      ),
+      ...plan.defaultParams.map(
+        (f) =>
+            'required ${serializeType(f.targetField.type, false)} default${f.targetField.name.token.firstUp}',
+      ),
+    ];
+
+    final assignments = [
+      ...plan.autoMapped.map((f) {
+        final suffix =
+            _callToMapping(f.sourceField!.type, f.targetField.type, 0);
+        return '${f.targetField.name.token}: ${f.sourceField!.name.token}$suffix';
+      }),
+      ...plan.defaultParams.map(
+        (f) =>
+            '${f.targetField.name.token}: ${f.sourceField!.name.token} ?? default${f.targetField.name.token.firstUp}',
+      ),
+      ...plan.requiredParams.map(
+        (f) => '${f.targetField.name.token}: ${f.targetField.name.token}',
+      ),
+    ];
+
+    return codeGenUtils.createMethod(
+      returnType: targetType,
+      methodName: 'to${targetType.firstUp}',
+      namedArguments: true,
+      arguments: params,
+      statements: ['return $targetType(${assignments.join(', ')});'],
+    );
+  }
+
+  String _generateFromMethod(
+      GLInputDefinition def, MappingPlan plan, String targetType) {
+    final mapped = [...plan.autoMapped, ...plan.defaultParams];
+
+    // Fields where the target has a nullable element at some list depth but the
+    // input has a non-null element — cannot auto-map safely; become required params.
+    final elementMismatch = mapped
+        .where((f) => _hasElementNullabilityMismatch(f.sourceField!.type, f.targetField.type))
+        .toList();
+    final autoMappable = mapped
+        .where((f) => !_hasElementNullabilityMismatch(f.sourceField!.type, f.targetField.type))
+        .toList();
+
+    final mappedAssignments = autoMappable.map((f) {
+      final variable = '${targetType.firstLow}.${f.targetField.name.token}';
+      var expr = _callFromMapping(
+          variable, f.sourceField!.type.firstType.token, f.targetField.type, 0);
+      // target type field is nullable but input field is non-null list → use caller-supplied default
+      if (f.targetField.type.nullable &&
+          !f.sourceField!.type.nullable &&
+          f.sourceField!.type.isList) {
+        expr = '$expr ?? default${f.sourceField!.name.token.firstUp}';
+      }
+      return '${f.sourceField!.name.token}: $expr';
+    });
+    final nullableListDefaultParams = autoMappable
+        .where((f) =>
+            f.targetField.type.nullable &&
+            !f.sourceField!.type.nullable &&
+            f.sourceField!.type.isList)
+        .map((f) =>
+            '${serializeType(f.sourceField!.type, false)} default${f.sourceField!.name.token.firstUp} = const []');
+    final elementMismatchParams = elementMismatch.map(
+      (f) => 'required ${serializeType(f.sourceField!.type, false)} ${f.sourceField!.name.token}',
+    );
+    final elementMismatchAssignments = elementMismatch.map(
+      (f) => '${f.sourceField!.name.token}: ${f.sourceField!.name.token}',
+    );
+    final inputOnlyParams = plan.inputOnlyFields.map(
+      (f) =>
+          '${f.type.nullable ? '' : 'required '}${serializeType(f.type, false)} ${f.name.token}',
+    );
+    final inputOnlyAssignments = plan.inputOnlyFields.map(
+      (f) => '${f.name.token}: ${f.name.token}',
+    );
+
+    return codeGenUtils.createMethod(
+      returnType: 'static ${def.token}',
+      methodName: 'from${targetType.firstUp}',
+      namedArguments: true,
+      arguments: [
+        'required $targetType ${targetType.firstLow}',
+        ...nullableListDefaultParams,
+        ...elementMismatchParams,
+        ...inputOnlyParams,
+      ],
+      statements: [
+        'return ${def.token}(${[
+          ...mappedAssignments,
+          ...elementMismatchAssignments,
+          ...inputOnlyAssignments
+        ].join(', ')});',
+      ],
+    );
+  }
+
+  /// Returns true if [targetType] contains a nullable element at any list depth
+  /// where the corresponding [sourceType] element is non-null, making a safe
+  /// fromXxx() lambda call impossible.
+  bool _hasElementNullabilityMismatch(GLType sourceType, GLType targetType) {
+    if (!sourceType.isList || !targetType.isList) return false;
+    final sourceElem = sourceType.inlineType;
+    final targetElem = targetType.inlineType;
+    if (targetElem.nullable && !sourceElem.nullable) return true;
+    return _hasElementNullabilityMismatch(sourceElem, targetElem);
+  }
+
+  /// Returns a suffix to append to a source field value for toXxx() assignments.
+  /// e.g. '' for direct copy, '.map((e0) => e0.toTag()).toList()' for mapped lists.
+  String _callToMapping(GLType sourceType, GLType targetType, int index) {
+    final dot = sourceType.nullable ? '?.' : '.';
+    if (sourceType.isList) {
+      if (sourceType.firstType.token == targetType.firstType.token) {
+        return '${dot}toList()'; // same element type — copy the list
+      }
+      final varName = 'e$index';
+      final inner = _callToMapping(
+          sourceType.inlineType, targetType.inlineType, index + 1);
+      return '${dot}map(($varName) => $varName$inner).toList()';
+    }
+    final sourceInput = grammar.inputs[sourceType.token];
+    if (sourceInput?.mapsToType == targetType.token) {
+      return '${dot}to${targetType.token.firstUp}()';
+    }
+    return ''; // same type — direct copy
+  }
+
+  /// Returns the full expression for a fromXxx() field assignment.
+  /// e.g. 'order.tags.map((e0) => TagInput.fromTag(e0)).toList()'
+  String _callFromMapping(
+      String variable, String sourceElemToken, GLType targetType, int index) {
+    final dot = targetType.nullable ? '?.' : '.';
+    if (targetType.isList) {
+      if (sourceElemToken == targetType.firstType.token) {
+        return '$variable${dot}toList()'; // same element type — copy the list
+      }
+      final varName = 'e$index';
+      final inner = _callFromMapping(
+          varName, sourceElemToken, targetType.inlineType, index + 1);
+      return '$variable${dot}map(($varName) => $inner).toList()';
+    }
+    final sourceInput = grammar.inputs[sourceElemToken];
+    if (sourceInput?.mapsToType == targetType.token) {
+      return '$sourceElemToken.from${targetType.token.firstUp}(${targetType.token.firstLow}: $variable)';
+    }
+    return variable; // same type — direct copy
   }
 
   String toConstructorDeclaration(GLField field) {

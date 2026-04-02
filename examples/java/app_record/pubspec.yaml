@@ -1,0 +1,12 @@
+name: graphlink_app_record_java_example
+description: |
+  Example project demonstrating @glMapsTo/@glMapField with Java records for both types and inputs.
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ">=2.19.0 <4.0.0"
+
+dependencies:
+  graphlink:
+    path: ../../../

@@ -1,4 +1,7 @@
 
+directive @glMapsTo(type: String!) on INPUT_OBJECT
+directive @glMapField(to: String!) on INPUT_FIELD_DEFINITION
+
 directive @JsonProperty(
     value: String!
     glAnnotation: Boolean = true
@@ -47,5 +50,16 @@ type MyType implements Entity {
     id: String!
     creationDate: String
     name: String
+}
+
+# @glMapsTo on a record-mode input
+type Address {
+    street: String!
+    city: String!
+}
+
+input CreateAddressInput @glMapsTo(type: "Address") {
+    street: String!
+    city: String!
 }
 
