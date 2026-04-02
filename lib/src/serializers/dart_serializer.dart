@@ -1,6 +1,5 @@
 import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/gl_grammar_maps_to_extension.dart';
 import 'package:graphlink/src/model/gl_input_mapping.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
@@ -139,28 +138,16 @@ class DartSerializer extends GLSerializer {
         generateToJson(fields),
         generateFromJson(fields, def.token)
       ],
-      if (mappingMethods.isNotEmpty) mappingMethods,
+      ...mappingMethods,
     ]);
 
     buffer.writeln(inputClass);
     return buffer.toString();
   }
 
-  /// Generates toXxx() and fromXxx() methods for [def] if it declares @glMapsTo.
-  /// Returns an empty string if the directive is not present.
-  String generateMappingMethods(GLInputDefinition def) {
-    final plan = grammar.resolveInputMappingPlan(def);
-    if (plan == null) return '';
-    final targetType = def.mapsToType!;
-    final buffer = StringBuffer(_generateToMethod(def, plan, targetType));
-    buffer.writeln();
-    buffer.writeln();
-    buffer.writeln(_generateFromMethod(def, plan, targetType));
-    return buffer.toString();
-  }
-
-  String _generateToMethod(
-      GLInputDefinition def, MappingPlan plan, String targetType) {
+  @override
+  String generateToMethod(
+      GLInputDefinition def, String targetType, MappingPlan plan) {
     final params = [
       ...plan.requiredParams.map(
         (f) =>
@@ -196,8 +183,9 @@ class DartSerializer extends GLSerializer {
     );
   }
 
-  String _generateFromMethod(
-      GLInputDefinition def, MappingPlan plan, String targetType) {
+  @override
+  String generateFromMethod(
+      GLInputDefinition def, String targetType, MappingPlan plan) {
     final mapped = [...plan.autoMapped, ...plan.defaultParams];
 
     // Fields where the target has a nullable element at some list depth but the

@@ -1,7 +1,6 @@
 import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/gl_grammar_maps_to_extension.dart';
 import 'package:graphlink/src/model/gl_input_mapping.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
@@ -396,19 +395,9 @@ class JavaSerializer extends GLSerializer {
   // Mapping methods (@glMapsTo)
   // ---------------------------------------------------------------------------
 
-  /// Generates toXxx() and fromXxx() methods if [def] declares @glMapsTo.
-  List<String> generateMappingMethods(GLInputDefinition def) {
-    final plan = grammar.resolveInputMappingPlan(def);
-    if (plan == null) return [];
-    final targetType = def.mapsToType!;
-    return [
-      _generateToMethod(def, plan, targetType),
-      _generateFromMethod(def, plan, targetType),
-    ];
-  }
-
-  String _generateToMethod(
-      GLInputDefinition def, MappingPlan plan, String targetType) {
+  @override
+  String generateToMethod(
+      GLInputDefinition def, String targetType, MappingPlan plan) {
     // Whether the source input and target type are records (affects accessor style).
     final sourceIsRecord = inputsAsRecords;
     final targetIsRecord = typesAsRecords;
@@ -496,8 +485,9 @@ class JavaSerializer extends GLSerializer {
     );
   }
 
-  String _generateFromMethod(
-      GLInputDefinition def, MappingPlan plan, String targetType) {
+  @override
+  String generateFromMethod(
+      GLInputDefinition def, String targetType, MappingPlan plan) {
     final allMapped = [...plan.autoMapped, ...plan.defaultParams];
 
     final elementMismatch = allMapped
