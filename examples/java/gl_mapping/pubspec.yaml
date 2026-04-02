@@ -1,0 +1,12 @@
+name: graphlink_gl_mapping_java_example
+description: |
+  Example project demonstrating @glMapsTo and @glMapField input mapping generation for Java.
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ">=2.19.0 <4.0.0"
+
+dependencies:
+  graphlink:
+    path: ../../../

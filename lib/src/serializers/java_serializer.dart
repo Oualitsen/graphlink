@@ -1,6 +1,8 @@
 import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/gl_grammar_maps_to_extension.dart';
+import 'package:graphlink/src/model/gl_input_mapping.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
@@ -268,7 +270,8 @@ class JavaSerializer extends GLSerializer {
       buffer.writeln(decorators.trim());
     }
     if (inputsAsRecords) {
-      buffer.writeln(serializeRecord(def.token, def.fields, {}, def));
+      buffer.writeln(serializeRecord(def.token, def.fields, {}, def,
+          extraStatements: generateMappingMethods(def)));
       return buffer.toString();
     }
     var class_ =
@@ -295,7 +298,8 @@ class JavaSerializer extends GLSerializer {
       if (generateJsonMethods) ...[
         generateToJson(def.getSerializableFields(grammar.mode), def),
         generateFromJson(def.getSerializableFields(mode), def.token, def)
-      ]
+      ],
+      ...generateMappingMethods(def),
     ]);
     buffer.write(class_);
     return buffer.toString();
@@ -386,6 +390,261 @@ class JavaSerializer extends GLSerializer {
           ]),
     );
     return buffer.toString();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Mapping methods (@glMapsTo)
+  // ---------------------------------------------------------------------------
+
+  /// Generates toXxx() and fromXxx() methods if [def] declares @glMapsTo.
+  List<String> generateMappingMethods(GLInputDefinition def) {
+    final plan = grammar.resolveInputMappingPlan(def);
+    if (plan == null) return [];
+    final targetType = def.mapsToType!;
+    return [
+      _generateToMethod(def, plan, targetType),
+      _generateFromMethod(def, plan, targetType),
+    ];
+  }
+
+  String _generateToMethod(
+      GLInputDefinition def, MappingPlan plan, String targetType) {
+    // Whether the source input and target type are records (affects accessor style).
+    final sourceIsRecord = inputsAsRecords;
+    final targetIsRecord = typesAsRecords;
+
+    final params = [
+      ...plan.requiredParams.map(
+        (f) => '${serializeType(f.targetField.type, false)} ${f.targetField.name.token}',
+      ),
+      ...plan.defaultParams.map(
+        (f) => '${serializeType(f.targetField.type, false)} default${f.targetField.name.token.firstUp}',
+      ),
+    ];
+
+    // Source accessor: records use field(), classes use getField().
+    String sourceAccessor(String fieldName) => sourceIsRecord
+        ? '$fieldName()'
+        : '${_getterName(fieldName, false)}()';
+
+    if (targetIsRecord) {
+      // Build positional constructor args in the target type's field declaration order.
+      final targetDef = grammar.types[targetType];
+      final targetFields = targetDef?.getSerializableFields(grammar.mode) ?? [];
+
+      // Index mappings by target field name for quick lookup.
+      final autoByTarget = {for (final f in plan.autoMapped) f.targetField.name.token: f};
+      final defaultByTarget = {for (final f in plan.defaultParams) f.targetField.name.token: f};
+      final requiredByTarget = {for (final f in plan.requiredParams) f.targetField.name.token: f};
+
+      final constructorArgs = <String>[];
+      for (final tf in targetFields) {
+        final name = tf.name.token;
+        if (autoByTarget.containsKey(name)) {
+          final f = autoByTarget[name]!;
+          final getter = sourceAccessor(f.sourceField!.name.token);
+          constructorArgs.add(_toMappingExpr(getter, f.sourceField!.type, f.targetField.type, 0, def));
+        } else if (defaultByTarget.containsKey(name)) {
+          final f = defaultByTarget[name]!;
+          final getter = sourceAccessor(f.sourceField!.name.token);
+          constructorArgs.add('$getter != null ? $getter : default${f.targetField.name.token.firstUp}');
+        } else if (requiredByTarget.containsKey(name)) {
+          constructorArgs.add(name);
+        }
+      }
+
+      final lastIdx = constructorArgs.length - 1;
+      return codeGenUtils.createMethod(
+        returnType: 'public $targetType',
+        methodName: 'to${targetType.firstUp}',
+        arguments: params,
+        statements: [
+          'return new $targetType(',
+          ...constructorArgs.asMap().entries.map(
+                (e) => e.key < lastIdx ? '${e.value},' : e.value,
+              ),
+          ');',
+        ],
+      );
+    }
+
+    // Class-style target: builder chain.
+    final builderCalls = [
+      ...plan.autoMapped.map((f) {
+        final getter = sourceAccessor(f.sourceField!.name.token);
+        final expr = _toMappingExpr(getter, f.sourceField!.type, f.targetField.type, 0, def);
+        return '.${f.targetField.name.token}($expr)';
+      }),
+      ...plan.defaultParams.map((f) {
+        final getter = sourceAccessor(f.sourceField!.name.token);
+        return '.${f.targetField.name.token}($getter != null ? $getter : default${f.targetField.name.token.firstUp})';
+      }),
+      ...plan.requiredParams.map(
+        (f) => '.${f.targetField.name.token}(${f.targetField.name.token})',
+      ),
+    ];
+
+    return codeGenUtils.createMethod(
+      returnType: 'public $targetType',
+      methodName: 'to${targetType.firstUp}',
+      arguments: params,
+      statements: [
+        'return $targetType.builder()',
+        ...builderCalls,
+        '.build();',
+      ],
+    );
+  }
+
+  String _generateFromMethod(
+      GLInputDefinition def, MappingPlan plan, String targetType) {
+    final allMapped = [...plan.autoMapped, ...plan.defaultParams];
+
+    final elementMismatch = allMapped
+        .where((f) => _hasElementNullabilityMismatch(f.sourceField!.type, f.targetField.type))
+        .toList();
+    final autoMappable = allMapped
+        .where((f) => !_hasElementNullabilityMismatch(f.sourceField!.type, f.targetField.type))
+        .toList();
+
+    final autoMappableBySource = {
+      for (final f in autoMappable) f.sourceField!.name.token: f
+    };
+    final elementMismatchNames = {
+      for (final f in elementMismatch) f.sourceField!.name.token
+    };
+
+    final targetVar = targetType.firstLow;
+
+    final nullableListDefaultParams = autoMappable
+        .where((f) =>
+            f.targetField.type.nullable &&
+            !f.sourceField!.type.nullable &&
+            f.sourceField!.type.isList)
+        .map((f) =>
+            '${serializeType(f.sourceField!.type, false)} default${f.sourceField!.name.token.firstUp}');
+
+    final elementMismatchParams = elementMismatch.map(
+      (f) => '${serializeType(f.sourceField!.type, false)} ${f.sourceField!.name.token}',
+    );
+
+    final inputOnlyParams = plan.inputOnlyFields.map(
+      (f) => '${serializeType(f.type, false)} ${f.name.token}',
+    );
+
+    // Build positional constructor args in field declaration order.
+    final fields = def.getSerializableFields(grammar.mode);
+    final constructorArgs = <String>[];
+    for (final field in fields) {
+      final fieldName = field.name.token;
+      if (autoMappableBySource.containsKey(fieldName)) {
+        final f = autoMappableBySource[fieldName]!;
+        final targetFieldName = f.targetField.name.token;
+        final sourceExpr = typesAsRecords
+            ? '$targetVar.$targetFieldName()'
+            : '$targetVar.${_getterName(targetFieldName, false)}()';
+        var expr = _fromMappingExpr(
+            sourceExpr, f.sourceField!.type.firstType.token, f.targetField.type, 0, def);
+        if (f.targetField.type.nullable &&
+            !f.sourceField!.type.nullable &&
+            f.sourceField!.type.isList) {
+          expr = '$expr != null ? $expr : default${f.sourceField!.name.token.firstUp}';
+        }
+        constructorArgs.add(expr);
+      } else if (elementMismatchNames.contains(fieldName)) {
+        constructorArgs.add(fieldName);
+      } else {
+        // input-only field — taken from parameter
+        constructorArgs.add(fieldName);
+      }
+    }
+
+    return codeGenUtils.createMethod(
+      returnType: 'public static ${def.token}',
+      methodName: 'from${targetType.firstUp}',
+      arguments: [
+        '$targetType $targetVar',
+        ...nullableListDefaultParams,
+        ...elementMismatchParams,
+        ...inputOnlyParams,
+      ],
+      statements: [
+        'return new ${def.token}(',
+        ...constructorArgs.asMap().entries.map(
+              (e) => e.key < constructorArgs.length - 1
+                  ? '${e.value},'
+                  : e.value,
+            ),
+        ');',
+      ],
+    );
+  }
+
+  /// Returns the Java expression for a toXxx() field assignment.
+  /// Uses builder-chain suffix via stream().map().collect() for lists.
+  String _toMappingExpr(
+      String variable, GLType sourceType, GLType targetType, int index, GLToken context) {
+    if (sourceType.isList) {
+      if (sourceType.firstType.token == targetType.firstType.token) {
+        return variable; // same element type — pass directly
+      }
+      final varName = 'e$index';
+      final inner = _toMappingExpr(
+          varName, sourceType.inlineType, targetType.inlineType, index + 1, context);
+      context.addImport(JavaImports.collectors);
+      final streamExpr =
+          '$variable.stream().map($varName -> $inner).collect(Collectors.toList())';
+      if (sourceType.nullable) {
+        return '$variable == null ? null : $streamExpr';
+      }
+      return streamExpr;
+    }
+    final sourceInput = grammar.inputs[sourceType.token];
+    if (sourceInput?.mapsToType == targetType.token) {
+      if (sourceType.nullable) {
+        return '$variable == null ? null : $variable.to${targetType.token.firstUp}()';
+      }
+      return '$variable.to${targetType.token.firstUp}()';
+    }
+    return variable; // same type — direct copy
+  }
+
+  /// Returns the Java expression for a fromXxx() field assignment.
+  String _fromMappingExpr(
+      String variable, String sourceElemToken, GLType targetType, int index, GLToken context) {
+    if (targetType.isList) {
+      if (sourceElemToken == targetType.firstType.token) {
+        return variable; // same element type — pass directly
+      }
+      final varName = 'e$index';
+      final inner = _fromMappingExpr(
+          varName, sourceElemToken, targetType.inlineType, index + 1, context);
+      context.addImport(JavaImports.collectors);
+      final streamExpr =
+          '$variable.stream().map($varName -> $inner).collect(Collectors.toList())';
+      if (targetType.nullable) {
+        return '$variable == null ? null : $streamExpr';
+      }
+      return streamExpr;
+    }
+    final sourceInput = grammar.inputs[sourceElemToken];
+    if (sourceInput?.mapsToType == targetType.token) {
+      if (targetType.nullable) {
+        return '$variable == null ? null : $sourceElemToken.from${targetType.token.firstUp}($variable)';
+      }
+      return '$sourceElemToken.from${targetType.token.firstUp}($variable)';
+    }
+    return variable; // same type — direct copy
+  }
+
+  /// Returns true if [targetType] contains a nullable element at any list depth
+  /// where the corresponding [sourceType] element is non-null.
+  bool _hasElementNullabilityMismatch(GLType sourceType, GLType targetType) {
+    if (!sourceType.isList || !targetType.isList) return false;
+    final sourceElem = sourceType.inlineType;
+    final targetElem = targetType.inlineType;
+    if (targetElem.nullable && !sourceElem.nullable) return true;
+    return _hasElementNullabilityMismatch(sourceElem, targetElem);
   }
 
   String generateToJson(List<GLField> fields, GLToken context) {
@@ -574,8 +833,9 @@ class JavaSerializer extends GLSerializer {
     String recordName,
     List<GLField> fields,
     Set<String> interfaceNames,
-    GLToken context,
-  ) {
+    GLToken context, {
+    List<String> extraStatements = const [],
+  }) {
     return codeGenUtils.createRecord(
         recordName: recordName,
         components: fields
@@ -587,7 +847,8 @@ class JavaSerializer extends GLSerializer {
           if (generateJsonMethods) ...[
             generateToJson(fields, context),
             generateFromJson(fields, recordName, context)
-          ]
+          ],
+          ...extraStatements,
         ]);
   }
 
@@ -653,9 +914,12 @@ class JavaSerializer extends GLSerializer {
   @override
   String doSerializeTypeDefinition(GLTypeDefinition def) {
     if (def is GLInterfaceDefinition) {
+      // Internal interfaces always use JavaBean getter style regardless of typesAsRecords,
+      // because their implementations are always classes (never records).
+      final isInternal = def.getDirectiveByName(glInternal) != null;
       return serializeInterface(def,
-          getters:
-              def.getDirectiveByName(glInterfaceFieldAsProperties) == null);
+          getters: def.getDirectiveByName(glInterfaceFieldAsProperties) == null,
+          forceClassGetters: isInternal);
     } else {
       return _doSerializeTypeDefinition(def);
     }
@@ -670,7 +934,7 @@ class JavaSerializer extends GLSerializer {
     if (decorators.isNotEmpty) {
       buffer.writeln(decorators.trim());
     }
-    if (typesAsRecords) {
+    if (typesAsRecords && def.getDirectiveByName(glInternal) == null) {
       buffer
           .writeln(serializeRecord(def.token, def.fields, interfaceNames, def));
       return buffer.toString();
@@ -751,14 +1015,15 @@ class JavaSerializer extends GLSerializer {
     return buffer.toString();
   }
 
-  String _serializeInterfaceField(GLField f, bool getters) {
+  String _serializeInterfaceField(GLField f, bool getters,
+      {bool forceClassGetters = false}) {
     var buffer = StringBuffer();
     var fieldDecorators = serializeDecorators(f.getDirectives(), joiner: "\n");
     if (fieldDecorators.isNotEmpty) {
       buffer.writeln(fieldDecorators.trim().ident());
     }
     if (getters) {
-      if (typesAsRecords) {
+      if (typesAsRecords && !forceClassGetters) {
         buffer.write(
             serializeGetterDeclaration(f, skipModifier: true, asProperty: true)
                 .ident());
@@ -773,7 +1038,7 @@ class JavaSerializer extends GLSerializer {
   }
 
   String serializeInterface(GLInterfaceDefinition interface,
-      {required bool getters}) {
+      {required bool getters, bool forceClassGetters = false}) {
     final token = interface.tokenInfo;
     final interfaces = interface.interfaces;
     final fields = interface.getSerializableFields(grammar.mode);
@@ -791,7 +1056,7 @@ class JavaSerializer extends GLSerializer {
         interfaceName: token.token,
         interfaceNames: interfaces.map((e) => e.tokenInfo.token).toList(),
         statements: [
-          ...fields.map((f) => _serializeInterfaceField(f, getters)),
+          ...fields.map((f) => _serializeInterfaceField(f, getters, forceClassGetters: forceClassGetters)),
           if (generateJsonConverstionMethods) ...[
             "",
             "Map<String, Object> toJson();",

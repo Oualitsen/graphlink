@@ -104,6 +104,8 @@ clientConfig.java
   operationNameAsParameter        bool    Pass operation name as a parameter      [false]
   immutableInputFields            bool    Generate input fields as final          [true]
   immutableTypeFields             bool    Generate type fields as final           [true]
+  inputAsRecord                   bool    Generate inputs as Java records         [false]
+  typeAsRecord                    bool    Generate types as Java records          [false]
 
 ━━ mode: server ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -447,11 +449,14 @@ Future<Set<String>> generateDartClientClasses(
 Future<Set<String>> generateJavaClientClasses(
     GLParser parser, GeneratorConfig config, DateTime started,
     {String? pack, noClient = false}) async {
+  final javaClientConfig = config.clientConfig?.java;
   final serializer = JavaSerializer(
     parser,
     generateJsonMethods: true,
-    immutableInputFields: true,
-    immutableTypeFields: true,
+    immutableInputFields: javaClientConfig?.immutableInputFields ?? true,
+    immutableTypeFields: javaClientConfig?.immutableTypeFields ?? true,
+    inputsAsRecords: javaClientConfig?.inputAsRecord ?? false,
+    typesAsRecords: javaClientConfig?.typeAsRecord ?? false,
   );
   final clientSerializer = JavaClientSerializer(parser, serializer);
   final List<Future<File>> futures = [];

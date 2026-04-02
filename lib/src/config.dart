@@ -191,6 +191,8 @@ class JavaClientConfig {
   final bool operationNameAsParameter;
   final bool immutableInputFields;
   final bool immutableTypeFields;
+  final bool inputAsRecord;
+  final bool typeAsRecord;
   final JavaWsAdapter wsAdapter;
   final JavaJsonCodec jsonCodec;
 
@@ -202,6 +204,8 @@ class JavaClientConfig {
     this.operationNameAsParameter = false,
     this.immutableInputFields = true,
     this.immutableTypeFields = true,
+    this.inputAsRecord = false,
+    this.typeAsRecord = false,
     this.wsAdapter = JavaWsAdapter.java11,
     this.jsonCodec = JavaJsonCodec.jackson,
   });
@@ -215,6 +219,8 @@ class JavaClientConfig {
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
       immutableInputFields: (json['immutableInputFields'] as bool?) ?? true,
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
+      inputAsRecord: (json['inputAsRecord'] as bool?) ?? false,
+      typeAsRecord: (json['typeAsRecord'] as bool?) ?? false,
       wsAdapter: JavaWsAdapter.values.firstWhere(
         (e) => e.name == json['wsAdapter'],
         orElse: () => JavaWsAdapter.java11,
