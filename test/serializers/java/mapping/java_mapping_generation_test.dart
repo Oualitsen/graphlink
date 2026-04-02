@@ -216,7 +216,8 @@ void _case4Tests() {
       test('toAccount maps email and displayName, not password', () {
         expect(out, contains('.email(getEmail())'));
         expect(out, contains('.displayName(getDisplayName())'));
-        expect(out, isNot(contains('password')));
+        // builder must not forward password to the target type
+        expect(out, isNot(contains('.password(')));
       });
       test('fromAccount takes input-only fields as params', () {
         expect(out, contains('String password, String confirmPassword'));
@@ -230,6 +231,7 @@ void _case4Tests() {
       test('toAccount uses component accessors, not password', () {
         expect(out, contains('email()'));
         expect(out, contains('displayName()'));
+        // constructor must not forward password to the target type
         expect(out, isNot(contains('password()')));
       });
       test('fromAccount still takes input-only fields as params', () {
@@ -244,11 +246,11 @@ void _case4Tests() {
 // ---------------------------------------------------------------------------
 
 const _case5 = '''
-  type Product { id: String!  title: String!  priceInCents: int!  stock: int!  categoryId: String! }
+  type Product { id: String!  title: String!  priceInCents: Int!  stock: Int!  categoryId: String! }
   input CreateProductInput @glMapsTo(type: "Product") {
     name: String!   @glMapField(to: "title")
-    price: int!     @glMapField(to: "priceInCents")
-    stock: int
+    price: Int!     @glMapField(to: "priceInCents")
+    stock: Int
     catId: String!  @glMapField(to: "categoryId")
     internalNote: String
   }
