@@ -53,6 +53,10 @@ Fields on the source input that have no counterpart on the target are simply ign
 
 Multiple `@glMapsTo` on the same input is not supported. If you need one input shape to construct two different types, that is service logic.
 
+### Target must be a type
+
+`@glMapsTo` may only target declared `type` definitions (`grammar.types`). Targeting another `input` or a projected type is not allowed — input-to-input conversion is service logic, and projected types are internal auto-generated constructs that users never reference by name.
+
 ### Generated method name
 
 `to{TargetType}()` — e.g. `toUser()`, `toAuditLog()`.
@@ -181,8 +185,8 @@ String? get mapFieldTo =>
 
 After existing input validation, add a pass over all inputs that declare `@glMapsTo`:
 
-1. Resolve the target name against `grammar.types`, `grammar.inputs`, and `grammar.projectedTypes`.
-2. If not found → `ParseException("@glMapsTo target '${input.mapsToType}' does not exist")`.
+1. Resolve the target name against `grammar.types` only (inputs and projectedTypes are not valid targets).
+2. If not found → `ParseException("@glMapsTo target '${input.mapsToType}' does not exist or is not a type")`.
 3. For each field on the input with `@glMapField(to: X)`, check that a field named `X` exists on the target → `ParseException` if not.
 4. Warn (or throw) if the resulting mapping has **zero** auto-mapped fields — the directive adds no value in that case (optional strictness, can be a warning).
 
@@ -198,8 +202,8 @@ Create a pure helper class/function `InputMappingResolver` that encodes the algo
 class MappedField {
   final GLField targetField;
   final GLField? sourceField;   // null → required param (missing in source)
-  final String sourceAccessor;  // field name or @glMapField alias
-  final bool isNullabilityMismatch; // nullable → non-null → needs default param
+  // isNullabilityMismatch: computed as sourceField.type.nullable && !targetField.type.nullable
+  // sourceAccessor: computed as sourceField?.name.token ?? targetField.name.token
 }
 
 class MappingPlan {
@@ -215,6 +219,26 @@ Resolution logic per **target** field:
 3. If found and `sourceField.type.nullable && !targetField.type.nullable` → `defaultParams`
 4. If found and types otherwise compatible → `autoMapped`
 5. If not found → `requiredParams`
+
+### Nested mapped input list rule
+
+When a source field is a list whose element type is itself a mapped input (`@glMapsTo`), auto-mapping via `.map((e) => e.toXxx()).toList()` is only valid if `toXxx()` can be called with **zero arguments** — i.e., the nested input's `MappingPlan` has no `requiredParams` and no `defaultParams`.
+
+If the nested `toXxx()` requires any parameters, the field is **promoted to `requiredParams`** in the parent plan. The caller receives `required List<TargetType> fieldName` and is responsible for the conversion.
+
+This rule applies to `toXxx()` only. For `fromXxx()`, nested `fromXxx()` calls always have optional default parameters (`= const []`), so the lambda can always call them with zero extra arguments.
+
+### List copy rule
+
+For list fields with the same element type (scalars, enums, or compatible types), the generated code always copies the list via `.toList()` rather than assigning the reference directly. Nullable source uses `?.toList()`.
+
+### `fromXxx()` nullable list default parameter rule
+
+When a target type field is a nullable list (`[T!]?`) but the corresponding input field is non-null (`[T!]!`), `fromXxx()` cannot guarantee a non-null value from the target instance. In this case:
+- A named optional parameter `List<T> defaultFieldName = const []` is added to `fromXxx()`
+- The assignment uses `targetInstance.field?.toList() ?? defaultFieldName`
+
+This mirrors how `toXxx()` handles nullable→non-null scalar mismatches with `required defaultFieldName` params, but uses an optional parameter with `const []` as the default since an empty list is always a safe fallback for collections.
 
 ---
 
@@ -288,15 +312,11 @@ Add the method to the input class statements list.
 
 ---
 
-## Step 8 — Handle target resolution (type or input)
+## Step 8 — Handle target resolution
 
-Both Step 6 and Step 7 need to resolve the target name to a `GLTokenWithFields`. The lookup order:
+Both Step 6 and Step 7 need to resolve the target name to a `GLTypeDefinition`. Lookup is `grammar.types[targetName]` only — inputs and projected types are not valid targets.
 
-1. `grammar.types[targetName]`
-2. `grammar.projectedTypes[targetName]`
-3. `grammar.inputs[targetName]`
-
-This is already handled by Step 4 validation, so by generation time the target is guaranteed to exist. Extract a small helper `_resolveTarget(String name)` in `GLSerializer` base or directly in each serializer.
+This is already guaranteed by Step 4 validation, so by generation time the target is always a `GLTypeDefinition`. Extract a small helper `_resolveTarget(String name)` in `GLSerializer` base or directly in each serializer.
 
 ---
 

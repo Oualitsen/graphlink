@@ -93,3 +93,11 @@ const glCacheInvalidate = "@glCacheInvalidate";
 const glCacheTagList = "tags";
 const glCacheArgAll = "all";
 const glCacheArgStaleIfOffline = "staleIfOffline";
+
+/// Maps an input type to a target type or input, generating a toXxx() method.
+const glMapsTo = "@glMapsTo";
+const glMapsToType = "type";
+
+/// Aliases an input field to a differently-named field on the mapping target.
+const glMapField = "@glMapField";
+const glMapFieldTo = "to";
