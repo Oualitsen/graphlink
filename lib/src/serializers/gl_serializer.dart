@@ -4,6 +4,7 @@ import 'package:graphlink/src/model/gl_enum_definition.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_directives_mixin.dart';
 import 'package:graphlink/src/model/gl_input_definition.dart';
+import 'package:graphlink/src/model/gl_input_mapping.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_type.dart';
@@ -11,6 +12,7 @@ import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/serializers/language.dart';
 import 'package:graphlink/src/utils.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+import 'package:graphlink/src/gl_grammar_maps_to_extension.dart';
 
 abstract class GLSerializer {
   final GLParser grammar;
@@ -133,6 +135,35 @@ abstract class GLSerializer {
       }
     }
     return buffer.toString();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Mapping — @glMapsTo / @glMapField
+  // Override generateToMethod and generateFromMethod in language serializers.
+  // ---------------------------------------------------------------------------
+
+  /// Generates the `toXxx()` method body for [def] → [targetType].
+  /// Returns an empty string by default (no mapping support).
+  String generateToMethod(
+          GLInputDefinition def, String targetType, MappingPlan plan) =>
+      '';
+
+  /// Generates the `fromXxx()` static method body for [targetType] → [def].
+  /// Returns an empty string by default (no mapping support).
+  String generateFromMethod(
+          GLInputDefinition def, String targetType, MappingPlan plan) =>
+      '';
+
+  /// Returns the mapping method strings for [def] if it declares @glMapsTo,
+  /// otherwise returns an empty list.
+  List<String> generateMappingMethods(GLInputDefinition def) {
+    final plan = grammar.resolveInputMappingPlan(def);
+    if (plan == null) return [];
+    final targetName = def.mapsToType!;
+    return [
+      generateToMethod(def, targetName, plan),
+      generateFromMethod(def, targetName, plan),
+    ].where((s) => s.isNotEmpty).toList();
   }
 
   String serializeToken(GLToken token, String importPrefix) {
