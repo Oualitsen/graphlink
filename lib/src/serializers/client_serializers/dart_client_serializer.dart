@@ -725,6 +725,7 @@ class _HeadersInterceptor extends Interceptor {
   String generateDefaultWebSocketAdapterFile() {
     return """
 import 'dart:async';
+import 'dart:math';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'graph_link_client.dart';
 
@@ -796,10 +797,7 @@ class _SubscriptionHandler {
 
   Completer<_StreamSink>? _sinkCompleter;
 
-  late final Stream<String> _onMessageStream = () {
-    var stream = adapter.onMessageStream;
-    return stream.isBroadcast ? stream : stream.asBroadcastStream();
-  }();
+  late final _onMessageStream = adapter.onMessageStream;
 
   Future<_StreamSink> _initWs() {
     if (_sinkCompleter != null) return _sinkCompleter!.future;
@@ -809,11 +807,12 @@ class _SubscriptionHandler {
   }
 
   Future<void> _connect() async {
+    final completer = _sinkCompleter;
     try {
       await adapter.connect();
-      _sinkCompleter!.complete(await _doHandshake());
+      completer?.complete(await _doHandshake());
     } catch (e) {
-      _sinkCompleter!.completeError(e);
+      completer?.completeError(e);
       _sinkCompleter = null;
     }
   }
@@ -827,49 +826,27 @@ class _SubscriptionHandler {
     await adapter.sendMessage(initMsg);
     await _onMessageStream
         .map(_parseEvent)
-        .firstWhere((msg) => msg.type == GraphqlWsMessageTypes.connectionAck);
+        .firstWhere(
+          (msg) => msg.type == GraphqlWsMessageTypes.connectionAck,
+          orElse: () => throw StateError('WebSocket closed before receiving connection_ack'),
+        )
+        .catchError((_) => GraphLinkSubscriptionErrorMessage(type: GraphqlWsMessageTypes.connectionAck));
     return _StreamSink(sendMessage: adapter.sendMessage, stream: _onMessageStream);
   }
 
   Future<void> _onReconnect() async {
     if (_payloads.isEmpty) return;
-    for (final sub in _subs.values) {
-      await sub.cancel();
-    }
-    _subs.clear();
     _sinkCompleter = Completer();
+    final completer = _sinkCompleter;
     try {
       final sink = await _doHandshake();
-      _sinkCompleter!.complete(sink);
-      await _resubscribeAll(sink);
+      completer?.complete(sink);
     } catch (e) {
-      _sinkCompleter!.completeError(e);
+      completer?.completeError(e);
       _sinkCompleter = null;
-      for (final uuid in List.from(_payloads.keys)) {
-        _map[uuid]?.addError(e);
-        _removeController(uuid);
+      for (final uuid in _map.keys) {
+        if (!_map[uuid]!.isClosed) _map[uuid]!.addError(e);
       }
-    }
-  }
-
-  Future<void> _resubscribeAll(_StreamSink sink) async {
-    for (final entry in Map.from(_payloads).entries) {
-      final uuid = entry.key as String;
-      if (!_map.containsKey(uuid)) continue;
-      final sub = sink.stream
-          .map(_parseEvent)
-          .where((event) => event.id == uuid)
-          .listen((msg) => _handleMessage(msg, uuid));
-      _subs[uuid] = sub;
-      final message = GraphLinkSubscriptionMessage(
-          id: uuid,
-          type: GraphqlWsMessageTypes.subscribe,
-          payload: GraphLinkSubscriptionPayload(
-            query: entry.value.query,
-            operationName: entry.value.operationName,
-            variables: entry.value.variables,
-          ));
-      await sink.sendMessage(json.encode(message.toJson()));
     }
   }
 
@@ -904,7 +881,7 @@ class _SubscriptionHandler {
           ));
       await streamSink.sendMessage(json.encode(message.toJson()));
     }).catchError((e) {
-      controller.addError(e);
+      if (!controller.isClosed) controller.addError(e);
       _removeController(uuid);
     });
 
@@ -921,20 +898,21 @@ class _SubscriptionHandler {
   }
 
   void _handleMessage(GraphLinkSubscriptionErrorMessageBase msg, String uuid) {
-    var controller = _map[uuid]!;
+    var controller = _map[uuid];
+    if (controller == null) return;
     switch (msg.type!) {
       case GraphqlWsMessageTypes.ping:
         adapter.sendMessage(pongMessage);
         break;
       case GraphqlWsMessageTypes.next:
-        controller.add((msg as GraphLinkSubscriptionMessage).payload!.data!);
+        if (!controller.isClosed) controller.add((msg as GraphLinkSubscriptionMessage).payload!.data!);
         break;
       case GraphqlWsMessageTypes.complete:
         _removeController(uuid);
         break;
       case GraphqlWsMessageTypes.error:
         var errorMsg = msg as GraphLinkSubscriptionErrorMessage;
-        controller.addError(errorMsg.payload as Object);
+        if (!controller.isClosed) controller.addError(errorMsg.payload as Object);
         _removeController(uuid);
         break;
       default:
@@ -946,7 +924,6 @@ class _SubscriptionHandler {
     _map.remove(uuid)?.close();
     _payloads.remove(uuid);
     if (_map.isEmpty) {
-      adapter.close();
       _sinkCompleter = null;
     }
   }
@@ -986,6 +963,7 @@ const _webSocketAdapter = """
 abstract class GraphLinkWebSocketAdapter {
   Future<void> connect();
 
+  /// Must return a broadcast stream.
   Stream<String> get onMessageStream;
 
   Future<void> sendMessage(String message);
@@ -1004,58 +982,86 @@ const _defaultWebSocketAdapter = """
 class DefaultGraphLinkWebSocketAdapter extends GraphLinkWebSocketAdapter {
   final String url;
   final Future<Map<String, String>?> Function()? headersProvider;
-  final Duration initialReconnectDelay;
-  final Duration maxReconnectDelay;
+  final bool reconnect;
 
   WebSocketChannel? _channel;
   final _messageController = StreamController<String>.broadcast();
   final _reconnectController = StreamController<void>.broadcast();
-  bool _closed = false;
+  StreamSubscription<dynamic>? _subscription;
+  Completer<void>? _connectionCompleter;
   int _reconnectAttempts = 0;
+  static const int _maxReconnectAttempts = 10;
+  static const Duration _initialDelay = Duration(seconds: 1);
+  static const Duration _maxDelay = Duration(seconds: 30);
+  static final Random _random = Random();
 
   DefaultGraphLinkWebSocketAdapter({
     required this.url,
     this.headersProvider,
-    this.initialReconnectDelay = const Duration(seconds: 1),
-    this.maxReconnectDelay = const Duration(seconds: 30),
+    this.reconnect = false,
   });
 
   @override
   Future<void> connect() async {
-    _closed = false;
     await _connectOnce();
   }
 
-  Future<void> _connectOnce() async {
-    _channel = WebSocketChannel.connect(Uri.parse(url));
-    await _channel!.ready;
-    _channel!.stream.listen(
-      (msg) => _messageController.add(msg as String),
-      onError: (_) => _scheduleReconnect(),
-      onDone: _scheduleReconnect,
-      cancelOnError: true,
-    );
+  Future<void> _connectOnce() {
+    if (_channel != null) return _channel!.ready;
+    if (_connectionCompleter != null) return _connectionCompleter!.future;
+    _connectionCompleter = Completer<void>();
+    _createConnection();
+    return _connectionCompleter!.future;
   }
 
-  Duration get _nextDelay {
-    final ms = initialReconnectDelay.inMilliseconds * (1 << _reconnectAttempts.clamp(0, 5));
-    return Duration(milliseconds: ms.clamp(0, maxReconnectDelay.inMilliseconds));
+  Future<void> _createConnection() async {
+    try {
+      _channel = WebSocketChannel.connect(Uri.parse(url));
+      _subscription = _channel!.stream.listen(
+        (data) => _messageController.add(data as String),
+        onError: _onError,
+        onDone: _onDone,
+      );
+      await _channel!.ready;
+      _connectionCompleter?.complete();
+    } catch (e) {
+      _connectionCompleter?.completeError(e);
+    } finally {
+      _connectionCompleter = null;
+    }
   }
 
-  void _scheduleReconnect() {
-    if (_closed) return;
-    final delay = _nextDelay;
+  void _onError(Object error) {
+    if (_subscription == null) return;
+    _subscription?.cancel();
+    _subscription = null;
+    _channel = null;
+    if (reconnect) _reconnect();
+  }
+
+  void _onDone() {
+    if (_subscription == null) return;
+    final closeCode = _channel?.closeCode;
+    _subscription?.cancel();
+    _subscription = null;
+    _channel = null;
+    if (reconnect && closeCode != 1000) _reconnect();
+  }
+
+  Future<void> _reconnect() async {
+    if (_reconnectAttempts >= _maxReconnectAttempts) return;
+    final delay = _backoffDelay(_reconnectAttempts);
     _reconnectAttempts++;
-    Future.delayed(delay, () async {
-      if (_closed) return;
-      try {
-        await _connectOnce();
-        _reconnectAttempts = 0;
-        _reconnectController.add(null);
-      } catch (_) {
-        _scheduleReconnect();
-      }
-    });
+    await Future.delayed(delay);
+    await _connectOnce();
+    _reconnectAttempts = 0;
+    _reconnectController.add(null);
+  }
+
+  Duration _backoffDelay(int attempt) {
+    final exp = min(_initialDelay.inMilliseconds * pow(2, attempt), _maxDelay.inMilliseconds);
+    final jitter = _random.nextInt(1000);
+    return Duration(milliseconds: exp.toInt() + jitter);
   }
 
   @override
@@ -1076,10 +1082,11 @@ class DefaultGraphLinkWebSocketAdapter extends GraphLinkWebSocketAdapter {
 
   @override
   Future<void> close() async {
-    _closed = true;
-    await _channel?.sink.close();
-    await _messageController.close();
-    await _reconnectController.close();
+    _reconnectAttempts = 0;
+    _subscription?.cancel();
+    _subscription = null;
+    await _channel?.sink.close(1000, 'normal closure');
+    _channel = null;
   }
 }
 """;
