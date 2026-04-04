@@ -136,3 +136,8 @@
   - Fixed FNV1a hash JS compatibility in Dart cache store
   - Internal unique-name refactor for more consistent generated class names
   - Updated Java server example
+
+
+## 4.3.0 - 2026-04-04
+  ### Fixes & improvements
+  Fixes a bug immutableInputFields and immutableTypeFields for spring boot code generation.
