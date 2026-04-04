@@ -686,8 +686,8 @@ Future<Set<String>> generateServerClasses(
     typesAsRecords: config.serverConfig?.spring?.typeAsRecord ?? false,
     inputsCheckForNulls: true,
     typesCheckForNulls: grammar.mode == CodeGenerationMode.client,
-    immutableInputFields: true,
-    immutableTypeFields: false,
+    immutableInputFields: config.serverConfig?.spring?.immutableInputFields ?? true,
+    immutableTypeFields: config.serverConfig?.spring?.immutableTypeFields?? false,
   );
   final springSerializer = SpringServerSerializer(grammar,
       javaSerializer: serializer,
