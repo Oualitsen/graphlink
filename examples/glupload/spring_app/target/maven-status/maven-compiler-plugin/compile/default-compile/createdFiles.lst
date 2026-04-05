@@ -1,0 +1,13 @@
+dev/graphlink/demo/services/UploadedFileServiceImpl.class
+dev/graphlink/demo/config/UploadScalar$1.class
+dev/graphlink/demo/config/GraphQlConfig.class
+dev/graphlink/demo/generated/types/UploadedFile.class
+dev/graphlink/demo/DemoApplication.class
+dev/graphlink/demo/generated/types/UploadedFile$Builder.class
+dev/graphlink/demo/config/MultipartGraphQlInterceptor.class
+dev/graphlink/demo/config/MultipartGraphQlInterceptor$2.class
+dev/graphlink/demo/generated/services/UploadedFileService.class
+dev/graphlink/demo/config/WebConfig.class
+dev/graphlink/demo/config/MultipartGraphQlInterceptor$1.class
+dev/graphlink/demo/generated/controllers/UploadedFileServiceController.class
+dev/graphlink/demo/config/UploadScalar.class

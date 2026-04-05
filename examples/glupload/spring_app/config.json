@@ -1,0 +1,32 @@
+{
+    "schemaPaths": [
+        "schema.graphql"
+    ],
+    "mode": "server",
+    "identityFields": [],
+    "typeMappings": {
+        "ID": "String",
+        "String": "String",
+        "Float": "Double",
+        "Int": "Integer",
+        "Boolean": "Boolean",
+        "Null": "null"
+    },
+    "outputDir": "spring_app/src/main/java/dev/graphlink/demo/generated",
+    "serverConfig": {
+        "spring": {
+            "basePackage": "dev.graphlink.demo.generated",
+            "generateControllers": true,
+            "generateInputs": true,
+            "generateTypes": true,
+            "generateRepositories": false,
+            "inputAsRecord": false,
+            "typeAsRecord": false,
+            "generateSchema": true,
+            "schemaTargetPath": "spring_app/src/main/resources/graphql/schema.graphqls",
+            "immutableInputFields": true,
+            "immutableTypeFields": false,
+            "injectDataFetching": false
+        }
+    }
+}
