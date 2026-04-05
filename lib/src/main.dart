@@ -22,6 +22,7 @@ import 'package:args/args.dart';
 import 'dart:convert';
 
 import 'package:graphlink/src/gl_grammar_io.dart' as grammar_io;
+import 'package:graphlink/src/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/utils.dart';
 
 const String appVersion =
@@ -413,6 +414,15 @@ Future<Set<String>> generateDartClientClasses(
         imports: [],
         destinationDir: destinationDir);
     futures.add(r);
+
+    if (parser.hasUploadMutations) {
+      futures.add(writeToFile(
+          data: clientSerializer.generateUploadsFile(),
+          fileName: 'graph_link_uploads${clientSerializer.fileExtension}',
+          subdir: 'client',
+          imports: [],
+          destinationDir: destinationDir));
+    }
 
     if (config.clientConfig?.dart?.generateAdapters ?? true) {
       final httpAdapter = config.clientConfig?.dart?.httpAdapter ?? DartHttpAdapter.http;

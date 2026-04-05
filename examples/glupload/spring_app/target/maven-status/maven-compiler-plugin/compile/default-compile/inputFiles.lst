@@ -1,0 +1,9 @@
+/Users/ramdane/projects/graphlink/examples/glupload/spring_app/src/main/java/dev/graphlink/demo/DemoApplication.java
+/Users/ramdane/projects/graphlink/examples/glupload/spring_app/src/main/java/dev/graphlink/demo/config/GraphQlConfig.java
+/Users/ramdane/projects/graphlink/examples/glupload/spring_app/src/main/java/dev/graphlink/demo/config/MultipartGraphQlInterceptor.java
+/Users/ramdane/projects/graphlink/examples/glupload/spring_app/src/main/java/dev/graphlink/demo/config/UploadScalar.java
+/Users/ramdane/projects/graphlink/examples/glupload/spring_app/src/main/java/dev/graphlink/demo/config/WebConfig.java
+/Users/ramdane/projects/graphlink/examples/glupload/spring_app/src/main/java/dev/graphlink/demo/generated/controllers/UploadedFileServiceController.java
+/Users/ramdane/projects/graphlink/examples/glupload/spring_app/src/main/java/dev/graphlink/demo/generated/services/UploadedFileService.java
+/Users/ramdane/projects/graphlink/examples/glupload/spring_app/src/main/java/dev/graphlink/demo/generated/types/UploadedFile.java
+/Users/ramdane/projects/graphlink/examples/glupload/spring_app/src/main/java/dev/graphlink/demo/services/UploadedFileServiceImpl.java

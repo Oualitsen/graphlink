@@ -23,6 +23,7 @@ import 'package:graphlink/src/utils.dart';
 import 'package:logger/logger.dart';
 
 import 'package:graphlink/src/gl_grammar_cache_extension.dart';
+import 'package:graphlink/src/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/gl_grammar_maps_to_extension.dart';
 import 'package:graphlink/src/gl_grammar_extension.dart';
 import 'package:graphlink/src/gl_validation_extension.dart';
@@ -244,6 +245,9 @@ class GLParser {
       checkGLCacheInvalidateDirectives();
       checkGLCacheTags();
       validateMapsToDirectives();
+      checkUploadDirectivePlacement();
+      checkUploadScalarUsage();
+      checkUploadListDepth();
       createProjectedTypes();
       updateInterfaceCommonFields();
       fillProjectedInterfaces();

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/excpetions/parse_exception.dart';
@@ -20,6 +21,7 @@ import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/serializers/language.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+import 'package:graphlink/src/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/utils.dart';
 
 class SpringServerSerializer {
@@ -45,10 +47,51 @@ class SpringServerSerializer {
     _validateFieldArguments();
     _annotateRepositories();
     _annotateControllers();
+    _warnIfUploadScalarsPresent();
     grammar.convertAnnotationsToDecorators(
         _getControllerMixins(),
         (val) => AnnotationSerializer.serializeAnnotation(val,
             multiLineString: false));
+  }
+
+  void _warnIfUploadScalarsPresent() {
+    if (grammar.uploadScalarNames.isEmpty) return;
+    final scalars = grammar.uploadScalarNames.join(', ');
+    stdout.writeln('''
+ℹ  File upload detected — Spring Boot configuration required
+   ─────────────────────────────────────────────────────────
+   Upload scalar(s) found: $scalars
+
+   1. Multipart support
+      Spring for GraphQL does not handle multipart requests out of the box.
+      Add the following library to your project:
+
+        https://github.com/nkonev/multipart-spring-graphql
+
+      Follow its README to register the multipart scalar and configure
+      the servlet multipart resolver in application.properties:
+
+        spring.servlet.multipart.enabled=true
+        spring.servlet.multipart.max-file-size=10MB
+        spring.servlet.multipart.max-request-size=10MB
+
+   2. Prevent schema redefinition errors
+      The $scalars scalar is declared in your schema file. If GraphLink
+      copies that file to the server output (generateSchema: true), the
+      library above will also register the scalar — causing a duplicate
+      definition error at startup.
+
+      To avoid this, annotate the scalar in your schema with @glSkipOnServer
+      so GraphLink omits it from the generated schema copy:
+
+        scalar Upload @glUpload @glSkipOnServer
+
+      Then enable schema copying in your config:
+
+        "generateSchema": true
+        "schemaTargetPath": "src/main/resources/graphql/schema.graphqls"
+   ─────────────────────────────────────────────────────────
+''');
   }
 
   List<GLDirectivesMixin> _getControllerMixins() {
@@ -173,12 +216,13 @@ class SpringServerSerializer {
       buffer.writeln(decorators);
     }
     var args = method.arguments.map((arg) {
+      final argType = _resolveArgType(arg, context);
       var argDecorators =
           serializer.serializeDecorators(arg.getDirectives()).trim();
       if (argDecorators.isNotEmpty) {
-        return "$argDecorators ${serializer.serializeType(arg.type, false)} ${arg.token}";
+        return "$argDecorators $argType ${arg.token}";
       }
-      return "${serializer.serializeType(arg.type, false)} ${arg.token}";
+      return "$argType ${arg.token}";
     }).toList();
 
     if (injectDataFetching) {
@@ -296,7 +340,7 @@ class SpringServerSerializer {
       returnType = _getServiceReturnType(method.type);
     }
     var result =
-        "${serializer.serializeTypeReactive(context: context, glType: createListTypeOnSubscription(returnType, type), reactive: type == GLQueryType.subscription)} ${method.name}(${serializeArgs(method.arguments, argPrefix)}";
+        "${serializer.serializeTypeReactive(context: context, glType: createListTypeOnSubscription(returnType, type), reactive: type == GLQueryType.subscription)} ${method.name}(${serializeArgs(method.arguments, context, argPrefix)}";
     if (injectDataFetching) {
       var inject = "DataFetchingEnvironment dataFetchingEnvironment";
       context.addImport(SpringImports.gqlDataFetchingEnvironment);
@@ -354,8 +398,9 @@ class SpringServerSerializer {
     return mappedTo.token;
   }
 
-  String serializeArgs(List<GLArgumentDefinition> args, [String? prefix]) {
-    return args.map((a) => serializeArg(a)).map((e) {
+  String serializeArgs(List<GLArgumentDefinition> args, GLToken context,
+      [String? prefix]) {
+    return args.map((a) => serializeArg(a, context)).map((e) {
       if (prefix != null) {
         return "$prefix $e";
       }
@@ -363,8 +408,23 @@ class SpringServerSerializer {
     }).join(", ");
   }
 
-  String serializeArg(GLArgumentDefinition arg) {
-    return "${serializer.serializeType(arg.type, false)} ${arg.tokenInfo}";
+  String serializeArg(GLArgumentDefinition arg, GLToken context) {
+    return "${_resolveArgType(arg, context)} ${arg.tokenInfo}";
+  }
+
+  /// Returns `MultipartFile` / `List<MultipartFile>` for upload scalars,
+  /// otherwise delegates to the standard type serializer.
+  String _resolveArgType(GLArgumentDefinition arg, GLToken context) {
+    final uploadNames = grammar.uploadScalarNames;
+    if (uploadNames.contains(arg.type.firstType.token)) {
+      context.addImport(SpringImports.multipartFile);
+      if (arg.type.isList) {
+        context.addImport(JavaImports.list);
+        return 'List<MultipartFile>';
+      }
+      return 'MultipartFile';
+    }
+    return serializer.serializeType(arg.type, false);
   }
 
   String serializeMappingMethod(
@@ -478,7 +538,7 @@ Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(serializer.se
     buffer.write(
         "${_getReturnType(mapping, context)} ${mapping.key}(${_getMappingArgument(mapping, context)}");
     for (var arg in mapping.field.arguments) {
-      final argType = serializer.serializeType(arg.type, false);
+      final argType = _resolveArgType(arg, context);
       if (annotateArguments) {
         context.addImport(SpringImports.gqlArgument);
         buffer.write(', @Argument $argType ${arg.tokenInfo}');
