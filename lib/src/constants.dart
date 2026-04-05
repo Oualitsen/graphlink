@@ -152,6 +152,101 @@ enum GraphLinkAckStatus {none progress acknoledged }
 ''';
 }
 
+/// Content of the generated `graph_link_uploads.dart` file.
+/// Imported by both the client and adapter files — no circular dependency.
+const dartUploadsFile = """
+import 'dart:async';
+import 'dart:typed_data';
+
+typedef UploadProgressCallback = void Function(int sent, int total);
+typedef GLUploadConverter = Object Function(GLUpload upload);
+typedef GLMultipartAdapter = Future<String> Function(
+    Map<String, Object> parts, UploadProgressCallback? onProgress);
+
+class GLUpload {
+  final Stream<List<int>> stream;
+  final int? length;
+  final String? filename;
+  final String mimeType;
+
+  GLUpload({
+    required this.stream,
+    this.length,
+    this.filename,
+    this.mimeType = 'application/octet-stream',
+  });
+
+  factory GLUpload.fromBytes(
+    Uint8List bytes, {
+    String? filename,
+    String mimeType = 'application/octet-stream',
+  }) {
+    return GLUpload(
+      stream: Stream.value(bytes),
+      length: bytes.length,
+      filename: filename,
+      mimeType: mimeType,
+    );
+  }
+}
+""";
+
+/// Emitted once in the client file — the default identity converter.
+const dartUploadDefaultConverter = '''
+/// Default converter — passes GLUpload through as-is.
+/// The selected adapter's multipartCall handles GLUpload natively.
+Object _defaultUploadConverter(GLUpload upload) => upload;
+''';
+
+const javaUploadProgressCallback = '''
+@FunctionalInterface
+public interface UploadProgressCallback {
+    void onProgress(long sent, long total);
+}
+''';
+
+const javaGLUpload = '''
+public final class GLUpload {
+
+    private final InputStream stream;
+    private final long length;
+    private final String filename;
+    private final String mimeType;
+
+    public GLUpload(InputStream stream, long length, String filename, String mimeType) {
+        this.stream = stream;
+        this.length = length;
+        this.filename = filename;
+        this.mimeType = mimeType;
+    }
+
+    public GLUpload(InputStream stream, long length, String filename) {
+        this(stream, length, filename, "application/octet-stream");
+    }
+
+    public static GLUpload fromBytes(byte[] bytes, String filename, String mimeType) {
+        return new GLUpload(new ByteArrayInputStream(bytes), bytes.length, filename, mimeType);
+    }
+
+    public static GLUpload fromBytes(byte[] bytes, String filename) {
+        return fromBytes(bytes, filename, "application/octet-stream");
+    }
+
+    public static GLUpload fromFile(File file) throws IOException {
+        return new GLUpload(new FileInputStream(file), file.length(), file.getName(), "application/octet-stream");
+    }
+
+    public static GLUpload fromFile(File file, String mimeType) throws IOException {
+        return new GLUpload(new FileInputStream(file), file.length(), file.getName(), mimeType);
+    }
+
+    public InputStream getStream() { return stream; }
+    public long getLength() { return length; }
+    public String getFilename() { return filename; }
+    public String getMimeType() { return mimeType; }
+}
+''';
+
 class JavaImports {
   static const map = "java.util.Map";
   static const hashMap = "java.util.HashMap";
@@ -174,6 +269,11 @@ class JavaImports {
   static const consumer = "java.util.function.Consumer";
   static const set = "java.util.Set";
   static const hashSet = "java.util.HashSet";
+  static const inputStream = "java.io.InputStream";
+  static const byteArrayInputStream = "java.io.ByteArrayInputStream";
+  static const fileInputStream = "java.io.FileInputStream";
+  static const file = "java.io.File";
+  static const ioException = "java.io.IOException";
 }
 
 class SpringImports {
@@ -196,4 +296,6 @@ class SpringImports {
       "org.springframework.graphql.data.method.annotation.MutationMapping";
   static const subscriptionMapping =
       "org.springframework.graphql.data.method.annotation.SubscriptionMapping";
+  static const multipartFile =
+      "org.springframework.web.multipart.MultipartFile";
 }

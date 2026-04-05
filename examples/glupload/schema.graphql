@@ -1,0 +1,48 @@
+directive @glUpload on SCALAR
+
+scalar Upload @glUpload
+
+# ── Types ─────────────────────────────────────────────────────────────────────
+
+type UploadedFile {
+  id: ID!
+  filename: String!
+  mimeType: String!
+  size: Int!
+  url: String!
+}
+
+# ── Queries ───────────────────────────────────────────────────────────────────
+
+type Query {
+  files: [UploadedFile!]!
+  file(id: ID!): UploadedFile
+}
+
+# ── Mutations ─────────────────────────────────────────────────────────────────
+
+type Mutation {
+  # Upload a single file with an optional display name
+  uploadFile(file: Upload!, filename: String!): UploadedFile!
+
+  # Upload multiple files in one request with an optional label
+  uploadFiles(files: [Upload!]!, label: String): [UploadedFile!]!
+
+  # Upload an avatar for a specific user (mixed: upload + regular args)
+  uploadAvatar(file: Upload!, userId: ID!): UploadedFile!
+
+  createSomething(input: CreateSomething): String
+
+}
+
+input CreateSomething {
+  name: String
+}
+
+mutation UploadMultiFies($myFiles: [Upload!]!, $label: String) {
+  uploadFiles(files: $myFiles, label: $label) {
+    id
+  }
+}
+
+

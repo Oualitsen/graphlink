@@ -1,9 +1,12 @@
+import 'dart:io';
 import 'package:graphlink/src/cache_store_dart.dart';
 import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/config.dart';
+import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/gl_grammar_cache_extension.dart';
+import 'package:graphlink/src/gl_grammar_upload_extension.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/serializers/gl_client_serilaizer.dart';
@@ -43,7 +46,9 @@ class DartClientSerializer extends GLClientSerilaizer {
       buffer.writeln("import 'graph_link_websocket_adapter.dart';");
     }
     buffer.writeln(imports);
-
+    if(_parser.hasMutations && _parser.hasUploadMutations) {
+      buffer.writeln("import 'graph_link_uploads.dart';");
+    }
     buffer.writeln();
     buffer.writeln("const tagKeyPrefix = '__tag__';");
     buffer.writeln();
@@ -59,6 +64,10 @@ class DartClientSerializer extends GLClientSerilaizer {
     buffer.writeln();
     buffer.writeln(inMemoryGraphLinkCacheStore);
     buffer.writeln();
+    if (_parser.hasUploadMutations) {
+      buffer.writeln(dartUploadDefaultConverter);
+      buffer.writeln();
+    }
 
     GLQueryType.values
         .map((e) => generateQueriesClassByType(e))
@@ -207,6 +216,10 @@ class DartClientSerializer extends GLClientSerilaizer {
         methodName: 'GraphLinkClient',
         arguments: [
           'required ${_adapterDeclaration()}',
+          if (_parser.hasUploadMutations) ...[
+            'GLUploadConverter uploadConverter = _defaultUploadConverter',
+            'GLMultipartAdapter? uploadAdapter',
+          ],
           if (_parser.hasSubscriptions) 'required GraphLinkWebSocketAdapter wsAdapter',
           '$_cacheStoreClassName? store'
         ],
@@ -223,7 +236,9 @@ class DartClientSerializer extends GLClientSerilaizer {
           if (_parser.hasQueries)
             "queries = ${classNameFromType(GLQueryType.query)}(adapter, _fragmMap, this.store, _tagLocks);",
           if (_parser.hasMutations)
-            "mutations = ${classNameFromType(GLQueryType.mutation)}(adapter, _fragmMap, this.store, _tagLocks);",
+            _parser.hasUploadMutations
+                ? "mutations = ${classNameFromType(GLQueryType.mutation)}(adapter, uploadConverter, uploadAdapter, _fragmMap, this.store, _tagLocks);"
+                : "mutations = ${classNameFromType(GLQueryType.mutation)}(adapter, _fragmMap, this.store, _tagLocks);",
           if (_parser.hasSubscriptions)
             "subscriptions = ${classNameFromType(GLQueryType.subscription)}(wsAdapter, _fragmMap, this.store, _tagLocks);",
         ],
@@ -247,6 +262,26 @@ class DartClientSerializer extends GLClientSerilaizer {
         : '';
     final adapterClass = _useDio ? 'GraphLinkDioAdapter' : 'GraphLinkHttpAdapter';
     final adapterArgs = 'url: url, headersProvider: headersProvider';
+
+    if (_parser.hasUploadMutations) {
+      return '''
+factory GraphLinkClient.withHttp({
+  required String url,
+  $wsParams
+  Future<Map<String, String>?> Function()? headersProvider,
+  $_cacheStoreClassName? store,
+}) {
+  final _a = $adapterClass($adapterArgs);
+  return GraphLinkClient(
+    adapter: _a.call,
+    uploadConverter: _defaultUploadConverter,
+    uploadAdapter: _a.multipartCall,
+    $wsArg
+    store: store,
+  );
+}''';
+    }
+
     return '''
 GraphLinkClient.withHttp({
   required String url,
@@ -407,6 +442,10 @@ GraphLinkClient.fromUrl({
         'GraphLinkWebSocketAdapter adapter'
       else
         'this._adapter',
+      if (type == GLQueryType.mutation && _parser.hasUploadMutations) ...[
+        'this._uploadConverter',
+        'this._uploadAdapter',
+      ],
       'Map<String, String> fragmentMap',
       'GraphLinkCacheStore store',
       'Map<String, _Lock> _tagLocks'
@@ -416,8 +455,13 @@ GraphLinkClient.fromUrl({
   String declareAdapter(GLQueryType type) {
     switch (type) {
       case GLQueryType.query:
-      case GLQueryType.mutation:
         return "final Future<String> Function(String payload${_parser.operationNameAsParameter ? ', String $_operationNameParam' : ''}) _adapter;";
+      case GLQueryType.mutation:
+        final base = "final Future<String> Function(String payload${_parser.operationNameAsParameter ? ', String $_operationNameParam' : ''}) _adapter;";
+        if (_parser.hasUploadMutations) {
+          return "$base\nfinal GLUploadConverter _uploadConverter;\nfinal GLMultipartAdapter? _uploadAdapter;";
+        }
+        return base;
       case GLQueryType.subscription:
         return "late final _SubscriptionHandler _handler;";
     }
@@ -430,6 +474,7 @@ GraphLinkClient.fromUrl({
         arguments: getArguments(def),
         async: def.type != GLQueryType.subscription,
         statements: [
+          if(!_parser.mutationHasUploads(def))
           "const operationName = '${def.tokenInfo}';",
           if (def.fragments(_parser).isNotEmpty) ...[
             "final fragsValues = [",
@@ -441,6 +486,7 @@ GraphLinkClient.fromUrl({
           else
             "final query = '''${_parser.serializer.serializeQueryDefinition(def)} \${fragsValues}''';",
           generateVariables(def),
+          if(!_parser.mutationHasUploads(def))
           "final payload = GraphLinkPayload(query: query, operationName: operationName, variables: variables);",
           _serializeAdapterCall(def)
         ]);
@@ -564,6 +610,9 @@ return _handler.handle(payload)
           .trim()
           .ident();
     }
+    if (_parser.mutationHasUploads(def)) {
+      return _serializeMultipartAdapterCall(def);
+    }
     return """
 final response = await _adapter(json.encode(payload.toJson())${_parser.operationNameAsParameter ? ', operationName' : ''});
 Map<String, dynamic> result = jsonDecode(response);
@@ -576,8 +625,70 @@ return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson(data);
 """;
   }
 
+  String _serializeMultipartAdapterCall(GLQueryDefinition def) {
+    final uploadNames = _parser.uploadScalarNames;
+    final uploadArgs = def.arguments
+        .where((a) => uploadNames.contains(a.type.firstType.token))
+        .toList();
+
+    final statements = <String>[
+      'final _multipartMap = <String, Object>{};',
+      'final _fileParts = <String, Object>{};',
+      'int _slot = 0;',
+    ];
+
+    for (final arg in uploadArgs) {
+      final name = arg.dartArgumentName;
+      if (arg.type.isList) {
+        statements.add(codeGenUtils.forEachLoop(
+          variable: '_i',
+          iterable: 'Iterable.generate($name.length)',
+          statements: [
+            "_multipartMap['\${_slot + _i}'] = ['variables.$name.\$_i'];",
+            "_fileParts['\${_slot + _i}'] = _uploadConverter($name[_i]);",
+          ],
+        ));
+        statements.add('_slot += $name.length;');
+      } else {
+        statements.addAll([
+          "_multipartMap['\$_slot'] = ['variables.$name'];",
+          "_fileParts['\$_slot'] = _uploadConverter($name);",
+          '_slot++;',
+        ]);
+      }
+    }
+
+    statements.addAll([
+      "final parts = <String, Object>{"
+          "\n  'operations': jsonEncode({'query': query, 'variables': variables}),"
+          "\n  'map': jsonEncode(_multipartMap),"
+          "\n  ..._fileParts,"
+          "\n};",
+      'final response = await _uploadAdapter!(parts, onProgress);',
+      'Map<String, dynamic> result = jsonDecode(response);',
+      codeGenUtils.ifStatement(
+        condition: 'result.containsKey("errors")',
+        ifBlockStatements: [
+          'throw result["errors"].map((error) => GraphLinkError.fromJson(error)).toList();',
+        ],
+      ),
+      'var data = result["data"];',
+      _serializeInvalidationCall(def),
+      'return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson(data);',
+    ]);
+
+    return statements.join('\n');
+  }
+
   String _serializeArgumentValue(GLQueryDefinition def, String argName) {
     var arg = def.findByName(argName);
+    if (_parser.uploadScalarNames.contains(arg.type.firstType.token)) {
+      if(arg.type.isList) {
+        return '${arg.dartArgumentName}.map((e) => null).toList()';
+      } else {
+        return 'null';
+      }
+    }
     return _callToJson(arg.dartArgumentName, arg.type);
   }
 
@@ -608,14 +719,22 @@ return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson(data);
   }
 
   List<String> getArguments(GLQueryDefinition def) {
-    if (def.arguments.isEmpty) {
-      return [];
-    }
-    return def.arguments
-        .map((e) =>
-            "${serializer.serializeType(e.type, false)} ${e.dartArgumentName}")
-        .map((e) => "required $e")
+    final args = def.arguments
+        .map((e) => "required ${_resolveArgType(e)} ${e.dartArgumentName}")
         .toList();
+    if (_parser.mutationHasUploads(def)) {
+      args.add('UploadProgressCallback? onProgress');
+    }
+    if (args.isEmpty) return [];
+    return args;
+  }
+
+  String _resolveArgType(arg) {
+    final uploadNames = _parser.uploadScalarNames;
+    if (uploadNames.contains(arg.type.firstType.token)) {
+      return arg.type.isList ? 'List<GLUpload>' : 'GLUpload';
+    }
+    return serializer.serializeType(arg.type, false);
   }
 
   String returnTypeByQueryType(GLQueryDefinition def) {
@@ -641,11 +760,73 @@ $_webSocketAdapter
   String get fileExtension => '.dart';
 
   String generateHttpAdapterFile() {
+    if (_parser.hasUploadMutations) {
+      stdout.writeln(
+        '⚠️  Upload mutations detected with the http adapter.\n'
+        '   Progress tracking buffers the entire request body in memory.\n'
+        '   For large files, consider switching to the Dio adapter (httpAdapter: "dio").',
+      );
+    }
     final extraParam = _parser.operationNameAsParameter ? ', String operationName' : '';
+    final uploadsImport = _parser.hasUploadMutations
+        ? "import 'graph_link_uploads.dart';"
+        : '';
+    final multipartMethod = _parser.hasUploadMutations ? '''
+
+  Future<String> multipartCall(Map<String, Object> parts, UploadProgressCallback? onProgress) async {
+    final request = http.MultipartRequest('POST', Uri.parse(url));
+    final extraHeaders = await headersProvider?.call() ?? {};
+    request.headers.addAll(extraHeaders);
+    for (final entry in parts.entries) {
+      if (entry.value is GLUpload) {
+        final u = entry.value as GLUpload;
+        request.files.add(http.MultipartFile(
+          entry.key, u.stream, u.length ?? 0,
+          filename: u.filename,
+          contentType: MediaType.parse(u.mimeType),
+        ));
+      } else {
+        request.fields[entry.key] = entry.value as String;
+      }
+    }
+
+    if (onProgress == null) {
+      final streamed = await request.send();
+      return (await http.Response.fromStream(streamed)).body;
+    }
+
+    // Progress requested: buffer the full body to know total length,
+    // then re-stream it with a counting wrapper.
+    // Note: the entire request body is held in memory during upload.
+    // For large files prefer the Dio adapter which supports native progress.
+    final bodyBytes = await request.finalize().toBytes();
+    final total = bodyBytes.length;
+    int sent = 0;
+
+    const chunkSize = 8192;
+    final counted = Stream.fromIterable([
+      for (var i = 0; i < bodyBytes.length; i += chunkSize)
+        bodyBytes.sublist(i, (i + chunkSize).clamp(0, bodyBytes.length)),
+    ]).map((chunk) {
+      sent += chunk.length;
+      onProgress(sent, total);
+      return chunk;
+    });
+
+    final raw = http.StreamedRequest('POST', Uri.parse(url));
+    raw.headers.addAll(extraHeaders);
+    raw.headers['content-type'] = request.headers['content-type']!;
+    raw.contentLength = total;
+    counted.listen(raw.sink.add, onDone: raw.sink.close);
+
+    final streamed = await raw.send();
+    return (await http.Response.fromStream(streamed)).body;
+  }''' : '';
     return """
 import 'dart:async';
 import 'package:http/http.dart' as http;
-
+import 'package:http_parser/http_parser.dart';
+$uploadsImport
 class GraphLinkHttpAdapter {
   final String url;
   final Future<Map<String, String>?> Function()? headersProvider;
@@ -667,18 +848,44 @@ class GraphLinkHttpAdapter {
       headers: requestHeaders,
     );
     return response.body;
-  }
+  }$multipartMethod
 }
 """;
   }
 
   String generateDioAdapterFile() {
     final extraParam = _parser.operationNameAsParameter ? ', String operationName' : '';
+    final uploadsImport = _parser.hasUploadMutations
+        ? "import 'graph_link_uploads.dart';"
+        : '';
+    final multipartMethod = _parser.hasUploadMutations ? '''
+
+  Future<String> multipartCall(Map<String, Object> parts, UploadProgressCallback? onProgress) async {
+    final converted = <String, dynamic>{};
+    for (final entry in parts.entries) {
+      if (entry.value is GLUpload) {
+        final u = entry.value as GLUpload;
+        converted[entry.key] = MultipartFile.fromStream(
+          () => u.stream, u.length ?? 0,
+          filename: u.filename,
+          contentType: u.mimeType.isNotEmpty ? MediaType.parse(u.mimeType) : null,
+        );
+      } else {
+        converted[entry.key] = entry.value;
+      }
+    }
+    final formData = FormData.fromMap(converted);
+    final response = await dio.post<dynamic>(url, data: formData,
+        onSendProgress: onProgress != null ? (sent, total) => onProgress(sent, total) : null);
+    final data = response.data;
+    return data is String ? data : jsonEncode(data);
+  }''' : '';
     return """
 import 'dart:async';
 import 'dart:convert';
 import 'package:dio/dio.dart';
-
+import 'package:http_parser/http_parser.dart';
+$uploadsImport
 class GraphLinkDioAdapter {
   final String url;
   final Dio dio;
@@ -702,7 +909,7 @@ class GraphLinkDioAdapter {
     final response = await dio.post<dynamic>(url, data: payload);
     final data = response.data;
     return data is String ? data : jsonEncode(data);
-  }
+  }$multipartMethod
 }
 
 class _HeadersInterceptor extends Interceptor {
@@ -721,6 +928,8 @@ class _HeadersInterceptor extends Interceptor {
 }
 """;
   }
+
+  String generateUploadsFile() => dartUploadsFile;
 
   String generateDefaultWebSocketAdapterFile() {
     return """

@@ -1,0 +1,11 @@
+name: dart_dio_upload_app
+description: GraphLink upload example — Dart client with Dio adapter
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ">=2.19.0 <4.0.0"
+
+dependencies:
+  dio: ^5.9.2
+  http_parser: ^4.0.0

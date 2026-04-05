@@ -101,3 +101,8 @@ const glMapsToType = "type";
 /// Aliases an input field to a differently-named field on the mapping target.
 const glMapField = "@glMapField";
 const glMapFieldTo = "to";
+
+/// Marks a scalar as a file upload type.
+/// The generator will produce GLUpload (Dart) / GLUpload (Java) as the type,
+/// and multipart/form-data transport for any mutation that uses it.
+const glUpload = "@glUpload";
