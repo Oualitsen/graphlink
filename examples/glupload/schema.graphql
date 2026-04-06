@@ -31,9 +31,10 @@ type Mutation {
   # Upload an avatar for a specific user (mixed: upload + regular args)
   uploadAvatar(file: Upload!, userId: ID!): UploadedFile!
 
-  createSomething(input: CreateSomething): String
+  createSomething(input: CreateSomething!): String
 
 }
+
 
 input CreateSomething {
   name: String

@@ -1,6 +1,6 @@
 {
     "schemaPaths": [
-        "schema.graphql"
+        "../schema.graphql"
     ],
     "mode": "client",
     "identityFields": [],
@@ -12,7 +12,7 @@
         "Boolean": "Boolean",
         "Null": "null"
     },
-    "outputDir": "java_java11_client_app/src/main/java/com/example/generated",
+    "outputDir": "src/main/java/com/example/generated",
     "clientConfig": {
         "java": {
             "packageName": "com.example.generated",

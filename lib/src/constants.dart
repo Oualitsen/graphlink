@@ -205,6 +205,16 @@ public interface UploadProgressCallback {
 }
 ''';
 
+const javaGraphLinkMultipartAdapter = '''
+public interface GraphLinkMultipartAdapter {
+    String executeMultipart(String operations, String mapJson, Map<String, GLUpload> files, UploadProgressCallback onProgress) throws java.io.IOException;
+
+    default String executeMultipart(String operations, String mapJson, Map<String, GLUpload> files) throws java.io.IOException {
+        return executeMultipart(operations, mapJson, files, null);
+    }
+}
+''';
+
 const javaGLUpload = '''
 public final class GLUpload {
 
