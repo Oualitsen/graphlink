@@ -1,4 +1,6 @@
 import 'package:graphlink/src/cache_store_java.dart';
+import 'package:graphlink/src/config.dart';
+import 'package:graphlink/src/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/extensions.dart';
@@ -20,10 +22,11 @@ const _subscriptionListenerRef = _subscriptionListenerName;
 class JavaClientSerializer extends GLClientSerilaizer {
   final GLParser _grammar;
   final codeGenUtils = JavaCodeGenUtils();
+  final JavaJsonCodec jsonCodec;
 
   final GLGraphqSerializer gqlSerializer;
 
-  JavaClientSerializer(this._grammar, GLSerializer serializer)
+  JavaClientSerializer(this._grammar, GLSerializer serializer, {this.jsonCodec = JavaJsonCodec.jackson})
       : gqlSerializer = GLGraphqSerializer(_grammar, false),
         super(serializer);
 
@@ -58,9 +61,9 @@ class JavaClientSerializer extends GLClientSerilaizer {
         returnType: 'public',
         statements: [
           if (_grammar.hasSubscriptions)
-            'this(adapter, encoder, decoder, null, wsAdapter);'
+            'this(adapter, ${_grammar.hasUploadMutations ? 'multipartAdapter, ' : ''}encoder, decoder, null, wsAdapter);'
           else
-            'this(adapter, encoder, decoder, null);',
+            'this(adapter, ${_grammar.hasUploadMutations ? 'multipartAdapter, ' : ''}encoder, decoder, null);',
         ],
         arguments: [
           _adapterDeclaration(false),
@@ -88,7 +91,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
           if (_grammar.hasQueries)
             "queries = new ${classNameFromType(GLQueryType.query)}(adapter, _fragmMap, encoder, decoder, store);",
           if (_grammar.hasMutations)
-            "mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, _fragmMap, encoder, decoder, store);",
+            "mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, ${_grammar.hasUploadMutations ? 'multipartAdapter, ' : ''}_fragmMap, encoder, decoder, store);",
           if (_grammar.hasSubscriptions)
             "subscriptions = new ${classNameFromType(GLQueryType.subscription)}(wsAdapter, _fragmMap, encoder, decoder, store);",
           ..._grammar.fragments.values.map((value) =>
@@ -107,78 +110,115 @@ class JavaClientSerializer extends GLClientSerilaizer {
       'GraphLinkJsonEncoder encoder',
       'GraphLinkJsonDecoder decoder',
     ];
-    const defaultCodec = 'new JacksonGraphLinkJsonCodec()';
+    final defaultCodec = jsonCodec == JavaJsonCodec.jackson
+        ? 'new JacksonGraphLinkJsonCodec()'
+        : jsonCodec == JavaJsonCodec.gson
+            ? 'new GsonGraphLinkJsonCodec()'
+            : null;
 
     if (!_grammar.hasSubscriptions) {
       return [
+        // When uploads are present, an intermediate constructor takes
+        // DefaultGraphLinkClientAdapter (which implements both interfaces) so
+        // the url+encoder constructors can delegate with this() as the first
+        // statement while only constructing one adapter instance.
+        if (_grammar.hasUploadMutations)
+          codeGenUtils.createMethod(
+            returnType: 'public',
+            methodName: clientName,
+            arguments: ['DefaultGraphLinkClientAdapter adapter', ...encoderDecoderArgs],
+            statements: ['this(adapter, adapter, encoder, decoder, null);'],
+          ),
         codeGenUtils.createMethod(
           returnType: 'public',
           methodName: clientName,
           arguments: ['String url', ...encoderDecoderArgs],
-          statements: ['this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, null);'],
+          statements: _grammar.hasUploadMutations
+              ? ['this(new DefaultGraphLinkClientAdapter(url), encoder, decoder);']
+              : ['this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, null);'],
         ),
         codeGenUtils.createMethod(
           returnType: 'public',
           methodName: clientName,
           arguments: ['String url', 'Supplier<Map<String, String>> headersProvider', ...encoderDecoderArgs],
-          statements: ['this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, null);'],
+          statements: _grammar.hasUploadMutations
+              ? ['this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder);']
+              : ['this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, null);'],
         ),
-        // Default encoder/decoder (Jackson)
-        codeGenUtils.createMethod(
-          returnType: 'public',
-          methodName: clientName,
-          arguments: ['String url'],
-          statements: ['this(url, $defaultCodec, $defaultCodec);'],
-        ),
+        if (defaultCodec != null)
+          codeGenUtils.createMethod(
+            returnType: 'public',
+            methodName: clientName,
+            arguments: ['String url'],
+            statements: ['this(url, $defaultCodec, $defaultCodec);'],
+          ),
       ];
     }
 
     return [
+      // Intermediate constructor for upload case (no-subscription path above has its own)
+      if (_grammar.hasUploadMutations)
+        codeGenUtils.createMethod(
+          returnType: 'public',
+          methodName: clientName,
+          arguments: ['DefaultGraphLinkClientAdapter adapter', ...encoderDecoderArgs, 'GraphLinkWebSocketAdapter wsAdapter'],
+          statements: ['this(adapter, adapter, encoder, decoder, null, wsAdapter);'],
+        ),
       // Option A — single URL, ws derived by replacing http→ws
       codeGenUtils.createMethod(
         returnType: 'public',
         methodName: clientName,
         arguments: ['String url', ...encoderDecoderArgs],
-        statements: ['this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws")));'],
+        statements: _grammar.hasUploadMutations
+            ? ['this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws")));']
+            : ['this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws")));'],
       ),
       codeGenUtils.createMethod(
         returnType: 'public',
         methodName: clientName,
         arguments: ['String url', 'Supplier<Map<String, String>> headersProvider', ...encoderDecoderArgs],
-        statements: ['this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"), headersProvider));'],
+        statements: _grammar.hasUploadMutations
+            ? ['this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"), headersProvider));']
+            : ['this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"), headersProvider));'],
       ),
       // Option B — explicit wsUrl
       codeGenUtils.createMethod(
         returnType: 'public',
         methodName: clientName,
         arguments: ['String url', 'String wsUrl', ...encoderDecoderArgs],
-        statements: ['this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(wsUrl));'],
+        statements: _grammar.hasUploadMutations
+            ? ['this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, new DefaultGraphLinkWebSocketAdapter(wsUrl));']
+            : ['this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(wsUrl));'],
       ),
       codeGenUtils.createMethod(
         returnType: 'public',
         methodName: clientName,
         arguments: ['String url', 'String wsUrl', 'Supplier<Map<String, String>> headersProvider', ...encoderDecoderArgs],
-        statements: ['this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider));'],
+        statements: _grammar.hasUploadMutations
+            ? ['this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, new DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider));']
+            : ['this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider));'],
       ),
-      // Default encoder/decoder (Jackson)
-      codeGenUtils.createMethod(
-        returnType: 'public',
-        methodName: clientName,
-        arguments: ['String url'],
-        statements: ['this(url, $defaultCodec, $defaultCodec);'],
-      ),
-      codeGenUtils.createMethod(
-        returnType: 'public',
-        methodName: clientName,
-        arguments: ['String url', 'String wsUrl'],
-        statements: ['this(url, wsUrl, $defaultCodec, $defaultCodec);'],
-      ),
+      if (defaultCodec != null) ...[
+        codeGenUtils.createMethod(
+          returnType: 'public',
+          methodName: clientName,
+          arguments: ['String url'],
+          statements: ['this(url, $defaultCodec, $defaultCodec);'],
+        ),
+        codeGenUtils.createMethod(
+          returnType: 'public',
+          methodName: clientName,
+          arguments: ['String url', 'String wsUrl'],
+          statements: ['this(url, wsUrl, $defaultCodec, $defaultCodec);'],
+        ),
+      ],
     ];
   }
 
   String _adapterDeclaration(bool withStore) {
     return [
       'GraphLinkClientAdapter adapter',
+      if (_grammar.hasUploadMutations) 'GraphLinkMultipartAdapter multipartAdapter',
       'GraphLinkJsonEncoder encoder',
       'GraphLinkJsonDecoder decoder',
       if (withStore) 'GraphLinkCacheStore store',
@@ -206,6 +246,8 @@ class JavaClientSerializer extends GLClientSerilaizer {
               statements: [
                 'super(fragmentMap, store, encoder, decoder);',
                 'this.adapter = adapter;',
+                if (type == GLQueryType.mutation && _grammar.hasUploadMutations)
+                  'this.multipartAdapter = multipartAdapter;',
                 if (type == GLQueryType.subscription)
                   '_handler = new GraphLinkSubscriptionHandler(adapter, decoder, encoder);',
               ]),
@@ -290,6 +332,8 @@ class JavaClientSerializer extends GLClientSerilaizer {
         'GraphLinkWebSocketAdapter adapter'
       else
         'GraphLinkClientAdapter adapter',
+      if (type == GLQueryType.mutation && _grammar.hasUploadMutations)
+        'GraphLinkMultipartAdapter multipartAdapter',
       'Map<String, String> fragmentMap',
       'GraphLinkJsonEncoder encoder',
       'GraphLinkJsonDecoder decoder',
@@ -301,7 +345,11 @@ class JavaClientSerializer extends GLClientSerilaizer {
     switch (type) {
       case GLQueryType.query:
       case GLQueryType.mutation:
-        return ["private final GraphLinkClientAdapter adapter;"];
+        return [
+          'private final GraphLinkClientAdapter adapter;',
+          if (type == GLQueryType.mutation && _grammar.hasUploadMutations)
+            'private final GraphLinkMultipartAdapter multipartAdapter;',
+        ];
       case GLQueryType.subscription:
         return [
           "private final GraphLinkSubscriptionHandler _handler;",
@@ -431,21 +479,110 @@ class JavaClientSerializer extends GLClientSerilaizer {
 
   String mutationToMethod(GLQueryDefinition def) {
     final frags = def.fragments(_grammar);
-    return codeGenUtils.createMethod(
-        returnType: 'public ${returnTypeByQueryType(def)}',
-        methodName: def.tokenInfo.token,
-        arguments: getArguments(def),
-        statements: [
-          'String operationName = "${def.tokenInfo}";',
-          if (frags.isNotEmpty) ...[
+    final returnType = 'public ${returnTypeByQueryType(def)}';
+    final methodName = def.tokenInfo.token;
+    final queryLine = frags.isNotEmpty
+        ? [
             'List<String> fragsValues = Arrays.asList(${frags.map((e) => 'fragmentMap.get("${e.token}")').join(", ")});',
             'String query = "${gqlSerializer.serializeQueryDefinition(def)} " + String.join(" ", fragsValues);',
-          ] else
-            'String query = "${gqlSerializer.serializeQueryDefinition(def)}";',
+          ]
+        : ['String query = "${gqlSerializer.serializeQueryDefinition(def)}";'];
+
+    if (_grammar.mutationHasUploads(def)) {
+      final argsNoProgress = getArguments(def);
+      final argNamesNoProgress = def.arguments.map((e) => e.dartArgumentName).join(', ');
+      final argsWithProgress = [...argsNoProgress, 'UploadProgressCallback onProgress'];
+
+      final body = codeGenUtils.block([
+        'String operationName = "$methodName";',
+        ...queryLine,
+        generateVariables(def),
+        _serializeMultipartAdapterCall(def),
+      ]);
+
+      // overload without onProgress delegates to the full method with null
+      final noProgressBody = codeGenUtils.block([
+        'return $methodName($argNamesNoProgress, null);',
+      ]);
+
+      return [
+        '$returnType $methodName${codeGenUtils.parentheses(argsNoProgress)} throws java.io.IOException $noProgressBody',
+        '$returnType $methodName${codeGenUtils.parentheses(argsWithProgress)} throws java.io.IOException $body',
+      ].join('\n\n');
+    }
+
+    return codeGenUtils.createMethod(
+        returnType: returnType,
+        methodName: methodName,
+        arguments: getArguments(def),
+        statements: [
+          'String operationName = "$methodName";',
+          ...queryLine,
           generateVariables(def),
-          "GraphLinkPayload payload = GraphLinkPayload.builder().query(query).operationName(operationName).variables(variables).build();",
-          _serializeAdapterCall(def)
+          'GraphLinkPayload payload = GraphLinkPayload.builder().query(query).operationName(operationName).variables(variables).build();',
+          _serializeAdapterCall(def),
         ]);
+  }
+
+  String _serializeMultipartAdapterCall(GLQueryDefinition def) {
+    final uploadNames = _grammar.uploadScalarNames;
+    final uploadArgs = def.arguments
+        .where((a) => uploadNames.contains(a.type.firstType.token))
+        .toList();
+    final returnType = def.getGeneratedTypeDefinition().tokenInfo.token;
+    final hasListArg = uploadArgs.any((a) => a.type.isList);
+
+    final statements = <String>[
+      'Map<String, GLUpload> _files = new java.util.LinkedHashMap<>();',
+      'Map<String, Object> _fileMap = new HashMap<>();',
+      if (hasListArg) 'int _slot = 0;',
+    ];
+
+    var staticIndex = 0;
+    for (final arg in uploadArgs) {
+      final name = arg.dartArgumentName;
+      if (arg.type.isList) {
+        statements.add(
+          'for (int _i = 0; _i < $name.size(); _i++) {\n'
+          '    _files.put(String.valueOf(_slot + _i), $name.get(_i));\n'
+          '    _fileMap.put(String.valueOf(_slot + _i), Arrays.asList("variables.$name." + _i));\n'
+          '}',
+        );
+        statements.add('_slot += $name.size();');
+      } else if (hasListArg) {
+        statements.addAll([
+          '_files.put(String.valueOf(_slot), $name);',
+          '_fileMap.put(String.valueOf(_slot), Arrays.asList("variables.$name"));',
+          '_slot++;',
+        ]);
+      } else {
+        statements.addAll([
+          '_files.put("$staticIndex", $name);',
+          '_fileMap.put("$staticIndex", Arrays.asList("variables.$name"));',
+        ]);
+        staticIndex++;
+      }
+    }
+
+    statements.addAll([
+      'Map<String, Object> _operationsMap = new HashMap<>();',
+      '_operationsMap.put("query", query);',
+      '_operationsMap.put("operationName", operationName);',
+      '_operationsMap.put("variables", variables);',
+      'String operations = encoder.encode(_operationsMap);',
+      'String mapJson = encoder.encode(_fileMap);',
+      'String responseText = multipartAdapter.executeMultipart(operations, mapJson, _files, onProgress);',
+      'Map<String, Object> decodedResponse = decoder.decode(responseText);',
+      codeGenUtils.ifStatement(
+        condition: 'decodedResponse.containsKey("errors")',
+        ifBlockStatements: ['throw ${clientExceptionName}.of((List)decodedResponse.get("errors"));'],
+      ),
+      'Map<String, Object> data = (Map<String, Object>) decodedResponse.get("data");',
+      _serializeInvalidationCall(def),
+      'return $returnType.fromJson(data);',
+    ]);
+
+    return statements.join('\n');
   }
 
   String subscriptionToMethod(GLQueryDefinition def) {
@@ -570,6 +707,13 @@ class JavaClientSerializer extends GLClientSerilaizer {
 
   String _serializeArgumentValue(GLQueryDefinition def, String argName) {
     var arg = def.findByName(argName);
+    if (_grammar.uploadScalarNames.contains(arg.type.firstType.token)) {
+      if (arg.type.isList) {
+        return 'new ArrayList<>(Collections.nCopies(${arg.dartArgumentName}.size(), null))';
+      } else {
+        return 'null';
+      }
+    }
     return _callToJson(arg.dartArgumentName, arg.type);
   }
 
@@ -599,14 +743,17 @@ class JavaClientSerializer extends GLClientSerilaizer {
     return "";
   }
 
-  List<String> getArguments(GLQueryDefinition def) {
-    List<String> result;
-    if (def.arguments.isEmpty) {
-      result = [];
+  String _resolveArgType(arg) {
+    final uploadNames = _grammar.uploadScalarNames;
+    if (uploadNames.contains(arg.type.firstType.token)) {
+      return arg.type.isList ? 'List<GLUpload>' : 'GLUpload';
     }
-    result = def.arguments
-        .map((e) =>
-            "${serializer.serializeType(e.type, false)} ${e.dartArgumentName}")
+    return serializer.serializeType(arg.type, false);
+  }
+
+  List<String> getArguments(GLQueryDefinition def) {
+    final result = def.arguments
+        .map((e) => '${_resolveArgType(e)} ${e.dartArgumentName}')
         .toList();
     if (def.type == GLQueryType.subscription) {
       result.add(
@@ -850,6 +997,9 @@ class JavaClientSerializer extends GLClientSerilaizer {
         JavaImports.uuid,
         JavaImports.hashSet,
       ],
+      if(type == GLQueryType.mutation && _grammar.hasUploadMutations) ... [
+        JavaImports.collections,
+      ]
     ]) {
       buffer.writeln('import $i;');
     }
@@ -997,6 +1147,33 @@ class JavaClientSerializer extends GLClientSerilaizer {
     return result;
   }
 
+  String generateUploadProgressCallbackFile() {
+    return javaUploadProgressCallback.trim();
+  }
+
+  String generateMultipartAdapterFile(String importPrefix) {
+    final buffer = StringBuffer();
+    buffer.writeln('import ${JavaImports.map};');
+    if (importPrefix.isNotEmpty) {
+      buffer.writeln('import $importPrefix.client.GLUpload;');
+      buffer.writeln('import $importPrefix.client.UploadProgressCallback;');
+    }
+    buffer.writeln(javaGraphLinkMultipartAdapter.trim());
+    return buffer.toString();
+  }
+
+  String generateGLUploadFile() {
+    return [
+      'import ${JavaImports.inputStream};',
+      'import ${JavaImports.byteArrayInputStream};',
+      'import ${JavaImports.fileInputStream};',
+      'import ${JavaImports.file};',
+      'import ${JavaImports.ioException};',
+      '',
+      javaGLUpload.trim(),
+    ].join('\n');
+  }
+
   String generateWebSocketAdapterFile() {
     return javaWebSocketAdapter.trim();
   }
@@ -1028,6 +1205,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
         'okhttp3.Request',
         'okhttp3.RequestBody',
         'okhttp3.Response',
+        if (_grammar.hasUploadMutations) 'okhttp3.MultipartBody',
       ]) {
         buffer.writeln('import $i;');
       }
@@ -1046,9 +1224,16 @@ class JavaClientSerializer extends GLClientSerilaizer {
     if (importPrefix.isNotEmpty) {
       buffer.writeln('import ${importPrefix}.interfaces.GraphLinkClientAdapter;');
     }
-    buffer.writeln(flavor == 'okhttp'
-        ? _defaultClientAdapterOkHttp.trim()
-        : _defaultClientAdapterJava11.trim());
+    if (_grammar.hasUploadMutations) {
+      buffer.writeln('import ${JavaImports.ioException};');
+    }
+    buffer.writeln(_grammar.hasUploadMutations
+        ? (flavor == 'okhttp'
+            ? _defaultClientAdapterOkHttpWithUpload.trim()
+            : _defaultClientAdapterJava11WithUpload.trim())
+        : (flavor == 'okhttp'
+            ? _defaultClientAdapterOkHttp.trim()
+            : _defaultClientAdapterJava11.trim()));
     return buffer.toString();
   }
 
@@ -1643,6 +1828,216 @@ public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter {
       }
     } catch (Exception e) {
       throw new RuntimeException(e);
+    }
+  }
+}
+''';
+
+const _defaultClientAdapterOkHttpWithUpload = '''
+public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter, GraphLinkMultipartAdapter {
+
+  private static final MediaType JSON = MediaType.get("application/json");
+
+  private final String url;
+  private final Supplier<Map<String, String>> headersProvider;
+  private final OkHttpClient httpClient;
+
+  public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider) {
+    this.url = url;
+    this.headersProvider = headersProvider;
+    this.httpClient = new OkHttpClient();
+  }
+
+  public DefaultGraphLinkClientAdapter(String url) {
+    this(url, null);
+  }
+
+  @Override
+  public String execute(String payload) {
+    try {
+      Request.Builder builder = new Request.Builder()
+          .url(url)
+          .post(RequestBody.create(payload, JSON));
+      if (headersProvider != null) {
+        Map<String, String> headers = headersProvider.get();
+        if (headers != null) headers.forEach(builder::header);
+      }
+      try (Response response = httpClient.newCall(builder.build()).execute()) {
+        return response.body().string();
+      }
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public String executeMultipart(String operations, String mapJson, Map<String, GLUpload> files, UploadProgressCallback onProgress) throws java.io.IOException {
+    MultipartBody.Builder bodyBuilder = new MultipartBody.Builder().setType(MultipartBody.FORM);
+    bodyBuilder.addFormDataPart("operations", operations);
+    bodyBuilder.addFormDataPart("map", mapJson);
+    for (Map.Entry<String, GLUpload> entry : files.entrySet()) {
+      GLUpload upload = entry.getValue();
+      RequestBody fileBody = new RequestBody() {
+        @Override public MediaType contentType() { return MediaType.parse(upload.getMimeType()); }
+        @Override public long contentLength() { return upload.getLength(); }
+        @Override public void writeTo(okio.BufferedSink sink) throws java.io.IOException {
+          sink.writeAll(okio.Okio.source(upload.getStream()));
+        }
+      };
+      RequestBody uploadBody = onProgress != null ? new ProgressRequestBody(fileBody, onProgress) : fileBody;
+      String filename = upload.getFilename() != null ? upload.getFilename() : entry.getKey();
+      bodyBuilder.addFormDataPart(entry.getKey(), filename, uploadBody);
+    }
+    Request.Builder reqBuilder = new Request.Builder().url(url).post(bodyBuilder.build());
+    if (headersProvider != null) {
+      Map<String, String> headers = headersProvider.get();
+      if (headers != null) headers.forEach(reqBuilder::header);
+    }
+    try (Response response = httpClient.newCall(reqBuilder.build()).execute()) {
+      return response.body().string();
+    }
+  }
+
+  private static final class ProgressRequestBody extends RequestBody {
+    private final RequestBody delegate;
+    private final UploadProgressCallback callback;
+
+    ProgressRequestBody(RequestBody delegate, UploadProgressCallback callback) {
+      this.delegate = delegate;
+      this.callback = callback;
+    }
+
+    @Override public MediaType contentType() { return delegate.contentType(); }
+    @Override public long contentLength() throws java.io.IOException { return delegate.contentLength(); }
+
+    @Override
+    public void writeTo(okio.BufferedSink sink) throws java.io.IOException {
+      final long total = contentLength();
+      final long[] sent = {0};
+      okio.BufferedSink countingSink = okio.Okio.buffer(new okio.ForwardingSink(sink) {
+        @Override public void write(okio.Buffer source, long byteCount) throws java.io.IOException {
+          super.write(source, byteCount);
+          sent[0] += byteCount;
+          callback.onProgress(sent[0], total);
+        }
+      });
+      delegate.writeTo(countingSink);
+      countingSink.flush();
+    }
+  }
+}
+''';
+
+const _defaultClientAdapterJava11WithUpload = '''
+public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter, GraphLinkMultipartAdapter {
+
+  private final String url;
+  private final Supplier<Map<String, String>> headersProvider;
+  private final HttpClient httpClient = HttpClient.newHttpClient();
+
+  public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider) {
+    this.url = url;
+    this.headersProvider = headersProvider;
+  }
+
+  public DefaultGraphLinkClientAdapter(String url) {
+    this(url, null);
+  }
+
+  @Override
+  public String execute(String payload) {
+    try {
+      HttpRequest.Builder builder = HttpRequest.newBuilder()
+          .uri(URI.create(url))
+          .header("Content-Type", "application/json")
+          .POST(HttpRequest.BodyPublishers.ofString(payload));
+      if (headersProvider != null) {
+        Map<String, String> headers = headersProvider.get();
+        if (headers != null) headers.forEach(builder::header);
+      }
+      HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+      return response.body();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public String executeMultipart(String operations, String mapJson, Map<String, GLUpload> files, UploadProgressCallback onProgress) throws java.io.IOException {
+    String boundary = "----GraphLinkBoundary" + java.util.UUID.randomUUID().toString().replace("-", "");
+    byte[] body = buildMultipartBody(boundary, operations, mapJson, files);
+    HttpRequest.BodyPublisher basePublisher = HttpRequest.BodyPublishers.ofByteArray(body);
+    HttpRequest.BodyPublisher publisher = onProgress != null
+        ? new CountingBodyPublisher(basePublisher, body.length, onProgress)
+        : basePublisher;
+    HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
+        .uri(URI.create(url))
+        .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+        .POST(publisher);
+    if (headersProvider != null) {
+      Map<String, String> headers = headersProvider.get();
+      if (headers != null) headers.forEach(reqBuilder::header);
+    }
+    try {
+      HttpResponse<String> response = httpClient.send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
+      return response.body();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new java.io.IOException(e);
+    }
+  }
+
+  private byte[] buildMultipartBody(String boundary, String operations, String mapJson, Map<String, GLUpload> files) throws java.io.IOException {
+    java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+    writePart(out, boundary, "operations", "application/json", operations.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    writePart(out, boundary, "map", "application/json", mapJson.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    for (Map.Entry<String, GLUpload> entry : files.entrySet()) {
+      GLUpload upload = entry.getValue();
+      String filename = upload.getFilename() != null ? upload.getFilename() : entry.getKey();
+      out.write(("--" + boundary + "\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+      out.write(("Content-Disposition: form-data; name=\\"" + entry.getKey() + "\\"; filename=\\"" + filename + "\\"\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+      out.write(("Content-Type: " + upload.getMimeType() + "\\r\\n\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+      upload.getStream().transferTo(out);
+      out.write("\\r\\n".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+    out.write(("--" + boundary + "--\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    return out.toByteArray();
+  }
+
+  private void writePart(java.io.ByteArrayOutputStream out, String boundary, String name, String contentType, byte[] data) throws java.io.IOException {
+    out.write(("--" + boundary + "\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    out.write(("Content-Disposition: form-data; name=\\"" + name + "\\"\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    out.write(("Content-Type: " + contentType + "\\r\\n\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    out.write(data);
+    out.write("\\r\\n".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+  }
+
+  private static final class CountingBodyPublisher implements HttpRequest.BodyPublisher {
+    private final HttpRequest.BodyPublisher delegate;
+    private final long total;
+    private final UploadProgressCallback callback;
+
+    CountingBodyPublisher(HttpRequest.BodyPublisher delegate, long total, UploadProgressCallback callback) {
+      this.delegate = delegate;
+      this.total = total;
+      this.callback = callback;
+    }
+
+    @Override public long contentLength() { return delegate.contentLength(); }
+
+    @Override
+    public void subscribe(java.util.concurrent.Flow.Subscriber<? super java.nio.ByteBuffer> subscriber) {
+      delegate.subscribe(new java.util.concurrent.Flow.Subscriber<>() {
+        long sent = 0;
+        @Override public void onSubscribe(java.util.concurrent.Flow.Subscription sub) { subscriber.onSubscribe(sub); }
+        @Override public void onNext(java.nio.ByteBuffer item) {
+          sent += item.remaining();
+          callback.onProgress(sent, total);
+          subscriber.onNext(item);
+        }
+        @Override public void onError(Throwable t) { subscriber.onError(t); }
+        @Override public void onComplete() { subscriber.onComplete(); }
+      });
     }
   }
 }

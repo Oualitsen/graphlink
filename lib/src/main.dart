@@ -460,6 +460,7 @@ Future<Set<String>> generateJavaClientClasses(
     GLParser parser, GeneratorConfig config, DateTime started,
     {String? pack, noClient = false}) async {
   final javaClientConfig = config.clientConfig?.java;
+  final jsonCodec = javaClientConfig?.jsonCodec ?? JavaJsonCodec.jackson;
   final serializer = JavaSerializer(
     parser,
     generateJsonMethods: true,
@@ -468,7 +469,7 @@ Future<Set<String>> generateJavaClientClasses(
     inputsAsRecords: javaClientConfig?.inputAsRecord ?? false,
     typesAsRecords: javaClientConfig?.typeAsRecord ?? false,
   );
-  final clientSerializer = JavaClientSerializer(parser, serializer);
+  final clientSerializer = JavaClientSerializer(parser, serializer, jsonCodec: jsonCodec);
   final List<Future<File>> futures = [];
   final destinationDir = config.outputDir;
   final packageName = config.clientConfig?.java?.packageName;
@@ -523,7 +524,6 @@ Future<Set<String>> generateJavaClientClasses(
   });
 
   final wsAdapter = config.clientConfig?.java?.wsAdapter ?? JavaWsAdapter.java11;
-  final jsonCodec = config.clientConfig?.java?.jsonCodec ?? JavaJsonCodec.jackson;
 
   if (!noClient) {
     String client = clientSerializer.generateClient(prefix, hasDefaultAdapters: wsAdapter != JavaWsAdapter.none);
@@ -607,6 +607,33 @@ Future<Set<String>> generateJavaClientClasses(
       destinationDir: destinationDir,
       packageName: packageName,
     ));
+
+    if (parser.hasUploadMutations) {
+      futures.add(writeToFile(
+        data: clientSerializer.generateGLUploadFile(),
+        fileName: 'GLUpload.java',
+        subdir: 'client',
+        imports: [],
+        destinationDir: destinationDir,
+        packageName: packageName,
+      ));
+      futures.add(writeToFile(
+        data: clientSerializer.generateUploadProgressCallbackFile(),
+        fileName: 'UploadProgressCallback.java',
+        subdir: 'client',
+        imports: [],
+        destinationDir: destinationDir,
+        packageName: packageName,
+      ));
+      futures.add(writeToFile(
+        data: clientSerializer.generateMultipartAdapterFile(prefix),
+        fileName: 'GraphLinkMultipartAdapter.java',
+        subdir: 'client',
+        imports: [],
+        destinationDir: destinationDir,
+        packageName: packageName,
+      ));
+    }
 
     if (wsAdapter != JavaWsAdapter.none) {
       futures.add(writeToFile(
