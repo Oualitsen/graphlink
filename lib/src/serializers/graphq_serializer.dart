@@ -63,6 +63,7 @@ class GLGraphqSerializer {
 
     var scalars = filterSerialization(parser.scalars.values, clientMode)
         .where((s) => !parser.builtInScalars.contains(s.token))
+        .where((s) => !s.hasDirective(glSkipOnServer))
         .map(serializeScalarDefinition)
         .join("\n");
     buffer.writeln(scalars);

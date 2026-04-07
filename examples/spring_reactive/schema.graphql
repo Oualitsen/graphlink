@@ -1,0 +1,47 @@
+directive @glUpload on SCALAR
+directive @glSkipOnServer(mapTo: String, batch: Boolean! = true) on FIELD_DEFINITION|OBJECT|SCALAR
+
+scalar Upload @glUpload @glSkipOnServer
+
+type Person {
+    id: ID!
+    name: String!
+    age: Int!
+    car: Car @glSkipOnServer(batch: false)
+    car2: MyCouple @glSkipOnServer(batch: false)
+}
+
+type MyCouple @glSkipOnServer(mapTo: "Car"){
+    car: Car
+    age: Int
+}
+
+type Car {
+    id: ID!
+    brand: String!
+    model: String!
+    owner: Person!
+}
+
+input CreatePersonInput {
+    name: String!
+    age: Int!
+}
+
+input CreateCarInput {
+    brand: String!
+    model: String!
+    ownerId: ID!
+}
+
+type Query {
+    person(id: ID!): Person
+    car(id: ID!): Car
+}
+
+type Mutation {
+    createPerson(input: CreatePersonInput!): Person!
+    createCar(input: CreateCarInput!): Car!
+
+    uploadFile(file: Upload!): Int!
+}
