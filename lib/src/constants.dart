@@ -17,6 +17,7 @@ const graphqlHeadComment = """
 # GitHub: https://github.com/Oualitsen/retrofit-Graphql-For-Dart/
 # Pub.dev https://pub.dev/packages/graphlink
 """;
+const javaCollectorsToList = "collect(Collectors.toList())";
 
 const clientTypes = {
   'GraphLinkPayload',
