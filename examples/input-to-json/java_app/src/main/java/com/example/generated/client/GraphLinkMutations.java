@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.stream.Collectors;
 import com.example.generated.types.GraphLinkPayload;
 import com.example.generated.types.GraphLinkError;
 import com.example.generated.types.GraphLinkSubscriptionPayload;
@@ -41,7 +42,7 @@ public class GraphLinkMutations extends GraphLinkResolverBase {
       List<String> fragsValues = Arrays.asList(fragmentMap.get("_all_fields_Dummy"));
       String query = "mutation withEnumList($colors: [Color!]!){withEnumList(colors: $colors){..._all_fields_Dummy}} " + String.join(" ", fragsValues);
       Map<String, Object> variables = new HashMap<>();
-      variables.put("colors", colors.map((e) => e.toJson()).toList());
+      variables.put("colors", colors.stream().map(e0 -> e0.toJson()).collect(Collectors.toList()));
 
       GraphLinkPayload payload = GraphLinkPayload.builder().query(query).operationName(operationName).variables(variables).build();
       String encodedPayload = encoder.encode(payload);
@@ -59,7 +60,7 @@ public class GraphLinkMutations extends GraphLinkResolverBase {
       List<String> fragsValues = Arrays.asList(fragmentMap.get("_all_fields_Dummy"));
       String query = "mutation withEnumListList($colors: [[Color!]!]!){withEnumListList(colors: $colors){..._all_fields_Dummy}} " + String.join(" ", fragsValues);
       Map<String, Object> variables = new HashMap<>();
-      variables.put("colors", colors.map((e) => e.map((e) => e.toJson()).toList()).toList());
+      variables.put("colors", colors.stream().map(e0 -> e0.stream().map(e1 -> e1.toJson()).collect(Collectors.toList())).collect(Collectors.toList()));
 
       GraphLinkPayload payload = GraphLinkPayload.builder().query(query).operationName(operationName).variables(variables).build();
       String encodedPayload = encoder.encode(payload);
@@ -77,7 +78,7 @@ public class GraphLinkMutations extends GraphLinkResolverBase {
       List<String> fragsValues = Arrays.asList(fragmentMap.get("_all_fields_Dummy"));
       String query = "mutation withEnumListListX10($colors: [[[[[[[[[[[Color!]!]!]]]]]]]]]){withEnumListListX10(colors: $colors){..._all_fields_Dummy}} " + String.join(" ", fragsValues);
       Map<String, Object> variables = new HashMap<>();
-      variables.put("colors", colors?.map((e) => e?.map((e) => e?.map((e) => e?.map((e) => e?.map((e) => e?.map((e) => e?.map((e) => e?.map((e) => e?.map((e) => e.map((e) => e.map((e) => e.toJson()).toList()).toList()).toList()).toList()).toList()).toList()).toList()).toList()).toList()).toList()).toList());
+      variables.put("colors", colors == null ? null : colors.stream().map(e0 -> e0 == null ? null : e0.stream().map(e1 -> e1 == null ? null : e1.stream().map(e2 -> e2 == null ? null : e2.stream().map(e3 -> e3 == null ? null : e3.stream().map(e4 -> e4 == null ? null : e4.stream().map(e5 -> e5 == null ? null : e5.stream().map(e6 -> e6 == null ? null : e6.stream().map(e7 -> e7 == null ? null : e7.stream().map(e8 -> e8.stream().map(e9 -> e9.stream().map(e10 -> e10.toJson()).collect(Collectors.toList())).collect(Collectors.toList())).collect(Collectors.toList())).collect(Collectors.toList())).collect(Collectors.toList())).collect(Collectors.toList())).collect(Collectors.toList())).collect(Collectors.toList())).collect(Collectors.toList())).collect(Collectors.toList())).collect(Collectors.toList()));
 
       GraphLinkPayload payload = GraphLinkPayload.builder().query(query).operationName(operationName).variables(variables).build();
       String encodedPayload = encoder.encode(payload);
@@ -113,7 +114,7 @@ public class GraphLinkMutations extends GraphLinkResolverBase {
       List<String> fragsValues = Arrays.asList(fragmentMap.get("_all_fields_Dummy"));
       String query = "mutation withInputList($inputs: [SimpleInput!]!){withInputList(inputs: $inputs){..._all_fields_Dummy}} " + String.join(" ", fragsValues);
       Map<String, Object> variables = new HashMap<>();
-      variables.put("inputs", inputs.map((e) => e.toJson()).toList());
+      variables.put("inputs", inputs.stream().map(e0 -> e0.toJson()).collect(Collectors.toList()));
 
       GraphLinkPayload payload = GraphLinkPayload.builder().query(query).operationName(operationName).variables(variables).build();
       String encodedPayload = encoder.encode(payload);
@@ -131,7 +132,7 @@ public class GraphLinkMutations extends GraphLinkResolverBase {
       List<String> fragsValues = Arrays.asList(fragmentMap.get("_all_fields_Dummy"));
       String query = "mutation withInputListList($inputs: [[SimpleInput!]!]!){withInputListList(inputs: $inputs){..._all_fields_Dummy}} " + String.join(" ", fragsValues);
       Map<String, Object> variables = new HashMap<>();
-      variables.put("inputs", inputs.map((e) => e.map((e) => e.toJson()).toList()).toList());
+      variables.put("inputs", inputs.stream().map(e0 -> e0.stream().map(e1 -> e1.toJson()).collect(Collectors.toList())).collect(Collectors.toList()));
 
       GraphLinkPayload payload = GraphLinkPayload.builder().query(query).operationName(operationName).variables(variables).build();
       String encodedPayload = encoder.encode(payload);
