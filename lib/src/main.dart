@@ -655,7 +655,7 @@ Future<Set<String>> generateJavaClientClasses(
     futures.add(writeToFile(
       data: serializer.serializeGlClass(clientSerializer.generateWebSocketAdapterFile(), importPrefix: prefix),
       fileName: 'GraphLinkWebSocketAdapter.java',
-      subdir: 'interfaces',
+      subdir: 'client',
       imports: [],
       destinationDir: destinationDir,
       packageName: packageName,

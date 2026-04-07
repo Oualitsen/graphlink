@@ -27,13 +27,14 @@ class JavaClientSerializer extends GLClientSerilaizer {
 
   final GLGraphqSerializer gqlSerializer;
 
-  JavaClientSerializer(this._grammar, GLSerializer serializer, {this.jsonCodec = JavaJsonCodec.jackson})
+  JavaClientSerializer(this._grammar, GLSerializer serializer,
+      {this.jsonCodec = JavaJsonCodec.jackson})
       : gqlSerializer = GLGraphqSerializer(_grammar, false),
         super(serializer);
 
-  
   @override
-  GLClassModel generateClient(String importPrefix, {bool hasDefaultAdapters = true}) {
+  GLClassModel generateClient(String importPrefix,
+      {bool hasDefaultAdapters = true}) {
     final container = GLImportContainer();
     container.imports.addAll([
       JavaImports.map,
@@ -45,11 +46,10 @@ class JavaClientSerializer extends GLClientSerilaizer {
       _grammar.getTokenByKey('GraphLinkClientAdapter')!,
       _grammar.getTokenByKey('GraphLinkJsonEncoder')!,
       _grammar.getTokenByKey('GraphLinkJsonDecoder')!,
-      if(_grammar.hasSubscriptions)
-      _grammar.getTokenByKey('GraphLinkWebSocketAdapter')!,
-      ]);
+    ]);
     final bodyBuf = StringBuffer();
-    bodyBuf.writeln(codeGenUtils.createClass(className: clientName, statements: [
+    bodyBuf
+        .writeln(codeGenUtils.createClass(className: clientName, statements: [
       'final Map<String, String> _fragmMap = new HashMap<>();',
       if (_grammar.hasQueries)
         'public final ${classNameFromType(GLQueryType.query)} queries;',
@@ -68,8 +68,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
         ],
         arguments: [
           _adapterDeclaration(false),
-          if (_grammar.hasSubscriptions)
-            'GraphLinkWebSocketAdapter wsAdapter'
+          if (_grammar.hasSubscriptions) 'GraphLinkWebSocketAdapter wsAdapter'
         ],
       ),
       codeGenUtils.createMethod(
@@ -77,8 +76,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
         methodName: clientName,
         arguments: [
           _adapterDeclaration(true),
-          if (_grammar.hasSubscriptions)
-            'GraphLinkWebSocketAdapter wsAdapter'
+          if (_grammar.hasSubscriptions) 'GraphLinkWebSocketAdapter wsAdapter'
         ],
         statements: [
           codeGenUtils.ifStatement(
@@ -107,9 +105,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
 
     return GLClassModel(
       imports: [
-        ... container.imports,
-        if (_grammar.hasSubscriptions && importPrefix.isNotEmpty)
-          'import ${importPrefix}.interfaces.GraphLinkWebSocketAdapter;',
+        ...container.imports,
       ],
       importDepencies: container.importDepencies,
       body: bodyBuf.toString(),
@@ -137,7 +133,10 @@ class JavaClientSerializer extends GLClientSerilaizer {
           codeGenUtils.createMethod(
             returnType: 'public',
             methodName: clientName,
-            arguments: ['DefaultGraphLinkClientAdapter adapter', ...encoderDecoderArgs],
+            arguments: [
+              'DefaultGraphLinkClientAdapter adapter',
+              ...encoderDecoderArgs
+            ],
             statements: ['this(adapter, adapter, encoder, decoder, null);'],
           ),
         codeGenUtils.createMethod(
@@ -145,16 +144,28 @@ class JavaClientSerializer extends GLClientSerilaizer {
           methodName: clientName,
           arguments: ['String url', ...encoderDecoderArgs],
           statements: _grammar.hasUploadMutations
-              ? ['this(new DefaultGraphLinkClientAdapter(url), encoder, decoder);']
-              : ['this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, null);'],
+              ? [
+                  'this(new DefaultGraphLinkClientAdapter(url), encoder, decoder);'
+                ]
+              : [
+                  'this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, null);'
+                ],
         ),
         codeGenUtils.createMethod(
           returnType: 'public',
           methodName: clientName,
-          arguments: ['String url', 'Supplier<Map<String, String>> headersProvider', ...encoderDecoderArgs],
+          arguments: [
+            'String url',
+            'Supplier<Map<String, String>> headersProvider',
+            ...encoderDecoderArgs
+          ],
           statements: _grammar.hasUploadMutations
-              ? ['this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder);']
-              : ['this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, null);'],
+              ? [
+                  'this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder);'
+                ]
+              : [
+                  'this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, null);'
+                ],
         ),
         if (defaultCodec != null)
           codeGenUtils.createMethod(
@@ -172,8 +183,14 @@ class JavaClientSerializer extends GLClientSerilaizer {
         codeGenUtils.createMethod(
           returnType: 'public',
           methodName: clientName,
-          arguments: ['DefaultGraphLinkClientAdapter adapter', ...encoderDecoderArgs, 'GraphLinkWebSocketAdapter wsAdapter'],
-          statements: ['this(adapter, adapter, encoder, decoder, null, wsAdapter);'],
+          arguments: [
+            'DefaultGraphLinkClientAdapter adapter',
+            ...encoderDecoderArgs,
+            'GraphLinkWebSocketAdapter wsAdapter'
+          ],
+          statements: [
+            'this(adapter, adapter, encoder, decoder, null, wsAdapter);'
+          ],
         ),
       //Single URL, ws derived by replacing http→ws
       codeGenUtils.createMethod(
@@ -181,16 +198,28 @@ class JavaClientSerializer extends GLClientSerilaizer {
         methodName: clientName,
         arguments: ['String url', ...encoderDecoderArgs],
         statements: _grammar.hasUploadMutations
-            ? ['this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws")));']
-            : ['this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws")));'],
+            ? [
+                'this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws")));'
+              ]
+            : [
+                'this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws")));'
+              ],
       ),
       codeGenUtils.createMethod(
         returnType: 'public',
         methodName: clientName,
-        arguments: ['String url', 'Supplier<Map<String, String>> headersProvider', ...encoderDecoderArgs],
+        arguments: [
+          'String url',
+          'Supplier<Map<String, String>> headersProvider',
+          ...encoderDecoderArgs
+        ],
         statements: _grammar.hasUploadMutations
-            ? ['this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"), headersProvider));']
-            : ['this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"), headersProvider));'],
+            ? [
+                'this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"), headersProvider));'
+              ]
+            : [
+                'this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"), headersProvider));'
+              ],
       ),
       // Option B — explicit wsUrl
       codeGenUtils.createMethod(
@@ -198,16 +227,29 @@ class JavaClientSerializer extends GLClientSerilaizer {
         methodName: clientName,
         arguments: ['String url', 'String wsUrl', ...encoderDecoderArgs],
         statements: _grammar.hasUploadMutations
-            ? ['this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, new DefaultGraphLinkWebSocketAdapter(wsUrl));']
-            : ['this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(wsUrl));'],
+            ? [
+                'this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, new DefaultGraphLinkWebSocketAdapter(wsUrl));'
+              ]
+            : [
+                'this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(wsUrl));'
+              ],
       ),
       codeGenUtils.createMethod(
         returnType: 'public',
         methodName: clientName,
-        arguments: ['String url', 'String wsUrl', 'Supplier<Map<String, String>> headersProvider', ...encoderDecoderArgs],
+        arguments: [
+          'String url',
+          'String wsUrl',
+          'Supplier<Map<String, String>> headersProvider',
+          ...encoderDecoderArgs
+        ],
         statements: _grammar.hasUploadMutations
-            ? ['this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, new DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider));']
-            : ['this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider));'],
+            ? [
+                'this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, new DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider));'
+              ]
+            : [
+                'this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider));'
+              ],
       ),
       if (defaultCodec != null) ...[
         codeGenUtils.createMethod(
@@ -229,7 +271,8 @@ class JavaClientSerializer extends GLClientSerilaizer {
   String _adapterDeclaration(bool withStore) {
     return [
       'GraphLinkClientAdapter adapter',
-      if (_grammar.hasUploadMutations) 'GraphLinkMultipartAdapter multipartAdapter',
+      if (_grammar.hasUploadMutations)
+        'GraphLinkMultipartAdapter multipartAdapter',
       'GraphLinkJsonEncoder encoder',
       'GraphLinkJsonDecoder decoder',
       if (withStore) 'GraphLinkCacheStore store',
@@ -250,7 +293,8 @@ class JavaClientSerializer extends GLClientSerilaizer {
 
   /// Kept for backwards compatibility — prefer [getQueriesClass],
   /// [getMutationsClass], or [getSubscriptionsClass] via the base-class API.
-  GLClassModel? generateQueriesClassByType(GLQueryType type, String importPrefix) =>
+  GLClassModel? generateQueriesClassByType(
+          GLQueryType type, String importPrefix) =>
       _buildClassForType(type, importPrefix);
 
   GLClassModel? _buildClassForType(GLQueryType type, String importPrefix) {
@@ -262,13 +306,18 @@ class JavaClientSerializer extends GLClientSerilaizer {
       return null;
     }
     final importContainer = GLImportContainer();
-    if(type == GLQueryType.subscription) {
-      importContainer.importDepencies.add(_grammar.getTypeByName("name")!);
-    }else {
-      importContainer.importDepencies.add(_grammar.getTypeByName("GraphLinkClientAdapter")!);
+    if (type == GLQueryType.subscription) {
+      importContainer.importDepencies
+          .add(_grammar.getTypeByName("GraphLinkClientAdapter")!);
+    } else {
+      importContainer.importDepencies
+          .add(_grammar.getTypeByName("GraphLinkClientAdapter")!);
     }
-      importContainer.importDepencies.addAll(['GraphLinkJsonEncoder', 'GraphLinkJsonDecoder'].map((e) => _grammar.getTypeByName(e)!));
-    
+    importContainer.importDepencies.addAll([
+      'GraphLinkJsonEncoder',
+      'GraphLinkJsonDecoder'
+    ].map((e) => _grammar.getTypeByName(e)!));
+
     final classBody = codeGenUtils.createClass(
         staticClass: false,
         className: "${classNameFromType(type)} extends GraphLinkResolverBase",
@@ -361,25 +410,24 @@ class JavaClientSerializer extends GLClientSerilaizer {
         ]);
 
     return GLClassModel(
-      importDepencies: {... _getQueryImports(type), ...importContainer.importDepencies}.toList(),
-      imports: [
-        ...importContainer.imports
-      ],
+      importDepencies: {
+        ..._getQueryImports(type),
+        ...importContainer.importDepencies
+      }.toList(),
+      imports: [...importContainer.imports],
       body: classBody,
     );
   }
 
   Set<GLToken> _getQueryImports(GLQueryType type) {
     var result = <GLToken>[_grammar.getTokenByKey("GraphLinkPayload")!];
-    var queries = _grammar.queries.values
-        .where((e) => e.type == type);
+    var queries = _grammar.queries.values.where((e) => e.type == type);
     queries
         .where((element) => element.typeDefinition != null)
         .map((e) => e.typeDefinition!)
         .forEach(result.add);
 
-    queries
-    .expand((e) => e.arguments).forEach((arg) {
+    queries.expand((e) => e.arguments).forEach((arg) {
       if (_grammar.isEnum(arg.type.token)) {
         result.add(_grammar.enums[arg.type.token]!);
       } else if (_grammar.isInput(arg.type.token)) {
@@ -426,9 +474,15 @@ class JavaClientSerializer extends GLClientSerilaizer {
     final directives = gqlSerializer
         .serializeDirectiveValueList(def.getDirectives(skipGenerated: true));
     final returnType = def.getGeneratedTypeDefinition().tokenInfo.token;
-    container.imports.addAll([JavaImports.map, JavaImports.hashMap, JavaImports.list, JavaImports.arrayList]);
-    if(dividedQueries.isNotEmpty) {
-      container.imports.addAll([JavaImports.set, JavaImports.hashSet, JavaImports.arrays]);
+    container.imports.addAll([
+      JavaImports.map,
+      JavaImports.hashMap,
+      JavaImports.list,
+      JavaImports.arrayList
+    ]);
+    if (dividedQueries.isNotEmpty) {
+      container.imports
+          .addAll([JavaImports.set, JavaImports.hashSet, JavaImports.arrays]);
     }
     return codeGenUtils.createMethod(
         returnType: 'public ${returnTypeByQueryType(def)}',
@@ -552,15 +606,20 @@ class JavaClientSerializer extends GLClientSerilaizer {
             'String query = "${gqlSerializer.serializeQueryDefinition(def)} " + String.join(" ", fragsValues);',
           ]
         : ['String query = "${gqlSerializer.serializeQueryDefinition(def)}";'];
-    container.imports.addAll([JavaImports.map, JavaImports.hashMap, JavaImports.arrays]);
-    if(frags.isNotEmpty) {
+    container.imports
+        .addAll([JavaImports.map, JavaImports.hashMap, JavaImports.arrays]);
+    if (frags.isNotEmpty) {
       container.imports.add(JavaImports.list);
     }
 
     if (_grammar.mutationHasUploads(def)) {
       final argsNoProgress = getArguments(def);
-      final argNamesNoProgress = def.arguments.map((e) => e.dartArgumentName).join(', ');
-      final argsWithProgress = [...argsNoProgress, 'UploadProgressCallback onProgress'];
+      final argNamesNoProgress =
+          def.arguments.map((e) => e.dartArgumentName).join(', ');
+      final argsWithProgress = [
+        ...argsNoProgress,
+        'UploadProgressCallback onProgress'
+      ];
 
       final body = codeGenUtils.block([
         'String operationName = "$methodName";',
@@ -593,14 +652,16 @@ class JavaClientSerializer extends GLClientSerilaizer {
         ]);
   }
 
-  String _serializeMultipartAdapterCall(GLQueryDefinition def, GLImportContainer container) {
+  String _serializeMultipartAdapterCall(
+      GLQueryDefinition def, GLImportContainer container) {
     final uploadNames = _grammar.uploadScalarNames;
     final uploadArgs = def.arguments
         .where((a) => uploadNames.contains(a.type.firstType.token))
         .toList();
     final returnType = def.getGeneratedTypeDefinition().tokenInfo.token;
     final hasListArg = uploadArgs.any((a) => a.type.isList);
-    container.imports.addAll([JavaImports.linkedHashMap, JavaImports.hashMap, JavaImports.arrays]);
+    container.imports.addAll(
+        [JavaImports.linkedHashMap, JavaImports.hashMap, JavaImports.arrays]);
     final statements = <String>[
       'Map<String, GLUpload> _files = new LinkedHashMap<>();',
       'Map<String, Object> _fileMap = new HashMap<>();',
@@ -649,7 +710,9 @@ class JavaClientSerializer extends GLClientSerilaizer {
       'Map<String, Object> decodedResponse = decoder.decode(responseText);',
       codeGenUtils.ifStatement(
         condition: 'decodedResponse.containsKey("errors")',
-        ifBlockStatements: ['throw ${clientExceptionName}.of((List)decodedResponse.get("errors"));'],
+        ifBlockStatements: [
+          'throw ${clientExceptionName}.of((List)decodedResponse.get("errors"));'
+        ],
       ),
       'Map<String, Object> data = (Map<String, Object>) decodedResponse.get("data");',
       _serializeInvalidationCall(def),
@@ -659,7 +722,9 @@ class JavaClientSerializer extends GLClientSerilaizer {
     return statements.join('\n');
   }
 
-  String subscriptionToMethod(GLQueryDefinition def, GLImportContainer container) {
+  String subscriptionToMethod(
+      GLQueryDefinition def, GLImportContainer container) {
+        container.imports.addAll([JavaImports.map, JavaImports.hashMap]);
     final frags = def.fragments(_grammar);
     return codeGenUtils.createMethod(
         returnType: 'public ${returnTypeByQueryType(def)}',
@@ -779,11 +844,13 @@ class JavaClientSerializer extends GLClientSerilaizer {
         .join('\n');
   }
 
-  String _serializeArgumentValue(GLQueryDefinition def, String argName, GLImportContainer container) {
+  String _serializeArgumentValue(
+      GLQueryDefinition def, String argName, GLImportContainer container) {
     var arg = def.findByName(argName);
     if (_grammar.uploadScalarNames.contains(arg.type.firstType.token)) {
       if (arg.type.isList) {
-        container.imports.addAll([JavaImports.arrayList, JavaImports.collections]);
+        container.imports
+            .addAll([JavaImports.arrayList, JavaImports.collections]);
         return 'new ArrayList<>(Collections.nCopies(${arg.dartArgumentName}.size(), null))';
       } else {
         return 'null';
@@ -792,29 +859,29 @@ class JavaClientSerializer extends GLClientSerilaizer {
     return _callToJson(arg.dartArgumentName, arg.type, 0, container);
   }
 
-  String _callToJson(String variableName, GLType type, int index, GLImportContainer container) {
-
-    if(type.isList) {
-        var inlineType = type.inlineType;
+  String _callToJson(String variableName, GLType type, int index,
+      GLImportContainer container) {
+    if (type.isList) {
+      var inlineType = type.inlineType;
       String varName = "e${index}";
-      var inlineCallToJson = _callToJson(varName, inlineType, index + 1, container);
+      var inlineCallToJson =
+          _callToJson(varName, inlineType, index + 1, container);
       String method;
-        if (varName == inlineCallToJson) {
-          container.imports.add(JavaImports.collectors);
-          method = "stream().${javaCollectorsToList}";
-        } else {
-          container.imports.add(JavaImports.collectors);
-          method = "stream().map(${varName} -> ${inlineCallToJson}).${javaCollectorsToList}";
-        }
-        return JavaCodeGenUtils.safeCall(variableName, method, type.nullable);
-    } else if(_grammar.isEnum(type.token) || _grammar.isInput(type.token)) {
-        return JavaCodeGenUtils.safeCall(variableName, "toJson()", type.nullable);
-    }else {
+      if (varName == inlineCallToJson) {
+        container.imports.add(JavaImports.collectors);
+        method = "stream().${javaCollectorsToList}";
+      } else {
+        container.imports.add(JavaImports.collectors);
+        method =
+            "stream().map(${varName} -> ${inlineCallToJson}).${javaCollectorsToList}";
+      }
+      return JavaCodeGenUtils.safeCall(variableName, method, type.nullable);
+    } else if (_grammar.isEnum(type.token) || _grammar.isInput(type.token)) {
+      return JavaCodeGenUtils.safeCall(variableName, "toJson()", type.nullable);
+    } else {
       return variableName;
     }
   }
-
-  
 
   String _resolveArgType(arg) {
     final uploadNames = _grammar.uploadScalarNames;
@@ -1046,41 +1113,43 @@ class JavaClientSerializer extends GLClientSerilaizer {
         JavaImports.reentrantLock,
         JavaImports.function,
       ],
-      importDepencies: [_grammar.getTokenByKey("GraphLinkJsonEncoder")!, _grammar.getTokenByKey("GraphLinkJsonDecoder")!],
+      importDepencies: [
+        _grammar.getTokenByKey("GraphLinkJsonEncoder")!,
+        _grammar.getTokenByKey("GraphLinkJsonDecoder")!
+      ],
       body: classBody,
     );
   }
 
-  GLClassModel? generateQueriesClassFile(GLQueryType type, String importPrefix) =>
+  GLClassModel? generateQueriesClassFile(
+          GLQueryType type, String importPrefix) =>
       generateQueriesClassByType(type, importPrefix);
 
-  GLClassModel generateGraphLinkCacheEntryFile() =>
-     const GLClassModel(
+  GLClassModel generateGraphLinkCacheEntryFile() => const GLClassModel(
         imports: [JavaImports.map, JavaImports.hashMap],
         body: cacheEntry,
       );
 
-  GLClassModel generateGraphLinkTagEntryFile() =>
-     const GLClassModel(
+  GLClassModel generateGraphLinkTagEntryFile() => const GLClassModel(
         imports: [
-         JavaImports.map,
+          JavaImports.map,
           JavaImports.hashMap,
           JavaImports.set,
           JavaImports.hashSet,
           JavaImports.list,
-          JavaImports.arrayList, 
+          JavaImports.arrayList,
         ],
         body: tagEntry,
       );
 
   GLClassModel generateGraphLinkPartialQueryFile(String importPrefix) =>
-       GLClassModel(
+      GLClassModel(
         importDepencies: [_grammar.getTokenByKey('GraphLinkJsonEncoder')!],
         imports: [
           JavaImports.map,
-            JavaImports.list,
-            JavaImports.set,
-            JavaImports.treeMap,
+          JavaImports.list,
+          JavaImports.set,
+          JavaImports.treeMap,
         ],
         body: partialQuery,
       );
@@ -1088,8 +1157,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
   GLClassModel generateGraphLinkCacheStoreFile() =>
       const GLClassModel(body: graphLinkCacheStore);
 
-  GLClassModel generateInMemoryGraphLinkCacheStoreFile() =>
-      const GLClassModel(
+  GLClassModel generateInMemoryGraphLinkCacheStoreFile() => const GLClassModel(
         imports: [JavaImports.concurrentHashMap],
         body: inMemoryGraphLinkCacheStore,
       );
@@ -1104,25 +1172,34 @@ class JavaClientSerializer extends GLClientSerilaizer {
 
   GLClassModel generateGraphLinkSubscriptionHandlerFile(String importPrefix) {
     return GLClassModel(
-        imports: [
-           JavaImports.map,
-            JavaImports.hashMap,
-            JavaImports.list,
-            JavaImports.arrayList,
-            JavaImports.collections,
-            JavaImports.uuid,
-          if (importPrefix.isNotEmpty)
-            'import ${importPrefix}.interfaces.GraphLinkWebSocketAdapter;',
-        ],
-        body: _subscriptionHandlerClass,
-      );
+      imports: [
+        JavaImports.map,
+        JavaImports.hashMap,
+        JavaImports.list,
+        JavaImports.arrayList,
+        JavaImports.collections,
+        JavaImports.uuid,
+      ],
+      importDepencies: [
+        ...[
+          'GraphLinkJsonDecoder',
+          'GraphLinkJsonEncoder',
+          'GraphLinkAckStatus',
+          'GraphLinkPayload',
+          'GraphLinkSubscriptionMessage',
+          'GraphLinkSubscriptionPayload',
+          'GraphLinkSubscriptionErrorMessageBase',
+          'GraphLinkSubscriptionErrorMessage'
+        ].map((e) => _grammar.getTokenByKey(e)!)
+      ],
+      body: _subscriptionHandlerClass,
+    );
   }
 
   String get exceptionFileName => '$clientExceptionName.java';
 
   GLClassModel generateGraphLinkExceptionFile(String importPrefix) {
     final errorToken = _grammar.getTokenByKey('GraphLinkError');
-   
 
     final classBody = codeGenUtils.createClass(
       className: '$clientExceptionName extends RuntimeException',
@@ -1134,15 +1211,14 @@ class JavaClientSerializer extends GLClientSerilaizer {
             arguments: [
               'List<GraphLinkError> errors',
             ],
-            statements: ['this.errors = errors;']),
+            statements: [
+              'this.errors = errors;'
+            ]),
         codeGenUtils.createMethod(
             returnType: 'private',
             methodName: clientExceptionName,
             arguments: ['Exception ex'],
-            statements: [
-              'super(ex);',
-              'errors = Collections.emptyList();'
-            ]),
+            statements: ['super(ex);', 'errors = Collections.emptyList();']),
         codeGenUtils.createMethod(
             returnType: 'public List<GraphLinkError>',
             methodName: 'getErrors',
@@ -1151,7 +1227,9 @@ class JavaClientSerializer extends GLClientSerilaizer {
         codeGenUtils.createMethod(
             returnType: 'static $clientExceptionName',
             methodName: 'of',
-            arguments: ['List<?> errors'],
+            arguments: [
+              'List<?> errors'
+            ],
             statements: [
               'return new $clientExceptionName(errors.stream().map(e -> GraphLinkError.fromJson((Map<String, Object>)e)).collect(Collectors.toList()));'
             ]),
@@ -1159,13 +1237,12 @@ class JavaClientSerializer extends GLClientSerilaizer {
     );
 
     return GLClassModel(
-      importDepencies: [if(errorToken != null) errorToken],
+      importDepencies: [if (errorToken != null) errorToken],
       imports: [
-        
-          JavaImports.list,
-          JavaImports.collections,
-          JavaImports.collectors,
-          JavaImports.map,
+        JavaImports.list,
+        JavaImports.collections,
+        JavaImports.collectors,
+        JavaImports.map,
       ],
       body: classBody,
     );
@@ -1192,14 +1269,11 @@ class JavaClientSerializer extends GLClientSerilaizer {
 
   GLClassModel generateMultipartAdapterFile(String importPrefix) =>
       const GLClassModel(
-        imports: [
-          JavaImports.map
-        ],
+        imports: [JavaImports.map],
         body: javaGraphLinkMultipartAdapter,
       );
 
-  GLClassModel generateGLUploadFile() =>
-      const GLClassModel(
+  GLClassModel generateGLUploadFile() => const GLClassModel(
         imports: [
           JavaImports.inputStream,
           JavaImports.byteArrayInputStream,
@@ -1220,7 +1294,6 @@ class JavaClientSerializer extends GLClientSerilaizer {
               ? 'com.fasterxml.jackson.databind.ObjectMapper'
               : 'com.google.gson.Gson',
           JavaImports.map,
-          
         ],
         importDepencies: [
           _grammar.getTokenByKey('GraphLinkJsonEncoder')!,
@@ -1229,7 +1302,8 @@ class JavaClientSerializer extends GLClientSerilaizer {
         body: codec == 'jackson' ? _jacksonCodecClass : _gsonCodecClass,
       );
 
-  GLClassModel generateDefaultClientAdapterFile(String flavor, String importPrefix) =>
+  GLClassModel generateDefaultClientAdapterFile(
+          String flavor, String importPrefix) =>
       GLClassModel(
         imports: [
           ...(flavor == 'okhttp'
@@ -1252,7 +1326,6 @@ class JavaClientSerializer extends GLClientSerilaizer {
             JavaImports.supplier,
             if (_grammar.hasUploadMutations) JavaImports.ioException,
           ]),
-          
         ],
         importDepencies: [_grammar.getTokenByKey('GraphLinkClientAdapter')!],
         body: _grammar.hasUploadMutations
@@ -1266,7 +1339,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
 
   GLClassModel generateDefaultWebSocketAdapterFile(
           String flavor, String importPrefix) =>
-       GLClassModel(
+      GLClassModel(
         imports: [
           ...(flavor == 'okhttp'
               ? [
@@ -1293,10 +1366,10 @@ class JavaClientSerializer extends GLClientSerilaizer {
             JavaImports.consumer,
             JavaImports.supplier,
           ]),
-          if (importPrefix.isNotEmpty)
-            'import ${importPrefix}.interfaces.GraphLinkWebSocketAdapter;',
         ],
-        body: flavor == 'okhttp' ? _defaultWsAdapterOkHttp : _defaultWsAdapterJava11,
+        body: flavor == 'okhttp'
+            ? _defaultWsAdapterOkHttp
+            : _defaultWsAdapterJava11,
       );
 }
 

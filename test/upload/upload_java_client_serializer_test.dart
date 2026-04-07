@@ -48,8 +48,13 @@ void main() {
   // ---------------------------------------------------------------------------
   group('GLUpload file', () {
     late String out;
-    setUpAll(() => out = _serializer(_schema).generateGLUploadFile().toFileContent());
+    setUpAll(() {
+      final s = _serializer(_schema);
+      return out =  s.serializer.serializeGlClass( s.generateGLUploadFile(), importPrefix: 'com.example');
+    });
+   
 
+   
     test('contains class GLUpload', () => expect(out, contains('class GLUpload')));
     test('has InputStream field', () => expect(out, contains('InputStream stream')));
     test('has fromFile factory', () => expect(out, contains('fromFile')));
@@ -62,7 +67,10 @@ void main() {
   // ---------------------------------------------------------------------------
   group('UploadProgressCallback file', () {
     late String out;
-    setUpAll(() => out = _serializer(_schema).generateUploadProgressCallbackFile().toFileContent());
+    setUpAll(() {
+      final s = _serializer(_schema);
+      return out =  s.serializer.serializeGlClass( s.generateUploadProgressCallbackFile(), importPrefix: 'com.example');
+    });
 
     test('is FunctionalInterface', () => expect(out, contains('@FunctionalInterface')));
     test('has onProgress method', () => expect(out, contains('void onProgress(long sent, long total)')));
@@ -73,15 +81,15 @@ void main() {
   // ---------------------------------------------------------------------------
   group('GraphLinkMultipartAdapter file', () {
     late String out;
-    setUpAll(() => out = _serializer(_schema).generateMultipartAdapterFile('com.example.generated').toFileContent());
-
+    setUpAll(() {
+      final s = _serializer(_schema);
+      return out =  s.serializer.serializeGlClass( s.generateMultipartAdapterFile('com.example.generated'), importPrefix: 'com.example.generated');
+    });
     test('declares executeMultipart', () => expect(out, contains('executeMultipart')));
     test('takes Map<String, GLUpload>', () => expect(out, contains('Map<String, GLUpload>')));
     test('takes UploadProgressCallback', () => expect(out, contains('UploadProgressCallback onProgress')));
     test('has default no-progress overload', () => expect(out, contains('executeMultipart(operations, mapJson, files, null)')));
     test('imports java.util.Map', () => expect(out, contains('import java.util.Map')));
-    test('imports GLUpload', () => expect(out, contains('import com.example.generated.client.GLUpload')));
-    test('imports UploadProgressCallback', () => expect(out, contains('import com.example.generated.client.UploadProgressCallback')));
   });
 
   // ---------------------------------------------------------------------------
@@ -100,7 +108,7 @@ void main() {
     test('list upload uses runtime loop', () => expect(out, contains('for (int _i = 0; _i < files.size(); _i++)')));
     test('calls executeMultipart', () => expect(out, contains('multipartAdapter.executeMultipart')));
     test('overload without progress delegates with null', () => expect(out, contains('uploadFile(file, filename, null)')));
-    test('overload with progress throws IOException', () => expect(out, contains('throws java.io.IOException')));
+    test('overload with progress throws IOException', () => expect(out, contains('throws IOException')));
     test('non-upload mutation uses adapter.execute', () => expect(out, contains('adapter.execute')));
   });
 
@@ -145,7 +153,10 @@ void main() {
   // ---------------------------------------------------------------------------
   group('DefaultGraphLinkClientAdapter — okhttp with upload', () {
     late String out;
-    setUpAll(() => out = _serializer(_schema).generateDefaultClientAdapterFile('okhttp', '').toFileContent());
+    setUpAll(() {
+      var s = _serializer(_schema);
+      return out = s.serializer.serializeGlClass(s.generateDefaultClientAdapterFile('okhttp', ''), importPrefix: 'com.example');
+    });
 
     test('implements GraphLinkMultipartAdapter', () => expect(out, contains('implements GraphLinkClientAdapter, GraphLinkMultipartAdapter')));
     test('has executeMultipart', () => expect(out, contains('executeMultipart')));

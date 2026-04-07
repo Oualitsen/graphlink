@@ -1,5 +1,6 @@
 /Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/Main.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/client/DefaultGraphLinkClientAdapter.java
+/Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/client/DefaultGraphLinkWebSocketAdapter.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/client/GLUpload.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/client/GraphLinkCacheEntry.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/client/GraphLinkCacheStore.java
@@ -10,7 +11,12 @@
 /Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/client/GraphLinkPartialQuery.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/client/GraphLinkQueries.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/client/GraphLinkResolverBase.java
+/Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/client/GraphLinkSubscriptionHandler.java
+/Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/client/GraphLinkSubscriptionListener.java
+/Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/client/GraphLinkSubscriptions.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/client/GraphLinkTagEntry.java
+/Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/client/GraphLinkWebSocketAdapter.java
+/Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/client/GraphqlWsMessageTypes.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/client/InMemoryGraphLinkCacheStore.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/client/JacksonGraphLinkJsonCodec.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/client/UploadProgressCallback.java
@@ -21,6 +27,7 @@
 /Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/interfaces/GraphLinkJsonDecoder.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/interfaces/GraphLinkJsonEncoder.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/interfaces/GraphLinkSubscriptionErrorMessageBase.java
+/Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/interfaces/GraphLinkWebSocketAdapter.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/types/CreateSomethingResponse.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/types/FileResponse.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/types/FilesResponse.java
@@ -36,3 +43,4 @@
 /Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/types/UploadMultiFiesResponse.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/types/UploadedFile.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/types/UploadedFile_Id.java
+/Users/ramdane/projects/graphlink/examples/glupload/java_java11_client_app/src/main/java/com/example/generated/types/WatchIntResponse.java

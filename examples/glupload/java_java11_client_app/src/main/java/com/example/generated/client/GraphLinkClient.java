@@ -18,31 +18,43 @@ public class GraphLinkClient {
    final Map<String, String> _fragmMap = new HashMap<>();
    public final GraphLinkQueries queries;
    public final GraphLinkMutations mutations;
-   public GraphLinkClient(GraphLinkClientAdapter adapter, GraphLinkMultipartAdapter multipartAdapter, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder) {
-      this(adapter, multipartAdapter, encoder, decoder, null);
+   public final GraphLinkSubscriptions subscriptions;
+   public GraphLinkClient(GraphLinkClientAdapter adapter, GraphLinkMultipartAdapter multipartAdapter, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder, GraphLinkWebSocketAdapter wsAdapter) {
+      this(adapter, multipartAdapter, encoder, decoder, null, wsAdapter);
    }
-   public GraphLinkClient(GraphLinkClientAdapter adapter, GraphLinkMultipartAdapter multipartAdapter, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder, GraphLinkCacheStore store) {
+   public GraphLinkClient(GraphLinkClientAdapter adapter, GraphLinkMultipartAdapter multipartAdapter, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder, GraphLinkCacheStore store, GraphLinkWebSocketAdapter wsAdapter) {
       if(store == null) {
          store = new InMemoryGraphLinkCacheStore();
       }
       Objects.requireNonNull(adapter);
       Objects.requireNonNull(encoder);
       Objects.requireNonNull(decoder);
+      Objects.requireNonNull(wsAdapter);
       queries = new GraphLinkQueries(adapter, _fragmMap, encoder, decoder, store);
       mutations = new GraphLinkMutations(adapter, multipartAdapter, _fragmMap, encoder, decoder, store);
+      subscriptions = new GraphLinkSubscriptions(wsAdapter, _fragmMap, encoder, decoder, store);
       _fragmMap.put("_all_fields_UploadedFile", "fragment _all_fields_UploadedFile on UploadedFile{id filename mimeType size url}");
    }
-   public GraphLinkClient(DefaultGraphLinkClientAdapter adapter, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder) {
-      this(adapter, adapter, encoder, decoder, null);
+   public GraphLinkClient(DefaultGraphLinkClientAdapter adapter, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder, GraphLinkWebSocketAdapter wsAdapter) {
+      this(adapter, adapter, encoder, decoder, null, wsAdapter);
    }
    public GraphLinkClient(String url, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder) {
-      this(new DefaultGraphLinkClientAdapter(url), encoder, decoder);
+      this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws")));
    }
    public GraphLinkClient(String url, Supplier<Map<String, String>> headersProvider, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder) {
-      this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder);
+      this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"), headersProvider));
+   }
+   public GraphLinkClient(String url, String wsUrl, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder) {
+      this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, new DefaultGraphLinkWebSocketAdapter(wsUrl));
+   }
+   public GraphLinkClient(String url, String wsUrl, Supplier<Map<String, String>> headersProvider, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder) {
+      this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, new DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider));
    }
    public GraphLinkClient(String url) {
       this(url, new JacksonGraphLinkJsonCodec(), new JacksonGraphLinkJsonCodec());
+   }
+   public GraphLinkClient(String url, String wsUrl) {
+      this(url, wsUrl, new JacksonGraphLinkJsonCodec(), new JacksonGraphLinkJsonCodec());
    }
 }
 
