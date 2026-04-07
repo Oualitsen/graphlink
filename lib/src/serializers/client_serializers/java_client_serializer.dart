@@ -1,9 +1,9 @@
 import 'package:graphlink/src/cache_store_java.dart';
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/gl_grammar_upload_extension.dart';
-import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/java_code_gen_utils.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/gl_grammar_cache_extension.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
@@ -714,34 +714,30 @@ class JavaClientSerializer extends GLClientSerilaizer {
         return 'null';
       }
     }
-    return _callToJson(arg.dartArgumentName, arg.type);
+    return _callToJson(arg.dartArgumentName, arg.type, 0);
   }
 
-  String _callToJson(String argName, GLType type) {
-    if (_grammar.inputTypeRequiresProjection(type)) {
-      if (type.isList) {
-        return "$argName${_getNullableText(type)}.map((e) => ${_callToJson("e", type.inlineType)}).toList()";
-      } else {
-        return "$argName${_getNullableText(type)}.toJson()";
-      }
-    }
-    if (_grammar.isEnum(type.token)) {
-      if (type.isList) {
-        return "$argName${_getNullableText(type)}.map((e) => ${_callToJson("e", type.inlineType)}).toList()";
-      } else {
-        return "$argName${_getNullableText(type)}.toJson()";
-      }
-    } else {
-      return argName;
+  String _callToJson(String variableName, GLType type, int index) {
+
+    if(type.isList) {
+        var inlineType = type.inlineType;
+      String varName = "e${index}";
+      var inlineCallToJson = _callToJson(varName, inlineType, index + 1);
+      String method;
+        if (varName == inlineCallToJson) {
+          method = "stream().${javaCollectorsToList}";
+        } else {
+          method = "stream().map(${varName} -> ${inlineCallToJson}).${javaCollectorsToList}";
+        }
+        return JavaCodeGenUtils.safeCall(variableName, method, type.nullable);
+    } else if(_grammar.isEnum(type.token) || _grammar.isInput(type.token)) {
+        return JavaCodeGenUtils.safeCall(variableName, "toJson()", type.nullable);
+    }else {
+      return variableName;
     }
   }
 
-  String _getNullableText(GLType type) {
-    if (type.nullable) {
-      return "?";
-    }
-    return "";
-  }
+  
 
   String _resolveArgType(arg) {
     final uploadNames = _grammar.uploadScalarNames;
@@ -989,6 +985,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
       JavaImports.list,
       JavaImports.arrayList,
       JavaImports.arrays,
+      JavaImports.collectors,
       if (type == GLQueryType.query) ...[
         JavaImports.set,
         JavaImports.hashSet,

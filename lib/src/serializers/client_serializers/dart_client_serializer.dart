@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:graphlink/src/cache_store_dart.dart';
-import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/constants.dart';
+import 'package:graphlink/src/dart_code_gen_utils.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/gl_grammar_cache_extension.dart';
 import 'package:graphlink/src/gl_grammar_upload_extension.dart';
@@ -693,14 +693,7 @@ return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson(data);
   }
 
   String _callToJson(String argName, GLType type) {
-    if (_parser.inputTypeRequiresProjection(type)) {
-      if (type.isList) {
-        return "$argName${_getNullableText(type)}.map((e) => ${_callToJson("e", type.inlineType)}).toList()";
-      } else {
-        return "$argName${_getNullableText(type)}.toJson()";
-      }
-    }
-    if (_parser.isEnum(type.token)) {
+    if (_parser.inputTypeRequiresProjection(type) || _parser.isEnum(type.token)) {
       if (type.isList) {
         return "$argName${_getNullableText(type)}.map((e) => ${_callToJson("e", type.inlineType)}).toList()";
       } else {

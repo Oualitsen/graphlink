@@ -1,6 +1,6 @@
-import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/java_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_input_mapping.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
@@ -18,7 +18,6 @@ import 'package:graphlink/src/serializers/annotation_serializer.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
 import 'package:graphlink/src/utils.dart';
 
-const _toList = "collect(Collectors.toList())";
 const _list = "List";
 const _map = "Map";
 const _javaNumbers = {
@@ -337,7 +336,7 @@ class JavaSerializer extends GLSerializer {
       String mapFunction =
           'map(${newVarName} -> ${getFromJsonCall(field, newVarName, depth + 1, context, type.inlineType)})';
       var finalResult =
-          '$nullCheckStatement (${targetCast}${varName}${callMapDotGet}).stream().${mapFunction}.${_toList}';
+          '$nullCheckStatement (${targetCast}${varName}${callMapDotGet}).stream().${mapFunction}.${javaCollectorsToList}';
       context.addImport(JavaImports.collectors);
       return finalResult;
     }
@@ -654,38 +653,31 @@ class JavaSerializer extends GLSerializer {
   String _fieldToJson(GLField field, GLToken context) {
     var buffer = StringBuffer();
     var toJosnCall =
-        _callToJson(field, field.type, field.name.token, 0, context);
+        callToJson(field, field.type, field.name.token, 0, context);
     buffer.write(toJosnCall);
     return buffer.toString();
   }
 
-  String _safeCall(String variable, String method, bool nullable) {
-    if (nullable) {
-      return "$variable == null ? null : ${variable}.${method}";
-    }
-    return "${variable}.${method}";
-  }
 
-  String _callToJson(GLField field, GLType type, String variableName, int index,
+
+  String callToJson(GLField field, GLType type, String variableName, int index,
       GLToken context) {
     if (type.isList) {
       var inlineType = type.inlineType;
       String varName = "e${index}";
       var inlineCallToJson =
-          _callToJson(field, inlineType, varName, index + 1, context);
+          callToJson(field, inlineType, varName, index + 1, context);
       String method;
         if (varName == inlineCallToJson) {
-          method = "stream().${_toList}";
+          method = "stream().${javaCollectorsToList}";
         } else {
-          method = "stream().map(${varName} -> ${inlineCallToJson}).${_toList}";
+          method = "stream().map(${varName} -> ${inlineCallToJson}).${javaCollectorsToList}";
         }
         context.addImport(JavaImports.collectors);
-
-        return _safeCall(variableName, method, type.nullable);
+        return JavaCodeGenUtils.safeCall(variableName, method, type.nullable);
       
-    }
-    if (grammar.isEnum(type.token) || grammar.isProjectableType(type.token)) {
-      return _safeCall(variableName, "toJson()", type.nullable);
+    } else  if (grammar.isEnum(type.token) || grammar.isProjectableType(type.token)) {
+      return JavaCodeGenUtils.safeCall(variableName, "toJson()", type.nullable);
     }
     return variableName;
   }
