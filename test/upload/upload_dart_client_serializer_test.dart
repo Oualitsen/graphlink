@@ -36,7 +36,7 @@ DartClientSerializer _serializer(String schema,
 void main() {
   group('uploads file', () {
     late String out;
-    setUpAll(() => out = _serializer(_schema).generateUploadsFile());
+    setUpAll(() => out = _serializer(_schema).generateUploadsFile().toFileContent());
 
     test('contains GLUpload', () => expect(out, contains('class GLUpload')));
     test('contains UploadProgressCallback', () => expect(out, contains('typedef UploadProgressCallback')));
@@ -46,7 +46,7 @@ void main() {
 
   group('client file — upload mutations', () {
     late String out;
-    setUpAll(() => out = _serializer(_schema).generateClient(''));
+    setUpAll(() => out = _serializer(_schema).generateClient('').toFileContent());
 
     test('imports graph_link_uploads.dart', () => expect(out, contains("import 'graph_link_uploads.dart'")));
     test('has _defaultUploadConverter', () => expect(out, contains('_defaultUploadConverter')));
@@ -68,14 +68,14 @@ void main() {
 
   group('adapter files — upload support', () {
     test('dio adapter imports graph_link_uploads.dart', () {
-      final out = _serializer(_schema).generateDioAdapterFile();
+      final out = _serializer(_schema).generateDioAdapterFile().toFileContent();
       expect(out, contains("import 'graph_link_uploads.dart'"));
       expect(out, contains('multipartCall'));
       expect(out, contains('FormData.fromMap'));
     });
 
     test('http adapter imports graph_link_uploads.dart', () {
-      final out = _serializer(_schema, adapter: DartHttpAdapter.http).generateHttpAdapterFile();
+      final out = _serializer(_schema, adapter: DartHttpAdapter.http).generateHttpAdapterFile().toFileContent();
       expect(out, contains("import 'graph_link_uploads.dart'"));
       expect(out, contains('multipartCall'));
       expect(out, contains('MultipartRequest'));
@@ -84,13 +84,13 @@ void main() {
 
   group('no uploads — nothing emitted', () {
     test('client has no upload imports', () {
-      final out = _serializer(_plainSchema).generateClient('');
+      final out = _serializer(_plainSchema).generateClient('').toFileContent();
       expect(out, isNot(contains('graph_link_uploads')));
       expect(out, isNot(contains('GLUploadConverter')));
     });
 
     test('dio adapter has no multipartCall', () {
-      final out = _serializer(_plainSchema).generateDioAdapterFile();
+      final out = _serializer(_plainSchema).generateDioAdapterFile().toFileContent();
       expect(out, isNot(contains('multipartCall')));
     });
   });

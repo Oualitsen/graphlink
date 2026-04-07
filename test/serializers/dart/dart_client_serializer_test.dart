@@ -25,7 +25,7 @@ void main() {
     var serializer = DartSerializer(g);
     var clientSerializer = DartClientSerializer(g, serializer);
 
-    var client = clientSerializer.generateClient("package");
+    var client = clientSerializer.generateClient("package").toFileContent();
     var lines =
         client.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty);
     expect(

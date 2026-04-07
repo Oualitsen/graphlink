@@ -204,6 +204,19 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
     return buffer.toString();
   }
 
+  @override
+  String forLoop({
+    required String init,
+    required String condition,
+    required String increment,
+    required List<String> statements,
+  }) {
+    var buffer = StringBuffer();
+    buffer.write("for ($init; $condition; $increment) ");
+    buffer.write(block(statements));
+    return buffer.toString();
+  }
+
    static String safeCall(String variable, String method, bool nullable) {
     if (nullable) {
       return "$variable == null ? null : ${variable}.${method}";
