@@ -1,4 +1,5 @@
 import 'package:graphlink/src/model/gl_class_model.dart';
+import 'package:graphlink/src/model/gl_controller.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
