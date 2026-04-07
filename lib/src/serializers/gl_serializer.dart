@@ -48,7 +48,7 @@ abstract class GLSerializer {
   }
 
   String doSerializeField(GLField def, bool immutable);
-  String serializeType(GLType def, bool forceNullable, [bool asArray = false]);
+  String serializeType(GLType def, bool forceNullable);
 
   String serializeInputDefinition(GLInputDefinition def, String importPrefix) {
     if (shouldSkipSerialization(directives: def.getDirectives(), mode: mode)) {

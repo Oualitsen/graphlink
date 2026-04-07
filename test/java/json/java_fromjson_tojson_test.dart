@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
@@ -102,35 +101,7 @@ void main() {
     );
   });
 
-  test("Java input tojson list as array", () {
-    final GLParser g = GLParser();
-
-    g.parse('''
-  enum Gender {male, female}
-  input UserInput {
-    names: [String!]! ${glArray}
-    genderList: [Gender] ${glArray}
-    genderList2: [[Gender!]] ${glArray}
-  }
-''');
-
-    var userInput = g.inputs["UserInput"]!;
-    var serializer = JavaSerializer(g, generateJsonMethods: true);
-    var inputSerial = serializer.generateToJson(userInput.fields, userInput);
-
-    expect(
-      inputSerial.split('\n').map((e) => e.trim()),
-      containsAllInOrder([
-        'public Map<String, Object> toJson() {',
-        'Map<String, Object> map = new HashMap<>();',
-        'map.put("names", names == null ? null : Stream.of(names).map(e0 -> e0).collect(Collectors.toList()));',
-        'map.put("genderList", genderList == null ? null : Stream.of(genderList).map(e0 -> e0 == null ? null : e0.toJson()).collect(Collectors.toList()));',
-        'map.put("genderList2", genderList2 == null ? null : Stream.of(genderList2).map(e0 -> e0 == null ? null : Stream.of(e0).map(e1 -> e1.toJson()).collect(Collectors.toList())).collect(Collectors.toList()));',
-        'return map;',
-        '}'
-      ]),
-    );
-  });
+  
 
   test("Java input tojson list of lists", () {
     final GLParser g = GLParser();

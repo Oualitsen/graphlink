@@ -174,7 +174,7 @@ class JavaSerializer extends GLSerializer {
       buffer.write("final ");
     }
     buffer.write(
-        '${serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray)} $name;');
+        '${serializeType(type, hasInculeOrSkipDiretives)} $name;');
     return buffer.toString();
   }
 
@@ -204,7 +204,7 @@ class JavaSerializer extends GLSerializer {
       }
     }
     buffer.write(
-        serializeType(type, hasInculeOrSkipDiretives, def.serialzeAsArray));
+        serializeType(type, hasInculeOrSkipDiretives));
     buffer.write(" ");
     buffer.write(name);
     return buffer.toString();
@@ -218,7 +218,6 @@ class JavaSerializer extends GLSerializer {
   String serializeTypeReactive({
     required GLType glType,
     bool forceNullable = false,
-    bool asArray = false,
     bool reactive = false,
     required GLToken? context,
   }) {
@@ -227,13 +226,9 @@ class JavaSerializer extends GLSerializer {
         context?.addImport(JavaImports.flux);
         return "Flux<${convertPrimitiveToBoxed(serializeTypeReactive(glType: glType.inlineType, context: context))}>";
       }
-      if (asArray) {
-        return "${serializeType(glType.inlineType, false, asArray)}[]";
-      } else {
-        context?.addImport(importList);
+      context?.addImport(importList);
         return _listOf(
             convertPrimitiveToBoxed(serializeType(glType.inlineType, false)));
-      }
     }
     final token = glType.token;
 
@@ -249,14 +244,13 @@ class JavaSerializer extends GLSerializer {
   }
 
   @override
-  String serializeType(GLType def, bool forceNullable, [bool asArray = false]) {
+  String serializeType(GLType def, bool forceNullable) {
     var token = def.token;
     var context = grammar.getTokenByKey(token);
     return serializeTypeReactive(
       context: context,
       glType: def,
       forceNullable: forceNullable,
-      asArray: asArray,
       reactive: false,
     );
   }
@@ -649,7 +643,7 @@ class JavaSerializer extends GLSerializer {
           statements: [
             "${_mapOf('String', 'Object')} map = new HashMap<>();",
             ...fields.map((field) =>
-                'map.put("${field.name}", ${fieldToJson(field, context)});'),
+                'map.put("${field.name}", ${_fieldToJson(field, context)});'),
             'return map;'
           ]),
     );
@@ -657,38 +651,29 @@ class JavaSerializer extends GLSerializer {
     return buffer.toString();
   }
 
-  String fieldToJson(GLField field, GLToken context) {
+  String _fieldToJson(GLField field, GLToken context) {
     var buffer = StringBuffer();
     var toJosnCall =
-        callToJson(field, field.type, field.name.token, 0, context);
+        _callToJson(field, field.type, field.name.token, 0, context);
     buffer.write(toJosnCall);
     return buffer.toString();
   }
 
-  String safeCall(String variable, String method, bool nullable) {
+  String _safeCall(String variable, String method, bool nullable) {
     if (nullable) {
       return "$variable == null ? null : ${variable}.${method}";
     }
     return "${variable}.${method}";
   }
 
-  String callToJson(GLField field, GLType type, String variableName, int index,
+  String _callToJson(GLField field, GLType type, String variableName, int index,
       GLToken context) {
     if (type.isList) {
       var inlineType = type.inlineType;
       String varName = "e${index}";
       var inlineCallToJson =
-          callToJson(field, inlineType, varName, index + 1, context);
-      if (field.getDirectiveByName(glArray) != null) {
-        // array
-        String method =
-            "Stream.of(${variableName}).map(${varName} -> ${inlineCallToJson}).${_toList}";
-        context.addImport(JavaImports.stream);
-        return "${variableName} == null ? null : $method";
-      } else {
-        // list
-
-        String method;
+          _callToJson(field, inlineType, varName, index + 1, context);
+      String method;
         if (varName == inlineCallToJson) {
           method = "stream().${_toList}";
         } else {
@@ -696,11 +681,11 @@ class JavaSerializer extends GLSerializer {
         }
         context.addImport(JavaImports.collectors);
 
-        return safeCall(variableName, method, type.nullable);
-      }
+        return _safeCall(variableName, method, type.nullable);
+      
     }
     if (grammar.isEnum(type.token) || grammar.isProjectableType(type.token)) {
-      return safeCall(variableName, "toJson()", type.nullable);
+      return _safeCall(variableName, "toJson()", type.nullable);
     }
     return variableName;
   }
@@ -787,7 +772,7 @@ class JavaSerializer extends GLSerializer {
     if (checkForNulls) {
       context.addImport(JavaImports.objects);
     }
-    var returnType = serializeType(field.type, false, field.serialzeAsArray);
+    var returnType = serializeType(field.type, false);
     return codeGenUtils.createMethod(
         returnType: "public ${returnType}",
         methodName: _getterName(field.name.token, returnType == "boolean"),
@@ -808,7 +793,7 @@ class JavaSerializer extends GLSerializer {
         withParenthesis: false,
         join: ", ");
     var result =
-        "${serializeType(field.type, false, field.serialzeAsArray)} ${field.name}($args)";
+        "${serializeType(field.type, false)} ${field.name}($args)";
     if (modifier != null) {
       result = "$modifier $result";
     }
@@ -845,7 +830,7 @@ class JavaSerializer extends GLSerializer {
   String serializeGetterDeclaration(GLField field,
       {bool skipModifier = false, bool asProperty = false}) {
     var returnType = serializeType(field.type, false);
-    var result = serializeType(field.type, false, field.serialzeAsArray);
+    var result = serializeType(field.type, false);
     if (asProperty) {
       result = "$result ${field.name}";
     } else {

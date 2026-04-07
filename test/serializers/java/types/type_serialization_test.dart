@@ -17,27 +17,6 @@ void main() {
     "Long": "Long"
   };
 
-  test("test list as array", () {
-    final GLParser g = GLParser(
-        identityFields: ["id"],
-        typeMap: typeMapping,
-        mode: CodeGenerationMode.client);
-
-    final text = File(
-            "test/serializers/java/types/type_serialization_list_as_array.graphql")
-        .readAsStringSync();
-
-    g.parse(text);
-
-    var javaSerialzer = JavaSerializer(g);
-
-    var userServer = g.getTypeByName("User")!;
-    var result = javaSerialzer.serializeTypeDefinition(userServer, "");
-    expect(result, contains("String[] array"));
-    expect(result, contains("String[][] arrayOfArrays"));
-    expect(result, contains("List<List<String>> listOfLists"));
-  });
-
   test("test skipOn mode = client", () {
     final GLParser g = GLParser(
         identityFields: ["id"],

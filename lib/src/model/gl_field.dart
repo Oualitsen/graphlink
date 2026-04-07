@@ -58,10 +58,6 @@ class GLField with GLDirectivesMixin {
   String? get mapFieldTo =>
       getDirectiveByName(glMapField)?.getArgValueAsString(glMapFieldTo);
 
-  bool get serialzeAsArray {
-    _isArray ??= getDirectives().where((e) => e.token == glArray).isNotEmpty;
-    return _isArray!;
-  }
 
   void checkMerge(GLField other) {
     if (type != other.type) {

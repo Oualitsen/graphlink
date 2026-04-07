@@ -21,7 +21,6 @@ const _skippedDirectives = {
   glDecorators,
   glSkipOnServer,
   glSkipOnClient,
-  glArray,
   glServiceName,
   glTypeNameDirective,
   glEqualsHashcode,
