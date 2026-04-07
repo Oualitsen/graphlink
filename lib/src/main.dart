@@ -720,8 +720,8 @@ Future<Set<String>> generateServerClasses(
   final springSerializer = SpringServerSerializer(grammar,
       javaSerializer: serializer,
       generateSchema: springConfig.generateSchema,
-      injectDataFetching:
-          config.serverConfig?.spring?.injectDataFetching ?? false);
+      injectDataFetching: config.serverConfig?.spring?.injectDataFetching ?? false,
+      reactive: config.serverConfig?.spring?.reactive ?? false);
   final List<Future<File>> futures = [];
   const fileExtension = ".java";
 

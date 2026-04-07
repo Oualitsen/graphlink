@@ -313,4 +313,6 @@ class SpringImports {
       "org.springframework.graphql.data.method.annotation.SubscriptionMapping";
   static const multipartFile =
       "org.springframework.web.multipart.MultipartFile";
+  static const filePart =
+      "org.springframework.http.codec.multipart.FilePart";
 }

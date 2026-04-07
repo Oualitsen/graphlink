@@ -70,6 +70,7 @@ class SpringServerConfig {
   final bool typeAsRecord;
   final bool generateSchema;
   final bool injectDataFetching;
+  final bool reactive;
   final String? schemaTargetPath;
   final bool immutableInputFields;
   final bool immutableTypeFields;
@@ -84,6 +85,7 @@ class SpringServerConfig {
     required this.typeAsRecord,
     required this.generateSchema,
     required this.injectDataFetching,
+    required this.reactive,
     required this.immutableInputFields,
     required this.immutableTypeFields,
     this.schemaTargetPath,
@@ -108,7 +110,8 @@ class SpringServerConfig {
         immutableInputFields: json['immutableInputFields'] ?? true,
         immutableTypeFields: json['immutableTypeFields'] ?? false,
         schemaTargetPath: json['schemaTargetPath'],
-        injectDataFetching: json['injectDataFetching'] as bool? ?? false);
+        injectDataFetching: json['injectDataFetching'] as bool? ?? false,
+        reactive: json['reactive'] as bool? ?? false);
   }
 }
 

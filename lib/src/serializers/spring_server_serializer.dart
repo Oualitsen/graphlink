@@ -32,13 +32,15 @@ class SpringServerSerializer {
   final JavaSerializer serializer;
   final bool generateSchema;
   final bool injectDataFetching;
+  final bool reactive;
   final codeGenUtils = JavaCodeGenUtils();
 
   SpringServerSerializer(this.grammar,
       {this.defaultRepositoryBase,
       JavaSerializer? javaSerializer,
       this.generateSchema = false,
-      this.injectDataFetching = false})
+      this.injectDataFetching = false,
+      this.reactive = false})
       : assert(grammar.mode == CodeGenerationMode.server,
             "Grammar must be in code generation mode = `CodeGenerationMode.server`"),
         serializer = javaSerializer ??
@@ -167,7 +169,9 @@ class SpringServerSerializer {
   String _serializeControllerBody(GLController ctrl, String importPrefix) {
     final controllerName = ctrl.token;
     final sericeInstanceName = ctrl.serviceName.firstLow;
-    ctrl.addImport(JavaImports.completableFuture);
+    if (!reactive) {
+      ctrl.addImport(JavaImports.completableFuture);
+    }
     if (ctrl.fields.isNotEmpty && injectDataFetching) {
       ctrl.addImport(SpringImports.gqlDataFetchingEnvironment);
     }
@@ -234,28 +238,40 @@ class SpringServerSerializer {
     if (injectDataFetching) {
       serviceArgs.add('dataFetchingEnvironment');
     }
-    String returnType = serializer.serializeTypeReactive(
-        context: context,
-        glType: createListTypeOnSubscription(
-            _getServiceReturnType(method.type), type),
-        reactive: type == GLQueryType.subscription);
-    
-    bool returnTypeIsVoid = returnType == "void";
-    if(type != GLQueryType.subscription) {
-      returnType = "CompletableFuture<${convertPrimitiveToBoxed(returnType)}>";
-    }
-    if (qualifier != null) {
-      returnType = "${qualifier} ${returnType}";
-    }
-    String statement = '$sericeInstanceName.${method.name}(${serviceArgs.join(", ")})';
-    if(type != GLQueryType.subscription) {
-      statement = _wrapInCompletableFuture(statement, returnTypeIsVoid);
+    final serviceCall = '$sericeInstanceName.${method.name}(${serviceArgs.join(", ")})';
+    final String returnType;
+    final String statement;
+
+    if (type == GLQueryType.subscription) {
+      returnType = serializer.serializeTypeReactive(
+          context: context,
+          glType: createListTypeOnSubscription(
+              _getServiceReturnType(method.type), type),
+          reactive: true);
+      statement = "return $serviceCall;";
+    } else if (reactive) {
+      returnType = serializer.serializeTypeReactive(
+          context: context,
+          glType: _getServiceReturnType(method.type),
+          reactive: true);
+      statement = "return $serviceCall;";
     } else {
-      statement = "return $statement;";
+      context.addImport(JavaImports.completableFuture);
+      final baseReturnType = serializer.serializeTypeReactive(
+          context: context,
+          glType: _getServiceReturnType(method.type),
+          reactive: false);
+      final returnTypeIsVoid = baseReturnType == "void";
+      returnType =
+          "CompletableFuture<${convertPrimitiveToBoxed(baseReturnType)}>";
+      statement = _wrapInCompletableFuture(serviceCall, returnTypeIsVoid);
     }
+
+    final fullReturnType =
+        qualifier != null ? "$qualifier $returnType" : returnType;
     
     buffer.writeln(codeGenUtils.createMethod(
-        returnType: returnType,
+        returnType: fullReturnType,
         methodName: method.name.token,
         arguments: args,
         statements: [
@@ -352,7 +368,7 @@ class SpringServerSerializer {
       returnType = _getServiceReturnType(method.type);
     }
     var result =
-        "${serializer.serializeTypeReactive(context: context, glType: createListTypeOnSubscription(returnType, type), reactive: type == GLQueryType.subscription)} ${method.name}(${serializeArgs(method.arguments, context, argPrefix)}";
+        "${serializer.serializeTypeReactive(context: context, glType: createListTypeOnSubscription(returnType, type), reactive: reactive || type == GLQueryType.subscription)} ${method.name}(${serializeArgs(method.arguments, context, argPrefix)}";
     if (injectDataFetching) {
       var inject = "DataFetchingEnvironment dataFetchingEnvironment";
       context.addImport(SpringImports.gqlDataFetchingEnvironment);
@@ -424,17 +440,27 @@ class SpringServerSerializer {
     return "${_resolveArgType(arg, context)} ${arg.tokenInfo}";
   }
 
-  /// Returns `MultipartFile` / `List<MultipartFile>` for upload scalars,
-  /// otherwise delegates to the standard type serializer.
+  /// Returns `MultipartFile` / `List<MultipartFile>` for upload scalars in
+  /// blocking mode, or `FilePart` / `List<FilePart>` in reactive mode.
+  /// Otherwise delegates to the standard type serializer.
   String _resolveArgType(GLArgumentDefinition arg, GLToken context) {
     final uploadNames = grammar.uploadScalarNames;
     if (uploadNames.contains(arg.type.firstType.token)) {
-      context.addImport(SpringImports.multipartFile);
-      if (arg.type.isList) {
-        context.addImport(JavaImports.list);
-        return 'List<MultipartFile>';
+      if (reactive) {
+        context.addImport(SpringImports.filePart);
+        if (arg.type.isList) {
+          context.addImport(JavaImports.list);
+          return 'List<FilePart>';
+        }
+        return 'FilePart';
+      } else {
+        context.addImport(SpringImports.multipartFile);
+        if (arg.type.isList) {
+          context.addImport(JavaImports.list);
+          return 'List<MultipartFile>';
+        }
+        return 'MultipartFile';
       }
-      return 'MultipartFile';
     }
     return serializer.serializeType(arg.type, false);
   }
@@ -465,9 +491,10 @@ class SpringServerSerializer {
       statement.write(', dataFetchingEnvironment');
     }
     statement.write(')');
-    return '${serializeControllerMethodHeader(mapping, context)} ${codeGenUtils.block([
-         _wrapInCompletableFuture(statement.toString(), false) 
-        ])}';
+    final body = reactive
+        ? 'return ${statement};'
+        : _wrapInCompletableFuture(statement.toString(), false);
+    return '${serializeControllerMethodHeader(mapping, context)} ${codeGenUtils.block([body])}';
   }
 
   String _getAnnotation(GLSchemaMapping mapping, GLToken context) {
@@ -489,18 +516,37 @@ class SpringServerSerializer {
     }
     final type = serializer.serializeTypeReactive(
         context: context, glType: mapping.field.type, reactive: false);
+    final boxedType = convertPrimitiveToBoxed(type);
+
     final String returnType;
-    if (mapping.isBatch) {
-      returnType = "List<${convertPrimitiveToBoxed(type)}>";
+    final String statement;
+    if (reactive) {
+      if (mapping.isBatch) {
+        context.addImport(JavaImports.flux);
+        returnType = "Flux<$boxedType>";
+        statement = "return Flux.fromIterable(value);";
+      } else {
+        context.addImport(JavaImports.mono);
+        returnType = "Mono<$boxedType>";
+        statement = "return Mono.just(value);";
+      }
     } else {
-      returnType = type;
+      if (mapping.isBatch) {
+        returnType = "List<$boxedType>";
+      } else {
+        returnType = type;
+      }
+      statement = "return value;";
     }
+
     buffer.writeln(
       codeGenUtils.createMethod(
-          returnType: 'public ${returnType}',
+          returnType: 'public $returnType',
           methodName: mapping.key,
-          arguments: ['$returnType value'],
-          statements: ['return value;']),
+          arguments: [
+            mapping.isBatch ? 'List<$boxedType> value' : '$boxedType value'
+          ],
+          statements: [statement]),
     );
 
     return buffer.toString();
@@ -541,8 +587,16 @@ Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(serializer.se
     buffer.writeln(_getAnnotation(mapping, context));
     buffer.write("public ");
    
-    buffer.write(
-        "CompletableFuture<${convertPrimitiveToBoxed(_getReturnType(mapping, context))}> ${mapping.key}(${_getMappingArgument(mapping, context)}");
+    final returnType = _getReturnType(mapping, context);
+    if (reactive) {
+      context.addImport(JavaImports.mono);
+      buffer.write(
+          "Mono<${convertPrimitiveToBoxed(returnType)}> ${mapping.key}(${_getMappingArgument(mapping, context)}");
+    } else {
+      context.addImport(JavaImports.completableFuture);
+      buffer.write(
+          "CompletableFuture<${convertPrimitiveToBoxed(returnType)}> ${mapping.key}(${_getMappingArgument(mapping, context)}");
+    }
     for (var arg in mapping.field.arguments) {
       final argType = _resolveArgType(arg, context);
       context.addImport(SpringImports.gqlArgument);
@@ -563,7 +617,14 @@ Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(serializer.se
     var buffer = StringBuffer();
    
     
-    buffer.write("${_getReturnType(mapping, context)} ${mapping.key}(${_getMappingArgument(mapping, context)}");
+    final returnType = _getReturnType(mapping, context);
+    if (reactive) {
+      context.addImport(JavaImports.mono);
+      buffer.write(
+          "Mono<${convertPrimitiveToBoxed(returnType)}> ${mapping.key}(${_getMappingArgument(mapping, context)}");
+    } else {
+      buffer.write("$returnType ${mapping.key}(${_getMappingArgument(mapping, context)}");
+    }
     for (var arg in mapping.field.arguments) {
       final argType = _resolveArgType(arg, context);
       buffer.write(', $argType ${arg.tokenInfo}');
