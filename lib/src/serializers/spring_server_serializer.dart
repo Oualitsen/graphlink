@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/excpetions/parse_exception.dart';
 import 'package:graphlink/src/java_code_gen_utils.dart';
