@@ -51,7 +51,7 @@ void main() {
         lines,
         containsAllInOrder([
           '@MutationMapping()',
-          'public UploadedFile uploadFile(@Argument() MultipartFile file, @Argument() String filename) {',
+          'public CompletableFuture<UploadedFile> uploadFile(@Argument() MultipartFile file, @Argument() String filename) {',
         ]),
       );
     });
@@ -65,7 +65,7 @@ void main() {
         lines,
         containsAllInOrder([
           '@MutationMapping()',
-          'public List<UploadedFile> uploadFiles(@Argument() List<MultipartFile> files, @Argument() String label) {',
+          'public CompletableFuture<List<UploadedFile>> uploadFiles(@Argument() List<MultipartFile> files, @Argument() String label) {',
         ]),
       );
     });

@@ -99,6 +99,7 @@ const _primitiveToBoxed = {
   'double': 'Double',
   'char': 'Character',
   'boolean': 'Boolean',
+  'void': 'Void'
 };
 
 String convertPrimitiveToBoxed(String type) {

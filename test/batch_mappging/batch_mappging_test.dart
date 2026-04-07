@@ -217,18 +217,19 @@ type Query {
     var serialService = serializer.serializeService(mappingService, "myOrg");
     var serialController =
         serializer.serializeController(mappingController, "myOrg");
-    print(serialService);
     expect(
         serialService,
         contains(
             'Map<User, Car> userCar(List<User> value, DataFetchingEnvironment dataFetchingEnvironment);'));
+    
     expect(
         serialController,
         contains(
-            'Map<User, Car> userCar(List<User> value, DataFetchingEnvironment dataFetchingEnvironment)'));
+            'CompletableFuture<Map<User, Car>> userCar(List<User> value, DataFetchingEnvironment dataFetchingEnvironment)'));
+   
     expect(
         serialController,
         contains(
-            'return userSchemaMappingsService.userCar(value, dataFetchingEnvironment);'));
+            'return CompletableFuture.supplyAsync(() -> userSchemaMappingsService.userCar(value, dataFetchingEnvironment));'));
   });
 }

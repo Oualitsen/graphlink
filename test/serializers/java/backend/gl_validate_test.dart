@@ -125,9 +125,9 @@ void main() {
             .map((e) => e.trim())
             .where((e) => e.isNotEmpty),
         containsAllInOrder([
-          'public Person getPerson(@Argument() SearchQuery searchQuery) {',
+          'public CompletableFuture<Person> getPerson(@Argument() SearchQuery searchQuery) {',
           'personService.validateGetPerson(searchQuery);',
-          'return personService.getPerson(searchQuery);',
+          'return CompletableFuture.supplyAsync(() -> personService.getPerson(searchQuery));',
         ]));
   });
 
@@ -158,9 +158,9 @@ void main() {
             .map((e) => e.trim())
             .where((e) => e.isNotEmpty),
         containsAllInOrder([
-          'public Person getPerson(@Argument() SearchQuery searchQuery, DataFetchingEnvironment dataFetchingEnvironment) {',
+          'public CompletableFuture<Person> getPerson(@Argument() SearchQuery searchQuery, DataFetchingEnvironment dataFetchingEnvironment) {',
           'personService.validateGetPerson(searchQuery, dataFetchingEnvironment);',
-          'return personService.getPerson(searchQuery, dataFetchingEnvironment);',
+          'return CompletableFuture.supplyAsync(() -> personService.getPerson(searchQuery, dataFetchingEnvironment));',
         ]));
   });
 }
