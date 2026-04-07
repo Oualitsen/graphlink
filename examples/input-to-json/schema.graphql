@@ -1,0 +1,35 @@
+enum Color {
+  RED
+  GREEN
+  BLUE
+}
+
+input SimpleInput {
+  name: String
+}
+
+type Dummy {
+  id: ID!
+}
+
+type Mutation {
+  # list of enums
+  withEnumList(colors: [Color!]!): Dummy!
+
+  # list of list of enums
+  withEnumListList(colors: [[Color!]!]!): Dummy!
+  withEnumListListX10(colors: [[[[[[[[[[[Color!]!]!]]]]]]]]]): Dummy!
+
+  # simple input
+  withInput(input: SimpleInput!): Dummy!
+
+  # list of simple input
+  withInputList(inputs: [SimpleInput!]!): Dummy!
+
+  # list of list of simple input
+  withInputListList(inputs: [[SimpleInput!]!]!): Dummy!
+}
+
+type Query {
+  dummy: Dummy
+}

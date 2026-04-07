@@ -1,0 +1,31 @@
+{
+    "schemaPaths": [
+        "../schema.graphql"
+    ],
+    "mode": "client",
+    "identityFields": [],
+    "typeMappings": {
+        "ID": "String",
+        "String": "String",
+        "Float": "double",
+        "Int": "int",
+        "Boolean": "bool",
+        "Null": "null"
+    },
+    "outputDir": "lib/generated",
+    "clientConfig": {
+        "dart": {
+            "packageName": "dart_dio_upload_app",
+            "generateAllFieldsFragments": true,
+            "nullableFieldsRequired": false,
+            "autoGenerateQueries": true,
+            "autoGenerateQueriesDefaultAlias": "data",
+            "operationNameAsParameter": false,
+            "generateUiTypes": false,
+            "generateUiInputs": false,
+            "immutableInputFields": true,
+            "immutableTypeFields": true,
+            "httpAdapter": "dio"
+        }
+    }
+}
