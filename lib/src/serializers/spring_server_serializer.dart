@@ -167,7 +167,7 @@ class SpringServerSerializer {
   String _serializeControllerBody(GLController ctrl, String importPrefix) {
     final controllerName = ctrl.token;
     final sericeInstanceName = ctrl.serviceName.firstLow;
-
+    ctrl.addImport(JavaImports.completableFuture);
     if (ctrl.fields.isNotEmpty && injectDataFetching) {
       ctrl.addImport(SpringImports.gqlDataFetchingEnvironment);
     }
@@ -239,11 +239,21 @@ class SpringServerSerializer {
         glType: createListTypeOnSubscription(
             _getServiceReturnType(method.type), type),
         reactive: type == GLQueryType.subscription);
+    
     bool returnTypeIsVoid = returnType == "void";
-
+    if(type != GLQueryType.subscription) {
+      returnType = "CompletableFuture<${convertPrimitiveToBoxed(returnType)}>";
+    }
     if (qualifier != null) {
       returnType = "${qualifier} ${returnType}";
     }
+    String statement = '$sericeInstanceName.${method.name}(${serviceArgs.join(", ")})';
+    if(type != GLQueryType.subscription) {
+      statement = _wrapInCompletableFuture(statement, returnTypeIsVoid);
+    } else {
+      statement = "return $statement;";
+    }
+    
     buffer.writeln(codeGenUtils.createMethod(
         returnType: returnType,
         methodName: method.name.token,
@@ -251,13 +261,17 @@ class SpringServerSerializer {
         statements: [
           if (method.getDirectiveByName(glValidate) != null)
             '$sericeInstanceName.${GLService.getValidationMethodName(method.name.token)}(${serviceArgs.join(", ")});',
-          if (returnTypeIsVoid)
-            '$sericeInstanceName.${method.name}(${serviceArgs.join(", ")});'
-          else
-            'return $sericeInstanceName.${method.name}(${serviceArgs.join(", ")});',
+          statement
         ]));
 
     return buffer.toString();
+  }
+
+  String _wrapInCompletableFuture(String serviceCall, bool returnVoid) {
+    if(returnVoid) {
+      return "return CompletableFuture.runAsync(() -> $serviceCall);";
+    }
+    return "return CompletableFuture.supplyAsync(() -> $serviceCall);";
   }
 
   GLType createListTypeOnSubscription(GLType type, GLQueryType queryType) {
@@ -322,10 +336,7 @@ class SpringServerSerializer {
           .map((e) => "${e};"),
       '',
       ...mappings
-          .map((m) => serializeMappingImplMethodHeader(m, service,
-              skipAnnotation: true,
-              skipQualifier: true,
-              annotateArguments: false))
+          .map((m) => serializeServiceMappingImplMethodHeader(m, service))
           .map((e) => "${e};")
     ]));
     return buffer.toString();
@@ -436,7 +447,7 @@ class SpringServerSerializer {
     if (mapping.forbid) {
       context.addImport(SpringImports.gqlGraphQLException);
 
-      return '${serializeMappingImplMethodHeader(mapping, context)} ${codeGenUtils.block([
+      return '${serializeControllerMethodHeader(mapping, context)} ${codeGenUtils.block([
             '''throw new GraphQLException("Access denied to field '${mapping.type.tokenInfo}.${mapping.field.name}'");'''
           ])}';
     }
@@ -446,16 +457,16 @@ class SpringServerSerializer {
     }
 
     final statement =
-        StringBuffer('return $serviceInstanceName.${mapping.key}(value');
+        StringBuffer('$serviceInstanceName.${mapping.key}(value');
     for (var arg in mapping.field.arguments) {
       statement.write(', ${arg.tokenInfo}');
     }
     if (injectDataFetching) {
       statement.write(', dataFetchingEnvironment');
     }
-    statement.write(');');
-    return '${serializeMappingImplMethodHeader(mapping, context)} ${codeGenUtils.block([
-          statement.toString()
+    statement.write(')');
+    return '${serializeControllerMethodHeader(mapping, context)} ${codeGenUtils.block([
+         _wrapInCompletableFuture(statement.toString(), false) 
         ])}';
   }
 
@@ -524,28 +535,39 @@ Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(serializer.se
     }
   }
 
-  String serializeMappingImplMethodHeader(
-      GLSchemaMapping mapping, GLToken context,
-      {bool skipAnnotation = false,
-      bool skipQualifier = false,
-      bool annotateArguments = true}) {
+  String serializeControllerMethodHeader(GLSchemaMapping mapping, GLToken context) {
+
     var buffer = StringBuffer();
-    if (!skipAnnotation) {
-      buffer.writeln(_getAnnotation(mapping, context));
-    }
-    if (!skipQualifier) {
-      buffer.write("public ");
-    }
+    buffer.writeln(_getAnnotation(mapping, context));
+    buffer.write("public ");
+   
     buffer.write(
-        "${_getReturnType(mapping, context)} ${mapping.key}(${_getMappingArgument(mapping, context)}");
+        "CompletableFuture<${convertPrimitiveToBoxed(_getReturnType(mapping, context))}> ${mapping.key}(${_getMappingArgument(mapping, context)}");
     for (var arg in mapping.field.arguments) {
       final argType = _resolveArgType(arg, context);
-      if (annotateArguments) {
-        context.addImport(SpringImports.gqlArgument);
-        buffer.write(', @Argument $argType ${arg.tokenInfo}');
-      } else {
-        buffer.write(', $argType ${arg.tokenInfo}');
-      }
+      context.addImport(SpringImports.gqlArgument);
+      buffer.write(', @Argument $argType ${arg.tokenInfo}');
+    }
+    if (injectDataFetching) {
+      context.addImport(SpringImports.gqlDataFetchingEnvironment);
+      buffer.write(', DataFetchingEnvironment dataFetchingEnvironment)');
+    } else {
+      buffer.write(')');
+    }
+    return buffer.toString();
+
+  }
+
+  String serializeServiceMappingImplMethodHeader(
+      GLSchemaMapping mapping, GLToken context) {
+    var buffer = StringBuffer();
+   
+    
+    buffer.write("${_getReturnType(mapping, context)} ${mapping.key}(${_getMappingArgument(mapping, context)}");
+    for (var arg in mapping.field.arguments) {
+      final argType = _resolveArgType(arg, context);
+      buffer.write(', $argType ${arg.tokenInfo}');
+
     }
     if (injectDataFetching) {
       context.addImport(SpringImports.gqlDataFetchingEnvironment);

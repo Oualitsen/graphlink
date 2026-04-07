@@ -288,6 +288,7 @@ class JavaImports {
   static const file = "java.io.File";
   static const ioException = "java.io.IOException";
   static const linkedHashMap = "java.util.LinkedHashMap";
+  static const completableFuture = "java.util.concurrent.CompletableFuture";
 }
 
 class SpringImports {
