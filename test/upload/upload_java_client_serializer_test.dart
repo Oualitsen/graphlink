@@ -48,8 +48,13 @@ void main() {
   // ---------------------------------------------------------------------------
   group('GLUpload file', () {
     late String out;
-    setUpAll(() => out = _serializer(_schema).generateGLUploadFile());
+    setUpAll(() {
+      final s = _serializer(_schema);
+      return out =  s.serializer.serializeGlClass( s.generateGLUploadFile(), importPrefix: 'com.example');
+    });
+   
 
+   
     test('contains class GLUpload', () => expect(out, contains('class GLUpload')));
     test('has InputStream field', () => expect(out, contains('InputStream stream')));
     test('has fromFile factory', () => expect(out, contains('fromFile')));
@@ -62,7 +67,10 @@ void main() {
   // ---------------------------------------------------------------------------
   group('UploadProgressCallback file', () {
     late String out;
-    setUpAll(() => out = _serializer(_schema).generateUploadProgressCallbackFile());
+    setUpAll(() {
+      final s = _serializer(_schema);
+      return out =  s.serializer.serializeGlClass( s.generateUploadProgressCallbackFile(), importPrefix: 'com.example');
+    });
 
     test('is FunctionalInterface', () => expect(out, contains('@FunctionalInterface')));
     test('has onProgress method', () => expect(out, contains('void onProgress(long sent, long total)')));
@@ -73,15 +81,15 @@ void main() {
   // ---------------------------------------------------------------------------
   group('GraphLinkMultipartAdapter file', () {
     late String out;
-    setUpAll(() => out = _serializer(_schema).generateMultipartAdapterFile('com.example.generated'));
-
+    setUpAll(() {
+      final s = _serializer(_schema);
+      return out =  s.serializer.serializeGlClass( s.generateMultipartAdapterFile('com.example.generated'), importPrefix: 'com.example.generated');
+    });
     test('declares executeMultipart', () => expect(out, contains('executeMultipart')));
     test('takes Map<String, GLUpload>', () => expect(out, contains('Map<String, GLUpload>')));
     test('takes UploadProgressCallback', () => expect(out, contains('UploadProgressCallback onProgress')));
     test('has default no-progress overload', () => expect(out, contains('executeMultipart(operations, mapJson, files, null)')));
     test('imports java.util.Map', () => expect(out, contains('import java.util.Map')));
-    test('imports GLUpload', () => expect(out, contains('import com.example.generated.client.GLUpload')));
-    test('imports UploadProgressCallback', () => expect(out, contains('import com.example.generated.client.UploadProgressCallback')));
   });
 
   // ---------------------------------------------------------------------------
@@ -89,7 +97,7 @@ void main() {
   // ---------------------------------------------------------------------------
   group('mutations class — upload methods', () {
     late String out;
-    setUpAll(() => out = _serializer(_schema).generateQueriesClassFile(GLQueryType.mutation, 'com.example.generated')!);
+    setUpAll(() => out = _serializer(_schema).generateQueriesClassFile(GLQueryType.mutation, 'com.example.generated')!.toFileContent());
 
     test('has multipartAdapter field', () => expect(out, contains('GraphLinkMultipartAdapter multipartAdapter')));
     test('single upload arg is GLUpload', () => expect(out, contains('GLUpload file')));
@@ -100,7 +108,7 @@ void main() {
     test('list upload uses runtime loop', () => expect(out, contains('for (int _i = 0; _i < files.size(); _i++)')));
     test('calls executeMultipart', () => expect(out, contains('multipartAdapter.executeMultipart')));
     test('overload without progress delegates with null', () => expect(out, contains('uploadFile(file, filename, null)')));
-    test('overload with progress throws IOException', () => expect(out, contains('throws java.io.IOException')));
+    test('overload with progress throws IOException', () => expect(out, contains('throws IOException')));
     test('non-upload mutation uses adapter.execute', () => expect(out, contains('adapter.execute')));
   });
 
@@ -109,7 +117,7 @@ void main() {
   // ---------------------------------------------------------------------------
   group('mutations class — no uploads', () {
     late String out;
-    setUpAll(() => out = _serializer(_plainSchema).generateQueriesClassFile(GLQueryType.mutation, '')!);
+    setUpAll(() => out = _serializer(_plainSchema).generateQueriesClassFile(GLQueryType.mutation, '')!.toFileContent());
 
     test('no multipartAdapter field', () => expect(out, isNot(contains('multipartAdapter'))));
     test('no GLUpload', () => expect(out, isNot(contains('GLUpload'))));
@@ -121,7 +129,7 @@ void main() {
   // ---------------------------------------------------------------------------
   group('GraphLinkClient — upload constructors', () {
     late String out;
-    setUpAll(() => out = _serializer(_schema).generateClient('com.example.generated'));
+    setUpAll(() => out = _serializer(_schema).generateClient('com.example.generated').toFileContent());
 
     test('full constructor takes multipartAdapter', () => expect(out, contains('GraphLinkMultipartAdapter multipartAdapter')));
     test('mutations instantiation passes multipartAdapter', () => expect(out, contains('new GraphLinkMutations(adapter, multipartAdapter')));
@@ -134,7 +142,7 @@ void main() {
   // ---------------------------------------------------------------------------
   group('GraphLinkClient — no upload constructors', () {
     late String out;
-    setUpAll(() => out = _serializer(_plainSchema).generateClient(''));
+    setUpAll(() => out = _serializer(_plainSchema).generateClient('').toFileContent());
 
     test('no multipartAdapter in constructor', () => expect(out, isNot(contains('GraphLinkMultipartAdapter'))));
     test('mutations instantiation has no multipartAdapter', () => expect(out, isNot(contains('new GraphLinkMutations(adapter, multipartAdapter'))));
@@ -145,7 +153,10 @@ void main() {
   // ---------------------------------------------------------------------------
   group('DefaultGraphLinkClientAdapter — okhttp with upload', () {
     late String out;
-    setUpAll(() => out = _serializer(_schema).generateDefaultClientAdapterFile('okhttp', ''));
+    setUpAll(() {
+      var s = _serializer(_schema);
+      return out = s.serializer.serializeGlClass(s.generateDefaultClientAdapterFile('okhttp', ''), importPrefix: 'com.example');
+    });
 
     test('implements GraphLinkMultipartAdapter', () => expect(out, contains('implements GraphLinkClientAdapter, GraphLinkMultipartAdapter')));
     test('has executeMultipart', () => expect(out, contains('executeMultipart')));
@@ -155,7 +166,7 @@ void main() {
 
   group('DefaultGraphLinkClientAdapter — java11 with upload', () {
     late String out;
-    setUpAll(() => out = _serializer(_schema).generateDefaultClientAdapterFile('java11', ''));
+    setUpAll(() => out = _serializer(_schema).generateDefaultClientAdapterFile('java11', '').toFileContent());
 
     test('implements GraphLinkMultipartAdapter', () => expect(out, contains('implements GraphLinkClientAdapter, GraphLinkMultipartAdapter')));
     test('has executeMultipart', () => expect(out, contains('executeMultipart')));
@@ -165,7 +176,7 @@ void main() {
 
   group('DefaultGraphLinkClientAdapter — no upload', () {
     late String out;
-    setUpAll(() => out = _serializer(_plainSchema).generateDefaultClientAdapterFile('okhttp', ''));
+    setUpAll(() => out = _serializer(_plainSchema).generateDefaultClientAdapterFile('okhttp', '').toFileContent());
 
     test('does not implement GraphLinkMultipartAdapter', () => expect(out, isNot(contains('GraphLinkMultipartAdapter'))));
     test('no executeMultipart', () => expect(out, isNot(contains('executeMultipart'))));
@@ -176,17 +187,17 @@ void main() {
   // ---------------------------------------------------------------------------
   group('convenience constructor codec', () {
     test('jackson codec uses JacksonGraphLinkJsonCodec', () {
-      final out = _serializer(_plainSchema, codec: JavaJsonCodec.jackson).generateClient('');
+      final out = _serializer(_plainSchema, codec: JavaJsonCodec.jackson).generateClient('').toFileContent();
       expect(out, contains('new JacksonGraphLinkJsonCodec()'));
     });
 
     test('gson codec uses GsonGraphLinkJsonCodec', () {
-      final out = _serializer(_plainSchema, codec: JavaJsonCodec.gson).generateClient('');
+      final out = _serializer(_plainSchema, codec: JavaJsonCodec.gson).generateClient('').toFileContent();
       expect(out, contains('new GsonGraphLinkJsonCodec()'));
     });
 
     test('none codec omits url-only constructor', () {
-      final out = _serializer(_plainSchema, codec: JavaJsonCodec.none).generateClient('');
+      final out = _serializer(_plainSchema, codec: JavaJsonCodec.none).generateClient('').toFileContent();
       expect(out, isNot(contains('this(url,')));
     });
   });

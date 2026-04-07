@@ -32,6 +32,13 @@ abstract class CodeGenUtilsBase {
     required String iterable,
     required List<String> statements,
   });
+
+  String forLoop({
+    required String init,
+    required String condition,
+    required String increment,
+    required List<String> statements,
+  });
 }
 
 abstract class CaseStatement {

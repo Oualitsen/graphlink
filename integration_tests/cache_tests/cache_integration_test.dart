@@ -61,7 +61,7 @@ void main() {
   setUp(() {
     _serverCallCount = 0;
     _simulateOffline = false;
-    client = GraphLinkClient(_countingAdapter, null);
+    client = GraphLinkClient(adapter: _countingAdapter);
   });
 
   test('getCar is served from cache on second call with same id', () async {

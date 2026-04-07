@@ -1,6 +1,7 @@
 import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/java_code_gen_utils.dart';
+import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_input_mapping.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
@@ -1094,5 +1095,23 @@ class JavaSerializer extends GLSerializer {
       return 'import ${JavaImports.list};';
     }
     return 'import ${import};';
+  }
+
+  @override
+  String serializeGlClass(GLClassModel theClass,
+      {bool withImports = true, required String importPrefix}) {
+    if (!withImports || theClass.importDepencies.isEmpty && theClass.imports.isEmpty) {
+      return super.serializeGlClass(theClass, withImports: withImports, importPrefix: importPrefix);
+    }
+    final tokenImports = theClass.importDepencies
+        .map((dep) => serializeImportToken(dep, importPrefix))
+        .where((l) => l.trim().isNotEmpty)
+        .toList();
+    final simpleImports = theClass.imports.map((imp) => serializeImport(imp)).toList();
+    final merged = GLClassModel(
+      imports: {...tokenImports, ...simpleImports}.toList(),
+      body: theClass.body,
+    );
+    return super.serializeGlClass(merged, withImports: withImports, importPrefix: importPrefix);
   }
 }

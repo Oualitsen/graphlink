@@ -6,6 +6,7 @@ import 'package:graphlink/src/dart_code_gen_utils.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/gl_grammar_cache_extension.dart';
 import 'package:graphlink/src/gl_grammar_upload_extension.dart';
+import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_type.dart';
@@ -30,25 +31,26 @@ class DartClientSerializer extends GLClientSerilaizer {
   bool get _useDio => httpAdapter == DartHttpAdapter.dio;
 
   @override
-  String generateClient(String importPrefix) {
-    var imports = serializeImports(_parser, importPrefix);
+  @override
+  GLClassModel generateClient(String importPrefix) {
+    final dartImports = [
+      "import 'dart:convert';",
+      "import 'dart:async';",
+      "import 'dart:math';",
+      if (generateAdapters)
+        _useDio
+            ? "import 'graph_link_dio_adapter.dart';"
+            : "import 'graph_link_http_adapter.dart';",
+      if (generateAdapters && _parser.hasSubscriptions)
+        "import 'graph_link_websocket_adapter.dart';",
+      ...serializeImports(_parser, importPrefix)
+          .split('\n')
+          .where((l) => l.trim().isNotEmpty),
+      if (_parser.hasMutations && _parser.hasUploadMutations)
+        "import 'graph_link_uploads.dart';",
+    ];
 
-    var buffer = StringBuffer();
-    buffer.writeln("import 'dart:convert';");
-    buffer.writeln("import 'dart:async';");
-    buffer.writeln("import 'dart:math';");
-    if (generateAdapters) {
-      buffer.writeln(_useDio
-          ? "import 'graph_link_dio_adapter.dart';"
-          : "import 'graph_link_http_adapter.dart';");
-    }
-    if (generateAdapters && _parser.hasSubscriptions) {
-      buffer.writeln("import 'graph_link_websocket_adapter.dart';");
-    }
-    buffer.writeln(imports);
-    if(_parser.hasMutations && _parser.hasUploadMutations) {
-      buffer.writeln("import 'graph_link_uploads.dart';");
-    }
+    final buffer = StringBuffer();
     buffer.writeln();
     buffer.writeln("const tagKeyPrefix = '__tag__';");
     buffer.writeln();
@@ -250,7 +252,7 @@ class DartClientSerializer extends GLClientSerilaizer {
     ]));
 
     buffer.writeln(serializeSubscriptions().ident());
-    return buffer.toString();
+    return GLClassModel(imports: dartImports, body: buffer.toString());
   }
 
   String _withHttpConstructor() {
@@ -261,7 +263,7 @@ class DartClientSerializer extends GLClientSerilaizer {
         ? 'wsAdapter: DefaultGraphLinkWebSocketAdapter(url: wsUrl, headersProvider: wsHeadersProvider),'
         : '';
     final adapterClass = _useDio ? 'GraphLinkDioAdapter' : 'GraphLinkHttpAdapter';
-    final adapterArgs = 'url: url, headersProvider: headersProvider';
+    const adapterArgs = 'url: url, headersProvider: headersProvider';
 
     if (_parser.hasUploadMutations) {
       return '''
@@ -315,6 +317,24 @@ GraphLinkClient.fromUrl({
       return 'Future<String> Function(String payload, String $_operationNameParam) adapter';
     }
     return 'Future<String> Function(String payload) adapter';
+  }
+
+  @override
+  GLClassModel? getQueriesClass(String importPrefix) {
+    final body = generateQueriesClassByType(GLQueryType.query);
+    return body != null ? GLClassModel(body: body) : null;
+  }
+
+  @override
+  GLClassModel? getMutationsClass(String importPrefix) {
+    final body = generateQueriesClassByType(GLQueryType.mutation);
+    return body != null ? GLClassModel(body: body) : null;
+  }
+
+  @override
+  GLClassModel? getSubscriptionsClass(String importPrefix) {
+    final body = generateQueriesClassByType(GLQueryType.subscription);
+    return body != null ? GLClassModel(body: body) : null;
   }
 
   String? generateQueriesClassByType(GLQueryType type) {
@@ -752,7 +772,7 @@ $_webSocketAdapter
 
   String get fileExtension => '.dart';
 
-  String generateHttpAdapterFile() {
+  GLClassModel generateHttpAdapterFile() {
     if (_parser.hasUploadMutations) {
       stdout.writeln(
         '⚠️  Upload mutations detected with the http adapter.\n'
@@ -761,9 +781,6 @@ $_webSocketAdapter
       );
     }
     final extraParam = _parser.operationNameAsParameter ? ', String operationName' : '';
-    final uploadsImport = _parser.hasUploadMutations
-        ? "import 'graph_link_uploads.dart';"
-        : '';
     final multipartMethod = _parser.hasUploadMutations ? '''
 
   Future<String> multipartCall(Map<String, Object> parts, UploadProgressCallback? onProgress) async {
@@ -815,11 +832,14 @@ $_webSocketAdapter
     final streamed = await raw.send();
     return (await http.Response.fromStream(streamed)).body;
   }''' : '';
-    return """
-import 'dart:async';
-import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
-$uploadsImport
+    return GLClassModel(
+      imports: [
+        "import 'dart:async';",
+        "import 'package:http/http.dart' as http;",
+        "import 'package:http_parser/http_parser.dart';",
+        if (_parser.hasUploadMutations) "import 'graph_link_uploads.dart';",
+      ],
+      body: """
 class GraphLinkHttpAdapter {
   final String url;
   final Future<Map<String, String>?> Function()? headersProvider;
@@ -843,14 +863,12 @@ class GraphLinkHttpAdapter {
     return response.body;
   }$multipartMethod
 }
-""";
+""",
+    );
   }
 
-  String generateDioAdapterFile() {
+  GLClassModel generateDioAdapterFile() {
     final extraParam = _parser.operationNameAsParameter ? ', String operationName' : '';
-    final uploadsImport = _parser.hasUploadMutations
-        ? "import 'graph_link_uploads.dart';"
-        : '';
     final multipartMethod = _parser.hasUploadMutations ? '''
 
   Future<String> multipartCall(Map<String, Object> parts, UploadProgressCallback? onProgress) async {
@@ -873,12 +891,15 @@ class GraphLinkHttpAdapter {
     final data = response.data;
     return data is String ? data : jsonEncode(data);
   }''' : '';
-    return """
-import 'dart:async';
-import 'dart:convert';
-import 'package:dio/dio.dart';
-import 'package:http_parser/http_parser.dart';
-$uploadsImport
+    return GLClassModel(
+      imports: [
+        "import 'dart:async';",
+        "import 'dart:convert';",
+        "import 'package:dio/dio.dart';",
+        "import 'package:http_parser/http_parser.dart';",
+        if (_parser.hasUploadMutations) "import 'graph_link_uploads.dart';",
+      ],
+      body: """
 class GraphLinkDioAdapter {
   final String url;
   final Dio dio;
@@ -919,21 +940,23 @@ class _HeadersInterceptor extends Interceptor {
     handler.next(options);
   }
 }
-""";
+""",
+    );
   }
 
-  String generateUploadsFile() => dartUploadsFile;
+  GLClassModel generateUploadsFile() => const GLClassModel(body: dartUploadsFile);
 
-  String generateDefaultWebSocketAdapterFile() {
-    return """
-import 'dart:async';
-import 'dart:math';
-import 'package:web_socket_channel/web_socket_channel.dart';
-import 'graph_link_client.dart';
+  GLClassModel generateDefaultWebSocketAdapterFile() =>
+     const GLClassModel(
+        imports: [
+          "import 'dart:async';",
+          "import 'dart:math';",
+          "import 'package:web_socket_channel/web_socket_channel.dart';",
+          "import 'graph_link_client.dart';",
+        ],
+        body: _defaultWebSocketAdapter,
+      );
 
-$_defaultWebSocketAdapter
-""";
-  }
 }
 
 const _subscriptionHandler = """

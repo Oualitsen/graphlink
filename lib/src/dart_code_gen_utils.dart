@@ -213,6 +213,19 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
     return buffer.toString();
   }
 
+  @override
+  String forLoop({
+    required String init,
+    required String condition,
+    required String increment,
+    required List<String> statements,
+  }) {
+    var buffer = StringBuffer();
+    buffer.write("for ($init; $condition; $increment) ");
+    buffer.write(block(statements));
+    return buffer.toString();
+  }
+
   String then({required String varName, required List<String> statements}) {
     return ".then(($varName) ${block(statements)})";
   }

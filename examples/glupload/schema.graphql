@@ -35,6 +35,10 @@ type Mutation {
 
 }
 
+type Subscription {
+  watchInt: Int!
+}
+
 
 input CreateSomething {
   name: String

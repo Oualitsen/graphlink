@@ -41,7 +41,7 @@ void main() async {
     var serializer = DartSerializer(g);
 
     var clientGen = DartClientSerializer(g, serializer);
-    var client = clientGen.generateClient("package");
+    var client = clientGen.generateClient("package").toFileContent();
     var types = g.types.values
         .map((t) => serializer.serializeTypeDefinition(t, ""))
         .join("\n");
