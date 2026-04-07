@@ -1,0 +1,5 @@
+curl --location --request POST 'http://localhost:8080/graphql' \
+--form 'operations="{ \"query\": \"mutation uploadFiles($files: [Upload!]!) {uploadFiles(files: $files, label: \\\"test\\\"){id}}\" , \"variables\": {\"files\": [null, null]}}"' \
+--form 'filePart1=@"pubspec.lock"' \
+--form 'filePart2=@"pubspec.yaml"' \
+--form 'map="{\"filePart1\": [\"variables.files.0\"], \"filePart2\": [\"variables.files.1\"]}"'

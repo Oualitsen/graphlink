@@ -19,10 +19,6 @@ const glBatch = "batch";
 ///
 const glSkipOnClient = "@glSkipOnClient";
 
-///
-/// Generates lists as array on languages that support arrays.
-///
-const glArray = "@glArray";
 
 ///
 /// Adds methods to a Service with a given name.

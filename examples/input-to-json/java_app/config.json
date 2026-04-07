@@ -1,0 +1,29 @@
+{
+    "schemaPaths": [
+        "../schema.graphql"
+    ],
+    "mode": "client",
+    "identityFields": [],
+    "typeMappings": {
+        "ID": "String",
+        "String": "String",
+        "Float": "Double",
+        "Int": "Integer",
+        "Boolean": "Boolean",
+        "Null": "null"
+    },
+    "outputDir": "src/main/java/com/example/generated",
+    "clientConfig": {
+        "java": {
+            "packageName": "com.example.generated",
+            "generateAllFieldsFragments": true,
+            "nullableFieldsRequired": false,
+            "autoGenerateQueries": true,
+            "operationNameAsParameter": false,
+            "immutableInputFields": true,
+            "immutableTypeFields": true,
+            "wsAdapter": "okhttp",
+            "jsonCodec": "gson"
+        }
+    }
+}
