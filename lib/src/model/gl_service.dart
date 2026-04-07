@@ -111,4 +111,13 @@ class GLService extends GLInterfaceDefinition {
   static String getValidationMethodName(String methodName) {
     return '${glValidateMethodPrefix}${methodName.firstUp}';
   }
+
+  @override
+  Set<String> getImports(GLParser g) {
+    var result =  [...super.getImports(g)];
+    if(this is! GLController) {
+      result.removeWhere((e) => e.startsWith('org.springframework.graphql.data.method.annotation'));
+    }
+    return result.toSet();
+  }
 }
