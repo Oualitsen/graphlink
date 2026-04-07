@@ -15,16 +15,12 @@
 /Users/ramdane/projects/graphlink/examples/glupload/java_okhttp_app/src/main/java/com/example/generated/client/InMemoryGraphLinkCacheStore.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_okhttp_app/src/main/java/com/example/generated/client/UploadProgressCallback.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_okhttp_app/src/main/java/com/example/generated/enums/GQFieldViewType.java
-/Users/ramdane/projects/graphlink/examples/glupload/java_okhttp_app/src/main/java/com/example/generated/enums/Gender.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_okhttp_app/src/main/java/com/example/generated/enums/GraphLinkAckStatus.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_okhttp_app/src/main/java/com/example/generated/inputs/CreateSomething.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_okhttp_app/src/main/java/com/example/generated/interfaces/GraphLinkClientAdapter.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_okhttp_app/src/main/java/com/example/generated/interfaces/GraphLinkJsonDecoder.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_okhttp_app/src/main/java/com/example/generated/interfaces/GraphLinkJsonEncoder.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_okhttp_app/src/main/java/com/example/generated/interfaces/GraphLinkSubscriptionErrorMessageBase.java
-/Users/ramdane/projects/graphlink/examples/glupload/java_okhttp_app/src/main/java/com/example/generated/types/CreateGenderListListResponse.java
-/Users/ramdane/projects/graphlink/examples/glupload/java_okhttp_app/src/main/java/com/example/generated/types/CreateGenderListResponse.java
-/Users/ramdane/projects/graphlink/examples/glupload/java_okhttp_app/src/main/java/com/example/generated/types/CreateGenderResponse.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_okhttp_app/src/main/java/com/example/generated/types/CreateSomethingResponse.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_okhttp_app/src/main/java/com/example/generated/types/FileResponse.java
 /Users/ramdane/projects/graphlink/examples/glupload/java_okhttp_app/src/main/java/com/example/generated/types/FilesResponse.java

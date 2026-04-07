@@ -1,3 +1,4 @@
+import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
@@ -164,6 +165,23 @@ abstract class GLSerializer {
       generateToMethod(def, targetName, plan),
       generateFromMethod(def, targetName, plan),
     ].where((s) => s.isNotEmpty).toList();
+  }
+
+  /// Serializes a [GLClassModel] to a source file string.
+  ///
+  /// When [withImports] is `true` (default) the import block is prepended to
+  /// the body, producing a self-contained file.  Pass `false` to get just the
+  /// class body — useful when embedding the class inside a larger file that
+  /// already manages its own imports (e.g. the Dart single-file output).
+  ///
+  /// [importPrefix] is forwarded to [serializeImportToken] when resolving
+  /// [GLClassModel.importDepencies] into language-specific import lines.
+  /// Language-specific subclasses should override this to handle token
+  /// dependencies via [serializeImportToken].
+  String serializeGlClass(GLClassModel theClass,
+      {bool withImports = true, required String importPrefix}) {
+    if (!withImports) return theClass.body.trim();
+    return theClass.toFileContent();
   }
 
   String serializeToken(GLToken token, String importPrefix) {
