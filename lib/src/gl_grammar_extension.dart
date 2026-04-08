@@ -255,12 +255,65 @@ extension GLGrammarExtension on GLParser {
     return serviceName;
   }
 
-  GLField? _getIdentityField(GLTypeDefinition type) {
+  /// Returns true when [a] and [b] have the same structural type:
+  /// same base token, same nullability, and — for lists — matching element types.
+  bool _typesMatch(GLType a, GLType b) {
+    if (a.isList != b.isList) return false;
+    if (a.nullable != b.nullable) return false;
+    if (a.token != b.token) return false;
+    if (a.isList) return _typesMatch(a.inlineType, b.inlineType);
+    return true;
+  }
+
+  /// Fields of [type] that need a real @SchemaMapping (with service delegation).
+  ///
+  /// When [type] has `@glSkipOnServer(mapTo: "ServerType")` and `ServerType` is
+  /// in the grammar, auto-detects which fields are absent from `ServerType`.
+  /// Fields explicitly annotated with `@glSkipOnServer` at the field level are
+  /// always included regardless of whether they match (backward-compat override).
+  /// Falls back to the explicit-annotation list when the mapTo type is external.
+  List<GLField> _getFieldsNeedingSchemaMappings(GLTypeDefinition type) {
+    final mapToName =
+        type.getDirectiveByName(glSkipOnServer)?.getArgValueAsString(glMapTo);
+    if (mapToName != null) {
+      final serverType = getTypeByName(mapToName);
+      if (serverType != null) {
+        return type.fields
+            .where((f) => f.getDirectiveByName(glSkipOnClient) == null)
+            .where((f) =>
+                f.getDirectiveByName(glSkipOnServer) != null ||
+                !serverType.fields.any((sf) =>
+                    sf.name.token == f.name.token &&
+                    _typesMatch(sf.type, f.type)))
+            .toList();
+      }
+    }
+    return type.getSkipOnServerFields();
+  }
+
+  /// Fields of [type] that exist verbatim on the mapTo server type
+  /// (same name + structural type, no explicit @glSkipOnServer override).
+  /// The controller will forward these directly to the server type's getter.
+  List<GLField> _getForwardedFields(GLTypeDefinition type) {
+    final mapToName =
+        type.getDirectiveByName(glSkipOnServer)?.getArgValueAsString(glMapTo);
+    if (mapToName != null) {
+      final serverType = getTypeByName(mapToName);
+      if (serverType != null) {
+        return type.fields
+            .where((f) => f.getDirectiveByName(glSkipOnClient) == null)
+            .where((f) => serverType.getFieldByName(f.name.token) != null && _typesMatch(f.type, serverType.getFieldByName(f.name.token)!.type))
+            .toList();
+      }
+    }
+    return [];
+  }
+
+  GLField? _getIdentityField(GLTypeDefinition type, List<GLField> fieldsNeedingMapping) {
     var mapsTo =
         type.getDirectiveByName(glSkipOnServer)?.getArgValueAsString(glMapTo);
-    var skipOnServerFields = type.getSkipOnServerFields();
     if (mapsTo != null) {
-      var list = skipOnServerFields
+      var list = fieldsNeedingMapping
           .where((e) => e.type.token == mapsTo && e.type.isNotList)
           .toList();
       if (list.length == 1) {
@@ -278,9 +331,15 @@ extension GLGrammarExtension on GLParser {
 
   void generateSchemaMappingServices() {
     for (var type in types.values) {
+      var controllerMappings = getAllMappingsByType(type.token);
+      if (controllerMappings.isEmpty) continue;
+
+      var serviceName = serviceMappingName(type.token);
       var serviceMappings = getServiceMappingByType(type.token);
+
+      // Only create the service interface when there are methods that require
+      // service delegation (forwarded and forbidden mappings need no service method).
       if (serviceMappings.isNotEmpty) {
-        var serviceName = serviceMappingName(type.token);
         var service = services[serviceName] ??
             GLService(
                 name: serviceName.toToken(),
@@ -290,23 +349,20 @@ extension GLGrammarExtension on GLParser {
                 interfaceNames: {});
         serviceMappings.forEach(service.addMapping);
         services[serviceName] = service;
-
-        var controllerMappings = getAllMappingsByType(type.token);
-        if (controllerMappings.isNotEmpty) {
-          var ctrlName = controllerMappingName(type.token);
-          var ctrl = controllers[ctrlName] ??
-              GLController(
-                serviceName: serviceName,
-                name: ctrlName.toToken(),
-                nameDeclared: false,
-                fields: [],
-                interfaceNames: {},
-                directives: [],
-              );
-          controllerMappings.forEach(ctrl.addMapping);
-          controllers[ctrlName] = ctrl;
-        }
       }
+
+      var ctrlName = controllerMappingName(type.token);
+      var ctrl = controllers[ctrlName] ??
+          GLController(
+            serviceName: serviceName,
+            name: ctrlName.toToken(),
+            nameDeclared: false,
+            fields: [],
+            interfaceNames: {},
+            directives: [],
+          );
+      controllerMappings.forEach(ctrl.addMapping);
+      controllers[ctrlName] = ctrl;
     }
   }
 
@@ -316,7 +372,7 @@ extension GLGrammarExtension on GLParser {
 
     for (var field in fields) {
       var type = getType(field.type.tokenInfo);
-      var skipOnServerFields = type.getSkipOnServerFields();
+      var skipOnServerFields = _getFieldsNeedingSchemaMappings(type);
       var typeBatch = type
           .getDirectiveByName(glSkipOnServer)
           ?.getArgValue(glBatch) as bool?;
@@ -324,8 +380,17 @@ extension GLGrammarExtension on GLParser {
           .getDirectiveByName(glSkipOnServer)
           ?.getArgValue(glBatch) as bool?;
 
+      // Fields that exist verbatim on the server type → forwarded getter mappings
+      for (var forwardedField in _getForwardedFields(type)) {
+        addSchemaMapping(GLSchemaMapping(
+          type: type,
+          field: forwardedField,
+          forwarded: true,
+        ));
+      }
+
       // find the field to make as identity
-      GLField? identityField = _getIdentityField(type);
+      GLField? identityField = _getIdentityField(type, skipOnServerFields);
       for (var typeField in skipOnServerFields) {
         var targetField = typeField;
         var fieldType = getTypeByName(typeField.type.token);

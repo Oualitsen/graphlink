@@ -38,7 +38,9 @@ class GLController extends GLService {
   @override
   Set<GLToken> getImportDependecies(GLParser g) {
     var result = {...super.getImportDependecies(g)};
-    result.add(g.services[serviceName]!);
+    if(g.services.containsKey(serviceName)) {
+      result.add(g.services[serviceName]!);
+    }
     return result;
   }
 }

@@ -268,8 +268,19 @@ class GLParser {
   }
 
   void addSchemaMapping(GLSchemaMapping mapping) {
+    if(mapping.key == "carAndPersonPerson"){
+      print("adding schema mapping ${mapping.key}, batch = ${mapping.batch} exists = ${_schemaMappings.containsKey(mapping.key)}");
+    }
     var m = _schemaMappings[mapping.key];
-    if (m == null || m.batch == null) {
+    if (m == null) {
+      _schemaMappings[mapping.key] = mapping;
+      return;
+    }
+    // Forwarded mappings are definitive — once stored, never overwrite them.
+    if (m.forwarded) {
+      return;
+    }
+    if (m.batch == null) {
       _schemaMappings[mapping.key] = mapping;
       return;
     }
@@ -289,7 +300,7 @@ class GLParser {
       _schemaMappings.values.where((e) => e.type.token == typeName).toList();
   List<GLSchemaMapping> getServiceMappingByType(String typeName) =>
       _schemaMappings.values
-          .where((e) => e.type.token == typeName && !e.forbid && !e.identity)
+          .where((e) => e.type.token == typeName && !e.forbid && !e.identity && !e.forwarded)
           .toList();
 
   List<GLSchemaMapping> getSchemaMappings(GLTypeDefinition def) {
