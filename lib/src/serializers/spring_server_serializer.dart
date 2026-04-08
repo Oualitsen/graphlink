@@ -181,11 +181,13 @@ class SpringServerSerializer {
     buffer.writeln(decorators);
     buffer.writeln(
         codeGenUtils.createClass(className: controllerName, statements: [
+          if(grammar.services.containsKey(ctrl.serviceName))
       'private final ${ctrl.serviceName} $sericeInstanceName;',
       '',
       serializer.generateContructor(
           controllerName,
           [
+            if(grammar.services.containsKey(ctrl.serviceName))
             GLField(
                 name: sericeInstanceName.toToken(),
                 type: GLType(ctrl.serviceName.toToken(), false),
@@ -466,6 +468,9 @@ class SpringServerSerializer {
 
   String serializeMappingMethod(
       GLSchemaMapping mapping, String serviceInstanceName, GLToken context) {
+    if (mapping.forwarded) {
+      return serializeForwardedMapping(mapping, context);
+    }
     if (mapping.forbid && generateSchema) {
       return "";
     }
@@ -547,6 +552,57 @@ class SpringServerSerializer {
           ],
           statements: [statement]),
     );
+
+    return buffer.toString();
+  }
+
+  /// Returns the Java getter method name for [fieldName] given its serialized [fieldType].
+  /// Records use the bare field name; classes use `get` prefix, except primitive
+  /// `boolean` which uses `is`.
+  String _getterMethodName(String fieldName, String fieldType) {
+    if (serializer.typesAsRecords) return fieldName;
+    final prefix = fieldType == 'boolean' ? 'is' : 'get';
+    return '$prefix${fieldName.firstUp}';
+  }
+
+  /// Generates a @SchemaMapping that forwards a field directly to the matching
+  /// accessor on the backing server type, e.g.:
+  ///
+  ///   @SchemaMapping(typeName="ClientVehicle", field="brand")
+  ///   public String clientVehicleBrand(ServerVehicle value) {
+  ///       return value.getBrand();
+  ///   }
+  String serializeForwardedMapping(GLSchemaMapping mapping, GLToken context) {
+    var buffer = StringBuffer();
+    buffer.writeln(_getAnnotation(mapping, context));
+
+    final fieldName = mapping.field.name.token;
+    final fieldType = serializer.serializeTypeReactive(
+        context: context, glType: mapping.field.type, reactive: false);
+    final boxedFieldType = convertPrimitiveToBoxed(fieldType);
+    final argType = serializer.serializeType(
+        _getServiceReturnType(GLType(mapping.type.tokenInfo, false)), false);
+
+    final getterCall = 'value.${_getterMethodName(fieldName, fieldType)}()';
+
+    final String returnType;
+    final String statement;
+    if (reactive) {
+      context.addImport(JavaImports.mono);
+      returnType = 'Mono<$boxedFieldType>';
+      statement = 'return Mono.just($getterCall);';
+    } else {
+      // Simple getter — no async wrapping needed.
+      returnType = fieldType;
+      statement = 'return $getterCall;';
+    }
+
+    buffer.writeln(codeGenUtils.createMethod(
+      returnType: 'public $returnType',
+      methodName: mapping.key,
+      arguments: ['$argType value'],
+      statements: [statement],
+    ));
 
     return buffer.toString();
   }

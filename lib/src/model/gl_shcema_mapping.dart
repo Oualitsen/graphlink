@@ -22,12 +22,20 @@ class GLSchemaMapping {
   /// if true, no need to implement Type field(Type t) or Map<Type, Type> field(List<Type>)
   ///
   final bool identity;
+
+  ///
+  /// when true, the field exists on the mapTo server type with the same name/type/nullability.
+  /// The controller forwards the call directly to the server type's getter — no service method needed.
+  ///
+  final bool forwarded;
+
   GLSchemaMapping({
     required this.type,
     required this.field,
     this.batch,
     this.forbid = false,
     this.identity = false,
+    this.forwarded = false,
   });
   String get key => "${type.token.firstLow}${field.name.token.firstUp}";
 }
