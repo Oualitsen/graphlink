@@ -213,6 +213,8 @@ class GLParser {
     }
     validateInputReferences();
     validateTypeReferences();
+    validateSkipOnServerMapTo();
+    validateTypeFieldSkipOnServerDirectives();
     convertUnionsToInterfaces();
     fillInterfaceImplementations();
     setDirectivesDefaultValues();

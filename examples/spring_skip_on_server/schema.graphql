@@ -1,24 +1,23 @@
 directive @glUpload on SCALAR
-directive @glSkipOnServer(mapTo: String, batch: Boolean! = true) on FIELD_DEFINITION|OBJECT|SCALAR
+directive @glSkipOnServer(mapTo: String, batch: Boolean! = true) on FIELD_DEFINITION|OBJECT|SCALAR|INPUT_FIELD_DEFINITION|INPUT_OBJECT
 
 
 type Person {
     id: ID!
     name: String!
     age: Int!
-    carInfo: CarInfo @glSkipOnServer(mapTo: "Car", batch: false)
 
+    info: CarInfo @glSkipOnServer
 }
 
-type CarAndPerson @glSkipOnServer(mapTo: "Car") {
-    car: Car!
-    person: Person
-}
-
-type CarInfo  {
+type CarInfo  @glSkipOnServer(mapTo: "Car", batch: false) {
     id: ID!
     brand: String!
     model: String!
+}
+
+type NewCar {
+    brandon: String
 }
 
 type Car {
@@ -42,8 +41,6 @@ input CreateCarInput {
 type Query {
     person(id: ID!): Person
     car(id: ID!): Car
-
-    getCarPerson(carid: ID!, personId: ID!): CarAndPerson!
 }
 
 type Mutation {
