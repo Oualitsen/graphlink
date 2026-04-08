@@ -20,6 +20,8 @@ import 'package:graphlink/src/model/token_info.dart';
 extension GLValidationExtension on GLParser {
   void validateInputReferences() {
     inputs.values.forEach(_validateInputRef);
+    _validateSkippedInputDirectives();
+    _validateSkippedInputNotReferenced();
   }
 
   void _validateInputRef(GLInputDefinition def) {
@@ -30,6 +32,103 @@ extension GLValidationExtension on GLParser {
           !enums.containsKey(typeToken)) {
         throw ParseException("$typeToken is not a scalar, input or enum",
             info: field.name);
+      }
+      for (var directive in [glSkipOnClient, glSkipOnServer]) {
+        if (field.getDirectiveByName(directive) != null) {
+          throw ParseException(
+              "$directive cannot be applied to an input field. Apply it to the input type itself instead.",
+              info: field.name);
+        }
+      }
+    }
+  }
+
+  void _validateSkippedInputDirectives() {
+    for (final input in inputs.values) {
+      final skipOnServer = input.getDirectiveByName(glSkipOnServer);
+      if (skipOnServer != null &&
+          skipOnServer.getArgValueAsString(glMapTo) != null) {
+        throw ParseException(
+            "$glSkipOnServer on input '${input.declaredName}' cannot have a '$glMapTo' argument: the input is not generated on the server",
+            info: skipOnServer.tokenInfo);
+      }
+    }
+  }
+
+  void _validateSkippedInputNotReferenced() {
+    final skippedOnServer = inputs.values
+        .where((i) => i.getDirectiveByName(glSkipOnServer) != null)
+        .map((i) => i.declaredName)
+        .toSet();
+
+    if (skippedOnServer.isEmpty) return;
+
+    // Check other input fields
+    for (final input in inputs.values) {
+      if (skippedOnServer.contains(input.declaredName)) continue;
+      for (final field in input.fields) {
+        final typeName = field.type.token;
+        if (skippedOnServer.contains(typeName)) {
+          throw ParseException(
+              "Input '${input.declaredName}' references '$typeName' which is marked $glSkipOnServer",
+              info: field.name);
+        }
+      }
+    }
+
+    // Check type/interface field arguments
+    for (final typeDef in [...types.values, ...interfaces.values]) {
+      for (final field in typeDef.fields) {
+        for (final arg in field.arguments) {
+          final typeName = arg.type.token;
+          if (skippedOnServer.contains(typeName)) {
+            throw ParseException(
+                "Argument '${arg.token}' of '${typeDef.token}.${field.name.token}' references '$typeName' which is marked $glSkipOnServer",
+                info: arg.tokenInfo);
+          }
+        }
+      }
+    }
+  }
+
+  void validateSkipOnServerMapTo() {
+    for (final typeDef in [...types.values, ...interfaces.values]) {
+      final skipOnServer = typeDef.getDirectiveByName(glSkipOnServer);
+      if (skipOnServer == null) continue;
+      final mapTo = skipOnServer.getArgValueAsString(glMapTo);
+      if (mapTo == null) continue;
+      final target = types[mapTo] ?? interfaces[mapTo];
+      if (target == null) continue; // caught by validateTypeReferences
+      if (target.getDirectiveByName(glSkipOnServer) != null) {
+        throw ParseException(
+            "Cannot use '$glMapTo: \"$mapTo\"' on '${typeDef.token}': '$mapTo' is also marked $glSkipOnServer",
+            info: skipOnServer.tokenInfo);
+      }
+    }
+  }
+
+  void validateTypeFieldSkipOnServerDirectives() {
+    for (final typeDef in [...types.values, ...interfaces.values]) {
+      for (final field in typeDef.fields) {
+        final skipOnServer = field.getDirectiveByName(glSkipOnServer);
+        if (skipOnServer == null) continue;
+
+        if (skipOnServer.getArgValueAsString(glMapTo) != null) {
+          throw ParseException(
+              "$glSkipOnServer on field '${typeDef.token}.${field.name.token}' cannot have a '$glMapTo' argument",
+              info: field.name);
+        }
+
+        final fieldType = types[field.type.token] ?? interfaces[field.type.token];
+        if (fieldType != null) {
+          final typeSkipOnServer = fieldType.getDirectiveByName(glSkipOnServer);
+          if (typeSkipOnServer != null &&
+              typeSkipOnServer.getArgValueAsString(glMapTo) == null) {
+            throw ParseException(
+                "Field '${typeDef.token}.${field.name.token}' has $glSkipOnServer and its type '${field.type.token}' also has $glSkipOnServer — '$glMapTo' is required on '${field.type.token}'",
+                info: field.name);
+          }
+        }
       }
     }
   }
