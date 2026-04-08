@@ -25,16 +25,15 @@ type Person {
    id: ID!
    name: String!
    age: Int!
-   carInfo: CarInfo
-}
-type CarAndPerson {
-   car: Car!
-   person: Person
+   info: CarInfo
 }
 type CarInfo {
    id: ID!
    brand: String!
    model: String!
+}
+type NewCar {
+   brandon: String
 }
 type Car {
    id: ID!
@@ -45,7 +44,6 @@ type Car {
 type Query {
    person(id: ID!): Person
    car(id: ID!): Car
-   getCarPerson(carid: ID!, personId: ID!): CarAndPerson!
 }
 type Mutation {
    createPerson(input: CreatePersonInput!): Person!
