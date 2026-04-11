@@ -241,7 +241,11 @@ class SpringServerSerializer {
     }
     final serviceCall = '$sericeInstanceName.${method.name}(${serviceArgs.join(", ")})';
     final String returnType;
-    final String statement;
+    final List<String> statements;
+
+    final validationCall = method.getDirectiveByName(glValidate) != null
+        ? '$sericeInstanceName.${GLService.getValidationMethodName(method.name.token)}(${serviceArgs.join(", ")});'
+        : null;
 
     if (type == GLQueryType.subscription) {
       returnType = serializer.serializeTypeReactive(
@@ -249,13 +253,19 @@ class SpringServerSerializer {
           glType: createListTypeOnSubscription(
               _getServiceReturnType(method.type), type),
           reactive: true);
-      statement = "return $serviceCall;";
+      statements = [
+        if (validationCall != null) validationCall,
+        "return $serviceCall;",
+      ];
     } else if (reactive) {
       returnType = serializer.serializeTypeReactive(
           context: context,
           glType: _getServiceReturnType(method.type),
           reactive: true);
-      statement = "return $serviceCall;";
+      statements = [
+        if (validationCall != null) validationCall,
+        "return $serviceCall;",
+      ];
     } else {
       context.addImport(JavaImports.completableFuture);
       final baseReturnType = serializer.serializeTypeReactive(
@@ -265,30 +275,39 @@ class SpringServerSerializer {
       final returnTypeIsVoid = baseReturnType == "void";
       returnType =
           "CompletableFuture<${convertPrimitiveToBoxed(baseReturnType)}>";
-      statement = _wrapInCompletableFuture(serviceCall, returnTypeIsVoid);
+      statements = [
+        _wrapInCompletableFuture([
+          if (validationCall != null) validationCall,
+          serviceCall,
+        ], returnTypeIsVoid),
+      ];
     }
 
     final fullReturnType =
         qualifier != null ? "$qualifier $returnType" : returnType;
-    
+
     buffer.writeln(codeGenUtils.createMethod(
         returnType: fullReturnType,
         methodName: method.name.token,
         arguments: args,
-        statements: [
-          if (method.getDirectiveByName(glValidate) != null)
-            '$sericeInstanceName.${GLService.getValidationMethodName(method.name.token)}(${serviceArgs.join(", ")});',
-          statement
-        ]));
+        statements: statements));
 
     return buffer.toString();
   }
 
-  String _wrapInCompletableFuture(String serviceCall, bool returnVoid) {
-    if(returnVoid) {
-      return "return CompletableFuture.runAsync(() -> $serviceCall);";
+  String _wrapInCompletableFuture(List<String> innerStatements, bool returnVoid) {
+    final method = returnVoid ? 'runAsync' : 'supplyAsync';
+    if (innerStatements.length == 1) {
+      return "return CompletableFuture.$method(() -> ${innerStatements.first});";
     }
-    return "return CompletableFuture.supplyAsync(() -> $serviceCall);";
+    // Block lambda needed when validation precedes the service call.
+    final preceding = innerStatements.sublist(0, innerStatements.length - 1);
+    final last = innerStatements.last;
+    final blockStatements = [
+      ...preceding,
+      returnVoid ? "$last;" : "return $last;",
+    ];
+    return "return CompletableFuture.$method(() -> ${codeGenUtils.block(blockStatements)});";
   }
 
   GLType createListTypeOnSubscription(GLType type, GLQueryType queryType) {
@@ -497,7 +516,7 @@ class SpringServerSerializer {
     statement.write(')');
     final body = reactive
         ? 'return ${statement};'
-        : _wrapInCompletableFuture(statement.toString(), false);
+        : _wrapInCompletableFuture([statement.toString()], false);
     return '${serializeControllerMethodHeader(mapping, context)} ${codeGenUtils.block([body])}';
   }
 
