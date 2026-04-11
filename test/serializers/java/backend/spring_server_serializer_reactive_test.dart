@@ -49,6 +49,33 @@ void main() {
     );
   });
 
+  test("reactive controller chains Mono<Void> validation via .then()", () {
+    final g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    g.parse('''
+      type Query {
+        getCar(id: ID!): Car! @glValidate
+      }
+      type Car {
+        id: ID!
+        make: String!
+      }
+    ''');
+    final serializer = SpringServerSerializer(g, reactive: true);
+    final ctrl = g.controllers['CarServiceController']!;
+    final result = serializer.serializeController(ctrl, 'com.example');
+    print(result);
+    expect(
+      result.split('\n').map((e) => e.trim()).toList(),
+      containsAllInOrder([
+        '@QueryMapping()',
+        'public Mono<Car> getCar(@Argument() String id) {',
+        'return carService.validateGetCar(id).then(carService.getCar(id));',
+        '}',
+      ]),
+    );
+    expect(result, isNot(contains("CompletableFuture")));
+  });
+
   test("reactive controller uses Mono/Flux return types without CompletableFuture", () {
     final g = buildParser();
     final serializer = SpringServerSerializer(g, reactive: true);

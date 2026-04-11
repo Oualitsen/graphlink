@@ -245,9 +245,10 @@ class SpringServerSerializer {
     final String returnType;
     final List<String> statements;
 
-    final validationCall = method.getDirectiveByName(glValidate) != null
-        ? '$sericeInstanceName.${GLService.getValidationMethodName(method.name.token)}(${serviceArgs.join(", ")});'
+    final validationMethodCall = method.getDirectiveByName(glValidate) != null
+        ? '$sericeInstanceName.${GLService.getValidationMethodName(method.name.token)}(${serviceArgs.join(", ")})'
         : null;
+    final validationCall = validationMethodCall != null ? '$validationMethodCall;' : null;
 
     if (type == GLQueryType.subscription) {
       returnType = serializer.serializeTypeReactive(
@@ -265,8 +266,9 @@ class SpringServerSerializer {
           glType: _getServiceReturnType(method.type),
           reactive: true);
       statements = [
-        if (validationCall != null) validationCall,
-        "return $serviceCall;",
+        validationMethodCall != null
+            ? "return $validationMethodCall.then($serviceCall);"
+            : "return $serviceCall;",
       ];
     } else {
       context.addImport(JavaImports.completableFuture);
