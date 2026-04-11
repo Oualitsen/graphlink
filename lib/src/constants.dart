@@ -289,6 +289,7 @@ class JavaImports {
   static const ioException = "java.io.IOException";
   static const linkedHashMap = "java.util.LinkedHashMap";
   static const completableFuture = "java.util.concurrent.CompletableFuture";
+  static const securityContextHolder = "org.springframework.security.core.context.SecurityContextHolder";
 }
 
 class SpringImports {
