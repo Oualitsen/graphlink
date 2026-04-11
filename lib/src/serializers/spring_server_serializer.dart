@@ -32,6 +32,7 @@ class SpringServerSerializer {
   final bool generateSchema;
   final bool injectDataFetching;
   final bool reactive;
+  final bool useSpringSecurity;
   final codeGenUtils = JavaCodeGenUtils();
 
   SpringServerSerializer(this.grammar,
@@ -39,7 +40,8 @@ class SpringServerSerializer {
       JavaSerializer? javaSerializer,
       this.generateSchema = false,
       this.injectDataFetching = false,
-      this.reactive = false})
+      this.reactive = false,
+      this.useSpringSecurity = false})
       : assert(grammar.mode == CodeGenerationMode.server,
             "Grammar must be in code generation mode = `CodeGenerationMode.server`"),
         serializer = javaSerializer ??
@@ -275,12 +277,10 @@ class SpringServerSerializer {
       final returnTypeIsVoid = baseReturnType == "void";
       returnType =
           "CompletableFuture<${convertPrimitiveToBoxed(baseReturnType)}>";
-      statements = [
-        _wrapInCompletableFuture([
-          if (validationCall != null) validationCall,
-          serviceCall,
-        ], returnTypeIsVoid),
-      ];
+      statements = _wrapInCompletableFuture([
+        if (validationCall != null) validationCall,
+        serviceCall,
+      ], returnTypeIsVoid, context);
     }
 
     final fullReturnType =
@@ -295,19 +295,38 @@ class SpringServerSerializer {
     return buffer.toString();
   }
 
-  String _wrapInCompletableFuture(List<String> innerStatements, bool returnVoid) {
+  List<String> _wrapInCompletableFuture(
+      List<String> innerStatements, bool returnVoid, GLToken context) {
     final method = returnVoid ? 'runAsync' : 'supplyAsync';
-    if (innerStatements.length == 1) {
-      return "return CompletableFuture.$method(() -> ${innerStatements.first});";
-    }
-    // Block lambda needed when validation precedes the service call.
     final preceding = innerStatements.sublist(0, innerStatements.length - 1);
     final last = innerStatements.last;
-    final blockStatements = [
+    final bodyStatements = [
       ...preceding,
       returnVoid ? "$last;" : "return $last;",
     ];
-    return "return CompletableFuture.$method(() -> ${codeGenUtils.block(blockStatements)});";
+
+    if (!useSpringSecurity) {
+      final lambdaBody = bodyStatements.length == 1
+          ? innerStatements.first
+          : codeGenUtils.block(bodyStatements);
+      return ["return CompletableFuture.$method(() -> $lambdaBody);"];
+    }
+
+    // Capture the SecurityContext on the request thread and propagate it to
+    // the worker thread, clearing it in finally to avoid context leaks.
+    context.addImport(JavaImports.securityContext);
+    context.addImport(JavaImports.securityContextHolder);
+    final lambdaBody = codeGenUtils.block([
+      "SecurityContextHolder.setContext(securityContext);",
+      codeGenUtils.tryCatchFinally(
+        tryStatements: bodyStatements,
+        finallyStatements: ["SecurityContextHolder.clearContext();"],
+      ),
+    ]);
+    return [
+      "SecurityContext securityContext = SecurityContextHolder.getContext();",
+      "return CompletableFuture.$method(() -> $lambdaBody);",
+    ];
   }
 
   GLType createListTypeOnSubscription(GLType type, GLQueryType queryType) {
@@ -514,10 +533,10 @@ class SpringServerSerializer {
       statement.write(', dataFetchingEnvironment');
     }
     statement.write(')');
-    final body = reactive
-        ? 'return ${statement};'
-        : _wrapInCompletableFuture([statement.toString()], false);
-    return '${serializeControllerMethodHeader(mapping, context)} ${codeGenUtils.block([body])}';
+    final bodyStatements = reactive
+        ? ['return ${statement};']
+        : _wrapInCompletableFuture([statement.toString()], false, context);
+    return '${serializeControllerMethodHeader(mapping, context)} ${codeGenUtils.block(bodyStatements)}';
   }
 
   String _getAnnotation(GLSchemaMapping mapping, GLToken context) {

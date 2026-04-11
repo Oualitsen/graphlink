@@ -555,4 +555,36 @@ void main() {
     final result = serializer.serializeController(ctrl, 'com.example');
     print(result);
   });
+
+  test('useSpringSecurity wraps CompletableFuture body with SecurityContext capture and try/finally', () {
+    final g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    g.parse('''
+      type Query {
+        getUser(id: ID!): User!
+      }
+      type User {
+        id: ID!
+        name: String!
+      }
+    ''');
+    final serializer = SpringServerSerializer(g, useSpringSecurity: true);
+    final ctrl = g.controllers['UserServiceController']!;
+    final result = serializer.serializeController(ctrl, 'com.example');
+    print(result);
+    final lines = result.split('\n').map((e) => e.trim()).toList();
+    expect(lines, containsAllInOrder([
+      '@QueryMapping()',
+      'public CompletableFuture<User> getUser(@Argument() String id) {',
+      'SecurityContext securityContext = SecurityContextHolder.getContext();',
+      'return CompletableFuture.supplyAsync(() -> {',
+      'SecurityContextHolder.setContext(securityContext);',
+      'try {',
+      'return userService.getUser(id);',
+      '} finally {',
+      'SecurityContextHolder.clearContext();',
+      '}',
+      '});',
+      '}',
+    ]));
+  });
 }

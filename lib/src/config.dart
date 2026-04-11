@@ -71,6 +71,11 @@ class SpringServerConfig {
   final bool generateSchema;
   final bool injectDataFetching;
   final bool reactive;
+  /// When true and reactive is false, emits SecurityContext capture/propagation
+  /// code inside CompletableFuture lambdas so the security context is available
+  /// on worker threads. Requires spring-security on the classpath.
+  /// Has no effect in reactive mode.
+  final bool useSpringSecurity;
   final String? schemaTargetPath;
   final bool immutableInputFields;
   final bool immutableTypeFields;
@@ -86,6 +91,7 @@ class SpringServerConfig {
     required this.generateSchema,
     required this.injectDataFetching,
     required this.reactive,
+    required this.useSpringSecurity,
     required this.immutableInputFields,
     required this.immutableTypeFields,
     this.schemaTargetPath,
@@ -111,7 +117,8 @@ class SpringServerConfig {
         immutableTypeFields: json['immutableTypeFields'] ?? false,
         schemaTargetPath: json['schemaTargetPath'],
         injectDataFetching: json['injectDataFetching'] as bool? ?? false,
-        reactive: json['reactive'] as bool? ?? false);
+        reactive: json['reactive'] as bool? ?? false,
+        useSpringSecurity: json['useSpringSecurity'] as bool? ?? false);
   }
 }
 
