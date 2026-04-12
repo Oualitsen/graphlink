@@ -595,7 +595,7 @@ GraphLinkClient.fromUrl({
             codeGenUtils.ifStatement(
                 condition: 'remainingCount > 0',
                 ifBlockStatements: [
-                  "throw exception;",
+                  "rethrow;",
                 ]),
             'return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson($_svResponseMap);'
           ], catchVariable: 'exception'),
