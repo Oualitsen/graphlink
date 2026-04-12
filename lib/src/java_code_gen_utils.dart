@@ -223,7 +223,13 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
     }
     return "${variable}.${method}";
   }
-  
+
+  /// Returns a local variable name that is unlikely to clash with user-defined
+  /// method arguments by wrapping it with a fixed prefix and suffix.
+  ///
+  /// Example: safeLocalVar('operationName') → '__gl_operationName__'
+  String safeLocalVar(String name) => '__gl_${name}__';
+
 }
 
 
