@@ -32,6 +32,35 @@ class JavaClientSerializer extends GLClientSerilaizer {
       : gqlSerializer = GLGraphqSerializer(_grammar, false),
         super(serializer);
 
+  // Safe generated local variable names — avoids clashing with user-defined method arguments.
+  String get _svOperationName => codeGenUtils.safeLocalVar('operationName');
+  String get _svFragsValues => codeGenUtils.safeLocalVar('fragsValues');
+  String get _svQuery => codeGenUtils.safeLocalVar('query');
+  String get _svPayload => codeGenUtils.safeLocalVar('payload');
+  String get _svVariables => codeGenUtils.safeLocalVar('variables');
+  String get _svEncodedPayload => codeGenUtils.safeLocalVar('encodedPayload');
+  String get _svResponseText => codeGenUtils.safeLocalVar('responseText');
+  String get _svDecodedResponse => codeGenUtils.safeLocalVar('decodedResponse');
+  String get _svData => codeGenUtils.safeLocalVar('data');
+  String get _svPartialQueries => codeGenUtils.safeLocalVar('partialQueries');
+  String get _svResponseMap => codeGenUtils.safeLocalVar('responseMap');
+  String get _svStaleData => codeGenUtils.safeLocalVar('staleData');
+  String get _svRemaining => codeGenUtils.safeLocalVar('remaining');
+  String get _svRawListener => codeGenUtils.safeLocalVar('rawListener');
+  String get _svHandler => codeGenUtils.safeLocalVar('handler');
+  String get _svFragmentNap => codeGenUtils.safeLocalVar('fragmentMap');
+  String get _svTagLocks => codeGenUtils.safeLocalVar('tagLocks');
+  String get _svMultipartAdapter => codeGenUtils.safeLocalVar('multipartAdapter');
+  String get _svAdapter => codeGenUtils.safeLocalVar('adapter');
+  String get _svStore => codeGenUtils.safeLocalVar('store');
+  String get _svEncoder => codeGenUtils.safeLocalVar('encoder');
+  String get _svDecoder => codeGenUtils.safeLocalVar('decoder');
+  String get _svFiles => codeGenUtils.safeLocalVar('files');
+  String get _svFileMap => codeGenUtils.safeLocalVar('fileMap');
+  String get _svOperationsMap => codeGenUtils.safeLocalVar('operationsMap');
+  String get _svOperations => codeGenUtils.safeLocalVar('operations');
+  String get _svMapJson => codeGenUtils.safeLocalVar('mapJson');
+
   @override
   GLClassModel generateClient(String importPrefix,
       {bool hasDefaultAdapters = true}) {
@@ -50,7 +79,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
     final bodyBuf = StringBuffer();
     bodyBuf
         .writeln(codeGenUtils.createClass(className: clientName, statements: [
-      'final Map<String, String> _fragmMap = new HashMap<>();',
+      'private final Map<String, String> $_svFragmentNap = new HashMap<>();',
       if (_grammar.hasQueries)
         'public final ${classNameFromType(GLQueryType.query)} queries;',
       if (_grammar.hasMutations)
@@ -88,13 +117,13 @@ class JavaClientSerializer extends GLClientSerilaizer {
           "Objects.requireNonNull(decoder);",
           if (_grammar.hasSubscriptions) "Objects.requireNonNull(wsAdapter);",
           if (_grammar.hasQueries)
-            "queries = new ${classNameFromType(GLQueryType.query)}(adapter, _fragmMap, encoder, decoder, store);",
+            "queries = new ${classNameFromType(GLQueryType.query)}(adapter, $_svFragmentNap, encoder, decoder, store);",
           if (_grammar.hasMutations)
-            "mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, ${_grammar.hasUploadMutations ? 'multipartAdapter, ' : ''}_fragmMap, encoder, decoder, store);",
+            "mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, ${_grammar.hasUploadMutations ? 'multipartAdapter, ' : ''}$_svFragmentNap, encoder, decoder, store);",
           if (_grammar.hasSubscriptions)
-            "subscriptions = new ${classNameFromType(GLQueryType.subscription)}(wsAdapter, _fragmMap, encoder, decoder, store);",
+            "subscriptions = new ${classNameFromType(GLQueryType.subscription)}(wsAdapter, $_svFragmentNap, encoder, decoder, store);",
           ..._grammar.fragments.values.map((value) =>
-              '_fragmMap.put("${value.tokenInfo}", "${gqlSerializer.serializeFragmentDefinitionBase(value)}");'),
+              '$_svFragmentNap.put("${value.tokenInfo}", "${gqlSerializer.serializeFragmentDefinitionBase(value)}");'),
         ],
       ),
       if (hasDefaultAdapters) ..._convenienceConstructors(),
@@ -127,8 +156,8 @@ class JavaClientSerializer extends GLClientSerilaizer {
       return [
         // When uploads are present, an intermediate constructor takes
         // DefaultGraphLinkClientAdapter (which implements both interfaces) so
-        // the url+encoder constructors can delegate with this() as the first
-        // statement while only constructing one adapter instance.
+        // the url+$_svEncoder constructors can delegate with this() as the first
+        // statement while only constructing one $_svAdapter instance.
         if (_grammar.hasUploadMutations)
           codeGenUtils.createMethod(
             returnType: 'public',
@@ -329,11 +358,11 @@ class JavaClientSerializer extends GLClientSerilaizer {
               arguments: _declareConstructorArgs(type),
               statements: [
                 'super(fragmentMap, store, encoder, decoder);',
-                'this.adapter = adapter;',
+                'this.$_svAdapter = adapter;',
                 if (type == GLQueryType.mutation && _grammar.hasUploadMutations)
-                  'this.multipartAdapter = multipartAdapter;',
+                  'this.$_svMultipartAdapter = multipartAdapter;',
                 if (type == GLQueryType.subscription)
-                  '_handler = new GraphLinkSubscriptionHandler(adapter, decoder, encoder);',
+                  '$_svHandler = new GraphLinkSubscriptionHandler(adapter, decoder, encoder);',
               ]),
           ...queryList
               .where((e) => e.type == GLQueryType.query)
@@ -401,7 +430,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
                     variable: 'fragName',
                     iterable: 'fragmentNames',
                     statements: [
-                      'fragmentsBuilder.append(fragmentMap.get(fragName));',
+                      'fragmentsBuilder.append(${_svFragmentNap}.get(fragName));',
                     ]),
                 'queryBuilder.append(fragmentsBuilder);',
                 'return GraphLinkPayload.builder().query(queryBuilder.toString()).operationName(operationName).variables(variables).build();',
@@ -457,14 +486,14 @@ class JavaClientSerializer extends GLClientSerilaizer {
       case GLQueryType.query:
       case GLQueryType.mutation:
         return [
-          'private final GraphLinkClientAdapter adapter;',
+          'private final GraphLinkClientAdapter $_svAdapter;',
           if (type == GLQueryType.mutation && _grammar.hasUploadMutations)
-            'private final GraphLinkMultipartAdapter multipartAdapter;',
+            'private final GraphLinkMultipartAdapter $_svMultipartAdapter;',
         ];
       case GLQueryType.subscription:
         return [
-          "private final GraphLinkSubscriptionHandler _handler;",
-          "private final GraphLinkWebSocketAdapter adapter;"
+          "private final GraphLinkSubscriptionHandler $_svHandler;",
+          "private final GraphLinkWebSocketAdapter $_svAdapter;"
         ];
     }
   }
@@ -489,15 +518,15 @@ class JavaClientSerializer extends GLClientSerilaizer {
         methodName: def.tokenInfo.token,
         arguments: getArguments(def),
         statements: [
-          'String operationName = "${def.tokenInfo}";',
+          'String $_svOperationName = "${def.tokenInfo}";',
           generateVariables(def, container),
-          'List<GraphLinkPartialQuery> partialQueries = new ArrayList<>();',
+          'List<GraphLinkPartialQuery> $_svPartialQueries = new ArrayList<>();',
           ...dividedQueries.map(serializePartialQueryJava),
-          'Map<String, Object> responseMap = new HashMap<>();',
-          'Map<String, Object> staleData = new HashMap<>();',
+          'Map<String, Object> $_svResponseMap = new HashMap<>();',
+          'Map<String, Object> $_svStaleData = new HashMap<>();',
           codeGenUtils.forEachLoop(
               variable: 'partQuery',
-              iterable: 'partialQueries',
+              iterable: '$_svPartialQueries',
               statements: [
                 codeGenUtils.ifStatement(
                     condition: 'partQuery.ttl > 0',
@@ -511,10 +540,10 @@ class JavaClientSerializer extends GLClientSerilaizer {
                                 codeGenUtils.ifStatement(
                                   condition: 'entry.stale',
                                   ifBlockStatements: [
-                                    'staleData.put(partQuery.elementKey, decoder.decode(entry.data));'
+                                    '$_svStaleData.put(partQuery.elementKey, $_svDecoder.decode(entry.data));'
                                   ],
                                   elseBlockStatements: [
-                                    'responseMap.put(partQuery.elementKey, decoder.decode(entry.data));'
+                                    '$_svResponseMap.put(partQuery.elementKey, $_svDecoder.decode(entry.data));'
                                   ],
                                 ),
                               ]),
@@ -524,37 +553,37 @@ class JavaClientSerializer extends GLClientSerilaizer {
                       ),
                     ]),
               ]),
-          'List<GraphLinkPartialQuery> remaining = new ArrayList<>();',
+          'List<GraphLinkPartialQuery> $_svRemaining = new ArrayList<>();',
           codeGenUtils.forEachLoop(
               variable: 'partQuery',
-              iterable: 'partialQueries',
+              iterable: '$_svPartialQueries',
               statements: [
                 codeGenUtils.ifStatement(
-                    condition: '!responseMap.containsKey(partQuery.elementKey)',
+                    condition: '!$_svResponseMap.containsKey(partQuery.elementKey)',
                     ifBlockStatements: [
-                      'remaining.add(partQuery);',
+                      '$_svRemaining.add(partQuery);',
                     ]),
               ]),
           codeGenUtils.ifStatement(
-              condition: 'remaining.isEmpty()',
+              condition: '$_svRemaining.isEmpty()',
               ifBlockStatements: [
-                'return $returnType.fromJson(responseMap);',
+                'return $returnType.fromJson($_svResponseMap);',
               ]),
-          'GraphLinkPayload payload = buildPayload(remaining, operationName, "$directives");',
+          'GraphLinkPayload $_svPayload = buildPayload($_svRemaining, $_svOperationName, "$directives");',
           codeGenUtils.tryCatchFinally(
             tryStatements: [
-              'String responseText = adapter.execute(encoder.encode(payload));',
-              'return parseToObjectAndCache(responseText, responseMap, $returnType::fromJson, remaining);',
+              'String $_svResponseText = $_svAdapter.execute($_svEncoder.encode($_svPayload));',
+              'return parseToObjectAndCache($_svResponseText, $_svResponseMap, $returnType::fromJson, $_svRemaining);',
             ],
             catchStatements: [
-              'responseMap.putAll(staleData);',
-              'long remainingCount = partialQueries.stream().filter(e -> !responseMap.containsKey(e.elementKey)).count();',
+              '$_svResponseMap.putAll($_svStaleData);',
+              'long remainingCount = $_svPartialQueries.stream().filter(e -> !$_svResponseMap.containsKey(e.elementKey)).count();',
               codeGenUtils.ifStatement(
                   condition: 'remainingCount > 0',
                   ifBlockStatements: [
                     'throw new RuntimeException(exception);',
                   ]),
-              'return $returnType.fromJson(responseMap);',
+              'return $returnType.fromJson($_svResponseMap);',
             ],
             catchVariable: 'exception',
           ),
@@ -578,9 +607,9 @@ class JavaClientSerializer extends GLClientSerilaizer {
     buffer.writeln('  Map<String, Object> pqVars = new HashMap<>();');
     for (var v in e.variables) {
       final argName = v.substring(1);
-      buffer.writeln('  pqVars.put("$argName", variables.get("$argName"));');
+      buffer.writeln('  pqVars.put("$argName", $_svVariables.get("$argName"));');
     }
-    buffer.writeln('  partialQueries.add(new GraphLinkPartialQuery(');
+    buffer.writeln('  $_svPartialQueries.add(new GraphLinkPartialQuery(');
     buffer.writeln('    "$queryStr",');
     buffer.writeln('    pqVars,');
     buffer.writeln('    ${e.cacheTTL},');
@@ -590,7 +619,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
     buffer.writeln('    $fragNamesStr,');
     buffer.writeln('    $argDeclsStr,');
     buffer.writeln('    ${e.staleIfOffline},');
-    buffer.writeln('    encoder');
+    buffer.writeln('    $_svEncoder');
     buffer.writeln('  ));');
     buffer.write('}');
     return buffer.toString();
@@ -602,10 +631,10 @@ class JavaClientSerializer extends GLClientSerilaizer {
     final methodName = def.tokenInfo.token;
     final queryLine = frags.isNotEmpty
         ? [
-            'List<String> fragsValues = Arrays.asList(${frags.map((e) => 'fragmentMap.get("${e.token}")').join(", ")});',
-            'String query = "${gqlSerializer.serializeQueryDefinition(def)} " + String.join(" ", fragsValues);',
+            'List<String> $_svFragsValues = Arrays.asList(${frags.map((e) => '${_svFragmentNap}.get("${e.token}")').join(", ")});',
+            'String $_svQuery = "${gqlSerializer.serializeQueryDefinition(def)} " + String.join(" ", $_svFragsValues);',
           ]
-        : ['String query = "${gqlSerializer.serializeQueryDefinition(def)}";'];
+        : ['String $_svQuery = "${gqlSerializer.serializeQueryDefinition(def)}";'];
     container.imports
         .addAll([JavaImports.map, JavaImports.hashMap, JavaImports.arrays]);
     if (frags.isNotEmpty) {
@@ -622,7 +651,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
       ];
 
       final body = codeGenUtils.block([
-        'String operationName = "$methodName";',
+        'String $_svOperationName = "$methodName";',
         ...queryLine,
         generateVariables(def, container),
         _serializeMultipartAdapterCall(def, container),
@@ -644,10 +673,10 @@ class JavaClientSerializer extends GLClientSerilaizer {
         methodName: methodName,
         arguments: getArguments(def),
         statements: [
-          'String operationName = "$methodName";',
+          'String $_svOperationName = "$methodName";',
           ...queryLine,
           generateVariables(def, container),
-          'GraphLinkPayload payload = GraphLinkPayload.builder().query(query).operationName(operationName).variables(variables).build();',
+          'GraphLinkPayload $_svPayload = GraphLinkPayload.builder().query($_svQuery).operationName($_svOperationName).variables($_svVariables).build();',
           _serializeAdapterCall(def),
         ]);
   }
@@ -663,8 +692,8 @@ class JavaClientSerializer extends GLClientSerilaizer {
     container.imports.addAll(
         [JavaImports.linkedHashMap, JavaImports.hashMap, JavaImports.arrays]);
     final statements = <String>[
-      'Map<String, GLUpload> _files = new LinkedHashMap<>();',
-      'Map<String, Object> _fileMap = new HashMap<>();',
+      'Map<String, GLUpload> ${_svFiles} = new LinkedHashMap<>();',
+      'Map<String, Object> ${_svFileMap} = new HashMap<>();',
       if (hasListArg) 'int _slot = 0;',
     ];
 
@@ -678,45 +707,45 @@ class JavaClientSerializer extends GLClientSerilaizer {
             condition: '_i < $name.size()',
             increment: '_i++',
             statements: [
-              '_files.put(String.valueOf(_slot + _i), $name.get(_i));',
-              '_fileMap.put(String.valueOf(_slot + _i), Arrays.asList("variables.$name." + _i));',
+              '${_svFiles}.put(String.valueOf(_slot + _i), $name.get(_i));',
+              '${_svFileMap}.put(String.valueOf(_slot + _i), Arrays.asList("variables.$name." + _i));',
             ],
           ),
         );
         statements.add('_slot += $name.size();');
       } else if (hasListArg) {
         statements.addAll([
-          '_files.put(String.valueOf(_slot), $name);',
-          '_fileMap.put(String.valueOf(_slot), Arrays.asList("variables.$name"));',
+          '${_svFiles}.put(String.valueOf(_slot), $name);',
+          '${_svFileMap}.put(String.valueOf(_slot), Arrays.asList("variables.$name"));',
           '_slot++;',
         ]);
       } else {
         statements.addAll([
-          '_files.put("$staticIndex", $name);',
-          '_fileMap.put("$staticIndex", Arrays.asList("variables.$name"));',
+          '${_svFiles}.put("$staticIndex", $name);',
+          '${_svFileMap}.put("$staticIndex", Arrays.asList("variables.$name"));',
         ]);
         staticIndex++;
       }
     }
 
     statements.addAll([
-      'Map<String, Object> _operationsMap = new HashMap<>();',
-      '_operationsMap.put("query", query);',
-      '_operationsMap.put("operationName", operationName);',
-      '_operationsMap.put("variables", variables);',
-      'String operations = encoder.encode(_operationsMap);',
-      'String mapJson = encoder.encode(_fileMap);',
-      'String responseText = multipartAdapter.executeMultipart(operations, mapJson, _files, onProgress);',
-      'Map<String, Object> decodedResponse = decoder.decode(responseText);',
+      'Map<String, Object> ${_svOperationsMap} = new HashMap<>();',
+      '${_svOperationsMap}.put("query", $_svQuery);',
+      '${_svOperationsMap}.put("operationName", $_svOperationName);',
+      '${_svOperationsMap}.put("variables", $_svVariables);',
+      'String ${_svOperations} = $_svEncoder.encode(${_svOperationsMap});',
+      'String ${_svMapJson} = $_svEncoder.encode(${_svFileMap});',
+      'String $_svResponseText = $_svMultipartAdapter.executeMultipart(${_svOperations}, ${_svMapJson}, ${_svFiles}, onProgress);',
+      'Map<String, Object> $_svDecodedResponse = $_svDecoder.decode($_svResponseText);',
       codeGenUtils.ifStatement(
-        condition: 'decodedResponse.containsKey("errors")',
+        condition: '$_svDecodedResponse.containsKey("errors")',
         ifBlockStatements: [
-          'throw ${clientExceptionName}.of((List)decodedResponse.get("errors"));'
+          'throw ${clientExceptionName}.of((List)$_svDecodedResponse.get("errors"));'
         ],
       ),
-      'Map<String, Object> data = (Map<String, Object>) decodedResponse.get("data");',
+      'Map<String, Object> $_svData = (Map<String, Object>) $_svDecodedResponse.get("data");',
       _serializeInvalidationCall(def),
-      'return $returnType.fromJson(data);',
+      'return $returnType.fromJson($_svData);',
     ]);
 
     return statements.join('\n');
@@ -724,32 +753,32 @@ class JavaClientSerializer extends GLClientSerilaizer {
 
   String subscriptionToMethod(
       GLQueryDefinition def, GLImportContainer container) {
-        container.imports.addAll([JavaImports.map, JavaImports.hashMap]);
+        container.imports.addAll([JavaImports.map, JavaImports.hashMap, JavaImports.list, JavaImports.arrays]);
     final frags = def.fragments(_grammar);
     return codeGenUtils.createMethod(
         returnType: 'public ${returnTypeByQueryType(def)}',
         methodName: def.tokenInfo.token,
         arguments: getArguments(def),
         statements: [
-          'String operationName = "${def.tokenInfo}";',
+          'String $_svOperationName = "${def.tokenInfo}";',
           if (frags.isNotEmpty) ...[
-            'List<String> fragsValues = Arrays.asList(${frags.map((e) => 'fragmentMap.get("${e.token}")').join(", ")});',
-            'String query = "${gqlSerializer.serializeQueryDefinition(def)} " + String.join(" ", fragsValues);',
+            'List<String> $_svFragsValues = Arrays.asList(${frags.map((e) => '${_svFragmentNap}.get("${e.token}")').join(", ")});',
+            'String $_svQuery = "${gqlSerializer.serializeQueryDefinition(def)} " + String.join(" ", $_svFragsValues);',
           ] else
-            'String query = "${gqlSerializer.serializeQueryDefinition(def)}";',
+            'String $_svQuery = "${gqlSerializer.serializeQueryDefinition(def)}";',
           generateVariables(def, container),
-          "GraphLinkPayload payload = GraphLinkPayload.builder().query(query).operationName(operationName).variables(variables).build();",
+          "GraphLinkPayload $_svPayload = GraphLinkPayload.builder().query($_svQuery).operationName($_svOperationName).variables($_svVariables).build();",
           _serializeSubscriptionAdapterCall(def),
         ]);
   }
 
   String generateVariables(GLQueryDefinition def, GLImportContainer container) {
     var buffer =
-        StringBuffer("Map<String, Object> variables = new HashMap<>();");
+        StringBuffer("Map<String, Object> $_svVariables = new HashMap<>();");
     buffer.writeln();
     def.arguments
         .map((e) =>
-            'variables.put("${e.dartArgumentName}", ${_serializeArgumentValue(def, e.token, container)});')
+            '$_svVariables.put("${e.dartArgumentName}", ${_serializeArgumentValue(def, e.token, container)});')
         .forEach(buffer.writeln);
 
     return buffer.toString();
@@ -768,40 +797,40 @@ class JavaClientSerializer extends GLClientSerilaizer {
 
   String _serializeQueryAdapterCall(GLQueryDefinition def) {
     return [
-      "String encodedPayload = encoder.encode(payload);",
-      "String responseText = adapter.execute(encodedPayload);",
-      "Map<String, Object> decodedResponse = decoder.decode(responseText);",
+      "String $_svEncodedPayload = $_svEncoder.encode($_svPayload);",
+      "String $_svResponseText = $_svAdapter.execute($_svEncodedPayload);",
+      "Map<String, Object> $_svDecodedResponse = $_svDecoder.decode($_svResponseText);",
       codeGenUtils.ifStatement(
-          condition: 'decodedResponse.containsKey("errors")',
+          condition: '$_svDecodedResponse.containsKey("errors")',
           ifBlockStatements: [
-            'throw ${clientExceptionName}.of((List)decodedResponse.get("errors"));'
+            'throw ${clientExceptionName}.of((List)$_svDecodedResponse.get("errors"));'
           ],
           elseBlockStatements: [
-            'return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson((Map<String, Object>)decodedResponse.get("data"));'
+            'return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson((Map<String, Object>)$_svDecodedResponse.get("data"));'
           ])
     ].join("\n");
   }
 
   String _serializeMutationAdapterCall(GLQueryDefinition def) {
     return [
-      "String encodedPayload = encoder.encode(payload);",
-      "String responseText = adapter.execute(encodedPayload);",
-      "Map<String, Object> decodedResponse = decoder.decode(responseText);",
+      "String $_svEncodedPayload = $_svEncoder.encode($_svPayload);",
+      "String $_svResponseText = $_svAdapter.execute($_svEncodedPayload);",
+      "Map<String, Object> $_svDecodedResponse = $_svDecoder.decode($_svResponseText);",
       codeGenUtils.ifStatement(
-          condition: 'decodedResponse.containsKey("errors")',
+          condition: '$_svDecodedResponse.containsKey("errors")',
           ifBlockStatements: [
-            'throw ${clientExceptionName}.of((List)decodedResponse.get("errors"));',
+            'throw ${clientExceptionName}.of((List)$_svDecodedResponse.get("errors"));',
           ]),
-      'Map<String, Object> data = (Map<String, Object>) decodedResponse.get("data");',
+      'Map<String, Object> $_svData = (Map<String, Object>) $_svDecodedResponse.get("data");',
       _serializeInvalidationCall(def),
-      'return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson(data);',
+      'return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson($_svData);',
     ].join("\n");
   }
 
   String _serializeInvalidationCall(GLQueryDefinition def) {
     for (var e in def.elements) {
       if (e.cacheInvalidateAll) {
-        return 'store.invalidateAll();';
+        return '$_svStore.invalidateAll();';
       }
     }
     final tags = def.elements.expand((e) => e.invalidateCacheTags).toSet();
@@ -814,7 +843,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
   String _serializeSubscriptionAdapterCall(GLQueryDefinition def) {
     var method = codeGenUtils.createMethod(
         methodName:
-            '${_subscriptionListenerRef}<Map<String, Object>> rawListener = new ${_subscriptionListenerRef}<Map<String, Object>>',
+            '${_subscriptionListenerRef}<Map<String, Object>> $_svRawListener = new ${_subscriptionListenerRef}<Map<String, Object>>',
         statements: [
           '@Override',
           codeGenUtils.createMethod(
@@ -840,7 +869,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
             statements: ['listener.onError(error);'],
           )
         ]);
-    return ['${method};', '_handler.handlePayload(payload, rawListener);']
+    return ['${method};', '$_svHandler.handlePayload($_svPayload, $_svRawListener);']
         .join('\n');
   }
 
@@ -921,11 +950,11 @@ class JavaClientSerializer extends GLClientSerilaizer {
     final classBody = codeGenUtils.createClass(
       className: 'GraphLinkResolverBase',
       statements: [
-        'protected final Map<String, String> fragmentMap;',
-        'protected final GraphLinkCacheStore store;',
-        'protected final GraphLinkJsonEncoder encoder;',
-        'protected final GraphLinkJsonDecoder decoder;',
-        'private final Map<String, ReentrantLock> tagLocks = new HashMap<>();',
+        'protected final Map<String, String> ${_svFragmentNap};',
+        'protected final GraphLinkCacheStore $_svStore;',
+        'protected final GraphLinkJsonEncoder $_svEncoder;',
+        'protected final GraphLinkJsonDecoder $_svDecoder;',
+        'private final Map<String, ReentrantLock> $_svTagLocks = new HashMap<>();',
         codeGenUtils.createMethod(
           methodName: 'GraphLinkResolverBase',
           arguments: [
@@ -935,14 +964,14 @@ class JavaClientSerializer extends GLClientSerilaizer {
             'GraphLinkJsonDecoder decoder',
           ],
           statements: [
-            'this.fragmentMap = fragmentMap;',
-            'this.store = store;',
-            'this.encoder = encoder;',
-            'this.decoder = decoder;',
+            'this.${_svFragmentNap} = fragmentMap;',
+            'this.$_svStore = store;',
+            'this.$_svEncoder = encoder;',
+            'this.$_svDecoder = decoder;',
             'String[] tags = {${allTags.map((t) => '"$t"').join(', ')}};',
             codeGenUtils
                 .forEachLoop(variable: 'tag', iterable: 'tags', statements: [
-              'tagLocks.put(tag, new ReentrantLock());',
+              '$_svTagLocks.put(tag, new ReentrantLock());',
             ]),
           ],
         ),
@@ -956,7 +985,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
             'List<GraphLinkPartialQuery> remainingQueries',
           ],
           statements: [
-            'Map<String, Object> result = decoder.decode(data);',
+            'Map<String, Object> result = $_svDecoder.decode(data);',
             codeGenUtils.ifStatement(
                 condition: 'result.containsKey("errors")',
                 ifBlockStatements: [
@@ -971,8 +1000,8 @@ class JavaClientSerializer extends GLClientSerilaizer {
                       condition:
                           'q.ttl > 0 && dataMap.get(q.elementKey) != null',
                       ifBlockStatements: [
-                        'GraphLinkCacheEntry entry = new GraphLinkCacheEntry(encoder.encode(dataMap.get(q.elementKey)), System.currentTimeMillis() + q.ttl * 1000L);',
-                        'store.set(q.cacheKey, encoder.encode(entry.toJson()));',
+                        'GraphLinkCacheEntry entry = new GraphLinkCacheEntry($_svEncoder.encode(dataMap.get(q.elementKey)), System.currentTimeMillis() + q.ttl * 1000L);',
+                        '$_svStore.set(q.cacheKey, $_svEncoder.encode(entry.toJson()));',
                         codeGenUtils.ifStatement(
                             condition: '!q.tags.isEmpty()',
                             ifBlockStatements: [
@@ -999,10 +1028,10 @@ class JavaClientSerializer extends GLClientSerilaizer {
             'boolean staleIfOffline'
           ],
           statements: [
-            'String result = store.get(key);',
+            'String result = $_svStore.get(key);',
             codeGenUtils
                 .ifStatement(condition: 'result != null', ifBlockStatements: [
-              'Map<String, Object> entryMap = decoder.decode(result);',
+              'Map<String, Object> entryMap = $_svDecoder.decode(result);',
               'GraphLinkCacheEntry entry = GraphLinkCacheEntry.fromJson(entryMap);',
               codeGenUtils.ifStatement(
                   condition: 'entry.isExpired()',
@@ -1010,7 +1039,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
                     codeGenUtils.ifStatement(
                         condition: 'staleIfOffline',
                         ifBlockStatements: ['return entry.asStale();']),
-                    'store.invalidate(key);',
+                    '$_svStore.invalidate(key);',
                     codeGenUtils.ifStatement(
                         condition: '!tags.isEmpty()',
                         ifBlockStatements: ['removeKeyFromTags(key, tags);']),
@@ -1031,18 +1060,18 @@ class JavaClientSerializer extends GLClientSerilaizer {
             codeGenUtils
                 .forEachLoop(variable: 'tag', iterable: 'tags', statements: [
               'String tKey = tagKey(tag);',
-              'ReentrantLock lock = tagLocks.get(tag);',
+              'ReentrantLock lock = $_svTagLocks.get(tag);',
               'lock.lock();',
               codeGenUtils.tryCatchFinally(tryStatements: [
-                'String data = store.get(tKey);',
+                'String data = $_svStore.get(tKey);',
                 codeGenUtils
                     .ifStatement(condition: 'data != null', ifBlockStatements: [
-                  'GraphLinkTagEntry entry = GraphLinkTagEntry.fromJson(decoder.decode(data));',
+                  'GraphLinkTagEntry entry = GraphLinkTagEntry.fromJson($_svDecoder.decode(data));',
                   codeGenUtils.forEachLoop(
                       variable: 'k',
                       iterable: 'entry.keys',
-                      statements: ['store.invalidate(k);']),
-                  'store.invalidate(tKey);',
+                      statements: ['$_svStore.invalidate(k);']),
+                  '$_svStore.invalidate(tKey);',
                 ]),
               ], finallyStatements: [
                 'lock.unlock();',
@@ -1058,13 +1087,13 @@ class JavaClientSerializer extends GLClientSerilaizer {
             codeGenUtils
                 .forEachLoop(variable: 'tag', iterable: 'tags', statements: [
               'String tKey = tagKey(tag);',
-              'ReentrantLock lock = tagLocks.get(tag);',
+              'ReentrantLock lock = $_svTagLocks.get(tag);',
               'lock.lock();',
               codeGenUtils.tryCatchFinally(tryStatements: [
-                'String data = store.get(tKey);',
-                'GraphLinkTagEntry entry = data != null ? GraphLinkTagEntry.fromJson(decoder.decode(data)) : new GraphLinkTagEntry(new HashSet<>());',
+                'String data = $_svStore.get(tKey);',
+                'GraphLinkTagEntry entry = data != null ? GraphLinkTagEntry.fromJson($_svDecoder.decode(data)) : new GraphLinkTagEntry(new HashSet<>());',
                 'entry.add(key);',
-                'store.set(tKey, encoder.encode(entry.toJson()));',
+                '$_svStore.set(tKey, $_svEncoder.encode(entry.toJson()));',
               ], finallyStatements: [
                 'lock.unlock();',
               ]),
@@ -1079,19 +1108,19 @@ class JavaClientSerializer extends GLClientSerilaizer {
             codeGenUtils
                 .forEachLoop(variable: 'tag', iterable: 'tags', statements: [
               'String tKey = tagKey(tag);',
-              'ReentrantLock lock = tagLocks.computeIfAbsent(tag, k -> new ReentrantLock());',
+              'ReentrantLock lock = $_svTagLocks.computeIfAbsent(tag, k -> new ReentrantLock());',
               'lock.lock();',
               codeGenUtils.tryCatchFinally(tryStatements: [
-                'String data = store.get(tKey);',
+                'String data = $_svStore.get(tKey);',
                 codeGenUtils
                     .ifStatement(condition: 'data != null', ifBlockStatements: [
-                  'GraphLinkTagEntry entry = GraphLinkTagEntry.fromJson(decoder.decode(data));',
+                  'GraphLinkTagEntry entry = GraphLinkTagEntry.fromJson($_svDecoder.decode(data));',
                   'entry.remove(key);',
                   codeGenUtils.ifStatement(
                     condition: 'entry.keys.isEmpty()',
-                    ifBlockStatements: ['store.invalidate(tKey);'],
+                    ifBlockStatements: ['$_svStore.invalidate(tKey);'],
                     elseBlockStatements: [
-                      'store.set(tKey, encoder.encode(entry.toJson()));'
+                      '$_svStore.set(tKey, $_svEncoder.encode(entry.toJson()));'
                     ],
                   ),
                 ]),
@@ -1253,7 +1282,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
   @override
   Set<GLToken> getImportDependecies(GLParser g) {
     // The client file only needs the shared GraphLink types and the Java
-    // adapter/codec interfaces. Query return types and input argument types
+    // $_svAdapter/codec interfaces. Query return types and input argument types
     // are imported in their respective class files (GLQueries, GLMutations,
     // GLSubscriptions) and don't need to appear in GraphLinkClient.java.
     return [
