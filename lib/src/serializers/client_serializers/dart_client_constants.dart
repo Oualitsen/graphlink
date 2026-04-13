@@ -247,7 +247,7 @@ class DefaultGraphLinkWebSocketAdapter extends GraphLinkWebSocketAdapter {
   DefaultGraphLinkWebSocketAdapter({
     required this.url,
     this.headersProvider,
-    this.reconnect = false,
+    this.reconnect = true,
   });
 
   @override
