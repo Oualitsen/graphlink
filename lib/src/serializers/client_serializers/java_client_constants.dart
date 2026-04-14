@@ -262,7 +262,7 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
 
   private final String url;
   private final Supplier<Map<String, String>> headersProvider;
-  private final HttpClient httpClient = HttpClient.newHttpClient();
+  private final HttpClient httpClient;
   private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
   private volatile WebSocket webSocket;
@@ -271,12 +271,17 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
   private final AtomicInteger reconnectAttempts = new AtomicInteger(0);
 
   public DefaultGraphLinkWebSocketAdapter(String url) {
-    this(url, null);
+    this(url, null, HttpClient.newHttpClient());
   }
 
   public DefaultGraphLinkWebSocketAdapter(String url, Supplier<Map<String, String>> headersProvider) {
+    this(url, headersProvider, HttpClient.newHttpClient());
+  }
+
+  public DefaultGraphLinkWebSocketAdapter(String url, Supplier<Map<String, String>> headersProvider, HttpClient httpClient) {
     this.url = url;
     this.headersProvider = headersProvider;
+    this.httpClient = httpClient;
   }
 
   @Override
@@ -286,8 +291,8 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
   }
 
   private void connectInternal(Runnable onConnect, Consumer<Throwable> onFailure) {
-    java.net.http.WebSocket.Builder wsBuilder = httpClient.newWebSocketBuilder()
-        .header("Sec-WebSocket-Protocol", "graphql-transport-ws");
+    java.net.http.WebSocket.Builder wsBuilder = httpClient.newWebSocketBuilder();
+        
     if (headersProvider != null) {
       Map<String, String> h = headersProvider.get();
       if (h != null) h.forEach(wsBuilder::header);
@@ -386,19 +391,22 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
   private final AtomicInteger reconnectAttempts = new AtomicInteger(0);
 
   public DefaultGraphLinkWebSocketAdapter(String url) {
-    this(url, null);
+    this(url, null, new OkHttpClient());
   }
 
   public DefaultGraphLinkWebSocketAdapter(String url, Supplier<Map<String, String>> headersProvider) {
+    this(url, headersProvider, new OkHttpClient());
+  }
+
+  public DefaultGraphLinkWebSocketAdapter(String url, Supplier<Map<String, String>> headersProvider, OkHttpClient httpClient) {
     this.url = url;
     this.headersProvider = headersProvider;
-    this.httpClient = new OkHttpClient();
+    this.httpClient = httpClient;
   }
 
   protected Request buildRequest() {
     Request.Builder builder = new Request.Builder()
-        .url(url)
-        .header("Sec-WebSocket-Protocol", "graphql-transport-ws");
+        .url(url);
     if (headersProvider != null) {
       Map<String, String> headers = headersProvider.get();
       if (headers != null) headers.forEach(builder::header);
@@ -485,15 +493,20 @@ public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter {
 
   private final String url;
   private final Supplier<Map<String, String>> headersProvider;
-  private final HttpClient httpClient = HttpClient.newHttpClient();
+  private final HttpClient httpClient;
 
   public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider) {
-    this.url = url;
-    this.headersProvider = headersProvider;
+    this(url, headersProvider, HttpClient.newHttpClient());
   }
 
   public DefaultGraphLinkClientAdapter(String url) {
-    this(url, null);
+    this(url, null, HttpClient.newHttpClient());
+  }
+
+  public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider, HttpClient httpClient) {
+    this.url = url;
+    this.headersProvider = headersProvider;
+    this.httpClient = httpClient;
   }
 
   @Override
@@ -526,13 +539,17 @@ public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter {
   private final OkHttpClient httpClient;
 
   public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider) {
-    this.url = url;
-    this.headersProvider = headersProvider;
-    this.httpClient = new OkHttpClient();
+    this(url, headersProvider, new OkHttpClient());
   }
 
   public DefaultGraphLinkClientAdapter(String url) {
-    this(url, null);
+    this(url, null, new OkHttpClient());
+  }
+
+  public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider, OkHttpClient httpClient) {
+    this.url = url;
+    this.headersProvider = headersProvider;
+    this.httpClient = httpClient;
   }
 
   @Override
@@ -565,13 +582,17 @@ public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter, Gr
   private final OkHttpClient httpClient;
 
   public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider) {
-    this.url = url;
-    this.headersProvider = headersProvider;
-    this.httpClient = new OkHttpClient();
+    this(url, headersProvider, new OkHttpClient());
   }
 
   public DefaultGraphLinkClientAdapter(String url) {
-    this(url, null);
+    this(url, null, new OkHttpClient());
+  }
+
+  public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider, OkHttpClient httpClient) {
+    this.url = url;
+    this.headersProvider = headersProvider;
+    this.httpClient = httpClient;
   }
 
   @Override
@@ -655,15 +676,20 @@ public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter, Gr
 
   private final String url;
   private final Supplier<Map<String, String>> headersProvider;
-  private final HttpClient httpClient = HttpClient.newHttpClient();
+  private final HttpClient httpClient;
 
   public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider) {
-    this.url = url;
-    this.headersProvider = headersProvider;
+    this(url, headersProvider, HttpClient.newHttpClient());
   }
 
   public DefaultGraphLinkClientAdapter(String url) {
-    this(url, null);
+    this(url, null, HttpClient.newHttpClient());
+  }
+
+  public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider, HttpClient httpClient) {
+    this.url = url;
+    this.headersProvider = headersProvider;
+    this.httpClient = httpClient;
   }
 
   @Override
