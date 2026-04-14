@@ -5,9 +5,10 @@ import 'package:dart_dio_upload_app/generated/client/graph_link_uploads.dart';
 import 'generated/client/graph_link_client.dart';
 
 const _endpoint = 'http://localhost:8080/graphql';
+const _ws = 'ws://localhost:8080/graphql';
 
 void main() async {
-  final client = GraphLinkClient.withHttp(url: _endpoint);
+  final client = GraphLinkClient.withHttp(url: _endpoint, wsUrl: _ws);
 
   // ── Single file upload ─────────────────────────────────────────────────────
   final file = File('pubspec.yaml');

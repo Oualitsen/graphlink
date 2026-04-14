@@ -174,20 +174,22 @@ class InMemoryGraphLinkCacheStore implements GraphLinkCacheStore {
 }
 
 class GraphLinkQueries extends _ResolverBase {
-   final Future<String> Function(String payload) _adapter;
-   GraphLinkQueries(this._adapter, Map<String, String> fragmentMap, GraphLinkCacheStore store, Map<String, _Lock> _tagLocks) : super(fragmentMap, store, _tagLocks) {
+   late final Map<String, String> __gl_fragmentMap__;
+   final Future<String> Function(String payload) __gl_adapter__;
+   GraphLinkQueries(this.__gl_adapter__, Map<String, String> fragmentMap, GraphLinkCacheStore store, Map<String, _Lock> __gl_tagLocks__) : super(store, __gl_tagLocks__) {
+      __gl_fragmentMap__ = fragmentMap;
    }
    Future<GetCarAndOwnerResponse> getCarAndOwner({
       required String carId,
       required String ownerId
    }) async {
-      const operationName = 'getCarAndOwner';
-      final variables = <String, dynamic>{
+      const __gl_operationName__ = 'getCarAndOwner';
+      final __gl_variables__ = <String, dynamic>{
          'carId': carId,
          'ownerId': ownerId,
       };
 
-      final partialQueries = [_GraphLinkPartialQuery(
+      final __gl_partialQueries__ = [_GraphLinkPartialQuery(
         query: 'car:getCar(id: \$carId){..._all_fields_Car}',
         operationName: "getCarAndOwner_car_getCar",
         tags: ["cars", "data"],
@@ -196,7 +198,7 @@ class GraphLinkQueries extends _ResolverBase {
         fragmentNames: {"_all_fields_Car"},
         argumentDeclarations: ["\$carId: ID!"],
         variables: {
-      'carId': variables['carId'],
+      'carId': __gl_variables__['carId'],
       },
         staleIfOffline: false
       )
@@ -209,52 +211,52 @@ class GraphLinkQueries extends _ResolverBase {
         fragmentNames: {"_all_fields_Owner", "_all_fields_Car"},
         argumentDeclarations: ["\$ownerId: ID!"],
         variables: {
-      'ownerId': variables['ownerId'],
+      'ownerId': __gl_variables__['ownerId'],
       },
         staleIfOffline: false
       )
       ];
-      final responseMap = <String, dynamic>{};
-      final staleData = <String, dynamic>{};
-      final cacheFetchFutures = <Future>[];
-      for (var partQuery in partialQueries.where((e) => e.ttl > 0)) {
-         cacheFetchFutures.add(_getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)
+      final __gl_responseMap__ = <String, dynamic>{};
+      final __gl_staleData__ = <String, dynamic>{};
+      final __gl_cacheFetchFutures__ = <Future>[];
+      for (var partQuery in __gl_partialQueries__.where((e) => e.ttl > 0)) {
+         __gl_cacheFetchFutures__.add(_getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)
          .asStream().where((e) => e != null).map((e) => e!).first.then((entry) {
             if(entry.stale) {
-               staleData[partQuery.elementKey] = jsonDecode(entry.data);
+               __gl_staleData__[partQuery.elementKey] = jsonDecode(entry.data);
             } else {
-               responseMap[partQuery.elementKey] = jsonDecode(entry.data);
+               __gl_responseMap__[partQuery.elementKey] = jsonDecode(entry.data);
             }
          }));
       }
-      await Future.wait(cacheFetchFutures.map((f) => f.catchError((_) => null)));
-      var remaining = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).toSet();
-      if(remaining.isEmpty) {
-         return GetCarAndOwnerResponse.fromJson(responseMap);
+      await Future.wait(__gl_cacheFetchFutures__.map((f) => f.catchError((_) => null)));
+      var __gl_remaining__ = __gl_partialQueries__.where((e) => !__gl_responseMap__.containsKey(e.elementKey)).toSet();
+      if(__gl_remaining__.isEmpty) {
+         return GetCarAndOwnerResponse.fromJson(__gl_responseMap__);
       }
-      final remainingQueries = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).toList();
-      final payload = _buildPayload(remainingQueries, operationName, '');
+      final __gl_remainingQueries__ = __gl_partialQueries__.where((e) => !__gl_responseMap__.containsKey(e.elementKey)).toList();
+      final __gl_payload__ = _buildPayload(__gl_remainingQueries__, __gl_operationName__, '');
       try {
-         final responseText = await _getFromSource(payload);
-         return _parseToObjectAndCache(responseText, responseMap, GetCarAndOwnerResponse.fromJson, remaining);
+         final __gl_responseText__ = await _getFromSource(__gl_payload__);
+         return _parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, GetCarAndOwnerResponse.fromJson, __gl_remaining__);
       } catch (exception) {
-         responseMap.addAll(staleData);
-         final remainingCount = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).length;
+         __gl_responseMap__.addAll(__gl_staleData__);
+         final remainingCount = __gl_partialQueries__.where((e) => !__gl_responseMap__.containsKey(e.elementKey)).length;
          if(remainingCount > 0) {
-            throw exception;
+            rethrow;
          }
-         return GetCarAndOwnerResponse.fromJson(responseMap);
+         return GetCarAndOwnerResponse.fromJson(__gl_responseMap__);
       }
    }
    Future<GetOwnerResponse> getOwner({
       required String id
    }) async {
-      const operationName = 'getOwner';
-      final variables = <String, dynamic>{
+      const __gl_operationName__ = 'getOwner';
+      final __gl_variables__ = <String, dynamic>{
          'id': id,
       };
 
-      final partialQueries = [_GraphLinkPartialQuery(
+      final __gl_partialQueries__ = [_GraphLinkPartialQuery(
         query: 'getOwner(id: \$id){..._all_fields_Owner}',
         operationName: "getOwner__getOwner",
         tags: [],
@@ -263,52 +265,52 @@ class GraphLinkQueries extends _ResolverBase {
         fragmentNames: {"_all_fields_Owner", "_all_fields_Car"},
         argumentDeclarations: ["\$id: ID!"],
         variables: {
-      'id': variables['id'],
+      'id': __gl_variables__['id'],
       },
         staleIfOffline: false
       )
       ];
-      final responseMap = <String, dynamic>{};
-      final staleData = <String, dynamic>{};
-      final cacheFetchFutures = <Future>[];
-      for (var partQuery in partialQueries.where((e) => e.ttl > 0)) {
-         cacheFetchFutures.add(_getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)
+      final __gl_responseMap__ = <String, dynamic>{};
+      final __gl_staleData__ = <String, dynamic>{};
+      final __gl_cacheFetchFutures__ = <Future>[];
+      for (var partQuery in __gl_partialQueries__.where((e) => e.ttl > 0)) {
+         __gl_cacheFetchFutures__.add(_getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)
          .asStream().where((e) => e != null).map((e) => e!).first.then((entry) {
             if(entry.stale) {
-               staleData[partQuery.elementKey] = jsonDecode(entry.data);
+               __gl_staleData__[partQuery.elementKey] = jsonDecode(entry.data);
             } else {
-               responseMap[partQuery.elementKey] = jsonDecode(entry.data);
+               __gl_responseMap__[partQuery.elementKey] = jsonDecode(entry.data);
             }
          }));
       }
-      await Future.wait(cacheFetchFutures.map((f) => f.catchError((_) => null)));
-      var remaining = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).toSet();
-      if(remaining.isEmpty) {
-         return GetOwnerResponse.fromJson(responseMap);
+      await Future.wait(__gl_cacheFetchFutures__.map((f) => f.catchError((_) => null)));
+      var __gl_remaining__ = __gl_partialQueries__.where((e) => !__gl_responseMap__.containsKey(e.elementKey)).toSet();
+      if(__gl_remaining__.isEmpty) {
+         return GetOwnerResponse.fromJson(__gl_responseMap__);
       }
-      final remainingQueries = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).toList();
-      final payload = _buildPayload(remainingQueries, operationName, '');
+      final __gl_remainingQueries__ = __gl_partialQueries__.where((e) => !__gl_responseMap__.containsKey(e.elementKey)).toList();
+      final __gl_payload__ = _buildPayload(__gl_remainingQueries__, __gl_operationName__, '');
       try {
-         final responseText = await _getFromSource(payload);
-         return _parseToObjectAndCache(responseText, responseMap, GetOwnerResponse.fromJson, remaining);
+         final __gl_responseText__ = await _getFromSource(__gl_payload__);
+         return _parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, GetOwnerResponse.fromJson, __gl_remaining__);
       } catch (exception) {
-         responseMap.addAll(staleData);
-         final remainingCount = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).length;
+         __gl_responseMap__.addAll(__gl_staleData__);
+         final remainingCount = __gl_partialQueries__.where((e) => !__gl_responseMap__.containsKey(e.elementKey)).length;
          if(remainingCount > 0) {
-            throw exception;
+            rethrow;
          }
-         return GetOwnerResponse.fromJson(responseMap);
+         return GetOwnerResponse.fromJson(__gl_responseMap__);
       }
    }
    Future<GetCarResponse> getCar({
       required String id
    }) async {
-      const operationName = 'getCar';
-      final variables = <String, dynamic>{
+      const __gl_operationName__ = 'getCar';
+      final __gl_variables__ = <String, dynamic>{
          'id': id,
       };
 
-      final partialQueries = [_GraphLinkPartialQuery(
+      final __gl_partialQueries__ = [_GraphLinkPartialQuery(
         query: 'getCar(id: \$id){..._all_fields_Car}',
         operationName: "getCar__getCar",
         tags: ["cars"],
@@ -317,52 +319,52 @@ class GraphLinkQueries extends _ResolverBase {
         fragmentNames: {"_all_fields_Car"},
         argumentDeclarations: ["\$id: ID!"],
         variables: {
-      'id': variables['id'],
+      'id': __gl_variables__['id'],
       },
         staleIfOffline: false
       )
       ];
-      final responseMap = <String, dynamic>{};
-      final staleData = <String, dynamic>{};
-      final cacheFetchFutures = <Future>[];
-      for (var partQuery in partialQueries.where((e) => e.ttl > 0)) {
-         cacheFetchFutures.add(_getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)
+      final __gl_responseMap__ = <String, dynamic>{};
+      final __gl_staleData__ = <String, dynamic>{};
+      final __gl_cacheFetchFutures__ = <Future>[];
+      for (var partQuery in __gl_partialQueries__.where((e) => e.ttl > 0)) {
+         __gl_cacheFetchFutures__.add(_getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)
          .asStream().where((e) => e != null).map((e) => e!).first.then((entry) {
             if(entry.stale) {
-               staleData[partQuery.elementKey] = jsonDecode(entry.data);
+               __gl_staleData__[partQuery.elementKey] = jsonDecode(entry.data);
             } else {
-               responseMap[partQuery.elementKey] = jsonDecode(entry.data);
+               __gl_responseMap__[partQuery.elementKey] = jsonDecode(entry.data);
             }
          }));
       }
-      await Future.wait(cacheFetchFutures.map((f) => f.catchError((_) => null)));
-      var remaining = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).toSet();
-      if(remaining.isEmpty) {
-         return GetCarResponse.fromJson(responseMap);
+      await Future.wait(__gl_cacheFetchFutures__.map((f) => f.catchError((_) => null)));
+      var __gl_remaining__ = __gl_partialQueries__.where((e) => !__gl_responseMap__.containsKey(e.elementKey)).toSet();
+      if(__gl_remaining__.isEmpty) {
+         return GetCarResponse.fromJson(__gl_responseMap__);
       }
-      final remainingQueries = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).toList();
-      final payload = _buildPayload(remainingQueries, operationName, '');
+      final __gl_remainingQueries__ = __gl_partialQueries__.where((e) => !__gl_responseMap__.containsKey(e.elementKey)).toList();
+      final __gl_payload__ = _buildPayload(__gl_remainingQueries__, __gl_operationName__, '');
       try {
-         final responseText = await _getFromSource(payload);
-         return _parseToObjectAndCache(responseText, responseMap, GetCarResponse.fromJson, remaining);
+         final __gl_responseText__ = await _getFromSource(__gl_payload__);
+         return _parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, GetCarResponse.fromJson, __gl_remaining__);
       } catch (exception) {
-         responseMap.addAll(staleData);
-         final remainingCount = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).length;
+         __gl_responseMap__.addAll(__gl_staleData__);
+         final remainingCount = __gl_partialQueries__.where((e) => !__gl_responseMap__.containsKey(e.elementKey)).length;
          if(remainingCount > 0) {
-            throw exception;
+            rethrow;
          }
-         return GetCarResponse.fromJson(responseMap);
+         return GetCarResponse.fromJson(__gl_responseMap__);
       }
    }
    Future<GetCarStaleResponse> getCarStale({
       required String id
    }) async {
-      const operationName = 'getCarStale';
-      final variables = <String, dynamic>{
+      const __gl_operationName__ = 'getCarStale';
+      final __gl_variables__ = <String, dynamic>{
          'id': id,
       };
 
-      final partialQueries = [_GraphLinkPartialQuery(
+      final __gl_partialQueries__ = [_GraphLinkPartialQuery(
         query: 'getCarStale(id: \$id){..._all_fields_Car}',
         operationName: "getCarStale__getCarStale",
         tags: ["cars"],
@@ -371,52 +373,52 @@ class GraphLinkQueries extends _ResolverBase {
         fragmentNames: {"_all_fields_Car"},
         argumentDeclarations: ["\$id: ID!"],
         variables: {
-      'id': variables['id'],
+      'id': __gl_variables__['id'],
       },
         staleIfOffline: true
       )
       ];
-      final responseMap = <String, dynamic>{};
-      final staleData = <String, dynamic>{};
-      final cacheFetchFutures = <Future>[];
-      for (var partQuery in partialQueries.where((e) => e.ttl > 0)) {
-         cacheFetchFutures.add(_getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)
+      final __gl_responseMap__ = <String, dynamic>{};
+      final __gl_staleData__ = <String, dynamic>{};
+      final __gl_cacheFetchFutures__ = <Future>[];
+      for (var partQuery in __gl_partialQueries__.where((e) => e.ttl > 0)) {
+         __gl_cacheFetchFutures__.add(_getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)
          .asStream().where((e) => e != null).map((e) => e!).first.then((entry) {
             if(entry.stale) {
-               staleData[partQuery.elementKey] = jsonDecode(entry.data);
+               __gl_staleData__[partQuery.elementKey] = jsonDecode(entry.data);
             } else {
-               responseMap[partQuery.elementKey] = jsonDecode(entry.data);
+               __gl_responseMap__[partQuery.elementKey] = jsonDecode(entry.data);
             }
          }));
       }
-      await Future.wait(cacheFetchFutures.map((f) => f.catchError((_) => null)));
-      var remaining = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).toSet();
-      if(remaining.isEmpty) {
-         return GetCarStaleResponse.fromJson(responseMap);
+      await Future.wait(__gl_cacheFetchFutures__.map((f) => f.catchError((_) => null)));
+      var __gl_remaining__ = __gl_partialQueries__.where((e) => !__gl_responseMap__.containsKey(e.elementKey)).toSet();
+      if(__gl_remaining__.isEmpty) {
+         return GetCarStaleResponse.fromJson(__gl_responseMap__);
       }
-      final remainingQueries = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).toList();
-      final payload = _buildPayload(remainingQueries, operationName, '');
+      final __gl_remainingQueries__ = __gl_partialQueries__.where((e) => !__gl_responseMap__.containsKey(e.elementKey)).toList();
+      final __gl_payload__ = _buildPayload(__gl_remainingQueries__, __gl_operationName__, '');
       try {
-         final responseText = await _getFromSource(payload);
-         return _parseToObjectAndCache(responseText, responseMap, GetCarStaleResponse.fromJson, remaining);
+         final __gl_responseText__ = await _getFromSource(__gl_payload__);
+         return _parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, GetCarStaleResponse.fromJson, __gl_remaining__);
       } catch (exception) {
-         responseMap.addAll(staleData);
-         final remainingCount = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).length;
+         __gl_responseMap__.addAll(__gl_staleData__);
+         final remainingCount = __gl_partialQueries__.where((e) => !__gl_responseMap__.containsKey(e.elementKey)).length;
          if(remainingCount > 0) {
-            throw exception;
+            rethrow;
          }
-         return GetCarStaleResponse.fromJson(responseMap);
+         return GetCarStaleResponse.fromJson(__gl_responseMap__);
       }
    }
    Future<GetCarExpiringResponse> getCarExpiring({
       required String id
    }) async {
-      const operationName = 'getCarExpiring';
-      final variables = <String, dynamic>{
+      const __gl_operationName__ = 'getCarExpiring';
+      final __gl_variables__ = <String, dynamic>{
          'id': id,
       };
 
-      final partialQueries = [_GraphLinkPartialQuery(
+      final __gl_partialQueries__ = [_GraphLinkPartialQuery(
         query: 'getCarExpiring(id: \$id){..._all_fields_Car}',
         operationName: "getCarExpiring__getCarExpiring",
         tags: ["cars"],
@@ -425,49 +427,49 @@ class GraphLinkQueries extends _ResolverBase {
         fragmentNames: {"_all_fields_Car"},
         argumentDeclarations: ["\$id: ID!"],
         variables: {
-      'id': variables['id'],
+      'id': __gl_variables__['id'],
       },
         staleIfOffline: false
       )
       ];
-      final responseMap = <String, dynamic>{};
-      final staleData = <String, dynamic>{};
-      final cacheFetchFutures = <Future>[];
-      for (var partQuery in partialQueries.where((e) => e.ttl > 0)) {
-         cacheFetchFutures.add(_getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)
+      final __gl_responseMap__ = <String, dynamic>{};
+      final __gl_staleData__ = <String, dynamic>{};
+      final __gl_cacheFetchFutures__ = <Future>[];
+      for (var partQuery in __gl_partialQueries__.where((e) => e.ttl > 0)) {
+         __gl_cacheFetchFutures__.add(_getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)
          .asStream().where((e) => e != null).map((e) => e!).first.then((entry) {
             if(entry.stale) {
-               staleData[partQuery.elementKey] = jsonDecode(entry.data);
+               __gl_staleData__[partQuery.elementKey] = jsonDecode(entry.data);
             } else {
-               responseMap[partQuery.elementKey] = jsonDecode(entry.data);
+               __gl_responseMap__[partQuery.elementKey] = jsonDecode(entry.data);
             }
          }));
       }
-      await Future.wait(cacheFetchFutures.map((f) => f.catchError((_) => null)));
-      var remaining = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).toSet();
-      if(remaining.isEmpty) {
-         return GetCarExpiringResponse.fromJson(responseMap);
+      await Future.wait(__gl_cacheFetchFutures__.map((f) => f.catchError((_) => null)));
+      var __gl_remaining__ = __gl_partialQueries__.where((e) => !__gl_responseMap__.containsKey(e.elementKey)).toSet();
+      if(__gl_remaining__.isEmpty) {
+         return GetCarExpiringResponse.fromJson(__gl_responseMap__);
       }
-      final remainingQueries = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).toList();
-      final payload = _buildPayload(remainingQueries, operationName, '');
+      final __gl_remainingQueries__ = __gl_partialQueries__.where((e) => !__gl_responseMap__.containsKey(e.elementKey)).toList();
+      final __gl_payload__ = _buildPayload(__gl_remainingQueries__, __gl_operationName__, '');
       try {
-         final responseText = await _getFromSource(payload);
-         return _parseToObjectAndCache(responseText, responseMap, GetCarExpiringResponse.fromJson, remaining);
+         final __gl_responseText__ = await _getFromSource(__gl_payload__);
+         return _parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, GetCarExpiringResponse.fromJson, __gl_remaining__);
       } catch (exception) {
-         responseMap.addAll(staleData);
-         final remainingCount = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).length;
+         __gl_responseMap__.addAll(__gl_staleData__);
+         final remainingCount = __gl_partialQueries__.where((e) => !__gl_responseMap__.containsKey(e.elementKey)).length;
          if(remainingCount > 0) {
-            throw exception;
+            rethrow;
          }
-         return GetCarExpiringResponse.fromJson(responseMap);
+         return GetCarExpiringResponse.fromJson(__gl_responseMap__);
       }
    }
    Future<GetCarsCountResponse> getCarsCount() async {
-      const operationName = 'getCarsCount';
-      final variables = <String, dynamic>{
+      const __gl_operationName__ = 'getCarsCount';
+      final __gl_variables__ = <String, dynamic>{
       };
 
-      final partialQueries = [_GraphLinkPartialQuery(
+      final __gl_partialQueries__ = [_GraphLinkPartialQuery(
         query: 'getCarsCount',
         operationName: "getCarsCount__getCarsCount",
         tags: [],
@@ -479,47 +481,47 @@ class GraphLinkQueries extends _ResolverBase {
         staleIfOffline: false
       )
       ];
-      final responseMap = <String, dynamic>{};
-      final staleData = <String, dynamic>{};
-      final cacheFetchFutures = <Future>[];
-      for (var partQuery in partialQueries.where((e) => e.ttl > 0)) {
-         cacheFetchFutures.add(_getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)
+      final __gl_responseMap__ = <String, dynamic>{};
+      final __gl_staleData__ = <String, dynamic>{};
+      final __gl_cacheFetchFutures__ = <Future>[];
+      for (var partQuery in __gl_partialQueries__.where((e) => e.ttl > 0)) {
+         __gl_cacheFetchFutures__.add(_getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)
          .asStream().where((e) => e != null).map((e) => e!).first.then((entry) {
             if(entry.stale) {
-               staleData[partQuery.elementKey] = jsonDecode(entry.data);
+               __gl_staleData__[partQuery.elementKey] = jsonDecode(entry.data);
             } else {
-               responseMap[partQuery.elementKey] = jsonDecode(entry.data);
+               __gl_responseMap__[partQuery.elementKey] = jsonDecode(entry.data);
             }
          }));
       }
-      await Future.wait(cacheFetchFutures.map((f) => f.catchError((_) => null)));
-      var remaining = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).toSet();
-      if(remaining.isEmpty) {
-         return GetCarsCountResponse.fromJson(responseMap);
+      await Future.wait(__gl_cacheFetchFutures__.map((f) => f.catchError((_) => null)));
+      var __gl_remaining__ = __gl_partialQueries__.where((e) => !__gl_responseMap__.containsKey(e.elementKey)).toSet();
+      if(__gl_remaining__.isEmpty) {
+         return GetCarsCountResponse.fromJson(__gl_responseMap__);
       }
-      final remainingQueries = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).toList();
-      final payload = _buildPayload(remainingQueries, operationName, '');
+      final __gl_remainingQueries__ = __gl_partialQueries__.where((e) => !__gl_responseMap__.containsKey(e.elementKey)).toList();
+      final __gl_payload__ = _buildPayload(__gl_remainingQueries__, __gl_operationName__, '');
       try {
-         final responseText = await _getFromSource(payload);
-         return _parseToObjectAndCache(responseText, responseMap, GetCarsCountResponse.fromJson, remaining);
+         final __gl_responseText__ = await _getFromSource(__gl_payload__);
+         return _parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, GetCarsCountResponse.fromJson, __gl_remaining__);
       } catch (exception) {
-         responseMap.addAll(staleData);
-         final remainingCount = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).length;
+         __gl_responseMap__.addAll(__gl_staleData__);
+         final remainingCount = __gl_partialQueries__.where((e) => !__gl_responseMap__.containsKey(e.elementKey)).length;
          if(remainingCount > 0) {
-            throw exception;
+            rethrow;
          }
-         return GetCarsCountResponse.fromJson(responseMap);
+         return GetCarsCountResponse.fromJson(__gl_responseMap__);
       }
    }
    Future<GetCarNameResponse> getCarName({
       required String id
    }) async {
-      const operationName = 'getCarName';
-      final variables = <String, dynamic>{
+      const __gl_operationName__ = 'getCarName';
+      final __gl_variables__ = <String, dynamic>{
          'id': id,
       };
 
-      final partialQueries = [_GraphLinkPartialQuery(
+      final __gl_partialQueries__ = [_GraphLinkPartialQuery(
         query: 'getCarName(id: \$id)',
         operationName: "getCarName__getCarName",
         tags: [],
@@ -528,45 +530,45 @@ class GraphLinkQueries extends _ResolverBase {
         fragmentNames: {},
         argumentDeclarations: ["\$id: ID!"],
         variables: {
-      'id': variables['id'],
+      'id': __gl_variables__['id'],
       },
         staleIfOffline: false
       )
       ];
-      final responseMap = <String, dynamic>{};
-      final staleData = <String, dynamic>{};
-      final cacheFetchFutures = <Future>[];
-      for (var partQuery in partialQueries.where((e) => e.ttl > 0)) {
-         cacheFetchFutures.add(_getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)
+      final __gl_responseMap__ = <String, dynamic>{};
+      final __gl_staleData__ = <String, dynamic>{};
+      final __gl_cacheFetchFutures__ = <Future>[];
+      for (var partQuery in __gl_partialQueries__.where((e) => e.ttl > 0)) {
+         __gl_cacheFetchFutures__.add(_getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)
          .asStream().where((e) => e != null).map((e) => e!).first.then((entry) {
             if(entry.stale) {
-               staleData[partQuery.elementKey] = jsonDecode(entry.data);
+               __gl_staleData__[partQuery.elementKey] = jsonDecode(entry.data);
             } else {
-               responseMap[partQuery.elementKey] = jsonDecode(entry.data);
+               __gl_responseMap__[partQuery.elementKey] = jsonDecode(entry.data);
             }
          }));
       }
-      await Future.wait(cacheFetchFutures.map((f) => f.catchError((_) => null)));
-      var remaining = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).toSet();
-      if(remaining.isEmpty) {
-         return GetCarNameResponse.fromJson(responseMap);
+      await Future.wait(__gl_cacheFetchFutures__.map((f) => f.catchError((_) => null)));
+      var __gl_remaining__ = __gl_partialQueries__.where((e) => !__gl_responseMap__.containsKey(e.elementKey)).toSet();
+      if(__gl_remaining__.isEmpty) {
+         return GetCarNameResponse.fromJson(__gl_responseMap__);
       }
-      final remainingQueries = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).toList();
-      final payload = _buildPayload(remainingQueries, operationName, '');
+      final __gl_remainingQueries__ = __gl_partialQueries__.where((e) => !__gl_responseMap__.containsKey(e.elementKey)).toList();
+      final __gl_payload__ = _buildPayload(__gl_remainingQueries__, __gl_operationName__, '');
       try {
-         final responseText = await _getFromSource(payload);
-         return _parseToObjectAndCache(responseText, responseMap, GetCarNameResponse.fromJson, remaining);
+         final __gl_responseText__ = await _getFromSource(__gl_payload__);
+         return _parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, GetCarNameResponse.fromJson, __gl_remaining__);
       } catch (exception) {
-         responseMap.addAll(staleData);
-         final remainingCount = partialQueries.where((e) => !responseMap.containsKey(e.elementKey)).length;
+         __gl_responseMap__.addAll(__gl_staleData__);
+         final remainingCount = __gl_partialQueries__.where((e) => !__gl_responseMap__.containsKey(e.elementKey)).length;
          if(remainingCount > 0) {
-            throw exception;
+            rethrow;
          }
-         return GetCarNameResponse.fromJson(responseMap);
+         return GetCarNameResponse.fromJson(__gl_responseMap__);
       }
    }
    Future<String> _getFromSource(GraphLinkPayload payload) async {
-      return await _adapter(json.encode(payload.toJson()));
+      return await __gl_adapter__(json.encode(payload.toJson()));
    }
    GraphLinkPayload _buildPayload(List<_GraphLinkPartialQuery> partQueries, String operationName, String directives) {
       final Map<String, dynamic> variables = {};
@@ -588,7 +590,7 @@ class GraphLinkQueries extends _ResolverBase {
          queryBuilder.write(partQuery.query);
       }
       queryBuilder.write("}");
-      final fragments = partQueries.expand((e) => e.fragmentNames).toSet().map((fragName) => fragmentMap[fragName]!).join();
+      final fragments = partQueries.expand((e) => e.fragmentNames).toSet().map((fragName) => __gl_fragmentMap__[fragName]!).join();
       queryBuilder.write(fragments);
       return GraphLinkPayload(query: queryBuilder.toString(), operationName: operationName, variables: variables);
    }
@@ -601,7 +603,7 @@ class GraphLinkQueries extends _ResolverBase {
       for (var q in remainingQueries) {
          if(q.ttl > 0 && dataMap[q.elementKey] != null) {
             final entry = _GraphLinkCacheEntry(jsonEncode(dataMap[q.elementKey]), DateTime.now().millisecondsSinceEpoch + q.ttl * 1000);
-            store.set(q.cacheKey!, jsonEncode(entry.toJson()));
+            __gl_store__.set(q.cacheKey!, jsonEncode(entry.toJson()));
             if(q.tags.isNotEmpty) {
                _addKeyToTags(q.cacheKey!, q.tags);
             }
@@ -612,64 +614,68 @@ class GraphLinkQueries extends _ResolverBase {
    }
 }
 class GraphLinkMutations extends _ResolverBase {
-   final Future<String> Function(String payload) _adapter;
-   GraphLinkMutations(this._adapter, Map<String, String> fragmentMap, GraphLinkCacheStore store, Map<String, _Lock> _tagLocks) : super(fragmentMap, store, _tagLocks) {
+   late final Map<String, String> __gl_fragmentMap__;
+   final Future<String> Function(String payload) __gl_adapter__;
+   GraphLinkMutations(this.__gl_adapter__, Map<String, String> fragmentMap, GraphLinkCacheStore store, Map<String, _Lock> __gl_tagLocks__) : super(store, __gl_tagLocks__) {
+      __gl_fragmentMap__ = fragmentMap;
    }
    Future<CreateOwnerResponse> createOwner({
       required CreateOwnerInput input
    }) async {
-      const operationName = 'createOwner';
-      final fragsValues = [
+      const __gl_operationName__ = 'createOwner';
+      final __gl_fragsValues__ = [
       "_all_fields_Owner",
       "_all_fields_Car",
-      ].map((fragName) => fragmentMap[fragName]!).join();
-      final query = '''mutation createOwner(\$input: CreateOwnerInput!){createOwner(input: \$input){..._all_fields_Owner}} ${fragsValues}''';
-      final variables = <String, dynamic>{
+      ].map((fragName) => __gl_fragmentMap__[fragName]!).join();
+      final __gl_query__ = '''mutation createOwner(\$input: CreateOwnerInput!){createOwner(input: \$input){..._all_fields_Owner}} ${__gl_fragsValues__}''';
+      final __gl_variables__ = <String, dynamic>{
          'input': input.toJson(),
       };
 
-      final payload = GraphLinkPayload(query: query, operationName: operationName, variables: variables);
-      final response = await _adapter(json.encode(payload.toJson()));
-      Map<String, dynamic> result = jsonDecode(response);
-      if (result.containsKey("errors")) {
-        throw result["errors"].map((error) => GraphLinkError.fromJson(error)).toList();
+      final __gl_payload__ = GraphLinkPayload(query: __gl_query__, operationName: __gl_operationName__, variables: __gl_variables__);
+      final __gl_response__ = await __gl_adapter__(json.encode(__gl_payload__.toJson()));
+      Map<String, dynamic> __gl_result__ = jsonDecode(__gl_response__);
+      if (__gl_result__.containsKey("errors")) {
+        throw __gl_result__["errors"].map((error) => GraphLinkError.fromJson(error)).toList();
       }
-      var data = result["data"];
+      var __gl_data__ = __gl_result__["data"];
       await _invalidateByTags(["persons"]);
-      return CreateOwnerResponse.fromJson(data);
+      return CreateOwnerResponse.fromJson(__gl_data__);
 
    }
    Future<CreateCarResponse> createCar({
       required CreateCarInput input
    }) async {
-      const operationName = 'createCar';
-      final fragsValues = [
+      const __gl_operationName__ = 'createCar';
+      final __gl_fragsValues__ = [
       "_all_fields_Car",
-      ].map((fragName) => fragmentMap[fragName]!).join();
-      final query = '''mutation createCar(\$input: CreateCarInput!){createCar(input: \$input){..._all_fields_Car}} ${fragsValues}''';
-      final variables = <String, dynamic>{
+      ].map((fragName) => __gl_fragmentMap__[fragName]!).join();
+      final __gl_query__ = '''mutation createCar(\$input: CreateCarInput!){createCar(input: \$input){..._all_fields_Car}} ${__gl_fragsValues__}''';
+      final __gl_variables__ = <String, dynamic>{
          'input': input.toJson(),
       };
 
-      final payload = GraphLinkPayload(query: query, operationName: operationName, variables: variables);
-      final response = await _adapter(json.encode(payload.toJson()));
-      Map<String, dynamic> result = jsonDecode(response);
-      if (result.containsKey("errors")) {
-        throw result["errors"].map((error) => GraphLinkError.fromJson(error)).toList();
+      final __gl_payload__ = GraphLinkPayload(query: __gl_query__, operationName: __gl_operationName__, variables: __gl_variables__);
+      final __gl_response__ = await __gl_adapter__(json.encode(__gl_payload__.toJson()));
+      Map<String, dynamic> __gl_result__ = jsonDecode(__gl_response__);
+      if (__gl_result__.containsKey("errors")) {
+        throw __gl_result__["errors"].map((error) => GraphLinkError.fromJson(error)).toList();
       }
-      var data = result["data"];
+      var __gl_data__ = __gl_result__["data"];
       await _invalidateByTags(["cars"]);
-      return CreateCarResponse.fromJson(data);
+      return CreateCarResponse.fromJson(__gl_data__);
 
    }
 }
 class _ResolverBase {
-   final Map<String, String> fragmentMap;
-   final GraphLinkCacheStore store;
-   final Map<String, _Lock> _tagLocks;
-   _ResolverBase(this.fragmentMap, this.store, this._tagLocks);
+   late final GraphLinkCacheStore __gl_store__;
+   late final Map<String, _Lock> __gl_tagLocks__;
+   _ResolverBase(GraphLinkCacheStore store, Map<String, _Lock> locks) {
+      this.__gl_store__ = store;
+      this.__gl_tagLocks__ = locks;
+   }
    Future<_GraphLinkCacheEntry?> _getFromCache(String key, List<String> tags, bool staleIfOffline) async {
-      var result = await store.get(key);
+      var result = await __gl_store__.get(key);
       if(result != null) {
          var entryMap = jsonDecode(result);
          var entry = _GraphLinkCacheEntry.fromJson(entryMap);
@@ -677,7 +683,7 @@ class _ResolverBase {
             if(staleIfOffline) {
                return entry.asStale();
             }
-            store.invalidate(key);
+            __gl_store__.invalidate(key);
             if(tags.isNotEmpty) {
                _removeKeyFromTags(key, tags);
             }
@@ -691,16 +697,16 @@ class _ResolverBase {
    Future<void> _invalidateByTags(List<String> tags) async {
       for (var tag in tags) {
          final tagKey = "${tagKeyPrefix}${tag}";
-         final lock = _tagLocks[tag]!;
+         final lock = __gl_tagLocks__[tag]!;
          await lock.synchronized(() async
          {
-            final data = await store.get(tagKey);
+            final data = await __gl_store__.get(tagKey);
             if(data != null) {
                final entry = _GraphLinkTagEntry.decode(data);
                for (var key in entry.keys) {
-                  await store.invalidate(key);
+                  await __gl_store__.invalidate(key);
                }
-               await store.invalidate(tagKey);
+               await __gl_store__.invalidate(tagKey);
             }
          }
          );
@@ -709,13 +715,13 @@ class _ResolverBase {
    Future<void> _addKeyToTags(String key, List<String> tags) async {
       for (var tag in tags) {
          final tagKey = "${tagKeyPrefix}${tag}";
-         final lock = _tagLocks[tag]!;
+         final lock = __gl_tagLocks__[tag]!;
          await lock.synchronized(() async
          {
-            final data = await store.get(tagKey);
+            final data = await __gl_store__.get(tagKey);
             final entry = data != null ? _GraphLinkTagEntry.decode(data) : _GraphLinkTagEntry({});
             entry.add(key);
-            await store.set(tagKey, entry.encode());
+            await __gl_store__.set(tagKey, entry.encode());
          }
          );
       }
@@ -723,17 +729,17 @@ class _ResolverBase {
    Future<void> _removeKeyFromTags(String key, List<String> tags) async {
       for (var tag in tags) {
          final tagKey = "${tagKeyPrefix}${tag}";
-         final lock = _tagLocks.putIfAbsent(tag, () => _Lock());
+         final lock = __gl_tagLocks__.putIfAbsent(tag, () => _Lock());
          await lock.synchronized(() async
          {
-            final data = await store.get(tagKey);
+            final data = await __gl_store__.get(tagKey);
             if(data != null) {
                final entry = _GraphLinkTagEntry.decode(data);
                entry.remove(key);
                if(entry.keys.isEmpty) {
-                  await store.invalidate(tagKey);
+                  await __gl_store__.invalidate(tagKey);
                } else {
-                  await store.set(tagKey, entry.encode());
+                  await __gl_store__.set(tagKey, entry.encode());
                }
             }
          }
@@ -742,8 +748,8 @@ class _ResolverBase {
    }
 }
 class GraphLinkClient {
-   final _fragmMap = <String, String>{};
-   final _tagLocks = <String, _Lock>{};
+   final __gl_fragmentMap__ = <String, String>{};
+   final __gl_tagLocks__ = <String, _Lock>{};
    late final GraphLinkQueries queries;
    late final GraphLinkMutations mutations;
    late final GraphLinkCacheStore store;
@@ -751,15 +757,15 @@ class GraphLinkClient {
       required Future<String> Function(String payload) adapter,
       GraphLinkCacheStore? store
    }) {
-      _fragmMap['_all_fields_Owner'] = 'fragment _all_fields_Owner on Owner{id name email cars{..._all_fields_Car}}';
-      _fragmMap['_all_fields_Car'] = 'fragment _all_fields_Car on Car{id make model year ownerId}';
+      __gl_fragmentMap__['_all_fields_Owner'] = 'fragment _all_fields_Owner on Owner{id name email cars{..._all_fields_Car}}';
+      __gl_fragmentMap__['_all_fields_Car'] = 'fragment _all_fields_Car on Car{id make model year ownerId}';
       this.store = store ?? InMemoryGraphLinkCacheStore();
       final tags = ["cars", "data", "persons"];
       for (var tag in tags) {
-         _tagLocks[tag] = _Lock();
+         __gl_tagLocks__[tag] = _Lock();
       }
-      queries = GraphLinkQueries(adapter, _fragmMap, this.store, _tagLocks);
-      mutations = GraphLinkMutations(adapter, _fragmMap, this.store, _tagLocks);
+      queries = GraphLinkQueries(adapter, __gl_fragmentMap__, this.store, __gl_tagLocks__);
+      mutations = GraphLinkMutations(adapter, __gl_fragmentMap__, this.store, __gl_tagLocks__);
    }
    GraphLinkClient.withHttp({
      required String url,

@@ -256,7 +256,6 @@ class GLParser {
       cleanProjectedInterfacesImplementations();
       addClientTypesToProjectedTypes();
       updateFragmentAllTypesDependencies();
-      generateViews();
       if (defaultCacheTTL != null) {
         applyDefaultCacheToQueries(defaultCacheTTL!);
       }

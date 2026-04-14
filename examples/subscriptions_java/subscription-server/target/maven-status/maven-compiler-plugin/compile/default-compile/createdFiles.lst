@@ -1,0 +1,6 @@
+dev/graphlink/demo/generated/types/Person.class
+dev/graphlink/demo/generated/controllers/PersonServiceController.class
+dev/graphlink/demo/DemoApplication.class
+dev/graphlink/demo/generated/types/Person$Builder.class
+dev/graphlink/demo/generated/services/PersonService.class
+dev/graphlink/demo/services/PersonServiceImpl.class
