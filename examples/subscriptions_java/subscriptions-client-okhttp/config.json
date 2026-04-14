@@ -1,0 +1,32 @@
+{
+    "schemaPaths": [
+        "../schema.graphql"
+    ],
+    "mode": "client",
+    "identityFields": [],
+    "typeMappings": {
+        "ID": "String",
+        "String": "String",
+        "Float": "double",
+        "Int": "int",
+        "Boolean": "bool",
+        "Null": "null"
+    },
+    "outputDir": "src/main/java/com/graphlink/generated",
+    "clientConfig": {
+        "java": {
+            "packageName": "com.graphlink.generated",
+            "generateAllFieldsFragments": true,
+            "nullableFieldsRequired": false,
+            "autoGenerateQueries": true,
+            "operationNameAsParameter": false,
+            "immutableInputFields": true,
+            "immutableTypeFields": true,
+            "inputAsRecord": true,
+            "typeAsRecord": true,
+            "wsAdapter": "okhttp",
+            "jsonCodec": "jackson",
+            "defaultAlias": "data"
+        }
+    }
+}

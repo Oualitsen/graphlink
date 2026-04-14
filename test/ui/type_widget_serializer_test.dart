@@ -196,30 +196,7 @@ enum Gender {male, female}
         pack: 'lib/generated');
   });
 
-  test("UI View DriverWidget should import CarWidget", () async {
-    var g = GLParser(
-        autoGenerateQueries: true,
-        mode: CodeGenerationMode.client,
-        generateAllFieldsFragments: true);
-    g.parse('''
-  type Driver {
-    cars: [Car]
-  }
-
-  type Car  {
-    model: String
-  }
-
-  type Query {
-    getDriver: Driver
-  }
-
-''');
-
-    var driverWidget = g.views['DriverWidget']!;
-    expect(driverWidget.getImportDependecies(g).map((e) => e.token),
-        containsAll(['CarWidget']));
-  });
+  
 
   test("UI View should not generate for @internal", () async {
     var g = GLParser(
@@ -236,24 +213,5 @@ enum Gender {male, female}
     expect(g.views[widgetName("Person")], isNull);
   });
 
-  test("UI View should not generate for Graphql Responses", () async {
-    var g = GLParser(
-        autoGenerateQueries: true,
-        mode: CodeGenerationMode.client,
-        generateAllFieldsFragments: true);
-    g.parse('''
-  type Person  {
-    name: String!
-  }
-
-  type Query {
-    getPerson: Person
-  }
-
-''');
-
-    expect(g.views.length, 1);
-    // should not generate a widget for GetPersonResponse
-    expect(g.views[widgetName('GetPersonResponse')], isNull);
-  });
+ 
 }

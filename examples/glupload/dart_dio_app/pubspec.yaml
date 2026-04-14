@@ -9,3 +9,4 @@ environment:
 dependencies:
   dio: ^5.9.2
   http_parser: ^4.0.0
+  web_socket_channel: ^3.0.3
