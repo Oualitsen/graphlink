@@ -138,6 +138,59 @@
   - Updated Java server example
 
 
-## 4.3.0 - 2026-04-04
+## 4.3.1 - 2026-04-04
   ### Fixes & improvements
   Fixes a bug immutableInputFields and immutableTypeFields for spring boot code generation.
+
+## 4.4.0 - 2026-04-14
+  ### New features
+  - **Injectable HTTP client** — `DefaultGraphLinkWebSocketAdapter` now accepts an
+    `HttpClient` (Java 11) or `OkHttpClient` (OkHttp) as a constructor argument,
+    allowing you to bring your own pre-configured client (proxy, SSL, timeouts, etc.).
+    The no-arg and headers-only constructors still work unchanged.
+
+  - **`DefaultGraphLinkWebSocketAdapter` reconnects by default** — the Dart adapter's
+    `reconnect` flag now defaults to `true`. Previously it defaulted to `false`,
+    requiring an explicit opt-in to enable automatic reconnection after a disconnect.
+
+  - **Safe generated variable names** — internal local variables emitted inside
+    generated client methods are now prefixed/suffixed (`__gl_name__`) to avoid
+    accidental collisions with user-defined argument names (e.g. a query argument
+    named `query` or `response` no longer shadows the internal variable).
+
+  - **MVC security context propagation** — new `useSpringSecurity: true` option in
+    `config.json` (`clientConfig.java`). When enabled (MVC mode only), the generated
+    controllers capture the `SecurityContext` before entering a `CompletableFuture`
+    lambda and restore it on the worker thread, so Spring Security's authentication
+    is available inside async service calls. Has no effect in reactive mode.
+
+  - **Forward mappings** — when a type uses `@glSkipOnServer(mapTo: "ServerType")`,
+    fields that exist verbatim on the server type (same name and structural type) are now
+    auto-forwarded in the generated controller without creating a service method.
+    Only fields absent from the server type, or explicitly annotated with `@glSkipOnServer`,
+    still get a full `@SchemaMapping` + service delegation.
+
+  - **Reactive Spring server** — new `reactive: true` option in `config.json` enables
+    Spring WebFlux-style controller generation. Controllers return `Mono`/`Flux` types
+    and file upload fields use `FilePart` instead of `MultipartFile`.
+
+  - **File upload support** — GraphQL multipart upload spec is now supported across all
+    three targets. Dart clients (http and Dio) receive a `GLUpload` type with a stream,
+    length, filename and mime type. Java clients get the equivalent `GLUpload` class.
+    Spring Boot controllers accept `MultipartFile` (MVC) or `FilePart` (reactive).
+
+  - **Input mappings (`@glMapsTo` / `@glMapField`)** — annotate a GraphQL input type
+    with `@glMapsTo(type: "JavaType")` to declare that it maps to an existing Java/Dart
+    class. Use `@glMapField(to: "fieldName")` on individual fields to rename them during
+    mapping. GraphLink validates all target types and field names at generation time and
+    emits a mapping constructor/method on the generated input class.
+
+  ### Fixes & improvements
+  - Validation code calls wrapped in `CompletableFuture`
+  - `@glSkipOnClient` / `@glSkipOnServer` applied to validations
+  - Completable future support in Spring controllers
+  - Optimized Spring service imports
+  - Fixed Java input `toJson` call on client
+  - Removed `@glArray` support
+  - Fixed default Dart WebSocket adapter
+  - Refactored GL mapping
