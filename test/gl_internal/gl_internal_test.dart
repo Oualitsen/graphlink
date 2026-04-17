@@ -12,7 +12,7 @@ void main() async {
       autoGenerateQueries: true,
     );
     g.parse('''
-${getClientObjects()}
+${getClientObjects('dynamic', 'Map<String, dynamic>')}
 
   type Person {
     name: String

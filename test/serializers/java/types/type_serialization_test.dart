@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:graphlink/src/serializers/language.dart';
+import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/spring_server_serializer.dart';
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';

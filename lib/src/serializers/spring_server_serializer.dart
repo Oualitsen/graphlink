@@ -19,7 +19,7 @@ import 'package:graphlink/src/model/token_info.dart';
 import 'package:graphlink/src/serializers/annotation_serializer.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/serializers/language.dart';
+import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/utils.dart';

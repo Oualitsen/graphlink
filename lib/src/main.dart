@@ -12,17 +12,19 @@ import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/serializers/client_serializers/dart_client_serializer.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/serializers/client_serializers/java_client_serializer.dart';
+import 'package:graphlink/src/serializers/client_serializers/typescript_client_serializer.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:graphlink/src/serializers/flutter_type_widget_serializer.dart';
 import 'package:graphlink/src/serializers/graphq_serializer.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
-import 'package:graphlink/src/serializers/language.dart';
+import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/spring_server_serializer.dart';
 import 'package:args/args.dart';
 import 'dart:convert';
 
 import 'package:graphlink/src/gl_grammar_io.dart' as grammar_io;
 import 'package:graphlink/src/gl_grammar_upload_extension.dart';
+import 'package:graphlink/src/serializers/typescript_serializer.dart';
 import 'package:graphlink/src/utils.dart';
 
 const String appVersion =
@@ -280,8 +282,10 @@ void handleGeneration(GeneratorConfig config) async {
     } else if (mode == CodeGenerationMode.client) {
       if (config.clientConfig?.java != null) {
         await generateJavaClientClasses(grammar, config, now);
-      } else {
-        await generateDartClientClasses(grammar, config, now);
+      } else if(config.clientConfig?.dart != null) {
+          await generateDartClientClasses(grammar, config, now);
+      } else if(config.clientConfig?.typescript != null) {
+          await generateTypeScriptClientClasses(grammar, config, now);
       }
     }
   } catch (ex, st) {
@@ -297,13 +301,20 @@ String? _buildExtraGql(GLParser parser, GeneratorConfig config) {
   if (parser.mode != CodeGenerationMode.client) return null;
   if (config.clientConfig?.java != null) {
     return [
-      getClientObjects("Java"),
+      getClientObjects("Object", "Map<String, Object>"),
       javaJsonEncoderDecorder,
       javaClientAdapterNoParamSync,
       javaGraphLinkWebSocketAdapter,  // scalars only now, no interface
     ].join();
   }
-  return getClientObjects("dart");
+  if(config.clientConfig?.dart != null) {
+    return getClientObjects("dynamic", "Map<String, dynamic>");
+  }
+
+  if(config.clientConfig?.typescript != null) {
+    return getClientObjects("unknown", "Record<string, unknown>");
+  }
+  return null;
 }
 
 GLParser createGrammar(GeneratorConfig config) {
@@ -316,25 +327,110 @@ GLParser createGrammar(GeneratorConfig config) {
   } else {
     final dart = config.clientConfig?.dart;
     final java = config.clientConfig?.java;
+    final ts = config.clientConfig?.typescript;
 
     return GLParser(
       mode: mode,
       typeMap: config.typeMappings!,
       identityFields: config.identityFields,
       generateAllFieldsFragments: dart?.generateAllFieldsFragments ??
-          java?.generateAllFieldsFragments ??
+          java?.generateAllFieldsFragments ?? ts?.generateAllFieldsFragments ??
           false,
       nullableFieldsRequired:
-          dart?.nullableFieldsRequired ?? java?.nullableFieldsRequired ?? false,
+          dart?.nullableFieldsRequired ?? java?.nullableFieldsRequired ??  false,
       autoGenerateQueries:
-          dart?.autoGenerateQueries ?? java?.autoGenerateQueries ?? false,
-      defaultAlias: dart?.defaultAlias,
+          dart?.autoGenerateQueries ?? java?.autoGenerateQueries ?? ts?.autoGenerateQueries ?? false,
+      defaultAlias: dart?.defaultAlias ?? java?.defaultAlias ?? ts?.defaultAlias,
       operationNameAsParameter: dart?.operationNameAsParameter ??
-          java?.operationNameAsParameter ??
+          java?.operationNameAsParameter ?? ts?.operationNameAsParameter ??
           false,
     );
   }
 }
+
+Future<Set<String>> generateTypeScriptClientClasses(
+    GLParser parser, GeneratorConfig config, DateTime started,
+    {String? pack}) async {
+  final serializer = TypeScriptSerializer(parser);
+  final clientSerializer = TypeScriptClientSerializer(parser, serializer);
+  final List<Future<File>> futures = [];
+  final destinationDir = config.outputDir;
+  const prefix = '';
+  print("parser.hasQueries = ${parser.hasQueries} ###");
+  parser.enums.forEach((k, def) {
+    var text = serializer.serializeEnumDefinition(def, "");
+    var r = writeToFile(
+      data: text,
+      fileName: serializer.getFileNameFor(def),
+      subdir: "enums",
+      imports: [],
+      destinationDir: destinationDir,
+    );
+    futures.add(r);
+  });
+
+  parser.inputs.forEach((k, def) {
+    var text = serializer.serializeInputDefinition(def, prefix);
+    var r = writeToFile(
+        data: text,
+        fileName: serializer.getFileNameFor(def),
+        subdir: "inputs",
+        imports: [],
+        destinationDir: destinationDir);
+    futures.add(r);
+  });
+
+  var allProjectedTypes = <String, GLTypeDefinition>{};
+  allProjectedTypes.addAll(parser.projectedTypes);
+  allProjectedTypes.addAll(parser.projectedInterfaces);
+  allProjectedTypes.forEach((k, def) {
+    final subdir = def is GLInterfaceDefinition ? "interfaces" : "types";
+
+    var text = serializer.serializeTypeDefinition(def, prefix);
+    var r = writeToFile(
+        data: text,
+        fileName: serializer.getFileNameFor(def),
+        subdir: subdir,
+        imports: [],
+        destinationDir: destinationDir);
+    futures.add(r);
+  });
+
+  futures.add(writeToFile(
+      data: serializer.serializeGlClass(clientSerializer.generateClient(prefix), importPrefix: prefix),
+      fileName: 'graph-link-client${clientSerializer.fileExtension}',
+      subdir: 'client',
+      imports: [],
+      destinationDir: destinationDir));
+
+  if (parser.hasUploadMutations) {
+    futures.add(writeToFile(
+        data: serializer.serializeGlClass(clientSerializer.generateUploadsFile(), importPrefix: prefix),
+        fileName: 'graph-link-uploads${clientSerializer.fileExtension}',
+        subdir: 'client',
+        imports: [],
+        destinationDir: destinationDir));
+  }
+
+  final tsConfig = config.clientConfig!.typescript!;
+  final adaptersModel = clientSerializer.generateAdaptersFile(tsConfig.httpAdapter);
+  if (adaptersModel != null) {
+    futures.add(writeToFile(
+        data: serializer.serializeGlClass(adaptersModel, importPrefix: prefix),
+        fileName: 'graph-link-adapters${clientSerializer.fileExtension}',
+        subdir: 'client',
+        imports: [],
+        destinationDir: destinationDir));
+  }
+  var result = await Future.wait(futures);
+  stdout.writeln(
+      "Generated ${futures.length} files in ${formatElapsedTime(started)}");
+  var paths = result.map((f) => f.path).toSet();
+  await cleanUpObsoleteFiles(paths);
+  return paths;
+}
+
+
 
 Future<Set<String>> generateDartClientClasses(
     GLParser parser, GeneratorConfig config, DateTime started,
@@ -455,15 +551,15 @@ Future<Set<String>> generateDartClientClasses(
 Future<Set<String>> generateJavaClientClasses(
     GLParser parser, GeneratorConfig config, DateTime started,
     {String? pack}) async {
-  final javaClientConfig = config.clientConfig?.java;
-  final jsonCodec = javaClientConfig?.jsonCodec ?? JavaJsonCodec.jackson;
+  final javaClientConfig = config.clientConfig?.java as JavaClientConfig;
+  final jsonCodec = javaClientConfig.jsonCodec ;
   final serializer = JavaSerializer(
     parser,
     generateJsonMethods: true,
-    immutableInputFields: javaClientConfig?.immutableInputFields ?? true,
-    immutableTypeFields: javaClientConfig?.immutableTypeFields ?? true,
-    inputsAsRecords: javaClientConfig?.inputAsRecord ?? false,
-    typesAsRecords: javaClientConfig?.typeAsRecord ?? false,
+    immutableInputFields: javaClientConfig.immutableInputFields ,
+    immutableTypeFields: javaClientConfig.immutableTypeFields,
+    inputsAsRecords: javaClientConfig.inputAsRecord,
+    typesAsRecords: javaClientConfig.typeAsRecord,
   );
   final clientSerializer = JavaClientSerializer(parser, serializer, jsonCodec: jsonCodec);
   final List<Future<File>> futures = [];

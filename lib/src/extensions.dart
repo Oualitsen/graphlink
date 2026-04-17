@@ -71,4 +71,12 @@ extension StringExt on String {
     );
     return snake.toLowerCase();
   }
+
+  String toKebabCase() {
+    final kebab = replaceAllMapped(
+      RegExp(r'([a-z0-9])([A-Z])'),
+      (Match m) => '${m[1]}-${m[2]}',
+    );
+    return kebab.toLowerCase();
+  }
 }

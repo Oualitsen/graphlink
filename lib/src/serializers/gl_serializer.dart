@@ -1,5 +1,4 @@
 import 'package:graphlink/src/model/gl_class_model.dart';
-import 'package:graphlink/src/model/gl_controller.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
@@ -11,7 +10,7 @@ import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
-import 'package:graphlink/src/serializers/language.dart';
+import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/utils.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/gl_grammar_maps_to_extension.dart';

@@ -1,7 +1,7 @@
 import 'package:graphlink/src/excpetions/parse_exception.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
-import 'package:graphlink/src/serializers/language.dart';
+import 'package:graphlink/src/serializers/code_generation_mode.dart';
 
 mixin GLDirectivesMixin {
   List<GLDirectiveValue> getDirectives({bool skipGenerated = false}) {

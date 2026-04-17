@@ -14,7 +14,7 @@ import 'package:graphlink/src/model/gl_schema.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/gl_union.dart';
-import 'package:graphlink/src/serializers/language.dart';
+import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/utils.dart';
 
 const _skippedDirectives = {

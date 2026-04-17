@@ -1,0 +1,27 @@
+{
+  "schemaPaths": [
+    "../graphlq-dummy-server-subscription/schema.graphql"
+  ],
+  "mode": "client",
+  "identityFields": [],
+  "typeMappings": {
+    "ID": "string",
+    "String": "string",
+    "Float": "number",
+    "Int": "number",
+    "Boolean": "boolean",
+    "Null": "null"
+  },
+  "outputDir": "src/generated",
+  "clientConfig": {
+    "typescript": {
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "operationNameAsParameter": false,
+      "immutableTypeFields": true,
+      "optionalNullableInputFields": true,
+      "generateDefaultWsAdapter": true,
+      "httpAdapter": "fetch"
+    }
+  }
+}
