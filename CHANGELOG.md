@@ -180,7 +180,7 @@
     Spring Boot controllers accept `MultipartFile` (MVC) or `FilePart` (reactive).
 
   - **Input mappings (`@glMapsTo` / `@glMapField`)** — annotate a GraphQL input type
-    with `@glMapsTo(type: "JavaType")` to declare that it maps to an existing Java/Dart
+    with `@glMapsTo(type: "GraphqlType")` to declare that it maps to an existing Java/Dart
     class. Use `@glMapField(to: "fieldName")` on individual fields to rename them during
     mapping. GraphLink validates all target types and field names at generation time and
     emits a mapping constructor/method on the generated input class.

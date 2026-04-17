@@ -1,0 +1,16 @@
+/Users/ramdane/projects/graphlink/examples/graphlq-dummy-server-subscription/src/main/java/dev/graphlink/demo/DemoApplication.java
+/Users/ramdane/projects/graphlink/examples/graphlq-dummy-server-subscription/src/main/java/dev/graphlink/demo/GraphQlConfig.java
+/Users/ramdane/projects/graphlink/examples/graphlq-dummy-server-subscription/src/main/java/dev/graphlink/demo/LoggingWebSocketSession.java
+/Users/ramdane/projects/graphlink/examples/graphlq-dummy-server-subscription/src/main/java/dev/graphlink/demo/WsLoggingConfig.java
+/Users/ramdane/projects/graphlink/examples/graphlq-dummy-server-subscription/src/main/java/dev/graphlink/demo/generated/controllers/CarServiceController.java
+/Users/ramdane/projects/graphlink/examples/graphlq-dummy-server-subscription/src/main/java/dev/graphlink/demo/generated/controllers/PersonServiceController.java
+/Users/ramdane/projects/graphlink/examples/graphlq-dummy-server-subscription/src/main/java/dev/graphlink/demo/generated/inputs/CreateCarInput.java
+/Users/ramdane/projects/graphlink/examples/graphlq-dummy-server-subscription/src/main/java/dev/graphlink/demo/generated/inputs/CreatePersonInput.java
+/Users/ramdane/projects/graphlink/examples/graphlq-dummy-server-subscription/src/main/java/dev/graphlink/demo/generated/interfaces/Vehicle.java
+/Users/ramdane/projects/graphlink/examples/graphlq-dummy-server-subscription/src/main/java/dev/graphlink/demo/generated/services/CarService.java
+/Users/ramdane/projects/graphlink/examples/graphlq-dummy-server-subscription/src/main/java/dev/graphlink/demo/generated/services/PersonService.java
+/Users/ramdane/projects/graphlink/examples/graphlq-dummy-server-subscription/src/main/java/dev/graphlink/demo/generated/types/Car.java
+/Users/ramdane/projects/graphlink/examples/graphlq-dummy-server-subscription/src/main/java/dev/graphlink/demo/generated/types/Moto.java
+/Users/ramdane/projects/graphlink/examples/graphlq-dummy-server-subscription/src/main/java/dev/graphlink/demo/generated/types/Person.java
+/Users/ramdane/projects/graphlink/examples/graphlq-dummy-server-subscription/src/main/java/dev/graphlink/demo/services/CarServiceImpl.java
+/Users/ramdane/projects/graphlink/examples/graphlq-dummy-server-subscription/src/main/java/dev/graphlink/demo/services/PersonServiceImpl.java

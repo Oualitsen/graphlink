@@ -30,7 +30,7 @@ const _plainSchema = '''
 
 JavaClientSerializer _serializer(String schema, {JavaJsonCodec codec = JavaJsonCodec.jackson}) {
   final fullSchema = [
-    getClientObjects("Java"),
+    getClientObjects("Object", "Map<String, Object>"),
     javaJsonEncoderDecorder,
     javaClientAdapterNoParamSync,
     javaGraphLinkWebSocketAdapter,

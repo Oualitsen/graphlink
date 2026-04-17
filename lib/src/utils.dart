@@ -4,7 +4,7 @@ import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_directives_mixin.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
-import 'package:graphlink/src/serializers/language.dart';
+import 'package:graphlink/src/serializers/code_generation_mode.dart';
 
 String serializeListText(List<String>? list,
     {String join = ",", bool withParenthesis = true}) {

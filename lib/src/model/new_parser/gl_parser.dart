@@ -18,7 +18,7 @@ import 'package:graphlink/src/model/new_parser/gl_lexter_token.dart';
 import 'package:graphlink/src/model/gl_logical_file.dart';
 import 'package:graphlink/src/model/new_parser/gl_token_type.dart';
 import 'package:graphlink/src/model/token_info.dart';
-import 'package:graphlink/src/serializers/language.dart';
+import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/utils.dart';
 import 'package:logger/logger.dart';
 
