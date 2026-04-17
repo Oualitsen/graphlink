@@ -97,13 +97,10 @@ public interface GraphLinkWebSocketAdapter {
 }
 ''';
 
-String getClientObjects([String lang = 'Dart']) {
-  String dynamicValue = "dynamic";
-  if (lang == "Java") {
-    dynamicValue = "Object";
-  }
+String getClientObjects(String dynamicValue, String mapValue) {
+ 
   return '''
-scalar gqlMapStrObj ${glExternal}(glClass: "Map<String, ${dynamicValue}>")
+scalar gqlMapStrObj ${glExternal}(glClass: "${mapValue}")
 scalar dynamicValue ${glExternal}(glClass: "${dynamicValue}")
 
 

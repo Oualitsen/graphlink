@@ -5,7 +5,7 @@ import 'package:graphlink/src/model/gl_token_with_fields.dart';
 import 'package:graphlink/src/serializers/client_serializers/dart_client_serializer.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
-import 'package:graphlink/src/serializers/language.dart';
+import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/spring_server_serializer.dart';
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
@@ -535,7 +535,7 @@ type Cat implements Animal {
     var serilazer = DartSerializer(g);
     var clientGen = DartClientSerializer(g, serilazer);
     final text = '''
-  ${getClientObjects("dart")}
+  ${getClientObjects("dynamic", "Map<String, dynamic>")}
 
 type Cat  {
   name: String
@@ -566,7 +566,7 @@ type Cat  {
     var clientGen = DartClientSerializer(g, serilazer);
 
     g.parse('''
-  ${getClientObjects()}
+  ${getClientObjects('dynamic', 'Map<String, dynamic>')}
 
 type Cat  {
   name: String
@@ -595,7 +595,7 @@ type Cat  {
     var clientGen = DartClientSerializer(g, serilazer);
 
     g.parse('''
-  ${getClientObjects()}
+  ${getClientObjects('dynamic', 'Map<String, dynamic>')}
 enum Gender {male, female}
 type Cat  {
   name: String
@@ -619,7 +619,7 @@ type Query {
     var clientGen = DartClientSerializer(g, serilazer);
 
     g.parse('''
-  ${getClientObjects()}
+  ${getClientObjects('dynamic', 'Map<String, dynamic>')}
 type Cat  {
   name: String
 }
@@ -646,7 +646,7 @@ type Subscrtipion {
         autoGenerateQueries: true);
 
     g.parse('''
-  ${getClientObjects()}
+  ${getClientObjects('dynamic', 'Map<String, dynamic>')}
 enum Gender {male, female}
 type Person  {
   name: String
@@ -666,7 +666,7 @@ type Person  {
         autoGenerateQueries: true);
 
     g.parse('''
-  ${getClientObjects()}
+  ${getClientObjects('dynamic', 'Map<String, dynamic>')}
 
   directive @Id(
     glClass: String = "Id",
@@ -695,7 +695,7 @@ type Person  {
         autoGenerateQueries: true);
 
     g.parse('''
-  ${getClientObjects()}
+  ${getClientObjects('dynamic', 'Map<String, dynamic>')}
 
   directive @FieldNameConstants(
     glAnnotation: Boolean = true
@@ -720,7 +720,7 @@ type Person @FieldNameConstants  {
     final GLParser g = GLParser(mode: CodeGenerationMode.server);
 
     g.parse('''
-  ${getClientObjects()}
+  ${getClientObjects('dynamic', 'Map<String, dynamic>')}
 
   directive @FieldNameConstants(
     glAnnotation: Boolean = true
@@ -762,7 +762,7 @@ type Query {
     final GLParser g = GLParser(mode: CodeGenerationMode.server);
 
     g.parse('''
-  ${getClientObjects()}
+  ${getClientObjects('dynamic', 'Map<String, dynamic>')}
 
   type PersonCar @glSkipOnServer(mapTo: "Person") {
     person: Person!
@@ -788,7 +788,7 @@ type Query {
     final GLParser g = GLParser(mode: CodeGenerationMode.server);
 
     g.parse('''
-  ${getClientObjects()}
+  ${getClientObjects('dynamic', 'Map<String, dynamic>')}
 
   type PersonCar @glSkipOnServer(mapTo: "Person") {
     person: Person!
@@ -827,7 +827,7 @@ type Query {
     final GLParser g = GLParser(mode: CodeGenerationMode.server);
 
     g.parse('''
-  ${getClientObjects()}
+  ${getClientObjects('dynamic', 'Map<String, dynamic>')}
   type Person {
     firstName: String
     lastName: String
@@ -852,7 +852,7 @@ type Query {
     final GLParser g = GLParser(mode: CodeGenerationMode.server);
 
     g.parse('''
-  ${getClientObjects()}
+  ${getClientObjects('dynamic', 'Map<String, dynamic>')}
   type ConversationUnread @glSkipOnServer(mapTo: "ConversationView") {
     view: ConversationView!
     unread: Int!
@@ -881,7 +881,7 @@ type Query {
     final GLParser g = GLParser(mode: CodeGenerationMode.server);
 
     g.parse('''
-  ${getClientObjects()}
+  ${getClientObjects('dynamic', 'Map<String, dynamic>')}
   
 
   type Person  {
@@ -908,7 +908,7 @@ type Query {
     final GLParser g = GLParser(mode: CodeGenerationMode.server);
 
     g.parse('''
-  ${getClientObjects()}
+  ${getClientObjects('dynamic', 'Map<String, dynamic>')}
   
 
   type Person  {
@@ -935,7 +935,7 @@ type Query {
     final GLParser g = GLParser(mode: CodeGenerationMode.server);
 
     g.parse('''
-  ${getClientObjects()}
+  ${getClientObjects('dynamic', 'Map<String, dynamic>')}
   
   interface BasicEntity {
     id: ID!
@@ -964,7 +964,7 @@ type Query {
     final GLParser g = GLParser(mode: CodeGenerationMode.server);
 
     g.parse('''
-  ${getClientObjects()}
+  ${getClientObjects('dynamic', 'Map<String, dynamic>')}
   
 
   type Person  {

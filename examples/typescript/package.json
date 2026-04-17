@@ -1,0 +1,16 @@
+{
+  "name": "graphlink-typescript-example",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "generate": "dart run main.dart --config config.json",
+    "dev": "tsx src/main.ts",
+    "build": "tsc",
+    "start": "node dist/main.js"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

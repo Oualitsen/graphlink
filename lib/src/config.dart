@@ -1,6 +1,8 @@
-import 'package:graphlink/src/serializers/language.dart';
+import 'package:graphlink/src/serializers/code_generation_mode.dart';
 
 enum DartHttpAdapter { http, dio, none }
+
+enum TypeScriptHttpAdapter { fetch, axios, none }
 
 enum JavaWsAdapter { java11, okhttp, none }
 
@@ -14,7 +16,6 @@ class GeneratorConfig {
   final String outputDir;
   final ServerConfig? serverConfig;
   final ClientConfig? clientConfig;
-
   CodeGenerationMode getMode() {
     if (mode == "client") {
       return CodeGenerationMode.client;
@@ -125,14 +126,17 @@ class SpringServerConfig {
 class ClientConfig {
   final DartClientConfig? dart;
   final JavaClientConfig? java;
+  final TypeScriptClientConfig? typescript;
 
-  ClientConfig({this.dart, this.java})
-      : assert(dart != null || java != null, 'ClientConfig must have at least one of dart or java');
+  ClientConfig({this.dart, this.java, this.typescript})
+      : assert(dart != null || java != null || typescript != null,
+            'ClientConfig must have at least one of dart, java, or typescript');
 
   factory ClientConfig.fromJson(Map<String, dynamic> json) {
     return ClientConfig(
       dart: json['dart'] != null ? DartClientConfig.fromJson(json['dart']) : null,
       java: json['java'] != null ? JavaClientConfig.fromJson(json['java']) : null,
+      typescript: json['typescript'] != null ? TypeScriptClientConfig.fromJson(json['typescript']) : null,
     );
   }
 }
@@ -205,6 +209,7 @@ class JavaClientConfig {
   final bool typeAsRecord;
   final JavaWsAdapter wsAdapter;
   final JavaJsonCodec jsonCodec;
+  final String? defaultAlias;
 
   JavaClientConfig({
     required this.packageName,
@@ -218,6 +223,7 @@ class JavaClientConfig {
     this.typeAsRecord = false,
     this.wsAdapter = JavaWsAdapter.java11,
     this.jsonCodec = JavaJsonCodec.jackson,
+    this.defaultAlias,
   });
 
   factory JavaClientConfig.fromJson(Map<String, dynamic> json) {
@@ -231,6 +237,7 @@ class JavaClientConfig {
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
       inputAsRecord: (json['inputAsRecord'] as bool?) ?? false,
       typeAsRecord: (json['typeAsRecord'] as bool?) ?? false,
+      defaultAlias: json['defaultAlias'],
       wsAdapter: JavaWsAdapter.values.firstWhere(
         (e) => e.name == json['wsAdapter'],
         orElse: () => JavaWsAdapter.java11,
@@ -242,3 +249,42 @@ class JavaClientConfig {
     );
   }
 }
+
+class TypeScriptClientConfig {
+  final bool generateAllFieldsFragments;
+  final bool autoGenerateQueries;
+  final bool operationNameAsParameter;
+  final bool immutableTypeFields;
+  final bool optionalNullableInputFields;
+  final bool generateDefaultWsAdapter;
+  final TypeScriptHttpAdapter httpAdapter;
+  final String? defaultAlias;
+
+  TypeScriptClientConfig({
+    this.generateAllFieldsFragments = false,
+    this.autoGenerateQueries = false,
+    this.operationNameAsParameter = false,
+    this.immutableTypeFields = true,
+    this.optionalNullableInputFields = true,
+    this.generateDefaultWsAdapter = true,
+    this.httpAdapter = TypeScriptHttpAdapter.fetch,
+    this.defaultAlias,
+  });
+
+  factory TypeScriptClientConfig.fromJson(Map<String, dynamic> json) {
+    return TypeScriptClientConfig(
+      generateAllFieldsFragments: (json['generateAllFieldsFragments'] as bool?) ?? false,
+      autoGenerateQueries: (json['autoGenerateQueries'] as bool?) ?? false,
+      operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
+      immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
+      optionalNullableInputFields: (json['optionalNullableInputFields'] as bool?) ?? true,
+      generateDefaultWsAdapter: (json['generateDefaultWsAdapter'] as bool?) ?? true,
+      httpAdapter: TypeScriptHttpAdapter.values.firstWhere(
+        (e) => e.name == json['httpAdapter'],
+        orElse: () => TypeScriptHttpAdapter.fetch,
+      ),
+      defaultAlias: json['defaultAlias'],
+    );
+  }
+}
+
