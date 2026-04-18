@@ -213,6 +213,7 @@ void main() async {
 ''');
 
     var serializer = DartSerializer(g);
+    print(g.projectedInterfaces.keys);
     var iface1 = g.projectedInterfaces['BasicEntity_CreationDateId']!;
     var iface2 = g.projectedInterfaces['BasicEntity_Id']!;
     expect(

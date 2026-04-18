@@ -706,8 +706,8 @@ extension GLGrammarExtension on GLParser {
     });
   }
 
-  void updateInterfaceCommonFields() {
-    for (var i in tempProjectedInterfaces.values) {
+  void _updateInterfaceCommonFields(List<GLInterfaceDefinition> definitions) {
+    for (var i in definitions) {
       var commonFields = _getCommonInterfaceFields(i);
       for (var cf in commonFields) {
         i.addField(cf);
@@ -715,16 +715,15 @@ extension GLGrammarExtension on GLParser {
     }
   }
 
-  void fillProjectedInterfaces() {
-    for (var iface in tempProjectedInterfaces.values) {
+  void _fillProjectedInterfaces(List<GLInterfaceDefinition> interfaces) {
+    for (var iface in interfaces) {
       var projections = iface.fields.map((field) => GLProjection(
           fragmentName: null,
           token: field.name,
           alias: null,
           block: null,
           directives: []));
-      var newName =
-          _generateName(iface.derivedFromType!.token, projections, []);
+      var newName = _generateName(iface.derivedFromType!.token, projections, []);
       var newIface = GLInterfaceDefinition(
         name: iface.tokenInfo.ofNewName(newName.value),
         nameDeclared: newName.declared,
@@ -820,7 +819,12 @@ extension GLGrammarExtension on GLParser {
     });
 
     allEmenets.where((e) => e.projectedTypeKey != null).forEach((element) {
-      element.projectedType = projectedTypes[element.projectedTypeKey!]!;
+      var returnTypeToken = element.returnType.token;
+      if(interfaces.containsKey(returnTypeToken)) {
+        element.projectedType = projectedInterfaces[element.projectedTypeKey!]!;
+      }else {
+        element.projectedType = projectedTypes[element.projectedTypeKey!]!;
+      }
     });
 
     queries.forEach((key, query) {
@@ -1109,12 +1113,12 @@ extension GLGrammarExtension on GLParser {
   }) {
     if (type is GLInterfaceDefinition) {
       var implementationTypes = getTypesImplementing(type);
-      GLTypeDefinition? result;
+      TypeWithInterface? result;
+      final couples =  <TypeWithInterface>[];
       for (var it in implementationTypes) {
         var projections = _collectProjection(projectionMap, it.token);
         if (projections.isNotEmpty) {
-          /// when it is an interface, createProjectedTypeOnType will return the same interface, so this loop is safe
-          /// even if it does not look safe at first sight.
+          
           result = createProjectedTypeOnType(
             type: type,
             projectionMap: projectionMap,
@@ -1123,19 +1127,30 @@ extension GLGrammarExtension on GLParser {
             /// @TODO think about passing directives from inline fragments
             onTypeName: it.token,
           );
+          couples.add(result);
+          
         }
       }
       if (result != null) {
-        return result;
+        final interfaces = couples.expand((e) => e.interfaces).toList();
+        _updateInterfaceCommonFields(interfaces);
+        _fillProjectedInterfaces(interfaces);
+        var interface =  result.type.interfaces.first;
+        return interface;
       }
     }
 
-    return createProjectedTypeOnType(
+    var result = createProjectedTypeOnType(
       type: type,
       projectionMap: projectionMap,
       directives: directives,
       onTypeName: type.token,
     );
+    if(result.interfaces.isNotEmpty ) {
+       _updateInterfaceCommonFields(result.interfaces);
+      _fillProjectedInterfaces(result.interfaces);
+    }
+    return result.type;
   }
 
   GLInterfaceDefinition _createNewInterface(GLInterfaceDefinition original) {
@@ -1163,7 +1178,7 @@ extension GLGrammarExtension on GLParser {
     );
   }
 
-  GLTypeDefinition createProjectedTypeOnType({
+  TypeWithInterface createProjectedTypeOnType({
     required GLTypeDefinition type,
     required Map<String, GLProjection> projectionMap,
     required List<GLDirectiveValue> directives,
@@ -1185,13 +1200,15 @@ extension GLGrammarExtension on GLParser {
     }
     var name = _generateName(onTypeName, projections.values, directives);
     var newType = _createNewType(name, result, directives, realType);
+    final interfaceList = <GLInterfaceDefinition>[];
     for (var iface in realType.interfaces) {
-      var newInface = _createNewInterface(iface);
-      tempProjectedInterfaces[newInface.token] = newInface;
-      newInface.addImplementation(newType);
+      var interface = _createNewInterface(iface);
+      interface.addImplementation(newType);
+      interfaceList.add(interface);
     }
 
-    return addToProjectedTypes(newType);
+    var resultType = addToProjectedTypes(newType);
+    return TypeWithInterface(type: resultType, interfaces: interfaceList);
   }
 
   Map<String, GLProjection> _collectProjection(
@@ -1335,4 +1352,11 @@ class GeneratedTypeName {
   final bool declared;
 
   GeneratedTypeName(this.value, this.declared);
+}
+
+
+class TypeWithInterface {
+  final List<GLInterfaceDefinition> interfaces;
+  final GLTypeDefinition type;
+  TypeWithInterface({required this.type, required this.interfaces});
 }
