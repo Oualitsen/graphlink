@@ -138,7 +138,6 @@ class GLParser {
   final Map<String, GLEnumDefinition> enums = {};
   final Map<String, GLTypeDefinition> projectedTypes = {};
   final Map<String, GLInterfaceDefinition> projectedInterfaces = {};
-  final Map<String, GLInterfaceDefinition> tempProjectedInterfaces = {};
   final Map<String, GLDirectiveDefinition> directiveDefinitions = {};
   final Map<String, GLService> services = {};
   final Map<String, GLController> controllers = {};
@@ -251,8 +250,6 @@ class GLParser {
       checkUploadScalarUsage();
       checkUploadListDepth();
       createProjectedTypes();
-      updateInterfaceCommonFields();
-      fillProjectedInterfaces();
       cleanProjectedInterfacesImplementations();
       addClientTypesToProjectedTypes();
       updateFragmentAllTypesDependencies();

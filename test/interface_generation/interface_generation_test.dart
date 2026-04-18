@@ -14,7 +14,6 @@ void main() async {
         GLParser(generateAllFieldsFragments: true, autoGenerateQueries: true);
 
     g.parse(text);
-
     expect(
         g.projectedInterfaces.keys, containsAll(["BasicEntity", "UserBase"]));
     var userBase = g.projectedInterfaces["UserBase"]!;
