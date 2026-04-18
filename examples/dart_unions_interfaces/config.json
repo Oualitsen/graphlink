@@ -1,0 +1,31 @@
+{
+    "schemaPaths": [
+        "schema/*.gql"
+    ],
+    "mode": "client",
+    "identityFields": [],
+    "typeMappings": {
+        "ID": "String",
+        "String": "String",
+        "Float": "double",
+        "Int": "int",
+        "Boolean": "bool",
+        "Null": "null"
+    },
+    "outputDir": "lib/generated",
+    "clientConfig": {
+        "dart": {
+            "packageName": "graphlink_dart_unions_interfaces",
+            "generateAllFieldsFragments": true,
+            "nullableFieldsRequired": false,
+            "autoGenerateQueries": false,
+            "autoGenerateQueriesDefaultAlias": "data",
+            "operationNameAsParameter": false,
+            "generateUiTypes": false,
+            "generateUiInputs": false,
+            "immutableInputFields": true,
+            "immutableTypeFields": true,
+            "httpAdapter": "dio"   
+        }
+    }
+}

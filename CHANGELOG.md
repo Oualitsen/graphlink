@@ -194,3 +194,7 @@
   - Removed `@glArray` support
   - Fixed default Dart WebSocket adapter
   - Refactored GL mapping
+
+## 4.4.1 - 2026-04-19
+  ### Fixes
+  - Fixed deserialization of query responses when the return type is an interface or union
