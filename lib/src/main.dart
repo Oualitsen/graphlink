@@ -110,6 +110,17 @@ clientConfig.java
   inputAsRecord                   bool    Generate inputs as Java records         [false]
   typeAsRecord                    bool    Generate types as Java records          [false]
 
+clientConfig.typescript
+  generateAllFieldsFragments      bool    Generate _all_fields fragments          [false]
+  autoGenerateQueries             bool    Auto-generate queries from schema        [false]
+  autoGenerateQueriesDefaultAlias string  Default alias for auto-generated queries
+  operationNameAsParameter        bool    Pass operation name as a parameter      [false]
+  immutableTypeFields             bool    Generate type fields as final           [true]
+  optionalNullableInputFields     bool    Nullable input fields are optional      [true]
+  generateDefaultWsAdapter        bool    Generate default WebSocket adapter      [true]
+  observables                     bool    Use RxJS observables instead of promises [false]
+  httpAdapter                     string  HTTP adapter: "fetch" | "axios" | "none" [fetch]
+
 ━━ mode: server ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 serverConfig.spring
