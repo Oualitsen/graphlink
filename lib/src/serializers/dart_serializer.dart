@@ -91,17 +91,17 @@ class DartSerializer extends GLSerializer {
   }
 
   @override
-  String doSerializeField(GLField def, bool immutable) {
+  String doSerializeField(GLField def, bool immutable, bool isTypeField) {
     final type = def.type;
     final name = def.name;
-    final hasInculeOrSkipDiretives = def.hasInculeOrSkipDiretives;
+    final forceNullable = isTypeField && (def.hasInculeOrSkipDiretives || forceFieldNullable);
     final builder = StringBuffer(serializeDecorators(def.getDirectives()));
     if (immutable) {
       builder.write("final ");
     } else {
       builder.write(" ");
     }
-    builder.write("${serializeType(type, hasInculeOrSkipDiretives)} $name;");
+    builder.write("${serializeType(type, forceNullable)} $name;");
     return builder.toString();
   }
 
@@ -130,7 +130,7 @@ class DartSerializer extends GLSerializer {
     final mappingMethods = generateMappingMethods(def);
     var inputClass =
         codeGenUtils.createClass(className: def.token, statements: [
-      ...fields.map((e) => serializeField(e, true)),
+      ...fields.map((e) => serializeField(e, true, false)),
       codeGenUtils.createMethod(
           methodName: def.token,
           namedArguments: true,
@@ -517,7 +517,7 @@ class DartSerializer extends GLSerializer {
       className: token,
       baseClassNames: interfaceNames.toList(),
       statements: [
-        ...fields.map((e) => serializeField(e, true)),
+        ...fields.map((e) => serializeField(e, true, true)),
         codeGenUtils.createMethod(
             methodName: token,
             namedArguments: false,

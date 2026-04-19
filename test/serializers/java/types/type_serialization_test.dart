@@ -80,7 +80,7 @@ void main() {
     var user = g.getTypeByName("User")!;
 
     var idField = user.fields.where((f) => f.name.token == "id").first;
-    var id = javaSerialzer.serializeField(idField, false);
+    var id = javaSerialzer.serializeField(idField, false, true);
     expect(
         id, stringContainsInOrder(["@Getter", "@Setter", "private String id"]));
 
@@ -109,7 +109,7 @@ void main() {
     var javaSerialzer = JavaSerializer(g);
     var user = g.getTypeByName("User")!;
     var idField = user.fields.where((f) => f.name.token == "id").first;
-    var id = javaSerialzer.serializeField(idField, false);
+    var id = javaSerialzer.serializeField(idField, false, true);
     expect(id, "private String id;");
   });
 

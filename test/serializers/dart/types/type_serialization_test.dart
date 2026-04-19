@@ -102,6 +102,25 @@ void main() {
     );
   });
 
+  test("Dart server mode: non-null type field is generated as nullable", () {
+    final g = GLParser(identityFields: [], mode: CodeGenerationMode.server);
+    g.parse('type Product { name: String! }');
+
+    final product = g.getTypeByName("Product")!;
+    final result = DartSerializer(g).serializeTypeDefinition(product, "");
+    expect(result, contains("String? name"));
+  });
+
+  test("Dart server mode: input non-null field stays non-nullable", () {
+    final g = GLParser(identityFields: [], mode: CodeGenerationMode.server);
+    g.parse('input ProductInput { name: String! }');
+
+    final input = g.inputs["ProductInput"]!;
+    final result = DartSerializer(g).serializeInputDefinition(input, "");
+    expect(result, contains("String name"));
+    expect(result, isNot(contains("String? name")));
+  });
+
   test("Dart interface serialization", () {
     final GLParser g = GLParser(identityFields: ["id"]);
     final text =

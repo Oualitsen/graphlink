@@ -19,6 +19,13 @@ abstract class GLSerializer {
   final GLParser grammar;
   late final CodeGenerationMode mode;
   bool get generateJsonMethods;
+
+  /// When `true`, type fields should be generated as nullable regardless of
+  /// the schema declaration. Required in server mode because a GraphQL client
+  /// may request only a subset of fields, so resolvers cannot guarantee every
+  /// field is populated.
+  bool get forceFieldNullable => mode == CodeGenerationMode.server;
+
   GLSerializer(this.grammar) : mode = grammar.mode;
 
   String serializeEnumDefinition(GLEnumDefinition def, String importPrefix) {
@@ -41,14 +48,14 @@ abstract class GLSerializer {
 
   String doSerializeEnumValue(GLEnumValue value);
 
-  String serializeField(GLField def, bool immutable) {
+  String serializeField(GLField def, bool immutable, bool isTypeField) {
     if (shouldSkipSerialization(directives: def.getDirectives(), mode: mode)) {
       return "";
     }
-    return doSerializeField(def, immutable);
+    return doSerializeField(def, immutable, isTypeField);
   }
 
-  String doSerializeField(GLField def, bool immutable);
+  String doSerializeField(GLField def, bool immutable, bool isTypeField);
   String serializeType(GLType def, bool forceNullable);
 
   String serializeInputDefinition(GLInputDefinition def, String importPrefix) {
