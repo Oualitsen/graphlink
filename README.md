@@ -50,7 +50,7 @@ One `.graphql` file drives the Dart client, the Java client, and the Spring Boot
 | Flutter client | Stable |
 | Java client | Stable |
 | Spring Boot server | Stable |
-| TypeScript client | In development |
+| TypeScript client | Stable |
 | Express / Node.js | Planned |
 | Go, Kotlin | Planned |
 
