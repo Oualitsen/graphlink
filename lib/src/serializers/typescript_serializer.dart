@@ -98,10 +98,10 @@ class TypeScriptSerializer extends GLSerializer {
   /// [immutable] == false → input context: `name?: Type | null;` (when nullable
   ///                        and [optionalNullableInputFields] is true)
   @override
-  String doSerializeField(GLField def, bool immutable) {
+  String doSerializeField(GLField def, bool immutable, bool isTypeField) {
     final type = def.type;
     final name = def.name;
-    final forceNullable = def.hasInculeOrSkipDiretives;
+    final forceNullable = isTypeField && (def.hasInculeOrSkipDiretives || forceFieldNullable);
     final tsType = serializeType(type, forceNullable);
 
     if (!immutable && (type.nullable || forceNullable) && optionalNullableInputFields) {
@@ -119,7 +119,7 @@ class TypeScriptSerializer extends GLSerializer {
     final fields = def.getSerializableFields(grammar.mode);
     return codeGenUtils.createInterface(
       interfaceName: def.token,
-      fields: fields.map((f) => serializeField(f, false)).toList(),
+      fields: fields.map((f) => serializeField(f, false, false)).toList(),
     );
   }
 
@@ -145,7 +145,7 @@ class TypeScriptSerializer extends GLSerializer {
     final fields = def.getSerializableFields(grammar.mode);
     return codeGenUtils.createInterface(
       interfaceName: def.token,
-      fields: fields.map((f) => serializeField(f, true)).toList(),
+      fields: fields.map((f) => serializeField(f, true, true)).toList(),
     );
   }
 
