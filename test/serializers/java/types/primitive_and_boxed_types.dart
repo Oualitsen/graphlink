@@ -107,8 +107,8 @@ void main() {
     var age = person.fields.where((f) => f.name.token == "age").first;
     var age2 = person.fields.where((f) => f.name.token == "age2").first;
 
-    var ageSerial = javaSerialzer.serializeField(age, false);
-    var age2Serial = javaSerialzer.serializeField(age2, false);
+    var ageSerial = javaSerialzer.serializeField(age, false, true);
+    var age2Serial = javaSerialzer.serializeField(age2, false, true);
     expect(ageSerial, "private Integer age;");
     expect(age2Serial, "private int age2;");
   });

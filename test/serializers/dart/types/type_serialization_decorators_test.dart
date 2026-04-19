@@ -21,10 +21,10 @@ void main() {
     var nameField = user.fields.where((f) => f.name.token == "name").first;
     var middleNameField =
         user.fields.where((f) => f.name.token == "middleName").first;
-    var id = dartSerialzer.serializeField(idField, true);
-    var nameSerial = dartSerialzer.serializeField(nameField, true);
+    var id = dartSerialzer.serializeField(idField, true, true);
+    var nameSerial = dartSerialzer.serializeField(nameField, true, true);
     var middleNameFieldSerial =
-        dartSerialzer.serializeField(middleNameField, true);
+        dartSerialzer.serializeField(middleNameField, true, true);
     expect(
         id, stringContainsInOrder(["@Getter", "@Setter", "final String id;"]));
     expect(nameSerial,
