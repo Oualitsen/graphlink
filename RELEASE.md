@@ -4,7 +4,17 @@ Follow these steps in order to publish a new version of GraphLink.
 
 ---
 
-## 1. Update the version in `pubspec.yaml`
+## 1. Update the help message in `lib/src/main.dart`
+
+If any new config options were added, update the help text printed by `glink --help`:
+
+- Add new options under the relevant `clientConfig.*` or `serverConfig.*` section
+- Follow the existing column alignment: name (left), type, description, default in brackets
+- Test it: `dart run lib/src/main.dart --help`
+
+---
+
+## 2. Update the version in `pubspec.yaml`
 
 Edit the `version` field:
 
@@ -16,7 +26,7 @@ Example: `4.3.1` → `4.4.0`
 
 ---
 
-## 2. Update `CHANGELOG.md`
+## 3. Update `CHANGELOG.md`
 
 Get the commits since the last tag, excluding the `examples/` directory:
 
@@ -33,16 +43,16 @@ Use that output to write a new section at the bottom of `CHANGELOG.md`:
 
 ---
 
-## 3. Commit the changes
+## 4. Commit the changes
 
 ```bash
-git add pubspec.yaml CHANGELOG.md
+git add pubspec.yaml CHANGELOG.md lib/src/main.dart
 git commit -m "chore: bump version to <new-version>"
 ```
 
 ---
 
-## 4. Create and push a git tag
+## 5. Create and push a git tag
 
 ```bash
 git tag v<new-version>
@@ -60,7 +70,7 @@ git push origin v4.4.0
 
 ---
 
-## 5. Publish to pub.dev
+## 6. Publish to pub.dev
 
 ```bash
 dart pub publish
