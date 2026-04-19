@@ -1,4 +1,3 @@
-import 'package:graphlink/src/extensions.dart';
 
 abstract class CodeGenUtilsBase {
   String block(List<String>? statements);

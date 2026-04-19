@@ -65,7 +65,7 @@ class DartClientSerializer extends GLClientSerilaizer {
     final dartImports = [
       "import 'dart:convert';",
       "import 'dart:async';",
-      "import 'dart:math';",
+      if (_parser.hasSubscriptions) "import 'dart:math';",
       if (generateAdapters)
         _useDio
             ? "import 'graph_link_dio_adapter.dart';"
@@ -117,8 +117,8 @@ class DartClientSerializer extends GLClientSerilaizer {
           namedArguments: false,
           arguments: ['GraphLinkCacheStore store', 'Map<String, _Lock> locks'],
           statements: [
-            'this.$_svStore = store;',
-            'this.$_svTagLocks = locks;',
+            '$_svStore = store;',
+            '$_svTagLocks = locks;',
           ]),
       codeGenUtils.createMethod(
           methodName: "_getFromCache",

@@ -266,9 +266,6 @@ class GLParser {
   }
 
   void addSchemaMapping(GLSchemaMapping mapping) {
-    if(mapping.key == "carAndPersonPerson"){
-      print("adding schema mapping ${mapping.key}, batch = ${mapping.batch} exists = ${_schemaMappings.containsKey(mapping.key)}");
-    }
     var m = _schemaMappings[mapping.key];
     if (m == null) {
       _schemaMappings[mapping.key] = mapping;
