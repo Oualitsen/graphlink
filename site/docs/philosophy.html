@@ -1,310 +1,1319 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Philosophy — GraphLink Docs</title>
-  <meta name="description" content="The GraphLink philosophy: pure code generation, no runtime abstractions, schema as single source of truth, and only the fields the server actually needs.">
-  <meta property="og:type" content="article">
-  <meta property="og:url" content="https://graphlink.dev/docs/philosophy.html">
-  <meta property="og:site_name" content="GraphLink">
-  <meta property="og:title" content="Philosophy — GraphLink Docs">
-  <meta property="og:description" content="GraphLink's core philosophy: pure code generation, zero runtime dependency, schema as single source of truth, and only the fields the server actually needs.">
-  <meta property="og:image" content="https://graphlink.dev/og-image.png">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Philosophy — GraphLink Docs">
-  <meta name="twitter:description" content="GraphLink's core philosophy: pure code generation, zero runtime dependency, schema as single source of truth.">
-  <meta name="twitter:image" content="https://graphlink.dev/og-image.png">
-  <link rel="canonical" href="https://graphlink.dev/docs/philosophy.html">
-  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
-  <link rel="alternate" type="text/plain" title="GraphLink for LLMs" href="/llms.txt">
-  <link rel="stylesheet" href="../css/styles.css?v=4.3.0">
-  <link rel="stylesheet" href="../css/docs.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "TechArticle",
-        "headline": "GraphLink Philosophy — Pure Code Generation",
-        "description": "GraphLink's design philosophy: zero runtime dependency, schema as single source of truth, and generating only what the server needs.",
-        "url": "https://graphlink.dev/docs/philosophy.html",
-        "isPartOf": { "@id": "https://graphlink.dev/#app" }
-      },
-      {
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-          { "@type": "ListItem", "position": 1, "name": "GraphLink", "item": "https://graphlink.dev/" },
-          { "@type": "ListItem", "position": 2, "name": "Docs", "item": "https://graphlink.dev/docs/index.html" },
-          { "@type": "ListItem", "position": 3, "name": "Philosophy", "item": "https://graphlink.dev/docs/philosophy.html" }
-        ]
-      }
-    ]
-  }
-  </script>
-</head>
-<body class="docs-page">
 
-<nav class="nav scrolled" id="nav">
-  <div class="nav-inner">
-    <a href="../index.html" class="logo">
-      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-      GraphLink
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="The GraphLink philosophy — pure code generation, no runtime abstractions, schema as single source of truth, and only the fields the server actually needs.">
+      
+      
+        <meta name="author" content="GraphLink">
+      
+      
+        <link rel="canonical" href="https://graphlink.dev/philosophy.html">
+      
+      
+        <link rel="prev" href="index.html">
+      
+      
+        <link rel="next" href="getting-started.html">
+      
+      
+        
+      
+      
+      <link rel="icon" href="assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Philosophy — GraphLink Docs - GraphLink Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#the-graphlink-philosophy" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="index.html" title="GraphLink Docs" class="md-header__button md-logo" aria-label="GraphLink Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
     </a>
-    <ul class="nav-links">
-      <li><a href="../index.html#features">Features</a></li>
-      <li><a href="index.html" class="active">Docs</a></li>
-      <li><a href="../index.html#roadmap">Roadmap</a></li>
-      <li><a href="https://github.com/Oualitsen/graphlink" class="nav-github" target="_blank" rel="noopener">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
-        GitHub
-      </a></li>
-    </ul>
-    <a href="../index.html#quick-start" class="btn-nav">Get Started</a>
-  </div>
-</nav>
-
-<div class="docs-layout">
-  <aside class="docs-sidebar">
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Introduction</span>
-      <a href="index.html" class="sidebar-link">Overview</a>
-      <a href="philosophy.html" class="sidebar-link active">Philosophy</a>
-    </div>
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Getting Started</span>
-      <a href="getting-started.html" class="sidebar-link">Installation &amp; First Schema</a>
-    </div>
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Frontend Clients</span>
-      <a href="dart-client.html" class="sidebar-link">Dart / Flutter</a>
-      <a href="java-client.html" class="sidebar-link">Java</a>
-    </div>
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Backend</span>
-      <a href="spring-server.html" class="sidebar-link">Spring Boot</a>
-    </div>
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Features</span>
-      <a href="caching.html" class="sidebar-link">Caching</a>
-    </div>
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Reference</span>
-      <a href="directives.html" class="sidebar-link">Directives</a>
-      <a href="configuration.html" class="sidebar-link">Configuration</a>
-    </div>
-  </aside>
-
-  <main class="docs-content">
-    <div class="breadcrumb">
-      <a href="../index.html">Home</a>
-      <span class="breadcrumb-sep">›</span>
-      <a href="index.html">Docs</a>
-      <span class="breadcrumb-sep">›</span>
-      <span class="breadcrumb-current">Philosophy</span>
-    </div>
-
-    <h1 class="doc-title">The GraphLink Philosophy</h1>
-    <p class="doc-lead">Pure code generation. No runtime abstractions. Only what the server needs.</p>
-
-    <h2>What pure code generation means</h2>
-    <p>GraphLink is a code generator, not a runtime library. When you run <code>glink -c config.json</code>, it reads your schema and writes ordinary Dart or Java source files. Those files have zero dependency on GraphLink itself — no base classes to extend, no interfaces to implement, no runtime to ship.</p>
-    <p>Every generated class is plain Dart or plain Java. A generated <code>Vehicle</code> class in Dart is just a Dart class with fields, a constructor, <code>fromJson</code>, and <code>toJson</code>. A generated <code>Vehicle.java</code> is just a POJO with a builder. You could hand-write these classes yourself; GraphLink simply writes them faster and keeps them in sync with your schema.</p>
-    <p><strong>Delete GraphLink from your project tomorrow and everything still compiles.</strong> There is nothing to uninstall, no peer dependency to satisfy, no API surface that could be deprecated. The generated code is yours.</p>
-
-    <div class="callout callout-success">
-      <span class="callout-icon">✓</span>
-      <p><strong>The practical implication</strong><br>
-      You can upgrade GraphLink independently of your app. You can audit every line of code that runs in production. You can add methods to generated classes without fighting a framework. You own the output.</p>
-    </div>
-
-    <h2>Only what the server needs</h2>
-    <p>This is one of the most important design decisions in GraphLink, and it directly affects Spring Boot compatibility.</p>
-    <p>Many GraphQL clients (such as ferry in Dart) serialize the <em>entire schema document</em> and send it with every request. This includes type definitions, directives, fragment definitions, comments, and whitespace. On the wire this looks like:</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">What other clients send</span>
-        <span class="doc-code-lang">JSON</span>
-      </div>
-      <pre><code class="language-json">{
-  "query": "fragment _all_fields_Vehicle on Vehicle { id brand model year fuelType ownerId } query getVehicle($id: ID!) { getVehicle(id: $id) { ...  _all_fields_Vehicle } }",
-  "variables": { "id": "42" }
-}</code></pre>
-    </div>
-
-    <p>Spring Boot's <code>graphql-java</code> validates the query document on every request. If the client sends fragment definitions for types or fields that the server doesn't know about — or just sends unnecessary bulk — the server may reject the request or log validation warnings.</p>
-    <p>GraphLink generates minimal, precise query strings. The client sends exactly the fields needed for the response type, no fragment boilerplate, no extra definitions:</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">What GraphLink sends</span>
-        <span class="doc-code-lang">JSON</span>
-      </div>
-      <pre><code class="language-json">{
-  "query": "query getVehicle($id: ID!) { getVehicle(id: $id) { id brand model year fuelType ownerId } }",
-  "variables": { "id": "42" }
-}</code></pre>
-    </div>
-
-    <p>This is a significant operational difference. It means GraphLink clients work out-of-the-box with strict Spring Boot GraphQL servers, with AWS AppSync, and with any other server that validates incoming documents carefully.</p>
-
-    <h2>The schema is the single source of truth</h2>
-    <p>In a typical project without code generation, the same concept is expressed in three places: the GraphQL schema, the data transfer objects (DTOs) in the server language, and the model classes in the client language. When the schema changes, all three must be updated manually. When they get out of sync — which they always do — you get runtime errors, not compile-time errors.</p>
-    <p>GraphLink collapses all three into one. You edit the schema. You re-run the generator. Every DTO, every model class, every query string, every serializer is immediately regenerated and consistent. Schema drift becomes impossible.</p>
-    <p>This also means code review is simpler: a schema change in a pull request implies a corresponding regeneration of client and server code. Reviewers can read the schema diff and know immediately what changed.</p>
-
-    <h2>No generics at the Java call site</h2>
-    <p>Most Java GraphQL clients force you to carry type information through generics. A typical query call looks like:</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">Other clients — the generic soup</span>
-        <span class="doc-code-lang">Java</span>
-      </div>
-      <pre><code class="language-java">// What you write with most clients
-GraphQLResponse&lt;Map&lt;String, Object&gt;&gt; response =
-    client.query(new SimpleGraphQLRequest&lt;&gt;(
-        QUERY_STRING,
-        variables,
-        new TypeReference&lt;GraphQLResponse&lt;Map&lt;String, Object&gt;&gt;&gt;() {}
-    ));
-Vehicle vehicle = objectMapper.convertValue(
-    response.getData().get("getVehicle"), Vehicle.class
-);</code></pre>
-    </div>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">GraphLink — no generics, no casting</span>
-        <span class="doc-code-lang">Java</span>
-      </div>
-      <pre><code class="language-java">// What you write with GraphLink
-GetVehicleResponse res = client.queries.getVehicle("42");
-System.out.println(res.getGetVehicle().getBrand());</code></pre>
-    </div>
-
-    <p>GraphLink generates a specific <code>getVehicle(String id)</code> method that returns a specific <code>GetVehicleResponse</code> type. The compiler knows the exact return type. There are no anonymous <code>TypeReference</code> subclasses, no unchecked casts, no <code>Map&lt;String, Object&gt;</code> to navigate manually.</p>
-
-    <h2>Framework agnostic</h2>
-    <p>GraphLink generates the logic — the query strings, the serialization, the client wiring — but it never dictates how you make HTTP requests. You provide the transport as a simple function:</p>
-    <ul>
-      <li>In Dart: <code>Future&lt;String&gt; Function(String payload)</code></li>
-      <li>In Java: a <code>@FunctionalInterface</code> that takes a JSON string and returns a JSON string</li>
-    </ul>
-    <p>This means you can use <code>http</code>, <code>dio</code>, <code>OkHttp</code>, Spring's <code>WebClient</code>, a mock, or anything else. The generated client does not import any HTTP library. You swap the transport at construction time. This makes testing trivial — pass a function that returns a hardcoded JSON string and you have a complete mock client.</p>
-
-    <h2>How it compares</h2>
-    <p>GraphLink occupies a distinct position in the GraphQL tooling landscape. Here is a direct comparison with popular alternatives:</p>
-
-    <table class="doc-table">
-      <thead>
-        <tr>
-          <th>Feature</th>
-          <th>GraphLink</th>
-          <th>ferry (Dart)</th>
-          <th>Apollo (JS/Kotlin)</th>
-          <th>Manual code</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Runtime dependency in app</td>
-          <td><strong style="color:var(--green)">None</strong></td>
-          <td>Yes (ferry, gql)</td>
-          <td>Yes (Apollo runtime)</td>
-          <td>None</td>
-        </tr>
-        <tr>
-          <td>Sends whole schema on request</td>
-          <td><strong style="color:var(--green)">No</strong></td>
-          <td>Yes</td>
-          <td>Partial</td>
-          <td>No</td>
-        </tr>
-        <tr>
-          <td>Generics at Java call site</td>
-          <td><strong style="color:var(--green)">No</strong></td>
-          <td>N/A</td>
-          <td>Yes</td>
-          <td>Yes</td>
-        </tr>
-        <tr>
-          <td>Server-side generation</td>
-          <td><strong style="color:var(--green)">Yes</strong></td>
-          <td>No</td>
-          <td>Partial</td>
-          <td>Manual</td>
-        </tr>
-        <tr>
-          <td>Java client support</td>
-          <td><strong style="color:var(--green)">Yes</strong></td>
-          <td>No</td>
-          <td>Kotlin only</td>
-          <td>Manual</td>
-        </tr>
-        <tr>
-          <td>Caching directives in schema</td>
-          <td><strong style="color:var(--green)">Yes</strong></td>
-          <td>No</td>
-          <td>No</td>
-          <td>No</td>
-        </tr>
-        <tr>
-          <td>Partial query caching</td>
-          <td><strong style="color:var(--green)">Yes</strong></td>
-          <td>No</td>
-          <td>No</td>
-          <td>No</td>
-        </tr>
-        <tr>
-          <td>Spring Boot controller gen</td>
-          <td><strong style="color:var(--green)">Yes</strong></td>
-          <td>No</td>
-          <td>No</td>
-          <td>Manual</td>
-        </tr>
-      </tbody>
-    </table>
-
-    <nav class="doc-nav-footer">
-      <a href="index.html" class="doc-nav-btn prev">
-        <span class="doc-nav-label">← Previous</span>
-        <span class="doc-nav-title">Overview</span>
-      </a>
-      <a href="getting-started.html" class="doc-nav-btn next">
-        <span class="doc-nav-label">Next</span>
-        <span class="doc-nav-title">Getting Started →</span>
-      </a>
-    </nav>
-  </main>
-</div>
-
-<footer class="footer">
-  <div class="container">
-    <div class="footer-top">
-      <div class="footer-brand">
-        <a href="../index.html" class="logo"><svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>GraphLink</a>
-        <p>GraphQL code generation for Dart, Flutter, and Java.<br>Open source — MIT License.</p>
-        <div class="footer-links">
-          <a href="https://github.com/Oualitsen/graphlink" target="_blank" rel="noopener">GitHub</a>
-          <a href="https://pub.dev/packages/graphlink" target="_blank" rel="noopener">pub.dev</a>
-          <a href="https://github.com/Oualitsen/graphlink/releases" target="_blank" rel="noopener">Releases</a>
-          <a href="https://github.com/Oualitsen/graphlink/issues" target="_blank" rel="noopener">Issues</a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            GraphLink Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Philosophy — GraphLink Docs
+            
+          </span>
         </div>
       </div>
     </div>
-    <div class="footer-bottom">
-      <p>© 2024 GraphLink · MIT License</p>
-      <p class="footer-tagline">Your schema is already the contract. Let GraphLink write the rest.</p>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Oualitsen/graphlink" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Oualitsen/graphlink
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="index.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Overview
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="philosophy.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Philosophy
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="getting-started.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="dart-client.html" class="md-tabs__link">
+          
+  
+  
+  Clients
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="spring-server.html" class="md-tabs__link">
+          
+  
+  
+  Backend
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="caching.html" class="md-tabs__link">
+          
+  
+  
+  Features
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="directives.html" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="index.html" title="GraphLink Docs" class="md-nav__button md-logo" aria-label="GraphLink Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    GraphLink Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Oualitsen/graphlink" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Oualitsen/graphlink
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Philosophy
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="philosophy.html" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-pure-code-generation-means" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What pure code generation means
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#only-what-the-server-needs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Only what the server needs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-schema-is-the-single-source-of-truth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The schema is the single source of truth
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#no-generics-at-the-java-call-site" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        No generics at the Java call site
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#framework-agnostic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Framework agnostic
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-compares" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it compares
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="getting-started.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clients
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Clients
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="dart-client.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dart / Flutter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="java-client.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="typescript-client.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Backend
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-server.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spring Boot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Features
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="caching.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Caching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="directives.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Directives
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="configuration.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-pure-code-generation-means" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What pure code generation means
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#only-what-the-server-needs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Only what the server needs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-schema-is-the-single-source-of-truth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The schema is the single source of truth
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#no-generics-at-the-java-call-site" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        No generics at the Java call site
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#framework-agnostic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Framework agnostic
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-compares" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it compares
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="the-graphlink-philosophy">The GraphLink Philosophy<a class="headerlink" href="#the-graphlink-philosophy" title="Permanent link">&para;</a></h1>
+<p>Pure code generation. No runtime abstractions. Only what the server needs.</p>
+<h2 id="what-pure-code-generation-means">What pure code generation means<a class="headerlink" href="#what-pure-code-generation-means" title="Permanent link">&para;</a></h2>
+<p>GraphLink is a code generator, not a runtime library. When you run <code>glink -c config.json</code>, it reads your schema and writes ordinary Dart or Java source files. Those files have zero dependency on GraphLink itself — no base classes to extend, no interfaces to implement, no runtime to ship.</p>
+<p>Every generated class is plain Dart or plain Java. A generated <code>Vehicle</code> class in Dart is just a Dart class with fields, a constructor, <code>fromJson</code>, and <code>toJson</code>. A generated <code>Vehicle.java</code> is just a POJO with a builder. You could hand-write these classes yourself; GraphLink simply writes them faster and keeps them in sync with your schema.</p>
+<p><strong>Delete GraphLink from your project tomorrow and everything still compiles.</strong> There is nothing to uninstall, no peer dependency to satisfy, no API surface that could be deprecated. The generated code is yours.</p>
+<div class="admonition success">
+<p class="admonition-title">The practical implication</p>
+<p>You can upgrade GraphLink independently of your app. You can audit every line of code that runs in production. You can add methods to generated classes without fighting a framework. You own the output.</p>
+</div>
+<h2 id="only-what-the-server-needs">Only what the server needs<a class="headerlink" href="#only-what-the-server-needs" title="Permanent link">&para;</a></h2>
+<p>This is one of the most important design decisions in GraphLink, and it directly affects Spring Boot compatibility.</p>
+<p>Many GraphQL clients (such as ferry in Dart) serialize the <em>entire schema document</em> and send it with every request. This includes type definitions, directives, fragment definitions, comments, and whitespace. On the wire this looks like:</p>
+<div class="highlight"><span class="filename">What other clients send</span><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;query&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;fragment _all_fields_Vehicle on Vehicle { id brand model year fuelType ownerId } query getVehicle($id: ID!) { getVehicle(id: $id) { ...  _all_fields_Vehicle } }&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">&quot;variables&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;42&quot;</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">}</span>
+</code></pre></div>
+<p>Spring Boot's <code>graphql-java</code> validates the query document on every request. If the client sends fragment definitions for types or fields that the server doesn't know about — or just sends unnecessary bulk — the server may reject the request or log validation warnings.</p>
+<p>GraphLink generates minimal, precise query strings. The client sends exactly the fields needed for the response type, no fragment boilerplate, no extra definitions:</p>
+<div class="highlight"><span class="filename">What GraphLink sends</span><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">&quot;query&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;query getVehicle($id: ID!) { getVehicle(id: $id) { id brand model year fuelType ownerId } }&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">&quot;variables&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;42&quot;</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="p">}</span>
+</code></pre></div>
+<p>This is a significant operational difference. It means GraphLink clients work out-of-the-box with strict Spring Boot GraphQL servers, with AWS AppSync, and with any other server that validates incoming documents carefully.</p>
+<h2 id="the-schema-is-the-single-source-of-truth">The schema is the single source of truth<a class="headerlink" href="#the-schema-is-the-single-source-of-truth" title="Permanent link">&para;</a></h2>
+<p>In a typical project without code generation, the same concept is expressed in three places: the GraphQL schema, the data transfer objects (DTOs) in the server language, and the model classes in the client language. When the schema changes, all three must be updated manually. When they get out of sync — which they always do — you get runtime errors, not compile-time errors.</p>
+<p>GraphLink collapses all three into one. You edit the schema. You re-run the generator. Every DTO, every model class, every query string, every serializer is immediately regenerated and consistent. Schema drift becomes impossible.</p>
+<p>This also means code review is simpler: a schema change in a pull request implies a corresponding regeneration of client and server code. Reviewers can read the schema diff and know immediately what changed.</p>
+<h2 id="no-generics-at-the-java-call-site">No generics at the Java call site<a class="headerlink" href="#no-generics-at-the-java-call-site" title="Permanent link">&para;</a></h2>
+<p>Most Java GraphQL clients force you to carry type information through generics. A typical query call looks like:</p>
+<div class="highlight"><span class="filename">Other clients — the generic soup</span><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1">// What you write with most clients</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">GraphQLResponse</span><span class="o">&lt;</span><span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="w"> </span><span class="n">Object</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">response</span><span class="w"> </span><span class="o">=</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="n">client</span><span class="p">.</span><span class="na">query</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">SimpleGraphQLRequest</span><span class="o">&lt;&gt;</span><span class="p">(</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">        </span><span class="n">QUERY_STRING</span><span class="p">,</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">        </span><span class="n">variables</span><span class="p">,</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">        </span><span class="k">new</span><span class="w"> </span><span class="n">TypeReference</span><span class="o">&lt;</span><span class="n">GraphQLResponse</span><span class="o">&lt;</span><span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="w"> </span><span class="n">Object</span><span class="o">&gt;&gt;&gt;</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span><span class="p">));</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">Vehicle</span><span class="w"> </span><span class="n">vehicle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">objectMapper</span><span class="p">.</span><span class="na">convertValue</span><span class="p">(</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">    </span><span class="n">response</span><span class="p">.</span><span class="na">getData</span><span class="p">().</span><span class="na">get</span><span class="p">(</span><span class="s">&quot;getVehicle&quot;</span><span class="p">),</span><span class="w"> </span><span class="n">Vehicle</span><span class="p">.</span><span class="na">class</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="p">);</span>
+</code></pre></div>
+<div class="highlight"><span class="filename">GraphLink — no generics, no casting</span><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1">// What you write with GraphLink</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">GetVehicleResponse</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="na">queries</span><span class="p">.</span><span class="na">getVehicle</span><span class="p">(</span><span class="s">&quot;42&quot;</span><span class="p">);</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="na">getGetVehicle</span><span class="p">().</span><span class="na">getBrand</span><span class="p">());</span>
+</code></pre></div>
+<p>GraphLink generates a specific <code>getVehicle(String id)</code> method that returns a specific <code>GetVehicleResponse</code> type. The compiler knows the exact return type. There are no anonymous <code>TypeReference</code> subclasses, no unchecked casts, no <code>Map&lt;String, Object&gt;</code> to navigate manually.</p>
+<h2 id="framework-agnostic">Framework agnostic<a class="headerlink" href="#framework-agnostic" title="Permanent link">&para;</a></h2>
+<p>GraphLink generates the logic — the query strings, the serialization, the client wiring — but it never dictates how you make HTTP requests. You provide the transport as a simple function:</p>
+<ul>
+<li>In Dart: <code>Future&lt;String&gt; Function(String payload)</code></li>
+<li>In Java: a <code>@FunctionalInterface</code> that takes a JSON string and returns a JSON string</li>
+</ul>
+<p>This means you can use <code>http</code>, <code>dio</code>, <code>OkHttp</code>, Spring's <code>WebClient</code>, a mock, or anything else. The generated client does not import any HTTP library. You swap the transport at construction time. This makes testing trivial — pass a function that returns a hardcoded JSON string and you have a complete mock client.</p>
+<h2 id="how-it-compares">How it compares<a class="headerlink" href="#how-it-compares" title="Permanent link">&para;</a></h2>
+<p>GraphLink occupies a distinct position in the GraphQL tooling landscape. Here is a direct comparison with popular alternatives:</p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>GraphLink</th>
+<th>ferry (Dart)</th>
+<th>Apollo (JS/Kotlin)</th>
+<th>Manual code</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Runtime dependency in app</td>
+<td><strong>None</strong></td>
+<td>Yes (ferry, gql)</td>
+<td>Yes (Apollo runtime)</td>
+<td>None</td>
+</tr>
+<tr>
+<td>Sends whole schema on request</td>
+<td><strong>No</strong></td>
+<td>Yes</td>
+<td>Partial</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Generics at Java call site</td>
+<td><strong>No</strong></td>
+<td>N/A</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Server-side generation</td>
+<td><strong>Yes</strong></td>
+<td>No</td>
+<td>Partial</td>
+<td>Manual</td>
+</tr>
+<tr>
+<td>Java client support</td>
+<td><strong>Yes</strong></td>
+<td>No</td>
+<td>Kotlin only</td>
+<td>Manual</td>
+</tr>
+<tr>
+<td>Caching directives in schema</td>
+<td><strong>Yes</strong></td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Partial query caching</td>
+<td><strong>Yes</strong></td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Spring Boot controller gen</td>
+<td><strong>Yes</strong></td>
+<td>No</td>
+<td>No</td>
+<td>Manual</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/Oualitsen/graphlink" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
     </div>
   </div>
 </footer>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
-<script src="../js/main.js?v=4.3.0"></script>
-<script src="../js/docs.js?v=4.3.0"></script>
-</body>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["navigation.tabs", "navigation.sections", "content.code.copy", "content.tabs.link"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
 </html>

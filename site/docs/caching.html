@@ -1,422 +1,1521 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Caching — GraphLink Docs</title>
-  <meta name="description" content="GraphLink's built-in caching: @glCache and @glCacheInvalidate directives, TTL, tag-based invalidation, partial query caching, staleIfOffline, and custom cache stores.">
-  <meta property="og:type" content="article">
-  <meta property="og:url" content="https://graphlink.dev/docs/caching.html">
-  <meta property="og:site_name" content="GraphLink">
-  <meta property="og:title" content="Caching — GraphLink Docs">
-  <meta property="og:description" content="Built-in GraphQL client-side caching via schema directives. @glCache and @glCacheInvalidate with tag-based invalidation and offline fallback.">
-  <meta property="og:image" content="https://graphlink.dev/og-image.png">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Caching — GraphLink Docs">
-  <meta name="twitter:description" content="GraphQL caching declared in the schema itself via @glCache and @glCacheInvalidate. Tag-based invalidation and staleIfOffline support.">
-  <meta name="twitter:image" content="https://graphlink.dev/og-image.png">
-  <link rel="canonical" href="https://graphlink.dev/docs/caching.html">
-  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
-  <link rel="alternate" type="text/plain" title="GraphLink for LLMs" href="/llms.txt">
-  <link rel="stylesheet" href="../css/styles.css?v=4.3.0">
-  <link rel="stylesheet" href="../css/docs.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "TechArticle",
-        "headline": "GraphQL Client-Side Caching with @glCache — GraphLink",
-        "description": "Schema-declared GraphQL caching using @glCache and @glCacheInvalidate directives. Tag-based invalidation, partial query caching, and offline fallback.",
-        "url": "https://graphlink.dev/docs/caching.html",
-        "isPartOf": { "@id": "https://graphlink.dev/#app" }
-      },
-      {
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-          { "@type": "ListItem", "position": 1, "name": "GraphLink", "item": "https://graphlink.dev/" },
-          { "@type": "ListItem", "position": 2, "name": "Docs", "item": "https://graphlink.dev/docs/index.html" },
-          { "@type": "ListItem", "position": 3, "name": "Caching", "item": "https://graphlink.dev/docs/caching.html" }
-        ]
-      }
-    ]
-  }
-  </script>
-</head>
-<body class="docs-page">
 
-<nav class="nav scrolled" id="nav">
-  <div class="nav-inner">
-    <a href="../index.html" class="logo">
-      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-      GraphLink
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="GraphLink's built-in caching — @glCache and @glCacheInvalidate directives, TTL, tag-based invalidation, partial query caching, staleIfOffline, and custom cache stores.">
+      
+      
+        <meta name="author" content="GraphLink">
+      
+      
+        <link rel="canonical" href="https://graphlink.dev/caching.html">
+      
+      
+        <link rel="prev" href="spring-server.html">
+      
+      
+        <link rel="next" href="directives.html">
+      
+      
+        
+      
+      
+      <link rel="icon" href="assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Caching — GraphLink Docs - GraphLink Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#built-in-caching" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="index.html" title="GraphLink Docs" class="md-header__button md-logo" aria-label="GraphLink Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
     </a>
-    <ul class="nav-links">
-      <li><a href="../index.html#features">Features</a></li>
-      <li><a href="index.html" class="active">Docs</a></li>
-      <li><a href="../index.html#roadmap">Roadmap</a></li>
-      <li><a href="https://github.com/Oualitsen/graphlink" class="nav-github" target="_blank" rel="noopener">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
-        GitHub
-      </a></li>
-    </ul>
-    <a href="../index.html#quick-start" class="btn-nav">Get Started</a>
-  </div>
-</nav>
-
-<div class="docs-layout">
-  <aside class="docs-sidebar">
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Introduction</span>
-      <a href="index.html" class="sidebar-link">Overview</a>
-      <a href="philosophy.html" class="sidebar-link">Philosophy</a>
-    </div>
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Getting Started</span>
-      <a href="getting-started.html" class="sidebar-link">Installation &amp; First Schema</a>
-    </div>
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Frontend Clients</span>
-      <a href="dart-client.html" class="sidebar-link">Dart / Flutter</a>
-      <a href="java-client.html" class="sidebar-link">Java</a>
-    </div>
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Backend</span>
-      <a href="spring-server.html" class="sidebar-link">Spring Boot</a>
-    </div>
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Features</span>
-      <a href="caching.html" class="sidebar-link active">Caching</a>
-    </div>
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Reference</span>
-      <a href="directives.html" class="sidebar-link">Directives</a>
-      <a href="configuration.html" class="sidebar-link">Configuration</a>
-    </div>
-  </aside>
-
-  <main class="docs-content">
-    <div class="breadcrumb">
-      <a href="../index.html">Home</a>
-      <span class="breadcrumb-sep">›</span>
-      <a href="index.html">Docs</a>
-      <span class="breadcrumb-sep">›</span>
-      <span class="breadcrumb-current">Caching</span>
-    </div>
-
-    <h1 class="doc-title">Built-In Caching</h1>
-    <p class="doc-lead">Cache control belongs in the schema, not scattered across your application code.</p>
-
-    <h2>How it works</h2>
-    <p>GraphLink caching is opt-in and declared entirely at the schema level using two directives: <code>@glCache</code> on queries and <code>@glCacheInvalidate</code> on mutations. The generated client handles all cache logic automatically — reading from cache, writing to cache, and evicting entries on mutation. No application code is needed to enable or configure caching.</p>
-    <p>The cache operates on the client side. It stores serialized response data keyed by operation name + variables. The server never knows about client-side caching.</p>
-
-    <h2>@glCache — caching a query</h2>
-    <p>Annotate any query field with <code>@glCache</code> to have its response cached:</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">@glCache directive</span>
-        <span class="doc-code-lang">GraphQL</span>
-      </div>
-      <pre><code class="language-graphql">type Query {
-  # Cache for 120 seconds, tagged "vehicles"
-  getVehicle(id: ID!): Vehicle! @glCache(ttl: 120, tags: ["vehicles"])
-
-  # Cache for 60 seconds, same tag group
-  listVehicles: [Vehicle!]! @glCache(ttl: 60, tags: ["vehicles"])
-
-  # Cache for 300 seconds, no tags (cannot be tag-invalidated)
-  getStaticConfig: AppConfig! @glCache(ttl: 300)
-
-  # Cache with staleIfOffline — serve stale data if network fails
-  getUserProfile(id: ID!): UserProfile @glCache(ttl: 60, staleIfOffline: true)
-}</code></pre>
-    </div>
-
-    <table class="doc-table">
-      <thead>
-        <tr><th>Argument</th><th>Type</th><th>Required</th><th>Description</th></tr>
-      </thead>
-      <tbody>
-        <tr><td><code>ttl</code></td><td><code>Int</code></td><td>Yes</td><td>Time-to-live in seconds. After this duration, the entry is considered expired and the next call will hit the server.</td></tr>
-        <tr><td><code>tags</code></td><td><code>[String!]</code></td><td>No</td><td>List of tags to associate with this cache entry. Used for group invalidation via <code>@glCacheInvalidate</code>.</td></tr>
-        <tr><td><code>staleIfOffline</code></td><td><code>Boolean</code></td><td>No</td><td>If <code>true</code>, serve the expired cached value when the network call fails instead of throwing.</td></tr>
-      </tbody>
-    </table>
-
-    <h2>Cache keys</h2>
-    <p>Cache entries are keyed by a combination of the operation name and the serialized variables. The key is computed as an FNV1a hash of <code>operationName + JSON(variables)</code>. This means:</p>
-    <ul>
-      <li><code>getVehicle("42")</code> and <code>getVehicle("99")</code> produce different cache entries</li>
-      <li><code>getVehicle("42")</code> called twice produces the same cache key — the second call returns the cached result</li>
-      <li><code>listVehicles()</code> (no variables) always produces the same cache key regardless of call site</li>
-    </ul>
-
-    <div class="callout callout-info">
-      <span class="callout-icon">ℹ</span>
-      <p><strong>Per-argument caching</strong><br>Each unique argument combination gets its own cache entry. Calling <code>getVehicle</code> with 100 different IDs stores 100 separate cache entries. All of them share the <code>"vehicles"</code> tag, so a single <code>addVehicle</code> mutation invalidates all 100 at once.</p>
-    </div>
-
-    <h2>@glCacheInvalidate — busting the cache</h2>
-    <p>Annotate a mutation with <code>@glCacheInvalidate</code> to automatically evict cache entries when the mutation succeeds:</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">@glCacheInvalidate directive</span>
-        <span class="doc-code-lang">GraphQL</span>
-      </div>
-      <pre><code class="language-graphql">type Mutation {
-  # Evicts all cache entries tagged "vehicles"
-  addVehicle(input: AddVehicleInput!): Vehicle! @glCacheInvalidate(tags: ["vehicles"])
-
-  # Evicts entries tagged "vehicles" AND "persons"
-  transferVehicle(vehicleId: ID!, newOwnerId: ID!): Vehicle!
-    @glCacheInvalidate(tags: ["vehicles", "persons"])
-
-  # Wipes the ENTIRE cache
-  resetAllData: Boolean! @glCacheInvalidate(all: true)
-}</code></pre>
-    </div>
-
-    <table class="doc-table">
-      <thead>
-        <tr><th>Argument</th><th>Type</th><th>Description</th></tr>
-      </thead>
-      <tbody>
-        <tr><td><code>tags</code></td><td><code>[String!]</code></td><td>Evict all cache entries that were stored with any of these tags.</td></tr>
-        <tr><td><code>all</code></td><td><code>Boolean</code></td><td>When <code>true</code>, evict the entire cache regardless of tags.</td></tr>
-      </tbody>
-    </table>
-
-    <h2>Tag-based invalidation</h2>
-    <p>Tags are labels you attach to cache entries at write time. When you later invalidate a tag, all entries carrying that tag are evicted simultaneously.</p>
-    <p>This allows a single mutation to invalidate many different cached queries at once, even if those queries have different operation names and different variable sets:</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">Tag invalidation in action</span>
-        <span class="doc-code-lang">GraphQL</span>
-      </div>
-      <pre><code class="language-graphql">type Query {
-  getVehicle(id: ID!): Vehicle!   @glCache(ttl: 120, tags: ["vehicles"])
-  listVehicles: [Vehicle!]!       @glCache(ttl: 60,  tags: ["vehicles"])
-  getFleet(ownerId: ID!): [Vehicle!]! @glCache(ttl: 90, tags: ["vehicles"])
-}
-
-type Mutation {
-  # One mutation invalidates ALL three queries above
-  addVehicle(input: AddVehicleInput!): Vehicle! @glCacheInvalidate(tags: ["vehicles"])
-  updateVehicle(id: ID!, input: AddVehicleInput!): Vehicle! @glCacheInvalidate(tags: ["vehicles"])
-  deleteVehicle(id: ID!): Boolean! @glCacheInvalidate(tags: ["vehicles"])
-}</code></pre>
-    </div>
-
-    <p>After calling <code>addVehicle</code>, the next call to <code>getVehicle</code>, <code>listVehicles</code>, or <code>getFleet</code> will always go to the server — no stale data.</p>
-
-    <h2>Partial query caching</h2>
-    <p>This is GraphLink's most powerful caching feature. When a query returns multiple aliased fields, each field can carry its own <code>@glCache</code> directive. The client fetches each field independently and caches them separately.</p>
-    <p>The result: if one tag is invalidated, only the affected portion of the query is re-fetched. The rest is still served from cache.</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">Partial caching — schema</span>
-        <span class="doc-code-lang">GraphQL</span>
-      </div>
-      <pre><code class="language-graphql">type Query {
-  # These two aliases will be cached separately
-  vehicle: Vehicle! @glCache(ttl: 120, tags: ["vehicles"])
-  owner:   Person!  @glCache(ttl: 300, tags: ["persons"])
-}</code></pre>
-    </div>
-
-    <p>Here is what happens step by step:</p>
-    <ol style="margin:0 0 16px 20px;display:flex;flex-direction:column;gap:8px;">
-      <li style="font-size:.93rem;color:var(--text-2);line-height:1.7;"><strong style="color:var(--text)">First call</strong> — both <code>vehicle</code> and <code>owner</code> are cache misses. The client sends requests to the server for both. Results are stored: <code>vehicle</code> tagged <code>["vehicles"]</code>, <code>owner</code> tagged <code>["persons"]</code>.</li>
-      <li style="font-size:.93rem;color:var(--text-2);line-height:1.7;"><strong style="color:var(--text)">Second call (within TTL)</strong> — both hits. No network requests.</li>
-      <li style="font-size:.93rem;color:var(--text-2);line-height:1.7;"><strong style="color:var(--text)">addVehicle mutation runs</strong> — <code>@glCacheInvalidate(tags: ["vehicles"])</code> evicts the <code>vehicle</code> entry. The <code>owner</code> entry is unaffected.</li>
-      <li style="font-size:.93rem;color:var(--text-2);line-height:1.7;"><strong style="color:var(--text)">Third call</strong> — <code>vehicle</code> is a miss (re-fetched from server). <code>owner</code> is still a hit (served from cache). One network request instead of two.</li>
-    </ol>
-
-    <p>Partial query caching is especially valuable in dashboard or profile screens that combine volatile data (frequently updated) with stable data (rarely changed). The stable portion never leaves the cache even when the volatile portion is invalidated.</p>
-
-    <h2>staleIfOffline</h2>
-    <p>When <code>staleIfOffline: true</code> is set on a cached query and the cache entry has expired, GraphLink attempts a server request. If that request fails (network error, timeout, server unreachable), it falls back to the expired cached value instead of throwing an exception.</p>
-    <p>This is especially useful on mobile apps where network connectivity is unreliable. Users see slightly outdated data rather than an error screen:</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">staleIfOffline example</span>
-        <span class="doc-code-lang">GraphQL</span>
-      </div>
-      <pre><code class="language-graphql">type Query {
-  # If expired and network fails, return the last known value
-  getUserProfile(id: ID!): UserProfile @glCache(ttl: 60, staleIfOffline: true)
-
-  # Without staleIfOffline — throws on network failure after TTL
-  getVehicle(id: ID!): Vehicle! @glCache(ttl: 120)
-}</code></pre>
-    </div>
-
-    <h2>Custom cache store</h2>
-    <p>The default cache store is <code>InMemoryGraphLinkCacheStore</code>. It is an in-process, non-persistent LRU map. For most apps this is sufficient. If you need persistence, cross-process sharing, or custom eviction, implement the <code>GraphLinkCacheStore</code> interface:</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">GraphLinkCacheStore interface (generated)</span>
-        <span class="doc-code-lang">Java</span>
-      </div>
-      <pre><code class="language-java">public interface GraphLinkCacheStore {
-    // Store an entry with its TTL (in seconds) and tags
-    void set(String key, Object value, int ttl, List&lt;String&gt; tags);
-
-    // Retrieve a cached entry, or null if expired/absent
-    Object get(String key);
-
-    // Evict all entries matching any of the given tags
-    void invalidate(List&lt;String&gt; tags);
-
-    // Evict all entries in the store
-    void invalidateAll();
-}</code></pre>
-    </div>
-
-    <p>Examples of custom implementations you might write:</p>
-    <ul>
-      <li><strong>SharedPreferences (Flutter)</strong> — persist cache across app restarts on mobile</li>
-      <li><strong>Redis-backed (Java)</strong> — share cache across multiple service instances</li>
-      <li><strong>Encrypted store</strong> — encrypt sensitive data at rest on device</li>
-      <li><strong>Size-limited LRU</strong> — evict least-recently-used entries when a size cap is reached</li>
-    </ul>
-
-    <p>Pass the custom store as the last argument to the client constructor:</p>
-
-    <div class="doc-tabgroup">
-      <div class="doc-tabs">
-        <button class="doc-tab active">Dart</button>
-        <button class="doc-tab">Java</button>
-      </div>
-      <div class="doc-tab-content active">
-        <pre><code class="language-dart">// Pass custom store to the client
-final client = GraphLinkClient(
-  graphLinkAdapter,
-  SimpleWebSocketAdapter('ws://localhost:8080/graphql'),
-  MyCustomCacheStore(), // implements GraphLinkCacheStore
-);</code></pre>
-      </div>
-      <div class="doc-tab-content">
-        <pre><code class="language-java">// Pass custom store to the client
-GraphLinkClient client = new GraphLinkClient(
-    adapter, encoder, decoder,
-    new MyRedisCacheStore(redisClient) // implements GraphLinkCacheStore
-);</code></pre>
-      </div>
-    </div>
-
-    <h2>Dart usage — full cache flow</h2>
-    <p>Here is the complete caching lifecycle in Dart, step by step:</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">Cache flow in Dart</span>
-        <span class="doc-code-lang">Dart</span>
-      </div>
-      <pre><code class="language-dart">// 1. First call — cache miss, hits the server
-//    Result stored with key=hash("getVehicle"+"42"), ttl=120s, tags=["vehicles"]
-final res1 = await client.queries.getVehicle(id: '42');
-print(res1.getVehicle.brand); // Toyota — from server
-
-// 2. Second call within 120s — cache hit, no network request
-final res2 = await client.queries.getVehicle(id: '42');
-print(res2.getVehicle.brand); // Toyota — from cache
-
-// 3. Different ID — separate cache entry
-final res3 = await client.queries.getVehicle(id: '99');
-print(res3.getVehicle.brand); // Honda — from server (different cache key)
-
-// 4. Mutation — @glCacheInvalidate(tags: ["vehicles"]) evicts all "vehicles" entries
-//    Both '42' and '99' entries are evicted
-final added = await client.mutations.addVehicle(
-  input: AddVehicleInput(brand: 'Ford', model: 'Focus', year: 2024, fuelType: FuelType.GASOLINE),
-);
-
-// 5. After mutation — cache miss again for all "vehicles" entries
-final res5 = await client.queries.getVehicle(id: '42');
-print(res5.getVehicle.brand); // Toyota — from server again (cache was cleared)</code></pre>
-    </div>
-
-    <h2>Java usage — full cache flow</h2>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">Cache flow in Java</span>
-        <span class="doc-code-lang">Java</span>
-      </div>
-      <pre><code class="language-java">// 1. First call — cache miss, hits the server
-GetVehicleResponse res1 = client.queries.getVehicle("42");
-System.out.println(res1.getGetVehicle().getBrand()); // Toyota — from server
-
-// 2. Second call within 120s — cache hit, no network
-GetVehicleResponse res2 = client.queries.getVehicle("42");
-System.out.println(res2.getGetVehicle().getBrand()); // Toyota — from cache
-
-// 3. List query — its own cache entry (ttl=60, tags=["vehicles"])
-ListVehiclesResponse list1 = client.queries.listVehicles();
-System.out.println(list1.getListVehicles().size()); // 3 — from server
-
-// 4. Mutation — evicts all "vehicles" cache entries
-AddVehicleResponse added = client.mutations.addVehicle(
-    AddVehicleInput.builder()
-        .brand("Ford").model("Focus").year(2024)
-        .fuelType(FuelType.GASOLINE).build()
-);
-
-// 5. After mutation — getVehicle("42") and listVehicles() both miss cache
-GetVehicleResponse res5 = client.queries.getVehicle("42");
-System.out.println(res5.getGetVehicle().getBrand()); // Toyota — from server again
-
-ListVehiclesResponse list2 = client.queries.listVehicles();
-System.out.println(list2.getListVehicles().size()); // 4 — from server (includes new Ford)</code></pre>
-    </div>
-
-    <nav class="doc-nav-footer">
-      <a href="spring-server.html" class="doc-nav-btn prev">
-        <span class="doc-nav-label">← Previous</span>
-        <span class="doc-nav-title">Spring Boot</span>
-      </a>
-      <a href="directives.html" class="doc-nav-btn next">
-        <span class="doc-nav-label">Next</span>
-        <span class="doc-nav-title">Directives Reference →</span>
-      </a>
-    </nav>
-  </main>
-</div>
-
-<footer class="footer">
-  <div class="container">
-    <div class="footer-top">
-      <div class="footer-brand">
-        <a href="../index.html" class="logo"><svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>GraphLink</a>
-        <p>GraphQL code generation for Dart, Flutter, and Java.<br>Open source — MIT License.</p>
-        <div class="footer-links">
-          <a href="https://github.com/Oualitsen/graphlink" target="_blank" rel="noopener">GitHub</a>
-          <a href="https://pub.dev/packages/graphlink" target="_blank" rel="noopener">pub.dev</a>
-          <a href="https://github.com/Oualitsen/graphlink/releases" target="_blank" rel="noopener">Releases</a>
-          <a href="https://github.com/Oualitsen/graphlink/issues" target="_blank" rel="noopener">Issues</a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            GraphLink Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Caching — GraphLink Docs
+            
+          </span>
         </div>
       </div>
     </div>
-    <div class="footer-bottom">
-      <p>© 2024 GraphLink · MIT License</p>
-      <p class="footer-tagline">Your schema is already the contract. Let GraphLink write the rest.</p>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Oualitsen/graphlink" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Oualitsen/graphlink
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="index.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Overview
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="philosophy.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Philosophy
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="getting-started.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="dart-client.html" class="md-tabs__link">
+          
+  
+  
+  Clients
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="spring-server.html" class="md-tabs__link">
+          
+  
+  
+  Backend
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="caching.html" class="md-tabs__link">
+          
+  
+  
+  Features
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="directives.html" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="index.html" title="GraphLink Docs" class="md-nav__button md-logo" aria-label="GraphLink Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    GraphLink Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Oualitsen/graphlink" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Oualitsen/graphlink
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="philosophy.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="getting-started.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clients
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Clients
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="dart-client.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dart / Flutter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="java-client.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="typescript-client.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Backend
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-server.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spring Boot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Features
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Caching
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="caching.html" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Caching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#glcache-caching-a-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        @glCache — caching a query
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cache-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cache keys
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#glcacheinvalidate-busting-the-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        @glCacheInvalidate — busting the cache
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tag-based-invalidation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tag-based invalidation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#partial-query-caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Partial query caching
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#staleifoffline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        staleIfOffline
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-cache-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom cache store
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dart-usage-full-cache-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dart usage — full cache flow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#java-usage-full-cache-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Java usage — full cache flow
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="directives.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Directives
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="configuration.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#glcache-caching-a-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        @glCache — caching a query
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cache-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cache keys
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#glcacheinvalidate-busting-the-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        @glCacheInvalidate — busting the cache
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tag-based-invalidation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tag-based invalidation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#partial-query-caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Partial query caching
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#staleifoffline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        staleIfOffline
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-cache-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom cache store
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dart-usage-full-cache-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dart usage — full cache flow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#java-usage-full-cache-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Java usage — full cache flow
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="built-in-caching">Built-In Caching<a class="headerlink" href="#built-in-caching" title="Permanent link">&para;</a></h1>
+<p>Cache control belongs in the schema, not scattered across your application code.</p>
+<h2 id="how-it-works">How it works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
+<p>GraphLink caching is opt-in and declared entirely at the schema level using two directives: <code>@glCache</code> on queries and <code>@glCacheInvalidate</code> on mutations. The generated client handles all cache logic automatically — reading from cache, writing to cache, and evicting entries on mutation. No application code is needed to enable or configure caching.</p>
+<p>The cache operates on the client side. It stores serialized response data keyed by operation name + variables. The server never knows about client-side caching.</p>
+<h2 id="glcache-caching-a-query">@glCache — caching a query<a class="headerlink" href="#glcache-caching-a-query" title="Permanent link">&para;</a></h2>
+<p>Annotate any query field with <code>@glCache</code> to have its response cached:</p>
+<div class="highlight"><span class="filename">@glCache directive</span><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">type</span><span class="w"> </span><span class="err">Query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="c"># Cache for 120 seconds, tagged &quot;vehicles&quot;</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="n">getVehicle</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">Vehicle</span><span class="err">!</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">120</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="c"># Cache for 60 seconds, same tag group</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="nl">listVehicles</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Vehicle</span><span class="err">!]!</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="c"># Cache for 300 seconds, no tags (cannot be tag-invalidated)</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span><span class="nl">getStaticConfig</span><span class="p">:</span><span class="w"> </span><span class="n">AppConfig</span><span class="err">!</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">300</span><span class="p">)</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">  </span><span class="c"># Cache with staleIfOffline — serve stale data if network fails</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">  </span><span class="n">getUserProfile</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">UserProfile</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span><span class="p">,</span><span class="w"> </span><span class="n">staleIfOffline</span><span class="p">:</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="p">}</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ttl</code></td>
+<td><code>Int</code></td>
+<td>Yes</td>
+<td>Time-to-live in seconds. After this duration, the entry is considered expired and the next call will hit the server.</td>
+</tr>
+<tr>
+<td><code>tags</code></td>
+<td><code>[String!]</code></td>
+<td>No</td>
+<td>List of tags to associate with this cache entry. Used for group invalidation via <code>@glCacheInvalidate</code>.</td>
+</tr>
+<tr>
+<td><code>staleIfOffline</code></td>
+<td><code>Boolean</code></td>
+<td>No</td>
+<td>If <code>true</code>, serve the expired cached value when the network call fails instead of throwing.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="cache-keys">Cache keys<a class="headerlink" href="#cache-keys" title="Permanent link">&para;</a></h2>
+<p>Cache entries are keyed by a combination of the operation name and the serialized variables. The key is computed as an FNV1a hash of <code>operationName + JSON(variables)</code>. This means:</p>
+<ul>
+<li><code>getVehicle("42")</code> and <code>getVehicle("99")</code> produce different cache entries</li>
+<li><code>getVehicle("42")</code> called twice produces the same cache key — the second call returns the cached result</li>
+<li><code>listVehicles()</code> (no variables) always produces the same cache key regardless of call site</li>
+</ul>
+<div class="admonition info">
+<p class="admonition-title">Per-argument caching</p>
+<p>Each unique argument combination gets its own cache entry. Calling <code>getVehicle</code> with 100 different IDs stores 100 separate cache entries. All of them share the <code>"vehicles"</code> tag, so a single <code>addVehicle</code> mutation invalidates all 100 at once.</p>
+</div>
+<h2 id="glcacheinvalidate-busting-the-cache">@glCacheInvalidate — busting the cache<a class="headerlink" href="#glcacheinvalidate-busting-the-cache" title="Permanent link">&para;</a></h2>
+<p>Annotate a mutation with <code>@glCacheInvalidate</code> to automatically evict cache entries when the mutation succeeds:</p>
+<div class="highlight"><span class="filename">@glCacheInvalidate directive</span><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">type</span><span class="w"> </span><span class="err">Mutation</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="c"># Evicts all cache entries tagged &quot;vehicles&quot;</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="n">addVehicle</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="no">AddVehicleInput</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">Vehicle</span><span class="err">!</span><span class="w"> </span><span class="nd">@glCacheInvalidate</span><span class="p">(</span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="c"># Evicts entries tagged &quot;vehicles&quot; AND &quot;persons&quot;</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="n">transferVehicle</span><span class="p">(</span><span class="n">vehicleId</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">,</span><span class="w"> </span><span class="n">newOwnerId</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">Vehicle</span><span class="err">!</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="nd">@glCacheInvalidate</span><span class="p">(</span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;persons&quot;</span><span class="p">])</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span><span class="c"># Wipes the ENTIRE cache</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span><span class="nl">resetAllData</span><span class="p">:</span><span class="w"> </span><span class="n">Boolean</span><span class="err">!</span><span class="w"> </span><span class="nd">@glCacheInvalidate</span><span class="p">(</span><span class="n">all</span><span class="p">:</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="p">}</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tags</code></td>
+<td><code>[String!]</code></td>
+<td>Evict all cache entries that were stored with any of these tags.</td>
+</tr>
+<tr>
+<td><code>all</code></td>
+<td><code>Boolean</code></td>
+<td>When <code>true</code>, evict the entire cache regardless of tags.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="tag-based-invalidation">Tag-based invalidation<a class="headerlink" href="#tag-based-invalidation" title="Permanent link">&para;</a></h2>
+<p>Tags are labels you attach to cache entries at write time. When you later invalidate a tag, all entries carrying that tag are evicted simultaneously.</p>
+<p>This allows a single mutation to invalidate many different cached queries at once, even if those queries have different operation names and different variable sets:</p>
+<div class="highlight"><span class="filename">Tag invalidation in action</span><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">type</span><span class="w"> </span><span class="err">Query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="n">getVehicle</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">Vehicle</span><span class="err">!</span><span class="w">       </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">120</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nl">listVehicles</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Vehicle</span><span class="err">!]!</span><span class="w">           </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span><span class="p">,</span><span class="w">  </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="n">getFleet</span><span class="p">(</span><span class="n">ownerId</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="err">[</span><span class="n">Vehicle</span><span class="err">!]!</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">90</span><span class="p">,</span><span class="w">  </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="p">}</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="k">type</span><span class="w"> </span><span class="err">Mutation</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span><span class="c"># One mutation invalidates ALL three queries above</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span><span class="n">addVehicle</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="no">AddVehicleInput</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">Vehicle</span><span class="err">!</span><span class="w">      </span><span class="nd">@glCacheInvalidate</span><span class="p">(</span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">  </span><span class="n">updateVehicle</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">,</span><span class="w"> </span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="no">AddVehicleInput</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">Vehicle</span><span class="err">!</span><span class="w"> </span><span class="nd">@glCacheInvalidate</span><span class="p">(</span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">  </span><span class="n">deleteVehicle</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">Boolean</span><span class="err">!</span><span class="w">                   </span><span class="nd">@glCacheInvalidate</span><span class="p">(</span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="p">}</span>
+</code></pre></div>
+<p>After calling <code>addVehicle</code>, the next call to <code>getVehicle</code>, <code>listVehicles</code>, or <code>getFleet</code> will always go to the server — no stale data.</p>
+<h2 id="partial-query-caching">Partial query caching<a class="headerlink" href="#partial-query-caching" title="Permanent link">&para;</a></h2>
+<p>This is GraphLink's most powerful caching feature. When a query returns multiple aliased fields, each field can carry its own <code>@glCache</code> directive. The client fetches each field independently and caches them separately.</p>
+<p>The result: if one tag is invalidated, only the affected portion of the query is re-fetched. The rest is still served from cache.</p>
+<div class="highlight"><span class="filename">Partial caching — schema</span><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">type</span><span class="w"> </span><span class="err">Query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="c"># These two aliases will be cached separately</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="nl">vehicle</span><span class="p">:</span><span class="w"> </span><span class="n">Vehicle</span><span class="err">!</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">120</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nl">owner</span><span class="p">:</span><span class="w">   </span><span class="n">Person</span><span class="err">!</span><span class="w">  </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">300</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;persons&quot;</span><span class="p">])</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="p">}</span>
+</code></pre></div>
+<p>Here is what happens step by step:</p>
+<ol>
+<li><strong>First call</strong> — both <code>vehicle</code> and <code>owner</code> are cache misses. The client sends requests to the server for both. Results are stored: <code>vehicle</code> tagged <code>["vehicles"]</code>, <code>owner</code> tagged <code>["persons"]</code>.</li>
+<li><strong>Second call (within TTL)</strong> — both hits. No network requests.</li>
+<li><strong>addVehicle mutation runs</strong> — <code>@glCacheInvalidate(tags: ["vehicles"])</code> evicts the <code>vehicle</code> entry. The <code>owner</code> entry is unaffected.</li>
+<li><strong>Third call</strong> — <code>vehicle</code> is a miss (re-fetched from server). <code>owner</code> is still a hit (served from cache). One network request instead of two.</li>
+</ol>
+<p>Partial query caching is especially valuable in dashboard or profile screens that combine volatile data (frequently updated) with stable data (rarely changed). The stable portion never leaves the cache even when the volatile portion is invalidated.</p>
+<h2 id="staleifoffline">staleIfOffline<a class="headerlink" href="#staleifoffline" title="Permanent link">&para;</a></h2>
+<p>When <code>staleIfOffline: true</code> is set on a cached query and the cache entry has expired, GraphLink attempts a server request. If that request fails (network error, timeout, server unreachable), it falls back to the expired cached value instead of throwing an exception.</p>
+<p>This is especially useful on mobile apps where network connectivity is unreliable. Users see slightly outdated data rather than an error screen:</p>
+<div class="highlight"><span class="filename">staleIfOffline example</span><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">type</span><span class="w"> </span><span class="err">Query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="c"># If expired and network fails, return the last known value</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="n">getUserProfile</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">UserProfile</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span><span class="p">,</span><span class="w"> </span><span class="n">staleIfOffline</span><span class="p">:</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="c"># Without staleIfOffline — throws on network failure after TTL</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span><span class="n">getVehicle</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">Vehicle</span><span class="err">!</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">120</span><span class="p">)</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="p">}</span>
+</code></pre></div>
+<h2 id="custom-cache-store">Custom cache store<a class="headerlink" href="#custom-cache-store" title="Permanent link">&para;</a></h2>
+<p>The default cache store is <code>InMemoryGraphLinkCacheStore</code>. It is an in-process, non-persistent LRU map. For most apps this is sufficient. If you need persistence, cross-process sharing, or custom eviction, implement the <code>GraphLinkCacheStore</code> interface:</p>
+<div class="highlight"><span class="filename">GraphLinkCacheStore interface (generated)</span><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kd">public</span><span class="w"> </span><span class="kd">interface</span> <span class="nc">GraphLinkCacheStore</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span><span class="c1">// Store an entry with its TTL (in seconds) and tags</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">set</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">key</span><span class="p">,</span><span class="w"> </span><span class="n">Object</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">ttl</span><span class="p">,</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">tags</span><span class="p">);</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">    </span><span class="c1">// Retrieve a cached entry, or null if expired/absent</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span><span class="n">Object</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">key</span><span class="p">);</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">    </span><span class="c1">// Evict all entries matching any of the given tags</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">invalidate</span><span class="p">(</span><span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">tags</span><span class="p">);</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">    </span><span class="c1">// Evict all entries in the store</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">invalidateAll</span><span class="p">();</span>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="p">}</span>
+</code></pre></div>
+<p>Examples of custom implementations you might write:</p>
+<ul>
+<li><strong>SharedPreferences (Flutter)</strong> — persist cache across app restarts on mobile</li>
+<li><strong>Redis-backed (Java)</strong> — share cache across multiple service instances</li>
+<li><strong>Encrypted store</strong> — encrypt sensitive data at rest on device</li>
+<li><strong>Size-limited LRU</strong> — evict least-recently-used entries when a size cap is reached</li>
+</ul>
+<p>Pass the custom store as the last argument to the client constructor:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Dart</label><label for="__tabbed_1_2">Java</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kd">final</span><span class="w"> </span><span class="n">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GraphLinkClient</span><span class="p">(</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="n">graphLinkAdapter</span><span class="p">,</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span><span class="n">SimpleWebSocketAdapter</span><span class="p">(</span><span class="s1">&#39;ws://localhost:8080/graphql&#39;</span><span class="p">),</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span><span class="n">MyCustomCacheStore</span><span class="p">(),</span><span class="w"> </span><span class="c1">// implements GraphLinkCacheStore</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="p">);</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">GraphLinkClient</span><span class="w"> </span><span class="n">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">GraphLinkClient</span><span class="p">(</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">    </span><span class="n">adapter</span><span class="p">,</span><span class="w"> </span><span class="n">encoder</span><span class="p">,</span><span class="w"> </span><span class="n">decoder</span><span class="p">,</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">MyRedisCacheStore</span><span class="p">(</span><span class="n">redisClient</span><span class="p">)</span><span class="w"> </span><span class="c1">// implements GraphLinkCacheStore</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="p">);</span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<h2 id="dart-usage-full-cache-flow">Dart usage — full cache flow<a class="headerlink" href="#dart-usage-full-cache-flow" title="Permanent link">&para;</a></h2>
+<div class="highlight"><span class="filename">Cache flow in Dart</span><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1">// 1. First call — cache miss, hits the server</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="c1">//    Result stored with key=hash(&quot;getVehicle&quot;+&quot;42&quot;), ttl=120s, tags=[&quot;vehicles&quot;]</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="kd">final</span><span class="w"> </span><span class="n">res1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kd">await</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">queries</span><span class="p">.</span><span class="n">getVehicle</span><span class="p">(</span><span class="nl">id:</span><span class="w"> </span><span class="s1">&#39;42&#39;</span><span class="p">);</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">print</span><span class="p">(</span><span class="n">res1</span><span class="p">.</span><span class="n">getVehicle</span><span class="p">.</span><span class="n">brand</span><span class="p">);</span><span class="w"> </span><span class="c1">// Toyota — from server</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="c1">// 2. Second call within 120s — cache hit, no network request</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="kd">final</span><span class="w"> </span><span class="n">res2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kd">await</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">queries</span><span class="p">.</span><span class="n">getVehicle</span><span class="p">(</span><span class="nl">id:</span><span class="w"> </span><span class="s1">&#39;42&#39;</span><span class="p">);</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="n">print</span><span class="p">(</span><span class="n">res2</span><span class="p">.</span><span class="n">getVehicle</span><span class="p">.</span><span class="n">brand</span><span class="p">);</span><span class="w"> </span><span class="c1">// Toyota — from cache</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="c1">// 3. Different ID — separate cache entry</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="kd">final</span><span class="w"> </span><span class="n">res3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kd">await</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">queries</span><span class="p">.</span><span class="n">getVehicle</span><span class="p">(</span><span class="nl">id:</span><span class="w"> </span><span class="s1">&#39;99&#39;</span><span class="p">);</span>
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="n">print</span><span class="p">(</span><span class="n">res3</span><span class="p">.</span><span class="n">getVehicle</span><span class="p">.</span><span class="n">brand</span><span class="p">);</span><span class="w"> </span><span class="c1">// Honda — from server (different cache key)</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="c1">// 4. Mutation — @glCacheInvalidate(tags: [&quot;vehicles&quot;]) evicts all &quot;vehicles&quot; entries</span>
+<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="kd">await</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">mutations</span><span class="p">.</span><span class="n">addVehicle</span><span class="p">(</span>
+<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="w">  </span><span class="nl">input:</span><span class="w"> </span><span class="n">AddVehicleInput</span><span class="p">(</span><span class="nl">brand:</span><span class="w"> </span><span class="s1">&#39;Ford&#39;</span><span class="p">,</span><span class="w"> </span><span class="nl">model:</span><span class="w"> </span><span class="s1">&#39;Focus&#39;</span><span class="p">,</span><span class="w"> </span><span class="nl">year:</span><span class="w"> </span><span class="m">2024</span><span class="p">,</span><span class="w"> </span><span class="nl">fuelType:</span><span class="w"> </span><span class="n">FuelType</span><span class="p">.</span><span class="n">GASOLINE</span><span class="p">),</span>
+<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a><span class="p">);</span>
+<a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a>
+<a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a><span class="c1">// 5. After mutation — cache miss again for all &quot;vehicles&quot; entries</span>
+<a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a><span class="kd">final</span><span class="w"> </span><span class="n">res5</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kd">await</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">queries</span><span class="p">.</span><span class="n">getVehicle</span><span class="p">(</span><span class="nl">id:</span><span class="w"> </span><span class="s1">&#39;42&#39;</span><span class="p">);</span>
+<a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a><span class="n">print</span><span class="p">(</span><span class="n">res5</span><span class="p">.</span><span class="n">getVehicle</span><span class="p">.</span><span class="n">brand</span><span class="p">);</span><span class="w"> </span><span class="c1">// Toyota — from server again (cache was cleared)</span>
+</code></pre></div>
+<h2 id="java-usage-full-cache-flow">Java usage — full cache flow<a class="headerlink" href="#java-usage-full-cache-flow" title="Permanent link">&para;</a></h2>
+<div class="highlight"><span class="filename">Cache flow in Java</span><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1">// 1. First call — cache miss, hits the server</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">GetVehicleResponse</span><span class="w"> </span><span class="n">res1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="na">queries</span><span class="p">.</span><span class="na">getVehicle</span><span class="p">(</span><span class="s">&quot;42&quot;</span><span class="p">);</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">res1</span><span class="p">.</span><span class="na">getGetVehicle</span><span class="p">().</span><span class="na">getBrand</span><span class="p">());</span><span class="w"> </span><span class="c1">// Toyota — from server</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="c1">// 2. Second call within 120s — cache hit, no network</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="n">GetVehicleResponse</span><span class="w"> </span><span class="n">res2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="na">queries</span><span class="p">.</span><span class="na">getVehicle</span><span class="p">(</span><span class="s">&quot;42&quot;</span><span class="p">);</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">res2</span><span class="p">.</span><span class="na">getGetVehicle</span><span class="p">().</span><span class="na">getBrand</span><span class="p">());</span><span class="w"> </span><span class="c1">// Toyota — from cache</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="c1">// 3. List query — its own cache entry (ttl=60, tags=[&quot;vehicles&quot;])</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="n">ListVehiclesResponse</span><span class="w"> </span><span class="n">list1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="na">queries</span><span class="p">.</span><span class="na">listVehicles</span><span class="p">();</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">list1</span><span class="p">.</span><span class="na">getListVehicles</span><span class="p">().</span><span class="na">size</span><span class="p">());</span><span class="w"> </span><span class="c1">// 3 — from server</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="c1">// 4. Mutation — evicts all &quot;vehicles&quot; cache entries</span>
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="n">client</span><span class="p">.</span><span class="na">mutations</span><span class="p">.</span><span class="na">addVehicle</span><span class="p">(</span>
+<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="w">    </span><span class="n">AddVehicleInput</span><span class="p">.</span><span class="na">builder</span><span class="p">()</span>
+<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a><span class="w">        </span><span class="p">.</span><span class="na">brand</span><span class="p">(</span><span class="s">&quot;Ford&quot;</span><span class="p">).</span><span class="na">model</span><span class="p">(</span><span class="s">&quot;Focus&quot;</span><span class="p">).</span><span class="na">year</span><span class="p">(</span><span class="mi">2024</span><span class="p">)</span>
+<a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a><span class="w">        </span><span class="p">.</span><span class="na">fuelType</span><span class="p">(</span><span class="n">FuelType</span><span class="p">.</span><span class="na">GASOLINE</span><span class="p">).</span><span class="na">build</span><span class="p">()</span>
+<a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a><span class="p">);</span>
+<a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a>
+<a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a><span class="c1">// 5. After mutation — getVehicle(&quot;42&quot;) and listVehicles() both miss cache</span>
+<a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a><span class="n">GetVehicleResponse</span><span class="w"> </span><span class="n">res5</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="na">queries</span><span class="p">.</span><span class="na">getVehicle</span><span class="p">(</span><span class="s">&quot;42&quot;</span><span class="p">);</span>
+<a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">res5</span><span class="p">.</span><span class="na">getGetVehicle</span><span class="p">().</span><span class="na">getBrand</span><span class="p">());</span><span class="w"> </span><span class="c1">// Toyota — from server again</span>
+<a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a>
+<a id="__codelineno-9-24" name="__codelineno-9-24" href="#__codelineno-9-24"></a><span class="n">ListVehiclesResponse</span><span class="w"> </span><span class="n">list2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="na">queries</span><span class="p">.</span><span class="na">listVehicles</span><span class="p">();</span>
+<a id="__codelineno-9-25" name="__codelineno-9-25" href="#__codelineno-9-25"></a><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">list2</span><span class="p">.</span><span class="na">getListVehicles</span><span class="p">().</span><span class="na">size</span><span class="p">());</span><span class="w"> </span><span class="c1">// 4 — from server (includes new Ford)</span>
+</code></pre></div>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/Oualitsen/graphlink" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
     </div>
   </div>
 </footer>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
-<script src="../js/main.js?v=4.3.0"></script>
-<script src="../js/docs.js?v=4.3.0"></script>
-</body>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["navigation.tabs", "navigation.sections", "content.code.copy", "content.tabs.link"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
 </html>

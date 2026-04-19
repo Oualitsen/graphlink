@@ -1,475 +1,1688 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Getting Started — GraphLink Docs</title>
-  <meta name="description" content="Install the GraphLink CLI, write your first GraphQL schema, configure the generator, and run it to produce type-safe Dart and Java code in under 5 minutes.">
-  <meta property="og:type" content="article">
-  <meta property="og:url" content="https://graphlink.dev/docs/getting-started.html">
-  <meta property="og:site_name" content="GraphLink">
-  <meta property="og:title" content="Getting Started — GraphLink Docs">
-  <meta property="og:description" content="Install the GraphLink CLI, write your first GraphQL schema, configure the generator, and produce type-safe Dart and Java code in under 5 minutes.">
-  <meta property="og:image" content="https://graphlink.dev/og-image.png">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Getting Started — GraphLink Docs">
-  <meta name="twitter:description" content="Install the GraphLink CLI and generate type-safe Dart and Java code from your GraphQL schema in under 5 minutes.">
-  <meta name="twitter:image" content="https://graphlink.dev/og-image.png">
-  <link rel="canonical" href="https://graphlink.dev/docs/getting-started.html">
-  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
-  <link rel="alternate" type="text/plain" title="GraphLink for LLMs" href="/llms.txt">
-  <link rel="stylesheet" href="../css/styles.css?v=4.3.0">
-  <link rel="stylesheet" href="../css/docs.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "TechArticle",
-        "headline": "Getting Started with GraphLink",
-        "description": "Install the GraphLink CLI binary, write your first GraphQL schema, configure the generator, and produce type-safe Dart and Java code in under 5 minutes.",
-        "url": "https://graphlink.dev/docs/getting-started.html",
-        "isPartOf": { "@id": "https://graphlink.dev/#app" }
-      },
-      {
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-          { "@type": "ListItem", "position": 1, "name": "GraphLink", "item": "https://graphlink.dev/" },
-          { "@type": "ListItem", "position": 2, "name": "Docs", "item": "https://graphlink.dev/docs/index.html" },
-          { "@type": "ListItem", "position": 3, "name": "Getting Started", "item": "https://graphlink.dev/docs/getting-started.html" }
-        ]
-      }
-    ]
-  }
-  </script>
-</head>
-<body class="docs-page">
 
-<nav class="nav scrolled" id="nav">
-  <div class="nav-inner">
-    <a href="../index.html" class="logo">
-      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-      GraphLink
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Install the GraphLink CLI, write your first GraphQL schema, configure the generator, and produce type-safe Dart, Java, and TypeScript code in under 5 minutes.">
+      
+      
+        <meta name="author" content="GraphLink">
+      
+      
+        <link rel="canonical" href="https://graphlink.dev/getting-started.html">
+      
+      
+        <link rel="prev" href="philosophy.html">
+      
+      
+        <link rel="next" href="dart-client.html">
+      
+      
+        
+      
+      
+      <link rel="icon" href="assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Getting Started — GraphLink Docs - GraphLink Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#getting-started" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="index.html" title="GraphLink Docs" class="md-header__button md-logo" aria-label="GraphLink Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
     </a>
-    <ul class="nav-links">
-      <li><a href="../index.html#features">Features</a></li>
-      <li><a href="index.html" class="active">Docs</a></li>
-      <li><a href="../index.html#roadmap">Roadmap</a></li>
-      <li><a href="https://github.com/Oualitsen/graphlink" class="nav-github" target="_blank" rel="noopener">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
-        GitHub
-      </a></li>
-    </ul>
-    <a href="../index.html#quick-start" class="btn-nav">Get Started</a>
-  </div>
-</nav>
-
-<div class="docs-layout">
-  <aside class="docs-sidebar">
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Introduction</span>
-      <a href="index.html" class="sidebar-link">Overview</a>
-      <a href="philosophy.html" class="sidebar-link">Philosophy</a>
-    </div>
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Getting Started</span>
-      <a href="getting-started.html" class="sidebar-link active">Installation &amp; First Schema</a>
-    </div>
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Frontend Clients</span>
-      <a href="dart-client.html" class="sidebar-link">Dart / Flutter</a>
-      <a href="java-client.html" class="sidebar-link">Java</a>
-    </div>
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Backend</span>
-      <a href="spring-server.html" class="sidebar-link">Spring Boot</a>
-    </div>
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Features</span>
-      <a href="caching.html" class="sidebar-link">Caching</a>
-    </div>
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Reference</span>
-      <a href="directives.html" class="sidebar-link">Directives</a>
-      <a href="configuration.html" class="sidebar-link">Configuration</a>
-    </div>
-  </aside>
-
-  <main class="docs-content">
-    <div class="breadcrumb">
-      <a href="../index.html">Home</a>
-      <span class="breadcrumb-sep">›</span>
-      <a href="index.html">Docs</a>
-      <span class="breadcrumb-sep">›</span>
-      <span class="breadcrumb-current">Getting Started</span>
-    </div>
-
-    <h1 class="doc-title">Getting Started</h1>
-    <p class="doc-lead">From zero to generated code in under 5 minutes.</p>
-
-    <h2>Step 1 — Download the CLI</h2>
-    <p>The GraphLink CLI is distributed as a single self-contained binary called <code>glink</code>. No runtime, no package manager, no JVM required.</p>
-
-    <div class="doc-tabgroup">
-      <div class="doc-tabs">
-        <button class="doc-tab active">Linux / macOS</button>
-        <button class="doc-tab">Windows</button>
-        <button class="doc-tab">Manual</button>
-      </div>
-      <div class="doc-tab-content active">
-        <pre><code class="language-bash"># Download the latest release
-curl -fsSL https://github.com/Oualitsen/graphlink/releases/latest/download/glink-linux-x64 -o glink
-
-# Make it executable
-chmod +x glink
-
-# Move to your PATH
-sudo mv glink /usr/local/bin/glink
-
-# Verify
-glink --version</code></pre>
-      </div>
-      <div class="doc-tab-content">
-        <pre><code class="language-powershell"># Download via PowerShell
-Invoke-WebRequest `
-  -Uri "https://github.com/Oualitsen/graphlink/releases/latest/download/glink-windows-x64.exe" `
-  -OutFile "glink.exe"
-
-# Add to PATH or run from current directory
-.\glink.exe --version</code></pre>
-      </div>
-      <div class="doc-tab-content">
-        <pre><code class="language-text">Visit: https://github.com/Oualitsen/graphlink/releases/latest
-
-Download the binary for your platform:
-  glink-linux-x64      — Linux (x86_64)
-  glink-linux-arm64    — Linux (ARM64 / Raspberry Pi)
-  glink-macos-x64      — macOS (Intel)
-  glink-macos-arm64    — macOS (Apple Silicon)
-  glink-windows-x64.exe — Windows (x86_64)
-
-Place the binary somewhere on your PATH and make it executable.</code></pre>
-      </div>
-    </div>
-
-    <h2>Step 2 — Write your schema</h2>
-    <p>Create a <code>schema/</code> directory and save your GraphQL schema as one or more <code>.graphql</code> or <code>.gql</code> files. Here is the schema used throughout this documentation:</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">schema/schema.graphql</span>
-        <span class="doc-code-lang">GraphQL</span>
-      </div>
-      <pre><code class="language-graphql"># An enum — GraphLink generates serialization in both directions
-enum FuelType {
-  GASOLINE
-  DIESEL
-  ELECTRIC
-  HYBRID
-}
-
-# A type — generates a model class with fromJson/toJson (Dart) or builder + getters (Java)
-type Person {
-  id: ID!        # ID maps to String in both Dart and Java
-  name: String!
-  email: String!
-  vehicles: [Vehicle!]!  # nested list — fully typed
-}
-
-type Vehicle {
-  id: ID!
-  brand: String!
-  model: String!
-  year: Int!
-  fuelType: FuelType!
-  ownerId: ID    # nullable — String? in Dart, @Nullable String in Java
-}
-
-# Input types — generate immutable input classes with builders
-input AddPersonInput {
-  name: String!
-  email: String!
-}
-
-input AddVehicleInput {
-  brand: String!
-  model: String!
-  year: Int!
-  fuelType: FuelType!
-  ownerId: ID
-}
-
-# Queries — @glCache caches the result; ttl in seconds; tags for group invalidation
-type Query {
-  getPerson(id: ID!): Person                              # returns nullable Person
-  getVehicle(id: ID!): Vehicle!  @glCache(ttl: 120, tags: ["vehicles"])
-  listVehicles: [Vehicle!]!      @glCache(ttl: 60,  tags: ["vehicles"])
-}
-
-# Mutations — @glCacheInvalidate evicts all entries with matching tags on success
-type Mutation {
-  addPerson(input: AddPersonInput!): Person!
-  addVehicle(input: AddVehicleInput!): Vehicle! @glCacheInvalidate(tags: ["vehicles"])
-}
-
-# Subscriptions — backed by a WebSocket connection
-type Subscription {
-  vehicleAdded: Vehicle!
-}</code></pre>
-    </div>
-
-    <p>The schema above exercises every major GraphLink feature: types, enums, input types, nullable vs non-nullable fields, nested lists, and caching directives.</p>
-
-    <h2>Step 3 — Configure the generator</h2>
-    <p>Create a <code>config.json</code> file in your project root. The config tells GraphLink where to find the schema, where to write output, and what language/framework to target.</p>
-
-    <div class="doc-tabgroup">
-      <div class="doc-tabs">
-        <button class="doc-tab active">Dart / Flutter</button>
-        <button class="doc-tab">Java client</button>
-        <button class="doc-tab">Spring Boot</button>
-      </div>
-      <div class="doc-tab-content active">
-        <pre><code class="language-json">{
-  "schemaPaths": ["schema/*.graphql"],
-  "mode": "client",
-  "typeMappings": {
-    "ID":      "String",
-    "String":  "String",
-    "Float":   "double",
-    "Int":     "int",
-    "Boolean": "bool",
-    "Null":    "null"
-  },
-  "outputDir": "lib/generated",
-  "clientConfig": {
-    "dart": {
-      "packageName": "my_app",
-      "generateAllFieldsFragments": true,
-      "autoGenerateQueries": true,
-      "nullableFieldsRequired": false,
-      "immutableInputFields": true,
-      "immutableTypeFields": true
-    }
-  }
-}</code></pre>
-      </div>
-      <div class="doc-tab-content">
-        <pre><code class="language-json">{
-  "schemaPaths": ["schema/*.graphql"],
-  "mode": "client",
-  "typeMappings": {
-    "ID":      "String",
-    "String":  "String",
-    "Float":   "Double",
-    "Int":     "Integer",
-    "Boolean": "Boolean",
-    "Null":    "null"
-  },
-  "outputDir": "src/main/java/com/example/generated",
-  "clientConfig": {
-    "java": {
-      "packageName": "com.example.generated",
-      "generateAllFieldsFragments": true,
-      "autoGenerateQueries": true,
-      "nullableFieldsRequired": false,
-      "immutableInputFields": true,
-      "immutableTypeFields": true
-    }
-  }
-}</code></pre>
-      </div>
-      <div class="doc-tab-content">
-        <pre><code class="language-json">{
-  "schemaPaths": ["schema/*.graphql"],
-  "mode": "server",
-  "typeMappings": {
-    "ID":      "String",
-    "String":  "String",
-    "Float":   "Double",
-    "Int":     "Integer",
-    "Boolean": "Boolean",
-    "Null":    "null"
-  },
-  "outputDir": "src/main/java/com/example/generated",
-  "serverConfig": {
-    "spring": {
-      "basePackage": "com.example.generated",
-      "generateControllers": true,
-      "generateInputs": true,
-      "generateTypes": true,
-      "generateRepositories": false,
-      "immutableInputFields": true,
-      "immutableTypeFields": false
-    }
-  }
-}</code></pre>
-      </div>
-    </div>
-
-    <h3>Key configuration options explained</h3>
-    <table class="doc-table">
-      <thead>
-        <tr><th>Key</th><th>Description</th></tr>
-      </thead>
-      <tbody>
-        <tr><td><code>schemaPaths</code></td><td>Glob patterns for schema files. You can split the schema across multiple files.</td></tr>
-        <tr><td><code>mode</code></td><td><code>"client"</code> generates client code; <code>"server"</code> generates Spring Boot scaffolding.</td></tr>
-        <tr><td><code>typeMappings</code></td><td>Maps GraphQL scalar types to language types. Add entries for custom scalars.</td></tr>
-        <tr><td><code>outputDir</code></td><td>Where to write generated files. Existing files are overwritten.</td></tr>
-        <tr><td><code>generateAllFieldsFragments</code></td><td>Generates a <code>_all_fields_TypeName</code> fragment per type, used by <code>autoGenerateQueries</code>.</td></tr>
-        <tr><td><code>autoGenerateQueries</code></td><td>Generates query strings for every Query/Mutation/Subscription field automatically.</td></tr>
-        <tr><td><code>immutableInputFields</code></td><td>Input class fields are <code>final</code> (Dart) or <code>final</code> (Java). Inputs become builder-only.</td></tr>
-        <tr><td><code>immutableTypeFields</code></td><td>Response type fields are final. For Spring server, set to <code>false</code> so Spring can set fields.</td></tr>
-        <tr><td><code>generateControllers</code></td><td>Spring only. Generates <code>@Controller</code> classes wired with <code>@QueryMapping</code> etc.</td></tr>
-        <tr><td><code>generateRepositories</code></td><td>Spring only. Generates JpaRepository interfaces for types annotated with <code>@glRepository</code>.</td></tr>
-      </tbody>
-    </table>
-
-    <h2>Step 4 — Run the generator</h2>
-    <p>Point <code>glink</code> at your config file and let it run:</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">Terminal</span>
-        <span class="doc-code-lang">bash</span>
-      </div>
-      <pre><code class="language-bash">glink -c config.json</code></pre>
-    </div>
-
-    <p>For the Dart client config, the generator produces 21 files. For the Java client, 38 files. For Spring Boot, 9 files. Here is the Dart output tree:</p>
-
-    <div class="doc-filetree">
-      <div class="ft-dir">lib/generated/</div>
-      <div class="ft-dir" style="padding-left:20px;">client/</div>
-      <span class="ft-file" style="padding-left:40px;">graph_link_client.dart</span>
-      <div class="ft-dir" style="padding-left:20px;">enums/</div>
-      <span class="ft-file" style="padding-left:40px;">fuel_type.dart</span>
-      <div class="ft-dir" style="padding-left:20px;">inputs/</div>
-      <span class="ft-file" style="padding-left:40px;">add_person_input.dart</span>
-      <span class="ft-file" style="padding-left:40px;">add_vehicle_input.dart</span>
-      <div class="ft-dir" style="padding-left:20px;">types/</div>
-      <span class="ft-file" style="padding-left:40px;">vehicle.dart</span>
-      <span class="ft-file" style="padding-left:40px;">person.dart</span>
-      <span class="ft-file" style="padding-left:40px;">get_vehicle_response.dart</span>
-      <span class="ft-file" style="padding-left:40px;">list_vehicles_response.dart</span>
-      <span class="ft-file" style="padding-left:40px;">get_person_response.dart</span>
-      <span class="ft-file" style="padding-left:40px;">add_vehicle_response.dart</span>
-      <span class="ft-file" style="padding-left:40px;">add_person_response.dart</span>
-      <span class="ft-file" style="padding-left:40px;">vehicle_added_response.dart</span>
-      <span class="ft-file" style="padding-left:40px;">graph_link_error.dart</span>
-      <span class="ft-file" style="padding-left:40px;">graph_link_payload.dart</span>
-      <span class="ft-count" style="padding-left:40px;">... + 6 internal support files</span>
-    </div>
-
-    <p>And the Spring Boot output:</p>
-
-    <div class="doc-filetree">
-      <div class="ft-dir">src/main/java/com/example/generated/</div>
-      <div class="ft-dir" style="padding-left:20px;">controllers/</div>
-      <span class="ft-file hl" style="padding-left:40px;">PersonServiceController.java</span>
-      <span class="ft-file hl" style="padding-left:40px;">VehicleServiceController.java</span>
-      <div class="ft-dir" style="padding-left:20px;">services/</div>
-      <span class="ft-file hl" style="padding-left:40px;">PersonService.java</span>
-      <span class="ft-file hl" style="padding-left:40px;">VehicleService.java</span>
-      <div class="ft-dir" style="padding-left:20px;">types/</div>
-      <span class="ft-file" style="padding-left:40px;">Person.java</span>
-      <span class="ft-file" style="padding-left:40px;">Vehicle.java</span>
-      <div class="ft-dir" style="padding-left:20px;">inputs/</div>
-      <span class="ft-file" style="padding-left:40px;">AddPersonInput.java</span>
-      <span class="ft-file" style="padding-left:40px;">AddVehicleInput.java</span>
-      <div class="ft-dir" style="padding-left:20px;">enums/</div>
-      <span class="ft-file" style="padding-left:40px;">FuelType.java</span>
-    </div>
-
-    <div class="callout callout-info">
-      <span class="callout-icon">ℹ</span>
-      <p>Highlighted files (<span style="color:var(--green)">✨</span>) are the ones you interact with. Controllers are generated and never touched. Service interfaces are implemented by you. Types, inputs, and enums are plain data classes.</p>
-    </div>
-
-    <h2>Step 5 — What just happened?</h2>
-    <p>The generator processed each section of your schema and produced a corresponding set of files:</p>
-
-    <h3>Types → model classes</h3>
-    <p><code>type Vehicle</code> became <code>vehicle.dart</code> (Dart) and <code>Vehicle.java</code> (Java). Each has all fields, a constructor, and JSON serialization. In Dart, fields are final and the constructor uses named parameters with <code>required</code>. In Java, an inner <code>Builder</code> class is generated.</p>
-
-    <h3>Enums → enum classes with serialization</h3>
-    <p><code>enum FuelType</code> became <code>fuel_type.dart</code> and <code>FuelType.java</code>, each with <code>toJson()</code> and <code>fromJson()</code> methods that map to and from the GraphQL string representation.</p>
-
-    <h3>Inputs → immutable input classes</h3>
-    <p><code>input AddVehicleInput</code> became <code>add_vehicle_input.dart</code> and <code>AddVehicleInput.java</code>. Required fields are enforced at construction time. The Java version uses a builder with <code>Objects.requireNonNull</code> for required fields.</p>
-
-    <h3>Queries/Mutations/Subscriptions → response types + client</h3>
-    <p>Each operation generates a response wrapper (e.g. <code>GetVehicleResponse</code>) that holds the typed result. The <code>GraphLinkClient</code> class exposes <code>client.queries</code>, <code>client.mutations</code>, and <code>client.subscriptions</code> with one method per operation.</p>
-
-    <h3>Cache directives → wired into the client automatically</h3>
-    <p>The <code>@glCache</code> and <code>@glCacheInvalidate</code> directives you wrote in the schema are reflected in the generated client code. No application-level code is needed to enable caching.</p>
-
-    <h2>Watch mode</h2>
-    <p>During development, add <code>-w</code> to watch your schema files and regenerate automatically on every save:</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">Terminal</span>
-        <span class="doc-code-lang">bash</span>
-      </div>
-      <pre><code class="language-bash">glink -c config.json -w
-
-# Output:
-# Watching schema/*.graphql for changes...
-# [14:32:01] Change detected in schema/schema.graphql
-# [14:32:01] Regenerating... done (21 files, 312ms)</code></pre>
-    </div>
-
-    <p>This integrates naturally with Flutter's hot reload workflow — schema change, save, and your Dart types are updated before you switch back to the emulator.</p>
-
-    <h2>Next steps</h2>
-    <p>You now have generated code. The next step depends on your target:</p>
-    <ul>
-      <li><a href="dart-client.html">Dart / Flutter client</a> — set up the adapter, initialize the client, make queries</li>
-      <li><a href="java-client.html">Java client</a> — wire up Jackson or Gson, make type-safe calls</li>
-      <li><a href="spring-server.html">Spring Boot server</a> — implement the generated service interfaces, run your app</li>
-      <li><a href="caching.html">Caching</a> — understand TTL, tags, and partial query caching in depth</li>
-    </ul>
-
-    <nav class="doc-nav-footer">
-      <a href="philosophy.html" class="doc-nav-btn prev">
-        <span class="doc-nav-label">← Previous</span>
-        <span class="doc-nav-title">Philosophy</span>
-      </a>
-      <a href="dart-client.html" class="doc-nav-btn next">
-        <span class="doc-nav-label">Next</span>
-        <span class="doc-nav-title">Dart / Flutter Client →</span>
-      </a>
-    </nav>
-  </main>
-</div>
-
-<footer class="footer">
-  <div class="container">
-    <div class="footer-top">
-      <div class="footer-brand">
-        <a href="../index.html" class="logo"><svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>GraphLink</a>
-        <p>GraphQL code generation for Dart, Flutter, and Java.<br>Open source — MIT License.</p>
-        <div class="footer-links">
-          <a href="https://github.com/Oualitsen/graphlink" target="_blank" rel="noopener">GitHub</a>
-          <a href="https://pub.dev/packages/graphlink" target="_blank" rel="noopener">pub.dev</a>
-          <a href="https://github.com/Oualitsen/graphlink/releases" target="_blank" rel="noopener">Releases</a>
-          <a href="https://github.com/Oualitsen/graphlink/issues" target="_blank" rel="noopener">Issues</a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            GraphLink Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Getting Started — GraphLink Docs
+            
+          </span>
         </div>
       </div>
     </div>
-    <div class="footer-bottom">
-      <p>© 2024 GraphLink · MIT License</p>
-      <p class="footer-tagline">Your schema is already the contract. Let GraphLink write the rest.</p>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Oualitsen/graphlink" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Oualitsen/graphlink
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="index.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Overview
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="philosophy.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Philosophy
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="getting-started.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="dart-client.html" class="md-tabs__link">
+          
+  
+  
+  Clients
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="spring-server.html" class="md-tabs__link">
+          
+  
+  
+  Backend
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="caching.html" class="md-tabs__link">
+          
+  
+  
+  Features
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="directives.html" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="index.html" title="GraphLink Docs" class="md-nav__button md-logo" aria-label="GraphLink Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    GraphLink Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Oualitsen/graphlink" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Oualitsen/graphlink
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="philosophy.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="getting-started.html" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-download-the-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1 — Download the CLI
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-write-your-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2 — Write your schema
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-configure-the-generator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3 — Configure the generator
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 3 — Configure the generator">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-configuration-options-explained" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key configuration options explained
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-run-the-generator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4 — Run the generator
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-what-just-happened" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5 — What just happened?
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 5 — What just happened?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#types-model-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Types → model classes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#enums-enum-classes-with-serialization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enums → enum classes with serialization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inputs-immutable-input-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inputs → immutable input classes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#queriesmutationssubscriptions-response-types-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Queries/Mutations/Subscriptions → response types + client
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cache-directives-wired-into-the-client-automatically" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cache directives → wired into the client automatically
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#watch-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Watch mode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clients
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Clients
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="dart-client.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dart / Flutter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="java-client.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="typescript-client.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Backend
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-server.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spring Boot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Features
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="caching.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Caching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="directives.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Directives
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="configuration.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-download-the-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1 — Download the CLI
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-write-your-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2 — Write your schema
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-configure-the-generator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3 — Configure the generator
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 3 — Configure the generator">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-configuration-options-explained" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key configuration options explained
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-run-the-generator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4 — Run the generator
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-what-just-happened" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5 — What just happened?
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 5 — What just happened?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#types-model-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Types → model classes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#enums-enum-classes-with-serialization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enums → enum classes with serialization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inputs-immutable-input-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inputs → immutable input classes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#queriesmutationssubscriptions-response-types-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Queries/Mutations/Subscriptions → response types + client
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cache-directives-wired-into-the-client-automatically" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cache directives → wired into the client automatically
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#watch-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Watch mode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="getting-started">Getting Started<a class="headerlink" href="#getting-started" title="Permanent link">&para;</a></h1>
+<p>From zero to generated code in under 5 minutes.</p>
+<h2 id="step-1-download-the-cli">Step 1 — Download the CLI<a class="headerlink" href="#step-1-download-the-cli" title="Permanent link">&para;</a></h2>
+<p>The GraphLink CLI is distributed as a single self-contained binary called <code>glink</code>. No runtime, no package manager, no JVM required.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Linux / macOS</label><label for="__tabbed_1_2">Windows</label><label for="__tabbed_1_3">Manual</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Download the latest release</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://github.com/Oualitsen/graphlink/releases/latest/download/glink-linux-x64<span class="w"> </span>-o<span class="w"> </span>glink
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Make it executable</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>chmod<span class="w"> </span>+x<span class="w"> </span>glink
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># Move to your PATH</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>sudo<span class="w"> </span>mv<span class="w"> </span>glink<span class="w"> </span>/usr/local/bin/glink
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># Verify</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>glink<span class="w"> </span>--version
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c"># Download via PowerShell</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nb">Invoke-WebRequest</span> <span class="p">`</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>  <span class="n">-Uri</span> <span class="s2">&quot;https://github.com/Oualitsen/graphlink/releases/latest/download/glink-windows-x64.exe&quot;</span> <span class="p">`</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>  <span class="n">-OutFile</span> <span class="s2">&quot;glink.exe&quot;</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="c"># Add to PATH or run from current directory</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="p">.\</span><span class="n">glink</span><span class="p">.</span><span class="n">exe</span> <span class="p">-</span><span class="n">-version</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Visit: https://github.com/Oualitsen/graphlink/releases/latest
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>Download the binary for your platform:
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>  glink-linux-x64       — Linux (x86_64)
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>  glink-linux-arm64     — Linux (ARM64 / Raspberry Pi)
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>  glink-macos-x64       — macOS (Intel)
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>  glink-macos-arm64     — macOS (Apple Silicon)
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>  glink-windows-x64.exe — Windows (x86_64)
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>Place the binary somewhere on your PATH and make it executable.
+</code></pre></div>
+</div>
+</div>
+</div>
+<h2 id="step-2-write-your-schema">Step 2 — Write your schema<a class="headerlink" href="#step-2-write-your-schema" title="Permanent link">&para;</a></h2>
+<p>Create a <code>schema/</code> directory and save your GraphQL schema as one or more <code>.graphql</code> or <code>.gql</code> files. Here is the schema used throughout this documentation:</p>
+<div class="highlight"><span class="filename">schema/schema.graphql</span><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c"># An enum — GraphLink generates serialization in both directions</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">enum</span><span class="w"> </span><span class="err">FuelType</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="n">GASOLINE</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="n">DIESEL</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="n">ELECTRIC</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="n">HYBRID</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="p">}</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="c"># A type — generates a model class with fromJson/toJson (Dart) or builder + getters (Java)</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="k">type</span><span class="w"> </span><span class="err">Person</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span><span class="w">        </span><span class="c"># ID maps to String in both Dart and Java</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">  </span><span class="nl">email</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">  </span><span class="nl">vehicles</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Vehicle</span><span class="err">!]!</span><span class="w">  </span><span class="c"># nested list — fully typed</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="p">}</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="k">type</span><span class="w"> </span><span class="err">Vehicle</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="w">  </span><span class="nl">brand</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="w">  </span><span class="nl">model</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="w">  </span><span class="nl">year</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="w">  </span><span class="nl">fuelType</span><span class="p">:</span><span class="w"> </span><span class="n">FuelType</span><span class="err">!</span>
+<a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a><span class="w">  </span><span class="nl">ownerId</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="w">    </span><span class="c"># nullable — String? in Dart, @Nullable String in Java</span>
+<a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a><span class="p">}</span>
+<a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a>
+<a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a><span class="c"># Input types — generate immutable input classes with builders</span>
+<a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a><span class="k">input</span><span class="w"> </span><span class="err">AddPersonInput</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a><span class="w">  </span><span class="nl">email</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a><span class="p">}</span>
+<a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a>
+<a id="__codelineno-3-32" name="__codelineno-3-32" href="#__codelineno-3-32"></a><span class="k">input</span><span class="w"> </span><span class="err">AddVehicleInput</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-33" name="__codelineno-3-33" href="#__codelineno-3-33"></a><span class="w">  </span><span class="nl">brand</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-3-34" name="__codelineno-3-34" href="#__codelineno-3-34"></a><span class="w">  </span><span class="nl">model</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-3-35" name="__codelineno-3-35" href="#__codelineno-3-35"></a><span class="w">  </span><span class="nl">year</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-3-36" name="__codelineno-3-36" href="#__codelineno-3-36"></a><span class="w">  </span><span class="nl">fuelType</span><span class="p">:</span><span class="w"> </span><span class="n">FuelType</span><span class="err">!</span>
+<a id="__codelineno-3-37" name="__codelineno-3-37" href="#__codelineno-3-37"></a><span class="w">  </span><span class="nl">ownerId</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span>
+<a id="__codelineno-3-38" name="__codelineno-3-38" href="#__codelineno-3-38"></a><span class="p">}</span>
+<a id="__codelineno-3-39" name="__codelineno-3-39" href="#__codelineno-3-39"></a>
+<a id="__codelineno-3-40" name="__codelineno-3-40" href="#__codelineno-3-40"></a><span class="c"># Queries — @glCache caches the result; ttl in seconds; tags for group invalidation</span>
+<a id="__codelineno-3-41" name="__codelineno-3-41" href="#__codelineno-3-41"></a><span class="k">type</span><span class="w"> </span><span class="err">Query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-42" name="__codelineno-3-42" href="#__codelineno-3-42"></a><span class="w">  </span><span class="n">getPerson</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">Person</span>
+<a id="__codelineno-3-43" name="__codelineno-3-43" href="#__codelineno-3-43"></a><span class="w">  </span><span class="n">getVehicle</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">Vehicle</span><span class="err">!</span><span class="w">  </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">120</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
+<a id="__codelineno-3-44" name="__codelineno-3-44" href="#__codelineno-3-44"></a><span class="w">  </span><span class="nl">listVehicles</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Vehicle</span><span class="err">!]!</span><span class="w">      </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span><span class="p">,</span><span class="w">  </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
+<a id="__codelineno-3-45" name="__codelineno-3-45" href="#__codelineno-3-45"></a><span class="p">}</span>
+<a id="__codelineno-3-46" name="__codelineno-3-46" href="#__codelineno-3-46"></a>
+<a id="__codelineno-3-47" name="__codelineno-3-47" href="#__codelineno-3-47"></a><span class="c"># Mutations — @glCacheInvalidate evicts all entries with matching tags on success</span>
+<a id="__codelineno-3-48" name="__codelineno-3-48" href="#__codelineno-3-48"></a><span class="k">type</span><span class="w"> </span><span class="err">Mutation</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-49" name="__codelineno-3-49" href="#__codelineno-3-49"></a><span class="w">  </span><span class="n">addPerson</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="no">AddPersonInput</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">Person</span><span class="err">!</span>
+<a id="__codelineno-3-50" name="__codelineno-3-50" href="#__codelineno-3-50"></a><span class="w">  </span><span class="n">addVehicle</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="no">AddVehicleInput</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">Vehicle</span><span class="err">!</span><span class="w"> </span><span class="nd">@glCacheInvalidate</span><span class="p">(</span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
+<a id="__codelineno-3-51" name="__codelineno-3-51" href="#__codelineno-3-51"></a><span class="p">}</span>
+<a id="__codelineno-3-52" name="__codelineno-3-52" href="#__codelineno-3-52"></a>
+<a id="__codelineno-3-53" name="__codelineno-3-53" href="#__codelineno-3-53"></a><span class="c"># Subscriptions — backed by a WebSocket connection</span>
+<a id="__codelineno-3-54" name="__codelineno-3-54" href="#__codelineno-3-54"></a><span class="k">type</span><span class="w"> </span><span class="err">Subscription</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-55" name="__codelineno-3-55" href="#__codelineno-3-55"></a><span class="w">  </span><span class="nl">vehicleAdded</span><span class="p">:</span><span class="w"> </span><span class="n">Vehicle</span><span class="err">!</span>
+<a id="__codelineno-3-56" name="__codelineno-3-56" href="#__codelineno-3-56"></a><span class="p">}</span>
+</code></pre></div>
+<h2 id="step-3-configure-the-generator">Step 3 — Configure the generator<a class="headerlink" href="#step-3-configure-the-generator" title="Permanent link">&para;</a></h2>
+<p>Create a <code>config.json</code> file in your project root. The config tells GraphLink where to find the schema, where to write output, and what language/framework to target.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:3"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Dart / Flutter</label><label for="__tabbed_2_2">Java client</label><label for="__tabbed_2_3">Spring Boot</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">&quot;schemaPaths&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;schema/*.graphql&quot;</span><span class="p">],</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;client&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">&quot;typeMappings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="nt">&quot;ID&quot;</span><span class="p">:</span><span class="w">      </span><span class="s2">&quot;String&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="nt">&quot;String&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;String&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="nt">&quot;Float&quot;</span><span class="p">:</span><span class="w">   </span><span class="s2">&quot;double&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span><span class="nt">&quot;Int&quot;</span><span class="p">:</span><span class="w">     </span><span class="s2">&quot;int&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">    </span><span class="nt">&quot;Boolean&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;bool&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">    </span><span class="nt">&quot;Null&quot;</span><span class="p">:</span><span class="w">    </span><span class="s2">&quot;null&quot;</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">  </span><span class="p">},</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">  </span><span class="nt">&quot;outputDir&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;lib/generated&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">  </span><span class="nt">&quot;clientConfig&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">    </span><span class="nt">&quot;dart&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">      </span><span class="nt">&quot;packageName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;my_app&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">      </span><span class="nt">&quot;generateAllFieldsFragments&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">      </span><span class="nt">&quot;autoGenerateQueries&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="w">      </span><span class="nt">&quot;nullableFieldsRequired&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="w">      </span><span class="nt">&quot;immutableInputFields&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="w">      </span><span class="nt">&quot;immutableTypeFields&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="p">}</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="p">{</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">&quot;schemaPaths&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;schema/*.graphql&quot;</span><span class="p">],</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;client&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="nt">&quot;typeMappings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">    </span><span class="nt">&quot;ID&quot;</span><span class="p">:</span><span class="w">      </span><span class="s2">&quot;String&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span><span class="nt">&quot;String&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;String&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">    </span><span class="nt">&quot;Float&quot;</span><span class="p">:</span><span class="w">   </span><span class="s2">&quot;Double&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">    </span><span class="nt">&quot;Int&quot;</span><span class="p">:</span><span class="w">     </span><span class="s2">&quot;Integer&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">    </span><span class="nt">&quot;Boolean&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Boolean&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">    </span><span class="nt">&quot;Null&quot;</span><span class="p">:</span><span class="w">    </span><span class="s2">&quot;null&quot;</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">  </span><span class="p">},</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">  </span><span class="nt">&quot;outputDir&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;src/main/java/com/example/generated&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="w">  </span><span class="nt">&quot;clientConfig&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="w">    </span><span class="nt">&quot;java&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="w">      </span><span class="nt">&quot;packageName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;com.example.generated&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="w">      </span><span class="nt">&quot;generateAllFieldsFragments&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="w">      </span><span class="nt">&quot;autoGenerateQueries&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="w">      </span><span class="nt">&quot;nullableFieldsRequired&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a><span class="w">      </span><span class="nt">&quot;immutableInputFields&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a><span class="w">      </span><span class="nt">&quot;immutableTypeFields&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a><span class="p">}</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="p">{</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">&quot;schemaPaths&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;schema/*.graphql&quot;</span><span class="p">],</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;server&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span><span class="nt">&quot;typeMappings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">    </span><span class="nt">&quot;ID&quot;</span><span class="p">:</span><span class="w">      </span><span class="s2">&quot;String&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span><span class="nt">&quot;String&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;String&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">    </span><span class="nt">&quot;Float&quot;</span><span class="p">:</span><span class="w">   </span><span class="s2">&quot;Double&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">    </span><span class="nt">&quot;Int&quot;</span><span class="p">:</span><span class="w">     </span><span class="s2">&quot;Integer&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">    </span><span class="nt">&quot;Boolean&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Boolean&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">    </span><span class="nt">&quot;Null&quot;</span><span class="p">:</span><span class="w">    </span><span class="s2">&quot;null&quot;</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">  </span><span class="p">},</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">  </span><span class="nt">&quot;outputDir&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;src/main/java/com/example/generated&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="w">  </span><span class="nt">&quot;serverConfig&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="w">    </span><span class="nt">&quot;spring&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="w">      </span><span class="nt">&quot;basePackage&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;com.example.generated&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="w">      </span><span class="nt">&quot;generateControllers&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="w">      </span><span class="nt">&quot;generateInputs&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="w">      </span><span class="nt">&quot;generateTypes&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a><span class="w">      </span><span class="nt">&quot;generateRepositories&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a><span class="w">      </span><span class="nt">&quot;immutableInputFields&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a><span class="w">      </span><span class="nt">&quot;immutableTypeFields&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a><span class="p">}</span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<h3 id="key-configuration-options-explained">Key configuration options explained<a class="headerlink" href="#key-configuration-options-explained" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>schemaPaths</code></td>
+<td>Glob patterns for schema files. You can split the schema across multiple files.</td>
+</tr>
+<tr>
+<td><code>mode</code></td>
+<td><code>"client"</code> generates client code; <code>"server"</code> generates Spring Boot scaffolding.</td>
+</tr>
+<tr>
+<td><code>typeMappings</code></td>
+<td>Maps GraphQL scalar types to language types. Add entries for custom scalars.</td>
+</tr>
+<tr>
+<td><code>outputDir</code></td>
+<td>Where to write generated files. Existing files are overwritten.</td>
+</tr>
+<tr>
+<td><code>generateAllFieldsFragments</code></td>
+<td>Generates a <code>_all_fields_TypeName</code> fragment per type, used by <code>autoGenerateQueries</code>.</td>
+</tr>
+<tr>
+<td><code>autoGenerateQueries</code></td>
+<td>Generates query strings for every Query/Mutation/Subscription field automatically.</td>
+</tr>
+<tr>
+<td><code>immutableInputFields</code></td>
+<td>Input class fields are <code>final</code> (Dart) or <code>final</code> (Java). Inputs become builder-only.</td>
+</tr>
+<tr>
+<td><code>immutableTypeFields</code></td>
+<td>Response type fields are final. For Spring server, set to <code>false</code> so Spring can set fields.</td>
+</tr>
+<tr>
+<td><code>generateControllers</code></td>
+<td>Spring only. Generates <code>@Controller</code> classes wired with <code>@QueryMapping</code> etc.</td>
+</tr>
+<tr>
+<td><code>generateRepositories</code></td>
+<td>Spring only. Generates JpaRepository interfaces for types annotated with <code>@glRepository</code>.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="step-4-run-the-generator">Step 4 — Run the generator<a class="headerlink" href="#step-4-run-the-generator" title="Permanent link">&para;</a></h2>
+<p>Point <code>glink</code> at your config file and let it run:</p>
+<div class="highlight"><span class="filename">Terminal</span><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>glink<span class="w"> </span>-c<span class="w"> </span>config.json
+</code></pre></div>
+<p>For the Dart client config, the generator produces 21 files. For the Java client, 38 files. For Spring Boot, 9 files. Here is the Dart output tree:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>lib/generated/
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>  client/
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    graph_link_client.dart
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>  enums/
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    fuel_type.dart
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>  inputs/
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>    add_person_input.dart
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>    add_vehicle_input.dart
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>  types/
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>    vehicle.dart
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>    person.dart
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>    get_vehicle_response.dart
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>    list_vehicles_response.dart
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>    get_person_response.dart
+<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>    add_vehicle_response.dart
+<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>    add_person_response.dart
+<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a>    vehicle_added_response.dart
+<a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a>    graph_link_error.dart
+<a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a>    graph_link_payload.dart
+<a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a>    ... + 6 internal support files
+</code></pre></div>
+<p>And the Spring Boot output:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>src/main/java/com/example/generated/
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>  controllers/
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>    PersonServiceController.java  ← generated, never touch
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    VehicleServiceController.java ← generated, never touch
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>  services/
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    PersonService.java  ← implement this
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    VehicleService.java ← implement this
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>  types/
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>    Person.java
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>    Vehicle.java
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>  inputs/
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>    AddPersonInput.java
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>    AddVehicleInput.java
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>  enums/
+<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>    FuelType.java
+</code></pre></div>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>The <code>services/</code> files are the ones you implement. Controllers are generated and never touched by hand. Types, inputs, and enums are plain data classes.</p>
+</div>
+<h2 id="step-5-what-just-happened">Step 5 — What just happened?<a class="headerlink" href="#step-5-what-just-happened" title="Permanent link">&para;</a></h2>
+<p>The generator processed each section of your schema and produced a corresponding set of files:</p>
+<h3 id="types-model-classes">Types → model classes<a class="headerlink" href="#types-model-classes" title="Permanent link">&para;</a></h3>
+<p><code>type Vehicle</code> became <code>vehicle.dart</code> (Dart) and <code>Vehicle.java</code> (Java). Each has all fields, a constructor, and JSON serialization. In Dart, fields are final and the constructor uses named parameters with <code>required</code>. In Java, an inner <code>Builder</code> class is generated.</p>
+<h3 id="enums-enum-classes-with-serialization">Enums → enum classes with serialization<a class="headerlink" href="#enums-enum-classes-with-serialization" title="Permanent link">&para;</a></h3>
+<p><code>enum FuelType</code> became <code>fuel_type.dart</code> and <code>FuelType.java</code>, each with <code>toJson()</code> and <code>fromJson()</code> methods that map to and from the GraphQL string representation.</p>
+<h3 id="inputs-immutable-input-classes">Inputs → immutable input classes<a class="headerlink" href="#inputs-immutable-input-classes" title="Permanent link">&para;</a></h3>
+<p><code>input AddVehicleInput</code> became <code>add_vehicle_input.dart</code> and <code>AddVehicleInput.java</code>. Required fields are enforced at construction time. The Java version uses a builder with <code>Objects.requireNonNull</code> for required fields.</p>
+<h3 id="queriesmutationssubscriptions-response-types-client">Queries/Mutations/Subscriptions → response types + client<a class="headerlink" href="#queriesmutationssubscriptions-response-types-client" title="Permanent link">&para;</a></h3>
+<p>Each operation generates a response wrapper (e.g. <code>GetVehicleResponse</code>) that holds the typed result. The <code>GraphLinkClient</code> class exposes <code>client.queries</code>, <code>client.mutations</code>, and <code>client.subscriptions</code> with one method per operation.</p>
+<h3 id="cache-directives-wired-into-the-client-automatically">Cache directives → wired into the client automatically<a class="headerlink" href="#cache-directives-wired-into-the-client-automatically" title="Permanent link">&para;</a></h3>
+<p>The <code>@glCache</code> and <code>@glCacheInvalidate</code> directives you wrote in the schema are reflected in the generated client code. No application-level code is needed to enable caching.</p>
+<h2 id="watch-mode">Watch mode<a class="headerlink" href="#watch-mode" title="Permanent link">&para;</a></h2>
+<p>During development, add <code>-w</code> to watch your schema files and regenerate automatically on every save:</p>
+<div class="highlight"><span class="filename">Terminal</span><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>glink<span class="w"> </span>-c<span class="w"> </span>config.json<span class="w"> </span>-w
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="c1"># Output:</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1"># Watching schema/*.graphql for changes...</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="c1"># [14:32:01] Change detected in schema/schema.graphql</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="c1"># [14:32:01] Regenerating... done (21 files, 312ms)</span>
+</code></pre></div>
+<p>This integrates naturally with Flutter's hot reload workflow — schema change, save, and your Dart types are updated before you switch back to the emulator.</p>
+<h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<p>You now have generated code. The next step depends on your target:</p>
+<ul>
+<li><a href="dart-client.html">Dart / Flutter client</a> — set up the adapter, initialize the client, make queries</li>
+<li><a href="java-client.html">Java client</a> — wire up Jackson or Gson, make type-safe calls</li>
+<li><a href="spring-server.html">Spring Boot server</a> — implement the generated service interfaces, run your app</li>
+<li><a href="caching.html">Caching</a> — understand TTL, tags, and partial query caching in depth</li>
+</ul>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/Oualitsen/graphlink" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
     </div>
   </div>
 </footer>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
-<script src="../js/main.js?v=4.3.0"></script>
-<script src="../js/docs.js?v=4.3.0"></script>
-</body>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["navigation.tabs", "navigation.sections", "content.code.copy", "content.tabs.link"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
 </html>

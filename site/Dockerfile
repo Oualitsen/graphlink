@@ -1,19 +1,24 @@
+# Stage 1: Build MkDocs docs
+FROM python:3.12-alpine AS builder
+RUN pip install --no-cache-dir mkdocs-material
+WORKDIR /site
+COPY mkdocs.yml .
+COPY docs-src/ docs-src/
+COPY hooks/ hooks/
+RUN mkdocs build
+
+# Stage 2: Serve with nginx
 FROM nginx:1.27-alpine
-
-# Remove default nginx config
 RUN rm /etc/nginx/conf.d/default.conf
-
-# Copy hardened nginx config
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Copy static site files
-COPY . /usr/share/nginx/html/
+# Landing page and root assets
+COPY index.html favicon.svg robots.txt llms.txt llms-full.txt sitemap.xml /usr/share/nginx/html/
+COPY css/ /usr/share/nginx/html/css/
+COPY js/ /usr/share/nginx/html/js/
 
-# Remove build artifacts that don't belong in the image
-RUN rm -f /usr/share/nginx/html/Dockerfile \
-          /usr/share/nginx/html/nginx.conf
+# MkDocs-built docs
+COPY --from=builder /site/docs/ /usr/share/nginx/html/docs/
 
-# nginx in this config listens on 8080 (non-root port)
 EXPOSE 8080
-
 CMD ["nginx", "-g", "daemon off;"]

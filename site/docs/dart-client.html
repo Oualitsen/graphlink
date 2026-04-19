@@ -1,494 +1,1569 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dart / Flutter Client — GraphLink Docs</title>
-  <meta name="description" content="Use the generated GraphLink Dart client in Flutter or Dart apps. Generated Dio and http adapters, named-parameter constructors, typed queries, mutations, subscriptions, and built-in caching.">
-  <meta property="og:type" content="article">
-  <meta property="og:url" content="https://graphlink.dev/docs/dart-client.html">
-  <meta property="og:site_name" content="GraphLink">
-  <meta property="og:title" content="Dart / Flutter Client — GraphLink Docs">
-  <meta property="og:description" content="Generated Dart GraphQL client with Dio and WebSocket adapters out of the box. Named-parameter constructors, typed queries, mutations, subscriptions — zero boilerplate setup.">
-  <meta property="og:image" content="https://graphlink.dev/og-image.png">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Dart / Flutter Client — GraphLink Docs">
-  <meta name="twitter:description" content="Generated Dart GraphQL client with Dio/http adapters and auto-reconnect WebSocket. Named-parameter constructors, typed queries, mutations, subscriptions — zero setup.">
-  <meta name="twitter:image" content="https://graphlink.dev/og-image.png">
-  <link rel="canonical" href="https://graphlink.dev/docs/dart-client.html">
-  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
-  <link rel="alternate" type="text/plain" title="GraphLink for LLMs" href="/llms.txt">
-  <link rel="stylesheet" href="../css/styles.css?v=4.3.0">
-  <link rel="stylesheet" href="../css/docs.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "TechArticle",
-        "headline": "Dart / Flutter GraphQL Client — GraphLink",
-        "description": "How to use the generated GraphLink Dart client for type-safe queries, mutations, and WebSocket subscriptions in Flutter and Dart apps.",
-        "url": "https://graphlink.dev/docs/dart-client.html",
-        "isPartOf": { "@id": "https://graphlink.dev/#app" }
-      },
-      {
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-          { "@type": "ListItem", "position": 1, "name": "GraphLink", "item": "https://graphlink.dev/" },
-          { "@type": "ListItem", "position": 2, "name": "Docs", "item": "https://graphlink.dev/docs/index.html" },
-          { "@type": "ListItem", "position": 3, "name": "Dart / Flutter Client", "item": "https://graphlink.dev/docs/dart-client.html" }
-        ]
-      }
-    ]
-  }
-  </script>
-</head>
-<body class="docs-page">
 
-<nav class="nav scrolled" id="nav">
-  <div class="nav-inner">
-    <a href="../index.html" class="logo">
-      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-      GraphLink
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Use the generated GraphLink Dart client in Flutter or Dart apps. Generated Dio and http adapters, named-parameter constructors, typed queries, mutations, subscriptions, file uploads, and built-in caching.">
+      
+      
+        <meta name="author" content="GraphLink">
+      
+      
+        <link rel="canonical" href="https://graphlink.dev/dart-client.html">
+      
+      
+        <link rel="prev" href="getting-started.html">
+      
+      
+        <link rel="next" href="java-client.html">
+      
+      
+        
+      
+      
+      <link rel="icon" href="assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Dart / Flutter Client — GraphLink Docs - GraphLink Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#dart-flutter-client" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="index.html" title="GraphLink Docs" class="md-header__button md-logo" aria-label="GraphLink Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
     </a>
-    <ul class="nav-links">
-      <li><a href="../index.html#features">Features</a></li>
-      <li><a href="index.html" class="active">Docs</a></li>
-      <li><a href="../index.html#roadmap">Roadmap</a></li>
-      <li><a href="https://github.com/Oualitsen/graphlink" class="nav-github" target="_blank" rel="noopener">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
-        GitHub
-      </a></li>
-    </ul>
-    <a href="../index.html#quick-start" class="btn-nav">Get Started</a>
-  </div>
-</nav>
-
-<div class="docs-layout">
-  <aside class="docs-sidebar">
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Introduction</span>
-      <a href="index.html" class="sidebar-link">Overview</a>
-      <a href="philosophy.html" class="sidebar-link">Philosophy</a>
-    </div>
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Getting Started</span>
-      <a href="getting-started.html" class="sidebar-link">Installation &amp; First Schema</a>
-    </div>
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Frontend Clients</span>
-      <a href="dart-client.html" class="sidebar-link active">Dart / Flutter</a>
-      <a href="java-client.html" class="sidebar-link">Java</a>
-    </div>
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Backend</span>
-      <a href="spring-server.html" class="sidebar-link">Spring Boot</a>
-    </div>
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Features</span>
-      <a href="caching.html" class="sidebar-link">Caching</a>
-    </div>
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Reference</span>
-      <a href="directives.html" class="sidebar-link">Directives</a>
-      <a href="configuration.html" class="sidebar-link">Configuration</a>
-    </div>
-  </aside>
-
-  <main class="docs-content">
-    <div class="breadcrumb">
-      <a href="../index.html">Home</a>
-      <span class="breadcrumb-sep">›</span>
-      <a href="index.html">Docs</a>
-      <span class="breadcrumb-sep">›</span>
-      <span class="breadcrumb-current">Dart / Flutter Client</span>
-    </div>
-
-    <h1 class="doc-title">Dart / Flutter Client</h1>
-    <p class="doc-lead">A fully typed GraphQL client generated directly from your schema.</p>
-
-    <h2>Generated adapters</h2>
-    <p>GraphLink generates adapter files alongside the client. Which HTTP adapter is generated is controlled by the <code>httpAdapter</code> option in <code>config.json</code>. The WebSocket adapter is always generated when your schema has subscriptions.</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">config.json — adapter options</span>
-        <span class="doc-code-lang">JSON</span>
-      </div>
-      <pre><code class="language-json">{
-  "clientConfig": {
-    "dart": {
-      "packageName": "com.example.generated",
-      "httpAdapter": "dio"
-    }
-  }
-}</code></pre>
-    </div>
-
-    <p><strong><code>httpAdapter</code></strong> — controls which HTTP adapter file is generated:</p>
-    <ul>
-      <li><code>"dio"</code> (default) — generates <code>graph_link_dio_adapter.dart</code> containing <code>GraphLinkDioAdapter</code>. Supports an optional <code>tokenProvider</code> for Bearer auth, custom Dio <code>interceptors</code>, and <code>BaseOptions</code>. Used automatically by <code>GraphLinkClient.withHttp</code>.</li>
-      <li><code>"http"</code> — generates <code>graph_link_http_adapter.dart</code> containing <code>GraphLinkHttpAdapter</code>. Uses <code>package:http</code> with an optional async <code>headersProvider</code> for custom headers.</li>
-      <li><code>"none"</code> — no HTTP adapter file is generated. Supply your own <code>Future&lt;String&gt; Function(String)</code>.</li>
-    </ul>
-
-    <div class="doc-tabgroup">
-      <div class="doc-tabs">
-        <button class="doc-tab active">Dio adapter</button>
-        <button class="doc-tab">http adapter</button>
-        <button class="doc-tab">WebSocket adapter</button>
-      </div>
-      <div class="doc-tab-content active">
-        <pre><code class="language-dart">// generated/client/graph_link_dio_adapter.dart
-class GraphLinkDioAdapter {
-  final String url;
-  final Dio dio;
-
-  GraphLinkDioAdapter({
-    required this.url,
-    Dio? dio,
-    Future&lt;String?&gt; Function()? tokenProvider, // adds Authorization: Bearer &lt;token&gt;
-    List&lt;Interceptor&gt; interceptors = const [],
-    BaseOptions? options,
-  });
-
-  Future&lt;String&gt; call(String payload) async { /* ... */ }
-}</code></pre>
-      </div>
-      <div class="doc-tab-content">
-        <pre><code class="language-dart">// generated/client/graph_link_http_adapter.dart
-class GraphLinkHttpAdapter {
-  final String url;
-  final Future&lt;Map&lt;String, String&gt;?&gt; Function()? headersProvider;
-
-  GraphLinkHttpAdapter({
-    required this.url,
-    this.headersProvider, // merged into request headers on every call
-  });
-
-  Future&lt;String&gt; call(String payload) async { /* ... */ }
-}</code></pre>
-      </div>
-      <div class="doc-tab-content">
-        <pre><code class="language-dart">// generated/client/graph_link_websocket_adapter.dart
-// Always generated when your schema has subscriptions.
-class DefaultGraphLinkWebSocketAdapter extends GraphLinkWebSocketAdapter {
-  DefaultGraphLinkWebSocketAdapter({
-    required String url,
-    Future&lt;Map&lt;String, String&gt;?&gt; Function()? headersProvider,
-    Duration initialReconnectDelay = const Duration(seconds: 1),
-    Duration maxReconnectDelay = const Duration(seconds: 30),
-  });
-  // Handles graphql-ws protocol, exponential-backoff reconnect,
-  // and forwards headersProvider result as connection_init payload.
-}</code></pre>
-      </div>
-    </div>
-
-    <p>All adapter files are generated into your output directory. They carry no external GraphLink dependency and you can edit them freely.</p>
-
-    <h2>Initializing the client</h2>
-    <p>The <code>GraphLinkClient</code> uses <strong>named parameters</strong>. Three constructors cover every scenario:</p>
-
-    <div class="doc-tabgroup">
-      <div class="doc-tabs">
-        <button class="doc-tab active">withHttp (simplest)</button>
-        <button class="doc-tab">fromUrl (custom HTTP)</button>
-        <button class="doc-tab">full control</button>
-      </div>
-      <div class="doc-tab-content active">
-        <pre><code class="language-dart">import 'generated/client/graph_link_client.dart';
-
-// Uses the generated Dio adapter for HTTP and the generated
-// WebSocket adapter for subscriptions.
-final client = GraphLinkClient.withHttp(
-  url: 'http://localhost:8080/graphql',
-  wsUrl: 'ws://localhost:8080/graphql',
-  // Optional — adds Authorization: Bearer &lt;token&gt; on every request
-  tokenProvider: () async =&gt; await getAuthToken(),
-  // Optional — forwarded as connection_init payload for WS auth
-  wsTokenProvider: () async =&gt; await getAuthToken(),
-  // Optional — defaults to InMemoryGraphLinkCacheStore
-  // store: MyPersistentCacheStore(),
-);</code></pre>
-      </div>
-      <div class="doc-tab-content">
-        <pre><code class="language-dart">import 'generated/client/graph_link_client.dart';
-import 'generated/client/graph_link_http_adapter.dart';
-
-// Bring your own HTTP adapter (or use GraphLinkHttpAdapter).
-// The generated WebSocket adapter handles subscriptions.
-final client = GraphLinkClient.fromUrl(
-  adapter: GraphLinkHttpAdapter(
-    url: 'http://localhost:8080/graphql',
-    headersProvider: () async =&gt; {'Authorization': 'Bearer ${await getToken()}'},
-  ).call,
-  wsUrl: 'ws://localhost:8080/graphql',
-);</code></pre>
-      </div>
-      <div class="doc-tab-content">
-        <pre><code class="language-dart">import 'generated/client/graph_link_client.dart';
-import 'generated/client/graph_link_websocket_adapter.dart';
-
-// Full control — any adapter function, any WebSocket adapter.
-final client = GraphLinkClient(
-  adapter: myHttpAdapterFn,   // Future&lt;String&gt; Function(String payload)
-  wsAdapter: DefaultGraphLinkWebSocketAdapter(
-    url: 'ws://localhost:8080/graphql',
-    headersProvider: () async =&gt; {'Authorization': 'Bearer ${await getToken()}'},
-    initialReconnectDelay: const Duration(seconds: 2),
-    maxReconnectDelay: const Duration(seconds: 60),
-  ),
-  store: myPersistentCacheStore, // optional
-);</code></pre>
-      </div>
-    </div>
-
-    <div class="callout callout-info">
-      <span class="callout-icon">ℹ</span>
-      <p><strong>Testing made easy</strong><br>Because the adapter is just a named function parameter, passing a mock in tests requires no HTTP mocking library: <code>adapter: (payload) async =&gt; '{"data":{"getCar":{"id":"1","make":"Toyota"}}}'</code></p>
-    </div>
-
-    <h2>Subscriptions</h2>
-    <p>Subscriptions are available via <code>client.subscriptions</code> and return a <code>Stream</code>. The generated <code>DefaultGraphLinkWebSocketAdapter</code> implements the <a href="https://github.com/enisdenjo/graphql-ws/blob/master/PROTOCOL.md" target="_blank" rel="noopener">graphql-ws subprotocol</a> and handles connection init, ping/pong, and reconnect automatically.</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">Subscribing to new cars</span>
-        <span class="doc-code-lang">Dart</span>
-      </div>
-      <pre><code class="language-dart">// onCarCreated() returns Stream&lt;OnCarCreatedResponse&gt;
-final subscription = client.subscriptions.onCarCreated().listen((event) {
-  print('New car: ${event.onCarCreated.make} ${event.onCarCreated.model}');
-});
-
-// Cancel when done (e.g. in Flutter widget dispose)
-await subscription.cancel();</code></pre>
-    </div>
-
-    <p>If you supply a <code>headersProvider</code> on the WebSocket adapter, its result is returned from <code>connectionInitPayload()</code> and sent in the <code>connection_init</code> message — your server can use it to authenticate the WebSocket session without needing HTTP headers on the upgrade request.</p>
-
-    <h2>Queries</h2>
-    <p>All queries are accessible via <code>client.queries</code>. Each operation becomes a method with typed parameters and a typed return value.</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">Fetching a vehicle by ID</span>
-        <span class="doc-code-lang">Dart</span>
-      </div>
-      <pre><code class="language-dart">// getVehicle returns GetVehicleResponse — never null (Vehicle! in schema)
-final res = await client.queries.getVehicle(id: '42');
-
-// res.getVehicle is a typed Vehicle object
-print(res.getVehicle.brand);   // Toyota
-print(res.getVehicle.model);   // Camry
-print(res.getVehicle.year);    // 2023
-print(res.getVehicle.fuelType); // FuelType.GASOLINE</code></pre>
-    </div>
-
-    <p>The generated <code>GetVehicleResponse</code> type looks like this:</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">generated/types/get_vehicle_response.dart</span>
-        <span class="doc-code-lang">Dart</span>
-      </div>
-      <pre><code class="language-dart">class GetVehicleResponse {
-   final Vehicle getVehicle;
-   GetVehicleResponse({required this.getVehicle});
-   static GetVehicleResponse fromJson(Map&lt;String, dynamic&gt; json) {
-      return GetVehicleResponse(
-         getVehicle: Vehicle.fromJson(json['getVehicle'] as Map&lt;String, dynamic&gt;),
-      );
-   }
-}</code></pre>
-    </div>
-
-    <h3>List queries</h3>
-    <p>List queries work the same way. The response type holds a <code>List&lt;Vehicle&gt;</code>:</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">Fetching all vehicles</span>
-        <span class="doc-code-lang">Dart</span>
-      </div>
-      <pre><code class="language-dart">final res = await client.queries.listVehicles();
-
-// res.listVehicles is List&lt;Vehicle&gt; — fully typed
-for (final vehicle in res.listVehicles) {
-  print('${vehicle.brand} ${vehicle.model} (${vehicle.year})');
-}</code></pre>
-    </div>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">generated/types/list_vehicles_response.dart</span>
-        <span class="doc-code-lang">Dart</span>
-      </div>
-      <pre><code class="language-dart">class ListVehiclesResponse {
-   final List&lt;Vehicle&gt; listVehicles;
-   ListVehiclesResponse({required this.listVehicles});
-   static ListVehiclesResponse fromJson(Map&lt;String, dynamic&gt; json) {
-      return ListVehiclesResponse(
-         listVehicles: (json['listVehicles'] as List&lt;dynamic&gt;)
-             .map((e) =&gt; Vehicle.fromJson(e as Map&lt;String, dynamic&gt;)).toList(),
-      );
-   }
-}</code></pre>
-    </div>
-
-    <h2>Nullable queries</h2>
-    <p>When the schema declares a query with a nullable return type (no <code>!</code>), the response wrapper field is also nullable. This matches the schema precisely:</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">getPerson — nullable result</span>
-        <span class="doc-code-lang">Dart</span>
-      </div>
-      <pre><code class="language-dart">// Schema: getPerson(id: ID!): Person   &lt;-- no ! on Person
-final res = await client.queries.getPerson(id: '99');
-
-// res.getPerson is Person? — use null-aware access
-if (res.getPerson != null) {
-  print(res.getPerson!.name);
-}
-
-// Or with null-safe chaining
-print(res.getPerson?.email ?? 'Not found');</code></pre>
-    </div>
-
-    <h2>Mutations</h2>
-    <p>Mutations live under <code>client.mutations</code> and follow the same pattern. Input types are passed as named parameters:</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">Adding a vehicle</span>
-        <span class="doc-code-lang">Dart</span>
-      </div>
-      <pre><code class="language-dart">import 'generated/inputs/add_vehicle_input.dart';
-import 'generated/enums/fuel_type.dart';
-
-final added = await client.mutations.addVehicle(
-  input: AddVehicleInput(
-    brand: 'Toyota',
-    model: 'Camry',
-    year: 2023,
-    fuelType: FuelType.GASOLINE,
-    // ownerId is nullable — omit it or pass null
-  ),
-);
-
-print(added.addVehicle.id);    // server-assigned ID
-print(added.addVehicle.brand); // Toyota</code></pre>
-    </div>
-
-    <p>The generated <code>AddVehicleInput</code> class enforces required fields at construction time through Dart's named required parameters:</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">generated/inputs/add_vehicle_input.dart</span>
-        <span class="doc-code-lang">Dart</span>
-      </div>
-      <pre><code class="language-dart">class AddVehicleInput {
-   final String brand;
-   final String model;
-   final int year;
-   final FuelType fuelType;
-   final String? ownerId;
-   AddVehicleInput({
-      required this.brand, required this.model,
-      required this.year, required this.fuelType, this.ownerId
-   });
-   Map&lt;String, dynamic&gt; toJson() {
-      return { 'brand': brand, 'model': model, 'year': year,
-               'fuelType': fuelType.toJson(), 'ownerId': ownerId };
-   }
-}</code></pre>
-    </div>
-
-
-    <h2>Error handling</h2>
-    <p>If the server returns a GraphQL error, the generated client throws a <code>GraphLinkException</code> containing the list of errors from the response. Wrap calls in a try/catch:</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">Error handling</span>
-        <span class="doc-code-lang">Dart</span>
-      </div>
-      <pre><code class="language-dart">import 'generated/types/graph_link_error.dart';
-
-try {
-  final res = await client.queries.getVehicle(id: 'bad-id');
-  print(res.getVehicle.brand);
-} on GraphLinkException catch (e) {
-  for (final error in e.errors) {
-    print('GraphQL error: ${error.message}');
-    if (error.locations != null) {
-      for (final loc in error.locations!) {
-        print('  at line ${loc.line}, column ${loc.column}');
-      }
-    }
-  }
-} catch (e) {
-  // Network error, timeout, etc.
-  print('Request failed: $e');
-}</code></pre>
-    </div>
-
-    <h2>The _all_fields fragment</h2>
-    <p>When <code>generateAllFieldsFragments: true</code> is set in the config, GraphLink generates a named fragment for every type in the schema. For example, for <code>Vehicle</code> it generates a fragment <code>_all_fields_Vehicle</code> that selects every field.</p>
-    <p>The <code>autoGenerateQueries: true</code> option uses these fragments to automatically build the query strings for every operation. Instead of writing query strings by hand, GraphLink inlines the fields from the fragment. This means you never have to maintain query strings manually — when you add a field to a type in the schema, the generated client automatically fetches that field.</p>
-    <p>You can also reference <code>_all_fields_Vehicle</code> by name in any hand-written queries you add to the schema. Use the shorthand <code>... _all_fields</code> and GraphLink resolves it to the appropriate type-specific fragment based on the field's return type.</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">Using _all_fields in a custom query</span>
-        <span class="doc-code-lang">GraphQL</span>
-      </div>
-      <pre><code class="language-graphql">type Query {
-  # GraphLink resolves _all_fields to _all_fields_Vehicle for this field
-  getVehicle(id: ID!): Vehicle! @glCache(ttl: 120, tags: ["vehicles"])
-}</code></pre>
-    </div>
-
-    <nav class="doc-nav-footer">
-      <a href="getting-started.html" class="doc-nav-btn prev">
-        <span class="doc-nav-label">← Previous</span>
-        <span class="doc-nav-title">Getting Started</span>
-      </a>
-      <a href="java-client.html" class="doc-nav-btn next">
-        <span class="doc-nav-label">Next</span>
-        <span class="doc-nav-title">Java Client →</span>
-      </a>
-    </nav>
-  </main>
-</div>
-
-<footer class="footer">
-  <div class="container">
-    <div class="footer-top">
-      <div class="footer-brand">
-        <a href="../index.html" class="logo"><svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>GraphLink</a>
-        <p>GraphQL code generation for Dart, Flutter, and Java.<br>Open source — MIT License.</p>
-        <div class="footer-links">
-          <a href="https://github.com/Oualitsen/graphlink" target="_blank" rel="noopener">GitHub</a>
-          <a href="https://pub.dev/packages/graphlink" target="_blank" rel="noopener">pub.dev</a>
-          <a href="https://github.com/Oualitsen/graphlink/releases" target="_blank" rel="noopener">Releases</a>
-          <a href="https://github.com/Oualitsen/graphlink/issues" target="_blank" rel="noopener">Issues</a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            GraphLink Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Dart / Flutter Client — GraphLink Docs
+            
+          </span>
         </div>
       </div>
     </div>
-    <div class="footer-bottom">
-      <p>© 2024 GraphLink · MIT License</p>
-      <p class="footer-tagline">Your schema is already the contract. Let GraphLink write the rest.</p>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Oualitsen/graphlink" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Oualitsen/graphlink
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="index.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Overview
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="philosophy.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Philosophy
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="getting-started.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="dart-client.html" class="md-tabs__link">
+          
+  
+  
+  Clients
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="spring-server.html" class="md-tabs__link">
+          
+  
+  
+  Backend
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="caching.html" class="md-tabs__link">
+          
+  
+  
+  Features
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="directives.html" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="index.html" title="GraphLink Docs" class="md-nav__button md-logo" aria-label="GraphLink Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    GraphLink Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Oualitsen/graphlink" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Oualitsen/graphlink
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="philosophy.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="getting-started.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clients
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Clients
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dart / Flutter
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="dart-client.html" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dart / Flutter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#generated-adapters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generated adapters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#initializing-the-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Initializing the client
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Queries
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Queries">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#list-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        List queries
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nullable-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nullable queries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mutations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mutations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#subscriptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subscriptions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error handling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-_all_fields-fragment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The _all_fields fragment
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file-uploads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File uploads
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="java-client.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="typescript-client.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Backend
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-server.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spring Boot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Features
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="caching.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Caching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="directives.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Directives
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="configuration.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#generated-adapters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generated adapters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#initializing-the-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Initializing the client
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Queries
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Queries">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#list-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        List queries
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nullable-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nullable queries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mutations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mutations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#subscriptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subscriptions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error handling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-_all_fields-fragment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The _all_fields fragment
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file-uploads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File uploads
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="dart-flutter-client">Dart / Flutter Client<a class="headerlink" href="#dart-flutter-client" title="Permanent link">&para;</a></h1>
+<p>A fully typed GraphQL client generated directly from your schema.</p>
+<h2 id="generated-adapters">Generated adapters<a class="headerlink" href="#generated-adapters" title="Permanent link">&para;</a></h2>
+<p>GraphLink generates adapter files alongside the client. Which HTTP adapter is generated is controlled by the <code>httpAdapter</code> option in <code>config.json</code>. The WebSocket adapter is always generated when your schema has subscriptions.</p>
+<div class="highlight"><span class="filename">config.json — adapter options</span><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;clientConfig&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nt">&quot;dart&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">      </span><span class="nt">&quot;packageName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;com.example.generated&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">      </span><span class="nt">&quot;httpAdapter&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;dio&quot;</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong><code>httpAdapter</code></strong> — controls which HTTP adapter file is generated:</p>
+<ul>
+<li><code>"dio"</code> (default) — generates <code>graph_link_dio_adapter.dart</code> containing <code>GraphLinkDioAdapter</code>. Supports an optional <code>tokenProvider</code> for Bearer auth, custom Dio <code>interceptors</code>, and <code>BaseOptions</code>. Used automatically by <code>GraphLinkClient.withHttp</code>.</li>
+<li><code>"http"</code> — generates <code>graph_link_http_adapter.dart</code> containing <code>GraphLinkHttpAdapter</code>. Uses <code>package:http</code> with an optional async <code>headersProvider</code> for custom headers.</li>
+<li><code>"none"</code> — no HTTP adapter file is generated. Supply your own <code>Future&lt;String&gt; Function(String)</code>.</li>
+</ul>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Dio adapter</label><label for="__tabbed_1_2">http adapter</label><label for="__tabbed_1_3">WebSocket adapter</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1">// generated/client/graph_link_dio_adapter.dart</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kd">class</span><span class="w"> </span><span class="nc">GraphLinkDioAdapter</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="n">url</span><span class="p">;</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">Dio</span><span class="w"> </span><span class="n">dio</span><span class="p">;</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="n">GraphLinkDioAdapter</span><span class="p">({</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="kd">required</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="n">url</span><span class="p">,</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span><span class="n">Dio</span><span class="o">?</span><span class="w"> </span><span class="n">dio</span><span class="p">,</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">    </span><span class="n">Future</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">?&gt;</span><span class="w"> </span><span class="kt">Function</span><span class="p">()</span><span class="o">?</span><span class="w"> </span><span class="n">tokenProvider</span><span class="p">,</span><span class="w"> </span><span class="c1">// adds Authorization: Bearer &lt;token&gt;</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Interceptor</span><span class="o">&gt;</span><span class="w"> </span><span class="n">interceptors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">[],</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">    </span><span class="n">BaseOptions</span><span class="o">?</span><span class="w"> </span><span class="n">options</span><span class="p">,</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">  </span><span class="p">});</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">  </span><span class="n">Future</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">call</span><span class="p">(</span><span class="kt">String</span><span class="w"> </span><span class="n">payload</span><span class="p">)</span><span class="w"> </span><span class="kd">async</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="cm">/* ... */</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="p">}</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1">// generated/client/graph_link_http_adapter.dart</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kd">class</span><span class="w"> </span><span class="nc">GraphLinkHttpAdapter</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="n">url</span><span class="p">;</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">Future</span><span class="o">&lt;</span><span class="n">Map</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span><span class="w"> </span><span class="kt">String</span><span class="o">&gt;?&gt;?</span><span class="w"> </span><span class="kt">Function</span><span class="p">()</span><span class="o">?</span><span class="w"> </span><span class="n">headersProvider</span><span class="p">;</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span><span class="n">GraphLinkHttpAdapter</span><span class="p">({</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span><span class="kd">required</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="n">url</span><span class="p">,</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="n">headersProvider</span><span class="p">,</span><span class="w"> </span><span class="c1">// merged into request headers on every call</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span><span class="p">});</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">  </span><span class="n">Future</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">call</span><span class="p">(</span><span class="kt">String</span><span class="w"> </span><span class="n">payload</span><span class="p">)</span><span class="w"> </span><span class="kd">async</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="cm">/* ... */</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="p">}</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1">// generated/client/graph_link_websocket_adapter.dart</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="c1">// Always generated when your schema has subscriptions.</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="kd">class</span><span class="w"> </span><span class="nc">DefaultGraphLinkWebSocketAdapter</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">GraphLinkWebSocketAdapter</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="n">DefaultGraphLinkWebSocketAdapter</span><span class="p">({</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span><span class="kd">required</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="n">url</span><span class="p">,</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span><span class="n">Future</span><span class="o">&lt;</span><span class="n">Map</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span><span class="w"> </span><span class="kt">String</span><span class="o">&gt;?&gt;?</span><span class="w"> </span><span class="kt">Function</span><span class="p">()</span><span class="o">?</span><span class="w"> </span><span class="n">headersProvider</span><span class="p">,</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span><span class="n">Duration</span><span class="w"> </span><span class="n">initialReconnectDelay</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">Duration</span><span class="p">(</span><span class="nl">seconds:</span><span class="w"> </span><span class="m">1</span><span class="p">),</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">    </span><span class="n">Duration</span><span class="w"> </span><span class="n">maxReconnectDelay</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">Duration</span><span class="p">(</span><span class="nl">seconds:</span><span class="w"> </span><span class="m">30</span><span class="p">),</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">  </span><span class="p">});</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span><span class="c1">// Handles graphql-ws protocol, exponential-backoff reconnect,</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">  </span><span class="c1">// and forwards headersProvider result as connection_init payload.</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="p">}</span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>All adapter files are generated into your output directory. They carry no external GraphLink dependency and you can edit them freely.</p>
+<h2 id="initializing-the-client">Initializing the client<a class="headerlink" href="#initializing-the-client" title="Permanent link">&para;</a></h2>
+<p>The <code>GraphLinkClient</code> uses <strong>named parameters</strong>. Three constructors cover every scenario:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:3"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">withHttp (simplest)</label><label for="__tabbed_2_2">fromUrl (custom HTTP)</label><label for="__tabbed_2_3">full control</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">import</span><span class="w"> </span><span class="s1">&#39;generated/client/graph_link_client.dart&#39;</span><span class="p">;</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="c1">// Uses the generated Dio adapter for HTTP and the generated</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1">// WebSocket adapter for subscriptions.</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="kd">final</span><span class="w"> </span><span class="n">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GraphLinkClient</span><span class="p">.</span><span class="n">withHttp</span><span class="p">(</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span><span class="nl">url:</span><span class="w"> </span><span class="s1">&#39;http://localhost:8080/graphql&#39;</span><span class="p">,</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span><span class="nl">wsUrl:</span><span class="w"> </span><span class="s1">&#39;ws://localhost:8080/graphql&#39;</span><span class="p">,</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span><span class="c1">// Optional — adds Authorization: Bearer &lt;token&gt; on every request</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">  </span><span class="nl">tokenProvider:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="kd">async</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="kd">await</span><span class="w"> </span><span class="n">getAuthToken</span><span class="p">(),</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">  </span><span class="c1">// Optional — forwarded as connection_init payload for WS auth</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">  </span><span class="nl">wsTokenProvider:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="kd">async</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="kd">await</span><span class="w"> </span><span class="n">getAuthToken</span><span class="p">(),</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">  </span><span class="c1">// Optional — defaults to InMemoryGraphLinkCacheStore</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">  </span><span class="c1">// store: MyPersistentCacheStore(),</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="p">);</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">import</span><span class="w"> </span><span class="s1">&#39;generated/client/graph_link_client.dart&#39;</span><span class="p">;</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">import</span><span class="w"> </span><span class="s1">&#39;generated/client/graph_link_http_adapter.dart&#39;</span><span class="p">;</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1">// Bring your own HTTP adapter (or use GraphLinkHttpAdapter).</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="c1">// The generated WebSocket adapter handles subscriptions.</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="kd">final</span><span class="w"> </span><span class="n">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GraphLinkClient</span><span class="p">.</span><span class="n">fromUrl</span><span class="p">(</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">  </span><span class="nl">adapter:</span><span class="w"> </span><span class="n">GraphLinkHttpAdapter</span><span class="p">(</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">    </span><span class="nl">url:</span><span class="w"> </span><span class="s1">&#39;http://localhost:8080/graphql&#39;</span><span class="p">,</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">    </span><span class="nl">headersProvider:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="kd">async</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="s1">&#39;Authorization&#39;</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;Bearer </span><span class="si">${</span><span class="kd">await</span><span class="w"> </span><span class="n">getToken</span><span class="p">()</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">},</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">  </span><span class="p">).</span><span class="n">call</span><span class="p">,</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">  </span><span class="nl">wsUrl:</span><span class="w"> </span><span class="s1">&#39;ws://localhost:8080/graphql&#39;</span><span class="p">,</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="p">);</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">import</span><span class="w"> </span><span class="s1">&#39;generated/client/graph_link_client.dart&#39;</span><span class="p">;</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">import</span><span class="w"> </span><span class="s1">&#39;generated/client/graph_link_websocket_adapter.dart&#39;</span><span class="p">;</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1">// Full control — any adapter function, any WebSocket adapter.</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="kd">final</span><span class="w"> </span><span class="n">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GraphLinkClient</span><span class="p">(</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">  </span><span class="nl">adapter:</span><span class="w"> </span><span class="n">myHttpAdapterFn</span><span class="p">,</span><span class="w">   </span><span class="c1">// Future&lt;String&gt; Function(String payload)</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">  </span><span class="nl">wsAdapter:</span><span class="w"> </span><span class="n">DefaultGraphLinkWebSocketAdapter</span><span class="p">(</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">    </span><span class="nl">url:</span><span class="w"> </span><span class="s1">&#39;ws://localhost:8080/graphql&#39;</span><span class="p">,</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">    </span><span class="nl">headersProvider:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="kd">async</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="s1">&#39;Authorization&#39;</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;Bearer </span><span class="si">${</span><span class="kd">await</span><span class="w"> </span><span class="n">getToken</span><span class="p">()</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">},</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">    </span><span class="nl">initialReconnectDelay:</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">Duration</span><span class="p">(</span><span class="nl">seconds:</span><span class="w"> </span><span class="m">2</span><span class="p">),</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">    </span><span class="nl">maxReconnectDelay:</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">Duration</span><span class="p">(</span><span class="nl">seconds:</span><span class="w"> </span><span class="m">60</span><span class="p">),</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">  </span><span class="p">),</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="w">  </span><span class="nl">store:</span><span class="w"> </span><span class="n">myPersistentCacheStore</span><span class="p">,</span><span class="w"> </span><span class="c1">// optional</span>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="p">);</span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<div class="admonition info">
+<p class="admonition-title">Testing made easy</p>
+<p>Because the adapter is just a named function parameter, passing a mock in tests requires no HTTP mocking library: <code>adapter: (payload) async =&gt; '{"data":{"getCar":{"id":"1","make":"Toyota"}}}'</code></p>
+</div>
+<h2 id="queries">Queries<a class="headerlink" href="#queries" title="Permanent link">&para;</a></h2>
+<p>All queries are accessible via <code>client.queries</code>. Each operation becomes a method with typed parameters and a typed return value.</p>
+<div class="highlight"><span class="filename">Fetching a vehicle by ID</span><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1">// getVehicle returns GetVehicleResponse — never null (Vehicle! in schema)</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kd">final</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kd">await</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">queries</span><span class="p">.</span><span class="n">getVehicle</span><span class="p">(</span><span class="nl">id:</span><span class="w"> </span><span class="s1">&#39;42&#39;</span><span class="p">);</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1">// res.getVehicle is a typed Vehicle object</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">print</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="n">getVehicle</span><span class="p">.</span><span class="n">brand</span><span class="p">);</span><span class="w">    </span><span class="c1">// Toyota</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="n">print</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="n">getVehicle</span><span class="p">.</span><span class="n">model</span><span class="p">);</span><span class="w">    </span><span class="c1">// Camry</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="n">print</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="n">getVehicle</span><span class="p">.</span><span class="n">year</span><span class="p">);</span><span class="w">     </span><span class="c1">// 2023</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="n">print</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="n">getVehicle</span><span class="p">.</span><span class="n">fuelType</span><span class="p">);</span><span class="w"> </span><span class="c1">// FuelType.GASOLINE</span>
+</code></pre></div>
+<p>The generated <code>GetVehicleResponse</code> type looks like this:</p>
+<div class="highlight"><span class="filename">generated/types/get_vehicle_response.dart</span><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kd">class</span><span class="w"> </span><span class="nc">GetVehicleResponse</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">   </span><span class="kd">final</span><span class="w"> </span><span class="n">Vehicle</span><span class="w"> </span><span class="n">getVehicle</span><span class="p">;</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">   </span><span class="n">GetVehicleResponse</span><span class="p">({</span><span class="kd">required</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="n">getVehicle</span><span class="p">});</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">   </span><span class="kd">static</span><span class="w"> </span><span class="n">GetVehicleResponse</span><span class="w"> </span><span class="n">fromJson</span><span class="p">(</span><span class="n">Map</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span><span class="w"> </span><span class="kt">dynamic</span><span class="o">&gt;</span><span class="w"> </span><span class="n">json</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">GetVehicleResponse</span><span class="p">(</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">         </span><span class="nl">getVehicle:</span><span class="w"> </span><span class="n">Vehicle</span><span class="p">.</span><span class="n">fromJson</span><span class="p">(</span><span class="n">json</span><span class="p">[</span><span class="s1">&#39;getVehicle&#39;</span><span class="p">]</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">Map</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span><span class="w"> </span><span class="kt">dynamic</span><span class="o">&gt;</span><span class="p">),</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">      </span><span class="p">);</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">   </span><span class="p">}</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="p">}</span>
+</code></pre></div>
+<h3 id="list-queries">List queries<a class="headerlink" href="#list-queries" title="Permanent link">&para;</a></h3>
+<div class="highlight"><span class="filename">Fetching all vehicles</span><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kd">final</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kd">await</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">queries</span><span class="p">.</span><span class="n">listVehicles</span><span class="p">();</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="c1">// res.listVehicles is List&lt;Vehicle&gt; — fully typed</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">vehicle</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">res</span><span class="p">.</span><span class="n">listVehicles</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">${</span><span class="n">vehicle</span><span class="p">.</span><span class="n">brand</span><span class="si">}</span><span class="s1"> </span><span class="si">${</span><span class="n">vehicle</span><span class="p">.</span><span class="n">model</span><span class="si">}</span><span class="s1"> (</span><span class="si">${</span><span class="n">vehicle</span><span class="p">.</span><span class="n">year</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">);</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="p">}</span>
+</code></pre></div>
+<h2 id="nullable-queries">Nullable queries<a class="headerlink" href="#nullable-queries" title="Permanent link">&para;</a></h2>
+<p>When the schema declares a query with a nullable return type (no <code>!</code>), the response wrapper field is also nullable:</p>
+<div class="highlight"><span class="filename">getPerson — nullable result</span><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1">// Schema: getPerson(id: ID!): Person   &lt;-- no ! on Person</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="kd">final</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kd">await</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">queries</span><span class="p">.</span><span class="n">getPerson</span><span class="p">(</span><span class="nl">id:</span><span class="w"> </span><span class="s1">&#39;99&#39;</span><span class="p">);</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1">// res.getPerson is Person? — use null-aware access</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="n">getPerson</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="n">getPerson</span><span class="o">!</span><span class="p">.</span><span class="n">name</span><span class="p">);</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="p">}</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="c1">// Or with null-safe chaining</span>
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="n">print</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="n">getPerson</span><span class="o">?</span><span class="p">.</span><span class="n">email</span><span class="w"> </span><span class="o">??</span><span class="w"> </span><span class="s1">&#39;Not found&#39;</span><span class="p">);</span>
+</code></pre></div>
+<h2 id="mutations">Mutations<a class="headerlink" href="#mutations" title="Permanent link">&para;</a></h2>
+<p>Mutations live under <code>client.mutations</code> and follow the same pattern. Input types are passed as named parameters:</p>
+<div class="highlight"><span class="filename">Adding a vehicle</span><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">import</span><span class="w"> </span><span class="s1">&#39;generated/inputs/add_vehicle_input.dart&#39;</span><span class="p">;</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="k">import</span><span class="w"> </span><span class="s1">&#39;generated/enums/fuel_type.dart&#39;</span><span class="p">;</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="kd">final</span><span class="w"> </span><span class="n">added</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kd">await</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">mutations</span><span class="p">.</span><span class="n">addVehicle</span><span class="p">(</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">  </span><span class="nl">input:</span><span class="w"> </span><span class="n">AddVehicleInput</span><span class="p">(</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">    </span><span class="nl">brand:</span><span class="w"> </span><span class="s1">&#39;Toyota&#39;</span><span class="p">,</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">    </span><span class="nl">model:</span><span class="w"> </span><span class="s1">&#39;Camry&#39;</span><span class="p">,</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">    </span><span class="nl">year:</span><span class="w"> </span><span class="m">2023</span><span class="p">,</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="w">    </span><span class="nl">fuelType:</span><span class="w"> </span><span class="n">FuelType</span><span class="p">.</span><span class="n">GASOLINE</span><span class="p">,</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="w">    </span><span class="c1">// ownerId is nullable — omit it or pass null</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="w">  </span><span class="p">),</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="p">);</span>
+<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>
+<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="n">print</span><span class="p">(</span><span class="n">added</span><span class="p">.</span><span class="n">addVehicle</span><span class="p">.</span><span class="n">id</span><span class="p">);</span><span class="w">    </span><span class="c1">// server-assigned ID</span>
+<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="n">print</span><span class="p">(</span><span class="n">added</span><span class="p">.</span><span class="n">addVehicle</span><span class="p">.</span><span class="n">brand</span><span class="p">);</span><span class="w"> </span><span class="c1">// Toyota</span>
+</code></pre></div>
+<p>The generated <code>AddVehicleInput</code> class enforces required fields at construction time through Dart's named required parameters:</p>
+<div class="highlight"><span class="filename">generated/inputs/add_vehicle_input.dart</span><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kd">class</span><span class="w"> </span><span class="nc">AddVehicleInput</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">   </span><span class="kd">final</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="n">brand</span><span class="p">;</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">   </span><span class="kd">final</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="n">model</span><span class="p">;</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">   </span><span class="kd">final</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">year</span><span class="p">;</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">   </span><span class="kd">final</span><span class="w"> </span><span class="n">FuelType</span><span class="w"> </span><span class="n">fuelType</span><span class="p">;</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w">   </span><span class="kd">final</span><span class="w"> </span><span class="kt">String</span><span class="o">?</span><span class="w"> </span><span class="n">ownerId</span><span class="p">;</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="w">   </span><span class="n">AddVehicleInput</span><span class="p">({</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="w">      </span><span class="kd">required</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="n">brand</span><span class="p">,</span><span class="w"> </span><span class="kd">required</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="n">model</span><span class="p">,</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="w">      </span><span class="kd">required</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="n">year</span><span class="p">,</span><span class="w"> </span><span class="kd">required</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="n">fuelType</span><span class="p">,</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="n">ownerId</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="w">   </span><span class="p">});</span>
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="w">   </span><span class="n">Map</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span><span class="w"> </span><span class="kt">dynamic</span><span class="o">&gt;</span><span class="w"> </span><span class="n">toJson</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="s1">&#39;brand&#39;</span><span class="o">:</span><span class="w"> </span><span class="n">brand</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;model&#39;</span><span class="o">:</span><span class="w"> </span><span class="n">model</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;year&#39;</span><span class="o">:</span><span class="w"> </span><span class="n">year</span><span class="p">,</span>
+<a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a><span class="w">               </span><span class="s1">&#39;fuelType&#39;</span><span class="o">:</span><span class="w"> </span><span class="n">fuelType</span><span class="p">.</span><span class="n">toJson</span><span class="p">(),</span><span class="w"> </span><span class="s1">&#39;ownerId&#39;</span><span class="o">:</span><span class="w"> </span><span class="n">ownerId</span><span class="w"> </span><span class="p">};</span>
+<a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a><span class="w">   </span><span class="p">}</span>
+<a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a><span class="p">}</span>
+</code></pre></div>
+<h2 id="subscriptions">Subscriptions<a class="headerlink" href="#subscriptions" title="Permanent link">&para;</a></h2>
+<p>Subscriptions are available via <code>client.subscriptions</code> and return a <code>Stream</code>. The generated <code>DefaultGraphLinkWebSocketAdapter</code> implements the <a href="https://github.com/enisdenjo/graphql-ws/blob/master/PROTOCOL.md">graphql-ws subprotocol</a> and handles connection init, ping/pong, and reconnect automatically.</p>
+<div class="highlight"><span class="filename">Subscribing to new vehicles</span><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kd">final</span><span class="w"> </span><span class="n">subscription</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">subscriptions</span><span class="p">.</span><span class="n">vehicleAdded</span><span class="p">().</span><span class="n">listen</span><span class="p">((</span><span class="n">event</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="s1">&#39;New vehicle: </span><span class="si">${</span><span class="n">event</span><span class="p">.</span><span class="n">vehicleAdded</span><span class="p">.</span><span class="n">brand</span><span class="si">}</span><span class="s1"> </span><span class="si">${</span><span class="n">event</span><span class="p">.</span><span class="n">vehicleAdded</span><span class="p">.</span><span class="n">model</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">);</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="p">});</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="c1">// Cancel when done (e.g. in Flutter widget dispose)</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="kd">await</span><span class="w"> </span><span class="n">subscription</span><span class="p">.</span><span class="n">cancel</span><span class="p">();</span>
+</code></pre></div>
+<p>If you supply a <code>headersProvider</code> on the WebSocket adapter, its result is returned from <code>connectionInitPayload()</code> and sent in the <code>connection_init</code> message — your server can use it to authenticate the WebSocket session without needing HTTP headers on the upgrade request.</p>
+<h2 id="error-handling">Error handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h2>
+<p>If the server returns a GraphQL error, the generated client throws a <code>GraphLinkException</code> containing the list of errors from the response. Wrap calls in a try/catch:</p>
+<div class="highlight"><span class="filename">Error handling</span><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="k">import</span><span class="w"> </span><span class="s1">&#39;generated/types/graph_link_error.dart&#39;</span><span class="p">;</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kd">await</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">queries</span><span class="p">.</span><span class="n">getVehicle</span><span class="p">(</span><span class="nl">id:</span><span class="w"> </span><span class="s1">&#39;bad-id&#39;</span><span class="p">);</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="n">getVehicle</span><span class="p">.</span><span class="n">brand</span><span class="p">);</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="p">}</span><span class="w"> </span><span class="kd">on</span><span class="w"> </span><span class="n">GraphLinkException</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">errors</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="w">    </span><span class="n">print</span><span class="p">(</span><span class="s1">&#39;GraphQL error: </span><span class="si">${</span><span class="n">error</span><span class="p">.</span><span class="n">message</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">);</span>
+<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">.</span><span class="n">locations</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="w">      </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">loc</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">error</span><span class="p">.</span><span class="n">locations</span><span class="o">!</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="w">        </span><span class="n">print</span><span class="p">(</span><span class="s1">&#39;  at line </span><span class="si">${</span><span class="n">loc</span><span class="p">.</span><span class="n">line</span><span class="si">}</span><span class="s1">, column </span><span class="si">${</span><span class="n">loc</span><span class="p">.</span><span class="n">column</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">);</span>
+<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a><span class="w">      </span><span class="p">}</span>
+<a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a><span class="w">  </span><span class="c1">// Network error, timeout, etc.</span>
+<a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a><span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="s1">&#39;Request failed: </span><span class="si">$</span><span class="n">e</span><span class="s1">&#39;</span><span class="p">);</span>
+<a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a><span class="p">}</span>
+</code></pre></div>
+<h2 id="the-_all_fields-fragment">The _all_fields fragment<a class="headerlink" href="#the-_all_fields-fragment" title="Permanent link">&para;</a></h2>
+<p>When <code>generateAllFieldsFragments: true</code> is set in the config, GraphLink generates a named fragment for every type in the schema. The <code>autoGenerateQueries: true</code> option uses these fragments to automatically build the query strings for every operation. Instead of writing query strings by hand, GraphLink inlines the fields from the fragment. This means you never have to maintain query strings manually — when you add a field to a type in the schema, the generated client automatically fetches that field.</p>
+<p>You can also reference <code>_all_fields_Vehicle</code> by name in any hand-written queries. Use the shorthand <code>... _all_fields</code> and GraphLink resolves it to the appropriate type-specific fragment based on the field's return type.</p>
+<div class="highlight"><span class="filename">Using _all_fields in a custom query</span><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="k">type</span><span class="w"> </span><span class="err">Query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span><span class="c"># GraphLink resolves _all_fields to _all_fields_Vehicle for this field</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span><span class="n">getVehicle</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">Vehicle</span><span class="err">!</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">120</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="p">}</span>
+</code></pre></div>
+<h2 id="file-uploads">File uploads<a class="headerlink" href="#file-uploads" title="Permanent link">&para;</a></h2>
+<p>When your schema uses the built-in <code>Upload</code> scalar, GraphLink generates a <code>GLUpload</code> type and produces multipart-aware upload logic in the HTTP adapter:</p>
+<div class="highlight"><span class="filename">Schema — Upload scalar</span><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="k">scalar</span><span class="w"> </span><span class="err">Upload</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="k">type</span><span class="w"> </span><span class="err">Mutation</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">  </span><span class="n">uploadDocument</span><span class="p">(</span><span class="n">file</span><span class="p">:</span><span class="w"> </span><span class="no">Upload</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><span class="filename">Using GLUpload in Dart</span><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="k">import</span><span class="w"> </span><span class="s1">&#39;generated/types/gl_upload.dart&#39;</span><span class="p">;</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="k">import</span><span class="w"> </span><span class="s1">&#39;dart:io&#39;</span><span class="p">;</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="kd">final</span><span class="w"> </span><span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">File</span><span class="p">(</span><span class="s1">&#39;/path/to/document.pdf&#39;</span><span class="p">);</span>
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="kd">final</span><span class="w"> </span><span class="n">upload</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GLUpload</span><span class="p">(</span>
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="w">  </span><span class="nl">stream:</span><span class="w"> </span><span class="n">file</span><span class="p">.</span><span class="n">openRead</span><span class="p">(),</span>
+<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="w">  </span><span class="nl">length:</span><span class="w"> </span><span class="kd">await</span><span class="w"> </span><span class="n">file</span><span class="p">.</span><span class="n">length</span><span class="p">(),</span>
+<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="w">  </span><span class="nl">filename:</span><span class="w"> </span><span class="s1">&#39;document.pdf&#39;</span><span class="p">,</span>
+<a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a><span class="w">  </span><span class="nl">mimeType:</span><span class="w"> </span><span class="s1">&#39;application/pdf&#39;</span><span class="p">,</span>
+<a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a><span class="p">);</span>
+<a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>
+<a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a><span class="kd">final</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kd">await</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">mutations</span><span class="p">.</span><span class="n">uploadDocument</span><span class="p">(</span><span class="nl">file:</span><span class="w"> </span><span class="n">upload</span><span class="p">);</span>
+<a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a><span class="n">print</span><span class="p">(</span><span class="n">result</span><span class="p">.</span><span class="n">uploadDocument</span><span class="p">);</span><span class="w"> </span><span class="c1">// e.g. &quot;https://cdn.example.com/document.pdf&quot;</span>
+</code></pre></div>
+<p>The Dio and http adapters both handle multipart encoding automatically when a mutation argument contains a <code>GLUpload</code>. No extra configuration is needed.</p>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/Oualitsen/graphlink" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
     </div>
   </div>
 </footer>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
-<script src="../js/main.js?v=4.3.0"></script>
-<script src="../js/docs.js?v=4.3.0"></script>
-</body>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["navigation.tabs", "navigation.sections", "content.code.copy", "content.tabs.link"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
 </html>
