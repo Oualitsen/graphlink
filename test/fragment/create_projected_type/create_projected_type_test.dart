@@ -31,6 +31,8 @@ void main() async {
         type: type,
         projectionMap: block.projections,
         directives: type.getDirectives());
+    expect(newType.token, 'Person_Name');
+    print(newType.token);
   });
 
   test("createProjectedType 2", () {

@@ -12,7 +12,9 @@ Future<File> saveSource({
   if (!file.existsSync()) {
     file.createSync(recursive: true);
   }
-  final header = graphqlSource ? graphqlHeadComment : fileHeadComment;
+  final header = graphqlSource
+      ? graphqlHeadComment
+      : "$fileHeadComment$dartIgnoreForFile\n";
   return file.writeAsString('''
 $header
 $data

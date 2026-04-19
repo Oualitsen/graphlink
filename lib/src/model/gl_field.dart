@@ -13,7 +13,6 @@ class GLField with GLDirectivesMixin {
   final String? documentation;
   final Map<String, GLArgumentDefinition> _arguments = {};
 
-  bool? _isArray;
 
   bool? _containsSkipOrIncludeDirective;
 

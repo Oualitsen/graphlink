@@ -278,7 +278,7 @@ class TypeScriptClientSerializer extends GLClientSerilaizer {
       'store: $_cacheStoreType',
       'tagLocks: Map<string, _Lock>',
     ];
-    final superCall = 'super(store, tagLocks);';
+    const superCall = 'super(store, tagLocks);';
     return _cg.createMethod(
       methodName: 'constructor',
       arguments: args,
