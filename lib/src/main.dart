@@ -352,11 +352,16 @@ Future<Set<String>> generateTypeScriptClientClasses(
     GLParser parser, GeneratorConfig config, DateTime started,
     {String? pack}) async {
   final serializer = TypeScriptSerializer(parser);
-  final clientSerializer = TypeScriptClientSerializer(parser, serializer);
+  final tsClientConfig = config.clientConfig?.typescript;
+  final clientSerializer = TypeScriptClientSerializer(
+    parser,
+    serializer,
+    generateDefaultWsAdapter: tsClientConfig?.generateDefaultWsAdapter ?? true,
+    observables: tsClientConfig?.observables ?? false,
+  );
   final List<Future<File>> futures = [];
   final destinationDir = config.outputDir;
   const prefix = '';
-  print("parser.hasQueries = ${parser.hasQueries} ###");
   parser.enums.forEach((k, def) {
     var text = serializer.serializeEnumDefinition(def, "");
     var r = writeToFile(
