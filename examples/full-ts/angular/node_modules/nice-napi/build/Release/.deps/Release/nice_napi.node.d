@@ -1,1 +1,0 @@
-cmd_Release/nice_napi.node := c++ -bundle -undefined dynamic_lookup -Wl,-search_paths_first -mmacosx-version-min=10.7 -arch arm64 -L./Release -stdlib=libc++  -o Release/nice_napi.node Release/obj.target/nice_napi/binding.o Release/nothing.a 
