@@ -198,3 +198,18 @@
 ## 4.4.1 - 2026-04-19
   ### Fixes
   - Fixed deserialization of query responses when the return type is an interface or union
+
+## 4.5.0 - 2026-04-19
+  ### New features
+  - **TypeScript client code generation** — new `clientConfig.typescript` block in `config.json`
+  - Generates typed client for queries, mutations, and subscriptions
+  - HTTP adapter: `fetch` (default, works in Angular, React, Svelte, Vue) or `axios` (Node/Bun environments)
+  - Optional RxJS observables mode (`observables: true`) as an alternative to promises
+  - Generates a default WebSocket adapter for subscriptions (`generateDefaultWsAdapter: true`)
+  - Nullable input fields are optional by default (`optionalNullableInputFields: true`)
+  - Supports `generateAllFieldsFragments`, `autoGenerateQueries`, `operationNameAsParameter`, `immutableTypeFields`
+
+  ### Improvements
+  - Generated Dart files: version number now embedded in the file header comment
+  - Generated GraphQL files: version number now embedded in the file header comment
+  - `dart:math` import in generated Dart client only emitted when subscriptions are present
