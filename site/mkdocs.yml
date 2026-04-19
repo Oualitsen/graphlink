@@ -1,0 +1,63 @@
+site_name: GraphLink Docs
+site_url: https://graphlink.dev
+site_description: GraphQL code generation for Dart, Flutter, Java, TypeScript, and Spring Boot.
+site_author: GraphLink
+repo_url: https://github.com/Oualitsen/graphlink
+repo_name: Oualitsen/graphlink
+
+docs_dir: docs-src
+site_dir: docs
+
+use_directory_urls: false
+
+theme:
+  name: material
+  palette:
+    scheme: default
+    primary: black
+    accent: indigo
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - content.code.copy
+    - content.tabs.link
+
+plugins:
+  - search
+  - meta  # reads per-page meta: blocks in frontmatter for custom og:/twitter: tags
+
+hooks:
+  - hooks/generate_llms.py
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - tables
+  - toc:
+      permalink: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Oualitsen/graphlink
+
+nav:
+  - Overview: index.md
+  - Philosophy: philosophy.md
+  - Getting Started: getting-started.md
+  - Clients:
+    - Dart / Flutter: dart-client.md
+    - Java: java-client.md
+    - TypeScript: typescript-client.md
+  - Backend:
+    - Spring Boot: spring-server.md
+  - Features:
+    - Caching: caching.md
+  - Reference:
+    - Directives: directives.md
+    - Configuration: configuration.md
