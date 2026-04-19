@@ -1,6 +1,6 @@
 # GraphLink
 
-> GraphQL code generation tool for Dart, Flutter, Java, and Spring Boot. Open source. MIT License.
+> GraphQL code generation tool for Dart, Flutter, Java, TypeScript, and Spring Boot. Open source. MIT License.
 
 GraphLink is a command-line tool (`glink`) that reads a GraphQL schema and generates fully type-safe
 client and server code. Developers define their API once in a `.graphql` schema file and run
@@ -15,8 +15,12 @@ client and server code. Developers define their API once in a `.graphql` schema 
   concrete typed response — no generics, no TypeReference, no casting at the call site. Ships with
   generated adapters (Java 11 HttpClient + WebSocket, or OkHttp) and a Jackson/Gson codec so a
   one-liner `new GraphLinkClient(url)` is all you need.
+- **TypeScript client**: typed interfaces, enums, input types, a fully typed client with Fetch
+  (default) or Axios HTTP adapter, optional RxJS observables (Angular-friendly), and a default
+  WebSocket adapter for subscriptions. Works in Angular, React, Vue, Svelte, and Node/Bun.
 - **Spring Boot server**: controllers, service interfaces, repository stubs, and input classes
-  generated from the schema's type definitions and queries.
+  generated from the schema's type definitions and queries. Supports MVC and reactive (WebFlux) mode.
+  Injectable HttpClient/OkHttpClient for both HTTP and WebSocket adapters (Java client).
 
 ## Key differentiators
 
@@ -36,13 +40,13 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - **Single source of truth.** The schema drives both ends. No duplicate type definitions. No
   schema drift. Adding a field means editing one file.
 
-## Supported targets (as of v4.3.0)
+## Supported targets (as of v4.5.0)
 
 - Dart client (stable)
 - Flutter client (stable)
 - Java client (stable)
-- Spring Boot server (stable)
-- TypeScript client (in development)
+- Spring Boot server (stable, MVC and reactive/WebFlux)
+- TypeScript client (stable as of v4.5.0 — fetch/axios, RxJS observables, WebSocket subscriptions)
 - Express / Node.js server (planned)
 - Go (planned, demand-based)
 - Kotlin (planned, demand-based)
@@ -97,12 +101,13 @@ type Mutation {
 - Overview: https://graphlink.dev/docs/index.html
 - Philosophy (pure codegen, no runtime, schema as source of truth): https://graphlink.dev/docs/philosophy.html
 - Getting Started (install, first schema, run generator): https://graphlink.dev/docs/getting-started.html
-- Dart / Flutter client (generated adapters, named-param constructors, queries, mutations, subscriptions): https://graphlink.dev/docs/dart-client.html
-- Java client (generated adapters, convenience constructors, no-generics API, builder pattern): https://graphlink.dev/docs/java-client.html
-- Spring Boot server (controllers, service interfaces, subscriptions): https://graphlink.dev/docs/spring-server.html
+- Dart / Flutter client (generated adapters, named-param constructors, queries, mutations, subscriptions, file upload): https://graphlink.dev/docs/dart-client.html
+- Java client (generated adapters, injectable HttpClient, no-generics API, builder pattern, file upload): https://graphlink.dev/docs/java-client.html
+- TypeScript client (fetch/axios adapters, RxJS observables, WebSocket subscriptions, Angular/React/Vue examples): https://graphlink.dev/docs/typescript-client.html
+- Spring Boot server (MVC + reactive/WebFlux, service interfaces, file upload, security context propagation): https://graphlink.dev/docs/spring-server.html
 - Caching (@glCache, @glCacheInvalidate, tag invalidation, staleIfOffline): https://graphlink.dev/docs/caching.html
-- Directives (all 13 directives with placement, args, and examples): https://graphlink.dev/docs/directives.html
-- Configuration (all config keys for Dart, Java, Spring; typeMappings; CLI flags): https://graphlink.dev/docs/configuration.html
+- Directives (@glMapsTo, @glMapField, @glCache, @glCacheInvalidate, @glSkipOnServer forward mappings, and more): https://graphlink.dev/docs/directives.html
+- Configuration (all config keys for Dart, Java, TypeScript, Spring; reactive; useSpringSecurity; typeMappings; CLI flags): https://graphlink.dev/docs/configuration.html
 
 ## Links
 
@@ -115,118 +120,31 @@ type Mutation {
 
 ---
 
-# Philosophy — The GraphLink Philosophy
-
-Pure code generation. No runtime abstractions. Only what the server needs.
-
-## What pure code generation means
-
-GraphLink is a code generator, not a runtime library. When you run `glink -c config.json`, it reads your schema and writes ordinary Dart or Java source files. Those files have zero dependency on GraphLink itself — no base classes to extend, no interfaces to implement, no runtime to ship.
-
-Every generated class is plain Dart or plain Java. A generated `Vehicle` class in Dart is just a Dart class with fields, a constructor, `fromJson`, and `toJson`. A generated `Vehicle.java` is just a POJO with a builder. You could hand-write these classes yourself; GraphLink simply writes them faster and keeps them in sync with your schema.
-
-**Delete GraphLink from your project tomorrow and everything still compiles.** There is nothing to uninstall, no peer dependency to satisfy, no API surface that could be deprecated. The generated code is yours.
-
-## Only what the server needs
-
-This is one of the most important design decisions in GraphLink, and it directly affects Spring Boot compatibility.
-
-Many GraphQL clients (such as ferry in Dart) serialize the entire schema document and send it with every request. This includes type definitions, directives, fragment definitions, comments, and whitespace.
-
-What other clients send:
-```json
-{
-  "query": "fragment _all_fields_Vehicle on Vehicle { id brand model year fuelType ownerId } query getVehicle($id: ID!) { getVehicle(id: $id) { ...  _all_fields_Vehicle } }",
-  "variables": { "id": "42" }
-}
-```
-
-Spring Boot's `graphql-java` validates the query document on every request. If the client sends fragment definitions for types or fields that the server doesn't know about, the server may reject the request or log validation warnings.
-
-GraphLink generates minimal, precise query strings:
-```json
-{
-  "query": "query getVehicle($id: ID!) { getVehicle(id: $id) { id brand model year fuelType ownerId } }",
-  "variables": { "id": "42" }
-}
-```
-
-This means GraphLink clients work out-of-the-box with strict Spring Boot GraphQL servers, with AWS AppSync, and with any other server that validates incoming documents carefully.
-
-## The schema is the single source of truth
-
-In a typical project without code generation, the same concept is expressed in three places: the GraphQL schema, the DTOs in the server language, and the model classes in the client language. When the schema changes, all three must be updated manually. GraphLink collapses all three into one.
-
-## No generics at the Java call site
-
-Most Java GraphQL clients force you to carry type information through generics:
-```java
-// What you write with most clients
-GraphQLResponse<Map<String, Object>> response =
-    client.query(new SimpleGraphQLRequest<>(
-        QUERY_STRING, variables,
-        new TypeReference<GraphQLResponse<Map<String, Object>>>() {}
-    ));
-Vehicle vehicle = objectMapper.convertValue(
-    response.getData().get("getVehicle"), Vehicle.class
-);
-```
-
-With GraphLink:
-```java
-// What you write with GraphLink
-GetVehicleResponse res = client.queries.getVehicle("42");
-System.out.println(res.getGetVehicle().getBrand());
-```
-
-## Framework agnostic
-
-GraphLink generates the logic — the query strings, the serialization, the client wiring — but it never dictates how you make HTTP requests. You provide the transport as a simple function:
-- In Dart: `Future<String> Function(String payload)`
-- In Java: a `@FunctionalInterface` that takes a JSON string and returns a JSON string
-
-## How it compares
-
-| Feature | GraphLink | ferry (Dart) | Apollo (JS/Kotlin) | Manual code |
-|---|---|---|---|---|
-| Runtime dependency in app | None | Yes (ferry, gql) | Yes (Apollo runtime) | None |
-| Sends whole schema on request | No | Yes | Partial | No |
-| Generics at Java call site | No | N/A | Yes | Yes |
-| Server-side generation | Yes | No | Partial | Manual |
-| Java client support | Yes | No | Kotlin only | Manual |
-| Caching directives in schema | Yes | No | No | No |
-| Partial query caching | Yes | No | No | No |
-| Spring Boot controller gen | Yes | No | No | Manual |
-
 ---
 
-# Getting Started
+# Documentation
 
-From zero to generated code in under 5 minutes.
+Everything you need to know about GraphLink — from first schema to production deployment.
 
-## Step 1 — Download the CLI
+<div class="grid cards" markdown>
 
-The GraphLink CLI is distributed as a single self-contained binary called `glink`. No runtime, no package manager, no JVM required.
+- **[Philosophy](philosophy.md)** — Why pure code generation? Why no runtime abstractions?
+- **[Getting Started](getting-started.md)** — Zero to generated code in 5 minutes.
+- **[Dart / Flutter Client](dart-client.md)** — Typed queries, mutations, subscriptions. Adapter pattern.
+- **[Java Client](java-client.md)** — No generics. No casting. Builder pattern on all inputs.
+- **[TypeScript Client](typescript-client.md)** — Typed client for Angular, React, Vue, and Node.
+- **[Spring Boot](spring-server.md)** — Generated controllers, service interfaces, types, inputs.
+- **[Caching](caching.md)** — `@glCache` and `@glCacheInvalidate`. Tag-based invalidation.
+- **[Directives](directives.md)** — Complete reference for all GraphLink directives.
+- **[Configuration](configuration.md)** — Every `config.json` option explained.
 
-```bash
-# Download the latest release
-curl -fsSL https://github.com/Oualitsen/graphlink/releases/latest/download/glink-linux-x64 -o glink
+</div>
 
-# Make it executable
-chmod +x glink
+## The schema used throughout these docs
 
-# Move to your PATH
-sudo mv glink /usr/local/bin/glink
+All examples in this documentation use the following schema. It covers every major GraphLink feature: types, enums, inputs, queries, mutations, subscriptions, and cache directives.
 
-# Verify
-glink --version
-```
-
-Platforms: glink-linux-x64, glink-linux-arm64, glink-macos-x64, glink-macos-arm64, glink-windows-x64.exe
-
-## Step 2 — Write your schema
-
-```graphql
+```graphql title="schema.graphql"
 enum FuelType {
   GASOLINE
   DIESEL
@@ -279,118 +197,432 @@ type Subscription {
 }
 ```
 
+!!! info "What this schema exercises"
+    `FuelType` is an enum — GraphLink generates serialization in both directions. `Person` and `Vehicle` are types with nullable/non-nullable fields. `AddPersonInput` and `AddVehicleInput` are input types. `getVehicle` and `listVehicles` use `@glCache` with tags. `addVehicle` uses `@glCacheInvalidate` — when it runs, all entries tagged `"vehicles"` are evicted. `vehicleAdded` is a subscription backed by a WebSocket connection.
+
+---
+
+# The GraphLink Philosophy
+
+Pure code generation. No runtime abstractions. Only what the server needs.
+
+## What pure code generation means
+
+GraphLink is a code generator, not a runtime library. When you run `glink -c config.json`, it reads your schema and writes ordinary Dart or Java source files. Those files have zero dependency on GraphLink itself — no base classes to extend, no interfaces to implement, no runtime to ship.
+
+Every generated class is plain Dart or plain Java. A generated `Vehicle` class in Dart is just a Dart class with fields, a constructor, `fromJson`, and `toJson`. A generated `Vehicle.java` is just a POJO with a builder. You could hand-write these classes yourself; GraphLink simply writes them faster and keeps them in sync with your schema.
+
+**Delete GraphLink from your project tomorrow and everything still compiles.** There is nothing to uninstall, no peer dependency to satisfy, no API surface that could be deprecated. The generated code is yours.
+
+!!! success "The practical implication"
+    You can upgrade GraphLink independently of your app. You can audit every line of code that runs in production. You can add methods to generated classes without fighting a framework. You own the output.
+
+## Only what the server needs
+
+This is one of the most important design decisions in GraphLink, and it directly affects Spring Boot compatibility.
+
+Many GraphQL clients (such as ferry in Dart) serialize the *entire schema document* and send it with every request. This includes type definitions, directives, fragment definitions, comments, and whitespace. On the wire this looks like:
+
+```json title="What other clients send"
+{
+  "query": "fragment _all_fields_Vehicle on Vehicle { id brand model year fuelType ownerId } query getVehicle($id: ID!) { getVehicle(id: $id) { ...  _all_fields_Vehicle } }",
+  "variables": { "id": "42" }
+}
+```
+
+Spring Boot's `graphql-java` validates the query document on every request. If the client sends fragment definitions for types or fields that the server doesn't know about — or just sends unnecessary bulk — the server may reject the request or log validation warnings.
+
+GraphLink generates minimal, precise query strings. The client sends exactly the fields needed for the response type, no fragment boilerplate, no extra definitions:
+
+```json title="What GraphLink sends"
+{
+  "query": "query getVehicle($id: ID!) { getVehicle(id: $id) { id brand model year fuelType ownerId } }",
+  "variables": { "id": "42" }
+}
+```
+
+This is a significant operational difference. It means GraphLink clients work out-of-the-box with strict Spring Boot GraphQL servers, with AWS AppSync, and with any other server that validates incoming documents carefully.
+
+## The schema is the single source of truth
+
+In a typical project without code generation, the same concept is expressed in three places: the GraphQL schema, the data transfer objects (DTOs) in the server language, and the model classes in the client language. When the schema changes, all three must be updated manually. When they get out of sync — which they always do — you get runtime errors, not compile-time errors.
+
+GraphLink collapses all three into one. You edit the schema. You re-run the generator. Every DTO, every model class, every query string, every serializer is immediately regenerated and consistent. Schema drift becomes impossible.
+
+This also means code review is simpler: a schema change in a pull request implies a corresponding regeneration of client and server code. Reviewers can read the schema diff and know immediately what changed.
+
+## No generics at the Java call site
+
+Most Java GraphQL clients force you to carry type information through generics. A typical query call looks like:
+
+```java title="Other clients — the generic soup"
+// What you write with most clients
+GraphQLResponse<Map<String, Object>> response =
+    client.query(new SimpleGraphQLRequest<>(
+        QUERY_STRING,
+        variables,
+        new TypeReference<GraphQLResponse<Map<String, Object>>>() {}
+    ));
+Vehicle vehicle = objectMapper.convertValue(
+    response.getData().get("getVehicle"), Vehicle.class
+);
+```
+
+```java title="GraphLink — no generics, no casting"
+// What you write with GraphLink
+GetVehicleResponse res = client.queries.getVehicle("42");
+System.out.println(res.getGetVehicle().getBrand());
+```
+
+GraphLink generates a specific `getVehicle(String id)` method that returns a specific `GetVehicleResponse` type. The compiler knows the exact return type. There are no anonymous `TypeReference` subclasses, no unchecked casts, no `Map<String, Object>` to navigate manually.
+
+## Framework agnostic
+
+GraphLink generates the logic — the query strings, the serialization, the client wiring — but it never dictates how you make HTTP requests. You provide the transport as a simple function:
+
+- In Dart: `Future<String> Function(String payload)`
+- In Java: a `@FunctionalInterface` that takes a JSON string and returns a JSON string
+
+This means you can use `http`, `dio`, `OkHttp`, Spring's `WebClient`, a mock, or anything else. The generated client does not import any HTTP library. You swap the transport at construction time. This makes testing trivial — pass a function that returns a hardcoded JSON string and you have a complete mock client.
+
+## How it compares
+
+GraphLink occupies a distinct position in the GraphQL tooling landscape. Here is a direct comparison with popular alternatives:
+
+| Feature | GraphLink | ferry (Dart) | Apollo (JS/Kotlin) | Manual code |
+|---|---|---|---|---|
+| Runtime dependency in app | **None** | Yes (ferry, gql) | Yes (Apollo runtime) | None |
+| Sends whole schema on request | **No** | Yes | Partial | No |
+| Generics at Java call site | **No** | N/A | Yes | Yes |
+| Server-side generation | **Yes** | No | Partial | Manual |
+| Java client support | **Yes** | No | Kotlin only | Manual |
+| Caching directives in schema | **Yes** | No | No | No |
+| Partial query caching | **Yes** | No | No | No |
+| Spring Boot controller gen | **Yes** | No | No | Manual |
+
+---
+
+# Getting Started
+
+From zero to generated code in under 5 minutes.
+
+## Step 1 — Download the CLI
+
+The GraphLink CLI is distributed as a single self-contained binary called `glink`. No runtime, no package manager, no JVM required.
+
+=== "Linux / macOS"
+
+    ```bash
+    # Download the latest release
+    curl -fsSL https://github.com/Oualitsen/graphlink/releases/latest/download/glink-linux-x64 -o glink
+
+    # Make it executable
+    chmod +x glink
+
+    # Move to your PATH
+    sudo mv glink /usr/local/bin/glink
+
+    # Verify
+    glink --version
+    ```
+
+=== "Windows"
+
+    ```powershell
+    # Download via PowerShell
+    Invoke-WebRequest `
+      -Uri "https://github.com/Oualitsen/graphlink/releases/latest/download/glink-windows-x64.exe" `
+      -OutFile "glink.exe"
+
+    # Add to PATH or run from current directory
+    .\glink.exe --version
+    ```
+
+=== "Manual"
+
+    ```
+    Visit: https://github.com/Oualitsen/graphlink/releases/latest
+
+    Download the binary for your platform:
+      glink-linux-x64       — Linux (x86_64)
+      glink-linux-arm64     — Linux (ARM64 / Raspberry Pi)
+      glink-macos-x64       — macOS (Intel)
+      glink-macos-arm64     — macOS (Apple Silicon)
+      glink-windows-x64.exe — Windows (x86_64)
+
+    Place the binary somewhere on your PATH and make it executable.
+    ```
+
+## Step 2 — Write your schema
+
+Create a `schema/` directory and save your GraphQL schema as one or more `.graphql` or `.gql` files. Here is the schema used throughout this documentation:
+
+```graphql title="schema/schema.graphql"
+# An enum — GraphLink generates serialization in both directions
+enum FuelType {
+  GASOLINE
+  DIESEL
+  ELECTRIC
+  HYBRID
+}
+
+# A type — generates a model class with fromJson/toJson (Dart) or builder + getters (Java)
+type Person {
+  id: ID!        # ID maps to String in both Dart and Java
+  name: String!
+  email: String!
+  vehicles: [Vehicle!]!  # nested list — fully typed
+}
+
+type Vehicle {
+  id: ID!
+  brand: String!
+  model: String!
+  year: Int!
+  fuelType: FuelType!
+  ownerId: ID    # nullable — String? in Dart, @Nullable String in Java
+}
+
+# Input types — generate immutable input classes with builders
+input AddPersonInput {
+  name: String!
+  email: String!
+}
+
+input AddVehicleInput {
+  brand: String!
+  model: String!
+  year: Int!
+  fuelType: FuelType!
+  ownerId: ID
+}
+
+# Queries — @glCache caches the result; ttl in seconds; tags for group invalidation
+type Query {
+  getPerson(id: ID!): Person
+  getVehicle(id: ID!): Vehicle!  @glCache(ttl: 120, tags: ["vehicles"])
+  listVehicles: [Vehicle!]!      @glCache(ttl: 60,  tags: ["vehicles"])
+}
+
+# Mutations — @glCacheInvalidate evicts all entries with matching tags on success
+type Mutation {
+  addPerson(input: AddPersonInput!): Person!
+  addVehicle(input: AddVehicleInput!): Vehicle! @glCacheInvalidate(tags: ["vehicles"])
+}
+
+# Subscriptions — backed by a WebSocket connection
+type Subscription {
+  vehicleAdded: Vehicle!
+}
+```
+
 ## Step 3 — Configure the generator
 
-Dart / Flutter config:
-```json
-{
-  "schemaPaths": ["schema/*.graphql"],
-  "mode": "client",
-  "typeMappings": { "ID": "String", "String": "String", "Float": "double", "Int": "int", "Boolean": "bool", "Null": "null" },
-  "outputDir": "lib/generated",
-  "clientConfig": {
-    "dart": {
-      "packageName": "my_app",
-      "generateAllFieldsFragments": true,
-      "autoGenerateQueries": true,
-      "nullableFieldsRequired": false,
-      "immutableInputFields": true,
-      "immutableTypeFields": true
-    }
-  }
-}
-```
+Create a `config.json` file in your project root. The config tells GraphLink where to find the schema, where to write output, and what language/framework to target.
 
-Java client config:
-```json
-{
-  "schemaPaths": ["schema/*.graphql"],
-  "mode": "client",
-  "typeMappings": { "ID": "String", "String": "String", "Float": "Double", "Int": "Integer", "Boolean": "Boolean", "Null": "null" },
-  "outputDir": "src/main/java/com/example/generated",
-  "clientConfig": {
-    "java": {
-      "packageName": "com.example.generated",
-      "generateAllFieldsFragments": true,
-      "autoGenerateQueries": true,
-      "nullableFieldsRequired": false,
-      "immutableInputFields": true,
-      "immutableTypeFields": true
-    }
-  }
-}
-```
+=== "Dart / Flutter"
 
-Spring Boot config:
-```json
-{
-  "schemaPaths": ["schema/*.graphql"],
-  "mode": "server",
-  "typeMappings": { "ID": "String", "String": "String", "Float": "Double", "Int": "Integer", "Boolean": "Boolean", "Null": "null" },
-  "outputDir": "src/main/java/com/example/generated",
-  "serverConfig": {
-    "spring": {
-      "basePackage": "com.example.generated",
-      "generateControllers": true,
-      "generateInputs": true,
-      "generateTypes": true,
-      "generateRepositories": false,
-      "immutableInputFields": true,
-      "immutableTypeFields": false
+    ```json
+    {
+      "schemaPaths": ["schema/*.graphql"],
+      "mode": "client",
+      "typeMappings": {
+        "ID":      "String",
+        "String":  "String",
+        "Float":   "double",
+        "Int":     "int",
+        "Boolean": "bool",
+        "Null":    "null"
+      },
+      "outputDir": "lib/generated",
+      "clientConfig": {
+        "dart": {
+          "packageName": "my_app",
+          "generateAllFieldsFragments": true,
+          "autoGenerateQueries": true,
+          "nullableFieldsRequired": false,
+          "immutableInputFields": true,
+          "immutableTypeFields": true
+        }
+      }
     }
-  }
-}
-```
+    ```
+
+=== "Java client"
+
+    ```json
+    {
+      "schemaPaths": ["schema/*.graphql"],
+      "mode": "client",
+      "typeMappings": {
+        "ID":      "String",
+        "String":  "String",
+        "Float":   "Double",
+        "Int":     "Integer",
+        "Boolean": "Boolean",
+        "Null":    "null"
+      },
+      "outputDir": "src/main/java/com/example/generated",
+      "clientConfig": {
+        "java": {
+          "packageName": "com.example.generated",
+          "generateAllFieldsFragments": true,
+          "autoGenerateQueries": true,
+          "nullableFieldsRequired": false,
+          "immutableInputFields": true,
+          "immutableTypeFields": true
+        }
+      }
+    }
+    ```
+
+=== "Spring Boot"
+
+    ```json
+    {
+      "schemaPaths": ["schema/*.graphql"],
+      "mode": "server",
+      "typeMappings": {
+        "ID":      "String",
+        "String":  "String",
+        "Float":   "Double",
+        "Int":     "Integer",
+        "Boolean": "Boolean",
+        "Null":    "null"
+      },
+      "outputDir": "src/main/java/com/example/generated",
+      "serverConfig": {
+        "spring": {
+          "basePackage": "com.example.generated",
+          "generateControllers": true,
+          "generateInputs": true,
+          "generateTypes": true,
+          "generateRepositories": false,
+          "immutableInputFields": true,
+          "immutableTypeFields": false
+        }
+      }
+    }
+    ```
+
+### Key configuration options explained
+
+| Key | Description |
+|---|---|
+| `schemaPaths` | Glob patterns for schema files. You can split the schema across multiple files. |
+| `mode` | `"client"` generates client code; `"server"` generates Spring Boot scaffolding. |
+| `typeMappings` | Maps GraphQL scalar types to language types. Add entries for custom scalars. |
+| `outputDir` | Where to write generated files. Existing files are overwritten. |
+| `generateAllFieldsFragments` | Generates a `_all_fields_TypeName` fragment per type, used by `autoGenerateQueries`. |
+| `autoGenerateQueries` | Generates query strings for every Query/Mutation/Subscription field automatically. |
+| `immutableInputFields` | Input class fields are `final` (Dart) or `final` (Java). Inputs become builder-only. |
+| `immutableTypeFields` | Response type fields are final. For Spring server, set to `false` so Spring can set fields. |
+| `generateControllers` | Spring only. Generates `@Controller` classes wired with `@QueryMapping` etc. |
+| `generateRepositories` | Spring only. Generates JpaRepository interfaces for types annotated with `@glRepository`. |
 
 ## Step 4 — Run the generator
 
-```bash
+Point `glink` at your config file and let it run:
+
+```bash title="Terminal"
 glink -c config.json
 ```
 
-For the Dart client config, the generator produces 21 files. For the Java client, 38 files. For Spring Boot, 9 files.
+For the Dart client config, the generator produces 21 files. For the Java client, 38 files. For Spring Boot, 9 files. Here is the Dart output tree:
 
-Dart output tree:
 ```
 lib/generated/
-  client/graph_link_client.dart
-  enums/fuel_type.dart
-  inputs/add_person_input.dart, add_vehicle_input.dart
-  types/vehicle.dart, person.dart, get_vehicle_response.dart, list_vehicles_response.dart, ...
+  client/
+    graph_link_client.dart
+  enums/
+    fuel_type.dart
+  inputs/
+    add_person_input.dart
+    add_vehicle_input.dart
+  types/
+    vehicle.dart
+    person.dart
+    get_vehicle_response.dart
+    list_vehicles_response.dart
+    get_person_response.dart
+    add_vehicle_response.dart
+    add_person_response.dart
+    vehicle_added_response.dart
+    graph_link_error.dart
+    graph_link_payload.dart
+    ... + 6 internal support files
 ```
 
-Spring Boot output:
+And the Spring Boot output:
+
 ```
 src/main/java/com/example/generated/
-  controllers/PersonServiceController.java, VehicleServiceController.java
-  services/PersonService.java, VehicleService.java
-  types/Person.java, Vehicle.java
-  inputs/AddPersonInput.java, AddVehicleInput.java
-  enums/FuelType.java
+  controllers/
+    PersonServiceController.java  ← generated, never touch
+    VehicleServiceController.java ← generated, never touch
+  services/
+    PersonService.java  ← implement this
+    VehicleService.java ← implement this
+  types/
+    Person.java
+    Vehicle.java
+  inputs/
+    AddPersonInput.java
+    AddVehicleInput.java
+  enums/
+    FuelType.java
 ```
+
+!!! info
+    The `services/` files are the ones you implement. Controllers are generated and never touched by hand. Types, inputs, and enums are plain data classes.
 
 ## Step 5 — What just happened?
 
+The generator processed each section of your schema and produced a corresponding set of files:
+
 ### Types → model classes
-`type Vehicle` became `vehicle.dart` (Dart) and `Vehicle.java` (Java) with all fields, constructor, and JSON serialization.
+
+`type Vehicle` became `vehicle.dart` (Dart) and `Vehicle.java` (Java). Each has all fields, a constructor, and JSON serialization. In Dart, fields are final and the constructor uses named parameters with `required`. In Java, an inner `Builder` class is generated.
 
 ### Enums → enum classes with serialization
-`enum FuelType` became `fuel_type.dart` and `FuelType.java`, each with `toJson()` and `fromJson()`.
+
+`enum FuelType` became `fuel_type.dart` and `FuelType.java`, each with `toJson()` and `fromJson()` methods that map to and from the GraphQL string representation.
 
 ### Inputs → immutable input classes
-`input AddVehicleInput` became `add_vehicle_input.dart` and `AddVehicleInput.java`. Required fields are enforced at construction time.
+
+`input AddVehicleInput` became `add_vehicle_input.dart` and `AddVehicleInput.java`. Required fields are enforced at construction time. The Java version uses a builder with `Objects.requireNonNull` for required fields.
 
 ### Queries/Mutations/Subscriptions → response types + client
-Each operation generates a response wrapper and the `GraphLinkClient` class exposes `client.queries`, `client.mutations`, and `client.subscriptions`.
+
+Each operation generates a response wrapper (e.g. `GetVehicleResponse`) that holds the typed result. The `GraphLinkClient` class exposes `client.queries`, `client.mutations`, and `client.subscriptions` with one method per operation.
 
 ### Cache directives → wired into the client automatically
-The `@glCache` and `@glCacheInvalidate` directives are reflected in the generated client code automatically.
+
+The `@glCache` and `@glCacheInvalidate` directives you wrote in the schema are reflected in the generated client code. No application-level code is needed to enable caching.
 
 ## Watch mode
 
-```bash
+During development, add `-w` to watch your schema files and regenerate automatically on every save:
+
+```bash title="Terminal"
 glink -c config.json -w
+
+# Output:
+# Watching schema/*.graphql for changes...
+# [14:32:01] Change detected in schema/schema.graphql
+# [14:32:01] Regenerating... done (21 files, 312ms)
 ```
+
+This integrates naturally with Flutter's hot reload workflow — schema change, save, and your Dart types are updated before you switch back to the emulator.
+
+## Next steps
+
+You now have generated code. The next step depends on your target:
+
+- [Dart / Flutter client](dart-client.md) — set up the adapter, initialize the client, make queries
+- [Java client](java-client.md) — wire up Jackson or Gson, make type-safe calls
+- [Spring Boot server](spring-server.md) — implement the generated service interfaces, run your app
+- [Caching](caching.md) — understand TTL, tags, and partial query caching in depth
 
 ---
 
@@ -400,59 +632,161 @@ A fully typed GraphQL client generated directly from your schema.
 
 ## Generated adapters
 
-GraphLink generates adapter files alongside the client. The `httpAdapter` config option controls which HTTP adapter is generated:
+GraphLink generates adapter files alongside the client. Which HTTP adapter is generated is controlled by the `httpAdapter` option in `config.json`. The WebSocket adapter is always generated when your schema has subscriptions.
 
-- `"dio"` (default) — generates `graph_link_dio_adapter.dart` with `GraphLinkDioAdapter`. Supports optional `tokenProvider` (adds `Authorization: Bearer`), custom interceptors, and `BaseOptions`.
-- `"http"` — generates `graph_link_http_adapter.dart` with `GraphLinkHttpAdapter`. Uses `package:http` with an optional async `headersProvider`.
-- `"none"` — no HTTP adapter generated; supply your own `Future<String> Function(String)`.
+```json title="config.json — adapter options"
+{
+  "clientConfig": {
+    "dart": {
+      "packageName": "com.example.generated",
+      "httpAdapter": "dio"
+    }
+  }
+}
+```
 
-`graph_link_websocket_adapter.dart` is always generated when the schema has subscriptions. It contains `DefaultGraphLinkWebSocketAdapter` with exponential-backoff auto-reconnect and an optional `headersProvider` forwarded as `connection_init` payload for WebSocket auth.
+**`httpAdapter`** — controls which HTTP adapter file is generated:
+
+- `"dio"` (default) — generates `graph_link_dio_adapter.dart` containing `GraphLinkDioAdapter`. Supports an optional `tokenProvider` for Bearer auth, custom Dio `interceptors`, and `BaseOptions`. Used automatically by `GraphLinkClient.withHttp`.
+- `"http"` — generates `graph_link_http_adapter.dart` containing `GraphLinkHttpAdapter`. Uses `package:http` with an optional async `headersProvider` for custom headers.
+- `"none"` — no HTTP adapter file is generated. Supply your own `Future<String> Function(String)`.
+
+=== "Dio adapter"
+
+    ```dart
+    // generated/client/graph_link_dio_adapter.dart
+    class GraphLinkDioAdapter {
+      final String url;
+      final Dio dio;
+
+      GraphLinkDioAdapter({
+        required this.url,
+        Dio? dio,
+        Future<String?> Function()? tokenProvider, // adds Authorization: Bearer <token>
+        List<Interceptor> interceptors = const [],
+        BaseOptions? options,
+      });
+
+      Future<String> call(String payload) async { /* ... */ }
+    }
+    ```
+
+=== "http adapter"
+
+    ```dart
+    // generated/client/graph_link_http_adapter.dart
+    class GraphLinkHttpAdapter {
+      final String url;
+      final Future<Map<String, String>?>? Function()? headersProvider;
+
+      GraphLinkHttpAdapter({
+        required this.url,
+        this.headersProvider, // merged into request headers on every call
+      });
+
+      Future<String> call(String payload) async { /* ... */ }
+    }
+    ```
+
+=== "WebSocket adapter"
+
+    ```dart
+    // generated/client/graph_link_websocket_adapter.dart
+    // Always generated when your schema has subscriptions.
+    class DefaultGraphLinkWebSocketAdapter extends GraphLinkWebSocketAdapter {
+      DefaultGraphLinkWebSocketAdapter({
+        required String url,
+        Future<Map<String, String>?>? Function()? headersProvider,
+        Duration initialReconnectDelay = const Duration(seconds: 1),
+        Duration maxReconnectDelay = const Duration(seconds: 30),
+      });
+      // Handles graphql-ws protocol, exponential-backoff reconnect,
+      // and forwards headersProvider result as connection_init payload.
+    }
+    ```
+
+All adapter files are generated into your output directory. They carry no external GraphLink dependency and you can edit them freely.
 
 ## Initializing the client
 
-`GraphLinkClient` uses named parameters. Three constructors cover every scenario:
+The `GraphLinkClient` uses **named parameters**. Three constructors cover every scenario:
 
-```dart
-// Simplest — uses generated Dio adapter + generated WebSocket adapter
-final client = GraphLinkClient.withHttp(
-  url: 'http://localhost:8080/graphql',
-  wsUrl: 'ws://localhost:8080/graphql',
-  tokenProvider: () async => await getAuthToken(),   // optional
-  wsTokenProvider: () async => await getAuthToken(), // optional
-);
+=== "withHttp (simplest)"
 
-// Bring your own HTTP adapter, use generated WebSocket adapter
-final client = GraphLinkClient.fromUrl(
-  adapter: myHttpAdapterFn,
-  wsUrl: 'ws://localhost:8080/graphql',
-);
+    ```dart
+    import 'generated/client/graph_link_client.dart';
 
-// Full control
-final client = GraphLinkClient(
-  adapter: myHttpAdapterFn,
-  wsAdapter: DefaultGraphLinkWebSocketAdapter(
-    url: 'ws://localhost:8080/graphql',
-    headersProvider: () async => {'Authorization': 'Bearer ${await getToken()}'},
-    initialReconnectDelay: const Duration(seconds: 2),
-    maxReconnectDelay: const Duration(seconds: 60),
-  ),
-  store: myPersistentCacheStore, // optional, defaults to InMemoryGraphLinkCacheStore
-);
-```
+    // Uses the generated Dio adapter for HTTP and the generated
+    // WebSocket adapter for subscriptions.
+    final client = GraphLinkClient.withHttp(
+      url: 'http://localhost:8080/graphql',
+      wsUrl: 'ws://localhost:8080/graphql',
+      // Optional — adds Authorization: Bearer <token> on every request
+      tokenProvider: () async => await getAuthToken(),
+      // Optional — forwarded as connection_init payload for WS auth
+      wsTokenProvider: () async => await getAuthToken(),
+      // Optional — defaults to InMemoryGraphLinkCacheStore
+      // store: MyPersistentCacheStore(),
+    );
+    ```
+
+=== "fromUrl (custom HTTP)"
+
+    ```dart
+    import 'generated/client/graph_link_client.dart';
+    import 'generated/client/graph_link_http_adapter.dart';
+
+    // Bring your own HTTP adapter (or use GraphLinkHttpAdapter).
+    // The generated WebSocket adapter handles subscriptions.
+    final client = GraphLinkClient.fromUrl(
+      adapter: GraphLinkHttpAdapter(
+        url: 'http://localhost:8080/graphql',
+        headersProvider: () async => {'Authorization': 'Bearer ${await getToken()}'},
+      ).call,
+      wsUrl: 'ws://localhost:8080/graphql',
+    );
+    ```
+
+=== "full control"
+
+    ```dart
+    import 'generated/client/graph_link_client.dart';
+    import 'generated/client/graph_link_websocket_adapter.dart';
+
+    // Full control — any adapter function, any WebSocket adapter.
+    final client = GraphLinkClient(
+      adapter: myHttpAdapterFn,   // Future<String> Function(String payload)
+      wsAdapter: DefaultGraphLinkWebSocketAdapter(
+        url: 'ws://localhost:8080/graphql',
+        headersProvider: () async => {'Authorization': 'Bearer ${await getToken()}'},
+        initialReconnectDelay: const Duration(seconds: 2),
+        maxReconnectDelay: const Duration(seconds: 60),
+      ),
+      store: myPersistentCacheStore, // optional
+    );
+    ```
+
+!!! info "Testing made easy"
+    Because the adapter is just a named function parameter, passing a mock in tests requires no HTTP mocking library: `adapter: (payload) async => '{"data":{"getCar":{"id":"1","make":"Toyota"}}}'`
 
 ## Queries
 
-```dart
+All queries are accessible via `client.queries`. Each operation becomes a method with typed parameters and a typed return value.
+
+```dart title="Fetching a vehicle by ID"
 // getVehicle returns GetVehicleResponse — never null (Vehicle! in schema)
 final res = await client.queries.getVehicle(id: '42');
+
+// res.getVehicle is a typed Vehicle object
 print(res.getVehicle.brand);    // Toyota
 print(res.getVehicle.model);    // Camry
 print(res.getVehicle.year);     // 2023
 print(res.getVehicle.fuelType); // FuelType.GASOLINE
 ```
 
-Generated response type:
-```dart
+The generated `GetVehicleResponse` type looks like this:
+
+```dart title="generated/types/get_vehicle_response.dart"
 class GetVehicleResponse {
    final Vehicle getVehicle;
    GetVehicleResponse({required this.getVehicle});
@@ -465,22 +799,38 @@ class GetVehicleResponse {
 ```
 
 ### List queries
-```dart
+
+```dart title="Fetching all vehicles"
 final res = await client.queries.listVehicles();
+
+// res.listVehicles is List<Vehicle> — fully typed
 for (final vehicle in res.listVehicles) {
   print('${vehicle.brand} ${vehicle.model} (${vehicle.year})');
 }
 ```
 
 ## Nullable queries
-```dart
-// Schema: getPerson(id: ID!): Person  <-- nullable
+
+When the schema declares a query with a nullable return type (no `!`), the response wrapper field is also nullable:
+
+```dart title="getPerson — nullable result"
+// Schema: getPerson(id: ID!): Person   <-- no ! on Person
 final res = await client.queries.getPerson(id: '99');
+
+// res.getPerson is Person? — use null-aware access
+if (res.getPerson != null) {
+  print(res.getPerson!.name);
+}
+
+// Or with null-safe chaining
 print(res.getPerson?.email ?? 'Not found');
 ```
 
 ## Mutations
-```dart
+
+Mutations live under `client.mutations` and follow the same pattern. Input types are passed as named parameters:
+
+```dart title="Adding a vehicle"
 import 'generated/inputs/add_vehicle_input.dart';
 import 'generated/enums/fuel_type.dart';
 
@@ -490,37 +840,116 @@ final added = await client.mutations.addVehicle(
     model: 'Camry',
     year: 2023,
     fuelType: FuelType.GASOLINE,
+    // ownerId is nullable — omit it or pass null
   ),
 );
-print(added.addVehicle.id);
+
+print(added.addVehicle.id);    // server-assigned ID
+print(added.addVehicle.brand); // Toyota
+```
+
+The generated `AddVehicleInput` class enforces required fields at construction time through Dart's named required parameters:
+
+```dart title="generated/inputs/add_vehicle_input.dart"
+class AddVehicleInput {
+   final String brand;
+   final String model;
+   final int year;
+   final FuelType fuelType;
+   final String? ownerId;
+   AddVehicleInput({
+      required this.brand, required this.model,
+      required this.year, required this.fuelType, this.ownerId
+   });
+   Map<String, dynamic> toJson() {
+      return { 'brand': brand, 'model': model, 'year': year,
+               'fuelType': fuelType.toJson(), 'ownerId': ownerId };
+   }
+}
 ```
 
 ## Subscriptions
-```dart
-// DefaultGraphLinkWebSocketAdapter handles graphql-ws protocol, reconnect, and auth automatically
-final subscription = client.subscriptions.onCarCreated().listen((event) {
-  print('New car: ${event.onCarCreated.make} ${event.onCarCreated.model}');
+
+Subscriptions are available via `client.subscriptions` and return a `Stream`. The generated `DefaultGraphLinkWebSocketAdapter` implements the [graphql-ws subprotocol](https://github.com/enisdenjo/graphql-ws/blob/master/PROTOCOL.md) and handles connection init, ping/pong, and reconnect automatically.
+
+```dart title="Subscribing to new vehicles"
+final subscription = client.subscriptions.vehicleAdded().listen((event) {
+  print('New vehicle: ${event.vehicleAdded.brand} ${event.vehicleAdded.model}');
 });
 
-await subscription.cancel(); // cancel when done (e.g. widget dispose)
+// Cancel when done (e.g. in Flutter widget dispose)
+await subscription.cancel();
 ```
 
+If you supply a `headersProvider` on the WebSocket adapter, its result is returned from `connectionInitPayload()` and sent in the `connection_init` message — your server can use it to authenticate the WebSocket session without needing HTTP headers on the upgrade request.
+
 ## Error handling
-```dart
+
+If the server returns a GraphQL error, the generated client throws a `GraphLinkException` containing the list of errors from the response. Wrap calls in a try/catch:
+
+```dart title="Error handling"
+import 'generated/types/graph_link_error.dart';
+
 try {
   final res = await client.queries.getVehicle(id: 'bad-id');
+  print(res.getVehicle.brand);
 } on GraphLinkException catch (e) {
   for (final error in e.errors) {
     print('GraphQL error: ${error.message}');
+    if (error.locations != null) {
+      for (final loc in error.locations!) {
+        print('  at line ${loc.line}, column ${loc.column}');
+      }
+    }
   }
 } catch (e) {
+  // Network error, timeout, etc.
   print('Request failed: $e');
 }
 ```
 
 ## The _all_fields fragment
 
-When `generateAllFieldsFragments: true`, GraphLink generates a named fragment per type selecting every field. `autoGenerateQueries: true` uses these fragments to build query strings for every operation automatically — you never write query strings by hand.
+When `generateAllFieldsFragments: true` is set in the config, GraphLink generates a named fragment for every type in the schema. The `autoGenerateQueries: true` option uses these fragments to automatically build the query strings for every operation. Instead of writing query strings by hand, GraphLink inlines the fields from the fragment. This means you never have to maintain query strings manually — when you add a field to a type in the schema, the generated client automatically fetches that field.
+
+You can also reference `_all_fields_Vehicle` by name in any hand-written queries. Use the shorthand `... _all_fields` and GraphLink resolves it to the appropriate type-specific fragment based on the field's return type.
+
+```graphql title="Using _all_fields in a custom query"
+type Query {
+  # GraphLink resolves _all_fields to _all_fields_Vehicle for this field
+  getVehicle(id: ID!): Vehicle! @glCache(ttl: 120, tags: ["vehicles"])
+}
+```
+
+## File uploads
+
+When your schema uses the built-in `Upload` scalar, GraphLink generates a `GLUpload` type and produces multipart-aware upload logic in the HTTP adapter:
+
+```graphql title="Schema — Upload scalar"
+scalar Upload
+
+type Mutation {
+  uploadDocument(file: Upload!): String!
+}
+```
+
+```dart title="Using GLUpload in Dart"
+import 'generated/types/gl_upload.dart';
+import 'dart:io';
+
+final file = File('/path/to/document.pdf');
+final upload = GLUpload(
+  stream: file.openRead(),
+  length: await file.length(),
+  filename: 'document.pdf',
+  mimeType: 'application/pdf',
+);
+
+final result = await client.mutations.uploadDocument(file: upload);
+print(result.uploadDocument); // e.g. "https://cdn.example.com/document.pdf"
+```
+
+The Dio and http adapters both handle multipart encoding automatically when a mutation argument contains a `GLUpload`. No extra configuration is needed.
 
 ---
 
@@ -530,43 +959,150 @@ Type-safe. No generics. No casting. Works with any JSON library.
 
 ## Generated adapters
 
-GraphLink generates concrete adapter classes into your `client/` folder. Two config options control what is generated:
+GraphLink generates concrete adapter classes into your `client/` folder — no external GraphLink runtime, no boilerplate. Two config options control what is generated:
 
-- `"wsAdapter"`: `"java11"` (default) — generates `DefaultGraphLinkWebSocketAdapter` using Java 11's `java.net.http.WebSocket`. No external dependencies. Supports exponential-backoff reconnect, optional `Supplier<Map<String,String>>` headers provider, and forwards headers as `connection_init` payload for WS auth. `"okhttp"` generates the same interface backed by OkHttp. `"none"` skips generation.
-- `"jsonCodec"`: `"jackson"` (default) — generates `JacksonGraphLinkJsonCodec` implementing both `GraphLinkJsonEncoder` and `GraphLinkJsonDecoder`. `"gson"` generates `GsonGraphLinkJsonCodec`. `"none"` skips generation.
+```json title="config.json — adapter options"
+{
+  "clientConfig": {
+    "java": {
+      "packageName": "com.example.generated",
+      "wsAdapter": "java11",
+      "jsonCodec": "jackson"
+    }
+  }
+}
+```
 
-`DefaultGraphLinkClientAdapter` (Java 11 `HttpClient`, optional headers provider) is always generated alongside the WebSocket adapter.
+**`wsAdapter`** — controls which WebSocket adapter is generated:
+
+- `"java11"` (default) — generates `DefaultGraphLinkWebSocketAdapter` using Java 11's built-in `java.net.http.WebSocket`. Zero external dependencies. Supports exponential-backoff auto-reconnect, an optional `Supplier<Map<String,String>>` for auth headers, and automatically forwards those headers as the `connection_init` payload so your server can authenticate the WebSocket handshake.
+- `"okhttp"` — generates the same interface implemented with OkHttp's WebSocket client instead.
+- `"none"` — no WebSocket adapter is generated. Use this if you do not need subscriptions.
+
+**`jsonCodec`** — controls which JSON codec is generated:
+
+- `"jackson"` (default) — generates `JacksonGraphLinkJsonCodec` implementing both `GraphLinkJsonEncoder` and `GraphLinkJsonDecoder`.
+- `"gson"` — generates `GsonGraphLinkJsonCodec` instead.
+- `"none"` — no codec class is generated; supply your own lambdas.
+
+`DefaultGraphLinkClientAdapter` is always generated (when `wsAdapter` is not `"none"`). It uses Java 11's `HttpClient` for HTTP requests and accepts the same optional headers provider as the WebSocket adapter.
+
+### Injectable HTTP client
+
+Both `DefaultGraphLinkClientAdapter` and `DefaultGraphLinkWebSocketAdapter` accept a pre-configured `HttpClient` (Java 11) or `OkHttpClient` as an optional constructor argument:
+
+=== "Java 11 HttpClient"
+
+    ```java
+    HttpClient httpClient = HttpClient.newBuilder()
+        .connectTimeout(Duration.ofSeconds(10))
+        .sslContext(mySslContext)
+        .proxy(ProxySelector.of(new InetSocketAddress("proxy.corp", 8080)))
+        .build();
+
+    // Pass it to the adapter — all HTTP and WebSocket traffic uses this client
+    DefaultGraphLinkClientAdapter adapter = new DefaultGraphLinkClientAdapter(
+        "http://api.example.com/graphql",
+        httpClient
+    );
+    DefaultGraphLinkWebSocketAdapter wsAdapter = new DefaultGraphLinkWebSocketAdapter(
+        "ws://api.example.com/graphql",
+        httpClient
+    );
+    ```
+
+=== "OkHttpClient"
+
+    ```java
+    OkHttpClient okHttpClient = new OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .addInterceptor(loggingInterceptor)
+        .build();
+
+    DefaultGraphLinkClientAdapter adapter = new DefaultGraphLinkClientAdapter(
+        "http://api.example.com/graphql",
+        okHttpClient
+    );
+    DefaultGraphLinkWebSocketAdapter wsAdapter = new DefaultGraphLinkWebSocketAdapter(
+        "ws://api.example.com/graphql",
+        okHttpClient
+    );
+    ```
+
+The no-arg and headers-only constructors still work unchanged — the injected client is an opt-in.
 
 ## Initializing the client
 
-Multiple constructors are generated, from simplest to full control:
+The generated `GraphLinkClient` ships with several constructors that progressively add control:
 
-```java
-// One-liner — Jackson + Java 11 HttpClient, wsUrl auto-derived (http→ws)
-GraphLinkClient client = new GraphLinkClient("http://localhost:8080/graphql");
+=== "one-liner"
 
-// Explicit wsUrl
-GraphLinkClient client = new GraphLinkClient(
-    "http://localhost:8080/graphql",
-    "ws://localhost:8080/graphql"
-);
+    ```java
+    import com.example.generated.client.GraphLinkClient;
 
-// With auth headers — Supplier called fresh on every request
-Supplier<Map<String, String>> headers = () -> Map.of("Authorization", "Bearer " + getToken());
-GraphLinkClient client = new GraphLinkClient(
-    "http://localhost:8080/graphql", headers,
-    new JacksonGraphLinkJsonCodec(), new JacksonGraphLinkJsonCodec()
-);
+    // Simplest setup — Jackson + Java 11 HttpClient + auto-derives wsUrl.
+    // wsUrl is derived by replacing "http" with "ws" in the provided URL.
+    GraphLinkClient client = new GraphLinkClient("http://localhost:8080/graphql");
+    ```
 
-// Full control — custom adapter, codec, cache store, WebSocket adapter
-GraphLinkClient client = new GraphLinkClient(adapter, encoder, decoder, cacheStore, wsAdapter);
-```
+=== "with auth headers"
 
-The three generated `@FunctionalInterface` types (`GraphLinkClientAdapter`, `GraphLinkJsonEncoder`, `GraphLinkJsonDecoder`) can still be assigned from lambdas for custom JSON libraries (Gson, Moshi, etc.).
+    ```java
+    // Dynamic auth headers on every request — token is fetched fresh each time.
+    Supplier<Map<String, String>> headers = () -> Map.of(
+        "Authorization", "Bearer " + tokenService.getToken()
+    );
+
+    // wsUrl auto-derived; both HTTP and WebSocket adapters receive the headers.
+    GraphLinkClient client = new GraphLinkClient(
+        "http://localhost:8080/graphql",
+        headers,
+        new JacksonGraphLinkJsonCodec(),
+        new JacksonGraphLinkJsonCodec()
+    );
+    ```
+
+=== "custom codec"
+
+    ```java
+    // Use a different JSON library — e.g. Gson.
+    GraphLinkJsonEncoder encoder = obj -> gson.toJson(obj);
+    GraphLinkJsonDecoder decoder = json -> gson.fromJson(json, Map.class);
+
+    GraphLinkClient client = new GraphLinkClient(
+        "http://localhost:8080/graphql",
+        "ws://localhost:8080/graphql",
+        encoder,
+        decoder
+    );
+    ```
+
+=== "full control"
+
+    ```java
+    // Full manual wiring — bring your own adapter, encoder, decoder, and cache store.
+    GraphLinkClientAdapter adapter = payload -> { /* custom HTTP logic */ };
+    GraphLinkJsonEncoder encoder = obj -> mapper.writeValueAsString(obj);
+    GraphLinkJsonDecoder decoder = json -> mapper.readValue(json, Map.class);
+    GraphLinkWebSocketAdapter wsAdapter = new DefaultGraphLinkWebSocketAdapter(
+        "ws://localhost:8080/graphql"
+    );
+
+    GraphLinkClient client = new GraphLinkClient(
+        adapter, encoder, decoder, myCacheStore, wsAdapter
+    );
+    ```
+
+!!! info "Any JSON library works"
+    The three generated interfaces (`GraphLinkClientAdapter`, `GraphLinkJsonEncoder`, `GraphLinkJsonDecoder`) are all `@FunctionalInterface` — assign them from lambdas using Gson, Moshi, or any other library. Jackson is only the default for the convenience constructors.
+
+Pass a custom `GraphLinkCacheStore` in the full constructor if you need a persistent or shared cache (e.g. Redis-backed). See the [Caching](caching.md) page for details.
 
 ## Queries — no generics
 
-```java
+This is the core difference from every other Java GraphQL client. There are no `TypeReference` anonymous classes, no unchecked casts, no raw `Map` navigation:
+
+```java title="Fetching a vehicle — GraphLink style"
 // Clean, typed, no generics
 GetVehicleResponse res = client.queries.getVehicle("42");
 System.out.println(res.getGetVehicle().getBrand());   // Toyota
@@ -574,8 +1110,9 @@ System.out.println(res.getGetVehicle().getYear());    // 2023
 System.out.println(res.getGetVehicle().getFuelType()); // GASOLINE
 ```
 
-Compare to other clients:
-```java
+Compare this to the boilerplate required by most other clients:
+
+```java title="The same query — typical other client"
 // What you're forced to write with most Java GraphQL clients
 GraphQLResponse<Map<String, Object>> response =
     client.query(new SimpleGraphQLRequest<>(
@@ -583,12 +1120,35 @@ GraphQLResponse<Map<String, Object>> response =
         Map.of("id", "42"),
         new TypeReference<GraphQLResponse<Map<String, Object>>>() {}
     ));
-Map<String, Object> vehicleMap = (Map<String, Object>) response.getData().get("getVehicle");
+@SuppressWarnings("unchecked")
+Map<String, Object> vehicleMap =
+    (Map<String, Object>) response.getData().get("getVehicle");
+String brand = (String) vehicleMap.get("brand");
+Integer year = ((Number) vehicleMap.get("year")).intValue();
+```
+
+## Nullable queries
+
+When the schema declares a nullable return type (no `!`), the corresponding getter on the response class returns a nullable type:
+
+```java title="getPerson — nullable result"
+// Schema: getPerson(id: ID!): Person   <-- nullable return
+GetPersonResponse res = client.queries.getPerson("99");
+
+Person p = res.getGetPerson(); // can be null — check before use
+if (p != null) {
+    System.out.println(p.getName());
+    System.out.println(p.getEmail());
+} else {
+    System.out.println("Person not found");
+}
 ```
 
 ## Mutations — builder pattern
 
-```java
+All input types are generated with an inner `Builder` class. Required fields (non-nullable in the schema) are validated with `Objects.requireNonNull` when `build()` is called:
+
+```java title="Adding a vehicle"
 import com.example.generated.inputs.AddVehicleInput;
 import com.example.generated.enums.FuelType;
 
@@ -598,27 +1158,55 @@ AddVehicleResponse added = client.mutations.addVehicle(
         .model("Camry")
         .year(2023)
         .fuelType(FuelType.GASOLINE)
+        // ownerId is nullable — omit for null
         .build()
 );
-System.out.println(added.getAddVehicle().getId());
+
+System.out.println(added.getAddVehicle().getId());    // server-assigned ID
+System.out.println(added.getAddVehicle().getBrand()); // Toyota
 ```
 
-Generated `AddVehicleInput`:
-```java
+The generated `AddVehicleInput` class:
+
+```java title="generated/inputs/AddVehicleInput.java"
 public class AddVehicleInput {
    private final String brand; private final String model;
    private final Integer year; private final FuelType fuelType; private final String ownerId;
-   // constructor with Objects.requireNonNull for required fields
+
+   public AddVehicleInput(String brand, String model, Integer year, FuelType fuelType, String ownerId) {
+      Objects.requireNonNull(brand); Objects.requireNonNull(model);
+      Objects.requireNonNull(year); Objects.requireNonNull(fuelType);
+      this.brand = brand; this.model = model; this.year = year;
+      this.fuelType = fuelType; this.ownerId = ownerId;
+   }
    public static Builder builder() { return new Builder(); }
-   // ... builder methods
+   public static class Builder {
+      private String brand; private String model; private Integer year;
+      private FuelType fuelType; private String ownerId;
+      public Builder brand(String brand) { this.brand = brand; return this; }
+      public Builder model(String model) { this.model = model; return this; }
+      public Builder year(Integer year) { this.year = year; return this; }
+      public Builder fuelType(FuelType fuelType) { this.fuelType = fuelType; return this; }
+      public Builder ownerId(String ownerId) { this.ownerId = ownerId; return this; }
+      public AddVehicleInput build() { return new AddVehicleInput(brand, model, year, fuelType, ownerId); }
+   }
 }
 ```
 
 ## Lists
 
-```java
+List queries return a typed `List<T>` — no casting required:
+
+```java title="List query"
 ListVehiclesResponse res = client.queries.listVehicles();
 List<Vehicle> vehicles = res.getListVehicles(); // List<Vehicle> — no raw types
+
+for (Vehicle v : vehicles) {
+    System.out.printf("%s %s (%d) — %s%n",
+        v.getBrand(), v.getModel(), v.getYear(), v.getFuelType());
+}
+
+// Or with streams
 vehicles.stream()
     .filter(v -> v.getFuelType() == FuelType.ELECTRIC)
     .map(Vehicle::getBrand)
@@ -627,7 +1215,453 @@ vehicles.stream()
 
 ## The response wrapper pattern
 
-Every operation generates a `{OperationName}Response` class. The double "get" in `getGetVehicle()` — the first is the Java getter prefix, the second is the operation name. This is consistent and predictable.
+Every query, mutation, and subscription operation generates a dedicated response class named `{OperationName}Response`. For example, `getVehicle` generates `GetVehicleResponse`.
+
+This pattern mirrors the GraphQL JSON response structure, which always wraps results in a `data` field:
+
+```json title="GraphQL HTTP response JSON"
+{
+  "data": {
+    "getVehicle": {
+      "id": "42",
+      "brand": "Toyota",
+      "model": "Camry",
+      "year": 2023,
+      "fuelType": "GASOLINE",
+      "ownerId": null
+    }
+  }
+}
+```
+
+The generated `GetVehicleResponse.fromJson()` navigates into the `data` object and deserializes `getVehicle` as a `Vehicle`. From your code's perspective, you simply call `res.getGetVehicle()` — the JSON unwrapping is invisible.
+
+Notice the double "get" in `getGetVehicle()` — the first is the Java getter prefix, the second is the operation name. This is consistent and predictable: the method name is always `get` + the operation name with a capital first letter.
+
+## Subscriptions
+
+Subscriptions are available via `client.subscriptions` and use the `GraphLinkWebSocketAdapter` interface. The generated `DefaultGraphLinkWebSocketAdapter` implements this interface out of the box:
+
+```java title="Subscribing to new vehicles"
+client.subscriptions.vehicleAdded(event -> {
+    VehicleAddedResponse res = event;
+    System.out.println("New vehicle: " + res.getVehicleAdded().getBrand());
+});
+```
+
+The generated WebSocket adapter handles the [graphql-ws subprotocol](https://github.com/enisdenjo/graphql-ws/blob/master/PROTOCOL.md) automatically — connection init, ping/pong, and exponential-backoff reconnect on disconnect.
+
+!!! info "Deriving the WebSocket URL"
+    The convenience constructors that take only an HTTP URL automatically derive the WebSocket URL by replacing `http` with `ws` (and `https` with `wss`). Pass an explicit `wsUrl` if your WebSocket endpoint differs from the HTTP endpoint.
+
+## File uploads
+
+When your schema uses the built-in `Upload` scalar, GraphLink generates a `GLUpload` class and handles multipart encoding in the generated adapter:
+
+```java title="Using GLUpload in Java"
+import com.example.generated.types.GLUpload;
+import java.io.FileInputStream;
+import java.io.File;
+
+File file = new File("/path/to/document.pdf");
+GLUpload upload = new GLUpload(
+    new FileInputStream(file),
+    file.length(),
+    "document.pdf",
+    "application/pdf"
+);
+
+UploadDocumentResponse result = client.mutations.uploadDocument(upload);
+System.out.println(result.getUploadDocument()); // URL or ID returned by server
+```
+
+The generated `DefaultGraphLinkClientAdapter` automatically encodes mutations containing `GLUpload` as multipart/form-data following the [GraphQL multipart request spec](https://github.com/jaydenseric/graphql-multipart-request-spec). No extra configuration needed.
+
+---
+
+# TypeScript Client
+
+A fully typed GraphQL client generated from your schema — works in Angular, React, Vue, Svelte, and Node/Bun.
+
+## Configuration
+
+Set `"mode": "client"` and add a `"typescript"` key under `clientConfig`:
+
+```json title="ts-config.json"
+{
+  "schemaPaths": ["schema/*.graphql"],
+  "mode": "client",
+  "typeMappings": {
+    "ID":      "string",
+    "String":  "string",
+    "Float":   "number",
+    "Int":     "number",
+    "Boolean": "boolean",
+    "Null":    "null"
+  },
+  "outputDir": "src/generated",
+  "clientConfig": {
+    "typescript": {
+      "packageName": "my-app",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "httpAdapter": "fetch",
+      "observables": false,
+      "generateDefaultWsAdapter": true,
+      "optionalNullableInputFields": true
+    }
+  }
+}
+```
+
+## Generated output
+
+For the example schema, GraphLink generates the following TypeScript files:
+
+```
+src/generated/
+  client/
+    graph-link-client.ts        ← GraphLinkClient class
+    graph-link-fetch-adapter.ts ← HTTP adapter
+    graph-link-ws-adapter.ts    ← WebSocket adapter
+  types/
+    vehicle.ts
+    person.ts
+  inputs/
+    add-vehicle-input.ts
+    add-person-input.ts
+  enums/
+    fuel-type.ts
+  responses/
+    get-vehicle-response.ts
+    list-vehicles-response.ts
+    add-vehicle-response.ts
+```
+
+## HTTP adapters
+
+The `httpAdapter` option controls which HTTP adapter is generated:
+
+- `"fetch"` (default) — generates `GraphLinkFetchAdapter` using the native `fetch` API. Works in Angular, React, Vue, Svelte, Bun, and modern Node (v18+) without any extra dependencies.
+- `"axios"` — generates `GraphLinkAxiosAdapter` using Axios. Choose this for Node environments where you already use Axios or need its interceptor/cancellation support.
+
+=== "Fetch adapter"
+
+    ```typescript
+    // generated/client/graph-link-fetch-adapter.ts
+    export class GraphLinkFetchAdapter {
+      constructor(
+        private readonly url: string,
+        private readonly headersProvider?: () => Promise<Record<string, string> | undefined>
+      ) {}
+
+      async call(payload: string): Promise<string> {
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          ...((await this.headersProvider?.()) ?? {}),
+        };
+        const res = await fetch(this.url, { method: 'POST', headers, body: payload });
+        return res.text();
+      }
+    }
+    ```
+
+=== "Axios adapter"
+
+    ```typescript
+    // generated/client/graph-link-axios-adapter.ts
+    import axios, { AxiosInstance } from 'axios';
+
+    export class GraphLinkAxiosAdapter {
+      private readonly axios: AxiosInstance;
+
+      constructor(
+        private readonly url: string,
+        private readonly headersProvider?: () => Promise<Record<string, string> | undefined>,
+        axiosInstance?: AxiosInstance
+      ) {
+        this.axios = axiosInstance ?? axios.create();
+      }
+
+      async call(payload: string): Promise<string> {
+        const headers = {
+          'Content-Type': 'application/json',
+          ...((await this.headersProvider?.()) ?? {}),
+        };
+        const res = await this.axios.post(this.url, payload, { headers });
+        return typeof res.data === 'string' ? res.data : JSON.stringify(res.data);
+      }
+    }
+    ```
+
+=== "WebSocket adapter"
+
+    ```typescript
+    // generated/client/graph-link-ws-adapter.ts
+    // Generated when generateDefaultWsAdapter: true
+    export class DefaultGraphLinkWebSocketAdapter {
+      constructor(
+        private readonly url: string,
+        private readonly headersProvider?: () => Promise<Record<string, string> | undefined>,
+        private readonly initialReconnectDelayMs: number = 1000,
+        private readonly maxReconnectDelayMs: number = 30000
+      ) {}
+      // Implements graphql-ws protocol with exponential-backoff reconnect.
+      // headersProvider result is forwarded as connection_init payload.
+    }
+    ```
+
+## Initializing the client
+
+=== "Minimal (Fetch)"
+
+    ```typescript
+    import { GraphLinkClient } from './generated/client/graph-link-client';
+    import { GraphLinkFetchAdapter } from './generated/client/graph-link-fetch-adapter';
+    import { DefaultGraphLinkWebSocketAdapter } from './generated/client/graph-link-ws-adapter';
+
+    const adapter = new GraphLinkFetchAdapter('http://localhost:8080/graphql');
+    const wsAdapter = new DefaultGraphLinkWebSocketAdapter('ws://localhost:8080/graphql');
+
+    const client = new GraphLinkClient(adapter.call.bind(adapter), wsAdapter);
+    ```
+
+=== "With auth headers"
+
+    ```typescript
+    import { GraphLinkFetchAdapter } from './generated/client/graph-link-fetch-adapter';
+
+    const adapter = new GraphLinkFetchAdapter(
+      'http://localhost:8080/graphql',
+      async () => ({ Authorization: `Bearer ${await getToken()}` })
+    );
+
+    const client = new GraphLinkClient(adapter.call.bind(adapter));
+    ```
+
+=== "Axios + subscriptions"
+
+    ```typescript
+    import { GraphLinkAxiosAdapter } from './generated/client/graph-link-axios-adapter';
+    import { DefaultGraphLinkWebSocketAdapter } from './generated/client/graph-link-ws-adapter';
+
+    const adapter = new GraphLinkAxiosAdapter(
+      'http://localhost:8080/graphql',
+      async () => ({ Authorization: `Bearer ${await getToken()}` })
+    );
+
+    const wsAdapter = new DefaultGraphLinkWebSocketAdapter(
+      'ws://localhost:8080/graphql',
+      async () => ({ Authorization: `Bearer ${await getToken()}` })
+    );
+
+    const client = new GraphLinkClient(adapter.call.bind(adapter), wsAdapter);
+    ```
+
+## Queries
+
+All queries are accessible via `client.queries`. Each method is fully typed — parameters and return types match the schema exactly:
+
+```typescript title="Fetching a vehicle"
+// getVehicle returns Promise<GetVehicleResponse>
+const res = await client.queries.getVehicle({ id: '42' });
+
+// res.getVehicle is typed as Vehicle
+console.log(res.getVehicle.brand);    // Toyota
+console.log(res.getVehicle.year);     // 2023
+console.log(res.getVehicle.fuelType); // FuelType.GASOLINE
+```
+
+```typescript title="generated/responses/get-vehicle-response.ts"
+import { Vehicle } from '../types/vehicle';
+
+export interface GetVehicleResponse {
+  getVehicle: Vehicle;
+}
+
+export function getVehicleResponseFromJson(json: Record<string, unknown>): GetVehicleResponse {
+  return {
+    getVehicle: vehicleFromJson(json['getVehicle'] as Record<string, unknown>),
+  };
+}
+```
+
+### List queries
+
+```typescript title="Fetching all vehicles"
+const res = await client.queries.listVehicles();
+
+// res.listVehicles is Vehicle[] — fully typed
+res.listVehicles.forEach(v => {
+  console.log(`${v.brand} ${v.model} (${v.year})`);
+});
+
+// Filter with full type safety
+const electrics = res.listVehicles.filter(v => v.fuelType === FuelType.ELECTRIC);
+```
+
+## Mutations
+
+Mutations are available via `client.mutations`. Input types use TypeScript interfaces with optional fields for nullable schema fields (when `optionalNullableInputFields: true`):
+
+```typescript title="Adding a vehicle"
+import { FuelType } from './generated/enums/fuel-type';
+
+const added = await client.mutations.addVehicle({
+  input: {
+    brand: 'Toyota',
+    model: 'Camry',
+    year: 2023,
+    fuelType: FuelType.GASOLINE,
+    // ownerId is nullable — omit entirely or pass null
+  },
+});
+
+console.log(added.addVehicle.id);    // server-assigned ID
+console.log(added.addVehicle.brand); // Toyota
+```
+
+```typescript title="generated/inputs/add-vehicle-input.ts"
+import { FuelType } from '../enums/fuel-type';
+
+export interface AddVehicleInput {
+  brand: string;
+  model: string;
+  year: number;
+  fuelType: FuelType;
+  ownerId?: string | null;  // optional because nullable in schema
+}
+
+export function addVehicleInputToJson(input: AddVehicleInput): Record<string, unknown> {
+  return {
+    brand: input.brand,
+    model: input.model,
+    year: input.year,
+    fuelType: input.fuelType,
+    ownerId: input.ownerId ?? null,
+  };
+}
+```
+
+## Subscriptions
+
+Subscriptions are available via `client.subscriptions`. Subscription methods return an object with an `unsubscribe()` method:
+
+```typescript title="Subscribing to vehicle events"
+const sub = client.subscriptions.vehicleAdded({
+  onData: (event) => {
+    console.log('New vehicle:', event.vehicleAdded.brand);
+  },
+  onError: (err) => console.error('Subscription error:', err),
+  onComplete: () => console.log('Subscription ended'),
+});
+
+// Later — clean up
+sub.unsubscribe();
+```
+
+## RxJS observables mode
+
+Set `"observables": true` in the TypeScript config to generate Observable-returning methods instead of Promise/callback. This is the idiomatic choice for Angular projects:
+
+```typescript title="With observables: true"
+import { Observable } from 'rxjs';
+
+// Queries and mutations return Observable<T>
+client.queries.listVehicles().subscribe(res => {
+  this.vehicles = res.listVehicles;
+});
+
+// Subscriptions also return Observable<T>
+client.subscriptions.vehicleAdded().subscribe(event => {
+  this.vehicles.push(event.vehicleAdded);
+});
+
+// In Angular templates — use the async pipe
+// vehicles$ = client.queries.listVehicles().pipe(map(r => r.listVehicles));
+// <li *ngFor="let v of vehicles$ | async">{{ v.brand }}</li>
+```
+
+## Error handling
+
+The generated client throws a `GraphLinkException` when the server returns GraphQL errors:
+
+```typescript title="Error handling"
+import { GraphLinkException } from './generated/client/graph-link-client';
+
+try {
+  const res = await client.queries.getVehicle({ id: 'bad-id' });
+  console.log(res.getVehicle.brand);
+} catch (e) {
+  if (e instanceof GraphLinkException) {
+    for (const error of e.errors) {
+      console.error('GraphQL error:', error.message);
+    }
+  } else {
+    // Network error, timeout, etc.
+    console.error('Request failed:', e);
+  }
+}
+```
+
+!!! info "Testing without mocking frameworks"
+    The adapter is a plain function — `(payload: string) => Promise<string>`. In tests, pass a lambda that returns the JSON you want: `adapter: async () => JSON.stringify({ data: { getVehicle: { id: '1', brand: 'Toyota', ... } } })`. No HTTP mocking library needed.
+
+## Using with Angular
+
+In Angular, inject the `GraphLinkClient` as a singleton service and use `observables: true` for the most ergonomic integration with Angular's reactive patterns:
+
+```typescript title="Angular service setup"
+import { Injectable } from '@angular/core';
+import { GraphLinkClient } from './generated/client/graph-link-client';
+import { GraphLinkFetchAdapter } from './generated/client/graph-link-fetch-adapter';
+import { DefaultGraphLinkWebSocketAdapter } from './generated/client/graph-link-ws-adapter';
+
+@Injectable({ providedIn: 'root' })
+export class ApiService {
+  readonly client: GraphLinkClient;
+
+  constructor(private authService: AuthService) {
+    const adapter = new GraphLinkFetchAdapter(
+      'https://api.example.com/graphql',
+      async () => ({ Authorization: `Bearer ${this.authService.getToken()}` })
+    );
+    const wsAdapter = new DefaultGraphLinkWebSocketAdapter(
+      'wss://api.example.com/graphql',
+      async () => ({ Authorization: `Bearer ${this.authService.getToken()}` })
+    );
+    this.client = new GraphLinkClient(adapter.call.bind(adapter), wsAdapter);
+  }
+}
+```
+
+## Using with React
+
+Create the client once (outside the component tree) and use it directly in hooks:
+
+```typescript title="React hook usage"
+// api.ts — create client once
+import { GraphLinkClient } from './generated/client/graph-link-client';
+import { GraphLinkFetchAdapter } from './generated/client/graph-link-fetch-adapter';
+
+const adapter = new GraphLinkFetchAdapter('/graphql');
+export const api = new GraphLinkClient(adapter.call.bind(adapter));
+
+// VehicleList.tsx
+import { useEffect, useState } from 'react';
+import { api } from './api';
+import { Vehicle } from './generated/types/vehicle';
+
+export function VehicleList() {
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+
+  useEffect(() => {
+    api.queries.listVehicles().then(res => setVehicles(res.listVehicles));
+  }, []);
+
+  return <ul>{vehicles.map(v => <li key={v.id}>{v.brand} {v.model}</li>)}</ul>;
+}
+```
 
 ---
 
@@ -637,21 +1671,30 @@ GraphLink generates the entire Spring Boot scaffolding from your schema — cont
 
 ## Server mode config
 
-```json
+Set `"mode": "server"` and provide a `"spring"` section under `serverConfig`. The key options:
+
+```json title="spring-config.json"
 {
   "schemaPaths": ["schema/*.graphql"],
   "mode": "server",
-  "typeMappings": { "ID": "String", "String": "String", "Float": "Double", "Int": "Integer", "Boolean": "Boolean", "Null": "null" },
+  "typeMappings": {
+    "ID":      "String",
+    "String":  "String",
+    "Float":   "Double",
+    "Int":     "Integer",
+    "Boolean": "Boolean",
+    "Null":    "null"
+  },
   "outputDir": "src/main/java/com/example/generated",
   "serverConfig": {
     "spring": {
-      "basePackage": "com.example.generated",
-      "generateControllers": true,
-      "generateInputs": true,
-      "generateTypes": true,
+      "basePackage":          "com.example.generated",
+      "generateControllers":  true,
+      "generateInputs":       true,
+      "generateTypes":        true,
       "generateRepositories": false,
       "immutableInputFields": true,
-      "immutableTypeFields": false
+      "immutableTypeFields":  false
     }
   }
 }
@@ -659,34 +1702,79 @@ GraphLink generates the entire Spring Boot scaffolding from your schema — cont
 
 | Option | Description |
 |---|---|
-| `generateControllers` | Generates `@Controller` classes with `@QueryMapping`, `@MutationMapping`, `@SubscriptionMapping`, and `@Argument` |
-| `generateInputs` | Generates input classes from `input` type definitions |
-| `generateTypes` | Generates entity/response classes from `type` definitions |
-| `generateRepositories` | Generates JPA `Repository` interfaces for types annotated with `@glRepository` |
-| `immutableInputFields` | Input class fields are `final`. Recommended: true |
-| `immutableTypeFields` | Type class fields are `final`. Set to `false` for Spring Boot |
+| `generateControllers` | Generates `@Controller` classes with `@QueryMapping`, `@MutationMapping`, `@SubscriptionMapping`, and `@Argument` on parameters. |
+| `generateInputs` | Generates input classes from `input` type definitions. |
+| `generateTypes` | Generates entity/response classes from `type` definitions. |
+| `generateRepositories` | When `true`, generates JPA `Repository` interfaces for types annotated with `@glRepository`. |
+| `immutableInputFields` | Input class fields are `final`. Recommended: `true`. |
+| `immutableTypeFields` | Type class fields are `final`. Set to `false` for Spring Boot — Spring's GraphQL runtime sets fields via setters. |
 
 ## What gets generated
 
-For the example schema, the generator produces 9 files: 2 controllers, 2 service interfaces, 2 types, 2 inputs, 1 enum.
+For the example schema, the generator produces 9 files:
+
+```
+src/main/java/com/example/generated/
+  controllers/
+    PersonServiceController.java  ← generated, never touch
+    VehicleServiceController.java ← generated, never touch
+  services/
+    PersonService.java  ← implement this
+    VehicleService.java ← implement this
+  types/
+    Person.java
+    Vehicle.java
+  inputs/
+    AddPersonInput.java
+    AddVehicleInput.java
+  enums/
+    FuelType.java
+```
+
+Controllers are generated and never touched by hand. Service interfaces are what you implement. Types, inputs, and enums are data classes.
 
 ## Types and inputs
 
-Server-side types are mutable — they have getters and setters, not final fields:
-```java
+Server-side types are mutable — they have getters and setters, not final fields. This is required because Spring's GraphQL runtime deserializes JSON into these classes using reflection.
+
+```java title="generated/types/Vehicle.java — server version (mutable)"
 public class Vehicle {
    private String id;
    private String brand;
-   // ...
+   private String model;
+   private Integer year;
+   private FuelType fuelType;
+   private String ownerId;
+
+   public Vehicle() {}
+
    public String getId() { return id; }
    public void setId(String id) { this.id = id; }
-   // ...
+
+   public String getBrand() { return brand; }
+   public void setBrand(String brand) { this.brand = brand; }
+
+   public String getModel() { return model; }
+   public void setModel(String model) { this.model = model; }
+
+   public Integer getYear() { return year; }
+   public void setYear(Integer year) { this.year = year; }
+
+   public FuelType getFuelType() { return fuelType; }
+   public void setFuelType(FuelType fuelType) { this.fuelType = fuelType; }
+
+   public String getOwnerId() { return ownerId; }
+   public void setOwnerId(String ownerId) { this.ownerId = ownerId; }
 }
 ```
 
+Input classes can be immutable since Spring maps query arguments into them at the framework level using constructors or builders. Note that `immutableTypeFields: false` applies to `type` definitions only; input classes follow `immutableInputFields`.
+
 ## Service interfaces
 
-```java
+For each group of operations sharing a root type, GraphLink generates one service interface:
+
+```java title="generated/services/VehicleService.java"
 public interface VehicleService {
    Vehicle getVehicle(String id);
    List<Vehicle> listVehicles();
@@ -695,14 +1783,26 @@ public interface VehicleService {
 }
 ```
 
-Subscriptions return `Flux<T>` — a Project Reactor reactive stream.
+Observe the return types:
+
+- Queries return the domain type directly — `Vehicle`, not `Optional<Vehicle>` or `Mono<Vehicle>`
+- Subscriptions return `Flux<T>` — a Project Reactor reactive stream
+- The method signatures exactly mirror the schema declarations
+
+You implement this interface and annotate your implementation with `@Service`. You do not touch the generated controller.
 
 ## Controllers
 
-```java
+The generated controller is the glue between Spring's GraphQL runtime and your service. It is fully annotated and delegates every call to the service interface. You never need to modify it:
+
+```java title="generated/controllers/VehicleServiceController.java"
 @Controller()
 public class VehicleServiceController {
    private final VehicleService vehicleService;
+
+   public VehicleServiceController(VehicleService vehicleService) {
+      this.vehicleService = vehicleService;
+   }
 
    @QueryMapping()
    public Vehicle getVehicle(@Argument() String id) {
@@ -726,20 +1826,52 @@ public class VehicleServiceController {
 }
 ```
 
+Spring's `@QueryMapping`, `@MutationMapping`, and `@SubscriptionMapping` use the method name to map to the schema field by convention. `@Argument` on method parameters maps GraphQL arguments to Java parameters by name.
+
 ## Implementing the service
 
-```java
+Create a `@Service` class in your own package (not in the `generated` package) that implements the generated interface:
+
+```java title="com/example/service/VehicleServiceImpl.java — your code"
+package com.example.service;
+
+import com.example.generated.services.VehicleService;
+import com.example.generated.types.Vehicle;
+import com.example.generated.inputs.AddVehicleInput;
+import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Sinks;
+import java.util.List;
+
 @Service
 public class VehicleServiceImpl implements VehicleService {
+
     private final VehicleRepository vehicleRepository;
     private final Sinks.Many<Vehicle> vehicleSink =
         Sinks.many().multicast().onBackpressureBuffer();
+
+    public VehicleServiceImpl(VehicleRepository vehicleRepository) {
+        this.vehicleRepository = vehicleRepository;
+    }
+
+    @Override
+    public Vehicle getVehicle(String id) {
+        return vehicleRepository.findById(id).orElse(null);
+    }
+
+    @Override
+    public List<Vehicle> listVehicles() {
+        return vehicleRepository.findAll();
+    }
 
     @Override
     public Vehicle addVehicle(AddVehicleInput input) {
         Vehicle v = new Vehicle();
         v.setBrand(input.getBrand());
-        // ...
+        v.setModel(input.getModel());
+        v.setYear(input.getYear());
+        v.setFuelType(input.getFuelType());
+        v.setOwnerId(input.getOwnerId());
         Vehicle saved = vehicleRepository.save(v);
         vehicleSink.tryEmitNext(saved);
         return saved;
@@ -752,21 +1884,187 @@ public class VehicleServiceImpl implements VehicleService {
 }
 ```
 
+!!! info "Keep generated code separate"
+    Put your implementations in a separate package from the generated code (e.g. `com.example.service` vs `com.example.generated`). This way, re-running the generator never overwrites your business logic.
+
+## Subscriptions with Reactor
+
+Spring Boot GraphQL uses Project Reactor for subscriptions. The service interface returns `Flux<T>` — a reactive stream that emits items over time.
+
+The recommended approach is `Sinks.Many`: a thread-safe construct that lets you push items from anywhere in your application:
+
+```java title="Push-based subscription with Sinks"
+// Declare a multicast sink — supports multiple concurrent subscribers
+private final Sinks.Many<Vehicle> vehicleSink =
+    Sinks.many().multicast().onBackpressureBuffer();
+
+// In vehicleAdded() — return the flux backed by the sink
+@Override
+public Flux<Vehicle> vehicleAdded() {
+    return vehicleSink.asFlux();
+}
+
+// When a new vehicle is saved, push it to all subscribers
+vehicleSink.tryEmitNext(savedVehicle);
+
+// When the application shuts down (optional)
+vehicleSink.tryEmitComplete();
+```
+
+`Sinks.many().multicast()` allows multiple GraphQL subscribers to receive the same events simultaneously.
+
+## Reactive mode (Spring WebFlux)
+
+Set `"reactive": true` in `serverConfig.spring` to generate Spring WebFlux-style controllers. Queries and mutations return `Mono<T>` instead of `T` directly, and subscriptions return `Flux<T>` as usual. File upload fields use `FilePart` instead of `MultipartFile`.
+
+```json title="config.json — reactive mode"
+{
+  "serverConfig": {
+    "spring": {
+      "basePackage": "com.example.generated",
+      "reactive": true
+    }
+  }
+}
+```
+
+With `reactive: true`, the generated service interface returns reactive types:
+
+```java title="Generated VehicleService.java — reactive mode"
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+public interface VehicleService {
+   Mono<Vehicle> getVehicle(String id);
+   Flux<Vehicle> listVehicles();
+   Mono<Vehicle> addVehicle(AddVehicleInput input);
+   Flux<Vehicle> vehicleAdded();
+}
+```
+
+The generated controllers delegate to these reactive methods directly. Spring WebFlux handles back-pressure and non-blocking I/O automatically.
+
+## Security context propagation (MVC)
+
+In MVC (non-reactive) mode, Spring Security's `SecurityContextHolder` is thread-local. When a controller delegates to an async `CompletableFuture`, the security context is not automatically carried to the worker thread. Enable `"useSpringSecurity": true` to have GraphLink capture the context before entering the future and restore it on the worker thread:
+
+```json title="config.json — security context propagation"
+{
+  "clientConfig": {
+    "java": {
+      "useSpringSecurity": true
+    }
+  }
+}
+```
+
+When enabled, the generated controller looks like this:
+
+```java title="Generated controller — with useSpringSecurity: true"
+@QueryMapping()
+public CompletableFuture<Vehicle> getVehicle(@Argument() String id) {
+    SecurityContext ctx = SecurityContextHolder.getContext();
+    return CompletableFuture.supplyAsync(() -> {
+        SecurityContextHolder.setContext(ctx);
+        try {
+            return vehicleService.getVehicle(id);
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    });
+}
+```
+
+This option has no effect in reactive mode — Spring Security provides dedicated reactive support via `ReactiveSecurityContextHolder`.
+
+## Forward mappings
+
+When a type is annotated with `@glSkipOnServer(mapTo: "SomeServerType")`, GraphLink automatically forwards fields that exist verbatim on the server type — fields with the same name and compatible type — without generating a service method or `@SchemaMapping` for them. Only fields absent from the server type still get full delegation.
+
+```graphql title="Forward mapping example"
+# Map our schema Pageable to Spring Data's Pageable — don't generate a class
+type Pageable @glSkipOnServer(mapTo: "org.springframework.data.domain.Pageable") {
+  pageNumber: Int   # exists verbatim on Spring's Pageable → auto-forwarded
+  pageSize: Int     # exists verbatim on Spring's Pageable → auto-forwarded
+  offset: Long      # exists verbatim on Spring's Pageable → auto-forwarded
+}
+```
+
+Fields that match are resolved directly by Spring without any service delegation. This removes the boilerplate of manually writing `@SchemaMapping` methods for fields that already exist on the mapped type.
+
+## File uploads
+
+When your schema uses the `Upload` scalar, Spring Boot controllers accept `MultipartFile` (MVC mode) or `FilePart` (reactive mode):
+
+```graphql title="Schema with Upload scalar"
+scalar Upload
+
+type Mutation {
+  uploadDocument(file: Upload!): String!
+}
+```
+
+=== "MVC controller"
+
+    ```java
+    @MutationMapping()
+    public String uploadDocument(@Argument() MultipartFile file) {
+        return documentService.uploadDocument(file);
+    }
+    ```
+
+=== "Reactive controller"
+
+    ```java
+    @MutationMapping()
+    public Mono<String> uploadDocument(@Argument() FilePart file) {
+        return documentService.uploadDocument(file);
+    }
+    ```
+
+The service interface method receives the same type as the controller, so you implement it directly without any conversion.
+
 ## Validation with @glValidate
 
-Add `@glValidate` to a mutation to generate a `validateX()` method in the service interface:
+Add `@glValidate` to a mutation in your schema to instruct GraphLink to generate a `validateX()` method in the service interface. The controller calls this method before the main method, giving you a place to throw validation exceptions before any business logic runs.
 
-```graphql
+```graphql title="Schema with @glValidate"
 type Mutation {
   addVehicle(input: AddVehicleInput!): Vehicle! @glValidate
 }
 ```
 
-Generated:
-```java
+With `@glValidate` on `addVehicle`, the generated service interface gains an extra method:
+
+```java title="Generated VehicleService.java — with @glValidate"
 public interface VehicleService {
-   void validateAddVehicle(AddVehicleInput input); // called first — throw to abort
+   // Called first by the controller — throw here to abort the mutation
+   void validateAddVehicle(AddVehicleInput input);
+
    Vehicle addVehicle(AddVehicleInput input);
+   List<Vehicle> listVehicles();
+   Vehicle getVehicle(String id);
+   Flux<Vehicle> vehicleAdded();
+}
+```
+
+The generated controller calls `validateAddVehicle` before `addVehicle`. In your implementation, throw any exception to abort:
+
+```java title="Implementing the validation method"
+@Override
+public void validateAddVehicle(AddVehicleInput input) {
+    if (input.getBrand() == null || input.getBrand().isBlank()) {
+        throw new IllegalArgumentException("Brand must not be blank");
+    }
+    if (input.getYear() < 1886 || input.getYear() > 2100) {
+        throw new IllegalArgumentException("Year out of valid range");
+    }
+}
+
+@Override
+public Vehicle addVehicle(AddVehicleInput input) {
+    // Only reached if validateAddVehicle did not throw
+    // ...
 }
 ```
 
@@ -778,110 +2076,234 @@ Cache control belongs in the schema, not scattered across your application code.
 
 ## How it works
 
-GraphLink caching is opt-in and declared entirely at the schema level using two directives: `@glCache` on queries and `@glCacheInvalidate` on mutations. The generated client handles all cache logic automatically.
+GraphLink caching is opt-in and declared entirely at the schema level using two directives: `@glCache` on queries and `@glCacheInvalidate` on mutations. The generated client handles all cache logic automatically — reading from cache, writing to cache, and evicting entries on mutation. No application code is needed to enable or configure caching.
+
+The cache operates on the client side. It stores serialized response data keyed by operation name + variables. The server never knows about client-side caching.
 
 ## @glCache — caching a query
 
-```graphql
+Annotate any query field with `@glCache` to have its response cached:
+
+```graphql title="@glCache directive"
 type Query {
+  # Cache for 120 seconds, tagged "vehicles"
   getVehicle(id: ID!): Vehicle! @glCache(ttl: 120, tags: ["vehicles"])
+
+  # Cache for 60 seconds, same tag group
   listVehicles: [Vehicle!]! @glCache(ttl: 60, tags: ["vehicles"])
+
+  # Cache for 300 seconds, no tags (cannot be tag-invalidated)
   getStaticConfig: AppConfig! @glCache(ttl: 300)
+
+  # Cache with staleIfOffline — serve stale data if network fails
   getUserProfile(id: ID!): UserProfile @glCache(ttl: 60, staleIfOffline: true)
 }
 ```
 
 | Argument | Type | Required | Description |
 |---|---|---|---|
-| `ttl` | `Int` | Yes | Time-to-live in seconds |
-| `tags` | `[String!]` | No | Tags for group invalidation |
-| `staleIfOffline` | `Boolean` | No | Serve expired cache on network failure |
+| `ttl` | `Int` | Yes | Time-to-live in seconds. After this duration, the entry is considered expired and the next call will hit the server. |
+| `tags` | `[String!]` | No | List of tags to associate with this cache entry. Used for group invalidation via `@glCacheInvalidate`. |
+| `staleIfOffline` | `Boolean` | No | If `true`, serve the expired cached value when the network call fails instead of throwing. |
 
 ## Cache keys
 
-Cache entries are keyed by FNV1a hash of `operationName + JSON(variables)`. Each unique argument combination gets its own cache entry.
+Cache entries are keyed by a combination of the operation name and the serialized variables. The key is computed as an FNV1a hash of `operationName + JSON(variables)`. This means:
+
+- `getVehicle("42")` and `getVehicle("99")` produce different cache entries
+- `getVehicle("42")` called twice produces the same cache key — the second call returns the cached result
+- `listVehicles()` (no variables) always produces the same cache key regardless of call site
+
+!!! info "Per-argument caching"
+    Each unique argument combination gets its own cache entry. Calling `getVehicle` with 100 different IDs stores 100 separate cache entries. All of them share the `"vehicles"` tag, so a single `addVehicle` mutation invalidates all 100 at once.
 
 ## @glCacheInvalidate — busting the cache
 
-```graphql
+Annotate a mutation with `@glCacheInvalidate` to automatically evict cache entries when the mutation succeeds:
+
+```graphql title="@glCacheInvalidate directive"
 type Mutation {
+  # Evicts all cache entries tagged "vehicles"
   addVehicle(input: AddVehicleInput!): Vehicle! @glCacheInvalidate(tags: ["vehicles"])
+
+  # Evicts entries tagged "vehicles" AND "persons"
   transferVehicle(vehicleId: ID!, newOwnerId: ID!): Vehicle!
     @glCacheInvalidate(tags: ["vehicles", "persons"])
+
+  # Wipes the ENTIRE cache
   resetAllData: Boolean! @glCacheInvalidate(all: true)
 }
 ```
 
 | Argument | Type | Description |
 |---|---|---|
-| `tags` | `[String!]` | Evict all cache entries tagged with these values |
-| `all` | `Boolean` | When true, evict the entire cache |
+| `tags` | `[String!]` | Evict all cache entries that were stored with any of these tags. |
+| `all` | `Boolean` | When `true`, evict the entire cache regardless of tags. |
 
 ## Tag-based invalidation
 
-Tags allow a single mutation to invalidate many different cached queries at once. A single `addVehicle` mutation invalidates `getVehicle`, `listVehicles`, and `getFleet` simultaneously.
+Tags are labels you attach to cache entries at write time. When you later invalidate a tag, all entries carrying that tag are evicted simultaneously.
+
+This allows a single mutation to invalidate many different cached queries at once, even if those queries have different operation names and different variable sets:
+
+```graphql title="Tag invalidation in action"
+type Query {
+  getVehicle(id: ID!): Vehicle!       @glCache(ttl: 120, tags: ["vehicles"])
+  listVehicles: [Vehicle!]!           @glCache(ttl: 60,  tags: ["vehicles"])
+  getFleet(ownerId: ID!): [Vehicle!]! @glCache(ttl: 90,  tags: ["vehicles"])
+}
+
+type Mutation {
+  # One mutation invalidates ALL three queries above
+  addVehicle(input: AddVehicleInput!): Vehicle!      @glCacheInvalidate(tags: ["vehicles"])
+  updateVehicle(id: ID!, input: AddVehicleInput!): Vehicle! @glCacheInvalidate(tags: ["vehicles"])
+  deleteVehicle(id: ID!): Boolean!                   @glCacheInvalidate(tags: ["vehicles"])
+}
+```
+
+After calling `addVehicle`, the next call to `getVehicle`, `listVehicles`, or `getFleet` will always go to the server — no stale data.
 
 ## Partial query caching
 
-When a query returns multiple aliased fields, each field can carry its own `@glCache` directive:
+This is GraphLink's most powerful caching feature. When a query returns multiple aliased fields, each field can carry its own `@glCache` directive. The client fetches each field independently and caches them separately.
 
-```graphql
+The result: if one tag is invalidated, only the affected portion of the query is re-fetched. The rest is still served from cache.
+
+```graphql title="Partial caching — schema"
 type Query {
+  # These two aliases will be cached separately
   vehicle: Vehicle! @glCache(ttl: 120, tags: ["vehicles"])
   owner:   Person!  @glCache(ttl: 300, tags: ["persons"])
 }
 ```
 
-If the "vehicles" tag is invalidated, only the `vehicle` field is re-fetched. The `owner` field is still served from cache.
+Here is what happens step by step:
+
+1. **First call** — both `vehicle` and `owner` are cache misses. The client sends requests to the server for both. Results are stored: `vehicle` tagged `["vehicles"]`, `owner` tagged `["persons"]`.
+2. **Second call (within TTL)** — both hits. No network requests.
+3. **addVehicle mutation runs** — `@glCacheInvalidate(tags: ["vehicles"])` evicts the `vehicle` entry. The `owner` entry is unaffected.
+4. **Third call** — `vehicle` is a miss (re-fetched from server). `owner` is still a hit (served from cache). One network request instead of two.
+
+Partial query caching is especially valuable in dashboard or profile screens that combine volatile data (frequently updated) with stable data (rarely changed). The stable portion never leaves the cache even when the volatile portion is invalidated.
 
 ## staleIfOffline
 
-When `staleIfOffline: true` and the cache entry has expired, GraphLink attempts a server request. If it fails (network error, timeout), it returns the expired cached value instead of throwing. Useful on mobile where connectivity is unreliable.
+When `staleIfOffline: true` is set on a cached query and the cache entry has expired, GraphLink attempts a server request. If that request fails (network error, timeout, server unreachable), it falls back to the expired cached value instead of throwing an exception.
+
+This is especially useful on mobile apps where network connectivity is unreliable. Users see slightly outdated data rather than an error screen:
+
+```graphql title="staleIfOffline example"
+type Query {
+  # If expired and network fails, return the last known value
+  getUserProfile(id: ID!): UserProfile @glCache(ttl: 60, staleIfOffline: true)
+
+  # Without staleIfOffline — throws on network failure after TTL
+  getVehicle(id: ID!): Vehicle! @glCache(ttl: 120)
+}
+```
 
 ## Custom cache store
 
-Implement the `GraphLinkCacheStore` interface:
-```java
+The default cache store is `InMemoryGraphLinkCacheStore`. It is an in-process, non-persistent LRU map. For most apps this is sufficient. If you need persistence, cross-process sharing, or custom eviction, implement the `GraphLinkCacheStore` interface:
+
+```java title="GraphLinkCacheStore interface (generated)"
 public interface GraphLinkCacheStore {
+    // Store an entry with its TTL (in seconds) and tags
     void set(String key, Object value, int ttl, List<String> tags);
+
+    // Retrieve a cached entry, or null if expired/absent
     Object get(String key);
+
+    // Evict all entries matching any of the given tags
     void invalidate(List<String> tags);
+
+    // Evict all entries in the store
     void invalidateAll();
 }
 ```
 
-Examples: SharedPreferences (Flutter), Redis-backed (Java), encrypted store.
+Examples of custom implementations you might write:
+
+- **SharedPreferences (Flutter)** — persist cache across app restarts on mobile
+- **Redis-backed (Java)** — share cache across multiple service instances
+- **Encrypted store** — encrypt sensitive data at rest on device
+- **Size-limited LRU** — evict least-recently-used entries when a size cap is reached
+
+Pass the custom store as the last argument to the client constructor:
+
+=== "Dart"
+
+    ```dart
+    final client = GraphLinkClient(
+      graphLinkAdapter,
+      SimpleWebSocketAdapter('ws://localhost:8080/graphql'),
+      MyCustomCacheStore(), // implements GraphLinkCacheStore
+    );
+    ```
+
+=== "Java"
+
+    ```java
+    GraphLinkClient client = new GraphLinkClient(
+        adapter, encoder, decoder,
+        new MyRedisCacheStore(redisClient) // implements GraphLinkCacheStore
+    );
+    ```
 
 ## Dart usage — full cache flow
 
-```dart
+```dart title="Cache flow in Dart"
 // 1. First call — cache miss, hits the server
+//    Result stored with key=hash("getVehicle"+"42"), ttl=120s, tags=["vehicles"]
 final res1 = await client.queries.getVehicle(id: '42');
+print(res1.getVehicle.brand); // Toyota — from server
 
 // 2. Second call within 120s — cache hit, no network request
 final res2 = await client.queries.getVehicle(id: '42');
+print(res2.getVehicle.brand); // Toyota — from cache
 
-// 3. Mutation — evicts all "vehicles" cache entries
-await client.mutations.addVehicle(input: AddVehicleInput(...));
+// 3. Different ID — separate cache entry
+final res3 = await client.queries.getVehicle(id: '99');
+print(res3.getVehicle.brand); // Honda — from server (different cache key)
 
-// 4. After mutation — cache miss again
-final res4 = await client.queries.getVehicle(id: '42'); // from server
+// 4. Mutation — @glCacheInvalidate(tags: ["vehicles"]) evicts all "vehicles" entries
+await client.mutations.addVehicle(
+  input: AddVehicleInput(brand: 'Ford', model: 'Focus', year: 2024, fuelType: FuelType.GASOLINE),
+);
+
+// 5. After mutation — cache miss again for all "vehicles" entries
+final res5 = await client.queries.getVehicle(id: '42');
+print(res5.getVehicle.brand); // Toyota — from server again (cache was cleared)
 ```
 
 ## Java usage — full cache flow
 
-```java
-// 1. First call — cache miss
+```java title="Cache flow in Java"
+// 1. First call — cache miss, hits the server
 GetVehicleResponse res1 = client.queries.getVehicle("42");
+System.out.println(res1.getGetVehicle().getBrand()); // Toyota — from server
 
-// 2. Second call — cache hit
+// 2. Second call within 120s — cache hit, no network
 GetVehicleResponse res2 = client.queries.getVehicle("42");
+System.out.println(res2.getGetVehicle().getBrand()); // Toyota — from cache
 
-// 3. Mutation — evicts all "vehicles" entries
-client.mutations.addVehicle(AddVehicleInput.builder()...build());
+// 3. List query — its own cache entry (ttl=60, tags=["vehicles"])
+ListVehiclesResponse list1 = client.queries.listVehicles();
+System.out.println(list1.getListVehicles().size()); // 3 — from server
 
-// 4. After mutation — cache miss
-GetVehicleResponse res4 = client.queries.getVehicle("42"); // from server
+// 4. Mutation — evicts all "vehicles" cache entries
+client.mutations.addVehicle(
+    AddVehicleInput.builder()
+        .brand("Ford").model("Focus").year(2024)
+        .fuelType(FuelType.GASOLINE).build()
+);
+
+// 5. After mutation — getVehicle("42") and listVehicles() both miss cache
+GetVehicleResponse res5 = client.queries.getVehicle("42");
+System.out.println(res5.getGetVehicle().getBrand()); // Toyota — from server again
+
+ListVehiclesResponse list2 = client.queries.listVehicles();
+System.out.println(list2.getListVehicles().size()); // 4 — from server (includes new Ford)
 ```
 
 ---
@@ -894,9 +2316,15 @@ All GraphLink directives with arguments, placement, and examples.
 
 **Target:** CLIENT · **Placement:** `FIELD_DEFINITION` on `Query` fields
 
-Caches the result of a query field. Arguments: `ttl` (Int!, required), `tags` ([String!], optional), `staleIfOffline` (Boolean, optional).
+Caches the result of a query field. The generated client checks the cache before making a network request and stores the result on a cache miss.
 
-```graphql
+| Argument | Type | Required | Description |
+|---|---|---|---|
+| `ttl` | `Int!` | Yes | Time-to-live in seconds. |
+| `tags` | `[String!]` | No | Tags to associate with this cache entry for group invalidation. |
+| `staleIfOffline` | `Boolean` | No | When `true`, return the expired cached value if the network request fails. |
+
+```graphql title="Example"
 type Query {
   getVehicle(id: ID!): Vehicle! @glCache(ttl: 120, tags: ["vehicles"])
   getUserProfile(id: ID!): UserProfile @glCache(ttl: 60, tags: ["users"], staleIfOffline: true)
@@ -908,9 +2336,14 @@ type Query {
 
 **Target:** CLIENT · **Placement:** `FIELD_DEFINITION` on `Mutation` fields
 
-Invalidates cache entries after a successful mutation. Arguments: `tags` ([String!]), `all` (Boolean).
+Invalidates cache entries after a successful mutation. Either specify `tags` to evict by tag, or set `all: true` to wipe the entire cache.
 
-```graphql
+| Argument | Type | Description |
+|---|---|---|
+| `tags` | `[String!]` | Evict all entries tagged with any of these values. |
+| `all` | `Boolean` | When `true`, evict the entire cache store. |
+
+```graphql title="Example"
 type Mutation {
   addVehicle(input: AddVehicleInput!): Vehicle! @glCacheInvalidate(tags: ["vehicles"])
   updatePerson(input: UpdatePersonInput!): Person! @glCacheInvalidate(tags: ["persons", "vehicles"])
@@ -922,9 +2355,14 @@ type Mutation {
 
 **Target:** CLIENT · **Placement:** `OBJECT`, `INPUT_OBJECT`, `ENUM`
 
-Overrides the name of the generated class. Arguments: `name` (String!).
+Overrides the name of the generated class for a type. By default, GraphLink uses the GraphQL type name.
 
-```graphql
+| Argument | Type | Description |
+|---|---|---|
+| `name` | `String!` | The class name to use in generated code. |
+
+```graphql title="Example"
+# GraphQL type is "GQLVehicle", but generated class will be named "Vehicle"
 type GQLVehicle @glTypeName(name: "Vehicle") {
   id: ID!
   brand: String!
@@ -935,12 +2373,27 @@ type GQLVehicle @glTypeName(name: "Vehicle") {
 
 **Target:** SERVER · **Placement:** `OBJECT`, `INPUT_OBJECT`
 
-Adds raw annotation strings to the generated class declaration (e.g. JPA annotations). Arguments: `value` ([String!]!).
+Adds raw annotation strings to the generated class declaration. Useful for adding JPA annotations (`@Entity`, `@Table`), Lombok annotations, or any other annotation that belongs on the class.
 
-```graphql
+| Argument | Type | Description |
+|---|---|---|
+| `value` | `[String!]!` | List of annotation strings to emit before the class declaration. |
+
+```graphql title="Example"
 type Vehicle @glDecorators(value: ["@Entity", "@Table(name = \"vehicles\")"]) {
   id: ID!
   brand: String!
+  model: String!
+}
+```
+
+Generated output:
+
+```java title="Generated Vehicle.java"
+@Entity
+@Table(name = "vehicles")
+public class Vehicle {
+    // ...
 }
 ```
 
@@ -948,22 +2401,31 @@ type Vehicle @glDecorators(value: ["@Entity", "@Table(name = \"vehicles\")"]) {
 
 **Target:** BOTH · **Placement:** `OBJECT`, `SCALAR`
 
-Skip generating a class for this type in server mode. Arguments: `mapTo` (String, optional fully-qualified class name).
+Instructs GraphLink to skip generating a class for this type in server mode. If `mapTo` is provided, the generator substitutes the given class name wherever this type appears.
 
-```graphql
+| Argument | Type | Description |
+|---|---|---|
+| `mapTo` | `String` | Optional. Fully-qualified class name to use in place of this type. |
+
+```graphql title="Example"
+# Don't generate a class — use Spring Data's Pageable from the framework
 type Pageable @glSkipOnServer(mapTo: "org.springframework.data.domain.Pageable") {
   page: Int
   size: Int
+  sort: String
 }
 ```
+
+**Forward mappings:** When `mapTo` is set, GraphLink automatically *forwards* fields that exist verbatim on the target type (same name and compatible structural type). These fields are resolved by Spring directly — no service method or `@SchemaMapping` is generated for them. Only fields absent from the target type, or explicitly annotated with `@glSkipOnServer`, still get full delegation.
 
 ## @glSkipOnClient
 
 **Target:** BOTH · **Placement:** `OBJECT`, `INPUT_OBJECT`, `SCALAR`
 
-Skip generating a class for this type in client mode.
+Instructs GraphLink to skip generating a class for this type in client mode. Use this for server-side types that clients never need to instantiate directly.
 
-```graphql
+```graphql title="Example"
+# PageInfo is part of GraphQL responses but clients don't instantiate it
 type PageInfo @glSkipOnClient {
   hasNextPage: Boolean!
   endCursor: String
@@ -974,12 +2436,24 @@ type PageInfo @glSkipOnClient {
 
 **Target:** BOTH · **Placement:** `SCALAR`, `OBJECT`
 
-Maps a GraphQL scalar or type to an external class. Arguments: `glClass` (String!), `glImport` (String, optional).
+Maps a GraphQL scalar or type to an external class, optionally specifying the import path. Unlike `typeMappings` in the config (which works for all types globally), `@glExternal` is per-type and can specify an import statement.
 
-```graphql
+| Argument | Type | Description |
+|---|---|---|
+| `glClass` | `String!` | The fully-qualified class name to use. |
+| `glImport` | `String` | Optional import statement to add to generated files that reference this type. |
+
+```graphql title="Example"
+# Map the DateTime scalar to Java's OffsetDateTime
 scalar DateTime @glExternal(
   glClass: "OffsetDateTime",
   glImport: "java.time.OffsetDateTime"
+)
+
+# Map the BigDecimal scalar to Java's BigDecimal
+scalar BigDecimal @glExternal(
+  glClass: "BigDecimal",
+  glImport: "java.math.BigDecimal"
 )
 ```
 
@@ -987,11 +2461,17 @@ scalar DateTime @glExternal(
 
 **Target:** SERVER · **Placement:** `OBJECT`
 
-Sets a custom name for the generated service interface. Arguments: `name` (String!).
+Sets a custom name for the generated service interface associated with a type. By default, the service is named `{TypeName}Service`.
 
-```graphql
+| Argument | Type | Description |
+|---|---|---|
+| `name` | `String!` | The service interface name to generate. |
+
+```graphql title="Example"
+# Generates FleetManagementService instead of VehicleService
 type Vehicle @glServiceName(name: "FleetManagementService") {
   id: ID!
+  brand: String!
 }
 ```
 
@@ -999,12 +2479,26 @@ type Vehicle @glServiceName(name: "FleetManagementService") {
 
 **Target:** BOTH · **Placement:** `OBJECT`, `INPUT_OBJECT`
 
-Generates `equals()` and `hashCode()` methods based on specified fields. Arguments: `fields` ([String!]!).
+Generates `equals()` and `hashCode()` methods on the produced class, based on the specified fields. In Dart, generates `==` and `hashCode` overrides. In Java, generates standard `equals`/`hashCode` based on the listed fields.
 
-```graphql
+| Argument | Type | Description |
+|---|---|---|
+| `fields` | `[String!]!` | The field names to include in equality comparison. |
+
+```graphql title="Example"
+# Two Vehicles are equal if they have the same id
 type Vehicle @glEqualsHashcode(fields: ["id"]) {
   id: ID!
   brand: String!
+  model: String!
+}
+
+# Two AddVehicleInputs are equal if all fields match
+input AddVehicleInput @glEqualsHashcode(fields: ["brand", "model", "year", "fuelType"]) {
+  brand: String!
+  model: String!
+  year: Int!
+  fuelType: FuelType!
 }
 ```
 
@@ -1012,17 +2506,25 @@ type Vehicle @glEqualsHashcode(fields: ["id"]) {
 
 **Target:** SERVER · **Placement:** `OBJECT`
 
-Generates a JPA `JpaRepository` interface for this type. Requires `generateRepositories: true`. Arguments: `glType` (String!), `glIdType` (String!).
+Generates a JPA `JpaRepository` interface for this type. Requires `generateRepositories: true` in the server config. The repository is named `{TypeName}Repository`.
 
-```graphql
+| Argument | Type | Description |
+|---|---|---|
+| `glType` | `String!` | The entity class name. |
+| `glIdType` | `String!` | The Java type of the ID field (e.g. `"String"`, `"Long"`, `"UUID"`). |
+
+```graphql title="Example"
 type Vehicle @glRepository(glType: "Vehicle", glIdType: "String") {
   id: ID!
   brand: String!
 }
 ```
 
-Generated:
-```java
+Generated output (when `generateRepositories: true`):
+
+```java title="Generated VehicleRepository.java"
+import org.springframework.data.jpa.repository.JpaRepository;
+
 public interface VehicleRepository extends JpaRepository<Vehicle, String> {
 }
 ```
@@ -1031,12 +2533,14 @@ public interface VehicleRepository extends JpaRepository<Vehicle, String> {
 
 **Target:** BOTH · **Placement:** `OBJECT`
 
-Marks a type as internal to the GraphLink runtime. Excluded from `_all_fields` fragment generation.
+Marks a type as internal to the GraphLink runtime. Internal types are excluded from `_all_fields` fragment generation and from any UI widget generation. Use this for generated infrastructure types like error wrappers or pagination metadata that should not appear in user-facing code.
 
-```graphql
+```graphql title="Example"
+# This type will not get an _all_fields fragment and will be skipped by UI generators
 type GraphLinkError @glInternal {
   message: String!
   locations: [GraphLinkErrorLocation]
+  path: [String]
 }
 ```
 
@@ -1044,31 +2548,81 @@ type GraphLinkError @glInternal {
 
 **Target:** SERVER · **Placement:** `FIELD_DEFINITION` on `Mutation` fields
 
-Generates a `validate{OperationName}()` method in the service interface, called before the main method.
+Generates a `validate{OperationName}()` method in the service interface. The generated controller calls this method before the main operation method. Throw any exception in the validate method to abort the mutation.
 
-```graphql
+```graphql title="Example"
 type Mutation {
   addVehicle(input: AddVehicleInput!): Vehicle! @glValidate
 }
 ```
 
-## @glArray
+Generated service interface additions:
 
-**Target:** BOTH · **Placement:** `FIELD_DEFINITION`
+```java title="Generated VehicleService.java"
+public interface VehicleService {
+    // Called before addVehicle — throw to reject
+    void validateAddVehicle(AddVehicleInput input);
 
-Generates list fields as native arrays (`T[]` in Java) instead of `List<T>`.
-
-```graphql
-type Person {
-  vehicles: [Vehicle!]! @glArray  # Vehicle[] in Java
+    Vehicle addVehicle(AddVehicleInput input);
+    // ...
 }
 ```
 
+## @glArray — Removed in v4.4.0
+
+!!! danger "@glArray has been removed"
+    This directive is no longer supported. As of v4.4.0, all list fields are generated as `List<T>` in Java and Dart regardless of this annotation. Remove any `@glArray` usages from your schema before upgrading to v4.4.0+.
+
+## @glMapsTo
+
+**Target:** BOTH · **Placement:** `INPUT_OBJECT`
+
+Declares that a GraphQL input type maps to an existing class in the target language. GraphLink validates that the target class and all field mappings exist at generation time and emits a mapping constructor or method on the generated input class. Use `@glMapField` on individual fields to rename them during mapping.
+
+| Argument | Type | Description |
+|---|---|---|
+| `type` | `String!` | The fully-qualified target class name to map to. |
+
+```graphql title="Example"
+# Map GraphQL input to an existing Java/Dart class
+input UpdateVehicleInput @glMapsTo(type: "com.example.domain.UpdateVehicleCommand") {
+  id: ID!
+  brand: String!
+  model: String!
+  year: Int!
+  # Rename during mapping — see @glMapField below
+  fuelKind: FuelType! @glMapField(to: "fuelType")
+}
+```
+
+GraphLink generates a `toMappedType()` method on the input class that constructs the target type from the input fields, applying any `@glMapField` renames in the process.
+
+## @glMapField
+
+**Target:** BOTH · **Placement:** `FIELD_DEFINITION` on `input` types annotated with `@glMapsTo`
+
+Renames a field during the input-to-target mapping. The GraphQL field name is used in the schema and the generated input class; the `to` value is the field name on the target class.
+
+| Argument | Type | Description |
+|---|---|---|
+| `to` | `String!` | The field name on the target mapped class. |
+
+```graphql title="Example"
+input UpdateVehicleInput @glMapsTo(type: "com.example.domain.UpdateVehicleCommand") {
+  id: ID!
+  brand: String!
+  # GraphQL field is "fuelKind", target class field is "fuelType"
+  fuelKind: FuelType! @glMapField(to: "fuelType")
+}
+```
+
+GraphLink validates at generation time that the `to` field name exists on the target class. If it does not, generation fails with a clear error message.
+
 ## _all_fields — the magic fragment
 
-When `generateAllFieldsFragments: true`, GraphLink generates a named fragment per type selecting all fields:
+When `generateAllFieldsFragments: true` is set in the config, GraphLink generates a named fragment for every type in the schema. The fragment selects all fields of that type and is named `_all_fields_{TypeName}`:
 
-```graphql
+```graphql title="Generated _all_fields_Vehicle fragment"
 fragment _all_fields_Vehicle on Vehicle {
   id
   brand
@@ -1079,92 +2633,35 @@ fragment _all_fields_Vehicle on Vehicle {
 }
 ```
 
-Use in queries:
-```graphql
+You can reference these fragments in hand-written queries as a shorthand:
+
+```graphql title="Using _all_fields in a query"
 query getVehicle($id: ID!) {
   getVehicle(id: $id) {
-    ... _all_fields  # resolves to _all_fields_Vehicle
+    ... _all_fields_Vehicle
+  }
+}
+
+# Or use the shorthand — resolves to the type-appropriate fragment
+query getVehicle($id: ID!) {
+  getVehicle(id: $id) {
+    ... _all_fields
   }
 }
 ```
 
-Types annotated with `@glInternal` are excluded from `_all_fields` fragments.
+The shorthand `... _all_fields` (without the type suffix) is resolved by GraphLink based on the return type of the field. It is equivalent to writing `... _all_fields_Vehicle` when the field returns `Vehicle`.
+
+The `autoGenerateQueries: true` config option uses these fragments internally to generate query strings for every operation in the schema — you never write query strings by hand at all.
+
+!!! warning "Types annotated with @glInternal are excluded"
+    Internal types (annotated with `@glInternal`) do not get `_all_fields` fragments. This prevents GraphLink's own runtime types from being included in user queries.
 
 ---
 
 # Configuration Reference
 
-Every option in `config.json`, explained.
+Full `config.json` reference — coming soon.
 
-## Top-level options
+---
 
-| Key | Type | Required | Description |
-|---|---|---|---|
-| `schemaPaths` | `string[]` | Yes | Glob patterns for schema files |
-| `mode` | `"client" \| "server"` | Yes | `"client"` for client code, `"server"` for Spring Boot scaffolding |
-| `typeMappings` | `object` | Yes | Maps GraphQL scalar names to target language type names |
-| `outputDir` | `string` | Yes | Directory where generated files are written |
-| `clientConfig` | `object` | When `mode: "client"` | Contains `"dart"` or `"java"` key |
-| `serverConfig` | `object` | When `mode: "server"` | Contains `"spring"` key |
-
-## Dart client options (`clientConfig.dart`)
-
-| Key | Type | Default | Description |
-|---|---|---|---|
-| `packageName` | `string` | — | Your Dart package name. Required. |
-| `generateAllFieldsFragments` | `boolean` | `false` | Generates `_all_fields_TypeName` fragments. Fails if schema has type cycles. |
-| `autoGenerateQueries` | `boolean` | `false` | Generates query strings for every operation. Requires `generateAllFieldsFragments: true`. |
-| `nullableFieldsRequired` | `boolean` | `false` | When true, nullable fields are `required` in constructors. |
-| `immutableInputFields` | `boolean` | `true` | Makes input class fields `final`. |
-| `immutableTypeFields` | `boolean` | `true` | Makes response type class fields `final`. |
-
-**Schema cycles warning:** If your schema has a type cycle (e.g. Person→vehicles→Vehicle→owner→Person), `generateAllFieldsFragments` will fail with a dependency cycle error. Break the cycle with a projection type, or set both options to `false`.
-
-## Java client options (`clientConfig.java`)
-
-| Key | Type | Default | Description |
-|---|---|---|---|
-| `packageName` | `string` | — | Base Java package (e.g. `"com.example.generated"`). Required. |
-| `generateAllFieldsFragments` | `boolean` | `false` | Same as Dart. Fails if schema has type cycles. |
-| `autoGenerateQueries` | `boolean` | `false` | Generates query string constants for every schema operation. |
-| `nullableFieldsRequired` | `boolean` | `false` | Controls whether nullable fields require explicit null in builders. |
-| `immutableInputFields` | `boolean` | `true` | Makes input fields `final` with `Objects.requireNonNull`. |
-| `immutableTypeFields` | `boolean` | `true` | Makes response type fields `final`. Set `false` for Spring server types. |
-
-## Spring Boot options (`serverConfig.spring`)
-
-| Key | Type | Default | Description |
-|---|---|---|---|
-| `basePackage` | `string` | — | Base Java package for all generated server files. Required. |
-| `generateControllers` | `boolean` | `true` | Generates `@Controller` classes with Spring GraphQL annotations. |
-| `generateInputs` | `boolean` | `true` | Generates Java classes for all `input` type definitions. |
-| `generateTypes` | `boolean` | `true` | Generates Java classes for all `type` definitions. |
-| `generateRepositories` | `boolean` | `false` | Generates `JpaRepository` interfaces for types with `@glRepository`. |
-| `immutableInputFields` | `boolean` | `true` | Makes server-side input fields `final`. |
-| `immutableTypeFields` | `boolean` | `false` | Must be `false` for Spring's GraphQL runtime to set fields via reflection. |
-
-## typeMappings — custom scalars
-
-```json
-{
-  "typeMappings": {
-    "ID": "String", "String": "String", "Float": "Double",
-    "Int": "Integer", "Boolean": "Boolean", "Null": "null",
-    "DateTime": "OffsetDateTime", "BigDecimal": "BigDecimal",
-    "URL": "String", "Long": "Long", "UUID": "UUID"
-  }
-}
-```
-
-For scalars that require an import statement, use `@glExternal` on the scalar definition.
-
-## Running the CLI
-
-```bash
-glink -c config.json        # generate once
-glink -c config.json -w     # watch mode — regenerate on schema changes
-glink --version             # print version
-glink --help                # show help
-```
-
-Paths in the config file are resolved relative to the config file's location. A monorepo can have two configs: `glink -c dart-config.json && glink -c spring-config.json`.

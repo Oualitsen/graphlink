@@ -303,7 +303,7 @@ System.out.println(
   <!-- ══════════════════════════ STATS BAR ══════════════════════════════ -->
   <section class="stats-bar">
     <div class="container">
-      <p class="stats-bar-label">Measured in production — multi-tenant SaaS, dialysis clinic management platform</p>
+      <p class="stats-bar-label">Measured in production — <a href="https://www.optidialysis.com/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Optidialysis</a>, multi-tenant dialysis clinic management platform</p>
       <div class="stats-grid">
         <div class="stat-item">
           <span class="stat-number">72%</span>
@@ -327,6 +327,30 @@ System.out.println(
         GraphLink wrote the rest — controllers, service interfaces, DTOs, input classes, repositories, and batch mappings.
         Every generated file compiles, ships, and runs with <strong>zero runtime dependency</strong> on GraphLink.
       </p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ BUILT WITH ═══════════════════════════ -->
+  <section class="section" id="built-with" style="padding-top:0;padding-bottom:48px;">
+    <div class="container">
+      <p class="section-label">In production</p>
+      <h2 class="section-title" style="font-size:1.6rem;margin-bottom:8px;">Built with GraphLink</h2>
+      <p class="section-subtitle" style="margin-bottom:32px;">Real applications running GraphLink-generated code in production.</p>
+      <div style="display:flex;gap:24px;flex-wrap:wrap;">
+        <a href="https://www.optidialysis.com/" target="_blank" rel="noopener"
+           style="display:flex;align-items:center;gap:16px;padding:20px 28px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);text-decoration:none;transition:border-color .15s,background .15s;flex:1;min-width:280px;max-width:480px;"
+           onmouseover="this.style.borderColor='var(--primary)';this.style.background='var(--primary-dim)'"
+           onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--card)'">
+          <div style="width:44px;height:44px;border-radius:10px;background:var(--primary);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          </div>
+          <div>
+            <div style="font-weight:700;color:var(--text);margin-bottom:3px;">Optidialysis</div>
+            <div style="font-size:.85rem;color:var(--text-muted);line-height:1.4;">Multi-tenant SaaS platform for dialysis clinic management. Spring Boot backend + Flutter app — 72% of server files generated.</div>
+          </div>
+          <svg style="margin-left:auto;flex-shrink:0;color:var(--text-muted)" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+      </div>
     </div>
   </section>
 
@@ -450,6 +474,7 @@ System.out.println(
       <div class="compare-tabs">
         <button class="compare-tab active" data-target="java">Java</button>
         <button class="compare-tab" data-target="dart">Dart</button>
+        <button class="compare-tab" data-target="typescript">TypeScript</button>
       </div>
 
       <!-- Java comparison -->
@@ -580,6 +605,63 @@ final user = res.getUser; // typed User</code></pre>
             <div class="after-callout">
               <strong>No fromJson. No query strings. No HTTP wiring.</strong><br>
               GraphLink generates and maintains all of it, forever in sync with your schema.
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- TypeScript comparison -->
+      <div class="compare-group" id="compare-typescript">
+        <div class="compare-panels">
+          <div class="compare-panel before-panel">
+            <div class="panel-header">
+              <span class="panel-label bad">Without GraphLink</span>
+              <span class="line-badge">~45 lines</span>
+            </div>
+            <pre><code class="language-typescript">// 1. Write the interface manually
+interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
+// 2. Write the response wrapper manually
+interface GetUserResponse {
+  data: { getUser: User };
+}
+
+// 3. Write the query string manually
+const GET_USER = `
+  query GetUser($id: ID!) {
+    getUser(id: $id) { id name email }
+  }
+`;
+
+// 4. Execute — with manual fetch and casting
+const res = await fetch('/graphql', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    query: GET_USER,
+    variables: { id: userId },
+  }),
+});
+const json = (await res.json()) as GetUserResponse;
+const user = json.data.getUser; // any-typed, no safety</code></pre>
+          </div>
+
+          <div class="compare-panel after-panel">
+            <div class="panel-header">
+              <span class="panel-label good">With GraphLink</span>
+              <span class="line-badge saved">0 written · ~60 generated</span>
+            </div>
+            <pre><code class="language-typescript">// That's it.
+const res = await client.queries
+    .getUser({ id: userId });
+
+const user = res.getUser; // typed User</code></pre>
+            <div class="after-callout">
+              <strong>No interfaces. No query strings. No fetch wiring.</strong><br>
+              Works in Angular, React, Vue, Svelte, and Node — with optional RxJS observables.
             </div>
           </div>
         </div>
@@ -746,6 +828,7 @@ User user = res.getData().getGetUser();</code></pre>
       <div class="qs-tabs">
         <button class="qs-tab active" data-qs="flutter">Dart / Flutter</button>
         <button class="qs-tab" data-qs="java">Java Client</button>
+        <button class="qs-tab" data-qs="typescript">TypeScript</button>
         <button class="qs-tab" data-qs="spring">Spring Boot Server</button>
       </div>
 
@@ -851,6 +934,69 @@ mv glink-linux-x86_64 /usr/local/bin/glink</code></pre>
       "packageName": "com.example.generated",
       "generateAllFieldsFragments": true,
       "autoGenerateQueries": true
+    }
+  }
+}</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="qs-step">
+          <span class="qs-num">3</span>
+          <div class="qs-body">
+            <h4>Generate</h4>
+            <div class="code-block">
+              <button class="copy-btn" data-copy="glink -c config.json">Copy</button>
+              <pre><code class="language-bash">glink -c config.json
+
+# Or watch mode — regenerates on every schema save:
+glink -c config.json -w</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TypeScript -->
+      <div class="qs-content" id="qs-typescript">
+        <div class="qs-step">
+          <span class="qs-num">1</span>
+          <div class="qs-body">
+            <h4>Download the CLI binary</h4>
+            <div class="code-block">
+              <pre><code class="language-bash"># Download for your platform from GitHub Releases:
+# github.com/Oualitsen/graphlink/releases/latest
+#
+# Linux:   glink-linux-x86_64
+# macOS:   glink-macos-arm64
+# Windows: glink-windows-x86_64.exe
+
+chmod +x glink-linux-x86_64
+mv glink-linux-x86_64 /usr/local/bin/glink</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="qs-step">
+          <span class="qs-num">2</span>
+          <div class="qs-body">
+            <h4>Create <code>config.json</code></h4>
+            <div class="code-block">
+              <pre><code class="language-json">{
+  "schemaPaths": ["schema/*.graphql"],
+  "mode": "client",
+  "typeMappings": {
+    "ID": "string",
+    "Float": "number",
+    "Int": "number",
+    "Boolean": "boolean"
+  },
+  "outputDir": "src/generated",
+  "clientConfig": {
+    "typescript": {
+      "packageName": "my-app",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "httpAdapter": "fetch"
     }
   }
 }</code></pre>

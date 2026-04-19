@@ -1,434 +1,1568 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Java Client — GraphLink Docs</title>
-  <meta name="description" content="Use the generated GraphLink Java client for type-safe GraphQL queries. Generated Java 11 and OkHttp adapters, Jackson/Gson codecs, convenience constructors — from one-liner to full control.">
-  <meta property="og:type" content="article">
-  <meta property="og:url" content="https://graphlink.dev/docs/java-client.html">
-  <meta property="og:site_name" content="GraphLink">
-  <meta property="og:title" content="Java Client — GraphLink Docs">
-  <meta property="og:description" content="Generated Java GraphQL client with no generics. Generated Java 11/OkHttp adapters, Jackson/Gson codecs, and convenience constructors — new GraphLinkClient(url) is all you need.">
-  <meta property="og:image" content="https://graphlink.dev/og-image.png">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Java Client — GraphLink Docs">
-  <meta name="twitter:description" content="Generated Java GraphQL client — no generics, no TypeReference. Generated Java 11/OkHttp adapters and Jackson codec mean a one-liner new GraphLinkClient(url) is enough.">
-  <meta name="twitter:image" content="https://graphlink.dev/og-image.png">
-  <link rel="canonical" href="https://graphlink.dev/docs/java-client.html">
-  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
-  <link rel="alternate" type="text/plain" title="GraphLink for LLMs" href="/llms.txt">
-  <link rel="stylesheet" href="../css/styles.css?v=4.3.0">
-  <link rel="stylesheet" href="../css/docs.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "TechArticle",
-        "headline": "Java GraphQL Client — No Generics at the Call Site",
-        "description": "Generated Java GraphQL client that eliminates TypeReference boilerplate. Every query and mutation returns a fully-typed concrete response object.",
-        "url": "https://graphlink.dev/docs/java-client.html",
-        "isPartOf": { "@id": "https://graphlink.dev/#app" }
-      },
-      {
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-          { "@type": "ListItem", "position": 1, "name": "GraphLink", "item": "https://graphlink.dev/" },
-          { "@type": "ListItem", "position": 2, "name": "Docs", "item": "https://graphlink.dev/docs/index.html" },
-          { "@type": "ListItem", "position": 3, "name": "Java Client", "item": "https://graphlink.dev/docs/java-client.html" }
-        ]
-      }
-    ]
-  }
-  </script>
-</head>
-<body class="docs-page">
 
-<nav class="nav scrolled" id="nav">
-  <div class="nav-inner">
-    <a href="../index.html" class="logo">
-      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-      GraphLink
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Use the generated GraphLink Java client for type-safe GraphQL queries. No generics, injectable HttpClient/OkHttpClient, builder pattern inputs, file uploads — new GraphLinkClient(url) is all you need.">
+      
+      
+        <meta name="author" content="GraphLink">
+      
+      
+        <link rel="canonical" href="https://graphlink.dev/java-client.html">
+      
+      
+        <link rel="prev" href="dart-client.html">
+      
+      
+        <link rel="next" href="typescript-client.html">
+      
+      
+        
+      
+      
+      <link rel="icon" href="assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Java Client — GraphLink Docs - GraphLink Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#java-client" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="index.html" title="GraphLink Docs" class="md-header__button md-logo" aria-label="GraphLink Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
     </a>
-    <ul class="nav-links">
-      <li><a href="../index.html#features">Features</a></li>
-      <li><a href="index.html" class="active">Docs</a></li>
-      <li><a href="../index.html#roadmap">Roadmap</a></li>
-      <li><a href="https://github.com/Oualitsen/graphlink" class="nav-github" target="_blank" rel="noopener">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
-        GitHub
-      </a></li>
-    </ul>
-    <a href="../index.html#quick-start" class="btn-nav">Get Started</a>
-  </div>
-</nav>
-
-<div class="docs-layout">
-  <aside class="docs-sidebar">
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Introduction</span>
-      <a href="index.html" class="sidebar-link">Overview</a>
-      <a href="philosophy.html" class="sidebar-link">Philosophy</a>
-    </div>
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Getting Started</span>
-      <a href="getting-started.html" class="sidebar-link">Installation &amp; First Schema</a>
-    </div>
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Frontend Clients</span>
-      <a href="dart-client.html" class="sidebar-link">Dart / Flutter</a>
-      <a href="java-client.html" class="sidebar-link active">Java</a>
-    </div>
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Backend</span>
-      <a href="spring-server.html" class="sidebar-link">Spring Boot</a>
-    </div>
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Features</span>
-      <a href="caching.html" class="sidebar-link">Caching</a>
-    </div>
-    <div class="sidebar-group">
-      <span class="sidebar-group-label">Reference</span>
-      <a href="directives.html" class="sidebar-link">Directives</a>
-      <a href="configuration.html" class="sidebar-link">Configuration</a>
-    </div>
-  </aside>
-
-  <main class="docs-content">
-    <div class="breadcrumb">
-      <a href="../index.html">Home</a>
-      <span class="breadcrumb-sep">›</span>
-      <a href="index.html">Docs</a>
-      <span class="breadcrumb-sep">›</span>
-      <span class="breadcrumb-current">Java Client</span>
-    </div>
-
-    <h1 class="doc-title">Java Client</h1>
-    <p class="doc-lead">Type-safe. No generics. No casting. Works with any JSON library.</p>
-
-    <h2>Generated adapters</h2>
-    <p>GraphLink generates concrete adapter classes into your <code>client/</code> folder — no external GraphLink runtime, no boilerplate. Which adapters are generated is controlled by two options in <code>config.json</code>:</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">config.json — adapter options</span>
-        <span class="doc-code-lang">JSON</span>
-      </div>
-      <pre><code class="language-json">{
-  "clientConfig": {
-    "java": {
-      "packageName": "com.example.generated",
-      "wsAdapter": "java11",
-      "jsonCodec": "jackson"
-    }
-  }
-}</code></pre>
-    </div>
-
-    <p><strong><code>wsAdapter</code></strong> — controls which WebSocket adapter is generated:</p>
-    <ul>
-      <li><code>"java11"</code> (default) — generates <code>DefaultGraphLinkWebSocketAdapter</code> using Java 11's built-in <code>java.net.http.WebSocket</code>. Zero external dependencies. Supports exponential-backoff auto-reconnect, an optional <code>Supplier&lt;Map&lt;String,String&gt;&gt;</code> for auth headers, and automatically forwards those headers as the <code>connection_init</code> payload so your server can authenticate the WebSocket handshake.</li>
-      <li><code>"okhttp"</code> — generates the same interface implemented with OkHttp's WebSocket client instead. Choose this if OkHttp is already in your dependency tree.</li>
-      <li><code>"none"</code> — no WebSocket adapter is generated. Use this if you do not need subscriptions.</li>
-    </ul>
-
-    <p><strong><code>jsonCodec</code></strong> — controls which JSON codec is generated:</p>
-    <ul>
-      <li><code>"jackson"</code> (default) — generates <code>JacksonGraphLinkJsonCodec</code> implementing both <code>GraphLinkJsonEncoder</code> and <code>GraphLinkJsonDecoder</code>.</li>
-      <li><code>"gson"</code> — generates <code>GsonGraphLinkJsonCodec</code> instead.</li>
-      <li><code>"none"</code> — no codec class is generated; supply your own lambdas.</li>
-    </ul>
-
-    <p>Additionally, <code>DefaultGraphLinkClientAdapter</code> is always generated (when <code>wsAdapter</code> is not <code>"none"</code>). It uses Java 11's <code>HttpClient</code> for HTTP requests and accepts the same optional headers provider as the WebSocket adapter.</p>
-
-    <h2>Initializing the client</h2>
-    <p>The generated <code>GraphLinkClient</code> ships with several constructors that progressively add control. Start with the simplest one that fits your needs:</p>
-
-    <div class="doc-tabgroup">
-      <div class="doc-tabs">
-        <button class="doc-tab active">one-liner</button>
-        <button class="doc-tab">with auth headers</button>
-        <button class="doc-tab">custom codec</button>
-        <button class="doc-tab">full control</button>
-      </div>
-      <div class="doc-tab-content active">
-        <pre><code class="language-java">import com.example.generated.client.GraphLinkClient;
-
-// Simplest setup — Jackson + Java 11 HttpClient + auto-derives wsUrl.
-// wsUrl is derived by replacing "http" with "ws" in the provided URL.
-GraphLinkClient client = new GraphLinkClient("http://localhost:8080/graphql");</code></pre>
-      </div>
-      <div class="doc-tab-content">
-        <pre><code class="language-java">// Dynamic auth headers on every request — token is fetched fresh each time.
-Supplier&lt;Map&lt;String, String&gt;&gt; headers = () -> Map.of(
-    "Authorization", "Bearer " + tokenService.getToken()
-);
-
-// wsUrl auto-derived; both HTTP and WebSocket adapters receive the headers.
-GraphLinkClient client = new GraphLinkClient(
-    "http://localhost:8080/graphql",
-    headers,
-    new JacksonGraphLinkJsonCodec(),
-    new JacksonGraphLinkJsonCodec()
-);</code></pre>
-      </div>
-      <div class="doc-tab-content">
-        <pre><code class="language-java">// Use a different JSON library — e.g. Gson.
-GraphLinkJsonEncoder encoder = obj -> gson.toJson(obj);
-GraphLinkJsonDecoder decoder = json -> gson.fromJson(json, Map.class);
-
-// Explicit wsUrl + custom codec.
-GraphLinkClient client = new GraphLinkClient(
-    "http://localhost:8080/graphql",
-    "ws://localhost:8080/graphql",
-    encoder,
-    decoder
-);</code></pre>
-      </div>
-      <div class="doc-tab-content">
-        <pre><code class="language-java">// Full manual wiring — bring your own adapter, encoder, decoder, and cache store.
-GraphLinkClientAdapter adapter = payload -> { /* custom HTTP logic */ };
-GraphLinkJsonEncoder encoder = obj -> mapper.writeValueAsString(obj);
-GraphLinkJsonDecoder decoder = json -> mapper.readValue(json, Map.class);
-GraphLinkWebSocketAdapter wsAdapter = new DefaultGraphLinkWebSocketAdapter(
-    "ws://localhost:8080/graphql"
-);
-
-GraphLinkClient client = new GraphLinkClient(
-    adapter, encoder, decoder, myCacheStore, wsAdapter
-);</code></pre>
-      </div>
-    </div>
-
-    <div class="callout callout-info">
-      <span class="callout-icon">ℹ</span>
-      <p><strong>Any JSON library works</strong><br>The three generated interfaces (<code>GraphLinkClientAdapter</code>, <code>GraphLinkJsonEncoder</code>, <code>GraphLinkJsonDecoder</code>) are all <code>@FunctionalInterface</code> — assign them from lambdas using Gson, Moshi, or any other library. Jackson is only the default for the convenience constructors.</p>
-    </div>
-
-    <p>Pass a custom <code>GraphLinkCacheStore</code> in the full constructor if you need a persistent or shared cache (e.g. Redis-backed). See the <a href="caching.html">Caching</a> page for details.</p>
-
-    <h2>Queries — no generics</h2>
-    <p>This is the core difference from every other Java GraphQL client. There are no <code>TypeReference</code> anonymous classes, no unchecked casts, no raw <code>Map</code> navigation. Each query method has a concrete return type:</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">Fetching a vehicle — GraphLink style</span>
-        <span class="doc-code-lang">Java</span>
-      </div>
-      <pre><code class="language-java">// Clean, typed, no generics
-GetVehicleResponse res = client.queries.getVehicle("42");
-System.out.println(res.getGetVehicle().getBrand());  // Toyota
-System.out.println(res.getGetVehicle().getYear());   // 2023
-System.out.println(res.getGetVehicle().getFuelType()); // GASOLINE</code></pre>
-    </div>
-
-    <p>Compare this to the boilerplate required by most other clients:</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">The same query — typical other client</span>
-        <span class="doc-code-lang">Java</span>
-      </div>
-      <pre><code class="language-java">// What you're forced to write with most Java GraphQL clients
-GraphQLResponse&lt;Map&lt;String, Object&gt;&gt; response =
-    client.query(new SimpleGraphQLRequest&lt;&gt;(
-        "query getVehicle($id: ID!) { getVehicle(id: $id) { id brand model year fuelType } }",
-        Map.of("id", "42"),
-        new TypeReference&lt;GraphQLResponse&lt;Map&lt;String, Object&gt;&gt;&gt;() {}
-    ));
-@SuppressWarnings("unchecked")
-Map&lt;String, Object&gt; vehicleMap =
-    (Map&lt;String, Object&gt;) response.getData().get("getVehicle");
-String brand = (String) vehicleMap.get("brand");
-Integer year = ((Number) vehicleMap.get("year")).intValue();</code></pre>
-    </div>
-
-    <h2>Nullable queries</h2>
-    <p>When the schema declares a nullable return type (no <code>!</code>), the corresponding getter on the response class returns a nullable type. In Java, this means it can be <code>null</code>:</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">getPerson — nullable result</span>
-        <span class="doc-code-lang">Java</span>
-      </div>
-      <pre><code class="language-java">// Schema: getPerson(id: ID!): Person   &lt;-- nullable return
-GetPersonResponse res = client.queries.getPerson("99");
-
-Person p = res.getGetPerson(); // can be null — check before use
-if (p != null) {
-    System.out.println(p.getName());
-    System.out.println(p.getEmail());
-} else {
-    System.out.println("Person not found");
-}</code></pre>
-    </div>
-
-    <h2>Mutations — builder pattern</h2>
-    <p>All input types are generated with an inner <code>Builder</code> class. Required fields (non-nullable in the schema) are validated with <code>Objects.requireNonNull</code> when <code>build()</code> is called:</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">Adding a vehicle</span>
-        <span class="doc-code-lang">Java</span>
-      </div>
-      <pre><code class="language-java">import com.example.generated.inputs.AddVehicleInput;
-import com.example.generated.enums.FuelType;
-
-AddVehicleResponse added = client.mutations.addVehicle(
-    AddVehicleInput.builder()
-        .brand("Toyota")
-        .model("Camry")
-        .year(2023)
-        .fuelType(FuelType.GASOLINE)
-        // ownerId is nullable — omit for null
-        .build()
-);
-
-System.out.println(added.getAddVehicle().getId());    // server-assigned ID
-System.out.println(added.getAddVehicle().getBrand()); // Toyota</code></pre>
-    </div>
-
-    <p>The generated <code>AddVehicleInput</code> class:</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">generated/inputs/AddVehicleInput.java</span>
-        <span class="doc-code-lang">Java</span>
-      </div>
-      <pre><code class="language-java">public class AddVehicleInput {
-   private final String brand; private final String model;
-   private final Integer year; private final FuelType fuelType; private final String ownerId;
-
-   public AddVehicleInput(String brand, String model, Integer year, FuelType fuelType, String ownerId) {
-      Objects.requireNonNull(brand); Objects.requireNonNull(model);
-      Objects.requireNonNull(year); Objects.requireNonNull(fuelType);
-      this.brand = brand; this.model = model; this.year = year;
-      this.fuelType = fuelType; this.ownerId = ownerId;
-   }
-   public static Builder builder() { return new Builder(); }
-   public static class Builder {
-      private String brand; private String model; private Integer year;
-      private FuelType fuelType; private String ownerId;
-      public Builder brand(String brand) { this.brand = brand; return this; }
-      public Builder model(String model) { this.model = model; return this; }
-      public Builder year(Integer year) { this.year = year; return this; }
-      public Builder fuelType(FuelType fuelType) { this.fuelType = fuelType; return this; }
-      public Builder ownerId(String ownerId) { this.ownerId = ownerId; return this; }
-      public AddVehicleInput build() { return new AddVehicleInput(brand, model, year, fuelType, ownerId); }
-   }
-}</code></pre>
-    </div>
-
-    <h2>Lists</h2>
-    <p>List queries return a typed <code>List&lt;T&gt;</code> — no casting required:</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">List query</span>
-        <span class="doc-code-lang">Java</span>
-      </div>
-      <pre><code class="language-java">ListVehiclesResponse res = client.queries.listVehicles();
-List&lt;Vehicle&gt; vehicles = res.getListVehicles(); // List&lt;Vehicle&gt; — no raw types
-
-for (Vehicle v : vehicles) {
-    System.out.printf("%s %s (%d) — %s%n",
-        v.getBrand(), v.getModel(), v.getYear(), v.getFuelType());
-}
-
-// Or with streams
-vehicles.stream()
-    .filter(v -> v.getFuelType() == FuelType.ELECTRIC)
-    .map(Vehicle::getBrand)
-    .forEach(System.out::println);</code></pre>
-    </div>
-
-    <h2>The response wrapper pattern</h2>
-    <p>Every query, mutation, and subscription operation generates a dedicated response class named <code>{OperationName}Response</code>. For example, <code>getVehicle</code> generates <code>GetVehicleResponse</code>.</p>
-    <p>This pattern mirrors the GraphQL JSON response structure, which always wraps results in a <code>data</code> field:</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">GraphQL HTTP response JSON</span>
-        <span class="doc-code-lang">JSON</span>
-      </div>
-      <pre><code class="language-json">{
-  "data": {
-    "getVehicle": {
-      "id": "42",
-      "brand": "Toyota",
-      "model": "Camry",
-      "year": 2023,
-      "fuelType": "GASOLINE",
-      "ownerId": null
-    }
-  }
-}</code></pre>
-    </div>
-
-    <p>The generated <code>GetVehicleResponse.fromJson()</code> navigates into the <code>data</code> object and deserializes <code>getVehicle</code> as a <code>Vehicle</code>. From your code's perspective, you simply call <code>res.getGetVehicle()</code> — the JSON unwrapping is invisible.</p>
-    <p>Notice the double "get" in <code>getGetVehicle()</code> — the first is the Java getter prefix, the second is the operation name. This is consistent and predictable: the method name is always <code>get</code> + the operation name with a capital first letter.</p>
-
-    <h2>Subscriptions</h2>
-    <p>Subscriptions are available via <code>client.subscriptions</code> and use the <code>GraphLinkWebSocketAdapter</code> interface. The generated <code>DefaultGraphLinkWebSocketAdapter</code> implements this interface out of the box — no extra setup is needed as long as <code>wsAdapter</code> is not <code>"none"</code> in your config.</p>
-
-    <div class="doc-code">
-      <div class="doc-code-header">
-        <span class="doc-code-label">Subscribing to new cars</span>
-        <span class="doc-code-lang">Java</span>
-      </div>
-      <pre><code class="language-java">// client already holds a DefaultGraphLinkWebSocketAdapter — just subscribe
-client.subscriptions.onCarCreated(event -> {
-    OnCarCreatedResponse res = event;
-    System.out.println("New car: " + res.getOnCarCreated().getMake());
-});</code></pre>
-    </div>
-
-    <p>The generated WebSocket adapter (Java 11 or OkHttp) handles the <a href="https://github.com/enisdenjo/graphql-ws/blob/master/PROTOCOL.md" target="_blank" rel="noopener">graphql-ws subprotocol</a> automatically — connection init, ping/pong, and exponential-backoff reconnect on disconnect. If a <code>headersProvider</code> is supplied, the headers are forwarded in the <code>connection_init</code> payload so the server can authenticate the WebSocket session.</p>
-
-    <div class="callout callout-info">
-      <span class="callout-icon">ℹ</span>
-      <p><strong>Deriving the WebSocket URL</strong><br>The convenience constructors that take only an HTTP URL automatically derive the WebSocket URL by replacing <code>http</code> with <code>ws</code> (and <code>https</code> with <code>wss</code>). Pass an explicit <code>wsUrl</code> if your WebSocket endpoint differs from the HTTP endpoint.</p>
-    </div>
-
-    <nav class="doc-nav-footer">
-      <a href="dart-client.html" class="doc-nav-btn prev">
-        <span class="doc-nav-label">← Previous</span>
-        <span class="doc-nav-title">Dart / Flutter Client</span>
-      </a>
-      <a href="spring-server.html" class="doc-nav-btn next">
-        <span class="doc-nav-label">Next</span>
-        <span class="doc-nav-title">Spring Boot →</span>
-      </a>
-    </nav>
-  </main>
-</div>
-
-<footer class="footer">
-  <div class="container">
-    <div class="footer-top">
-      <div class="footer-brand">
-        <a href="../index.html" class="logo"><svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>GraphLink</a>
-        <p>GraphQL code generation for Dart, Flutter, and Java.<br>Open source — MIT License.</p>
-        <div class="footer-links">
-          <a href="https://github.com/Oualitsen/graphlink" target="_blank" rel="noopener">GitHub</a>
-          <a href="https://pub.dev/packages/graphlink" target="_blank" rel="noopener">pub.dev</a>
-          <a href="https://github.com/Oualitsen/graphlink/releases" target="_blank" rel="noopener">Releases</a>
-          <a href="https://github.com/Oualitsen/graphlink/issues" target="_blank" rel="noopener">Issues</a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            GraphLink Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Java Client — GraphLink Docs
+            
+          </span>
         </div>
       </div>
     </div>
-    <div class="footer-bottom">
-      <p>© 2024 GraphLink · MIT License</p>
-      <p class="footer-tagline">Your schema is already the contract. Let GraphLink write the rest.</p>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Oualitsen/graphlink" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Oualitsen/graphlink
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="index.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Overview
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="philosophy.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Philosophy
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="getting-started.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="dart-client.html" class="md-tabs__link">
+          
+  
+  
+  Clients
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="spring-server.html" class="md-tabs__link">
+          
+  
+  
+  Backend
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="caching.html" class="md-tabs__link">
+          
+  
+  
+  Features
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="directives.html" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="index.html" title="GraphLink Docs" class="md-nav__button md-logo" aria-label="GraphLink Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    GraphLink Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Oualitsen/graphlink" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Oualitsen/graphlink
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="philosophy.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="getting-started.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clients
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Clients
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="dart-client.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dart / Flutter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="java-client.html" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#generated-adapters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generated adapters
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Generated adapters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#injectable-http-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Injectable HTTP client
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#initializing-the-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Initializing the client
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#queries-no-generics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Queries — no generics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nullable-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nullable queries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mutations-builder-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mutations — builder pattern
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lists" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lists
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-response-wrapper-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The response wrapper pattern
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#subscriptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subscriptions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file-uploads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File uploads
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="typescript-client.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Backend
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-server.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spring Boot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Features
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="caching.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Caching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="directives.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Directives
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="configuration.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#generated-adapters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generated adapters
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Generated adapters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#injectable-http-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Injectable HTTP client
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#initializing-the-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Initializing the client
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#queries-no-generics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Queries — no generics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nullable-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nullable queries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mutations-builder-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mutations — builder pattern
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lists" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lists
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-response-wrapper-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The response wrapper pattern
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#subscriptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subscriptions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file-uploads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File uploads
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="java-client">Java Client<a class="headerlink" href="#java-client" title="Permanent link">&para;</a></h1>
+<p>Type-safe. No generics. No casting. Works with any JSON library.</p>
+<h2 id="generated-adapters">Generated adapters<a class="headerlink" href="#generated-adapters" title="Permanent link">&para;</a></h2>
+<p>GraphLink generates concrete adapter classes into your <code>client/</code> folder — no external GraphLink runtime, no boilerplate. Two config options control what is generated:</p>
+<div class="highlight"><span class="filename">config.json — adapter options</span><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;clientConfig&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nt">&quot;java&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">      </span><span class="nt">&quot;packageName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;com.example.generated&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">      </span><span class="nt">&quot;wsAdapter&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;java11&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">      </span><span class="nt">&quot;jsonCodec&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;jackson&quot;</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong><code>wsAdapter</code></strong> — controls which WebSocket adapter is generated:</p>
+<ul>
+<li><code>"java11"</code> (default) — generates <code>DefaultGraphLinkWebSocketAdapter</code> using Java 11's built-in <code>java.net.http.WebSocket</code>. Zero external dependencies. Supports exponential-backoff auto-reconnect, an optional <code>Supplier&lt;Map&lt;String,String&gt;&gt;</code> for auth headers, and automatically forwards those headers as the <code>connection_init</code> payload so your server can authenticate the WebSocket handshake.</li>
+<li><code>"okhttp"</code> — generates the same interface implemented with OkHttp's WebSocket client instead.</li>
+<li><code>"none"</code> — no WebSocket adapter is generated. Use this if you do not need subscriptions.</li>
+</ul>
+<p><strong><code>jsonCodec</code></strong> — controls which JSON codec is generated:</p>
+<ul>
+<li><code>"jackson"</code> (default) — generates <code>JacksonGraphLinkJsonCodec</code> implementing both <code>GraphLinkJsonEncoder</code> and <code>GraphLinkJsonDecoder</code>.</li>
+<li><code>"gson"</code> — generates <code>GsonGraphLinkJsonCodec</code> instead.</li>
+<li><code>"none"</code> — no codec class is generated; supply your own lambdas.</li>
+</ul>
+<p><code>DefaultGraphLinkClientAdapter</code> is always generated (when <code>wsAdapter</code> is not <code>"none"</code>). It uses Java 11's <code>HttpClient</code> for HTTP requests and accepts the same optional headers provider as the WebSocket adapter.</p>
+<h3 id="injectable-http-client">Injectable HTTP client<a class="headerlink" href="#injectable-http-client" title="Permanent link">&para;</a></h3>
+<p>Both <code>DefaultGraphLinkClientAdapter</code> and <code>DefaultGraphLinkWebSocketAdapter</code> accept a pre-configured <code>HttpClient</code> (Java 11) or <code>OkHttpClient</code> as an optional constructor argument:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Java 11 HttpClient</label><label for="__tabbed_1_2">OkHttpClient</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">HttpClient</span><span class="w"> </span><span class="n">httpClient</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">HttpClient</span><span class="p">.</span><span class="na">newBuilder</span><span class="p">()</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span><span class="p">.</span><span class="na">connectTimeout</span><span class="p">(</span><span class="n">Duration</span><span class="p">.</span><span class="na">ofSeconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="p">.</span><span class="na">sslContext</span><span class="p">(</span><span class="n">mySslContext</span><span class="p">)</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="p">.</span><span class="na">proxy</span><span class="p">(</span><span class="n">ProxySelector</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">InetSocketAddress</span><span class="p">(</span><span class="s">&quot;proxy.corp&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">8080</span><span class="p">)))</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="p">.</span><span class="na">build</span><span class="p">();</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1">// Pass it to the adapter — all HTTP and WebSocket traffic uses this client</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">DefaultGraphLinkClientAdapter</span><span class="w"> </span><span class="n">adapter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">DefaultGraphLinkClientAdapter</span><span class="p">(</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">    </span><span class="s">&quot;http://api.example.com/graphql&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="n">httpClient</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="p">);</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">DefaultGraphLinkWebSocketAdapter</span><span class="w"> </span><span class="n">wsAdapter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">DefaultGraphLinkWebSocketAdapter</span><span class="p">(</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">    </span><span class="s">&quot;ws://api.example.com/graphql&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">    </span><span class="n">httpClient</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="p">);</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">OkHttpClient</span><span class="w"> </span><span class="n">okHttpClient</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">OkHttpClient</span><span class="p">.</span><span class="na">Builder</span><span class="p">()</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="p">.</span><span class="na">connectTimeout</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="n">TimeUnit</span><span class="p">.</span><span class="na">SECONDS</span><span class="p">)</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="p">.</span><span class="na">addInterceptor</span><span class="p">(</span><span class="n">loggingInterceptor</span><span class="p">)</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="p">.</span><span class="na">build</span><span class="p">();</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">DefaultGraphLinkClientAdapter</span><span class="w"> </span><span class="n">adapter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">DefaultGraphLinkClientAdapter</span><span class="p">(</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span><span class="s">&quot;http://api.example.com/graphql&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">    </span><span class="n">okHttpClient</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="p">);</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">DefaultGraphLinkWebSocketAdapter</span><span class="w"> </span><span class="n">wsAdapter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">DefaultGraphLinkWebSocketAdapter</span><span class="p">(</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">    </span><span class="s">&quot;ws://api.example.com/graphql&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">    </span><span class="n">okHttpClient</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="p">);</span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>The no-arg and headers-only constructors still work unchanged — the injected client is an opt-in.</p>
+<h2 id="initializing-the-client">Initializing the client<a class="headerlink" href="#initializing-the-client" title="Permanent link">&para;</a></h2>
+<p>The generated <code>GraphLinkClient</code> ships with several constructors that progressively add control:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:4"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><input id="__tabbed_2_4" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">one-liner</label><label for="__tabbed_2_2">with auth headers</label><label for="__tabbed_2_3">custom codec</label><label for="__tabbed_2_4">full control</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.example.generated.client.GraphLinkClient</span><span class="p">;</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1">// Simplest setup — Jackson + Java 11 HttpClient + auto-derives wsUrl.</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1">// wsUrl is derived by replacing &quot;http&quot; with &quot;ws&quot; in the provided URL.</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">GraphLinkClient</span><span class="w"> </span><span class="n">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">GraphLinkClient</span><span class="p">(</span><span class="s">&quot;http://localhost:8080/graphql&quot;</span><span class="p">);</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1">// Dynamic auth headers on every request — token is fetched fresh each time.</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">Supplier</span><span class="o">&lt;</span><span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">headers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Map</span><span class="p">.</span><span class="na">of</span><span class="p">(</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="s">&quot;Authorization&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Bearer &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">tokenService</span><span class="p">.</span><span class="na">getToken</span><span class="p">()</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="p">);</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="c1">// wsUrl auto-derived; both HTTP and WebSocket adapters receive the headers.</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">GraphLinkClient</span><span class="w"> </span><span class="n">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">GraphLinkClient</span><span class="p">(</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span><span class="s">&quot;http://localhost:8080/graphql&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">    </span><span class="n">headers</span><span class="p">,</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">JacksonGraphLinkJsonCodec</span><span class="p">(),</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">JacksonGraphLinkJsonCodec</span><span class="p">()</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="p">);</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1">// Use a different JSON library — e.g. Gson.</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">GraphLinkJsonEncoder</span><span class="w"> </span><span class="n">encoder</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">obj</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">gson</span><span class="p">.</span><span class="na">toJson</span><span class="p">(</span><span class="n">obj</span><span class="p">);</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">GraphLinkJsonDecoder</span><span class="w"> </span><span class="n">decoder</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">json</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">gson</span><span class="p">.</span><span class="na">fromJson</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">Map</span><span class="p">.</span><span class="na">class</span><span class="p">);</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">GraphLinkClient</span><span class="w"> </span><span class="n">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">GraphLinkClient</span><span class="p">(</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span><span class="s">&quot;http://localhost:8080/graphql&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">    </span><span class="s">&quot;ws://localhost:8080/graphql&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">    </span><span class="n">encoder</span><span class="p">,</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">    </span><span class="n">decoder</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="p">);</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1">// Full manual wiring — bring your own adapter, encoder, decoder, and cache store.</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">GraphLinkClientAdapter</span><span class="w"> </span><span class="n">adapter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">payload</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="cm">/* custom HTTP logic */</span><span class="w"> </span><span class="p">};</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">GraphLinkJsonEncoder</span><span class="w"> </span><span class="n">encoder</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">obj</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">mapper</span><span class="p">.</span><span class="na">writeValueAsString</span><span class="p">(</span><span class="n">obj</span><span class="p">);</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">GraphLinkJsonDecoder</span><span class="w"> </span><span class="n">decoder</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">json</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">mapper</span><span class="p">.</span><span class="na">readValue</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">Map</span><span class="p">.</span><span class="na">class</span><span class="p">);</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">GraphLinkWebSocketAdapter</span><span class="w"> </span><span class="n">wsAdapter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">DefaultGraphLinkWebSocketAdapter</span><span class="p">(</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span><span class="s">&quot;ws://localhost:8080/graphql&quot;</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="p">);</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="n">GraphLinkClient</span><span class="w"> </span><span class="n">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">GraphLinkClient</span><span class="p">(</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">    </span><span class="n">adapter</span><span class="p">,</span><span class="w"> </span><span class="n">encoder</span><span class="p">,</span><span class="w"> </span><span class="n">decoder</span><span class="p">,</span><span class="w"> </span><span class="n">myCacheStore</span><span class="p">,</span><span class="w"> </span><span class="n">wsAdapter</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="p">);</span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<div class="admonition info">
+<p class="admonition-title">Any JSON library works</p>
+<p>The three generated interfaces (<code>GraphLinkClientAdapter</code>, <code>GraphLinkJsonEncoder</code>, <code>GraphLinkJsonDecoder</code>) are all <code>@FunctionalInterface</code> — assign them from lambdas using Gson, Moshi, or any other library. Jackson is only the default for the convenience constructors.</p>
+</div>
+<p>Pass a custom <code>GraphLinkCacheStore</code> in the full constructor if you need a persistent or shared cache (e.g. Redis-backed). See the <a href="caching.html">Caching</a> page for details.</p>
+<h2 id="queries-no-generics">Queries — no generics<a class="headerlink" href="#queries-no-generics" title="Permanent link">&para;</a></h2>
+<p>This is the core difference from every other Java GraphQL client. There are no <code>TypeReference</code> anonymous classes, no unchecked casts, no raw <code>Map</code> navigation:</p>
+<div class="highlight"><span class="filename">Fetching a vehicle — GraphLink style</span><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1">// Clean, typed, no generics</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">GetVehicleResponse</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="na">queries</span><span class="p">.</span><span class="na">getVehicle</span><span class="p">(</span><span class="s">&quot;42&quot;</span><span class="p">);</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="na">getGetVehicle</span><span class="p">().</span><span class="na">getBrand</span><span class="p">());</span><span class="w">   </span><span class="c1">// Toyota</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="na">getGetVehicle</span><span class="p">().</span><span class="na">getYear</span><span class="p">());</span><span class="w">    </span><span class="c1">// 2023</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="na">getGetVehicle</span><span class="p">().</span><span class="na">getFuelType</span><span class="p">());</span><span class="w"> </span><span class="c1">// GASOLINE</span>
+</code></pre></div>
+<p>Compare this to the boilerplate required by most other clients:</p>
+<div class="highlight"><span class="filename">The same query — typical other client</span><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1">// What you&#39;re forced to write with most Java GraphQL clients</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">GraphQLResponse</span><span class="o">&lt;</span><span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="w"> </span><span class="n">Object</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">response</span><span class="w"> </span><span class="o">=</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span><span class="n">client</span><span class="p">.</span><span class="na">query</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">SimpleGraphQLRequest</span><span class="o">&lt;&gt;</span><span class="p">(</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">        </span><span class="s">&quot;query getVehicle($id: ID!) { getVehicle(id: $id) { id brand model year fuelType } }&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">        </span><span class="n">Map</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;id&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;42&quot;</span><span class="p">),</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">        </span><span class="k">new</span><span class="w"> </span><span class="n">TypeReference</span><span class="o">&lt;</span><span class="n">GraphQLResponse</span><span class="o">&lt;</span><span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="w"> </span><span class="n">Object</span><span class="o">&gt;&gt;&gt;</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">    </span><span class="p">));</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="nd">@SuppressWarnings</span><span class="p">(</span><span class="s">&quot;unchecked&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="w"> </span><span class="n">Object</span><span class="o">&gt;</span><span class="w"> </span><span class="n">vehicleMap</span><span class="w"> </span><span class="o">=</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="w">    </span><span class="p">(</span><span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="w"> </span><span class="n">Object</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span><span class="n">response</span><span class="p">.</span><span class="na">getData</span><span class="p">().</span><span class="na">get</span><span class="p">(</span><span class="s">&quot;getVehicle&quot;</span><span class="p">);</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="n">String</span><span class="w"> </span><span class="n">brand</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">String</span><span class="p">)</span><span class="w"> </span><span class="n">vehicleMap</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="s">&quot;brand&quot;</span><span class="p">);</span>
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="n">Integer</span><span class="w"> </span><span class="n">year</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">((</span><span class="n">Number</span><span class="p">)</span><span class="w"> </span><span class="n">vehicleMap</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="s">&quot;year&quot;</span><span class="p">)).</span><span class="na">intValue</span><span class="p">();</span>
+</code></pre></div>
+<h2 id="nullable-queries">Nullable queries<a class="headerlink" href="#nullable-queries" title="Permanent link">&para;</a></h2>
+<p>When the schema declares a nullable return type (no <code>!</code>), the corresponding getter on the response class returns a nullable type:</p>
+<div class="highlight"><span class="filename">getPerson — nullable result</span><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1">// Schema: getPerson(id: ID!): Person   &lt;-- nullable return</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">GetPersonResponse</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="na">queries</span><span class="p">.</span><span class="na">getPerson</span><span class="p">(</span><span class="s">&quot;99&quot;</span><span class="p">);</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">Person</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">res</span><span class="p">.</span><span class="na">getGetPerson</span><span class="p">();</span><span class="w"> </span><span class="c1">// can be null — check before use</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">    </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="na">getName</span><span class="p">());</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="w">    </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="na">getEmail</span><span class="p">());</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="w">    </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&quot;Person not found&quot;</span><span class="p">);</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="p">}</span>
+</code></pre></div>
+<h2 id="mutations-builder-pattern">Mutations — builder pattern<a class="headerlink" href="#mutations-builder-pattern" title="Permanent link">&para;</a></h2>
+<p>All input types are generated with an inner <code>Builder</code> class. Required fields (non-nullable in the schema) are validated with <code>Objects.requireNonNull</code> when <code>build()</code> is called:</p>
+<div class="highlight"><span class="filename">Adding a vehicle</span><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.example.generated.inputs.AddVehicleInput</span><span class="p">;</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.example.generated.enums.FuelType</span><span class="p">;</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">AddVehicleResponse</span><span class="w"> </span><span class="n">added</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="na">mutations</span><span class="p">.</span><span class="na">addVehicle</span><span class="p">(</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">    </span><span class="n">AddVehicleInput</span><span class="p">.</span><span class="na">builder</span><span class="p">()</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">        </span><span class="p">.</span><span class="na">brand</span><span class="p">(</span><span class="s">&quot;Toyota&quot;</span><span class="p">)</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="w">        </span><span class="p">.</span><span class="na">model</span><span class="p">(</span><span class="s">&quot;Camry&quot;</span><span class="p">)</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="w">        </span><span class="p">.</span><span class="na">year</span><span class="p">(</span><span class="mi">2023</span><span class="p">)</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="w">        </span><span class="p">.</span><span class="na">fuelType</span><span class="p">(</span><span class="n">FuelType</span><span class="p">.</span><span class="na">GASOLINE</span><span class="p">)</span>
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="w">        </span><span class="c1">// ownerId is nullable — omit for null</span>
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="w">        </span><span class="p">.</span><span class="na">build</span><span class="p">()</span>
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="p">);</span>
+<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>
+<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">added</span><span class="p">.</span><span class="na">getAddVehicle</span><span class="p">().</span><span class="na">getId</span><span class="p">());</span><span class="w">    </span><span class="c1">// server-assigned ID</span>
+<a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">added</span><span class="p">.</span><span class="na">getAddVehicle</span><span class="p">().</span><span class="na">getBrand</span><span class="p">());</span><span class="w"> </span><span class="c1">// Toyota</span>
+</code></pre></div>
+<p>The generated <code>AddVehicleInput</code> class:</p>
+<div class="highlight"><span class="filename">generated/inputs/AddVehicleInput.java</span><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">AddVehicleInput</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">   </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">brand</span><span class="p">;</span><span class="w"> </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">model</span><span class="p">;</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">   </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">Integer</span><span class="w"> </span><span class="n">year</span><span class="p">;</span><span class="w"> </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">FuelType</span><span class="w"> </span><span class="n">fuelType</span><span class="p">;</span><span class="w"> </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">ownerId</span><span class="p">;</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">   </span><span class="kd">public</span><span class="w"> </span><span class="nf">AddVehicleInput</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">brand</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">model</span><span class="p">,</span><span class="w"> </span><span class="n">Integer</span><span class="w"> </span><span class="n">year</span><span class="p">,</span><span class="w"> </span><span class="n">FuelType</span><span class="w"> </span><span class="n">fuelType</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">ownerId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">      </span><span class="n">Objects</span><span class="p">.</span><span class="na">requireNonNull</span><span class="p">(</span><span class="n">brand</span><span class="p">);</span><span class="w"> </span><span class="n">Objects</span><span class="p">.</span><span class="na">requireNonNull</span><span class="p">(</span><span class="n">model</span><span class="p">);</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">      </span><span class="n">Objects</span><span class="p">.</span><span class="na">requireNonNull</span><span class="p">(</span><span class="n">year</span><span class="p">);</span><span class="w"> </span><span class="n">Objects</span><span class="p">.</span><span class="na">requireNonNull</span><span class="p">(</span><span class="n">fuelType</span><span class="p">);</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">      </span><span class="k">this</span><span class="p">.</span><span class="na">brand</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">brand</span><span class="p">;</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="p">;</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">year</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">year</span><span class="p">;</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="w">      </span><span class="k">this</span><span class="p">.</span><span class="na">fuelType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fuelType</span><span class="p">;</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">ownerId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ownerId</span><span class="p">;</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="w">   </span><span class="p">}</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="w">   </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="n">Builder</span><span class="w"> </span><span class="nf">builder</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Builder</span><span class="p">();</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="w">   </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Builder</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="w">      </span><span class="kd">private</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">brand</span><span class="p">;</span><span class="w"> </span><span class="kd">private</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">model</span><span class="p">;</span><span class="w"> </span><span class="kd">private</span><span class="w"> </span><span class="n">Integer</span><span class="w"> </span><span class="n">year</span><span class="p">;</span>
+<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="w">      </span><span class="kd">private</span><span class="w"> </span><span class="n">FuelType</span><span class="w"> </span><span class="n">fuelType</span><span class="p">;</span><span class="w"> </span><span class="kd">private</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">ownerId</span><span class="p">;</span>
+<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="w">      </span><span class="kd">public</span><span class="w"> </span><span class="n">Builder</span><span class="w"> </span><span class="nf">brand</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">brand</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">brand</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">brand</span><span class="p">;</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a><span class="w">      </span><span class="kd">public</span><span class="w"> </span><span class="n">Builder</span><span class="w"> </span><span class="nf">model</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">model</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="p">;</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a><span class="w">      </span><span class="kd">public</span><span class="w"> </span><span class="n">Builder</span><span class="w"> </span><span class="nf">year</span><span class="p">(</span><span class="n">Integer</span><span class="w"> </span><span class="n">year</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">year</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">year</span><span class="p">;</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a><span class="w">      </span><span class="kd">public</span><span class="w"> </span><span class="n">Builder</span><span class="w"> </span><span class="nf">fuelType</span><span class="p">(</span><span class="n">FuelType</span><span class="w"> </span><span class="n">fuelType</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">fuelType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fuelType</span><span class="p">;</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a><span class="w">      </span><span class="kd">public</span><span class="w"> </span><span class="n">Builder</span><span class="w"> </span><span class="nf">ownerId</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">ownerId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">ownerId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ownerId</span><span class="p">;</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a><span class="w">      </span><span class="kd">public</span><span class="w"> </span><span class="n">AddVehicleInput</span><span class="w"> </span><span class="nf">build</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">AddVehicleInput</span><span class="p">(</span><span class="n">brand</span><span class="p">,</span><span class="w"> </span><span class="n">model</span><span class="p">,</span><span class="w"> </span><span class="n">year</span><span class="p">,</span><span class="w"> </span><span class="n">fuelType</span><span class="p">,</span><span class="w"> </span><span class="n">ownerId</span><span class="p">);</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a><span class="w">   </span><span class="p">}</span>
+<a id="__codelineno-11-22" name="__codelineno-11-22" href="#__codelineno-11-22"></a><span class="p">}</span>
+</code></pre></div>
+<h2 id="lists">Lists<a class="headerlink" href="#lists" title="Permanent link">&para;</a></h2>
+<p>List queries return a typed <code>List&lt;T&gt;</code> — no casting required:</p>
+<div class="highlight"><span class="filename">List query</span><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">ListVehiclesResponse</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="na">queries</span><span class="p">.</span><span class="na">listVehicles</span><span class="p">();</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="n">List</span><span class="o">&lt;</span><span class="n">Vehicle</span><span class="o">&gt;</span><span class="w"> </span><span class="n">vehicles</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">res</span><span class="p">.</span><span class="na">getListVehicles</span><span class="p">();</span><span class="w"> </span><span class="c1">// List&lt;Vehicle&gt; — no raw types</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">Vehicle</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">vehicles</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">    </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">printf</span><span class="p">(</span><span class="s">&quot;%s %s (%d) — %s%n&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w">        </span><span class="n">v</span><span class="p">.</span><span class="na">getBrand</span><span class="p">(),</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="na">getModel</span><span class="p">(),</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="na">getYear</span><span class="p">(),</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="na">getFuelType</span><span class="p">());</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="p">}</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="c1">// Or with streams</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="n">vehicles</span><span class="p">.</span><span class="na">stream</span><span class="p">()</span>
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="w">    </span><span class="p">.</span><span class="na">filter</span><span class="p">(</span><span class="n">v</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="na">getFuelType</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">FuelType</span><span class="p">.</span><span class="na">ELECTRIC</span><span class="p">)</span>
+<a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="w">    </span><span class="p">.</span><span class="na">map</span><span class="p">(</span><span class="n">Vehicle</span><span class="p">::</span><span class="n">getBrand</span><span class="p">)</span>
+<a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a><span class="w">    </span><span class="p">.</span><span class="na">forEach</span><span class="p">(</span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">::</span><span class="n">println</span><span class="p">);</span>
+</code></pre></div>
+<h2 id="the-response-wrapper-pattern">The response wrapper pattern<a class="headerlink" href="#the-response-wrapper-pattern" title="Permanent link">&para;</a></h2>
+<p>Every query, mutation, and subscription operation generates a dedicated response class named <code>{OperationName}Response</code>. For example, <code>getVehicle</code> generates <code>GetVehicleResponse</code>.</p>
+<p>This pattern mirrors the GraphQL JSON response structure, which always wraps results in a <code>data</code> field:</p>
+<div class="highlight"><span class="filename">GraphQL HTTP response JSON</span><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="p">{</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">    </span><span class="nt">&quot;getVehicle&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">      </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;42&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">      </span><span class="nt">&quot;brand&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Toyota&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">      </span><span class="nt">&quot;model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Camry&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="w">      </span><span class="nt">&quot;year&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2023</span><span class="p">,</span>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="w">      </span><span class="nt">&quot;fuelType&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;GASOLINE&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="w">      </span><span class="nt">&quot;ownerId&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a><span class="p">}</span>
+</code></pre></div>
+<p>The generated <code>GetVehicleResponse.fromJson()</code> navigates into the <code>data</code> object and deserializes <code>getVehicle</code> as a <code>Vehicle</code>. From your code's perspective, you simply call <code>res.getGetVehicle()</code> — the JSON unwrapping is invisible.</p>
+<p>Notice the double "get" in <code>getGetVehicle()</code> — the first is the Java getter prefix, the second is the operation name. This is consistent and predictable: the method name is always <code>get</code> + the operation name with a capital first letter.</p>
+<h2 id="subscriptions">Subscriptions<a class="headerlink" href="#subscriptions" title="Permanent link">&para;</a></h2>
+<p>Subscriptions are available via <code>client.subscriptions</code> and use the <code>GraphLinkWebSocketAdapter</code> interface. The generated <code>DefaultGraphLinkWebSocketAdapter</code> implements this interface out of the box:</p>
+<div class="highlight"><span class="filename">Subscribing to new vehicles</span><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">client</span><span class="p">.</span><span class="na">subscriptions</span><span class="p">.</span><span class="na">vehicleAdded</span><span class="p">(</span><span class="n">event</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">    </span><span class="n">VehicleAddedResponse</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">event</span><span class="p">;</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">    </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&quot;New vehicle: &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">res</span><span class="p">.</span><span class="na">getVehicleAdded</span><span class="p">().</span><span class="na">getBrand</span><span class="p">());</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="p">});</span>
+</code></pre></div>
+<p>The generated WebSocket adapter handles the <a href="https://github.com/enisdenjo/graphql-ws/blob/master/PROTOCOL.md">graphql-ws subprotocol</a> automatically — connection init, ping/pong, and exponential-backoff reconnect on disconnect.</p>
+<div class="admonition info">
+<p class="admonition-title">Deriving the WebSocket URL</p>
+<p>The convenience constructors that take only an HTTP URL automatically derive the WebSocket URL by replacing <code>http</code> with <code>ws</code> (and <code>https</code> with <code>wss</code>). Pass an explicit <code>wsUrl</code> if your WebSocket endpoint differs from the HTTP endpoint.</p>
+</div>
+<h2 id="file-uploads">File uploads<a class="headerlink" href="#file-uploads" title="Permanent link">&para;</a></h2>
+<p>When your schema uses the built-in <code>Upload</code> scalar, GraphLink generates a <code>GLUpload</code> class and handles multipart encoding in the generated adapter:</p>
+<div class="highlight"><span class="filename">Using GLUpload in Java</span><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.example.generated.types.GLUpload</span><span class="p">;</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">java.io.FileInputStream</span><span class="p">;</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">java.io.File</span><span class="p">;</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="n">File</span><span class="w"> </span><span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">File</span><span class="p">(</span><span class="s">&quot;/path/to/document.pdf&quot;</span><span class="p">);</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="n">GLUpload</span><span class="w"> </span><span class="n">upload</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">GLUpload</span><span class="p">(</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">FileInputStream</span><span class="p">(</span><span class="n">file</span><span class="p">),</span>
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="w">    </span><span class="n">file</span><span class="p">.</span><span class="na">length</span><span class="p">(),</span>
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="w">    </span><span class="s">&quot;document.pdf&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="w">    </span><span class="s">&quot;application/pdf&quot;</span>
+<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="p">);</span>
+<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a>
+<a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a><span class="n">UploadDocumentResponse</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="na">mutations</span><span class="p">.</span><span class="na">uploadDocument</span><span class="p">(</span><span class="n">upload</span><span class="p">);</span>
+<a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">result</span><span class="p">.</span><span class="na">getUploadDocument</span><span class="p">());</span><span class="w"> </span><span class="c1">// URL or ID returned by server</span>
+</code></pre></div>
+<p>The generated <code>DefaultGraphLinkClientAdapter</code> automatically encodes mutations containing <code>GLUpload</code> as multipart/form-data following the <a href="https://github.com/jaydenseric/graphql-multipart-request-spec">GraphQL multipart request spec</a>. No extra configuration needed.</p>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/Oualitsen/graphlink" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
     </div>
   </div>
 </footer>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
-<script src="../js/main.js?v=4.3.0"></script>
-<script src="../js/docs.js?v=4.3.0"></script>
-</body>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["navigation.tabs", "navigation.sections", "content.code.copy", "content.tabs.link"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
 </html>
