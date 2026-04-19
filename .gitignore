@@ -35,6 +35,9 @@ lib/generated
 example/lib/generated
 examples/**/lib/generated
 
+# Node
+**/node_modules/
+
 # Web related
 lib/generated_plugin_registrant.dart
 

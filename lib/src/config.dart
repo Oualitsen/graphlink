@@ -257,6 +257,7 @@ class TypeScriptClientConfig {
   final bool immutableTypeFields;
   final bool optionalNullableInputFields;
   final bool generateDefaultWsAdapter;
+  final bool observables;
   final TypeScriptHttpAdapter httpAdapter;
   final String? defaultAlias;
 
@@ -267,6 +268,7 @@ class TypeScriptClientConfig {
     this.immutableTypeFields = true,
     this.optionalNullableInputFields = true,
     this.generateDefaultWsAdapter = true,
+    this.observables = false,
     this.httpAdapter = TypeScriptHttpAdapter.fetch,
     this.defaultAlias,
   });
@@ -279,6 +281,7 @@ class TypeScriptClientConfig {
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
       optionalNullableInputFields: (json['optionalNullableInputFields'] as bool?) ?? true,
       generateDefaultWsAdapter: (json['generateDefaultWsAdapter'] as bool?) ?? true,
+      observables: (json['observables'] as bool?) ?? false,
       httpAdapter: TypeScriptHttpAdapter.values.firstWhere(
         (e) => e.name == json['httpAdapter'],
         orElse: () => TypeScriptHttpAdapter.fetch,

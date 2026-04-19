@@ -418,15 +418,21 @@ type _FetchFn = (
   init?: Record<string, unknown>,
 ) => Promise<{ ok: boolean; status: number; statusText: string; text(): Promise<string> }>;
 
+interface _FetchAdapterOptions {
+  fetchFn?: _FetchFn;
+  headers?: () => Record<string, string> | Promise<Record<string, string>>;
+}
+
 export function createFetchAdapter(
   url: string,
-  fetchFn?: _FetchFn,
+  options?: _FetchAdapterOptions,
 ): GraphLinkAdapter {
   return async (payload: string): Promise<string> => {
-    const fn = (fetchFn ?? (globalThis as Record<string, unknown>)['fetch']) as _FetchFn;
+    const fn = (options?.fetchFn ?? (globalThis as Record<string, unknown>)['fetch']) as _FetchFn;
+    const extraHeaders = options?.headers ? await options.headers() : {};
     const response = await fn(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...extraHeaders },
       body: payload,
     });
     if (!response.ok) {
@@ -440,10 +446,11 @@ export function createFetchAdapter(
 const tsMultipartFetchAdapter = r'''
 export function createMultipartFetchAdapter(
   url: string,
-  fetchFn?: _FetchFn,
+  options?: _FetchAdapterOptions,
 ): GLMultipartAdapter {
   return async (parts: Record<string, unknown>, onProgress?: UploadProgressCallback): Promise<string> => {
-    const fn = (fetchFn ?? (globalThis as Record<string, unknown>)['fetch']) as _FetchFn;
+    const fn = (options?.fetchFn ?? (globalThis as Record<string, unknown>)['fetch']) as _FetchFn;
+    const extraHeaders = options?.headers ? await options.headers() : {};
     const formData = new FormData();
     for (const [key, value] of Object.entries(parts)) {
       if (value !== null && typeof value === 'object' && 'stream' in value) {
@@ -453,7 +460,7 @@ export function createMultipartFetchAdapter(
         formData.append(key, value as string);
       }
     }
-    const response = await fn(url, { method: 'POST', body: formData });
+    const response = await fn(url, { method: 'POST', body: formData, headers: extraHeaders });
     if (!response.ok) {
       throw new Error(`GraphLink: HTTP ${response.status} ${response.statusText}`);
     }
@@ -472,13 +479,19 @@ interface _AxiosLike {
   ): Promise<{ data: unknown }>;
 }
 
+interface _AxiosAdapterOptions {
+  headers?: () => Record<string, string> | Promise<Record<string, string>>;
+}
+
 export function createAxiosAdapter(
   url: string,
   axiosInstance: _AxiosLike,
+  options?: _AxiosAdapterOptions,
 ): GraphLinkAdapter {
   return async (payload: string): Promise<string> => {
+    const extraHeaders = options?.headers ? await options.headers() : {};
     const response = await axiosInstance.post(url, payload, {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...extraHeaders },
       responseType: 'text',
     });
     return response.data as string;

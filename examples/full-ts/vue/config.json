@@ -1,0 +1,24 @@
+{
+  "schemaPaths": ["../schema/full-ts-schema.graphql"],
+  "mode": "client",
+  "identityFields": ["id"],
+  "typeMappings": {
+    "ID": "string",
+    "String": "string",
+    "Float": "number",
+    "Int": "number",
+    "Boolean": "boolean"
+  },
+  "outputDir": "src/generated",
+  "clientConfig": {
+    "typescript": {
+      "generateAllFieldsFragments": false,
+      "autoGenerateQueries": false,
+      "immutableTypeFields": true,
+      "optionalNullableInputFields": true,
+      "generateDefaultWsAdapter": true,
+      "httpAdapter": "fetch",
+      "observables": false
+    }
+  }
+}

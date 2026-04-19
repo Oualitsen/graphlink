@@ -17,6 +17,7 @@ const _inMemoryCacheStoreType = 'InMemoryGraphLinkCacheStore';
 class TypeScriptClientSerializer extends GLClientSerilaizer {
   final GLParser _parser;
   final bool generateDefaultWsAdapter;
+  final bool observables;
   final _cg = TypeScriptCodeGenUtils();
   late final GLGraphqSerializer _gqlSerializer;
 
@@ -52,6 +53,7 @@ class TypeScriptClientSerializer extends GLClientSerilaizer {
     this._parser,
     GLSerializer tsSerializer, {
     this.generateDefaultWsAdapter = true,
+    this.observables = false,
   }) : super(tsSerializer) {
     _gqlSerializer = GLGraphqSerializer(_parser, false);
   }
@@ -89,6 +91,8 @@ class TypeScriptClientSerializer extends GLClientSerilaizer {
           .where((l) => l.trim().isNotEmpty),
       if (_parser.hasUploadMutations)
         "import { GLUpload, GLMultipartAdapter, UploadProgressCallback } from './graph-link-uploads.js';",
+      if (observables)
+        "import { Observable } from 'rxjs';",
     ];
   }
 
@@ -345,52 +349,82 @@ private _parseAndCache(
     final directives = _gqlSerializer
         .serializeDirectiveValueList(def.getDirectives(skipGenerated: true));
 
+    final innerStatements = [
+      "const $_svOperationName = '${def.tokenInfo}';",
+      _generateVariables(def),
+      'const $_svPartialQueries = [',
+      ...dividedQueries.map((dq) => '  ${_serializePartialQuery(dq, hasFrags)},'),
+      '];',
+      'const $_svResponseMap: Record<string, unknown> = {};',
+      'const $_svStaleData: Record<string, unknown> = {};',
+      'const $_svCacheFutures = $_svPartialQueries',
+      '  .filter(pq => pq.ttl > 0)',
+      '  .map(pq => this._getFromCache(pq.cacheKey!, pq.tags, pq.staleIfOffline).then(entry => {',
+      '    if (!entry) return;',
+      '    if (entry.stale) $_svStaleData[pq.elementKey] = JSON.parse(entry.data);',
+      '    else $_svResponseMap[pq.elementKey] = JSON.parse(entry.data);',
+      '  }).catch(() => {}));',
+      'await Promise.all($_svCacheFutures);',
+      'const $_svRemaining = $_svPartialQueries.filter(pq => !(pq.elementKey in $_svResponseMap));',
+      _cg.ifStatement(
+        condition: '$_svRemaining.length === 0',
+        ifBlockStatements: [
+          '${observables ? 'subscriber.next' : 'return'}($_svResponseMap as unknown as $returnTypeName);',
+          if (observables) 'subscriber.complete(); return;',
+        ],
+      ),
+      'const $_svPayload = this._buildPayload($_svRemaining, $_svOperationName, ${directives.isEmpty ? "''" : "'${directives}'"}); ',
+      _cg.tryCatchFinally(
+        tryStatements: [
+          'const $_svResponseText = await this.$_svAdapter(JSON.stringify($_svPayload));',
+          'const $_svResult = this._parseAndCache($_svResponseText, $_svResponseMap, $_svRemaining) as unknown as $returnTypeName;',
+          if (observables) ...[
+            'subscriber.next($_svResult);',
+            'subscriber.complete();',
+          ] else
+            'return $_svResult;',
+        ],
+        catchVariable: 'e',
+        catchStatements: [
+          'Object.assign($_svResponseMap, $_svStaleData);',
+          'const $_svRemainingCount = $_svPartialQueries.filter(pq => !(pq.elementKey in $_svResponseMap)).length;',
+          _cg.ifStatement(
+            condition: '$_svRemainingCount > 0',
+            ifBlockStatements: [
+              observables ? 'subscriber.error(e); return;' : 'throw e;',
+            ],
+          ),
+          if (observables) ...[
+            'subscriber.next($_svResponseMap as unknown as $returnTypeName);',
+            'subscriber.complete();',
+          ] else
+            'return $_svResponseMap as unknown as $returnTypeName;',
+        ],
+      ),
+    ];
+
+    if (observables) {
+      return _cg.createMethod(
+        methodName: def.tokenInfo.token,
+        returnType: 'Observable<$returnTypeName>',
+        async: false,
+        arguments: args.isEmpty ? null : args,
+        statements: [
+          'return new Observable<$returnTypeName>(subscriber => {',
+          '  (async () => {',
+          ...innerStatements.map((s) => '    $s'),
+          '  })();',
+          '});',
+        ],
+      );
+    }
+
     return _cg.createMethod(
       methodName: def.tokenInfo.token,
       returnType: returnTypeName,
       async: true,
       arguments: args.isEmpty ? null : args,
-      statements: [
-        "const $_svOperationName = '${def.tokenInfo}';",
-        _generateVariables(def),
-        'const $_svPartialQueries = [',
-        ...dividedQueries.map((dq) => '  ${_serializePartialQuery(dq, hasFrags)},'),
-        '];',
-        'const $_svResponseMap: Record<string, unknown> = {};',
-        'const $_svStaleData: Record<string, unknown> = {};',
-        'const $_svCacheFutures = $_svPartialQueries',
-        '  .filter(pq => pq.ttl > 0)',
-        '  .map(pq => this._getFromCache(pq.cacheKey!, pq.tags, pq.staleIfOffline).then(entry => {',
-        '    if (!entry) return;',
-        '    if (entry.stale) $_svStaleData[pq.elementKey] = JSON.parse(entry.data);',
-        '    else $_svResponseMap[pq.elementKey] = JSON.parse(entry.data);',
-        '  }).catch(() => {}));',
-        'await Promise.all($_svCacheFutures);',
-        'const $_svRemaining = $_svPartialQueries.filter(pq => !(pq.elementKey in $_svResponseMap));',
-        _cg.ifStatement(
-          condition: '$_svRemaining.length === 0',
-          ifBlockStatements: [
-            'return $_svResponseMap as unknown as $returnTypeName;',
-          ],
-        ),
-        'const $_svPayload = this._buildPayload($_svRemaining, $_svOperationName, ${directives.isEmpty ? "''" : "'${directives}'"}); ',
-        _cg.tryCatchFinally(
-          tryStatements: [
-            'const $_svResponseText = await this.$_svAdapter(JSON.stringify($_svPayload));',
-            'return this._parseAndCache($_svResponseText, $_svResponseMap, $_svRemaining) as unknown as $returnTypeName;',
-          ],
-          catchVariable: 'e',
-          catchStatements: [
-            'Object.assign($_svResponseMap, $_svStaleData);',
-            'const $_svRemainingCount = $_svPartialQueries.filter(pq => !(pq.elementKey in $_svResponseMap)).length;',
-            _cg.ifStatement(
-              condition: '$_svRemainingCount > 0',
-              ifBlockStatements: ['throw e;'],
-            ),
-            'return $_svResponseMap as unknown as $returnTypeName;',
-          ],
-        ),
-      ],
+      statements: innerStatements,
     );
   }
 
@@ -422,14 +456,35 @@ private _parseAndCache(
       statements.add("const $_svQuery = '${queryStr}';");
     }
 
-    statements.addAll([
+    final innerStatements = [
       "const $_svPayload = JSON.stringify({ query: $_svQuery, operationName: $_svOperationName, variables: $_svVariables });",
       "const $_svResponse = await this.$_svAdapter($_svPayload);",
       "const $_svResult = JSON.parse($_svResponse);",
-      "if ($_svResult['errors']) throw $_svResult['errors'] as GraphLinkError[];",
+      "if ($_svResult['errors']) ${observables ? "{ subscriber.error($_svResult['errors']); return; }" : "throw $_svResult['errors'] as GraphLinkError[];"}",
       if (invalidation.isNotEmpty) invalidation,
-      "return $_svResult['data'] as $returnTypeName;",
-    ]);
+      if (observables) ...[
+        "subscriber.next($_svResult['data'] as $returnTypeName);",
+        "subscriber.complete();",
+      ] else
+        "return $_svResult['data'] as $returnTypeName;",
+    ];
+    statements.addAll(innerStatements);
+
+    if (observables) {
+      return _cg.createMethod(
+        methodName: def.tokenInfo.token,
+        returnType: 'Observable<$returnTypeName>',
+        async: false,
+        arguments: args.isEmpty ? null : args,
+        statements: [
+          'return new Observable<$returnTypeName>(subscriber => {',
+          '  (async () => {',
+          ...statements.map((s) => '    $s'),
+          '  })();',
+          '});',
+        ],
+      );
+    }
 
     return _cg.createMethod(
       methodName: def.tokenInfo.token,
@@ -494,7 +549,7 @@ private _parseAndCache(
       }
     }
 
-    statements.addAll([
+    final innerStatements = [
       "const $_svAllParts: Record<string, unknown> = {",
       "  'operations': JSON.stringify({ query: $_svQuery, operationName: $_svOperationName, variables: $_svVariables }),",
       "  'map': JSON.stringify($_svMap),",
@@ -502,10 +557,31 @@ private _parseAndCache(
       "};",
       "const $_svResponse = await this.$_svMultipartAdapter!($_svAllParts, onProgress);",
       "const $_svResult = JSON.parse($_svResponse);",
-      "if ($_svResult['errors']) throw $_svResult['errors'] as GraphLinkError[];",
+      "if ($_svResult['errors']) ${observables ? "{ subscriber.error($_svResult['errors']); return; }" : "throw $_svResult['errors'] as GraphLinkError[];"}",
       if (invalidation.isNotEmpty) invalidation,
-      "return $_svResult['data'] as $returnTypeName;",
-    ]);
+      if (observables) ...[
+        "subscriber.next($_svResult['data'] as $returnTypeName);",
+        "subscriber.complete();",
+      ] else
+        "return $_svResult['data'] as $returnTypeName;",
+    ];
+    statements.addAll(innerStatements);
+
+    if (observables) {
+      return _cg.createMethod(
+        methodName: def.tokenInfo.token,
+        returnType: 'Observable<$returnTypeName>',
+        async: false,
+        arguments: args.isEmpty ? null : args,
+        statements: [
+          'return new Observable<$returnTypeName>(subscriber => {',
+          '  (async () => {',
+          ...statements.map((s) => '    $s'),
+          '  })();',
+          '});',
+        ],
+      );
+    }
 
     return _cg.createMethod(
       methodName: def.tokenInfo.token,
@@ -544,6 +620,34 @@ private _parseAndCache(
       "  variables: $_svVariables,",
       "};",
       "const $_svGen = this.$_svHandler.handle($_svPayload);",
+    ]);
+
+    if (observables) {
+      statements.addAll([
+        "return new Observable<$returnTypeName>(subscriber => {",
+        "  (async () => {",
+        "    try {",
+        "      for await (const $_svData of $_svGen) {",
+        "        subscriber.next($_svData as unknown as $returnTypeName);",
+        "      }",
+        "      subscriber.complete();",
+        "    } catch (e) {",
+        "      subscriber.error(e);",
+        "    }",
+        "  })();",
+        "  return () => { void $_svGen.return(undefined); };",
+        "});",
+      ]);
+
+      return _cg.createMethod(
+        methodName: def.tokenInfo.token,
+        returnType: 'Observable<$returnTypeName>',
+        arguments: queryArgs.isEmpty ? null : queryArgs,
+        statements: statements,
+      );
+    }
+
+    statements.addAll([
       "(async () => {",
       "  try {",
       "    for await (const $_svData of $_svGen) {",

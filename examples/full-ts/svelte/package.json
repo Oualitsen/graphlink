@@ -1,0 +1,17 @@
+{
+  "name": "graphlink-full-ts-svelte",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "generate": "dart run main.dart --config config.json"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^3.0.0",
+    "svelte": "^5.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0"
+  }
+}

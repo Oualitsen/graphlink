@@ -188,7 +188,7 @@ class TypeScriptSerializer extends GLSerializer {
       subDir = "inputs";
     }
     if (subDir == null) return "";
-    final file = getFileNameFor(token);
+    final file = getFileNameFor(token).replaceAll('.ts', '.js');
     return "import { ${token.token} } from '../$subDir/$file';";
   }
 
