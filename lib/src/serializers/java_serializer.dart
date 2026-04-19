@@ -160,10 +160,10 @@ class JavaSerializer extends GLSerializer {
   }
 
   @override
-  String doSerializeField(GLField def, bool immutable) {
+  String doSerializeField(GLField def, bool immutable, bool isTypeField) {
     final type = def.type;
     final name = def.name;
-    final hasInculeOrSkipDiretives = def.hasInculeOrSkipDiretives;
+    final forceNullable = isTypeField && (def.hasInculeOrSkipDiretives || forceFieldNullable);
     var buffer = StringBuffer();
     var decorators = serializeDecorators(def.getDirectives(), joiner: "\n");
     if (decorators.isNotEmpty) {
@@ -173,8 +173,7 @@ class JavaSerializer extends GLSerializer {
     if (immutable) {
       buffer.write("final ");
     }
-    buffer.write(
-        '${serializeType(type, hasInculeOrSkipDiretives)} $name;');
+    buffer.write('${serializeType(type, forceNullable)} $name;');
     return buffer.toString();
   }
 
@@ -271,7 +270,7 @@ class JavaSerializer extends GLSerializer {
         codeGenUtils.createClass(className: def.tokenInfo.token, statements: [
       ...def
           .getSerializableFields(grammar.mode)
-          .map((e) => serializeField(e, immutableInputFields)),
+          .map((e) => serializeField(e, immutableInputFields, false)),
       "",
       if (!immutableInputFields)
         generateContructor(def.token, [], "public", def,
@@ -741,7 +740,7 @@ class JavaSerializer extends GLSerializer {
               type: field.type,
               arguments: field.arguments,
               directives: []))
-          .map((field) => serializeField(field, false)),
+          .map((field) => serializeField(field, false, !forInput)),
       "",
       ...fields.map((e) => codeGenUtils.createMethod(
           returnType: 'public Builder',
@@ -913,7 +912,7 @@ class JavaSerializer extends GLSerializer {
         statements: [
           ...def
               .getSerializableFields(grammar.mode)
-              .map((e) => serializeField(e, immutableTypeFields)),
+              .map((e) => serializeField(e, immutableTypeFields, true)),
           "",
           if (!immutableTypeFields)
             generateContructor(def.token, [], "public", def,
