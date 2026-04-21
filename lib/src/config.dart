@@ -51,12 +51,38 @@ class GeneratorConfig {
 // ServerConfig supports multiple frameworks
 class ServerConfig {
   final SpringServerConfig? spring;
+  final ExpressApolloServerConfig? expressApollo;
 
-  ServerConfig({this.spring});
+  ServerConfig({this.spring, this.expressApollo});
 
   factory ServerConfig.fromJson(Map<String, dynamic> json) {
     return ServerConfig(
       spring: json['spring'] != null ? SpringServerConfig.fromJson(json['spring']) : null,
+      expressApollo: json['expressApollo'] != null ? ExpressApolloServerConfig.fromJson(json['expressApollo']) : null,
+    );
+  }
+}
+
+
+class ExpressApolloServerConfig {
+  final int port;
+  final String graphqlPath;
+  final bool generateEntryPoint;
+  final bool useResolveInfo;
+
+  ExpressApolloServerConfig({
+    this.port = 4000,
+    this.graphqlPath = '/graphql',
+    this.generateEntryPoint = true,
+    this.useResolveInfo = false,
+  });
+
+  factory ExpressApolloServerConfig.fromJson(Map<String, dynamic> json) {
+    return ExpressApolloServerConfig(
+      port: (json['port'] as int?) ?? 4000,
+      graphqlPath: (json['graphqlPath'] as String?) ?? '/graphql',
+      generateEntryPoint: (json['generateEntryPoint'] as bool?) ?? true,
+      useResolveInfo: (json['useResolveInfo'] as bool?) ?? false,
     );
   }
 }
