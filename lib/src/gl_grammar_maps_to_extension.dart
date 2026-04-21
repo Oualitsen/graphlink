@@ -4,6 +4,7 @@ import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_input_mapping.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/serializers/code_generation_mode.dart';
 
 extension GLGrammarMapsToExtension on GLParser {
   /// Validates all @glMapsTo and @glMapField usages across the schema.
@@ -39,10 +40,11 @@ extension GLGrammarMapsToExtension on GLParser {
   /// Resolves the [MappingPlan] for [input] if it declares @glMapsTo.
   /// Returns null if the input has no @glMapsTo directive.
   /// Assumes validation has already run — target is guaranteed to exist.
-  MappingPlan? resolveInputMappingPlan(GLInputDefinition input) {
+  MappingPlan? resolveInputMappingPlan(GLInputDefinition input,
+      CodeGenerationMode mode) {
     final targetName = input.mapsToType;
     if (targetName == null) return null;
-    return input.buildMappingPlan(_resolveTarget(targetName)!, inputs, types);
+    return input.buildMappingPlan(_resolveTarget(targetName)!, inputs, types, mode);
   }
 
   GLTypeDefinition? _resolveTarget(String name) => types[name];

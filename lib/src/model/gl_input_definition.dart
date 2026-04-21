@@ -8,6 +8,7 @@ import 'package:graphlink/src/model/gl_token_with_fields.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/token_info.dart';
+import 'package:graphlink/src/serializers/code_generation_mode.dart';
 
 class GLInputDefinition extends GLTokenWithFields with GLDirectivesMixin {
   final String declaredName;
@@ -30,8 +31,9 @@ class GLInputDefinition extends GLTokenWithFields with GLDirectivesMixin {
   MappingPlan buildMappingPlan(
           GLTypeDefinition target,
           Map<String, GLInputDefinition> allInputs,
-          Map<String, GLTypeDefinition> allTypes) =>
-      MappingPlan.resolve(this, target, allInputs, allTypes);
+          Map<String, GLTypeDefinition> allTypes,
+          CodeGenerationMode mode) =>
+      MappingPlan.resolve(this, target, allInputs, allTypes, mode);
 
   @override
   Set<GLToken> getImportDependecies(GLParser g) {
@@ -42,7 +44,7 @@ class GLInputDefinition extends GLTokenWithFields with GLDirectivesMixin {
     final target = g.types[targetName]!;
     result.add(target);
 
-    final plan = buildMappingPlan(target, g.inputs, g.types);
+    final plan = buildMappingPlan(target, g.inputs, g.types, g.mode);
 
     // requiredParams fields whose types are complex (non-scalar) need importing
     // since they appear explicitly in the toXxx() method signature.
