@@ -1,0 +1,22 @@
+{
+  "schemaPaths": ["schema.graphql"],
+  "mode": "server",
+  "identityFields": ["id"],
+  "typeMappings": {
+    "ID": "string",
+    "String": "string",
+    "Float": "number",
+    "Int": "number",
+    "Boolean": "boolean",
+    "Null": "null"
+  },
+  "outputDir": "src/generated",
+  "serverConfig": {
+    "expressApollo": {
+      "port": 4000,
+      "graphqlPath": "/graphql",
+      "generateEntryPoint": true,
+      "useResolveInfo": true
+    }
+  }
+}

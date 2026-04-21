@@ -19,12 +19,14 @@ import 'package:graphlink/src/serializers/graphq_serializer.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/spring_server_serializer.dart';
+import 'package:graphlink/src/serializers/express_apollo_server_serializer.dart';
 import 'package:args/args.dart';
 import 'dart:convert';
 
 import 'package:graphlink/src/gl_grammar_io.dart' as grammar_io;
 import 'package:graphlink/src/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/serializers/typescript_serializer.dart';
+import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/utils.dart';
 
 const String appVersion =
@@ -817,6 +819,9 @@ Future<Set<String>> generateJavaClientClasses(
 
 Future<Set<String>> generateServerClasses(
     GLParser grammar, GeneratorConfig config, DateTime started) async {
+  if (config.serverConfig?.expressApollo != null) {
+    return generateExpressApolloServerClasses(grammar, config, started);
+  }
   final springConfig = config.serverConfig!.spring!;
   final packageName = springConfig.basePackage;
   final destinationDir = config.outputDir;
@@ -937,6 +942,136 @@ Future<Set<String>> generateServerClasses(
   stdout.writeln(
       "Generated ${futures.length} files in ${formatElapsedTime(started)}");
   var paths = result.map((f) => f.path).toSet();
+  await cleanUpObsoleteFiles(paths);
+  return paths;
+}
+
+Future<Set<String>> generateExpressApolloServerClasses(
+    GLParser grammar, GeneratorConfig config, DateTime started) async {
+  final apolloConfig = config.serverConfig!.expressApollo!;
+  final destinationDir = config.outputDir;
+  final tsSerializer = TypeScriptSerializer(grammar);
+  final serverSerializer = ExpressApolloServerSerializer(grammar, tsSerializer, apolloConfig);
+  final futures = <Future<File>>[];
+
+  // typeDefs.ts
+  futures.add(saveSource(
+    data: serverSerializer.serializeTypeDefs(),
+    path: '$destinationDir/typeDefs.ts',
+    typescriptSource: true,
+  ));
+
+  // enums
+  grammar.getSerializableEnums().forEach((def) {
+    futures.add(saveSource(
+      data: tsSerializer.serializeEnumDefinition(def, ''),
+      path: '$destinationDir/enums/${tsSerializer.getFileNameFor(def)}',
+      typescriptSource: true,
+    ));
+  });
+
+  // inputs
+  grammar.getSerializableInputs().forEach((def) {
+    futures.add(saveSource(
+      data: tsSerializer.serializeInputDefinition(def, ''),
+      path: '$destinationDir/inputs/${tsSerializer.getFileNameFor(def)}',
+      typescriptSource: true,
+    ));
+  });
+
+  // types
+  grammar.getSerializableTypes().forEach((def) {
+    futures.add(saveSource(
+      data: tsSerializer.serializeTypeDefinition(def, ''),
+      path: '$destinationDir/types/${tsSerializer.getFileNameFor(def)}',
+      typescriptSource: true,
+    ));
+  });
+
+  // services & guards & loaders
+  grammar.services.forEach((_, service) {
+    futures.add(saveSource(
+      data: serverSerializer.serializeService(service),
+      path: '$destinationDir/services/${service.token.toKebabCase()}.ts',
+      typescriptSource: true,
+    ));
+
+    final guard = serverSerializer.serializeGuard(service);
+    if (guard != null) {
+      final guardName = '${service.token.replaceFirst('Service', '')}Guard';
+      futures.add(saveSource(
+        data: guard,
+        path: '$destinationDir/guards/${guardName.toKebabCase()}.ts',
+        typescriptSource: true,
+      ));
+    }
+
+    final loader = serverSerializer.serializeLoader(service);
+    if (loader != null) {
+      final loaderFile = '${service.token.replaceFirst('Service', '').toKebabCase()}-loaders.ts';
+      futures.add(saveSource(
+        data: loader,
+        path: '$destinationDir/loaders/$loaderFile',
+        typescriptSource: true,
+      ));
+    }
+  });
+
+  // context.ts
+  futures.add(saveSource(
+    data: serverSerializer.serializeContext(),
+    path: '$destinationDir/context.ts',
+    typescriptSource: true,
+  ));
+
+  // upload types (only when schema uses @glUpload)
+  final hasUploads = grammar.uploadScalarNames.isNotEmpty &&
+      grammar.services.values.any((s) =>
+          s.fields.any((f) => f.arguments.any((a) =>
+              grammar.uploadScalarNames.contains(a.type.firstType.token))));
+  if (hasUploads) {
+    futures.add(saveSource(
+      data: serverSerializer.serializeFileUploadType(),
+      path: '$destinationDir/file-upload.ts',
+      typescriptSource: true,
+    ));
+    futures.add(saveSource(
+      data: serverSerializer.serializeGraphqlUploadDeclarations(),
+      path: '$destinationDir/graphql-upload.d.ts',
+      typescriptSource: true,
+    ));
+  }
+
+  // resolvers/build-resolvers.ts
+  futures.add(saveSource(
+    data: serverSerializer.serializeResolvers(),
+    path: '$destinationDir/resolvers/build-resolvers.ts',
+    typescriptSource: true,
+  ));
+
+  // index.ts
+  if (apolloConfig.generateEntryPoint) {
+    futures.add(saveSource(
+      data: serverSerializer.serializeEntryPoint(),
+      path: '$destinationDir/index.ts',
+      typescriptSource: true,
+    ));
+
+    // my-context.ts stub — written once, never overwritten
+    final implDir = destinationDir.replaceFirst('/generated', '');
+    final contextStubPath = '$implDir/impl/my-context.ts';
+    if (!File(contextStubPath).existsSync()) {
+      futures.add(saveSource(
+        data: serverSerializer.serializeContextStub(destinationDir),
+        path: contextStubPath,
+        typescriptSource: true,
+      ));
+    }
+  }
+
+  final result = await Future.wait(futures);
+  stdout.writeln('Generated ${futures.length} files in ${formatElapsedTime(started)}');
+  final paths = result.map((f) => f.path).toSet();
   await cleanUpObsoleteFiles(paths);
   return paths;
 }

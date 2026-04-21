@@ -1,0 +1,36 @@
+{
+  "name": "typescript-server-example",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "generate": "dart run main.dart --config config.json",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "dev": "tsx src/main.ts",
+    "test:upload": "tsx upload-test.ts"
+  },
+  "dependencies": {
+    "@apollo/server": "^4.11.0",
+    "@graphql-tools/schema": "^10.0.0",
+    "@graphql-tools/utils": "^10.5.0",
+    "cors": "^2.8.5",
+    "dataloader": "^2.2.3",
+    "express": "^4.21.0",
+    "graphql": "^16.9.0",
+    "graphql-upload": "^15.0.2",
+    "graphql-ws": "^5.16.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/form-data": "^2.2.1",
+    "@types/node": "^22.0.0",
+    "@types/node-fetch": "^2.6.13",
+    "@types/ws": "^8.5.0",
+    "form-data": "^4.0.5",
+    "node-fetch": "^2.7.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
