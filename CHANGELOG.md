@@ -199,6 +199,11 @@
   ### Fixes
   - Fixed deserialization of query responses when the return type is an interface or union
 
+## 4.5.1 - 2026-04-21
+  ### Fixes
+  - Fixed `@glMapsTo` / `@glMapField`: `toXxx()` and `fromXxx()` now respect `@glSkipOnClient` / `@glSkipOnServer` — fields invisible to the target mode are no longer emitted as parameters or assignments, preventing compilation errors in generated code
+  - Fixed `@glMapsTo` / `@glMapField` in Java: primitive `boolean` fields now correctly use `isXxx()` getters instead of `getXxx()` in both `toXxx()` and `fromXxx()` methods
+
 ## 4.5.0 - 2026-04-19
   ### New features
   - **TypeScript client code generation** — new `clientConfig.typescript` block in `config.json`
