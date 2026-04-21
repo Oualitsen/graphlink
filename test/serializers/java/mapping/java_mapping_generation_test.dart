@@ -647,6 +647,60 @@ void _case10Tests() {
 }
 
 // ---------------------------------------------------------------------------
+// Case 11 — Boolean fields: primitive boolean uses isXxx(), boxed Boolean uses getXxx()
+// ---------------------------------------------------------------------------
+
+const _case11 = '''
+  type Person {
+    man: Boolean!
+    woman: Boolean
+  }
+  input PersonInput @glMapsTo(type: "Person") {
+    man: Boolean!
+    woman: Boolean
+  }
+  type Query { noop: String }
+''';
+
+void _case11Tests() {
+  group('Case 11 — boolean getter prefix: primitive boolean → isXxx(), boxed Boolean → getXxx()', () {
+    group('class mode', () {
+      late String out;
+      setUp(() => out = _class(_case11, 'PersonInput'));
+
+      test('toP uses isMan() for primitive boolean source field', () {
+        expect(out, contains('isMan()'));
+        expect(out, isNot(contains('getMan()')));
+      });
+      test('toP uses getWoman() for boxed Boolean source field', () {
+        expect(out, contains('getWoman()'));
+        expect(out, isNot(contains('isWoman()')));
+      });
+      test('fromP uses isMan() on target for primitive boolean field', () {
+        expect(out, contains('person.isMan()'));
+        expect(out, isNot(contains('person.getMan()')));
+      });
+      test('fromP uses getWoman() on target for boxed Boolean field', () {
+        expect(out, contains('person.getWoman()'));
+        expect(out, isNot(contains('person.isWoman()')));
+      });
+    });
+
+    group('record mode', () {
+      late String out;
+      setUp(() => out = _record(_case11, 'PersonInput'));
+
+      test('records always use component accessors (no is/get prefix)', () {
+        expect(out, contains('man()'));
+        expect(out, contains('woman()'));
+        expect(out, isNot(contains('isMan()')));
+        expect(out, isNot(contains('getMan()')));
+      });
+    });
+  });
+}
+
+// ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
 
@@ -661,4 +715,5 @@ void main() {
   _case8Tests();
   _case9Tests();
   _case10Tests();
+  _case11Tests();
 }

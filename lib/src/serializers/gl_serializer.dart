@@ -158,7 +158,7 @@ abstract class GLSerializer {
   /// Returns the mapping method strings for [def] if it declares @glMapsTo,
   /// otherwise returns an empty list.
   List<String> generateMappingMethods(GLInputDefinition def) {
-    final plan = grammar.resolveInputMappingPlan(def);
+    final plan = grammar.resolveInputMappingPlan(def, mode);
     if (plan == null) return [];
     final targetName = def.mapsToType!;
     return [

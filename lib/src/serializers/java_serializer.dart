@@ -405,10 +405,12 @@ class JavaSerializer extends GLSerializer {
       ),
     ];
 
-    // Source accessor: records use field(), classes use getField().
-    String sourceAccessor(String fieldName) => sourceIsRecord
-        ? '$fieldName()'
-        : '${_getterName(fieldName, false)}()';
+    // Source accessor: records use field(), classes use getField() / isField().
+    String sourceAccessor(GLField field) {
+      final name = field.name.token;
+      if (sourceIsRecord) return '$name()';
+      return '${_getterName(name, serializeType(field.type, false) == "boolean")}()';
+    }
 
     if (targetIsRecord) {
       // Build positional constructor args in the target type's field declaration order.
@@ -425,11 +427,11 @@ class JavaSerializer extends GLSerializer {
         final name = tf.name.token;
         if (autoByTarget.containsKey(name)) {
           final f = autoByTarget[name]!;
-          final getter = sourceAccessor(f.sourceField!.name.token);
+          final getter = sourceAccessor(f.sourceField!);
           constructorArgs.add(_toMappingExpr(getter, f.sourceField!.type, f.targetField.type, 0, def));
         } else if (defaultByTarget.containsKey(name)) {
           final f = defaultByTarget[name]!;
-          final getter = sourceAccessor(f.sourceField!.name.token);
+          final getter = sourceAccessor(f.sourceField!);
           constructorArgs.add('$getter != null ? $getter : default${f.targetField.name.token.firstUp}');
         } else if (requiredByTarget.containsKey(name)) {
           constructorArgs.add(name);
@@ -454,12 +456,12 @@ class JavaSerializer extends GLSerializer {
     // Class-style target: builder chain.
     final builderCalls = [
       ...plan.autoMapped.map((f) {
-        final getter = sourceAccessor(f.sourceField!.name.token);
+        final getter = sourceAccessor(f.sourceField!);
         final expr = _toMappingExpr(getter, f.sourceField!.type, f.targetField.type, 0, def);
         return '.${f.targetField.name.token}($expr)';
       }),
       ...plan.defaultParams.map((f) {
-        final getter = sourceAccessor(f.sourceField!.name.token);
+        final getter = sourceAccessor(f.sourceField!);
         return '.${f.targetField.name.token}($getter != null ? $getter : default${f.targetField.name.token.firstUp})';
       }),
       ...plan.requiredParams.map(
@@ -526,7 +528,7 @@ class JavaSerializer extends GLSerializer {
         final targetFieldName = f.targetField.name.token;
         final sourceExpr = typesAsRecords
             ? '$targetVar.$targetFieldName()'
-            : '$targetVar.${_getterName(targetFieldName, false)}()';
+            : '$targetVar.${_getterName(targetFieldName, serializeType(f.targetField.type, false) == "boolean")}()';
         var expr = _fromMappingExpr(
             sourceExpr, f.sourceField!.type.firstType.token, f.targetField.type, 0, def);
         if (f.targetField.type.nullable &&

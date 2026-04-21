@@ -1,6 +1,7 @@
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
+import 'package:graphlink/src/serializers/code_generation_mode.dart';
 
 // ---------------------------------------------------------------------------
 // Mapping plan model (Step 5)
@@ -67,19 +68,23 @@ class MappingPlan {
       GLInputDefinition source,
       GLTypeDefinition target,
       Map<String, GLInputDefinition> allInputs,
-      Map<String, GLTypeDefinition> allTypes) {
+      Map<String, GLTypeDefinition> allTypes,
+      CodeGenerationMode mode) {
     final autoMapped = <MappedField>[];
     final defaultParams = <MappedField>[];
     final requiredParams = <MappedField>[];
 
-    for (final targetField in target.fields) {
+    final sourceFields = source.getSerializableFields(mode);
+    final targetFields = target.getSerializableFields(mode);
+
+    for (final targetField in targetFields) {
       // 1. Alias match: source field whose @glMapField(to:) equals the target field name.
-      GLField? sourceField = source.fields.firstWhereOrNull(
+      GLField? sourceField = sourceFields.firstWhereOrNull(
         (f) => f.mapFieldTo == targetField.name.token,
       );
 
       // 2. Name match: source field whose own name equals the target field name.
-      sourceField ??= source.fields.firstWhereOrNull(
+      sourceField ??= sourceFields.firstWhereOrNull(
         (f) => f.mapFieldTo == null && f.name.token == targetField.name.token,
       );
 
@@ -102,7 +107,7 @@ class MappingPlan {
           // Mapped input list — only auto-map if the nested toXxx() needs zero args.
           final nestedTarget = allTypes[targetElemToken];
           if (nestedTarget != null) {
-            final nestedPlan = MappingPlan.resolve(sourceInput!, nestedTarget, allInputs, allTypes);
+            final nestedPlan = MappingPlan.resolve(sourceInput!, nestedTarget, allInputs, allTypes, mode);
             if (nestedPlan.requiredParams.isNotEmpty || nestedPlan.defaultParams.isNotEmpty) {
               // Nested toXxx() has required params — caller must pre-convert.
               requiredParams.add(MappedField(targetField: targetField, sourceField: null));
@@ -124,7 +129,7 @@ class MappingPlan {
       autoMapped: autoMapped,
       defaultParams: defaultParams,
       requiredParams: requiredParams,
-      sourceFields: source.fields,
+      sourceFields: sourceFields,
     );
   }
 }
