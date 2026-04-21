@@ -1,0 +1,59 @@
+directive @glSkipOnServer(mapTo: String, batch: Boolean! = true) on FIELD_DEFINITION|OBJECT|SCALAR|INPUT_FIELD_DEFINITION|INPUT_OBJECT
+directive @glValidate on FIELD_DEFINITION
+directive @glUpload on SCALAR
+
+scalar Upload @glUpload
+
+enum VehicleStatus {
+  ACTIVE
+  INACTIVE
+  SOLD
+}
+
+type Owner {
+  id: ID!
+  name: String!
+  email: String!
+}
+
+type Vehicle {
+  id: ID!
+  brand: String!
+  year: Int!
+  status: VehicleStatus!
+  # batch mapping: resolved via DataLoader
+  owner: Owner! @glSkipOnServer(batch: true)
+}
+
+input AddOwnerInput {
+  name: String!
+  email: String!
+}
+
+input AddVehicleInput {
+  brand: String!
+  year: Int!
+  ownerId: ID!
+}
+
+type Query {
+  getVehicle(id: ID!): Vehicle
+  listVehicles: [Vehicle!]!
+  getOwner(id: ID!): Owner
+}
+
+type UploadResult {
+  filename: String!
+  size: Int!
+  mimetype: String!
+}
+
+type Mutation {
+  addOwner(input: AddOwnerInput!): Owner! @glValidate
+  addVehicle(input: AddVehicleInput!): Vehicle!
+  uploadFile(file: Upload!): UploadResult!
+}
+
+type Subscription {
+  vehicleStatusChanged(vehicleId: ID!): Vehicle!
+}

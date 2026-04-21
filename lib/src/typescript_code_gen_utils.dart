@@ -242,6 +242,36 @@ class TypeScriptCodeGenUtils implements CodeGenUtilsBase {
     return buffer.toString();
   }
 
+  /// Generates a standalone TypeScript `function` (top-level, not a class method).
+  ///
+  /// ```typescript
+  /// export async function main(): Promise<void> { ... }
+  /// ```
+  String createFunction({
+    required String functionName,
+    List<String>? arguments,
+    String? returnType,
+    List<String>? statements,
+    bool async = false,
+    bool exported = false,
+  }) {
+    final buf = StringBuffer();
+    if (exported) buf.write('export ');
+    if (async) buf.write('async ');
+    buf.write('function $functionName');
+    buf.write(parentheses(arguments));
+    if (returnType != null) {
+      buf.write(async ? ': Promise<$returnType>' : ': $returnType');
+    }
+    if (statements != null) {
+      buf.write(' ');
+      buf.write(block(statements));
+    } else {
+      buf.write(';');
+    }
+    return buf.toString();
+  }
+
   /// Generates an `export const name = value;` statement.
   String exportConst(String name, String value) => "export const $name = $value;";
 
