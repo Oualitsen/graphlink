@@ -405,6 +405,10 @@ class JavaSerializer extends GLSerializer {
       ),
     ];
 
+    if ([...plan.requiredParams, ...plan.defaultParams].any((f) => f.targetField.type.isList)) {
+      def.addImport(importList);
+    }
+
     // Source accessor: records use field(), classes use getField() / isField().
     String sourceAccessor(GLField field) {
       final name = field.name.token;
@@ -517,6 +521,15 @@ class JavaSerializer extends GLSerializer {
     final inputOnlyParams = plan.inputOnlyFields.map(
       (f) => '${serializeType(f.type, false)} ${f.name.token}',
     );
+
+    if (elementMismatch.any((f) => f.sourceField!.type.isList) ||
+        plan.inputOnlyFields.any((f) => f.type.isList) ||
+        autoMappable.any((f) =>
+            f.targetField.type.nullable &&
+            !f.sourceField!.type.nullable &&
+            f.sourceField!.type.isList)) {
+      def.addImport(importList);
+    }
 
     // Build positional constructor args in field declaration order.
     final fields = def.getSerializableFields(grammar.mode);
