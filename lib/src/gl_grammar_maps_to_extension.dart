@@ -44,7 +44,7 @@ extension GLGrammarMapsToExtension on GLParser {
       CodeGenerationMode mode) {
     final targetName = input.mapsToType;
     if (targetName == null) return null;
-    return input.buildMappingPlan(_resolveTarget(targetName)!, inputs, types, mode);
+    return input.buildMappingPlan(_resolveTarget(targetName)!, inputs, types, mode, typeMap: typeMap);
   }
 
   GLTypeDefinition? _resolveTarget(String name) => types[name];

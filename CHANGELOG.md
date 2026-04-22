@@ -199,6 +199,12 @@
   ### Fixes
   - Fixed deserialization of query responses when the return type is an interface or union
 
+## 4.5.2 - 2026-04-22
+  ### Fixes
+  - Fixed `@glMapsTo`: nested input fields whose type has no `@glMapsTo` directive are now correctly treated as required parameters instead of being silently auto-mapped
+  - Fixed `@glMapsTo`: fields with different GraphQL tokens that serialize to the same target type (e.g. `String!` and `ID!`) are now correctly treated as compatible and auto-mapped
+  - Fixed `@glMapsTo` in Java: `java.util.List` is now imported when `requiredParams` or `defaultParams` contain list types
+
 ## 4.5.1 - 2026-04-21
   ### Fixes
   - Fixed `@glMapsTo` / `@glMapField`: `toXxx()` and `fromXxx()` now respect `@glSkipOnClient` / `@glSkipOnServer` — fields invisible to the target mode are no longer emitted as parameters or assignments, preventing compilation errors in generated code
