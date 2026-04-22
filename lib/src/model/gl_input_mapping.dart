@@ -64,12 +64,16 @@ class MappingPlan {
   /// (e.g. [PhoneInput!]! → [Phone!]!) which becomes a required parameter.
   /// [allTypes] is required to recursively check whether a nested mapped input's
   /// toXxx() can be called with zero arguments.
+  /// [typeMap] is the language-level scalar mapping (e.g. ID→String) used to
+  /// treat tokens that serialize to the same type as compatible.
   factory MappingPlan.resolve(
       GLInputDefinition source,
       GLTypeDefinition target,
       Map<String, GLInputDefinition> allInputs,
       Map<String, GLTypeDefinition> allTypes,
-      CodeGenerationMode mode) {
+      CodeGenerationMode mode, {
+      Map<String, String> typeMap = const {},
+      }) {
     final autoMapped = <MappedField>[];
     final defaultParams = <MappedField>[];
     final requiredParams = <MappedField>[];
@@ -93,7 +97,36 @@ class MappingPlan {
         continue;
       }
 
-      // 3. For list fields, check element-type compatibility.
+      // 3. For non-list fields with mismatched types, verify the source input
+      //    has a @glMapsTo pointing to the target type.
+      if (!sourceField.type.isList && !targetField.type.isList) {
+        final sourceToken = sourceField.type.token;
+        final targetToken = targetField.type.token;
+        if (sourceToken != targetToken) {
+          // If both tokens resolve to the same serialized type (e.g. ID and String
+          // both map to String), treat them as compatible — direct assignment.
+          final sourceMapped = typeMap[sourceToken] ?? sourceToken;
+          final targetMapped = typeMap[targetToken] ?? targetToken;
+          if (sourceMapped != targetMapped) {
+            final sourceInput = allInputs[sourceToken];
+            if (sourceInput?.mapsToType != targetToken) {
+              requiredParams.add(MappedField(targetField: targetField, sourceField: null));
+              continue;
+            }
+            // Mapped input — only auto-map if toXxx() needs zero args.
+            final nestedTarget = allTypes[targetToken];
+            if (nestedTarget != null) {
+              final nestedPlan = MappingPlan.resolve(sourceInput!, nestedTarget, allInputs, allTypes, mode, typeMap: typeMap);
+              if (nestedPlan.requiredParams.isNotEmpty || nestedPlan.defaultParams.isNotEmpty) {
+                requiredParams.add(MappedField(targetField: targetField, sourceField: null));
+                continue;
+              }
+            }
+          }
+        }
+      }
+
+      // 4. For list fields, check element-type compatibility.
       if (sourceField.type.isList && targetField.type.isList) {
         final sourceElemToken = sourceField.type.firstType.token;
         final targetElemToken = targetField.type.firstType.token;
@@ -107,7 +140,7 @@ class MappingPlan {
           // Mapped input list — only auto-map if the nested toXxx() needs zero args.
           final nestedTarget = allTypes[targetElemToken];
           if (nestedTarget != null) {
-            final nestedPlan = MappingPlan.resolve(sourceInput!, nestedTarget, allInputs, allTypes, mode);
+            final nestedPlan = MappingPlan.resolve(sourceInput!, nestedTarget, allInputs, allTypes, mode, typeMap: typeMap);
             if (nestedPlan.requiredParams.isNotEmpty || nestedPlan.defaultParams.isNotEmpty) {
               // Nested toXxx() has required params — caller must pre-convert.
               requiredParams.add(MappedField(targetField: targetField, sourceField: null));
