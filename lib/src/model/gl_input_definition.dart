@@ -32,8 +32,10 @@ class GLInputDefinition extends GLTokenWithFields with GLDirectivesMixin {
           GLTypeDefinition target,
           Map<String, GLInputDefinition> allInputs,
           Map<String, GLTypeDefinition> allTypes,
-          CodeGenerationMode mode) =>
-      MappingPlan.resolve(this, target, allInputs, allTypes, mode);
+          CodeGenerationMode mode, {
+          Map<String, String> typeMap = const {},
+          }) =>
+      MappingPlan.resolve(this, target, allInputs, allTypes, mode, typeMap: typeMap);
 
   @override
   Set<GLToken> getImportDependecies(GLParser g) {
@@ -44,7 +46,7 @@ class GLInputDefinition extends GLTokenWithFields with GLDirectivesMixin {
     final target = g.types[targetName]!;
     result.add(target);
 
-    final plan = buildMappingPlan(target, g.inputs, g.types, g.mode);
+    final plan = buildMappingPlan(target, g.inputs, g.types, g.mode, typeMap: g.typeMap);
 
     // requiredParams fields whose types are complex (non-scalar) need importing
     // since they appear explicitly in the toXxx() method signature.
