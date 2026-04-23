@@ -13,6 +13,7 @@ class GeneratorConfig {
   final String mode; // "server" or "client"
   final List<String> identityFields;
   Map<String, String>? typeMappings;
+  final bool disableCache;
   final String outputDir;
   final ServerConfig? serverConfig;
   final ClientConfig? clientConfig;
@@ -29,6 +30,7 @@ class GeneratorConfig {
     required this.identityFields,
     required this.typeMappings,
     required this.outputDir,
+    this.disableCache = false,
     this.serverConfig,
     this.clientConfig,
   });
@@ -39,6 +41,7 @@ class GeneratorConfig {
       mode: json['mode'] ?? 'server',
       identityFields: List<String>.from(json['identityFields'] ?? []),
       typeMappings: Map<String, String>.from(json['typeMappings'] ?? {}),
+      disableCache: (json['disableCache'] as bool?) ?? false,
       outputDir: json['outputDir'] ?? 'src/main/java',
       serverConfig:
           json['serverConfig'] != null ? ServerConfig.fromJson(json['serverConfig']) : null,
