@@ -255,4 +255,126 @@ void main() {
       );
     });
   });
+
+  // -------------------------------------------------------------------------
+  // Case 5 — Nullable nested mapped input in fromXxx()
+  // -------------------------------------------------------------------------
+
+  const _case5 = '''
+    input PeriodInput @glMapsTo(type: "Period") {
+      value: Int!
+      unit: String!
+    }
+
+    type Period {
+      value: Int!
+      unit: String!
+    }
+
+    type Equipment {
+      id: ID!
+      name: String!
+      maintenancePeriod: Period
+    }
+
+    input EquipmentInput @glMapsTo(type: "Equipment") {
+      name: String!
+      maintenancePeriod: PeriodInput
+    }
+
+    type Query { noop: String }
+  ''';
+
+  // -------------------------------------------------------------------------
+  // Case 6 — Type field nullable, input field non-null (scalar reverse mismatch)
+  // -------------------------------------------------------------------------
+
+  const case6 = '''
+    type Biopsy {
+      id: ID!
+      diagnosticDate: Int
+    }
+
+    input BiopsyInput @glMapsTo(type: "Biopsy") {
+      diagnosticDate: Int!
+    }
+
+    type Query { noop: String }
+  ''';
+
+  group('Case 6 — nullable type field assigned to non-null input field', () {
+    test('fromBiopsy() requires diagnosticDate as a required param', () {
+      expect(
+        _lines(case6, 'BiopsyInput'),
+        containsAllInOrder([
+          'static BiopsyInput fromBiopsy({',
+          'required Biopsy biopsy,',
+          'required int diagnosticDate',  // Int serializes to int in Dart
+          '}) {',
+        ]),
+      );
+    });
+
+    test('fromBiopsy() assigns diagnosticDate from the param, not from biopsy.diagnosticDate', () {
+      final lines = _lines(case6, 'BiopsyInput');
+      expect(lines, contains('return BiopsyInput(diagnosticDate: diagnosticDate);'));
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Case 7 — List field whose element fromXxx() needs extra params
+  // -------------------------------------------------------------------------
+
+  const case7 = '''
+    type Biopsy {
+      id: ID!
+      diagnosticDate: Int
+    }
+
+    input BiopsyInput @glMapsTo(type: "Biopsy") {
+      diagnosticDate: Int!
+    }
+
+    type Record {
+      id: ID!
+      biopsies: [Biopsy!]!
+    }
+
+    input RecordInput @glMapsTo(type: "Record") {
+      biopsies: [BiopsyInput!]!
+    }
+
+    type Query { noop: String }
+  ''';
+
+  group('Case 7 — list of mapped inputs whose fromXxx() needs extra params becomes required param', () {
+    test('fromRecord() requires biopsies as a required param', () {
+      expect(
+        _lines(case7, 'RecordInput'),
+        containsAllInOrder([
+          'static RecordInput fromRecord({',
+          'required Record record,',
+          'required List<BiopsyInput> biopsies',
+          '}) {',
+        ]),
+      );
+    });
+
+    test('fromRecord() passes biopsies directly without an inline .map()', () {
+      final lines = _lines(case7, 'RecordInput');
+      expect(lines, contains('return RecordInput(biopsies: biopsies);'));
+    });
+  });
+
+  group('Case 5 — nullable nested mapped input in fromXxx()', () {
+    test('fromEquipment() generates a null guard for maintenancePeriod', () {
+      final lines = _lines(_case5, 'EquipmentInput');
+      expect(
+        lines,
+        contains(
+          'return EquipmentInput(name: equipment.name, maintenancePeriod: equipment.maintenancePeriod != null ? PeriodInput.fromPeriod(period: equipment.maintenancePeriod!) : null);',
+        ),
+      );
+    });
+  });
 }
