@@ -189,10 +189,13 @@ class JavaSerializer extends GLSerializer {
   }
 
   String serializeArgumentField(GLField def,
-      {bool withDecorators = false, String decoratorJoiner = "\n"}) {
+      {bool withDecorators = false, String decoratorJoiner = "\n", bool isTypeField = false}) {
     final type = def.type;
     final name = def.name;
     final hasInculeOrSkipDiretives = def.hasInculeOrSkipDiretives;
+    final forceNullable = isTypeField
+        ? (hasInculeOrSkipDiretives || forceFieldNullable)
+        : hasInculeOrSkipDiretives;
     final buffer = StringBuffer();
     if (withDecorators) {
       var decorators =
@@ -202,8 +205,7 @@ class JavaSerializer extends GLSerializer {
         buffer.write(decoratorJoiner);
       }
     }
-    buffer.write(
-        serializeType(type, hasInculeOrSkipDiretives));
+    buffer.write(serializeType(type, forceNullable));
     buffer.write(" ");
     buffer.write(name);
     return buffer.toString();
@@ -699,7 +701,7 @@ class JavaSerializer extends GLSerializer {
 
   String generateContructor(
       String name, List<GLField> fields, String? modifier, GLToken context,
-      {bool checkForNulls = false}) {
+      {bool checkForNulls = false, bool isTypeField = false}) {
     String nullCheck = "";
     if (checkForNulls) {
       var checkingFields = fields
@@ -719,7 +721,7 @@ class JavaSerializer extends GLSerializer {
       buffer.write("$modifier ");
     }
     buffer.writeln(
-        "$name(${serializeListText(fields.map((e) => serializeArgumentField(e)).toList(), join: ", ", withParenthesis: false)}) {");
+        "$name(${serializeListText(fields.map((e) => serializeArgumentField(e, isTypeField: isTypeField)).toList(), join: ", ", withParenthesis: false)}) {");
     if (nullCheck.isNotEmpty) {
       buffer.writeln(nullCheck.ident());
     }
@@ -775,11 +777,12 @@ class JavaSerializer extends GLSerializer {
   }
 
   String serializeGetter(GLField field, GLToken context,
-      {bool checkForNulls = false}) {
+      {bool checkForNulls = false, bool isTypeField = false}) {
     if (checkForNulls) {
       context.addImport(JavaImports.objects);
     }
-    var returnType = serializeType(field.type, false);
+    final forceNullable = isTypeField && (field.hasInculeOrSkipDiretives || forceFieldNullable);
+    var returnType = serializeType(field.type, forceNullable);
     return codeGenUtils.createMethod(
         returnType: "public ${returnType}",
         methodName: _getterName(field.name.token, returnType == "boolean"),
@@ -792,7 +795,7 @@ class JavaSerializer extends GLSerializer {
         ]);
   }
 
-  String serializeMethod(GLField field, {String? modifier}) {
+  String serializeMethod(GLField field, {String? modifier, bool forceNullable = false}) {
     var buffer = StringBuffer();
     var decorators = serializeDecorators(field.getDirectives());
     var args = serializeListText(
@@ -800,7 +803,7 @@ class JavaSerializer extends GLSerializer {
         withParenthesis: false,
         join: ", ");
     var result =
-        "${serializeType(field.type, false)} ${field.name}($args)";
+        "${serializeType(field.type, forceNullable)} ${field.name}($args)";
     if (modifier != null) {
       result = "$modifier $result";
     }
@@ -835,9 +838,9 @@ class JavaSerializer extends GLSerializer {
   }
 
   String serializeGetterDeclaration(GLField field,
-      {bool skipModifier = false, bool asProperty = false}) {
-    var returnType = serializeType(field.type, false);
-    var result = serializeType(field.type, false);
+      {bool skipModifier = false, bool asProperty = false, bool forceNullable = false}) {
+    var returnType = serializeType(field.type, forceNullable);
+    var result = serializeType(field.type, forceNullable);
     if (asProperty) {
       result = "$result ${field.name}";
     } else {
@@ -931,16 +934,16 @@ class JavaSerializer extends GLSerializer {
           "",
           if (!immutableTypeFields)
             generateContructor(def.token, [], "public", def,
-                checkForNulls: typesCheckForNulls),
+                checkForNulls: typesCheckForNulls, isTypeField: true),
           "",
           generateContructor(def.token, def.getSerializableFields(grammar.mode),
-              immutableTypeFields ? "public" : "private", def),
+              immutableTypeFields ? "public" : "private", def, isTypeField: true),
           "",
           generateBuilder(
               def.token, def.getSerializableFields(grammar.mode), false),
           "",
           ...def.getSerializableFields(grammar.mode).map((e) =>
-              serializeGetter(e, def, checkForNulls: typesCheckForNulls)),
+              serializeGetter(e, def, checkForNulls: typesCheckForNulls, isTypeField: true)),
           "",
           ...def.getSerializableFields(grammar.mode).where((field) {
             // @TODO check for mutable directive
@@ -1004,16 +1007,17 @@ class JavaSerializer extends GLSerializer {
     if (fieldDecorators.isNotEmpty) {
       buffer.writeln(fieldDecorators.trim().ident());
     }
+    final fieldForceNullable = f.hasInculeOrSkipDiretives || forceFieldNullable;
     if (getters) {
       if (typesAsRecords && !forceClassGetters) {
         buffer.write(
-            serializeGetterDeclaration(f, skipModifier: true, asProperty: true)
+            serializeGetterDeclaration(f, skipModifier: true, asProperty: true, forceNullable: fieldForceNullable)
                 .ident());
       } else {
-        buffer.write(serializeGetterDeclaration(f, skipModifier: true).ident());
+        buffer.write(serializeGetterDeclaration(f, skipModifier: true, forceNullable: fieldForceNullable).ident());
       }
     } else {
-      buffer.write(serializeMethod(f).ident());
+      buffer.write(serializeMethod(f, forceNullable: fieldForceNullable).ident());
     }
     buffer.write(";");
     return buffer.toString();

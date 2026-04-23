@@ -191,11 +191,33 @@ class DartSerializer extends GLSerializer {
 
     // Fields where the target has a nullable element at some list depth but the
     // input has a non-null element — cannot auto-map safely; become required params.
+    // Also catches list fields whose element's fromXxx() requires extra params.
     final elementMismatch = mapped
-        .where((f) => _hasElementNullabilityMismatch(f.sourceField!.type, f.targetField.type))
+        .where((f) {
+          if (_hasElementNullabilityMismatch(f.sourceField!.type, f.targetField.type)) return true;
+          if (f.sourceField!.type.isList && f.targetField.type.isList) {
+            final srcElem = f.sourceField!.type.firstType.token;
+            final tgtElem = f.targetField.type.firstType.token;
+            if (srcElem != tgtElem && _nestedFromNeedsExtraParams(srcElem, tgtElem)) return true;
+          }
+          return false;
+        })
         .toList();
+
+    // Non-list fields where the type field is nullable but the input field is
+    // non-null — reading a nullable value into a non-null field; become required params.
+    final scalarReverseMismatch = mapped
+        .where((f) =>
+            !elementMismatch.contains(f) &&
+            !f.sourceField!.type.isList &&
+            f.targetField.type.nullable &&
+            !f.sourceField!.type.nullable)
+        .toList();
+
     final autoMappable = mapped
-        .where((f) => !_hasElementNullabilityMismatch(f.sourceField!.type, f.targetField.type))
+        .where((f) =>
+            !elementMismatch.contains(f) &&
+            !scalarReverseMismatch.contains(f))
         .toList();
 
     final mappedAssignments = autoMappable.map((f) {
@@ -223,6 +245,12 @@ class DartSerializer extends GLSerializer {
     final elementMismatchAssignments = elementMismatch.map(
       (f) => '${f.sourceField!.name.token}: ${f.sourceField!.name.token}',
     );
+    final scalarReverseMismatchParams = scalarReverseMismatch.map(
+      (f) => 'required ${serializeType(f.sourceField!.type, false)} ${f.sourceField!.name.token}',
+    );
+    final scalarReverseMismatchAssignments = scalarReverseMismatch.map(
+      (f) => '${f.sourceField!.name.token}: ${f.sourceField!.name.token}',
+    );
     final inputOnlyParams = plan.inputOnlyFields.map(
       (f) =>
           '${f.type.nullable ? '' : 'required '}${serializeType(f.type, false)} ${f.name.token}',
@@ -239,12 +267,14 @@ class DartSerializer extends GLSerializer {
         'required $targetType ${targetType.firstLow}',
         ...nullableListDefaultParams,
         ...elementMismatchParams,
+        ...scalarReverseMismatchParams,
         ...inputOnlyParams,
       ],
       statements: [
         'return ${def.token}(${[
           ...mappedAssignments,
           ...elementMismatchAssignments,
+          ...scalarReverseMismatchAssignments,
           ...inputOnlyAssignments
         ].join(', ')});',
       ],
@@ -260,6 +290,24 @@ class DartSerializer extends GLSerializer {
     final targetElem = targetType.inlineType;
     if (targetElem.nullable && !sourceElem.nullable) return true;
     return _hasElementNullabilityMismatch(sourceElem, targetElem);
+  }
+
+  /// Returns true if the nested fromXxx() for [sourceElemToken] → [targetElemToken]
+  /// would require extra params beyond just the target instance (i.e. it has scalar
+  /// reverse mismatches), making an inline .map() call impossible.
+  bool _nestedFromNeedsExtraParams(String sourceElemToken, String targetElemToken) {
+    final nestedInput = grammar.inputs[sourceElemToken];
+    final nestedTarget = grammar.types[targetElemToken];
+    if (nestedInput == null || nestedTarget == null) return false;
+    final nestedPlan = MappingPlan.resolve(
+        nestedInput, nestedTarget, grammar.inputs, grammar.types, grammar.mode,
+        typeMap: grammar.typeMap);
+    final allMapped = [...nestedPlan.autoMapped, ...nestedPlan.defaultParams];
+    return allMapped.any((f) =>
+        f.sourceField != null &&
+        !f.sourceField!.type.isList &&
+        f.targetField.type.nullable &&
+        !f.sourceField!.type.nullable);
   }
 
   /// Returns a suffix to append to a source field value for toXxx() assignments.
@@ -298,6 +346,9 @@ class DartSerializer extends GLSerializer {
     }
     final sourceInput = grammar.inputs[sourceElemToken];
     if (sourceInput?.mapsToType == targetType.token) {
+      if (targetType.nullable) {
+        return '$variable != null ? $sourceElemToken.from${targetType.token.firstUp}(${targetType.token.firstLow}: $variable!) : null';
+      }
       return '$sourceElemToken.from${targetType.token.firstUp}(${targetType.token.firstLow}: $variable)';
     }
     return variable; // same type — direct copy
@@ -606,7 +657,8 @@ class DartSerializer extends GLSerializer {
   }
 
   String serializeGetterDeclaration(GLField field) {
-    return """${serializeType(field.type, false)} get ${field.name}""";
+    final forceNullable = field.hasInculeOrSkipDiretives || forceFieldNullable;
+    return """${serializeType(field.type, forceNullable)} get ${field.name}""";
   }
 
   @override

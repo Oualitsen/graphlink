@@ -199,16 +199,7 @@
   ### Fixes
   - Fixed deserialization of query responses when the return type is an interface or union
 
-## 4.5.2 - 2026-04-22
-  ### Fixes
-  - Fixed `@glMapsTo`: nested input fields whose type has no `@glMapsTo` directive are now correctly treated as required parameters instead of being silently auto-mapped
-  - Fixed `@glMapsTo`: fields with different GraphQL tokens that serialize to the same target type (e.g. `String!` and `ID!`) are now correctly treated as compatible and auto-mapped
-  - Fixed `@glMapsTo` in Java: `java.util.List` is now imported when `requiredParams` or `defaultParams` contain list types
 
-## 4.5.1 - 2026-04-21
-  ### Fixes
-  - Fixed `@glMapsTo` / `@glMapField`: `toXxx()` and `fromXxx()` now respect `@glSkipOnClient` / `@glSkipOnServer` — fields invisible to the target mode are no longer emitted as parameters or assignments, preventing compilation errors in generated code
-  - Fixed `@glMapsTo` / `@glMapField` in Java: primitive `boolean` fields now correctly use `isXxx()` getters instead of `getXxx()` in both `toXxx()` and `fromXxx()` methods
 
 ## 4.5.0 - 2026-04-19
   ### New features
@@ -224,3 +215,23 @@
   - Generated Dart files: version number now embedded in the file header comment
   - Generated GraphQL files: version number now embedded in the file header comment
   - `dart:math` import in generated Dart client only emitted when subscriptions are present
+
+## 4.5.1 - 2026-04-21
+  ### Fixes
+  - Fixed `@glMapsTo` / `@glMapField`: `toXxx()` and `fromXxx()` now respect `@glSkipOnClient` / `@glSkipOnServer` — fields invisible to the target mode are no longer emitted as parameters or assignments, preventing compilation errors in generated code
+  - Fixed `@glMapsTo` / `@glMapField` in Java: primitive `boolean` fields now correctly use `isXxx()` getters instead of `getXxx()` in both `toXxx()` and `fromXxx()` methods
+
+## 4.5.2 - 2026-04-22
+  ### Fixes
+  - Fixed `@glMapsTo`: nested input fields whose type has no `@glMapsTo` directive are now correctly treated as required parameters instead of being silently auto-mapped
+  - Fixed `@glMapsTo`: fields with different GraphQL tokens that serialize to the same target type (e.g. `String!` and `ID!`) are now correctly treated as compatible and auto-mapped
+  - Fixed `@glMapsTo` in Java: `java.util.List` is now imported when `requiredParams` or `defaultParams` contain list types
+
+## 4.5.3 - 2026-04-23
+  ### Fixes
+  - Fixed Dart/Java: interface getter declarations now correctly force nullable field types in server mode
+  - Fixed Dart `@glMapsTo` `fromXxx()`: scalar non-list fields where the type field is nullable but the input field is non-null are now emitted as required parameters instead of being silently auto-mapped
+  - Fixed Dart `@glMapsTo` `fromXxx()`: list fields whose nested `fromXxx()` requires extra parameters are now escalated to required parameters instead of generating an invalid inline `.map()` call
+  - Fixed Dart `@glMapsTo` `fromXxx()`: nullable target type now emits a null-safety guard (`!= null ? … : null`) instead of an unconditional call
+  - Fixed Dart client: `http_parser` import is now only emitted when upload mutations are present
+  - Fixed Java: type field constructors, getters, and getter declarations now correctly force nullable types in server mode

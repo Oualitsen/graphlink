@@ -214,7 +214,7 @@ void main() {
     expect(
         dartSerial,
         stringContainsInOrder(
-            ['abstract class BasicEntity ', '@Id()', 'String get id;']));
+            ['abstract class BasicEntity ', '@Id()', 'String? get id;']));
 
     print(serialzer.serializeTypeDefinition(iface, "com.myorg"));
     print(dartSerialzer.serializeTypeDefinition(iface, "com.myorg"));
