@@ -248,6 +248,24 @@ extension GLGrammarCacheExtension on GLParser {
     });
   }
 
+  /// Strips all cache-related directives from queries, mutations, and their
+  /// elements after validation has already run. Called when disableCache is
+  /// true so the generators produce cache-free code.
+  void stripCacheDirectives() {
+    const cacheDirectives = [glCache, glCacheInvalidate, glNoCache];
+    for (final query in queries.values) {
+      for (final name in cacheDirectives) {
+        query.removeDirectiveByName(name);
+      }
+      for (final element in query.elements) {
+        for (final name in cacheDirectives) {
+          element.removeDirectiveByName(name);
+        }
+      }
+    }
+    directiveValues.removeWhere((d) => cacheDirectives.contains(d.token));
+  }
+
   Set<String> getAllCacheTags() {
     return directiveValues
         .where((val) => val.token == glCache)

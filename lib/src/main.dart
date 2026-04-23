@@ -335,6 +335,7 @@ GLParser createGrammar(GeneratorConfig config) {
     return GLParser(
       mode: mode,
       identityFields: config.identityFields,
+      disableCache: config.disableCache,
       generateAllFieldsFragments: dart?.generateAllFieldsFragments ??
           java?.generateAllFieldsFragments ?? ts?.generateAllFieldsFragments ??
           false,
