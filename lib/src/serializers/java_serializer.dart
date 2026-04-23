@@ -542,7 +542,7 @@ class JavaSerializer extends GLSerializer {
         final targetFieldName = f.targetField.name.token;
         final sourceExpr = typesAsRecords
             ? '$targetVar.$targetFieldName()'
-            : '$targetVar.${_getterName(targetFieldName, serializeType(f.targetField.type, false) == "boolean")}()';
+            : '$targetVar.${_getterName(targetFieldName, serializeType(f.targetField.type, f.targetField.hasInculeOrSkipDiretives || forceFieldNullable) == "boolean")}()';
         var expr = _fromMappingExpr(
             sourceExpr, f.sourceField!.type.firstType.token, f.targetField.type, 0, def);
         if (f.targetField.type.nullable &&
