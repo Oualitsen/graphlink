@@ -182,15 +182,6 @@ ${parser.usage}
     stderr.writeln('❌ Error parsing config: $e');
     exit(1);
   }
-  config.typeMappings ??= {
-    "ID": "String",
-    "String": "String",
-    "Float": "Double",
-    "Int": "Integer",
-    "Boolean": "Boolean",
-    "Null": "null"
-  };
-
   if (config.schemaPaths.isEmpty) {
     stderr.writeln('❌ schema_paths is empty, please provide at least one file');
     exit(1);
@@ -335,7 +326,6 @@ GLParser createGrammar(GeneratorConfig config) {
   if (mode == CodeGenerationMode.server) {
     return GLParser(
         mode: mode,
-        typeMap: config.typeMappings!,
         identityFields: config.identityFields);
   } else {
     final dart = config.clientConfig?.dart;
@@ -344,7 +334,6 @@ GLParser createGrammar(GeneratorConfig config) {
 
     return GLParser(
       mode: mode,
-      typeMap: config.typeMappings!,
       identityFields: config.identityFields,
       generateAllFieldsFragments: dart?.generateAllFieldsFragments ??
           java?.generateAllFieldsFragments ?? ts?.generateAllFieldsFragments ??
@@ -364,7 +353,8 @@ GLParser createGrammar(GeneratorConfig config) {
 Future<Set<String>> generateTypeScriptClientClasses(
     GLParser parser, GeneratorConfig config, DateTime started,
     {String? pack}) async {
-  final serializer = TypeScriptSerializer(parser);
+  final serializer = TypeScriptSerializer(parser,
+      typeMapOverrides: config.typeMappings ?? {});
   final tsClientConfig = config.clientConfig?.typescript;
   final clientSerializer = TypeScriptClientSerializer(
     parser,
@@ -453,7 +443,9 @@ Future<Set<String>> generateTypeScriptClientClasses(
 Future<Set<String>> generateDartClientClasses(
     GLParser parser, GeneratorConfig config, DateTime started,
     {String? pack}) async {
-  final serializer = DartSerializer(parser, generateJsonMethods: true);
+  final serializer = DartSerializer(parser,
+      generateJsonMethods: true,
+      typeMapOverrides: config.typeMappings ?? {});
   final clientSerializer = DartClientSerializer(parser, serializer,
       generateAdapters: config.clientConfig?.dart?.generateAdapters ?? true,
       httpAdapter: config.clientConfig?.dart?.httpAdapter ?? DartHttpAdapter.http);
@@ -574,10 +566,11 @@ Future<Set<String>> generateJavaClientClasses(
   final serializer = JavaSerializer(
     parser,
     generateJsonMethods: true,
-    immutableInputFields: javaClientConfig.immutableInputFields ,
+    immutableInputFields: javaClientConfig.immutableInputFields,
     immutableTypeFields: javaClientConfig.immutableTypeFields,
     inputsAsRecords: javaClientConfig.inputAsRecord,
     typesAsRecords: javaClientConfig.typeAsRecord,
+    typeMapOverrides: config.typeMappings ?? {},
   );
   final clientSerializer = JavaClientSerializer(parser, serializer, jsonCodec: jsonCodec);
   final List<Future<File>> futures = [];
@@ -832,7 +825,8 @@ Future<Set<String>> generateServerClasses(
     inputsCheckForNulls: true,
     typesCheckForNulls: grammar.mode == CodeGenerationMode.client,
     immutableInputFields: config.serverConfig?.spring?.immutableInputFields ?? true,
-    immutableTypeFields: config.serverConfig?.spring?.immutableTypeFields?? false,
+    immutableTypeFields: config.serverConfig?.spring?.immutableTypeFields ?? false,
+    typeMapOverrides: config.typeMappings ?? {},
   );
   final springSerializer = SpringServerSerializer(grammar,
       javaSerializer: serializer,
@@ -950,7 +944,8 @@ Future<Set<String>> generateExpressApolloServerClasses(
     GLParser grammar, GeneratorConfig config, DateTime started) async {
   final apolloConfig = config.serverConfig!.expressApollo!;
   final destinationDir = config.outputDir;
-  final tsSerializer = TypeScriptSerializer(grammar);
+  final tsSerializer = TypeScriptSerializer(grammar,
+      typeMapOverrides: config.typeMappings ?? {});
   final serverSerializer = ExpressApolloServerSerializer(grammar, tsSerializer, apolloConfig);
   final futures = <Future<File>>[];
 

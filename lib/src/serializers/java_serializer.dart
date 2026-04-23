@@ -80,6 +80,18 @@ class JavaSerializer extends GLSerializer {
   final codeGenUtils = JavaCodeGenUtils();
   @override
   final bool generateJsonMethods;
+
+  @override
+  Map<String, String> get defaultTypeMap => const {
+    "ID": "String",
+    "String": "String",
+    "Float": "Double",
+    "Int": "Integer",
+    "Boolean": "Boolean",
+    "Long": "Long",
+    "Null": "null",
+  };
+
   JavaSerializer(
     super.grammar, {
     this.inputsAsRecords = false,
@@ -89,6 +101,7 @@ class JavaSerializer extends GLSerializer {
     this.inputsCheckForNulls = true,
     this.immutableInputFields = true,
     this.immutableTypeFields = false,
+    super.typeMapOverrides = const {},
   }) {
     _initAnnotations();
   }

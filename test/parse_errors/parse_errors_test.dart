@@ -3,19 +3,11 @@ import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 void main() {
-  final typeMapping = {
-    "ID": "String",
-    "String": "String",
-    "Float": "Double",
-    "Int": "Integer",
-    "Boolean": "Boolean",
-    "Null": "null",
-    "Long": "Long"
-  };
+  
 
   test("Parse error type implements interface but does not declare a field",
       () {
-    final GLParser g = GLParser(typeMap: typeMapping);
+    final GLParser g = GLParser();
 
     expect(
       () => g.parse('''
@@ -38,7 +30,7 @@ void main() {
   });
 
   test("Exception when scalar has already been defined", () {
-    final GLParser g = GLParser(typeMap: typeMapping);
+    final GLParser g = GLParser();
 
     expect(
       () => g.parse('''
@@ -56,7 +48,7 @@ void main() {
   });
 
   test("Exception when directive has already been defined", () {
-    final GLParser g = GLParser(typeMap: typeMapping);
+    final GLParser g = GLParser();
 
     expect(
       () => g.parse('''
@@ -75,7 +67,7 @@ void main() {
   });
 
   test("Exception when enum has already been defined", () {
-    final GLParser g = GLParser(typeMap: typeMapping);
+    final GLParser g = GLParser();
 
     expect(
       () => g.parse('''
@@ -93,7 +85,7 @@ void main() {
   });
 
   test("Exception when interface has already been defined", () {
-    final GLParser g = GLParser(typeMap: typeMapping);
+    final GLParser g = GLParser();
 
     expect(
       () => g.parse('''
@@ -116,7 +108,7 @@ void main() {
   });
 
   test("Exception when type has already been defined", () {
-    final GLParser g = GLParser(typeMap: typeMapping);
+    final GLParser g = GLParser();
 
     expect(
       () => g.parse('''
@@ -138,7 +130,7 @@ void main() {
   });
 
   test("Exception when input has already been defined", () {
-    final GLParser g = GLParser(typeMap: typeMapping);
+    final GLParser g = GLParser();
 
     expect(
       () => g.parse('''
@@ -161,7 +153,7 @@ void main() {
   });
 
   test("Exception when union has already been defined", () {
-    final GLParser g = GLParser(typeMap: typeMapping);
+    final GLParser g = GLParser();
 
     expect(
       () => g.parse('''
@@ -193,7 +185,7 @@ void main() {
   });
 
   test("Exception when fragment has already been defined", () {
-    final GLParser g = GLParser(typeMap: typeMapping);
+    final GLParser g = GLParser();
 
     expect(
       () => g.parse('''
@@ -219,7 +211,7 @@ void main() {
   });
 
   test("Exception when query has already been defined", () {
-    final GLParser g = GLParser(typeMap: typeMapping);
+    final GLParser g = GLParser();
 
     expect(
       () => g.parse('''
@@ -257,7 +249,7 @@ void main() {
   });
 
   test("Exception when input is not defined", () {
-    final GLParser g = GLParser(typeMap: typeMapping);
+    final GLParser g = GLParser();
 
     expect(
       () => g.parse('''
@@ -279,7 +271,7 @@ void main() {
   });
 
   test("Exception when type is not defined", () {
-    final GLParser g = GLParser(typeMap: typeMapping);
+    final GLParser g = GLParser();
     expect(
       () => g.parse('''
     type UserInput {
@@ -299,7 +291,7 @@ void main() {
   });
 
   test("Exception when query argument not found", () {
-    final GLParser g = GLParser(typeMap: typeMapping);
+    final GLParser g = GLParser();
 
     expect(
       () => g.parse('''
@@ -326,7 +318,7 @@ void main() {
   });
 
   test("Exception when schema is already defined", () {
-    final GLParser g = GLParser(typeMap: typeMapping);
+    final GLParser g = GLParser();
 
     expect(
       () => g.parse('''
@@ -355,7 +347,7 @@ void main() {
   });
 
   test("Exception when projection is required but not found", () {
-    final GLParser g = GLParser(typeMap: typeMapping);
+    final GLParser g = GLParser();
     expect(
       () => g.parse('''
     type User {
@@ -389,7 +381,7 @@ void main() {
   });
 
   test("Exception when projection is not required but found", () {
-    final GLParser g = GLParser(typeMap: typeMapping);
+    final GLParser g = GLParser();
     expect(
       () => g.parse('''
     type User {
@@ -426,7 +418,7 @@ void main() {
   test(
       "Exception when inline projection on a given type does not implement the target type",
       () {
-    final GLParser g = GLParser(typeMap: typeMapping);
+    final GLParser g = GLParser();
 
     expect(
       () => g.parse('''
@@ -481,7 +473,7 @@ void main() {
   test(
       "Exception when inline projection on a given type does not implement the target type 2",
       () {
-    final GLParser g = GLParser(typeMap: typeMapping);
+    final GLParser g = GLParser();
 
     expect(
       () => g.parse('''
@@ -520,7 +512,7 @@ void main() {
   });
 
   test("Exception when fragment is applied to the wrong type", () {
-    final GLParser g = GLParser(typeMap: typeMapping);
+    final GLParser g = GLParser();
     expect(
       () => g.parse('''
     type User {
@@ -557,7 +549,7 @@ void main() {
   });
 
   test("Exception when projection is not required but found", () {
-    final GLParser g = GLParser(typeMap: typeMapping);
+    final GLParser g = GLParser();
     expect(
       () => g.parse('''
     type User {
@@ -594,7 +586,7 @@ void main() {
   });
 
   test("Exception when fragment projection conatins an undeclared field", () {
-    final GLParser g = GLParser(typeMap: typeMapping);
+    final GLParser g = GLParser();
     expect(
       () => g.parse('''
     type User {
@@ -636,7 +628,7 @@ void main() {
   });
 
   test("Exception on duplicate field defition on query", () {
-    final GLParser g = GLParser(typeMap: typeMapping);
+    final GLParser g = GLParser();
     expect(
       () => g.parse('''
     type User {
@@ -677,7 +669,7 @@ void main() {
   });
 
   test("Exception on duplicate query definition", () {
-    final GLParser g = GLParser(typeMap: typeMapping);
+    final GLParser g = GLParser();
 
     expect(
       () => g.parse('''
@@ -721,7 +713,7 @@ void main() {
   });
 
   test("Exception on different objects with same name", () {
-    final GLParser g = GLParser(typeMap: typeMapping);
+    final GLParser g = GLParser();
 
     expect(
       () => g.parse('''
@@ -765,7 +757,7 @@ void main() {
   });
 
   test("Exception on interface implement undefined interface", () {
-    final GLParser g = GLParser(typeMap: typeMapping);
+    final GLParser g = GLParser();
     expect(
       () => g.parse('''
     interface BasicEntity implements IBase {
@@ -783,7 +775,7 @@ void main() {
   });
 
   test("Exception on interface implement more than once", () {
-    final GLParser g = GLParser(typeMap: typeMapping);
+    final GLParser g = GLParser();
 
     expect(
       () => g.parse('''

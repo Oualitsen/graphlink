@@ -7,20 +7,11 @@ import 'package:graphlink/src/serializers/spring_server_serializer.dart';
 import 'package:test/test.dart';
 
 void main() {
-  final typeMapping = {
-    "ID": "String",
-    "String": "String",
-    "Float": "Double",
-    "Int": "Integer",
-    "Boolean": "Boolean",
-    "Null": "null",
-    "Long": "Long"
-  };
+  
 
   test("test schema mapping generation", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
         mode: CodeGenerationMode.server);
 
     g.parse('''
@@ -82,7 +73,7 @@ type Query {
 
   test("Service should not have identity schema mapping", () {
     final GLParser g =
-        GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+        GLParser(mode: CodeGenerationMode.server);
 
     final text =
         File("test/batch_mappging/batch_mappging2.graphql").readAsStringSync();
@@ -98,7 +89,7 @@ type Query {
 
   test("Controller should implement identity on BatchMappings ", () {
     final GLParser g =
-        GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+        GLParser(mode: CodeGenerationMode.server);
 
     final text =
         File("test/batch_mappging/batch_mappging2.graphql").readAsStringSync();
@@ -120,7 +111,7 @@ type Query {
 
   test("Controller should implement identity on SchemaMappings ", () {
     final GLParser g =
-        GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+        GLParser(mode: CodeGenerationMode.server);
 
     final text =
         File("test/batch_mappging/batch_mappging3.graphql").readAsStringSync();
@@ -141,7 +132,7 @@ type Query {
 
   test("Should generate batch mapping when batch = true", () {
     final GLParser g =
-        GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+        GLParser(mode: CodeGenerationMode.server);
 
     const text = '''
 type ConversationUnread ${glSkipOnServer}(mapTo: "ConversationView", batch: true) {
@@ -168,7 +159,7 @@ type Query {
 
   test("Should not generate batch mapping when batch = false", () {
     final GLParser g =
-        GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+        GLParser(mode: CodeGenerationMode.server);
 
     const text = '''
 type ConversationUnread ${glSkipOnServer}(mapTo: "ConversationView", batch: false) {
@@ -195,7 +186,7 @@ type Query {
       "should inject DataFetchingEnvironment for mappings when injectDataFetching = true",
       () {
     final GLParser g =
-        GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+        GLParser(mode: CodeGenerationMode.server);
     const text = '''
     type User {
       name: String!

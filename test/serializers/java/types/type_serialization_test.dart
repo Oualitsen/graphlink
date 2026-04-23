@@ -7,20 +7,11 @@ import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 
 void main() {
-  final typeMapping = {
-    "ID": "String",
-    "String": "String",
-    "Float": "Double",
-    "Int": "Integer",
-    "Boolean": "Boolean",
-    "Null": "null",
-    "Long": "Long"
-  };
 
   test("test skipOn mode = client", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
+       
         mode: CodeGenerationMode.client);
 
     final text = File(
@@ -39,7 +30,7 @@ void main() {
   test("test skipOn mode = server", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
+       
         mode: CodeGenerationMode.server);
 
     final text = File(
@@ -68,7 +59,7 @@ void main() {
   });
 
   test("testDecorators 2", () {
-    final GLParser g = GLParser(identityFields: ["id"], typeMap: typeMapping);
+    final GLParser g = GLParser(identityFields: ["id"]);
     final text = File(
             "test/serializers/java/types/type_serialization_decorators_test.graphql")
         .readAsStringSync();
@@ -99,7 +90,7 @@ void main() {
   });
 
   test("serializeField", () {
-    final GLParser g = GLParser(identityFields: ["id"], typeMap: typeMapping);
+    final GLParser g = GLParser(identityFields: ["id"]);
     final text =
         File("test/serializers/java/types/type_serialization_test.graphql")
             .readAsStringSync();
@@ -114,7 +105,7 @@ void main() {
   });
 
   test("serializeArgument", () {
-    final GLParser g = GLParser(identityFields: ["id"], typeMap: typeMapping);
+    final GLParser g = GLParser(identityFields: ["id"]);
     final text =
         File("test/serializers/java/types/type_serialization_test.graphql")
             .readAsStringSync();
@@ -129,7 +120,7 @@ void main() {
   });
 
   test("serializeType", () {
-    final GLParser g = GLParser(identityFields: ["id"], typeMap: typeMapping);
+    final GLParser g = GLParser(identityFields: ["id"]);
     final text =
         File("test/serializers/java/types/type_serialization_test.graphql")
             .readAsStringSync();
@@ -148,7 +139,7 @@ void main() {
   });
 
   test("serializeEnumDefinition", () {
-    final GLParser g = GLParser(identityFields: ["id"], typeMap: typeMapping);
+    final GLParser g = GLParser(identityFields: ["id"]);
     final text =
         File("test/serializers/java/types/type_serialization_test.graphql")
             .readAsStringSync();
@@ -163,7 +154,7 @@ void main() {
   });
 
   test("serializeGetterDeclaration", () {
-    final GLParser g = GLParser(identityFields: ["id"], typeMap: typeMapping);
+    final GLParser g = GLParser(identityFields: ["id"]);
     final text =
         File("test/serializers/java/types/type_serialization_test.graphql")
             .readAsStringSync();
@@ -189,7 +180,7 @@ void main() {
   });
 
   test("serializeSetter", () {
-    final GLParser g = GLParser(identityFields: ["id"], typeMap: typeMapping);
+    final GLParser g = GLParser(identityFields: ["id"]);
     final text =
         File("test/serializers/java/types/type_serialization_test.graphql")
             .readAsStringSync();
@@ -223,7 +214,7 @@ void main() {
   });
 
   test("serializeGetter", () {
-    final GLParser g = GLParser(identityFields: ["id"], typeMap: typeMapping);
+    final GLParser g = GLParser(identityFields: ["id"]);
     final text =
         File("test/serializers/java/types/type_serialization_test.graphql")
             .readAsStringSync();
@@ -259,7 +250,7 @@ void main() {
   });
 
   test("Java type serialization", () {
-    final GLParser g = GLParser(identityFields: ["id"], typeMap: typeMapping);
+    final GLParser g = GLParser(identityFields: ["id"]);
     final text =
         File("test/serializers/java/types/type_serialization_test.graphql")
             .readAsStringSync();
@@ -284,7 +275,7 @@ void main() {
   });
 
   test("Java input serialization", () {
-    final GLParser g = GLParser(identityFields: ["id"], typeMap: typeMapping);
+    final GLParser g = GLParser(identityFields: ["id"]);
     final text =
         File("test/serializers/java/types/type_serialization_test.graphql")
             .readAsStringSync();
@@ -309,7 +300,7 @@ void main() {
   });
 
   test("Java interface serialization", () {
-    final GLParser g = GLParser(identityFields: ["id"], typeMap: typeMapping);
+    final GLParser g = GLParser(identityFields: ["id"]);
     final text =
         File("test/serializers/java/types/interface_serialization_test.graphql")
             .readAsStringSync();
@@ -330,7 +321,7 @@ void main() {
   });
 
   test("Java interface implementing one interface serialization", () {
-    final GLParser g = GLParser(identityFields: ["id"], typeMap: typeMapping);
+    final GLParser g = GLParser(identityFields: ["id"]);
     final text =
         File("test/serializers/java/types/interface_serialization_test.graphql")
             .readAsStringSync();
@@ -352,7 +343,7 @@ void main() {
   });
 
   test("Java interface implementing multiple interface serialization", () {
-    final GLParser g = GLParser(identityFields: ["id"], typeMap: typeMapping);
+    final GLParser g = GLParser(identityFields: ["id"]);
     final text =
         File("test/serializers/java/types/interface_serialization_test.graphql")
             .readAsStringSync();
@@ -376,7 +367,7 @@ void main() {
   test("Repository serialization", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
+       
         mode: CodeGenerationMode.server);
     final text = File(
             "test/serializers/java/types/repository_serialization_test.graphql")
@@ -400,7 +391,7 @@ void main() {
   test("decorators on interfaces ", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
+       
         mode: CodeGenerationMode.server);
     g.parse('''
     directive @Id(
@@ -431,7 +422,7 @@ void main() {
 
   test("serialize input with null checks", () {
     final GLParser g =
-        GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+        GLParser(mode: CodeGenerationMode.server);
     g.parse('''
     input UserInput {
       id: ID
@@ -492,26 +483,17 @@ void main() {
   });
 
   test("serialize no null check on java primitives", () {
-    final typeMapping = {
-      "ID": "String",
-      "String": "String",
-      "Float": "Double",
-      "Int": "int",
-      "Boolean": "Boolean",
-      "Null": "null",
-      "Long": "Long"
-    };
+    
     final GLParser g =
-        GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+        GLParser(mode: CodeGenerationMode.server);
     g.parse('''
     input UserInput {
-      
       age: Int!
     }
 ''');
 
     var userInput = g.inputs['UserInput']!;
-    var serializer = JavaSerializer(g,
+    var serializer = JavaSerializer(g, typeMapOverrides: {"Int": "int"},
         immutableInputFields: false, immutableTypeFields: false);
     var serializedInput =
         serializer.serializeInputDefinition(userInput, "com.myorg");
@@ -541,7 +523,7 @@ void main() {
   test(
       "serialize input: final field with no getter when immutableInputFields = true",
       () {
-    final GLParser g = GLParser(typeMap: {}, mode: CodeGenerationMode.server);
+    final GLParser g = GLParser(mode: CodeGenerationMode.server);
     g.parse('''
     input UserInput {
       age: String
@@ -563,7 +545,7 @@ void main() {
   test(
       "serialize type: final field with no getter when immutableTypeFields = true",
       () {
-    final GLParser g = GLParser(typeMap: {}, mode: CodeGenerationMode.server);
+    final GLParser g = GLParser(mode: CodeGenerationMode.server);
     g.parse('''
     type UserInput {
       age: String

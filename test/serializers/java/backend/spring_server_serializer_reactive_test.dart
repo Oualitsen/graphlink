@@ -6,20 +6,11 @@ import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 void main() {
-  final typeMapping = {
-    "ID": "String",
-    "String": "String",
-    "Float": "Double",
-    "Int": "Integer",
-    "Boolean": "Boolean",
-    "Null": "null",
-    "Long": "Long"
-  };
+  
 
   GLParser buildParser() {
     final g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
         mode: CodeGenerationMode.server);
     final text =
         File("test/serializers/java/backend/spring_server_serializer.graphql")
@@ -50,7 +41,7 @@ void main() {
   });
 
   test("reactive controller chains Mono<Void> validation via .then()", () {
-    final g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final g = GLParser( mode: CodeGenerationMode.server);
     g.parse('''
       type Query {
         getCar(id: ID!): Car! @glValidate

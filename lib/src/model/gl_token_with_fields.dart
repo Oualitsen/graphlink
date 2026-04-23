@@ -64,7 +64,7 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
       if (fieldName == GLParser.typename) {
         return GLField(
           name: fieldName.toToken(),
-          type: GLType(g.getLangType("String").toToken(), false),
+          type: GLType("String".toToken(), false),
           arguments: [],
           directives: [],
         );

@@ -73,7 +73,7 @@ class GLParser {
 
   final Map<String, GLSchemaMapping> _schemaMappings = {};
 
-  late final Map<String, String> typeMap;
+  Map<String, String> typeMap = {};
   late final CodeGenerationMode mode;
 
   static const directivesToSkip = [glTypeNameDirective, glEqualsHashcode];
@@ -160,15 +160,6 @@ class GLParser {
   late final GLGraphqSerializer serializer;
 
   GLParser({
-    this.typeMap = const {
-      "ID": "String",
-      "String": "String",
-      "Float": "double",
-      "Int": "int",
-      "Boolean": "bool",
-      "Null": "null",
-      "Long": "int"
-    },
     this.generateAllFieldsFragments = false,
     this.nullableFieldsRequired = false,
     this.autoGenerateQueries = false,

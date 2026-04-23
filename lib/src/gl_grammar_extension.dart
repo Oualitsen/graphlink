@@ -564,7 +564,7 @@ extension GLGrammarExtension on GLParser {
       if (result.isNotEmpty) {
         return result.first.type;
       } else {
-        return GLType(getLangType("String").toToken(), false);
+        return GLType("String".toToken(), false);
       }
     }
   }
@@ -1269,14 +1269,6 @@ extension GLGrammarExtension on GLParser {
       return GLListType(_createTypeFrom(orig.type, inline), orig.nullable);
     }
     return GLType(inline.tokenInfo, orig.inlineType.nullable);
-  }
-
-  String getLangType(String typeName) {
-    var result = typeMap[typeName];
-    if (result == null) {
-      throw ParseException("Unknown type $typeName");
-    }
-    return result;
   }
 
   static List<String> extractDecorators(

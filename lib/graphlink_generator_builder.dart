@@ -40,7 +40,6 @@ class GraphlinkGeneratorBuilder implements Builder {
       map[e.key] = e.value as String;
     });
     var g = GLParser(
-      typeMap: map,
       generateAllFieldsFragments:
           options.config["generateAllFieldsFragments"] as bool? ?? false,
       nullableFieldsRequired:

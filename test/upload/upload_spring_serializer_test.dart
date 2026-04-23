@@ -5,14 +5,7 @@ import 'package:graphlink/src/serializers/spring_server_serializer.dart';
 import 'package:test/test.dart';
 
 void main() {
-  final typeMapping = {
-    "ID": "String",
-    "String": "String",
-    "Float": "Double",
-    "Int": "Integer",
-    "Boolean": "Boolean",
-    "Null": "null",
-  };
+  
 
   const schema = '''
     directive $glUpload on SCALAR
@@ -36,7 +29,7 @@ void main() {
   late SpringServerSerializer serializer;
 
   setUp(() {
-    g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    g = GLParser( mode: CodeGenerationMode.server);
     g.parse(schema);
     serializer = SpringServerSerializer(g);
   });

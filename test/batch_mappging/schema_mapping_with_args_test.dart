@@ -5,16 +5,9 @@ import 'package:graphlink/src/serializers/spring_server_serializer.dart';
 import 'package:test/test.dart';
 
 void main() {
-  final typeMapping = {
-    "ID": "String",
-    "String": "String",
-    "Float": "Double",
-    "Int": "Integer",
-    "Boolean": "Boolean",
-  };
 
   test('batch: true with field arguments throws', () {
-    final g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final g = GLParser(mode: CodeGenerationMode.server);
     g.parse('''
       type Query { getUser: User }
       type User {
@@ -33,7 +26,7 @@ void main() {
 
   test('schema mapping with arguments generates correct controller and service',
       () {
-    final g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final g = GLParser(mode: CodeGenerationMode.server);
     g.parse('''
       type Query { getUser: User }
       type User {

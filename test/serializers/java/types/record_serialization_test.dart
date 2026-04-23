@@ -6,20 +6,11 @@ import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 
 void main() {
-  final typeMapping = {
-    "ID": "String",
-    "String": "String",
-    "Float": "Double",
-    "Int": "Integer",
-    "Boolean": "Boolean",
-    "Null": "null",
-    "Long": "Long"
-  };
 
   test("input serialization as records", () {
     final GLParser g = GLParser(
       identityFields: ["id"],
-      typeMap: typeMapping,
+     
       mode: CodeGenerationMode.server,
     );
     final text =
@@ -44,7 +35,7 @@ void main() {
   test("type serialization as records", () {
     final GLParser g = GLParser(
       identityFields: ["id"],
-      typeMap: typeMapping,
+     
       mode: CodeGenerationMode.server,
     );
     final text =
@@ -71,7 +62,7 @@ void main() {
   test("type serialization as records with decorators", () {
     final GLParser g = GLParser(
       identityFields: ["id"],
-      typeMap: typeMapping,
+     
       mode: CodeGenerationMode.server,
     );
     final text =
@@ -98,7 +89,7 @@ void main() {
   test("input serialization as records with decorators", () {
     final GLParser g = GLParser(
       identityFields: ["id"],
-      typeMap: typeMapping,
+     
       mode: CodeGenerationMode.server,
     );
     final text =
@@ -124,7 +115,7 @@ void main() {
   test("interface serialization when types as records", () {
     final GLParser g = GLParser(
       identityFields: ["id"],
-      typeMap: typeMapping,
+     
       mode: CodeGenerationMode.server,
     );
     final text =
@@ -151,7 +142,7 @@ void main() {
   test("type serialization records when implementing interfaces", () {
     final GLParser g = GLParser(
       identityFields: ["id"],
-      typeMap: typeMapping,
+     
       mode: CodeGenerationMode.server,
     );
     final text =
@@ -174,7 +165,7 @@ void main() {
   test("input record with @glMapsTo generates toXxx and fromXxx methods", () {
     final GLParser g = GLParser(
       identityFields: ["id"],
-      typeMap: typeMapping,
+     
       mode: CodeGenerationMode.server,
     );
     final text =
