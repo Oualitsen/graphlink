@@ -930,7 +930,7 @@ class GraphLinkHttpAdapter {
         "import 'dart:async';",
         "import 'dart:convert';",
         "import 'package:dio/dio.dart';",
-        "import 'package:http_parser/http_parser.dart';",
+        if (_parser.hasUploadMutations) "import 'package:http_parser/http_parser.dart';",
         if (_parser.hasUploadMutations) "import 'graph_link_uploads.dart';",
       ],
       body: """
