@@ -5,20 +5,11 @@ import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 void main() {
-  final typeMapping = {
-    "ID": "String",
-    "String": "String",
-    "Float": "Double",
-    "Int": "Integer",
-    "Boolean": "Boolean",
-    "Null": "null",
-    "Long": "Long",
-    "void": "void"
-  };
+
 
   test("Service should contain two methods getPerson and validateGetPerson",
       () {
-    final g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final g = GLParser(mode: CodeGenerationMode.server);
     g.parse('''
       type Person {
         id: ID!
@@ -36,7 +27,7 @@ void main() {
   });
 
   test("Service should serialize validation method as returning void", () {
-    final g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final g = GLParser(mode: CodeGenerationMode.server);
     g.parse('''
       type Person {
         id: ID!
@@ -69,7 +60,7 @@ void main() {
   test(
       "Service should serialize validation method as returning void when datafetching is on",
       () {
-    final g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final g = GLParser(mode: CodeGenerationMode.server);
     g.parse('''
       type Person {
         id: ID!
@@ -101,7 +92,7 @@ void main() {
   test(
       "Controller method should call validation method before calling target service methods.",
       () {
-    final g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final g = GLParser(mode: CodeGenerationMode.server);
     g.parse('''
       type Person {
         id: ID!
@@ -137,7 +128,7 @@ void main() {
   test(
       "Controller method should call validation method before calling target service methods when injectDataFetching on",
       () {
-    final g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final g = GLParser(mode: CodeGenerationMode.server);
     g.parse('''
       type Person {
         id: ID!

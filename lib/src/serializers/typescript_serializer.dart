@@ -12,25 +12,25 @@ import 'package:graphlink/src/serializers/gl_serializer.dart';
 import 'package:graphlink/src/typescript_code_gen_utils.dart';
 import 'package:graphlink/src/utils.dart';
 
-/// Default mappings for GraphQL built-in scalars → TypeScript types.
-/// Applied when no explicit `typeMappings` entry exists in the config.
-const _builtInTsTypes = {
-  'String': 'string',
-  'Int': 'number',
-  'Float': 'number',
-  'Boolean': 'boolean',
-  'ID': 'string',
-};
-
 class TypeScriptSerializer extends GLSerializer {
   final codeGenUtils = TypeScriptCodeGenUtils();
   final bool immutableTypeFields;
   final bool optionalNullableInputFields;
 
+  @override
+  Map<String, String> get defaultTypeMap => const {
+    'ID': 'string',
+    'String': 'string',
+    'Int': 'number',
+    'Float': 'number',
+    'Boolean': 'boolean',
+  };
+
   TypeScriptSerializer(
     super.grammar, {
     this.immutableTypeFields = true,
     this.optionalNullableInputFields = true,
+    super.typeMapOverrides = const {},
   });
 
   @override
@@ -82,11 +82,7 @@ class TypeScriptSerializer extends GLSerializer {
     }
 
     final token = def.token;
-    // TS built-ins take priority over grammar.typeMap (which carries Dart defaults).
-    // Custom config mappings for non-scalar types still win via getTypeNameFromGQExternal.
-    final tsType = _builtInTsTypes[token] ??
-        getTypeNameFromGQExternal(token) ??
-        token;
+    final tsType = getTypeNameFromGQExternal(token) ?? token;
     return nullable ? '$tsType | null' : tsType;
   }
 

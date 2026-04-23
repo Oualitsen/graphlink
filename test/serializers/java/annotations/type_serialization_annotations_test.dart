@@ -10,20 +10,11 @@ import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 
 void main() {
-  final typeMapping = {
-    "ID": "String",
-    "String": "String",
-    "Float": "Double",
-    "Int": "Integer",
-    "Boolean": "Boolean",
-    "Null": "null",
-    "Long": "Long"
-  };
+ 
 
   test("test get annotations", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
         mode: CodeGenerationMode.server);
     final text = File(
             "test/serializers/java/annotations/type_serialization_annotations_test.graphql")
@@ -39,7 +30,7 @@ void main() {
   test("test annotation serialization", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
+        
         mode: CodeGenerationMode.server);
     final text = File(
             "test/serializers/java/annotations/type_serialization_annotations_test.graphql")
@@ -57,7 +48,7 @@ void main() {
   test("test annotations on inputs and input fields", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
+        
         mode: CodeGenerationMode.server);
     final text = File(
             "test/serializers/java/annotations/type_serialization_annotations_test.graphql")
@@ -84,7 +75,7 @@ void main() {
   test("test annotations on interfaces and its fields", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
+        
         mode: CodeGenerationMode.server);
     final text = File(
             "test/serializers/java/annotations/type_serialization_annotations_test.graphql")
@@ -110,7 +101,7 @@ void main() {
   test("test annotations on types", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
+        
         mode: CodeGenerationMode.server);
     final text = File(
             "test/serializers/java/annotations/type_serialization_annotations_test.graphql")
@@ -136,7 +127,7 @@ void main() {
   test("test annotations on enums and enum values", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
+        
         mode: CodeGenerationMode.server);
     final text = File(
             "test/serializers/java/annotations/type_serialization_annotations_test.graphql")
@@ -160,15 +151,7 @@ void main() {
   test("annotations on controllers", () {
     final GLParser g = GLParser(identityFields: [
       "id"
-    ], typeMap: {
-      "ID": "String",
-      "String": "String",
-      "Float": "Double",
-      "Int": "int",
-      "Boolean": "boolean",
-      "Null": "null",
-      "Long": "Long"
-    }, mode: CodeGenerationMode.server);
+    ], mode: CodeGenerationMode.server);
     final text = File(
             "test/serializers/java/annotations/type_serialization_annotations_test.graphql")
         .readAsStringSync();

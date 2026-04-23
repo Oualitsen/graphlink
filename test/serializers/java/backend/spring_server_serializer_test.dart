@@ -8,20 +8,11 @@ import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 void main() {
-  final typeMapping = {
-    "ID": "String",
-    "String": "String",
-    "Float": "Double",
-    "Int": "Integer",
-    "Boolean": "Boolean",
-    "Null": "null",
-    "Long": "Long"
-  };
 
   test("test backend handlers 1", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
+        
         mode: CodeGenerationMode.server);
 
     final text =
@@ -75,7 +66,7 @@ void main() {
   test("test backend handlers 2", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
+        
         mode: CodeGenerationMode.server);
 
     final text =
@@ -129,7 +120,7 @@ void main() {
   test("test backend handlers when shcema generation is on", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
+        
         mode: CodeGenerationMode.server);
 
     final text =
@@ -185,7 +176,7 @@ void main() {
   test("test controller/service returning skipped type ", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
+        
         mode: CodeGenerationMode.server);
 
     final text =
@@ -217,7 +208,7 @@ void main() {
   test("test controller/service returning skipped type (batch mapping) ", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
+        
         mode: CodeGenerationMode.server);
 
     final text =
@@ -247,7 +238,7 @@ void main() {
   test("test controller/service returning skipped type with no mapTo 1", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
+        
         mode: CodeGenerationMode.server);
 
     final text =
@@ -280,7 +271,7 @@ void main() {
   test("test controller/service returning skipped type with no mapTo 2", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
+        
         mode: CodeGenerationMode.server);
 
     final text =
@@ -313,7 +304,7 @@ void main() {
   test("test backend handlers with DataFetchingEnvironment injection", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
+        
         mode: CodeGenerationMode.server);
 
     final text =
@@ -346,7 +337,7 @@ void main() {
   test("test serialize Service (User Service)", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
+        
         mode: CodeGenerationMode.server);
 
     final text =
@@ -374,7 +365,7 @@ void main() {
   test("test serialize Service (Car Service)", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
+        
         mode: CodeGenerationMode.server);
 
     final text =
@@ -398,7 +389,7 @@ void main() {
   test("test serialize Service with DataFetchingEnvironment", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
+        
         mode: CodeGenerationMode.server);
 
     final text =
@@ -423,7 +414,7 @@ void main() {
   test("test serialize Handler", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
+        
         mode: CodeGenerationMode.server);
 
     final text =
@@ -439,20 +430,9 @@ void main() {
   });
 
   test("controller should not serialize 'return' on void", () {
-    final typeMapping = {
-      "ID": "String",
-      "String": "String",
-      "Float": "Double",
-      "Int": "Integer",
-      "Boolean": "Boolean",
-      "Null": "null",
-      "Long": "Long",
-      'void': 'void',
-    };
-
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
+        
         mode: CodeGenerationMode.server);
 
     const text = '''
@@ -487,7 +467,7 @@ void main() {
   test(
       'field with arguments on non-root type without @glSkipOnServer throws on serializer construction',
       () {
-    final g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final g = GLParser( mode: CodeGenerationMode.server);
     g.parse('''
       type Query { getUser: User }
       type User {
@@ -503,7 +483,7 @@ void main() {
   test(
       'field with arguments and batch: true throws on serializer construction',
       () {
-    final g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final g = GLParser( mode: CodeGenerationMode.server);
     g.parse('''
       type Query { getUser: User }
       type User {
@@ -517,7 +497,7 @@ void main() {
   });
 
   test('field with arguments and batch: false is valid', () {
-    final g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final g = GLParser( mode: CodeGenerationMode.server);
     g.parse('''
       type Query { getUser: User }
       type User {
@@ -528,7 +508,7 @@ void main() {
   });
 
   test('field with arguments on root type (Query) does not throw', () {
-    final g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final g = GLParser( mode: CodeGenerationMode.server);
     g.parse('''
       type Query {
         getUser(id: String): User
@@ -539,7 +519,7 @@ void main() {
   });
 
   test('schema mapping with field arguments prints generated code', () {
-    final g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final g = GLParser( mode: CodeGenerationMode.server);
     g.parse('''
       type Query { getUser: User }
       type User {
@@ -557,7 +537,7 @@ void main() {
   });
 
   test('useSpringSecurity wraps CompletableFuture body with SecurityContext capture and try/finally', () {
-    final g = GLParser(typeMap: typeMapping, mode: CodeGenerationMode.server);
+    final g = GLParser( mode: CodeGenerationMode.server);
     g.parse('''
       type Query {
         getUser(id: ID!): User!

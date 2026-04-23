@@ -3,17 +3,9 @@ import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 
-const _typeMapping = {
-  "ID": "String",
-  "String": "String",
-  "Float": "Double",
-  "Int": "Integer",
-  "Long": "Long",
-  "Boolean": "Boolean",
-};
+
 
 GLParser _parser() => GLParser(
-      typeMap: _typeMapping,
       mode: CodeGenerationMode.server,
     );
 

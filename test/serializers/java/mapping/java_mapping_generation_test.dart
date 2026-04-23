@@ -7,14 +7,7 @@ import 'package:test/test.dart';
 // Helpers
 // ---------------------------------------------------------------------------
 
-const _typeMapping = {
-  "ID": "String",
-  "String": "String",
-  "Float": "double",
-  "Int": "int",
-  "Boolean": "boolean",
-  "Null": "null",
-};
+
 
 const _directives = '''
   directive @glMapsTo(type: String!) on INPUT_OBJECT
@@ -23,15 +16,15 @@ const _directives = '''
 
 /// Serializes [inputName] from [schema] in class+builder mode.
 String _class(String schema, String inputName) {
-  final g = GLParser(typeMap: _typeMapping, mode: CodeGenerationMode.client)
+  final g = GLParser(mode: CodeGenerationMode.client)
     ..parse('$_directives $schema');
-  return JavaSerializer(g, generateJsonMethods: false)
+  return JavaSerializer(g, generateJsonMethods: false, typeMapOverrides: {"Boolean": "boolean"})
       .serializeInputDefinition(g.inputs[inputName]!, '');
 }
 
 /// Serializes [inputName] from [schema] in record mode (inputs + types as records).
 String _record(String schema, String inputName) {
-  final g = GLParser(typeMap: _typeMapping, mode: CodeGenerationMode.client)
+  final g = GLParser(mode: CodeGenerationMode.client)
     ..parse('$_directives $schema');
   return JavaSerializer(g,
           generateJsonMethods: false,
@@ -264,7 +257,7 @@ void _case5Tests() {
       setUp(() => out = _class(_case5, 'CreateProductInput'));
 
       test('toProduct required params: id (missing) and defaultStock (mismatch)', () {
-        expect(out, contains('public Product toProduct(String id, int defaultStock)'));
+        expect(out, contains('public Product toProduct(String id, Integer defaultStock)'));
       });
       test('toProduct maps alias name → title via getter', () {
         expect(out, contains('.title(getName())'));

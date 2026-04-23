@@ -20,13 +20,24 @@ abstract class GLSerializer {
   late final CodeGenerationMode mode;
   bool get generateJsonMethods;
 
+  /// Language-specific scalar defaults (e.g. Boolean→bool for Dart).
+  /// Subclasses must override this.
+  Map<String, String> get defaultTypeMap;
+
+  /// Effective type map: language defaults merged with user-supplied overrides.
+  late final Map<String, String> typeMap;
+
   /// When `true`, type fields should be generated as nullable regardless of
   /// the schema declaration. Required in server mode because a GraphQL client
   /// may request only a subset of fields, so resolvers cannot guarantee every
   /// field is populated.
   bool get forceFieldNullable => mode == CodeGenerationMode.server;
 
-  GLSerializer(this.grammar) : mode = grammar.mode;
+  GLSerializer(this.grammar, {Map<String, String> typeMapOverrides = const {}})
+      : mode = grammar.mode {
+    typeMap = {...defaultTypeMap, ...typeMapOverrides};
+    grammar.typeMap = typeMap;
+  }
 
   String serializeEnumDefinition(GLEnumDefinition def, String importPrefix) {
     if (shouldSkipSerialization(directives: def.getDirectives(), mode: mode)) {
@@ -100,8 +111,7 @@ abstract class GLSerializer {
         ?.getDirectiveByName(glExternal)
         ?.getArgValueAsString(glExternalArg);
     if (result == null) {
-      // check on typeMap
-      return grammar.typeMap[token];
+      return typeMap[token];
     }
     return result;
   }

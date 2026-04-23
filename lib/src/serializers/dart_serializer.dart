@@ -19,7 +19,21 @@ class DartSerializer extends GLSerializer {
   final codeGenUtils = DartCodeGenUtils();
   @override
   final bool generateJsonMethods;
-  DartSerializer(super.grammar, {this.generateJsonMethods = true}) {
+
+  @override
+  Map<String, String> get defaultTypeMap => const {
+    "ID": "String",
+    "String": "String",
+    "Float": "double",
+    "Int": "int",
+    "Boolean": "bool",
+    "Null": "null",
+    "Long": "int",
+  };
+
+  DartSerializer(super.grammar,
+      {this.generateJsonMethods = true,
+      super.typeMapOverrides = const {}}) {
     _initAnnotations();
   }
 
@@ -301,7 +315,7 @@ class DartSerializer extends GLSerializer {
     if (nestedInput == null || nestedTarget == null) return false;
     final nestedPlan = MappingPlan.resolve(
         nestedInput, nestedTarget, grammar.inputs, grammar.types, grammar.mode,
-        typeMap: grammar.typeMap);
+        typeMap: typeMap);
     final allMapped = [...nestedPlan.autoMapped, ...nestedPlan.defaultParams];
     return allMapped.any((f) =>
         f.sourceField != null &&
