@@ -5,20 +5,10 @@ import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 void main() {
-  final typeMapping = {
-    "ID": "String",
-    "String": "String",
-    "Float": "Double",
-    "Int": "Integer",
-    "Boolean": "Boolean",
-    "Null": "null",
-    "Long": "Long"
-  };
 
   test("test schema mapping generation2", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
         mode: CodeGenerationMode.server);
 
     final text =

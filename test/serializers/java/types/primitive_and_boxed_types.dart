@@ -9,15 +9,7 @@ void main() {
   test("test serializeGetterDeclaration when Boolean is Object", () {
     final GLParser g = GLParser(identityFields: [
       "id"
-    ], typeMap: {
-      "ID": "String",
-      "String": "String",
-      "Float": "Double",
-      "Int": "Integer",
-      "Boolean": "Boolean", // Boolean is an object here
-      "Null": "null",
-      "Long": "Long"
-    }, mode: CodeGenerationMode.server);
+    ], mode: CodeGenerationMode.server);
     final text = File("test/serializers/java/types/boolean_getter_test.graphql")
         .readAsStringSync();
 
@@ -35,15 +27,7 @@ void main() {
   test("test serializeGetterDeclaration when Boolean is a primitive", () {
     final GLParser g = GLParser(identityFields: [
       "id"
-    ], typeMap: {
-      "ID": "String",
-      "String": "String",
-      "Float": "Double",
-      "Int": "Integer",
-      "Boolean": "boolean", // Boolean is a primitive
-      "Null": "null",
-      "Long": "Long"
-    }, mode: CodeGenerationMode.server);
+    ], mode: CodeGenerationMode.server);
     final text = File("test/serializers/java/types/boolean_getter_test.graphql")
         .readAsStringSync();
 
@@ -61,15 +45,7 @@ void main() {
   test("test boxed types", () {
     final GLParser g = GLParser(identityFields: [
       "id"
-    ], typeMap: {
-      "ID": "String",
-      "String": "String",
-      "Float": "Double",
-      "Int": "int",
-      "Boolean": "boolean",
-      "Null": "null",
-      "Long": "Long"
-    }, mode: CodeGenerationMode.server);
+    ], mode: CodeGenerationMode.server);
     final text = File("test/serializers/java/types/boxed_types.graphql")
         .readAsStringSync();
 
@@ -88,15 +64,7 @@ void main() {
   test("primitive types to boxed types when nullable", () {
     final GLParser g = GLParser(identityFields: [
       "id"
-    ], typeMap: {
-      "ID": "String",
-      "String": "String",
-      "Float": "Double",
-      "Int": "int",
-      "Boolean": "boolean",
-      "Null": "null",
-      "Long": "Long"
-    }, mode: CodeGenerationMode.server);
+    ], mode: CodeGenerationMode.server);
     final text = File("test/serializers/java/types/boxed_types.graphql")
         .readAsStringSync();
 

@@ -4,17 +4,6 @@ import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:test/test.dart';
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-const _typeMapping = {
-  "ID": "String",
-  "String": "String",
-  "Float": "double",
-  "Int": "int",
-  "Boolean": "bool",
-};
 
 const _directives = '''
   directive @glMapsTo(type: String!) on INPUT_OBJECT
@@ -24,16 +13,16 @@ const _directives = '''
 ''';
 
 String _dart(String schema, String inputName, CodeGenerationMode mode) {
-  final g = GLParser(typeMap: _typeMapping, mode: mode)
+  final g = GLParser(mode: mode)
     ..parse('$_directives $schema');
   return DartSerializer(g, generateJsonMethods: false)
       .serializeInputDefinition(g.inputs[inputName]!, '');
 }
 
 String _java(String schema, String inputName, CodeGenerationMode mode) {
-  final g = GLParser(typeMap: _typeMapping, mode: mode)
+  final g = GLParser(mode: mode)
     ..parse('$_directives $schema');
-  return JavaSerializer(g, generateJsonMethods: false)
+  return JavaSerializer(g, generateJsonMethods: false, typeMapOverrides: {"Int": "int"})
       .serializeInputDefinition(g.inputs[inputName]!, '');
 }
 

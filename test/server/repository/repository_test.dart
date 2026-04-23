@@ -8,20 +8,12 @@ import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 void main() {
-  final typeMapping = {
-    "ID": "String",
-    "String": "String",
-    "Float": "Double",
-    "Int": "Integer",
-    "Boolean": "Boolean",
-    "Null": "null",
-    "Long": "Long"
-  };
+  
 
   test("handle repositories", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
+        
         mode: CodeGenerationMode.server);
 
     final text = File("test/server/repository/repository_test.graphql")
@@ -39,7 +31,7 @@ void main() {
   test("external types/inputs serialization", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
+        
         mode: CodeGenerationMode.server);
 
     final text =
@@ -71,7 +63,7 @@ void main() {
   test("check type == null", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
+        
         mode: CodeGenerationMode.server);
 
     const text = """
@@ -99,7 +91,7 @@ void main() {
   test("check id = null", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
+        
         mode: CodeGenerationMode.server);
 
     const text = """
@@ -126,7 +118,7 @@ void main() {
   test("should serialize directives on methods", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        typeMap: typeMapping,
+        
         mode: CodeGenerationMode.server);
 
     const text = """
