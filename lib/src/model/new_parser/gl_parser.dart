@@ -157,6 +157,7 @@ class GLParser {
   final bool operationNameAsParameter;
   final List<String> identityFields;
   final int? defaultCacheTTL;
+  final bool disableCache;
   late final GLGraphqSerializer serializer;
 
   GLParser({
@@ -168,6 +169,7 @@ class GLParser {
     this.defaultAlias,
     this.mode = CodeGenerationMode.client,
     this.defaultCacheTTL,
+    this.disableCache = false,
   }) : assert(
           !autoGenerateQueries || generateAllFieldsFragments,
           'autoGenerateQueries can only be true if generateAllFieldsFragments is also true',
@@ -236,6 +238,7 @@ class GLParser {
       checkGLCacheDirectives();
       checkGLCacheInvalidateDirectives();
       checkGLCacheTags();
+      if (disableCache) stripCacheDirectives();
       validateMapsToDirectives();
       checkUploadDirectivePlacement();
       checkUploadScalarUsage();
