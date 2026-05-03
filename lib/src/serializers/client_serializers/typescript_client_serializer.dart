@@ -310,7 +310,7 @@ private _buildPayload(
   if (args.size > 0) query += `(\${Array.from(args).join(', ')})`;
   if (directives) query += directives;
   query += '{';
-  for (const pq of partQueries) query += pq.query;
+  for (const pq of partQueries) query += pq.query + ' ';
   query += '}';
   const fragNames = new Set(partQueries.flatMap(pq => Array.from(pq.fragmentNames)));
   query += Array.from(fragNames).map(n => this.$_svFragMap[n]!).join('');

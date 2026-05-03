@@ -414,6 +414,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
                     iterable: 'partQueries',
                     statements: [
                       'queryBuilder.append(partQuery.query);',
+                      'queryBuilder.append(" ");',
                     ]),
                 'queryBuilder.append("}");',
                 'Set<String> fragmentNames = new HashSet<>();',

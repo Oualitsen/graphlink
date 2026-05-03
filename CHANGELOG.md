@@ -1,3 +1,7 @@
+## 4.5.4 - 2026-05-03
+
+- Fix missing space between fields in dynamically built queries (Dart, Java, TypeScript clients)
+
 ## 1.0.0+1 - 2023-08-14
 
 - Initial Release.

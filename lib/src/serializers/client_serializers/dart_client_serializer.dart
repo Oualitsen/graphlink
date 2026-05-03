@@ -441,6 +441,7 @@ GraphLinkClient.fromUrl({
                       iterable: 'partQueries',
                       statements: [
                         'queryBuilder.write(partQuery.query);',
+                        'queryBuilder.write(" ");',
                       ]),
                   'queryBuilder.write("}");',
                   'final fragments = partQueries.expand((e) => e.fragmentNames).toSet().map((fragName) => $_svFragMap[fragName]!).join();',
