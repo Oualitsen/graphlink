@@ -18,7 +18,8 @@
       "optionalNullableInputFields": true,
       "generateDefaultWsAdapter": true,
       "httpAdapter": "fetch",
-      "observables": true
+      "observables": true,
+      "operationNameAsParameter": true
     }
   }
 }

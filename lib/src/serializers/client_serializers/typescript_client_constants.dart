@@ -411,7 +411,10 @@ class _SubscriptionHandler {
 }
 ''';
 
-const tsFetchAdapter = r'''
+String tsFetchAdapter(bool withParam) {
+  final extraParam = withParam ? ', operationName: string' : '';
+  final urlExpr = withParam ? "url + '?operationName=' + operationName" : 'url';
+  return r'''
 // Minimal fetch-compatible function type — no DOM globals required.
 type _FetchFn = (
   input: string,
@@ -427,10 +430,10 @@ export function createFetchAdapter(
   url: string,
   options?: _FetchAdapterOptions,
 ): GraphLinkAdapter {
-  return async (payload: string): Promise<string> => {
+  return async (payload: string''' + extraParam + r'''): Promise<string> => {
     const fn = (options?.fetchFn ?? (globalThis as Record<string, unknown>)['fetch']) as _FetchFn;
     const extraHeaders = options?.headers ? await options.headers() : {};
-    const response = await fn(url, {
+    const response = await fn(''' + urlExpr + r''', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...extraHeaders },
       body: payload,
@@ -442,6 +445,7 @@ export function createFetchAdapter(
   };
 }
 ''';
+}
 
 const tsMultipartFetchAdapter = r'''
 export function createMultipartFetchAdapter(
@@ -469,7 +473,10 @@ export function createMultipartFetchAdapter(
 }
 ''';
 
-const tsAxiosAdapter = r'''
+String tsAxiosAdapter(bool withParam) {
+  final extraParam = withParam ? ', operationName: string' : '';
+  final urlExpr = withParam ? "url + '?operationName=' + operationName" : 'url';
+  return r'''
 // Minimal structural axios interface — no @types/axios required.
 interface _AxiosLike {
   post(
@@ -488,9 +495,9 @@ export function createAxiosAdapter(
   axiosInstance: _AxiosLike,
   options?: _AxiosAdapterOptions,
 ): GraphLinkAdapter {
-  return async (payload: string): Promise<string> => {
+  return async (payload: string''' + extraParam + r'''): Promise<string> => {
     const extraHeaders = options?.headers ? await options.headers() : {};
-    const response = await axiosInstance.post(url, payload, {
+    const response = await axiosInstance.post(''' + urlExpr + r''', payload, {
       headers: { 'Content-Type': 'application/json', ...extraHeaders },
       responseType: 'text',
     });
@@ -498,6 +505,7 @@ export function createAxiosAdapter(
   };
 }
 ''';
+}
 
 const tsDefaultWsAdapter = r'''
 export class DefaultGraphLinkWsAdapter implements GraphLinkWsAdapter {
