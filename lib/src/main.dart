@@ -307,7 +307,10 @@ String? _buildExtraGql(GLParser parser, GeneratorConfig config) {
     return [
       getClientObjects("Object", "Map<String, Object>"),
       javaJsonEncoderDecorder,
-      javaClientAdapterNoParamSync,
+      if(parser.operationNameAsParameter)
+        javaClientAdapterWithParamSync
+      else
+        javaClientAdapterNoParamSync,
       javaGraphLinkWebSocketAdapter,  // scalars only now, no interface
     ].join();
   }

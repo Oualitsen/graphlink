@@ -488,7 +488,7 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
 }
 ''';
 
-const defaultClientAdapterJava11 = '''
+String defaultClientAdapterJava11(bool withParam) => '''
 public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter {
 
   private final String url;
@@ -510,10 +510,10 @@ public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter {
   }
 
   @Override
-  public String execute(String payload) {
+  public String execute(String payload${withParam ? ', String operationName': ''}) {
     try {
       HttpRequest.Builder builder = HttpRequest.newBuilder()
-          .uri(URI.create(url))
+          .uri(URI.create(${withParam ? 'url + "?operationName=" + operationName' : 'url'}))
           .header("Content-Type", "application/json")
           .POST(HttpRequest.BodyPublishers.ofString(payload));
       if (headersProvider != null) {
@@ -529,7 +529,7 @@ public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter {
 }
 ''';
 
-const defaultClientAdapterOkHttp = '''
+String defaultClientAdapterOkHttp(bool withParam) => '''
 public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter {
 
   private static final MediaType JSON = MediaType.get("application/json");
@@ -553,10 +553,10 @@ public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter {
   }
 
   @Override
-  public String execute(String payload) {
+  public String execute(String payload${withParam ? ', String operationName': ''}) {
     try {
       Request.Builder builder = new Request.Builder()
-          .url(url)
+          .url(${withParam ? 'url + "?operationName=" + operationName' : 'url'})
           .post(RequestBody.create(payload, JSON));
       if (headersProvider != null) {
         Map<String, String> headers = headersProvider.get();
@@ -572,7 +572,7 @@ public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter {
 }
 ''';
 
-const defaultClientAdapterOkHttpWithUpload = '''
+String defaultClientAdapterOkHttpWithUpload(bool withParam) => '''
 public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter, GraphLinkMultipartAdapter {
 
   private static final MediaType JSON = MediaType.get("application/json");
@@ -596,10 +596,10 @@ public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter, Gr
   }
 
   @Override
-  public String execute(String payload) {
+  public String execute(String payload${withParam ? ', String operationName': ''}) {
     try {
       Request.Builder builder = new Request.Builder()
-          .url(url)
+          .url(${withParam ? 'url + "?operationName=" + operationName' : 'url'})
           .post(RequestBody.create(payload, JSON));
       if (headersProvider != null) {
         Map<String, String> headers = headersProvider.get();
@@ -671,7 +671,7 @@ public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter, Gr
 }
 ''';
 
-const defaultClientAdapterJava11WithUpload = '''
+String defaultClientAdapterJava11WithUpload(bool withParam) => '''
 public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter, GraphLinkMultipartAdapter {
 
   private final String url;
@@ -693,10 +693,10 @@ public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter, Gr
   }
 
   @Override
-  public String execute(String payload) {
+  public String execute(String payload${withParam ? ', String operationName': ''}) {
     try {
       HttpRequest.Builder builder = HttpRequest.newBuilder()
-          .uri(URI.create(url))
+          .uri(URI.create(${withParam ? 'url + "?operationName=" + operationName' : 'url'}))
           .header("Content-Type", "application/json")
           .POST(HttpRequest.BodyPublishers.ofString(payload));
       if (headersProvider != null) {

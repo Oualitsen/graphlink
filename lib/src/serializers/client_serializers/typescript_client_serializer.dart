@@ -96,8 +96,12 @@ class TypeScriptClientSerializer extends GLClientSerilaizer {
     ];
   }
 
-  String _adapterTypeAlias() =>
-      'export type $_adapterType = (payload: string) => Promise<string>;';
+  String _adapterTypeAlias() {
+    if (_parser.operationNameAsParameter) {
+      return 'export type $_adapterType = (payload: string, operationName: string) => Promise<string>;';
+    }
+    return 'export type $_adapterType = (payload: string) => Promise<string>;';
+  }
 
   // ── Resolver base class ───────────────────────────────────────────────────
 
@@ -108,12 +112,26 @@ class TypeScriptClientSerializer extends GLClientSerilaizer {
       statements: [
         'protected readonly $_svStore: $_cacheStoreType;',
         'protected readonly $_svTagLocks: Map<string, _Lock>;',
+        'protected readonly $_svAdapter?: $_adapterType;',
         _cg.createMethod(
           methodName: 'constructor',
-          arguments: ['store: $_cacheStoreType', 'tagLocks: Map<string, _Lock>'],
+          arguments: ['store: $_cacheStoreType', 'tagLocks: Map<string, _Lock>', 'adapter?: $_adapterType'],
           statements: [
             'this.$_svStore = store;',
             'this.$_svTagLocks = tagLocks;',
+            'this.$_svAdapter = adapter;',
+          ],
+        ),
+        _cg.createMethod(
+          methodName: '_glCallAdapter',
+          async: true,
+          returnType: 'string',
+          arguments: ['payload: GraphLinkPayload'],
+          statements: [
+            if (_parser.operationNameAsParameter)
+              'return await this.$_svAdapter!(JSON.stringify(payload), payload.operationName);'
+            else
+              'return await this.$_svAdapter!(JSON.stringify(payload));'
           ],
         ),
         _cg.createMethod(
@@ -249,7 +267,6 @@ class TypeScriptClientSerializer extends GLClientSerilaizer {
       exported: false,
       statements: [
         if (type != GLQueryType.subscription) ...[
-          'private readonly $_svAdapter: $_adapterType;',
           if (type == GLQueryType.mutation && _parser.hasUploadMutations)
             'private readonly $_svMultipartAdapter?: GLMultipartAdapter;',
         ] else ...[
@@ -278,7 +295,9 @@ class TypeScriptClientSerializer extends GLClientSerilaizer {
       'store: $_cacheStoreType',
       'tagLocks: Map<string, _Lock>',
     ];
-    const superCall = 'super(store, tagLocks);';
+    final superCall = type == GLQueryType.subscription
+        ? 'super(store, tagLocks);'
+        : 'super(store, tagLocks, adapter);';
     return _cg.createMethod(
       methodName: 'constructor',
       arguments: args,
@@ -287,7 +306,6 @@ class TypeScriptClientSerializer extends GLClientSerilaizer {
         if (type == GLQueryType.subscription) ...[
           'this.$_svHandler = new _SubscriptionHandler(adapter);',
         ] else ...[
-          'this.$_svAdapter = adapter;',
           if (type == GLQueryType.mutation && _parser.hasUploadMutations)
             'this.$_svMultipartAdapter = multipartAdapter;',
         ],
@@ -376,7 +394,7 @@ private _parseAndCache(
       'const $_svPayload = this._buildPayload($_svRemaining, $_svOperationName, ${directives.isEmpty ? "''" : "'${directives}'"}); ',
       _cg.tryCatchFinally(
         tryStatements: [
-          'const $_svResponseText = await this.$_svAdapter(JSON.stringify($_svPayload));',
+          'const $_svResponseText = await this._glCallAdapter($_svPayload);',
           'const $_svResult = this._parseAndCache($_svResponseText, $_svResponseMap, $_svRemaining) as unknown as $returnTypeName;',
           if (observables) ...[
             'subscriber.next($_svResult);',
@@ -457,8 +475,8 @@ private _parseAndCache(
     }
 
     final innerStatements = [
-      "const $_svPayload = JSON.stringify({ query: $_svQuery, operationName: $_svOperationName, variables: $_svVariables });",
-      "const $_svResponse = await this.$_svAdapter($_svPayload);",
+      "const $_svPayload: GraphLinkPayload = { query: $_svQuery, operationName: $_svOperationName, variables: $_svVariables };",
+      "const $_svResponse = await this._glCallAdapter($_svPayload);",
       "const $_svResult = JSON.parse($_svResponse);",
       "if ($_svResult['errors']) ${observables ? "{ subscriber.error($_svResult['errors']); return; }" : "throw $_svResult['errors'] as GraphLinkError[];"}",
       if (invalidation.isNotEmpty) invalidation,
@@ -850,10 +868,10 @@ private _parseAndCache(
     }
     buffer.writeln();
     if (httpAdapter == TypeScriptHttpAdapter.fetch) {
-      buffer.writeln(tsFetchAdapter);
+      buffer.writeln(tsFetchAdapter(_parser.operationNameAsParameter));
       if (hasUploads) buffer.writeln(tsMultipartFetchAdapter);
     }
-    if (httpAdapter == TypeScriptHttpAdapter.axios) buffer.writeln(tsAxiosAdapter);
+    if (httpAdapter == TypeScriptHttpAdapter.axios) buffer.writeln(tsAxiosAdapter(_parser.operationNameAsParameter));
     return GLClassModel(body: buffer.toString());
   }
 
