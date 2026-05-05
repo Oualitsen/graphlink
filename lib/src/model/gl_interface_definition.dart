@@ -1,4 +1,8 @@
+import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/serializers/code_generation_mode.dart';
+import 'package:graphlink/src/utils.dart';
 
 class GLInterfaceDefinition extends GLTypeDefinition {
   final bool fromUnion;
@@ -27,6 +31,11 @@ class GLInterfaceDefinition extends GLTypeDefinition {
   }
 
   Set<GLTypeDefinition> get implementations => Set.unmodifiable(_implementations);
+
+  Set<GLTypeDefinition> getSerializableImplementations(CodeGenerationMode mode) {
+    var result = _implementations.where((type) => filterByParserMode(type, mode)).toList();
+    return Set.unmodifiable(result);
+  }
 
   void addImplementation(GLTypeDefinition token) {
     _implementations.add(token);

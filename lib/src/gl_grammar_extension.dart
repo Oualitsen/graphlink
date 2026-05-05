@@ -173,12 +173,7 @@ extension GLGrammarExtension on GLParser {
   }
 
   bool _filterByMode(GLDirectivesMixin mixin) {
-    switch (mode) {
-      case CodeGenerationMode.client:
-        return mixin.getDirectiveByName(glSkipOnClient) == null;
-      case CodeGenerationMode.server:
-        return mixin.getDirectiveByName(glSkipOnServer) == null;
-    }
+    return filterByParserMode(mixin, mode);
   }
 
   void skipFieldOfSkipOnServerTypes() {
