@@ -157,3 +157,13 @@ bool shouldSkip(GLDirectivesMixin mixin, CodeGenerationMode mode) {
 }
 
 String widgetName(String typeName) => "${typeName}Widget";
+
+
+bool filterByParserMode(GLDirectivesMixin mixin, CodeGenerationMode mode) {
+    switch (mode) {
+      case CodeGenerationMode.client:
+        return mixin.getDirectiveByName(glSkipOnClient) == null;
+      case CodeGenerationMode.server:
+        return mixin.getDirectiveByName(glSkipOnServer) == null;
+    }
+}
