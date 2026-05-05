@@ -515,7 +515,7 @@ class DartSerializer extends GLSerializer {
   String _doSerializeTypeDefinition(GLTypeDefinition def) {
     final token = def.token;
     final implementations = def is GLInterfaceDefinition
-        ? def.implementations
+        ? def.getSerializableImplementations(mode)
         : <GLTypeDefinition>{};
 
     final interfaceNames = def.interfaceNames.map((e) => e.token).toSet();
@@ -660,9 +660,10 @@ class DartSerializer extends GLSerializer {
     if (generateJsonMethods) {
       buffer.writeln(_serializeToJsonForInterface(token).ident());
     }
-    if (generateJsonMethods && interface.implementations.isNotEmpty) {
+    final serialisableImplemenations = interface.getSerializableImplementations(mode);
+    if (generateJsonMethods && serialisableImplemenations.isNotEmpty) {
       buffer.writeln(
-          _serializeFromJsonForInterface(token, interface.implementations)
+          _serializeFromJsonForInterface(token, serialisableImplemenations)
               .ident());
     }
 

@@ -1056,11 +1056,11 @@ class JavaSerializer extends GLSerializer {
         interfaceNames: interfaces.map((e) => e.tokenInfo.token).toList(),
         statements: [
           ...fields.map((f) => _serializeInterfaceField(f, getters, forceClassGetters: forceClassGetters)),
-          if (generateJsonConverstionMethods) ...[
+          if (generateJsonConverstionMethods && interface.getSerializableImplementations(mode).isNotEmpty) ...[
             "",
             "Map<String, Object> toJson();",
             _serializeFromJsonForInterface(
-                interface.token, interface.implementations)
+                interface.token, interface.getSerializableImplementations(mode))
           ]
         ]));
     return buffer.toString();

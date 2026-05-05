@@ -131,8 +131,8 @@ class TypeScriptSerializer extends GLSerializer {
 
   /// GraphQL `interface` / `union` → `export type Animal = Dog | Cat;`
   String _serializeInterfaceAsUnion(GLInterfaceDefinition def) {
-    if (def.implementations.isEmpty) return '';
-    final members = def.implementations.map((t) => t.token).join(' | ');
+    if (def.getSerializableImplementations(mode).isEmpty) return '';
+    final members = def.getSerializableImplementations(mode).map((t) => t.token).join(' | ');
     return codeGenUtils.createTypeAlias(name: def.token, value: members);
   }
 
@@ -149,8 +149,8 @@ class TypeScriptSerializer extends GLSerializer {
   /// since the base only does this when generateJsonMethods is true.
   @override
   String serializeImports(GLToken token, String importPrefix) {
-    if (token is GLInterfaceDefinition && token.implementations.isNotEmpty) {
-      var deps = {...token.getImportDependecies(grammar), ...token.implementations};
+    if (token is GLInterfaceDefinition && token.getSerializableImplementations(mode).isNotEmpty) {
+      var deps = {...token.getImportDependecies(grammar), ...token.getSerializableImplementations(mode)};
       final buffer = StringBuffer();
       for (final dep in deps) {
         final import = serializeImportToken(dep, importPrefix);
