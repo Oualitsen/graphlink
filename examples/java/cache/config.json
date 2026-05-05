@@ -19,9 +19,10 @@
             "generateAllFieldsFragments": true,
             "nullableFieldsRequired": false,
             "autoGenerateQueries": true,
-            "operationNameAsParameter": false,
+            "operationNameAsParameter": true,
             "immutableInputFields": true,
             "immutableTypeFields": true,
+            "typeAsRecord": false,
             "wsAdapter": "java11",
             "jsonCodec": "jackson"
         }

@@ -36,7 +36,6 @@ class JavaClientSerializer extends GLClientSerilaizer {
   String get _svQuery => codeGenUtils.safeLocalVar('query');
   String get _svPayload => codeGenUtils.safeLocalVar('payload');
   String get _svVariables => codeGenUtils.safeLocalVar('variables');
-  String get _svEncodedPayload => codeGenUtils.safeLocalVar('encodedPayload');
   String get _svResponseText => codeGenUtils.safeLocalVar('responseText');
   String get _svDecodedResponse => codeGenUtils.safeLocalVar('decodedResponse');
   String get _svData => codeGenUtils.safeLocalVar('data');
@@ -119,7 +118,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
           if (_grammar.hasMutations)
             "mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, ${_grammar.hasUploadMutations ? 'multipartAdapter, ' : ''}$_svFragmentNap, encoder, decoder, store);",
           if (_grammar.hasSubscriptions)
-            "subscriptions = new ${classNameFromType(GLQueryType.subscription)}(wsAdapter, $_svFragmentNap, encoder, decoder, store);",
+            "subscriptions = new ${classNameFromType(GLQueryType.subscription)}(adapter, wsAdapter, $_svFragmentNap, encoder, decoder, store);",
           ..._grammar.fragments.values.map((value) =>
               '$_svFragmentNap.put("${value.tokenInfo}", "${gqlSerializer.serializeFragmentDefinitionBase(value)}");'),
         ],
@@ -355,12 +354,11 @@ class JavaClientSerializer extends GLClientSerilaizer {
               methodName: classNameFromType(type),
               arguments: _declareConstructorArgs(type),
               statements: [
-                'super(fragmentMap, store, encoder, decoder);',
-                'this.$_svAdapter = adapter;',
+                'super(adapter, fragmentMap, store, encoder, decoder);',
                 if (type == GLQueryType.mutation && _grammar.hasUploadMutations)
                   'this.$_svMultipartAdapter = multipartAdapter;',
                 if (type == GLQueryType.subscription)
-                  '$_svHandler = new GraphLinkSubscriptionHandler(adapter, decoder, encoder);',
+                  '$_svHandler = new GraphLinkSubscriptionHandler(wsAdapter, decoder, encoder);',
               ]),
           ...queryList
               .where((e) => e.type == GLQueryType.query)
@@ -467,10 +465,9 @@ class JavaClientSerializer extends GLClientSerilaizer {
 
   List<String> _declareConstructorArgs(GLQueryType type) {
     return [
+      'GraphLinkClientAdapter adapter',
       if (type == GLQueryType.subscription)
-        'GraphLinkWebSocketAdapter adapter'
-      else
-        'GraphLinkClientAdapter adapter',
+        'GraphLinkWebSocketAdapter wsAdapter',
       if (type == GLQueryType.mutation && _grammar.hasUploadMutations)
         'GraphLinkMultipartAdapter multipartAdapter',
       'Map<String, String> fragmentMap',
@@ -485,14 +482,12 @@ class JavaClientSerializer extends GLClientSerilaizer {
       case GLQueryType.query:
       case GLQueryType.mutation:
         return [
-          'private final GraphLinkClientAdapter $_svAdapter;',
           if (type == GLQueryType.mutation && _grammar.hasUploadMutations)
             'private final GraphLinkMultipartAdapter $_svMultipartAdapter;',
         ];
       case GLQueryType.subscription:
         return [
-          "private final GraphLinkSubscriptionHandler $_svHandler;",
-          "private final GraphLinkWebSocketAdapter $_svAdapter;"
+          "private final GraphLinkSubscriptionHandler $_svHandler;"
         ];
     }
   }
@@ -571,7 +566,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
           'GraphLinkPayload $_svPayload = buildPayload($_svRemaining, $_svOperationName, "$directives");',
           codeGenUtils.tryCatchFinally(
             tryStatements: [
-              'String $_svResponseText = $_svAdapter.execute($_svEncoder.encode($_svPayload));',
+              'String $_svResponseText = glCallAdapter($_svPayload);',
               'return parseToObjectAndCache($_svResponseText, $_svResponseMap, $returnType::fromJson, $_svRemaining);',
             ],
             catchStatements: [
@@ -796,8 +791,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
 
   String _serializeQueryAdapterCall(GLQueryDefinition def) {
     return [
-      "String $_svEncodedPayload = $_svEncoder.encode($_svPayload);",
-      "String $_svResponseText = $_svAdapter.execute($_svEncodedPayload);",
+      "String $_svResponseText = glCallAdapter($_svPayload);",
       "Map<String, Object> $_svDecodedResponse = $_svDecoder.decode($_svResponseText);",
       codeGenUtils.ifStatement(
           condition: '$_svDecodedResponse.containsKey("errors")',
@@ -812,8 +806,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
 
   String _serializeMutationAdapterCall(GLQueryDefinition def) {
     return [
-      "String $_svEncodedPayload = $_svEncoder.encode($_svPayload);",
-      "String $_svResponseText = $_svAdapter.execute($_svEncodedPayload);",
+      "String $_svResponseText = glCallAdapter($_svPayload);",
       "Map<String, Object> $_svDecodedResponse = $_svDecoder.decode($_svResponseText);",
       codeGenUtils.ifStatement(
           condition: '$_svDecodedResponse.containsKey("errors")',
@@ -954,15 +947,18 @@ class JavaClientSerializer extends GLClientSerilaizer {
         'protected final GraphLinkJsonEncoder $_svEncoder;',
         'protected final GraphLinkJsonDecoder $_svDecoder;',
         'private final Map<String, ReentrantLock> $_svTagLocks = new HashMap<>();',
+        'private final GraphLinkClientAdapter $_svAdapter;',
         codeGenUtils.createMethod(
           methodName: 'GraphLinkResolverBase',
           arguments: [
+            'GraphLinkClientAdapter adapter',
             'Map<String, String> fragmentMap',
             'GraphLinkCacheStore store',
             'GraphLinkJsonEncoder encoder',
             'GraphLinkJsonDecoder decoder',
           ],
           statements: [
+            'this.$_svAdapter = adapter;'
             'this.${_svFragmentNap} = fragmentMap;',
             'this.$_svStore = store;',
             'this.$_svEncoder = encoder;',
@@ -1018,6 +1014,17 @@ class JavaClientSerializer extends GLClientSerilaizer {
           arguments: ['String tag'],
           statements: ['return "__tag__" + tag;'],
         ),
+        codeGenUtils.createMethod(methodName: 'glCallAdapter', returnType: 'protected String', arguments: [
+          'GraphLinkPayload payload',
+        ], statements: [
+            if(_grammar.operationNameAsParameter)
+              ...[
+                'String operationName = payload.getOperationName();',
+                'return $_svAdapter.execute($_svEncoder.encode(payload), operationName);']
+            else
+              'return $_svAdapter.execute($_svEncoder.encode(payload));'
+
+        ]),
         codeGenUtils.createMethod(
           returnType: 'GraphLinkCacheEntry',
           methodName: 'getFromCache',
@@ -1143,7 +1150,9 @@ class JavaClientSerializer extends GLClientSerilaizer {
       ],
       importDepencies: [
         _grammar.getTokenByKey("GraphLinkJsonEncoder")!,
-        _grammar.getTokenByKey("GraphLinkJsonDecoder")!
+        _grammar.getTokenByKey("GraphLinkJsonDecoder")!,
+        _grammar.getTokenByKey("GraphLinkPayload")!,
+        _grammar.getTokenByKey("GraphLinkClientAdapter")!,
       ],
       body: classBody,
     );
@@ -1358,11 +1367,11 @@ class JavaClientSerializer extends GLClientSerilaizer {
         importDepencies: [_grammar.getTokenByKey('GraphLinkClientAdapter')!],
         body: _grammar.hasUploadMutations
             ? (flavor == 'okhttp'
-                ? defaultClientAdapterOkHttpWithUpload
-                : defaultClientAdapterJava11WithUpload)
+                ? defaultClientAdapterOkHttpWithUpload(_grammar.operationNameAsParameter)
+                : defaultClientAdapterJava11WithUpload(_grammar.operationNameAsParameter))
             : (flavor == 'okhttp'
-                ? defaultClientAdapterOkHttp
-                : defaultClientAdapterJava11),
+                ? defaultClientAdapterOkHttp(_grammar.operationNameAsParameter)
+                : defaultClientAdapterJava11(_grammar.operationNameAsParameter)),
       );
 
   GLClassModel generateDefaultWebSocketAdapterFile(

@@ -112,14 +112,23 @@ class DartClientSerializer extends GLClientSerilaizer {
         codeGenUtils.createClass(className: "_ResolverBase", statements: [
       'late final GraphLinkCacheStore $_svStore;',
       'late final Map<String, _Lock> $_svTagLocks;',
+      declareHttpAdapter(),
       codeGenUtils.createMethod(
           methodName: '_ResolverBase',
           namedArguments: false,
-          arguments: ['GraphLinkCacheStore store', 'Map<String, _Lock> locks'],
+          arguments: ['GraphLinkCacheStore store', 'Map<String, _Lock> locks', 'this.$_svAdapter'],
           statements: [
             '$_svStore = store;',
             '$_svTagLocks = locks;',
           ]),
+      codeGenUtils.createMethod(returnType: 'Future<String>', methodName: "glCallAdapter", async: true, namedArguments: false, arguments: [
+        'GraphLinkPayload payload',
+      ], statements: [
+        if(_parser.operationNameAsParameter)
+          'return await $_svAdapter(json.encode(payload.toJson()), payload.operationName);'
+        else
+          'return await $_svAdapter(json.encode(payload.toJson()));'
+      ]),
       codeGenUtils.createMethod(
           methodName: "_getFromCache",
           async: true,
@@ -388,7 +397,8 @@ GraphLinkClient.fromUrl({
               arguments: _declareConstructorArgs(type),
               superArguments: [
                 'store',
-                _svTagLocks
+                _svTagLocks,
+                'httpAdapter',
               ],
               statements: [
                 '$_svFragMap = fragmentMap;',
@@ -406,7 +416,7 @@ GraphLinkClient.fromUrl({
                 arguments: ['GraphLinkPayload payload'],
                 returnType: 'Future<String>',
                 statements: [
-                  'return await $_svAdapter(json.encode(payload.toJson()));'
+                  'return await glCallAdapter(payload);'
                 ]),
             codeGenUtils.createMethod(
                 returnType: "GraphLinkPayload",
@@ -495,7 +505,7 @@ GraphLinkClient.fromUrl({
       if (type == GLQueryType.subscription)
         'GraphLinkWebSocketAdapter adapter'
       else
-        'this.$_svAdapter',
+      '${delcareHttpAdapterFunction()} httpAdapter',
       if (type == GLQueryType.mutation && _parser.hasUploadMutations) ...[
         'this.$_svUploadConverter',
         'this.$_svUploadAdapter',
@@ -503,22 +513,30 @@ GraphLinkClient.fromUrl({
       'Map<String, String> fragmentMap',
       'GraphLinkCacheStore store',
       'Map<String, _Lock> $_svTagLocks'
+      
     ];
   }
 
   String declareAdapter(GLQueryType type) {
     switch (type) {
       case GLQueryType.query:
-        return "final Future<String> Function(String payload${_parser.operationNameAsParameter ? ', String $_operationNameParam' : ''}) $_svAdapter;";
+        return '';
       case GLQueryType.mutation:
-        final base = "final Future<String> Function(String payload${_parser.operationNameAsParameter ? ', String $_operationNameParam' : ''}) $_svAdapter;";
         if (_parser.hasUploadMutations) {
-          return "$base\nfinal GLUploadConverter $_svUploadConverter;\nfinal GLMultipartAdapter? $_svUploadAdapter;";
+          return "final GLUploadConverter $_svUploadConverter;\nfinal GLMultipartAdapter? $_svUploadAdapter;";
         }
-        return base;
+        return '';
       case GLQueryType.subscription:
         return "late final _SubscriptionHandler $_svHandler;";
     }
+  }
+
+  String declareHttpAdapter() {
+    return "final ${delcareHttpAdapterFunction()} $_svAdapter;";
+  }
+
+  String delcareHttpAdapterFunction() {
+    return 'Future<String> Function(String payload${_parser.operationNameAsParameter ? ', String $_operationNameParam' : ''})';
   }
 
   String mutationToMethod(GLQueryDefinition def) {
@@ -668,7 +686,7 @@ return $_svHandler.handle($_svPayload)
       return _serializeMultipartAdapterCall(def);
     }
     return """
-final $_svResponse = await $_svAdapter(json.encode($_svPayload.toJson())${_parser.operationNameAsParameter ? ', $_svOperationName' : ''});
+final $_svResponse = await glCallAdapter($_svPayload);
 Map<String, dynamic> $_svResult = jsonDecode($_svResponse);
 if ($_svResult.containsKey("errors")) {
   throw $_svResult["errors"].map((error) => GraphLinkError.fromJson(error)).toList();
@@ -891,7 +909,7 @@ class GraphLinkHttpAdapter {
       if (extraHeaders != null) ...extraHeaders,
     };
     final response = await http.post(
-      Uri.parse(url),
+      Uri.parse(${_parser.operationNameAsParameter ? "url + '?operationName=' + operationName" : 'url'}),
       body: payload,
       headers: requestHeaders,
     );
@@ -955,7 +973,7 @@ class GraphLinkDioAdapter {
   }
 
   Future<String> call(String payload$extraParam) async {
-    final response = await dio.post<dynamic>(url, data: payload);
+    final response = await dio.post<dynamic>(${_parser.operationNameAsParameter ? "url + '?operationName=' + operationName" : 'url'}, data: payload);
     final data = response.data;
     return data is String ? data : jsonEncode(data);
   }$multipartMethod

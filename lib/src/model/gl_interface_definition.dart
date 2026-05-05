@@ -1,6 +1,4 @@
-import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
-import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/utils.dart';
 
