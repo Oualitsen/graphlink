@@ -909,7 +909,7 @@ class GraphLinkHttpAdapter {
       if (extraHeaders != null) ...extraHeaders,
     };
     final response = await http.post(
-      Uri.parse(${_parser.operationNameAsParameter ? "url + '?operationName=' + operationName" : 'url'}),
+      Uri.parse(${_parser.operationNameAsParameter ? "'\$url?operationName=\$operationName'" : 'url'}),
       body: payload,
       headers: requestHeaders,
     );
@@ -973,7 +973,7 @@ class GraphLinkDioAdapter {
   }
 
   Future<String> call(String payload$extraParam) async {
-    final response = await dio.post<dynamic>(${_parser.operationNameAsParameter ? "url + '?operationName=' + operationName" : 'url'}, data: payload);
+    final response = await dio.post<dynamic>(${_parser.operationNameAsParameter ? "'\$url?operationName=\$operationName'" : 'url'}, data: payload);
     final data = response.data;
     return data is String ? data : jsonEncode(data);
   }$multipartMethod
