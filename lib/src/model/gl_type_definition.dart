@@ -43,6 +43,12 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
   void addInterface(GLInterfaceDefinition iface) {
     _interfaces.add(iface);
     addInterfaceName(iface.tokenInfo);
+    iface.addImplementation(this);
+  }
+
+  void unlinkInterface(GLInterfaceDefinition iface) {
+    _interfaces.remove(iface);
+    _interfaceNames.removeWhere((t) => t.token == iface.token);
   }
 
   void addOriginalToken(String token) {
