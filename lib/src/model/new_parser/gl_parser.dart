@@ -245,6 +245,7 @@ class GLParser {
       checkUploadListDepth();
       createProjectedTypes();
       cleanProjectedInterfacesImplementations();
+      fixProjectedInterfaceConflicts();
       addClientTypesToProjectedTypes();
       updateFragmentAllTypesDependencies();
       if (defaultCacheTTL != null) {

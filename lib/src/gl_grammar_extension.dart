@@ -907,10 +907,6 @@ extension GLGrammarExtension on GLParser {
           definition.implementations.forEach(first.addImplementation);
         }
         targetStore[first.token] = first;
-        if (first is GLInterfaceDefinition &&
-            definition is GLInterfaceDefinition) {
-          definition.implementations.forEach(first.addImplementation);
-        }
         return first;
       }
     }
@@ -1301,6 +1297,52 @@ extension GLGrammarExtension on GLParser {
         .expand((inner) => inner)
         .toList();
     return decorators;
+  }
+
+  void fixProjectedInterfaceConflicts() {
+    var ifaceList = projectedInterfaces.entries.toList();
+
+    for (var entry in ifaceList) {
+      var iface = entry.value;
+
+      var groups = <String, List<GLTypeDefinition>>{};
+      for (var impl in iface.implementations) {
+        var key = impl.derivedFromType?.token ?? impl.token;
+        groups.putIfAbsent(key, () => []).add(impl);
+      }
+
+      for (var impls in groups.values) {
+        if (impls.length <= 1) continue;
+
+        for (var impl in impls.skip(1)) {
+          iface.removeImplementation(impl.token);
+          impl.unlinkInterface(iface);
+
+          var newName = _uniqueProjectedInterfaceName(iface.token);
+          var newIface = GLInterfaceDefinition(
+            name: iface.tokenInfo.ofNewName(newName),
+            nameDeclared: false,
+            fields: List.from(iface.fields),
+            directives: iface.getDirectives(),
+            interfaceNames: {},
+            extension: false,
+            derivedFromType: iface.derivedFromType,
+          );
+
+          impl.addInterface(newIface);
+          projectedInterfaces[newName] = newIface;
+        }
+      }
+    }
+  }
+
+  String _uniqueProjectedInterfaceName(String baseName) {
+    var i = 1;
+    var name = '${baseName}_$i';
+    while (projectedInterfaces.containsKey(name) || projectedTypes.containsKey(name)) {
+      name = '${baseName}_${++i}';
+    }
+    return name;
   }
 
   void generateViews() {
