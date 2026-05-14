@@ -1396,7 +1396,7 @@
 <a id="__codelineno-3-56" name="__codelineno-3-56" href="#__codelineno-3-56"></a><span class="p">}</span>
 </code></pre></div>
 <h2 id="step-3-configure-the-generator">Step 3 — Configure the generator<a class="headerlink" href="#step-3-configure-the-generator" title="Permanent link">&para;</a></h2>
-<p>Create a <code>config.json</code> file in your project root. The config tells GraphLink where to find the schema, where to write output, and what language/framework to target.</p>
+<p>Create a config file in your project root. GraphLink accepts <strong>JSON</strong> (<code>.json</code>), <strong>YAML</strong> (<code>.yaml</code>), or <strong>YML</strong> (<code>.yml</code>). Name it <code>glink.json</code>, <code>glink.yaml</code>, or <code>glink.yml</code> and the <code>-c</code> flag becomes optional — <code>glink</code> finds it automatically.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="2:3"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Dart / Flutter</label><label for="__tabbed_2_2">Java client</label><label for="__tabbed_2_3">Spring Boot</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
@@ -1532,9 +1532,10 @@
 </tbody>
 </table>
 <h2 id="step-4-run-the-generator">Step 4 — Run the generator<a class="headerlink" href="#step-4-run-the-generator" title="Permanent link">&para;</a></h2>
-<p>Point <code>glink</code> at your config file and let it run:</p>
-<div class="highlight"><span class="filename">Terminal</span><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>glink<span class="w"> </span>-c<span class="w"> </span>config.json
+<p>If your config is named <code>glink.json</code>, <code>glink.yaml</code>, or <code>glink.yml</code>, just run:</p>
+<div class="highlight"><span class="filename">Terminal</span><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>glink
 </code></pre></div>
+<p><code>glink</code> searches for those filenames from the current directory upward. To use a custom path, pass it explicitly with <code>-c my-config.json</code>.</p>
 <p>For the Dart client config, the generator produces 21 files. For the Java client, 38 files. For Spring Boot, 9 files. Here is the Dart output tree:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>lib/generated/
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>  client/
@@ -1592,7 +1593,7 @@
 <p>The <code>@glCache</code> and <code>@glCacheInvalidate</code> directives you wrote in the schema are reflected in the generated client code. No application-level code is needed to enable caching.</p>
 <h2 id="watch-mode">Watch mode<a class="headerlink" href="#watch-mode" title="Permanent link">&para;</a></h2>
 <p>During development, add <code>-w</code> to watch your schema files and regenerate automatically on every save:</p>
-<div class="highlight"><span class="filename">Terminal</span><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>glink<span class="w"> </span>-c<span class="w"> </span>config.json<span class="w"> </span>-w
+<div class="highlight"><span class="filename">Terminal</span><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>glink<span class="w"> </span>-w
 <a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
 <a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="c1"># Output:</span>
 <a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1"># Watching schema/*.graphql for changes...</span>

@@ -119,11 +119,11 @@ type Subscription {
 
 ## Step 3 — Configure the generator
 
-Create a `config.json` file in your project root. The config tells GraphLink where to find the schema, where to write output, and what language/framework to target.
+Create a config file in your project root. GraphLink accepts **JSON** (`.json`), **YAML** (`.yaml`), or **YML** (`.yml`). Name it `glink.json` / `glink.yaml` / `glink.yml` and the `-c` flag becomes optional — `glink` finds it automatically.
 
 === "Dart / Flutter"
 
-    ```json
+    ```json title="glink.json"
     {
       "schemaPaths": ["schema/*.graphql"],
       "mode": "client",
@@ -151,7 +151,7 @@ Create a `config.json` file in your project root. The config tells GraphLink whe
 
 === "Java client"
 
-    ```json
+    ```json title="glink.json"
     {
       "schemaPaths": ["schema/*.graphql"],
       "mode": "client",
@@ -179,7 +179,7 @@ Create a `config.json` file in your project root. The config tells GraphLink whe
 
 === "Spring Boot"
 
-    ```json
+    ```json title="glink.json"
     {
       "schemaPaths": ["schema/*.graphql"],
       "mode": "server",
@@ -223,10 +223,16 @@ Create a `config.json` file in your project root. The config tells GraphLink whe
 
 ## Step 4 — Run the generator
 
-Point `glink` at your config file and let it run:
+If your config is named `glink.json`, `glink.yaml`, or `glink.yml`, just run:
 
 ```bash title="Terminal"
-glink -c config.json
+glink
+```
+
+`glink` searches for those filenames from the current directory upward. To use a custom path, pass it explicitly:
+
+```bash title="Terminal"
+glink -c my-config.json
 ```
 
 For the Dart client config, the generator produces 21 files. For the Java client, 38 files. For Spring Boot, 9 files. Here is the Dart output tree:
@@ -306,7 +312,7 @@ The `@glCache` and `@glCacheInvalidate` directives you wrote in the schema are r
 During development, add `-w` to watch your schema files and regenerate automatically on every save:
 
 ```bash title="Terminal"
-glink -c config.json -w
+glink -w
 
 # Output:
 # Watching schema/*.graphql for changes...
