@@ -42,7 +42,7 @@ Future<void> main(List<String> arguments) async {
     ..addOption(
       'config',
       abbr: 'c',
-      help: 'Path to the config file',
+      help: 'Path to the config file (.json, .yaml, or .yml)',
     )
     ..addFlag(
       'watch',
@@ -74,13 +74,16 @@ Future<void> main(List<String> arguments) async {
 
   if (args['help'] as bool) {
     stdout.write('''
-Usage: glink -c <config.json> [options]
+Usage: glink [-c <config>] [options]
 
 Options:
 ${parser.usage}
 
+If -c is omitted, glink searches for glink.json, glink.yaml, or glink.yml
+starting from the current directory and walking up to the filesystem root.
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- config.json reference
+ config reference  (JSON, YAML, and YML are all accepted)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Top-level
