@@ -35,10 +35,20 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - **Only what the server needs.** Unlike ferry (which sends the entire schema), GraphLink generates
   precise queries containing only the requested fields. This is required for Spring Boot's strict
   schema validation to pass.
-- **Watch mode.** Run `glink -c config.json -w` to watch schema files and regenerate automatically
-  on every save.
+- **Watch mode.** Run `glink -w` to watch schema files and regenerate automatically on every save.
 - **Single source of truth.** The schema drives both ends. No duplicate type definitions. No
   schema drift. Adding a field means editing one file.
+- **Two-layer server-side access control.** `@glSkipOnClient` enforces field access on the server
+  at two levels. Level 1 (always active): a `@SchemaMapping` is generated that throws
+  `GraphQLException("Access denied")` — no runtime access regardless of the client. Level 2
+  (`generateSchema: true`): the field is stripped from the schema Spring Boot serves — invisible
+  in GraphiQL and rejected at validation before execution. Neither level depends on the generated
+  client — any raw GraphQL client or introspection tool is blocked.
+- **ID/object field-pair pattern.** `@glSkipOnServer` and `@glSkipOnClient` are designed to be
+  used on different fields of the same type. The raw foreign key (`cashierId @glSkipOnClient`)
+  stays on the server for persistence; the resolved object (`cashier @glSkipOnServer(batch: true)`)
+  is loaded by the server and delivered to the client. This eliminates N+1 queries and keeps
+  each side's model clean without any shared representation.
 
 ## Supported targets (as of v4.6.0)
 
@@ -46,7 +56,7 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - Flutter client (stable)
 - Java client (stable)
 - Spring Boot server (stable, MVC and reactive/WebFlux)
-- TypeScript client (stable as of v4.5.0 — fetch/axios, RxJS observables, WebSocket subscriptions)
+- TypeScript client (stable — fetch/axios, RxJS observables, WebSocket subscriptions)
 - Express / Node.js server (planned)
 - Go (planned, demand-based)
 - Kotlin (planned, demand-based)
@@ -61,10 +71,11 @@ Platforms: Linux (x86_64), macOS (ARM64), Windows (x86_64)
 ## Basic usage
 
 ```bash
-glink -c config.json        # generate once
-glink -c config.json -w     # watch mode
-glink -v                    # print version
-glink -h                    # show help
+glink                   # auto-discover glink.json / glink.yaml / glink.yml
+glink -c config.json    # explicit config path (JSON, YAML, or YML)
+glink -w                # watch mode — regenerate on schema change
+glink -v                # print version
+glink -h                # show help
 ```
 
 ## Configuration (config.json)
@@ -107,14 +118,15 @@ type Mutation {
 - Spring Boot server (MVC + reactive/WebFlux, service interfaces, file upload, security context propagation): https://graphlink.dev/docs/spring-server.html
 - Caching (@glCache, @glCacheInvalidate, tag invalidation, staleIfOffline): https://graphlink.dev/docs/caching.html
 - Directives (@glMapsTo, @glMapField, @glCache, @glCacheInvalidate, @glSkipOnServer forward mappings, and more): https://graphlink.dev/docs/directives.html
-- Configuration (all config keys for Dart, Java, TypeScript, Spring; reactive; useSpringSecurity; typeMappings; CLI flags): https://graphlink.dev/docs/configuration.html
+- "@glSkipOnServer & @glSkipOnClient" (two-layer server-side access control, schema stripping, @SchemaMapping, @BatchMapping, mapTo, forward mappings, ID/object field-pair pattern for N+1-safe loading): https://graphlink.dev/docs/skip-directives.html
+- Configuration (all config keys for Dart, Java, TypeScript, Spring; reactive; useSpringSecurity; typeMappings; CLI flags; YAML config): https://graphlink.dev/docs/configuration.html
 
 ## Links
 
 - Website: https://graphlink.dev/
 - Docs: https://graphlink.dev/docs/index.html
 - GitHub: https://github.com/Oualitsen/graphlink
-- pub.dev: https://pub.dev/packages/retrofit_graphql
+- pub.dev: https://pub.dev/packages/graphlink
 - Issues: https://github.com/Oualitsen/graphlink/issues
 - Releases: https://github.com/Oualitsen/graphlink/releases
 
@@ -418,11 +430,11 @@ type Subscription {
 
 ## Step 3 — Configure the generator
 
-Create a `config.json` file in your project root. The config tells GraphLink where to find the schema, where to write output, and what language/framework to target.
+Create a config file in your project root. GraphLink accepts **JSON** (`.json`), **YAML** (`.yaml`), or **YML** (`.yml`). Name it `glink.json` / `glink.yaml` / `glink.yml` and the `-c` flag becomes optional — `glink` finds it automatically.
 
 === "Dart / Flutter"
 
-    ```json
+    ```json title="glink.json"
     {
       "schemaPaths": ["schema/*.graphql"],
       "mode": "client",
@@ -450,7 +462,7 @@ Create a `config.json` file in your project root. The config tells GraphLink whe
 
 === "Java client"
 
-    ```json
+    ```json title="glink.json"
     {
       "schemaPaths": ["schema/*.graphql"],
       "mode": "client",
@@ -478,7 +490,7 @@ Create a `config.json` file in your project root. The config tells GraphLink whe
 
 === "Spring Boot"
 
-    ```json
+    ```json title="glink.json"
     {
       "schemaPaths": ["schema/*.graphql"],
       "mode": "server",
@@ -522,10 +534,16 @@ Create a `config.json` file in your project root. The config tells GraphLink whe
 
 ## Step 4 — Run the generator
 
-Point `glink` at your config file and let it run:
+If your config is named `glink.json`, `glink.yaml`, or `glink.yml`, just run:
 
 ```bash title="Terminal"
-glink -c config.json
+glink
+```
+
+`glink` searches for those filenames from the current directory upward. To use a custom path, pass it explicitly:
+
+```bash title="Terminal"
+glink -c my-config.json
 ```
 
 For the Dart client config, the generator produces 21 files. For the Java client, 38 files. For Spring Boot, 9 files. Here is the Dart output tree:
@@ -605,7 +623,7 @@ The `@glCache` and `@glCacheInvalidate` directives you wrote in the schema are r
 During development, add `-w` to watch your schema files and regenerate automatically on every save:
 
 ```bash title="Terminal"
-glink -c config.json -w
+glink -w
 
 # Output:
 # Watching schema/*.graphql for changes...
@@ -921,6 +939,43 @@ type Query {
 }
 ```
 
+## Operation name in URL
+
+Set `"operationNameAsParameter": true` to include the operation name as a URL query parameter on every request. This is useful for identifying operations in server logs, APM dashboards, and proxies without parsing the request body:
+
+```json title="config.json"
+{
+  "clientConfig": {
+    "dart": {
+      "operationNameAsParameter": true
+    }
+  }
+}
+```
+
+The generated adapter function gains a second parameter and the client appends `?operationName=OperationName` to every HTTP request:
+
+```dart
+// Generated adapter signature with operationNameAsParameter: true
+Future<String> Function(String payload, String operationName) adapter
+```
+
+The WebSocket adapter is unaffected — operation names on subscriptions flow through the graphql-ws protocol message payload.
+
+## Nullable fields
+
+By default, nullable schema fields generate optional constructor parameters (`this.fieldName`). Set `"nullableFieldsRequired": true` to force `required this.fieldName` on every field regardless of nullability:
+
+```json title="config.json"
+{
+  "clientConfig": {
+    "dart": { "nullableFieldsRequired": true }
+  }
+}
+```
+
+With the default `false`, a nullable field like `ownerId: ID` generates `this.ownerId` (optional). With `true`, it generates `required this.ownerId` — you must always pass it explicitly, even as `null`.
+
 ## File uploads
 
 When your schema uses the built-in `Upload` scalar, GraphLink generates a `GLUpload` type and produces multipart-aware upload logic in the HTTP adapter:
@@ -950,14 +1005,6 @@ print(result.uploadDocument); // e.g. "https://cdn.example.com/document.pdf"
 ```
 
 The Dio and http adapters both handle multipart encoding automatically when a mutation argument contains a `GLUpload`. No extra configuration is needed.
-
-## Operation name in URL
-
-Set `"operationNameAsParameter": true` to append the operation name to every HTTP request URL as `?operationName=OperationName`. Useful for server-side logging and APM tracing. The adapter function signature gains a second `String operationName` parameter.
-
-## Nullable fields
-
-`"nullableFieldsRequired": false` (default) generates optional constructor params for nullable fields (`this.fieldName`). Set to `true` for `required this.fieldName` on all fields regardless of nullability.
 
 ---
 
@@ -1262,6 +1309,63 @@ The generated WebSocket adapter handles the [graphql-ws subprotocol](https://git
 !!! info "Deriving the WebSocket URL"
     The convenience constructors that take only an HTTP URL automatically derive the WebSocket URL by replacing `http` with `ws` (and `https` with `wss`). Pass an explicit `wsUrl` if your WebSocket endpoint differs from the HTTP endpoint.
 
+## Operation name in URL
+
+Set `"operationNameAsParameter": true` to append the operation name as a URL query parameter on every request — useful for server-side logging and APM tracing:
+
+```json title="config.json"
+{
+  "clientConfig": {
+    "java": { "operationNameAsParameter": true }
+  }
+}
+```
+
+The generated adapter interface gains an `operationName` parameter and the client appends `?operationName=OperationName` to each HTTP request URL.
+
+## Nullable fields
+
+By default, nullable schema fields accept `null` without any runtime enforcement. Set `"nullableFieldsRequired": true` to emit `Objects.requireNonNull` on every field, including nullable ones:
+
+```json title="config.json"
+{
+  "clientConfig": {
+    "java": { "nullableFieldsRequired": true }
+  }
+}
+```
+
+## Java records
+
+Set `"inputAsRecord": true` and/or `"typeAsRecord": true` to generate inputs and types as Java records instead of classes with builders. Records use component accessor syntax (`field()`) instead of `getField()`:
+
+```json title="config.json"
+{
+  "clientConfig": {
+    "java": {
+      "inputAsRecord": true,
+      "typeAsRecord": true
+    }
+  }
+}
+```
+
+```java title="Generated input as record"
+public record AddVehicleInput(
+    String brand,
+    String model,
+    Integer year,
+    FuelType fuelType,
+    String ownerId
+) {}
+
+// Usage — no builder needed
+AddVehicleInput input = new AddVehicleInput("Toyota", "Camry", 2023, FuelType.GASOLINE, null);
+System.out.println(input.brand()); // component accessor, no get prefix
+```
+
+Records require Java 16 or later. Mapping methods generated by `@glMapsTo` use component accessors automatically when `typeAsRecord` is `true`.
+
 ## File uploads
 
 When your schema uses the built-in `Upload` scalar, GraphLink generates a `GLUpload` class and handles multipart encoding in the generated adapter:
@@ -1284,18 +1388,6 @@ System.out.println(result.getUploadDocument()); // URL or ID returned by server
 ```
 
 The generated `DefaultGraphLinkClientAdapter` automatically encodes mutations containing `GLUpload` as multipart/form-data following the [GraphQL multipart request spec](https://github.com/jaydenseric/graphql-multipart-request-spec). No extra configuration needed.
-
-## Operation name in URL
-
-Set `"operationNameAsParameter": true` to append `?operationName=OperationName` to every HTTP request URL.
-
-## Nullable fields
-
-`"nullableFieldsRequired": true` emits `Objects.requireNonNull` for all fields including nullable ones.
-
-## Java records
-
-`"inputAsRecord": true` / `"typeAsRecord": true` generates inputs and types as Java records (Java 16+). Component accessor syntax (`field()`) replaces builder getters (`getField()`).
 
 ---
 
@@ -1602,6 +1694,35 @@ client.subscriptions.vehicleAdded().subscribe(event => {
 // <li *ngFor="let v of vehicles$ | async">{{ v.brand }}</li>
 ```
 
+## Operation name in URL
+
+Set `"operationNameAsParameter": true` to append the operation name as a query parameter on every HTTP request — useful for server-side logging and APM:
+
+```json title="config.json"
+{
+  "clientConfig": {
+    "typescript": { "operationNameAsParameter": true }
+  }
+}
+```
+
+The adapter function gains a second parameter and the client sends requests to `<url>?operationName=OperationName`.
+
+## Readonly types
+
+Set `"immutableTypeFields": true` (the default) to generate `readonly` on every field in type interfaces:
+
+```typescript title="With immutableTypeFields: true (default)"
+export interface Vehicle {
+  readonly id: string;
+  readonly brand: string;
+  readonly model: string;
+  readonly year: number;
+}
+```
+
+Set to `false` if you need to mutate response objects after deserialization.
+
 ## Error handling
 
 The generated client throws a `GraphLinkException` when the server returns GraphQL errors:
@@ -1683,14 +1804,6 @@ export function VehicleList() {
 }
 ```
 
-## Operation name in URL
-
-Set `"operationNameAsParameter": true` to append `?operationName=OperationName` to every HTTP request URL.
-
-## Readonly types
-
-`"immutableTypeFields": true` (default) generates `readonly` on all fields in type interfaces.
-
 ---
 
 # Spring Boot Server
@@ -1736,6 +1849,43 @@ Set `"mode": "server"` and provide a `"spring"` section under `serverConfig`. Th
 | `generateRepositories` | When `true`, generates JPA `Repository` interfaces for types annotated with `@glRepository`. |
 | `immutableInputFields` | Input class fields are `final`. Recommended: `true`. |
 | `immutableTypeFields` | Type class fields are `final`. Set to `false` for Spring Boot — Spring's GraphQL runtime sets fields via setters. |
+
+## Java records
+
+Set `"inputAsRecord": true` and/or `"typeAsRecord": true` to generate inputs and types as Java records instead of mutable classes with setters. Records are more concise and enforce immutability at the language level:
+
+```json title="config.json — records"
+{
+  "serverConfig": {
+    "spring": {
+      "basePackage": "com.example.generated",
+      "inputAsRecord": true,
+      "typeAsRecord": false
+    }
+  }
+}
+```
+
+!!! warning "Type records and Spring deserialization"
+    Spring's GraphQL runtime deserializes JSON into type classes using setters or reflection. Setting `typeAsRecord: true` for server-side types requires that you configure Spring to use a record-aware deserializer (e.g. Jackson with `@JsonCreator`). For most Spring Boot setups, keep `typeAsRecord: false` and only set `inputAsRecord: true`.
+
+## Schema generation
+
+Set `"generateSchema": true` to write the processed schema file to disk alongside the generated Java. This is useful when your Spring Boot app needs to serve the schema file at a specific path:
+
+```json title="config.json — schema generation"
+{
+  "serverConfig": {
+    "spring": {
+      "basePackage": "com.example.generated",
+      "generateSchema": true,
+      "schemaTargetPath": "src/main/resources/graphql/schema.graphqls"
+    }
+  }
+}
+```
+
+`schemaTargetPath` must end in `.graphql` or `.graphqls`. The generated schema reflects all directive processing — internal directives like `@glSkipOnServer` are not emitted.
 
 ## What gets generated
 
@@ -2340,6 +2490,63 @@ System.out.println(list2.getListVehicles().size()); // 4 — from server (includ
 
 All GraphLink directives with arguments, placement, and examples.
 
+## Copy-paste declarations
+
+Add this block to your schema file (or a dedicated `directives.graphql`) so your IDE and schema validators recognise every GraphLink directive:
+
+```graphql title="directives.graphql"
+# ── Caching ───────────────────────────────────────────────────────────────────
+
+directive @glCache(
+  ttl: Int!
+  tags: [String!]
+  staleIfOffline: Boolean
+) on QUERY | MUTATION | FIELD | FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR | SCHEMA
+
+directive @glCacheInvalidate(
+  tags: [String!]
+  all: Boolean
+) on QUERY | MUTATION | FIELD | FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR | SCHEMA
+
+# ── Code generation control ───────────────────────────────────────────────────
+
+directive @glSkipOnServer(mapTo: String, batch: Boolean) on OBJECT | SCALAR | FIELD_DEFINITION
+
+directive @glSkipOnClient on OBJECT | INPUT_OBJECT | SCALAR | FIELD_DEFINITION
+
+directive @glExternal(glClass: String!, glImport: String) on SCALAR | OBJECT
+
+directive @glInternal on OBJECT
+
+directive @glTypeName(name: String!) on OBJECT | INPUT_OBJECT | ENUM
+
+# ── Server (Spring Boot) ──────────────────────────────────────────────────────
+
+directive @glDecorators(value: [String!]!) on OBJECT | INPUT_OBJECT | FIELD_DEFINITION
+
+directive @glServiceName(name: String!) on OBJECT | FIELD_DEFINITION
+
+directive @glValidate on FIELD_DEFINITION
+
+directive @glRepository(glType: String!, glIdType: String!) on OBJECT
+
+# ── Equality ──────────────────────────────────────────────────────────────────
+
+directive @glEqualsHashcode(fields: [String!]!) on OBJECT | INPUT_OBJECT
+
+# ── Input mapping ─────────────────────────────────────────────────────────────
+
+directive @glMapsTo(type: String!) on INPUT_OBJECT
+
+directive @glMapField(to: String!) on FIELD_DEFINITION
+
+# ── File upload ───────────────────────────────────────────────────────────────
+
+directive @glUpload on SCALAR
+```
+
+---
+
 ## @glCache
 
 **Target:** CLIENT · **Placement:** `FIELD_DEFINITION` on `Query` fields
@@ -2360,6 +2567,8 @@ type Query {
 }
 ```
 
+---
+
 ## @glCacheInvalidate
 
 **Target:** CLIENT · **Placement:** `FIELD_DEFINITION` on `Mutation` fields
@@ -2379,6 +2588,55 @@ type Mutation {
 }
 ```
 
+---
+
+## @glSkipOnServer
+
+**Target:** SERVER · **Placement:** `OBJECT`, `SCALAR`, `FIELD_DEFINITION`
+
+Excludes a type or field from server generation and generates `@SchemaMapping` or `@BatchMapping` to resolve it. Supports `mapTo` for substituting an existing class and `batch` for N+1-safe batch resolution.
+
+→ **[Full reference with generated code examples](skip-directives.md)**
+
+---
+
+## @glSkipOnClient
+
+**Target:** BOTH · **Placement:** `OBJECT`, `INPUT_OBJECT`, `SCALAR`, `FIELD_DEFINITION`
+
+Enforces server-side access control at two levels. **Always**: generates a `@SchemaMapping` that throws `GraphQLException("Access denied")` — no client can read the field at runtime. **With `generateSchema: true`**: also strips the field from the schema Spring Boot serves, making it invisible in GraphiQL and rejected at validation before execution. Also excludes the type or field from all client-side code generation (Dart, Java, TypeScript).
+
+→ **[Full reference including the server-side security guarantee](skip-directives.md)**
+
+---
+
+## @glExternal
+
+**Target:** BOTH · **Placement:** `SCALAR`, `OBJECT`
+
+Maps a GraphQL scalar or type to an external class, optionally specifying the import path. Unlike `typeMappings` in the config (which works for scalars globally), `@glExternal` is per-type and can specify an import statement so generated files get the correct import automatically.
+
+| Argument | Type | Description |
+|---|---|---|
+| `glClass` | `String!` | The fully-qualified class name to use. |
+| `glImport` | `String` | Optional import statement to add to generated files that reference this type. |
+
+```graphql title="Example"
+# Map the DateTime scalar to Java's OffsetDateTime
+scalar DateTime @glExternal(
+  glClass: "OffsetDateTime",
+  glImport: "java.time.OffsetDateTime"
+)
+
+# Map the BigDecimal scalar to Java's BigDecimal
+scalar BigDecimal @glExternal(
+  glClass: "BigDecimal",
+  glImport: "java.math.BigDecimal"
+)
+```
+
+---
+
 ## @glTypeName
 
 **Target:** CLIENT · **Placement:** `OBJECT`, `INPUT_OBJECT`, `ENUM`
@@ -2396,6 +2654,8 @@ type GQLVehicle @glTypeName(name: "Vehicle") {
   brand: String!
 }
 ```
+
+---
 
 ## @glDecorators
 
@@ -2425,71 +2685,13 @@ public class Vehicle {
 }
 ```
 
-## @glSkipOnServer
-
-**Target:** BOTH · **Placement:** `OBJECT`, `SCALAR`
-
-Instructs GraphLink to skip generating a class for this type in server mode. If `mapTo` is provided, the generator substitutes the given class name wherever this type appears.
-
-| Argument | Type | Description |
-|---|---|---|
-| `mapTo` | `String` | Optional. Fully-qualified class name to use in place of this type. |
-
-```graphql title="Example"
-# Don't generate a class — use Spring Data's Pageable from the framework
-type Pageable @glSkipOnServer(mapTo: "org.springframework.data.domain.Pageable") {
-  page: Int
-  size: Int
-  sort: String
-}
-```
-
-**Forward mappings:** When `mapTo` is set, GraphLink automatically *forwards* fields that exist verbatim on the target type (same name and compatible structural type). These fields are resolved by Spring directly — no service method or `@SchemaMapping` is generated for them. Only fields absent from the target type, or explicitly annotated with `@glSkipOnServer`, still get full delegation.
-
-## @glSkipOnClient
-
-**Target:** BOTH · **Placement:** `OBJECT`, `INPUT_OBJECT`, `SCALAR`
-
-Instructs GraphLink to skip generating a class for this type in client mode. Use this for server-side types that clients never need to instantiate directly.
-
-```graphql title="Example"
-# PageInfo is part of GraphQL responses but clients don't instantiate it
-type PageInfo @glSkipOnClient {
-  hasNextPage: Boolean!
-  endCursor: String
-}
-```
-
-## @glExternal
-
-**Target:** BOTH · **Placement:** `SCALAR`, `OBJECT`
-
-Maps a GraphQL scalar or type to an external class, optionally specifying the import path. Unlike `typeMappings` in the config (which works for all types globally), `@glExternal` is per-type and can specify an import statement.
-
-| Argument | Type | Description |
-|---|---|---|
-| `glClass` | `String!` | The fully-qualified class name to use. |
-| `glImport` | `String` | Optional import statement to add to generated files that reference this type. |
-
-```graphql title="Example"
-# Map the DateTime scalar to Java's OffsetDateTime
-scalar DateTime @glExternal(
-  glClass: "OffsetDateTime",
-  glImport: "java.time.OffsetDateTime"
-)
-
-# Map the BigDecimal scalar to Java's BigDecimal
-scalar BigDecimal @glExternal(
-  glClass: "BigDecimal",
-  glImport: "java.math.BigDecimal"
-)
-```
+---
 
 ## @glServiceName
 
-**Target:** SERVER · **Placement:** `OBJECT`
+**Target:** SERVER · **Placement:** `OBJECT`, `FIELD_DEFINITION`
 
-Sets a custom name for the generated service interface associated with a type. By default, the service is named `{TypeName}Service`.
+Sets a custom name for the generated service interface associated with a type or operation. By default, the service is named `{TypeName}Service`.
 
 | Argument | Type | Description |
 |---|---|---|
@@ -2502,6 +2704,8 @@ type Vehicle @glServiceName(name: "FleetManagementService") {
   brand: String!
 }
 ```
+
+---
 
 ## @glEqualsHashcode
 
@@ -2530,6 +2734,8 @@ input AddVehicleInput @glEqualsHashcode(fields: ["brand", "model", "year", "fuel
 }
 ```
 
+---
+
 ## @glRepository
 
 **Target:** SERVER · **Placement:** `OBJECT`
@@ -2557,6 +2763,8 @@ public interface VehicleRepository extends JpaRepository<Vehicle, String> {
 }
 ```
 
+---
+
 ## @glInternal
 
 **Target:** BOTH · **Placement:** `OBJECT`
@@ -2571,6 +2779,8 @@ type GraphLinkError @glInternal {
   path: [String]
 }
 ```
+
+---
 
 ## @glValidate
 
@@ -2596,10 +2806,14 @@ public interface VehicleService {
 }
 ```
 
+---
+
 ## @glArray — Removed in v4.4.0
 
 !!! danger "@glArray has been removed"
     This directive is no longer supported. As of v4.4.0, all list fields are generated as `List<T>` in Java and Dart regardless of this annotation. Remove any `@glArray` usages from your schema before upgrading to v4.4.0+.
+
+---
 
 ## @glMapsTo
 
@@ -2625,6 +2839,8 @@ input UpdateVehicleInput @glMapsTo(type: "com.example.domain.UpdateVehicleComman
 
 GraphLink generates a `toMappedType()` method on the input class that constructs the target type from the input fields, applying any `@glMapField` renames in the process.
 
+---
+
 ## @glMapField
 
 **Target:** BOTH · **Placement:** `FIELD_DEFINITION` on `input` types annotated with `@glMapsTo`
@@ -2645,6 +2861,25 @@ input UpdateVehicleInput @glMapsTo(type: "com.example.domain.UpdateVehicleComman
 ```
 
 GraphLink validates at generation time that the `to` field name exists on the target class. If it does not, generation fails with a clear error message.
+
+---
+
+## @glUpload
+
+**Target:** BOTH · **Placement:** `SCALAR`
+
+Marks a scalar as a file upload type. In Dart, the scalar is mapped to `GLUpload`. In Java MVC, mutation arguments become `MultipartFile` (or `List<MultipartFile>`). In WebFlux, they become `FilePart` (or `List<FilePart>`). The generated client adapter handles multipart encoding automatically.
+
+```graphql title="Example"
+scalar Upload @glUpload
+
+type Mutation {
+  uploadAvatar(userId: ID!, file: Upload!): User!
+  uploadDocuments(files: [Upload!]!): [Document!]!
+}
+```
+
+---
 
 ## _all_fields — the magic fragment
 
@@ -2687,89 +2922,789 @@ The `autoGenerateQueries: true` config option uses these fragments internally to
 
 ---
 
+# @glSkipOnServer & @glSkipOnClient
+
+Two directives that give you fine-grained control over what GraphLink generates for each target.
+
+| Directive | Target | Effect |
+|---|---|---|
+| `@glSkipOnServer` | Server (Spring Boot) | Excludes a type or field from server generation; generates `@SchemaMapping` / `@BatchMapping` to resolve it |
+| `@glSkipOnClient` | Client (Dart, Java, TypeScript) | Strips the type or field from the generated schema — **no client can query it** |
+
+Declaration (add to your schema or a dedicated `directives.graphql`):
+
+```graphql
+directive @glSkipOnServer(mapTo: String, batch: Boolean) on OBJECT | SCALAR | FIELD_DEFINITION
+directive @glSkipOnClient on OBJECT | INPUT_OBJECT | SCALAR | FIELD_DEFINITION
+```
+
+---
+
+## @glSkipOnClient is a server-side security guarantee
+
+!!! danger "This is not just client code generation"
+    `@glSkipOnClient` enforces access control **on the server**, at two levels depending on whether `generateSchema` is enabled. In both cases, the field cannot be read by any client — not GraphiQL, not Postman, not a rogue app.
+
+GraphLink enforces `@glSkipOnClient` through two complementary mechanisms:
+
+### Level 1 — Runtime rejection (always active)
+
+Even without any schema generation, GraphLink generates a `@SchemaMapping` handler for every `@glSkipOnClient` field that immediately throws a `GraphQLException`:
+
+```graphql title="Schema"
+type User {
+  id: ID!
+  email: String!
+  passwordHash: String! @glSkipOnClient
+}
+```
+
+```java title="Generated VehicleServiceController.java (always generated)"
+// Any client that queries passwordHash receives a GraphQL error — access denied.
+@SchemaMapping(typeName="User", field="passwordHash")
+public CompletableFuture<Object> passwordHash(User value) {
+    throw new GraphQLException("Access denied to field 'User.passwordHash'");
+}
+```
+
+Any query that includes `passwordHash` receives a GraphQL error in the response. The field is still visible via introspection at this level — but it is completely inaccessible at runtime.
+
+### Level 2 — Schema stripping (with `generateSchema: true`)
+
+When `generateSchema: true` is enabled, GraphLink also strips every `@glSkipOnClient` type, field, input, enum, and scalar from the schema file it writes to disk. Spring Boot serves this stripped schema as the authoritative GraphQL schema.
+
+```graphql title="Your source schema"
+type User {
+  id: ID!
+  email: String!
+  passwordHash: String! @glSkipOnClient   # never exposed
+  internalScore: Float! @glSkipOnClient   # never exposed
+}
+```
+
+```graphql title="Generated schema served by Spring Boot (generateSchema: true)"
+# passwordHash and internalScore are completely absent.
+# Spring rejects any query referencing them at validation — before execution.
+type User {
+  id: ID!
+  email: String!
+}
+```
+
+With the stripped schema in place:
+
+- The field does not appear in GraphiQL or any introspection result
+- Spring Boot rejects any query referencing it at the **validation layer**, before execution even starts — `400 Bad Request`
+- The `@SchemaMapping` exception handler from Level 1 is **not generated** for this field (it's not needed — the field doesn't exist in the schema)
+
+### How to enable Level 2
+
+Add `generateSchema: true` to your Spring Boot config:
+
+```json title="glink.json"
+{
+  "mode": "server",
+  "serverConfig": {
+    "spring": {
+      "basePackage": "com.example.generated",
+      "generateSchema": true,
+      "schemaTargetPath": "src/main/resources/graphql/schema.graphqls"
+    }
+  }
+}
+```
+
+Run `glink` and the stripped schema lands at `src/main/resources/graphql/schema.graphqls`. Spring Boot picks it up automatically.
+
+### Summary
+
+| | `generateSchema: false` | `generateSchema: true` |
+|---|---|---|
+| Field visible in GraphiQL | Yes | **No** |
+| Field accessible at runtime | **No** — throws `GraphQLException` | **No** — rejected at validation |
+| Rejection layer | Execution (runtime error) | Validation (`400 Bad Request`) |
+| `@SchemaMapping` generated | Yes — throws access denied | No — field stripped from schema |
+
+!!! tip "Use both"
+    Level 1 is always active and requires no configuration. Enable Level 2 (`generateSchema: true`) for the strongest guarantee — fields vanish from introspection entirely and are rejected before execution. Use both together in production.
+
+---
+
+---
+
+## @glSkipOnServer
+
+### Applied to a type — no `mapTo`
+
+When placed on a type with no arguments, GraphLink skips generating a Java class for it. Any field on another type that returns this type is resolved via `@SchemaMapping`. The return type in service and controller signatures becomes `Object`.
+
+```graphql title="Schema"
+type Vehicle {
+  id: ID!
+  brand: String!
+  stats: VehicleStats!
+}
+
+type VehicleStats @glSkipOnServer {
+  totalMileage: Int!
+  lastServiceDate: String!
+}
+```
+
+=== "MVC"
+
+    ```java title="Generated VehicleService.java"
+    public interface VehicleService {
+        Vehicle getVehicle(String id);
+        Object stats(Vehicle vehicle);
+    }
+    ```
+
+    ```java title="Generated VehicleServiceController.java"
+    @Controller
+    public class VehicleServiceController {
+
+        @QueryMapping
+        public CompletableFuture<Vehicle> getVehicle(@Argument String id) {
+            return CompletableFuture.supplyAsync(() -> vehicleService.getVehicle(id));
+        }
+
+        // return type is Object — VehicleStats has no mapTo
+        @SchemaMapping
+        public CompletableFuture<Object> stats(Vehicle vehicle) {
+            return CompletableFuture.supplyAsync(() -> vehicleService.stats(vehicle));
+        }
+    }
+    ```
+
+=== "WebFlux"
+
+    ```java title="Generated VehicleService.java"
+    public interface VehicleService {
+        Mono<Vehicle> getVehicle(String id);
+        Mono<Object> stats(Vehicle vehicle);
+    }
+    ```
+
+    ```java title="Generated VehicleServiceController.java"
+    @Controller
+    public class VehicleServiceController {
+
+        @QueryMapping
+        public Mono<Vehicle> getVehicle(@Argument String id) {
+            return vehicleService.getVehicle(id);
+        }
+
+        @SchemaMapping
+        public Mono<Object> stats(Vehicle vehicle) {
+            return vehicleService.stats(vehicle);
+        }
+    }
+    ```
+
+---
+
+### Applied to a type — with `mapTo`
+
+`mapTo` takes a **GraphQL type name defined in your schema**. GraphLink resolves it to the generated class for that type and uses it as the return type wherever the skipped type appears.
+
+GraphLink also compares the fields of the two types. Fields that exist verbatim on the target type (same name and compatible type) are **auto-forwarded** — Spring resolves them directly from the mapped object, so no service method or `@SchemaMapping` is generated for them. Only fields absent from the target type get full delegation.
+
+```graphql title="Schema"
+type Vehicle {
+  id: ID!
+  brand: String!
+  model: String!
+}
+
+type Query {
+  searchVehicles(query: String!): [VehicleCard!]!
+}
+
+# Client-facing view model. On the server, resolve as a regular Vehicle —
+# no VehicleCard class is generated.
+type VehicleCard @glSkipOnServer(mapTo: "Vehicle") {
+  id: ID!        # same field on Vehicle → auto-forwarded
+  brand: String! # same field on Vehicle → auto-forwarded
+  model: String! # same field on Vehicle → auto-forwarded
+  displayLabel: String! # NOT on Vehicle → @SchemaMapping + service method
+}
+```
+
+=== "MVC"
+
+    ```java title="Generated VehicleService.java"
+    public interface VehicleService {
+        // returns Vehicle, not VehicleCard — no VehicleCard class is generated
+        List<Vehicle> searchVehicles(String query);
+        String displayLabel(Vehicle vehicle);
+    }
+    ```
+
+    ```java title="Generated VehicleServiceController.java"
+    @Controller
+    public class VehicleServiceController {
+
+        @QueryMapping
+        public CompletableFuture<List<Vehicle>> searchVehicles(@Argument String query) {
+            return CompletableFuture.supplyAsync(() -> vehicleService.searchVehicles(query));
+        }
+
+        // id, brand, model are auto-forwarded — Spring calls vehicle.getId() etc. directly.
+
+        @SchemaMapping
+        public CompletableFuture<String> displayLabel(Vehicle vehicle) {
+            return CompletableFuture.supplyAsync(() -> vehicleService.displayLabel(vehicle));
+        }
+    }
+    ```
+
+=== "WebFlux"
+
+    ```java title="Generated VehicleService.java"
+    public interface VehicleService {
+        Flux<Vehicle> searchVehicles(String query);
+        Mono<String> displayLabel(Vehicle vehicle);
+    }
+    ```
+
+    ```java title="Generated VehicleServiceController.java"
+    @Controller
+    public class VehicleServiceController {
+
+        @QueryMapping
+        public Flux<Vehicle> searchVehicles(@Argument String query) {
+            return vehicleService.searchVehicles(query);
+        }
+
+        @SchemaMapping
+        public Mono<String> displayLabel(Vehicle vehicle) {
+            return vehicleService.displayLabel(vehicle);
+        }
+    }
+    ```
+
+---
+
+### Applied to a type — with `batch: true`
+
+`batch: true` swaps `@SchemaMapping` for `@BatchMapping`. The controller receives a list of parent objects and returns a map, eliminating N+1 queries when the field is requested for many parents at once.
+
+```graphql title="Schema"
+type Vehicle {
+  id: ID!
+  brand: String!
+  stats: VehicleStats! @glSkipOnServer(batch: true)
+}
+
+type VehicleStats @glSkipOnServer {
+  totalMileage: Int!
+  lastServiceDate: String!
+}
+```
+
+=== "MVC"
+
+    ```java title="Generated VehicleService.java"
+    public interface VehicleService {
+        Vehicle getVehicle(String id);
+        Map<Vehicle, Object> stats(List<Vehicle> vehicles);
+    }
+    ```
+
+    ```java title="Generated VehicleServiceController.java"
+    @BatchMapping
+    public CompletableFuture<Map<Vehicle, Object>> stats(List<Vehicle> vehicles) {
+        return CompletableFuture.supplyAsync(() -> vehicleService.stats(vehicles));
+    }
+    ```
+
+=== "WebFlux"
+
+    ```java title="Generated VehicleService.java"
+    public interface VehicleService {
+        Mono<Vehicle> getVehicle(String id);
+        Flux<Object> stats(List<Vehicle> vehicles);
+    }
+    ```
+
+    ```java title="Generated VehicleServiceController.java"
+    @BatchMapping
+    public Flux<Object> stats(List<Vehicle> vehicles) {
+        return vehicleService.stats(vehicles);
+    }
+    ```
+
+!!! tip "Combine `mapTo` with `batch: true`"
+    You can use both together: `@glSkipOnServer(mapTo: "Vehicle", batch: true)` generates a `@BatchMapping` and uses the `Vehicle` generated class as the value type in the map.
+
+---
+
+### Applied to a field
+
+When placed on a **field** of a non-root type (not on `Query`, `Mutation`, or `Subscription`), the field is excluded from the generated Java class and a `@SchemaMapping` is generated to resolve it. This is the correct way to declare computed fields or fields with arguments.
+
+```graphql title="Schema"
+type Vehicle {
+  id: ID!
+  brand: String!
+  model: String!
+  # Computed field — not stored, resolved server-side
+  displayName: String! @glSkipOnServer
+  # Field with arguments — must be marked so @SchemaMapping is generated
+  similarVehicles(limit: Int = 5): [Vehicle!]! @glSkipOnServer
+}
+```
+
+```java title="Generated Vehicle.java"
+public class Vehicle {
+    private final String id;
+    private final String brand;
+    private final String model;
+    // displayName and similarVehicles are absent
+}
+```
+
+=== "MVC"
+
+    ```java title="Generated VehicleService.java"
+    public interface VehicleService {
+        Vehicle getVehicle(String id);
+        String displayName(Vehicle vehicle);
+        List<Vehicle> similarVehicles(Vehicle vehicle, Integer limit);
+    }
+    ```
+
+    ```java title="Generated VehicleServiceController.java"
+    @SchemaMapping
+    public CompletableFuture<String> displayName(Vehicle vehicle) {
+        return CompletableFuture.supplyAsync(() -> vehicleService.displayName(vehicle));
+    }
+
+    @SchemaMapping
+    public CompletableFuture<List<Vehicle>> similarVehicles(
+            Vehicle vehicle, @Argument Integer limit) {
+        return CompletableFuture.supplyAsync(
+                () -> vehicleService.similarVehicles(vehicle, limit));
+    }
+    ```
+
+=== "WebFlux"
+
+    ```java title="Generated VehicleService.java"
+    public interface VehicleService {
+        Mono<Vehicle> getVehicle(String id);
+        Mono<String> displayName(Vehicle vehicle);
+        Flux<Vehicle> similarVehicles(Vehicle vehicle, Integer limit);
+    }
+    ```
+
+    ```java title="Generated VehicleServiceController.java"
+    @SchemaMapping
+    public Mono<String> displayName(Vehicle vehicle) {
+        return vehicleService.displayName(vehicle);
+    }
+
+    @SchemaMapping
+    public Flux<Vehicle> similarVehicles(Vehicle vehicle, @Argument Integer limit) {
+        return vehicleService.similarVehicles(vehicle, limit);
+    }
+    ```
+
+---
+
+## @glSkipOnClient
+
+Excludes a type or field from the generated schema and from client-side code generation. When `generateSchema: true` is set, the annotated type or field is **completely absent from the schema Spring Boot serves** — no client can request it. See the [security guarantee](#glskiponclient-is-a-server-side-security-guarantee) section above for details.
+
+### Applied to a type
+
+No class is generated. References to this type in queries are treated as opaque.
+
+```graphql title="Schema"
+# The server sends PageInfo but the client never instantiates it directly
+type PageInfo @glSkipOnClient {
+  hasNextPage: Boolean!
+  endCursor: String
+  startCursor: String
+}
+
+type VehicleConnection {
+  nodes: [Vehicle!]!
+  pageInfo: PageInfo!
+}
+```
+
+```dart title="Generated VehicleConnection (Dart)"
+class VehicleConnection {
+  final List<Vehicle> nodes;
+  // pageInfo is absent — PageInfo has no generated class
+}
+```
+
+### Applied to a field
+
+The field is excluded from the generated class. Use this for server-only fields — passwords, internal IDs, audit metadata — that should never reach the client.
+
+```graphql title="Schema"
+type User {
+  id: ID!
+  email: String!
+  passwordHash: String! @glSkipOnClient   # never sent to clients
+  createdAt: String!    @glSkipOnClient   # internal audit field
+}
+```
+
+=== "Dart"
+
+    ```dart title="Generated User (Dart)"
+    class User {
+      final String id;
+      final String email;
+      // passwordHash and createdAt are absent
+    }
+    ```
+
+=== "Java client"
+
+    ```java title="Generated User.java"
+    public class User {
+        private final String id;
+        private final String email;
+        // passwordHash and createdAt are absent
+    }
+    ```
+
+=== "TypeScript"
+
+    ```typescript title="Generated User (TypeScript)"
+    export interface User {
+      readonly id: string;
+      readonly email: string;
+      // passwordHash and createdAt are absent
+    }
+    ```
+
+### Interaction with `@glMapsTo`
+
+When a field is `@glSkipOnClient`, it is also excluded from any `@glMapsTo` mapping methods. GraphLink will not reference it in `toXxx()` or `fromXxx()` constructors, preventing broken type references in generated client code.
+
+```graphql title="Schema"
+input UpdateUserInput @glMapsTo(type: "UpdateUserCommand") {
+  id: ID!
+  email: String!
+  internalFlag: Boolean! @glSkipOnClient  # excluded from client mapping
+}
+```
+
+---
+
+## Combining both directives on different fields
+
+`@glSkipOnServer` and `@glSkipOnClient` are most often paired on **different fields of the same type** — not on the same whole type. This is the standard pattern for modelling a relationship where the server stores a raw foreign key but the client needs the resolved object.
+
+```graphql title="Schema"
+type Agency {
+  id: ID!
+  name: String!
+  # Server stores this ID in the database — the client never needs it
+  cashierId: ID! @glSkipOnClient
+  # Server resolves this via @BatchMapping — the client fetches it
+  cashier: Cashier @glSkipOnServer(batch: true)
+}
+```
+
+- `cashierId` is `@glSkipOnClient`: the raw foreign key used for persistence. Invisible to the client — not generated in Dart/Java/TypeScript, and protected server-side by the access-denied `@SchemaMapping`.
+- `cashier` is `@glSkipOnServer(batch: true)`: a resolved object the server produces via `@BatchMapping` using the stored `cashierId`. Not stored in the database.
+
+Generated output:
+
+```java title="Generated Agency.java (server)"
+public class Agency {
+    private String id;
+    private String name;
+    private String cashierId; // present on server — used for DB lookups
+    // cashier is absent — resolved via @BatchMapping
+}
+```
+
+```java title="Generated AgencyServiceController.java"
+@BatchMapping(typeName="Agency", field="cashier")
+public CompletableFuture<Map<Agency, Cashier>> cashier(List<Agency> agencies) {
+    return CompletableFuture.supplyAsync(() -> agencyService.cashier(agencies));
+}
+// cashierId: access-denied @SchemaMapping generated (or stripped from schema if generateSchema: true)
+```
+
+```dart title="Generated Agency (Dart client)"
+class Agency {
+  final String id;
+  final String name;
+  final Cashier cashier; // present on client — typed object
+  // cashierId is absent — @glSkipOnClient
+}
+```
+
+This pattern scales naturally for any number of relationships:
+
+```graphql title="Real-world example — lot movement tracking"
+type LotMovement {
+  id: ID!
+  quantity: Int!
+
+  lotId: ID!             @glSkipOnClient
+  lot: Lot               @glSkipOnServer(batch: true)
+
+  fromLocationId: ID     @glSkipOnClient
+  fromLocation: Location @glSkipOnServer(batch: true)
+
+  toLocationId: ID       @glSkipOnClient
+  toLocation: Location   @glSkipOnServer(batch: true)
+}
+```
+
+The client sees `lot`, `fromLocation`, and `toLocation` as fully typed objects. The server stores and works with the raw IDs, resolving the objects in batch to avoid N+1 queries. Neither side is aware of the other's representation — the schema is the only contract between them.
+
+---
+
 # Configuration Reference
 
 Full reference for every option in `config.json`.
 
 ## Top-level options
 
+```json title="config.json — top-level structure"
+{
+  "schemaPaths": ["schema/*.graphql"],
+  "mode": "client",
+  "typeMappings": { "ID": "String", "Float": "double" },
+  "outputDir": "lib/generated",
+  "identityFields": ["id"],
+  "disableCache": false,
+  "clientConfig": { ... },
+  "serverConfig": { ... }
+}
+```
+
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `schemaPaths` | `string[]` | — | Glob patterns for schema files. |
-| `mode` | `"client"` \| `"server"` | `"server"` | `"client"` generates a typed client. `"server"` generates Spring Boot scaffolding. |
-| `typeMappings` | `Record<string,string>` | `{}` | Maps GraphQL scalar names to target-language types. Add entries for custom scalars. |
-| `outputDir` | `string` | `"src/main/java"` | Directory where generated files are written. |
-| `identityFields` | `string[]` | `[]` | Field names included in generated `==`/`hashCode` methods (Dart and Java). |
-| `disableCache` | `boolean` | `false` | Strips all `@glCache`/`@glCacheInvalidate` directives from the generated client. |
+| `schemaPaths` | `string[]` | — | **Required.** Glob patterns for schema files. Multiple patterns are supported — all matched files are merged into one schema. |
+| `mode` | `"client"` \| `"server"` | `"server"` | Controls which generator runs. `"client"` generates a typed client (Dart, Java, or TypeScript). `"server"` generates Spring Boot scaffolding. |
+| `typeMappings` | `Record<string, string>` | `{}` | Maps GraphQL scalar names to target-language types. Entries here override the defaults. Add entries for custom scalars. |
+| `outputDir` | `string` | `"src/main/java"` | Directory where generated files are written. Existing files are overwritten on every run. |
+| `identityFields` | `string[]` | `[]` | Field names treated as identity fields when generating `==` / `hashCode` methods (Dart and Java). Fields listed here are always included in equality regardless of `@glEqualsHashcode`. |
+| `disableCache` | `boolean` | `false` | When `true`, strips all `@glCache` and `@glCacheInvalidate` directives from the generated client — useful for debugging or environments where caching is handled externally. |
 
-## clientConfig.dart
+---
 
-| Option | Default | Description |
-|---|---|---|
-| `packageName` | — | **Required.** Dart package name for import paths. |
-| `httpAdapter` | `"http"` | `"http"`, `"dio"`, or `"none"`. |
-| `generateAdapters` | `true` | When `false`, skips generating HTTP and WebSocket adapter files. |
-| `generateAllFieldsFragments` | `false` | Generates `_all_fields_TypeName` fragments for every type. |
-| `autoGenerateQueries` | `false` | Automatically builds query strings for every operation. |
-| `autoGenerateQueriesDefaultAlias` | `null` | Default alias prefix for auto-generated query fields. |
-| `defaultAlias` | `null` | Default alias applied to all generated query fields globally. |
-| `operationNameAsParameter` | `false` | Adds `operationName` as a second adapter parameter and appends it to the request URL. |
-| `nullableFieldsRequired` | `false` | When `true`, nullable constructor params use `required this.field` instead of optional `this.field`. |
-| `immutableInputFields` | `true` | Input class fields are `final`. |
-| `immutableTypeFields` | `true` | Response type class fields are `final`. |
-| `generateUiTypes` | `false` | Generates Flutter widget classes for every type. |
-| `generateUiInputs` | `false` | Generates Flutter form widgets for every input type. |
-| `appLocalizationsImport` | `null` | Import path for `AppLocalizations` injected into generated Flutter UI widgets. |
+## `clientConfig.dart`
 
-## clientConfig.java
+Used when `mode` is `"client"` and you want Dart/Flutter output.
 
-| Option | Default | Description |
-|---|---|---|
-| `packageName` | — | **Required.** Java package name. |
-| `wsAdapter` | `"java11"` | `"java11"`, `"okhttp"`, or `"none"`. |
-| `jsonCodec` | `"jackson"` | `"jackson"`, `"gson"`, or `"none"`. |
-| `generateAllFieldsFragments` | `false` | Generates `_all_fields_TypeName` fragments. |
-| `autoGenerateQueries` | `false` | Automatically builds query strings. |
-| `defaultAlias` | `null` | Default alias for all generated query fields. |
-| `operationNameAsParameter` | `false` | Adds `operationName` parameter to adapter interface and appends to URL. |
-| `nullableFieldsRequired` | `false` | Emits `Objects.requireNonNull` for all fields, including nullable ones. |
-| `immutableInputFields` | `true` | Input fields are `private final` — builder pattern. |
-| `immutableTypeFields` | `true` | Response type fields are `private final` — getters only. |
-| `inputAsRecord` | `false` | Generates inputs as Java records (Java 16+). |
-| `typeAsRecord` | `false` | Generates response types as Java records (Java 16+). |
+```json title="clientConfig.dart — all options"
+{
+  "clientConfig": {
+    "dart": {
+      "packageName": "my_app",
+      "httpAdapter": "dio",
+      "generateAdapters": true,
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "autoGenerateQueriesDefaultAlias": null,
+      "defaultAlias": null,
+      "operationNameAsParameter": false,
+      "nullableFieldsRequired": false,
+      "immutableInputFields": true,
+      "immutableTypeFields": true,
+      "generateUiTypes": false,
+      "generateUiInputs": false,
+      "appLocalizationsImport": null
+    }
+  }
+}
+```
 
-## clientConfig.typescript
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `packageName` | `string` | — | **Required.** The Dart package name used for import paths in generated files (e.g. `"my_app"` produces `import 'package:my_app/...'`). |
+| `httpAdapter` | `"http"` \| `"dio"` \| `"none"` | `"http"` | Which HTTP adapter file to generate. `"http"` uses `package:http`. `"dio"` uses Dio (supports interceptors, custom `BaseOptions`). `"none"` skips adapter generation — supply your own `Future<String> Function(String)`. |
+| `generateAdapters` | `boolean` | `true` | When `false`, skips generating the HTTP and WebSocket adapter files. Use this if you maintain your own adapter implementations and don't want them overwritten. |
+| `generateAllFieldsFragments` | `boolean` | `false` | Generates a `_all_fields_TypeName` named fragment for every type in the schema. Required for `autoGenerateQueries` to work. |
+| `autoGenerateQueries` | `boolean` | `false` | Automatically builds query strings for every operation using `_all_fields` fragments. When `true`, you do not need to write any query strings by hand. |
+| `autoGenerateQueriesDefaultAlias` | `string` \| `null` | `null` | Default alias prefix to use for auto-generated query fields when `autoGenerateQueries` is `true`. Useful when multiple operations select the same root field. |
+| `defaultAlias` | `string` \| `null` | `null` | Default alias applied to all generated query fields globally when no field-level alias is declared. |
+| `operationNameAsParameter` | `boolean` | `false` | When `true`, the generated HTTP adapter function signature includes a second `operationName` parameter: `Future<String> Function(String payload, String operationName)`. The operation name is appended to the URL as a query parameter, which is useful for server-side logging and APM tracing. |
+| `nullableFieldsRequired` | `boolean` | `false` | When `true`, nullable fields in generated constructors are emitted as `required this.fieldName` instead of optional `this.fieldName`. Use this to enforce that all fields are always explicitly passed at construction sites. |
+| `immutableInputFields` | `boolean` | `true` | Input class fields are `final`. Recommended. |
+| `immutableTypeFields` | `boolean` | `true` | Response type class fields are `final`. Recommended for client-side code. |
+| `generateUiTypes` | `boolean` | `false` | Generates Flutter widget classes for every `type` in the schema — useful for rapid prototyping. Requires Flutter. |
+| `generateUiInputs` | `boolean` | `false` | Generates Flutter form widgets for every `input` type — renders a form with one field per schema field. |
+| `appLocalizationsImport` | `string` \| `null` | `null` | Import path for an `AppLocalizations` class injected into generated Flutter UI widgets. Only relevant when `generateUiTypes` or `generateUiInputs` is `true`. |
 
-| Option | Default | Description |
-|---|---|---|
-| `httpAdapter` | `"fetch"` | `"fetch"`, `"axios"`, or `"none"`. |
-| `generateDefaultWsAdapter` | `true` | Generates the default WebSocket adapter. |
-| `observables` | `false` | Returns `Observable<T>` (RxJS) instead of `Promise<T>`. |
-| `generateAllFieldsFragments` | `false` | Generates `_all_fields_TypeName` fragments. |
-| `autoGenerateQueries` | `false` | Automatically builds query strings. |
-| `defaultAlias` | `null` | Default alias for all generated query fields. |
-| `operationNameAsParameter` | `false` | Adds `operationName` parameter to adapter and appends to URL. |
-| `optionalNullableInputFields` | `true` | Nullable input fields use `field?: T \| null` (optional property). |
-| `immutableTypeFields` | `true` | Type interface fields use `readonly`. |
+---
 
-## serverConfig.spring
+## `clientConfig.java`
 
-| Option | Default | Description |
-|---|---|---|
-| `basePackage` | — | **Required.** Java package name for all generated classes. |
-| `generateControllers` | `true` | Generates `@Controller` classes. |
-| `generateInputs` | `true` | Generates input data classes. |
-| `generateTypes` | `true` | Generates type data classes. |
-| `generateRepositories` | `false` | Generates JPA `Repository` interfaces for `@glRepository` types. |
-| `immutableInputFields` | `true` | Input fields are `private final`. |
-| `immutableTypeFields` | `false` | Type fields are `private final`. Keep `false` for Spring Boot. |
-| `inputAsRecord` | `false` | Generates inputs as Java records (Java 16+). |
-| `typeAsRecord` | `false` | Generates types as Java records (Java 16+). |
-| `reactive` | `false` | Generates Spring WebFlux controllers (`Mono`/`Flux` return types). |
-| `useSpringSecurity` | `false` | MVC only. Propagates `SecurityContext` into `CompletableFuture` lambdas. |
-| `injectDataFetching` | `false` | Generates data-fetching injection code in controllers. |
-| `generateSchema` | `false` | Writes the processed schema to disk. Requires `schemaTargetPath`. |
-| `schemaTargetPath` | `null` | Path for the generated schema file (must end in `.graphql` or `.graphqls`). |
+Used when `mode` is `"client"` and you want a Java client.
+
+```json title="clientConfig.java — all options"
+{
+  "clientConfig": {
+    "java": {
+      "packageName": "com.example.generated",
+      "wsAdapter": "java11",
+      "jsonCodec": "jackson",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "autoGenerateQueriesDefaultAlias": null,
+      "defaultAlias": null,
+      "operationNameAsParameter": false,
+      "nullableFieldsRequired": false,
+      "immutableInputFields": true,
+      "immutableTypeFields": true,
+      "inputAsRecord": false,
+      "typeAsRecord": false
+    }
+  }
+}
+```
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `packageName` | `string` | — | **Required.** Java package name for generated files (e.g. `"com.example.generated"`). |
+| `wsAdapter` | `"java11"` \| `"okhttp"` \| `"none"` | `"java11"` | Which WebSocket adapter to generate. `"java11"` uses `java.net.http.WebSocket` (zero extra dependencies). `"okhttp"` uses OkHttp's WebSocket client. `"none"` skips WebSocket adapter generation. |
+| `jsonCodec` | `"jackson"` \| `"gson"` \| `"none"` | `"jackson"` | Which JSON codec helper to generate. `"jackson"` generates `JacksonGraphLinkJsonCodec`. `"gson"` generates `GsonGraphLinkJsonCodec`. `"none"` skips codec generation — supply your own lambdas. |
+| `generateAllFieldsFragments` | `boolean` | `false` | Generates `_all_fields_TypeName` fragments for every type. Required for `autoGenerateQueries`. |
+| `autoGenerateQueries` | `boolean` | `false` | Automatically builds query strings for every operation. |
+| `defaultAlias` | `string` \| `null` | `null` | Default alias applied to all generated query fields globally. |
+| `operationNameAsParameter` | `boolean` | `false` | When `true`, the adapter interface includes an `operationName` parameter and the generated client appends it to the request URL as a query parameter. |
+| `nullableFieldsRequired` | `boolean` | `false` | When `true`, the generated input constructors do not accept `null` for nullable fields — `Objects.requireNonNull` is emitted for all fields. |
+| `immutableInputFields` | `boolean` | `true` | Input class fields are `private final`. Inputs use builder pattern. |
+| `immutableTypeFields` | `boolean` | `true` | Response type fields are `private final` with only getters. Recommended for client-side. |
+| `inputAsRecord` | `boolean` | `false` | Generates input types as Java records instead of classes with builders. Records use component accessor syntax (`field()`) instead of getters (`getField()`). Requires Java 16+. |
+| `typeAsRecord` | `boolean` | `false` | Generates response types as Java records. Affects how `fromJson` and mapping methods access fields. Requires Java 16+. |
+
+---
+
+## `clientConfig.typescript`
+
+Used when `mode` is `"client"` and you want TypeScript output.
+
+```json title="clientConfig.typescript — all options"
+{
+  "clientConfig": {
+    "typescript": {
+      "httpAdapter": "fetch",
+      "generateDefaultWsAdapter": true,
+      "observables": false,
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "defaultAlias": null,
+      "operationNameAsParameter": false,
+      "optionalNullableInputFields": true,
+      "immutableTypeFields": true
+    }
+  }
+}
+```
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `httpAdapter` | `"fetch"` \| `"axios"` \| `"none"` | `"fetch"` | Which HTTP adapter to generate. `"fetch"` uses the native Fetch API (works in Angular, React, Vue, Svelte, Node 18+). `"axios"` uses Axios. `"none"` skips adapter generation. |
+| `generateDefaultWsAdapter` | `boolean` | `true` | When `true`, generates `DefaultGraphLinkWebSocketAdapter` implementing the graphql-ws protocol with exponential-backoff reconnect. Set to `false` if you have no subscriptions or supply your own adapter. |
+| `observables` | `boolean` | `false` | When `true`, query and mutation methods return `Observable<T>` (RxJS) instead of `Promise<T>`. Subscription methods also return `Observable<T>`. Recommended for Angular projects. |
+| `generateAllFieldsFragments` | `boolean` | `false` | Generates `_all_fields_TypeName` fragments for every type. Required for `autoGenerateQueries`. |
+| `autoGenerateQueries` | `boolean` | `false` | Automatically builds query strings for every operation using `_all_fields` fragments. |
+| `defaultAlias` | `string` \| `null` | `null` | Default alias applied to all generated query fields globally. |
+| `operationNameAsParameter` | `boolean` | `false` | When `true`, the adapter function signature includes an `operationName` parameter and the client appends it to the request URL. |
+| `optionalNullableInputFields` | `boolean` | `true` | When `true`, nullable fields in generated input interfaces use `field?: T \| null` (TypeScript optional property). When `false`, they use `field: T \| null` (required but nullable). |
+| `immutableTypeFields` | `boolean` | `true` | When `true`, generated type interfaces use `readonly` on all fields. |
+
+---
+
+## `serverConfig.spring`
+
+Used when `mode` is `"server"`.
+
+```json title="serverConfig.spring — all options"
+{
+  "serverConfig": {
+    "spring": {
+      "basePackage": "com.example.generated",
+      "generateControllers": true,
+      "generateInputs": true,
+      "generateTypes": true,
+      "generateRepositories": false,
+      "immutableInputFields": true,
+      "immutableTypeFields": false,
+      "inputAsRecord": false,
+      "typeAsRecord": false,
+      "reactive": false,
+      "useSpringSecurity": false,
+      "injectDataFetching": false,
+      "generateSchema": false,
+      "schemaTargetPath": null
+    }
+  }
+}
+```
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `basePackage` | `string` | — | **Required.** Java package name for all generated classes (e.g. `"com.example.generated"`). |
+| `generateControllers` | `boolean` | `true` | Generates `@Controller` classes with `@QueryMapping`, `@MutationMapping`, `@SubscriptionMapping`, and `@Argument` on parameters. |
+| `generateInputs` | `boolean` | `true` | Generates input data classes from `input` type definitions. |
+| `generateTypes` | `boolean` | `true` | Generates type data classes from `type` definitions. |
+| `generateRepositories` | `boolean` | `false` | Generates JPA `Repository` interfaces for types annotated with `@glRepository`. |
+| `immutableInputFields` | `boolean` | `true` | Input class fields are `private final`. Recommended. |
+| `immutableTypeFields` | `boolean` | `false` | Type class fields are `private final`. Set to `false` for Spring Boot — Spring's runtime sets fields via setters or reflection. |
+| `inputAsRecord` | `boolean` | `false` | Generates input types as Java records. Requires Java 16+. |
+| `typeAsRecord` | `boolean` | `false` | Generates type classes as Java records. Requires Java 16+. |
+| `reactive` | `boolean` | `false` | When `true`, generates Spring WebFlux-style controllers. Queries and mutations return `Mono<T>`. File upload fields use `FilePart`. |
+| `useSpringSecurity` | `boolean` | `false` | MVC mode only. Captures the `SecurityContext` before entering `CompletableFuture` lambdas and restores it on the worker thread. Requires `spring-security` on the classpath. Has no effect in reactive mode. |
+| `injectDataFetching` | `boolean` | `false` | When `true`, generates data-fetching injection code in controllers for field-level resolution. |
+| `generateSchema` | `boolean` | `false` | When `true`, writes a copy of the processed schema to disk alongside the generated Java. Requires `schemaTargetPath`. |
+| `schemaTargetPath` | `string` \| `null` | `null` | Path where the schema file is written when `generateSchema` is `true`. Must end in `.graphql` or `.graphqls`. Example: `"src/main/resources/schema.graphqls"`. |
+
+---
+
+## Config file format
+
+GraphLink accepts **JSON** (`.json`), **YAML** (`.yaml`), and **YML** (`.yml`) config files. The structure and keys are identical across all three formats.
+
+```yaml title="glink.yaml — equivalent to the JSON example above"
+schemaPaths:
+  - schema/*.graphql
+mode: client
+typeMappings:
+  ID: String
+  Float: double
+outputDir: lib/generated
+clientConfig:
+  dart:
+    packageName: my_app
+    generateAllFieldsFragments: true
+    autoGenerateQueries: true
+```
+
+---
+
+## CLI flags
+
+```bash
+glink                   # auto-discover config (see below)
+glink -c config.json    # explicit config path
+glink -w                # watch mode — regenerate on schema change
+glink --version         # print version and exit
+glink --help            # print usage
+```
+
+| Flag | Description |
+|---|---|
+| `-c <path>` | Path to the config file. Accepts `.json`, `.yaml`, or `.yml`. If omitted, `glink` searches for `glink.json`, `glink.yaml`, or `glink.yml` starting from the current directory and walking up to the filesystem root. |
+| `-w` | Watch mode. GraphLink monitors the files matched by `schemaPaths` and regenerates on every save. |
+| `--version` | Prints the GraphLink version and exits. |
+| `--help` | Prints usage information and exits. |
 
 ---
 

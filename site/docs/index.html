@@ -916,6 +916,34 @@
   
   
     <li class="md-nav__item">
+      <a href="skip-directives.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    @glSkipOnServer & @glSkipOnClient
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="configuration.html" class="md-nav__link">
         
   
@@ -1003,20 +1031,19 @@
 
 <h1 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h1>
 <p>Everything you need to know about GraphLink — from first schema to production deployment.</p>
-<div class="grid cards" markdown>
-
-- **[Philosophy](philosophy.md)** — Why pure code generation? Why no runtime abstractions?
-- **[Getting Started](getting-started.md)** — Zero to generated code in 5 minutes.
-- **[Dart / Flutter Client](dart-client.md)** — Typed queries, mutations, subscriptions. Adapter pattern.
-- **[Java Client](java-client.md)** — No generics. No casting. Builder pattern on all inputs.
-- **[TypeScript Client](typescript-client.md)** — Typed client for Angular, React, Vue, and Node.
-- **[Spring Boot](spring-server.md)** — Generated controllers, service interfaces, types, inputs.
-- **[Caching](caching.md)** — `@glCache` and `@glCacheInvalidate`. Tag-based invalidation.
-- **[Directives](directives.md)** — Complete reference for all GraphLink directives.
-- **[Configuration](configuration.md)** — Every `config.json` option explained.
-
+<div class="grid cards">
+<ul>
+<li><strong><a href="philosophy.html">Philosophy</a></strong> — Why pure code generation? Why no runtime abstractions?</li>
+<li><strong><a href="getting-started.html">Getting Started</a></strong> — Zero to generated code in 5 minutes.</li>
+<li><strong><a href="dart-client.html">Dart / Flutter Client</a></strong> — Typed queries, mutations, subscriptions. Adapter pattern.</li>
+<li><strong><a href="java-client.html">Java Client</a></strong> — No generics. No casting. Builder pattern on all inputs.</li>
+<li><strong><a href="typescript-client.html">TypeScript Client</a></strong> — Typed client for Angular, React, Vue, and Node.</li>
+<li><strong><a href="spring-server.html">Spring Boot</a></strong> — Generated controllers, service interfaces, types, inputs.</li>
+<li><strong><a href="caching.html">Caching</a></strong> — <code>@glCache</code> and <code>@glCacheInvalidate</code>. Tag-based invalidation.</li>
+<li><strong><a href="directives.html">Directives</a></strong> — Complete reference for all GraphLink directives.</li>
+<li><strong><a href="configuration.html">Configuration</a></strong> — Every <code>config.json</code> option explained.</li>
+</ul>
 </div>
-
 <h2 id="the-schema-used-throughout-these-docs">The schema used throughout these docs<a class="headerlink" href="#the-schema-used-throughout-these-docs" title="Permanent link">&para;</a></h2>
 <p>All examples in this documentation use the following schema. It covers every major GraphLink feature: types, enums, inputs, queries, mutations, subscriptions, and cache directives.</p>
 <div class="highlight"><span class="filename">schema.graphql</span><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">enum</span><span class="w"> </span><span class="err">FuelType</span><span class="w"> </span><span class="p">{</span>

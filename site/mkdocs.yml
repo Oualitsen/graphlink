@@ -30,6 +30,8 @@ hooks:
   - hooks/generate_llms.py
 
 markdown_extensions:
+  - attr_list
+  - md_in_html
   - admonition
   - pymdownx.details
   - pymdownx.superfences
@@ -60,4 +62,5 @@ nav:
     - Caching: caching.md
   - Reference:
     - Directives: directives.md
+    - "@glSkipOnServer & @glSkipOnClient": skip-directives.md
     - Configuration: configuration.md

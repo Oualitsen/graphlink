@@ -713,6 +713,39 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#operation-name-in-url" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operation name in URL
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nullable-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nullable fields
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#java-records" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Java records
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#file-uploads" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1028,6 +1061,34 @@
   
   
     <li class="md-nav__item">
+      <a href="skip-directives.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    @glSkipOnServer & @glSkipOnClient
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="configuration.html" class="md-nav__link">
         
   
@@ -1181,6 +1242,39 @@
     <span class="md-ellipsis">
       
         Subscriptions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operation-name-in-url" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operation name in URL
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nullable-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nullable fields
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#java-records" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Java records
       
     </span>
   </a>
@@ -1470,22 +1564,63 @@
 <p class="admonition-title">Deriving the WebSocket URL</p>
 <p>The convenience constructors that take only an HTTP URL automatically derive the WebSocket URL by replacing <code>http</code> with <code>ws</code> (and <code>https</code> with <code>wss</code>). Pass an explicit <code>wsUrl</code> if your WebSocket endpoint differs from the HTTP endpoint.</p>
 </div>
+<h2 id="operation-name-in-url">Operation name in URL<a class="headerlink" href="#operation-name-in-url" title="Permanent link">&para;</a></h2>
+<p>Set <code>"operationNameAsParameter": true</code> to append the operation name as a URL query parameter on every request — useful for server-side logging and APM tracing:</p>
+<div class="highlight"><span class="filename">config.json</span><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="p">{</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span><span class="nt">&quot;clientConfig&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">    </span><span class="nt">&quot;java&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;operationNameAsParameter&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="p">}</span>
+</code></pre></div>
+<p>The generated adapter interface gains an <code>operationName</code> parameter and the client appends <code>?operationName=OperationName</code> to each HTTP request URL.</p>
+<h2 id="nullable-fields">Nullable fields<a class="headerlink" href="#nullable-fields" title="Permanent link">&para;</a></h2>
+<p>By default, nullable schema fields accept <code>null</code> without any runtime enforcement. Set <code>"nullableFieldsRequired": true</code> to emit <code>Objects.requireNonNull</code> on every field, including nullable ones:</p>
+<div class="highlight"><span class="filename">config.json</span><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="p">{</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span><span class="nt">&quot;clientConfig&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">    </span><span class="nt">&quot;java&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;nullableFieldsRequired&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="p">}</span>
+</code></pre></div>
+<h2 id="java-records">Java records<a class="headerlink" href="#java-records" title="Permanent link">&para;</a></h2>
+<p>Set <code>"inputAsRecord": true</code> and/or <code>"typeAsRecord": true</code> to generate inputs and types as Java records instead of classes with builders. Records use component accessor syntax (<code>field()</code>) instead of <code>getField()</code>:</p>
+<div class="highlight"><span class="filename">config.json</span><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="p">{</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">  </span><span class="nt">&quot;clientConfig&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">    </span><span class="nt">&quot;java&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="w">      </span><span class="nt">&quot;inputAsRecord&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="w">      </span><span class="nt">&quot;typeAsRecord&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><span class="filename">Generated input as record</span><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="kd">public</span><span class="w"> </span><span class="kd">record</span> <span class="nc">AddVehicleInput</span><span class="p">(</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">    </span><span class="n">String</span><span class="w"> </span><span class="n">brand</span><span class="p">,</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">    </span><span class="n">String</span><span class="w"> </span><span class="n">model</span><span class="p">,</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="w">    </span><span class="n">Integer</span><span class="w"> </span><span class="n">year</span><span class="p">,</span>
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="w">    </span><span class="n">FuelType</span><span class="w"> </span><span class="n">fuelType</span><span class="p">,</span>
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="w">    </span><span class="n">String</span><span class="w"> </span><span class="n">ownerId</span>
+<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="p">)</span><span class="w"> </span><span class="p">{}</span>
+<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a>
+<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a><span class="c1">// Usage — no builder needed</span>
+<a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a><span class="n">AddVehicleInput</span><span class="w"> </span><span class="n">input</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">AddVehicleInput</span><span class="p">(</span><span class="s">&quot;Toyota&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Camry&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">2023</span><span class="p">,</span><span class="w"> </span><span class="n">FuelType</span><span class="p">.</span><span class="na">GASOLINE</span><span class="p">,</span><span class="w"> </span><span class="kc">null</span><span class="p">);</span>
+<a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">input</span><span class="p">.</span><span class="na">brand</span><span class="p">());</span><span class="w"> </span><span class="c1">// component accessor, no get prefix</span>
+</code></pre></div>
+<p>Records require Java 16 or later. Mapping methods generated by <code>@glMapsTo</code> use component accessors automatically when <code>typeAsRecord</code> is <code>true</code>.</p>
 <h2 id="file-uploads">File uploads<a class="headerlink" href="#file-uploads" title="Permanent link">&para;</a></h2>
 <p>When your schema uses the built-in <code>Upload</code> scalar, GraphLink generates a <code>GLUpload</code> class and handles multipart encoding in the generated adapter:</p>
-<div class="highlight"><span class="filename">Using GLUpload in Java</span><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.example.generated.types.GLUpload</span><span class="p">;</span>
-<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">java.io.FileInputStream</span><span class="p">;</span>
-<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">java.io.File</span><span class="p">;</span>
-<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>
-<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="n">File</span><span class="w"> </span><span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">File</span><span class="p">(</span><span class="s">&quot;/path/to/document.pdf&quot;</span><span class="p">);</span>
-<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="n">GLUpload</span><span class="w"> </span><span class="n">upload</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">GLUpload</span><span class="p">(</span>
-<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">FileInputStream</span><span class="p">(</span><span class="n">file</span><span class="p">),</span>
-<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="w">    </span><span class="n">file</span><span class="p">.</span><span class="na">length</span><span class="p">(),</span>
-<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="w">    </span><span class="s">&quot;document.pdf&quot;</span><span class="p">,</span>
-<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="w">    </span><span class="s">&quot;application/pdf&quot;</span>
-<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="p">);</span>
-<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a>
-<a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a><span class="n">UploadDocumentResponse</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="na">mutations</span><span class="p">.</span><span class="na">uploadDocument</span><span class="p">(</span><span class="n">upload</span><span class="p">);</span>
-<a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">result</span><span class="p">.</span><span class="na">getUploadDocument</span><span class="p">());</span><span class="w"> </span><span class="c1">// URL or ID returned by server</span>
+<div class="highlight"><span class="filename">Using GLUpload in Java</span><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.example.generated.types.GLUpload</span><span class="p">;</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">java.io.FileInputStream</span><span class="p">;</span>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">java.io.File</span><span class="p">;</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="n">File</span><span class="w"> </span><span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">File</span><span class="p">(</span><span class="s">&quot;/path/to/document.pdf&quot;</span><span class="p">);</span>
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="n">GLUpload</span><span class="w"> </span><span class="n">upload</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">GLUpload</span><span class="p">(</span>
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">FileInputStream</span><span class="p">(</span><span class="n">file</span><span class="p">),</span>
+<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="w">    </span><span class="n">file</span><span class="p">.</span><span class="na">length</span><span class="p">(),</span>
+<a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="w">    </span><span class="s">&quot;document.pdf&quot;</span><span class="p">,</span>
+<a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a><span class="w">    </span><span class="s">&quot;application/pdf&quot;</span>
+<a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a><span class="p">);</span>
+<a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a>
+<a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a><span class="n">UploadDocumentResponse</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="na">mutations</span><span class="p">.</span><span class="na">uploadDocument</span><span class="p">(</span><span class="n">upload</span><span class="p">);</span>
+<a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">result</span><span class="p">.</span><span class="na">getUploadDocument</span><span class="p">());</span><span class="w"> </span><span class="c1">// URL or ID returned by server</span>
 </code></pre></div>
 <p>The generated <code>DefaultGraphLinkClientAdapter</code> automatically encodes mutations containing <code>GLUpload</code> as multipart/form-data following the <a href="https://github.com/jaydenseric/graphql-multipart-request-spec">GraphQL multipart request spec</a>. No extra configuration needed.</p>
 
