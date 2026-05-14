@@ -204,18 +204,40 @@ Used when `mode` is `"server"`.
 
 ---
 
+## Config file format
+
+GraphLink accepts **JSON** (`.json`), **YAML** (`.yaml`), and **YML** (`.yml`) config files. The structure and keys are identical across all three formats.
+
+```yaml title="glink.yaml — equivalent to the JSON example above"
+schemaPaths:
+  - schema/*.graphql
+mode: client
+typeMappings:
+  ID: String
+  Float: double
+outputDir: lib/generated
+clientConfig:
+  dart:
+    packageName: my_app
+    generateAllFieldsFragments: true
+    autoGenerateQueries: true
+```
+
+---
+
 ## CLI flags
 
 ```bash
-glink -c config.json        # run with explicit config path
-glink -c config.json -w     # watch mode — regenerate on schema change
-glink --version             # print version and exit
-glink --help                # print usage
+glink                   # auto-discover config (see below)
+glink -c config.json    # explicit config path
+glink -w                # watch mode — regenerate on schema change
+glink --version         # print version and exit
+glink --help            # print usage
 ```
 
 | Flag | Description |
 |---|---|
-| `-c <path>` | Path to the `config.json` file. Defaults to `config.json` in the current directory. |
+| `-c <path>` | Path to the config file. Accepts `.json`, `.yaml`, or `.yml`. If omitted, `glink` searches for `glink.json`, `glink.yaml`, or `glink.yml` starting from the current directory and walking up to the filesystem root. |
 | `-w` | Watch mode. GraphLink monitors the files matched by `schemaPaths` and regenerates on every save. |
 | `--version` | Prints the GraphLink version and exits. |
 | `--help` | Prints usage information and exits. |

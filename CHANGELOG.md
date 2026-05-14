@@ -244,6 +244,8 @@
 
 ### New features
 - **Operation name in URL** — when `operationNameAsParameter: true` is set, the operation name is now appended as a query parameter in the HTTP request URL
+- **YAML config support** — the config file can now be `.json`, `.yaml`, or `.yml`. All existing JSON configs continue to work unchanged.
+- **Default config discovery** — the `-c` flag is now optional. When omitted, `glink` searches for `glink.json`, `glink.yaml`, or `glink.yml` starting from the current directory and walking up to the filesystem root.
 
 ### Fixes & improvements
 - Fixed Dart client: subscription connection creation

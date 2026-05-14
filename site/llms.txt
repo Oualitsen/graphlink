@@ -4,7 +4,8 @@
 
 GraphLink is a command-line tool (`glink`) that reads a GraphQL schema and generates fully type-safe
 client and server code. Developers define their API once in a `.graphql` schema file and run
-`glink -c config.json` to get production-ready, idiomatic code for their target language.
+`glink` (auto-discovers `glink.json`, `glink.yaml`, or `glink.yml`) to get production-ready,
+idiomatic code for their target language.
 
 ## What GraphLink generates
 
@@ -34,12 +35,14 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - **Only what the server needs.** Unlike ferry (which sends the entire schema), GraphLink generates
   precise queries containing only the requested fields. This is required for Spring Boot's strict
   schema validation to pass.
-- **Watch mode.** Run `glink -c config.json -w` to watch schema files and regenerate automatically
-  on every save.
+- **Watch mode.** Run `glink -w` to watch schema files and regenerate automatically on every save.
+- **YAML config support.** Config files can be `.json`, `.yaml`, or `.yml` — same structure.
+- **Default config discovery.** When `-c` is omitted, `glink` searches for `glink.json`,
+  `glink.yaml`, or `glink.yml` from the current directory upward to the filesystem root.
 - **Single source of truth.** The schema drives both ends. No duplicate type definitions. No
   schema drift. Adding a field means editing one file.
 
-## Supported targets (as of v4.6.0)
+## Supported targets (as of v4.7.0)
 
 - Dart client (stable)
 - Flutter client (stable)
@@ -60,13 +63,14 @@ Platforms: Linux (x86_64), macOS (ARM64), Windows (x86_64)
 ## Basic usage
 
 ```bash
-glink -c config.json        # generate once
-glink -c config.json -w     # watch mode
-glink -v                    # print version
-glink -h                    # show help
+glink                   # auto-discover glink.json / glink.yaml / glink.yml
+glink -c config.json    # explicit config path
+glink -w                # watch mode
+glink -v                # print version
+glink -h                # show help
 ```
 
-## Configuration (config.json)
+## Configuration (JSON, YAML, or YML)
 
 ```json
 {

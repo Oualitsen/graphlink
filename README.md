@@ -117,6 +117,8 @@ type Mutation {
 
 ### 2. Configure
 
+Create a `glink.json` (or `glink.yaml` / `glink.yml`) in your project root:
+
 ```json
 {
   "schemaPaths": ["schema/*.graphql"],
@@ -133,11 +135,31 @@ type Mutation {
 }
 ```
 
+Or the equivalent YAML:
+
+```yaml
+schemaPaths:
+  - schema/*.graphql
+mode: client
+typeMappings:
+  ID: String
+  Float: double
+  Int: int
+  Boolean: bool
+outputDir: lib/generated
+clientConfig:
+  dart:
+    packageName: my_app
+    generateAllFieldsFragments: true
+    autoGenerateQueries: true
+```
+
 ### 3. Generate
 
 ```bash
-glink -c config.json        # once
-glink -c config.json -w     # watch mode — regenerate on every save
+glink                   # auto-discovers glink.json / glink.yaml / glink.yml
+glink -c config.json    # explicit config path
+glink -w                # watch mode — regenerate on every save
 ```
 
 That's it. You get typed classes, a ready-to-use client, JSON serialization, and cache wiring — all generated.
