@@ -1,5 +1,3 @@
-import 'dart:vmservice_io';
-
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';

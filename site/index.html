@@ -53,7 +53,7 @@
           "Watch mode for live schema file monitoring",
           "No generics at the Java call site",
           "No runtime dependency on GraphLink in generated code",
-          "TypeScript support in development"
+          "TypeScript client support"
         ],
         "offers": {
           "@type": "Offer",
@@ -105,7 +105,7 @@
             "name": "What languages and frameworks does GraphLink support?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "GraphLink currently supports Dart and Flutter for client generation, and Java and Spring Boot for both client and server generation. TypeScript support is currently in development. Go and Kotlin targets are planned based on community demand."
+              "text": "GraphLink supports Dart and Flutter for client generation, Java and Spring Boot for both client and server generation, and TypeScript for client generation. Go and Kotlin targets are planned based on community demand."
             }
           },
           {
@@ -213,7 +213,7 @@
       <div class="hero-text">
         <div class="hero-badge">
           <span class="badge-dot"></span>
-          Open Source · MIT · v4.3.0
+          Open Source · MIT · v4.6.0
         </div>
         <h1 class="hero-title">
           Your GraphQL Schema<br>
@@ -1091,8 +1091,7 @@ glink -c config.json -w</code></pre>
       <p class="section-label">What's coming</p>
       <h2 class="section-title">Growing With the Ecosystem</h2>
       <p class="section-subtitle">
-        GraphLink is actively developed. The next major target is <strong>TypeScript</strong> —
-        bringing the same zero-boilerplate experience to JavaScript/TypeScript frontends and Node.js backends.
+        GraphLink is actively developed. Dart, Java, Spring Boot, and TypeScript targets are stable.
         Go and Kotlin targets will follow based on community demand.
       </p>
 
@@ -1110,12 +1109,12 @@ glink -c config.json -w</code></pre>
         <div class="rm-card done">
           <span class="rm-status done">✓ Available</span>
           <h4>Spring Boot Server</h4>
-          <p>Controllers, service interfaces, and repository stubs generated from schema.</p>
+          <p>Controllers, service interfaces, and repository stubs generated from schema. Supports both MVC and reactive (WebFlux) modes.</p>
         </div>
-        <div class="rm-card active">
-          <span class="rm-status active">🔧 In Development</span>
+        <div class="rm-card done">
+          <span class="rm-status done">✓ Available</span>
           <h4>TypeScript Client</h4>
-          <p>Type-safe client for React, Vue, Angular, and Node.js. Same zero-boilerplate philosophy.</p>
+          <p>Type-safe client for React, Vue, Angular, and Node.js with Fetch/Axios adapters and optional RxJS observables.</p>
         </div>
         <div class="rm-card planned">
           <span class="rm-status planned">📋 Planned</span>
