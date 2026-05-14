@@ -47,6 +47,43 @@ Set `"mode": "server"` and provide a `"spring"` section under `serverConfig`. Th
 | `immutableInputFields` | Input class fields are `final`. Recommended: `true`. |
 | `immutableTypeFields` | Type class fields are `final`. Set to `false` for Spring Boot — Spring's GraphQL runtime sets fields via setters. |
 
+## Java records
+
+Set `"inputAsRecord": true` and/or `"typeAsRecord": true` to generate inputs and types as Java records instead of mutable classes with setters. Records are more concise and enforce immutability at the language level:
+
+```json title="config.json — records"
+{
+  "serverConfig": {
+    "spring": {
+      "basePackage": "com.example.generated",
+      "inputAsRecord": true,
+      "typeAsRecord": false
+    }
+  }
+}
+```
+
+!!! warning "Type records and Spring deserialization"
+    Spring's GraphQL runtime deserializes JSON into type classes using setters or reflection. Setting `typeAsRecord: true` for server-side types requires that you configure Spring to use a record-aware deserializer (e.g. Jackson with `@JsonCreator`). For most Spring Boot setups, keep `typeAsRecord: false` and only set `inputAsRecord: true`.
+
+## Schema generation
+
+Set `"generateSchema": true` to write the processed schema file to disk alongside the generated Java. This is useful when your Spring Boot app needs to serve the schema file at a specific path:
+
+```json title="config.json — schema generation"
+{
+  "serverConfig": {
+    "spring": {
+      "basePackage": "com.example.generated",
+      "generateSchema": true,
+      "schemaTargetPath": "src/main/resources/graphql/schema.graphqls"
+    }
+  }
+}
+```
+
+`schemaTargetPath` must end in `.graphql` or `.graphqls`. The generated schema reflects all directive processing — internal directives like `@glSkipOnServer` are not emitted.
+
 ## What gets generated
 
 For the example schema, the generator produces 9 files:

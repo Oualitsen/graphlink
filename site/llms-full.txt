@@ -40,7 +40,7 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - **Single source of truth.** The schema drives both ends. No duplicate type definitions. No
   schema drift. Adding a field means editing one file.
 
-## Supported targets (as of v4.5.0)
+## Supported targets (as of v4.6.0)
 
 - Dart client (stable)
 - Flutter client (stable)
@@ -951,6 +951,14 @@ print(result.uploadDocument); // e.g. "https://cdn.example.com/document.pdf"
 
 The Dio and http adapters both handle multipart encoding automatically when a mutation argument contains a `GLUpload`. No extra configuration is needed.
 
+## Operation name in URL
+
+Set `"operationNameAsParameter": true` to append the operation name to every HTTP request URL as `?operationName=OperationName`. Useful for server-side logging and APM tracing. The adapter function signature gains a second `String operationName` parameter.
+
+## Nullable fields
+
+`"nullableFieldsRequired": false` (default) generates optional constructor params for nullable fields (`this.fieldName`). Set to `true` for `required this.fieldName` on all fields regardless of nullability.
+
 ---
 
 # Java Client
@@ -1276,6 +1284,18 @@ System.out.println(result.getUploadDocument()); // URL or ID returned by server
 ```
 
 The generated `DefaultGraphLinkClientAdapter` automatically encodes mutations containing `GLUpload` as multipart/form-data following the [GraphQL multipart request spec](https://github.com/jaydenseric/graphql-multipart-request-spec). No extra configuration needed.
+
+## Operation name in URL
+
+Set `"operationNameAsParameter": true` to append `?operationName=OperationName` to every HTTP request URL.
+
+## Nullable fields
+
+`"nullableFieldsRequired": true` emits `Objects.requireNonNull` for all fields including nullable ones.
+
+## Java records
+
+`"inputAsRecord": true` / `"typeAsRecord": true` generates inputs and types as Java records (Java 16+). Component accessor syntax (`field()`) replaces builder getters (`getField()`).
 
 ---
 
@@ -1662,6 +1682,14 @@ export function VehicleList() {
   return <ul>{vehicles.map(v => <li key={v.id}>{v.brand} {v.model}</li>)}</ul>;
 }
 ```
+
+## Operation name in URL
+
+Set `"operationNameAsParameter": true` to append `?operationName=OperationName` to every HTTP request URL.
+
+## Readonly types
+
+`"immutableTypeFields": true` (default) generates `readonly` on all fields in type interfaces.
 
 ---
 
@@ -2661,7 +2689,87 @@ The `autoGenerateQueries: true` config option uses these fragments internally to
 
 # Configuration Reference
 
-Full `config.json` reference — coming soon.
+Full reference for every option in `config.json`.
+
+## Top-level options
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `schemaPaths` | `string[]` | — | Glob patterns for schema files. |
+| `mode` | `"client"` \| `"server"` | `"server"` | `"client"` generates a typed client. `"server"` generates Spring Boot scaffolding. |
+| `typeMappings` | `Record<string,string>` | `{}` | Maps GraphQL scalar names to target-language types. Add entries for custom scalars. |
+| `outputDir` | `string` | `"src/main/java"` | Directory where generated files are written. |
+| `identityFields` | `string[]` | `[]` | Field names included in generated `==`/`hashCode` methods (Dart and Java). |
+| `disableCache` | `boolean` | `false` | Strips all `@glCache`/`@glCacheInvalidate` directives from the generated client. |
+
+## clientConfig.dart
+
+| Option | Default | Description |
+|---|---|---|
+| `packageName` | — | **Required.** Dart package name for import paths. |
+| `httpAdapter` | `"http"` | `"http"`, `"dio"`, or `"none"`. |
+| `generateAdapters` | `true` | When `false`, skips generating HTTP and WebSocket adapter files. |
+| `generateAllFieldsFragments` | `false` | Generates `_all_fields_TypeName` fragments for every type. |
+| `autoGenerateQueries` | `false` | Automatically builds query strings for every operation. |
+| `autoGenerateQueriesDefaultAlias` | `null` | Default alias prefix for auto-generated query fields. |
+| `defaultAlias` | `null` | Default alias applied to all generated query fields globally. |
+| `operationNameAsParameter` | `false` | Adds `operationName` as a second adapter parameter and appends it to the request URL. |
+| `nullableFieldsRequired` | `false` | When `true`, nullable constructor params use `required this.field` instead of optional `this.field`. |
+| `immutableInputFields` | `true` | Input class fields are `final`. |
+| `immutableTypeFields` | `true` | Response type class fields are `final`. |
+| `generateUiTypes` | `false` | Generates Flutter widget classes for every type. |
+| `generateUiInputs` | `false` | Generates Flutter form widgets for every input type. |
+| `appLocalizationsImport` | `null` | Import path for `AppLocalizations` injected into generated Flutter UI widgets. |
+
+## clientConfig.java
+
+| Option | Default | Description |
+|---|---|---|
+| `packageName` | — | **Required.** Java package name. |
+| `wsAdapter` | `"java11"` | `"java11"`, `"okhttp"`, or `"none"`. |
+| `jsonCodec` | `"jackson"` | `"jackson"`, `"gson"`, or `"none"`. |
+| `generateAllFieldsFragments` | `false` | Generates `_all_fields_TypeName` fragments. |
+| `autoGenerateQueries` | `false` | Automatically builds query strings. |
+| `defaultAlias` | `null` | Default alias for all generated query fields. |
+| `operationNameAsParameter` | `false` | Adds `operationName` parameter to adapter interface and appends to URL. |
+| `nullableFieldsRequired` | `false` | Emits `Objects.requireNonNull` for all fields, including nullable ones. |
+| `immutableInputFields` | `true` | Input fields are `private final` — builder pattern. |
+| `immutableTypeFields` | `true` | Response type fields are `private final` — getters only. |
+| `inputAsRecord` | `false` | Generates inputs as Java records (Java 16+). |
+| `typeAsRecord` | `false` | Generates response types as Java records (Java 16+). |
+
+## clientConfig.typescript
+
+| Option | Default | Description |
+|---|---|---|
+| `httpAdapter` | `"fetch"` | `"fetch"`, `"axios"`, or `"none"`. |
+| `generateDefaultWsAdapter` | `true` | Generates the default WebSocket adapter. |
+| `observables` | `false` | Returns `Observable<T>` (RxJS) instead of `Promise<T>`. |
+| `generateAllFieldsFragments` | `false` | Generates `_all_fields_TypeName` fragments. |
+| `autoGenerateQueries` | `false` | Automatically builds query strings. |
+| `defaultAlias` | `null` | Default alias for all generated query fields. |
+| `operationNameAsParameter` | `false` | Adds `operationName` parameter to adapter and appends to URL. |
+| `optionalNullableInputFields` | `true` | Nullable input fields use `field?: T \| null` (optional property). |
+| `immutableTypeFields` | `true` | Type interface fields use `readonly`. |
+
+## serverConfig.spring
+
+| Option | Default | Description |
+|---|---|---|
+| `basePackage` | — | **Required.** Java package name for all generated classes. |
+| `generateControllers` | `true` | Generates `@Controller` classes. |
+| `generateInputs` | `true` | Generates input data classes. |
+| `generateTypes` | `true` | Generates type data classes. |
+| `generateRepositories` | `false` | Generates JPA `Repository` interfaces for `@glRepository` types. |
+| `immutableInputFields` | `true` | Input fields are `private final`. |
+| `immutableTypeFields` | `false` | Type fields are `private final`. Keep `false` for Spring Boot. |
+| `inputAsRecord` | `false` | Generates inputs as Java records (Java 16+). |
+| `typeAsRecord` | `false` | Generates types as Java records (Java 16+). |
+| `reactive` | `false` | Generates Spring WebFlux controllers (`Mono`/`Flux` return types). |
+| `useSpringSecurity` | `false` | MVC only. Propagates `SecurityContext` into `CompletableFuture` lambdas. |
+| `injectDataFetching` | `false` | Generates data-fetching injection code in controllers. |
+| `generateSchema` | `false` | Writes the processed schema to disk. Requires `schemaTargetPath`. |
+| `schemaTargetPath` | `null` | Path for the generated schema file (must end in `.graphql` or `.graphqls`). |
 
 ---
 

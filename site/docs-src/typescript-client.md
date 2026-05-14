@@ -306,6 +306,35 @@ client.subscriptions.vehicleAdded().subscribe(event => {
 // <li *ngFor="let v of vehicles$ | async">{{ v.brand }}</li>
 ```
 
+## Operation name in URL
+
+Set `"operationNameAsParameter": true` to append the operation name as a query parameter on every HTTP request — useful for server-side logging and APM:
+
+```json title="config.json"
+{
+  "clientConfig": {
+    "typescript": { "operationNameAsParameter": true }
+  }
+}
+```
+
+The adapter function gains a second parameter and the client sends requests to `<url>?operationName=OperationName`.
+
+## Readonly types
+
+Set `"immutableTypeFields": true` (the default) to generate `readonly` on every field in type interfaces:
+
+```typescript title="With immutableTypeFields: true (default)"
+export interface Vehicle {
+  readonly id: string;
+  readonly brand: string;
+  readonly model: string;
+  readonly year: number;
+}
+```
+
+Set to `false` if you need to mutate response objects after deserialization.
+
 ## Error handling
 
 The generated client throws a `GraphLinkException` when the server returns GraphQL errors:
