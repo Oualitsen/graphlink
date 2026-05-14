@@ -1,3 +1,6 @@
+import 'dart:vmservice_io';
+
+import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
@@ -5,7 +8,7 @@ import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 // Helpers --------------------------------------------------------------------
 
 GLParser _parser() =>
-    GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true);
+    GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
 
 /// Parses [schema], serializes the input named [inputName], and returns the
 /// trimmed lines — ready for containsAllInOrder / contains assertions.
@@ -303,21 +306,20 @@ void main() {
   ''';
 
   group('Case 6 — nullable type field assigned to non-null input field', () {
-    test('fromBiopsy() requires diagnosticDate as a required param', () {
+    test('fromBiopsy() is not generated — target instance would be unused', () {
+      final lines = _lines(case6, 'BiopsyInput');
+      expect(lines, isNot(contains('fromBiopsy')));
+    });
+
+    test('toBiopsy() is still generated with required id and defaultDiagnosticDate params', () {
       expect(
         _lines(case6, 'BiopsyInput'),
         containsAllInOrder([
-          'static BiopsyInput fromBiopsy({',
-          'required Biopsy biopsy,',
-          'required int diagnosticDate',  // Int serializes to int in Dart
+          'Biopsy toBiopsy({',
+          'required String id',
           '}) {',
         ]),
       );
-    });
-
-    test('fromBiopsy() assigns diagnosticDate from the param, not from biopsy.diagnosticDate', () {
-      final lines = _lines(case6, 'BiopsyInput');
-      expect(lines, contains('return BiopsyInput(diagnosticDate: diagnosticDate);'));
     });
   });
 
@@ -348,21 +350,14 @@ void main() {
   ''';
 
   group('Case 7 — list of mapped inputs whose fromXxx() needs extra params becomes required param', () {
-    test('fromRecord() requires biopsies as a required param', () {
-      expect(
-        _lines(case7, 'RecordInput'),
-        containsAllInOrder([
-          'static RecordInput fromRecord({',
-          'required Record record,',
-          'required List<BiopsyInput> biopsies',
-          '}) {',
-        ]),
-      );
+    test('fromRecord() is not generated — target instance would be unused', () {
+      final lines = _lines(case7, 'RecordInput');
+      expect(lines, isNot(contains('fromRecord')));
     });
 
-    test('fromRecord() passes biopsies directly without an inline .map()', () {
+    test('toRecord() is not generated — source instance would be unused', () {
       final lines = _lines(case7, 'RecordInput');
-      expect(lines, contains('return RecordInput(biopsies: biopsies);'));
+      expect(lines, isNot(contains('toRecord')));
     });
   });
 

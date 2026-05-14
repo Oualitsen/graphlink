@@ -37,14 +37,27 @@ extension GLGrammarMapsToExtension on GLParser {
     }
   }
 
-  /// Resolves the [MappingPlan] for [input] if it declares @glMapsTo.
-  /// Returns null if the input has no @glMapsTo directive.
-  /// Assumes validation has already run — target is guaranteed to exist.
-  MappingPlan? resolveInputMappingPlan(GLInputDefinition input,
-      CodeGenerationMode mode) {
+  /// Resolves the [ToMappingPlan] for [input] if it declares @glMapsTo.
+  /// Returns null if the input has no @glMapsTo directive, or in client mode
+  /// when the target type is not among the projected (generated) types.
+  ToMappingPlan? resolveToMappingPlan(GLInputDefinition input, CodeGenerationMode mode) {
     final targetName = input.mapsToType;
     if (targetName == null) return null;
-    return input.buildMappingPlan(_resolveTarget(targetName)!, inputs, types, mode, typeMap: typeMap);
+    if (mode == CodeGenerationMode.client && !projectedTypes.containsKey(targetName)) {
+      return null;
+    }
+    return input.buildToMappingPlan(_resolveTarget(targetName)!, inputs, types, mode, typeMap: typeMap);
+  }
+
+  /// Resolves the [FromMappingPlan] for [input] if it declares @glMapsTo.
+  /// Returns null under the same conditions as [resolveToMappingPlan].
+  FromMappingPlan? resolveFromMappingPlan(GLInputDefinition input, CodeGenerationMode mode) {
+    final targetName = input.mapsToType;
+    if (targetName == null) return null;
+    if (mode == CodeGenerationMode.client && !projectedTypes.containsKey(targetName)) {
+      return null;
+    }
+    return input.buildFromMappingPlan(_resolveTarget(targetName)!, inputs, types, mode, typeMap: typeMap);
   }
 
   GLTypeDefinition? _resolveTarget(String name) => types[name];

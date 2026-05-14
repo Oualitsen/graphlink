@@ -27,7 +27,7 @@ String _java(String schema, String inputName, CodeGenerationMode mode) {
 }
 
 // ---------------------------------------------------------------------------
-// Case 1 — Target type field is @glSkipOnClient; client mode
+// Case 1 — Target type field is @glSkipOnServer; server mode
 // The skipped field must NOT appear as a required parameter in toXxx() because
 // the generated target class will not have that field at all.
 // ---------------------------------------------------------------------------
@@ -36,7 +36,7 @@ const _case1 = '''
   type User {
     id: ID!
     name: String!
-    internalToken: String! @glSkipOnClient
+    internalToken: String! @glSkipOnServer
   }
   input UpdateUserInput @glMapsTo(type: "User") {
     id: ID!
@@ -46,10 +46,10 @@ const _case1 = '''
 ''';
 
 void _case1Tests() {
-  group('Case 1 — target field @glSkipOnClient in client mode', () {
+  group('Case 1 — target field @glSkipOnServer in server mode', () {
     group('Dart', () {
       late String out;
-      setUp(() => out = _dart(_case1, 'UpdateUserInput', CodeGenerationMode.client));
+      setUp(() => out = _dart(_case1, 'UpdateUserInput', CodeGenerationMode.server));
 
       test('toUser() has no extra params (internalToken not a required param)', () {
         expect(out, contains('User toUser()'));
@@ -62,9 +62,10 @@ void _case1Tests() {
 
     group('Java', () {
       late String out;
-      setUp(() => out = _java(_case1, 'UpdateUserInput', CodeGenerationMode.client));
+      setUp(() => out = _java(_case1, 'UpdateUserInput', CodeGenerationMode.server));
 
       test('toUser() has no extra params', () {
+        print(out);
         expect(out, contains('public User toUser()'));
         expect(out, isNot(contains('internalToken')));
       });
@@ -131,8 +132,8 @@ const _case3 = '''
   type Order {
     id: ID!
     total: Int!
-    internalRef: String! @glSkipOnClient
-    auditLog: String!    @glSkipOnClient
+    internalRef: String! @glSkipOnServer
+    auditLog: String!    @glSkipOnServer
   }
   input PlaceOrderInput @glMapsTo(type: "Order") {
     total: Int!
@@ -141,10 +142,10 @@ const _case3 = '''
 ''';
 
 void _case3Tests() {
-  group('Case 3 — multiple @glSkipOnClient fields on target in client mode', () {
+  group('Case 3 — multiple @glSkipOnServer fields on target in server mode', () {
     group('Dart', () {
       late String out;
-      setUp(() => out = _dart(_case3, 'PlaceOrderInput', CodeGenerationMode.client));
+      setUp(() => out = _dart(_case3, 'PlaceOrderInput', CodeGenerationMode.server));
 
       test('toOrder() only requires id (internalRef and auditLog filtered out)', () {
         expect(out, contains('required String id'));
@@ -159,7 +160,7 @@ void _case3Tests() {
 
     group('Java', () {
       late String out;
-      setUp(() => out = _java(_case3, 'PlaceOrderInput', CodeGenerationMode.client));
+      setUp(() => out = _java(_case3, 'PlaceOrderInput', CodeGenerationMode.server));
 
       test('toOrder() only requires id', () {
         expect(out, contains('public Order toOrder(String id)'));
@@ -179,7 +180,7 @@ const _case4 = '''
   type Employee {
     id: ID!
     name: String!
-    salary: Int! @glSkipOnClient
+    salary: Int! @glSkipOnServer
   }
   input CreateEmployeeInput @glMapsTo(type: "Employee") {
     id: ID!
@@ -193,7 +194,7 @@ void _case4Tests() {
   group('Case 4 — skipped target field that would have been auto-mapped (name match)', () {
     group('Dart', () {
       late String out;
-      setUp(() => out = _dart(_case4, 'CreateEmployeeInput', CodeGenerationMode.client));
+      setUp(() => out = _dart(_case4, 'CreateEmployeeInput', CodeGenerationMode.server));
 
       test('toEmployee() body maps only id and name, not salary', () {
         expect(out, contains('return Employee(id: id, name: name)'));
@@ -205,7 +206,7 @@ void _case4Tests() {
 
     group('Java', () {
       late String out;
-      setUp(() => out = _java(_case4, 'CreateEmployeeInput', CodeGenerationMode.client));
+      setUp(() => out = _java(_case4, 'CreateEmployeeInput', CodeGenerationMode.server));
 
       test('toEmployee() has no params and does not forward salary to target', () {
         expect(out, contains('public Employee toEmployee()'));
