@@ -1,0 +1,12 @@
+name: graphlink_example
+description: Comprehensive GraphLink example — queries, mutations, subscriptions, file upload, caching, and custom projections with a Dio adapter.
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  graphlink:
+    path: ../
+  dio: ^5.9.2

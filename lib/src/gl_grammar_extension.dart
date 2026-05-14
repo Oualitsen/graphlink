@@ -518,7 +518,7 @@ extension GLGrammarExtension on GLParser {
     });
   }
 
-  fillQueryElementArgumentTypes(
+  void fillQueryElementArgumentTypes(
       GLQueryElement element, GLQueryDefinition query) {
     for (var arg in element.arguments) {
       var list = query.arguments.where((a) => a.token == arg.value).toList();
@@ -531,7 +531,7 @@ extension GLGrammarExtension on GLParser {
     }
   }
 
-  fillQueryElementsReturnType() {
+  void fillQueryElementsReturnType() {
     queries.forEach((name, queryDefinition) {
       for (var element in queryDefinition.elements) {
         element.returnType = getTypeFromFieldName(element.token,
