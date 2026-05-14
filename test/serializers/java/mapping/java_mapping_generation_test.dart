@@ -16,7 +16,7 @@ const _directives = '''
 
 /// Serializes [inputName] from [schema] in class+builder mode.
 String _class(String schema, String inputName) {
-  final g = GLParser(mode: CodeGenerationMode.client)
+  final g = GLParser(mode: CodeGenerationMode.server)
     ..parse('$_directives $schema');
   return JavaSerializer(g, generateJsonMethods: false, typeMapOverrides: {"Boolean": "boolean"})
       .serializeInputDefinition(g.inputs[inputName]!, '');
@@ -24,7 +24,7 @@ String _class(String schema, String inputName) {
 
 /// Serializes [inputName] from [schema] in record mode (inputs + types as records).
 String _record(String schema, String inputName) {
-  final g = GLParser(mode: CodeGenerationMode.client)
+  final g = GLParser(mode: CodeGenerationMode.server)
     ..parse('$_directives $schema');
   return JavaSerializer(g,
           generateJsonMethods: false,
@@ -618,8 +618,8 @@ void _case10Tests() {
         test('toGrid maps nested list with null-guard on inner row', () {
           expect(out, contains('e0 == null ? null : e0.stream().map(e1 -> e1.toCell())'));
         });
-        test('fromGrid has cells as required param (element mismatch)', () {
-          expect(out, contains('fromGrid(Grid grid, List<List<CellInput>> cells)'));
+        test('fromGrid is not generated — target instance would be unused', () {
+          expect(out, isNot(contains('fromGrid')));
         });
       });
 
@@ -631,8 +631,8 @@ void _case10Tests() {
           expect(out, contains('cells()'));
           expect(out, isNot(contains('getCells()')));
         });
-        test('fromGrid still has cells as required param', () {
-          expect(out, contains('fromGrid(Grid grid, List<List<CellInput>> cells)'));
+        test('fromGrid is not generated — target instance would be unused', () {
+          expect(out, isNot(contains('fromGrid')));
         });
       });
     });
@@ -662,6 +662,7 @@ void _case11Tests() {
       setUp(() => out = _class(_case11, 'PersonInput'));
 
       test('toP uses isMan() for primitive boolean source field', () {
+        print(out);
         expect(out, contains('isMan()'));
         expect(out, isNot(contains('getMan()')));
       });

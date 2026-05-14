@@ -163,24 +163,27 @@ abstract class GLSerializer {
   /// Generates the `toXxx()` method body for [def] → [targetType].
   /// Returns an empty string by default (no mapping support).
   String generateToMethod(
-          GLInputDefinition def, String targetType, MappingPlan plan) =>
+          GLInputDefinition def, String targetType, ToMappingPlan plan) =>
       '';
 
   /// Generates the `fromXxx()` static method body for [targetType] → [def].
   /// Returns an empty string by default (no mapping support).
   String generateFromMethod(
-          GLInputDefinition def, String targetType, MappingPlan plan) =>
+          GLInputDefinition def, String targetType, FromMappingPlan plan) =>
       '';
 
   /// Returns the mapping method strings for [def] if it declares @glMapsTo,
   /// otherwise returns an empty list.
   List<String> generateMappingMethods(GLInputDefinition def) {
-    final plan = grammar.resolveInputMappingPlan(def, mode);
-    if (plan == null) return [];
+    final toPlan = grammar.resolveToMappingPlan(def, mode);
+    if (toPlan == null) return [];
+    final fromPlan = grammar.resolveFromMappingPlan(def, mode)!;
     final targetName = def.mapsToType!;
     return [
-      generateToMethod(def, targetName, plan),
-      generateFromMethod(def, targetName, plan),
+      if (toPlan.derivesAnythingFromSource)
+        generateToMethod(def, targetName, toPlan),
+      if (fromPlan.derivesAnythingFromTarget)
+        generateFromMethod(def, targetName, fromPlan),
     ].where((s) => s.isNotEmpty).toList();
   }
 
