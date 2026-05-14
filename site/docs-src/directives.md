@@ -7,6 +7,63 @@ description: Complete reference for all GraphLink schema directives — @glCache
 
 All GraphLink directives with arguments, placement, and examples.
 
+## Copy-paste declarations
+
+Add this block to your schema file (or a dedicated `directives.graphql`) so your IDE and schema validators recognise every GraphLink directive:
+
+```graphql title="directives.graphql"
+# ── Caching ───────────────────────────────────────────────────────────────────
+
+directive @glCache(
+  ttl: Int!
+  tags: [String!]
+  staleIfOffline: Boolean
+) on QUERY | MUTATION | FIELD | FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR | SCHEMA
+
+directive @glCacheInvalidate(
+  tags: [String!]
+  all: Boolean
+) on QUERY | MUTATION | FIELD | FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR | SCHEMA
+
+# ── Code generation control ───────────────────────────────────────────────────
+
+directive @glSkipOnServer(mapTo: String, batch: Boolean) on OBJECT | SCALAR | FIELD_DEFINITION
+
+directive @glSkipOnClient on OBJECT | INPUT_OBJECT | SCALAR | FIELD_DEFINITION
+
+directive @glExternal(glClass: String!, glImport: String) on SCALAR | OBJECT
+
+directive @glInternal on OBJECT
+
+directive @glTypeName(name: String!) on OBJECT | INPUT_OBJECT | ENUM
+
+# ── Server (Spring Boot) ──────────────────────────────────────────────────────
+
+directive @glDecorators(value: [String!]!) on OBJECT | INPUT_OBJECT | FIELD_DEFINITION
+
+directive @glServiceName(name: String!) on OBJECT | FIELD_DEFINITION
+
+directive @glValidate on FIELD_DEFINITION
+
+directive @glRepository(glType: String!, glIdType: String!) on OBJECT
+
+# ── Equality ──────────────────────────────────────────────────────────────────
+
+directive @glEqualsHashcode(fields: [String!]!) on OBJECT | INPUT_OBJECT
+
+# ── Input mapping ─────────────────────────────────────────────────────────────
+
+directive @glMapsTo(type: String!) on INPUT_OBJECT
+
+directive @glMapField(to: String!) on FIELD_DEFINITION
+
+# ── File upload ───────────────────────────────────────────────────────────────
+
+directive @glUpload on SCALAR
+```
+
+---
+
 ## @glCache
 
 **Target:** CLIENT · **Placement:** `FIELD_DEFINITION` on `Query` fields
@@ -27,6 +84,8 @@ type Query {
 }
 ```
 
+---
+
 ## @glCacheInvalidate
 
 **Target:** CLIENT · **Placement:** `FIELD_DEFINITION` on `Mutation` fields
@@ -46,6 +105,55 @@ type Mutation {
 }
 ```
 
+---
+
+## @glSkipOnServer
+
+**Target:** SERVER · **Placement:** `OBJECT`, `SCALAR`, `FIELD_DEFINITION`
+
+Excludes a type or field from server generation and generates `@SchemaMapping` or `@BatchMapping` to resolve it. Supports `mapTo` for substituting an existing class and `batch` for N+1-safe batch resolution.
+
+→ **[Full reference with generated code examples](skip-directives.md)**
+
+---
+
+## @glSkipOnClient
+
+**Target:** BOTH · **Placement:** `OBJECT`, `INPUT_OBJECT`, `SCALAR`, `FIELD_DEFINITION`
+
+Enforces server-side access control at two levels. **Always**: generates a `@SchemaMapping` that throws `GraphQLException("Access denied")` — no client can read the field at runtime. **With `generateSchema: true`**: also strips the field from the schema Spring Boot serves, making it invisible in GraphiQL and rejected at validation before execution. Also excludes the type or field from all client-side code generation (Dart, Java, TypeScript).
+
+→ **[Full reference including the server-side security guarantee](skip-directives.md)**
+
+---
+
+## @glExternal
+
+**Target:** BOTH · **Placement:** `SCALAR`, `OBJECT`
+
+Maps a GraphQL scalar or type to an external class, optionally specifying the import path. Unlike `typeMappings` in the config (which works for scalars globally), `@glExternal` is per-type and can specify an import statement so generated files get the correct import automatically.
+
+| Argument | Type | Description |
+|---|---|---|
+| `glClass` | `String!` | The fully-qualified class name to use. |
+| `glImport` | `String` | Optional import statement to add to generated files that reference this type. |
+
+```graphql title="Example"
+# Map the DateTime scalar to Java's OffsetDateTime
+scalar DateTime @glExternal(
+  glClass: "OffsetDateTime",
+  glImport: "java.time.OffsetDateTime"
+)
+
+# Map the BigDecimal scalar to Java's BigDecimal
+scalar BigDecimal @glExternal(
+  glClass: "BigDecimal",
+  glImport: "java.math.BigDecimal"
+)
+```
+
+---
+
 ## @glTypeName
 
 **Target:** CLIENT · **Placement:** `OBJECT`, `INPUT_OBJECT`, `ENUM`
@@ -63,6 +171,8 @@ type GQLVehicle @glTypeName(name: "Vehicle") {
   brand: String!
 }
 ```
+
+---
 
 ## @glDecorators
 
@@ -92,71 +202,13 @@ public class Vehicle {
 }
 ```
 
-## @glSkipOnServer
-
-**Target:** BOTH · **Placement:** `OBJECT`, `SCALAR`
-
-Instructs GraphLink to skip generating a class for this type in server mode. If `mapTo` is provided, the generator substitutes the given class name wherever this type appears.
-
-| Argument | Type | Description |
-|---|---|---|
-| `mapTo` | `String` | Optional. Fully-qualified class name to use in place of this type. |
-
-```graphql title="Example"
-# Don't generate a class — use Spring Data's Pageable from the framework
-type Pageable @glSkipOnServer(mapTo: "org.springframework.data.domain.Pageable") {
-  page: Int
-  size: Int
-  sort: String
-}
-```
-
-**Forward mappings:** When `mapTo` is set, GraphLink automatically *forwards* fields that exist verbatim on the target type (same name and compatible structural type). These fields are resolved by Spring directly — no service method or `@SchemaMapping` is generated for them. Only fields absent from the target type, or explicitly annotated with `@glSkipOnServer`, still get full delegation.
-
-## @glSkipOnClient
-
-**Target:** BOTH · **Placement:** `OBJECT`, `INPUT_OBJECT`, `SCALAR`
-
-Instructs GraphLink to skip generating a class for this type in client mode. Use this for server-side types that clients never need to instantiate directly.
-
-```graphql title="Example"
-# PageInfo is part of GraphQL responses but clients don't instantiate it
-type PageInfo @glSkipOnClient {
-  hasNextPage: Boolean!
-  endCursor: String
-}
-```
-
-## @glExternal
-
-**Target:** BOTH · **Placement:** `SCALAR`, `OBJECT`
-
-Maps a GraphQL scalar or type to an external class, optionally specifying the import path. Unlike `typeMappings` in the config (which works for all types globally), `@glExternal` is per-type and can specify an import statement.
-
-| Argument | Type | Description |
-|---|---|---|
-| `glClass` | `String!` | The fully-qualified class name to use. |
-| `glImport` | `String` | Optional import statement to add to generated files that reference this type. |
-
-```graphql title="Example"
-# Map the DateTime scalar to Java's OffsetDateTime
-scalar DateTime @glExternal(
-  glClass: "OffsetDateTime",
-  glImport: "java.time.OffsetDateTime"
-)
-
-# Map the BigDecimal scalar to Java's BigDecimal
-scalar BigDecimal @glExternal(
-  glClass: "BigDecimal",
-  glImport: "java.math.BigDecimal"
-)
-```
+---
 
 ## @glServiceName
 
-**Target:** SERVER · **Placement:** `OBJECT`
+**Target:** SERVER · **Placement:** `OBJECT`, `FIELD_DEFINITION`
 
-Sets a custom name for the generated service interface associated with a type. By default, the service is named `{TypeName}Service`.
+Sets a custom name for the generated service interface associated with a type or operation. By default, the service is named `{TypeName}Service`.
 
 | Argument | Type | Description |
 |---|---|---|
@@ -169,6 +221,8 @@ type Vehicle @glServiceName(name: "FleetManagementService") {
   brand: String!
 }
 ```
+
+---
 
 ## @glEqualsHashcode
 
@@ -197,6 +251,8 @@ input AddVehicleInput @glEqualsHashcode(fields: ["brand", "model", "year", "fuel
 }
 ```
 
+---
+
 ## @glRepository
 
 **Target:** SERVER · **Placement:** `OBJECT`
@@ -224,6 +280,8 @@ public interface VehicleRepository extends JpaRepository<Vehicle, String> {
 }
 ```
 
+---
+
 ## @glInternal
 
 **Target:** BOTH · **Placement:** `OBJECT`
@@ -238,6 +296,8 @@ type GraphLinkError @glInternal {
   path: [String]
 }
 ```
+
+---
 
 ## @glValidate
 
@@ -263,10 +323,14 @@ public interface VehicleService {
 }
 ```
 
+---
+
 ## @glArray — Removed in v4.4.0
 
 !!! danger "@glArray has been removed"
     This directive is no longer supported. As of v4.4.0, all list fields are generated as `List<T>` in Java and Dart regardless of this annotation. Remove any `@glArray` usages from your schema before upgrading to v4.4.0+.
+
+---
 
 ## @glMapsTo
 
@@ -292,6 +356,8 @@ input UpdateVehicleInput @glMapsTo(type: "com.example.domain.UpdateVehicleComman
 
 GraphLink generates a `toMappedType()` method on the input class that constructs the target type from the input fields, applying any `@glMapField` renames in the process.
 
+---
+
 ## @glMapField
 
 **Target:** BOTH · **Placement:** `FIELD_DEFINITION` on `input` types annotated with `@glMapsTo`
@@ -312,6 +378,25 @@ input UpdateVehicleInput @glMapsTo(type: "com.example.domain.UpdateVehicleComman
 ```
 
 GraphLink validates at generation time that the `to` field name exists on the target class. If it does not, generation fails with a clear error message.
+
+---
+
+## @glUpload
+
+**Target:** BOTH · **Placement:** `SCALAR`
+
+Marks a scalar as a file upload type. In Dart, the scalar is mapped to `GLUpload`. In Java MVC, mutation arguments become `MultipartFile` (or `List<MultipartFile>`). In WebFlux, they become `FilePart` (or `List<FilePart>`). The generated client adapter handles multipart encoding automatically.
+
+```graphql title="Example"
+scalar Upload @glUpload
+
+type Mutation {
+  uploadAvatar(userId: ID!, file: Upload!): User!
+  uploadDocuments(files: [Upload!]!): [Document!]!
+}
+```
+
+---
 
 ## _all_fields — the magic fragment
 

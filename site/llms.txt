@@ -4,8 +4,7 @@
 
 GraphLink is a command-line tool (`glink`) that reads a GraphQL schema and generates fully type-safe
 client and server code. Developers define their API once in a `.graphql` schema file and run
-`glink` (auto-discovers `glink.json`, `glink.yaml`, or `glink.yml`) to get production-ready,
-idiomatic code for their target language.
+`glink -c config.json` to get production-ready, idiomatic code for their target language.
 
 ## What GraphLink generates
 
@@ -35,14 +34,12 @@ idiomatic code for their target language.
 - **Only what the server needs.** Unlike ferry (which sends the entire schema), GraphLink generates
   precise queries containing only the requested fields. This is required for Spring Boot's strict
   schema validation to pass.
-- **Watch mode.** Run `glink -w` to watch schema files and regenerate automatically on every save.
-- **YAML config support.** Config files can be `.json`, `.yaml`, or `.yml` — same structure.
-- **Default config discovery.** When `-c` is omitted, `glink` searches for `glink.json`,
-  `glink.yaml`, or `glink.yml` from the current directory upward to the filesystem root.
+- **Watch mode.** Run `glink -c config.json -w` to watch schema files and regenerate automatically
+  on every save.
 - **Single source of truth.** The schema drives both ends. No duplicate type definitions. No
   schema drift. Adding a field means editing one file.
 
-## Supported targets (as of v4.7.0)
+## Supported targets (as of v4.5.0)
 
 - Dart client (stable)
 - Flutter client (stable)
@@ -63,14 +60,13 @@ Platforms: Linux (x86_64), macOS (ARM64), Windows (x86_64)
 ## Basic usage
 
 ```bash
-glink                   # auto-discover glink.json / glink.yaml / glink.yml
-glink -c config.json    # explicit config path
-glink -w                # watch mode
-glink -v                # print version
-glink -h                # show help
+glink -c config.json        # generate once
+glink -c config.json -w     # watch mode
+glink -v                    # print version
+glink -h                    # show help
 ```
 
-## Configuration (JSON, YAML, or YML)
+## Configuration (config.json)
 
 ```json
 {
@@ -110,7 +106,8 @@ type Mutation {
 - Spring Boot Server (GraphLink generates Spring Boot GraphQL scaffolding from your schema — controllers, service interfaces, inputs, enums. MVC and reactive WebFlux modes, file uploads, Spring Security context propagation, and forward mappings.): https://graphlink.dev/docs/spring-server.html
 - Caching (GraphLink's built-in caching — @glCache and @glCacheInvalidate directives, TTL, tag-based invalidation, partial query caching, staleIfOffline, and custom cache stores.): https://graphlink.dev/docs/caching.html
 - Directives Reference (Complete reference for all GraphLink schema directives — @glCache, @glCacheInvalidate, @glMapsTo, @glMapField, @glSkipOnServer (with forward mappings), @glExternal, @glValidate, and more.): https://graphlink.dev/docs/directives.html
-- Configuration Reference (Complete reference for all GraphLink config.json options — schemaPaths, typeMappings, outputDir, clientConfig, serverConfig, and CLI flags.): https://graphlink.dev/docs/configuration.html
+- "@glSkipOnServer & @glSkipOnClient" ("@glSkipOnServer and @glSkipOnClient — two-layer server-side access control, schema stripping, @SchemaMapping, @BatchMapping, mapTo, forward mappings, and the ID/object field-pair pattern for N+1-safe relationship loading."): https://graphlink.dev/docs/skip-directives.html
+- Configuration Reference (Complete reference for all GraphLink config.json options — schemaPaths, typeMappings, outputDir, clientConfig (Dart, Java, TypeScript), serverConfig (Spring Boot), and CLI flags.): https://graphlink.dev/docs/configuration.html
 
 ## Links
 

@@ -685,6 +685,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#operation-name-in-url" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operation name in URL
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nullable-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nullable fields
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#file-uploads" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1028,6 +1050,34 @@
   
   
     <li class="md-nav__item">
+      <a href="skip-directives.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    @glSkipOnServer & @glSkipOnClient
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="configuration.html" class="md-nav__link">
         
   
@@ -1181,6 +1231,28 @@
     <span class="md-ellipsis">
       
         The _all_fields fragment
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operation-name-in-url" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operation name in URL
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nullable-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nullable fields
       
     </span>
   </a>
@@ -1466,27 +1538,51 @@
 <a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span><span class="n">getVehicle</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">Vehicle</span><span class="err">!</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">120</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
 <a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="p">}</span>
 </code></pre></div>
+<h2 id="operation-name-in-url">Operation name in URL<a class="headerlink" href="#operation-name-in-url" title="Permanent link">&para;</a></h2>
+<p>Set <code>"operationNameAsParameter": true</code> to include the operation name as a URL query parameter on every request. This is useful for identifying operations in server logs, APM dashboards, and proxies without parsing the request body:</p>
+<div class="highlight"><span class="filename">config.json</span><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="p">{</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span><span class="nt">&quot;clientConfig&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">    </span><span class="nt">&quot;dart&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">      </span><span class="nt">&quot;operationNameAsParameter&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="p">}</span>
+</code></pre></div>
+<p>The generated adapter function gains a second parameter and the client appends <code>?operationName=OperationName</code> to every HTTP request:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1">// Generated adapter signature with operationNameAsParameter: true</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="n">Future</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span><span class="w"> </span><span class="kt">Function</span><span class="p">(</span><span class="kt">String</span><span class="w"> </span><span class="n">payload</span><span class="p">,</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="n">operationName</span><span class="p">)</span><span class="w"> </span><span class="n">adapter</span>
+</code></pre></div>
+<p>The WebSocket adapter is unaffected — operation names on subscriptions flow through the graphql-ws protocol message payload.</p>
+<h2 id="nullable-fields">Nullable fields<a class="headerlink" href="#nullable-fields" title="Permanent link">&para;</a></h2>
+<p>By default, nullable schema fields generate optional constructor parameters (<code>this.fieldName</code>). Set <code>"nullableFieldsRequired": true</code> to force <code>required this.fieldName</code> on every field regardless of nullability:</p>
+<div class="highlight"><span class="filename">config.json</span><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="p">{</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">  </span><span class="nt">&quot;clientConfig&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">    </span><span class="nt">&quot;dart&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;nullableFieldsRequired&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="p">}</span>
+</code></pre></div>
+<p>With the default <code>false</code>, a nullable field like <code>ownerId: ID</code> generates <code>this.ownerId</code> (optional). With <code>true</code>, it generates <code>required this.ownerId</code> — you must always pass it explicitly, even as <code>null</code>.</p>
 <h2 id="file-uploads">File uploads<a class="headerlink" href="#file-uploads" title="Permanent link">&para;</a></h2>
 <p>When your schema uses the built-in <code>Upload</code> scalar, GraphLink generates a <code>GLUpload</code> type and produces multipart-aware upload logic in the HTTP adapter:</p>
-<div class="highlight"><span class="filename">Schema — Upload scalar</span><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="k">scalar</span><span class="w"> </span><span class="err">Upload</span>
-<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>
-<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="k">type</span><span class="w"> </span><span class="err">Mutation</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">  </span><span class="n">uploadDocument</span><span class="p">(</span><span class="n">file</span><span class="p">:</span><span class="w"> </span><span class="no">Upload</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
-<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="p">}</span>
+<div class="highlight"><span class="filename">Schema — Upload scalar</span><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="k">scalar</span><span class="w"> </span><span class="err">Upload</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="k">type</span><span class="w"> </span><span class="err">Mutation</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="w">  </span><span class="n">uploadDocument</span><span class="p">(</span><span class="n">file</span><span class="p">:</span><span class="w"> </span><span class="no">Upload</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="p">}</span>
 </code></pre></div>
-<div class="highlight"><span class="filename">Using GLUpload in Dart</span><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="k">import</span><span class="w"> </span><span class="s1">&#39;generated/types/gl_upload.dart&#39;</span><span class="p">;</span>
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="k">import</span><span class="w"> </span><span class="s1">&#39;dart:io&#39;</span><span class="p">;</span>
-<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
-<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="kd">final</span><span class="w"> </span><span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">File</span><span class="p">(</span><span class="s1">&#39;/path/to/document.pdf&#39;</span><span class="p">);</span>
-<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="kd">final</span><span class="w"> </span><span class="n">upload</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GLUpload</span><span class="p">(</span>
-<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="w">  </span><span class="nl">stream:</span><span class="w"> </span><span class="n">file</span><span class="p">.</span><span class="n">openRead</span><span class="p">(),</span>
-<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="w">  </span><span class="nl">length:</span><span class="w"> </span><span class="kd">await</span><span class="w"> </span><span class="n">file</span><span class="p">.</span><span class="n">length</span><span class="p">(),</span>
-<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="w">  </span><span class="nl">filename:</span><span class="w"> </span><span class="s1">&#39;document.pdf&#39;</span><span class="p">,</span>
-<a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a><span class="w">  </span><span class="nl">mimeType:</span><span class="w"> </span><span class="s1">&#39;application/pdf&#39;</span><span class="p">,</span>
-<a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a><span class="p">);</span>
-<a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>
-<a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a><span class="kd">final</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kd">await</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">mutations</span><span class="p">.</span><span class="n">uploadDocument</span><span class="p">(</span><span class="nl">file:</span><span class="w"> </span><span class="n">upload</span><span class="p">);</span>
-<a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a><span class="n">print</span><span class="p">(</span><span class="n">result</span><span class="p">.</span><span class="n">uploadDocument</span><span class="p">);</span><span class="w"> </span><span class="c1">// e.g. &quot;https://cdn.example.com/document.pdf&quot;</span>
+<div class="highlight"><span class="filename">Using GLUpload in Dart</span><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="k">import</span><span class="w"> </span><span class="s1">&#39;generated/types/gl_upload.dart&#39;</span><span class="p">;</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="k">import</span><span class="w"> </span><span class="s1">&#39;dart:io&#39;</span><span class="p">;</span>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="kd">final</span><span class="w"> </span><span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">File</span><span class="p">(</span><span class="s1">&#39;/path/to/document.pdf&#39;</span><span class="p">);</span>
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="kd">final</span><span class="w"> </span><span class="n">upload</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GLUpload</span><span class="p">(</span>
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a><span class="w">  </span><span class="nl">stream:</span><span class="w"> </span><span class="n">file</span><span class="p">.</span><span class="n">openRead</span><span class="p">(),</span>
+<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="w">  </span><span class="nl">length:</span><span class="w"> </span><span class="kd">await</span><span class="w"> </span><span class="n">file</span><span class="p">.</span><span class="n">length</span><span class="p">(),</span>
+<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a><span class="w">  </span><span class="nl">filename:</span><span class="w"> </span><span class="s1">&#39;document.pdf&#39;</span><span class="p">,</span>
+<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a><span class="w">  </span><span class="nl">mimeType:</span><span class="w"> </span><span class="s1">&#39;application/pdf&#39;</span><span class="p">,</span>
+<a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a><span class="p">);</span>
+<a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a>
+<a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a><span class="kd">final</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kd">await</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">mutations</span><span class="p">.</span><span class="n">uploadDocument</span><span class="p">(</span><span class="nl">file:</span><span class="w"> </span><span class="n">upload</span><span class="p">);</span>
+<a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a><span class="n">print</span><span class="p">(</span><span class="n">result</span><span class="p">.</span><span class="n">uploadDocument</span><span class="p">);</span><span class="w"> </span><span class="c1">// e.g. &quot;https://cdn.example.com/document.pdf&quot;</span>
 </code></pre></div>
 <p>The Dio and http adapters both handle multipart encoding automatically when a mutation argument contains a <code>GLUpload</code>. No extra configuration is needed.</p>
 

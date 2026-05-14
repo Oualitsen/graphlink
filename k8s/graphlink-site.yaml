@@ -1,5 +1,8 @@
 # ─────────────────────────────────────────────────────────────
-#  GraphLink — Static Site Deployment
+#  GraphLink — Deployment + Service  (applied on every release)
+#
+#  Ingress rules live in graphlink-site-ingress.yaml and are
+#  applied once during cluster setup — not on every deploy.
 #
 #  Host: graphlink.dev
 #  SSL:  cert-manager / letsencrypt-prod (auto-issued)
@@ -11,6 +14,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: graphlink-site
+  namespace: default
   labels:
     app: graphlink-site
 spec:
@@ -57,6 +61,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: graphlink-site
+  namespace: default
   labels:
     app: graphlink-site
 spec:
@@ -68,58 +73,3 @@ spec:
       port: 8080
       targetPort: 8080
 
----
-# Main ingress — graphlink.dev
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: graphlink-site-ingress
-  annotations:
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-spec:
-  ingressClassName: nginx
-  tls:
-    - hosts:
-        - graphlink.dev
-      secretName: graphlink-site-tls
-  rules:
-    - host: graphlink.dev
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: graphlink-site
-                port:
-                  number: 8080
-
----
-# www redirect — 301 from www.graphlink.dev → graphlink.dev
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: graphlink-site-www-redirect
-  annotations:
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/permanent-redirect: "https://graphlink.dev$request_uri"
-spec:
-  ingressClassName: nginx
-  tls:
-    - hosts:
-        - www.graphlink.dev
-      secretName: graphlink-site-www-tls
-  rules:
-    - host: www.graphlink.dev
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: graphlink-site
-                port:
-                  number: 8080

@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Complete reference for all GraphLink config.json options — schemaPaths, typeMappings, outputDir, clientConfig, serverConfig, and CLI flags.">
+        <meta name="description" content="Complete reference for all GraphLink config.json options — schemaPaths, typeMappings, outputDir, clientConfig (Dart, Java, TypeScript), serverConfig (Spring Boot), and CLI flags.">
       
       
         <meta name="author" content="GraphLink">
@@ -15,7 +15,7 @@
         <link rel="canonical" href="https://graphlink.dev/configuration.html">
       
       
-        <link rel="prev" href="directives.html">
+        <link rel="prev" href="skip-directives.html">
       
       
       
@@ -860,6 +860,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="skip-directives.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    @glSkipOnServer & @glSkipOnClient
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -871,6 +899,24 @@
       
         
       
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
       
       <a href="configuration.html" class="md-nav__link md-nav__link--active">
         
@@ -888,6 +934,102 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#top-level-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Top-level options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clientconfigdart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        clientConfig.dart
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clientconfigjava" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        clientConfig.java
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clientconfigtypescript" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        clientConfig.typescript
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#serverconfigspring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        serverConfig.spring
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#config-file-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Config file format
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI flags
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -921,6 +1063,91 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#top-level-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Top-level options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clientconfigdart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        clientConfig.dart
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clientconfigjava" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        clientConfig.java
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clientconfigtypescript" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        clientConfig.typescript
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#serverconfigspring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        serverConfig.spring
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#config-file-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Config file format
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI flags
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -940,7 +1167,549 @@
 
 
 <h1 id="configuration-reference">Configuration Reference<a class="headerlink" href="#configuration-reference" title="Permanent link">&para;</a></h1>
-<p>Full <code>config.json</code> reference — coming soon.</p>
+<p>Full reference for every option in <code>config.json</code>.</p>
+<h2 id="top-level-options">Top-level options<a class="headerlink" href="#top-level-options" title="Permanent link">&para;</a></h2>
+<div class="highlight"><span class="filename">config.json — top-level structure</span><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;schemaPaths&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;schema/*.graphql&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;client&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">&quot;typeMappings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;ID&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;String&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;Float&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;double&quot;</span><span class="w"> </span><span class="p">},</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="nt">&quot;outputDir&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;lib/generated&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="nt">&quot;identityFields&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="nt">&quot;disableCache&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="nt">&quot;clientConfig&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="err">...</span><span class="w"> </span><span class="p">},</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span><span class="nt">&quot;serverConfig&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="err">...</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="p">}</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>schemaPaths</code></td>
+<td><code>string[]</code></td>
+<td>—</td>
+<td><strong>Required.</strong> Glob patterns for schema files. Multiple patterns are supported — all matched files are merged into one schema.</td>
+</tr>
+<tr>
+<td><code>mode</code></td>
+<td><code>"client"</code> | <code>"server"</code></td>
+<td><code>"server"</code></td>
+<td>Controls which generator runs. <code>"client"</code> generates a typed client (Dart, Java, or TypeScript). <code>"server"</code> generates Spring Boot scaffolding.</td>
+</tr>
+<tr>
+<td><code>typeMappings</code></td>
+<td><code>Record&lt;string, string&gt;</code></td>
+<td><code>{}</code></td>
+<td>Maps GraphQL scalar names to target-language types. Entries here override the defaults. Add entries for custom scalars.</td>
+</tr>
+<tr>
+<td><code>outputDir</code></td>
+<td><code>string</code></td>
+<td><code>"src/main/java"</code></td>
+<td>Directory where generated files are written. Existing files are overwritten on every run.</td>
+</tr>
+<tr>
+<td><code>identityFields</code></td>
+<td><code>string[]</code></td>
+<td><code>[]</code></td>
+<td>Field names treated as identity fields when generating <code>==</code> / <code>hashCode</code> methods (Dart and Java). Fields listed here are always included in equality regardless of <code>@glEqualsHashcode</code>.</td>
+</tr>
+<tr>
+<td><code>disableCache</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, strips all <code>@glCache</code> and <code>@glCacheInvalidate</code> directives from the generated client — useful for debugging or environments where caching is handled externally.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="clientconfigdart"><code>clientConfig.dart</code><a class="headerlink" href="#clientconfigdart" title="Permanent link">&para;</a></h2>
+<p>Used when <code>mode</code> is <code>"client"</code> and you want Dart/Flutter output.</p>
+<div class="highlight"><span class="filename">clientConfig.dart — all options</span><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">&quot;clientConfig&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="nt">&quot;dart&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">      </span><span class="nt">&quot;packageName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;my_app&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">      </span><span class="nt">&quot;httpAdapter&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;dio&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">      </span><span class="nt">&quot;generateAdapters&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">      </span><span class="nt">&quot;generateAllFieldsFragments&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">      </span><span class="nt">&quot;autoGenerateQueries&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">      </span><span class="nt">&quot;autoGenerateQueriesDefaultAlias&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">      </span><span class="nt">&quot;defaultAlias&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">      </span><span class="nt">&quot;operationNameAsParameter&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">      </span><span class="nt">&quot;nullableFieldsRequired&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">      </span><span class="nt">&quot;immutableInputFields&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">      </span><span class="nt">&quot;immutableTypeFields&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">      </span><span class="nt">&quot;generateUiTypes&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="w">      </span><span class="nt">&quot;generateUiInputs&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="w">      </span><span class="nt">&quot;appLocalizationsImport&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="p">}</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>packageName</code></td>
+<td><code>string</code></td>
+<td>—</td>
+<td><strong>Required.</strong> The Dart package name used for import paths in generated files (e.g. <code>"my_app"</code> produces <code>import 'package:my_app/...'</code>).</td>
+</tr>
+<tr>
+<td><code>httpAdapter</code></td>
+<td><code>"http"</code> | <code>"dio"</code> | <code>"none"</code></td>
+<td><code>"http"</code></td>
+<td>Which HTTP adapter file to generate. <code>"http"</code> uses <code>package:http</code>. <code>"dio"</code> uses Dio (supports interceptors, custom <code>BaseOptions</code>). <code>"none"</code> skips adapter generation — supply your own <code>Future&lt;String&gt; Function(String)</code>.</td>
+</tr>
+<tr>
+<td><code>generateAdapters</code></td>
+<td><code>boolean</code></td>
+<td><code>true</code></td>
+<td>When <code>false</code>, skips generating the HTTP and WebSocket adapter files. Use this if you maintain your own adapter implementations and don't want them overwritten.</td>
+</tr>
+<tr>
+<td><code>generateAllFieldsFragments</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>Generates a <code>_all_fields_TypeName</code> named fragment for every type in the schema. Required for <code>autoGenerateQueries</code> to work.</td>
+</tr>
+<tr>
+<td><code>autoGenerateQueries</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>Automatically builds query strings for every operation using <code>_all_fields</code> fragments. When <code>true</code>, you do not need to write any query strings by hand.</td>
+</tr>
+<tr>
+<td><code>autoGenerateQueriesDefaultAlias</code></td>
+<td><code>string</code> | <code>null</code></td>
+<td><code>null</code></td>
+<td>Default alias prefix to use for auto-generated query fields when <code>autoGenerateQueries</code> is <code>true</code>. Useful when multiple operations select the same root field.</td>
+</tr>
+<tr>
+<td><code>defaultAlias</code></td>
+<td><code>string</code> | <code>null</code></td>
+<td><code>null</code></td>
+<td>Default alias applied to all generated query fields globally when no field-level alias is declared.</td>
+</tr>
+<tr>
+<td><code>operationNameAsParameter</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, the generated HTTP adapter function signature includes a second <code>operationName</code> parameter: <code>Future&lt;String&gt; Function(String payload, String operationName)</code>. The operation name is appended to the URL as a query parameter, which is useful for server-side logging and APM tracing.</td>
+</tr>
+<tr>
+<td><code>nullableFieldsRequired</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, nullable fields in generated constructors are emitted as <code>required this.fieldName</code> instead of optional <code>this.fieldName</code>. Use this to enforce that all fields are always explicitly passed at construction sites.</td>
+</tr>
+<tr>
+<td><code>immutableInputFields</code></td>
+<td><code>boolean</code></td>
+<td><code>true</code></td>
+<td>Input class fields are <code>final</code>. Recommended.</td>
+</tr>
+<tr>
+<td><code>immutableTypeFields</code></td>
+<td><code>boolean</code></td>
+<td><code>true</code></td>
+<td>Response type class fields are <code>final</code>. Recommended for client-side code.</td>
+</tr>
+<tr>
+<td><code>generateUiTypes</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>Generates Flutter widget classes for every <code>type</code> in the schema — useful for rapid prototyping. Requires Flutter.</td>
+</tr>
+<tr>
+<td><code>generateUiInputs</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>Generates Flutter form widgets for every <code>input</code> type — renders a form with one field per schema field.</td>
+</tr>
+<tr>
+<td><code>appLocalizationsImport</code></td>
+<td><code>string</code> | <code>null</code></td>
+<td><code>null</code></td>
+<td>Import path for an <code>AppLocalizations</code> class injected into generated Flutter UI widgets. Only relevant when <code>generateUiTypes</code> or <code>generateUiInputs</code> is <code>true</code>.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="clientconfigjava"><code>clientConfig.java</code><a class="headerlink" href="#clientconfigjava" title="Permanent link">&para;</a></h2>
+<p>Used when <code>mode</code> is <code>"client"</code> and you want a Java client.</p>
+<div class="highlight"><span class="filename">clientConfig.java — all options</span><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">&quot;clientConfig&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">&quot;java&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">      </span><span class="nt">&quot;packageName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;com.example.generated&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">      </span><span class="nt">&quot;wsAdapter&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;java11&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">      </span><span class="nt">&quot;jsonCodec&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;jackson&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">      </span><span class="nt">&quot;generateAllFieldsFragments&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">      </span><span class="nt">&quot;autoGenerateQueries&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">      </span><span class="nt">&quot;autoGenerateQueriesDefaultAlias&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">      </span><span class="nt">&quot;defaultAlias&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">      </span><span class="nt">&quot;operationNameAsParameter&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">      </span><span class="nt">&quot;nullableFieldsRequired&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">      </span><span class="nt">&quot;immutableInputFields&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">      </span><span class="nt">&quot;immutableTypeFields&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="w">      </span><span class="nt">&quot;inputAsRecord&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="w">      </span><span class="nt">&quot;typeAsRecord&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="p">}</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>packageName</code></td>
+<td><code>string</code></td>
+<td>—</td>
+<td><strong>Required.</strong> Java package name for generated files (e.g. <code>"com.example.generated"</code>).</td>
+</tr>
+<tr>
+<td><code>wsAdapter</code></td>
+<td><code>"java11"</code> | <code>"okhttp"</code> | <code>"none"</code></td>
+<td><code>"java11"</code></td>
+<td>Which WebSocket adapter to generate. <code>"java11"</code> uses <code>java.net.http.WebSocket</code> (zero extra dependencies). <code>"okhttp"</code> uses OkHttp's WebSocket client. <code>"none"</code> skips WebSocket adapter generation.</td>
+</tr>
+<tr>
+<td><code>jsonCodec</code></td>
+<td><code>"jackson"</code> | <code>"gson"</code> | <code>"none"</code></td>
+<td><code>"jackson"</code></td>
+<td>Which JSON codec helper to generate. <code>"jackson"</code> generates <code>JacksonGraphLinkJsonCodec</code>. <code>"gson"</code> generates <code>GsonGraphLinkJsonCodec</code>. <code>"none"</code> skips codec generation — supply your own lambdas.</td>
+</tr>
+<tr>
+<td><code>generateAllFieldsFragments</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>Generates <code>_all_fields_TypeName</code> fragments for every type. Required for <code>autoGenerateQueries</code>.</td>
+</tr>
+<tr>
+<td><code>autoGenerateQueries</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>Automatically builds query strings for every operation.</td>
+</tr>
+<tr>
+<td><code>defaultAlias</code></td>
+<td><code>string</code> | <code>null</code></td>
+<td><code>null</code></td>
+<td>Default alias applied to all generated query fields globally.</td>
+</tr>
+<tr>
+<td><code>operationNameAsParameter</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, the adapter interface includes an <code>operationName</code> parameter and the generated client appends it to the request URL as a query parameter.</td>
+</tr>
+<tr>
+<td><code>nullableFieldsRequired</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, the generated input constructors do not accept <code>null</code> for nullable fields — <code>Objects.requireNonNull</code> is emitted for all fields.</td>
+</tr>
+<tr>
+<td><code>immutableInputFields</code></td>
+<td><code>boolean</code></td>
+<td><code>true</code></td>
+<td>Input class fields are <code>private final</code>. Inputs use builder pattern.</td>
+</tr>
+<tr>
+<td><code>immutableTypeFields</code></td>
+<td><code>boolean</code></td>
+<td><code>true</code></td>
+<td>Response type fields are <code>private final</code> with only getters. Recommended for client-side.</td>
+</tr>
+<tr>
+<td><code>inputAsRecord</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>Generates input types as Java records instead of classes with builders. Records use component accessor syntax (<code>field()</code>) instead of getters (<code>getField()</code>). Requires Java 16+.</td>
+</tr>
+<tr>
+<td><code>typeAsRecord</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>Generates response types as Java records. Affects how <code>fromJson</code> and mapping methods access fields. Requires Java 16+.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="clientconfigtypescript"><code>clientConfig.typescript</code><a class="headerlink" href="#clientconfigtypescript" title="Permanent link">&para;</a></h2>
+<p>Used when <code>mode</code> is <code>"client"</code> and you want TypeScript output.</p>
+<div class="highlight"><span class="filename">clientConfig.typescript — all options</span><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">&quot;clientConfig&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">&quot;typescript&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">      </span><span class="nt">&quot;httpAdapter&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;fetch&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">      </span><span class="nt">&quot;generateDefaultWsAdapter&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">      </span><span class="nt">&quot;observables&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">      </span><span class="nt">&quot;generateAllFieldsFragments&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">      </span><span class="nt">&quot;autoGenerateQueries&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">      </span><span class="nt">&quot;defaultAlias&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">      </span><span class="nt">&quot;operationNameAsParameter&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">      </span><span class="nt">&quot;optionalNullableInputFields&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">      </span><span class="nt">&quot;immutableTypeFields&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="p">}</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>httpAdapter</code></td>
+<td><code>"fetch"</code> | <code>"axios"</code> | <code>"none"</code></td>
+<td><code>"fetch"</code></td>
+<td>Which HTTP adapter to generate. <code>"fetch"</code> uses the native Fetch API (works in Angular, React, Vue, Svelte, Node 18+). <code>"axios"</code> uses Axios. <code>"none"</code> skips adapter generation.</td>
+</tr>
+<tr>
+<td><code>generateDefaultWsAdapter</code></td>
+<td><code>boolean</code></td>
+<td><code>true</code></td>
+<td>When <code>true</code>, generates <code>DefaultGraphLinkWebSocketAdapter</code> implementing the graphql-ws protocol with exponential-backoff reconnect. Set to <code>false</code> if you have no subscriptions or supply your own adapter.</td>
+</tr>
+<tr>
+<td><code>observables</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, query and mutation methods return <code>Observable&lt;T&gt;</code> (RxJS) instead of <code>Promise&lt;T&gt;</code>. Subscription methods also return <code>Observable&lt;T&gt;</code>. Recommended for Angular projects.</td>
+</tr>
+<tr>
+<td><code>generateAllFieldsFragments</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>Generates <code>_all_fields_TypeName</code> fragments for every type. Required for <code>autoGenerateQueries</code>.</td>
+</tr>
+<tr>
+<td><code>autoGenerateQueries</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>Automatically builds query strings for every operation using <code>_all_fields</code> fragments.</td>
+</tr>
+<tr>
+<td><code>defaultAlias</code></td>
+<td><code>string</code> | <code>null</code></td>
+<td><code>null</code></td>
+<td>Default alias applied to all generated query fields globally.</td>
+</tr>
+<tr>
+<td><code>operationNameAsParameter</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, the adapter function signature includes an <code>operationName</code> parameter and the client appends it to the request URL.</td>
+</tr>
+<tr>
+<td><code>optionalNullableInputFields</code></td>
+<td><code>boolean</code></td>
+<td><code>true</code></td>
+<td>When <code>true</code>, nullable fields in generated input interfaces use <code>field?: T \| null</code> (TypeScript optional property). When <code>false</code>, they use <code>field: T \| null</code> (required but nullable).</td>
+</tr>
+<tr>
+<td><code>immutableTypeFields</code></td>
+<td><code>boolean</code></td>
+<td><code>true</code></td>
+<td>When <code>true</code>, generated type interfaces use <code>readonly</code> on all fields.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="serverconfigspring"><code>serverConfig.spring</code><a class="headerlink" href="#serverconfigspring" title="Permanent link">&para;</a></h2>
+<p>Used when <code>mode</code> is <code>"server"</code>.</p>
+<div class="highlight"><span class="filename">serverConfig.spring — all options</span><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">&quot;serverConfig&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nt">&quot;spring&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">      </span><span class="nt">&quot;basePackage&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;com.example.generated&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">      </span><span class="nt">&quot;generateControllers&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">      </span><span class="nt">&quot;generateInputs&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">      </span><span class="nt">&quot;generateTypes&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">      </span><span class="nt">&quot;generateRepositories&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">      </span><span class="nt">&quot;immutableInputFields&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">      </span><span class="nt">&quot;immutableTypeFields&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">      </span><span class="nt">&quot;inputAsRecord&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">      </span><span class="nt">&quot;typeAsRecord&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">      </span><span class="nt">&quot;reactive&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">      </span><span class="nt">&quot;useSpringSecurity&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">      </span><span class="nt">&quot;injectDataFetching&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">      </span><span class="nt">&quot;generateSchema&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">      </span><span class="nt">&quot;schemaTargetPath&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="p">}</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>basePackage</code></td>
+<td><code>string</code></td>
+<td>—</td>
+<td><strong>Required.</strong> Java package name for all generated classes (e.g. <code>"com.example.generated"</code>).</td>
+</tr>
+<tr>
+<td><code>generateControllers</code></td>
+<td><code>boolean</code></td>
+<td><code>true</code></td>
+<td>Generates <code>@Controller</code> classes with <code>@QueryMapping</code>, <code>@MutationMapping</code>, <code>@SubscriptionMapping</code>, and <code>@Argument</code> on parameters.</td>
+</tr>
+<tr>
+<td><code>generateInputs</code></td>
+<td><code>boolean</code></td>
+<td><code>true</code></td>
+<td>Generates input data classes from <code>input</code> type definitions.</td>
+</tr>
+<tr>
+<td><code>generateTypes</code></td>
+<td><code>boolean</code></td>
+<td><code>true</code></td>
+<td>Generates type data classes from <code>type</code> definitions.</td>
+</tr>
+<tr>
+<td><code>generateRepositories</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>Generates JPA <code>Repository</code> interfaces for types annotated with <code>@glRepository</code>.</td>
+</tr>
+<tr>
+<td><code>immutableInputFields</code></td>
+<td><code>boolean</code></td>
+<td><code>true</code></td>
+<td>Input class fields are <code>private final</code>. Recommended.</td>
+</tr>
+<tr>
+<td><code>immutableTypeFields</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>Type class fields are <code>private final</code>. Set to <code>false</code> for Spring Boot — Spring's runtime sets fields via setters or reflection.</td>
+</tr>
+<tr>
+<td><code>inputAsRecord</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>Generates input types as Java records. Requires Java 16+.</td>
+</tr>
+<tr>
+<td><code>typeAsRecord</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>Generates type classes as Java records. Requires Java 16+.</td>
+</tr>
+<tr>
+<td><code>reactive</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, generates Spring WebFlux-style controllers. Queries and mutations return <code>Mono&lt;T&gt;</code>. File upload fields use <code>FilePart</code>.</td>
+</tr>
+<tr>
+<td><code>useSpringSecurity</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>MVC mode only. Captures the <code>SecurityContext</code> before entering <code>CompletableFuture</code> lambdas and restores it on the worker thread. Requires <code>spring-security</code> on the classpath. Has no effect in reactive mode.</td>
+</tr>
+<tr>
+<td><code>injectDataFetching</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, generates data-fetching injection code in controllers for field-level resolution.</td>
+</tr>
+<tr>
+<td><code>generateSchema</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, writes a copy of the processed schema to disk alongside the generated Java. Requires <code>schemaTargetPath</code>.</td>
+</tr>
+<tr>
+<td><code>schemaTargetPath</code></td>
+<td><code>string</code> | <code>null</code></td>
+<td><code>null</code></td>
+<td>Path where the schema file is written when <code>generateSchema</code> is <code>true</code>. Must end in <code>.graphql</code> or <code>.graphqls</code>. Example: <code>"src/main/resources/schema.graphqls"</code>.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="config-file-format">Config file format<a class="headerlink" href="#config-file-format" title="Permanent link">&para;</a></h2>
+<p>GraphLink accepts <strong>JSON</strong> (<code>.json</code>), <strong>YAML</strong> (<code>.yaml</code>), and <strong>YML</strong> (<code>.yml</code>) config files. The structure and keys are identical across all three formats.</p>
+<div class="highlight"><span class="filename">glink.yaml — equivalent to the JSON example above</span><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">schemaPaths</span><span class="p">:</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">schema/*.graphql</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="nt">typeMappings</span><span class="p">:</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span><span class="nt">ID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">String</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">  </span><span class="nt">Float</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">double</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="nt">outputDir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lib/generated</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="nt">clientConfig</span><span class="p">:</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">  </span><span class="nt">dart</span><span class="p">:</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">    </span><span class="nt">packageName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_app</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">    </span><span class="nt">generateAllFieldsFragments</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">    </span><span class="nt">autoGenerateQueries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<hr />
+<h2 id="cli-flags">CLI flags<a class="headerlink" href="#cli-flags" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>glink<span class="w">                   </span><span class="c1"># auto-discover config (see below)</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>glink<span class="w"> </span>-c<span class="w"> </span>config.json<span class="w">    </span><span class="c1"># explicit config path</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>glink<span class="w"> </span>-w<span class="w">                </span><span class="c1"># watch mode — regenerate on schema change</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>glink<span class="w"> </span>--version<span class="w">         </span><span class="c1"># print version and exit</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>glink<span class="w"> </span>--help<span class="w">            </span><span class="c1"># print usage</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-c &lt;path&gt;</code></td>
+<td>Path to the config file. Accepts <code>.json</code>, <code>.yaml</code>, or <code>.yml</code>. If omitted, <code>glink</code> searches for <code>glink.json</code>, <code>glink.yaml</code>, or <code>glink.yml</code> starting from the current directory and walking up to the filesystem root.</td>
+</tr>
+<tr>
+<td><code>-w</code></td>
+<td>Watch mode. GraphLink monitors the files matched by <code>schemaPaths</code> and regenerates on every save.</td>
+</tr>
+<tr>
+<td><code>--version</code></td>
+<td>Prints the GraphLink version and exits.</td>
+</tr>
+<tr>
+<td><code>--help</code></td>
+<td>Prints usage information and exits.</td>
+</tr>
+</tbody>
+</table>
 
 
 

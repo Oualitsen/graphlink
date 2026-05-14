@@ -35,18 +35,28 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - **Only what the server needs.** Unlike ferry (which sends the entire schema), GraphLink generates
   precise queries containing only the requested fields. This is required for Spring Boot's strict
   schema validation to pass.
-- **Watch mode.** Run `glink -c config.json -w` to watch schema files and regenerate automatically
-  on every save.
+- **Watch mode.** Run `glink -w` to watch schema files and regenerate automatically on every save.
 - **Single source of truth.** The schema drives both ends. No duplicate type definitions. No
   schema drift. Adding a field means editing one file.
+- **Two-layer server-side access control.** `@glSkipOnClient` enforces field access on the server
+  at two levels. Level 1 (always active): a `@SchemaMapping` is generated that throws
+  `GraphQLException("Access denied")` — no runtime access regardless of the client. Level 2
+  (`generateSchema: true`): the field is stripped from the schema Spring Boot serves — invisible
+  in GraphiQL and rejected at validation before execution. Neither level depends on the generated
+  client — any raw GraphQL client or introspection tool is blocked.
+- **ID/object field-pair pattern.** `@glSkipOnServer` and `@glSkipOnClient` are designed to be
+  used on different fields of the same type. The raw foreign key (`cashierId @glSkipOnClient`)
+  stays on the server for persistence; the resolved object (`cashier @glSkipOnServer(batch: true)`)
+  is loaded by the server and delivered to the client. This eliminates N+1 queries and keeps
+  each side's model clean without any shared representation.
 
-## Supported targets (as of v4.5.0)
+## Supported targets (as of v4.6.0)
 
 - Dart client (stable)
 - Flutter client (stable)
 - Java client (stable)
 - Spring Boot server (stable, MVC and reactive/WebFlux)
-- TypeScript client (stable as of v4.5.0 — fetch/axios, RxJS observables, WebSocket subscriptions)
+- TypeScript client (stable — fetch/axios, RxJS observables, WebSocket subscriptions)
 - Express / Node.js server (planned)
 - Go (planned, demand-based)
 - Kotlin (planned, demand-based)
@@ -61,10 +71,11 @@ Platforms: Linux (x86_64), macOS (ARM64), Windows (x86_64)
 ## Basic usage
 
 ```bash
-glink -c config.json        # generate once
-glink -c config.json -w     # watch mode
-glink -v                    # print version
-glink -h                    # show help
+glink                   # auto-discover glink.json / glink.yaml / glink.yml
+glink -c config.json    # explicit config path (JSON, YAML, or YML)
+glink -w                # watch mode — regenerate on schema change
+glink -v                # print version
+glink -h                # show help
 ```
 
 ## Configuration (config.json)
@@ -107,14 +118,15 @@ type Mutation {
 - Spring Boot server (MVC + reactive/WebFlux, service interfaces, file upload, security context propagation): https://graphlink.dev/docs/spring-server.html
 - Caching (@glCache, @glCacheInvalidate, tag invalidation, staleIfOffline): https://graphlink.dev/docs/caching.html
 - Directives (@glMapsTo, @glMapField, @glCache, @glCacheInvalidate, @glSkipOnServer forward mappings, and more): https://graphlink.dev/docs/directives.html
-- Configuration (all config keys for Dart, Java, TypeScript, Spring; reactive; useSpringSecurity; typeMappings; CLI flags): https://graphlink.dev/docs/configuration.html
+- "@glSkipOnServer & @glSkipOnClient" (two-layer server-side access control, schema stripping, @SchemaMapping, @BatchMapping, mapTo, forward mappings, ID/object field-pair pattern for N+1-safe loading): https://graphlink.dev/docs/skip-directives.html
+- Configuration (all config keys for Dart, Java, TypeScript, Spring; reactive; useSpringSecurity; typeMappings; CLI flags; YAML config): https://graphlink.dev/docs/configuration.html
 
 ## Links
 
 - Website: https://graphlink.dev/
 - Docs: https://graphlink.dev/docs/index.html
 - GitHub: https://github.com/Oualitsen/graphlink
-- pub.dev: https://pub.dev/packages/retrofit_graphql
+- pub.dev: https://pub.dev/packages/graphlink
 - Issues: https://github.com/Oualitsen/graphlink/issues
 - Releases: https://github.com/Oualitsen/graphlink/releases
 
