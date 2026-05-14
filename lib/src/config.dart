@@ -8,21 +8,46 @@ enum JavaWsAdapter { java11, okhttp, none }
 
 enum JavaJsonCodec { jackson, gson, none }
 
+// ── Abstract base classes ────────────────────────────────────────────────────
+
+abstract class ClientLanguageConfig {
+  bool get generateAllFieldsFragments => false;
+  bool get nullableFieldsRequired => false;
+  bool get autoGenerateQueries => false;
+  bool get operationNameAsParameter => false;
+  bool get immutableTypeFields => true;
+  String? get defaultAlias => null;
+
+  static ClientLanguageConfig fromJson(Map<String, dynamic> json) {
+    if (json['dart'] != null) return DartClientConfig.fromJson(json['dart'] as Map<String, dynamic>);
+    if (json['java'] != null) return JavaClientConfig.fromJson(json['java'] as Map<String, dynamic>);
+    if (json['typescript'] != null) return TypeScriptClientConfig.fromJson(json['typescript'] as Map<String, dynamic>);
+    throw ArgumentError('clientConfig must specify one of: dart, java, typescript');
+  }
+}
+
+abstract class ServerLanguageConfig {
+  static ServerLanguageConfig fromJson(Map<String, dynamic> json) {
+    if (json['spring'] != null) return SpringServerConfig.fromJson(json['spring'] as Map<String, dynamic>);
+    if (json['expressApollo'] != null) return ExpressApolloServerConfig.fromJson(json['expressApollo'] as Map<String, dynamic>);
+    throw ArgumentError('serverConfig must specify one of: spring, expressApollo');
+  }
+}
+
+// ── Top-level config ─────────────────────────────────────────────────────────
+
 class GeneratorConfig {
   final List<String> schemaPaths;
-  final String mode; // "server" or "client"
+  final String mode;
   final List<String> identityFields;
   Map<String, String>? typeMappings;
   final bool disableCache;
   final String outputDir;
   final ServerConfig? serverConfig;
   final ClientConfig? clientConfig;
-  CodeGenerationMode getMode() {
-    if (mode == "client") {
-      return CodeGenerationMode.client;
-    }
-    return CodeGenerationMode.server;
-  }
+
+  CodeGenerationMode getMode() =>
+      mode == 'client' ? CodeGenerationMode.client : CodeGenerationMode.server;
 
   GeneratorConfig({
     required this.schemaPaths,
@@ -43,31 +68,24 @@ class GeneratorConfig {
       typeMappings: Map<String, String>.from(json['typeMappings'] ?? {}),
       disableCache: (json['disableCache'] as bool?) ?? false,
       outputDir: json['outputDir'] ?? 'src/main/java',
-      serverConfig:
-          json['serverConfig'] != null ? ServerConfig.fromJson(json['serverConfig']) : null,
-      clientConfig:
-          json['clientConfig'] != null ? ClientConfig.fromJson(json['clientConfig']) : null,
+      serverConfig: json['serverConfig'] != null ? ServerConfig.fromJson(json['serverConfig'] as Map<String, dynamic>) : null,
+      clientConfig: json['clientConfig'] != null ? ClientConfig.fromJson(json['clientConfig'] as Map<String, dynamic>) : null,
     );
   }
 }
 
-// ServerConfig supports multiple frameworks
+// ── Server config ─────────────────────────────────────────────────────────────
+
 class ServerConfig {
-  final SpringServerConfig? spring;
-  final ExpressApolloServerConfig? expressApollo;
+  final ServerLanguageConfig language;
 
-  ServerConfig({this.spring, this.expressApollo});
+  ServerConfig(this.language);
 
-  factory ServerConfig.fromJson(Map<String, dynamic> json) {
-    return ServerConfig(
-      spring: json['spring'] != null ? SpringServerConfig.fromJson(json['spring']) : null,
-      expressApollo: json['expressApollo'] != null ? ExpressApolloServerConfig.fromJson(json['expressApollo']) : null,
-    );
-  }
+  factory ServerConfig.fromJson(Map<String, dynamic> json) =>
+      ServerConfig(ServerLanguageConfig.fromJson(json));
 }
 
-
-class ExpressApolloServerConfig {
+class ExpressApolloServerConfig extends ServerLanguageConfig {
   final int port;
   final String graphqlPath;
   final bool generateEntryPoint;
@@ -90,7 +108,7 @@ class ExpressApolloServerConfig {
   }
 }
 
-class SpringServerConfig {
+class SpringServerConfig extends ServerLanguageConfig {
   final String basePackage;
   final bool generateControllers;
   final bool generateInputs;
@@ -101,10 +119,6 @@ class SpringServerConfig {
   final bool generateSchema;
   final bool injectDataFetching;
   final bool reactive;
-  /// When true and reactive is false, emits SecurityContext capture/propagation
-  /// code inside CompletableFuture lambdas so the security context is available
-  /// on worker threads. Requires spring-security on the classpath.
-  /// Has no effect in reactive mode.
   final bool useSpringSecurity;
   final String? schemaTargetPath;
   final bool immutableInputFields;
@@ -135,54 +149,49 @@ class SpringServerConfig {
 
   factory SpringServerConfig.fromJson(Map<String, dynamic> json) {
     return SpringServerConfig(
-        basePackage: json['basePackage'],
-        generateControllers: json['generateControllers'] ?? true,
-        generateInputs: json['generateInputs'] ?? true,
-        generateTypes: json['generateTypes'] ?? true,
-        generateRepositories: json['generateRepositories'] ?? false,
-        inputAsRecord: json['inputAsRecord'] ?? false,
-        typeAsRecord: json['typeAsRecord'] ?? false,
-        generateSchema: json['generateSchema'] ?? false,
-        immutableInputFields: json['immutableInputFields'] ?? true,
-        immutableTypeFields: json['immutableTypeFields'] ?? false,
-        schemaTargetPath: json['schemaTargetPath'],
-        injectDataFetching: json['injectDataFetching'] as bool? ?? false,
-        reactive: json['reactive'] as bool? ?? false,
-        useSpringSecurity: json['useSpringSecurity'] as bool? ?? false);
-  }
-}
-
-class ClientConfig {
-  final DartClientConfig? dart;
-  final JavaClientConfig? java;
-  final TypeScriptClientConfig? typescript;
-
-  ClientConfig({this.dart, this.java, this.typescript})
-      : assert(dart != null || java != null || typescript != null,
-            'ClientConfig must have at least one of dart, java, or typescript');
-
-  factory ClientConfig.fromJson(Map<String, dynamic> json) {
-    return ClientConfig(
-      dart: json['dart'] != null ? DartClientConfig.fromJson(json['dart']) : null,
-      java: json['java'] != null ? JavaClientConfig.fromJson(json['java']) : null,
-      typescript: json['typescript'] != null ? TypeScriptClientConfig.fromJson(json['typescript']) : null,
+      basePackage: json['basePackage'] as String,
+      generateControllers: (json['generateControllers'] as bool?) ?? true,
+      generateInputs: (json['generateInputs'] as bool?) ?? true,
+      generateTypes: (json['generateTypes'] as bool?) ?? true,
+      generateRepositories: (json['generateRepositories'] as bool?) ?? false,
+      inputAsRecord: (json['inputAsRecord'] as bool?) ?? false,
+      typeAsRecord: (json['typeAsRecord'] as bool?) ?? false,
+      generateSchema: (json['generateSchema'] as bool?) ?? false,
+      immutableInputFields: (json['immutableInputFields'] as bool?) ?? true,
+      immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? false,
+      schemaTargetPath: json['schemaTargetPath'] as String?,
+      injectDataFetching: (json['injectDataFetching'] as bool?) ?? false,
+      reactive: (json['reactive'] as bool?) ?? false,
+      useSpringSecurity: (json['useSpringSecurity'] as bool?) ?? false,
     );
   }
 }
 
-class DartClientConfig {
-  final bool generateAllFieldsFragments;
-  final bool nullableFieldsRequired;
-  final bool autoGenerateQueries;
-  final bool operationNameAsParameter;
+// ── Client configs ────────────────────────────────────────────────────────────
+
+class ClientConfig {
+  final ClientLanguageConfig language;
+
+  ClientConfig(this.language);
+
+  factory ClientConfig.fromJson(Map<String, dynamic> json) =>
+      ClientConfig(ClientLanguageConfig.fromJson(json));
+}
+
+class DartClientConfig extends ClientLanguageConfig {
+  @override final bool generateAllFieldsFragments;
+  @override final bool nullableFieldsRequired;
+  @override final bool autoGenerateQueries;
+  @override final bool operationNameAsParameter;
+  @override final bool immutableTypeFields;
+  @override final String? defaultAlias;
+
   final String? autoGenerateQueriesDefaultAlias;
-  final String? defaultAlias;
   final String? packageName;
   final String? appLocalizationsImport;
   final bool generateUiTypes;
   final bool generateUiInputs;
   final bool immutableInputFields;
-  final bool immutableTypeFields;
   final bool generateAdapters;
   final DartHttpAdapter httpAdapter;
 
@@ -205,12 +214,12 @@ class DartClientConfig {
 
   factory DartClientConfig.fromJson(Map<String, dynamic> json) {
     return DartClientConfig(
-      generateAllFieldsFragments: json['generateAllFieldsFragments'] ?? false,
-      nullableFieldsRequired: json['nullableFieldsRequired'] ?? false,
-      autoGenerateQueries: json['autoGenerateQueries'] ?? false,
+      generateAllFieldsFragments: (json['generateAllFieldsFragments'] as bool?) ?? false,
+      nullableFieldsRequired: (json['nullableFieldsRequired'] as bool?) ?? false,
+      autoGenerateQueries: (json['autoGenerateQueries'] as bool?) ?? false,
       autoGenerateQueriesDefaultAlias: json['autoGenerateQueriesDefaultAlias'] as String?,
-      operationNameAsParameter: json['operationNameAsParameter'] ?? false,
-      defaultAlias: json['defaultAlias'],
+      operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
+      defaultAlias: json['defaultAlias'] as String?,
       packageName: json['packageName'] as String?,
       appLocalizationsImport: json['appLocalizationsImport'] as String?,
       generateUiInputs: (json['generateUiInputs'] as bool?) ?? false,
@@ -226,19 +235,20 @@ class DartClientConfig {
   }
 }
 
-class JavaClientConfig {
+class JavaClientConfig extends ClientLanguageConfig {
+  @override final bool generateAllFieldsFragments;
+  @override final bool nullableFieldsRequired;
+  @override final bool autoGenerateQueries;
+  @override final bool operationNameAsParameter;
+  @override final bool immutableTypeFields;
+  @override final String? defaultAlias;
+
   final String packageName;
-  final bool generateAllFieldsFragments;
-  final bool nullableFieldsRequired;
-  final bool autoGenerateQueries;
-  final bool operationNameAsParameter;
   final bool immutableInputFields;
-  final bool immutableTypeFields;
   final bool inputAsRecord;
   final bool typeAsRecord;
   final JavaWsAdapter wsAdapter;
   final JavaJsonCodec jsonCodec;
-  final String? defaultAlias;
 
   JavaClientConfig({
     required this.packageName,
@@ -266,7 +276,7 @@ class JavaClientConfig {
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
       inputAsRecord: (json['inputAsRecord'] as bool?) ?? false,
       typeAsRecord: (json['typeAsRecord'] as bool?) ?? false,
-      defaultAlias: json['defaultAlias'],
+      defaultAlias: json['defaultAlias'] as String?,
       wsAdapter: JavaWsAdapter.values.firstWhere(
         (e) => e.name == json['wsAdapter'],
         orElse: () => JavaWsAdapter.java11,
@@ -279,16 +289,17 @@ class JavaClientConfig {
   }
 }
 
-class TypeScriptClientConfig {
-  final bool generateAllFieldsFragments;
-  final bool autoGenerateQueries;
-  final bool operationNameAsParameter;
-  final bool immutableTypeFields;
+class TypeScriptClientConfig extends ClientLanguageConfig {
+  @override final bool generateAllFieldsFragments;
+  @override final bool autoGenerateQueries;
+  @override final bool operationNameAsParameter;
+  @override final bool immutableTypeFields;
+  @override final String? defaultAlias;
+
   final bool optionalNullableInputFields;
   final bool generateDefaultWsAdapter;
   final bool observables;
   final TypeScriptHttpAdapter httpAdapter;
-  final String? defaultAlias;
 
   TypeScriptClientConfig({
     this.generateAllFieldsFragments = false,
@@ -315,8 +326,7 @@ class TypeScriptClientConfig {
         (e) => e.name == json['httpAdapter'],
         orElse: () => TypeScriptHttpAdapter.fetch,
       ),
-      defaultAlias: json['defaultAlias'],
+      defaultAlias: json['defaultAlias'] as String?,
     );
   }
 }
-
