@@ -1,7 +1,3 @@
-## 4.5.4 - 2026-05-03
-
-- Fix missing space between fields in dynamically built queries (Dart, Java, TypeScript clients)
-
 ## 1.0.0+1 - 2023-08-14
 
 - Initial Release.
@@ -239,3 +235,27 @@
   - Fixed Dart `@glMapsTo` `fromXxx()`: nullable target type now emits a null-safety guard (`!= null ? … : null`) instead of an unconditional call
   - Fixed Dart client: `http_parser` import is now only emitted when upload mutations are present
   - Fixed Java: type field constructors, getters, and getter declarations now correctly force nullable types in server mode
+
+## 4.5.4 - 2026-05-03
+
+- Fix missing space between fields in dynamically built queries (Dart, Java, TypeScript clients)
+
+## 4.6.0 - 2026-05-14
+
+### New features
+- **Operation name in URL** — when `operationNameAsParameter: true` is set, the operation name is now appended as a query parameter in the HTTP request URL
+
+### Fixes & improvements
+- Fixed Dart client: subscription connection creation
+- Fixed interface: duplicate `__typename` handling in switch statements
+- Fixed interface: `@glSkipOnClient` correctly applied to interface implementors on the client
+- Fixed `@glMapsTo` client mode: mapping methods and imports are now suppressed when the target type is not among the projected (generated) types, preventing broken type references in the client output
+- Fixed `@glMapsTo` Dart & Java: nested non-list mapped input fields whose `fromXxx()` requires extra parameters are now correctly promoted to required parameters instead of generating an invalid auto-call
+- Fixed `@glMapsTo` Java: `fromXxx()` primitive `boolean` target fields now correctly use `isXxx()` getters instead of `getXxx()`
+- `toXxx()` and `fromXxx()` are no longer generated when the source or target instance would be entirely unused — an input whose mapped fields are all required parameters with nothing derivable from the target no longer emits a misleading method body
+
+### Internal
+- `MappingPlan` split into `ToMappingPlan` (forward direction) and `FromMappingPlan` (reverse direction) — all field-categorization logic is now fully encapsulated in the model; serializers are pure emitters with no resolution logic of their own
+
+---
+

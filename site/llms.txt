@@ -39,7 +39,7 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - **Single source of truth.** The schema drives both ends. No duplicate type definitions. No
   schema drift. Adding a field means editing one file.
 
-## Supported targets (as of v4.5.0)
+## Supported targets (as of v4.6.0)
 
 - Dart client (stable)
 - Flutter client (stable)

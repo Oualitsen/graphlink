@@ -298,6 +298,43 @@ type Query {
 }
 ```
 
+## Operation name in URL
+
+Set `"operationNameAsParameter": true` to include the operation name as a URL query parameter on every request. This is useful for identifying operations in server logs, APM dashboards, and proxies without parsing the request body:
+
+```json title="config.json"
+{
+  "clientConfig": {
+    "dart": {
+      "operationNameAsParameter": true
+    }
+  }
+}
+```
+
+The generated adapter function gains a second parameter and the client appends `?operationName=OperationName` to every HTTP request:
+
+```dart
+// Generated adapter signature with operationNameAsParameter: true
+Future<String> Function(String payload, String operationName) adapter
+```
+
+The WebSocket adapter is unaffected — operation names on subscriptions flow through the graphql-ws protocol message payload.
+
+## Nullable fields
+
+By default, nullable schema fields generate optional constructor parameters (`this.fieldName`). Set `"nullableFieldsRequired": true` to force `required this.fieldName` on every field regardless of nullability:
+
+```json title="config.json"
+{
+  "clientConfig": {
+    "dart": { "nullableFieldsRequired": true }
+  }
+}
+```
+
+With the default `false`, a nullable field like `ownerId: ID` generates `this.ownerId` (optional). With `true`, it generates `required this.ownerId` — you must always pass it explicitly, even as `null`.
+
 ## File uploads
 
 When your schema uses the built-in `Upload` scalar, GraphLink generates a `GLUpload` type and produces multipart-aware upload logic in the HTTP adapter:
