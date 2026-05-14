@@ -13,6 +13,7 @@ import 'package:graphlink/src/generators/typescript_client_generator.dart';
 import 'package:graphlink/src/gl_grammar_io.dart' as grammar_io;
 import 'package:graphlink/src/grammar_factory.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
+import 'package:yaml/yaml.dart';
 
 export 'package:graphlink/src/generators/dart_client_generator.dart' show generateDartClientClasses;
 export 'package:graphlink/src/generators/java_client_generator.dart' show generateJavaClientClasses;
@@ -20,6 +21,18 @@ export 'package:graphlink/src/generators/server_generator.dart' show generateSer
 export 'package:graphlink/src/generators/typescript_client_generator.dart' show generateTypeScriptClientClasses;
 export 'package:graphlink/src/grammar_factory.dart' show createGrammar, buildExtraGql;
 export 'package:graphlink/src/io_utils.dart' show writeToFile, cleanUpObsoleteFiles;
+
+extension on YamlMap {
+  Map<String, dynamic> toMap() => Map.fromEntries(
+        entries.map((e) => MapEntry(e.key as String, _convertYaml(e.value))),
+      );
+}
+
+dynamic _convertYaml(dynamic value) {
+  if (value is YamlMap) return value.toMap();
+  if (value is YamlList) return value.map(_convertYaml).toList();
+  return value;
+}
 
 const String appVersion =
     String.fromEnvironment('version', defaultValue: 'dev');
@@ -156,9 +169,17 @@ ${parser.usage}
   final raw = await configFile.readAsString();
   Map<String, dynamic> json;
   try {
-    json = jsonDecode(raw) as Map<String, dynamic>;
+    final isYaml = configPath.endsWith('.yaml') || configPath.endsWith('.yml');
+    if (isYaml) {
+      json = (loadYaml(raw) as YamlMap).toMap();
+    } else {
+      json = jsonDecode(raw) as Map<String, dynamic>;
+    }
   } on FormatException catch (e) {
     stderr.writeln('❌ Invalid JSON in $configPath: ${e.message}');
+    exit(1);
+  } catch (e) {
+    stderr.writeln('❌ Failed to parse config $configPath: $e');
     exit(1);
   }
 
