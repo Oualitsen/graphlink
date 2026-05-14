@@ -283,7 +283,7 @@ class DartClientSerializer extends GLClientSerilaizer {
                 ? "mutations = ${classNameFromType(GLQueryType.mutation)}(adapter, uploadConverter, uploadAdapter, $_svFragMap, this.store, $_svTagLocks);"
                 : "mutations = ${classNameFromType(GLQueryType.mutation)}(adapter, $_svFragMap, this.store, $_svTagLocks);",
           if (_parser.hasSubscriptions)
-            "subscriptions = ${classNameFromType(GLQueryType.subscription)}(wsAdapter, $_svFragMap, this.store, $_svTagLocks);",
+            "subscriptions = ${classNameFromType(GLQueryType.subscription)}(adapter, wsAdapter, $_svFragMap, this.store, $_svTagLocks);",
         ],
       ),
       if (_parser.hasSubscriptions && generateAdapters)
@@ -502,10 +502,9 @@ GraphLinkClient.fromUrl({
 
   List<String> _declareConstructorArgs(GLQueryType type) {
     return [
-      if (type == GLQueryType.subscription)
-        'GraphLinkWebSocketAdapter adapter'
-      else
       '${delcareHttpAdapterFunction()} httpAdapter',
+      if (type == GLQueryType.subscription)
+        'GraphLinkWebSocketAdapter adapter',
       if (type == GLQueryType.mutation && _parser.hasUploadMutations) ...[
         'this.$_svUploadConverter',
         'this.$_svUploadAdapter',
