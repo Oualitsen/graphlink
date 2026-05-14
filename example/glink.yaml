@@ -1,0 +1,24 @@
+schemaPaths:
+  - schema/*.gql
+
+mode: client
+
+typeMappings:
+  ID: String
+  String: String
+  Float: double
+  Int: int
+  Boolean: bool
+
+outputDir: lib/generated
+
+clientConfig:
+  dart:
+    packageName: graphlink_example
+    httpAdapter: dio               # generates a Dio adapter (supports interceptors, progress, etc.)
+    generateAdapters: true         # generate DefaultGraphLinkClientAdapter + WebSocket adapter
+    generateAllFieldsFragments: true   # generates _all_fields fragment per type
+    autoGenerateQueries: true          # auto-builds query strings for every operation
+    nullableFieldsRequired: false
+    immutableInputFields: true
+    immutableTypeFields: true

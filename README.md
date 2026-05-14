@@ -4,7 +4,7 @@
 
 > Define your GraphQL schema once. Get a fully typed client **and** server scaffold — for Dart, Flutter, Java, TypeScript, and Spring Boot — in milliseconds.
 
-[![pub.dev](https://img.shields.io/pub/v/retrofit_graphql?label=pub.dev)](https://pub.dev/packages/retrofit_graphql)
+[![pub.dev](https://img.shields.io/pub/v/graphlink?label=pub.dev)](https://pub.dev/packages/graphlink)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![GitHub Releases](https://img.shields.io/github/v/release/Oualitsen/graphlink)](https://github.com/Oualitsen/graphlink/releases/latest)
 
