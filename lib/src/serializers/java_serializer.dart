@@ -405,7 +405,7 @@ class JavaSerializer extends GLSerializer {
 
   @override
   String generateToMethod(
-      GLInputDefinition def, String targetType, MappingPlan plan) {
+      GLInputDefinition def, String targetType, ToMappingPlan plan) {
     // Whether the source input and target type are records (affects accessor style).
     final sourceIsRecord = inputsAsRecords;
     final targetIsRecord = typesAsRecords;
@@ -501,73 +501,51 @@ class JavaSerializer extends GLSerializer {
 
   @override
   String generateFromMethod(
-      GLInputDefinition def, String targetType, MappingPlan plan) {
-    final allMapped = [...plan.autoMapped, ...plan.defaultParams];
-
-    final elementMismatch = allMapped
-        .where((f) => _hasElementNullabilityMismatch(f.sourceField!.type, f.targetField.type))
-        .toList();
-    final autoMappable = allMapped
-        .where((f) => !_hasElementNullabilityMismatch(f.sourceField!.type, f.targetField.type))
-        .toList();
-
-    final autoMappableBySource = {
-      for (final f in autoMappable) f.sourceField!.name.token: f
-    };
-    final elementMismatchNames = {
-      for (final f in elementMismatch) f.sourceField!.name.token
-    };
-
+      GLInputDefinition def, String targetType, FromMappingPlan plan) {
     final targetVar = targetType.firstLow;
 
-    final nullableListDefaultParams = autoMappable
-        .where((f) =>
-            f.targetField.type.nullable &&
-            !f.sourceField!.type.nullable &&
-            f.sourceField!.type.isList)
-        .map((f) =>
-            '${serializeType(f.sourceField!.type, false)} default${f.sourceField!.name.token.firstUp}');
+    final nullableListDefaultParams = plan.nullableListDefaults.map((f) =>
+        '${serializeType(f.sourceField!.type, false)} default${f.sourceField!.name.token.firstUp}');
 
-    final elementMismatchParams = elementMismatch.map(
+    final promotedParams = plan.promoted.map(
       (f) => '${serializeType(f.sourceField!.type, false)} ${f.sourceField!.name.token}',
     );
 
-    final inputOnlyParams = plan.inputOnlyFields.map(
+    final inputOnlyParams = plan.inputOnly.map(
       (f) => '${serializeType(f.type, false)} ${f.name.token}',
     );
 
-    if (elementMismatch.any((f) => f.sourceField!.type.isList) ||
-        plan.inputOnlyFields.any((f) => f.type.isList) ||
-        autoMappable.any((f) =>
-            f.targetField.type.nullable &&
-            !f.sourceField!.type.nullable &&
-            f.sourceField!.type.isList)) {
+    if (plan.promoted.any((f) => f.sourceField!.type.isList) ||
+        plan.inputOnly.any((f) => f.type.isList) ||
+        plan.nullableListDefaults.isNotEmpty) {
       def.addImport(importList);
     }
 
-    // Build positional constructor args in field declaration order.
+    final autoBySource = {for (final f in plan.autoMapped) f.sourceField!.name.token: f};
+    final nullableListBySource = {for (final f in plan.nullableListDefaults) f.sourceField!.name.token: f};
+    final promotedNames = {for (final f in plan.promoted) f.sourceField!.name.token};
+    final inputOnlyNames = {for (final f in plan.inputOnly) f.name.token};
+
     final fields = def.getSerializableFields(grammar.mode);
     final constructorArgs = <String>[];
     for (final field in fields) {
       final fieldName = field.name.token;
-      if (autoMappableBySource.containsKey(fieldName)) {
-        final f = autoMappableBySource[fieldName]!;
+      if (autoBySource.containsKey(fieldName)) {
+        final f = autoBySource[fieldName]!;
         final targetFieldName = f.targetField.name.token;
         final sourceExpr = typesAsRecords
             ? '$targetVar.$targetFieldName()'
-            : '$targetVar.${_getterName(targetFieldName, serializeType(f.targetField.type, f.targetField.hasInculeOrSkipDiretives || forceFieldNullable) == "boolean")}()';
-        var expr = _fromMappingExpr(
-            sourceExpr, f.sourceField!.type.firstType.token, f.targetField.type, 0, def);
-        if (f.targetField.type.nullable &&
-            !f.sourceField!.type.nullable &&
-            f.sourceField!.type.isList) {
-          expr = '$expr != null ? $expr : default${f.sourceField!.name.token.firstUp}';
-        }
-        constructorArgs.add(expr);
-      } else if (elementMismatchNames.contains(fieldName)) {
-        constructorArgs.add(fieldName);
-      } else {
-        // input-only field — taken from parameter
+            : '$targetVar.${_getterName(targetFieldName, serializeType(f.targetField.type, false) == "boolean")}()';
+        constructorArgs.add(_fromMappingExpr(sourceExpr, f.sourceField!.type.firstType.token, f.targetField.type, 0, def));
+      } else if (nullableListBySource.containsKey(fieldName)) {
+        final f = nullableListBySource[fieldName]!;
+        final targetFieldName = f.targetField.name.token;
+        final sourceExpr = typesAsRecords
+            ? '$targetVar.$targetFieldName()'
+            : '$targetVar.${_getterName(targetFieldName, false)}()';
+        final expr = _fromMappingExpr(sourceExpr, f.sourceField!.type.firstType.token, f.targetField.type, 0, def);
+        constructorArgs.add('$expr != null ? $expr : default${f.sourceField!.name.token.firstUp}');
+      } else if (promotedNames.contains(fieldName) || inputOnlyNames.contains(fieldName)) {
         constructorArgs.add(fieldName);
       }
     }
@@ -578,15 +556,13 @@ class JavaSerializer extends GLSerializer {
       arguments: [
         '$targetType $targetVar',
         ...nullableListDefaultParams,
-        ...elementMismatchParams,
+        ...promotedParams,
         ...inputOnlyParams,
       ],
       statements: [
         'return new ${def.token}(',
         ...constructorArgs.asMap().entries.map(
-              (e) => e.key < constructorArgs.length - 1
-                  ? '${e.value},'
-                  : e.value,
+              (e) => e.key < constructorArgs.length - 1 ? '${e.value},' : e.value,
             ),
         ');',
       ],
@@ -650,15 +626,6 @@ class JavaSerializer extends GLSerializer {
     return variable; // same type — direct copy
   }
 
-  /// Returns true if [targetType] contains a nullable element at any list depth
-  /// where the corresponding [sourceType] element is non-null.
-  bool _hasElementNullabilityMismatch(GLType sourceType, GLType targetType) {
-    if (!sourceType.isList || !targetType.isList) return false;
-    final sourceElem = sourceType.inlineType;
-    final targetElem = targetType.inlineType;
-    if (targetElem.nullable && !sourceElem.nullable) return true;
-    return _hasElementNullabilityMismatch(sourceElem, targetElem);
-  }
 
   String generateToJson(List<GLField> fields, GLToken context) {
     var buffer = StringBuffer();

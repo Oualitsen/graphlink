@@ -162,7 +162,7 @@ class DartSerializer extends GLSerializer {
 
   @override
   String generateToMethod(
-      GLInputDefinition def, String targetType, MappingPlan plan) {
+      GLInputDefinition def, String targetType, ToMappingPlan plan) {
     final params = [
       ...plan.requiredParams.map(
         (f) =>
@@ -200,76 +200,34 @@ class DartSerializer extends GLSerializer {
 
   @override
   String generateFromMethod(
-      GLInputDefinition def, String targetType, MappingPlan plan) {
-    final mapped = [...plan.autoMapped, ...plan.defaultParams];
+      GLInputDefinition def, String targetType, FromMappingPlan plan) {
+    final targetVar = targetType.firstLow;
 
-    // Fields where the target has a nullable element at some list depth but the
-    // input has a non-null element — cannot auto-map safely; become required params.
-    // Also catches list fields whose element's fromXxx() requires extra params.
-    final elementMismatch = mapped
-        .where((f) {
-          if (_hasElementNullabilityMismatch(f.sourceField!.type, f.targetField.type)) return true;
-          if (f.sourceField!.type.isList && f.targetField.type.isList) {
-            final srcElem = f.sourceField!.type.firstType.token;
-            final tgtElem = f.targetField.type.firstType.token;
-            if (srcElem != tgtElem && _nestedFromNeedsExtraParams(srcElem, tgtElem)) return true;
-          }
-          return false;
-        })
-        .toList();
-
-    // Non-list fields where the type field is nullable but the input field is
-    // non-null — reading a nullable value into a non-null field; become required params.
-    final scalarReverseMismatch = mapped
-        .where((f) =>
-            !elementMismatch.contains(f) &&
-            !f.sourceField!.type.isList &&
-            f.targetField.type.nullable &&
-            !f.sourceField!.type.nullable)
-        .toList();
-
-    final autoMappable = mapped
-        .where((f) =>
-            !elementMismatch.contains(f) &&
-            !scalarReverseMismatch.contains(f))
-        .toList();
-
-    final mappedAssignments = autoMappable.map((f) {
-      final variable = '${targetType.firstLow}.${f.targetField.name.token}';
-      var expr = _callFromMapping(
-          variable, f.sourceField!.type.firstType.token, f.targetField.type, 0);
-      // target type field is nullable but input field is non-null list → use caller-supplied default
-      if (f.targetField.type.nullable &&
-          !f.sourceField!.type.nullable &&
-          f.sourceField!.type.isList) {
-        expr = '$expr ?? default${f.sourceField!.name.token.firstUp}';
-      }
+    final autoMappedAssignments = plan.autoMapped.map((f) {
+      final variable = '$targetVar.${f.targetField.name.token}';
+      final expr = _callFromMapping(variable, f.sourceField!.type.firstType.token, f.targetField.type, 0);
       return '${f.sourceField!.name.token}: $expr';
     });
-    final nullableListDefaultParams = autoMappable
-        .where((f) =>
-            f.targetField.type.nullable &&
-            !f.sourceField!.type.nullable &&
-            f.sourceField!.type.isList)
-        .map((f) =>
-            '${serializeType(f.sourceField!.type, false)} default${f.sourceField!.name.token.firstUp} = const []');
-    final elementMismatchParams = elementMismatch.map(
+
+    final nullableListDefaultParams = plan.nullableListDefaults.map((f) =>
+        '${serializeType(f.sourceField!.type, false)} default${f.sourceField!.name.token.firstUp} = const []');
+    final nullableListAssignments = plan.nullableListDefaults.map((f) {
+      final variable = '$targetVar.${f.targetField.name.token}';
+      final expr = _callFromMapping(variable, f.sourceField!.type.firstType.token, f.targetField.type, 0);
+      return '${f.sourceField!.name.token}: $expr ?? default${f.sourceField!.name.token.firstUp}';
+    });
+
+    final promotedParams = plan.promoted.map(
       (f) => 'required ${serializeType(f.sourceField!.type, false)} ${f.sourceField!.name.token}',
     );
-    final elementMismatchAssignments = elementMismatch.map(
+    final promotedAssignments = plan.promoted.map(
       (f) => '${f.sourceField!.name.token}: ${f.sourceField!.name.token}',
     );
-    final scalarReverseMismatchParams = scalarReverseMismatch.map(
-      (f) => 'required ${serializeType(f.sourceField!.type, false)} ${f.sourceField!.name.token}',
+
+    final inputOnlyParams = plan.inputOnly.map(
+      (f) => '${f.type.nullable ? '' : 'required '}${serializeType(f.type, false)} ${f.name.token}',
     );
-    final scalarReverseMismatchAssignments = scalarReverseMismatch.map(
-      (f) => '${f.sourceField!.name.token}: ${f.sourceField!.name.token}',
-    );
-    final inputOnlyParams = plan.inputOnlyFields.map(
-      (f) =>
-          '${f.type.nullable ? '' : 'required '}${serializeType(f.type, false)} ${f.name.token}',
-    );
-    final inputOnlyAssignments = plan.inputOnlyFields.map(
+    final inputOnlyAssignments = plan.inputOnly.map(
       (f) => '${f.name.token}: ${f.name.token}',
     );
 
@@ -278,50 +236,20 @@ class DartSerializer extends GLSerializer {
       methodName: 'from${targetType.firstUp}',
       namedArguments: true,
       arguments: [
-        'required $targetType ${targetType.firstLow}',
+        'required $targetType $targetVar',
         ...nullableListDefaultParams,
-        ...elementMismatchParams,
-        ...scalarReverseMismatchParams,
+        ...promotedParams,
         ...inputOnlyParams,
       ],
       statements: [
         'return ${def.token}(${[
-          ...mappedAssignments,
-          ...elementMismatchAssignments,
-          ...scalarReverseMismatchAssignments,
-          ...inputOnlyAssignments
+          ...autoMappedAssignments,
+          ...nullableListAssignments,
+          ...promotedAssignments,
+          ...inputOnlyAssignments,
         ].join(', ')});',
       ],
     );
-  }
-
-  /// Returns true if [targetType] contains a nullable element at any list depth
-  /// where the corresponding [sourceType] element is non-null, making a safe
-  /// fromXxx() lambda call impossible.
-  bool _hasElementNullabilityMismatch(GLType sourceType, GLType targetType) {
-    if (!sourceType.isList || !targetType.isList) return false;
-    final sourceElem = sourceType.inlineType;
-    final targetElem = targetType.inlineType;
-    if (targetElem.nullable && !sourceElem.nullable) return true;
-    return _hasElementNullabilityMismatch(sourceElem, targetElem);
-  }
-
-  /// Returns true if the nested fromXxx() for [sourceElemToken] → [targetElemToken]
-  /// would require extra params beyond just the target instance (i.e. it has scalar
-  /// reverse mismatches), making an inline .map() call impossible.
-  bool _nestedFromNeedsExtraParams(String sourceElemToken, String targetElemToken) {
-    final nestedInput = grammar.inputs[sourceElemToken];
-    final nestedTarget = grammar.types[targetElemToken];
-    if (nestedInput == null || nestedTarget == null) return false;
-    final nestedPlan = MappingPlan.resolve(
-        nestedInput, nestedTarget, grammar.inputs, grammar.types, grammar.mode,
-        typeMap: typeMap);
-    final allMapped = [...nestedPlan.autoMapped, ...nestedPlan.defaultParams];
-    return allMapped.any((f) =>
-        f.sourceField != null &&
-        !f.sourceField!.type.isList &&
-        f.targetField.type.nullable &&
-        !f.sourceField!.type.nullable);
   }
 
   /// Returns a suffix to append to a source field value for toXxx() assignments.

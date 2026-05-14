@@ -27,15 +27,23 @@ class GLInputDefinition extends GLTokenWithFields with GLDirectivesMixin {
   String? get mapsToType =>
       getDirectiveByName(glMapsTo)?.getArgValueAsString(glMapsToType);
 
-  /// Resolves the full field mapping plan from this input to [target].
-  MappingPlan buildMappingPlan(
+  ToMappingPlan buildToMappingPlan(
           GLTypeDefinition target,
           Map<String, GLInputDefinition> allInputs,
           Map<String, GLTypeDefinition> allTypes,
           CodeGenerationMode mode, {
           Map<String, String> typeMap = const {},
           }) =>
-      MappingPlan.resolve(this, target, allInputs, allTypes, mode, typeMap: typeMap);
+      ToMappingPlan.resolve(this, target, allInputs, allTypes, mode, typeMap: typeMap);
+
+  FromMappingPlan buildFromMappingPlan(
+          GLTypeDefinition target,
+          Map<String, GLInputDefinition> allInputs,
+          Map<String, GLTypeDefinition> allTypes,
+          CodeGenerationMode mode, {
+          Map<String, String> typeMap = const {},
+          }) =>
+      FromMappingPlan.resolve(this, target, allInputs, allTypes, mode, typeMap: typeMap);
 
   @override
   Set<GLToken> getImportDependecies(GLParser g) {
@@ -43,21 +51,22 @@ class GLInputDefinition extends GLTokenWithFields with GLDirectivesMixin {
     final targetName = mapsToType;
     if (targetName == null) return result;
 
+    if (g.mode == CodeGenerationMode.client && !g.projectedTypes.containsKey(targetName)) {
+      return result;
+    }
+
     final target = g.types[targetName]!;
     result.add(target);
 
-    final plan = buildMappingPlan(target, g.inputs, g.types, g.mode, typeMap: g.typeMap);
+    final toPlan = buildToMappingPlan(target, g.inputs, g.types, g.mode, typeMap: g.typeMap);
+    final fromPlan = buildFromMappingPlan(target, g.inputs, g.types, g.mode, typeMap: g.typeMap);
 
-    // requiredParams fields whose types are complex (non-scalar) need importing
-    // since they appear explicitly in the toXxx() method signature.
-    for (final f in plan.requiredParams) {
+    for (final f in toPlan.requiredParams) {
       final token = g.getTokenByKey(f.targetField.type.firstType.token);
       if (filterDependecy(token, g)) result.add(token!);
     }
 
-    // inputOnlyFields whose types are complex need importing
-    // since they appear explicitly in the fromXxx() method signature.
-    for (final f in plan.inputOnlyFields) {
+    for (final f in fromPlan.inputOnly) {
       final token = g.getTokenByKey(f.type.firstType.token);
       if (filterDependecy(token, g)) result.add(token!);
     }

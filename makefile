@@ -9,6 +9,9 @@ compile_win:
 compile:
 	dart compile exe lib/src/main.dart -o glink
 
+deploy:
+	dart compile exe lib/src/main.dart -o ~/bin/glink
+
 generate-examples:
 	find examples -name "Makefile" -o -name "makefile" | while read f; do \
 		$(MAKE) -C "$$(dirname $$f)" generate; \
