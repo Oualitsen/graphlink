@@ -149,7 +149,7 @@ serverConfig.spring
     exit(0);
   }
 
-  final configPath = args['config'] as String?;
+  final configPath = args['config'] as String? ?? _findDefaultConfig();
   if (configPath == null) {
     stdout.write('''
 Usage: glink generate [options]
@@ -202,6 +202,20 @@ ${parser.usage}
     watchAndGenerate(config);
   } else {
     handleGeneration(config);
+  }
+}
+
+String? _findDefaultConfig() {
+  const candidates = ['glink.json', 'glink.yaml', 'glink.yml'];
+  var dir = Directory.current;
+  while (true) {
+    for (final name in candidates) {
+      final file = File('${dir.path}/$name');
+      if (file.existsSync()) return file.path;
+    }
+    final parent = dir.parent;
+    if (parent.path == dir.path) return null; // filesystem root
+    dir = parent;
   }
 }
 
