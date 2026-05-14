@@ -293,9 +293,8 @@ void handleGeneration(GeneratorConfig config) async {
       }
     }
   } catch (ex, st) {
-    // ignore parse errors
+    stderr.writeln(ex);
     stderr.writeln(st);
-    rethrow;
   }
 }
 
