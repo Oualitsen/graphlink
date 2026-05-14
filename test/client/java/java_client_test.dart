@@ -15,8 +15,7 @@ getConfig(GLParser g) {
       identityFields: [],
       typeMappings: g.typeMap,
       outputDir: outputDir,
-      clientConfig: ClientConfig(
-          java: JavaClientConfig(
+      clientConfig: ClientConfig(JavaClientConfig(
               packageName: "org.gqlclient.generated",
               generateAllFieldsFragments: g.generateAllFieldsFragments,
               nullableFieldsRequired: false,

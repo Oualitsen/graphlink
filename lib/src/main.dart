@@ -1,33 +1,25 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:args/args.dart';
 import 'package:glob/glob.dart';
 import 'package:glob/list_local_fs.dart';
 import 'package:graphlink/src/config.dart';
-import 'package:graphlink/src/constants.dart';
-import 'package:graphlink/src/model/new_parser/gl_parser.dart';
-import 'package:graphlink/src/io_utils.dart';
-import 'package:graphlink/src/model/gl_interface_definition.dart';
-import 'package:graphlink/src/model/gl_type_definition.dart';
-import 'package:graphlink/src/serializers/client_serializers/dart_client_serializer.dart';
-import 'package:graphlink/src/model/gl_queries.dart';
-import 'package:graphlink/src/serializers/client_serializers/java_client_serializer.dart';
-import 'package:graphlink/src/serializers/client_serializers/typescript_client_serializer.dart';
-import 'package:graphlink/src/serializers/dart_serializer.dart';
-import 'package:graphlink/src/serializers/flutter_type_widget_serializer.dart';
-import 'package:graphlink/src/serializers/graphq_serializer.dart';
-import 'package:graphlink/src/serializers/java_serializer.dart';
-import 'package:graphlink/src/serializers/code_generation_mode.dart';
-import 'package:graphlink/src/serializers/spring_server_serializer.dart';
-import 'package:graphlink/src/serializers/express_apollo_server_serializer.dart';
-import 'package:args/args.dart';
-import 'dart:convert';
-
+import 'package:graphlink/src/generators/dart_client_generator.dart';
+import 'package:graphlink/src/generators/java_client_generator.dart';
+import 'package:graphlink/src/generators/server_generator.dart';
+import 'package:graphlink/src/generators/typescript_client_generator.dart';
 import 'package:graphlink/src/gl_grammar_io.dart' as grammar_io;
-import 'package:graphlink/src/gl_grammar_upload_extension.dart';
-import 'package:graphlink/src/serializers/typescript_serializer.dart';
-import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/utils.dart';
+import 'package:graphlink/src/grammar_factory.dart';
+import 'package:graphlink/src/serializers/code_generation_mode.dart';
+
+export 'package:graphlink/src/generators/dart_client_generator.dart' show generateDartClientClasses;
+export 'package:graphlink/src/generators/java_client_generator.dart' show generateJavaClientClasses;
+export 'package:graphlink/src/generators/server_generator.dart' show generateServerClasses;
+export 'package:graphlink/src/generators/typescript_client_generator.dart' show generateTypeScriptClientClasses;
+export 'package:graphlink/src/grammar_factory.dart' show createGrammar, buildExtraGql;
+export 'package:graphlink/src/io_utils.dart' show writeToFile, cleanUpObsoleteFiles;
 
 const String appVersion =
     String.fromEnvironment('version', defaultValue: 'dev');
@@ -170,13 +162,11 @@ ${parser.usage}
     exit(1);
   }
 
-  // 3) Parse into your config class
   late GeneratorConfig config;
   try {
     config = GeneratorConfig.fromJson(json);
-    if (!["server", "client"].contains(config.mode)) {
-      stderr.writeln(
-          '❌ Error parsing config: mode must be one of "server" or "client"');
+    if (!['server', 'client'].contains(config.mode)) {
+      stderr.writeln('❌ Error parsing config: mode must be one of "server" or "client"');
     }
   } catch (e) {
     stderr.writeln('❌ Error parsing config: $e');
@@ -199,19 +189,14 @@ void watchAndGenerate(GeneratorConfig config) {
 
   List<File> resolveWatchedFiles() {
     final files = <File>{};
-
-    for (var pattern in config.schemaPaths) {
-      final glob = Glob(pattern);
-      final matched = glob.listSync().whereType<File>();
-      files.addAll(matched);
+    for (final pattern in config.schemaPaths) {
+      files.addAll(Glob(pattern).listSync().whereType<File>());
     }
-
     return files.toList();
   }
 
-  List<File> watchedFiles = resolveWatchedFiles();
-
-  for (var file in watchedFiles) {
+  final watchedFiles = resolveWatchedFiles();
+  for (final file in watchedFiles) {
     if (file.existsSync()) {
       lastModifiedMap[file.path] = file.lastModifiedSync();
     } else {
@@ -220,30 +205,25 @@ void watchAndGenerate(GeneratorConfig config) {
     }
   }
 
-  // Initial run
   handleGeneration(config);
 
   Timer.periodic(const Duration(seconds: 1), (timer) {
     final currentFiles = resolveWatchedFiles();
 
-    for (var file in currentFiles) {
+    for (final file in currentFiles) {
       try {
         final newModified = file.lastModifiedSync();
         final prevModified = lastModifiedMap[file.path];
-
         if (prevModified == null || newModified.isAfter(prevModified)) {
           stdout.writeln('🔄 Detected change in: ${file.path}');
           lastModifiedMap[file.path] = newModified;
           handleGeneration(config);
           break;
         }
-      } catch (_) {
-        // Ignore if file temporarily unavailable
-      }
+      } catch (_) {}
     }
 
-    // Also check if new files were added that match the globs
-    for (var file in currentFiles) {
+    for (final file in currentFiles) {
       if (!lastModifiedMap.containsKey(file.path)) {
         stdout.writeln('🆕 New matching file detected: ${file.path}');
         lastModifiedMap[file.path] = file.lastModifiedSync();
@@ -251,864 +231,43 @@ void watchAndGenerate(GeneratorConfig config) {
         break;
       }
     }
-
-    watchedFiles = currentFiles;
   });
 }
 
 void handleGeneration(GeneratorConfig config) async {
   final now = DateTime.now();
-  var filePaths = <String>[];
-  for (var pattern in config.schemaPaths) {
-    final glob = Glob(pattern);
-    final files = glob.listSync().whereType<File>();
-
+  final filePaths = <String>[];
+  for (final pattern in config.schemaPaths) {
+    final files = Glob(pattern).listSync().whereType<File>().toList();
     if (files.isEmpty) {
       stderr.writeln('❌ No schema files matched "$pattern"');
       exit(1);
     }
-
-    for (var file in files) {
-      filePaths.add(file.path);
-    }
+    filePaths.addAll(files.map((f) => f.path));
   }
 
   final grammar = createGrammar(config);
   try {
-    var extra = _buildExtraGql(grammar, config);
+    final extra = buildExtraGql(grammar, config);
     final logicalFiles =
         await Future.wait(filePaths.map((p) => grammar_io.readLogicalFile(p)));
     grammar_io.parseFiles(grammar, logicalFiles, extraGql: extra);
 
-    var mode = config.getMode();
+    final mode = config.getMode();
     if (mode == CodeGenerationMode.server) {
       await generateServerClasses(grammar, config, now);
     } else if (mode == CodeGenerationMode.client) {
-      if (config.clientConfig?.java != null) {
+      final lang = config.clientConfig!.language;
+      if (lang is JavaClientConfig) {
         await generateJavaClientClasses(grammar, config, now);
-      } else if(config.clientConfig?.dart != null) {
-          await generateDartClientClasses(grammar, config, now);
-      } else if(config.clientConfig?.typescript != null) {
-          await generateTypeScriptClientClasses(grammar, config, now);
+      } else if (lang is DartClientConfig) {
+        await generateDartClientClasses(grammar, config, now);
+      } else if (lang is TypeScriptClientConfig) {
+        await generateTypeScriptClientClasses(grammar, config, now);
       }
     }
   } catch (ex, st) {
     stderr.writeln(ex);
     stderr.writeln(st);
   }
-}
-
-final _lastGeneratedFiles = <String>{};
-
-String? _buildExtraGql(GLParser parser, GeneratorConfig config) {
-  if (parser.mode != CodeGenerationMode.client) return null;
-  if (config.clientConfig?.java != null) {
-    return [
-      getClientObjects("Object", "Map<String, Object>"),
-      javaJsonEncoderDecorder,
-      if(parser.operationNameAsParameter)
-        javaClientAdapterWithParamSync
-      else
-        javaClientAdapterNoParamSync,
-      javaGraphLinkWebSocketAdapter,  // scalars only now, no interface
-    ].join();
-  }
-  if(config.clientConfig?.dart != null) {
-    return getClientObjects("dynamic", "Map<String, dynamic>");
-  }
-
-  if(config.clientConfig?.typescript != null) {
-    return getClientObjects("unknown", "Record<string, unknown>");
-  }
-  return null;
-}
-
-GLParser createGrammar(GeneratorConfig config) {
-  var mode = config.getMode();
-  if (mode == CodeGenerationMode.server) {
-    return GLParser(
-        mode: mode,
-        identityFields: config.identityFields);
-  } else {
-    final dart = config.clientConfig?.dart;
-    final java = config.clientConfig?.java;
-    final ts = config.clientConfig?.typescript;
-
-    return GLParser(
-      mode: mode,
-      identityFields: config.identityFields,
-      disableCache: config.disableCache,
-      generateAllFieldsFragments: dart?.generateAllFieldsFragments ??
-          java?.generateAllFieldsFragments ?? ts?.generateAllFieldsFragments ??
-          false,
-      nullableFieldsRequired:
-          dart?.nullableFieldsRequired ?? java?.nullableFieldsRequired ??  false,
-      autoGenerateQueries:
-          dart?.autoGenerateQueries ?? java?.autoGenerateQueries ?? ts?.autoGenerateQueries ?? false,
-      defaultAlias: dart?.defaultAlias ?? java?.defaultAlias ?? ts?.defaultAlias,
-      operationNameAsParameter: dart?.operationNameAsParameter ??
-          java?.operationNameAsParameter ?? ts?.operationNameAsParameter ??
-          false,
-    );
-  }
-}
-
-Future<Set<String>> generateTypeScriptClientClasses(
-    GLParser parser, GeneratorConfig config, DateTime started,
-    {String? pack}) async {
-  final serializer = TypeScriptSerializer(parser,
-      typeMapOverrides: config.typeMappings ?? {});
-  final tsClientConfig = config.clientConfig?.typescript;
-  final clientSerializer = TypeScriptClientSerializer(
-    parser,
-    serializer,
-    generateDefaultWsAdapter: tsClientConfig?.generateDefaultWsAdapter ?? true,
-    observables: tsClientConfig?.observables ?? false,
-  );
-  final List<Future<File>> futures = [];
-  final destinationDir = config.outputDir;
-  const prefix = '';
-  parser.enums.forEach((k, def) {
-    var text = serializer.serializeEnumDefinition(def, "");
-    var r = writeToFile(
-      data: text,
-      fileName: serializer.getFileNameFor(def),
-      subdir: "enums",
-      imports: [],
-      destinationDir: destinationDir,
-    );
-    futures.add(r);
-  });
-
-  parser.inputs.forEach((k, def) {
-    var text = serializer.serializeInputDefinition(def, prefix);
-    var r = writeToFile(
-        data: text,
-        fileName: serializer.getFileNameFor(def),
-        subdir: "inputs",
-        imports: [],
-        destinationDir: destinationDir);
-    futures.add(r);
-  });
-
-  var allProjectedTypes = <String, GLTypeDefinition>{};
-  allProjectedTypes.addAll(parser.projectedTypes);
-  allProjectedTypes.addAll(parser.projectedInterfaces);
-  allProjectedTypes.forEach((k, def) {
-    final subdir = def is GLInterfaceDefinition ? "interfaces" : "types";
-
-    var text = serializer.serializeTypeDefinition(def, prefix);
-    var r = writeToFile(
-        data: text,
-        fileName: serializer.getFileNameFor(def),
-        subdir: subdir,
-        imports: [],
-        destinationDir: destinationDir);
-    futures.add(r);
-  });
-
-  futures.add(writeToFile(
-      data: serializer.serializeGlClass(clientSerializer.generateClient(prefix), importPrefix: prefix),
-      fileName: 'graph-link-client${clientSerializer.fileExtension}',
-      subdir: 'client',
-      imports: [],
-      destinationDir: destinationDir));
-
-  if (parser.hasUploadMutations) {
-    futures.add(writeToFile(
-        data: serializer.serializeGlClass(clientSerializer.generateUploadsFile(), importPrefix: prefix),
-        fileName: 'graph-link-uploads${clientSerializer.fileExtension}',
-        subdir: 'client',
-        imports: [],
-        destinationDir: destinationDir));
-  }
-
-  final tsConfig = config.clientConfig!.typescript!;
-  final adaptersModel = clientSerializer.generateAdaptersFile(tsConfig.httpAdapter);
-  if (adaptersModel != null) {
-    futures.add(writeToFile(
-        data: serializer.serializeGlClass(adaptersModel, importPrefix: prefix),
-        fileName: 'graph-link-adapters${clientSerializer.fileExtension}',
-        subdir: 'client',
-        imports: [],
-        destinationDir: destinationDir));
-  }
-  var result = await Future.wait(futures);
-  stdout.writeln(
-      "Generated ${futures.length} files in ${formatElapsedTime(started)}");
-  var paths = result.map((f) => f.path).toSet();
-  await cleanUpObsoleteFiles(paths);
-  return paths;
-}
-
-
-
-Future<Set<String>> generateDartClientClasses(
-    GLParser parser, GeneratorConfig config, DateTime started,
-    {String? pack}) async {
-  final serializer = DartSerializer(parser,
-      generateJsonMethods: true,
-      typeMapOverrides: config.typeMappings ?? {});
-  final clientSerializer = DartClientSerializer(parser, serializer,
-      generateAdapters: config.clientConfig?.dart?.generateAdapters ?? true,
-      httpAdapter: config.clientConfig?.dart?.httpAdapter ?? DartHttpAdapter.http);
-  final List<Future<File>> futures = [];
-  final destinationDir = config.outputDir;
-  final packageName = config.clientConfig?.dart?.packageName;
-  final prefix =
-      "package:${packageName}/${(pack ?? config.outputDir).replaceFirst("lib/", "")}";
-  final viewSerializeer = FlutterTypeWidgetSerializer(parser, serializer, true);
-  parser.enums.forEach((k, def) {
-    var text = serializer.serializeEnumDefinition(def, "");
-    var r = writeToFile(
-      data: text,
-      fileName: serializer.getFileNameFor(def),
-      subdir: "enums",
-      imports: [],
-      destinationDir: destinationDir,
-    );
-    futures.add(r);
-  });
-
-  parser.inputs.forEach((k, def) {
-    var text = serializer.serializeInputDefinition(def, prefix);
-    var r = writeToFile(
-        data: text,
-        fileName: serializer.getFileNameFor(def),
-        subdir: "inputs",
-        imports: [],
-        destinationDir: destinationDir);
-    futures.add(r);
-  });
-
-  var allProjectedTypes = <String, GLTypeDefinition>{};
-  allProjectedTypes.addAll(parser.projectedTypes);
-  allProjectedTypes.addAll(parser.projectedInterfaces);
-  allProjectedTypes.forEach((k, def) {
-    final subdir = def is GLInterfaceDefinition ? "interfaces" : "types";
-
-    var text = serializer.serializeTypeDefinition(def, prefix);
-    var r = writeToFile(
-        data: text,
-        fileName: serializer.getFileNameFor(def),
-        subdir: subdir,
-        imports: [],
-        destinationDir: destinationDir);
-    futures.add(r);
-  });
-  if (config.clientConfig?.dart?.generateUiTypes ?? false) {
-    parser.views.forEach((k, def) {
-      var appLocImport = config.clientConfig?.dart?.appLocalizationsImport;
-      // @TODO add an assertion here
-      if (appLocImport != null) {
-        def.addImport(appLocImport);
-      }
-      var text = viewSerializeer.serializeType(def, prefix);
-      var r = writeToFile(
-          data: text,
-          fileName: serializer.getFileNameFor(def),
-          subdir: "widgets",
-          imports: [],
-          destinationDir: destinationDir);
-      futures.add(r);
-    });
-  }
-
-  futures.add(writeToFile(
-      data: serializer.serializeGlClass(clientSerializer.generateClient(prefix), importPrefix: prefix),
-      fileName: 'graph_link_client${clientSerializer.fileExtension}',
-      subdir: 'client',
-      imports: [],
-      destinationDir: destinationDir));
-
-  if (parser.hasUploadMutations) {
-    futures.add(writeToFile(
-        data: serializer.serializeGlClass(clientSerializer.generateUploadsFile(), importPrefix: prefix),
-        fileName: 'graph_link_uploads${clientSerializer.fileExtension}',
-        subdir: 'client',
-        imports: [],
-        destinationDir: destinationDir));
-  }
-
-  if (config.clientConfig?.dart?.generateAdapters ?? true) {
-    final httpAdapter = config.clientConfig?.dart?.httpAdapter ?? DartHttpAdapter.http;
-    if (httpAdapter != DartHttpAdapter.none) {
-      futures.add(writeToFile(
-          data: serializer.serializeGlClass(httpAdapter == DartHttpAdapter.dio
-              ? clientSerializer.generateDioAdapterFile()
-              : clientSerializer.generateHttpAdapterFile(), importPrefix: prefix),
-          fileName: httpAdapter == DartHttpAdapter.dio
-              ? 'graph_link_dio_adapter${clientSerializer.fileExtension}'
-              : 'graph_link_http_adapter${clientSerializer.fileExtension}',
-          subdir: 'client',
-          imports: [],
-          destinationDir: destinationDir));
-    }
-    if (parser.hasSubscriptions) {
-      futures.add(writeToFile(
-          data: serializer.serializeGlClass(clientSerializer.generateDefaultWebSocketAdapterFile(), importPrefix: prefix),
-          fileName: 'graph_link_websocket_adapter${clientSerializer.fileExtension}',
-          subdir: 'client',
-          imports: [],
-          destinationDir: destinationDir));
-    }
-  }
-  var result = await Future.wait(futures);
-  stdout.writeln(
-      "Generated ${futures.length} files in ${formatElapsedTime(started)}");
-  var paths = result.map((f) => f.path).toSet();
-  await cleanUpObsoleteFiles(paths);
-  return paths;
-}
-
-Future<Set<String>> generateJavaClientClasses(
-    GLParser parser, GeneratorConfig config, DateTime started,
-    {String? pack}) async {
-  final javaClientConfig = config.clientConfig?.java as JavaClientConfig;
-  final jsonCodec = javaClientConfig.jsonCodec ;
-  final serializer = JavaSerializer(
-    parser,
-    generateJsonMethods: true,
-    immutableInputFields: javaClientConfig.immutableInputFields,
-    immutableTypeFields: javaClientConfig.immutableTypeFields,
-    inputsAsRecords: javaClientConfig.inputAsRecord,
-    typesAsRecords: javaClientConfig.typeAsRecord,
-    typeMapOverrides: config.typeMappings ?? {},
-  );
-  final clientSerializer = JavaClientSerializer(parser, serializer, jsonCodec: jsonCodec);
-  final List<Future<File>> futures = [];
-  final destinationDir = config.outputDir;
-  final packageName = config.clientConfig?.java?.packageName;
-  final prefix = packageName ?? '';
-  parser.enums.forEach((k, def) {
-    var text = serializer.serializeEnumDefinition(def, "");
-    var r = writeToFile(
-      data: text,
-      fileName: serializer.getFileNameFor(def),
-      subdir: "enums",
-      imports: [],
-      destinationDir: destinationDir,
-      packageName: packageName,
-    );
-    futures.add(r);
-  });
-
-  parser.inputs.forEach((k, def) {
-    var text = serializer.serializeInputDefinition(def, prefix);
-    var r = writeToFile(
-      data: text,
-      fileName: serializer.getFileNameFor(def),
-      subdir: "inputs",
-      imports: [],
-      destinationDir: destinationDir,
-      packageName: packageName,
-    );
-    futures.add(r);
-  });
-
-  var allProjectedTypes = <String, GLTypeDefinition>{};
-  allProjectedTypes.addAll(parser.projectedTypes);
-  allProjectedTypes.addAll(parser.projectedInterfaces);
-  ['GraphLinkClientAdapter', 'GraphLinkJsonEncoder', 'GraphLinkJsonDecoder']
-      .map((e) => parser.interfaces[e]!)
-      .forEach((def) {
-    allProjectedTypes[def.token] = def;
-  });
-
-  allProjectedTypes.forEach((k, def) {
-    final subdir = def is GLInterfaceDefinition ? "interfaces" : "types";
-    var text = serializer.serializeTypeDefinition(def, prefix);
-    var r = writeToFile(
-      data: text,
-      fileName: serializer.getFileNameFor(def),
-      subdir: subdir,
-      imports: [],
-      destinationDir: destinationDir,
-      packageName: packageName,
-    );
-    futures.add(r);
-  });
-
-  final wsAdapter = config.clientConfig?.java?.wsAdapter ?? JavaWsAdapter.java11;
-
-  futures.add(writeToFile(
-    data: serializer.serializeGlClass(clientSerializer.generateClient(prefix, hasDefaultAdapters: wsAdapter != JavaWsAdapter.none), importPrefix: prefix),
-    fileName: 'GraphLinkClient${clientSerializer.fileExtension}',
-    subdir: 'client',
-    imports: [],
-    destinationDir: destinationDir,
-    packageName: packageName,
-  ));
-  futures.add(writeToFile(
-    data: serializer.serializeGlClass(clientSerializer.generateGraphLinkResolverBaseFile(prefix), importPrefix: prefix),
-    fileName: 'GraphLinkResolverBase.java',
-    subdir: 'client',
-    imports: [],
-    destinationDir: destinationDir,
-    packageName: packageName,
-  ));
-  for (var type in GLQueryType.values) {
-    final model = clientSerializer.generateQueriesClassFile(type, prefix);
-    if (model != null) {
-      futures.add(writeToFile(
-        data: serializer.serializeGlClass(model, importPrefix: prefix),
-        fileName: '${clientSerializer.classNameFromType(type)}.java',
-        subdir: 'client',
-        imports: [],
-        destinationDir: destinationDir,
-        packageName: packageName,
-      ));
-    }
-  }
-
-  futures.add(writeToFile(
-    data: serializer.serializeGlClass(clientSerializer.generateGraphLinkPartialQueryFile(prefix), importPrefix: prefix),
-    fileName: 'GraphLinkPartialQuery.java',
-    subdir: 'client',
-    imports: [],
-    destinationDir: destinationDir,
-    packageName: packageName,
-  ));
-  futures.add(writeToFile(
-    data: serializer.serializeGlClass(clientSerializer.generateGraphLinkCacheEntryFile(), importPrefix: prefix),
-    fileName: 'GraphLinkCacheEntry.java',
-    subdir: 'client',
-    imports: [],
-    destinationDir: destinationDir,
-    packageName: packageName,
-  ));
-  futures.add(writeToFile(
-    data: serializer.serializeGlClass(clientSerializer.generateGraphLinkTagEntryFile(), importPrefix: prefix),
-    fileName: 'GraphLinkTagEntry.java',
-    subdir: 'client',
-    imports: [],
-    destinationDir: destinationDir,
-    packageName: packageName,
-  ));
-  futures.add(writeToFile(
-    data: serializer.serializeGlClass(clientSerializer.generateGraphLinkCacheStoreFile(), importPrefix: prefix),
-    fileName: 'GraphLinkCacheStore.java',
-    subdir: 'client',
-    imports: [],
-    destinationDir: destinationDir,
-    packageName: packageName,
-  ));
-  futures.add(writeToFile(
-    data: serializer.serializeGlClass(clientSerializer.generateInMemoryGraphLinkCacheStoreFile(), importPrefix: prefix),
-    fileName: 'InMemoryGraphLinkCacheStore.java',
-    subdir: 'client',
-    imports: [],
-    destinationDir: destinationDir,
-    packageName: packageName,
-  ));
-  futures.add(writeToFile(
-    data: serializer.serializeGlClass(clientSerializer.generateGraphLinkExceptionFile(prefix), importPrefix: prefix),
-    fileName: clientSerializer.exceptionFileName,
-    subdir: 'client',
-    imports: [],
-    destinationDir: destinationDir,
-    packageName: packageName,
-  ));
-
-  if (parser.hasUploadMutations) {
-    futures.add(writeToFile(
-      data: serializer.serializeGlClass(clientSerializer.generateGLUploadFile(), importPrefix: prefix),
-      fileName: 'GLUpload.java',
-      subdir: 'client',
-      imports: [],
-      destinationDir: destinationDir,
-      packageName: packageName,
-    ));
-    futures.add(writeToFile(
-      data: serializer.serializeGlClass(clientSerializer.generateUploadProgressCallbackFile(), importPrefix: prefix),
-      fileName: 'UploadProgressCallback.java',
-      subdir: 'client',
-      imports: [],
-      destinationDir: destinationDir,
-      packageName: packageName,
-    ));
-    futures.add(writeToFile(
-      data: serializer.serializeGlClass(clientSerializer.generateMultipartAdapterFile(prefix), importPrefix: prefix),
-      fileName: 'GraphLinkMultipartAdapter.java',
-      subdir: 'client',
-      imports: [],
-      destinationDir: destinationDir,
-      packageName: packageName,
-    ));
-  }
-
-  if (wsAdapter != JavaWsAdapter.none) {
-    futures.add(writeToFile(
-      data: serializer.serializeGlClass(clientSerializer.generateDefaultClientAdapterFile(wsAdapter.name, prefix), importPrefix: prefix),
-      fileName: 'DefaultGraphLinkClientAdapter.java',
-      subdir: 'client',
-      imports: [],
-      destinationDir: destinationDir,
-      packageName: packageName,
-    ));
-  }
-
-  if (jsonCodec != JavaJsonCodec.none) {
-    futures.add(writeToFile(
-      data: serializer.serializeGlClass(clientSerializer.generateJsonCodecFile(jsonCodec.name, prefix), importPrefix: prefix),
-      fileName: jsonCodec == JavaJsonCodec.jackson
-          ? 'JacksonGraphLinkJsonCodec.java'
-          : 'GsonGraphLinkJsonCodec.java',
-      subdir: 'client',
-      imports: [],
-      destinationDir: destinationDir,
-      packageName: packageName,
-    ));
-  }
-
-  if (parser.hasSubscriptions) {
-    futures.add(writeToFile(
-      data: serializer.serializeGlClass(clientSerializer.generateWebSocketAdapterFile(), importPrefix: prefix),
-      fileName: 'GraphLinkWebSocketAdapter.java',
-      subdir: 'client',
-      imports: [],
-      destinationDir: destinationDir,
-      packageName: packageName,
-    ));
-    futures.add(writeToFile(
-      data: serializer.serializeGlClass(clientSerializer.generateSubscriptionListenerFile(), importPrefix: prefix),
-      fileName: 'GraphLinkSubscriptionListener.java',
-      subdir: 'client',
-      imports: [],
-      destinationDir: destinationDir,
-      packageName: packageName,
-    ));
-    futures.add(writeToFile(
-      data: serializer.serializeGlClass(clientSerializer.generateGraphqlWsMessageTypesFile(), importPrefix: prefix),
-      fileName: 'GraphqlWsMessageTypes.java',
-      subdir: 'client',
-      imports: [],
-      destinationDir: destinationDir,
-      packageName: packageName,
-    ));
-    futures.add(writeToFile(
-      data: serializer.serializeGlClass(clientSerializer.generateGraphLinkSubscriptionHandlerFile(prefix), importPrefix: prefix),
-      fileName: 'GraphLinkSubscriptionHandler.java',
-      subdir: 'client',
-      imports: [],
-      destinationDir: destinationDir,
-      packageName: packageName,
-    ));
-    if (wsAdapter != JavaWsAdapter.none) {
-      futures.add(writeToFile(
-        data: serializer.serializeGlClass(clientSerializer.generateDefaultWebSocketAdapterFile(wsAdapter.name, prefix), importPrefix: prefix),
-        fileName: 'DefaultGraphLinkWebSocketAdapter.java',
-        subdir: 'client',
-        imports: [],
-        destinationDir: destinationDir,
-        packageName: packageName,
-      ));
-    }
-  }
-  var result = await Future.wait(futures);
-  stdout.writeln(
-      "Generated ${futures.length} files in ${formatElapsedTime(started)}");
-  var paths = result.map((f) => f.path).toSet();
-  await cleanUpObsoleteFiles(paths);
-  return paths;
-}
-
-Future<Set<String>> generateServerClasses(
-    GLParser grammar, GeneratorConfig config, DateTime started) async {
-  if (config.serverConfig?.expressApollo != null) {
-    return generateExpressApolloServerClasses(grammar, config, started);
-  }
-  final springConfig = config.serverConfig!.spring!;
-  final packageName = springConfig.basePackage;
-  final destinationDir = config.outputDir;
-  final serializer = JavaSerializer(
-    grammar,
-    inputsAsRecords: config.serverConfig?.spring?.inputAsRecord ?? false,
-    typesAsRecords: config.serverConfig?.spring?.typeAsRecord ?? false,
-    inputsCheckForNulls: true,
-    typesCheckForNulls: grammar.mode == CodeGenerationMode.client,
-    immutableInputFields: config.serverConfig?.spring?.immutableInputFields ?? true,
-    immutableTypeFields: config.serverConfig?.spring?.immutableTypeFields ?? false,
-    typeMapOverrides: config.typeMappings ?? {},
-  );
-  final springSerializer = SpringServerSerializer(grammar,
-      javaSerializer: serializer,
-      generateSchema: springConfig.generateSchema,
-      injectDataFetching: springConfig.injectDataFetching,
-      reactive: springConfig.reactive,
-      useSpringSecurity: springConfig.useSpringSecurity);
-  final List<Future<File>> futures = [];
-  const fileExtension = ".java";
-
-  grammar.getSerializableTypes().forEach((def) {
-    var text = serializer.serializeTypeDefinition(def, packageName);
-    var r = writeToFile(
-        data: text,
-        fileName: serializer.getFileNameFor(def),
-        subdir: "types",
-        imports: [],
-        destinationDir: destinationDir,
-        packageName: packageName,
-        appendStar: true);
-    futures.add(r);
-  });
-  grammar.getSerializableInterfaces().forEach((def) {
-    var text = serializer.serializeTypeDefinition(def, packageName);
-    var r = writeToFile(
-        data: text,
-        fileName: serializer.getFileNameFor(def),
-        subdir: "interfaces",
-        imports: [],
-        destinationDir: destinationDir,
-        packageName: packageName,
-        appendStar: true);
-    futures.add(r);
-  });
-  grammar.getSerializableEnums().forEach((def) {
-    var text = serializer.serializeEnumDefinition(def, packageName);
-    var r = writeToFile(
-        data: text,
-        fileName: serializer.getFileNameFor(def),
-        subdir: "enums",
-        imports: [],
-        destinationDir: destinationDir,
-        packageName: packageName,
-        appendStar: true);
-    futures.add(r);
-  });
-  grammar.getSerializableInputs().forEach((def) {
-    var text = serializer.serializeInputDefinition(def, packageName);
-    var r = writeToFile(
-        data: text,
-        fileName: serializer.getFileNameFor(def),
-        subdir: "inputs",
-        imports: [],
-        destinationDir: destinationDir,
-        packageName: packageName,
-        appendStar: true);
-    futures.add(r);
-  });
-
-  grammar.services.forEach((k, def) {
-    var text = springSerializer.serializeService(def, packageName);
-    var r = writeToFile(
-        data: text,
-        fileName: serializer.getFileNameFor(def),
-        subdir: "services",
-        imports: [],
-        destinationDir: destinationDir,
-        packageName: packageName,
-        appendStar: true);
-    futures.add(r);
-  });
-
-  grammar.controllers.forEach((k, def) {
-    var text = springSerializer.serializeController(def, packageName);
-    var r = writeToFile(
-        data: text,
-        fileName: serializer.getFileNameFor(def),
-        subdir: "controllers",
-        imports: [],
-        destinationDir: destinationDir,
-        packageName: packageName,
-        appendStar: true);
-    futures.add(r);
-  });
-
-  grammar.repositories.forEach((k, def) {
-    var text = springSerializer.serializeRepository(def, packageName);
-    var r = writeToFile(
-        data: text,
-        fileName: "${k}${fileExtension}",
-        subdir: "repositories",
-        imports: [],
-        destinationDir: destinationDir,
-        packageName: packageName,
-        appendStar: true);
-    futures.add(r);
-  });
-
-  if (springConfig.generateSchema) {
-    var text = GLGraphqSerializer(grammar).generateSchema();
-    var r = saveSource(
-        data: text, path: springConfig.schemaTargetPath!, graphqlSource: true);
-    futures.add(r);
-  }
-
-  var result = await Future.wait(futures);
-  stdout.writeln(
-      "Generated ${futures.length} files in ${formatElapsedTime(started)}");
-  var paths = result.map((f) => f.path).toSet();
-  await cleanUpObsoleteFiles(paths);
-  return paths;
-}
-
-Future<Set<String>> generateExpressApolloServerClasses(
-    GLParser grammar, GeneratorConfig config, DateTime started) async {
-  final apolloConfig = config.serverConfig!.expressApollo!;
-  final destinationDir = config.outputDir;
-  final tsSerializer = TypeScriptSerializer(grammar,
-      typeMapOverrides: config.typeMappings ?? {});
-  final serverSerializer = ExpressApolloServerSerializer(grammar, tsSerializer, apolloConfig);
-  final futures = <Future<File>>[];
-
-  // typeDefs.ts
-  futures.add(saveSource(
-    data: serverSerializer.serializeTypeDefs(),
-    path: '$destinationDir/typeDefs.ts',
-    typescriptSource: true,
-  ));
-
-  // enums
-  grammar.getSerializableEnums().forEach((def) {
-    futures.add(saveSource(
-      data: tsSerializer.serializeEnumDefinition(def, ''),
-      path: '$destinationDir/enums/${tsSerializer.getFileNameFor(def)}',
-      typescriptSource: true,
-    ));
-  });
-
-  // inputs
-  grammar.getSerializableInputs().forEach((def) {
-    futures.add(saveSource(
-      data: tsSerializer.serializeInputDefinition(def, ''),
-      path: '$destinationDir/inputs/${tsSerializer.getFileNameFor(def)}',
-      typescriptSource: true,
-    ));
-  });
-
-  // types
-  grammar.getSerializableTypes().forEach((def) {
-    futures.add(saveSource(
-      data: tsSerializer.serializeTypeDefinition(def, ''),
-      path: '$destinationDir/types/${tsSerializer.getFileNameFor(def)}',
-      typescriptSource: true,
-    ));
-  });
-
-  // services & guards & loaders
-  grammar.services.forEach((_, service) {
-    futures.add(saveSource(
-      data: serverSerializer.serializeService(service),
-      path: '$destinationDir/services/${service.token.toKebabCase()}.ts',
-      typescriptSource: true,
-    ));
-
-    final guard = serverSerializer.serializeGuard(service);
-    if (guard != null) {
-      final guardName = '${service.token.replaceFirst('Service', '')}Guard';
-      futures.add(saveSource(
-        data: guard,
-        path: '$destinationDir/guards/${guardName.toKebabCase()}.ts',
-        typescriptSource: true,
-      ));
-    }
-
-    final loader = serverSerializer.serializeLoader(service);
-    if (loader != null) {
-      final loaderFile = '${service.token.replaceFirst('Service', '').toKebabCase()}-loaders.ts';
-      futures.add(saveSource(
-        data: loader,
-        path: '$destinationDir/loaders/$loaderFile',
-        typescriptSource: true,
-      ));
-    }
-  });
-
-  // context.ts
-  futures.add(saveSource(
-    data: serverSerializer.serializeContext(),
-    path: '$destinationDir/context.ts',
-    typescriptSource: true,
-  ));
-
-  // upload types (only when schema uses @glUpload)
-  final hasUploads = grammar.uploadScalarNames.isNotEmpty &&
-      grammar.services.values.any((s) =>
-          s.fields.any((f) => f.arguments.any((a) =>
-              grammar.uploadScalarNames.contains(a.type.firstType.token))));
-  if (hasUploads) {
-    futures.add(saveSource(
-      data: serverSerializer.serializeFileUploadType(),
-      path: '$destinationDir/file-upload.ts',
-      typescriptSource: true,
-    ));
-    futures.add(saveSource(
-      data: serverSerializer.serializeGraphqlUploadDeclarations(),
-      path: '$destinationDir/graphql-upload.d.ts',
-      typescriptSource: true,
-    ));
-  }
-
-  // resolvers/build-resolvers.ts
-  futures.add(saveSource(
-    data: serverSerializer.serializeResolvers(),
-    path: '$destinationDir/resolvers/build-resolvers.ts',
-    typescriptSource: true,
-  ));
-
-  // index.ts
-  if (apolloConfig.generateEntryPoint) {
-    futures.add(saveSource(
-      data: serverSerializer.serializeEntryPoint(),
-      path: '$destinationDir/index.ts',
-      typescriptSource: true,
-    ));
-
-    // my-context.ts stub — written once, never overwritten
-    final implDir = destinationDir.replaceFirst('/generated', '');
-    final contextStubPath = '$implDir/impl/my-context.ts';
-    if (!File(contextStubPath).existsSync()) {
-      futures.add(saveSource(
-        data: serverSerializer.serializeContextStub(destinationDir),
-        path: contextStubPath,
-        typescriptSource: true,
-      ));
-    }
-  }
-
-  final result = await Future.wait(futures);
-  stdout.writeln('Generated ${futures.length} files in ${formatElapsedTime(started)}');
-  final paths = result.map((f) => f.path).toSet();
-  await cleanUpObsoleteFiles(paths);
-  return paths;
-}
-
-Future<void> cleanUpObsoleteFiles(Set<String> newFiles) async {
-  var paths = _lastGeneratedFiles.where((path) => !newFiles.contains(path));
-  stdout.writeln("Cleaning up ${paths.length} obsolete files");
-  for (var p in paths) {
-    stdout.writeln("Cleaning up ${p}");
-  }
-  var filesToDelete = paths.map((p) => File(p)).map((f) => f.delete());
-  await Future.wait(filesToDelete);
-  _lastGeneratedFiles.clear();
-  _lastGeneratedFiles.addAll(newFiles);
-}
-
-Future<File> writeToFile(
-    {required String data,
-    required String fileName,
-    required String subdir,
-    required Iterable<String> imports,
-    required String destinationDir,
-    String? packageName,
-    bool appendStar = false}) {
-  final path = "$destinationDir/$subdir/$fileName";
-  var buffer = StringBuffer();
-  if (packageName != null) {
-    buffer.writeln('package ${packageName}.${subdir};');
-  }
-  if (imports.isNotEmpty) {
-    buffer.writeln(imports.map((i) => "import $i").map((e) {
-      if (appendStar) {
-        return '${e}.*;';
-      } else {
-        return '${e};';
-      }
-    }).join("\n"));
-  }
-  buffer.writeln(data);
-
-  return saveSource(data: buffer.toString(), path: path);
 }
