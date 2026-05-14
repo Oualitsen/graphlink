@@ -30,7 +30,12 @@ site-deploy:
 site-rollout:
 	kubectl rollout restart deployment/graphlink-site
 
-site-release: site-build site-deploy site-rollout
+site-version:
+	@VERSION=$$(grep '^version:' pubspec.yaml | sed 's/version: //'); \
+	sed -i '' "s/?v=[0-9]*\.[0-9]*\.[0-9]*/?v=$$VERSION/g" site/index.html; \
+	echo "✓ site/index.html asset versions updated to v$$VERSION"
+
+site-release: site-version site-build site-deploy site-rollout
 	@echo "✓ graphlink.dev deployed"
 
 site-status:
