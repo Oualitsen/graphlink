@@ -1,0 +1,120 @@
+# ── Scalars ──────────────────────────────────────────────────────────────────
+
+scalar Upload @glUpload  # maps to GLUpload — enables multipart upload support
+
+# ── Enums ─────────────────────────────────────────────────────────────────────
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+# ── Types ─────────────────────────────────────────────────────────────────────
+
+type User {
+  id: ID!
+  username: String!
+  email: String!
+  bio: String
+  avatarUrl: String
+  posts: [Post!]!
+}
+
+type Post {
+  id: ID!
+  title: String!
+  body: String!
+  status: PostStatus!
+  authorId: ID!
+  tags: [String!]!
+  createdAt: String!
+}
+
+type Comment {
+  id: ID!
+  postId: ID!
+  body: String!
+  authorId: ID!
+  createdAt: String!
+}
+
+# ── Inputs ────────────────────────────────────────────────────────────────────
+
+input CreateUserInput {
+  username: String!
+  email: String!
+  bio: String
+}
+
+input CreatePostInput {
+  title: String!
+  body: String!
+  tags: [String!]!
+}
+
+input AddCommentInput {
+  postId: ID!
+  body: String!
+}
+
+# ── Operations ────────────────────────────────────────────────────────────────
+
+type Query {
+  # Cached for 5 minutes, tagged so createUser/uploadAvatar can invalidate
+  getUser(id: ID!): User            @glCache(ttl: 300, tags: ["users"], staleIfOffline: true)
+
+  # Cached for 1 minute — invalidated when posts are created or deleted
+  listPosts(status: PostStatus): [Post!]!  @glCache(ttl: 60, tags: ["posts"])
+
+  # Cached per post id for 2 minutes
+  getPost(id: ID!): Post            @glCache(ttl: 120, tags: ["posts"])
+}
+
+type Mutation {
+  createUser(input: CreateUserInput!): User!    @glCacheInvalidate(tags: ["users"])
+  createPost(input: CreatePostInput!): Post!    @glCacheInvalidate(tags: ["posts"])
+  addComment(input: AddCommentInput!): Comment! @glCacheInvalidate(tags: ["posts"])
+  uploadAvatar(userId: ID!, file: Upload!): User! @glCacheInvalidate(tags: ["users"])
+  deleteAllPosts: Boolean!                      @glCacheInvalidate(all: true)
+}
+
+type Subscription {
+  commentAdded(postId: ID!): Comment!
+  postPublished: Post!
+}
+
+# ── Custom projections ────────────────────────────────────────────────────────
+# These complement autoGenerateQueries by fetching only the fields you need.
+
+# Lightweight user card — id, username, avatarUrl only
+query getUserCard($id: ID!) @glCache(ttl: 120, tags: ["users"], staleIfOffline: true) {
+  getUser(id: $id) {
+    id
+    username
+    avatarUrl
+  }
+}
+
+# Post list with preview fields only (no body)
+query listPostPreviews($status: PostStatus) {
+  listPosts(status: $status) {
+    id
+    title
+    status
+    tags
+    createdAt
+  }
+}
+
+# Compound query — fetch a post and its author in one round-trip
+query getPostWithAuthor($postId: ID!, $authorId: ID!) @glCache(ttl: 120, tags: ["posts", "users"]) {
+  post: getPost(id: $postId) {
+    ... _all_fields
+  }
+  author: getUser(id: $authorId) {
+    id
+    username
+    avatarUrl
+  }
+}

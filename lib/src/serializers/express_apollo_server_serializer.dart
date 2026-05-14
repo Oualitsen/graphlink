@@ -321,7 +321,7 @@ class ExpressApolloServerSerializer {
           : '(_, $argsDestructure, context)';
 
       buf.writeln('      ${e.fieldName}: async $resolverSignature => {');
-      for (final line in uploadAwaitLines) buf.writeln('        $line');
+      for (final line in uploadAwaitLines) { buf.writeln('        $line'); }
       if (validateCall != null) buf.writeln('        $validateCall');
       buf.writeln('        return $serviceCall;');
       buf.writeln('      },');
