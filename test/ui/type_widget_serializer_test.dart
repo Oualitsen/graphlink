@@ -15,8 +15,7 @@ getConfig(GLParser g) {
       identityFields: [],
       typeMappings: g.typeMap,
       outputDir: outputDir,
-      clientConfig: ClientConfig(
-          dart: DartClientConfig(
+      clientConfig: ClientConfig(DartClientConfig(
               appLocalizationsImport:
                   'package:my_web_app/generated/i18n/app_localizations.dart',
               generateAllFieldsFragments: g.generateAllFieldsFragments,
