@@ -2,7 +2,7 @@
 
 # GraphLink
 
-> Define your GraphQL schema once. Get a fully typed client **and** server scaffold — for Dart, Flutter, Java, and Spring Boot — in seconds.
+> Define your GraphQL schema once. Get a fully typed client **and** server scaffold — for Dart, Flutter, Java, TypeScript, and Spring Boot — in milliseconds.
 
 [![pub.dev](https://img.shields.io/pub/v/retrofit_graphql?label=pub.dev)](https://pub.dev/packages/retrofit_graphql)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -191,6 +191,32 @@ client.mutations.addVehicle(
 List<Vehicle> vehicles = client.queries.listVehicles().getListVehicles();
 ```
 
+### TypeScript
+
+```typescript
+import { GraphLinkClient } from './generated/client/graph-link-client';
+import { GraphLinkFetchAdapter } from './generated/client/graph-link-fetch-adapter';
+
+const client = new GraphLinkClient(
+  new GraphLinkFetchAdapter('http://localhost:8080/graphql').call.bind(adapter),
+);
+
+// Query — fully typed
+const res = await client.queries.getVehicle({ id: '42' });
+console.log(res.getVehicle.brand);    // Toyota
+console.log(res.getVehicle.fuelType); // FuelType.GASOLINE
+
+// Mutation
+const added = await client.mutations.addVehicle({
+  input: { brand: 'Toyota', model: 'Camry', year: 2023, fuelType: FuelType.GASOLINE },
+});
+
+// Subscription
+client.subscriptions.vehicleAdded({
+  onData: (e) => console.log(e.vehicleAdded.brand),
+});
+```
+
 ### Spring Boot (server mode)
 
 Set `"mode": "server"` and GraphLink generates controllers, service interfaces, types, inputs, and enums:
@@ -247,13 +273,14 @@ Cache entries are keyed by operation name + variables — each unique argument c
 
 | Feature | GraphLink | ferry (Dart) | Apollo (JS/Kotlin) | Manual |
 |---|---|---|---|---|
-| Runtime dependency | None | Yes | Yes | None |
-| Sends whole schema per request | No | Yes | Partial | No |
-| Generics at Java call site | No | N/A | Yes | Yes |
-| Server-side generation | Yes | No | Partial | Manual |
-| Java client | Yes | No | Kotlin only | Manual |
-| Cache directives in schema | Yes | No | No | No |
-| Spring Boot controller gen | Yes | No | No | Manual |
+| Runtime dependency | ✅ None | ❌ Yes | ❌ Yes | ✅ None |
+| Sends whole schema per request | ✅ No | ❌ Yes | ⚠️ Partial | ✅ No |
+| Generics at Java call site | ✅ No | ➖ N/A | ❌ Yes | ❌ Yes |
+| Server-side generation | ✅ Yes | ❌ No | ⚠️ Partial | ❌ Manual |
+| Java client | ✅ Yes | ❌ No | ⚠️ Kotlin only | ❌ Manual |
+| Cache directives in schema | ✅ Yes | ❌ No | ❌ No | ❌ No |
+| Spring Boot controller gen (MVC) | ✅ Yes | ❌ No | ❌ No | ❌ Manual |
+| Spring Boot controller gen (WebFlux) | ✅ Yes | ❌ No | ❌ No | ❌ Manual |
 
 ---
 
@@ -264,6 +291,7 @@ Full documentation at **[graphlink.dev](https://graphlink.dev/docs/index.html)**
 - [Getting Started](https://graphlink.dev/docs/getting-started.html) — install, first schema, run generator
 - [Dart / Flutter Client](https://graphlink.dev/docs/dart-client.html) — adapters, queries, mutations, subscriptions
 - [Java Client](https://graphlink.dev/docs/java-client.html) — no-generics API, builder pattern, adapters
+- [TypeScript Client](https://graphlink.dev/docs/typescript-client.html) — fetch/axios, RxJS observables, Angular/React/Vue
 - [Spring Boot Server](https://graphlink.dev/docs/spring-server.html) — controllers, service interfaces, subscriptions
 - [Caching](https://graphlink.dev/docs/caching.html) — `@glCache`, `@glCacheInvalidate`, partial caching, offline
 - [Directives Reference](https://graphlink.dev/docs/directives.html) — all 13 directives with examples
