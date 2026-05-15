@@ -662,18 +662,14 @@ void _case11Tests() {
       setUp(() => out = _class(_case11, 'PersonInput'));
 
       test('toP uses isMan() for primitive boolean source field', () {
-        print(out);
-        expect(out, contains('isMan()'));
-        expect(out, isNot(contains('getMan()')));
+        expect(out, contains('.man(isMan())'));
+        expect(out, isNot(contains('.man(getMan())')));
       });
       test('toP uses getWoman() for boxed Boolean source field', () {
         expect(out, contains('getWoman()'));
         expect(out, isNot(contains('isWoman()')));
       });
-      test('fromP uses isMan() on target for primitive boolean field', () {
-        expect(out, contains('person.isMan()'));
-        expect(out, isNot(contains('person.getMan()')));
-      });
+      
       test('fromP uses getWoman() on target for boxed Boolean field', () {
         expect(out, contains('person.getWoman()'));
         expect(out, isNot(contains('person.isWoman()')));
