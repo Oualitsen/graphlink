@@ -240,6 +240,10 @@
 
 - Fix missing space between fields in dynamically built queries (Dart, Java, TypeScript clients)
 
+## 4.6.1 - 2026-05-15
+  ### Fixes
+  - Fixed `@glMapsTo` Java: boxed `Boolean` fields now correctly use `getXxx()` accessors instead of `isXxx()` in generated `toXxx()` and `fromXxx()` methods
+
 ## 4.6.0 - 2026-05-14
 
 ### New features

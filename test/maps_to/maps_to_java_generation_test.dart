@@ -1,3 +1,4 @@
+
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
@@ -147,4 +148,43 @@ void main() {
       expect(body, contains('maintenancePeriod().toPeriod()'));
     });
   });
+
+  group("mapped booleans should use get accessor instead of is accessor in java when generated as Boolean", () {
+    test("get instead of is for Boolean in Java", () {
+     var p =  GLParser(mode: CodeGenerationMode.server);
+     p.parse(_mappedToBool);
+     var serializer = JavaSerializer(p, typeMapOverrides: {
+      "ID": "String",
+      "String": "String",
+      "Float": "Double",
+      "Int": "Integer",
+      "Boolean": "boolean",
+      "Bool": "Boolean",
+      "Null": "null"
+     });
+     var input = serializer.serializeInputDefinition(p.inputs['MissionInfoInput']!, 'dev.graphlink');
+     expect(input, contains('missionInfo.getLookingForFullTime()'));
+     expect(input, contains('missionInfo.getAcceptsEveningShifts()'));
+    });
+
+  });
 }
+
+
+const _mappedToBool = '''
+type MissionInfo @FieldNameConstants {
+    hourlyRate: Float
+    lookingForFullTime: Boolean!
+    acceptsEveningShifts: Boolean!
+}
+
+input MissionInfoInput @glMapsTo(type: "MissionInfo") {
+    hourlyRate: Float
+    lookingForFullTime: Boolean!
+    acceptsEveningShifts: Boolean!
+}
+
+  
+  type Query { noop: String }
+''';
+
