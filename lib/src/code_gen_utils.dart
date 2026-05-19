@@ -13,7 +13,7 @@ abstract class CodeGenUtilsBase {
   String switchStatement({
     required String expression,
     required List<CaseStatement> cases,
-    String? defaultStatement,
+    List<String>? defaultStatements,
   });
   String ternaryOp({required String condition, required String positiveStatement, required String negativeStatement});
 

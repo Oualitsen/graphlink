@@ -1,0 +1,90 @@
+enum FuelType { GASOLINE DIESEL ELECTRIC HYBRID }
+
+type Vehicle {
+  id: ID!
+  brand: String!
+  model: String!
+  year: Int
+  fuelType: FuelType!
+  available: Boolean!
+  mileage: Float
+  notes: String
+}
+
+input AddVehicleInput {
+  brand: String!
+  model: String!
+  year: Int!
+  fuelType: FuelType!
+  available: Boolean!
+  mileage: Float
+  notes: String
+}
+
+input UpdateVehicleInput {
+  brand: String
+  model: String
+  year: Int
+  fuelType: FuelType
+  available: Boolean!
+  mileage: Float
+  notes: String
+}
+
+input VehicleSearchInput {
+  fuelTypes: [FuelType!]!
+  tags: [String!]!
+  availableOnly: Boolean!
+  minYear: Int
+  maxMileage: Float
+}
+
+input RegisterInput {
+  username: String!
+  email: String!
+  password: String!
+  phone: String
+  website: String
+  bio: String
+}
+
+input AddressInput {
+  street: String!
+  city: String!
+  country: String!
+  zipCode: String
+}
+
+input PersonInput {
+  name: String!
+  email: String!
+  address: AddressInput!
+}
+
+input EventInput {
+  title: String!
+  startDate: Int!
+  endDate: Int
+  eventDate: String!
+  registrationDeadline: String
+}
+
+type Owner {
+  name: String!
+  email: String!
+  primaryVehicle: Vehicle!
+  secondaryVehicle: Vehicle
+}
+
+type Query {
+  getVehicle(id: ID!): Vehicle!
+  listVehicles: [Vehicle!]!
+  getOwner(id: ID!): Owner!
+}
+
+type Mutation {
+  addVehicle(input: AddVehicleInput!): Vehicle!
+  updateVehicle(id: ID!, input: UpdateVehicleInput!): Vehicle!
+  searchVehicles(filter: VehicleSearchInput!): [Vehicle!]!
+  register(input: RegisterInput!): Boolean!
+}

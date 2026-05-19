@@ -85,6 +85,7 @@ class GLQueryDefinition extends GLToken with GLDirectivesMixin {
         interfaceNames: {},
         derivedFromType: null,
         extension: false,
+        isResponseType: true,
       );
       gqDef.addDirective(
           GLDirectiveValue(glInternal.toToken(), [], [], generated: true));

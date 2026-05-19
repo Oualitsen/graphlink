@@ -8,7 +8,8 @@ import 'package:graphlink/src/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/client_serializers/dart_client_serializer.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
-import 'package:graphlink/src/serializers/flutter_type_widget_serializer.dart';
+import 'package:graphlink/src/serializers/flutter_inputs/flutter_inputs_serializer.dart';
+import 'package:graphlink/src/serializers/flutter_types_serializer.dart';
 import 'package:graphlink/src/utils.dart';
 
 Future<Set<String>> generateDartClientClasses(
@@ -26,7 +27,6 @@ Future<Set<String>> generateDartClientClasses(
   final packageName = dartConfig.packageName;
   final prefix =
       'package:$packageName/${(pack ?? config.outputDir).replaceFirst("lib/", "")}';
-  final viewSerializer = FlutterTypeWidgetSerializer(parser, serializer, true);
 
   parser.enums.forEach((k, def) {
     futures.add(writeToFile(
@@ -62,21 +62,131 @@ Future<Set<String>> generateDartClientClasses(
     ));
   });
 
-  if (dartConfig.generateUiTypes) {
-    parser.views.forEach((k, def) {
-      final appLocImport = dartConfig.appLocalizationsImport;
-      if (appLocImport != null) {
-        def.addImport(appLocImport);
-      }
+  final flutterConfig = dartConfig.flutter;
+  if (flutterConfig != null && flutterConfig.generateTypes) {
+    final flutterSerializer = FlutterTypesSerializer(parser, serializer, flutterConfig);
+
+    parser.enums.forEach((k, def) {
+      if (flutterSerializer.shouldSkipEnum(def)) return;
       futures.add(writeToFile(
-        data: viewSerializer.serializeType(def, prefix),
-        fileName: serializer.getFileNameFor(def),
-        subdir: 'widgets',
+        data: flutterSerializer.serializeEnumLabels(def, prefix),
+        fileName: flutterSerializer.getEnumLabelsFileNameFor(def),
+        subdir: 'widgets/enums',
         imports: [],
         destinationDir: destinationDir,
       ));
     });
+
+    parser.projectedTypes.forEach((k, def) {
+      final content = flutterSerializer.serializeTypeWidget(def, prefix);
+      if (content.isNotEmpty) {
+        futures.add(writeToFile(
+          data: content,
+          fileName: flutterSerializer.getWidgetFileNameFor(def),
+          subdir: 'widgets/types',
+          imports: [],
+          destinationDir: destinationDir,
+        ));
+      }
+    });
   }
+
+  if (flutterConfig != null && flutterConfig.generateInputs) {
+    final inputsSerializer = FlutterInputsSerializer(parser, serializer, flutterConfig);
+
+    // shared once-generated files
+    futures.add(writeToFile(
+      data: inputsSerializer.serializeSharedInputFormWidget(prefix),
+      fileName: 'input_form_widget.dart',
+      subdir: 'widgets/inputs',
+      imports: [],
+      destinationDir: destinationDir,
+    ));
+    futures.add(writeToFile(
+      data: inputsSerializer.serializeSharedInputReadException(),
+      fileName: 'input_read_exception.dart',
+      subdir: 'widgets/inputs',
+      imports: [],
+      destinationDir: destinationDir,
+    ));
+    futures.add(writeToFile(
+      data: inputsSerializer.serializeSharedBooleanLabels(),
+      fileName: 'boolean_labels.dart',
+      subdir: 'widgets/inputs',
+      imports: [],
+      destinationDir: destinationDir,
+    ));
+    futures.add(writeToFile(
+      data: inputsSerializer.serializeSharedFieldWidgets(),
+      fileName: 'field_widgets.dart',
+      subdir: 'widgets/inputs',
+      imports: [],
+      destinationDir: destinationDir,
+    ));
+    futures.add(writeToFile(
+      data: inputsSerializer.serializeSharedTextFieldOptions(),
+      fileName: 'text_field_options.dart',
+      subdir: 'widgets/inputs',
+      imports: [],
+      destinationDir: destinationDir,
+    ));
+    futures.add(writeToFile(
+      data: inputsSerializer.serializeSharedRequiredIndicator(),
+      fileName: 'required_indicator.dart',
+      subdir: 'widgets/inputs',
+      imports: [],
+      destinationDir: destinationDir,
+    ));
+    futures.add(writeToFile(
+      data: inputsSerializer.serializeSharedFormStrings(),
+      fileName: 'form_strings.dart',
+      subdir: 'widgets/inputs',
+      imports: [],
+      destinationDir: destinationDir,
+    ));
+    futures.add(writeToFile(
+      data: inputsSerializer.serializeSharedDateInputConfig(),
+      fileName: 'date_input_config.dart',
+      subdir: 'widgets/inputs',
+      imports: [],
+      destinationDir: destinationDir,
+    ));
+    futures.add(writeToFile(
+      data: inputsSerializer.serializeSharedDateInputFormatter(),
+      fileName: 'date_input_formatter.dart',
+      subdir: 'widgets/inputs',
+      imports: [],
+      destinationDir: destinationDir,
+    ));
+    futures.add(writeToFile(
+      data: inputsSerializer.serializeSharedFieldVisibility(),
+      fileName: 'field_visibility.dart',
+      subdir: 'widgets/inputs',
+      imports: [],
+      destinationDir: destinationDir,
+    ));
+    futures.add(writeToFile(
+      data: inputsSerializer.serializeSharedSimpleFieldForm(),
+      fileName: 'simple_field_form.dart',
+      subdir: 'widgets/inputs',
+      imports: [],
+      destinationDir: destinationDir,
+    ));
+
+    parser.inputs.forEach((k, def) {
+      final content = inputsSerializer.serializeInputForm(def, prefix);
+      if (content.isNotEmpty) {
+        futures.add(writeToFile(
+          data: content,
+          fileName: inputsSerializer.getFormFileNameFor(def),
+          subdir: 'widgets/inputs',
+          imports: [],
+          destinationDir: destinationDir,
+        ));
+      }
+    });
+  }
+ 
 
   futures.add(writeToFile(
     data: serializer.serializeGlClass(clientSerializer.generateClient(prefix), importPrefix: prefix),

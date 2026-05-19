@@ -20,7 +20,6 @@ import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/token_info.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
-import 'package:graphlink/src/ui/flutter/gl_type_view.dart';
 import 'package:graphlink/src/utils.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 
@@ -1343,34 +1342,6 @@ extension GLGrammarExtension on GLParser {
       name = '${baseName}_${++i}';
     }
     return name;
-  }
-
-  void generateViews() {
-    final queryTypeNames =
-        GLQueryType.values.map((t) => schema.getByQueryType(t)).toSet();
-    projectedTypes.values
-        .where((t) =>
-            t is! GLInterfaceDefinition &&
-            !queryTypeNames.contains(t.token) &&
-            t.getDirectiveByName(glInternal) == null)
-        .map((t) => GLTypeView(type: t))
-        .forEach((view) {
-      views[view.token] = view;
-    });
-    if (views.isNotEmpty) {
-      // add GQFieldViewType enumeration
-      addEnumDefinition(GLEnumDefinition(
-          extension: false,
-          token: "GQFieldViewType".toToken(),
-          values: ['listTile', 'reversedListTile', 'labelValueRow']
-              .map((e) => e.toToken())
-              .map(
-                (e) =>
-                    GLEnumValue(value: e, documentation: null, directives: []),
-              )
-              .toList(),
-          directives: []));
-    }
   }
 }
 

@@ -1,0 +1,30 @@
+{
+  "schemaPaths": ["schema/*.gql"],
+  "mode": "client",
+  "identityFields": [],
+  "typeMappings": {
+    "ID": "String",
+    "String": "String",
+    "Float": "double",
+    "Int": "int",
+    "Boolean": "bool"
+  },
+  "outputDir": "lib/generated",
+  "clientConfig": {
+    "dart": {
+      "packageName": "flutter_ui_example",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "generateAdapters": false,
+      "httpAdapter": "none",
+      "flutter": {
+        "generateTypes": true,
+        "generateInputs": true,
+        "booleanWidget": "switch",
+        "nullableBooleanWidget": "checkbox",
+        "typesToSkip": [],
+        "inputsToSkip": []
+      }
+    }
+  }
+}
