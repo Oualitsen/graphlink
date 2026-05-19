@@ -120,6 +120,15 @@ class GLParser {
       {GLDirectiveScope.OBJECT},
       false,
     ),
+    glExpand: GLDirectiveDefinition(
+      glExpand.toToken(),
+      [
+        GLArgumentDefinition(
+            glExpandDepth.toToken(), GLType("Int".toToken(), false), [])
+      ],
+      {GLDirectiveScope.OBJECT},
+      false,
+    ),
   };
 
   final bool _validate = true;
@@ -156,6 +165,7 @@ class GLParser {
   final List<String> identityFields;
   final int? defaultCacheTTL;
   final bool disableCache;
+  final int defaultExpandDepth;
   late final GLGraphqSerializer serializer;
 
   GLParser({
@@ -168,6 +178,7 @@ class GLParser {
     this.mode = CodeGenerationMode.client,
     this.defaultCacheTTL,
     this.disableCache = false,
+    this.defaultExpandDepth = 1,
   }) : assert(
           !autoGenerateQueries || generateAllFieldsFragments,
           'autoGenerateQueries can only be true if generateAllFieldsFragments is also true',
