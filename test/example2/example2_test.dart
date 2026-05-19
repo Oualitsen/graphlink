@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:graphlink/src/excpetions/parse_exception.dart';
 import 'package:graphlink/src/serializers/client_serializers/dart_client_serializer.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
@@ -25,12 +24,12 @@ void main() async {
   });
 
   test("depedecy_cycle_detection_test_indirect_dependency2", () {
+    // Cycles are now handled via inline expansion rather than throwing.
     final GLParser g = GLParser(generateAllFieldsFragments: true);
-
     final text = File(
             "test/fragment/depedecy_cycle_detection/depedecy_cycle_detection_test_indirect_dependency.graphql")
         .readAsStringSync();
-    expect(() => g.parse(text), throwsA(isA<ParseException>()));
+    expect(() => g.parse(text), returnsNormally);
   });
 
   test("client should not contain Instance of", () {

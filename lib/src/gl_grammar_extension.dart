@@ -627,52 +627,136 @@ extension GLGrammarExtension on GLParser {
   }
 
   GLFragmentDefinition createAllFieldsFragment(
-      GLTypeDefinition typeDefinition) {
+      GLTypeDefinition typeDefinition, Set<String> inProgress) {
     var key = typeDefinition.token;
-
     var allFieldsKey = allFieldsFragmentName(key);
-    if (fragments[allFieldsKey] != null) {
-      throw ParseException("Fragment $allFieldsKey is Already defined",
-          info: fragments[allFieldsKey]!.tokenInfo);
-    }
+
     if (typeDefinition is GLInterfaceDefinition) {
       var projection = _createProjectionForInterface(typeDefinition);
       var block = GLFragmentBlockDefinition([projection]);
       return GLFragmentDefinition(
           allFieldsKey.toToken(), typeDefinition.tokenInfo, block, []);
-    } else {
-      return GLFragmentDefinition(
-          allFieldsKey.toToken(),
-          typeDefinition.tokenInfo,
-          GLFragmentBlockDefinition(typeDefinition
-              .getSerializableFields(mode)
-              .map((field) => GLProjection(
-                    fragmentName: null,
-                    token: field.name,
-                    alias: null,
-                    block: createAllFieldBlock(field),
-                    directives: [],
-                  ))
-              .toList()),
-          []);
     }
+
+    final projections = typeDefinition.getSerializableFields(mode).map((field) {
+      if (typeRequiresProjection(field.type)) {
+        final fieldTypeName = field.type.inlineType.token;
+        if (inProgress.contains(fieldTypeName)) {
+          // Cyclic field — inline-expand using the back-referenced type's depth.
+          final cyclicType = types[fieldTypeName] ?? interfaces[fieldTypeName];
+          final depth = cyclicType != null ? _getExpandDepth(cyclicType) : defaultExpandDepth;
+          // depth 0 → skip the cyclic field entirely (no block, no field).
+          if (depth <= 0) return null;
+          return GLProjection(
+            fragmentName: null,
+            token: field.name,
+            alias: null,
+            // depth-1: so depth=1 gives scalars only, depth=2 gives one sub-level, etc.
+            block: _createInlineExpandBlock(fieldTypeName, depth - 1, inProgress),
+            directives: [],
+          );
+        }
+      }
+      return GLProjection(
+        fragmentName: null,
+        token: field.name,
+        alias: null,
+        block: createAllFieldBlock(field),
+        directives: [],
+      );
+    }).whereType<GLProjection>().toList();
+
+    return GLFragmentDefinition(
+        allFieldsKey.toToken(),
+        typeDefinition.tokenInfo,
+        GLFragmentBlockDefinition(projections),
+        []);
   }
 
   void createAllFieldsFragments() {
-    var allTypes = {...types, ...interfaces};
-    var queryTypeNames =
+    final allTypes = {...types, ...interfaces};
+    final queryTypeNames =
         GLQueryType.values.map((t) => schema.getByQueryType(t)).toSet();
-    allTypes.forEach((key, typeDefinition) {
+
+    final Set<String> done = {};
+    final Set<String> inProgress = {};
+
+    void generate(String key) {
+      if (done.contains(key) || inProgress.contains(key)) return;
+      final typeDef = allTypes[key]!;
+      inProgress.add(key);
+
+      // Ensure all non-cyclic dependencies are generated first (DFS).
+      for (final field in typeDef.getSerializableFields(mode)) {
+        if (typeRequiresProjection(field.type)) {
+          final depKey = field.type.inlineType.token;
+          if (allTypes.containsKey(depKey) &&
+              !queryTypeNames.contains(depKey) &&
+              allTypes[depKey]!.getDirectiveByName(glInternal) == null) {
+            generate(depKey);
+          }
+        }
+      }
+
+      addFragmentDefinition(createAllFieldsFragment(typeDef, inProgress));
+      inProgress.remove(key);
+      done.add(key);
+    }
+
+    allTypes.forEach((key, typeDef) {
       if (!queryTypeNames.contains(key) &&
-          typeDefinition.getDirectiveByName(glInternal) == null) {
-        var frag = createAllFieldsFragment(typeDefinition);
-        addFragmentDefinition(frag);
+          typeDef.getDirectiveByName(glInternal) == null) {
+        generate(key);
       }
     });
   }
 
   static String allFieldsFragmentName(String token) {
     return "${allFields}_$token";
+  }
+
+  int _getExpandDepth(GLTypeDefinition typeDef) {
+    final directive = typeDef.getDirectiveByName(glExpand);
+    if (directive == null) return defaultExpandDepth;
+    final value = directive.getArgValue(glExpandDepth);
+    return value is int ? value : defaultExpandDepth;
+  }
+
+  /// Recursively inline-expands [typeName]'s fields up to [remainingDepth] levels.
+  /// Never emits fragment spreads — everything is inlined to avoid introducing
+  /// new fragment-level cycles.
+  GLFragmentBlockDefinition? _createInlineExpandBlock(
+      String typeName, int remainingDepth, Set<String> cycleTypes) {
+    final typeDef = types[typeName] ?? interfaces[typeName];
+    if (typeDef == null) return null;
+
+    final projections = typeDef.getSerializableFields(mode).map((field) {
+      if (!typeRequiresProjection(field.type)) {
+        return GLProjection(
+          fragmentName: null,
+          token: field.name,
+          alias: null,
+          block: null,
+          directives: [],
+        );
+      }
+
+      final fieldTypeName = field.type.inlineType.token;
+      final isCyclic = cycleTypes.contains(fieldTypeName);
+
+      if (isCyclic && remainingDepth <= 0) return null;
+
+      final nextDepth = isCyclic ? remainingDepth - 1 : remainingDepth;
+      return GLProjection(
+        fragmentName: null,
+        token: field.name,
+        alias: null,
+        block: _createInlineExpandBlock(fieldTypeName, nextDepth, cycleTypes),
+        directives: [],
+      );
+    }).whereType<GLProjection>().toList();
+
+    return GLFragmentBlockDefinition(projections);
   }
 
   GLFragmentBlockDefinition? createAllFieldBlock(GLField field) {
