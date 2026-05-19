@@ -13,7 +13,6 @@ import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/serializers/annotation_serializer.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
-import 'package:graphlink/src/ui/flutter/gl_type_view.dart';
 
 class DartSerializer extends GLSerializer {
   final codeGenUtils = DartCodeGenUtils();
@@ -86,8 +85,8 @@ class DartSerializer extends GLSerializer {
                         caseValue: '"${val.token}"',
                         statement: 'return ${val.token};'))
                   ],
-                  defaultStatement:
-                      'throw ArgumentError("Invalid ${def.token}: \$value");')
+                  defaultStatements:
+                      ['throw ArgumentError("Invalid ${def.token}: \$value");'])
             ])
         .ident());
     buffer.writeln("}");
@@ -557,8 +556,8 @@ class DartSerializer extends GLSerializer {
                       "'${st.derivedFromType?.tokenInfo.token ?? st.tokenInfo.token}'",
                   statement: 'return ${st.tokenInfo.token}.fromJson(json);'))
             ],
-            defaultStatement:
-                'throw ArgumentError("Invalid type \$typename. \$typename does not implement $token or not defined");',
+            defaultStatements:
+                ['throw ArgumentError("Invalid type \$typename. \$typename does not implement $token or not defined");'],
           ),
         ]);
   }
@@ -620,9 +619,7 @@ class DartSerializer extends GLSerializer {
       init = "types/${getFileNameFor(token)}";
     } else if (token is GLInputDefinition) {
       init = "inputs/${getFileNameFor(token)}";
-    } else if (token is GLTypeView) {
-      init = "widgets/${getFileNameFor(token)}";
-    }
+    } 
 
     return "import '${importPrefix}/${init}';";
   }

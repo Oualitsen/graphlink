@@ -104,8 +104,10 @@ clientConfig.dart
   autoGenerateQueries             bool    Auto-generate queries from schema        [false]
   autoGenerateQueriesDefaultAlias string  Default alias for auto-generated queries
   operationNameAsParameter        bool    Pass operation name as a parameter      [false]
-  generateUiTypes                 bool    Generate Flutter UI type widgets        [false]
-  generateUiInputs                bool    Generate Flutter UI input widgets       [false]
+  flutter.generateTypes           bool    Generate Flutter UI type widgets        [true]
+  flutter.generateInputs          bool    Generate Flutter UI input widgets       [false]
+  flutter.typesToSkip             list    Type names to exclude from UI gen       []
+  flutter.defaultGap              number  Default spacing between field rows      [16]
   immutableInputFields            bool    Generate input fields as final          [true]
   immutableTypeFields             bool    Generate type fields as final           [true]
 

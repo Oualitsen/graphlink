@@ -178,6 +178,60 @@ class ClientConfig {
       ClientConfig(ClientLanguageConfig.fromJson(json));
 }
 
+enum BooleanWidget { tristate, checkbox, switchWidget }
+
+enum NullableBooleanWidget { tristate, checkbox }
+
+enum ListWidget { chips, checkboxes }
+
+class FlutterConfig {
+  final List<String> typesToSkip;
+  final List<String> inputsToSkip;
+  final bool generateTypes;
+  final bool generateInputs;
+  final double defaultGap;
+  final BooleanWidget booleanWidget;
+  final NullableBooleanWidget nullableBooleanWidget;
+  final ListWidget listWidget;
+
+  const FlutterConfig({
+    this.typesToSkip = const [],
+    this.inputsToSkip = const [],
+    this.generateTypes = true,
+    this.generateInputs = false,
+    this.defaultGap = 16,
+    this.booleanWidget = BooleanWidget.switchWidget,
+    this.nullableBooleanWidget = NullableBooleanWidget.checkbox,
+    this.listWidget = ListWidget.chips,
+  });
+
+  factory FlutterConfig.fromJson(Map<String, dynamic> json) {
+    final nullableBoolStr = json['nullableBooleanWidget'] as String? ?? 'checkbox';
+    if (nullableBoolStr == 'switch') {
+      throw ArgumentError('nullableBooleanWidget cannot be "switch": Switch cannot represent null. Use "checkbox" or "tristate".');
+    }
+    return FlutterConfig(
+      typesToSkip: List<String>.from(json['typesToSkip'] ?? []),
+      inputsToSkip: List<String>.from(json['inputsToSkip'] ?? []),
+      generateTypes: (json['generateTypes'] as bool?) ?? true,
+      generateInputs: (json['generateInputs'] as bool?) ?? false,
+      defaultGap: (json['defaultGap'] as num?)?.toDouble() ?? 16,
+      booleanWidget: BooleanWidget.values.firstWhere(
+        (e) => e.name == (json['booleanWidget'] as String? ?? 'switchWidget'),
+        orElse: () => BooleanWidget.switchWidget,
+      ),
+      nullableBooleanWidget: NullableBooleanWidget.values.firstWhere(
+        (e) => e.name == nullableBoolStr,
+        orElse: () => NullableBooleanWidget.checkbox,
+      ),
+      listWidget: ListWidget.values.firstWhere(
+        (e) => e.name == (json['listWidget'] as String? ?? 'chips'),
+        orElse: () => ListWidget.chips,
+      ),
+    );
+  }
+}
+
 class DartClientConfig extends ClientLanguageConfig {
   @override final bool generateAllFieldsFragments;
   @override final bool nullableFieldsRequired;
@@ -189,8 +243,7 @@ class DartClientConfig extends ClientLanguageConfig {
   final String? autoGenerateQueriesDefaultAlias;
   final String? packageName;
   final String? appLocalizationsImport;
-  final bool generateUiTypes;
-  final bool generateUiInputs;
+  final FlutterConfig? flutter;
   final bool immutableInputFields;
   final bool generateAdapters;
   final DartHttpAdapter httpAdapter;
@@ -204,8 +257,7 @@ class DartClientConfig extends ClientLanguageConfig {
     this.defaultAlias,
     this.packageName,
     this.appLocalizationsImport,
-    this.generateUiInputs = false,
-    this.generateUiTypes = false,
+    this.flutter,
     this.immutableInputFields = true,
     this.immutableTypeFields = true,
     this.generateAdapters = true,
@@ -222,8 +274,9 @@ class DartClientConfig extends ClientLanguageConfig {
       defaultAlias: json['defaultAlias'] as String?,
       packageName: json['packageName'] as String?,
       appLocalizationsImport: json['appLocalizationsImport'] as String?,
-      generateUiInputs: (json['generateUiInputs'] as bool?) ?? false,
-      generateUiTypes: (json['generateUiTypes'] as bool?) ?? false,
+      flutter: json['flutter'] != null
+          ? FlutterConfig.fromJson(json['flutter'] as Map<String, dynamic>)
+          : null,
       immutableInputFields: (json['immutableInputFields'] as bool?) ?? true,
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
       generateAdapters: (json['generateAdapters'] as bool?) ?? true,
