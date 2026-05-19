@@ -19,8 +19,7 @@ const _knownOptions = {
   'nullableFieldsRequired',
   'immutableInputFields',
   'immutableTypeFields',
-  'generateUiTypes',
-  'generateUiInputs',
+  'flutter',
   'appLocalizationsImport',
   'identityFields',
   'disableCache',
@@ -70,8 +69,7 @@ const _knownOptions = {
 /// | `nullableFieldsRequired` | `bool` | `false` |
 /// | `immutableInputFields` | `bool` | `true` |
 /// | `immutableTypeFields` | `bool` | `true` |
-/// | `generateUiTypes` | `bool` | `false` |
-/// | `generateUiInputs` | `bool` | `false` |
+/// | `flutter` | `map` | `null` |
 /// | `appLocalizationsImport` | `string` | `null` |
 /// | `identityFields` | `string[]` | `[]` |
 /// | `disableCache` | `bool` | `false` |
@@ -162,8 +160,10 @@ class GraphlinkGeneratorBuilder implements Builder {
       nullableFieldsRequired: b('nullableFieldsRequired', false),
       immutableInputFields: b('immutableInputFields', true),
       immutableTypeFields: b('immutableTypeFields', true),
-      generateUiTypes: b('generateUiTypes', false),
-      generateUiInputs: b('generateUiInputs', false),
+      flutter: options.config['flutter'] is Map
+          ? FlutterConfig.fromJson(
+              Map<String, dynamic>.from(options.config['flutter'] as Map))
+          : null,
       appLocalizationsImport: s('appLocalizationsImport'),
     );
 

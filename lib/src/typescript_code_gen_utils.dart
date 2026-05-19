@@ -54,14 +54,14 @@ class TypeScriptCodeGenUtils implements CodeGenUtilsBase {
   String switchStatement({
     required String expression,
     required List<CaseStatement> cases,
-    String? defaultStatement,
+    List<String>? defaultStatements,
   }) {
     var buffer = StringBuffer();
     buffer.write("switch ($expression) ");
     var myCases = [...cases.map((e) => e.toCaseStatement())];
-    if (defaultStatement != null) {
+    if (defaultStatements != null) {
       myCases.add("default:");
-      myCases.add(defaultStatement.ident());
+      myCases.add(defaultStatements.map((e) => e.ident()).join("\n"));
     }
     buffer.write(block(myCases));
     return buffer.toString();

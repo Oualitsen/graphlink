@@ -14,8 +14,10 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
   final Set<GLInterfaceDefinition> _interfaces = {};
   final bool nameDeclared;
   final GLTypeDefinition? derivedFromType;
+  final bool isResponseType;
 
   final Set<String> _originalTokens = <String>{};
+  
 
   GLTypeDefinition({
     required TokenInfo name,
@@ -25,6 +27,7 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
     required List<GLDirectiveValue> directives,
     required this.derivedFromType,
     required bool extension,
+    this.isResponseType = false,
     String? documentation,
   }) : super(name, extension, fields, documentation: documentation) {
     directives.forEach(addDirective);

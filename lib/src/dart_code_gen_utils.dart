@@ -59,20 +59,37 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
     return buffer.toString();
   }
 
+  String inlineIfStatement({required String condition, required String statement}) =>
+      'if ${parentheses([condition])} $statement';
+
+  String callExpression(String name, List<String> args) {
+    if (args.isEmpty) return '$name()';
+    final indented = args.map((a) => a.ident()).join(',\n');
+    return '$name(\n$indented,\n)';}
+
+  String functionLiteral(List<String> params, List<String> statements) =>
+      '${parentheses(params)} ${block(statements)}';
+
+  String listArg(String name, List<String> items) {
+    if (items.isEmpty) return '$name: []';
+    final indented = items.map((i) => i.ident()).join(',\n');
+    return '$name: [\n$indented,\n]';
+  }
+
   @override
   String switchStatement({
     required String expression,
     required List<CaseStatement> cases,
-    String? defaultStatement,
+    List<String>? defaultStatements,
   }) {
     var buffer = StringBuffer();
     buffer.write("switch");
     buffer.write(parentheses([expression]));
     buffer.write(" ");
     var myCases = [...cases.map((e) => e.toCaseStatement())];
-    if (defaultStatement != null) {
+    if (defaultStatements != null) {
       myCases.add("default:");
-      myCases.add(defaultStatement.ident());
+      myCases.add(defaultStatements.map((e) => e.ident()).join("\n"));
     }
     buffer.write(block(myCases));
     return buffer.toString();
@@ -92,23 +109,33 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
   String createMethod(
       {String? returnType,
       required String methodName,
+      List<String>? positionalArguments,
       List<String>? arguments,
       bool namedArguments = true,
       List<String>? statements,
-      bool async = false}) {
+      bool async = false,
+      bool isConst = false,
+      bool override = false}) {
     var buffer = StringBuffer();
+    if (override) buffer.write('@override\n');
+    if (isConst) buffer.write('const ');
     if (returnType != null) {
       buffer.write(returnType);
       buffer.write(" ");
     }
     buffer.write(methodName);
 
-    if (arguments != null) {
-      buffer.write(parentheses(namedArguments && arguments.isNotEmpty
-          ? [
-              block([arguments.join(",\n")]),
-            ]
-          : arguments));
+    if (arguments != null || positionalArguments != null) {
+      final positional = positionalArguments ?? [];
+      final List<String> allArgs;
+      if (arguments != null && arguments.isNotEmpty && namedArguments) {
+        allArgs = [...positional, block([arguments.join(",\n")])];
+      } else if (arguments != null) {
+        allArgs = [...positional, ...arguments];
+      } else {
+        allArgs = positional;
+      }
+      buffer.write(parentheses(allArgs.isEmpty ? null : allArgs));
     }
     if (async) {
       buffer.write(" async");
@@ -144,9 +171,17 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
     return buffer.toString();
   }
 
-  String createClass({required String className, required List<String> statements, List<String>? baseClassNames}) {
+  String createClass({
+    required String className,
+    required List<String> statements,
+    List<String>? baseClassNames,
+    String? extendsClassName,
+  }) {
     var buffer = StringBuffer();
     buffer.write("class ${className} ");
+    if (extendsClassName != null) {
+      buffer.write("extends $extendsClassName ");
+    }
     if (baseClassNames != null && baseClassNames.isNotEmpty) {
       buffer.write("implements ");
       buffer.write(baseClassNames.join(", "));
@@ -154,6 +189,14 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
     }
     buffer.write(block(statements));
     return buffer.toString();
+  }
+
+  String switchExpression({
+    required String expression,
+    required List<DartSwitchExpressionCase> cases,
+  }) {
+    final caseLines = cases.map((c) => '${c.pattern} => ${c.result},').toList();
+    return 'switch ${parentheses([expression])} ${block(caseLines)}';
   }
 
   String createInterface(
@@ -237,6 +280,12 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
   String safeLocalVar(String name) => '__gl_${name}__';
 }
 
+
+class DartSwitchExpressionCase {
+  final String pattern;
+  final String result;
+  const DartSwitchExpressionCase({required this.pattern, required this.result});
+}
 
 class DartCaseStatement extends CaseStatement {
   DartCaseStatement({required super.caseValue, required super.statement});

@@ -33,7 +33,6 @@ import 'package:graphlink/src/model/gl_repository.dart';
 import 'package:graphlink/src/model/gl_service.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/serializers/graphq_serializer.dart';
-import 'package:graphlink/src/ui/flutter/gl_type_view.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 export 'package:graphlink/src/gl_grammar_extension.dart';
 export 'package:graphlink/src/gl_validation_extension.dart';
@@ -141,7 +140,6 @@ class GLParser {
   final Map<String, GLDirectiveDefinition> directiveDefinitions = {};
   final Map<String, GLService> services = {};
   final Map<String, GLController> controllers = {};
-  final Map<String, GLTypeView> views = {};
 
   final Map<String, GLExtensibleTokenList> extensibleTokens = {};
 
