@@ -102,3 +102,10 @@ const glMapFieldTo = "to";
 /// The generator will produce GLUpload (Dart) / GLUpload (Java) as the type,
 /// and multipart/form-data transport for any mutation that uses it.
 const glUpload = "@glUpload";
+
+/// Controls inline expansion depth for cyclic types in all-fields fragment generation.
+/// When a cycle is detected, the generator inlines the cyclic type's fields up to
+/// [glExpandDepth] levels instead of emitting a fragment spread (which would be invalid).
+/// Default depth is 1 (one level of inline expansion).
+const glExpand = "@glExpand";
+const glExpandDepth = "depth";
