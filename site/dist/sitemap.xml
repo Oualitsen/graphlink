@@ -49,6 +49,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://graphlink.dev/docs/custom-queries.html</loc>
+    <lastmod>2026-05-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://graphlink.dev/docs/caching.html</loc>
     <lastmod>2026-05-20</lastmod>
     <changefreq>weekly</changefreq>

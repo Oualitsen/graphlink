@@ -81,13 +81,13 @@ def on_post_build(config):
         if not os.path.exists(filepath):
             continue
         meta, _ = _parse_frontmatter(_read(filepath))
-        html_path = path.replace('.md', '.html')
-        url = f"{site_url}/docs/{html_path}"
+        slug = path.replace('.md', '')
+        llms_url = f"{site_url}/docs/llms/{slug}.txt"
         desc = meta.get('description', '')
-        title = meta.get('title', html_path)
+        title = meta.get('title', slug)
         # strip site suffix from title for brevity
         title = re.sub(r'\s*—\s*GraphLink\s*(Docs)?', '', title).strip()
-        links.append(f"- {title} ({desc}): {url}")
+        links.append(f"- {title} ({desc}): {llms_url}")
 
     concise_output = header_concise + '\n\n## Documentation pages\n\n' + '\n'.join(links) + '\n\n## Links\n\n' \
         '- Website: https://graphlink.dev/\n' \

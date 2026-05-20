@@ -1,0 +1,1844 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Write your own GraphQL operation documents alongside the schema. Custom queries, mutations, aliases, fragments, multi-resolver queries, and specific field projections — all generate fully typed client methods.">
+      
+      
+        <meta name="author" content="GraphLink">
+      
+      
+        <link rel="canonical" href="https://graphlink.dev/custom-queries.html">
+      
+      
+        <link rel="prev" href="spring-server.html">
+      
+      
+        <link rel="next" href="caching.html">
+      
+      
+        
+      
+      
+      <link rel="icon" href="assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Custom Queries & Mutations — GraphLink Docs - GraphLink Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  
+
+  
+  <link rel="alternate" type="text/plain" title="GraphLink for LLMs" href="/llms.txt">
+
+  
+
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#custom-queries-mutations" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="index.html" title="GraphLink Docs" class="md-header__button md-logo" aria-label="GraphLink Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            GraphLink Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Custom Queries & Mutations — GraphLink Docs
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Oualitsen/graphlink" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Oualitsen/graphlink
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="index.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Overview
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="philosophy.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Philosophy
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="getting-started.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="dart-client.html" class="md-tabs__link">
+          
+  
+  
+  Clients
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="spring-server.html" class="md-tabs__link">
+          
+  
+  
+  Backend
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="custom-queries.html" class="md-tabs__link">
+          
+  
+  
+  Features
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="directives.html" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="ai-agents.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  AI Agents
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="index.html" title="GraphLink Docs" class="md-nav__button md-logo" aria-label="GraphLink Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    GraphLink Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Oualitsen/graphlink" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Oualitsen/graphlink
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="philosophy.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="getting-started.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clients
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Clients
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="dart-client.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dart / Flutter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="java-client.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="typescript-client.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Backend
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-server.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spring Boot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Features
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Queries & Mutations
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="custom-queries.html" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Queries & Mutations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#where-to-write-them" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where to write them
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#basic-custom-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic custom query
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-_all_fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using _all_fields
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aliases-and-projections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Aliases and projections
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multiple-resolvers-in-one-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multiple resolvers in one query
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-field-projection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom field projection
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-mutations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom mutations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#shared-fragments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shared fragments
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#caching-on-custom-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Caching on custom queries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-gets-generated" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What gets generated
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-most-tools-get-wrong" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What most tools get wrong
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What most tools get wrong">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#interfaces-and-inline-fragments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interfaces and inline fragments
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#subscriptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subscriptions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#all-three-together" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        All three together
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="caching.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Caching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="directives.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Directives
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="skip-directives.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    @glSkipOnServer & @glSkipOnClient
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="configuration.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="ai-agents.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI Agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#where-to-write-them" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where to write them
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#basic-custom-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic custom query
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-_all_fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using _all_fields
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aliases-and-projections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Aliases and projections
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multiple-resolvers-in-one-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multiple resolvers in one query
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-field-projection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom field projection
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-mutations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom mutations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#shared-fragments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shared fragments
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#caching-on-custom-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Caching on custom queries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-gets-generated" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What gets generated
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-most-tools-get-wrong" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What most tools get wrong
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What most tools get wrong">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#interfaces-and-inline-fragments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interfaces and inline fragments
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#subscriptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subscriptions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#all-three-together" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        All three together
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="custom-queries-mutations">Custom Queries &amp; Mutations<a class="headerlink" href="#custom-queries-mutations" title="Permanent link">&para;</a></h1>
+<p>GraphLink has supported hand-written GraphQL operation documents since day one. Write a query or mutation directly in your schema file (or in a separate <code>.graphql</code> file) and the generator produces a fully typed client method for it — same as auto-generated ones, with the same caching support.</p>
+<h2 id="where-to-write-them">Where to write them<a class="headerlink" href="#where-to-write-them" title="Permanent link">&para;</a></h2>
+<p>Custom operations live in any file matched by <code>schemaPaths</code>. You can put them in the same file as the schema or split them into separate files:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>schema/
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  schema.graphql      ← types, queries, mutations, subscriptions
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  operations.graphql  ← your custom operation documents
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>  fragments.graphql   ← shared fragments
+</code></pre></div>
+<div class="highlight"><span class="filename">glink.json — picking up all files</span><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">&quot;schemaPaths&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;schema/*.graphql&quot;</span><span class="p">]</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="p">}</span>
+</code></pre></div>
+<p>All files are merged before generation. GraphLink treats every <code>query</code>, <code>mutation</code>, and <code>subscription</code> block it finds as an operation to generate a client method for.</p>
+<hr />
+<h2 id="basic-custom-query">Basic custom query<a class="headerlink" href="#basic-custom-query" title="Permanent link">&para;</a></h2>
+<p>Write a standard GraphQL operation document. Variable names, field selections, and nesting are all yours to define:</p>
+<div class="highlight"><span class="filename">schema/operations.graphql</span><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">query</span><span class="w"> </span><span class="nf">fetchUserProfile</span><span class="p">(</span><span class="nv">$id</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="n">getUser</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="nv">$id</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="n">id</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="n">firstName</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="n">lastName</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span><span class="n">email</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="p">}</span>
+</code></pre></div>
+<p>Generated Dart method:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kd">final</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kd">await</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">queries</span><span class="p">.</span><span class="n">fetchUserProfile</span><span class="p">(</span><span class="nl">id:</span><span class="w"> </span><span class="s1">&#39;42&#39;</span><span class="p">);</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">print</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="n">getUser</span><span class="p">.</span><span class="n">firstName</span><span class="p">);</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">print</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="n">getUser</span><span class="p">.</span><span class="n">email</span><span class="p">);</span>
+</code></pre></div>
+<p>The method name is derived from the operation name (<code>fetchUserProfile</code>). The response type is <code>FetchUserProfileResponse</code> with a typed <code>.getUser</code> field containing only the fields you projected.</p>
+<hr />
+<h2 id="using-_all_fields">Using <code>_all_fields</code><a class="headerlink" href="#using-_all_fields" title="Permanent link">&para;</a></h2>
+<p>Instead of listing every field manually, use <code>... _all_fields</code> to select all fields of the return type. GraphLink resolves it to the correct type-specific fragment automatically:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">query</span><span class="w"> </span><span class="nf">fetchUser</span><span class="p">(</span><span class="nv">$id</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="n">getUser</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="nv">$id</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="n">_all_fields</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="p">}</span>
+</code></pre></div>
+<p>Or use the explicit form if you prefer:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">query</span><span class="w"> </span><span class="nf">fetchUser</span><span class="p">(</span><span class="nv">$id</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="n">getUser</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="nv">$id</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="n">_all_fields_User</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="p">}</span>
+</code></pre></div>
+<p>Both are equivalent. <code>_all_fields</code> is resolved based on the return type of the field.</p>
+<hr />
+<h2 id="aliases-and-projections">Aliases and projections<a class="headerlink" href="#aliases-and-projections" title="Permanent link">&para;</a></h2>
+<p>Any valid GraphQL field selection — with or without aliases — always generates a correctly named and typed response object. The generated field names match your aliases exactly. There is no constraint on what you can project or how you name it.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">query</span><span class="w"> </span><span class="nf">fetchCarAndOwner</span><span class="p">(</span><span class="nv">$carId</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!,</span><span class="w"> </span><span class="nv">$ownerId</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nl">vehicle</span><span class="p">:</span><span class="w"> </span><span class="n">getCar</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="nv">$carId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="n">_all_fields</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">  </span><span class="nl">owner</span><span class="p">:</span><span class="w"> </span><span class="n">getUser</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="nv">$ownerId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span><span class="n">firstName</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">    </span><span class="n">lastName</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="p">}</span>
+</code></pre></div>
+<p>The generated response type has fields named after the aliases:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kd">final</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kd">await</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">queries</span><span class="p">.</span><span class="n">fetchCarAndOwner</span><span class="p">(</span><span class="nl">carId:</span><span class="w"> </span><span class="s1">&#39;1&#39;</span><span class="p">,</span><span class="w"> </span><span class="nl">ownerId:</span><span class="w"> </span><span class="s1">&#39;2&#39;</span><span class="p">);</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">print</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="n">vehicle</span><span class="p">.</span><span class="n">make</span><span class="p">);</span><span class="w">      </span><span class="c1">// alias &quot;vehicle&quot; → getCar result</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">print</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">firstName</span><span class="p">);</span><span class="w">   </span><span class="c1">// alias &quot;owner&quot;   → getUser result</span>
+</code></pre></div>
+<p>Without an alias the field name matches the resolver name. With an alias it matches the alias — always:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">query</span><span class="w"> </span><span class="nf">fetchSummary</span><span class="p">(</span><span class="nv">$id</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nl">latestCar</span><span class="p">:</span><span class="w">    </span><span class="n">getCar</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="nv">$id</span><span class="p">)</span><span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="n">make</span><span class="w"> </span><span class="n">model</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span><span class="nl">primaryOwner</span><span class="p">:</span><span class="w"> </span><span class="n">getUser</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="nv">$id</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">firstName</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span><span class="nl">count</span><span class="p">:</span><span class="w">        </span><span class="n">getCarsCount</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kd">final</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kd">await</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">queries</span><span class="p">.</span><span class="n">fetchSummary</span><span class="p">(</span><span class="nl">id:</span><span class="w"> </span><span class="s1">&#39;1&#39;</span><span class="p">);</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">res</span><span class="p">.</span><span class="n">latestCar</span><span class="p">.</span><span class="n">make</span><span class="p">;</span><span class="w">       </span><span class="c1">// named &quot;latestCar&quot;</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">res</span><span class="p">.</span><span class="n">primaryOwner</span><span class="p">.</span><span class="n">firstName</span><span class="p">;</span><span class="w"> </span><span class="c1">// named &quot;primaryOwner&quot;</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">res</span><span class="p">.</span><span class="n">count</span><span class="p">;</span><span class="w">                </span><span class="c1">// named &quot;count&quot;, typed int</span>
+</code></pre></div>
+<p>The projected type for each field is generated from the field selection you wrote. If you project <code>{ make model }</code> on a <code>Car</code>, GraphLink generates a projected type with exactly those two fields. If you project all fields (via <code>... _all_fields</code> or explicitly), it reuses the base type.</p>
+<hr />
+<h2 id="multiple-resolvers-in-one-query">Multiple resolvers in one query<a class="headerlink" href="#multiple-resolvers-in-one-query" title="Permanent link">&para;</a></h2>
+<p>This is one of the most powerful features. A single custom query can call multiple resolvers and get back one unified, typed response:</p>
+<div class="highlight"><span class="filename">Dashboard query — one round trip for everything</span><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">query</span><span class="w"> </span><span class="nf">fetchDashboard</span><span class="p">(</span><span class="nv">$userId</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="nl">profile</span><span class="p">:</span><span class="w"> </span><span class="n">getUser</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="nv">$userId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="n">_all_fields</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">  </span><span class="nl">cars</span><span class="p">:</span><span class="w"> </span><span class="n">getCarsByUser</span><span class="p">(</span><span class="n">userId</span><span class="p">:</span><span class="w"> </span><span class="nv">$userId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="n">_all_fields</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="w">  </span><span class="nl">count</span><span class="p">:</span><span class="w"> </span><span class="n">getNotificationsCount</span><span class="p">(</span><span class="n">userId</span><span class="p">:</span><span class="w"> </span><span class="nv">$userId</span><span class="p">)</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><span class="filename">One call, everything typed</span><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kd">final</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kd">await</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">queries</span><span class="p">.</span><span class="n">fetchDashboard</span><span class="p">(</span><span class="nl">userId:</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">userId</span><span class="p">);</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="n">print</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="n">profile</span><span class="p">.</span><span class="n">firstName</span><span class="p">);</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="n">print</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="n">cars</span><span class="p">.</span><span class="n">length</span><span class="p">);</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="n">print</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="n">count</span><span class="p">);</span>
+</code></pre></div>
+<p>The server receives a single GraphQL request. The response type <code>FetchDashboardResponse</code> has a typed field for each resolver in the query.</p>
+<hr />
+<h2 id="custom-field-projection">Custom field projection<a class="headerlink" href="#custom-field-projection" title="Permanent link">&para;</a></h2>
+<p>You control exactly which fields come back. GraphLink generates a dedicated projected type matching your selection — not the full schema type:</p>
+<div class="highlight"><span class="filename">Lean projection — only what the screen needs</span><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="k">query</span><span class="w"> </span><span class="nf">fetchCarList</span><span class="p">(</span><span class="nv">$page</span><span class="p">:</span><span class="w"> </span><span class="nc">PageInput</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="n">getCars</span><span class="p">(</span><span class="n">page</span><span class="p">:</span><span class="w"> </span><span class="nv">$page</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">    </span><span class="n">id</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">    </span><span class="n">make</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">    </span><span class="n">model</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w">    </span><span class="n">year</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="p">}</span>
+</code></pre></div>
+<p>The response contains only <code>id</code>, <code>make</code>, <code>model</code>, and <code>year</code>. GraphLink generates a projected type (e.g. <code>Car_IdMakeModelYear</code>) that holds exactly those fields. Nullability from the schema is preserved on each field.</p>
+<p>When a projection selects <strong>all</strong> fields of a type, GraphLink is smart enough to reuse the base type directly — no duplicate class is generated.</p>
+<hr />
+<h2 id="custom-mutations">Custom mutations<a class="headerlink" href="#custom-mutations" title="Permanent link">&para;</a></h2>
+<p>Custom mutations follow the same pattern. Select exactly which fields you want from the response:</p>
+<div class="highlight"><span class="filename">Custom mutation — specific response fields</span><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="k">mutation</span><span class="w"> </span><span class="nf">registerCar</span><span class="p">(</span><span class="nv">$input</span><span class="p">:</span><span class="w"> </span><span class="nc">CreateCarInput</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="n">createCar</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="nv">$input</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">    </span><span class="n">id</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">    </span><span class="n">make</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">    </span><span class="n">model</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="kd">final</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kd">await</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">mutations</span><span class="p">.</span><span class="n">registerCar</span><span class="p">(</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span><span class="nl">input:</span><span class="w"> </span><span class="n">CreateCarInput</span><span class="p">(</span><span class="nl">make:</span><span class="w"> </span><span class="s1">&#39;Toyota&#39;</span><span class="p">,</span><span class="w"> </span><span class="nl">model:</span><span class="w"> </span><span class="s1">&#39;Camry&#39;</span><span class="p">,</span><span class="w"> </span><span class="nl">year:</span><span class="w"> </span><span class="m">2024</span><span class="p">),</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="p">);</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="n">print</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="n">createCar</span><span class="p">.</span><span class="n">id</span><span class="p">);</span>
+</code></pre></div>
+<hr />
+<h2 id="shared-fragments">Shared fragments<a class="headerlink" href="#shared-fragments" title="Permanent link">&para;</a></h2>
+<p>Define a fragment once and reuse it across multiple operations:</p>
+<div class="highlight"><span class="filename">schema/fragments.graphql</span><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="k">fragment</span><span class="w"> </span><span class="nf">CarSummary</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">Car</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span><span class="n">id</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span><span class="n">make</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">  </span><span class="n">model</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="w">  </span><span class="n">year</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><span class="filename">schema/operations.graphql</span><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="k">query</span><span class="w"> </span><span class="nf">fetchCar</span><span class="p">(</span><span class="nv">$id</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span><span class="n">getCar</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="nv">$id</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="n">CarSummary</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="p">}</span>
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="k">query</span><span class="w"> </span><span class="nf">fetchCarsAndOwner</span><span class="p">(</span><span class="nv">$ownerId</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="w">  </span><span class="n">getCars</span><span class="p">(</span><span class="n">ownerId</span><span class="p">:</span><span class="w"> </span><span class="nv">$ownerId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a><span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="n">CarSummary</span>
+<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a><span class="w">  </span><span class="n">getUser</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="nv">$ownerId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a><span class="w">    </span><span class="n">firstName</span>
+<a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a><span class="w">    </span><span class="n">lastName</span>
+<a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a><span class="p">}</span>
+</code></pre></div>
+<p>GraphLink resolves fragment spreads and inlines the selected fields into the generated query strings. Your fragments do not need to be in the same file as the operations that use them — any file in <code>schemaPaths</code> is visible to all others.</p>
+<hr />
+<h2 id="caching-on-custom-queries">Caching on custom queries<a class="headerlink" href="#caching-on-custom-queries" title="Permanent link">&para;</a></h2>
+<p><code>@glCache</code> and <code>@glCacheInvalidate</code> work exactly the same on custom operations. Apply them at the operation level or per resolver field:</p>
+<div class="highlight"><span class="filename">Custom query with caching</span><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="k">query</span><span class="w"> </span><span class="nf">fetchDashboard</span><span class="p">(</span><span class="nv">$userId</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!,</span><span class="w"> </span><span class="nv">$page</span><span class="p">:</span><span class="w"> </span><span class="nc">PageInput</span><span class="p">!)</span><span class="w"> </span><span class="err">@</span><span class="nf">glCache</span><span class="p">(</span><span class="err">ttl</span><span class="p">:</span><span class="w"> </span><span class="err">&quot;5</span><span class="nc">m</span><span class="err">&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="err">&quot;</span><span class="nc">dashboard</span><span class="err">&quot;</span><span class="p">])</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">  </span><span class="nl">profile</span><span class="p">:</span><span class="w"> </span><span class="n">getUser</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="nv">$userId</span><span class="p">)</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;10m&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;users&quot;</span><span class="p">])</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="n">_all_fields</span>
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="w">  </span><span class="nl">cars</span><span class="p">:</span><span class="w"> </span><span class="n">getCarsByUser</span><span class="p">(</span><span class="n">userId</span><span class="p">:</span><span class="w"> </span><span class="nv">$userId</span><span class="p">)</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2m&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;cars&quot;</span><span class="p">])</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="n">_all_fields</span>
+<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="p">}</span>
+</code></pre></div>
+<p>Each resolver is cached independently. If <code>"cars"</code> is invalidated, only that resolver is re-fetched on the next call — <code>profile</code> stays warm. See <a href="caching.html">Caching</a> for the full caching reference.</p>
+<hr />
+<h2 id="what-gets-generated">What gets generated<a class="headerlink" href="#what-gets-generated" title="Permanent link">&para;</a></h2>
+<p>For every custom operation, GraphLink generates:</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Naming convention</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Client method</td>
+<td>camelCase of operation name</td>
+<td><code>fetchDashboard(...)</code></td>
+</tr>
+<tr>
+<td>Response type</td>
+<td><code>{OperationName}Response</code></td>
+<td><code>FetchDashboardResponse</code></td>
+</tr>
+<tr>
+<td>Method parameters</td>
+<td>one per <code>$variable</code></td>
+<td><code>userId</code>, <code>page</code></td>
+</tr>
+<tr>
+<td>Response fields</td>
+<td>one per resolver / alias</td>
+<td><code>.profile</code>, <code>.cars</code>, <code>.count</code></td>
+</tr>
+</tbody>
+</table>
+<p>The method lives under <code>client.queries</code>, <code>client.mutations</code>, or <code>client.subscriptions</code> depending on the operation type. Everything is fully typed — no casting, no dynamic maps.</p>
+<hr />
+<h2 id="what-most-tools-get-wrong">What most tools get wrong<a class="headerlink" href="#what-most-tools-get-wrong" title="Permanent link">&para;</a></h2>
+<p>Most GraphQL code generators fall apart on three things: <strong>interfaces</strong>, <strong>unions</strong>, and <strong>subscriptions</strong>. GraphLink handles all three, including when they are combined.</p>
+<h3 id="interfaces-and-inline-fragments">Interfaces and inline fragments<a class="headerlink" href="#interfaces-and-inline-fragments" title="Permanent link">&para;</a></h3>
+<p>Given this schema:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="k">interface</span><span class="w"> </span><span class="err">Animal</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="p">}</span>
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="k">type</span><span class="w"> </span><span class="err">Dog</span><span class="w"> </span><span class="k">implements</span><span class="w"> </span><span class="err">Animal</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a><span class="w">  </span><span class="nl">breed</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a><span class="p">}</span>
+<a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a>
+<a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a><span class="k">type</span><span class="w"> </span><span class="err">Cat</span><span class="w"> </span><span class="k">implements</span><span class="w"> </span><span class="err">Animal</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-18-13" name="__codelineno-18-13" href="#__codelineno-18-13"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<a id="__codelineno-18-14" name="__codelineno-18-14" href="#__codelineno-18-14"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-18-15" name="__codelineno-18-15" href="#__codelineno-18-15"></a><span class="w">  </span><span class="nl">indoor</span><span class="p">:</span><span class="w"> </span><span class="n">Boolean</span><span class="err">!</span>
+<a id="__codelineno-18-16" name="__codelineno-18-16" href="#__codelineno-18-16"></a><span class="p">}</span>
+<a id="__codelineno-18-17" name="__codelineno-18-17" href="#__codelineno-18-17"></a>
+<a id="__codelineno-18-18" name="__codelineno-18-18" href="#__codelineno-18-18"></a><span class="k">type</span><span class="w"> </span><span class="err">Query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-18-19" name="__codelineno-18-19" href="#__codelineno-18-19"></a><span class="w">  </span><span class="nl">getAnimal</span><span class="p">:</span><span class="w"> </span><span class="n">Animal</span><span class="err">!</span>
+<a id="__codelineno-18-20" name="__codelineno-18-20" href="#__codelineno-18-20"></a><span class="p">}</span>
+</code></pre></div>
+<p>Write an inline fragment query projecting different fields per concrete type:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="k">query</span><span class="w"> </span><span class="nf">fetchAnimal</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="w">  </span><span class="n">getAnimal</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">Dog</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="n">breed</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">Cat</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="n">indoor</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="p">}</span>
+</code></pre></div>
+<p>GraphLink generates:</p>
+<ul>
+<li>An <strong>abstract base class</strong> <code>Animal_</code> with a <code>fromJson</code> factory that dispatches on <code>__typename</code></li>
+<li>Concrete classes <code>Dog_IdNameBreed</code> and <code>Cat_IdNameIndoor</code>, each implementing <code>Animal_</code></li>
+<li><code>FetchAnimalResponse</code> with <code>getAnimal</code> typed as <code>Animal_</code></li>
+</ul>
+<div class="highlight"><span class="filename">Usage — fully typed, no casting</span><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="kd">final</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kd">await</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">queries</span><span class="p">.</span><span class="n">fetchAnimal</span><span class="p">();</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="kd">final</span><span class="w"> </span><span class="n">animal</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">res</span><span class="p">.</span><span class="n">getAnimal</span><span class="p">;</span>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">animal</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="w">  </span><span class="k">case</span><span class="w"> </span><span class="n">Dog_IdNameBreed</span><span class="w"> </span><span class="nl">dog:</span>
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a><span class="w">    </span><span class="n">print</span><span class="p">(</span><span class="s1">&#39;Dog: </span><span class="si">${</span><span class="n">dog</span><span class="p">.</span><span class="n">breed</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">);</span>
+<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="w">  </span><span class="k">case</span><span class="w"> </span><span class="n">Cat_IdNameIndoor</span><span class="w"> </span><span class="nl">cat:</span>
+<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a><span class="w">    </span><span class="n">print</span><span class="p">(</span><span class="s1">&#39;Cat, indoor: </span><span class="si">${</span><span class="n">cat</span><span class="p">.</span><span class="n">indoor</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">);</span>
+<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a><span class="p">}</span>
+</code></pre></div>
+<p>The compiler knows every possible concrete type. No <code>Map&lt;String, dynamic&gt;</code>. No manual <code>__typename</code> checks. No casting.</p>
+<hr />
+<h3 id="unions">Unions<a class="headerlink" href="#unions" title="Permanent link">&para;</a></h3>
+<p>Unions work the same way. Each member type gets a concrete class implementing the generated abstract union base:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="k">union</span><span class="w"> </span><span class="err">SearchResult</span><span class="w"> </span><span class="err">=</span><span class="w"> </span><span class="err">Car</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="err">Owner</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="err">Driver</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="k">type</span><span class="w"> </span><span class="err">Query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="w">  </span><span class="n">search</span><span class="p">(</span><span class="n">term</span><span class="p">:</span><span class="w"> </span><span class="no">String</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="err">[</span><span class="n">SearchResult</span><span class="err">!]!</span>
+<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="p">}</span>
+<a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a>
+<a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a><span class="k">query</span><span class="w"> </span><span class="nf">runSearch</span><span class="p">(</span><span class="nv">$term</span><span class="p">:</span><span class="w"> </span><span class="nb">String</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a><span class="w">  </span><span class="n">search</span><span class="p">(</span><span class="n">term</span><span class="p">:</span><span class="w"> </span><span class="nv">$term</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a><span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">Car</span><span class="w">   </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">make</span><span class="w"> </span><span class="n">model</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-21-10" name="__codelineno-21-10" href="#__codelineno-21-10"></a><span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">Owner</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="n">email</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-21-11" name="__codelineno-21-11" href="#__codelineno-21-11"></a><span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">Driver</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="n">licenseNumber</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-21-12" name="__codelineno-21-12" href="#__codelineno-21-12"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-21-13" name="__codelineno-21-13" href="#__codelineno-21-13"></a><span class="p">}</span>
+</code></pre></div>
+<p>Generated abstract class <code>SearchResult_</code> with concrete <code>Car_IdMakeModel</code>, <code>Owner_IdNameEmail</code>, <code>Driver_IdNameLicenseNumber</code> — all dispatched from <code>fromJson</code> based on <code>__typename</code>. The <code>search</code> field on the response is <code>List&lt;SearchResult_&gt;</code> — fully typed, no generics needed at the call site.</p>
+<hr />
+<h3 id="subscriptions">Subscriptions<a class="headerlink" href="#subscriptions" title="Permanent link">&para;</a></h3>
+<p>Subscriptions generate a <code>Stream</code> of the typed response — not <code>Stream&lt;dynamic&gt;</code>, not <code>Stream&lt;Map&lt;String, dynamic&gt;&gt;</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="k">type</span><span class="w"> </span><span class="err">Subscription</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="w">  </span><span class="n">newNotification</span><span class="p">(</span><span class="n">userId</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">Notification</span><span class="err">!</span>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="p">}</span>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="k">subscription</span><span class="w"> </span><span class="nf">watchNotifications</span><span class="p">(</span><span class="nv">$userId</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="w">  </span><span class="n">newNotification</span><span class="p">(</span><span class="n">userId</span><span class="p">:</span><span class="w"> </span><span class="nv">$userId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a><span class="w">    </span><span class="n">id</span>
+<a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a><span class="w">    </span><span class="n">message</span>
+<a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a><span class="w">    </span><span class="n">createdAt</span>
+<a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-22-11" name="__codelineno-22-11" href="#__codelineno-22-11"></a><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><span class="filename">Typed subscription stream</span><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="n">client</span><span class="p">.</span><span class="n">subscriptions</span><span class="p">.</span><span class="n">watchNotifications</span><span class="p">(</span><span class="nl">userId:</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">userId</span><span class="p">).</span><span class="n">listen</span><span class="p">((</span><span class="n">event</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="w">  </span><span class="c1">// event is WatchNotificationsResponse — fully typed</span>
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="n">event</span><span class="p">.</span><span class="n">newNotification</span><span class="p">.</span><span class="n">message</span><span class="p">);</span>
+<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="n">event</span><span class="p">.</span><span class="n">newNotification</span><span class="p">.</span><span class="n">createdAt</span><span class="p">);</span>
+<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="p">});</span>
+</code></pre></div>
+<p>The generated WebSocket adapter handles the <code>graphql-ws</code> protocol, connection init, ping/pong, and exponential-backoff reconnect automatically.</p>
+<hr />
+<h3 id="all-three-together">All three together<a class="headerlink" href="#all-three-together" title="Permanent link">&para;</a></h3>
+<p>The real test: a subscription that returns a <strong>union type</strong>, requiring inline fragments to distinguish the concrete type at runtime. Most tools give up here. GraphLink generates it correctly:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="k">union</span><span class="w"> </span><span class="err">FeedEvent</span><span class="w"> </span><span class="err">=</span><span class="w"> </span><span class="err">NewMessage</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="err">UserJoined</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="err">UserLeft</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="k">type</span><span class="w"> </span><span class="err">Subscription</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="w">  </span><span class="n">feedEvents</span><span class="p">(</span><span class="n">roomId</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">FeedEvent</span><span class="err">!</span>
+<a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a><span class="p">}</span>
+<a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>
+<a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a><span class="k">subscription</span><span class="w"> </span><span class="nf">watchFeed</span><span class="p">(</span><span class="nv">$roomId</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a><span class="w">  </span><span class="n">feedEvents</span><span class="p">(</span><span class="n">roomId</span><span class="p">:</span><span class="w"> </span><span class="nv">$roomId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a><span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">NewMessage</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">authorName</span><span class="w"> </span><span class="n">text</span><span class="w"> </span><span class="n">sentAt</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a><span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">UserJoined</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">username</span><span class="w"> </span><span class="n">joinedAt</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-24-11" name="__codelineno-24-11" href="#__codelineno-24-11"></a><span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">UserLeft</span><span class="w">   </span><span class="p">{</span><span class="w"> </span><span class="n">username</span><span class="w"> </span><span class="n">leftAt</span><span class="w"> </span><span class="n">reason</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-24-12" name="__codelineno-24-12" href="#__codelineno-24-12"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-24-13" name="__codelineno-24-13" href="#__codelineno-24-13"></a><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><span class="filename">Typed stream of a union — no boilerplate</span><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="n">client</span><span class="p">.</span><span class="n">subscriptions</span><span class="p">.</span><span class="n">watchFeed</span><span class="p">(</span><span class="nl">roomId:</span><span class="w"> </span><span class="n">room</span><span class="p">.</span><span class="n">id</span><span class="p">).</span><span class="n">listen</span><span class="p">((</span><span class="n">event</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">feed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">event</span><span class="p">.</span><span class="n">feedEvents</span><span class="p">;</span><span class="w"> </span><span class="c1">// typed as FeedEvent_</span>
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>
+<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="w">  </span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">feed</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a><span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="n">NewMessage_AuthorNameTextSentAt</span><span class="w"> </span><span class="nl">msg:</span>
+<a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a><span class="w">      </span><span class="n">chatLog</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="s1">&#39;[</span><span class="si">${</span><span class="n">msg</span><span class="p">.</span><span class="n">authorName</span><span class="si">}</span><span class="s1">] </span><span class="si">${</span><span class="n">msg</span><span class="p">.</span><span class="n">text</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">);</span>
+<a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a><span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="n">UserJoined_UsernameJoinedAt</span><span class="w"> </span><span class="nl">join:</span>
+<a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a><span class="w">      </span><span class="n">chatLog</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">${</span><span class="n">join</span><span class="p">.</span><span class="n">username</span><span class="si">}</span><span class="s1"> joined&#39;</span><span class="p">);</span>
+<a id="__codelineno-25-9" name="__codelineno-25-9" href="#__codelineno-25-9"></a><span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="n">UserLeft_UsernameLeftAtReason</span><span class="w"> </span><span class="nl">left:</span>
+<a id="__codelineno-25-10" name="__codelineno-25-10" href="#__codelineno-25-10"></a><span class="w">      </span><span class="n">chatLog</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">${</span><span class="n">left</span><span class="p">.</span><span class="n">username</span><span class="si">}</span><span class="s1"> left: </span><span class="si">${</span><span class="n">left</span><span class="p">.</span><span class="n">reason</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">);</span>
+<a id="__codelineno-25-11" name="__codelineno-25-11" href="#__codelineno-25-11"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-25-12" name="__codelineno-25-12" href="#__codelineno-25-12"></a><span class="p">});</span>
+</code></pre></div>
+<p>Every event is dispatched by <code>__typename</code>, every concrete type is fully typed, and the stream reconnects automatically on disconnect. This is what most GraphQL tools describe as "coming soon."</p>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/Oualitsen/graphlink" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["navigation.tabs", "navigation.sections", "content.code.copy", "content.tabs.link"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

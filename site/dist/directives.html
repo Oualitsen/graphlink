@@ -303,7 +303,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="caching.html" class="md-tabs__link">
+        <a href="custom-queries.html" class="md-tabs__link">
           
   
   
@@ -763,6 +763,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="custom-queries.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Queries & Mutations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -1492,7 +1520,7 @@
 <div class="highlight"><span class="filename">directives.graphql</span><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c"># ── Caching ───────────────────────────────────────────────────────────────────</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">directive</span><span class="w"> </span><span class="err">@glCache(</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="err">ttl:</span><span class="w"> </span><span class="err">Int!</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="err">ttl:</span><span class="w"> </span><span class="err">String!</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="err">tags:</span><span class="w"> </span><span class="err">[String!]</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="err">staleIfOffline:</span><span class="w"> </span><span class="err">Boolean</span>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="err">)</span><span class="w"> </span><span class="err">on</span><span class="w"> </span><span class="k">QUERY</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="k">MUTATION</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="k">FIELD</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="k">FIELD_DEFINITION</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="k">OBJECT</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="k">INTERFACE</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="k">UNION</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="k">ENUM</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="k">INPUT_OBJECT</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="k">SCALAR</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="k">SCHEMA</span>
@@ -1558,9 +1586,9 @@
 <tbody>
 <tr>
 <td><code>ttl</code></td>
-<td><code>Int!</code></td>
+<td><code>String!</code></td>
 <td>Yes</td>
-<td>Time-to-live in seconds.</td>
+<td>Time-to-live as a duration string (<code>"30s"</code>, <code>"4m"</code>, <code>"2h"</code>, <code>"1d"</code>) or a bare integer string (<code>"300"</code> = 300 seconds).</td>
 </tr>
 <tr>
 <td><code>tags</code></td>
@@ -1576,10 +1604,53 @@
 </tr>
 </tbody>
 </table>
+<p><strong>TTL duration formats:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Format</th>
+<th>Unit</th>
+<th>Example</th>
+<th>Seconds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>"&lt;n&gt;s"</code></td>
+<td>seconds</td>
+<td><code>"90s"</code></td>
+<td>90</td>
+</tr>
+<tr>
+<td><code>"&lt;n&gt;m"</code></td>
+<td>minutes</td>
+<td><code>"4m"</code></td>
+<td>240</td>
+</tr>
+<tr>
+<td><code>"&lt;n&gt;h"</code></td>
+<td>hours</td>
+<td><code>"2h"</code></td>
+<td>7200</td>
+</tr>
+<tr>
+<td><code>"&lt;n&gt;d"</code></td>
+<td>days</td>
+<td><code>"1d"</code></td>
+<td>86400</td>
+</tr>
+<tr>
+<td><code>"&lt;n&gt;"</code></td>
+<td>seconds (bare)</td>
+<td><code>"300"</code></td>
+<td>300</td>
+</tr>
+</tbody>
+</table>
 <div class="highlight"><span class="filename">Example</span><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">type</span><span class="w"> </span><span class="err">Query</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="n">getVehicle</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">Vehicle</span><span class="err">!</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">120</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="n">getUserProfile</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">UserProfile</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;users&quot;</span><span class="p">],</span><span class="w"> </span><span class="n">staleIfOffline</span><span class="p">:</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nl">getConfig</span><span class="p">:</span><span class="w"> </span><span class="n">AppConfig</span><span class="err">!</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">3600</span><span class="p">)</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="n">getVehicle</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">Vehicle</span><span class="err">!</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2m&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="n">getUserProfile</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">UserProfile</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1m&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;users&quot;</span><span class="p">],</span><span class="w"> </span><span class="n">staleIfOffline</span><span class="p">:</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nl">getConfig</span><span class="p">:</span><span class="w"> </span><span class="n">AppConfig</span><span class="err">!</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1h&quot;</span><span class="p">)</span>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="p">}</span>
 </code></pre></div>
 <hr />
