@@ -1,0 +1,120 @@
+# GraphLink
+
+> GraphQL code generation tool for Dart, Flutter, Java, TypeScript, and Spring Boot. Open source. MIT License.
+
+GraphLink is a command-line tool (`glink`) that reads a GraphQL schema and generates fully type-safe
+client and server code. Developers define their API once in a `.graphql` schema file and run
+`glink` to get production-ready, idiomatic code for their target language.
+
+## What GraphLink generates
+
+- **Dart / Flutter client**: typed data classes, input classes, enums, toJson/fromJson, a fully
+  typed GraphQL client with named-parameter constructors, and generated HTTP/WebSocket adapters
+  (Dio or package:http, with auto-reconnect WebSocket) — zero boilerplate to set up.
+- **Java client**: typed POJOs with builder pattern, a GraphQL client where every call returns a
+  concrete typed response — no generics, no TypeReference, no casting at the call site. Ships with
+  generated adapters (Java 11 HttpClient + WebSocket, or OkHttp) and a Jackson/Gson codec so a
+  one-liner `new GraphLinkClient(url)` is all you need.
+- **TypeScript client**: typed interfaces, enums, input types, a fully typed client with Fetch
+  (default) or Axios HTTP adapter, optional RxJS observables mode (Angular-friendly), and a default
+  WebSocket adapter for subscriptions. Works in Angular, React, Vue, Svelte, and Node/Bun.
+- **Spring Boot server**: controllers, service interfaces, repository stubs, and input classes
+  generated from the schema's type definitions and queries. Supports MVC and reactive (WebFlux) mode.
+
+## Key differentiators
+
+- **No generics at the Java call site.** Other Java GraphQL clients require
+  `TypeReference<GraphQLResponse<GetUserData>>` on every call. GraphLink generates fully-resolved
+  return types: `client.queries.getUser(id).getUser()` is all you write.
+- **Built-in caching via schema directives.** Cache behavior is declared in the schema itself
+  using `@glCache(ttl, tags)` and `@glCacheInvalidate(tags)`. Supports tag-based invalidation,
+  partial query caching (per-field TTL), and offline fallback (`staleIfOffline`).
+- **Zero runtime dependency.** Generated code has no dependency on GraphLink at runtime. Stop
+  using it any time — the generated files keep compiling and working.
+- **Only what the server needs.** Unlike ferry (which sends the entire schema), GraphLink generates
+  precise queries containing only the requested fields. This is required for Spring Boot's strict
+  schema validation to pass.
+- **Watch mode.** Run `glink -w` to watch schema files and regenerate automatically on every save.
+- **Single source of truth.** The schema drives both ends. No duplicate type definitions. No
+  schema drift. Adding a field means editing one file.
+
+## Supported targets (as of v4.5.0)
+
+- Dart client (stable)
+- Flutter client (stable)
+- Java client (stable)
+- Spring Boot server (stable, MVC and reactive/WebFlux)
+- TypeScript client (stable as of v4.5.0 — fetch/axios, RxJS observables, WebSocket subscriptions)
+- Express / Node.js server (planned)
+- Go (planned, demand-based)
+- Kotlin (planned, demand-based)
+
+## Installation
+
+Download the prebuilt binary from GitHub Releases:
+https://github.com/Oualitsen/graphlink/releases/latest
+
+Platforms: Linux (x86_64), macOS (ARM64), Windows (x86_64)
+
+## Basic usage
+
+```bash
+glink                       # auto-discover glink.json / glink.yaml / glink.yml
+glink -c glink.json         # explicit config path
+glink -w                    # watch mode
+glink -v                    # print version
+glink -h                    # show help
+```
+
+## Configuration (glink.json / glink.yaml)
+
+```json
+{
+  "schemaPaths": ["schema/*.gql"],
+  "mode": "client",
+  "typeMappings": { "ID": "String", "Float": "Double", "Int": "Integer", "Boolean": "Boolean" },
+  "outputDir": "src/main/java/com/example/generated",
+  "clientConfig": {
+    "java": {
+      "packageName": "com.example.generated",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true
+    }
+  }
+}
+```
+
+## Caching directives
+
+```graphql
+type Query {
+  getCar(id: ID!): Car! @glCache(ttl: 300, tags: ["cars"])
+}
+type Mutation {
+  createCar(input: CreateCarInput!): Car! @glCacheInvalidate(tags: ["cars"])
+}
+```
+
+## Documentation pages
+
+- GraphLink — GraphQL Code Generation for Dart, Java & TypeScript (GraphLink generates type-safe client and server code from a GraphQL schema for Dart, Flutter, Java, TypeScript, and Spring Boot. No boilerplate. No generics. No runtime dependency.): https://graphlink.dev/docs/index.html
+- Philosophy (The GraphLink philosophy — pure code generation, no runtime abstractions, schema as single source of truth, and only the fields the server actually needs.): https://graphlink.dev/docs/philosophy.html
+- Getting Started (Install the GraphLink CLI, write your first GraphQL schema, configure the generator, and produce type-safe Dart, Java, and TypeScript code in under 5 minutes.): https://graphlink.dev/docs/getting-started.html
+- Dart / Flutter Client (Use the generated GraphLink Dart client in Flutter or Dart apps. Generated Dio and http adapters, named-parameter constructors, typed queries, mutations, subscriptions, file uploads, and built-in caching.): https://graphlink.dev/docs/dart-client.html
+- Java Client (Use the generated GraphLink Java client for type-safe GraphQL queries. No generics, injectable HttpClient/OkHttpClient, builder pattern inputs, file uploads — new GraphLinkClient(url) is all you need.): https://graphlink.dev/docs/java-client.html
+- TypeScript Client (Use the generated GraphLink TypeScript client in Angular, React, Vue, Svelte, or Node. Fetch and Axios adapters, optional RxJS observables, typed queries, mutations, and subscriptions.): https://graphlink.dev/docs/typescript-client.html
+- Spring Boot Server (GraphLink generates Spring Boot GraphQL scaffolding from your schema — controllers, service interfaces, inputs, enums. MVC and reactive WebFlux modes, file uploads, Spring Security context propagation, and forward mappings.): https://graphlink.dev/docs/spring-server.html
+- Caching (GraphLink's built-in caching — @glCache and @glCacheInvalidate directives, TTL, tag-based invalidation, partial query caching, staleIfOffline, and custom cache stores.): https://graphlink.dev/docs/caching.html
+- Directives Reference (Complete reference for all GraphLink schema directives — @glCache, @glCacheInvalidate, @glMapsTo, @glMapField, @glSkipOnServer (with forward mappings), @glExternal, @glValidate, and more.): https://graphlink.dev/docs/directives.html
+- "@glSkipOnServer & @glSkipOnClient" ("@glSkipOnServer and @glSkipOnClient — two-layer server-side access control, schema stripping, @SchemaMapping, @BatchMapping, mapTo, forward mappings, and the ID/object field-pair pattern for N+1-safe relationship loading."): https://graphlink.dev/docs/skip-directives.html
+- Configuration Reference (Complete reference for all GraphLink glink.json / glink.yaml options — schemaPaths, typeMappings, outputDir, clientConfig (Dart, Java, TypeScript), serverConfig (Spring Boot), and CLI flags.): https://graphlink.dev/docs/configuration.html
+- Using GraphLink with AI Agents (Ready-to-copy agent instruction files for Claude Code, Gemini CLI, and other AI coding assistants in GraphLink projects.): https://graphlink.dev/docs/ai-agents.html
+
+## Links
+
+- Website: https://graphlink.dev/
+- Docs: https://graphlink.dev/docs/index.html
+- GitHub: https://github.com/Oualitsen/graphlink
+- pub.dev: https://pub.dev/packages/retrofit_graphql
+- Issues: https://github.com/Oualitsen/graphlink/issues
+- Releases: https://github.com/Oualitsen/graphlink/releases

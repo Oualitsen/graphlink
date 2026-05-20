@@ -30,7 +30,7 @@ void main() {
     );
   });
 
-  test("glCache directive validation when ttl is invalid", () {
+  test("glCache directive validation when ttl is invalid string", () {
     final GLParser g = GLParser(
       autoGenerateQueries: true,
       generateAllFieldsFragments: true,
@@ -52,8 +52,120 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains(
-            'ttl on @glCache directives should be a positive integer! found: "invaidValue"'),
+        contains('$glCacheTTL on $glCache must be a positive duration'),
+      )),
+    );
+  });
+
+  test("glCache ttl accepts seconds string", () {
+    final GLParser g = GLParser(
+      autoGenerateQueries: true,
+      generateAllFieldsFragments: true,
+    );
+
+    const text = '''
+  type Person { id: ID! }
+  type Query {
+    getPerson: Person ${glCache}(ttl: "90s")
+  }
+''';
+
+    g.parse(text);
+    final directive = g.directiveValues.firstWhere((d) => d.token == glCache);
+    expect(directive.getArgValue(glCacheTTL), 90);
+  });
+
+  test("glCache ttl accepts minutes string", () {
+    final GLParser g = GLParser(
+      autoGenerateQueries: true,
+      generateAllFieldsFragments: true,
+    );
+
+    const text = '''
+  type Person { id: ID! }
+  type Query {
+    getPerson: Person ${glCache}(ttl: "4m")
+  }
+''';
+
+    g.parse(text);
+    final directive = g.directiveValues.firstWhere((d) => d.token == glCache);
+    expect(directive.getArgValue(glCacheTTL), 240);
+  });
+
+  test("glCache ttl accepts hours string", () {
+    final GLParser g = GLParser(
+      autoGenerateQueries: true,
+      generateAllFieldsFragments: true,
+    );
+
+    const text = '''
+  type Person { id: ID! }
+  type Query {
+    getPerson: Person ${glCache}(ttl: "2h")
+  }
+''';
+
+    g.parse(text);
+    final directive = g.directiveValues.firstWhere((d) => d.token == glCache);
+    expect(directive.getArgValue(glCacheTTL), 7200);
+  });
+
+  test("glCache ttl accepts days string", () {
+    final GLParser g = GLParser(
+      autoGenerateQueries: true,
+      generateAllFieldsFragments: true,
+    );
+
+    const text = '''
+  type Person { id: ID! }
+  type Query {
+    getPerson: Person ${glCache}(ttl: "1d")
+  }
+''';
+
+    g.parse(text);
+    final directive = g.directiveValues.firstWhere((d) => d.token == glCache);
+    expect(directive.getArgValue(glCacheTTL), 86400);
+  });
+
+  test("glCache ttl accepts bare integer string", () {
+    final GLParser g = GLParser(
+      autoGenerateQueries: true,
+      generateAllFieldsFragments: true,
+    );
+
+    const text = '''
+  type Person { id: ID! }
+  type Query {
+    getPerson: Person ${glCache}(ttl: "300")
+  }
+''';
+
+    g.parse(text);
+    final directive = g.directiveValues.firstWhere((d) => d.token == glCache);
+    expect(directive.getArgValue(glCacheTTL), 300);
+  });
+
+  test("glCache ttl rejects zero duration string", () {
+    final GLParser g = GLParser(
+      autoGenerateQueries: true,
+      generateAllFieldsFragments: true,
+    );
+
+    const text = '''
+  type Person { id: ID! }
+  type Query {
+    getPerson: Person ${glCache}(ttl: "0m")
+  }
+''';
+
+    expect(
+      () => g.parse(text),
+      throwsA(isA<ParseException>().having(
+        (e) => e.errorMessage,
+        'errorMessage',
+        contains('$glCacheTTL on $glCache must be a positive duration'),
       )),
     );
   });

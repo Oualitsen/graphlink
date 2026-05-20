@@ -19,25 +19,35 @@ Annotate any query field with `@glCache` to have its response cached:
 
 ```graphql title="@glCache directive"
 type Query {
-  # Cache for 120 seconds, tagged "vehicles"
-  getVehicle(id: ID!): Vehicle! @glCache(ttl: 120, tags: ["vehicles"])
+  # Cache for 2 minutes, tagged "vehicles"
+  getVehicle(id: ID!): Vehicle! @glCache(ttl: "2m", tags: ["vehicles"])
 
-  # Cache for 60 seconds, same tag group
-  listVehicles: [Vehicle!]! @glCache(ttl: 60, tags: ["vehicles"])
+  # Cache for 1 minute, same tag group
+  listVehicles: [Vehicle!]! @glCache(ttl: "1m", tags: ["vehicles"])
 
-  # Cache for 300 seconds, no tags (cannot be tag-invalidated)
-  getStaticConfig: AppConfig! @glCache(ttl: 300)
+  # Cache for 5 minutes, no tags (cannot be tag-invalidated)
+  getStaticConfig: AppConfig! @glCache(ttl: "5m")
 
   # Cache with staleIfOffline — serve stale data if network fails
-  getUserProfile(id: ID!): UserProfile @glCache(ttl: 60, staleIfOffline: true)
+  getUserProfile(id: ID!): UserProfile @glCache(ttl: "1m", staleIfOffline: true)
 }
 ```
 
 | Argument | Type | Required | Description |
 |---|---|---|---|
-| `ttl` | `Int` | Yes | Time-to-live in seconds. After this duration, the entry is considered expired and the next call will hit the server. |
+| `ttl` | `String` | Yes | Time-to-live as a duration string. After this duration, the entry is expired and the next call hits the server. |
 | `tags` | `[String!]` | No | List of tags to associate with this cache entry. Used for group invalidation via `@glCacheInvalidate`. |
 | `staleIfOffline` | `Boolean` | No | If `true`, serve the expired cached value when the network call fails instead of throwing. |
+
+**TTL duration formats:**
+
+| Format | Unit | Example | Equivalent |
+|--------|------|---------|------------|
+| `"<n>s"` | seconds | `"90s"` | 90 seconds |
+| `"<n>m"` | minutes | `"4m"` | 240 seconds |
+| `"<n>h"` | hours | `"2h"` | 7 200 seconds |
+| `"<n>d"` | days | `"1d"` | 86 400 seconds |
+| `"<n>"` | seconds (bare) | `"300"` | 300 seconds |
 
 ## Cache keys
 
@@ -81,9 +91,9 @@ This allows a single mutation to invalidate many different cached queries at onc
 
 ```graphql title="Tag invalidation in action"
 type Query {
-  getVehicle(id: ID!): Vehicle!       @glCache(ttl: 120, tags: ["vehicles"])
-  listVehicles: [Vehicle!]!           @glCache(ttl: 60,  tags: ["vehicles"])
-  getFleet(ownerId: ID!): [Vehicle!]! @glCache(ttl: 90,  tags: ["vehicles"])
+  getVehicle(id: ID!): Vehicle!       @glCache(ttl: "2m", tags: ["vehicles"])
+  listVehicles: [Vehicle!]!           @glCache(ttl: "1m", tags: ["vehicles"])
+  getFleet(ownerId: ID!): [Vehicle!]! @glCache(ttl: "90s", tags: ["vehicles"])
 }
 
 type Mutation {
@@ -105,8 +115,8 @@ The result: if one tag is invalidated, only the affected portion of the query is
 ```graphql title="Partial caching — schema"
 type Query {
   # These two aliases will be cached separately
-  vehicle: Vehicle! @glCache(ttl: 120, tags: ["vehicles"])
-  owner:   Person!  @glCache(ttl: 300, tags: ["persons"])
+  vehicle: Vehicle! @glCache(ttl: "2m",  tags: ["vehicles"])
+  owner:   Person!  @glCache(ttl: "5m", tags: ["persons"])
 }
 ```
 
@@ -128,10 +138,10 @@ This is especially useful on mobile apps where network connectivity is unreliabl
 ```graphql title="staleIfOffline example"
 type Query {
   # If expired and network fails, return the last known value
-  getUserProfile(id: ID!): UserProfile @glCache(ttl: 60, staleIfOffline: true)
+  getUserProfile(id: ID!): UserProfile @glCache(ttl: "1m", staleIfOffline: true)
 
   # Without staleIfOffline — throws on network failure after TTL
-  getVehicle(id: ID!): Vehicle! @glCache(ttl: 120)
+  getVehicle(id: ID!): Vehicle! @glCache(ttl: "2m")
 }
 ```
 
