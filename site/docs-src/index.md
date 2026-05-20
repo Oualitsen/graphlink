@@ -1,11 +1,318 @@
 ---
-title: Documentation — GraphLink
-description: Complete GraphLink documentation — from installation and first schema to Dart/Flutter, Java, and TypeScript clients, Spring Boot server generation, and built-in caching.
+title: GraphLink — GraphQL Code Generation for Dart, Flutter & Java
+description: GraphLink generates type-safe client and server code from a GraphQL schema for Dart, Flutter, Java, TypeScript, and Spring Boot. No boilerplate. No generics. No runtime dependency.
 ---
 
-# Documentation
+# GraphLink
 
-Everything you need to know about GraphLink — from first schema to production deployment.
+> Define your GraphQL schema once. Get fully typed client **and** server code — for Dart, Flutter, Java, TypeScript, and Spring Boot — in milliseconds.
+
+[![pub.dev](https://img.shields.io/pub/v/graphlink?label=pub.dev)](https://pub.dev/packages/graphlink)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Oualitsen/graphlink/blob/main/LICENSE)
+[![GitHub Releases](https://img.shields.io/github/v/release/Oualitsen/graphlink)](https://github.com/Oualitsen/graphlink/releases/latest)
+
+No runtime. No boilerplate. No schema drift.
+
+---
+
+## In production
+
+Measured in [Optidialysis](https://www.optidialysis.com/) — a multi-tenant dialysis clinic management platform running GraphLink-generated code.
+
+| Metric | Value |
+|---|---|
+| Spring Boot files generated | **72%** |
+| Spring Boot lines generated | **64%** |
+| Flutter codebase generated | **21.5%** |
+| Files written by hand (entire backend) | **135 files (~11.8k lines)** |
+
+Controllers, service interfaces, DTOs, input classes, enums — all generated.
+Every generated file compiles, ships, and runs with **zero runtime dependency** on GraphLink.
+
+---
+
+## Why GraphLink?
+
+**No generics at the Java call site.**
+Every other Java GraphQL client makes you write `TypeReference<GraphQLResponse<Map<String,Object>>>`. GraphLink generates fully-resolved return types:
+
+```java
+// Other clients
+GraphQLResponse<GetUserData> res = client.execute(query, vars,
+    new TypeReference<GraphQLResponse<GetUserData>>() {});
+User user = res.getData().getGetUser();
+
+// GraphLink
+User user = client.queries.getUser("42").getUser();
+```
+
+**Cache control belongs in your schema.**
+Declare caching once with `@glCache` and `@glCacheInvalidate` — the generated client handles TTL, tag-based invalidation, partial query caching, and offline fallback automatically.
+
+**Only what the server needs.**
+GraphLink generates minimal, precise query strings — no full-schema dumps that break Spring Boot's strict GraphQL validation.
+
+**Single source of truth.**
+One `.graphql` file drives the Dart client, the Java client, and the Spring Boot controllers. Add a field once, regenerate, both ends stay in sync.
+
+---
+
+## Supported targets
+
+| Target | Status |
+|---|---|
+| Dart client | ✅ Stable |
+| Flutter client | ✅ Stable |
+| Java client | ✅ Stable |
+| Spring Boot server | ✅ Stable |
+| TypeScript client | ✅ Stable |
+| Express / Node.js | 📋 Planned |
+| Go, Kotlin | 📋 On demand |
+
+---
+
+## Installation
+
+Download the single self-contained binary — no JVM, no package manager required.
+
+=== "macOS (ARM)"
+
+    ```bash
+    curl -fsSL https://github.com/Oualitsen/graphlink/releases/latest/download/glink-macos-arm64 -o glink
+    chmod +x glink && sudo mv glink /usr/local/bin/glink
+    ```
+
+=== "macOS (x64)"
+
+    ```bash
+    curl -fsSL https://github.com/Oualitsen/graphlink/releases/latest/download/glink-macos-x64 -o glink
+    chmod +x glink && sudo mv glink /usr/local/bin/glink
+    ```
+
+=== "Linux (x64)"
+
+    ```bash
+    curl -fsSL https://github.com/Oualitsen/graphlink/releases/latest/download/glink-linux-x64 -o glink
+    chmod +x glink && sudo mv glink /usr/local/bin/glink
+    ```
+
+=== "Windows"
+
+    Download [`glink-windows-x64.exe`](https://github.com/Oualitsen/graphlink/releases/latest) and add it to your PATH.
+
+=== "Dart / Flutter (pub)"
+
+    ```bash
+    flutter pub add --dev graphlink
+    # or
+    dart pub add --dev graphlink
+    ```
+
+---
+
+## Quick Start
+
+### 1. Write your schema
+
+```graphql
+type Vehicle {
+  id: ID!
+  brand: String!
+  model: String!
+  year: Int!
+  fuelType: FuelType!
+}
+
+enum FuelType { GASOLINE DIESEL ELECTRIC HYBRID }
+
+input AddVehicleInput {
+  brand: String!
+  model: String!
+  year: Int!
+  fuelType: FuelType!
+}
+
+type Query {
+  getVehicle(id: ID!): Vehicle!  @glCache(ttl: 120, tags: ["vehicles"])
+  listVehicles: [Vehicle!]!      @glCache(ttl: 60,  tags: ["vehicles"])
+}
+
+type Mutation {
+  addVehicle(input: AddVehicleInput!): Vehicle! @glCacheInvalidate(tags: ["vehicles"])
+}
+```
+
+### 2. Configure
+
+=== "Dart / Flutter"
+
+    === "JSON"
+
+        ```json
+        {
+          "schemaPaths": ["lib/**/*.graphql"],
+          "mode": "client",
+          "typeMappings": { "ID": "String", "Float": "double", "Int": "int", "Boolean": "bool" },
+          "outputDir": "lib/generated",
+          "clientConfig": {
+            "dart": {
+              "packageName": "my_app",
+              "generateAllFieldsFragments": true,
+              "autoGenerateQueries": true
+            }
+          }
+        }
+        ```
+
+    === "YAML"
+
+        ```yaml
+        schemaPaths:
+          - lib/**/*.graphql
+        mode: client
+        typeMappings:
+          ID: String
+          Float: double
+          Int: int
+          Boolean: bool
+        outputDir: lib/generated
+        clientConfig:
+          dart:
+            packageName: my_app
+            generateAllFieldsFragments: true
+            autoGenerateQueries: true
+        ```
+
+=== "Java client"
+
+    === "JSON"
+
+        ```json
+        {
+          "schemaPaths": ["schema/*.graphql"],
+          "mode": "client",
+          "typeMappings": { "ID": "String", "Float": "Double", "Int": "Integer", "Boolean": "Boolean" },
+          "outputDir": "src/main/java/com/example/generated",
+          "clientConfig": {
+            "java": {
+              "packageName": "com.example.generated",
+              "generateAllFieldsFragments": true,
+              "autoGenerateQueries": true
+            }
+          }
+        }
+        ```
+
+    === "YAML"
+
+        ```yaml
+        schemaPaths:
+          - schema/*.graphql
+        mode: client
+        typeMappings:
+          ID: String
+          Float: Double
+          Int: Integer
+          Boolean: Boolean
+        outputDir: src/main/java/com/example/generated
+        clientConfig:
+          java:
+            packageName: com.example.generated
+            generateAllFieldsFragments: true
+            autoGenerateQueries: true
+        ```
+
+=== "TypeScript"
+
+    === "JSON"
+
+        ```json
+        {
+          "schemaPaths": ["schema/*.graphql"],
+          "mode": "client",
+          "typeMappings": { "ID": "string", "Float": "number", "Int": "number", "Boolean": "boolean" },
+          "outputDir": "src/generated",
+          "clientConfig": {
+            "typescript": {
+              "generateAllFieldsFragments": true,
+              "autoGenerateQueries": true,
+              "httpAdapter": "fetch"
+            }
+          }
+        }
+        ```
+
+    === "YAML"
+
+        ```yaml
+        schemaPaths:
+          - schema/*.graphql
+        mode: client
+        typeMappings:
+          ID: string
+          Float: number
+          Int: number
+          Boolean: boolean
+        outputDir: src/generated
+        clientConfig:
+          typescript:
+            generateAllFieldsFragments: true
+            autoGenerateQueries: true
+            httpAdapter: fetch
+        ```
+
+=== "Spring Boot server"
+
+    === "JSON"
+
+        ```json
+        {
+          "schemaPaths": ["src/main/resources/graphql/*.graphqls"],
+          "mode": "server",
+          "typeMappings": { "ID": "String", "Float": "Double", "Int": "Integer", "Boolean": "Boolean" },
+          "outputDir": "src/main/java/com/example/generated",
+          "serverConfig": {
+            "spring": {
+              "basePackage": "com.example.generated",
+              "generateControllers": true,
+              "generateInputs": true,
+              "generateTypes": true
+            }
+          }
+        }
+        ```
+
+    === "YAML"
+
+        ```yaml
+        schemaPaths:
+          - src/main/resources/graphql/*.graphqls
+        mode: server
+        typeMappings:
+          ID: String
+          Float: Double
+          Int: Integer
+          Boolean: Boolean
+        outputDir: src/main/java/com/example/generated
+        serverConfig:
+          spring:
+            basePackage: com.example.generated
+            generateControllers: true
+            generateInputs: true
+            generateTypes: true
+        ```
+
+### 3. Generate
+
+```bash
+glink                   # auto-discovers glink.json / glink.yaml / glink.yml
+glink -c glink.json     # explicit config path
+glink -w                # watch mode — regenerate on every save
+```
+
+---
+
+## Documentation
 
 <div class="grid cards" markdown>
 
@@ -17,66 +324,59 @@ Everything you need to know about GraphLink — from first schema to production 
 - **[Spring Boot](spring-server.md)** — Generated controllers, service interfaces, types, inputs.
 - **[Caching](caching.md)** — `@glCache` and `@glCacheInvalidate`. Tag-based invalidation.
 - **[Directives](directives.md)** — Complete reference for all GraphLink directives.
-- **[Configuration](configuration.md)** — Every `config.json` option explained.
+- **[Configuration](configuration.md)** — Every `glink.json` / `glink.yaml` option explained.
+- **[AI Agents](ai-agents.md)** — Ready-to-copy instructions for Claude Code, Gemini CLI, and others.
 
 </div>
 
-## The schema used throughout these docs
+---
 
-All examples in this documentation use the following schema. It covers every major GraphLink feature: types, enums, inputs, queries, mutations, subscriptions, and cache directives.
+## FAQ
 
-```graphql title="schema.graphql"
-enum FuelType {
-  GASOLINE
-  DIESEL
-  ELECTRIC
-  HYBRID
-}
+??? "Does the generated code have a runtime dependency on GraphLink?"
 
-type Person {
-  id: ID!
-  name: String!
-  email: String!
-  vehicles: [Vehicle!]!
-}
+    No. If you stop using GraphLink tomorrow, every generated file continues to compile
+    and work exactly as before. The output is ordinary Dart, Java, or TypeScript code —
+    you own it completely.
 
-type Vehicle {
-  id: ID!
-  brand: String!
-  model: String!
-  year: Int!
-  fuelType: FuelType!
-  ownerId: ID
-}
+??? "Does the Java client use generics at the call site?"
 
-input AddPersonInput {
-  name: String!
-  email: String!
-}
+    Never. GraphLink generates fully-resolved return types for every query and mutation.
+    The call site is just `client.queries.getUser(id).getUser()` — no `TypeReference`,
+    no casting, no generic parameters.
 
-input AddVehicleInput {
-  brand: String!
-  model: String!
-  year: Int!
-  fuelType: FuelType!
-  ownerId: ID
-}
+??? "What happens when I add a field to the schema?"
 
-type Query {
-  getPerson(id: ID!): Person
-  getVehicle(id: ID!): Vehicle!  @glCache(ttl: 120, tags: ["vehicles"])
-  listVehicles: [Vehicle!]!      @glCache(ttl: 60,  tags: ["vehicles"])
-}
+    Run `glink` again (or `glink -c glink.json`) (or let watch mode pick it up automatically).
+    All affected files are regenerated and the new field is immediately available as a
+    typed property. One file to edit — GraphLink handles the rest.
 
-type Mutation {
-  addPerson(input: AddPersonInput!): Person!
-  addVehicle(input: AddVehicleInput!): Vehicle! @glCacheInvalidate(tags: ["vehicles"])
-}
+??? "How does the built-in caching work?"
 
-type Subscription {
-  vehicleAdded: Vehicle!
-}
-```
+    Cache behaviour is declared in the schema using two directives.
+    `@glCache(ttl: 300, tags: ["cars"])` caches a query result for 300 seconds under the
+    tag `"cars"`. `@glCacheInvalidate(tags: ["cars"])` on a mutation evicts all entries
+    tagged `"cars"` when the mutation succeeds. Individual fields inside a compound query
+    can each carry their own TTL — if one tag is invalidated, the others stay warm.
 
-!!! info "What this schema exercises"
-    `FuelType` is an enum — GraphLink generates serialization in both directions. `Person` and `Vehicle` are types with nullable/non-nullable fields. `AddPersonInput` and `AddVehicleInput` are input types. `getVehicle` and `listVehicles` use `@glCache` with tags. `addVehicle` uses `@glCacheInvalidate` — when it runs, all entries tagged `"vehicles"` are evicted. `vehicleAdded` is a subscription backed by a WebSocket connection.
+??? "Is GraphLink production-ready?"
+
+    Yes. In one production deployment (multi-tenant SaaS, dialysis clinic management),
+    72% of Spring Boot files and 64% of lines are generated — only 135 files (~11.8k lines)
+    were written by hand across the entire backend. On the Flutter side, 21.5% of the
+    codebase is generated, covering all DTOs, input classes, enums, and GraphQL client wiring.
+
+??? "Can I use GraphLink with an existing project?"
+
+    Yes. Point `schemaPaths` at your existing `.graphql` files and set `outputDir` to
+    wherever you want the generated files. GraphLink does not modify any of your existing
+    source files.
+
+??? "What languages and frameworks are supported?"
+
+    Dart and Flutter (client), Java (client), TypeScript (client), and Spring Boot (server).
+    Express/Node.js server generation and Go/Kotlin targets are planned based on community demand.
+
+---
+
+Issues and contributions welcome at [github.com/Oualitsen/graphlink](https://github.com/Oualitsen/graphlink).

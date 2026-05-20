@@ -4,7 +4,7 @@
 
 GraphLink is a command-line tool (`glink`) that reads a GraphQL schema and generates fully type-safe
 client and server code. Developers define their API once in a `.graphql` schema file and run
-`glink -c config.json` to get production-ready, idiomatic code for their target language.
+`glink` to get production-ready, idiomatic code for their target language.
 
 ## What GraphLink generates
 
@@ -72,13 +72,13 @@ Platforms: Linux (x86_64), macOS (ARM64), Windows (x86_64)
 
 ```bash
 glink                   # auto-discover glink.json / glink.yaml / glink.yml
-glink -c config.json    # explicit config path (JSON, YAML, or YML)
+glink -c glink.json     # explicit config path (JSON, YAML, or YML)
 glink -w                # watch mode — regenerate on schema change
 glink -v                # print version
 glink -h                # show help
 ```
 
-## Configuration (config.json)
+## Configuration (glink.json / glink.yaml)
 
 ```json
 {
@@ -134,9 +134,316 @@ type Mutation {
 
 ---
 
-# Documentation
+# GraphLink
 
-Everything you need to know about GraphLink — from first schema to production deployment.
+> Define your GraphQL schema once. Get fully typed client **and** server code — for Dart, Flutter, Java, TypeScript, and Spring Boot — in milliseconds.
+
+[![pub.dev](https://img.shields.io/pub/v/graphlink?label=pub.dev)](https://pub.dev/packages/graphlink)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Oualitsen/graphlink/blob/main/LICENSE)
+[![GitHub Releases](https://img.shields.io/github/v/release/Oualitsen/graphlink)](https://github.com/Oualitsen/graphlink/releases/latest)
+
+No runtime. No boilerplate. No schema drift.
+
+---
+
+## In production
+
+Measured in [Optidialysis](https://www.optidialysis.com/) — a multi-tenant dialysis clinic management platform running GraphLink-generated code.
+
+| Metric | Value |
+|---|---|
+| Spring Boot files generated | **72%** |
+| Spring Boot lines generated | **64%** |
+| Flutter codebase generated | **21.5%** |
+| Files written by hand (entire backend) | **135 files (~11.8k lines)** |
+
+Controllers, service interfaces, DTOs, input classes, enums — all generated.
+Every generated file compiles, ships, and runs with **zero runtime dependency** on GraphLink.
+
+---
+
+## Why GraphLink?
+
+**No generics at the Java call site.**
+Every other Java GraphQL client makes you write `TypeReference<GraphQLResponse<Map<String,Object>>>`. GraphLink generates fully-resolved return types:
+
+```java
+// Other clients
+GraphQLResponse<GetUserData> res = client.execute(query, vars,
+    new TypeReference<GraphQLResponse<GetUserData>>() {});
+User user = res.getData().getGetUser();
+
+// GraphLink
+User user = client.queries.getUser("42").getUser();
+```
+
+**Cache control belongs in your schema.**
+Declare caching once with `@glCache` and `@glCacheInvalidate` — the generated client handles TTL, tag-based invalidation, partial query caching, and offline fallback automatically.
+
+**Only what the server needs.**
+GraphLink generates minimal, precise query strings — no full-schema dumps that break Spring Boot's strict GraphQL validation.
+
+**Single source of truth.**
+One `.graphql` file drives the Dart client, the Java client, and the Spring Boot controllers. Add a field once, regenerate, both ends stay in sync.
+
+---
+
+## Supported targets
+
+| Target | Status |
+|---|---|
+| Dart client | ✅ Stable |
+| Flutter client | ✅ Stable |
+| Java client | ✅ Stable |
+| Spring Boot server | ✅ Stable |
+| TypeScript client | ✅ Stable |
+| Express / Node.js | 📋 Planned |
+| Go, Kotlin | 📋 On demand |
+
+---
+
+## Installation
+
+Download the single self-contained binary — no JVM, no package manager required.
+
+=== "macOS (ARM)"
+
+    ```bash
+    curl -fsSL https://github.com/Oualitsen/graphlink/releases/latest/download/glink-macos-arm64 -o glink
+    chmod +x glink && sudo mv glink /usr/local/bin/glink
+    ```
+
+=== "macOS (x64)"
+
+    ```bash
+    curl -fsSL https://github.com/Oualitsen/graphlink/releases/latest/download/glink-macos-x64 -o glink
+    chmod +x glink && sudo mv glink /usr/local/bin/glink
+    ```
+
+=== "Linux (x64)"
+
+    ```bash
+    curl -fsSL https://github.com/Oualitsen/graphlink/releases/latest/download/glink-linux-x64 -o glink
+    chmod +x glink && sudo mv glink /usr/local/bin/glink
+    ```
+
+=== "Windows"
+
+    Download [`glink-windows-x64.exe`](https://github.com/Oualitsen/graphlink/releases/latest) and add it to your PATH.
+
+=== "Dart / Flutter (pub)"
+
+    ```bash
+    flutter pub add --dev graphlink
+    # or
+    dart pub add --dev graphlink
+    ```
+
+---
+
+## Quick Start
+
+### 1. Write your schema
+
+```graphql
+type Vehicle {
+  id: ID!
+  brand: String!
+  model: String!
+  year: Int!
+  fuelType: FuelType!
+}
+
+enum FuelType { GASOLINE DIESEL ELECTRIC HYBRID }
+
+input AddVehicleInput {
+  brand: String!
+  model: String!
+  year: Int!
+  fuelType: FuelType!
+}
+
+type Query {
+  getVehicle(id: ID!): Vehicle!  @glCache(ttl: 120, tags: ["vehicles"])
+  listVehicles: [Vehicle!]!      @glCache(ttl: 60,  tags: ["vehicles"])
+}
+
+type Mutation {
+  addVehicle(input: AddVehicleInput!): Vehicle! @glCacheInvalidate(tags: ["vehicles"])
+}
+```
+
+### 2. Configure
+
+=== "Dart / Flutter"
+
+    === "JSON"
+
+        ```json
+        {
+          "schemaPaths": ["lib/**/*.graphql"],
+          "mode": "client",
+          "typeMappings": { "ID": "String", "Float": "double", "Int": "int", "Boolean": "bool" },
+          "outputDir": "lib/generated",
+          "clientConfig": {
+            "dart": {
+              "packageName": "my_app",
+              "generateAllFieldsFragments": true,
+              "autoGenerateQueries": true
+            }
+          }
+        }
+        ```
+
+    === "YAML"
+
+        ```yaml
+        schemaPaths:
+          - lib/**/*.graphql
+        mode: client
+        typeMappings:
+          ID: String
+          Float: double
+          Int: int
+          Boolean: bool
+        outputDir: lib/generated
+        clientConfig:
+          dart:
+            packageName: my_app
+            generateAllFieldsFragments: true
+            autoGenerateQueries: true
+        ```
+
+=== "Java client"
+
+    === "JSON"
+
+        ```json
+        {
+          "schemaPaths": ["schema/*.graphql"],
+          "mode": "client",
+          "typeMappings": { "ID": "String", "Float": "Double", "Int": "Integer", "Boolean": "Boolean" },
+          "outputDir": "src/main/java/com/example/generated",
+          "clientConfig": {
+            "java": {
+              "packageName": "com.example.generated",
+              "generateAllFieldsFragments": true,
+              "autoGenerateQueries": true
+            }
+          }
+        }
+        ```
+
+    === "YAML"
+
+        ```yaml
+        schemaPaths:
+          - schema/*.graphql
+        mode: client
+        typeMappings:
+          ID: String
+          Float: Double
+          Int: Integer
+          Boolean: Boolean
+        outputDir: src/main/java/com/example/generated
+        clientConfig:
+          java:
+            packageName: com.example.generated
+            generateAllFieldsFragments: true
+            autoGenerateQueries: true
+        ```
+
+=== "TypeScript"
+
+    === "JSON"
+
+        ```json
+        {
+          "schemaPaths": ["schema/*.graphql"],
+          "mode": "client",
+          "typeMappings": { "ID": "string", "Float": "number", "Int": "number", "Boolean": "boolean" },
+          "outputDir": "src/generated",
+          "clientConfig": {
+            "typescript": {
+              "generateAllFieldsFragments": true,
+              "autoGenerateQueries": true,
+              "httpAdapter": "fetch"
+            }
+          }
+        }
+        ```
+
+    === "YAML"
+
+        ```yaml
+        schemaPaths:
+          - schema/*.graphql
+        mode: client
+        typeMappings:
+          ID: string
+          Float: number
+          Int: number
+          Boolean: boolean
+        outputDir: src/generated
+        clientConfig:
+          typescript:
+            generateAllFieldsFragments: true
+            autoGenerateQueries: true
+            httpAdapter: fetch
+        ```
+
+=== "Spring Boot server"
+
+    === "JSON"
+
+        ```json
+        {
+          "schemaPaths": ["src/main/resources/graphql/*.graphqls"],
+          "mode": "server",
+          "typeMappings": { "ID": "String", "Float": "Double", "Int": "Integer", "Boolean": "Boolean" },
+          "outputDir": "src/main/java/com/example/generated",
+          "serverConfig": {
+            "spring": {
+              "basePackage": "com.example.generated",
+              "generateControllers": true,
+              "generateInputs": true,
+              "generateTypes": true
+            }
+          }
+        }
+        ```
+
+    === "YAML"
+
+        ```yaml
+        schemaPaths:
+          - src/main/resources/graphql/*.graphqls
+        mode: server
+        typeMappings:
+          ID: String
+          Float: Double
+          Int: Integer
+          Boolean: Boolean
+        outputDir: src/main/java/com/example/generated
+        serverConfig:
+          spring:
+            basePackage: com.example.generated
+            generateControllers: true
+            generateInputs: true
+            generateTypes: true
+        ```
+
+### 3. Generate
+
+```bash
+glink                   # auto-discovers glink.json / glink.yaml / glink.yml
+glink -c glink.json     # explicit config path
+glink -w                # watch mode — regenerate on every save
+```
+
+---
+
+## Documentation
 
 <div class="grid cards" markdown>
 
@@ -148,69 +455,62 @@ Everything you need to know about GraphLink — from first schema to production 
 - **[Spring Boot](spring-server.md)** — Generated controllers, service interfaces, types, inputs.
 - **[Caching](caching.md)** — `@glCache` and `@glCacheInvalidate`. Tag-based invalidation.
 - **[Directives](directives.md)** — Complete reference for all GraphLink directives.
-- **[Configuration](configuration.md)** — Every `config.json` option explained.
+- **[Configuration](configuration.md)** — Every `glink.json` / `glink.yaml` option explained.
+- **[AI Agents](ai-agents.md)** — Ready-to-copy instructions for Claude Code, Gemini CLI, and others.
 
 </div>
 
-## The schema used throughout these docs
+---
 
-All examples in this documentation use the following schema. It covers every major GraphLink feature: types, enums, inputs, queries, mutations, subscriptions, and cache directives.
+## FAQ
 
-```graphql title="schema.graphql"
-enum FuelType {
-  GASOLINE
-  DIESEL
-  ELECTRIC
-  HYBRID
-}
+??? "Does the generated code have a runtime dependency on GraphLink?"
 
-type Person {
-  id: ID!
-  name: String!
-  email: String!
-  vehicles: [Vehicle!]!
-}
+    No. If you stop using GraphLink tomorrow, every generated file continues to compile
+    and work exactly as before. The output is ordinary Dart, Java, or TypeScript code —
+    you own it completely.
 
-type Vehicle {
-  id: ID!
-  brand: String!
-  model: String!
-  year: Int!
-  fuelType: FuelType!
-  ownerId: ID
-}
+??? "Does the Java client use generics at the call site?"
 
-input AddPersonInput {
-  name: String!
-  email: String!
-}
+    Never. GraphLink generates fully-resolved return types for every query and mutation.
+    The call site is just `client.queries.getUser(id).getUser()` — no `TypeReference`,
+    no casting, no generic parameters.
 
-input AddVehicleInput {
-  brand: String!
-  model: String!
-  year: Int!
-  fuelType: FuelType!
-  ownerId: ID
-}
+??? "What happens when I add a field to the schema?"
 
-type Query {
-  getPerson(id: ID!): Person
-  getVehicle(id: ID!): Vehicle!  @glCache(ttl: 120, tags: ["vehicles"])
-  listVehicles: [Vehicle!]!      @glCache(ttl: 60,  tags: ["vehicles"])
-}
+    Run `glink` again (or `glink -c glink.json`) (or let watch mode pick it up automatically).
+    All affected files are regenerated and the new field is immediately available as a
+    typed property. One file to edit — GraphLink handles the rest.
 
-type Mutation {
-  addPerson(input: AddPersonInput!): Person!
-  addVehicle(input: AddVehicleInput!): Vehicle! @glCacheInvalidate(tags: ["vehicles"])
-}
+??? "How does the built-in caching work?"
 
-type Subscription {
-  vehicleAdded: Vehicle!
-}
-```
+    Cache behaviour is declared in the schema using two directives.
+    `@glCache(ttl: 300, tags: ["cars"])` caches a query result for 300 seconds under the
+    tag `"cars"`. `@glCacheInvalidate(tags: ["cars"])` on a mutation evicts all entries
+    tagged `"cars"` when the mutation succeeds. Individual fields inside a compound query
+    can each carry their own TTL — if one tag is invalidated, the others stay warm.
 
-!!! info "What this schema exercises"
-    `FuelType` is an enum — GraphLink generates serialization in both directions. `Person` and `Vehicle` are types with nullable/non-nullable fields. `AddPersonInput` and `AddVehicleInput` are input types. `getVehicle` and `listVehicles` use `@glCache` with tags. `addVehicle` uses `@glCacheInvalidate` — when it runs, all entries tagged `"vehicles"` are evicted. `vehicleAdded` is a subscription backed by a WebSocket connection.
+??? "Is GraphLink production-ready?"
+
+    Yes. In one production deployment (multi-tenant SaaS, dialysis clinic management),
+    72% of Spring Boot files and 64% of lines are generated — only 135 files (~11.8k lines)
+    were written by hand across the entire backend. On the Flutter side, 21.5% of the
+    codebase is generated, covering all DTOs, input classes, enums, and GraphQL client wiring.
+
+??? "Can I use GraphLink with an existing project?"
+
+    Yes. Point `schemaPaths` at your existing `.graphql` files and set `outputDir` to
+    wherever you want the generated files. GraphLink does not modify any of your existing
+    source files.
+
+??? "What languages and frameworks are supported?"
+
+    Dart and Flutter (client), Java (client), TypeScript (client), and Spring Boot (server).
+    Express/Node.js server generation and Go/Kotlin targets are planned based on community demand.
+
+---
+
+Issues and contributions welcome at [github.com/Oualitsen/graphlink](https://github.com/Oualitsen/graphlink).
 
 ---
 
@@ -220,7 +520,7 @@ Pure code generation. No runtime abstractions. Only what the server needs.
 
 ## What pure code generation means
 
-GraphLink is a code generator, not a runtime library. When you run `glink -c config.json`, it reads your schema and writes ordinary Dart or Java source files. Those files have zero dependency on GraphLink itself — no base classes to extend, no interfaces to implement, no runtime to ship.
+GraphLink is a code generator, not a runtime library. When you run `glink`, it reads your schema and writes ordinary Dart or Java source files. Those files have zero dependency on GraphLink itself — no base classes to extend, no interfaces to implement, no runtime to ship.
 
 Every generated class is plain Dart or plain Java. A generated `Vehicle` class in Dart is just a Dart class with fields, a constructor, `fromJson`, and `toJson`. A generated `Vehicle.java` is just a POJO with a builder. You could hand-write these classes yourself; GraphLink simply writes them faster and keeps them in sync with your schema.
 
@@ -434,88 +734,167 @@ Create a config file in your project root. GraphLink accepts **JSON** (`.json`),
 
 === "Dart / Flutter"
 
-    ```json title="glink.json"
-    {
-      "schemaPaths": ["schema/*.graphql"],
-      "mode": "client",
-      "typeMappings": {
-        "ID":      "String",
-        "String":  "String",
-        "Float":   "double",
-        "Int":     "int",
-        "Boolean": "bool",
-        "Null":    "null"
-      },
-      "outputDir": "lib/generated",
-      "clientConfig": {
-        "dart": {
-          "packageName": "my_app",
-          "generateAllFieldsFragments": true,
-          "autoGenerateQueries": true,
-          "nullableFieldsRequired": false,
-          "immutableInputFields": true,
-          "immutableTypeFields": true
+    === "JSON"
+
+        ```json title="glink.json"
+        {
+          "schemaPaths": ["schema/*.graphql"],
+          "mode": "client",
+          "typeMappings": {
+            "ID":      "String",
+            "String":  "String",
+            "Float":   "double",
+            "Int":     "int",
+            "Boolean": "bool",
+            "Null":    "null"
+          },
+          "outputDir": "lib/generated",
+          "clientConfig": {
+            "dart": {
+              "packageName": "my_app",
+              "generateAllFieldsFragments": true,
+              "autoGenerateQueries": true,
+              "nullableFieldsRequired": false,
+              "immutableInputFields": true,
+              "immutableTypeFields": true
+            }
+          }
         }
-      }
-    }
-    ```
+        ```
+
+    === "YAML"
+
+        ```yaml title="glink.yaml"
+        schemaPaths:
+          - schema/*.graphql
+        mode: client
+        typeMappings:
+          ID: String
+          String: String
+          Float: double
+          Int: int
+          Boolean: bool
+          Null: null
+        outputDir: lib/generated
+        clientConfig:
+          dart:
+            packageName: my_app
+            generateAllFieldsFragments: true
+            autoGenerateQueries: true
+            nullableFieldsRequired: false
+            immutableInputFields: true
+            immutableTypeFields: true
+        ```
 
 === "Java client"
 
-    ```json title="glink.json"
-    {
-      "schemaPaths": ["schema/*.graphql"],
-      "mode": "client",
-      "typeMappings": {
-        "ID":      "String",
-        "String":  "String",
-        "Float":   "Double",
-        "Int":     "Integer",
-        "Boolean": "Boolean",
-        "Null":    "null"
-      },
-      "outputDir": "src/main/java/com/example/generated",
-      "clientConfig": {
-        "java": {
-          "packageName": "com.example.generated",
-          "generateAllFieldsFragments": true,
-          "autoGenerateQueries": true,
-          "nullableFieldsRequired": false,
-          "immutableInputFields": true,
-          "immutableTypeFields": true
+    === "JSON"
+
+        ```json title="glink.json"
+        {
+          "schemaPaths": ["schema/*.graphql"],
+          "mode": "client",
+          "typeMappings": {
+            "ID":      "String",
+            "String":  "String",
+            "Float":   "Double",
+            "Int":     "Integer",
+            "Boolean": "Boolean",
+            "Null":    "null"
+          },
+          "outputDir": "src/main/java/com/example/generated",
+          "clientConfig": {
+            "java": {
+              "packageName": "com.example.generated",
+              "generateAllFieldsFragments": true,
+              "autoGenerateQueries": true,
+              "nullableFieldsRequired": false,
+              "immutableInputFields": true,
+              "immutableTypeFields": true
+            }
+          }
         }
-      }
-    }
-    ```
+        ```
+
+    === "YAML"
+
+        ```yaml title="glink.yaml"
+        schemaPaths:
+          - schema/*.graphql
+        mode: client
+        typeMappings:
+          ID: String
+          String: String
+          Float: Double
+          Int: Integer
+          Boolean: Boolean
+          Null: null
+        outputDir: src/main/java/com/example/generated
+        clientConfig:
+          java:
+            packageName: com.example.generated
+            generateAllFieldsFragments: true
+            autoGenerateQueries: true
+            nullableFieldsRequired: false
+            immutableInputFields: true
+            immutableTypeFields: true
+        ```
 
 === "Spring Boot"
 
-    ```json title="glink.json"
-    {
-      "schemaPaths": ["schema/*.graphql"],
-      "mode": "server",
-      "typeMappings": {
-        "ID":      "String",
-        "String":  "String",
-        "Float":   "Double",
-        "Int":     "Integer",
-        "Boolean": "Boolean",
-        "Null":    "null"
-      },
-      "outputDir": "src/main/java/com/example/generated",
-      "serverConfig": {
-        "spring": {
-          "basePackage": "com.example.generated",
-          "generateControllers": true,
-          "generateInputs": true,
-          "generateTypes": true,
-          "generateRepositories": false,
-          "immutableInputFields": true,
-          "immutableTypeFields": false
+    === "JSON"
+
+        ```json title="glink.json"
+        {
+          "schemaPaths": ["schema/*.graphql"],
+          "mode": "server",
+          "typeMappings": {
+            "ID":      "String",
+            "String":  "String",
+            "Float":   "Double",
+            "Int":     "Integer",
+            "Boolean": "Boolean",
+            "Null":    "null"
+          },
+          "outputDir": "src/main/java/com/example/generated",
+          "serverConfig": {
+            "spring": {
+              "basePackage": "com.example.generated",
+              "generateControllers": true,
+              "generateInputs": true,
+              "generateTypes": true,
+              "generateRepositories": false,
+              "immutableInputFields": true,
+              "immutableTypeFields": false
+            }
+          }
         }
-      }
-    }
-    ```
+        ```
+
+    === "YAML"
+
+        ```yaml title="glink.yaml"
+        schemaPaths:
+          - schema/*.graphql
+        mode: server
+        typeMappings:
+          ID: String
+          String: String
+          Float: Double
+          Int: Integer
+          Boolean: Boolean
+          Null: null
+        outputDir: src/main/java/com/example/generated
+        serverConfig:
+          spring:
+            basePackage: com.example.generated
+            generateControllers: true
+            generateInputs: true
+            generateTypes: true
+            generateRepositories: false
+            immutableInputFields: true
+            immutableTypeFields: false
+        ```
 
 ### Key configuration options explained
 
@@ -650,18 +1029,29 @@ A fully typed GraphQL client generated directly from your schema.
 
 ## Generated adapters
 
-GraphLink generates adapter files alongside the client. Which HTTP adapter is generated is controlled by the `httpAdapter` option in `config.json`. The WebSocket adapter is always generated when your schema has subscriptions.
+GraphLink generates adapter files alongside the client. Which HTTP adapter is generated is controlled by the `httpAdapter` option in `glink.json`. The WebSocket adapter is always generated when your schema has subscriptions.
 
-```json title="config.json — adapter options"
-{
-  "clientConfig": {
-    "dart": {
-      "packageName": "com.example.generated",
-      "httpAdapter": "dio"
+=== "JSON"
+
+    ```json title="glink.json — adapter options"
+    {
+      "clientConfig": {
+        "dart": {
+          "packageName": "com.example.generated",
+          "httpAdapter": "dio"
+        }
+      }
     }
-  }
-}
-```
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — adapter options"
+    clientConfig:
+      dart:
+        packageName: com.example.generated
+        httpAdapter: dio
+    ```
 
 **`httpAdapter`** — controls which HTTP adapter file is generated:
 
@@ -943,15 +1333,25 @@ type Query {
 
 Set `"operationNameAsParameter": true` to include the operation name as a URL query parameter on every request. This is useful for identifying operations in server logs, APM dashboards, and proxies without parsing the request body:
 
-```json title="config.json"
-{
-  "clientConfig": {
-    "dart": {
-      "operationNameAsParameter": true
+=== "JSON"
+
+    ```json title="glink.json"
+    {
+      "clientConfig": {
+        "dart": {
+          "operationNameAsParameter": true
+        }
+      }
     }
-  }
-}
-```
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml"
+    clientConfig:
+      dart:
+        operationNameAsParameter: true
+    ```
 
 The generated adapter function gains a second parameter and the client appends `?operationName=OperationName` to every HTTP request:
 
@@ -966,13 +1366,23 @@ The WebSocket adapter is unaffected — operation names on subscriptions flow th
 
 By default, nullable schema fields generate optional constructor parameters (`this.fieldName`). Set `"nullableFieldsRequired": true` to force `required this.fieldName` on every field regardless of nullability:
 
-```json title="config.json"
-{
-  "clientConfig": {
-    "dart": { "nullableFieldsRequired": true }
-  }
-}
-```
+=== "JSON"
+
+    ```json title="glink.json"
+    {
+      "clientConfig": {
+        "dart": { "nullableFieldsRequired": true }
+      }
+    }
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml"
+    clientConfig:
+      dart:
+        nullableFieldsRequired: true
+    ```
 
 With the default `false`, a nullable field like `ownerId: ID` generates `this.ownerId` (optional). With `true`, it generates `required this.ownerId` — you must always pass it explicitly, even as `null`.
 
@@ -1016,17 +1426,29 @@ Type-safe. No generics. No casting. Works with any JSON library.
 
 GraphLink generates concrete adapter classes into your `client/` folder — no external GraphLink runtime, no boilerplate. Two config options control what is generated:
 
-```json title="config.json — adapter options"
-{
-  "clientConfig": {
-    "java": {
-      "packageName": "com.example.generated",
-      "wsAdapter": "java11",
-      "jsonCodec": "jackson"
+=== "JSON"
+
+    ```json title="glink.json — adapter options"
+    {
+      "clientConfig": {
+        "java": {
+          "packageName": "com.example.generated",
+          "wsAdapter": "java11",
+          "jsonCodec": "jackson"
+        }
+      }
     }
-  }
-}
-```
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — adapter options"
+    clientConfig:
+      java:
+        packageName: com.example.generated
+        wsAdapter: java11
+        jsonCodec: jackson
+    ```
 
 **`wsAdapter`** — controls which WebSocket adapter is generated:
 
@@ -1313,13 +1735,23 @@ The generated WebSocket adapter handles the [graphql-ws subprotocol](https://git
 
 Set `"operationNameAsParameter": true` to append the operation name as a URL query parameter on every request — useful for server-side logging and APM tracing:
 
-```json title="config.json"
-{
-  "clientConfig": {
-    "java": { "operationNameAsParameter": true }
-  }
-}
-```
+=== "JSON"
+
+    ```json title="glink.json"
+    {
+      "clientConfig": {
+        "java": { "operationNameAsParameter": true }
+      }
+    }
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml"
+    clientConfig:
+      java:
+        operationNameAsParameter: true
+    ```
 
 The generated adapter interface gains an `operationName` parameter and the client appends `?operationName=OperationName` to each HTTP request URL.
 
@@ -1327,28 +1759,49 @@ The generated adapter interface gains an `operationName` parameter and the clien
 
 By default, nullable schema fields accept `null` without any runtime enforcement. Set `"nullableFieldsRequired": true` to emit `Objects.requireNonNull` on every field, including nullable ones:
 
-```json title="config.json"
-{
-  "clientConfig": {
-    "java": { "nullableFieldsRequired": true }
-  }
-}
-```
+=== "JSON"
+
+    ```json title="glink.json"
+    {
+      "clientConfig": {
+        "java": { "nullableFieldsRequired": true }
+      }
+    }
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml"
+    clientConfig:
+      java:
+        nullableFieldsRequired: true
+    ```
 
 ## Java records
 
 Set `"inputAsRecord": true` and/or `"typeAsRecord": true` to generate inputs and types as Java records instead of classes with builders. Records use component accessor syntax (`field()`) instead of `getField()`:
 
-```json title="config.json"
-{
-  "clientConfig": {
-    "java": {
-      "inputAsRecord": true,
-      "typeAsRecord": true
+=== "JSON"
+
+    ```json title="glink.json"
+    {
+      "clientConfig": {
+        "java": {
+          "inputAsRecord": true,
+          "typeAsRecord": true
+        }
+      }
     }
-  }
-}
-```
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml"
+    clientConfig:
+      java:
+        inputAsRecord: true
+        typeAsRecord: true
+    ```
 
 ```java title="Generated input as record"
 public record AddVehicleInput(
@@ -1399,32 +1852,59 @@ A fully typed GraphQL client generated from your schema — works in Angular, Re
 
 Set `"mode": "client"` and add a `"typescript"` key under `clientConfig`:
 
-```json title="ts-config.json"
-{
-  "schemaPaths": ["schema/*.graphql"],
-  "mode": "client",
-  "typeMappings": {
-    "ID":      "string",
-    "String":  "string",
-    "Float":   "number",
-    "Int":     "number",
-    "Boolean": "boolean",
-    "Null":    "null"
-  },
-  "outputDir": "src/generated",
-  "clientConfig": {
-    "typescript": {
-      "packageName": "my-app",
-      "generateAllFieldsFragments": true,
-      "autoGenerateQueries": true,
-      "httpAdapter": "fetch",
-      "observables": false,
-      "generateDefaultWsAdapter": true,
-      "optionalNullableInputFields": true
+=== "JSON"
+
+    ```json title="glink.json"
+    {
+      "schemaPaths": ["schema/*.graphql"],
+      "mode": "client",
+      "typeMappings": {
+        "ID":      "string",
+        "String":  "string",
+        "Float":   "number",
+        "Int":     "number",
+        "Boolean": "boolean",
+        "Null":    "null"
+      },
+      "outputDir": "src/generated",
+      "clientConfig": {
+        "typescript": {
+          "packageName": "my-app",
+          "generateAllFieldsFragments": true,
+          "autoGenerateQueries": true,
+          "httpAdapter": "fetch",
+          "observables": false,
+          "generateDefaultWsAdapter": true,
+          "optionalNullableInputFields": true
+        }
+      }
     }
-  }
-}
-```
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml"
+    schemaPaths:
+      - schema/*.graphql
+    mode: client
+    typeMappings:
+      ID: string
+      String: string
+      Float: number
+      Int: number
+      Boolean: boolean
+      Null: null
+    outputDir: src/generated
+    clientConfig:
+      typescript:
+        packageName: my-app
+        generateAllFieldsFragments: true
+        autoGenerateQueries: true
+        httpAdapter: fetch
+        observables: false
+        generateDefaultWsAdapter: true
+        optionalNullableInputFields: true
+    ```
 
 ## Generated output
 
@@ -1698,13 +2178,23 @@ client.subscriptions.vehicleAdded().subscribe(event => {
 
 Set `"operationNameAsParameter": true` to append the operation name as a query parameter on every HTTP request — useful for server-side logging and APM:
 
-```json title="config.json"
-{
-  "clientConfig": {
-    "typescript": { "operationNameAsParameter": true }
-  }
-}
-```
+=== "JSON"
+
+    ```json title="glink.json"
+    {
+      "clientConfig": {
+        "typescript": { "operationNameAsParameter": true }
+      }
+    }
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml"
+    clientConfig:
+      typescript:
+        operationNameAsParameter: true
+    ```
 
 The adapter function gains a second parameter and the client sends requests to `<url>?operationName=OperationName`.
 
@@ -1814,32 +2304,59 @@ GraphLink generates the entire Spring Boot scaffolding from your schema — cont
 
 Set `"mode": "server"` and provide a `"spring"` section under `serverConfig`. The key options:
 
-```json title="spring-config.json"
-{
-  "schemaPaths": ["schema/*.graphql"],
-  "mode": "server",
-  "typeMappings": {
-    "ID":      "String",
-    "String":  "String",
-    "Float":   "Double",
-    "Int":     "Integer",
-    "Boolean": "Boolean",
-    "Null":    "null"
-  },
-  "outputDir": "src/main/java/com/example/generated",
-  "serverConfig": {
-    "spring": {
-      "basePackage":          "com.example.generated",
-      "generateControllers":  true,
-      "generateInputs":       true,
-      "generateTypes":        true,
-      "generateRepositories": false,
-      "immutableInputFields": true,
-      "immutableTypeFields":  false
+=== "JSON"
+
+    ```json title="glink.json"
+    {
+      "schemaPaths": ["schema/*.graphql"],
+      "mode": "server",
+      "typeMappings": {
+        "ID":      "String",
+        "String":  "String",
+        "Float":   "Double",
+        "Int":     "Integer",
+        "Boolean": "Boolean",
+        "Null":    "null"
+      },
+      "outputDir": "src/main/java/com/example/generated",
+      "serverConfig": {
+        "spring": {
+          "basePackage":          "com.example.generated",
+          "generateControllers":  true,
+          "generateInputs":       true,
+          "generateTypes":        true,
+          "generateRepositories": false,
+          "immutableInputFields": true,
+          "immutableTypeFields":  false
+        }
+      }
     }
-  }
-}
-```
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml"
+    schemaPaths:
+      - schema/*.graphql
+    mode: server
+    typeMappings:
+      ID: String
+      String: String
+      Float: Double
+      Int: Integer
+      Boolean: Boolean
+      Null: null
+    outputDir: src/main/java/com/example/generated
+    serverConfig:
+      spring:
+        basePackage: com.example.generated
+        generateControllers: true
+        generateInputs: true
+        generateTypes: true
+        generateRepositories: false
+        immutableInputFields: true
+        immutableTypeFields: false
+    ```
 
 | Option | Description |
 |---|---|
@@ -1854,36 +2371,58 @@ Set `"mode": "server"` and provide a `"spring"` section under `serverConfig`. Th
 
 Set `"inputAsRecord": true` and/or `"typeAsRecord": true` to generate inputs and types as Java records instead of mutable classes with setters. Records are more concise and enforce immutability at the language level:
 
-```json title="config.json — records"
-{
-  "serverConfig": {
-    "spring": {
-      "basePackage": "com.example.generated",
-      "inputAsRecord": true,
-      "typeAsRecord": false
-    }
-  }
-}
-```
+=== "JSON"
 
-!!! warning "Type records and Spring deserialization"
-    Spring's GraphQL runtime deserializes JSON into type classes using setters or reflection. Setting `typeAsRecord: true` for server-side types requires that you configure Spring to use a record-aware deserializer (e.g. Jackson with `@JsonCreator`). For most Spring Boot setups, keep `typeAsRecord: false` and only set `inputAsRecord: true`.
+    ```json title="glink.json — records"
+    {
+      "serverConfig": {
+        "spring": {
+          "basePackage": "com.example.generated",
+          "inputAsRecord": true,
+          "typeAsRecord": false
+        }
+      }
+    }
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — records"
+    serverConfig:
+      spring:
+        basePackage: com.example.generated
+        inputAsRecord: true
+        typeAsRecord: false
+    ```
+
 
 ## Schema generation
 
 Set `"generateSchema": true` to write the processed schema file to disk alongside the generated Java. This is useful when your Spring Boot app needs to serve the schema file at a specific path:
 
-```json title="config.json — schema generation"
-{
-  "serverConfig": {
-    "spring": {
-      "basePackage": "com.example.generated",
-      "generateSchema": true,
-      "schemaTargetPath": "src/main/resources/graphql/schema.graphqls"
+=== "JSON"
+
+    ```json title="glink.json — schema generation"
+    {
+      "serverConfig": {
+        "spring": {
+          "basePackage": "com.example.generated",
+          "generateSchema": true,
+          "schemaTargetPath": "src/main/resources/graphql/schema.graphqls"
+        }
+      }
     }
-  }
-}
-```
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — schema generation"
+    serverConfig:
+      spring:
+        basePackage: com.example.generated
+        generateSchema: true
+        schemaTargetPath: src/main/resources/graphql/schema.graphqls
+    ```
 
 `schemaTargetPath` must end in `.graphql` or `.graphqls`. The generated schema reflects all directive processing — internal directives like `@glSkipOnServer` are not emitted.
 
@@ -2095,16 +2634,27 @@ vehicleSink.tryEmitComplete();
 
 Set `"reactive": true` in `serverConfig.spring` to generate Spring WebFlux-style controllers. Queries and mutations return `Mono<T>` instead of `T` directly, and subscriptions return `Flux<T>` as usual. File upload fields use `FilePart` instead of `MultipartFile`.
 
-```json title="config.json — reactive mode"
-{
-  "serverConfig": {
-    "spring": {
-      "basePackage": "com.example.generated",
-      "reactive": true
+=== "JSON"
+
+    ```json title="glink.json — reactive mode"
+    {
+      "serverConfig": {
+        "spring": {
+          "basePackage": "com.example.generated",
+          "reactive": true
+        }
+      }
     }
-  }
-}
-```
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — reactive mode"
+    serverConfig:
+      spring:
+        basePackage: com.example.generated
+        reactive: true
+    ```
 
 With `reactive: true`, the generated service interface returns reactive types:
 
@@ -2126,15 +2676,25 @@ The generated controllers delegate to these reactive methods directly. Spring We
 
 In MVC (non-reactive) mode, Spring Security's `SecurityContextHolder` is thread-local. When a controller delegates to an async `CompletableFuture`, the security context is not automatically carried to the worker thread. Enable `"useSpringSecurity": true` to have GraphLink capture the context before entering the future and restore it on the worker thread:
 
-```json title="config.json — security context propagation"
-{
-  "clientConfig": {
-    "java": {
-      "useSpringSecurity": true
+=== "JSON"
+
+    ```json title="glink.json — security context propagation"
+    {
+      "serverConfig": {
+        "spring": {
+          "useSpringSecurity": true
+        }
+      }
     }
-  }
-}
-```
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — security context propagation"
+    serverConfig:
+      spring:
+        useSpringSecurity: true
+    ```
 
 When enabled, the generated controller looks like this:
 
@@ -2543,6 +3103,10 @@ directive @glMapField(to: String!) on FIELD_DEFINITION
 # ── File upload ───────────────────────────────────────────────────────────────
 
 directive @glUpload on SCALAR
+
+# ── Cyclic expansion ──────────────────────────────────────────────────────────
+
+directive @glExpand(depth: Int) on OBJECT
 ```
 
 ---
@@ -2878,6 +3442,48 @@ type Mutation {
   uploadDocuments(files: [Upload!]!): [Document!]!
 }
 ```
+
+---
+
+## @glExpand
+
+**Target:** CLIENT · **Placement:** `OBJECT`
+
+Controls how cyclic type references are handled during `_all_fields` fragment generation. When a type references itself (directly or through a chain), GraphLink cannot emit a recursive fragment spread — it would be invalid GraphQL. Instead, it inlines the cyclic type's fields up to `depth` levels deep.
+
+| Argument | Type | Default | Description |
+|---|---|---|---|
+| `depth` | `Int` | `1` | Number of inline expansion levels for cyclic back-references. `0` omits the cyclic field entirely. |
+
+```graphql title="Example — self-referential type"
+type Employee @glExpand(depth: 2) {
+  id: ID!
+  name: String!
+  manager: Employee
+}
+```
+
+Generated fragment (depth 2 — two levels of inline expansion):
+
+```graphql title="Generated _all_fields_Employee"
+fragment _all_fields_Employee on Employee {
+  id
+  name
+  manager {
+    id
+    name
+    manager {
+      id
+      name
+    }
+  }
+}
+```
+
+Without `@glExpand`, the default depth is `1` — one level of inline expansion. Use `depth: 0` to omit the cyclic field entirely from the fragment.
+
+!!! note "Multi-type cycles"
+    `@glExpand` also handles indirect cycles — for example `Customer → Order → Product → Supplier → Customer`. Each type in the cycle should declare `@glExpand` if a non-default depth is needed. The cycle is detected automatically; `@glExpand` only controls how deep the inline expansion goes before truncating.
 
 ---
 
@@ -3469,22 +4075,41 @@ The client sees `lot`, `fromLocation`, and `toLocation` as fully typed objects. 
 
 # Configuration Reference
 
-Full reference for every option in `config.json`.
+Full reference for every option in `glink.json` / `glink.yaml`.
 
 ## Top-level options
 
-```json title="config.json — top-level structure"
-{
-  "schemaPaths": ["schema/*.graphql"],
-  "mode": "client",
-  "typeMappings": { "ID": "String", "Float": "double" },
-  "outputDir": "lib/generated",
-  "identityFields": ["id"],
-  "disableCache": false,
-  "clientConfig": { ... },
-  "serverConfig": { ... }
-}
-```
+=== "JSON"
+
+    ```json title="glink.json — top-level structure"
+    {
+      "schemaPaths": ["schema/*.graphql"],
+      "mode": "client",
+      "typeMappings": { "ID": "String", "Float": "double" },
+      "outputDir": "lib/generated",
+      "identityFields": ["id"],
+      "disableCache": false,
+      "clientConfig": { },
+      "serverConfig": { }
+    }
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — top-level structure"
+    schemaPaths:
+      - schema/*.graphql
+    mode: client
+    typeMappings:
+      ID: String
+      Float: double
+    outputDir: lib/generated
+    identityFields:
+      - id
+    disableCache: false
+    clientConfig: # see sections below
+    serverConfig: # see sections below
+    ```
 
 | Option | Type | Default | Description |
 |---|---|---|---|
@@ -3501,28 +4126,51 @@ Full reference for every option in `config.json`.
 
 Used when `mode` is `"client"` and you want Dart/Flutter output.
 
-```json title="clientConfig.dart — all options"
-{
-  "clientConfig": {
-    "dart": {
-      "packageName": "my_app",
-      "httpAdapter": "dio",
-      "generateAdapters": true,
-      "generateAllFieldsFragments": true,
-      "autoGenerateQueries": true,
-      "autoGenerateQueriesDefaultAlias": null,
-      "defaultAlias": null,
-      "operationNameAsParameter": false,
-      "nullableFieldsRequired": false,
-      "immutableInputFields": true,
-      "immutableTypeFields": true,
-      "generateUiTypes": false,
-      "generateUiInputs": false,
-      "appLocalizationsImport": null
+=== "JSON"
+
+    ```json title="glink.json — clientConfig.dart"
+    {
+      "clientConfig": {
+        "dart": {
+          "packageName": "my_app",
+          "httpAdapter": "dio",
+          "generateAdapters": true,
+          "generateAllFieldsFragments": true,
+          "autoGenerateQueries": true,
+          "autoGenerateQueriesDefaultAlias": null,
+          "defaultAlias": null,
+          "operationNameAsParameter": false,
+          "nullableFieldsRequired": false,
+          "immutableInputFields": true,
+          "immutableTypeFields": true,
+          "generateUiTypes": false,
+          "generateUiInputs": false,
+          "appLocalizationsImport": null
+        }
+      }
     }
-  }
-}
-```
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — clientConfig.dart"
+    clientConfig:
+      dart:
+        packageName: my_app
+        httpAdapter: dio
+        generateAdapters: true
+        generateAllFieldsFragments: true
+        autoGenerateQueries: true
+        autoGenerateQueriesDefaultAlias: null
+        defaultAlias: null
+        operationNameAsParameter: false
+        nullableFieldsRequired: false
+        immutableInputFields: true
+        immutableTypeFields: true
+        generateUiTypes: false
+        generateUiInputs: false
+        appLocalizationsImport: null
+    ```
 
 | Option | Type | Default | Description |
 |---|---|---|---|
@@ -3547,27 +4195,49 @@ Used when `mode` is `"client"` and you want Dart/Flutter output.
 
 Used when `mode` is `"client"` and you want a Java client.
 
-```json title="clientConfig.java — all options"
-{
-  "clientConfig": {
-    "java": {
-      "packageName": "com.example.generated",
-      "wsAdapter": "java11",
-      "jsonCodec": "jackson",
-      "generateAllFieldsFragments": true,
-      "autoGenerateQueries": true,
-      "autoGenerateQueriesDefaultAlias": null,
-      "defaultAlias": null,
-      "operationNameAsParameter": false,
-      "nullableFieldsRequired": false,
-      "immutableInputFields": true,
-      "immutableTypeFields": true,
-      "inputAsRecord": false,
-      "typeAsRecord": false
+=== "JSON"
+
+    ```json title="glink.json — clientConfig.java"
+    {
+      "clientConfig": {
+        "java": {
+          "packageName": "com.example.generated",
+          "wsAdapter": "java11",
+          "jsonCodec": "jackson",
+          "generateAllFieldsFragments": true,
+          "autoGenerateQueries": true,
+          "autoGenerateQueriesDefaultAlias": null,
+          "defaultAlias": null,
+          "operationNameAsParameter": false,
+          "nullableFieldsRequired": false,
+          "immutableInputFields": true,
+          "immutableTypeFields": true,
+          "inputAsRecord": false,
+          "typeAsRecord": false
+        }
+      }
     }
-  }
-}
-```
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — clientConfig.java"
+    clientConfig:
+      java:
+        packageName: com.example.generated
+        wsAdapter: java11
+        jsonCodec: jackson
+        generateAllFieldsFragments: true
+        autoGenerateQueries: true
+        autoGenerateQueriesDefaultAlias: null
+        defaultAlias: null
+        operationNameAsParameter: false
+        nullableFieldsRequired: false
+        immutableInputFields: true
+        immutableTypeFields: true
+        inputAsRecord: false
+        typeAsRecord: false
+    ```
 
 | Option | Type | Default | Description |
 |---|---|---|---|
@@ -3590,23 +4260,41 @@ Used when `mode` is `"client"` and you want a Java client.
 
 Used when `mode` is `"client"` and you want TypeScript output.
 
-```json title="clientConfig.typescript — all options"
-{
-  "clientConfig": {
-    "typescript": {
-      "httpAdapter": "fetch",
-      "generateDefaultWsAdapter": true,
-      "observables": false,
-      "generateAllFieldsFragments": true,
-      "autoGenerateQueries": true,
-      "defaultAlias": null,
-      "operationNameAsParameter": false,
-      "optionalNullableInputFields": true,
-      "immutableTypeFields": true
+=== "JSON"
+
+    ```json title="glink.json — clientConfig.typescript"
+    {
+      "clientConfig": {
+        "typescript": {
+          "httpAdapter": "fetch",
+          "generateDefaultWsAdapter": true,
+          "observables": false,
+          "generateAllFieldsFragments": true,
+          "autoGenerateQueries": true,
+          "defaultAlias": null,
+          "operationNameAsParameter": false,
+          "optionalNullableInputFields": true,
+          "immutableTypeFields": true
+        }
+      }
     }
-  }
-}
-```
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — clientConfig.typescript"
+    clientConfig:
+      typescript:
+        httpAdapter: fetch
+        generateDefaultWsAdapter: true
+        observables: false
+        generateAllFieldsFragments: true
+        autoGenerateQueries: true
+        defaultAlias: null
+        operationNameAsParameter: false
+        optionalNullableInputFields: true
+        immutableTypeFields: true
+    ```
 
 | Option | Type | Default | Description |
 |---|---|---|---|
@@ -3626,28 +4314,51 @@ Used when `mode` is `"client"` and you want TypeScript output.
 
 Used when `mode` is `"server"`.
 
-```json title="serverConfig.spring — all options"
-{
-  "serverConfig": {
-    "spring": {
-      "basePackage": "com.example.generated",
-      "generateControllers": true,
-      "generateInputs": true,
-      "generateTypes": true,
-      "generateRepositories": false,
-      "immutableInputFields": true,
-      "immutableTypeFields": false,
-      "inputAsRecord": false,
-      "typeAsRecord": false,
-      "reactive": false,
-      "useSpringSecurity": false,
-      "injectDataFetching": false,
-      "generateSchema": false,
-      "schemaTargetPath": null
+=== "JSON"
+
+    ```json title="glink.json — serverConfig.spring"
+    {
+      "serverConfig": {
+        "spring": {
+          "basePackage": "com.example.generated",
+          "generateControllers": true,
+          "generateInputs": true,
+          "generateTypes": true,
+          "generateRepositories": false,
+          "immutableInputFields": true,
+          "immutableTypeFields": false,
+          "inputAsRecord": false,
+          "typeAsRecord": false,
+          "reactive": false,
+          "useSpringSecurity": false,
+          "injectDataFetching": false,
+          "generateSchema": false,
+          "schemaTargetPath": null
+        }
+      }
     }
-  }
-}
-```
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — serverConfig.spring"
+    serverConfig:
+      spring:
+        basePackage: com.example.generated
+        generateControllers: true
+        generateInputs: true
+        generateTypes: true
+        generateRepositories: false
+        immutableInputFields: true
+        immutableTypeFields: false
+        inputAsRecord: false
+        typeAsRecord: false
+        reactive: false
+        useSpringSecurity: false
+        injectDataFetching: false
+        generateSchema: false
+        schemaTargetPath: null
+    ```
 
 | Option | Type | Default | Description |
 |---|---|---|---|
@@ -3693,7 +4404,7 @@ clientConfig:
 
 ```bash
 glink                   # auto-discover config (see below)
-glink -c config.json    # explicit config path
+glink -c glink.json     # explicit config path
 glink -w                # watch mode — regenerate on schema change
 glink --version         # print version and exit
 glink --help            # print usage
@@ -3705,6 +4416,196 @@ glink --help            # print usage
 | `-w` | Watch mode. GraphLink monitors the files matched by `schemaPaths` and regenerates on every save. |
 | `--version` | Prints the GraphLink version and exits. |
 | `--help` | Prints usage information and exits. |
+
+---
+
+# Using GraphLink with AI Agents
+
+AI coding assistants work best when they understand how your project is structured.
+Without instructions, an agent seeing a `generated/` directory full of Dart or Java files
+will waste time reading, editing, or recreating code that GraphLink owns.
+
+This page provides ready-to-use instruction files for common setups.
+**Copy the one that matches your project and paste it into your agent's instruction file.**
+
+| Agent | Instruction file |
+|---|---|
+| Claude Code | `CLAUDE.md` at project root |
+| Gemini CLI | `GEMINI.md` or `.gemini/instructions.md` |
+| GitHub Copilot | `.github/copilot-instructions.md` |
+| Cursor | `.cursor/rules` |
+| Any agent | `AGENTS.md` at project root (read by most tools) |
+
+---
+
+## Dart / Flutter project
+
+=== "AGENTS.md / CLAUDE.md"
+
+    ```markdown
+    ## Code generation — GraphLink
+
+    This project uses [GraphLink](https://graphlink.dev) (`glink`) to generate
+    Dart/Flutter code from a GraphQL schema.
+
+    - **Schema**: `lib/**/*.graphql` (or wherever your .graphql files are)
+    - **Config**: `glink.json` (or `glink.yaml`) at the project root
+    - **Generated files**: `lib/generated/` — DO NOT edit these manually
+
+    To regenerate after any schema change:
+    ```bash
+    glink -c glink.json
+    # or with watch mode:
+    glink -c glink.json -w
+    ```
+
+    ### Rules
+    - To add a field, type, query, or mutation: edit the `.graphql` schema file, then run `glink`.
+    - Never edit files inside `lib/generated/` — they will be overwritten.
+    - The generated `GraphLinkClient` is the entry point for all queries, mutations, and subscriptions.
+    - Input classes live in `lib/generated/inputs/`. Type classes live in `lib/generated/types/`.
+    - Enums are in `lib/generated/enums/` and are already serialized — use them directly.
+
+    ### Caching
+    Cache behaviour is declared in the schema via `@glCache` and `@glCacheInvalidate` directives.
+    Do not implement caching in application code — add or modify the directive in the schema instead.
+    ```
+
+---
+
+## Java client project
+
+=== "AGENTS.md / CLAUDE.md"
+
+    ```markdown
+    ## Code generation — GraphLink
+
+    This project uses [GraphLink](https://graphlink.dev) (`glink`) to generate
+    Java client code from a GraphQL schema.
+
+    - **Schema**: `schema/*.graphql` (or wherever your .graphql files are)
+    - **Config**: `glink.json` at the project root
+    - **Generated files**: `src/main/java/com/example/generated/` — DO NOT edit these manually
+
+    To regenerate after any schema change:
+    ```bash
+    glink -c glink.json
+    ```
+
+    ### Rules
+    - To add a field, type, query, or mutation: edit the `.graphql` schema file, then run `glink`.
+    - Never edit files inside the `generated/` package.
+    - `GraphLinkClient` is the entry point. Queries are on `client.queries`, mutations on `client.mutations`.
+    - Return types are fully resolved — no `TypeReference`, no casting needed at the call site.
+    - Input classes use a builder pattern: `AddVehicleInput.builder().brand("Toyota").build()`.
+    ```
+
+---
+
+## TypeScript project
+
+=== "AGENTS.md / CLAUDE.md"
+
+    ```markdown
+    ## Code generation — GraphLink
+
+    This project uses [GraphLink](https://graphlink.dev) (`glink`) to generate
+    TypeScript client code from a GraphQL schema.
+
+    - **Schema**: `schema/*.graphql` (or wherever your .graphql files are)
+    - **Config**: `glink.json` at the project root
+    - **Generated files**: `src/generated/` — DO NOT edit these manually
+
+    To regenerate after any schema change:
+    ```bash
+    glink -c glink.json
+    ```
+
+    ### Rules
+    - To add a field, type, query, or mutation: edit the `.graphql` schema file, then run `glink`.
+    - Never edit files inside `src/generated/`.
+    - Import `GraphLinkClient` from `src/generated/client/graph-link-client`.
+    - All queries and mutations are typed methods — no manual type assertions needed.
+    - Subscriptions are available as callback-based methods on `client.subscriptions`.
+    ```
+
+---
+
+## Spring Boot server project
+
+=== "AGENTS.md / CLAUDE.md"
+
+    ```markdown
+    ## Code generation — GraphLink
+
+    This project uses [GraphLink](https://graphlink.dev) (`glink`) to generate
+    Spring Boot server code from a GraphQL schema.
+
+    - **Schema**: `src/main/resources/graphql/*.graphqls`
+    - **Config**: `glink.json` at the project root
+    - **Generated files**: `src/main/java/com/example/generated/` — DO NOT edit these manually
+
+    To regenerate after any schema change:
+    ```bash
+    glink -c glink.json
+    ```
+
+    ### Rules
+    - To add a field, type, query, or mutation: edit the `.graphqls` schema file, then run `glink`.
+    - Never edit files inside the `generated/` package — controllers, inputs, and types are all generated.
+    - Implement the generated service interfaces (e.g. `VehicleService`) — do not modify the controllers.
+    - Subscription resolvers must return `reactor.core.publisher.Flux<T>`.
+    - Generated repositories are stubs — fill in the persistence logic, but do not change the interface signature.
+    ```
+
+---
+
+## Full-stack project (Flutter + Spring Boot)
+
+=== "AGENTS.md / CLAUDE.md"
+
+    ```markdown
+    ## Code generation — GraphLink
+
+    This project uses [GraphLink](https://graphlink.dev) (`glink`) to generate code
+    from a single GraphQL schema for both the Flutter client and the Spring Boot backend.
+
+    ### Schema
+    One schema file drives both ends: `schema/schema.graphql`
+
+    ### Client (Flutter)
+    - **Config**: `client/glink.json`
+    - **Generated files**: `client/lib/generated/` — DO NOT edit
+
+    ### Server (Spring Boot)
+    - **Config**: `server/glink.json`
+    - **Generated files**: `server/src/main/java/com/example/generated/` — DO NOT edit
+
+    To regenerate both after a schema change:
+    ```bash
+    glink -c client/glink.json
+    glink -c server/glink.json
+    ```
+
+    ### Rules
+    - All data model changes go in `schema/schema.graphql` first — then regenerate.
+    - On the server, implement the generated service interfaces. Never edit generated controllers.
+    - On the client, use `GraphLinkClient` — never write raw HTTP or WebSocket calls for GraphQL.
+    - Cache behaviour is declared in the schema via `@glCache` / `@glCacheInvalidate`. Do not implement
+      caching in application code.
+    ```
+
+---
+
+!!! tip "Watch mode during development"
+    Run `glink -c glink.json -w` in a terminal while your AI agent edits the schema.
+    Every schema save triggers instant regeneration — the agent's next read of the
+    generated files will already reflect the change.
+
+!!! info "The generated code is yours"
+    GraphLink has zero runtime dependency. If you stop using it, every generated file
+    continues to compile and work. Commit the generated files to version control —
+    they are source of truth for what your schema produces.
 
 ---
 

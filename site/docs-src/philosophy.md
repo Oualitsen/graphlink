@@ -9,7 +9,7 @@ Pure code generation. No runtime abstractions. Only what the server needs.
 
 ## What pure code generation means
 
-GraphLink is a code generator, not a runtime library. When you run `glink -c config.json`, it reads your schema and writes ordinary Dart or Java source files. Those files have zero dependency on GraphLink itself — no base classes to extend, no interfaces to implement, no runtime to ship.
+GraphLink is a code generator, not a runtime library. When you run `glink`, it reads your schema and writes ordinary Dart or Java source files. Those files have zero dependency on GraphLink itself — no base classes to extend, no interfaces to implement, no runtime to ship.
 
 Every generated class is plain Dart or plain Java. A generated `Vehicle` class in Dart is just a Dart class with fields, a constructor, `fromJson`, and `toJson`. A generated `Vehicle.java` is just a POJO with a builder. You could hand-write these classes yourself; GraphLink simply writes them faster and keeps them in sync with your schema.
 

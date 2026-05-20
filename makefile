@@ -30,7 +30,7 @@ site-dev:
 site-local: site-docs
 	cd site && python3 -m http.server 8082
 
-# Build MkDocs docs only (regenerates docs/, llms.txt, sitemap.xml)
+# Build MkDocs docs only (regenerates dist/, llms.txt, sitemap.xml)
 site-docs:
 	cd site && mkdocs build
 
