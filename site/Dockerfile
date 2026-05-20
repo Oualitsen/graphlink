@@ -5,6 +5,7 @@ WORKDIR /site
 COPY mkdocs.yml .
 COPY docs-src/ docs-src/
 COPY hooks/ hooks/
+COPY overrides/ overrides/
 COPY favicon.svg robots.txt ./
 RUN mkdocs build
 # Move root assets into dist so nginx serves them from /

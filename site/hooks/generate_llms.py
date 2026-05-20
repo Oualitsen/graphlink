@@ -50,7 +50,7 @@ def _read(path):
 
 def on_post_build(config):
     docs_dir = config['docs_dir']
-    root_dir = os.path.dirname(os.path.abspath(docs_dir))
+    out_dir = config['site_dir']   # dist/ — goes into the Docker image
     site_url = config.get('site_url', 'https://graphlink.dev').rstrip('/')
     pages = [p for p in _flatten_nav(config.get('nav', [])) if p.endswith('.md') and not p.startswith('_')]
 
@@ -68,7 +68,7 @@ def on_post_build(config):
         full_parts.append('\n\n---\n\n')
 
     full_output = ''.join(full_parts)
-    with open(os.path.join(root_dir, 'llms-full.txt'), 'w') as f:
+    with open(os.path.join(out_dir, 'llms-full.txt'), 'w') as f:
         f.write(full_output)
 
     # --- llms.txt ---
@@ -97,7 +97,7 @@ def on_post_build(config):
         '- Issues: https://github.com/Oualitsen/graphlink/issues\n' \
         '- Releases: https://github.com/Oualitsen/graphlink/releases\n'
 
-    with open(os.path.join(root_dir, 'llms.txt'), 'w') as f:
+    with open(os.path.join(out_dir, 'llms.txt'), 'w') as f:
         f.write(concise_output)
 
     # --- sitemap.xml ---
@@ -124,7 +124,7 @@ def on_post_build(config):
     sitemap += '\n'.join(sitemap_entries)
     sitemap += '\n</urlset>\n'
 
-    with open(os.path.join(root_dir, 'sitemap.xml'), 'w') as f:
+    with open(os.path.join(out_dir, 'sitemap.xml'), 'w') as f:
         f.write(sitemap)
 
     print(f"  [llms hook] llms-full.txt — {len(pages)} pages, {len(full_output):,} chars")
