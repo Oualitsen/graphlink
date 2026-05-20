@@ -1036,6 +1036,18 @@ extension GLGrammarExtension on GLParser {
     return '${prefix}_$hash';
   }
 
+  bool _isExhaustiveProjection(List<GLField> result, GLTypeDefinition realType) {
+    if (!generateAllFieldsFragments) return false;
+    final resultFieldNames = result.map((f) => f.name.token).toSet();
+    if (!realType.getSerializableFields(mode)
+        .every((f) => resultFieldNames.contains(f.name.token))) return false;
+    return result.where((f) => typeRequiresProjection(f.type)).every((f) {
+      final sub = projectedTypes[f.type.firstType.token]
+               ?? projectedInterfaces[f.type.firstType.token];
+      return sub != null && sub.isExhaustive(this);
+    });
+  }
+
   GeneratedTypeName _generateName(String originalName,
       Iterable<GLProjection> projections, List<GLDirectiveValue> directives) {
     String? name = getNameValueFromDirectives(directives);
@@ -1272,7 +1284,9 @@ extension GLGrammarExtension on GLParser {
             field, projection, projection.getDirectives()));
       }
     }
-    var name = _generateName(onTypeName, projections.values, directives);
+    final name = _isExhaustiveProjection(result, realType)
+        ? GeneratedTypeName(onTypeName, false)
+        : _generateName(onTypeName, projections.values, directives);
     var newType = _createNewType(name, result, directives, realType);
     final interfaceList = <GLInterfaceDefinition>[];
     for (var iface in realType.interfaces) {
@@ -1282,6 +1296,12 @@ extension GLGrammarExtension on GLParser {
     }
 
     var resultType = addToProjectedTypes(newType);
+    if (!identical(resultType, newType)) {
+      for (var iface in interfaceList) {
+        iface.removeImplementation(newType.token);
+        iface.addImplementation(resultType);
+      }
+    }
     return TypeWithInterface(type: resultType, interfaces: interfaceList);
   }
 
