@@ -26,6 +26,10 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - **No generics at the Java call site.** Other Java GraphQL clients require
   `TypeReference<GraphQLResponse<GetUserData>>` on every call. GraphLink generates fully-resolved
   return types: `client.queries.getUser(id).getUser()` is all you write.
+- **Custom queries and mutations — fully typed.** Write standard GraphQL operation documents
+  alongside your schema. GraphLink generates a typed client method, a typed response class, and
+  projected types for every hand-written query, mutation, and subscription. Combine multiple
+  resolvers in one operation and get one unified typed response.
 - **Built-in caching via schema directives.** Cache behavior is declared in the schema itself
   using `@glCache(ttl, tags)` and `@glCacheInvalidate(tags)`. Supports tag-based invalidation,
   partial query caching (per-field TTL), and offline fallback (`staleIfOffline`).
@@ -88,7 +92,7 @@ glink -h                    # show help
 
 ```graphql
 type Query {
-  getCar(id: ID!): Car! @glCache(ttl: 300, tags: ["cars"])
+  getCar(id: ID!): Car! @glCache(ttl: "5m", tags: ["cars"])
 }
 type Mutation {
   createCar(input: CreateCarInput!): Car! @glCacheInvalidate(tags: ["cars"])

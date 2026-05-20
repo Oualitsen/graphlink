@@ -60,6 +60,7 @@ nav:
   - Backend:
     - Spring Boot: spring-server.md
   - Features:
+    - Custom Queries & Mutations: custom-queries.md
     - Caching: caching.md
   - Reference:
     - Directives: directives.md

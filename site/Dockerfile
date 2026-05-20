@@ -10,6 +10,13 @@ COPY favicon.svg robots.txt ./
 RUN mkdocs build
 # Move root assets into dist so nginx serves them from /
 RUN cp favicon.svg robots.txt dist/
+# Split docs into per-page llms files served at /docs/llms/<page>.txt
+RUN mkdir -p dist/llms && \
+    for f in docs-src/*.md; do \
+      name=$(basename "$f" .md); \
+      case "$name" in _*) continue ;; esac; \
+      cp "$f" "dist/llms/$name.txt"; \
+    done
 
 # Stage 2: Serve with nginx
 FROM nginx:1.27-alpine
