@@ -97,7 +97,7 @@ type Mutation {
 
 ## Documentation pages
 
-- GraphLink — GraphQL Code Generation for Dart, Flutter & Java (GraphLink generates type-safe client and server code from a GraphQL schema for Dart, Flutter, Java, TypeScript, and Spring Boot. No boilerplate. No generics. No runtime dependency.): https://graphlink.dev/docs/index.html
+- GraphLink — GraphQL Code Generation for Dart, Java & TypeScript (GraphLink generates type-safe client and server code from a GraphQL schema for Dart, Flutter, Java, TypeScript, and Spring Boot. No boilerplate. No generics. No runtime dependency.): https://graphlink.dev/docs/index.html
 - Philosophy (The GraphLink philosophy — pure code generation, no runtime abstractions, schema as single source of truth, and only the fields the server actually needs.): https://graphlink.dev/docs/philosophy.html
 - Getting Started (Install the GraphLink CLI, write your first GraphQL schema, configure the generator, and produce type-safe Dart, Java, and TypeScript code in under 5 minutes.): https://graphlink.dev/docs/getting-started.html
 - Dart / Flutter Client (Use the generated GraphLink Dart client in Flutter or Dart apps. Generated Dio and http adapters, named-parameter constructors, typed queries, mutations, subscriptions, file uploads, and built-in caching.): https://graphlink.dev/docs/dart-client.html

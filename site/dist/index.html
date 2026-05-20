@@ -27,7 +27,7 @@
     
     
       
-        <title>GraphLink — GraphQL Code Generation for Dart, Flutter & Java - GraphLink Docs</title>
+        <title>GraphLink — GraphQL Code Generation for Dart, Java & TypeScript - GraphLink Docs</title>
       
     
     
@@ -59,6 +59,129 @@
 
     
     
+  
+
+  
+  <link rel="alternate" type="text/plain" title="GraphLink for LLMs" href="/llms.txt">
+
+  
+  
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://graphlink.dev/">
+  <meta property="og:site_name"   content="GraphLink">
+  <meta property="og:title"       content="GraphLink — GraphQL Code Generation for Dart, Java &amp; TypeScript">
+  <meta property="og:description" content="Define your GraphQL schema once. Get typed client and server code for Dart, Flutter, Java, TypeScript, and Spring Boot. In production: 72% of Spring Boot files generated, 21.5% of Flutter codebase generated. No boilerplate. No generics. Free and open source.">
+  <meta property="og:image"       content="https://graphlink.dev/og-image.png">
+  <meta property="og:image:width"  content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale"      content="en_US">
+  
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:title"       content="GraphLink — GraphQL Code Generation for Dart, Java &amp; TypeScript">
+  <meta name="twitter:description" content="Define your GraphQL schema once. In production: 72% of Spring Boot files and 21.5% of Flutter code are generated. No boilerplate. No generics. Free and open source.">
+  <meta name="twitter:image"       content="https://graphlink.dev/og-image.png">
+  
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://graphlink.dev/#app",
+        "name": "GraphLink",
+        "alternateName": "glink",
+        "description": "GraphLink is a command-line code generation tool that reads a GraphQL schema and generates fully type-safe client and server code for Dart, Flutter, Java, TypeScript, and Spring Boot. It eliminates boilerplate data classes, serializers, query strings, and HTTP wiring. Generated Java code requires no generics at the call site. In production: 72% of Spring Boot files and 64% of lines are generated; 21.5% of a full Flutter codebase is generated.",
+        "applicationCategory": "DeveloperApplication",
+        "applicationSubCategory": "Code Generation Tool",
+        "operatingSystem": "Linux, macOS, Windows",
+        "programmingLanguage": ["Dart", "Java", "TypeScript", "Flutter", "Spring Boot"],
+        "featureList": [
+          "Type-safe GraphQL client generation for Dart, Java, and TypeScript",
+          "Spring Boot server code generation (controllers, services, repositories)",
+          "Built-in client-side caching via @glCache and @glCacheInvalidate schema directives",
+          "Tag-based cache invalidation",
+          "Partial query caching with per-field TTL",
+          "Offline fallback with staleIfOffline",
+          "WebSocket subscription support",
+          "Watch mode for live schema file monitoring",
+          "No generics at the Java call site",
+          "No runtime dependency on GraphLink in generated code"
+        ],
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "license": "https://opensource.org/licenses/MIT",
+        "url": "https://graphlink.dev/",
+        "downloadUrl": "https://github.com/Oualitsen/graphlink/releases/latest",
+        "releaseNotes": "https://github.com/Oualitsen/graphlink/releases",
+        "codeRepository": "https://github.com/Oualitsen/graphlink",
+        "isAccessibleForFree": true,
+        "sameAs": [
+          "https://github.com/Oualitsen/graphlink",
+          "https://pub.dev/packages/graphlink"
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://graphlink.dev/#faq",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Does the generated code have a runtime dependency on GraphLink?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. The generated code has zero runtime dependency on GraphLink. If you stop using GraphLink, the generated files continue to compile and work exactly as before. You own the output completely."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does the Java client use generics at the call site?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. GraphLink generates fully-resolved return types for every query and mutation. The call site reads like ordinary Java: client.queries.getUser(id).getUser() — no TypeReference, no casting, no generic parameters."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What languages and frameworks does GraphLink support?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "GraphLink supports Dart and Flutter for client generation, Java for client generation, TypeScript for client generation (Angular, React, Vue, Node), and Spring Boot for server generation. Go and Kotlin targets are planned."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How does GraphLink caching work?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Cache behavior is declared in the schema using @glCache(ttl, tags) to cache a query result and @glCacheInvalidate(tags) to evict tagged entries on mutation success. Individual fields in a compound query can each carry their own TTL."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is GraphLink production-ready?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. In one production deployment, 72% of Spring Boot files and 64% of lines are generated — only 135 files were written by hand across the entire backend. On the Flutter side, 21.5% of the codebase is generated."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I use watch mode to auto-regenerate on schema changes?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Run glink -w to start watch mode. GraphLink monitors your schema files and automatically regenerates all output files whenever a change is detected."
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+  
+
   </head>
   
   
@@ -110,7 +233,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              GraphLink — GraphQL Code Generation for Dart, Flutter & Java
+              GraphLink — GraphQL Code Generation for Dart, Java & TypeScript
             
           </span>
         </div>
