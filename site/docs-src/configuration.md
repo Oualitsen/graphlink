@@ -1,26 +1,45 @@
 ---
 title: Configuration Reference — GraphLink Docs
-description: Complete reference for all GraphLink config.json options — schemaPaths, typeMappings, outputDir, clientConfig (Dart, Java, TypeScript), serverConfig (Spring Boot), and CLI flags.
+description: Complete reference for all GraphLink glink.json / glink.yaml options — schemaPaths, typeMappings, outputDir, clientConfig (Dart, Java, TypeScript), serverConfig (Spring Boot), and CLI flags.
 ---
 
 # Configuration Reference
 
-Full reference for every option in `config.json`.
+Full reference for every option in `glink.json` / `glink.yaml`.
 
 ## Top-level options
 
-```json title="config.json — top-level structure"
-{
-  "schemaPaths": ["schema/*.graphql"],
-  "mode": "client",
-  "typeMappings": { "ID": "String", "Float": "double" },
-  "outputDir": "lib/generated",
-  "identityFields": ["id"],
-  "disableCache": false,
-  "clientConfig": { ... },
-  "serverConfig": { ... }
-}
-```
+=== "JSON"
+
+    ```json title="glink.json — top-level structure"
+    {
+      "schemaPaths": ["schema/*.graphql"],
+      "mode": "client",
+      "typeMappings": { "ID": "String", "Float": "double" },
+      "outputDir": "lib/generated",
+      "identityFields": ["id"],
+      "disableCache": false,
+      "clientConfig": { },
+      "serverConfig": { }
+    }
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — top-level structure"
+    schemaPaths:
+      - schema/*.graphql
+    mode: client
+    typeMappings:
+      ID: String
+      Float: double
+    outputDir: lib/generated
+    identityFields:
+      - id
+    disableCache: false
+    clientConfig: # see sections below
+    serverConfig: # see sections below
+    ```
 
 | Option | Type | Default | Description |
 |---|---|---|---|
@@ -37,28 +56,51 @@ Full reference for every option in `config.json`.
 
 Used when `mode` is `"client"` and you want Dart/Flutter output.
 
-```json title="clientConfig.dart — all options"
-{
-  "clientConfig": {
-    "dart": {
-      "packageName": "my_app",
-      "httpAdapter": "dio",
-      "generateAdapters": true,
-      "generateAllFieldsFragments": true,
-      "autoGenerateQueries": true,
-      "autoGenerateQueriesDefaultAlias": null,
-      "defaultAlias": null,
-      "operationNameAsParameter": false,
-      "nullableFieldsRequired": false,
-      "immutableInputFields": true,
-      "immutableTypeFields": true,
-      "generateUiTypes": false,
-      "generateUiInputs": false,
-      "appLocalizationsImport": null
+=== "JSON"
+
+    ```json title="glink.json — clientConfig.dart"
+    {
+      "clientConfig": {
+        "dart": {
+          "packageName": "my_app",
+          "httpAdapter": "dio",
+          "generateAdapters": true,
+          "generateAllFieldsFragments": true,
+          "autoGenerateQueries": true,
+          "autoGenerateQueriesDefaultAlias": null,
+          "defaultAlias": null,
+          "operationNameAsParameter": false,
+          "nullableFieldsRequired": false,
+          "immutableInputFields": true,
+          "immutableTypeFields": true,
+          "generateUiTypes": false,
+          "generateUiInputs": false,
+          "appLocalizationsImport": null
+        }
+      }
     }
-  }
-}
-```
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — clientConfig.dart"
+    clientConfig:
+      dart:
+        packageName: my_app
+        httpAdapter: dio
+        generateAdapters: true
+        generateAllFieldsFragments: true
+        autoGenerateQueries: true
+        autoGenerateQueriesDefaultAlias: null
+        defaultAlias: null
+        operationNameAsParameter: false
+        nullableFieldsRequired: false
+        immutableInputFields: true
+        immutableTypeFields: true
+        generateUiTypes: false
+        generateUiInputs: false
+        appLocalizationsImport: null
+    ```
 
 | Option | Type | Default | Description |
 |---|---|---|---|
@@ -83,27 +125,49 @@ Used when `mode` is `"client"` and you want Dart/Flutter output.
 
 Used when `mode` is `"client"` and you want a Java client.
 
-```json title="clientConfig.java — all options"
-{
-  "clientConfig": {
-    "java": {
-      "packageName": "com.example.generated",
-      "wsAdapter": "java11",
-      "jsonCodec": "jackson",
-      "generateAllFieldsFragments": true,
-      "autoGenerateQueries": true,
-      "autoGenerateQueriesDefaultAlias": null,
-      "defaultAlias": null,
-      "operationNameAsParameter": false,
-      "nullableFieldsRequired": false,
-      "immutableInputFields": true,
-      "immutableTypeFields": true,
-      "inputAsRecord": false,
-      "typeAsRecord": false
+=== "JSON"
+
+    ```json title="glink.json — clientConfig.java"
+    {
+      "clientConfig": {
+        "java": {
+          "packageName": "com.example.generated",
+          "wsAdapter": "java11",
+          "jsonCodec": "jackson",
+          "generateAllFieldsFragments": true,
+          "autoGenerateQueries": true,
+          "autoGenerateQueriesDefaultAlias": null,
+          "defaultAlias": null,
+          "operationNameAsParameter": false,
+          "nullableFieldsRequired": false,
+          "immutableInputFields": true,
+          "immutableTypeFields": true,
+          "inputAsRecord": false,
+          "typeAsRecord": false
+        }
+      }
     }
-  }
-}
-```
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — clientConfig.java"
+    clientConfig:
+      java:
+        packageName: com.example.generated
+        wsAdapter: java11
+        jsonCodec: jackson
+        generateAllFieldsFragments: true
+        autoGenerateQueries: true
+        autoGenerateQueriesDefaultAlias: null
+        defaultAlias: null
+        operationNameAsParameter: false
+        nullableFieldsRequired: false
+        immutableInputFields: true
+        immutableTypeFields: true
+        inputAsRecord: false
+        typeAsRecord: false
+    ```
 
 | Option | Type | Default | Description |
 |---|---|---|---|
@@ -126,23 +190,41 @@ Used when `mode` is `"client"` and you want a Java client.
 
 Used when `mode` is `"client"` and you want TypeScript output.
 
-```json title="clientConfig.typescript — all options"
-{
-  "clientConfig": {
-    "typescript": {
-      "httpAdapter": "fetch",
-      "generateDefaultWsAdapter": true,
-      "observables": false,
-      "generateAllFieldsFragments": true,
-      "autoGenerateQueries": true,
-      "defaultAlias": null,
-      "operationNameAsParameter": false,
-      "optionalNullableInputFields": true,
-      "immutableTypeFields": true
+=== "JSON"
+
+    ```json title="glink.json — clientConfig.typescript"
+    {
+      "clientConfig": {
+        "typescript": {
+          "httpAdapter": "fetch",
+          "generateDefaultWsAdapter": true,
+          "observables": false,
+          "generateAllFieldsFragments": true,
+          "autoGenerateQueries": true,
+          "defaultAlias": null,
+          "operationNameAsParameter": false,
+          "optionalNullableInputFields": true,
+          "immutableTypeFields": true
+        }
+      }
     }
-  }
-}
-```
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — clientConfig.typescript"
+    clientConfig:
+      typescript:
+        httpAdapter: fetch
+        generateDefaultWsAdapter: true
+        observables: false
+        generateAllFieldsFragments: true
+        autoGenerateQueries: true
+        defaultAlias: null
+        operationNameAsParameter: false
+        optionalNullableInputFields: true
+        immutableTypeFields: true
+    ```
 
 | Option | Type | Default | Description |
 |---|---|---|---|
@@ -162,28 +244,51 @@ Used when `mode` is `"client"` and you want TypeScript output.
 
 Used when `mode` is `"server"`.
 
-```json title="serverConfig.spring — all options"
-{
-  "serverConfig": {
-    "spring": {
-      "basePackage": "com.example.generated",
-      "generateControllers": true,
-      "generateInputs": true,
-      "generateTypes": true,
-      "generateRepositories": false,
-      "immutableInputFields": true,
-      "immutableTypeFields": false,
-      "inputAsRecord": false,
-      "typeAsRecord": false,
-      "reactive": false,
-      "useSpringSecurity": false,
-      "injectDataFetching": false,
-      "generateSchema": false,
-      "schemaTargetPath": null
+=== "JSON"
+
+    ```json title="glink.json — serverConfig.spring"
+    {
+      "serverConfig": {
+        "spring": {
+          "basePackage": "com.example.generated",
+          "generateControllers": true,
+          "generateInputs": true,
+          "generateTypes": true,
+          "generateRepositories": false,
+          "immutableInputFields": true,
+          "immutableTypeFields": false,
+          "inputAsRecord": false,
+          "typeAsRecord": false,
+          "reactive": false,
+          "useSpringSecurity": false,
+          "injectDataFetching": false,
+          "generateSchema": false,
+          "schemaTargetPath": null
+        }
+      }
     }
-  }
-}
-```
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — serverConfig.spring"
+    serverConfig:
+      spring:
+        basePackage: com.example.generated
+        generateControllers: true
+        generateInputs: true
+        generateTypes: true
+        generateRepositories: false
+        immutableInputFields: true
+        immutableTypeFields: false
+        inputAsRecord: false
+        typeAsRecord: false
+        reactive: false
+        useSpringSecurity: false
+        injectDataFetching: false
+        generateSchema: false
+        schemaTargetPath: null
+    ```
 
 | Option | Type | Default | Description |
 |---|---|---|---|
@@ -229,7 +334,7 @@ clientConfig:
 
 ```bash
 glink                   # auto-discover config (see below)
-glink -c config.json    # explicit config path
+glink -c glink.json     # explicit config path
 glink -w                # watch mode — regenerate on schema change
 glink --version         # print version and exit
 glink --help            # print usage

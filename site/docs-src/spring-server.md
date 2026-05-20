@@ -11,32 +11,59 @@ GraphLink generates the entire Spring Boot scaffolding from your schema — cont
 
 Set `"mode": "server"` and provide a `"spring"` section under `serverConfig`. The key options:
 
-```json title="spring-config.json"
-{
-  "schemaPaths": ["schema/*.graphql"],
-  "mode": "server",
-  "typeMappings": {
-    "ID":      "String",
-    "String":  "String",
-    "Float":   "Double",
-    "Int":     "Integer",
-    "Boolean": "Boolean",
-    "Null":    "null"
-  },
-  "outputDir": "src/main/java/com/example/generated",
-  "serverConfig": {
-    "spring": {
-      "basePackage":          "com.example.generated",
-      "generateControllers":  true,
-      "generateInputs":       true,
-      "generateTypes":        true,
-      "generateRepositories": false,
-      "immutableInputFields": true,
-      "immutableTypeFields":  false
+=== "JSON"
+
+    ```json title="glink.json"
+    {
+      "schemaPaths": ["schema/*.graphql"],
+      "mode": "server",
+      "typeMappings": {
+        "ID":      "String",
+        "String":  "String",
+        "Float":   "Double",
+        "Int":     "Integer",
+        "Boolean": "Boolean",
+        "Null":    "null"
+      },
+      "outputDir": "src/main/java/com/example/generated",
+      "serverConfig": {
+        "spring": {
+          "basePackage":          "com.example.generated",
+          "generateControllers":  true,
+          "generateInputs":       true,
+          "generateTypes":        true,
+          "generateRepositories": false,
+          "immutableInputFields": true,
+          "immutableTypeFields":  false
+        }
+      }
     }
-  }
-}
-```
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml"
+    schemaPaths:
+      - schema/*.graphql
+    mode: server
+    typeMappings:
+      ID: String
+      String: String
+      Float: Double
+      Int: Integer
+      Boolean: Boolean
+      Null: null
+    outputDir: src/main/java/com/example/generated
+    serverConfig:
+      spring:
+        basePackage: com.example.generated
+        generateControllers: true
+        generateInputs: true
+        generateTypes: true
+        generateRepositories: false
+        immutableInputFields: true
+        immutableTypeFields: false
+    ```
 
 | Option | Description |
 |---|---|
@@ -51,36 +78,58 @@ Set `"mode": "server"` and provide a `"spring"` section under `serverConfig`. Th
 
 Set `"inputAsRecord": true` and/or `"typeAsRecord": true` to generate inputs and types as Java records instead of mutable classes with setters. Records are more concise and enforce immutability at the language level:
 
-```json title="config.json — records"
-{
-  "serverConfig": {
-    "spring": {
-      "basePackage": "com.example.generated",
-      "inputAsRecord": true,
-      "typeAsRecord": false
-    }
-  }
-}
-```
+=== "JSON"
 
-!!! warning "Type records and Spring deserialization"
-    Spring's GraphQL runtime deserializes JSON into type classes using setters or reflection. Setting `typeAsRecord: true` for server-side types requires that you configure Spring to use a record-aware deserializer (e.g. Jackson with `@JsonCreator`). For most Spring Boot setups, keep `typeAsRecord: false` and only set `inputAsRecord: true`.
+    ```json title="glink.json — records"
+    {
+      "serverConfig": {
+        "spring": {
+          "basePackage": "com.example.generated",
+          "inputAsRecord": true,
+          "typeAsRecord": false
+        }
+      }
+    }
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — records"
+    serverConfig:
+      spring:
+        basePackage: com.example.generated
+        inputAsRecord: true
+        typeAsRecord: false
+    ```
+
 
 ## Schema generation
 
 Set `"generateSchema": true` to write the processed schema file to disk alongside the generated Java. This is useful when your Spring Boot app needs to serve the schema file at a specific path:
 
-```json title="config.json — schema generation"
-{
-  "serverConfig": {
-    "spring": {
-      "basePackage": "com.example.generated",
-      "generateSchema": true,
-      "schemaTargetPath": "src/main/resources/graphql/schema.graphqls"
+=== "JSON"
+
+    ```json title="glink.json — schema generation"
+    {
+      "serverConfig": {
+        "spring": {
+          "basePackage": "com.example.generated",
+          "generateSchema": true,
+          "schemaTargetPath": "src/main/resources/graphql/schema.graphqls"
+        }
+      }
     }
-  }
-}
-```
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — schema generation"
+    serverConfig:
+      spring:
+        basePackage: com.example.generated
+        generateSchema: true
+        schemaTargetPath: src/main/resources/graphql/schema.graphqls
+    ```
 
 `schemaTargetPath` must end in `.graphql` or `.graphqls`. The generated schema reflects all directive processing — internal directives like `@glSkipOnServer` are not emitted.
 
@@ -292,16 +341,27 @@ vehicleSink.tryEmitComplete();
 
 Set `"reactive": true` in `serverConfig.spring` to generate Spring WebFlux-style controllers. Queries and mutations return `Mono<T>` instead of `T` directly, and subscriptions return `Flux<T>` as usual. File upload fields use `FilePart` instead of `MultipartFile`.
 
-```json title="config.json — reactive mode"
-{
-  "serverConfig": {
-    "spring": {
-      "basePackage": "com.example.generated",
-      "reactive": true
+=== "JSON"
+
+    ```json title="glink.json — reactive mode"
+    {
+      "serverConfig": {
+        "spring": {
+          "basePackage": "com.example.generated",
+          "reactive": true
+        }
+      }
     }
-  }
-}
-```
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — reactive mode"
+    serverConfig:
+      spring:
+        basePackage: com.example.generated
+        reactive: true
+    ```
 
 With `reactive: true`, the generated service interface returns reactive types:
 
@@ -323,15 +383,25 @@ The generated controllers delegate to these reactive methods directly. Spring We
 
 In MVC (non-reactive) mode, Spring Security's `SecurityContextHolder` is thread-local. When a controller delegates to an async `CompletableFuture`, the security context is not automatically carried to the worker thread. Enable `"useSpringSecurity": true` to have GraphLink capture the context before entering the future and restore it on the worker thread:
 
-```json title="config.json — security context propagation"
-{
-  "clientConfig": {
-    "java": {
-      "useSpringSecurity": true
+=== "JSON"
+
+    ```json title="glink.json — security context propagation"
+    {
+      "serverConfig": {
+        "spring": {
+          "useSpringSecurity": true
+        }
+      }
     }
-  }
-}
-```
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — security context propagation"
+    serverConfig:
+      spring:
+        useSpringSecurity: true
+    ```
 
 When enabled, the generated controller looks like this:
 

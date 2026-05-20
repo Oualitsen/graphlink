@@ -60,6 +60,10 @@ directive @glMapField(to: String!) on FIELD_DEFINITION
 # ── File upload ───────────────────────────────────────────────────────────────
 
 directive @glUpload on SCALAR
+
+# ── Cyclic expansion ──────────────────────────────────────────────────────────
+
+directive @glExpand(depth: Int) on OBJECT
 ```
 
 ---
@@ -395,6 +399,48 @@ type Mutation {
   uploadDocuments(files: [Upload!]!): [Document!]!
 }
 ```
+
+---
+
+## @glExpand
+
+**Target:** CLIENT · **Placement:** `OBJECT`
+
+Controls how cyclic type references are handled during `_all_fields` fragment generation. When a type references itself (directly or through a chain), GraphLink cannot emit a recursive fragment spread — it would be invalid GraphQL. Instead, it inlines the cyclic type's fields up to `depth` levels deep.
+
+| Argument | Type | Default | Description |
+|---|---|---|---|
+| `depth` | `Int` | `1` | Number of inline expansion levels for cyclic back-references. `0` omits the cyclic field entirely. |
+
+```graphql title="Example — self-referential type"
+type Employee @glExpand(depth: 2) {
+  id: ID!
+  name: String!
+  manager: Employee
+}
+```
+
+Generated fragment (depth 2 — two levels of inline expansion):
+
+```graphql title="Generated _all_fields_Employee"
+fragment _all_fields_Employee on Employee {
+  id
+  name
+  manager {
+    id
+    name
+    manager {
+      id
+      name
+    }
+  }
+}
+```
+
+Without `@glExpand`, the default depth is `1` — one level of inline expansion. Use `depth: 0` to omit the cyclic field entirely from the fragment.
+
+!!! note "Multi-type cycles"
+    `@glExpand` also handles indirect cycles — for example `Customer → Order → Product → Supplier → Customer`. Each type in the cycle should declare `@glExpand` if a non-default depth is needed. The cycle is detected automatically; `@glExpand` only controls how deep the inline expansion goes before truncating.
 
 ---
 

@@ -11,32 +11,59 @@ A fully typed GraphQL client generated from your schema — works in Angular, Re
 
 Set `"mode": "client"` and add a `"typescript"` key under `clientConfig`:
 
-```json title="ts-config.json"
-{
-  "schemaPaths": ["schema/*.graphql"],
-  "mode": "client",
-  "typeMappings": {
-    "ID":      "string",
-    "String":  "string",
-    "Float":   "number",
-    "Int":     "number",
-    "Boolean": "boolean",
-    "Null":    "null"
-  },
-  "outputDir": "src/generated",
-  "clientConfig": {
-    "typescript": {
-      "packageName": "my-app",
-      "generateAllFieldsFragments": true,
-      "autoGenerateQueries": true,
-      "httpAdapter": "fetch",
-      "observables": false,
-      "generateDefaultWsAdapter": true,
-      "optionalNullableInputFields": true
+=== "JSON"
+
+    ```json title="glink.json"
+    {
+      "schemaPaths": ["schema/*.graphql"],
+      "mode": "client",
+      "typeMappings": {
+        "ID":      "string",
+        "String":  "string",
+        "Float":   "number",
+        "Int":     "number",
+        "Boolean": "boolean",
+        "Null":    "null"
+      },
+      "outputDir": "src/generated",
+      "clientConfig": {
+        "typescript": {
+          "packageName": "my-app",
+          "generateAllFieldsFragments": true,
+          "autoGenerateQueries": true,
+          "httpAdapter": "fetch",
+          "observables": false,
+          "generateDefaultWsAdapter": true,
+          "optionalNullableInputFields": true
+        }
+      }
     }
-  }
-}
-```
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml"
+    schemaPaths:
+      - schema/*.graphql
+    mode: client
+    typeMappings:
+      ID: string
+      String: string
+      Float: number
+      Int: number
+      Boolean: boolean
+      Null: null
+    outputDir: src/generated
+    clientConfig:
+      typescript:
+        packageName: my-app
+        generateAllFieldsFragments: true
+        autoGenerateQueries: true
+        httpAdapter: fetch
+        observables: false
+        generateDefaultWsAdapter: true
+        optionalNullableInputFields: true
+    ```
 
 ## Generated output
 
@@ -310,13 +337,23 @@ client.subscriptions.vehicleAdded().subscribe(event => {
 
 Set `"operationNameAsParameter": true` to append the operation name as a query parameter on every HTTP request — useful for server-side logging and APM:
 
-```json title="config.json"
-{
-  "clientConfig": {
-    "typescript": { "operationNameAsParameter": true }
-  }
-}
-```
+=== "JSON"
+
+    ```json title="glink.json"
+    {
+      "clientConfig": {
+        "typescript": { "operationNameAsParameter": true }
+      }
+    }
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml"
+    clientConfig:
+      typescript:
+        operationNameAsParameter: true
+    ```
 
 The adapter function gains a second parameter and the client sends requests to `<url>?operationName=OperationName`.
 
