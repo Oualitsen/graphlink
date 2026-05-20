@@ -28,6 +28,9 @@ class FlutterInputsTypeHelpers {
   bool isInputField(GLField f) =>
       !f.type.isList && _parser.inputs.containsKey(f.type.firstType.token);
 
+  bool isInputListField(GLField f) =>
+      f.type.isList && _parser.inputs.containsKey(f.type.inlineType.firstType.token);
+
   bool isBoolField(GLField f) =>
       !f.type.isList &&
       (_dartSerializer.typeMap[f.type.firstType.token] ?? '') == 'bool';
@@ -40,6 +43,14 @@ class FlutterInputsTypeHelpers {
     if (f.type.nullable) return _config.nullableBooleanWidget == NullableBooleanWidget.tristate;
     return _config.booleanWidget == BooleanWidget.tristate;
   }
+
+  bool needsSwitchBoolHelper(List<GLField> boolFields) =>
+      boolFields.any((f) => !f.type.nullable && _config.booleanWidget == BooleanWidget.switchWidget);
+
+  bool needsCheckboxBoolHelper(List<GLField> boolFields) =>
+      boolFields.any((f) => f.type.nullable
+          ? _config.nullableBooleanWidget == NullableBooleanWidget.checkbox
+          : _config.booleanWidget == BooleanWidget.checkbox);
 
   // ── Type expressions ──────────────────────────────────────────────────────────
 
@@ -150,7 +161,9 @@ class FlutterInputsTypeHelpers {
 
   bool isPasswordField(GLField f) {
     final n = f.name.token.toLowerCase();
-    return n.contains('password') || n.contains('secret') || n.contains('pin');
+    return n.contains('password') ||
+        n.contains('secret') ||
+        n == 'pin' || n.startsWith('pin') || n.endsWith('pin');
   }
 
   String smartKeyboardTypeExpr(GLField f) {

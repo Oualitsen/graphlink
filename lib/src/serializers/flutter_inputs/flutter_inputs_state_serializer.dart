@@ -118,6 +118,7 @@ class FlutterInputsStateSerializer {
     final formName = '${inputName}Form';
     final stateName = '${inputName}FormState';
     final passwordFields = textFields.where(_types.isPasswordField).toList();
+    final inputListFields = listFields.where(_types.isInputListField).toList();
 
     final stateVarDecls = <String>[
       'final _formKey = GlobalKey<FormState>();',
@@ -164,8 +165,8 @@ class FlutterInputsStateSerializer {
     ];
 
     final didUpdateStatements = <String>[
-      'super.didUpdateWidget(old);',
-      'final oldForm = old as ${formName};',
+      'super.didUpdateWidget(oldWidget);',
+      'final oldForm = oldWidget as ${formName};',
       ...listFields.map((f) {
         if (_types.isEnumListField(f) || _types.isScalarListField(f)) {
           return _u.inlineIfStatement(
@@ -201,7 +202,7 @@ class FlutterInputsStateSerializer {
         _u.createMethod(
             override: true, returnType: 'void', methodName: 'didUpdateWidget',
             namedArguments: false,
-            arguments: ['InputFormWidget<$inputName> old'],
+            arguments: ['InputFormWidget<$inputName> oldWidget'],
             statements: didUpdateStatements),
         _u.createMethod(
             override: true, returnType: 'void', methodName: 'dispose',
@@ -215,10 +216,10 @@ class FlutterInputsStateSerializer {
         ...dateEligibleFields.map(_date.dateRowMethod),
         ...inputFields.map(_inputFieldRowMethod),
         _requiredLabelHelper(inputName),
-        _fieldHelper(inputName),
-        _switchBoolFieldHelper(inputName),
-        _checkboxBoolFieldHelper(inputName),
-        _decorationHelper(inputName),
+        if (_needsFieldHelper(textFields, enumFields, boolFields, inputListFields)) _fieldHelper(inputName),
+        if (_types.needsSwitchBoolHelper(boolFields)) _switchBoolFieldHelper(inputName),
+        if (_types.needsCheckboxBoolHelper(boolFields)) _checkboxBoolFieldHelper(inputName),
+        if (_needsDecorationHelper(textFields, enumFields, boolFields)) _decorationHelper(inputName),
         if (textFields.isNotEmpty) _textDecorationHelper(inputName),
         if (dateEligibleFields.isNotEmpty) _date.clampDateHelper(),
         if (dateEligibleFields.isNotEmpty) _date.isCupertinoHelper(),
@@ -707,4 +708,19 @@ class FlutterInputsStateSerializer {
       ],
     );
   }
+
+  // _field is used by: text fields, enum fields, tristate bool, date fields, and input list fields (catch-all).
+  bool _needsFieldHelper(List<GLField> textFields, List<GLField> enumFields,
+      List<GLField> boolFields, List<GLField> inputListFields) =>
+      textFields.isNotEmpty ||
+      enumFields.isNotEmpty ||
+      boolFields.any(_types.isTristateField) ||
+      inputListFields.isNotEmpty;
+
+  // _decoration is used by: text fields (via _textDecoration), enum dropdowns, tristate bool, date fields.
+  bool _needsDecorationHelper(
+      List<GLField> textFields, List<GLField> enumFields, List<GLField> boolFields) =>
+      textFields.isNotEmpty ||
+      enumFields.isNotEmpty ||
+      boolFields.any(_types.isTristateField);
 }

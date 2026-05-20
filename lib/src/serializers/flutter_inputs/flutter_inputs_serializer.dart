@@ -4,7 +4,9 @@ import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_ui_entity.dart' show GlInputEntity;
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
+import 'package:graphlink/src/utils.dart' as gl_utils;
 import 'flutter_inputs_companion_serializer.dart';
 import 'flutter_inputs_date_serializer.dart';
 import 'flutter_inputs_field_serializer.dart';
@@ -29,7 +31,9 @@ class FlutterInputsSerializer {
 
   // ── File names ────────────────────────────────────────────────────────────────
 
-  bool shouldSkip(GLInputDefinition def) => _config.inputsToSkip.contains(def.token);
+  bool shouldSkip(GLInputDefinition def) =>
+      _config.inputsToSkip.contains(def.token) ||
+      gl_utils.shouldSkip(def, CodeGenerationMode.client);
 
   String getFormFileNameFor(GLInputDefinition def) =>
       '${def.token.toSnakeCase()}_form.dart';
@@ -67,41 +71,39 @@ class FlutterInputsSerializer {
     final stringDateFields = textFields.where((f) => _types.dartScalarType(f) == 'String').toList();
     final dateEligibleFields = [...intFields, ...stringDateFields];
     final inputFields = fields.where(_types.isInputField).toList();
+    final inputListFields = listFields.where(_types.isInputListField).toList();
     final formFields = [...textFields, ...enumFields, ...boolFields, ...inputFields];
     final enumListFields = listFields.where(_types.isEnumListField).toList();
 
     final buffer = StringBuffer();
 
-    // imports
-    buffer.writeln("import 'package:flutter/material.dart';");
-    buffer.writeln("import '$importPrefix/inputs/${inputName.toSnakeCase()}.dart';");
-    buffer.writeln("import '$importPrefix/widgets/inputs/input_form_widget.dart';");
-    buffer.writeln("import '$importPrefix/widgets/inputs/input_read_exception.dart';");
-    for (final imp in entity.enumDataImports(importPrefix)) { buffer.writeln(imp); }
-    for (final imp in entity.enumLabelImports(importPrefix)) { buffer.writeln(imp); }
-    if (boolFields.isNotEmpty) {
-      buffer.writeln("import '$importPrefix/widgets/inputs/boolean_labels.dart';");
-    }
-    if (enumFields.isNotEmpty || boolFields.isNotEmpty) {
-      buffer.writeln("import '$importPrefix/widgets/inputs/field_widgets.dart';");
-    }
-    if (textFields.isNotEmpty) {
-      buffer.writeln("import '$importPrefix/widgets/inputs/text_field_options.dart';");
-    }
-    if (dateEligibleFields.isNotEmpty) {
-      buffer.writeln("import 'package:flutter/cupertino.dart';");
-      buffer.writeln("import 'package:intl/intl.dart';");
-      buffer.writeln("import '$importPrefix/widgets/inputs/date_input_config.dart';");
-      buffer.writeln("import '$importPrefix/widgets/inputs/date_input_formatter.dart';");
-    }
-    buffer.writeln("import '$importPrefix/widgets/inputs/field_visibility.dart';");
-    buffer.writeln("import '$importPrefix/widgets/inputs/required_indicator.dart';");
-    buffer.writeln("import '$importPrefix/widgets/inputs/form_strings.dart';");
-    for (final f in inputFields) {
-      final childType = f.type.firstType.token;
-      buffer.writeln("import '$importPrefix/inputs/${childType.toSnakeCase()}.dart';");
-      buffer.writeln("import '$importPrefix/widgets/inputs/${childType.toSnakeCase()}_form.dart';");
-    }
+    final imports = <String>{
+      "import 'package:flutter/material.dart';",
+      "import '$importPrefix/inputs/${inputName.toSnakeCase()}.dart';",
+      "import '$importPrefix/widgets/inputs/input_form_widget.dart';",
+      "import '$importPrefix/widgets/inputs/input_read_exception.dart';",
+      ...entity.enumDataImports(importPrefix),
+      ...entity.enumLabelImports(importPrefix),
+      if (boolFields.isNotEmpty) "import '$importPrefix/widgets/inputs/boolean_labels.dart';",
+      if (enumFields.isNotEmpty || boolFields.isNotEmpty) "import '$importPrefix/widgets/inputs/field_widgets.dart';",
+      if (textFields.isNotEmpty) "import '$importPrefix/widgets/inputs/text_field_options.dart';",
+      if (dateEligibleFields.isNotEmpty) ...{
+        "import 'package:flutter/cupertino.dart';",
+        "import 'package:intl/intl.dart';",
+        "import '$importPrefix/widgets/inputs/date_input_config.dart';",
+        "import '$importPrefix/widgets/inputs/date_input_formatter.dart';",
+      },
+      "import '$importPrefix/widgets/inputs/field_visibility.dart';",
+      "import '$importPrefix/widgets/inputs/required_indicator.dart';",
+      "import '$importPrefix/widgets/inputs/form_strings.dart';",
+      for (final f in inputFields) ...{
+        "import '$importPrefix/inputs/${f.type.firstType.token.toSnakeCase()}.dart';",
+        "import '$importPrefix/widgets/inputs/${f.type.firstType.token.toSnakeCase()}_form.dart';",
+      },
+      for (final f in inputListFields)
+        "import '$importPrefix/inputs/${f.type.inlineType.firstType.token.toSnakeCase()}.dart';",
+    };
+    for (final imp in imports) { buffer.writeln(imp); }
     buffer.writeln();
 
     final validatableFields = [...textFields, ...enumFields, ...boolFields];

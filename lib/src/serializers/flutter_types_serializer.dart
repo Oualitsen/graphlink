@@ -73,15 +73,15 @@ class FlutterTypesSerializer {
           namedArguments: false,
           arguments: ['$enumName value'],
           statements: [
-            'return ${_u.switchExpression(
+            _u.switchStatement(
               expression: 'value',
               cases: values
-                  .map((v) => DartSwitchExpressionCase(
-                        pattern: '$enumName.${v.token}',
-                        result: v.token,
+                  .map((v) => DartCaseStatement(
+                        caseValue: '$enumName.${v.token}',
+                        statement: 'return ${v.token};',
                       ))
                   .toList(),
-            )};',
+            ),
           ],
         ),
       ],
@@ -112,17 +112,19 @@ class FlutterTypesSerializer {
 
     final buffer = StringBuffer();
 
-    buffer.writeln("import 'package:flutter/material.dart';");
-    buffer.writeln("import 'package:flutter/semantics.dart';");
-    buffer.writeln("import '$importPrefix/types/${typeName.toSnakeCase()}.dart';");
-    buffer.writeln("import '$importPrefix/widgets/inputs/form_strings.dart';");
-    for (final imp in entity.enumDataImports(importPrefix)) { buffer.writeln(imp); }
-    for (final imp in entity.enumLabelImports(importPrefix)) { buffer.writeln(imp); }
-    for (final f in nestedTypeFields) {
-      final child = f.type.firstType.token;
-      buffer.writeln("import '$importPrefix/types/${child.toSnakeCase()}.dart';");
-      buffer.writeln("import '$importPrefix/widgets/types/${child.toSnakeCase()}_widget.dart';");
-    }
+    final imports = <String>{
+      "import 'package:flutter/material.dart';",
+      "import 'package:flutter/semantics.dart';",
+      "import '$importPrefix/types/${typeName.toSnakeCase()}.dart';",
+      "import '$importPrefix/widgets/inputs/form_strings.dart';",
+      ...entity.enumDataImports(importPrefix),
+      ...entity.enumLabelImports(importPrefix),
+      for (final f in nestedTypeFields) ...{
+        "import '$importPrefix/types/${f.type.firstType.token.toSnakeCase()}.dart';",
+        "import '$importPrefix/widgets/types/${f.type.firstType.token.toSnakeCase()}_widget.dart';",
+      },
+    };
+    for (final imp in imports) { buffer.writeln(imp); }
     buffer.writeln();
 
     buffer.writeln(_serializeLabelsClass(typeName, fields));
@@ -313,9 +315,9 @@ class FlutterTypesSerializer {
         'final entries = <MapEntry<int, Widget>>[];',
         ...fields.asMap().entries.map((e) {
           final defaultVal = _defaultValueExpression(e.value, varName);
-          return _u.inlineIfStatement(
+          return _u.ifStatement(
             condition: 'vis.${e.value.name}',
-            statement: 'entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, values?.${e.value.name} ?? $defaultVal));',
+            ifBlockStatements: ['entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, values?.${e.value.name} ?? $defaultVal));'],
           );
         }),
         'entries.sort((a, b) => a.key.compareTo(b.key));',
@@ -336,9 +338,9 @@ class FlutterTypesSerializer {
         'final entries = <MapEntry<int, Widget>>[];',
         ...fields.asMap().entries.map((e) {
           final label = _humanize(e.value.name.token);
-          return _u.inlineIfStatement(
+          return _u.ifStatement(
             condition: 'vis.${e.value.name}',
-            statement: "entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, labels?.${e.value.name} ?? const Text('$label')));",
+            ifBlockStatements: ["entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, labels?.${e.value.name} ?? const Text('$label')));"],
           );
         }),
         'entries.sort((a, b) => a.key.compareTo(b.key));',
@@ -372,9 +374,9 @@ class FlutterTypesSerializer {
               ]),
             ]),
           ]);
-          return _u.inlineIfStatement(
+          return _u.ifStatement(
             condition: 'vis.${e.value.name}',
-            statement: 'entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, $row));',
+            ifBlockStatements: ['entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, $row));'],
           );
         }),
         'entries.sort((a, b) => a.key.compareTo(b.key));',
@@ -400,9 +402,9 @@ class FlutterTypesSerializer {
             "title: labels?.${e.value.name} ?? const Text('$label')",
             'subtitle: values?.${e.value.name} ?? $defaultVal',
           ]);
-          return _u.inlineIfStatement(
+          return _u.ifStatement(
             condition: 'vis.${e.value.name}',
-            statement: 'entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, $tile));',
+            ifBlockStatements: ['entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, $tile));'],
           );
         }),
         'entries.sort((a, b) => a.key.compareTo(b.key));',
@@ -439,9 +441,9 @@ class FlutterTypesSerializer {
               ]),
             ]),
           ]);
-          return _u.inlineIfStatement(
+          return _u.ifStatement(
             condition: 'vis.${e.value.name}',
-            statement: 'entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, $tile));',
+            ifBlockStatements: ['entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, $tile));'],
           );
         }),
         'entries.sort((a, b) => a.key.compareTo(b.key));',
@@ -473,6 +475,13 @@ class FlutterTypesSerializer {
     final nullable = type.nullable;
     final dartType = _dartSerializer.typeMap[baseToken] ?? baseToken;
 
+    // List
+    if (type.isList) {
+      return nullable
+          ? "Text($accessor?.join(', ') ?? '')"
+          : "Text($accessor.join(', '))";
+    }
+
     // Boolean
     if (dartType == 'bool') {
       if (nullable) {
@@ -503,7 +512,7 @@ class FlutterTypesSerializer {
       return nullable ? "Text($accessor ?? '')" : 'Text($accessor)';
     }
 
-    // Int, double, lists
+    // Int, double
     return nullable ? "Text($accessor?.toString() ?? '')" : 'Text($accessor.toString())';
   }
 

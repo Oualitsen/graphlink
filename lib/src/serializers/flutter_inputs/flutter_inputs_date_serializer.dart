@@ -56,7 +56,12 @@ class FlutterInputsDateSerializer {
         async: true,
         arguments: ['TextEditingController controller', 'DateInputConfig config'],
         statements: [
-          'final current = controller.text.isEmpty ? null : () { try { return DateFormat(config.pattern).parse(controller.text); } catch (_) { return null; } }();',
+          'DateTime? current;',
+          _u.tryCatchFinally(
+            tryStatements: ['current = controller.text.isEmpty ? null : DateFormat(config.pattern).parse(controller.text);'],
+            catchVariable: '_',
+            catchStatements: ['current = null;'],
+          ),
           'final first = config.firstDate ?? DateTime(1900);',
           'final last = config.lastDate ?? DateTime(2100);',
           'final initial = _clampDate(current ?? config.initialDate ?? DateTime.now(), first, last);',
@@ -87,7 +92,12 @@ class FlutterInputsDateSerializer {
         async: true,
         arguments: ['TextEditingController controller', 'DateInputConfig config'],
         statements: [
-          'final current = controller.text.isEmpty ? null : () { try { return DateFormat(config.pattern).parse(controller.text); } catch (_) { return null; } }();',
+          'DateTime? current;',
+          _u.tryCatchFinally(
+            tryStatements: ['current = controller.text.isEmpty ? null : DateFormat(config.pattern).parse(controller.text);'],
+            catchVariable: '_',
+            catchStatements: ['current = null;'],
+          ),
           'final first = config.firstDate ?? DateTime(1900);',
           'final last = config.lastDate ?? DateTime(2100);',
           'DateTime picked = _clampDate(current ?? config.initialDate ?? DateTime.now(), first, last);',
@@ -136,7 +146,11 @@ class FlutterInputsDateSerializer {
         arguments: ['String text', 'DateInputConfig config'],
         statements: [
           _u.inlineIfStatement(condition: 'text.isEmpty', statement: 'return null;'),
-          'try { return DateFormat(config.pattern).parse(text).millisecondsSinceEpoch; } catch (_) { return null; }',
+          _u.tryCatchFinally(
+            tryStatements: ['return DateFormat(config.pattern).parse(text).millisecondsSinceEpoch;'],
+            catchVariable: '_',
+            catchStatements: ['return null;'],
+          ),
         ],
       );
 
@@ -152,8 +166,15 @@ class FlutterInputsDateSerializer {
     final dateValidators = <String>[
       'final _ctx = _buildContext();',
       'if ((_form.visibility?.$name?.call(_ctx) ?? FieldVisibility.enabled) != FieldVisibility.enabled) return null;',
-      if (!nullable) "if (v == null || v.isEmpty) return _form.strings.required;",
-      "try { DateFormat(_form.dateConfig!.$name!.pattern).parse(v${nullable ? " ?? ''" : '!'}); } catch (_) { return _form.strings.invalidDate; }",
+      if (!nullable)
+        _u.inlineIfStatement(condition: 'v == null || v.isEmpty', statement: 'return _form.strings.required;'),
+      if (nullable)
+        _u.inlineIfStatement(condition: 'v == null || v.isEmpty', statement: 'return null;'),
+      _u.tryCatchFinally(
+        tryStatements: ["DateFormat(_form.dateConfig!.$name!.pattern).parse(v);"],
+        catchVariable: '_',
+        catchStatements: ['return _form.strings.invalidDate;'],
+      ),
       'return _form.validations?.$name?.call(v, _ctx);',
     ];
 
@@ -183,8 +204,16 @@ class FlutterInputsDateSerializer {
       ]),
     );
 
-    final initialDateExpr =
-        '_clampDate(_${name}Controller.text.isEmpty ? (_form.dateConfig!.$name!.initialDate ?? DateTime.now()) : (() { try { return DateFormat(_form.dateConfig!.$name!.pattern).parse(_${name}Controller.text); } catch (_) { return DateTime.now(); } }()), _form.dateConfig!.$name!.firstDate ?? DateTime(1900), _form.dateConfig!.$name!.lastDate ?? DateTime(2100))';
+    final parsedDateDecl = 'DateTime? _parsedDate;';
+    final parsedDateInit = _u.tryCatchFinally(
+      tryStatements: [
+        '_parsedDate = _${name}Controller.text.isEmpty ? null : DateFormat(_form.dateConfig!.$name!.pattern).parse(_${name}Controller.text);',
+      ],
+      catchVariable: '_',
+      catchStatements: ['_parsedDate = null;'],
+    );
+    final initialDateLocal =
+        'final _initialDate = _clampDate(_parsedDate ?? _form.dateConfig!.$name!.initialDate ?? DateTime.now(), _form.dateConfig!.$name!.firstDate ?? DateTime(1900), _form.dateConfig!.$name!.lastDate ?? DateTime(2100));';
 
     final onCupertinoDateTimeChanged =
         '(dt) => setState(() { '
@@ -196,7 +225,7 @@ class FlutterInputsDateSerializer {
       'height: 220',
       'child: ${_u.callExpression('CupertinoDatePicker', [
         'mode: _form.dateConfig!.$name!.type == DateType.dateTime ? CupertinoDatePickerMode.dateAndTime : CupertinoDatePickerMode.date',
-        'initialDateTime: $initialDateExpr',
+        'initialDateTime: _initialDate',
         'minimumDate: _form.dateConfig!.$name!.firstDate ?? DateTime(1900)',
         'maximumDate: _form.dateConfig!.$name!.lastDate ?? DateTime(2100)',
         'onDateTimeChanged: $onCupertinoDateTimeChanged',
@@ -218,7 +247,7 @@ class FlutterInputsDateSerializer {
         '}';
 
     final materialCalendar = _u.callExpression('CalendarDatePicker', [
-      'initialDate: $initialDateExpr',
+      'initialDate: _initialDate',
       'firstDate: _form.dateConfig!.$name!.firstDate ?? DateTime(1900)',
       'lastDate: _form.dateConfig!.$name!.lastDate ?? DateTime(2100)',
       'onDateChanged: $onMaterialDateChanged',
@@ -228,23 +257,28 @@ class FlutterInputsDateSerializer {
       'initialValue: _${name}Controller.text',
       'autovalidateMode: AutovalidateMode.onUserInteraction',
       'validator: ${_u.functionLiteral(['v'], dateValidators)}',
-      'builder: (field) => ${_u.callExpression('Column', [
-        'crossAxisAlignment: CrossAxisAlignment.start',
-        _u.listArg('children', [
-          _u.callExpression('InkWell', [
-            'onTap: enabled ? () => setState(() => _${name}CalendarOpen = !_${name}CalendarOpen) : null',
-            'child: ${_u.callExpression('InputDecorator', [
-              'decoration: _decoration(label).copyWith(errorText: field.errorText, suffixIcon: Icon(_${name}CalendarOpen ? Icons.keyboard_arrow_up_outlined : Icons.calendar_today_outlined))',
-              'child: Text(_${name}Controller.text.isEmpty ? \'\' : _${name}Controller.text)',
-            ])}',
+      'builder: ${_u.functionLiteral(['field'], [
+        parsedDateDecl,
+        parsedDateInit,
+        initialDateLocal,
+        'return ${_u.callExpression('Column', [
+          'crossAxisAlignment: CrossAxisAlignment.start',
+          _u.listArg('children', [
+            _u.callExpression('InkWell', [
+              'onTap: enabled ? () => setState(() => _${name}CalendarOpen = !_${name}CalendarOpen) : null',
+              'child: ${_u.callExpression('InputDecorator', [
+                'decoration: _decoration(label).copyWith(errorText: field.errorText, suffixIcon: Icon(_${name}CalendarOpen ? Icons.keyboard_arrow_up_outlined : Icons.calendar_today_outlined))',
+                'child: Text(_${name}Controller.text.isEmpty ? \'\' : _${name}Controller.text)',
+              ])}',
+            ]),
+            _u.callExpression('Visibility', [
+              'visible: _${name}CalendarOpen',
+              'maintainState: false',
+              'child: _isCupertino(_form.dateConfig!.$name!) ? $cupertinoCalendar : $materialCalendar',
+            ]),
+            errorText,
           ]),
-          _u.callExpression('Visibility', [
-            'visible: _${name}CalendarOpen',
-            'maintainState: false',
-            'child: _isCupertino(_form.dateConfig!.$name!) ? $cupertinoCalendar : $materialCalendar',
-          ]),
-          errorText,
-        ]),
+        ])};',
       ])}',
     ]);
 
@@ -260,7 +294,7 @@ class FlutterInputsDateSerializer {
           ifBlockStatements: ['return _field(label, $regularExpr);'],
         ),
         _u.ifStatement(
-          condition: 'config!.mode == DateInputMode.inline',
+          condition: 'config.mode == DateInputMode.inline',
           ifBlockStatements: ['return $inlineField;'],
         ),
         'return _field(label, $dialogField);',
