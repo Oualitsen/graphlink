@@ -11,9 +11,9 @@ enum JavaJsonCodec { jackson, gson, none }
 // ── Abstract base classes ────────────────────────────────────────────────────
 
 abstract class ClientLanguageConfig {
-  bool get generateAllFieldsFragments => false;
+  bool get generateAllFieldsFragments => true;
   bool get nullableFieldsRequired => false;
-  bool get autoGenerateQueries => false;
+  bool get autoGenerateQueries => true;
   bool get operationNameAsParameter => false;
   bool get immutableTypeFields => true;
   String? get defaultAlias => null;
@@ -266,9 +266,9 @@ class DartClientConfig extends ClientLanguageConfig {
 
   factory DartClientConfig.fromJson(Map<String, dynamic> json) {
     return DartClientConfig(
-      generateAllFieldsFragments: (json['generateAllFieldsFragments'] as bool?) ?? false,
+      generateAllFieldsFragments: (json['generateAllFieldsFragments'] as bool?) ?? true,
       nullableFieldsRequired: (json['nullableFieldsRequired'] as bool?) ?? false,
-      autoGenerateQueries: (json['autoGenerateQueries'] as bool?) ?? false,
+      autoGenerateQueries: (json['autoGenerateQueries'] as bool?) ?? true,
       autoGenerateQueriesDefaultAlias: json['autoGenerateQueriesDefaultAlias'] as String?,
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
       defaultAlias: json['defaultAlias'] as String?,
@@ -305,9 +305,9 @@ class JavaClientConfig extends ClientLanguageConfig {
 
   JavaClientConfig({
     required this.packageName,
-    this.generateAllFieldsFragments = false,
+    this.generateAllFieldsFragments = true,
     this.nullableFieldsRequired = false,
-    this.autoGenerateQueries = false,
+    this.autoGenerateQueries = true,
     this.operationNameAsParameter = false,
     this.immutableInputFields = true,
     this.immutableTypeFields = true,
@@ -321,9 +321,9 @@ class JavaClientConfig extends ClientLanguageConfig {
   factory JavaClientConfig.fromJson(Map<String, dynamic> json) {
     return JavaClientConfig(
       packageName: json['packageName'] as String,
-      generateAllFieldsFragments: (json['generateAllFieldsFragments'] as bool?) ?? false,
+      generateAllFieldsFragments: (json['generateAllFieldsFragments'] as bool?) ?? true,
       nullableFieldsRequired: (json['nullableFieldsRequired'] as bool?) ?? false,
-      autoGenerateQueries: (json['autoGenerateQueries'] as bool?) ?? false,
+      autoGenerateQueries: (json['autoGenerateQueries'] as bool?) ?? true,
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
       immutableInputFields: (json['immutableInputFields'] as bool?) ?? true,
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
@@ -355,8 +355,8 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
   final TypeScriptHttpAdapter httpAdapter;
 
   TypeScriptClientConfig({
-    this.generateAllFieldsFragments = false,
-    this.autoGenerateQueries = false,
+    this.generateAllFieldsFragments = true,
+    this.autoGenerateQueries = true,
     this.operationNameAsParameter = false,
     this.immutableTypeFields = true,
     this.optionalNullableInputFields = true,
@@ -368,8 +368,8 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
 
   factory TypeScriptClientConfig.fromJson(Map<String, dynamic> json) {
     return TypeScriptClientConfig(
-      generateAllFieldsFragments: (json['generateAllFieldsFragments'] as bool?) ?? false,
-      autoGenerateQueries: (json['autoGenerateQueries'] as bool?) ?? false,
+      generateAllFieldsFragments: (json['generateAllFieldsFragments'] as bool?) ?? true,
+      autoGenerateQueries: (json['autoGenerateQueries'] as bool?) ?? true,
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
       optionalNullableInputFields: (json['optionalNullableInputFields'] as bool?) ?? true,
