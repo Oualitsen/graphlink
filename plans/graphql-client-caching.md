@@ -421,10 +421,12 @@ The invalidation is **fire-and-forget** relative to the stream — it does not d
 - **Cache-and-Network** — return cached resolvers immediately, stream updates when network responds
 - **Cache size limits** — max entries or max memory cap with LRU eviction
 - **Cache inspector** — debug utility to inspect current cache state during development
+- **TTL duration strings** — allow human-readable TTL values like `"4m"`, `"90s"`, `"2h"` instead of raw seconds. See `ttl-units.md`.
+- **Argument-aware dynamic tags** — allow tag strings to interpolate resolver/mutation arguments (`"user-detail-$id"`) for surgical per-entry invalidation without new serializer logic. See `dynamic-tags-caching.md`.
 
 ---
 
 ## Open Questions
 
-- Should `invalidate<ResolverName>()` evict all entries for that resolver (across all variable combinations) or only for a specific variable set? **Current assumption: all variable combinations.**
+- ~~Should `invalidate<ResolverName>()` evict all entries for that resolver (across all variable combinations) or only for a specific variable set?~~ **Resolved:** targeted per-entry invalidation is handled via argument-aware dynamic tags (`"user-detail-$id"`). Bulk invalidation uses tags as before. No resolver-level imperative API is needed.
 - Should the generated code handle concurrent async requests to the same resolver key (request deduplication / in-flight tracking)?

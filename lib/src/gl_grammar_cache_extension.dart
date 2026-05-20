@@ -127,22 +127,38 @@ extension GLGrammarCacheExtension on GLParser {
   }
 
   ///
-  /// checks all glCache directves
-  /// ttl should not be null
-  /// ttl should be an integer
+  /// checks all glCache directives
+  /// ttl is required and must be a positive integer or a duration string ("30s", "4m", "2h", "1d")
+  /// String values are parsed and normalized back to int seconds so all downstream code is unchanged
   void checkGLCacheDirectives() {
     directiveValues.where((d) => d.token == glCache).forEach((directive) {
-      // check TTL is not null
       var ttlObject = directive.getArgValue(glCacheTTL);
       if (ttlObject == null) {
-        throw ParseException("${glCacheTTL} is required on $glCache directives",
+        throw ParseException("$glCacheTTL is required on $glCache directives",
             info: directive.tokenInfo);
       }
-      if (ttlObject is! int || ttlObject < 0) {
+
+      int ttlSeconds;
+      if (ttlObject is int) {
+        if (ttlObject <= 0) {
+          throw ParseException(
+            "$glCacheTTL on $glCache must be a positive integer. found: $ttlObject",
+            info: directive.tokenInfo,
+          );
+        }
+        ttlSeconds = ttlObject;
+      } else if (ttlObject is String) {
+        ttlSeconds = _parseTtlToSeconds(ttlObject, directive);
+      } else {
         throw ParseException(
-            "${glCacheTTL} on $glCache directives should be a positive integer! found: ${ttlObject}",
-            info: directive.tokenInfo);
+          '$glCacheTTL on $glCache must be a positive integer or a duration string (e.g. "30s", "4m", "2h", "1d"). found: $ttlObject',
+          info: directive.tokenInfo,
+        );
       }
+
+      // Normalize to int so all downstream consumers work unchanged
+      directive.addArg(glCacheTTL, ttlSeconds);
+
       final staleIfOffline = directive.getArgValue(glCacheArgStaleIfOffline);
       if (staleIfOffline != null && staleIfOffline is! bool) {
         throw ParseException(
@@ -151,6 +167,51 @@ extension GLGrammarCacheExtension on GLParser {
         );
       }
     });
+  }
+
+  int _parseTtlToSeconds(String raw, GLDirectiveValue directive) {
+    var value = raw.trim();
+    if (value.startsWith('"') && value.endsWith('"')) {
+      value = value.substring(1, value.length - 1).trim();
+    }
+
+    if (value.isEmpty) {
+      throw ParseException(
+        '$glCacheTTL on $glCache must be a positive duration (e.g. "30s", "4m", "2h", "1d"). found: "$raw"',
+        info: directive.tokenInfo,
+      );
+    }
+
+    final lower = value.toLowerCase();
+    int multiplier;
+    String numPart;
+
+    if (lower.endsWith('d')) {
+      multiplier = 86400;
+      numPart = lower.substring(0, lower.length - 1);
+    } else if (lower.endsWith('h')) {
+      multiplier = 3600;
+      numPart = lower.substring(0, lower.length - 1);
+    } else if (lower.endsWith('m')) {
+      multiplier = 60;
+      numPart = lower.substring(0, lower.length - 1);
+    } else if (lower.endsWith('s')) {
+      multiplier = 1;
+      numPart = lower.substring(0, lower.length - 1);
+    } else {
+      multiplier = 1;
+      numPart = lower;
+    }
+
+    final n = int.tryParse(numPart);
+    if (n == null || n <= 0) {
+      throw ParseException(
+        '$glCacheTTL on $glCache must be a positive duration (e.g. "30s", "4m", "2h", "1d"). found: "$raw"',
+        info: directive.tokenInfo,
+      );
+    }
+
+    return n * multiplier;
   }
 
   ///

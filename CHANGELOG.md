@@ -263,5 +263,64 @@
 ### Internal
 - `MappingPlan` split into `ToMappingPlan` (forward direction) and `FromMappingPlan` (reverse direction) — all field-categorization logic is now fully encapsulated in the model; serializers are pure emitters with no resolution logic of their own
 
+## 4.7.0 - 2026-05-20
+
+### Breaking changes
+
+- **`@glCache` `ttl` type changed from `Int` to `String`** — the `ttl` argument now accepts a human-readable duration string instead of a bare integer.
+
+  **Migration:** replace every bare integer TTL with a quoted duration string:
+
+  ```graphql
+  # Before
+  getVehicle(id: ID!): Vehicle! @glCache(ttl: 120, tags: ["vehicles"])
+
+  # After
+  getVehicle(id: ID!): Vehicle! @glCache(ttl: "2m", tags: ["vehicles"])
+  ```
+
+  Supported formats: `"<n>s"` (seconds), `"<n>m"` (minutes), `"<n>h"` (hours), `"<n>d"` (days), or a bare integer string `"300"` (treated as seconds). The generator emits a clear error if a bare unquoted integer is found.
+
+  Update the directive declaration in your schema file to match:
+
+  ```graphql
+  # Before
+  directive @glCache(ttl: Int!, ...) on ...
+
+  # After
+  directive @glCache(ttl: String!, ...) on ...
+  ```
+
+### New features
+
+- **Flutter UI widget generation** — new `flutter` config block generates Flutter widgets for GraphQL types and inputs. Configurable options:
+  - `generateTypes` (default `true`) — generate display widgets for output types
+  - `generateInputs` (default `false`) — generate form widgets for input types
+  - `typesToSkip` / `inputsToSkip` — exclude specific types from generation
+  - `defaultGap` (default `16`) — spacing between field rows
+  - `booleanWidget` — `switchWidget` (default), `checkbox`, or `tristate`
+  - `nullableBooleanWidget` — `checkbox` (default) or `tristate`
+  - `listWidget` — `chips` (default) or `checkboxes`
+
+- **`@glExpand` directive** — controls inline expansion depth for cyclic types in `_all_fields` fragment generation. When a cycle is detected, the generator inlines the cyclic type's fields up to `depth` levels instead of emitting an invalid recursive fragment spread. Default depth is `1`. Use `depth: 0` to omit the cyclic field entirely.
+
+  ```graphql
+  type Employee @glExpand(depth: 2) {
+    id: ID!
+    name: String!
+    manager: Employee
+  }
+  ```
+
+- **Exhaustive projection reuse** — when a query projects all fields of a type completely (recursively), the generator now reuses the base type name instead of generating a new projected type name. This reduces the number of generated classes and makes generated code easier to navigate.
+
+- **`generateAllFieldsFragments` and `autoGenerateQueries` default to `true`** — these options no longer need to be explicitly set in `config.json`; they are enabled by default.
+
+### Documentation
+
+- Site migrated to MkDocs — all documentation pages rebuilt with improved navigation and search
+- New **AI Agents** documentation page covering GraphLink's LLM-friendly design
+- Configuration, client, and server docs updated throughout
+
 ---
 

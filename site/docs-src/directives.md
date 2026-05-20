@@ -15,7 +15,7 @@ Add this block to your schema file (or a dedicated `directives.graphql`) so your
 # ── Caching ───────────────────────────────────────────────────────────────────
 
 directive @glCache(
-  ttl: Int!
+  ttl: String!
   tags: [String!]
   staleIfOffline: Boolean
 ) on QUERY | MUTATION | FIELD | FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR | SCHEMA
@@ -76,15 +76,25 @@ Caches the result of a query field. The generated client checks the cache before
 
 | Argument | Type | Required | Description |
 |---|---|---|---|
-| `ttl` | `Int!` | Yes | Time-to-live in seconds. |
+| `ttl` | `String!` | Yes | Time-to-live as a duration string (`"30s"`, `"4m"`, `"2h"`, `"1d"`) or a bare integer string (`"300"` = 300 seconds). |
 | `tags` | `[String!]` | No | Tags to associate with this cache entry for group invalidation. |
 | `staleIfOffline` | `Boolean` | No | When `true`, return the expired cached value if the network request fails. |
 
+**TTL duration formats:**
+
+| Format | Unit | Example | Seconds |
+|--------|------|---------|---------|
+| `"<n>s"` | seconds | `"90s"` | 90 |
+| `"<n>m"` | minutes | `"4m"` | 240 |
+| `"<n>h"` | hours | `"2h"` | 7200 |
+| `"<n>d"` | days | `"1d"` | 86400 |
+| `"<n>"` | seconds (bare) | `"300"` | 300 |
+
 ```graphql title="Example"
 type Query {
-  getVehicle(id: ID!): Vehicle! @glCache(ttl: 120, tags: ["vehicles"])
-  getUserProfile(id: ID!): UserProfile @glCache(ttl: 60, tags: ["users"], staleIfOffline: true)
-  getConfig: AppConfig! @glCache(ttl: 3600)
+  getVehicle(id: ID!): Vehicle! @glCache(ttl: "2m", tags: ["vehicles"])
+  getUserProfile(id: ID!): UserProfile @glCache(ttl: "1m", tags: ["users"], staleIfOffline: true)
+  getConfig: AppConfig! @glCache(ttl: "1h")
 }
 ```
 
