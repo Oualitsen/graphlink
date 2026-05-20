@@ -15,7 +15,7 @@
         <link rel="canonical" href="https://graphlink.dev/caching.html">
       
       
-        <link rel="prev" href="spring-server.html">
+        <link rel="prev" href="custom-queries.html">
       
       
         <link rel="next" href="directives.html">
@@ -305,7 +305,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="caching.html" class="md-tabs__link">
+        <a href="custom-queries.html" class="md-tabs__link">
           
   
   
@@ -768,6 +768,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="custom-queries.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Queries & Mutations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -1295,17 +1323,17 @@
 <h2 id="glcache-caching-a-query">@glCache — caching a query<a class="headerlink" href="#glcache-caching-a-query" title="Permanent link">&para;</a></h2>
 <p>Annotate any query field with <code>@glCache</code> to have its response cached:</p>
 <div class="highlight"><span class="filename">@glCache directive</span><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">type</span><span class="w"> </span><span class="err">Query</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="c"># Cache for 120 seconds, tagged &quot;vehicles&quot;</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="n">getVehicle</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">Vehicle</span><span class="err">!</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">120</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="c"># Cache for 2 minutes, tagged &quot;vehicles&quot;</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="n">getVehicle</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">Vehicle</span><span class="err">!</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2m&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="c"># Cache for 60 seconds, same tag group</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="nl">listVehicles</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Vehicle</span><span class="err">!]!</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="c"># Cache for 1 minute, same tag group</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="nl">listVehicles</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Vehicle</span><span class="err">!]!</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1m&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="c"># Cache for 300 seconds, no tags (cannot be tag-invalidated)</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span><span class="nl">getStaticConfig</span><span class="p">:</span><span class="w"> </span><span class="n">AppConfig</span><span class="err">!</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">300</span><span class="p">)</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="c"># Cache for 5 minutes, no tags (cannot be tag-invalidated)</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span><span class="nl">getStaticConfig</span><span class="p">:</span><span class="w"> </span><span class="n">AppConfig</span><span class="err">!</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;5m&quot;</span><span class="p">)</span>
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">  </span><span class="c"># Cache with staleIfOffline — serve stale data if network fails</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">  </span><span class="n">getUserProfile</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">UserProfile</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span><span class="p">,</span><span class="w"> </span><span class="n">staleIfOffline</span><span class="p">:</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">  </span><span class="n">getUserProfile</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">UserProfile</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1m&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">staleIfOffline</span><span class="p">:</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span>
 <a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="p">}</span>
 </code></pre></div>
 <table>
@@ -1320,9 +1348,9 @@
 <tbody>
 <tr>
 <td><code>ttl</code></td>
-<td><code>Int</code></td>
+<td><code>String</code></td>
 <td>Yes</td>
-<td>Time-to-live in seconds. After this duration, the entry is considered expired and the next call will hit the server.</td>
+<td>Time-to-live as a duration string. After this duration, the entry is expired and the next call hits the server.</td>
 </tr>
 <tr>
 <td><code>tags</code></td>
@@ -1335,6 +1363,49 @@
 <td><code>Boolean</code></td>
 <td>No</td>
 <td>If <code>true</code>, serve the expired cached value when the network call fails instead of throwing.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>TTL duration formats:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Format</th>
+<th>Unit</th>
+<th>Example</th>
+<th>Equivalent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>"&lt;n&gt;s"</code></td>
+<td>seconds</td>
+<td><code>"90s"</code></td>
+<td>90 seconds</td>
+</tr>
+<tr>
+<td><code>"&lt;n&gt;m"</code></td>
+<td>minutes</td>
+<td><code>"4m"</code></td>
+<td>240 seconds</td>
+</tr>
+<tr>
+<td><code>"&lt;n&gt;h"</code></td>
+<td>hours</td>
+<td><code>"2h"</code></td>
+<td>7 200 seconds</td>
+</tr>
+<tr>
+<td><code>"&lt;n&gt;d"</code></td>
+<td>days</td>
+<td><code>"1d"</code></td>
+<td>86 400 seconds</td>
+</tr>
+<tr>
+<td><code>"&lt;n&gt;"</code></td>
+<td>seconds (bare)</td>
+<td><code>"300"</code></td>
+<td>300 seconds</td>
 </tr>
 </tbody>
 </table>
@@ -1388,9 +1459,9 @@
 <p>Tags are labels you attach to cache entries at write time. When you later invalidate a tag, all entries carrying that tag are evicted simultaneously.</p>
 <p>This allows a single mutation to invalidate many different cached queries at once, even if those queries have different operation names and different variable sets:</p>
 <div class="highlight"><span class="filename">Tag invalidation in action</span><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">type</span><span class="w"> </span><span class="err">Query</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="n">getVehicle</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">Vehicle</span><span class="err">!</span><span class="w">       </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">120</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nl">listVehicles</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Vehicle</span><span class="err">!]!</span><span class="w">           </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span><span class="p">,</span><span class="w">  </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="n">getFleet</span><span class="p">(</span><span class="n">ownerId</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="err">[</span><span class="n">Vehicle</span><span class="err">!]!</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">90</span><span class="p">,</span><span class="w">  </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="n">getVehicle</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">Vehicle</span><span class="err">!</span><span class="w">       </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2m&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nl">listVehicles</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Vehicle</span><span class="err">!]!</span><span class="w">           </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1m&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="n">getFleet</span><span class="p">(</span><span class="n">ownerId</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="err">[</span><span class="n">Vehicle</span><span class="err">!]!</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;90s&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="p">}</span>
 <a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
 <a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="k">type</span><span class="w"> </span><span class="err">Mutation</span><span class="w"> </span><span class="p">{</span>
@@ -1406,8 +1477,8 @@
 <p>The result: if one tag is invalidated, only the affected portion of the query is re-fetched. The rest is still served from cache.</p>
 <div class="highlight"><span class="filename">Partial caching — schema</span><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">type</span><span class="w"> </span><span class="err">Query</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="c"># These two aliases will be cached separately</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="nl">vehicle</span><span class="p">:</span><span class="w"> </span><span class="n">Vehicle</span><span class="err">!</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">120</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nl">owner</span><span class="p">:</span><span class="w">   </span><span class="n">Person</span><span class="err">!</span><span class="w">  </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">300</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;persons&quot;</span><span class="p">])</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="nl">vehicle</span><span class="p">:</span><span class="w"> </span><span class="n">Vehicle</span><span class="err">!</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2m&quot;</span><span class="p">,</span><span class="w">  </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;vehicles&quot;</span><span class="p">])</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nl">owner</span><span class="p">:</span><span class="w">   </span><span class="n">Person</span><span class="err">!</span><span class="w">  </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;5m&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;persons&quot;</span><span class="p">])</span>
 <a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="p">}</span>
 </code></pre></div>
 <p>Here is what happens step by step:</p>
@@ -1423,10 +1494,10 @@
 <p>This is especially useful on mobile apps where network connectivity is unreliable. Users see slightly outdated data rather than an error screen:</p>
 <div class="highlight"><span class="filename">staleIfOffline example</span><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">type</span><span class="w"> </span><span class="err">Query</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="c"># If expired and network fails, return the last known value</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="n">getUserProfile</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">UserProfile</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span><span class="p">,</span><span class="w"> </span><span class="n">staleIfOffline</span><span class="p">:</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="n">getUserProfile</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">UserProfile</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1m&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">staleIfOffline</span><span class="p">:</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span>
 <a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
 <a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="c"># Without staleIfOffline — throws on network failure after TTL</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span><span class="n">getVehicle</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">Vehicle</span><span class="err">!</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="mi">120</span><span class="p">)</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span><span class="n">getVehicle</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">Vehicle</span><span class="err">!</span><span class="w"> </span><span class="nd">@glCache</span><span class="p">(</span><span class="n">ttl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2m&quot;</span><span class="p">)</span>
 <a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="p">}</span>
 </code></pre></div>
 <h2 id="custom-cache-store">Custom cache store<a class="headerlink" href="#custom-cache-store" title="Permanent link">&para;</a></h2>
