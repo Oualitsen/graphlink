@@ -16,8 +16,11 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
   final GLTypeDefinition? derivedFromType;
   final bool isResponseType;
 
+  bool _exaustive = false;
+  bool get exaustive => _exaustive;
+
   final Set<String> _originalTokens = <String>{};
-  
+
 
   GLTypeDefinition({
     required TokenInfo name,
@@ -98,6 +101,30 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
       return directiveFields.where((e) => fieldNames.contains(e)).toSet();
     }
     return g.identityFields.where((e) => fieldNames.contains(e)).toSet();
+  }
+
+  bool isExhaustive(GLParser g) {
+    if (_exaustive) return true;
+    if (derivedFromType == null) return true;
+
+    final schemaType = g.types[derivedFromType!.token]
+                    ?? g.interfaces[derivedFromType!.token];
+    if (schemaType == null) return false;
+
+    for (final schemaField in schemaType.getSerializableFields(g.mode)) {
+      if (!g.typeRequiresProjection(schemaField.type)) {
+        if (!fieldNames.contains(schemaField.name.token)) return false;
+      } else {
+        final projected = getFieldByName(schemaField.name.token);
+        if (projected != null) {
+          final sub = g.projectedTypes[projected.type.firstType.token]
+                   ?? g.projectedInterfaces[projected.type.firstType.token];
+          if (sub == null || !sub.isExhaustive(g)) return false;
+        }
+      }
+    }
+    _exaustive = true;
+    return true;
   }
 
   @override

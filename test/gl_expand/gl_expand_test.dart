@@ -223,4 +223,37 @@ void main() {
     final names = employee.fields.map((f) => f.name.token).toList();
     expect(names, isNot(contains("manager")));
   });
+
+  // ─── isExhaustive ──────────────────────────────────────────────────────────
+
+  test("cyclic leaf is exhaustive", () {
+    final g = parse();
+    final employee = fieldType(g, "getEmployee", "getEmployee");
+    final managerField = employee.fields.firstWhere((f) => f.name.token == "manager");
+    final leaf = g.projectedTypes[managerField.type.inlineType.token]!;
+    expect(leaf.isExhaustive(g), isTrue,
+        reason: "leaf has all scalars of Employee, missing only the cyclic complex field");
+  });
+
+  test("schema type is always exhaustive", () {
+    final g = parse();
+    final schemaEmployee = g.types["Employee"]!;
+    expect(schemaEmployee.isExhaustive(g), isTrue,
+        reason: "derivedFromType == null => schema type is definitionally exhaustive");
+  });
+
+  test("partial projection is not exhaustive", () {
+    final g = GLParser(
+      generateAllFieldsFragments: false,
+    )..parse('''
+      type Employee { id: ID! name: String! manager: Employee }
+      type Query { getEmployee: Employee! }
+      fragment partialEmployee on Employee { id }
+      query getEmployee { getEmployee { ...partialEmployee } }
+    ''');
+    final projected = g.projectedTypes.values
+        .firstWhere((t) => t.derivedFromType?.token == "Employee");
+    expect(projected.isExhaustive(g), isFalse,
+        reason: "projection omits scalar field name => not exhaustive");
+  });
 }
