@@ -11,17 +11,29 @@ Type-safe. No generics. No casting. Works with any JSON library.
 
 GraphLink generates concrete adapter classes into your `client/` folder — no external GraphLink runtime, no boilerplate. Two config options control what is generated:
 
-```json title="config.json — adapter options"
-{
-  "clientConfig": {
-    "java": {
-      "packageName": "com.example.generated",
-      "wsAdapter": "java11",
-      "jsonCodec": "jackson"
+=== "JSON"
+
+    ```json title="glink.json — adapter options"
+    {
+      "clientConfig": {
+        "java": {
+          "packageName": "com.example.generated",
+          "wsAdapter": "java11",
+          "jsonCodec": "jackson"
+        }
+      }
     }
-  }
-}
-```
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — adapter options"
+    clientConfig:
+      java:
+        packageName: com.example.generated
+        wsAdapter: java11
+        jsonCodec: jackson
+    ```
 
 **`wsAdapter`** — controls which WebSocket adapter is generated:
 
@@ -308,13 +320,23 @@ The generated WebSocket adapter handles the [graphql-ws subprotocol](https://git
 
 Set `"operationNameAsParameter": true` to append the operation name as a URL query parameter on every request — useful for server-side logging and APM tracing:
 
-```json title="config.json"
-{
-  "clientConfig": {
-    "java": { "operationNameAsParameter": true }
-  }
-}
-```
+=== "JSON"
+
+    ```json title="glink.json"
+    {
+      "clientConfig": {
+        "java": { "operationNameAsParameter": true }
+      }
+    }
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml"
+    clientConfig:
+      java:
+        operationNameAsParameter: true
+    ```
 
 The generated adapter interface gains an `operationName` parameter and the client appends `?operationName=OperationName` to each HTTP request URL.
 
@@ -322,28 +344,49 @@ The generated adapter interface gains an `operationName` parameter and the clien
 
 By default, nullable schema fields accept `null` without any runtime enforcement. Set `"nullableFieldsRequired": true` to emit `Objects.requireNonNull` on every field, including nullable ones:
 
-```json title="config.json"
-{
-  "clientConfig": {
-    "java": { "nullableFieldsRequired": true }
-  }
-}
-```
+=== "JSON"
+
+    ```json title="glink.json"
+    {
+      "clientConfig": {
+        "java": { "nullableFieldsRequired": true }
+      }
+    }
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml"
+    clientConfig:
+      java:
+        nullableFieldsRequired: true
+    ```
 
 ## Java records
 
 Set `"inputAsRecord": true` and/or `"typeAsRecord": true` to generate inputs and types as Java records instead of classes with builders. Records use component accessor syntax (`field()`) instead of `getField()`:
 
-```json title="config.json"
-{
-  "clientConfig": {
-    "java": {
-      "inputAsRecord": true,
-      "typeAsRecord": true
+=== "JSON"
+
+    ```json title="glink.json"
+    {
+      "clientConfig": {
+        "java": {
+          "inputAsRecord": true,
+          "typeAsRecord": true
+        }
+      }
     }
-  }
-}
-```
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml"
+    clientConfig:
+      java:
+        inputAsRecord: true
+        typeAsRecord: true
+    ```
 
 ```java title="Generated input as record"
 public record AddVehicleInput(

@@ -6,7 +6,7 @@ repo_url: https://github.com/Oualitsen/graphlink
 repo_name: Oualitsen/graphlink
 
 docs_dir: docs-src
-site_dir: docs
+site_dir: dist
 
 use_directory_urls: false
 
@@ -64,3 +64,4 @@ nav:
     - Directives: directives.md
     - "@glSkipOnServer & @glSkipOnClient": skip-directives.md
     - Configuration: configuration.md
+  - AI Agents: ai-agents.md

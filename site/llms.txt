@@ -4,7 +4,7 @@
 
 GraphLink is a command-line tool (`glink`) that reads a GraphQL schema and generates fully type-safe
 client and server code. Developers define their API once in a `.graphql` schema file and run
-`glink -c config.json` to get production-ready, idiomatic code for their target language.
+`glink` to get production-ready, idiomatic code for their target language.
 
 ## What GraphLink generates
 
@@ -34,8 +34,7 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - **Only what the server needs.** Unlike ferry (which sends the entire schema), GraphLink generates
   precise queries containing only the requested fields. This is required for Spring Boot's strict
   schema validation to pass.
-- **Watch mode.** Run `glink -c config.json -w` to watch schema files and regenerate automatically
-  on every save.
+- **Watch mode.** Run `glink -w` to watch schema files and regenerate automatically on every save.
 - **Single source of truth.** The schema drives both ends. No duplicate type definitions. No
   schema drift. Adding a field means editing one file.
 
@@ -60,13 +59,14 @@ Platforms: Linux (x86_64), macOS (ARM64), Windows (x86_64)
 ## Basic usage
 
 ```bash
-glink -c config.json        # generate once
-glink -c config.json -w     # watch mode
+glink                       # auto-discover glink.json / glink.yaml / glink.yml
+glink -c glink.json         # explicit config path
+glink -w                    # watch mode
 glink -v                    # print version
 glink -h                    # show help
 ```
 
-## Configuration (config.json)
+## Configuration (glink.json / glink.yaml)
 
 ```json
 {
@@ -97,7 +97,7 @@ type Mutation {
 
 ## Documentation pages
 
-- Documentation (Complete GraphLink documentation — from installation and first schema to Dart/Flutter, Java, and TypeScript clients, Spring Boot server generation, and built-in caching.): https://graphlink.dev/docs/index.html
+- GraphLink — GraphQL Code Generation for Dart, Flutter & Java (GraphLink generates type-safe client and server code from a GraphQL schema for Dart, Flutter, Java, TypeScript, and Spring Boot. No boilerplate. No generics. No runtime dependency.): https://graphlink.dev/docs/index.html
 - Philosophy (The GraphLink philosophy — pure code generation, no runtime abstractions, schema as single source of truth, and only the fields the server actually needs.): https://graphlink.dev/docs/philosophy.html
 - Getting Started (Install the GraphLink CLI, write your first GraphQL schema, configure the generator, and produce type-safe Dart, Java, and TypeScript code in under 5 minutes.): https://graphlink.dev/docs/getting-started.html
 - Dart / Flutter Client (Use the generated GraphLink Dart client in Flutter or Dart apps. Generated Dio and http adapters, named-parameter constructors, typed queries, mutations, subscriptions, file uploads, and built-in caching.): https://graphlink.dev/docs/dart-client.html
@@ -107,7 +107,8 @@ type Mutation {
 - Caching (GraphLink's built-in caching — @glCache and @glCacheInvalidate directives, TTL, tag-based invalidation, partial query caching, staleIfOffline, and custom cache stores.): https://graphlink.dev/docs/caching.html
 - Directives Reference (Complete reference for all GraphLink schema directives — @glCache, @glCacheInvalidate, @glMapsTo, @glMapField, @glSkipOnServer (with forward mappings), @glExternal, @glValidate, and more.): https://graphlink.dev/docs/directives.html
 - "@glSkipOnServer & @glSkipOnClient" ("@glSkipOnServer and @glSkipOnClient — two-layer server-side access control, schema stripping, @SchemaMapping, @BatchMapping, mapTo, forward mappings, and the ID/object field-pair pattern for N+1-safe relationship loading."): https://graphlink.dev/docs/skip-directives.html
-- Configuration Reference (Complete reference for all GraphLink config.json options — schemaPaths, typeMappings, outputDir, clientConfig (Dart, Java, TypeScript), serverConfig (Spring Boot), and CLI flags.): https://graphlink.dev/docs/configuration.html
+- Configuration Reference (Complete reference for all GraphLink glink.json / glink.yaml options — schemaPaths, typeMappings, outputDir, clientConfig (Dart, Java, TypeScript), serverConfig (Spring Boot), and CLI flags.): https://graphlink.dev/docs/configuration.html
+- Using GraphLink with AI Agents (Ready-to-copy agent instruction files for Claude Code, Gemini CLI, and other AI coding assistants in GraphLink projects.): https://graphlink.dev/docs/ai-agents.html
 
 ## Links
 

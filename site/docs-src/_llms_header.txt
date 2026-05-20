@@ -4,7 +4,7 @@
 
 GraphLink is a command-line tool (`glink`) that reads a GraphQL schema and generates fully type-safe
 client and server code. Developers define their API once in a `.graphql` schema file and run
-`glink -c config.json` to get production-ready, idiomatic code for their target language.
+`glink` to get production-ready, idiomatic code for their target language.
 
 ## What GraphLink generates
 
@@ -72,13 +72,13 @@ Platforms: Linux (x86_64), macOS (ARM64), Windows (x86_64)
 
 ```bash
 glink                   # auto-discover glink.json / glink.yaml / glink.yml
-glink -c config.json    # explicit config path (JSON, YAML, or YML)
+glink -c glink.json     # explicit config path (JSON, YAML, or YML)
 glink -w                # watch mode — regenerate on schema change
 glink -v                # print version
 glink -h                # show help
 ```
 
-## Configuration (config.json)
+## Configuration (glink.json / glink.yaml)
 
 ```json
 {

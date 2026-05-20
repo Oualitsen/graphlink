@@ -5,20 +5,18 @@ WORKDIR /site
 COPY mkdocs.yml .
 COPY docs-src/ docs-src/
 COPY hooks/ hooks/
+COPY favicon.svg robots.txt ./
 RUN mkdocs build
+# Move root assets into dist so nginx serves them from /
+RUN cp favicon.svg robots.txt dist/
 
 # Stage 2: Serve with nginx
 FROM nginx:1.27-alpine
 RUN rm /etc/nginx/conf.d/default.conf
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Landing page and root assets
-COPY index.html favicon.svg robots.txt llms.txt llms-full.txt sitemap.xml /usr/share/nginx/html/
-COPY css/ /usr/share/nginx/html/css/
-COPY js/ /usr/share/nginx/html/js/
-
-# MkDocs-built docs
-COPY --from=builder /site/docs/ /usr/share/nginx/html/docs/
+# Everything served from the MkDocs build output
+COPY --from=builder /site/dist/ /usr/share/nginx/html/
 
 EXPOSE 8080
 CMD ["nginx", "-g", "daemon off;"]

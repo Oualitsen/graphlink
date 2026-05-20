@@ -9,18 +9,29 @@ A fully typed GraphQL client generated directly from your schema.
 
 ## Generated adapters
 
-GraphLink generates adapter files alongside the client. Which HTTP adapter is generated is controlled by the `httpAdapter` option in `config.json`. The WebSocket adapter is always generated when your schema has subscriptions.
+GraphLink generates adapter files alongside the client. Which HTTP adapter is generated is controlled by the `httpAdapter` option in `glink.json`. The WebSocket adapter is always generated when your schema has subscriptions.
 
-```json title="config.json — adapter options"
-{
-  "clientConfig": {
-    "dart": {
-      "packageName": "com.example.generated",
-      "httpAdapter": "dio"
+=== "JSON"
+
+    ```json title="glink.json — adapter options"
+    {
+      "clientConfig": {
+        "dart": {
+          "packageName": "com.example.generated",
+          "httpAdapter": "dio"
+        }
+      }
     }
-  }
-}
-```
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — adapter options"
+    clientConfig:
+      dart:
+        packageName: com.example.generated
+        httpAdapter: dio
+    ```
 
 **`httpAdapter`** — controls which HTTP adapter file is generated:
 
@@ -302,15 +313,25 @@ type Query {
 
 Set `"operationNameAsParameter": true` to include the operation name as a URL query parameter on every request. This is useful for identifying operations in server logs, APM dashboards, and proxies without parsing the request body:
 
-```json title="config.json"
-{
-  "clientConfig": {
-    "dart": {
-      "operationNameAsParameter": true
+=== "JSON"
+
+    ```json title="glink.json"
+    {
+      "clientConfig": {
+        "dart": {
+          "operationNameAsParameter": true
+        }
+      }
     }
-  }
-}
-```
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml"
+    clientConfig:
+      dart:
+        operationNameAsParameter: true
+    ```
 
 The generated adapter function gains a second parameter and the client appends `?operationName=OperationName` to every HTTP request:
 
@@ -325,13 +346,23 @@ The WebSocket adapter is unaffected — operation names on subscriptions flow th
 
 By default, nullable schema fields generate optional constructor parameters (`this.fieldName`). Set `"nullableFieldsRequired": true` to force `required this.fieldName` on every field regardless of nullability:
 
-```json title="config.json"
-{
-  "clientConfig": {
-    "dart": { "nullableFieldsRequired": true }
-  }
-}
-```
+=== "JSON"
+
+    ```json title="glink.json"
+    {
+      "clientConfig": {
+        "dart": { "nullableFieldsRequired": true }
+      }
+    }
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml"
+    clientConfig:
+      dart:
+        nullableFieldsRequired: true
+    ```
 
 With the default `false`, a nullable field like `ownerId: ID` generates `this.ownerId` (optional). With `true`, it generates `required this.ownerId` — you must always pass it explicitly, even as `null`.
 

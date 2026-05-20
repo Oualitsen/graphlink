@@ -123,88 +123,167 @@ Create a config file in your project root. GraphLink accepts **JSON** (`.json`),
 
 === "Dart / Flutter"
 
-    ```json title="glink.json"
-    {
-      "schemaPaths": ["schema/*.graphql"],
-      "mode": "client",
-      "typeMappings": {
-        "ID":      "String",
-        "String":  "String",
-        "Float":   "double",
-        "Int":     "int",
-        "Boolean": "bool",
-        "Null":    "null"
-      },
-      "outputDir": "lib/generated",
-      "clientConfig": {
-        "dart": {
-          "packageName": "my_app",
-          "generateAllFieldsFragments": true,
-          "autoGenerateQueries": true,
-          "nullableFieldsRequired": false,
-          "immutableInputFields": true,
-          "immutableTypeFields": true
+    === "JSON"
+
+        ```json title="glink.json"
+        {
+          "schemaPaths": ["schema/*.graphql"],
+          "mode": "client",
+          "typeMappings": {
+            "ID":      "String",
+            "String":  "String",
+            "Float":   "double",
+            "Int":     "int",
+            "Boolean": "bool",
+            "Null":    "null"
+          },
+          "outputDir": "lib/generated",
+          "clientConfig": {
+            "dart": {
+              "packageName": "my_app",
+              "generateAllFieldsFragments": true,
+              "autoGenerateQueries": true,
+              "nullableFieldsRequired": false,
+              "immutableInputFields": true,
+              "immutableTypeFields": true
+            }
+          }
         }
-      }
-    }
-    ```
+        ```
+
+    === "YAML"
+
+        ```yaml title="glink.yaml"
+        schemaPaths:
+          - schema/*.graphql
+        mode: client
+        typeMappings:
+          ID: String
+          String: String
+          Float: double
+          Int: int
+          Boolean: bool
+          Null: null
+        outputDir: lib/generated
+        clientConfig:
+          dart:
+            packageName: my_app
+            generateAllFieldsFragments: true
+            autoGenerateQueries: true
+            nullableFieldsRequired: false
+            immutableInputFields: true
+            immutableTypeFields: true
+        ```
 
 === "Java client"
 
-    ```json title="glink.json"
-    {
-      "schemaPaths": ["schema/*.graphql"],
-      "mode": "client",
-      "typeMappings": {
-        "ID":      "String",
-        "String":  "String",
-        "Float":   "Double",
-        "Int":     "Integer",
-        "Boolean": "Boolean",
-        "Null":    "null"
-      },
-      "outputDir": "src/main/java/com/example/generated",
-      "clientConfig": {
-        "java": {
-          "packageName": "com.example.generated",
-          "generateAllFieldsFragments": true,
-          "autoGenerateQueries": true,
-          "nullableFieldsRequired": false,
-          "immutableInputFields": true,
-          "immutableTypeFields": true
+    === "JSON"
+
+        ```json title="glink.json"
+        {
+          "schemaPaths": ["schema/*.graphql"],
+          "mode": "client",
+          "typeMappings": {
+            "ID":      "String",
+            "String":  "String",
+            "Float":   "Double",
+            "Int":     "Integer",
+            "Boolean": "Boolean",
+            "Null":    "null"
+          },
+          "outputDir": "src/main/java/com/example/generated",
+          "clientConfig": {
+            "java": {
+              "packageName": "com.example.generated",
+              "generateAllFieldsFragments": true,
+              "autoGenerateQueries": true,
+              "nullableFieldsRequired": false,
+              "immutableInputFields": true,
+              "immutableTypeFields": true
+            }
+          }
         }
-      }
-    }
-    ```
+        ```
+
+    === "YAML"
+
+        ```yaml title="glink.yaml"
+        schemaPaths:
+          - schema/*.graphql
+        mode: client
+        typeMappings:
+          ID: String
+          String: String
+          Float: Double
+          Int: Integer
+          Boolean: Boolean
+          Null: null
+        outputDir: src/main/java/com/example/generated
+        clientConfig:
+          java:
+            packageName: com.example.generated
+            generateAllFieldsFragments: true
+            autoGenerateQueries: true
+            nullableFieldsRequired: false
+            immutableInputFields: true
+            immutableTypeFields: true
+        ```
 
 === "Spring Boot"
 
-    ```json title="glink.json"
-    {
-      "schemaPaths": ["schema/*.graphql"],
-      "mode": "server",
-      "typeMappings": {
-        "ID":      "String",
-        "String":  "String",
-        "Float":   "Double",
-        "Int":     "Integer",
-        "Boolean": "Boolean",
-        "Null":    "null"
-      },
-      "outputDir": "src/main/java/com/example/generated",
-      "serverConfig": {
-        "spring": {
-          "basePackage": "com.example.generated",
-          "generateControllers": true,
-          "generateInputs": true,
-          "generateTypes": true,
-          "generateRepositories": false,
-          "immutableInputFields": true,
-          "immutableTypeFields": false
+    === "JSON"
+
+        ```json title="glink.json"
+        {
+          "schemaPaths": ["schema/*.graphql"],
+          "mode": "server",
+          "typeMappings": {
+            "ID":      "String",
+            "String":  "String",
+            "Float":   "Double",
+            "Int":     "Integer",
+            "Boolean": "Boolean",
+            "Null":    "null"
+          },
+          "outputDir": "src/main/java/com/example/generated",
+          "serverConfig": {
+            "spring": {
+              "basePackage": "com.example.generated",
+              "generateControllers": true,
+              "generateInputs": true,
+              "generateTypes": true,
+              "generateRepositories": false,
+              "immutableInputFields": true,
+              "immutableTypeFields": false
+            }
+          }
         }
-      }
-    }
-    ```
+        ```
+
+    === "YAML"
+
+        ```yaml title="glink.yaml"
+        schemaPaths:
+          - schema/*.graphql
+        mode: server
+        typeMappings:
+          ID: String
+          String: String
+          Float: Double
+          Int: Integer
+          Boolean: Boolean
+          Null: null
+        outputDir: src/main/java/com/example/generated
+        serverConfig:
+          spring:
+            basePackage: com.example.generated
+            generateControllers: true
+            generateInputs: true
+            generateTypes: true
+            generateRepositories: false
+            immutableInputFields: true
+            immutableTypeFields: false
+        ```
 
 ### Key configuration options explained
 
