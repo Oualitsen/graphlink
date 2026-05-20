@@ -1,5 +1,5 @@
 ---
-title: GraphLink — GraphQL Code Generation for Dart, Flutter & Java
+title: GraphLink — GraphQL Code Generation for Dart, Java & TypeScript
 description: GraphLink generates type-safe client and server code from a GraphQL schema for Dart, Flutter, Java, TypeScript, and Spring Boot. No boilerplate. No generics. No runtime dependency.
 ---
 
