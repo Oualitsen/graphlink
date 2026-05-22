@@ -73,15 +73,15 @@ class FlutterTypesSerializer {
           namedArguments: false,
           arguments: ['$enumName value'],
           statements: [
-            'return ${_u.switchExpression(
+            _u.switchStatement(
               expression: 'value',
               cases: values
-                  .map((v) => DartSwitchExpressionCase(
-                        pattern: '$enumName.${v.token}',
-                        result: v.token,
+                  .map((v) => DartCaseStatement(
+                        caseValue: '$enumName.${v.token}',
+                        statement: 'return ${v.token};',
                       ))
                   .toList(),
-            )};',
+            ),
           ],
         ),
       ],
@@ -102,27 +102,34 @@ class FlutterTypesSerializer {
     final varName = typeName.firstLow;
     final fields = entity.fields;
     final enumFields = fields
-        .where((f) => !f.type.isList && _parser.enums.containsKey(f.type.firstType.token))
+        .where((f) => _parser.enums.containsKey(f.type.firstType.token))
         .toList();
     final nestedTypeFields = fields
         .where((f) => !f.type.isList &&
             _parser.types.containsKey(f.type.firstType.token) &&
             !_internalTypes.contains(f.type.firstType.token))
         .toList();
+    final nestedTypeListFields = fields
+        .where((f) => f.type.isList &&
+            _parser.types.containsKey(f.type.firstType.token) &&
+            !_internalTypes.contains(f.type.firstType.token))
+        .toList();
 
     final buffer = StringBuffer();
 
-    buffer.writeln("import 'package:flutter/material.dart';");
-    buffer.writeln("import 'package:flutter/semantics.dart';");
-    buffer.writeln("import '$importPrefix/types/${typeName.toSnakeCase()}.dart';");
-    buffer.writeln("import '$importPrefix/widgets/inputs/form_strings.dart';");
-    for (final imp in entity.enumDataImports(importPrefix)) { buffer.writeln(imp); }
-    for (final imp in entity.enumLabelImports(importPrefix)) { buffer.writeln(imp); }
-    for (final f in nestedTypeFields) {
-      final child = f.type.firstType.token;
-      buffer.writeln("import '$importPrefix/types/${child.toSnakeCase()}.dart';");
-      buffer.writeln("import '$importPrefix/widgets/types/${child.toSnakeCase()}_widget.dart';");
-    }
+    final imports = <String>{
+      "import 'package:flutter/material.dart';",
+      "import 'package:flutter/semantics.dart';",
+      "import '$importPrefix/types/${typeName.toSnakeCase()}.dart';",
+      "import '$importPrefix/widgets/inputs/form_strings.dart';",
+      ...entity.enumDataImports(importPrefix),
+      ...entity.enumLabelImports(importPrefix),
+      for (final f in [...nestedTypeFields, ...nestedTypeListFields]) ...{
+        "import '$importPrefix/types/${f.type.firstType.token.toSnakeCase()}.dart';",
+        "import '$importPrefix/widgets/types/${f.type.firstType.token.toSnakeCase()}_widget.dart';",
+      },
+    };
+    for (final imp in imports) { buffer.writeln(imp); }
     buffer.writeln();
 
     buffer.writeln(_serializeLabelsClass(typeName, fields));
@@ -137,7 +144,7 @@ class FlutterTypesSerializer {
     }
     buffer.writeln(_serializeOrderClass(typeName, fields));
     buffer.writeln();
-    buffer.writeln('enum ${typeName}Layout { labeledRow, listTile, listTileReversed }');
+    buffer.writeln('enum ${typeName}Layout { labeledRow, listTile, listTileReversed, expandable }');
     buffer.writeln();
     buffer.write(_serializeWidgetClass(typeName, varName, fields, enumFields));
 
@@ -151,11 +158,12 @@ class FlutterTypesSerializer {
       className: '${typeName}Labels',
       statements: [
         ...fields.map((f) => 'final Widget? ${f.name};'),
+        r'final Widget? $group;',
         _u.createMethod(
           isConst: true,
           methodName: '${typeName}Labels',
           namedArguments: true,
-          arguments: fields.map((f) => 'this.${f.name}').toList(),
+          arguments: [...fields.map((f) => 'this.${f.name}'), r'this.$group'],
         ),
       ],
     );
@@ -185,7 +193,7 @@ class FlutterTypesSerializer {
           isConst: true,
           methodName: '${typeName}Visibility',
           namedArguments: true,
-          arguments: fields.map((f) => 'this.${f.name} = true').toList(),
+          arguments: fields.map((f) => 'this.${f.name} = ${f.type.firstType.token == 'ID' ? 'false' : 'true'}').toList(),
         ),
       ],
     );
@@ -196,11 +204,12 @@ class FlutterTypesSerializer {
       className: '${typeName}Order',
       statements: [
         ...fields.map((f) => 'final int? ${f.name};'),
+        r'final int? $group;',
         _u.createMethod(
           isConst: true,
           methodName: '${typeName}Order',
           namedArguments: true,
-          arguments: fields.map((f) => 'this.${f.name}').toList(),
+          arguments: [...fields.map((f) => 'this.${f.name}'), r'this.$group'],
         ),
       ],
     );
@@ -255,6 +264,10 @@ class FlutterTypesSerializer {
               caseValue: '${typeName}Layout.listTileReversed',
               statement: 'return ${_u.callExpression('Column', ['children: _spaced(_listTileReversedItems())'])};',
             ),
+            DartCaseStatement(
+              caseValue: '${typeName}Layout.expandable',
+              statement: 'return ${_u.callExpression('Column', ['children: _spaced(_expandableItems())'])};',
+            ),
           ],
         ),
       ],
@@ -271,6 +284,7 @@ class FlutterTypesSerializer {
         'final ${typeName}Order? order;',
         if (hasEnumFields) 'final ${typeName}EnumLabels? enumLabels;',
         'final ${typeName}Layout layout;',
+        'final ${typeName}Layout groupLayout;',
         'final double gap;',
         'final FormStrings strings;',
         _u.createMethod(
@@ -286,6 +300,7 @@ class FlutterTypesSerializer {
             'this.order',
             if (hasEnumFields) 'this.enumLabels',
             'this.layout = ${typeName}Layout.labeledRow',
+            'this.groupLayout = ${typeName}Layout.labeledRow',
             'this.gap = $gap',
             'this.strings = const FormStrings()',
           ],
@@ -296,6 +311,7 @@ class FlutterTypesSerializer {
         _serializeLabeledTableRowsMethod(typeName, varName, fields),
         _serializeListTileItemsMethod(typeName, varName, fields),
         _serializeListTileReversedItemsMethod(typeName, varName, fields),
+        _serializeExpandableItemsMethod(typeName, varName, fields),
         _serializeSpacedMethod(),
       ],
     );
@@ -313,9 +329,9 @@ class FlutterTypesSerializer {
         'final entries = <MapEntry<int, Widget>>[];',
         ...fields.asMap().entries.map((e) {
           final defaultVal = _defaultValueExpression(e.value, varName);
-          return _u.inlineIfStatement(
+          return _u.ifStatement(
             condition: 'vis.${e.value.name}',
-            statement: 'entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, values?.${e.value.name} ?? $defaultVal));',
+            ifBlockStatements: ['entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, values?.${e.value.name} ?? $defaultVal));'],
           );
         }),
         'entries.sort((a, b) => a.key.compareTo(b.key));',
@@ -336,9 +352,9 @@ class FlutterTypesSerializer {
         'final entries = <MapEntry<int, Widget>>[];',
         ...fields.asMap().entries.map((e) {
           final label = _humanize(e.value.name.token);
-          return _u.inlineIfStatement(
+          return _u.ifStatement(
             condition: 'vis.${e.value.name}',
-            statement: "entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, labels?.${e.value.name} ?? const Text('$label')));",
+            ifBlockStatements: ["entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, labels?.${e.value.name} ?? const Text('$label')));"],
           );
         }),
         'entries.sort((a, b) => a.key.compareTo(b.key));',
@@ -372,9 +388,9 @@ class FlutterTypesSerializer {
               ]),
             ]),
           ]);
-          return _u.inlineIfStatement(
+          return _u.ifStatement(
             condition: 'vis.${e.value.name}',
-            statement: 'entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, $row));',
+            ifBlockStatements: ['entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, $row));'],
           );
         }),
         'entries.sort((a, b) => a.key.compareTo(b.key));',
@@ -400,9 +416,9 @@ class FlutterTypesSerializer {
             "title: labels?.${e.value.name} ?? const Text('$label')",
             'subtitle: values?.${e.value.name} ?? $defaultVal',
           ]);
-          return _u.inlineIfStatement(
+          return _u.ifStatement(
             condition: 'vis.${e.value.name}',
-            statement: 'entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, $tile));',
+            ifBlockStatements: ['entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, $tile));'],
           );
         }),
         'entries.sort((a, b) => a.key.compareTo(b.key));',
@@ -439,14 +455,186 @@ class FlutterTypesSerializer {
               ]),
             ]),
           ]);
-          return _u.inlineIfStatement(
+          return _u.ifStatement(
             condition: 'vis.${e.value.name}',
-            statement: 'entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, $tile));',
+            ifBlockStatements: ['entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, $tile));'],
           );
         }),
         'entries.sort((a, b) => a.key.compareTo(b.key));',
         'return entries.map((e) => e.value).toList();',
       ],
+    );
+  }
+
+  String _serializeExpandableItemsMethod(String typeName, String varName, List<GLField> fields) {
+    final scalarFields = <MapEntry<int, GLField>>[];
+    final nestedSingle = <MapEntry<int, GLField>>[];
+    final nestedList = <MapEntry<int, GLField>>[];
+
+    for (final e in fields.asMap().entries) {
+      final baseToken = e.value.type.firstType.token;
+      if (e.value.type.isList && _parser.types.containsKey(baseToken) && !_internalTypes.contains(baseToken)) {
+        nestedList.add(MapEntry(e.key, e.value));
+      } else if (!e.value.type.isList && _parser.types.containsKey(baseToken) && !_internalTypes.contains(baseToken)) {
+        nestedSingle.add(MapEntry(e.key, e.value));
+      } else {
+        scalarFields.add(MapEntry(e.key, e.value));
+      }
+    }
+
+    final statements = <String>[
+      'final vis = visibility ?? const ${typeName}Visibility();',
+      'final ord = order ?? const ${typeName}Order();',
+      'final accordions = <MapEntry<int, Widget>>[];',
+    ];
+
+    // Scalar group — style controlled by groupLayout, position by ord.$group
+    if (scalarFields.isNotEmpty) {
+      // labeledRow / expandable branch → two-column Table
+      final tableStmts = <String>['final scalarRows = <MapEntry<int, TableRow>>[];'];
+      for (final e in scalarFields) {
+        final idx = e.key;
+        final f = e.value;
+        final label = _humanize(f.name.token);
+        final defaultVal = _defaultValueExpression(f, varName);
+        final row = _u.callExpression('TableRow', [
+          _u.listArg('children', [
+            _u.callExpression('Padding', [
+              'padding: EdgeInsets.only(right: gap, bottom: gap)',
+              "child: labels?.${f.name} ?? const Text('$label')",
+            ]),
+            _u.callExpression('Padding', [
+              'padding: EdgeInsets.only(bottom: gap)',
+              'child: values?.${f.name} ?? $defaultVal',
+            ]),
+          ]),
+        ]);
+        tableStmts.add(_u.ifStatement(
+          condition: 'vis.${f.name}',
+          ifBlockStatements: ['scalarRows.add(MapEntry(ord.${f.name} ?? ${1000 + idx}, $row));'],
+        ));
+      }
+      tableStmts.add('scalarRows.sort((a, b) => a.key.compareTo(b.key));');
+      tableStmts.add('scalarContent = ${_u.callExpression('Table', [
+        'columnWidths: const {0: IntrinsicColumnWidth(), 1: FlexColumnWidth()}',
+        'children: scalarRows.map((e) => e.value).toList()',
+      ])};');
+
+      // listTile branch → Column of ListTile (label as title, value as subtitle)
+      final tileStmts = <String>['final scalarTiles = <MapEntry<int, Widget>>[];'];
+      for (final e in scalarFields) {
+        final idx = e.key;
+        final f = e.value;
+        final label = _humanize(f.name.token);
+        final defaultVal = _defaultValueExpression(f, varName);
+        final tile = _u.callExpression('ListTile', [
+          "title: labels?.${f.name} ?? const Text('$label')",
+          'subtitle: values?.${f.name} ?? $defaultVal',
+        ]);
+        tileStmts.add(_u.ifStatement(
+          condition: 'vis.${f.name}',
+          ifBlockStatements: ['scalarTiles.add(MapEntry(ord.${f.name} ?? ${1000 + idx}, $tile));'],
+        ));
+      }
+      tileStmts.add('scalarTiles.sort((a, b) => a.key.compareTo(b.key));');
+      tileStmts.add('scalarContent = ${_u.callExpression('Column', ['children: _spaced(scalarTiles.map((e) => e.value).toList())'])};');
+
+      // listTileReversed branch → Column of ListTile (value as title, label as subtitle)
+      final reversedStmts = <String>['final scalarReversed = <MapEntry<int, Widget>>[];'];
+      for (final e in scalarFields) {
+        final idx = e.key;
+        final f = e.value;
+        final label = _humanize(f.name.token);
+        final defaultVal = _defaultValueExpression(f, varName);
+        final tile = _u.callExpression('ListTile', [
+          'title: values?.${f.name} ?? $defaultVal',
+          "subtitle: labels?.${f.name} ?? const Text('$label')",
+        ]);
+        reversedStmts.add(_u.ifStatement(
+          condition: 'vis.${f.name}',
+          ifBlockStatements: ['scalarReversed.add(MapEntry(ord.${f.name} ?? ${1000 + idx}, $tile));'],
+        ));
+      }
+      reversedStmts.add('scalarReversed.sort((a, b) => a.key.compareTo(b.key));');
+      reversedStmts.add('scalarContent = ${_u.callExpression('Column', ['children: _spaced(scalarReversed.map((e) => e.value).toList())'])};');
+
+      statements.add('Widget? scalarContent;');
+      statements.add(_u.switchStatement(
+        expression: 'groupLayout',
+        cases: [
+          DartCaseStatement(
+            caseValue: '${typeName}Layout.listTile',
+            statement: tileStmts.join(' '),
+          ),
+          DartCaseStatement(
+            caseValue: '${typeName}Layout.listTileReversed',
+            statement: reversedStmts.join(' '),
+          ),
+          DartCaseStatement(
+            caseValue: 'default',
+            statement: tableStmts.join(' '),
+          ),
+        ],
+      ));
+
+      final accordionTile = _u.callExpression('ExpansionTile', [
+        r"title: labels?.$group ?? const Text('Details')",
+        _u.listArg('children', ['scalarContent!']),
+      ]);
+      statements.add(r'if (scalarContent != null) accordions.add(MapEntry(ord.$group ?? 0, ' + '$accordionTile));');
+    }
+
+    // Each single nested type → its own ExpansionTile
+    for (final e in nestedSingle) {
+      final idx = e.key;
+      final f = e.value;
+      final label = _humanize(f.name.token);
+      final childType = f.type.firstType.token;
+      final condition = f.type.nullable
+          ? 'vis.${f.name} && $varName.${f.name} != null'
+          : 'vis.${f.name}';
+      final childExpr = f.type.nullable
+          ? '${childType}Widget($varName.${f.name}!, strings: strings)'
+          : '${childType}Widget($varName.${f.name}, strings: strings)';
+      final tile = _u.callExpression('ExpansionTile', [
+        "title: labels?.${f.name} ?? const Text('$label')",
+        _u.listArg('children', ["values?.${f.name} ?? $childExpr"]),
+      ]);
+      statements.add(_u.ifStatement(
+        condition: condition,
+        ifBlockStatements: ['accordions.add(MapEntry(ord.${f.name} ?? ${1000 + idx}, $tile));'],
+      ));
+    }
+
+    // Each list-of-nested-type → its own ExpansionTile with mapped child widgets
+    for (final e in nestedList) {
+      final idx = e.key;
+      final f = e.value;
+      final label = _humanize(f.name.token);
+      final childType = f.type.firstType.token;
+      final listAccess = f.type.nullable ? '$varName.${f.name}!' : '$varName.${f.name}';
+      final condition = f.type.nullable
+          ? 'vis.${f.name} && ($varName.${f.name}?.isNotEmpty ?? false)'
+          : 'vis.${f.name} && $varName.${f.name}.isNotEmpty';
+      final tile = _u.callExpression('ExpansionTile', [
+        "title: labels?.${f.name} ?? const Text('$label')",
+        'children: $listAccess.map((item) => ${childType}Widget(item, strings: strings)).toList()',
+      ]);
+      statements.add(_u.ifStatement(
+        condition: condition,
+        ifBlockStatements: ['accordions.add(MapEntry(ord.${f.name} ?? ${1000 + idx}, $tile));'],
+      ));
+    }
+
+    statements.add('accordions.sort((a, b) => a.key.compareTo(b.key));');
+    statements.add('return accordions.map((e) => e.value).toList();');
+
+    return _u.createMethod(
+      returnType: 'List<Widget>',
+      methodName: '_expandableItems',
+      namedArguments: false,
+      arguments: [],
+      statements: statements,
     );
   }
 
@@ -472,6 +660,30 @@ class FlutterTypesSerializer {
     final baseToken = type.firstType.token;
     final nullable = type.nullable;
     final dartType = _dartSerializer.typeMap[baseToken] ?? baseToken;
+
+    // List
+    if (type.isList) {
+      // Nested type list — Column of child widgets if the widget is generated, else count chip
+      if (_parser.types.containsKey(baseToken) && !_internalTypes.contains(baseToken)) {
+        final typeDef = _parser.types[baseToken]!;
+        final widgetGenerated = !typeDef.isResponseType && !_config.typesToSkip.contains(baseToken);
+        final list = '$accessor${nullable ? '!' : ''}';
+        final inner = widgetGenerated
+            ? "Column(children: $list.map((e) => ${baseToken}Widget(e, strings: strings)).toList())"
+            : "Chip(label: Text('\${$list.length} ${_humanize(baseToken)}'))";
+        return nullable ? "($accessor == null ? const SizedBox.shrink() : $inner)" : inner;
+      }
+      // Enum list — chip per value; enumLabels controls the chip label, not the chip itself
+      if (_parser.enums.containsKey(baseToken)) {
+        final fieldName = field.name;
+        final list = '$accessor${nullable ? '!' : ''}';
+        final wrap = "Wrap(spacing: 4, runSpacing: 4, children: $list.map((e) => Chip(label: enumLabels?.$fieldName?.call(e) ?? Text(e.name))).toList())";
+        return nullable ? "($accessor == null ? const SizedBox.shrink() : $wrap)" : wrap;
+      }
+      // Scalar list (String, Int, Float, Boolean, ID) — chip per value
+      final wrap = "Wrap(spacing: 4, runSpacing: 4, children: $accessor${nullable ? '!' : ''}.map((e) => Chip(label: Text(e.toString()))).toList())";
+      return nullable ? "($accessor == null ? const SizedBox.shrink() : $wrap)" : wrap;
+    }
 
     // Boolean
     if (dartType == 'bool') {
@@ -503,7 +715,7 @@ class FlutterTypesSerializer {
       return nullable ? "Text($accessor ?? '')" : 'Text($accessor)';
     }
 
-    // Int, double, lists
+    // Int, double
     return nullable ? "Text($accessor?.toString() ?? '')" : 'Text($accessor.toString())';
   }
 

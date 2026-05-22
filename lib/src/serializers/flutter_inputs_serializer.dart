@@ -65,6 +65,7 @@ class FlutterInputsSerializer {
     final stringDateFields = textFields.where((f) => _types.dartScalarType(f) == 'String').toList();
     final dateEligibleFields = [...intFields, ...stringDateFields];
     final inputFields = fields.where(_types.isInputField).toList();
+    final inputListFields = listFields.where(_types.isInputListField).toList();
     final formFields = [...textFields, ...enumFields, ...boolFields, ...inputFields];
     final enumListFields = listFields.where(_types.isEnumListField).toList();
 
@@ -132,7 +133,7 @@ class FlutterInputsSerializer {
     buffer.writeln();
     buffer.writeln('enum ${inputName}LabelPosition { beside, above, floatingLabel }');
     buffer.writeln();
-    buffer.writeln(_state.serializeWidgetClass(inputName, listFields, formFields, enumFields, boolFields, textFields, dateEligibleFields));
+    buffer.writeln(_state.serializeWidgetClass(inputName, listFields, formFields, enumFields, boolFields, textFields, dateEligibleFields, inputFields, inputListFields));
     buffer.writeln();
     buffer.write(_state.serializeStateClass(inputName, fields, listFields, textFields, enumFields, boolFields, intFields, dateEligibleFields, inputFields));
 

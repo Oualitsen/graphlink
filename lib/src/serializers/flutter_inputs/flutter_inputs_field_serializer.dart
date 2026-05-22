@@ -35,9 +35,14 @@ class FlutterInputsFieldSerializer {
     final name = f.name.token;
     final nullable = f.type.nullable;
     final validators = _validatorStatements(name, [
-      if (!nullable) "if (v == null || v.isEmpty) return _form.strings.required;",
-      if (dartType == 'double')
-        "if (double.tryParse(v ?? '') == null) return _form.strings.mustBeNumber;",
+      if (!nullable)
+        _u.inlineIfStatement(condition: 'v == null || v.isEmpty', statement: 'return _form.strings.required;'),
+      if (dartType == 'double') ...[
+        if (nullable)
+          _u.inlineIfStatement(condition: 'v != null && v.isNotEmpty && double.tryParse(v) == null', statement: 'return _form.strings.mustBeNumber;')
+        else
+          _u.inlineIfStatement(condition: 'double.tryParse(v) == null', statement: 'return _form.strings.mustBeNumber;'),
+      ],
     ]);
 
     return _u.callExpression('TextFormField', [
@@ -52,6 +57,7 @@ class FlutterInputsFieldSerializer {
       'maxLength: _form.textConfig?.$name?.maxLength',
       'maxLines: _form.textConfig?.$name?.maxLines ?? 1',
       'decoration: _textDecoration(label, _form.textConfig?.$name, null)',
+      'onChanged: (_) => _onFieldChanged()',
       'validator: ${_u.functionLiteral(['v'], validators)}',
     ]);
   }
@@ -61,13 +67,23 @@ class FlutterInputsFieldSerializer {
     final nullable = f.type.nullable;
     final validators = _validatorStatements(name, [
       if (!nullable) "if (v == null || v.isEmpty) return _form.strings.required;",
-      "if (int.tryParse(v ?? '') == null) return _form.strings.mustBeWholeNumber;",
+      if (nullable)
+        _u.inlineIfStatement(
+          condition: 'v != null && v.isNotEmpty && int.tryParse(v) == null',
+          statement: 'return _form.strings.mustBeWholeNumber;',
+        )
+      else
+        _u.inlineIfStatement(
+          condition: 'int.tryParse(v) == null',
+          statement: 'return _form.strings.mustBeWholeNumber;',
+        ),
     ]);
     return _u.callExpression('TextFormField', [
       'controller: _${name}Controller',
       'enabled: $enabledExpr',
       'keyboardType: TextInputType.number',
       'decoration: _textDecoration(label, _form.textConfig?.$name, null)',
+      'onChanged: (_) => _onFieldChanged()',
       'validator: ${_u.functionLiteral(['v'], validators)}',
     ]);
   }
@@ -101,6 +117,7 @@ class FlutterInputsFieldSerializer {
       'maxLength: _form.textConfig?.$name?.maxLength',
       'maxLines: _form.textConfig?.$name?.maxLines ?? 1',
       'decoration: _textDecoration(label, _form.textConfig?.$name, $suffixIconExpr)',
+      'onChanged: (_) => _onFieldChanged()',
       'validator: ${_u.functionLiteral(['v'], validators)}',
     ]);
   }
@@ -431,6 +448,32 @@ class FlutterInputsFieldSerializer {
 
   // ── List fields ───────────────────────────────────────────────────────────────
 
+  String _listOnSelected(String name, String enabledExpr) {
+    final body = _u.functionLiteral(['on'], [
+      'setState(() ${_u.block([
+        _u.ifStatement(
+          condition: 'on',
+          ifBlockStatements: ['_$name.add(e);'],
+          elseBlockStatements: ['_$name.remove(e);'],
+        ),
+      ])});',
+    ]);
+    return '$enabledExpr ? $body : null';
+  }
+
+  String _listOnChanged(String name) {
+    final body = _u.functionLiteral(['on'], [
+      'setState(() ${_u.block([
+        _u.ifStatement(
+          condition: 'on == true',
+          ifBlockStatements: ['_$name.add(e);'],
+          elseBlockStatements: ['_$name.remove(e);'],
+        ),
+      ])});',
+    ]);
+    return body;
+  }
+
   String enumListWidgetExpr(GLField f, String enabledExpr) {
     final name = f.name.token;
     final enumType = f.type.inlineType.firstType.token;
@@ -444,7 +487,7 @@ class FlutterInputsFieldSerializer {
             'enabled: $enabledExpr',
             'title: _form.dropdownLabels?.$name?.call(e) ?? Text(e.name)',
             'value: _$name.contains(e)',
-            'onChanged: (on) => setState(() { if (on == true) _$name.add(e); else _$name.remove(e); })',
+            'onChanged: ${_listOnChanged(name)}',
           ])}).toList()',
         ]),
       ]);
@@ -459,7 +502,7 @@ class FlutterInputsFieldSerializer {
           'children: $enumType.values.map((e) => ${_u.callExpression('FilterChip', [
             'label: _form.dropdownLabels?.$name?.call(e) ?? Text(e.name)',
             'selected: _$name.contains(e)',
-            'onSelected: $enabledExpr ? (on) => setState(() { if (on) _$name.add(e); else _$name.remove(e); }) : null',
+            'onSelected: ${_listOnSelected(name, enabledExpr)}',
           ])}).toList()',
         ]),
       ]),
@@ -478,7 +521,7 @@ class FlutterInputsFieldSerializer {
             'enabled: $enabledExpr',
             'title: Text(e.toString())',
             'value: _$name.contains(e)',
-            'onChanged: (on) => setState(() { if (on == true) _$name.add(e); else _$name.remove(e); })',
+            'onChanged: ${_listOnChanged(name)}',
           ])}).toList()',
         ]),
       ]);
@@ -493,7 +536,7 @@ class FlutterInputsFieldSerializer {
           'children: (_form.${name}Options ?? []).map((e) => ${_u.callExpression('FilterChip', [
             'label: Text(e.toString())',
             'selected: _$name.contains(e)',
-            'onSelected: $enabledExpr ? (on) => setState(() { if (on) _$name.add(e); else _$name.remove(e); }) : null',
+            'onSelected: ${_listOnSelected(name, enabledExpr)}',
           ])}).toList()',
         ]),
       ]),

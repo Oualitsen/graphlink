@@ -4,6 +4,15 @@ import 'flutter_inputs_date_serializer.dart';
 import 'flutter_inputs_field_serializer.dart';
 import 'flutter_inputs_type_helpers.dart';
 
+enum _StepType { scalar, subInput, inputList }
+
+class _StepBucket {
+  final int index;
+  final _StepType type;
+  final GLField? field;
+  const _StepBucket(this.index, this.type, this.field);
+}
+
 class FlutterInputsStateSerializer {
   final DartCodeGenUtils _u;
   final FlutterInputsTypeHelpers _types;
@@ -17,7 +26,9 @@ class FlutterInputsStateSerializer {
   String serializeWidgetClass(
       String inputName, List<GLField> listFields, List<GLField> formFields,
       List<GLField> enumFields, List<GLField> boolFields, List<GLField> textFields,
-      List<GLField> dateEligibleFields) {
+      List<GLField> dateEligibleFields,
+      List<GLField> inputFields, List<GLField> inputListFields) {
+    final hasSubInputs = inputFields.isNotEmpty || inputListFields.isNotEmpty;
     final gap = _types.gapStr();
     final hasDropdownLabels = enumFields.isNotEmpty || boolFields.isNotEmpty || listFields.any(_types.isEnumListField);
 
@@ -62,6 +73,24 @@ class FlutterInputsStateSerializer {
         'final Widget? requiredLabel;',
         'final Widget? optionalLabel;',
         'final FormStrings strings;',
+        'final MainAxisSize columnMainAxisSize;',
+        if (hasSubInputs) 'final ${inputName}StepConfig? stepConfig;',
+        if (hasSubInputs) 'final StepperType stepperType;',
+        if (hasSubInputs) 'final Widget Function(BuildContext, ControlsDetails)? stepControlsBuilder;',
+        if (hasSubInputs) 'final MainAxisAlignment stepControlsAlignment;',
+        if (hasSubInputs) 'final StepperStrings stepperStrings;',
+        '/// Called synchronously on every field change with a live snapshot of all field values.\n'
+            '/// Use for instant reactive UI — visibility decisions, computed labels, live summaries.\n'
+            'final void Function(${inputName}FormContext)? onContextChange;',
+        '/// Called after [debounceDuration] with the result of [tryRead].\n'
+            '/// Delivers `null` when the form is not yet parseable (required fields empty,\n'
+            '/// invalid format, enum not selected). Delivers `$inputName` when the form\n'
+            '/// is complete enough to submit. Note: custom [validations] are NOT run here —\n'
+            '/// they only run on [read]. Use [onContextChange] to inspect raw field values\n'
+            '/// when the form is incomplete.\n'
+            'final void Function($inputName?)? onChange;',
+        '/// How long to wait after the last field change before firing [onChange]. Default: 300ms.\n'
+            'final Duration debounceDuration;',
         _u.createMethod(
           isConst: true,
           methodName: '${inputName}Form',
@@ -88,6 +117,15 @@ class FlutterInputsStateSerializer {
             'this.requiredLabel',
             'this.optionalLabel',
             'this.strings = const FormStrings()',
+            'this.columnMainAxisSize = MainAxisSize.min',
+            if (hasSubInputs) 'this.stepConfig',
+            if (hasSubInputs) 'this.stepperType = StepperType.vertical',
+            if (hasSubInputs) 'this.stepControlsBuilder',
+            if (hasSubInputs) 'this.stepControlsAlignment = MainAxisAlignment.spaceBetween',
+            if (hasSubInputs) 'this.stepperStrings = const StepperStrings()',
+            'this.onContextChange',
+            'this.onChange',
+            'this.debounceDuration = const Duration(milliseconds: 300)',
           ],
         ),
         _u.createMethod(
@@ -118,10 +156,21 @@ class FlutterInputsStateSerializer {
     final formName = '${inputName}Form';
     final stateName = '${inputName}FormState';
     final passwordFields = textFields.where(_types.isPasswordField).toList();
+    final inputListFields = listFields.where(_types.isInputListField).toList();
+
+    final hasSubInputs = inputFields.isNotEmpty || inputListFields.isNotEmpty;
+    final hasScalarFields = fields.any((f) => !_types.isInputField(f) && !_types.isInputListField(f));
+
+    // Build ordered step buckets: scalar step first, then sub-inputs and
+    // list-of-inputs interleaved in schema declaration order.
+    final stepBuckets = _buildStepBuckets(fields, hasScalarFields, inputFields, inputListFields);
 
     final stateVarDecls = <String>[
       'final _formKey = GlobalKey<FormState>();',
       '${formName} get _form => widget as ${formName};',
+      'Timer? _debounceTimer;',
+      'bool _isResetting = false;',
+      if (hasSubInputs) 'int _currentStep = 0;',
       if (textFields.isNotEmpty) '// text controllers',
       ...textFields.map((f) => 'late final TextEditingController _${f.name}Controller;'),
       if (passwordFields.isNotEmpty) '// password visibility state',
@@ -164,8 +213,8 @@ class FlutterInputsStateSerializer {
     ];
 
     final didUpdateStatements = <String>[
-      'super.didUpdateWidget(old);',
-      'final oldForm = old as ${formName};',
+      'super.didUpdateWidget(oldWidget);',
+      'final oldForm = oldWidget as ${formName};',
       ...listFields.map((f) {
         if (_types.isEnumListField(f) || _types.isScalarListField(f)) {
           return _u.inlineIfStatement(
@@ -186,6 +235,7 @@ class FlutterInputsStateSerializer {
     ];
 
     final disposeStatements = <String>[
+      '_debounceTimer?.cancel();',
       ...textFields.map((f) => '_${f.name}Controller.dispose();'),
       'super.dispose();',
     ];
@@ -201,24 +251,48 @@ class FlutterInputsStateSerializer {
         _u.createMethod(
             override: true, returnType: 'void', methodName: 'didUpdateWidget',
             namedArguments: false,
-            arguments: ['InputFormWidget<$inputName> old'],
+            arguments: ['InputFormWidget<$inputName> oldWidget'],
             statements: didUpdateStatements),
         _u.createMethod(
             override: true, returnType: 'void', methodName: 'dispose',
             arguments: [], namedArguments: false, statements: disposeStatements),
-        _serializeBuildMethod(inputName),
-        _serializeReadMethod(inputName, textFields, enumFields, boolFields, listFields, inputFields),
-        _serializeVisibleRowsMethod(inputName, fields, textFields, enumFields, boolFields, listFields, dateEligibleFields, inputFields),
+        _serializeResetMethod(textFields, enumFields, boolFields, listFields, inputFields, hasSubInputs),
+        _serializeBuildMethod(inputName, hasSubInputs),
+        _serializeValidateMethod(inputFields),
+        _serializeBuildResultMethod(inputName, textFields, enumFields, boolFields, listFields, inputFields),
+        _serializeReadMethod(inputName),
+        _serializeTryReadMethod(inputName),
+        _u.createMethod(
+          override: true,
+          returnType: 'void',
+          methodName: 'setState',
+          namedArguments: false,
+          arguments: ['VoidCallback fn'],
+          statements: [
+            'super.setState(fn);',
+            _u.inlineIfStatement(condition: '!_isResetting', statement: '_onFieldChanged();'),
+          ],
+        ),
+        if (hasSubInputs) _serializeBuildStepsMethod(inputName, stepBuckets, hasScalarFields),
+        if (hasSubInputs) _serializeScalarRowsMethod(inputName, fields, textFields, enumFields, boolFields, listFields, dateEligibleFields),
+        if (hasSubInputs) _serializeValidateAndReadCurrentStepMethod(inputName, stepBuckets),
+        if (hasSubInputs) _serializeOnStepContinueMethod(stepBuckets.length),
+        if (hasSubInputs) _serializeOnStepCancelMethod(),
+        if (hasSubInputs) _serializeBuildStepControlsMethod(stepBuckets.length),
+        _serializeVisibleRowsMethod('_visibleRows', inputName, fields, textFields, enumFields, boolFields, listFields, dateEligibleFields, inputFields),
         _buildContextMethod(inputName, fields.where((f) => !_types.isInputField(f)).toList()),
         ...enumFields.map(_fields.enumRowMethod),
         ...boolFields.map(_fields.boolRowMethod),
         ...dateEligibleFields.map(_date.dateRowMethod),
         ...inputFields.map(_inputFieldRowMethod),
         _requiredLabelHelper(inputName),
-        _fieldHelper(inputName),
-        _switchBoolFieldHelper(inputName),
-        _checkboxBoolFieldHelper(inputName),
-        _decorationHelper(inputName),
+        _onFieldChangedMethod(),
+        _notifyContextChangeMethod(),
+        _scheduleOnChangeMethod(),
+        if (_needsFieldHelper(textFields, enumFields, boolFields, inputListFields)) _fieldHelper(inputName),
+        if (_types.needsSwitchBoolHelper(boolFields)) _switchBoolFieldHelper(inputName),
+        if (_types.needsCheckboxBoolHelper(boolFields)) _checkboxBoolFieldHelper(inputName),
+        if (_needsDecorationHelper(textFields, enumFields, boolFields)) _decorationHelper(inputName),
         if (textFields.isNotEmpty) _textDecorationHelper(inputName),
         if (dateEligibleFields.isNotEmpty) _date.clampDateHelper(),
         if (dateEligibleFields.isNotEmpty) _date.isCupertinoHelper(),
@@ -233,24 +307,108 @@ class FlutterInputsStateSerializer {
 
   // ── Build / read / visible rows ───────────────────────────────────────────────
 
-  String _serializeBuildMethod(String inputName) {
-    final switchStmt = _u.switchStatement(
-      expression: '_form.layout',
-      cases: [
-        DartCaseStatement(
-          caseValue: '${inputName}Layout.column',
-          statement: 'child = Column(children: _intersperse(rows, _form.gap));',
+  String _serializeResetMethod(
+    List<GLField> textFields,
+    List<GLField> enumFields,
+    List<GLField> boolFields,
+    List<GLField> listFields,
+    List<GLField> inputFields,
+    bool hasSubInputs,
+  ) {
+    final passwordFields = textFields.where(_types.isPasswordField).toList();
+    final dateEligibleFields = textFields.where(
+        (f) => _types.dartScalarType(f) == 'int' || _types.dartScalarType(f) == 'String').toList();
+
+    // Helper: wraps a reset statement so it only runs when fields is null (full reset)
+    // or when the named field is explicitly listed.
+    String ifField(GLField f, String stmt) => _u.ifStatement(
+          condition: "fields == null || fields.contains('${f.name}')",
+          ifBlockStatements: [stmt],
+        );
+
+    final setStateBody = _u.block([
+      ...textFields.map((f) => ifField(f, '_${f.name}Controller.text = ${_types.initialTextExpr(f)};')),
+      // password and calendar are tied to their field — reset together with it
+      ...passwordFields.map((f) => ifField(f, '_${f.name}Obscured = true;')),
+      ...dateEligibleFields.map((f) => ifField(f, '_${f.name}CalendarOpen = false;')),
+      ...enumFields.map((f) => ifField(f, '_${f.name} = _form.initialValues?.${f.name};')),
+      ...boolFields.map((f) => ifField(f, '_${f.name} = ${_types.initialBoolExpr(f)};')),
+      ...listFields.map((f) {
+        final stmt = _types.isEnumListField(f) || _types.isScalarListField(f)
+            ? '_${f.name} = List.of(_form.${f.name});'
+            : f.type.nullable
+                ? '_${f.name} = _form.${f.name} != null ? List.of(_form.${f.name}!) : null;'
+                : '_${f.name} = List.of(_form.${f.name});';
+        return ifField(f, stmt);
+      }),
+      // stepper position — full reset only
+      if (hasSubInputs) _u.inlineIfStatement(condition: 'fields == null', statement: '_currentStep = 0;'),
+    ]);
+
+    // After setState: clear validation state and reset sub-forms.
+    // Full reset → clear entire form validation + all sub-forms.
+    // Partial reset → only reset explicitly listed sub-input keys; leave validation as-is
+    //                 so errors on untouched fields remain visible.
+    final postResetStatements = [
+      '_debounceTimer?.cancel();',
+      _u.ifStatement(
+        condition: 'fields == null',
+        ifBlockStatements: [
+          '_formKey.currentState?.reset();',
+          ...inputFields.map((f) => '_${f.name}Key.currentState?.reset();'),
+        ],
+        elseBlockStatements: [
+          ...inputFields.map((f) => _u.inlineIfStatement(
+                condition: "fields.contains('${f.name}')",
+                statement: '_${f.name}Key.currentState?.reset();',
+              )),
+        ],
+      ),
+    ];
+
+    return _u.createMethod(
+      override: true,
+      returnType: 'void',
+      methodName: 'reset',
+      namedArguments: true,
+      arguments: ['List<String>? fields'],
+      statements: [
+        _u.tryCatchFinally(
+          tryStatements: [
+            '_isResetting = true;',
+            'setState(() $setStateBody);',
+            ...postResetStatements,
+          ],
+          finallyStatements: ['_isResetting = false;'],
         ),
       ],
-      defaultStatements: [
-        'child = ${_u.callExpression('LayoutBuilder', [
-          'builder: ${_u.functionLiteral(['context', 'constraints'], [
-            'final childWidth = (constraints.maxWidth - _form.gap) / 2;',
-            'return ${_u.callExpression('Wrap', ['spacing: _form.gap', 'runSpacing: _form.gap', 'children: rows.map((w) => SizedBox(width: childWidth, child: w)).toList()'  ])};',
-          ])}',
-        ])};',
-      ],
     );
+  }
+
+  String _serializeBuildMethod(String inputName, bool hasSubInputs) {
+    final columnReturn = 'return ${_u.callExpression('Form', [
+      'key: _formKey',
+      'child: ${_u.callExpression('Column', [
+        'mainAxisSize: _form.columnMainAxisSize',
+        'crossAxisAlignment: CrossAxisAlignment.stretch',
+        'children: _intersperse(rows, _form.gap)',
+      ])}',
+    ])};';
+
+    final twoColumnReturn = 'return ${_u.callExpression('Form', [
+      'key: _formKey',
+      'child: ${_u.callExpression('LayoutBuilder', [
+        'builder: ${_u.functionLiteral(['context', 'constraints'], [
+          'final childWidth = (constraints.maxWidth - _form.gap) / 2;',
+          'return ${_u.callExpression('Wrap', [
+            'spacing: _form.gap',
+            'runSpacing: _form.gap',
+            'children: rows.map((w) => SizedBox(width: childWidth, child: w)).toList()',
+          ])};',
+        ])}',
+      ])}',
+    ])};';
+
     return _u.createMethod(
       override: true,
       returnType: 'Widget',
@@ -258,15 +416,32 @@ class FlutterInputsStateSerializer {
       namedArguments: false,
       arguments: ['BuildContext context'],
       statements: [
+        // Schema-derived stepper — sub-input forms drive the steps
+        if (hasSubInputs) _u.ifStatement(
+          condition: '_form.layout == ${inputName}Layout.stepper',
+          ifBlockStatements: [
+            'return ${_u.callExpression('Stepper', [
+              'type: _form.stepperType',
+              'currentStep: _currentStep',
+              'onStepContinue: _onStepContinue',
+              'onStepCancel: _onStepCancel',
+              'onStepTapped: (i) { if (i <= _currentStep) setState(() => _currentStep = i); }',
+              'controlsBuilder: _form.stepControlsBuilder ?? _buildStepControls',
+              'steps: _buildSteps()',
+            ])};',
+          ],
+        ),
         'final rows = _visibleRows();',
-        'Widget child;',
-        switchStmt,
-        'return ${_u.callExpression('Form', ['key: _formKey', 'child: child'])};',
+        _u.ifStatement(
+          condition: '_form.layout == ${inputName}Layout.column',
+          ifBlockStatements: [columnReturn],
+        ),
+        twoColumnReturn,
       ],
     );
   }
 
-  String _serializeReadMethod(
+  String _serializeBuildResultMethod(
     String inputName,
     List<GLField> textFields,
     List<GLField> enumFields,
@@ -275,11 +450,9 @@ class FlutterInputsStateSerializer {
     List<GLField> inputFields,
   ) {
     final allFormFields = [...textFields, ...enumFields, ...boolFields, ...inputFields];
-    // Vis decls for form fields + list fields — all needed for the hidden-wins check.
     final visDecls = [...allFormFields, ...listFields].map((f) =>
         'final _${f.name}Vis = vis.${f.name}?.call(_ctx) ?? FieldVisibility.enabled;').toList();
 
-    // Hidden wins: check visibility first, then override, then controller/state.
     final nonInputAssignments = [...textFields, ...enumFields, ...boolFields].map((f) {
       final name = f.name.token;
       final visibleExpr = _visibleReadExpr(f, textFields, enumFields, boolFields);
@@ -291,15 +464,12 @@ class FlutterInputsStateSerializer {
               ': $visibleExpr';
     }).toList();
 
-    // Input fields: no values override — use nested key directly.
     final inputAssignments = inputFields.map((f) {
       final name = f.name.token;
       final hiddenExpr = _hiddenReadExpr(f);
       return '$name: _${name}Vis != FieldVisibility.hidden ? _${name}Key.currentState!.read() : $hiddenExpr';
     }).toList();
 
-    // List fields: hidden wins — if hidden fall back to state, otherwise check override.
-    // No hiddenDefaults for list fields by design; hidden list fields return current state.
     final listAssignments = listFields.map((f) {
       final name = f.name.token;
       return '$name: _${name}Vis != FieldVisibility.hidden && _form.values?.$name != null '
@@ -307,12 +477,9 @@ class FlutterInputsStateSerializer {
           ': _$name';
     }).toList();
 
-    final fieldAssignments = [...nonInputAssignments, ...inputAssignments];
-
     return _u.createMethod(
-      override: true,
       returnType: inputName,
-      methodName: 'read',
+      methodName: '_buildResult',
       arguments: [],
       namedArguments: false,
       statements: [
@@ -320,16 +487,61 @@ class FlutterInputsStateSerializer {
         'final def = _form.hiddenDefaults ?? const ${inputName}Defaults();',
         'final _ctx = _buildContext();',
         ...visDecls,
-        _u.ifStatement(
-          condition: '!(_formKey.currentState?.validate() ?? false)',
-          ifBlockStatements: ["throw InputReadException('Validation failed');"],
-        ),
-        'return ${_u.callExpression(inputName, [...fieldAssignments, ...listAssignments])};',
+        'return ${_u.callExpression(inputName, [...nonInputAssignments, ...inputAssignments, ...listAssignments])};',
       ],
     );
   }
 
+  String _serializeReadMethod(String inputName) => _u.createMethod(
+        override: true,
+        returnType: inputName,
+        methodName: 'read',
+        arguments: [],
+        namedArguments: false,
+        statements: [
+          _u.ifStatement(
+            condition: '!validate()',
+            ifBlockStatements: ["throw InputReadException('Validation failed');"],
+          ),
+          'return _buildResult();',
+        ],
+      );
+
+  String _serializeTryReadMethod(String inputName) => _u.createMethod(
+        returnType: '$inputName?',
+        methodName: 'tryRead',
+        arguments: [],
+        namedArguments: false,
+        statements: [
+          _u.tryCatchFinally(
+            tryStatements: ['return _buildResult();'],
+            catchVariable: '_',
+            catchStatements: ['return null;'],
+          ),
+        ],
+      );
+
+  String _serializeValidateMethod(List<GLField> inputFields) {
+    return _u.createMethod(
+      override: true,
+      returnType: 'bool',
+      methodName: 'validate',
+      arguments: [],
+      namedArguments: false,
+      statements: [
+        'var _valid = _formKey.currentState?.validate() ?? false;',
+        // Use &= (non-short-circuit) so every sub-form is validated even if a previous one failed.
+        // currentState is null when a sub-form is hidden/unmounted — ?? true treats it as valid.
+        ...inputFields.map((f) =>
+            '_valid &= _${f.name.token}Key.currentState?.validate() ?? true;'),
+        'return _valid;',
+      ],
+    );
+  }
+
+
   String _serializeVisibleRowsMethod(
+    String methodName,
     String inputName,
     List<GLField> fields,
     List<GLField> textFields,
@@ -339,74 +551,17 @@ class FlutterInputsStateSerializer {
     List<GLField> dateEligibleFields,
     List<GLField> inputFields,
   ) {
-    final directFields = {
-      ...listFields.where((f) => _types.isEnumListField(f) || _types.isScalarListField(f)),
-    };
-    final rowMethodFields = {...enumFields, ...boolFields, ...dateEligibleFields, ...inputFields};
-
     final visDecls = fields.map((f) =>
         'final _${f.name}Vis = vis.${f.name}?.call(_ctx) ?? FieldVisibility.enabled;').toList();
 
-    final rowLines = fields.asMap().entries.map((entry) {
-      final i = entry.key;
-      final f = entry.value;
-      final humanLabel = _types.humanize(f.name.token);
-      final enabledExpr = '_${f.name}Vis == FieldVisibility.enabled';
-      final fieldWidget = _fields.fieldWidgetExpr(f, textFields, enumFields, boolFields, listFields, enabledExpr);
-      final defaultIdx = 1000 + i;
-      final isRequired = !f.type.nullable;
-      final labelStmt = "final label = _requiredLabel(_form.labels?.${f.name} ?? const Text('$humanLabel'), $isRequired);";
-
-      // Input fields have no Values override — they use their own nested key.
-      if (inputFields.contains(f)) {
-        return _u.ifStatement(
-          condition: '_${f.name}Vis != FieldVisibility.hidden',
-          ifBlockStatements: [
-            labelStmt,
-            "entries.add(MapEntry(ord.${f.name} ?? $defaultIdx, _${f.name}InputRow(label, $enabledExpr)));",
-          ],
-        );
-      }
-      // All other fields: try the builder override first, fall back to generated widget.
-      if (dateEligibleFields.contains(f)) {
-        return _u.ifStatement(
-          condition: '_${f.name}Vis != FieldVisibility.hidden',
-          ifBlockStatements: [
-            labelStmt,
-            "entries.add(MapEntry(ord.${f.name} ?? $defaultIdx, _form.values?.${f.name}?.call(_${f.name}OverrideKey) ?? _${f.name}DateRow(label, $enabledExpr)));",
-          ],
-        );
-      }
-      if (rowMethodFields.contains(f)) {
-        return _u.ifStatement(
-          condition: '_${f.name}Vis != FieldVisibility.hidden',
-          ifBlockStatements: [
-            labelStmt,
-            "entries.add(MapEntry(ord.${f.name} ?? $defaultIdx, _form.values?.${f.name}?.call(_${f.name}OverrideKey) ?? _${f.name}Row(label, $enabledExpr)));",
-          ],
-        );
-      }
-      if (directFields.contains(f)) {
-        return _u.ifStatement(
-          condition: '_${f.name}Vis != FieldVisibility.hidden',
-          ifBlockStatements: [
-            labelStmt,
-            "entries.add(MapEntry(ord.${f.name} ?? $defaultIdx, _form.values?.${f.name}?.call(_${f.name}OverrideKey) ?? $fieldWidget));",
-          ],
-        );
-      }
-      return _u.ifStatement(
-        condition: '_${f.name}Vis != FieldVisibility.hidden',
-        ifBlockStatements: [
-          labelStmt,
-          "entries.add(MapEntry(ord.${f.name} ?? $defaultIdx, _field(label, _form.values?.${f.name}?.call(_${f.name}OverrideKey) ?? $fieldWidget)));",
-        ],
-      );
-    }).toList();
+    final rowLines = _buildFieldLines(
+      fields, textFields, enumFields, boolFields, listFields, dateEligibleFields, inputFields,
+      (f, idx, w) => "entries.add(MapEntry(ord.${f.name} ?? $idx, $w))",
+    );
 
     return _u.createMethod(
       returnType: 'List<Widget>',
-      methodName: '_visibleRows',
+      methodName: methodName,
       arguments: [],
       namedArguments: false,
       statements: [
@@ -688,6 +843,14 @@ class FlutterInputsStateSerializer {
       'key: _${name}Key',
       'initialValues: _form.initialValues?.$name',
       'strings: _form.strings',
+      'requiredIndicator: _form.requiredIndicator',
+      'requiredLabel: _form.requiredLabel',
+      'optionalLabel: _form.optionalLabel',
+      'labelPosition: ${childType}LabelPosition.values.byName(_form.labelPosition.name)',
+      'labelWidth: _form.labelWidth',
+      'gap: _form.gap',
+      // bubble sub-form field changes up to the parent's onChange / onContextChange
+      'onContextChange: (_) => _onFieldChanged()',
     ]);
 
     return _u.createMethod(
@@ -707,4 +870,357 @@ class FlutterInputsStateSerializer {
       ],
     );
   }
+
+  String _onFieldChangedMethod() => _u.createMethod(
+        returnType: 'void',
+        methodName: '_onFieldChanged',
+        arguments: [],
+        namedArguments: false,
+        statements: [
+          _u.inlineIfStatement(condition: '!mounted', statement: 'return;'),
+          '_notifyContextChange();',
+          '_scheduleOnChange();',
+        ],
+      );
+
+  String _notifyContextChangeMethod() => _u.createMethod(
+        returnType: 'void',
+        methodName: '_notifyContextChange',
+        arguments: [],
+        namedArguments: false,
+        statements: ['_form.onContextChange?.call(_buildContext());'],
+      );
+
+  String _scheduleOnChangeMethod() => _u.createMethod(
+        returnType: 'void',
+        methodName: '_scheduleOnChange',
+        arguments: [],
+        namedArguments: false,
+        statements: [
+          _u.inlineIfStatement(condition: '_form.onChange == null', statement: 'return;'),
+          '_debounceTimer?.cancel();',
+          '_debounceTimer = Timer(_form.debounceDuration, () ${_u.block([
+            _u.inlineIfStatement(condition: 'mounted', statement: '_form.onChange?.call(tryRead());'),
+          ])});',
+        ],
+      );
+
+  // ── Stepper support ───────────────────────────────────────────────────────────
+
+  /// Builds the ordered list of step buckets at generator time.
+  /// Scalar step first (if any scalar fields exist), then sub-inputs and
+  /// list-of-inputs interleaved in schema declaration order.
+  List<_StepBucket> _buildStepBuckets(
+      List<GLField> fields, bool hasScalarFields,
+      List<GLField> inputFields, List<GLField> inputListFields) {
+    final buckets = <_StepBucket>[];
+    var idx = 0;
+    if (hasScalarFields) buckets.add(_StepBucket(idx++, _StepType.scalar, null));
+    for (final f in fields) {
+      if (inputFields.contains(f)) {
+        buckets.add(_StepBucket(idx++, _StepType.subInput, f));
+      } else if (inputListFields.contains(f)) {
+        buckets.add(_StepBucket(idx++, _StepType.inputList, f));
+      }
+    }
+    return buckets;
+  }
+
+  // ── Explicit step group methods ───────────────────────────────────────────────
+
+  /// Shared field-iteration logic used by both _visibleRows and _visibleRowMap.
+  /// [accumulate] receives (field, defaultOrderIdx, widgetExpr) and returns
+  /// the accumulation statement string — the only thing that differs between the two.
+  List<String> _buildFieldLines(
+    List<GLField> fields,
+    List<GLField> textFields,
+    List<GLField> enumFields,
+    List<GLField> boolFields,
+    List<GLField> listFields,
+    List<GLField> dateEligibleFields,
+    List<GLField> inputFields,
+    String Function(GLField f, int defaultIdx, String widgetExpr) accumulate,
+  ) {
+    final directFields = {
+      ...listFields.where((f) => _types.isEnumListField(f) || _types.isScalarListField(f)),
+    };
+    final rowMethodFields = {...enumFields, ...boolFields, ...dateEligibleFields, ...inputFields};
+
+    return fields.asMap().entries.map((entry) {
+      final i = entry.key;
+      final f = entry.value;
+      final humanLabel = _types.humanize(f.name.token);
+      final enabledExpr = '_${f.name}Vis == FieldVisibility.enabled';
+      final fieldWidget = _fields.fieldWidgetExpr(f, textFields, enumFields, boolFields, listFields, enabledExpr);
+      final defaultIdx = 1000 + i;
+      final isRequired = !f.type.nullable;
+      final labelStmt = "final label = _requiredLabel(_form.labels?.${f.name} ?? const Text('$humanLabel'), $isRequired);";
+
+      final String widgetExpr;
+      if (inputFields.contains(f)) {
+        widgetExpr = '_${f.name}InputRow(label, $enabledExpr)';
+      } else if (dateEligibleFields.contains(f)) {
+        widgetExpr = '_form.values?.${f.name}?.call(_${f.name}OverrideKey) ?? _${f.name}DateRow(label, $enabledExpr)';
+      } else if (rowMethodFields.contains(f)) {
+        widgetExpr = '_form.values?.${f.name}?.call(_${f.name}OverrideKey) ?? _${f.name}Row(label, $enabledExpr)';
+      } else if (directFields.contains(f)) {
+        widgetExpr = '_form.values?.${f.name}?.call(_${f.name}OverrideKey) ?? $fieldWidget';
+      } else {
+        widgetExpr = '_field(label, _form.values?.${f.name}?.call(_${f.name}OverrideKey) ?? $fieldWidget)';
+      }
+
+      return _u.ifStatement(
+        condition: '_${f.name}Vis != FieldVisibility.hidden',
+        ifBlockStatements: [labelStmt, '${accumulate(f, defaultIdx, widgetExpr)};'],
+      );
+    }).toList();
+  }
+
+  String _serializeBuildStepsMethod(
+      String inputName, List<_StepBucket> buckets, bool hasScalarFields) {
+    final humanizedInputName = _humanizeInputName(inputName);
+    final stepExprs = buckets.map((b) {
+      final idx = b.index;
+      final stateExpr =
+          '_currentStep > $idx ? StepState.complete : _currentStep == $idx ? StepState.editing : StepState.indexed';
+
+      if (b.type == _StepType.scalar) {
+        return _u.callExpression('Step', [
+          'title: _form.stepConfig?.scalarFields?.title ?? const Text(\'$humanizedInputName\')',
+          'subtitle: _form.stepConfig?.scalarFields?.subtitle',
+          'isActive: _currentStep >= $idx',
+          'state: $stateExpr',
+          'content: ${_u.callExpression('Form', [
+            'key: _formKey',
+            'child: ${_u.callExpression('Column', [
+              'mainAxisSize: MainAxisSize.min',
+              'crossAxisAlignment: CrossAxisAlignment.stretch',
+              'children: _intersperse(_scalarRows(), _form.gap)',
+            ])}',
+          ])}',
+        ]);
+      }
+
+      final f = b.field!;
+      final name = f.name.token;
+      final humanLabel = _types.humanize(name);
+
+      if (b.type == _StepType.subInput) {
+        final childType = f.type.firstType.token;
+        return _u.callExpression('Step', [
+          'title: _form.stepConfig?.$name?.title ?? const Text(\'$humanLabel\')',
+          'subtitle: _form.stepConfig?.$name?.subtitle',
+          'isActive: _currentStep >= $idx',
+          'state: $stateExpr',
+          'content: ${_u.callExpression('${childType}Form', [
+            'key: _${name}Key',
+            'strings: _form.strings',
+            'initialValues: _form.initialValues?.$name',
+            'requiredIndicator: _form.requiredIndicator',
+            'requiredLabel: _form.requiredLabel',
+            'optionalLabel: _form.optionalLabel',
+            'labelPosition: ${childType}LabelPosition.values.byName(_form.labelPosition.name)',
+            'labelWidth: _form.labelWidth',
+            'gap: _form.gap',
+            'onContextChange: (_) => _onFieldChanged()',
+          ])}',
+        ]);
+      }
+
+      // inputList
+      return _u.callExpression('Step', [
+        'title: _form.stepConfig?.$name?.title ?? const Text(\'$humanLabel\')',
+        'subtitle: _form.stepConfig?.$name?.subtitle',
+        'isActive: _currentStep >= $idx',
+        'state: $stateExpr',
+        'content: _form.values?.$name?.call(_${name}OverrideKey) ?? Text(\'\${_$name.length} items\')',
+      ]);
+    }).toList();
+
+    final stepsList = '[${stepExprs.map((e) => '\n  $e,').join('')}\n]';
+    return _u.createMethod(
+      returnType: 'List<Step>',
+      methodName: '_buildSteps',
+      arguments: [],
+      namedArguments: false,
+      statements: ['return $stepsList;'],
+    );
+  }
+
+  String _serializeScalarRowsMethod(
+      String inputName,
+      List<GLField> fields,
+      List<GLField> textFields,
+      List<GLField> enumFields,
+      List<GLField> boolFields,
+      List<GLField> listFields,
+      List<GLField> dateEligibleFields) {
+    final scalarFields = fields
+        .where((f) => !_types.isInputField(f) && !_types.isInputListField(f))
+        .toList();
+    final scalarListFields = listFields
+        .where((f) => !_types.isInputListField(f))
+        .toList();
+    return _serializeVisibleRowsMethod(
+      '_scalarRows',
+      inputName,
+      scalarFields,
+      textFields,
+      enumFields,
+      boolFields,
+      scalarListFields,
+      dateEligibleFields,
+      [],
+    );
+  }
+
+  String _serializeValidateAndReadCurrentStepMethod(
+      String inputName, List<_StepBucket> buckets) {
+    final cases = buckets.map((b) {
+      final idx = b.index;
+      final skippableExpr = b.type == _StepType.scalar
+          ? '_form.stepConfig?.scalarFields?.isSkippable ?? false'
+          : '_form.stepConfig?.${b.field!.name}?.isSkippable ?? false';
+
+      List<String> validateStatements;
+      if (b.type == _StepType.scalar) {
+        validateStatements = [
+          'return _formKey.currentState?.validate() ?? false;',
+        ];
+      } else if (b.type == _StepType.subInput) {
+        validateStatements = [
+          _u.tryCatchFinally(
+            tryStatements: ['_${b.field!.name}Key.currentState!.read();', 'return true;'],
+            catchVariable: '_',
+            catchStatements: ['return false;'],
+          ),
+        ];
+      } else {
+        // inputList — only validate if a Values override is present
+        validateStatements = [
+          _u.ifStatement(
+            condition: '_form.values?.${b.field!.name} != null',
+            ifBlockStatements: [
+              _u.tryCatchFinally(
+                tryStatements: ['_${b.field!.name}OverrideKey.currentState!.read();', 'return true;'],
+                catchVariable: '_',
+                catchStatements: ['return false;'],
+              ),
+            ],
+          ),
+          'return true;',
+        ];
+      }
+
+      return DartCaseStatement(
+        caseValue: '$idx',
+        statement: _u.block([
+          _u.ifStatement(
+            condition: skippableExpr,
+            ifBlockStatements: ['return true;'],
+          ),
+          ...validateStatements,
+        ]),
+      );
+    }).toList();
+
+    return _u.createMethod(
+      returnType: 'bool',
+      methodName: '_validateAndReadCurrentStep',
+      arguments: [],
+      namedArguments: false,
+      statements: [
+        _u.switchStatement(
+          expression: '_currentStep',
+          cases: cases,
+          defaultStatements: ['return true;'],
+        ),
+      ],
+    );
+  }
+
+  String _serializeOnStepContinueMethod(int totalSteps) => _u.createMethod(
+        returnType: 'void',
+        methodName: '_onStepContinue',
+        arguments: [],
+        namedArguments: false,
+        statements: [
+          _u.ifStatement(
+            condition: '_validateAndReadCurrentStep()',
+            ifBlockStatements: [
+              _u.ifStatement(
+                condition: '_currentStep < ${totalSteps - 1}',
+                ifBlockStatements: ['setState(() => _currentStep++);'],
+              ),
+            ],
+          ),
+        ],
+      );
+
+  String _serializeOnStepCancelMethod() => _u.createMethod(
+        returnType: 'void',
+        methodName: '_onStepCancel',
+        arguments: [],
+        namedArguments: false,
+        statements: [
+          _u.ifStatement(
+            condition: '_currentStep > 0',
+            ifBlockStatements: ['setState(() => _currentStep--);'],
+          ),
+        ],
+      );
+
+  String _serializeBuildStepControlsMethod(int totalSteps) => _u.createMethod(
+        returnType: 'Widget',
+        methodName: '_buildStepControls',
+        namedArguments: false,
+        arguments: ['BuildContext context', 'ControlsDetails details'],
+        statements: [
+          'final isFirst = details.stepIndex == 0;',
+          'final isLast = details.stepIndex == ${totalSteps - 1};',
+          'return ${_u.callExpression('Row', [
+            'mainAxisAlignment: _form.stepControlsAlignment',
+            _u.listArg('children', [
+              // Back — hidden on first step, always takes space to keep Next stable
+              _u.callExpression('Visibility', [
+                'visible: !isFirst',
+                'maintainSize: true',
+                'maintainAnimation: true',
+                'maintainState: true',
+                'child: ${_u.callExpression('TextButton', [
+                  'onPressed: details.onStepCancel',
+                  'child: Text(_form.stepperStrings.back)',
+                ])}',
+              ]),
+              // Next / Submit
+              _u.callExpression('ElevatedButton', [
+                'onPressed: details.onStepContinue',
+                'child: Text(isLast ? _form.stepperStrings.submit : _form.stepperStrings.next)',
+              ]),
+            ]),
+          ])};',
+        ],
+      );
+
+  String _humanizeInputName(String inputName) {
+    final withoutSuffix = inputName.endsWith('Input')
+        ? inputName.substring(0, inputName.length - 5)
+        : inputName;
+    return _types.humanize(withoutSuffix);
+  }
+
+  // _field is used by: text fields, enum fields, tristate bool, date fields, and input list fields (catch-all).
+  bool _needsFieldHelper(List<GLField> textFields, List<GLField> enumFields,
+      List<GLField> boolFields, List<GLField> inputListFields) =>
+      textFields.isNotEmpty ||
+      enumFields.isNotEmpty ||
+      boolFields.any(_types.isTristateField) ||
+      inputListFields.isNotEmpty;
+
+  // _decoration is used by: text fields (via _textDecoration), enum dropdowns, tristate bool, date fields.
+  bool _needsDecorationHelper(
+      List<GLField> textFields, List<GLField> enumFields, List<GLField> boolFields) =>
+      textFields.isNotEmpty ||
+      enumFields.isNotEmpty ||
+      boolFields.any(_types.isTristateField);
 }
