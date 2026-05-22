@@ -1,6 +1,6 @@
 # Flutter UI Input Form Generation
 
-## Status: Implemented (phase 9 — dynamic visibility, FormContext, typed Values override, generator refactor)
+## Status: Implemented (phase 10 — onChange/onContextChange/tryRead, stepper layout, validate() fix, bug fixes)
 
 ---
 
@@ -65,8 +65,9 @@ Per-field overrides (via `${InputName}Widgets`) take precedence over the global 
 ## Generated API
 
 For each `input` definition (e.g. `AddVehicleInput`), one file is generated containing:
-- 11 companion classes: `FormContext`, `DropdownLabels`, `Labels`, `Values`, `Visibility`, `Defaults`, `Validations`, `Order`, `Widgets`, `TextConfig`, `DateConfig` ⚡ added `FormContext` (phase 9)
-- 2 layout enums: `Layout`, `LabelPosition`
+- 11 companion classes always: `FormContext`, `DropdownLabels`, `Labels`, `Values`, `Visibility`, `Defaults`, `Validations`, `Order`, `Widgets`, `TextConfig`, `DateConfig`
+- 1 additional companion when sub-inputs exist: `StepConfig` ⚡ added (phase 10)
+- 2 layout enums: `Layout` (column, twoColumn, + stepper when sub-inputs exist ⚡ phase 10), `LabelPosition`
 - 1 `StatefulWidget` extending `InputFormWidget<T>`
 - 1 `State` extending `InputFormState<T>`
 
@@ -295,9 +296,12 @@ InputDecoration _textDecoration(Widget label, TextFieldOptions? opts, Widget? su
 ### Layout enums
 
 ```dart
-enum AddVehicleInputLayout { column, twoColumn }
+enum AddVehicleInputLayout { column, twoColumn }           // no sub-inputs
+enum PersonInputLayout     { column, twoColumn, stepper }  // has sub-inputs ⚡ phase 10
 enum AddVehicleInputLabelPosition { beside, above, floatingLabel }
 ```
+
+`stepper` is only added to the layout enum when the input has at least one sub-input or list-of-input field. In all other layouts the default is `column`.
 
 Note: `card` was removed — it had no useful behaviour over `column`.
 
@@ -321,12 +325,23 @@ class AddVehicleInputForm extends InputFormWidget<AddVehicleInput> {
   final AddVehicleInputOrder?          order;
   final AddVehicleInputDefaults?       hiddenDefaults;
   final AddVehicleInputValidations?    validations;
-  final AddVehicleInputWidgets?        widgets;   // ⚡ added (phase 3)
-  final AddVehicleInputTextConfig?     textConfig; // ⚡ added (phase 4)
+  final AddVehicleInputWidgets?        widgets;            // ⚡ added (phase 3)
+  final AddVehicleInputTextConfig?     textConfig;         // ⚡ added (phase 4)
   final AddVehicleInputLayout          layout;
   final AddVehicleInputLabelPosition   labelPosition;
   final double                         labelWidth;
   final double                         gap;
+  final MainAxisSize                   columnMainAxisSize; // default: MainAxisSize.min ⚡ phase 10
+  final FormStrings                    strings;
+  // onChange / onContextChange ⚡ added (phase 10)
+  final void Function(AddVehicleInputFormContext)? onContextChange;
+  final void Function(AddVehicleInput?)?           onChange;
+  final Duration                                   debounceDuration; // default: 300ms
+  // stepper (only generated when sub-inputs exist) ⚡ added (phase 10)
+  final PersonInputStepConfig?                     stepConfig;
+  final StepperType                                stepperType;      // default: vertical
+  final Widget Function(BuildContext, ControlsDetails)? stepControlsBuilder;
+  final MainAxisAlignment                          stepControlsAlignment; // default: spaceBetween
   ...
 }
 ```
@@ -374,15 +389,123 @@ class AddVehicleInputFormState extends InputFormState<AddVehicleInput> {
 
 ---
 
-### `read()` method
+### `read()`, `tryRead()`, `validate()` ⚡ updated (phase 10)
 
-Triggers `Form` validation, throws `InputReadException` on failure, then builds the typed input.
+**`validate()`** — added to `InputFormState<T>` base class. Overridden in each generated state to validate the main form AND all visible sub-forms simultaneously using non-short-circuit `&=`:
 
-- **Non-nullable visible**: reads from state or controller; required validators run.
-- **Nullable visible**: reads from state or controller; null is valid.
-- **Hidden non-nullable**: `hiddenDefaults?.field ?? throw InputReadException(...)`.
-- **Hidden nullable**: `hiddenDefaults?.field` — null is valid.
-- **List fields**: always from state `_list`, never from `hiddenDefaults`.
+```dart
+@override
+bool validate() {
+  var _valid = _formKey.currentState?.validate() ?? false;
+  _valid &= _addressKey.currentState?.validate() ?? true; // sub-form; null if unmounted = valid
+  return _valid;
+}
+```
+
+Previously `read()` only validated the main form first, then sub-forms lazily — errors in sub-forms were invisible while the main form had errors. `&=` ensures every validator fires and every error message appears at once.
+
+**`_buildResult()`** — private method extracted from `read()`. Contains the full field-assembly logic (vis checks, override key reads, hidden defaults). Shared by `read()` and `tryRead()`.
+
+**`read()`** — delegates to `validate()` then `_buildResult()`. Throws `InputReadException` if invalid.
+
+**`tryRead()`** — calls `_buildResult()` in a try-catch, returns `T?`. Never throws. Useful for auto-save and draft persistence:
+
+```dart
+final draft = _key.currentState!.tryRead(); // null if form not fully parseable
+```
+
+---
+
+### onChange / onContextChange ⚡ added (phase 10)
+
+Three new widget params:
+
+```dart
+final void Function(AddVehicleInputFormContext)? onContextChange; // sync, every field change
+final void Function(AddVehicleInput?)?           onChange;        // debounced, delivers tryRead()
+final Duration debounceDuration;                                  // default: 300ms
+```
+
+**`onContextChange`**: called synchronously on every field change (typing, enum select, bool toggle, date pick). Receives a `FormContext` snapshot. Use for instant reactive UI — visibility decisions, computed labels, live summaries.
+
+**`onChange`**: called after `debounceDuration` with `tryRead()`. `null` while the form is invalid or incomplete. Use for auto-save, remote search, draft persistence.
+
+**Implementation**: `setState` is overridden to call `_onFieldChanged()` after every state mutation. `TextFormField`s additionally get `onChanged: (_) => _onFieldChanged()` since text changes don't go through `setState`. `_onFieldChanged()` calls `_notifyContextChange()` (sync) and `_scheduleOnChange()` (timer). `_debounceTimer?.cancel()` in `dispose()`.
+
+---
+
+### Stepper layout ⚡ added (phase 10)
+
+Only generated for inputs that have at least one sub-input (`SubInput!`) or list-of-input (`[SubInput!]!`) field.
+
+**Step structure** — derived from schema, in declaration order:
+
+| Source | Step | Validation on Next |
+|---|---|---|
+| All scalar / enum / bool / plain-list fields | One implicit step (omitted if none) | `_formKey.currentState?.validate()` |
+| Each `SubInput!` / `SubInput?` field | One step, renders `${SubType}Form` | `try _key.currentState!.read() catch InputReadException` |
+| Each `[SubInput!]!` field | One step — caller provides `Values` override for content | If override: `try _overrideKey.currentState!.read()`. No override: always passes. |
+| `@glSkipOnClient` sub-input | Step not generated | — |
+
+**`${Input}StepConfig`** — companion class with one `InputStepOptions?` slot per step:
+
+```dart
+class PersonInputStepConfig {
+  final InputStepOptions? scalarFields;  // implicit scalar step (omitted if no scalars)
+  final InputStepOptions? address;       // one per sub-input / list-of-input field
+  const PersonInputStepConfig({this.scalarFields, this.address});
+}
+```
+
+**`InputStepOptions`** — shared, generated once into `input_step_options.dart`:
+
+```dart
+class InputStepOptions {
+  final Widget? title;      // null = auto-humanized field/input name
+  final Widget? subtitle;
+  final bool isSkippable;   // bypasses validate+read on Next; does NOT bypass final read()
+  const InputStepOptions({this.title, this.subtitle, this.isSkippable = false});
+}
+```
+
+**Navigation**: linear — `_validateAndReadCurrentStep()` blocks Next if the current step fails. `onStepTapped` allows going back but not jumping ahead. `isSkippable` bypasses the per-step check only; the final `read()` still validates everything.
+
+**`_buildStepControls`** — default controls builder. No Back on first step (hidden via `maintainSize: true`). Last step shows `strings.submit` instead of `strings.next`. Layout driven by `stepControlsAlignment` (default `MainAxisAlignment.spaceBetween` → Back left, Next/Submit right).
+
+**`stepControlsBuilder`** — optional full replacement for the controls widget:
+```dart
+PersonInputForm(
+  stepControlsBuilder: (context, details) => Row(children: [...]),
+)
+```
+
+**`_scalarRows()`** — new method alongside `_visibleRows()`. Returns only the non-sub-input, non-list-of-input rows. Used as the scalar step's content in stepper layout. `_visibleRows()` is unchanged for column/twoColumn layouts.
+
+**`Form` wrapper**: in column/twoColumn, `Form(key: _formKey)` wraps the whole output. In stepper, `Form(key: _formKey)` wraps only the scalar step's `Column` content — sub-input steps embed their own `Form` via `${SubType}Form`.
+
+---
+
+### `FormStrings` additions ⚡ phase 10
+
+Three new localizable strings:
+
+```dart
+final String next;    // default: 'Next'
+final String back;    // default: 'Back'
+final String submit;  // default: 'Submit'
+```
+
+Used by the default stepper controls builder. Fully overridable per the existing `FormStrings` pattern.
+
+---
+
+### Column layout improvements ⚡ phase 10
+
+```dart
+final MainAxisSize columnMainAxisSize; // default: MainAxisSize.min
+```
+
+Column now always uses `crossAxisAlignment: CrossAxisAlignment.stretch` (hardcoded — form fields should always fill their container). `columnMainAxisSize` defaults to `MainAxisSize.min` so the form shrink-wraps vertically. Callers inside fixed-height containers pass `MainAxisSize.max`.
 
 ---
 
@@ -511,6 +634,7 @@ Generated once into `widgets/inputs/`:
 | `date_input_formatter.dart` | `DateInputFormatter` ⚡ added (phase 7) |
 | `field_visibility.dart` | `FieldVisibility { enabled, disabled, hidden }` ⚡ added (phase 9) |
 | `simple_field_form.dart` | `SimpleFieldForm<T>` — thin helper for inline field overrides ⚡ added (phase 9) |
+| `input_step_options.dart` | `InputStepOptions` — per-step title/subtitle/isSkippable config ⚡ added (phase 10) |
 
 ---
 
@@ -585,7 +709,7 @@ lib/generated/
 | `lib/src/serializers/flutter_inputs/flutter_inputs_date_serializer.dart` | Date row method + picker helpers ⚡ added (phase 9) |
 | `lib/src/serializers/flutter_inputs/flutter_inputs_state_serializer.dart` | Widget class, state class, layout helpers ⚡ added (phase 9) |
 | `lib/src/generators/dart_client_generator.dart` | Hooks both serializers, writes shared files |
-| `examples/flutter/ui_types/` | Live example — 12 tabs covering all features |
+| `examples/flutter/ui_types/` | Live example — 14 tabs covering all features (tabs 13-14: onChange, Stepper) ⚡ phase 10 |
 | `examples/flutter/ui_types/GRAPHLINK_FLUTTER_GUIDE.md` | AI agent reference guide ⚡ added (phase 9) |
 
 ---
@@ -621,6 +745,17 @@ lib/generated/
 29. Typed field override — `Values` fields changed from `Widget?` to `InputFormWidget<T> Function(Key)?`; parent form generates and owns the `GlobalKey`; `read()` delegates to `overrideKey.currentState!.read()`; hidden wins over override (no crash on unmounted widget). ✅ (phase 9)
 30. `SimpleFieldForm<T>` — shared helper class for simple inline field overrides without writing a full `StatefulWidget`. ✅ (phase 9)
 31. Generator split — monolithic `FlutterInputsSerializer` (~2100 lines) replaced with 7 collaborating injected classes under `flutter_inputs/` folder. ✅ (phase 9)
+32. `onChange` / `onContextChange` / `tryRead()` — debounced typed onChange, sync context callback, non-throwing tryRead for auto-save. `setState` override + `onChanged` on TextFormField cover all field types. ✅ (phase 10)
+33. `validate()` on `InputFormState` base — validates all forms simultaneously with `&=` (non-short-circuit); fixes silent sub-form validation errors when main form also has errors. ✅ (phase 10)
+34. `_buildResult()` extracted — shared by `read()` and `tryRead()`; eliminates duplication. ✅ (phase 10)
+35. Stepper layout — schema-driven steps from sub-input fields; per-step validate+read on Next; `InputStepOptions` / `${Input}StepConfig`; configurable controls via `stepControlsBuilder` / `stepControlsAlignment`; default controls hide Back on first step, show Submit on last step. ✅ (phase 10)
+36. `columnMainAxisSize` parameter — default `MainAxisSize.min`; column always uses `CrossAxisAlignment.stretch`. ✅ (phase 10)
+37. `FormStrings` additions — `next`, `back`, `submit` for stepper controls localization. ✅ (phase 10)
+38. `@glSkipOnClient` respected — inputs tagged with this directive are skipped by the Flutter input generator. ✅ (phase 10)
+39. `isInputListField` — new type helper for list-of-input fields; missing imports fixed. ✅ (phase 10)
+40. `isPasswordField` — tightened to word-boundary check for `pin`; prevents false positives like `stopingDate`. ✅ (phase 10)
+41. `didUpdateWidget` parameter name — fixed to `oldWidget` to match Flutter's override signature. ✅ (phase 10)
+42. Dead helper guard — `_switchBoolField`/`_checkboxBoolField`/`_fieldHelper`/`_decorationHelper` only generated when their actual call sites exist in the form. ✅ (phase 10)
 
 ---
 

@@ -10,6 +10,8 @@ abstract class InputFormWidget<T> extends StatefulWidget {
 
 abstract class InputFormState<T> extends State<InputFormWidget<T>> {
   T read();
+  bool validate() => true;
+  void reset({List<String>? fields}) {}
 }
 ''';
 
@@ -95,6 +97,19 @@ class FormStrings {
     this.done = 'Done',
     this.requiredText = 'required',
     this.optionalText = 'optional',
+  });
+}
+''';
+
+  String serializeSharedStepperStrings() => '''
+class StepperStrings {
+  final String next;
+  final String back;
+  final String submit;
+  const StepperStrings({
+    this.next = 'Next',
+    this.back = 'Back',
+    this.submit = 'Submit',
   });
 }
 ''';
@@ -187,6 +202,27 @@ class _SimpleFieldFormState<T> extends InputFormState<T> {
 
   @override
   Widget build(BuildContext context) => (widget as SimpleFieldForm<T>).builder(context);
+}
+''';
+
+  String serializeSharedInputStepOptions() => '''
+import 'package:flutter/widgets.dart';
+
+class InputStepOptions {
+  final Widget? title;
+  final Widget? subtitle;
+  const InputStepOptions({this.title, this.subtitle});
+}
+''';
+
+  String serializeSharedInputStepGroup() => '''
+import 'package:flutter/widgets.dart';
+
+class InputStepGroup {
+  final List<String> fields;
+  final Widget? title;
+  final Widget? subtitle;
+  const InputStepGroup({required this.fields, this.title, this.subtitle});
 }
 ''';
 

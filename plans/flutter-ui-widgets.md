@@ -1,6 +1,6 @@
 # Flutter UI Widget Generation
 
-## Status: Phase 1 — enum labels improvement in progress
+## Status: Phase 1 — complete
 
 ---
 
@@ -49,13 +49,14 @@ For each concrete, non-response GraphQL `type`, one file is generated containing
 
 ### Companion classes
 
-**`VehicleLabels`** — override the label (left side) of any field. `null` = use the auto-humanized default (`Text('Brand')`).
+**`VehicleLabels`** — override the label (left side) of any field. `null` = use the auto-humanized default (`Text('Brand')`). Also holds `$group` — the scalar group title in `expandable` layout (default `Text('Details')`). The `$` prefix is a valid Dart identifier character and is impossible in GraphQL field names, eliminating any collision risk.
 ```dart
 class VehicleLabels {
   final Widget? id;
   final Widget? brand;
   // ... one field per schema field
-  const VehicleLabels({this.id, this.brand, ...});
+  final Widget? $group;  // scalar accordion title in expandable layout
+  const VehicleLabels({this.id, this.brand, ..., this.$group});
 }
 ```
 
@@ -69,38 +70,40 @@ class VehicleValues {
 }
 ```
 
-**`VehicleOrder`** — override the sort position of any field. `null` = use the schema-defined order (fields fall back to position × 1000 + index). Lower values appear first.
+**`VehicleOrder`** — override the sort position of any field. `null` = use the schema-defined order (fields fall back to position × 1000 + index). Lower values appear first. Also holds `$group` — the sort position of the scalar accordion group in `expandable` layout (default `0`, before all field-based accordions).
 ```dart
 class VehicleOrder {
   final int? id;
   final int? brand;
   // ...
-  const VehicleOrder({this.id, this.brand, ...});
+  final int? $group;  // position of the scalar accordion group in expandable layout
+  const VehicleOrder({this.id, this.brand, ..., this.$group});
 }
 ```
 
-**`VehicleVisibility`** — show/hide individual fields. All default to `true`. This is the sole mechanism for hiding fields; a `null` label in `VehicleLabels` does NOT hide a field.
+**`VehicleVisibility`** — show/hide individual fields. `ID`-typed fields default to `false`; all others default to `true`. This is the sole mechanism for hiding fields; a `null` label in `VehicleLabels` does NOT hide a field.
 ```dart
 class VehicleVisibility {
   final bool id;
   final bool brand;
   // ...
-  const VehicleVisibility({this.id = true, this.brand = true, ...});
+  const VehicleVisibility({this.id = false, this.brand = true, ...});
 }
 ```
 
-**`VehicleEnumLabels`** — per-value label overrides for every enum field in the type. Each field holds a `FuelTypeLabels?` (or the relevant per-enum class). `null` field = use default for that enum field; `null` widget inside = use `Text(value.name)` for that specific value.
+**`VehicleEnumLabels`** — per-value label overrides for every enum field in the type, including list-of-enum fields. Each field holds a `FuelTypeLabels?`. `null` field = use default for that enum field; `null` widget inside = use `Text(value.name)` (or `Chip(label: Text(value.name))` for list fields) for that specific value.
 ```dart
 class VehicleEnumLabels {
-  final FuelTypeLabels? fuelType;
-  // one field per enum-typed field in the type
-  const VehicleEnumLabels({this.fuelType});
+  final FuelTypeLabels? fuelType;   // scalar enum field
+  final FuelTypeLabels? fuelTypes;  // list-of-enum field
+  // one field per enum-typed field (scalar or list) in the type
+  const VehicleEnumLabels({this.fuelType, this.fuelTypes});
 }
 ```
 
 **`VehicleLayout`** — selects the rendering layout.
 ```dart
-enum VehicleLayout { labeledRow, listTile, listTileReversed }
+enum VehicleLayout { labeledRow, listTile, listTileReversed, expandable }
 ```
 
 ### Widget
@@ -115,6 +118,8 @@ class VehicleWidget extends StatelessWidget {
   final VehicleEnumLabels? enumLabels;
   final VehicleLayout layout;
   final double gap;
+  final VehicleLayout groupLayout;  // style of the scalar accordion in expandable layout
+  final FormStrings strings;
 
   const VehicleWidget(
     this.vehicle, {
@@ -125,7 +130,9 @@ class VehicleWidget extends StatelessWidget {
     this.order,
     this.enumLabels,
     this.layout = VehicleLayout.labeledRow,
+    this.groupLayout = VehicleLayout.labeledRow,
     this.gap = 16,
+    this.strings = const FormStrings(),
   });
 
   @override
@@ -139,7 +146,28 @@ class VehicleWidget extends StatelessWidget {
 }
 ```
 
-`toTableRow()` is an instance method — the same labels/values/visibility config is reused for both the widget and table-row rendering. No `BuildContext` is needed since widget construction is pure.
+These are instance methods — the same labels/values/visibility/order config is reused for both the widget and table-row rendering. No `BuildContext` is needed since widget construction is pure.
+
+### Expandable layout
+
+`VehicleLayout.expandable` groups fields into collapsible `ExpansionTile` sections:
+
+| Group | Content | Title |
+|---|---|---|
+| Scalar group | All scalar, enum, and scalar-list fields — rendered as a labeled two-column table inside one `ExpansionTile` | `labels?.details ?? Text('Details')` |
+| Nested type field | One `ExpansionTile` per field — contains the auto-embedded child widget (e.g. `OwnerWidget`) | `labels?.owner ?? Text('Owner')` |
+| List-of-nested-type field | One `ExpansionTile` per field — contains a `Column` of child widgets, one per element | `labels?.vehicles ?? Text('Vehicles')` |
+
+Rules:
+- A nullable nested type field whose value is `null` → its accordion is omitted entirely.
+- A list field that is `null` or empty → its accordion is omitted entirely.
+- `VehicleVisibility` still controls inclusion; hidden fields are excluded from all groups.
+- `VehicleValues` still overrides individual cells inside the scalar group, or the entire child widget for nested type fields.
+- The scalar group's internal style is controlled by `groupLayout` (default `labeledRow`). Accepts `labeledRow`, `listTile`, or `listTileReversed` — `expandable` falls back to `labeledRow`.
+- All accordion entries (scalar group + each nested/list field) are collected into one list and sorted together by their `VehicleOrder` value — `ord.$group` for the scalar group, `ord.fieldName` for the rest. This gives full control over group order.
+- Default order: scalar group at `0`, field-based accordions at `1000 + schemaIndex` — scalars appear first by default.
+
+Imports for both single and list nested-type fields are deduplicated via `Set<String>` at generation time.
 
 ### Default value rendering
 
@@ -150,7 +178,12 @@ class VehicleWidget extends StatelessWidget {
 | `Boolean` | `Icon(value ? Icons.check : Icons.close)` |
 | enum | `enumLabels?.fuelType?[value] ?? Text(value.name)` |
 | nullable of any above | null-safe equivalent (`?? ''`, `?.toString() ?? ''`, `?.name ?? ''`) |
-| list / nested type | `Text(value.toString())` — override via `VehicleValues` |
+| scalar list (`[String!]`, `[Int!]`, …) | `Wrap` of `Chip` widgets, one per element (`e.toString()`) — override via `VehicleValues` |
+| enum list (`[FuelType!]`) | `Wrap` of `Chip` widgets — `Chip(label: enumLabels?.fuelTypes?.call(e) ?? Text(e.name))` per element — `enumLabels` controls the chip **label** only; use `VehicleValues` for full chip replacement |
+| nested type list (`[Car!]`) | `Text('N items')` in non-expandable layouts; use `expandable` layout for proper rendering |
+| nested type | auto-embeds the child widget (e.g. `OwnerWidget(value)`) — override via `VehicleValues` |
+
+**List field evaluation order** — `type.isList` is checked first, before all scalar type checks. Within the list branch, nested-type lists are detected first, then enum lists, then scalar lists.
 
 **Enum rendering priority** (enum fields only):
 1. `values.fuelType` — full widget override (replaces the entire value cell)
@@ -210,7 +243,30 @@ Per-enum labels classes live in `widgets/enums/` and are generated once regardle
 
 `examples/flutter/ui_types/` — a Flutter web project using FVM 3.32.7.
 
-Schema: `Vehicle` type with `String`, `Int`, `Float?`, `Boolean`, `FuelType` enum, nullable `String?` — covers every branch of the default value renderer.
+Schema types:
+- `Vehicle` — `String`, `Int`, `Float?`, `Boolean`, `FuelType` enum — covers every scalar branch of the default value renderer.
+- `Owner` — has two nested `Vehicle` fields (`primaryVehicle`, `secondaryVehicle?`) — demonstrates nested type auto-embed.
+- `Fleet` — has scalar fields, a nested `Owner` field, and a `[Vehicle!]` list field — demonstrates the `expandable` layout with all three accordion groups.
+
+Tabs (15 total):
+
+| # | Tab | What it demonstrates |
+|---|---|---|
+| 1 | Display | Layout switcher, gap slider, label/value/order overrides, `toTableRow` |
+| 2 | Add Vehicle | Input form layouts and label positions |
+| 3 | Hidden Fields | Hidden fields with `hiddenDefaults` |
+| 4 | Update | Nullable-field update form |
+| 5 | Search | List-of-enum chip field |
+| 6 | Field Widgets | Per-field enum/bool widget override |
+| 7 | Text Options | `TextFieldOptions`, smart defaults |
+| 8 | Chip Validation | Chip validation + `RequiredIndicator` |
+| 9 | Date Inputs | Int/String date fields, dialog/inline/Cupertino |
+| 10 | Composition | Nested input composition + `SimpleFieldForm` |
+| 11 | Type Widgets | `OwnerWidget` with nested `VehicleWidget`, `toTableRow` |
+| 12 | Dynamic Forms | Visibility/validation callbacks with `FormContext` |
+| 13 | onChange | `onContextChange`, debounced `onChange`, `tryRead` |
+| 14 | Stepper | Stepper layout for nested inputs |
+| 15 | Expandable | `FleetWidget` with `expandable` layout — scalar accordion, nested-type accordion, list accordion |
 
 ```
 make get        # fvm flutter pub get
@@ -229,6 +285,7 @@ make clean-widgets  # rm -rf lib/generated/widgets (clears stale files)
 | `labeledRow` | ✅ reads correctly | Table read row-major: "Label", "Value", next row… |
 | `listTile` | ✅ reads correctly | `ListTile(title: label, subtitle: value)` — label announced first |
 | `listTileReversed` | ⚠️ value announced before label | `ListTile(title: value, subtitle: label)` — Flutter's `ListTile` always reads `title` first via internal `MergeSemantics`; no clean fix in generated code |
+| `expandable` | ✅ reads correctly | `ExpansionTile` announces its title; scalar table reads row-major inside the tile |
 
 **Boolean fields:** `Icon` widgets are generated with `semanticLabel: 'Yes'` / `semanticLabel: 'No'` so TalkBack/VoiceOver announce the value rather than "icon".
 
@@ -243,5 +300,5 @@ make clean-widgets  # rm -rf lib/generated/widgets (clears stale files)
 - Stateful form widgets for `input` types (`AddVehicleInputForm`)
 - Localization integration (`appLocalizationsImport` already in `DartClientConfig`)
 - Cupertino layout variant
-- Nested type widget composition (auto-embed child widgets)
 - `listTileReversed` accessibility fix (requires replacing `ListTile` with a custom layout that separates visual order from semantic order)
+- `expandable` layout: per-field initial expanded/collapsed state (currently all tiles start collapsed)
