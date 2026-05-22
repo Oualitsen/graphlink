@@ -203,6 +203,30 @@ class FlutterInputsCompanionSerializer {
     );
   }
 
+  String serializeStepConfigClass(
+      String inputName,
+      bool hasScalarFields,
+      List<GLField> inputFields,
+      List<GLField> inputListFields) {
+    final stepFields = [...inputFields, ...inputListFields];
+    return _u.createClass(
+      className: '${inputName}StepConfig',
+      statements: [
+        if (hasScalarFields) 'final InputStepOptions? scalarFields;',
+        ...stepFields.map((f) => 'final InputStepOptions? ${f.name};'),
+        _u.createMethod(
+          isConst: true,
+          methodName: '${inputName}StepConfig',
+          namedArguments: true,
+          arguments: [
+            if (hasScalarFields) 'this.scalarFields',
+            ...stepFields.map((f) => 'this.${f.name}'),
+          ],
+        ),
+      ],
+    );
+  }
+
   String? _heuristicDateConfig(GLField f) {
     final n = f.name.token.toLowerCase();
     if (n.endsWith('at')) return 'const DateInputConfig(type: DateType.dateTime)';

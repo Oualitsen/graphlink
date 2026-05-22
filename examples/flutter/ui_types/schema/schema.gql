@@ -76,10 +76,19 @@ type Owner {
   secondaryVehicle: Vehicle
 }
 
+type Fleet {
+  id: ID!
+  name: String!
+  city: String!
+  owner: Owner!
+  vehicles: [Vehicle!]!
+}
+
 type Query {
   getVehicle(id: ID!): Vehicle!
   listVehicles: [Vehicle!]!
   getOwner(id: ID!): Owner!
+  getFleet(id: ID!): Fleet!
 }
 
 type Mutation {

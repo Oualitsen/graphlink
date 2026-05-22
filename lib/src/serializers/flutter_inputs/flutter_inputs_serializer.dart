@@ -53,6 +53,9 @@ class FlutterInputsSerializer {
   String serializeSharedBooleanLabels() => _shared.serializeSharedBooleanLabels();
   String serializeSharedFieldVisibility() => _shared.serializeSharedFieldVisibility();
   String serializeSharedSimpleFieldForm() => _shared.serializeSharedSimpleFieldForm();
+  String serializeSharedInputStepOptions() => _shared.serializeSharedInputStepOptions();
+  String serializeSharedStepperStrings() => _shared.serializeSharedStepperStrings();
+  String serializeSharedInputStepGroup() => _shared.serializeSharedInputStepGroup();
 
   // ── Per-input entry point ─────────────────────────────────────────────────────
 
@@ -74,10 +77,13 @@ class FlutterInputsSerializer {
     final inputListFields = listFields.where(_types.isInputListField).toList();
     final formFields = [...textFields, ...enumFields, ...boolFields, ...inputFields];
     final enumListFields = listFields.where(_types.isEnumListField).toList();
+    final hasSubInputs = inputFields.isNotEmpty || inputListFields.isNotEmpty;
+    final hasScalarFields = fields.any((f) => !_types.isInputField(f) && !_types.isInputListField(f));
 
     final buffer = StringBuffer();
 
     final imports = <String>{
+      "import 'dart:async';",
       "import 'package:flutter/material.dart';",
       "import '$importPrefix/inputs/${inputName.toSnakeCase()}.dart';",
       "import '$importPrefix/widgets/inputs/input_form_widget.dart';",
@@ -102,6 +108,8 @@ class FlutterInputsSerializer {
       },
       for (final f in inputListFields)
         "import '$importPrefix/inputs/${f.type.inlineType.firstType.token.toSnakeCase()}.dart';",
+      if (hasSubInputs) "import '$importPrefix/widgets/inputs/input_step_options.dart';",
+      if (hasSubInputs) "import '$importPrefix/widgets/inputs/stepper_strings.dart';",
     };
     for (final imp in imports) { buffer.writeln(imp); }
     buffer.writeln();
@@ -136,11 +144,15 @@ class FlutterInputsSerializer {
       buffer.writeln(_companions.serializeDateConfigClass(inputName, dateEligibleFields));
       buffer.writeln();
     }
-    buffer.writeln('enum ${inputName}Layout { column, twoColumn }');
+    if (hasSubInputs) {
+      buffer.writeln(_companions.serializeStepConfigClass(inputName, hasScalarFields, inputFields, inputListFields));
+      buffer.writeln();
+    }
+    buffer.writeln('enum ${inputName}Layout { column, twoColumn${hasSubInputs ? ', stepper' : ''} }');
     buffer.writeln();
     buffer.writeln('enum ${inputName}LabelPosition { beside, above, floatingLabel }');
     buffer.writeln();
-    buffer.writeln(_state.serializeWidgetClass(inputName, listFields, formFields, enumFields, boolFields, textFields, dateEligibleFields));
+    buffer.writeln(_state.serializeWidgetClass(inputName, listFields, formFields, enumFields, boolFields, textFields, dateEligibleFields, inputFields, inputListFields));
     buffer.writeln();
     buffer.write(_state.serializeStateClass(inputName, fields, listFields, textFields, enumFields, boolFields, intFields, dateEligibleFields, inputFields));
 

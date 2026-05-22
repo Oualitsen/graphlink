@@ -57,6 +57,7 @@ class FlutterInputsFieldSerializer {
       'maxLength: _form.textConfig?.$name?.maxLength',
       'maxLines: _form.textConfig?.$name?.maxLines ?? 1',
       'decoration: _textDecoration(label, _form.textConfig?.$name, null)',
+      'onChanged: (_) => _onFieldChanged()',
       'validator: ${_u.functionLiteral(['v'], validators)}',
     ]);
   }
@@ -82,6 +83,7 @@ class FlutterInputsFieldSerializer {
       'enabled: $enabledExpr',
       'keyboardType: TextInputType.number',
       'decoration: _textDecoration(label, _form.textConfig?.$name, null)',
+      'onChanged: (_) => _onFieldChanged()',
       'validator: ${_u.functionLiteral(['v'], validators)}',
     ]);
   }
@@ -115,6 +117,7 @@ class FlutterInputsFieldSerializer {
       'maxLength: _form.textConfig?.$name?.maxLength',
       'maxLines: _form.textConfig?.$name?.maxLines ?? 1',
       'decoration: _textDecoration(label, _form.textConfig?.$name, $suffixIconExpr)',
+      'onChanged: (_) => _onFieldChanged()',
       'validator: ${_u.functionLiteral(['v'], validators)}',
     ]);
   }

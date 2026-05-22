@@ -163,7 +163,7 @@ class FlutterInputsTypeHelpers {
     final n = f.name.token.toLowerCase();
     return n.contains('password') ||
         n.contains('secret') ||
-        n == 'pin' || n.startsWith('pin') || n.endsWith('pin');
+        n == 'pin' || n.endsWith('pin');
   }
 
   String smartKeyboardTypeExpr(GLField f) {

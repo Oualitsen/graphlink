@@ -3,8 +3,10 @@ import 'package:flutter_ui_example/generated/enums/fuel_type.dart';
 import 'package:flutter_ui_example/generated/inputs/add_vehicle_input.dart';
 import 'package:flutter_ui_example/generated/inputs/event_input.dart';
 import 'package:flutter_ui_example/generated/inputs/register_input.dart';
+import 'package:flutter_ui_example/generated/types/fleet.dart';
 import 'package:flutter_ui_example/generated/types/owner.dart';
 import 'package:flutter_ui_example/generated/types/vehicle.dart';
+import 'package:flutter_ui_example/generated/widgets/types/fleet_widget.dart';
 import 'package:flutter_ui_example/generated/widgets/types/owner_widget.dart';
 import 'package:flutter_ui_example/generated/widgets/inputs/add_vehicle_input_form.dart';
 import 'package:flutter_ui_example/generated/widgets/inputs/boolean_labels.dart';
@@ -12,7 +14,11 @@ import 'package:flutter_ui_example/generated/widgets/inputs/date_input_config.da
 import 'package:flutter_ui_example/generated/inputs/person_input.dart';
 import 'package:flutter_ui_example/generated/widgets/inputs/event_input_form.dart';
 import 'package:flutter_ui_example/generated/widgets/inputs/form_strings.dart';
+import 'package:flutter_ui_example/generated/inputs/address_input.dart';
+import 'package:flutter_ui_example/generated/widgets/inputs/input_step_options.dart';
+import 'package:flutter_ui_example/generated/widgets/inputs/address_input_form.dart';
 import 'package:flutter_ui_example/generated/widgets/inputs/person_input_form.dart';
+import 'package:flutter_ui_example/generated/widgets/inputs/simple_field_form.dart';
 import 'package:flutter_ui_example/generated/widgets/inputs/field_widgets.dart';
 import 'package:flutter_ui_example/generated/widgets/inputs/field_visibility.dart';
 import 'package:flutter_ui_example/generated/widgets/inputs/input_read_exception.dart';
@@ -37,7 +43,7 @@ class MyApp extends StatelessWidget {
       title: 'GraphLink Flutter UI Example',
       theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.indigo),
       home: DefaultTabController(
-        length: 12,
+        length: 15,
         child: Scaffold(
           appBar: AppBar(
             title: const Text('GraphLink Flutter UI'),
@@ -56,6 +62,9 @@ class MyApp extends StatelessWidget {
                 Tab(text: 'Composition'),
                 Tab(text: 'Type Widgets'),
                 Tab(text: 'Dynamic Forms'),
+                Tab(text: 'onChange'),
+                Tab(text: 'Stepper'),
+                Tab(text: 'Expandable'),
               ],
             ),
           ),
@@ -73,6 +82,9 @@ class MyApp extends StatelessWidget {
               _CompositionTab(),
               _TypeWidgetsTab(),
               _DynamicFormsTab(),
+              _OnChangeTab(),
+              _StepperTab(),
+              _ExpandableTab(),
             ],
           ),
         ),
@@ -1410,8 +1422,20 @@ class _CompositionTabState extends State<_CompositionTab> {
   final _key = GlobalKey<PersonInputFormState>();
   PersonInput? _result;
   String _locale = 'en';
+  String? _country;
 
-  static const _locales = ['en', 'fr', 'ar'];
+  static const _countries = [
+    'Algeria',
+    'Canada',
+    'France',
+    'Germany',
+    'Italy',
+    'Morocco',
+    'Spain',
+    'Tunisia',
+    'United Kingdom',
+    'United States',
+  ];
 
   FormStrings _stringsFor(String locale) => switch (locale) {
         'fr' => const FormStrings(
@@ -1488,12 +1512,49 @@ class _CompositionTabState extends State<_CompositionTab> {
           const Divider(height: 24),
 
           // ── The form ─────────────────────────────────────────────────────────
+          // Sub-input fields are excluded from Values by design — they own their
+          // own GlobalKey. To customise AddressInputForm (e.g. restrict country),
+          // pass a Values override directly on AddressInputForm and embed
+          // PersonInputForm on top for the scalar fields only.
           PersonInputForm(
             key: _key,
             strings: _stringsFor(_locale),
             requiredIndicator: RequiredIndicator.asterisk,
             labels: const PersonInputLabels(
               address: Text('Address', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            ),
+          ),
+
+          const Divider(height: 32),
+
+          // ── AddressInputForm standalone — country restricted to 10 countries ──
+          Text('Address (country restricted)', style: Theme.of(context).textTheme.labelLarge),
+          const SizedBox(height: 8),
+          const Text(
+            'Country field replaced via Values override with a SimpleFieldForm<String> '
+            'wrapping a dropdown — only 10 countries, Algeria included.',
+            style: TextStyle(fontSize: 12),
+          ),
+          const SizedBox(height: 12),
+          AddressInputForm(
+            strings: _stringsFor(_locale),
+            requiredIndicator: RequiredIndicator.asterisk,
+            values: AddressInputValues(
+              country: (key) => SimpleFieldForm<String>(
+                key: key,
+                reader: () => _country ??
+                    (throw const InputReadException('Country is required')),
+                builder: (ctx) => DropdownButtonFormField<String>(
+                  value: _country,
+                  decoration: const InputDecoration(labelText: 'Country'),
+                  hint: const Text('Select a country'),
+                  items: _countries
+                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                      .toList(),
+                  onChanged: (v) => setState(() => _country = v),
+                  validator: (_) => _country == null ? 'Required' : null,
+                ),
+              ),
             ),
           ),
 
@@ -1546,6 +1607,508 @@ class _CompositionTabState extends State<_CompositionTab> {
         SnackBar(content: Text(e.message), backgroundColor: Colors.red),
       );
     }
+  }
+}
+
+// ── Tab 13: onChange / onContextChange / tryRead ──────────────────────────────
+
+class _OnChangeTab extends StatefulWidget {
+  const _OnChangeTab();
+  @override
+  State<_OnChangeTab> createState() => _OnChangeTabState();
+}
+
+class _OnChangeTabState extends State<_OnChangeTab> {
+  final _key = GlobalKey<AddVehicleInputFormState>();
+
+  // onContextChange fires synchronously on every keystroke — use for instant UI feedback.
+  AddVehicleInputFormContext? _liveContext;
+
+  // onChange fires after the debounce delay and carries a fully parsed AddVehicleInput?.
+  // null means the form is currently invalid / not fully filled.
+  AddVehicleInput? _debouncedValue;
+  DateTime? _lastDebounceAt;
+
+  Duration _debounce = const Duration(milliseconds: 300);
+  AddVehicleInput? _submitResult;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('onChange / onContextChange / tryRead', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 4),
+          const Text(
+            '• onContextChange: sync, fires on every field change — drives live UI feedback with zero delay.\n'
+            '• onChange: debounced, delivers AddVehicleInput? — null while the form is invalid.\n'
+            '• tryRead(): on-demand non-throwing read — useful for save-draft buttons.',
+          ),
+          const Divider(height: 24),
+
+          // ── Debounce slider ─────────────────────────────────────────────────
+          Row(
+            children: [
+              Text('Debounce', style: theme.textTheme.labelSmall),
+              Expanded(
+                child: Slider(
+                  value: _debounce.inMilliseconds.toDouble(),
+                  min: 0,
+                  max: 1500,
+                  divisions: 15,
+                  label: '${_debounce.inMilliseconds} ms',
+                  onChanged: (v) => setState(() => _debounce = Duration(milliseconds: v.toInt())),
+                ),
+              ),
+              SizedBox(
+                width: 64,
+                child: Text('${_debounce.inMilliseconds} ms', style: theme.textTheme.bodySmall),
+              ),
+            ],
+          ),
+
+          const Divider(height: 16),
+
+          // ── Live context panel (onContextChange) ────────────────────────────
+          Text('Live context (onContextChange — sync)', style: theme.textTheme.labelLarge),
+          const SizedBox(height: 8),
+          if (_liveContext == null)
+            const Text('Start typing to see live context…', style: TextStyle(fontStyle: FontStyle.italic))
+          else
+            _ContextCard(ctx: _liveContext!),
+
+          const Divider(height: 24),
+
+          // ── Debounced value panel (onChange) ────────────────────────────────
+          Row(
+            children: [
+              Text('Debounced value (onChange)', style: theme.textTheme.labelLarge),
+              if (_lastDebounceAt != null) ...[
+                const Spacer(),
+                Text(
+                  'last at ${_lastDebounceAt!.toIso8601String().substring(11, 19)}',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (_debouncedValue == null)
+            const Text(
+              'null — form is empty or invalid (onChange fires with null until parseable)',
+              style: TextStyle(fontStyle: FontStyle.italic),
+            )
+          else
+            _ResultCard(result: _debouncedValue!),
+
+          const Divider(height: 24),
+
+          // ── The form ────────────────────────────────────────────────────────
+          AddVehicleInputForm(
+            key: _key,
+            debounceDuration: _debounce,
+            onContextChange: (ctx) {
+              // Called synchronously on every field change — no setState needed
+              // if you only update derived UI outside the form itself.
+              setState(() => _liveContext = ctx);
+            },
+            onChange: (input) {
+              // Called after debounceDuration — input is null if form can't be read.
+              setState(() {
+                _debouncedValue = input;
+                _lastDebounceAt = DateTime.now();
+              });
+            },
+            visibility: AddVehicleInputVisibility(
+              notes: (ctx) => ctx.available ? FieldVisibility.enabled : FieldVisibility.hidden,
+            ),
+          ),
+
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _submit,
+                  child: const Text('Submit (validate + read)'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _tryRead,
+                  child: const Text('Save draft (tryRead)'),
+                ),
+              ),
+            ],
+          ),
+
+          if (_submitResult != null) ...[
+            const SizedBox(height: 16),
+            const Divider(),
+            Text('Submitted', style: theme.textTheme.labelLarge),
+            const SizedBox(height: 8),
+            _ResultCard(result: _submitResult!),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _submit() {
+    try {
+      setState(() => _submitResult = _key.currentState!.read());
+    } on InputReadException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  void _tryRead() {
+    final draft = _key.currentState!.tryRead();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          draft == null
+              ? 'Draft is incomplete — some required fields missing'
+              : 'Draft saved: ${draft.brand} ${draft.model}',
+        ),
+        backgroundColor: draft == null ? Colors.orange : Colors.green,
+      ),
+    );
+  }
+}
+
+// Live context summary card.
+class _ContextCard extends StatelessWidget {
+  final AddVehicleInputFormContext ctx;
+  const _ContextCard({required this.ctx});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Wrap(
+          spacing: 16,
+          runSpacing: 4,
+          children: [
+            _item('brand', ctx.brand.isEmpty ? '—' : ctx.brand),
+            _item('model', ctx.model.isEmpty ? '—' : ctx.model),
+            _item('year', ctx.year.isEmpty ? '—' : ctx.year),
+            _item('fuelType', ctx.fuelType?.name ?? '—'),
+            _item('available', ctx.available.toString()),
+            _item('mileage', ctx.mileage.isEmpty ? '—' : ctx.mileage),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _item(String label, String value) => RichText(
+        text: TextSpan(
+          style: const TextStyle(fontSize: 12, color: Colors.black87),
+          children: [
+            TextSpan(text: '$label: ', style: const TextStyle(fontWeight: FontWeight.bold)),
+            TextSpan(text: value),
+          ],
+        ),
+      );
+}
+
+// ── Tab 14: Stepper layout ────────────────────────────────────────────────────
+
+class _StepperTab extends StatefulWidget {
+  const _StepperTab();
+  @override
+  State<_StepperTab> createState() => _StepperTabState();
+}
+
+class _StepperTabState extends State<_StepperTab> {
+  final _key = GlobalKey<PersonInputFormState>();
+  PersonInput? _result;
+
+  // Pre-fill to demonstrate edit mode in a stepper.
+  bool _prefill = false;
+
+  static PersonInput _sample() => PersonInput(
+        name: 'Alice Martin',
+        email: 'alice@example.com',
+        address: AddressInput(
+          street: '12 Rue de la Paix',
+          city: 'Paris',
+          country: 'France',
+          zipCode: '75001',
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Stepper Layout', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 4),
+          const Text(
+            'PersonInput has a nested AddressInput, which drives the step structure automatically:\n'
+            '  Step 0 — scalar fields: name, email  (validates on Next)\n'
+            '  Step 1 — sub-input: address          (calls AddressInputForm.read() on Next)\n\n'
+            'Navigation is linear: Next validates + reads the current step before proceeding. '
+            'isSkippable bypasses that check for optional review steps. '
+            'Tapping a previous step header always works; tapping ahead is blocked.',
+          ),
+          const Divider(height: 24),
+
+          // ── Options ─────────────────────────────────────────────────────────
+          Wrap(
+            spacing: 8,
+            children: [
+              FilterChip(
+                label: const Text('Pre-fill (edit mode)'),
+                selected: _prefill,
+                onSelected: (on) => setState(() {
+                  _prefill = on;
+                  _result = null;
+                }),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // ── The stepper form ────────────────────────────────────────────────
+          // Key is rebuilt when _prefill changes so initialValues takes effect.
+          PersonInputForm(
+            key: ValueKey(_prefill),
+            layout: PersonInputLayout.stepper,
+            initialValues: _prefill ? _sample() : null,
+            requiredIndicator: RequiredIndicator.asterisk,
+
+            // Override step titles and add subtitles.
+            stepConfig: PersonInputStepConfig(
+              scalarFields: const InputStepOptions(
+                title: Text('Personal info'),
+                subtitle: Text('Your name and contact email'),
+              ),
+              address: const InputStepOptions(
+                title: Text('Address'),
+                subtitle: Text('Where should we send your documents?'),
+              ),
+            ),
+
+            // Cross-field validation across steps:
+            // flag suspicious email/name combos at submission time.
+            validations: PersonInputValidations(
+              email: (v, ctx) {
+                if (ctx.name.toLowerCase().contains('test') &&
+                    (v?.contains('@example') ?? false)) {
+                  return 'Test accounts are not allowed';
+                }
+                return null;
+              },
+            ),
+
+            strings: const FormStrings(),
+          ),
+
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _submit,
+            child: const Text('Submit (final read + validate)'),
+          ),
+
+          if (_result != null) ...[
+            const SizedBox(height: 16),
+            const Divider(),
+            Text('Result (sub-input stepper)', style: theme.textTheme.labelLarge),
+            const SizedBox(height: 8),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _row('name', _result!.name),
+                    _row('email', _result!.email),
+                    const Divider(height: 16),
+                    _row('street', _result!.address.street),
+                    _row('city', _result!.address.city),
+                    _row('country', _result!.address.country),
+                    _row('zipCode', _result!.address.zipCode ?? '—'),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _row(String label, String value) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 80,
+              child: Text('$label:', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+            ),
+            Expanded(child: Text(value, style: const TextStyle(fontSize: 12))),
+          ],
+        ),
+      );
+
+  void _submit() {
+    try {
+      setState(() => _result = _key.currentState!.read());
+    } on InputReadException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+      );
+    }
+  }
+}
+
+// ── Tab 15: Expandable layout ─────────────────────────────────────────────────
+
+class _ExpandableTab extends StatefulWidget {
+  const _ExpandableTab();
+  @override
+  State<_ExpandableTab> createState() => _ExpandableTabState();
+}
+
+class _ExpandableTabState extends State<_ExpandableTab> {
+  bool _customTitle = false;
+  bool _hideOwner = false;
+  bool _hideVehicles = false;
+  FleetLayout _groupLayout = FleetLayout.labeledRow;
+
+  static Fleet _sampleFleet() => Fleet(
+        id: 'f1',
+        name: 'Sahara Motors',
+        city: 'Algiers',
+        owner: Owner(
+          name: 'Karim Bouzid',
+          email: 'karim@saharamotors.dz',
+          primaryVehicle: Vehicle(
+            id: 'v1',
+            brand: 'Toyota',
+            model: 'Land Cruiser',
+            year: 2022,
+            fuelType: FuelType.GASOLINE,
+            available: true,
+            mileage: 34000,
+          ),
+        ),
+        vehicles: [
+          Vehicle(
+            id: 'v2',
+            brand: 'Renault',
+            model: 'Symbol',
+            year: 2020,
+            fuelType: FuelType.GASOLINE,
+            available: true,
+            mileage: 78000,
+          ),
+          Vehicle(
+            id: 'v3',
+            brand: 'Hyundai',
+            model: 'Tucson',
+            year: 2023,
+            fuelType: FuelType.HYBRID,
+            available: false,
+            mileage: 12000,
+          ),
+          Vehicle(
+            id: 'v4',
+            brand: 'Kia',
+            model: 'Sportage',
+            year: 2021,
+            fuelType: FuelType.DIESEL,
+            available: true,
+          ),
+        ],
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final fleet = _sampleFleet();
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Expandable Layout', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 4),
+          const Text(
+            'Fleet has scalar fields (name, city), a nested type (owner: Owner), '
+            'and a list of nested types (vehicles: [Vehicle!]). '
+            'Each group gets its own accordion. '
+            'Scalar fields share one "Details" tile; each complex field has its own.',
+          ),
+          const Divider(height: 24),
+
+          Wrap(
+            spacing: 8,
+            children: [
+              FilterChip(
+                label: const Text('Custom "Details" title'),
+                selected: _customTitle,
+                onSelected: (on) => setState(() => _customTitle = on),
+              ),
+              FilterChip(
+                label: const Text('Hide owner'),
+                selected: _hideOwner,
+                onSelected: (on) => setState(() => _hideOwner = on),
+              ),
+              FilterChip(
+                label: const Text('Hide vehicles'),
+                selected: _hideVehicles,
+                onSelected: (on) => setState(() => _hideVehicles = on),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+          Text('Scalar group style', style: Theme.of(context).textTheme.labelSmall),
+          const SizedBox(height: 4),
+          SegmentedButton<FleetLayout>(
+            segments: const [
+              ButtonSegment(value: FleetLayout.labeledRow, label: Text('Labeled row')),
+              ButtonSegment(value: FleetLayout.listTile, label: Text('List tile')),
+              ButtonSegment(value: FleetLayout.listTileReversed, label: Text('Reversed')),
+            ],
+            selected: {_groupLayout},
+            onSelectionChanged: (s) => setState(() => _groupLayout = s.first),
+          ),
+
+          const Divider(height: 24),
+
+          FleetWidget(
+            fleet,
+            layout: FleetLayout.expandable,
+            groupLayout: _groupLayout,
+            labels: _customTitle
+                ? const FleetLabels($group: Text('Fleet Info', style: TextStyle(fontWeight: FontWeight.w600)))
+                : null,
+            visibility: FleetVisibility(
+              owner: !_hideOwner,
+              vehicles: !_hideVehicles,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
