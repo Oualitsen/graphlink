@@ -34,9 +34,9 @@ public class GraphLinkResolverBase {
          __gl_tagLocks__.put(tag, new ReentrantLock());
       }
    }
-   protected <T> T parseToObjectAndCache(String data, Map<String, Object> cachedResponse, Function<Map<String, Object>, T> parser, List<GraphLinkPartialQuery> remainingQueries) {
+   protected <T> T parseToObjectAndCache(String data, Map<String, Object> cachedResponse, Function<Map<String, Object>, T> parser, List<GraphLinkPartialQuery> remainingQueries, boolean captureErrors) {
       Map<String, Object> result = __gl_decoder__.decode(data);
-      if(result.containsKey("errors")) {
+      if(result.containsKey("errors") && captureErrors) {
          throw GraphLinkException.of((List) result.get("errors"));
       }
       Map<String, Object> dataMap = (Map<String, Object>) result.get("data");
@@ -50,7 +50,7 @@ public class GraphLinkResolverBase {
          }
       }
       dataMap.putAll(cachedResponse);
-      return parser.apply(dataMap);
+      return parser.apply(result);
    }
    private String tagKey(String tag) {
       return "__tag__" + tag;

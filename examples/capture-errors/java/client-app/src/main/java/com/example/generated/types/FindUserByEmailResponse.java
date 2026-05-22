@@ -7,33 +7,55 @@
 
 package com.example.generated.types;
 import com.example.generated.types.User;
-import com.example.generated.types.GraphLinkError;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 
 public class FindUserByEmailResponse {
    private final User findUserByEmail;
-   private List<GraphLinkError> errors;
 
-   public boolean hasErrors() { return errors != null && !errors.isEmpty(); }
-   public List<GraphLinkError> getErrors() { return errors; }
+
+   public FindUserByEmailResponse(User findUserByEmail) {
+      this.findUserByEmail = findUserByEmail;
+   }
+
+
+   public static Builder builder() {
+      return new Builder();
+   }
+
+   public static class Builder {
+      private User findUserByEmail;
+
+      public Builder findUserByEmail(User findUserByEmail) {
+         this.findUserByEmail = findUserByEmail;
+         return this;
+      }
+
+      public FindUserByEmailResponse build() {
+         return new FindUserByEmailResponse(findUserByEmail);
+      }
+   }
+
+
    public User getFindUserByEmail() {
       return findUserByEmail;
    }
+
+
    public static FindUserByEmailResponse fromJson(Map<String, Object> json) {
-      FindUserByEmailResponse instance = new FindUserByEmailResponse();
-      @SuppressWarnings("unchecked")
-      Map<String, Object> data = (Map<String, Object>) json.get("data");
-      if (data != null && data.containsKey("findUserByEmail")) instance.findUserByEmail = data.get("findUserByEmail") == null ? null : User.fromJson((Map<String, Object>)data.get("findUserByEmail"));
-      @SuppressWarnings("unchecked")
-      List rawErrors = (List) json.get("errors");
-      if (rawErrors != null) {
-        instance.errors = new java.util.ArrayList<>();
-        for (Object e : rawErrors) instance.errors.add(GraphLinkError.fromJson((Map<String, Object>) e));
-      }
-      return instance;
+      return new FindUserByEmailResponse(
+      json.get("findUserByEmail") == null ? null : User.fromJson((Map<String, Object>)json.get("findUserByEmail"))
+      );
    }
+
+   public Map<String, Object> toJson() {
+      Map<String, Object> map = new HashMap<>();
+      map.put("findUserByEmail", findUserByEmail == null ? null : findUserByEmail.toJson());
+      return map;
+   }
+
 }
+
 
 

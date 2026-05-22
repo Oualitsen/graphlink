@@ -33,8 +33,12 @@ public class GraphLinkMutations extends GraphLinkResolverBase {
       GraphLinkPayload __gl_payload__ = GraphLinkPayload.builder().query(__gl_query__).operationName(__gl_operationName__).variables(__gl_variables__).build();
       String __gl_responseText__ = glCallAdapter(__gl_payload__);
       Map<String, Object> __gl_decodedResponse__ = __gl_decoder__.decode(__gl_responseText__);
-      if (!__gl_decodedResponse__.containsKey("errors")) { // no tag to invalidate }
-      return CreateUserResponse.fromJson(__gl_decodedResponse__);
+      if(__gl_decodedResponse__.containsKey("errors")) {
+         throw GraphLinkException.of((List)__gl_decodedResponse__.get("errors"));
+      }
+      Map<String, Object> __gl_data__ = (Map<String, Object>) __gl_decodedResponse__.get("data");
+      // no tag to invalidate
+      return CreateUserResponse.fromJson(__gl_data__);
    }
    public DeleteUserResponse deleteUser(String id) {
       String __gl_operationName__ = "deleteUser";
@@ -45,8 +49,12 @@ public class GraphLinkMutations extends GraphLinkResolverBase {
       GraphLinkPayload __gl_payload__ = GraphLinkPayload.builder().query(__gl_query__).operationName(__gl_operationName__).variables(__gl_variables__).build();
       String __gl_responseText__ = glCallAdapter(__gl_payload__);
       Map<String, Object> __gl_decodedResponse__ = __gl_decoder__.decode(__gl_responseText__);
-      if (!__gl_decodedResponse__.containsKey("errors")) { // no tag to invalidate }
-      return DeleteUserResponse.fromJson(__gl_decodedResponse__);
+      if(__gl_decodedResponse__.containsKey("errors")) {
+         throw GraphLinkException.of((List)__gl_decodedResponse__.get("errors"));
+      }
+      Map<String, Object> __gl_data__ = (Map<String, Object>) __gl_decodedResponse__.get("data");
+      // no tag to invalidate
+      return DeleteUserResponse.fromJson(__gl_data__);
    }
    public ResetDatabaseResponse resetDatabase() {
       String __gl_operationName__ = "resetDatabase";

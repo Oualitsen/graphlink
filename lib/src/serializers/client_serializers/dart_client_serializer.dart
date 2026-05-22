@@ -466,7 +466,7 @@ GraphLinkClient.fromUrl({
                   'Map<String, dynamic> cachedResponse',
                   'T Function(Map<String, dynamic> json) parser',
                   'Set<_GraphLinkPartialQuery> remainingQueries',
-                  '{bool captureErrors = false}',
+                  'bool captureErrors',
                 ],
                 returnType: 'T',
                 namedArguments: false,
@@ -575,20 +575,14 @@ GraphLinkClient.fromUrl({
     final responseToken = def.getGeneratedTypeDefinition().tokenInfo;
     final String cacheHitReturn;
     final String parseAndCacheCall;
-    if (_hasFullResponseSupport) {
-      final fullResponseToken = def.getFullResponseTypeDefinition(_parser).tokenInfo;
-      final nullableReturn = _isNullableReturn(def);
-      final dataSuffix = nullableReturn ? '' : '!';
-      cacheHitReturn = def.isCaptureErrors(_parser)
-          ? "return $fullResponseToken.fromJson({'data': $_svResponseMap});"
-          : "return $fullResponseToken.fromJson({'data': $_svResponseMap}).data$dataSuffix;";
-      parseAndCacheCall = def.isCaptureErrors(_parser)
-          ? "return _parseToObjectAndCache($_svResponseText, $_svResponseMap, $fullResponseToken.fromJson, $_svRemaining, captureErrors: true);"
-          : "return _parseToObjectAndCache($_svResponseText, $_svResponseMap, $fullResponseToken.fromJson, $_svRemaining).data$dataSuffix;";
-    } else {
-      cacheHitReturn = "return $responseToken.fromJson($_svResponseMap);";
-      parseAndCacheCall = "return _parseToObjectAndCache($_svResponseText, $_svResponseMap, $responseToken.fromJson, $_svRemaining);";
-    }
+    final fullResponseToken = def.getFullResponseTypeDefinition(_parser).tokenInfo;
+    final nullableReturn = _isNullableReturn(def);
+    final dataSuffix = nullableReturn ? '' : '!';
+    cacheHitReturn = def.isCaptureErrors(_parser)
+        ? "return $fullResponseToken.fromJson({'data': $_svResponseMap});"
+        : "return $fullResponseToken.fromJson({'data': $_svResponseMap}).data$dataSuffix;";
+    parseAndCacheCall = 
+         "return _parseToObjectAndCache($_svResponseText, $_svResponseMap, $fullResponseToken.fromJson, $_svRemaining, ${def.isCaptureErrors(_parser) ? 'true': 'false'});"
 
     return codeGenUtils.createMethod(
         returnType: returnTypeByQueryType(def),
@@ -823,11 +817,6 @@ return $_svResult.data$dataSuffix;
     }
   }
 
-  bool get _hasFullResponseSupport =>
-      _parser.getTypeByName('GraphLinkError') != null;
-
-  bool _isNullableReturn(GLQueryDefinition def) =>
-      def.elements.isNotEmpty && def.elements.first.returnType.nullable;
 
   String _getNullableText(GLType type) {
     if (type.nullable) {
@@ -859,12 +848,12 @@ return $_svResult.data$dataSuffix;
     if (def.type == GLQueryType.subscription) {
       return "Stream<${def.getGeneratedTypeDefinition().tokenInfo.token}>";
     }
-    if (def.isCaptureErrors(_parser) && _hasFullResponseSupport) {
+    if (def.isCaptureErrors(_parser)) {
       return "Future<${def.getFullResponseTypeDefinition(_parser).tokenInfo.token}>";
     }
     final typeName = def.getGeneratedTypeDefinition().tokenInfo.token;
-    final nullable = _isNullableReturn(def) ? '?' : '';
-    return "Future<$typeName$nullable>";
+    final nullable = def.p
+    return "Future<$typeName>";
   }
 
   String serializeSubscriptions() {

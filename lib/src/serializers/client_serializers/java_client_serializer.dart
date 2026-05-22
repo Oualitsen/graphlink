@@ -5,6 +5,7 @@ import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/java_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
+import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/gl_grammar_cache_extension.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
@@ -14,6 +15,7 @@ import 'package:graphlink/src/serializers/client_serializers/java_client_constan
 import 'package:graphlink/src/serializers/gl_client_serilaizer.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
 import 'package:graphlink/src/serializers/graphq_serializer.dart';
+import 'package:graphlink/src/capture_errors_utils.dart';
 
 
 
@@ -496,7 +498,8 @@ class JavaClientSerializer extends GLClientSerilaizer {
     final dividedQueries = gqlSerializer.divideQueryDefinition(def, _grammar);
     final directives = gqlSerializer
         .serializeDirectiveValueList(def.getDirectives(skipGenerated: true));
-    final returnType = def.getGeneratedTypeDefinition().tokenInfo.token;
+    final returnType = def.isCaptureErrors(_grammar) ? def.getFullResponseTypeDefinition(_grammar).token : def.getGeneratedTypeDefinition().token;
+    
     container.imports.addAll([
       JavaImports.map,
       JavaImports.hashMap,
@@ -567,7 +570,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
           codeGenUtils.tryCatchFinally(
             tryStatements: [
               'String $_svResponseText = glCallAdapter($_svPayload);',
-              'return parseToObjectAndCache($_svResponseText, $_svResponseMap, $returnType::fromJson, $_svRemaining);',
+              'return parseToObjectAndCache($_svResponseText, $_svResponseMap, $returnType::fromJson, $_svRemaining, ${def.isCaptureErrors(_grammar) ? 'true': 'false'})${_getDataCall(def)};',
             ],
             catchStatements: [
               '$_svResponseMap.putAll($_svStaleData);',
@@ -577,11 +580,18 @@ class JavaClientSerializer extends GLClientSerilaizer {
                   ifBlockStatements: [
                     'throw new RuntimeException(exception);',
                   ]),
-              'return $returnType.fromJson($_svResponseMap);',
+              'return $returnType.fromJson($_svResponseMap)${_getDataCall(def)};',
             ],
             catchVariable: 'exception',
           ),
         ]);
+  }
+
+  String _getDataCall(GLQueryDefinition def) {
+    if(def.isCaptureErrors(_grammar)) {
+      return '';
+    }
+    return '.getData()';
   }
 
   String serializePartialQueryJava(DividedQuery e) {
@@ -978,11 +988,12 @@ class JavaClientSerializer extends GLClientSerilaizer {
             'Map<String, Object> cachedResponse',
             'Function<Map<String, Object>, T> parser',
             'List<GraphLinkPartialQuery> remainingQueries',
+            'boolean captureErrors'
           ],
           statements: [
             'Map<String, Object> result = $_svDecoder.decode(data);',
             codeGenUtils.ifStatement(
-                condition: 'result.containsKey("errors")',
+                condition: 'result.containsKey("errors") && captureErrors',
                 ifBlockStatements: [
                   'throw ${clientExceptionName}.of((List) result.get("errors"));',
                 ]),
@@ -1005,7 +1016,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
                       ]),
                 ]),
             'dataMap.putAll(cachedResponse);',
-            'return parser.apply(dataMap);',
+            'return parser.apply(result);',
           ],
         ),
         codeGenUtils.createMethod(

@@ -7,33 +7,55 @@
 
 package com.example.generated.types;
 import com.example.generated.types.User;
-import com.example.generated.types.GraphLinkError;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 
 public class GetUserResponse {
    private final User getUser;
-   private List<GraphLinkError> errors;
 
-   public boolean hasErrors() { return errors != null && !errors.isEmpty(); }
-   public List<GraphLinkError> getErrors() { return errors; }
+
+   public GetUserResponse(User getUser) {
+      this.getUser = getUser;
+   }
+
+
+   public static Builder builder() {
+      return new Builder();
+   }
+
+   public static class Builder {
+      private User getUser;
+
+      public Builder getUser(User getUser) {
+         this.getUser = getUser;
+         return this;
+      }
+
+      public GetUserResponse build() {
+         return new GetUserResponse(getUser);
+      }
+   }
+
+
    public User getGetUser() {
       return getUser;
    }
+
+
    public static GetUserResponse fromJson(Map<String, Object> json) {
-      GetUserResponse instance = new GetUserResponse();
-      @SuppressWarnings("unchecked")
-      Map<String, Object> data = (Map<String, Object>) json.get("data");
-      if (data != null && data.containsKey("getUser")) instance.getUser = data.get("getUser") == null ? null : User.fromJson((Map<String, Object>)data.get("getUser"));
-      @SuppressWarnings("unchecked")
-      List rawErrors = (List) json.get("errors");
-      if (rawErrors != null) {
-        instance.errors = new java.util.ArrayList<>();
-        for (Object e : rawErrors) instance.errors.add(GraphLinkError.fromJson((Map<String, Object>) e));
-      }
-      return instance;
+      return new GetUserResponse(
+      User.fromJson((Map<String, Object>)json.get("getUser"))
+      );
    }
+
+   public Map<String, Object> toJson() {
+      Map<String, Object> map = new HashMap<>();
+      map.put("getUser", getUser.toJson());
+      return map;
+   }
+
 }
+
 
 

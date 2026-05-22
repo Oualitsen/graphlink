@@ -6,10 +6,7 @@
 // ignore_for_file: use_rethrow_when_possible, camel_case_types, constant_identifier_names, unused_import, non_constant_identifier_names, no_leading_underscores_for_local_identifiers, unused_local_variable, annotate_overrides, library_private_types_in_public_api
 
 package com.example.generated.client;
-import com.example.generated.types.GraphLinkPayload;
-import com.example.generated.types.GetUserResponse;
-import com.example.generated.types.FindUserByEmailResponse;
-import com.example.generated.types.ListUsersResponse;
+import com.example.generated.types.*;
 import com.example.generated.interfaces.GraphLinkClientAdapter;
 import com.example.generated.interfaces.GraphLinkJsonEncoder;
 import com.example.generated.interfaces.GraphLinkJsonDecoder;
@@ -71,35 +68,19 @@ public class GraphLinkQueries extends GraphLinkResolverBase {
          }
       }
       if(__gl_remaining__.isEmpty()) {
-         return GetUserResponse.fromJson(java.util.Collections.singletonMap("data", __gl_responseMap__));
+         return GetUserResponse.fromJson(__gl_responseMap__);
       }
       GraphLinkPayload __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "");
       try {
          String __gl_responseText__ = glCallAdapter(__gl_payload__);
-         @SuppressWarnings("unchecked")
-         @SuppressWarnings("unchecked")
-         Map<String, Object> __gl_decodedResponse__ = (Map<String, Object>) __gl_decoder__.decode(__gl_responseText__);
-         if (!__gl_decodedResponse__.containsKey("errors")) {
-           @SuppressWarnings("unchecked")
-           Map<String, Object> dataMap = (Map<String, Object>) __gl_decodedResponse__.get("data");
-           for (GraphLinkPartialQuery q : __gl_remaining__) {
-             if (q.ttl > 0 && dataMap.get(q.elementKey) != null) {
-               GraphLinkCacheEntry entry = new GraphLinkCacheEntry(__gl_decoder__.encode(dataMap.get(q.elementKey)), System.currentTimeMillis() + q.ttl * 1000L, false);
-               setToCache(q.cacheKey, entry);
-               if (!q.tags.isEmpty()) addKeyToTags(q.cacheKey, q.tags);
-             }
-           }
-           dataMap.putAll(__gl_responseMap__);
-           return GetUserResponse.fromJson(java.util.Collections.singletonMap("data", dataMap));
-         }
-         return GetUserResponse.fromJson(__gl_decodedResponse__);
+         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, GetUserResponse::fromJson, __gl_remaining__, true);
       } catch (Exception exception) {
          __gl_responseMap__.putAll(__gl_staleData__);
          long remainingCount = __gl_partialQueries__.stream().filter(e -> !__gl_responseMap__.containsKey(e.elementKey)).count();
          if(remainingCount > 0) {
             throw new RuntimeException(exception);
          }
-         return GetUserResponse.fromJson(java.util.Collections.singletonMap("data", __gl_responseMap__));
+         return GetUserResponse.fromJson(__gl_responseMap__);
       }
    }
    public FindUserByEmailResponse findUserByEmail(String email) {
@@ -148,35 +129,19 @@ public class GraphLinkQueries extends GraphLinkResolverBase {
          }
       }
       if(__gl_remaining__.isEmpty()) {
-         return FindUserByEmailResponse.fromJson(java.util.Collections.singletonMap("data", __gl_responseMap__));
+         return FindUserByEmailResponse.fromJson(__gl_responseMap__);
       }
       GraphLinkPayload __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "");
       try {
          String __gl_responseText__ = glCallAdapter(__gl_payload__);
-         @SuppressWarnings("unchecked")
-         @SuppressWarnings("unchecked")
-         Map<String, Object> __gl_decodedResponse__ = (Map<String, Object>) __gl_decoder__.decode(__gl_responseText__);
-         if (!__gl_decodedResponse__.containsKey("errors")) {
-           @SuppressWarnings("unchecked")
-           Map<String, Object> dataMap = (Map<String, Object>) __gl_decodedResponse__.get("data");
-           for (GraphLinkPartialQuery q : __gl_remaining__) {
-             if (q.ttl > 0 && dataMap.get(q.elementKey) != null) {
-               GraphLinkCacheEntry entry = new GraphLinkCacheEntry(__gl_decoder__.encode(dataMap.get(q.elementKey)), System.currentTimeMillis() + q.ttl * 1000L, false);
-               setToCache(q.cacheKey, entry);
-               if (!q.tags.isEmpty()) addKeyToTags(q.cacheKey, q.tags);
-             }
-           }
-           dataMap.putAll(__gl_responseMap__);
-           return FindUserByEmailResponse.fromJson(java.util.Collections.singletonMap("data", dataMap));
-         }
-         return FindUserByEmailResponse.fromJson(__gl_decodedResponse__);
+         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, FindUserByEmailResponse::fromJson, __gl_remaining__, true);
       } catch (Exception exception) {
          __gl_responseMap__.putAll(__gl_staleData__);
          long remainingCount = __gl_partialQueries__.stream().filter(e -> !__gl_responseMap__.containsKey(e.elementKey)).count();
          if(remainingCount > 0) {
             throw new RuntimeException(exception);
          }
-         return FindUserByEmailResponse.fromJson(java.util.Collections.singletonMap("data", __gl_responseMap__));
+         return FindUserByEmailResponse.fromJson(__gl_responseMap__);
       }
    }
    public ListUsersResponse listUsers() {
@@ -223,19 +188,19 @@ public class GraphLinkQueries extends GraphLinkResolverBase {
          }
       }
       if(__gl_remaining__.isEmpty()) {
-         return ListUsersResponse.fromJson(__gl_responseMap__);
+         return ListUsersFullResponse.fromJson(__gl_responseMap__);
       }
       GraphLinkPayload __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "");
       try {
          String __gl_responseText__ = glCallAdapter(__gl_payload__);
-         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, ListUsersResponse::fromJson, __gl_remaining__);
+         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, ListUsersFullResponse::fromJson, __gl_remaining__, false).getData();
       } catch (Exception exception) {
          __gl_responseMap__.putAll(__gl_staleData__);
          long remainingCount = __gl_partialQueries__.stream().filter(e -> !__gl_responseMap__.containsKey(e.elementKey)).count();
          if(remainingCount > 0) {
             throw new RuntimeException(exception);
          }
-         return ListUsersResponse.fromJson(__gl_responseMap__);
+         return ListUsersFullResponse.fromJson(__gl_responseMap__).getData();
       }
    }
    private GraphLinkPayload buildPayload(List<GraphLinkPartialQuery> partQueries, String operationName, String directives) {

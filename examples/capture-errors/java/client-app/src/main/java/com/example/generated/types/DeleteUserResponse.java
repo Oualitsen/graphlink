@@ -6,33 +6,55 @@
 // ignore_for_file: use_rethrow_when_possible, camel_case_types, constant_identifier_names, unused_import, non_constant_identifier_names, no_leading_underscores_for_local_identifiers, unused_local_variable, annotate_overrides, library_private_types_in_public_api
 
 package com.example.generated.types;
-import com.example.generated.types.GraphLinkError;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 
 public class DeleteUserResponse {
    private final bool deleteUser;
-   private List<GraphLinkError> errors;
 
-   public boolean hasErrors() { return errors != null && !errors.isEmpty(); }
-   public List<GraphLinkError> getErrors() { return errors; }
+
+   public DeleteUserResponse(bool deleteUser) {
+      this.deleteUser = deleteUser;
+   }
+
+
+   public static Builder builder() {
+      return new Builder();
+   }
+
+   public static class Builder {
+      private bool deleteUser;
+
+      public Builder deleteUser(bool deleteUser) {
+         this.deleteUser = deleteUser;
+         return this;
+      }
+
+      public DeleteUserResponse build() {
+         return new DeleteUserResponse(deleteUser);
+      }
+   }
+
+
    public bool getDeleteUser() {
       return deleteUser;
    }
+
+
    public static DeleteUserResponse fromJson(Map<String, Object> json) {
-      DeleteUserResponse instance = new DeleteUserResponse();
-      @SuppressWarnings("unchecked")
-      Map<String, Object> data = (Map<String, Object>) json.get("data");
-      if (data != null && data.containsKey("deleteUser")) instance.deleteUser = data.get("deleteUser") == null ? null : (bool)data.get("deleteUser");
-      @SuppressWarnings("unchecked")
-      List rawErrors = (List) json.get("errors");
-      if (rawErrors != null) {
-        instance.errors = new java.util.ArrayList<>();
-        for (Object e : rawErrors) instance.errors.add(GraphLinkError.fromJson((Map<String, Object>) e));
-      }
-      return instance;
+      return new DeleteUserResponse(
+      (bool)json.get("deleteUser")
+      );
    }
+
+   public Map<String, Object> toJson() {
+      Map<String, Object> map = new HashMap<>();
+      map.put("deleteUser", deleteUser);
+      return map;
+   }
+
 }
+
 
 

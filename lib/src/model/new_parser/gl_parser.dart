@@ -2,6 +2,7 @@ import 'package:graphlink/src/excpetions/parse_exception.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_fragment.dart';
+import 'package:graphlink/src/model/gl_query_element.dart';
 import 'package:graphlink/src/model/gl_schema.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
