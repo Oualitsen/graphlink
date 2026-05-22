@@ -16,6 +16,7 @@ abstract class ClientLanguageConfig {
   bool get autoGenerateQueries => true;
   bool get operationNameAsParameter => false;
   bool get immutableTypeFields => true;
+  bool get captureErrors => false;
   String? get defaultAlias => null;
 
   static ClientLanguageConfig fromJson(Map<String, dynamic> json) {
@@ -238,6 +239,7 @@ class DartClientConfig extends ClientLanguageConfig {
   @override final bool autoGenerateQueries;
   @override final bool operationNameAsParameter;
   @override final bool immutableTypeFields;
+  @override final bool captureErrors;
   @override final String? defaultAlias;
 
   final String? autoGenerateQueriesDefaultAlias;
@@ -254,6 +256,7 @@ class DartClientConfig extends ClientLanguageConfig {
     required this.autoGenerateQueries,
     this.autoGenerateQueriesDefaultAlias,
     required this.operationNameAsParameter,
+    this.captureErrors = false,
     this.defaultAlias,
     this.packageName,
     this.appLocalizationsImport,
@@ -271,6 +274,7 @@ class DartClientConfig extends ClientLanguageConfig {
       autoGenerateQueries: (json['autoGenerateQueries'] as bool?) ?? true,
       autoGenerateQueriesDefaultAlias: json['autoGenerateQueriesDefaultAlias'] as String?,
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
+      captureErrors: (json['captureErrors'] as bool?) ?? false,
       defaultAlias: json['defaultAlias'] as String?,
       packageName: json['packageName'] as String?,
       appLocalizationsImport: json['appLocalizationsImport'] as String?,
@@ -294,6 +298,7 @@ class JavaClientConfig extends ClientLanguageConfig {
   @override final bool autoGenerateQueries;
   @override final bool operationNameAsParameter;
   @override final bool immutableTypeFields;
+  @override final bool captureErrors;
   @override final String? defaultAlias;
 
   final String packageName;
@@ -309,6 +314,7 @@ class JavaClientConfig extends ClientLanguageConfig {
     this.nullableFieldsRequired = false,
     this.autoGenerateQueries = true,
     this.operationNameAsParameter = false,
+    this.captureErrors = false,
     this.immutableInputFields = true,
     this.immutableTypeFields = true,
     this.inputAsRecord = false,
@@ -325,6 +331,7 @@ class JavaClientConfig extends ClientLanguageConfig {
       nullableFieldsRequired: (json['nullableFieldsRequired'] as bool?) ?? false,
       autoGenerateQueries: (json['autoGenerateQueries'] as bool?) ?? true,
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
+      captureErrors: (json['captureErrors'] as bool?) ?? false,
       immutableInputFields: (json['immutableInputFields'] as bool?) ?? true,
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
       inputAsRecord: (json['inputAsRecord'] as bool?) ?? false,
@@ -347,6 +354,7 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
   @override final bool autoGenerateQueries;
   @override final bool operationNameAsParameter;
   @override final bool immutableTypeFields;
+  @override final bool captureErrors;
   @override final String? defaultAlias;
 
   final bool optionalNullableInputFields;
@@ -359,6 +367,7 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
     this.autoGenerateQueries = true,
     this.operationNameAsParameter = false,
     this.immutableTypeFields = true,
+    this.captureErrors = false,
     this.optionalNullableInputFields = true,
     this.generateDefaultWsAdapter = true,
     this.observables = false,
@@ -372,6 +381,7 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
       autoGenerateQueries: (json['autoGenerateQueries'] as bool?) ?? true,
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
+      captureErrors: (json['captureErrors'] as bool?) ?? false,
       optionalNullableInputFields: (json['optionalNullableInputFields'] as bool?) ?? true,
       generateDefaultWsAdapter: (json['generateDefaultWsAdapter'] as bool?) ?? true,
       observables: (json['observables'] as bool?) ?? false,

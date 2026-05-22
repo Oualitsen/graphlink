@@ -914,6 +914,17 @@ extension GLGrammarExtension on GLParser {
       }
       var def = addToProjectedTypes(projectedType);
       query.updateTypeDefinition(def);
+
+
+      if (getTypeByName('GraphLinkError') != null) {
+        var fullResponseType = query.getFullResponseTypeDefinition(this);
+        if (projectedTypes.containsKey(fullResponseType.token)) {
+          throw ParseException(
+              "Type ${fullResponseType.tokenInfo.token} has already been defined, please rename it",
+              info: projectedType.tokenInfo);
+        }
+        addToProjectedTypes(fullResponseType, similarityCheck: false);
+      }
     });
   }
 
@@ -1131,7 +1142,7 @@ extension GLGrammarExtension on GLParser {
     var argValues = field.arguments.map((arg) {
       return GLArgumentValue(arg.tokenInfo, "\$${arg.tokenInfo}");
     }).toList();
-    const inheritedDirectives = [glCache, glNoCache, glCacheInvalidate];
+    const inheritedDirectives = [glCache, glNoCache, glCacheInvalidate, glCaptureErrors];
     var directives = field
         .getDirectives()
         .where((e) => inheritedDirectives.contains(e.token))

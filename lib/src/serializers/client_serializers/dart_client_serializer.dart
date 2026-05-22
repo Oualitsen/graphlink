@@ -8,6 +8,7 @@ import 'package:graphlink/src/gl_grammar_cache_extension.dart';
 import 'package:graphlink/src/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/capture_errors_utils.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/serializers/client_serializers/dart_client_constants.dart';
@@ -465,15 +466,22 @@ GraphLinkClient.fromUrl({
                   'Map<String, dynamic> cachedResponse',
                   'T Function(Map<String, dynamic> json) parser',
                   'Set<_GraphLinkPartialQuery> remainingQueries',
+                  '{bool captureErrors = false}',
                 ],
                 returnType: 'T',
                 namedArguments: false,
                 statements: [
                   'final result = jsonDecode(data);',
+                  'final hasErrors = result.containsKey("errors") && result["errors"] != null;',
                   codeGenUtils.ifStatement(
-                      condition: 'result.containsKey("errors")',
+                      condition: 'hasErrors',
                       ifBlockStatements: [
-                        'throw result["errors"].map((error) => GraphLinkError.fromJson(error)).toList();'
+                        codeGenUtils.ifStatement(
+                            condition: '!captureErrors',
+                            ifBlockStatements: [
+                              'throw result["errors"].map((error) => GraphLinkError.fromJson(error)).toList();'
+                            ]),
+                        'return parser.call(result);',
                       ]),
                   'final dataMap = result["data"] as Map<String, dynamic>;',
                   codeGenUtils.forEachLoop(
@@ -494,7 +502,7 @@ GraphLinkClient.fromUrl({
                             ])
                       ]),
                   'dataMap.addAll(cachedResponse);',
-                  'return parser.call(dataMap);'
+                  "return parser.call({'data': dataMap});"
                 ]),
           ],
         ]);
@@ -564,6 +572,24 @@ GraphLinkClient.fromUrl({
   }
 
   String queryToMethod(GLQueryDefinition def) {
+    final responseToken = def.getGeneratedTypeDefinition().tokenInfo;
+    final String cacheHitReturn;
+    final String parseAndCacheCall;
+    if (_hasFullResponseSupport) {
+      final fullResponseToken = def.getFullResponseTypeDefinition(_parser).tokenInfo;
+      final nullableReturn = _isNullableReturn(def);
+      final dataSuffix = nullableReturn ? '' : '!';
+      cacheHitReturn = def.isCaptureErrors(_parser)
+          ? "return $fullResponseToken.fromJson({'data': $_svResponseMap});"
+          : "return $fullResponseToken.fromJson({'data': $_svResponseMap}).data$dataSuffix;";
+      parseAndCacheCall = def.isCaptureErrors(_parser)
+          ? "return _parseToObjectAndCache($_svResponseText, $_svResponseMap, $fullResponseToken.fromJson, $_svRemaining, captureErrors: true);"
+          : "return _parseToObjectAndCache($_svResponseText, $_svResponseMap, $fullResponseToken.fromJson, $_svRemaining).data$dataSuffix;";
+    } else {
+      cacheHitReturn = "return $responseToken.fromJson($_svResponseMap);";
+      parseAndCacheCall = "return _parseToObjectAndCache($_svResponseText, $_svResponseMap, $responseToken.fromJson, $_svRemaining);";
+    }
+
     return codeGenUtils.createMethod(
         returnType: returnTypeByQueryType(def),
         methodName: def.tokenInfo.token,
@@ -599,14 +625,12 @@ GraphLinkClient.fromUrl({
           'var $_svRemaining = $_svPartialQueries.where((e) => !$_svResponseMap.containsKey(e.elementKey)).toSet();',
           codeGenUtils.ifStatement(
               condition: '$_svRemaining.isEmpty',
-              ifBlockStatements: [
-                'return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson($_svResponseMap);'
-              ]),
+              ifBlockStatements: [cacheHitReturn]),
           "final $_svRemainingQueries = $_svPartialQueries.where((e) => !$_svResponseMap.containsKey(e.elementKey)).toList();",
           "final $_svPayload = _buildPayload($_svRemainingQueries, $_svOperationName, '${_parser.serializer.serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}');",
           codeGenUtils.tryCatchFinally(tryStatements: [
             'final $_svResponseText = await _getFromSource($_svPayload);',
-            'return _parseToObjectAndCache($_svResponseText, $_svResponseMap, ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson, $_svRemaining);',
+            parseAndCacheCall,
           ], catchStatements: [
             "$_svResponseMap.addAll($_svStaleData);",
             'final remainingCount = $_svPartialQueries.where((e) => !$_svResponseMap.containsKey(e.elementKey)).length;',
@@ -615,7 +639,7 @@ GraphLinkClient.fromUrl({
                 ifBlockStatements: [
                   "rethrow;",
                 ]),
-            'return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson($_svResponseMap);'
+            cacheHitReturn,
           ], catchVariable: 'exception'),
         ]);
   }
@@ -684,7 +708,8 @@ return $_svHandler.handle($_svPayload)
     if (_parser.mutationHasUploads(def)) {
       return _serializeMultipartAdapterCall(def);
     }
-    return """
+    if (!_hasFullResponseSupport) {
+      return """
 final $_svResponse = await glCallAdapter($_svPayload);
 Map<String, dynamic> $_svResult = jsonDecode($_svResponse);
 if ($_svResult.containsKey("errors")) {
@@ -693,6 +718,29 @@ if ($_svResult.containsKey("errors")) {
 var $_svData = $_svResult["data"];
 ${_serializeInvalidationCall(def)}
 return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson($_svData);
+""";
+    }
+    final fullResponseToken = def.getFullResponseTypeDefinition(_parser).tokenInfo;
+    if (def.isCaptureErrors(_parser)) {
+      return """
+final $_svResponse = await glCallAdapter($_svPayload);
+final $_svResult = $fullResponseToken.fromJson(jsonDecode($_svResponse));
+if ($_svResult.errors == null) {
+  ${_serializeInvalidationCall(def)}
+}
+return $_svResult;
+""";
+    }
+    final nullableReturn = _isNullableReturn(def);
+    final dataSuffix = nullableReturn ? '' : '!';
+    return """
+final $_svResponse = await glCallAdapter($_svPayload);
+final $_svResult = $fullResponseToken.fromJson(jsonDecode($_svResponse));
+if ($_svResult.errors != null) {
+  throw $_svResult.errors!;
+}
+${_serializeInvalidationCall(def)}
+return $_svResult.data$dataSuffix;
 """;
   }
 
@@ -775,6 +823,12 @@ return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson($_svData);
     }
   }
 
+  bool get _hasFullResponseSupport =>
+      _parser.getTypeByName('GraphLinkError') != null;
+
+  bool _isNullableReturn(GLQueryDefinition def) =>
+      def.elements.isNotEmpty && def.elements.first.returnType.nullable;
+
   String _getNullableText(GLType type) {
     if (type.nullable) {
       return "?";
@@ -802,12 +856,15 @@ return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson($_svData);
   }
 
   String returnTypeByQueryType(GLQueryDefinition def) {
-    var gen = def.getGeneratedTypeDefinition();
-
     if (def.type == GLQueryType.subscription) {
-      return "Stream<${gen.tokenInfo.token}>";
+      return "Stream<${def.getGeneratedTypeDefinition().tokenInfo.token}>";
     }
-    return "Future<${gen.tokenInfo.token}>";
+    if (def.isCaptureErrors(_parser) && _hasFullResponseSupport) {
+      return "Future<${def.getFullResponseTypeDefinition(_parser).tokenInfo.token}>";
+    }
+    final typeName = def.getGeneratedTypeDefinition().tokenInfo.token;
+    final nullable = _isNullableReturn(def) ? '?' : '';
+    return "Future<$typeName$nullable>";
   }
 
   String serializeSubscriptions() {

@@ -18,6 +18,7 @@ GLParser createGrammar(GeneratorConfig config) {
     autoGenerateQueries: lang.autoGenerateQueries,
     defaultAlias: lang.defaultAlias,
     operationNameAsParameter: lang.operationNameAsParameter,
+    captureErrors: lang.captureErrors,
   );
 }
 

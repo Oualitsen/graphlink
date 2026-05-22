@@ -70,6 +70,12 @@ abstract class GLClientSerilaizer {
         .map((e) => e.typeDefinition!)
         .forEach(result.add);
 
+    if (g.getTypeByName('GraphLinkError') != null) {
+      g.queries.values
+          .map((e) => e.getFullResponseTypeDefinition(g))
+          .forEach(result.add);
+    }
+
     g.queries.values.expand((e) => e.arguments).forEach((arg) {
       if (g.isEnum(arg.type.token)) {
         result.add(g.enums[arg.type.token]!);

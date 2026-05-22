@@ -129,6 +129,12 @@ class GLParser {
       {GLDirectiveScope.OBJECT},
       false,
     ),
+    glCaptureErrors: GLDirectiveDefinition(
+      glCaptureErrors.toToken(),
+      [],
+      {GLDirectiveScope.FIELD_DEFINITION},
+      false,
+    ),
   };
 
   final bool _validate = true;
@@ -166,6 +172,7 @@ class GLParser {
   final int? defaultCacheTTL;
   final bool disableCache;
   final int defaultExpandDepth;
+  final bool captureErrors;
   late final GLGraphqSerializer serializer;
 
   GLParser({
@@ -179,6 +186,7 @@ class GLParser {
     this.defaultCacheTTL,
     this.disableCache = false,
     this.defaultExpandDepth = 1,
+    this.captureErrors = false,
   }) : assert(
           !autoGenerateQueries || generateAllFieldsFragments,
           'autoGenerateQueries can only be true if generateAllFieldsFragments is also true',
@@ -249,6 +257,7 @@ class GLParser {
       checkGLCacheTags();
       if (disableCache) stripCacheDirectives();
       validateMapsToDirectives();
+      checkGLCaptureErrorsDirectives();
       checkUploadDirectivePlacement();
       checkUploadScalarUsage();
       checkUploadListDepth();

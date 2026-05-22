@@ -115,7 +115,18 @@ class AddVehicleInputFormContext {
 
 Built by `_buildContext()` in the state class — called once at the start of `_visibleRows()` and once at the start of `read()`. Validators each call `_buildContext()` independently at validation time.
 
-**`AddVehicleInputLabels`** — `Widget?` per field, `null` = auto-humanized default.
+**`AddVehicleInputLabels`** — `Widget?` per field, `null` = auto-humanized default. Each field also has a companion `String? ${field}Info` (e.g. `brandInfo`). When non-null, a small `Icons.info_outline` button is rendered next to the label; tapping/clicking it opens an `AlertDialog` containing that string. Uses the State's `context` getter — no `BuildContext` parameter needed.
+
+```dart
+class AddVehicleInputLabels {
+  final Widget? brand;
+  final String? brandInfo;
+  final Widget? fuelType;
+  final String? fuelTypeInfo;
+  // ... one Widget? + one String? per schema field
+  const AddVehicleInputLabels({this.brand, this.brandInfo, this.fuelType, this.fuelTypeInfo, ...});
+}
+```
 
 **`AddVehicleInputValues`** — typed field override. Each field is `InputFormWidget<T> Function(Key)?` where `T` matches the field's schema type. Input fields are excluded (they already use the nested key pattern). ⚡ changed (phase 9)
 
@@ -463,12 +474,11 @@ class PersonInputStepConfig {
 class InputStepOptions {
   final Widget? title;      // null = auto-humanized field/input name
   final Widget? subtitle;
-  final bool isSkippable;   // bypasses validate+read on Next; does NOT bypass final read()
-  const InputStepOptions({this.title, this.subtitle, this.isSkippable = false});
+  const InputStepOptions({this.title, this.subtitle});
 }
 ```
 
-**Navigation**: linear — `_validateAndReadCurrentStep()` blocks Next if the current step fails. `onStepTapped` allows going back but not jumping ahead. `isSkippable` bypasses the per-step check only; the final `read()` still validates everything.
+**Navigation**: linear — `_validateAndReadCurrentStep()` blocks Next if the current step fails. `onStepTapped` allows going back but not jumping ahead.
 
 **`_buildStepControls`** — default controls builder. No Back on first step (hidden via `maintainSize: true`). Last step shows `strings.submit` instead of `strings.next`. Layout driven by `stepControlsAlignment` (default `MainAxisAlignment.spaceBetween` → Back left, Next/Submit right).
 
@@ -704,10 +714,10 @@ lib/generated/
 | `lib/src/serializers/flutter_inputs/flutter_inputs_serializer.dart` | Thin orchestrator — public entry point ⚡ refactored (phase 9) |
 | `lib/src/serializers/flutter_inputs/flutter_inputs_type_helpers.dart` | Field classification, smart defaults, FormContext helpers ⚡ added (phase 9) |
 | `lib/src/serializers/flutter_inputs/flutter_inputs_shared_serializer.dart` | Once-generated shared file content ⚡ added (phase 9) |
-| `lib/src/serializers/flutter_inputs/flutter_inputs_companion_serializer.dart` | Companion class generation (FormContext, Visibility, Values, Validations, etc.) ⚡ added (phase 9) |
+| `lib/src/serializers/flutter_inputs/flutter_inputs_companion_serializer.dart` | Companion class generation (FormContext, Visibility, Values, Validations, etc.) ⚡ added (phase 9); `String? ${field}Info` fields added to `Labels` |
 | `lib/src/serializers/flutter_inputs/flutter_inputs_field_serializer.dart` | Field widget expressions + row methods ⚡ added (phase 9) |
 | `lib/src/serializers/flutter_inputs/flutter_inputs_date_serializer.dart` | Date row method + picker helpers ⚡ added (phase 9) |
-| `lib/src/serializers/flutter_inputs/flutter_inputs_state_serializer.dart` | Widget class, state class, layout helpers ⚡ added (phase 9) |
+| `lib/src/serializers/flutter_inputs/flutter_inputs_state_serializer.dart` | Widget class, state class, layout helpers ⚡ added (phase 9); `_labelWithInfo` helper generated into every state class for info-dialog support |
 | `lib/src/generators/dart_client_generator.dart` | Hooks both serializers, writes shared files |
 | `examples/flutter/ui_types/` | Live example — 14 tabs covering all features (tabs 13-14: onChange, Stepper) ⚡ phase 10 |
 | `examples/flutter/ui_types/GRAPHLINK_FLUTTER_GUIDE.md` | AI agent reference guide ⚡ added (phase 9) |

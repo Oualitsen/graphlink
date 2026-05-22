@@ -47,7 +47,7 @@ Every generated form produces these classes in a single file:
 ```
 AddVehicleInputFormContext     — snapshot of current field values (for callbacks)
 AddVehicleInputDropdownLabels  — custom label widgets for enum/bool options
-AddVehicleInputLabels          — custom label widget per field
+AddVehicleInputLabels          — custom label widget per field + optional String? *Info for info dialogs
 AddVehicleInputValues          — replace a field's entire widget with your own
 AddVehicleInputVisibility      — control per-field visibility (callback-based)
 AddVehicleInputDefaults        — values for hidden fields (used by read())
@@ -273,13 +273,34 @@ AddVehicleInputForm(
 
 ---
 
-## Custom labels
+## Custom labels and field info dialogs
+
+Each field in `Labels` accepts a `Widget?` label and a companion `String? *Info`. When `*Info` is set, a small `Icons.info_outline` button appears next to the label. Tapping it opens an `AlertDialog` with that string and an OK button.
 
 ```dart
 AddVehicleInputForm(
   labels: const AddVehicleInputLabels(
     brand: Text('Make'),
+    brandInfo: 'The vehicle manufacturer — e.g. Toyota, BMW, Tesla.',
     year: Text('Model year'),
+    yearInfo: 'The 4-digit model year. Must be between 1990 and 2030.',
+  ),
+)
+```
+
+- `null` label → auto-humanized default (`Text('Brand')`)
+- `null` info → no icon rendered (zero overhead)
+- **`floatingLabel` position**: the icon cannot sit inside `InputDecoration.label`, so it is rendered as a trailing button to the right of the field instead
+- `toTableRow()` / `toTableHeaderRow()` on display widgets do not show the info icon (no `BuildContext` available)
+
+The same `*Info` fields exist on display widget labels too:
+
+```dart
+VehicleWidget(
+  vehicle,
+  labels: const VehicleLabels(
+    fuelType: Text('Fuel type'),
+    fuelTypeInfo: 'The propulsion technology: gasoline, diesel, hybrid, or electric.',
   ),
 )
 ```
@@ -368,9 +389,12 @@ Each GraphQL `type` gets a corresponding display widget:
 ```dart
 VehicleWidget(
   vehicle,
-  layout: VehicleLayout.listTile,   // labeledRow | listTile | listTileReversed
+  layout: VehicleLayout.listTile,   // labeledRow | listTile | listTileReversed | expandable
   gap: 16,
-  labels: const VehicleLabels(brand: Text('Make')),
+  labels: const VehicleLabels(
+    brand: Text('Make'),
+    brandInfo: 'The vehicle manufacturer.',  // shows an info icon next to the label
+  ),
   visibility: const VehicleVisibility(notes: false),
   order: const VehicleOrder(notes: 0),  // renders notes first
 )

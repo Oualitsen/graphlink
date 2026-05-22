@@ -31,7 +31,7 @@ void main() {
     expect(
         lines,
         containsAllInOrder([
-          'Future<GetPersonResponse> getPerson({',
+          'Future<GetPersonResponse?> getPerson({',
           'required String id,', // the trailing comma is what we are testing for
           'required String name'
         ]));

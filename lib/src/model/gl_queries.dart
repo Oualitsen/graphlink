@@ -21,7 +21,8 @@ class GLQueryDefinition extends GLToken with GLDirectivesMixin {
   final GLQueryType type; //query|mutation|subscription
   Set<GLFragmentDefinitionBase>? _allFrags;
 
-  GLTypeDefinition? _gqTypeDefinition;
+  GLTypeDefinition? _glTypeDefinition;
+  GLTypeDefinition? _glFullResponse;
 
   Set<String> get fragmentNames {
     return elements.expand((e) => e.fragmentNames).toSet();
@@ -74,10 +75,25 @@ class GLQueryDefinition extends GLToken with GLDirectivesMixin {
     return false;
   }
 
+  GLTypeDefinition getFullResponseTypeDefinition(GLParser parser) {
+    var result = _glFullResponse;
+    if(result == null) {
+      final errorsType = GLListType(GLType(parser.getTypeByName('GraphLinkError')!.tokenInfo, false), true);
+      final dataType = GLType(getGeneratedTypeDefinition().tokenInfo, true);
+      result = _glFullResponse = GLTypeDefinition(name: tokenInfo.ofNewName(_fullResponseName()), nameDeclared: false, fields: [
+        GLField(name: "errors".toToken(), type: errorsType, arguments: [], directives: []),
+        GLField(name: "data".toToken(), type: dataType, arguments: [], directives: []),
+      ], interfaceNames: {}, directives: [], derivedFromType: null, extension: false, isResponseType: true);
+      result.addDirective(
+          GLDirectiveValue(glInternal.toToken(), [], [], generated: true));
+    }
+    return result;
+  }
+
   GLTypeDefinition getGeneratedTypeDefinition() {
-    var gqDef = _gqTypeDefinition;
+    var gqDef = _glTypeDefinition;
     if (gqDef == null) {
-      _gqTypeDefinition = gqDef = GLTypeDefinition(
+      _glTypeDefinition = gqDef = GLTypeDefinition(
         name: tokenInfo.ofNewName(_getGeneratedTypeName()),
         nameDeclared: getNameValueFromDirectives(getDirectives()) != null,
         fields: _generateFields(),
@@ -94,15 +110,17 @@ class GLQueryDefinition extends GLToken with GLDirectivesMixin {
   }
 
   void updateTypeDefinition(GLTypeDefinition def) {
-    _gqTypeDefinition = def;
+    _glTypeDefinition = def;
   }
 
-  GLTypeDefinition? get typeDefinition => _gqTypeDefinition;
+  GLTypeDefinition? get typeDefinition => _glTypeDefinition;
 
   String _getGeneratedTypeName() {
     return getNameValueFromDirectives(getDirectives()) ??
         "${tokenInfo.token.firstUp}Response";
   }
+
+  String _fullResponseName() => "${tokenInfo.token.firstUp}FullResponse";
 
   List<GLField> _generateFields() {
     return elements

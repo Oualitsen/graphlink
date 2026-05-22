@@ -28,6 +28,7 @@ const _skippedDirectives = {
   glRepository,
   glCache,
   glCacheInvalidate,
+  glCaptureErrors,
 };
 
 bool _shouldSkipDriectiveDefinition(GLDirectiveDefinition def) {

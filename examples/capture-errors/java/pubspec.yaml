@@ -1,0 +1,11 @@
+name: capture_errors_java
+description: GraphLink @glCaptureErrors example — Java client generator
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ">=2.19.0 <4.0.0"
+
+dependencies:
+  graphlink:
+    path: ../../../
