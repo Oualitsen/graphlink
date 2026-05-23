@@ -12,6 +12,7 @@ import 'package:graphlink/src/generators/server_generator.dart';
 import 'package:graphlink/src/generators/typescript_client_generator.dart';
 import 'package:graphlink/src/gl_grammar_io.dart' as grammar_io;
 import 'package:graphlink/src/grammar_factory.dart';
+import 'package:graphlink/src/io_utils.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:yaml/yaml.dart';
 
@@ -275,6 +276,7 @@ void watchAndGenerate(GeneratorConfig config) {
 }
 
 void handleGeneration(GeneratorConfig config) async {
+  resetWriteCount();
   final now = DateTime.now();
   final filePaths = <String>[];
   for (final pattern in config.schemaPaths) {
@@ -306,6 +308,7 @@ void handleGeneration(GeneratorConfig config) async {
         await generateTypeScriptClientClasses(grammar, config, now);
       }
     }
+    stdout.writeln('✅ $writeCount file(s) written.');
   } catch (ex, st) {
     stderr.writeln(ex);
     stderr.writeln(st);
