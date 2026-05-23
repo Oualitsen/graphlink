@@ -20,6 +20,57 @@ Regenerate at any time by running `dart run lib/generate.dart` from the example 
 
 ---
 
+## Generator defaults
+
+All values below are baked in at code-generation time via `glink.json` / `glink.yaml`. Change them project-wide by setting the key and regenerating — no need to touch any generated file or pass the value on every widget.
+
+### Input forms
+
+| What it controls | Config key | Built-in default |
+|---|---|---|
+| Label position | `flutter.defaultLabelPosition` | `floatingLabel` |
+| Label width (`beside` mode) | `flutter.defaultLabelWidth` | `120` |
+| Form layout | `flutter.defaultFormLayout` | `column` |
+| Required indicator style | `flutter.defaultRequiredIndicator` | `asterisk` |
+| `onChange` debounce | `flutter.defaultDebounceDuration` | `300` ms |
+| Stepper orientation | `flutter.defaultStepperOrientation` | `vertical` |
+
+### Type display widgets
+
+| What it controls | Config key | Built-in default |
+|---|---|---|
+| Widget layout | `flutter.defaultTypeLayout` | `labeledRow` |
+| Expandable group layout | `flutter.defaultGroupLayout` | `labeledRow` |
+
+### Date pickers
+
+| What it controls | Config key | Built-in default |
+|---|---|---|
+| Date format pattern | `flutter.defaultDatePattern` | `yyyy-MM-dd` |
+| `firstDate` fallback in all pickers | `flutter.defaultDateFirstYear` | `1900` |
+| `lastDate` fallback in all pickers | `flutter.defaultDateLastYear` | `2100` |
+| Picker mode | `flutter.defaultDateMode` | `dialog` |
+
+Example — a medical records app with French date format and narrow year range:
+
+```json
+{
+  "clientConfig": {
+    "dart": {
+      "flutter": {
+        "defaultLabelPosition": "beside",
+        "defaultRequiredIndicator": "requiredText",
+        "defaultDatePattern": "dd/MM/yyyy",
+        "defaultDateFirstYear": 1920,
+        "defaultDateLastYear": 2030
+      }
+    }
+  }
+}
+```
+
+---
+
 ## Shared runtime files (generated once)
 
 These live in `widgets/inputs/` and are imported by every generated form:
@@ -56,7 +107,7 @@ AddVehicleInputOrder           — render order override per field
 AddVehicleInputWidgets         — enum/bool widget style per field
 AddVehicleInputTextConfig      — TextFieldOptions per text field
 AddVehicleInputDateConfig      — DateInputConfig per Int/String field
-AddVehicleInputLayout          — { column, twoColumn }
+AddVehicleInputLayout          — { column, twoColumn } (+ stepper when the input has nested input fields)
 AddVehicleInputLabelPosition   — { beside, above, floatingLabel }
 AddVehicleInputForm            — the StatefulWidget
 AddVehicleInputFormState       — the State (public, needed for GlobalKey)
@@ -339,6 +390,8 @@ EventInputForm(
 - `Int` fields → picker returns `DateTime.millisecondsSinceEpoch`
 - `String` fields → picker returns `DateFormat(pattern).format(picked)`
 - `useCupertino: null` → auto-detects iOS/macOS; `true`/`false` forces the picker
+
+The `pattern`, `mode`, `firstDate`, and `lastDate` fallbacks are project-level defaults configured in `glink.json` (`flutter.defaultDatePattern`, `flutter.defaultDateMode`, `flutter.defaultDateFirstYear`, `flutter.defaultDateLastYear`). Per-field `DateInputConfig` values always win over the project defaults.
 
 ---
 

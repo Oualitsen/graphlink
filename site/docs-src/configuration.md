@@ -63,7 +63,7 @@ Used when `mode` is `"client"` and you want Dart/Flutter output.
       "clientConfig": {
         "dart": {
           "packageName": "my_app",
-          "httpAdapter": "dio",
+          "httpAdapter": "http",
           "generateAdapters": true,
           "generateAllFieldsFragments": true,
           "autoGenerateQueries": true,
@@ -73,10 +73,29 @@ Used when `mode` is `"client"` and you want Dart/Flutter output.
           "nullableFieldsRequired": false,
           "immutableInputFields": true,
           "immutableTypeFields": true,
-          "generateUiTypes": false,
-          "generateUiInputs": false,
-          "appLocalizationsImport": null,
-          "captureErrors": false
+          "captureErrors": false,
+          "flutter": {
+            "generateTypes": true,
+            "generateInputs": false,
+            "typesToSkip": [],
+            "inputsToSkip": [],
+            "defaultGap": 16,
+            "booleanWidget": "switchWidget",
+            "nullableBooleanWidget": "checkbox",
+            "listWidget": "chips",
+            "defaultLabelPosition": "floatingLabel",
+            "defaultLabelWidth": 120,
+            "defaultFormLayout": "column",
+            "defaultRequiredIndicator": "asterisk",
+            "defaultDebounceDuration": 300,
+            "defaultStepperOrientation": "vertical",
+            "defaultTypeLayout": "labeledRow",
+            "defaultGroupLayout": "labeledRow",
+            "defaultDatePattern": "yyyy-MM-dd",
+            "defaultDateFirstYear": 1900,
+            "defaultDateLastYear": 2100,
+            "defaultDateMode": "dialog"
+          }
         }
       }
     }
@@ -88,7 +107,7 @@ Used when `mode` is `"client"` and you want Dart/Flutter output.
     clientConfig:
       dart:
         packageName: my_app
-        httpAdapter: dio
+        httpAdapter: http
         generateAdapters: true
         generateAllFieldsFragments: true
         autoGenerateQueries: true
@@ -98,10 +117,28 @@ Used when `mode` is `"client"` and you want Dart/Flutter output.
         nullableFieldsRequired: false
         immutableInputFields: true
         immutableTypeFields: true
-        generateUiTypes: false
-        generateUiInputs: false
-        appLocalizationsImport: null
         captureErrors: false
+        flutter:
+          generateTypes: true
+          generateInputs: false
+          typesToSkip: []
+          inputsToSkip: []
+          defaultGap: 16
+          booleanWidget: switchWidget
+          nullableBooleanWidget: checkbox
+          listWidget: chips
+          defaultLabelPosition: floatingLabel
+          defaultLabelWidth: 120
+          defaultFormLayout: column
+          defaultRequiredIndicator: asterisk
+          defaultDebounceDuration: 300
+          defaultStepperOrientation: vertical
+          defaultTypeLayout: labeledRow
+          defaultGroupLayout: labeledRow
+          defaultDatePattern: "yyyy-MM-dd"
+          defaultDateFirstYear: 1900
+          defaultDateLastYear: 2100
+          defaultDateMode: dialog
     ```
 
 | Option | Type | Default | Description |
@@ -117,10 +154,66 @@ Used when `mode` is `"client"` and you want Dart/Flutter output.
 | `nullableFieldsRequired` | `boolean` | `false` | When `true`, nullable fields in generated constructors are emitted as `required this.fieldName` instead of optional `this.fieldName`. Use this to enforce that all fields are always explicitly passed at construction sites. |
 | `immutableInputFields` | `boolean` | `true` | Input class fields are `final`. Recommended. |
 | `immutableTypeFields` | `boolean` | `true` | Response type class fields are `final`. Recommended for client-side code. |
-| `generateUiTypes` | `boolean` | `false` | Generates Flutter widget classes for every `type` in the schema — useful for rapid prototyping. Requires Flutter. |
-| `generateUiInputs` | `boolean` | `false` | Generates Flutter form widgets for every `input` type — renders a form with one field per schema field. |
-| `appLocalizationsImport` | `string` \| `null` | `null` | Import path for an `AppLocalizations` class injected into generated Flutter UI widgets. Only relevant when `generateUiTypes` or `generateUiInputs` is `true`. |
 | `captureErrors` | `boolean` | `false` | When `true`, applies `@glCaptureErrors` behaviour to every query and mutation. Each method returns a `{OperationName}FullResponse` holding nullable `data` and nullable `errors` instead of throwing on GraphQL errors. Equivalent to annotating every query and mutation field with `@glCaptureErrors` in the schema. |
+| `appLocalizationsImport` | `string` \| `null` | `null` | Import path for an `AppLocalizations` class injected into generated Flutter UI widgets. Only relevant when `flutter` is configured. |
+| `flutter` | `object` | — | Enables Flutter widget generation and sets project-wide UI defaults. Omit the key entirely to disable Flutter generation. See [`clientConfig.dart.flutter`](#clientconfigdartflutter) for the full sub-key reference. |
+
+---
+
+## `clientConfig.dart.flutter`
+
+Flutter widget generation is enabled by adding a `flutter:` block inside `clientConfig.dart`. Omitting the block entirely disables Flutter generation. All keys are optional — unset keys use the built-in default.
+
+Keys split into two groups: **generation toggles** (what to generate) and **UI defaults** (what values are baked into generated widget constructors).
+
+### Generation toggles
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `generateTypes` | `boolean` | `true` | Generate stateless display widgets for schema `type` definitions (e.g. `VehicleWidget`). |
+| `generateInputs` | `boolean` | `false` | Generate stateful form widgets for schema `input` definitions (e.g. `AddVehicleInputForm`). |
+| `typesToSkip` | `string[]` | `[]` | Type names excluded from display widget generation. |
+| `inputsToSkip` | `string[]` | `[]` | Input names excluded from form widget generation. |
+
+### Global widget style
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `defaultGap` | `number` | `16` | Default spacing (dp) between rows in every generated widget and form. |
+| `booleanWidget` | `"switchWidget"` \| `"checkbox"` \| `"tristate"` | `"switchWidget"` | Default widget for non-nullable `Boolean` fields. `switchWidget` → `Switch`/`SwitchListTile`. `checkbox` → `Checkbox`. `tristate` → Yes/No/— dropdown. |
+| `nullableBooleanWidget` | `"checkbox"` \| `"tristate"` | `"checkbox"` | Default widget for nullable `Boolean?` fields. `switchWidget` is excluded — `Switch` cannot represent `null`. |
+| `listWidget` | `"chips"` \| `"checkboxes"` | `"chips"` | Default widget for enum-list and scalar-list fields. |
+
+### Input form defaults
+
+These values are emitted as the default constructor parameter values in every generated form widget. They can be overridden per widget call site at runtime.
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `defaultLabelPosition` | `"floatingLabel"` \| `"beside"` \| `"above"` | `"floatingLabel"` | Default label position across all generated forms. |
+| `defaultLabelWidth` | `number` | `120` | Default width (dp) of the label column in `beside` mode. |
+| `defaultFormLayout` | `"column"` \| `"twoColumn"` | `"column"` | Default layout for all generated forms. |
+| `defaultRequiredIndicator` | `"asterisk"` \| `"none"` \| `"requiredText"` \| `"optionalText"` | `"asterisk"` | Default required-field indicator style. |
+| `defaultDebounceDuration` | `number` | `300` | Milliseconds to wait after the last field change before firing `onChange`. |
+| `defaultStepperOrientation` | `"vertical"` \| `"horizontal"` | `"vertical"` | Default Flutter `StepperType` for forms that use the stepper layout (inputs with nested input fields). |
+
+### Type display widget defaults
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `defaultTypeLayout` | `"labeledRow"` \| `"listTile"` \| `"listTileReversed"` \| `"expandable"` | `"labeledRow"` | Default layout for all generated display widgets. |
+| `defaultGroupLayout` | `"labeledRow"` \| `"listTile"` \| `"listTileReversed"` | `"labeledRow"` | Default layout of the scalar accordion group inside the `expandable` layout. |
+
+### Date picker defaults
+
+These values are baked into the generated `DateInputConfig` class defaults and into every generated date-picker helper. Per-field `DateInputConfig` values always take precedence.
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `defaultDatePattern` | `string` | `"yyyy-MM-dd"` | Default `pattern` in the generated `DateInputConfig` class. Use `"dd/MM/yyyy"`, `"MM/dd/yyyy"`, etc. to match your locale. |
+| `defaultDateFirstYear` | `number` | `1900` | Fallback `firstDate` year used by all generated date pickers when no `firstDate` is provided in `DateInputConfig`. |
+| `defaultDateLastYear` | `number` | `2100` | Fallback `lastDate` year used by all generated date pickers when no `lastDate` is provided in `DateInputConfig`. |
+| `defaultDateMode` | `"dialog"` \| `"inline"` | `"dialog"` | Default `DateInputMode` in the generated `DateInputConfig` class. |
 
 ---
 

@@ -1,3 +1,4 @@
+import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/dart_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'flutter_inputs_field_serializer.dart';
@@ -5,10 +6,11 @@ import 'flutter_inputs_type_helpers.dart';
 
 class FlutterInputsDateSerializer {
   final DartCodeGenUtils _u;
+  final FlutterConfig _config;
   final FlutterInputsTypeHelpers _types;
   final FlutterInputsFieldSerializer _fields;
 
-  FlutterInputsDateSerializer(this._u, this._types, this._fields);
+  FlutterInputsDateSerializer(this._u, this._config, this._types, this._fields);
 
   // ── Generated helper methods (go into the state class) ────────────────────────
 
@@ -62,8 +64,8 @@ class FlutterInputsDateSerializer {
             catchVariable: '_',
             catchStatements: ['current = null;'],
           ),
-          'final first = config.firstDate ?? DateTime(1900);',
-          'final last = config.lastDate ?? DateTime(2100);',
+          'final first = config.firstDate ?? DateTime(${_config.defaultDateFirstYear});',
+          'final last = config.lastDate ?? DateTime(${_config.defaultDateLastYear});',
           'final initial = _clampDate(current ?? config.initialDate ?? DateTime.now(), first, last);',
           'DateTime? picked;',
           _u.ifStatement(
@@ -98,8 +100,8 @@ class FlutterInputsDateSerializer {
             catchVariable: '_',
             catchStatements: ['current = null;'],
           ),
-          'final first = config.firstDate ?? DateTime(1900);',
-          'final last = config.lastDate ?? DateTime(2100);',
+          'final first = config.firstDate ?? DateTime(${_config.defaultDateFirstYear});',
+          'final last = config.lastDate ?? DateTime(${_config.defaultDateLastYear});',
           'DateTime picked = _clampDate(current ?? config.initialDate ?? DateTime.now(), first, last);',
           'final result = await ${_u.callExpression('showCupertinoModalPopup<DateTime?>', [
             'context: context',
@@ -214,7 +216,7 @@ class FlutterInputsDateSerializer {
       catchStatements: ['_parsedDate = null;'],
     );
     final initialDateLocal =
-        'final _initialDate = _clampDate(_parsedDate ?? _form.dateConfig!.$name!.initialDate ?? DateTime.now(), _form.dateConfig!.$name!.firstDate ?? DateTime(1900), _form.dateConfig!.$name!.lastDate ?? DateTime(2100));';
+        'final _initialDate = _clampDate(_parsedDate ?? _form.dateConfig!.$name!.initialDate ?? DateTime.now(), _form.dateConfig!.$name!.firstDate ?? DateTime(${_config.defaultDateFirstYear}), _form.dateConfig!.$name!.lastDate ?? DateTime(${_config.defaultDateLastYear}));';
 
     final onCupertinoDateTimeChanged =
         '(dt) => setState(() { '
@@ -227,8 +229,8 @@ class FlutterInputsDateSerializer {
       'child: ${_u.callExpression('CupertinoDatePicker', [
         'mode: _form.dateConfig!.$name!.type == DateType.dateTime ? CupertinoDatePickerMode.dateAndTime : CupertinoDatePickerMode.date',
         'initialDateTime: _initialDate',
-        'minimumDate: _form.dateConfig!.$name!.firstDate ?? DateTime(1900)',
-        'maximumDate: _form.dateConfig!.$name!.lastDate ?? DateTime(2100)',
+        'minimumDate: _form.dateConfig!.$name!.firstDate ?? DateTime(${_config.defaultDateFirstYear})',
+        'maximumDate: _form.dateConfig!.$name!.lastDate ?? DateTime(${_config.defaultDateLastYear})',
         'onDateTimeChanged: $onCupertinoDateTimeChanged',
       ])}',
     ]);
@@ -249,8 +251,8 @@ class FlutterInputsDateSerializer {
 
     final materialCalendar = _u.callExpression('CalendarDatePicker', [
       'initialDate: _initialDate',
-      'firstDate: _form.dateConfig!.$name!.firstDate ?? DateTime(1900)',
-      'lastDate: _form.dateConfig!.$name!.lastDate ?? DateTime(2100)',
+      'firstDate: _form.dateConfig!.$name!.firstDate ?? DateTime(${_config.defaultDateFirstYear})',
+      'lastDate: _form.dateConfig!.$name!.lastDate ?? DateTime(${_config.defaultDateLastYear})',
       'onDateChanged: $onMaterialDateChanged',
     ]);
 

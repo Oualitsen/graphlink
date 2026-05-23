@@ -1,3 +1,4 @@
+import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/dart_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'flutter_inputs_date_serializer.dart';
@@ -15,11 +16,12 @@ class _StepBucket {
 
 class FlutterInputsStateSerializer {
   final DartCodeGenUtils _u;
+  final FlutterConfig _config;
   final FlutterInputsTypeHelpers _types;
   final FlutterInputsFieldSerializer _fields;
   final FlutterInputsDateSerializer _date;
 
-  FlutterInputsStateSerializer(this._u, this._types, this._fields, this._date);
+  FlutterInputsStateSerializer(this._u, this._config, this._types, this._fields, this._date);
 
   // ── Widget class ──────────────────────────────────────────────────────────────
 
@@ -109,23 +111,23 @@ class FlutterInputsStateSerializer {
             if (enumFields.isNotEmpty || boolFields.isNotEmpty) 'this.widgets',
             if (textFields.isNotEmpty) 'this.textConfig',
             if (dateEligibleFields.isNotEmpty) 'this.dateConfig',
-            'this.layout = ${inputName}Layout.column',
-            'this.labelPosition = ${inputName}LabelPosition.floatingLabel',
-            'this.labelWidth = 120',
+            'this.layout = ${inputName}Layout.${_config.defaultFormLayout.name}',
+            'this.labelPosition = ${inputName}LabelPosition.${_config.defaultLabelPosition.name}',
+            'this.labelWidth = ${_config.defaultLabelWidth % 1 == 0 ? _config.defaultLabelWidth.toInt() : _config.defaultLabelWidth}',
             'this.gap = $gap',
-            'this.requiredIndicator = RequiredIndicator.asterisk',
+            'this.requiredIndicator = RequiredIndicator.${_config.defaultRequiredIndicator.name}',
             'this.requiredLabel',
             'this.optionalLabel',
             'this.strings = const FormStrings()',
             'this.columnMainAxisSize = MainAxisSize.min',
             if (hasSubInputs) 'this.stepConfig',
-            if (hasSubInputs) 'this.stepperType = StepperType.vertical',
+            if (hasSubInputs) 'this.stepperType = StepperType.${_config.defaultStepperOrientation.name}',
             if (hasSubInputs) 'this.stepControlsBuilder',
             if (hasSubInputs) 'this.stepControlsAlignment = MainAxisAlignment.spaceBetween',
             if (hasSubInputs) 'this.stepperStrings = const StepperStrings()',
             'this.onContextChange',
             'this.onChange',
-            'this.debounceDuration = const Duration(milliseconds: 300)',
+            'this.debounceDuration = const Duration(milliseconds: ${_config.defaultDebounceDuration})',
           ],
         ),
         _u.createMethod(
