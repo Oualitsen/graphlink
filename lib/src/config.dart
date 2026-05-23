@@ -185,6 +185,13 @@ enum NullableBooleanWidget { tristate, checkbox }
 
 enum ListWidget { chips, checkboxes }
 
+enum LabelPosition { beside, above, floatingLabel }
+enum FormLayout { column, twoColumn }
+enum RequiredIndicator { none, asterisk, requiredText, optionalText }
+enum StepperOrientation { vertical, horizontal }
+enum TypeLayout { labeledRow, listTile, listTileReversed, expandable }
+enum DateFieldMode { dialog, inline }
+
 class FlutterConfig {
   final List<String> typesToSkip;
   final List<String> inputsToSkip;
@@ -194,6 +201,18 @@ class FlutterConfig {
   final BooleanWidget booleanWidget;
   final NullableBooleanWidget nullableBooleanWidget;
   final ListWidget listWidget;
+  final LabelPosition defaultLabelPosition;
+  final double defaultLabelWidth;
+  final FormLayout defaultFormLayout;
+  final RequiredIndicator defaultRequiredIndicator;
+  final int defaultDebounceDuration;
+  final StepperOrientation defaultStepperOrientation;
+  final TypeLayout defaultTypeLayout;
+  final TypeLayout defaultGroupLayout;
+  final String defaultDatePattern;
+  final int defaultDateFirstYear;
+  final int defaultDateLastYear;
+  final DateFieldMode defaultDateMode;
 
   const FlutterConfig({
     this.typesToSkip = const [],
@@ -204,6 +223,18 @@ class FlutterConfig {
     this.booleanWidget = BooleanWidget.switchWidget,
     this.nullableBooleanWidget = NullableBooleanWidget.checkbox,
     this.listWidget = ListWidget.chips,
+    this.defaultLabelPosition = LabelPosition.floatingLabel,
+    this.defaultLabelWidth = 120,
+    this.defaultFormLayout = FormLayout.column,
+    this.defaultRequiredIndicator = RequiredIndicator.asterisk,
+    this.defaultDebounceDuration = 300,
+    this.defaultStepperOrientation = StepperOrientation.vertical,
+    this.defaultTypeLayout = TypeLayout.labeledRow,
+    this.defaultGroupLayout = TypeLayout.labeledRow,
+    this.defaultDatePattern = 'yyyy-MM-dd',
+    this.defaultDateFirstYear = 1900,
+    this.defaultDateLastYear = 2100,
+    this.defaultDateMode = DateFieldMode.dialog,
   });
 
   factory FlutterConfig.fromJson(Map<String, dynamic> json) {
@@ -228,6 +259,39 @@ class FlutterConfig {
       listWidget: ListWidget.values.firstWhere(
         (e) => e.name == (json['listWidget'] as String? ?? 'chips'),
         orElse: () => ListWidget.chips,
+      ),
+      defaultLabelPosition: LabelPosition.values.firstWhere(
+        (e) => e.name == (json['defaultLabelPosition'] as String? ?? 'floatingLabel'),
+        orElse: () => LabelPosition.floatingLabel,
+      ),
+      defaultLabelWidth: (json['defaultLabelWidth'] as num?)?.toDouble() ?? 120,
+      defaultFormLayout: FormLayout.values.firstWhere(
+        (e) => e.name == (json['defaultFormLayout'] as String? ?? 'column'),
+        orElse: () => FormLayout.column,
+      ),
+      defaultRequiredIndicator: RequiredIndicator.values.firstWhere(
+        (e) => e.name == (json['defaultRequiredIndicator'] as String? ?? 'asterisk'),
+        orElse: () => RequiredIndicator.asterisk,
+      ),
+      defaultDebounceDuration: (json['defaultDebounceDuration'] as int?) ?? 300,
+      defaultStepperOrientation: StepperOrientation.values.firstWhere(
+        (e) => e.name == (json['defaultStepperOrientation'] as String? ?? 'vertical'),
+        orElse: () => StepperOrientation.vertical,
+      ),
+      defaultTypeLayout: TypeLayout.values.firstWhere(
+        (e) => e.name == (json['defaultTypeLayout'] as String? ?? 'labeledRow'),
+        orElse: () => TypeLayout.labeledRow,
+      ),
+      defaultGroupLayout: TypeLayout.values.firstWhere(
+        (e) => e.name == (json['defaultGroupLayout'] as String? ?? 'labeledRow'),
+        orElse: () => TypeLayout.labeledRow,
+      ),
+      defaultDatePattern: (json['defaultDatePattern'] as String?) ?? 'yyyy-MM-dd',
+      defaultDateFirstYear: (json['defaultDateFirstYear'] as int?) ?? 1900,
+      defaultDateLastYear: (json['defaultDateLastYear'] as int?) ?? 2100,
+      defaultDateMode: DateFieldMode.values.firstWhere(
+        (e) => e.name == (json['defaultDateMode'] as String? ?? 'dialog'),
+        orElse: () => DateFieldMode.dialog,
       ),
     );
   }
