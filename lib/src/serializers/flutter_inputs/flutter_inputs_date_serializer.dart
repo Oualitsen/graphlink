@@ -205,7 +205,7 @@ class FlutterInputsDateSerializer {
       ]),
     );
 
-    final parsedDateDecl = 'DateTime? _parsedDate;';
+    const parsedDateDecl = 'DateTime? _parsedDate;';
     final parsedDateInit = _u.tryCatchFinally(
       tryStatements: [
         '_parsedDate = _${name}Controller.text.isEmpty ? null : DateFormat(_form.dateConfig!.$name!.pattern).parse(_${name}Controller.text);',
