@@ -5,7 +5,7 @@ import 'package:graphlink/src/model/gl_controller.dart';
 import 'package:graphlink/src/model/gl_directives_mixin.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
-import 'package:graphlink/src/model/gl_shcema_mapping.dart';
+import 'package:graphlink/src/model/gl_schema_mapping.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 

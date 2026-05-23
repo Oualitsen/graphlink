@@ -2,6 +2,7 @@ import 'package:graphlink/src/cache_store_java.dart';
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/constants.dart';
+import 'package:graphlink/src/serializers/java_imports.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/java_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
@@ -11,10 +12,11 @@ import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/serializers/client_serializers/java_client_constants.dart';
-import 'package:graphlink/src/serializers/gl_client_serilaizer.dart';
+import 'package:graphlink/src/serializers/gl_client_serializer.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
 import 'package:graphlink/src/serializers/graphq_serializer.dart';
-import 'package:graphlink/src/capture_errors_utils.dart';
+import 'package:graphlink/src/serializers/client_serializers/java_client_context.dart';
+import 'package:graphlink/src/serializers/client_serializers/java_client_operation_serializer.dart';
 
 
 
@@ -25,11 +27,16 @@ class JavaClientSerializer extends GLClientSerilaizer {
   final JavaJsonCodec jsonCodec;
 
   final GLGraphqSerializer gqlSerializer;
+  late final JavaClientContext _ctx;
+  late final JavaClientOperationSerializer _opSer;
 
   JavaClientSerializer(this._grammar, GLSerializer serializer,
       {this.jsonCodec = JavaJsonCodec.jackson})
       : gqlSerializer = GLGraphqSerializer(_grammar, false),
-        super(serializer);
+        super(serializer) {
+    _ctx = JavaClientContext(_grammar, codeGenUtils, gqlSerializer, serializer);
+    _opSer = JavaClientOperationSerializer(_ctx);
+  }
 
   // Safe generated local variable names — avoids clashing with user-defined method arguments.
   String get _svOperationName => codeGenUtils.safeLocalVar('operationName');
@@ -125,8 +132,8 @@ class JavaClientSerializer extends GLClientSerilaizer {
       ),
       if (hasDefaultAdapters) ..._convenienceConstructors(),
     ]));
-    if (serializeSubscriptions().isNotEmpty) {
-      bodyBuf.writeln(serializeSubscriptions().ident());
+    if (_opSer.serializeSubscriptions().isNotEmpty) {
+      bodyBuf.writeln(_opSer.serializeSubscriptions().ident());
     }
 
     return GLClassModel(
@@ -362,13 +369,13 @@ class JavaClientSerializer extends GLClientSerilaizer {
               ]),
           ...queryList
               .where((e) => e.type == GLQueryType.query)
-              .map((e) => queryToMethod(e, importContainer)),
+              .map((e) => _opSer.queryToMethod(e, importContainer)),
           ...queryList
               .where((e) => e.type == GLQueryType.subscription)
-              .map((e) => subscriptionToMethod(e, importContainer)),
+              .map((e) => _opSer.subscriptionToMethod(e, importContainer)),
           ...queryList
               .where((e) => e.type == GLQueryType.mutation)
-              .map((e) => mutationToMethod(e, importContainer)),
+              .map((e) => _opSer.mutationToMethod(e, importContainer)),
           if (type == GLQueryType.query)
             codeGenUtils.createMethod(
               returnType: 'private GraphLinkPayload',
@@ -496,477 +503,6 @@ class JavaClientSerializer extends GLClientSerilaizer {
           "private final GraphLinkSubscriptionHandler $_svHandler;"
         ];
     }
-  }
-
-  String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
-    final dividedQueries = gqlSerializer.divideQueryDefinition(def, _grammar);
-    final directives = gqlSerializer
-        .serializeDirectiveValueList(def.getDirectives(skipGenerated: true));
-    final parseType = def.getFullResponseTypeDefinition(_grammar).token;
-    container.imports.addAll([
-      JavaImports.map,
-      JavaImports.hashMap,
-      JavaImports.list,
-      JavaImports.arrayList
-    ]);
-    if (dividedQueries.isNotEmpty) {
-      container.imports
-          .addAll([JavaImports.set, JavaImports.hashSet, JavaImports.arrays]);
-    }
-    return codeGenUtils.createMethod(
-        returnType: 'public ${returnTypeByQueryType(def)}',
-        methodName: def.tokenInfo.token,
-        arguments: getArguments(def),
-        statements: [
-          'String $_svOperationName = "${def.tokenInfo}";',
-          generateVariables(def, container),
-          'List<GraphLinkPartialQuery> $_svPartialQueries = new ArrayList<>();',
-          ...dividedQueries.map(serializePartialQueryJava),
-          'Map<String, Object> $_svResponseMap = new HashMap<>();',
-          'Map<String, Object> $_svStaleData = new HashMap<>();',
-          codeGenUtils.forEachLoop(
-              variable: 'partQuery',
-              iterable: '$_svPartialQueries',
-              statements: [
-                codeGenUtils.ifStatement(
-                    condition: 'partQuery.ttl > 0',
-                    ifBlockStatements: [
-                      codeGenUtils.tryCatchFinally(
-                        tryStatements: [
-                          'GraphLinkCacheEntry entry = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline);',
-                          codeGenUtils.ifStatement(
-                              condition: 'entry != null',
-                              ifBlockStatements: [
-                                codeGenUtils.ifStatement(
-                                  condition: 'entry.stale',
-                                  ifBlockStatements: [
-                                    '$_svStaleData.put(partQuery.elementKey, $_svDecoder.decode(entry.data));'
-                                  ],
-                                  elseBlockStatements: [
-                                    '$_svResponseMap.put(partQuery.elementKey, $_svDecoder.decode(entry.data));'
-                                  ],
-                                ),
-                              ]),
-                        ],
-                        catchStatements: [],
-                        catchVariable: 'ignored',
-                      ),
-                    ]),
-              ]),
-          'List<GraphLinkPartialQuery> $_svRemaining = new ArrayList<>();',
-          codeGenUtils.forEachLoop(
-              variable: 'partQuery',
-              iterable: '$_svPartialQueries',
-              statements: [
-                codeGenUtils.ifStatement(
-                    condition: '!$_svResponseMap.containsKey(partQuery.elementKey)',
-                    ifBlockStatements: [
-                      '$_svRemaining.add(partQuery);',
-                    ]),
-              ]),
-          codeGenUtils.ifStatement(
-              condition: '$_svRemaining.isEmpty()',
-              ifBlockStatements: [
-                'return $parseType.fromJson($_svResponseMap)${_getDataCall(def)};',
-              ]),
-          'GraphLinkPayload $_svPayload = buildPayload($_svRemaining, $_svOperationName, "$directives");',
-          codeGenUtils.tryCatchFinally(
-            tryStatements: [
-              'String $_svResponseText = glCallAdapter($_svPayload);',
-              'return parseToObjectAndCache($_svResponseText, $_svResponseMap, $parseType::fromJson, $_svRemaining, ${def.isCaptureErrors(_grammar) ? 'true': 'false'})${_getDataCall(def)};',
-            ],
-            catchStatements: [
-              '$_svResponseMap.putAll($_svStaleData);',
-              'long remainingCount = $_svPartialQueries.stream().filter(e -> !$_svResponseMap.containsKey(e.elementKey)).count();',
-              codeGenUtils.ifStatement(
-                  condition: 'remainingCount > 0',
-                  ifBlockStatements: [
-                    'throw new RuntimeException(exception);',
-                  ]),
-              'return $parseType.fromJson($_svResponseMap)${_getDataCall(def)};',
-            ],
-            catchVariable: 'exception',
-          ),
-        ]);
-  }
-
-  String _getDataCall(GLQueryDefinition def) {
-    if(def.isCaptureErrors(_grammar)) {
-      return '';
-    }
-    return '.getData()';
-  }
-
-  String serializePartialQueryJava(DividedQuery e) {
-    final tagsStr = e.tags.isEmpty
-        ? 'new ArrayList<>()'
-        : 'Arrays.asList(${e.tags.map((t) => '"$t"').join(', ')})';
-    final fragNamesStr = e.fragmentNames.isEmpty
-        ? 'new HashSet<>()'
-        : 'new HashSet<>(Arrays.asList(${e.fragmentNames.map((f) => '"$f"').join(', ')}))';
-    final argDeclsStr = e.argumentDeclarations.isEmpty
-        ? 'new ArrayList<>()'
-        : 'Arrays.asList(${e.argumentDeclarations.map((a) => '"$a"').join(', ')})';
-    final queryStr = e.query.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
-
-    final buffer = StringBuffer();
-    buffer.writeln('{');
-    buffer.writeln('  Map<String, Object> pqVars = new HashMap<>();');
-    for (var v in e.variables) {
-      final argName = v.substring(1);
-      buffer.writeln('  pqVars.put("$argName", $_svVariables.get("$argName"));');
-    }
-    buffer.writeln('  $_svPartialQueries.add(new GraphLinkPartialQuery(');
-    buffer.writeln('    "$queryStr",');
-    buffer.writeln('    pqVars,');
-    buffer.writeln('    ${e.cacheTTL},');
-    buffer.writeln('    $tagsStr,');
-    buffer.writeln('    "${e.operationName}",');
-    buffer.writeln('    "${e.elementKey}",');
-    buffer.writeln('    $fragNamesStr,');
-    buffer.writeln('    $argDeclsStr,');
-    buffer.writeln('    ${e.staleIfOffline},');
-    buffer.writeln('    $_svEncoder');
-    buffer.writeln('  ));');
-    buffer.write('}');
-    return buffer.toString();
-  }
-
-  String mutationToMethod(GLQueryDefinition def, GLImportContainer container) {
-    final frags = def.fragments(_grammar);
-    final returnType = 'public ${returnTypeByQueryType(def)}';
-    final methodName = def.tokenInfo.token;
-    final queryLine = frags.isNotEmpty
-        ? [
-            'List<String> $_svFragsValues = Arrays.asList(${frags.map((e) => '${_svFragmentNap}.get("${e.token}")').join(", ")});',
-            'String $_svQuery = "${gqlSerializer.serializeQueryDefinition(def)} " + String.join(" ", $_svFragsValues);',
-          ]
-        : ['String $_svQuery = "${gqlSerializer.serializeQueryDefinition(def)}";'];
-    container.imports
-        .addAll([JavaImports.map, JavaImports.hashMap, JavaImports.arrays]);
-    if (frags.isNotEmpty) {
-      container.imports.add(JavaImports.list);
-    }
-
-    if (_grammar.mutationHasUploads(def)) {
-      final argsNoProgress = getArguments(def);
-      final argNamesNoProgress =
-          def.arguments.map((e) => e.dartArgumentName).join(', ');
-      final argsWithProgress = [
-        ...argsNoProgress,
-        'UploadProgressCallback onProgress'
-      ];
-
-      final body = codeGenUtils.block([
-        'String $_svOperationName = "$methodName";',
-        ...queryLine,
-        generateVariables(def, container),
-        _serializeMultipartAdapterCall(def, container),
-      ]);
-
-      // overload without onProgress delegates to the full method with null
-      final noProgressBody = codeGenUtils.block([
-        'return $methodName($argNamesNoProgress, null);',
-      ]);
-      container.imports.add(JavaImports.ioException);
-      return [
-        '$returnType $methodName${codeGenUtils.parentheses(argsNoProgress)} throws IOException $noProgressBody',
-        '$returnType $methodName${codeGenUtils.parentheses(argsWithProgress)} throws IOException $body',
-      ].join('\n\n');
-    }
-
-    return codeGenUtils.createMethod(
-        returnType: returnType,
-        methodName: methodName,
-        arguments: getArguments(def),
-        statements: [
-          'String $_svOperationName = "$methodName";',
-          ...queryLine,
-          generateVariables(def, container),
-          'GraphLinkPayload $_svPayload = GraphLinkPayload.builder().query($_svQuery).operationName($_svOperationName).variables($_svVariables).build();',
-          _serializeAdapterCall(def),
-        ]);
-  }
-
-  String _serializeMultipartAdapterCall(
-      GLQueryDefinition def, GLImportContainer container) {
-    final uploadNames = _grammar.uploadScalarNames;
-    final uploadArgs = def.arguments
-        .where((a) => uploadNames.contains(a.type.firstType.token))
-        .toList();
-    final returnType = def.isCaptureErrors(_grammar)
-        ? def.getFullResponseTypeDefinition(_grammar).token
-        : def.getGeneratedTypeDefinition().tokenInfo.token;
-    final hasListArg = uploadArgs.any((a) => a.type.isList);
-    container.imports.addAll(
-        [JavaImports.linkedHashMap, JavaImports.hashMap, JavaImports.arrays]);
-    final statements = <String>[
-      'Map<String, GLUpload> ${_svFiles} = new LinkedHashMap<>();',
-      'Map<String, Object> ${_svFileMap} = new HashMap<>();',
-      if (hasListArg) 'int _slot = 0;',
-    ];
-
-    var staticIndex = 0;
-    for (final arg in uploadArgs) {
-      final name = arg.dartArgumentName;
-      if (arg.type.isList) {
-        statements.add(
-          codeGenUtils.forLoop(
-            init: 'int _i = 0',
-            condition: '_i < $name.size()',
-            increment: '_i++',
-            statements: [
-              '${_svFiles}.put(String.valueOf(_slot + _i), $name.get(_i));',
-              '${_svFileMap}.put(String.valueOf(_slot + _i), Arrays.asList("variables.$name." + _i));',
-            ],
-          ),
-        );
-        statements.add('_slot += $name.size();');
-      } else if (hasListArg) {
-        statements.addAll([
-          '${_svFiles}.put(String.valueOf(_slot), $name);',
-          '${_svFileMap}.put(String.valueOf(_slot), Arrays.asList("variables.$name"));',
-          '_slot++;',
-        ]);
-      } else {
-        statements.addAll([
-          '${_svFiles}.put("$staticIndex", $name);',
-          '${_svFileMap}.put("$staticIndex", Arrays.asList("variables.$name"));',
-        ]);
-        staticIndex++;
-      }
-    }
-
-    statements.addAll([
-      'Map<String, Object> ${_svOperationsMap} = new HashMap<>();',
-      '${_svOperationsMap}.put("query", $_svQuery);',
-      '${_svOperationsMap}.put("operationName", $_svOperationName);',
-      '${_svOperationsMap}.put("variables", $_svVariables);',
-      'String ${_svOperations} = $_svEncoder.encode(${_svOperationsMap});',
-      'String ${_svMapJson} = $_svEncoder.encode(${_svFileMap});',
-      'String $_svResponseText = $_svMultipartAdapter.executeMultipart(${_svOperations}, ${_svMapJson}, ${_svFiles}, onProgress);',
-      '$returnType $_svDecodedResponse = $returnType.fromJson($_svDecoder.decode($_svResponseText));',
-      if (!def.isCaptureErrors(_grammar)) ...[
-        codeGenUtils.ifStatement(
-          condition: '$_svDecodedResponse.getErrors() != null && !$_svDecodedResponse.getErrors().isEmpty()',
-          ifBlockStatements: ['throw ${clientExceptionName}.of($_svDecodedResponse.getErrors());'],
-        ),
-        _serializeInvalidationCall(def),
-        'return $_svDecodedResponse.getData();',
-      ] else ...[
-        if(def.invalidateCacheTags.isNotEmpty)
-          codeGenUtils.ifStatement(
-            condition: '$_svDecodedResponse.getErrors() == null',
-            ifBlockStatements: [_serializeInvalidationCall(def)],
-          ),
-        'return $_svDecodedResponse;',
-      ],
-    ]);
-
-    return statements.join('\n');
-  }
-
-  String subscriptionToMethod(
-      GLQueryDefinition def, GLImportContainer container) {
-        container.imports.addAll([JavaImports.map, JavaImports.hashMap, JavaImports.list, JavaImports.arrays]);
-    final frags = def.fragments(_grammar);
-    return codeGenUtils.createMethod(
-        returnType: 'public ${returnTypeByQueryType(def)}',
-        methodName: def.tokenInfo.token,
-        arguments: getArguments(def),
-        statements: [
-          'String $_svOperationName = "${def.tokenInfo}";',
-          if (frags.isNotEmpty) ...[
-            'List<String> $_svFragsValues = Arrays.asList(${frags.map((e) => '${_svFragmentNap}.get("${e.token}")').join(", ")});',
-            'String $_svQuery = "${gqlSerializer.serializeQueryDefinition(def)} " + String.join(" ", $_svFragsValues);',
-          ] else
-            'String $_svQuery = "${gqlSerializer.serializeQueryDefinition(def)}";',
-          generateVariables(def, container),
-          "GraphLinkPayload $_svPayload = GraphLinkPayload.builder().query($_svQuery).operationName($_svOperationName).variables($_svVariables).build();",
-          _serializeSubscriptionAdapterCall(def),
-        ]);
-  }
-
-  String generateVariables(GLQueryDefinition def, GLImportContainer container) {
-    var buffer =
-        StringBuffer("Map<String, Object> $_svVariables = new HashMap<>();");
-    buffer.writeln();
-    def.arguments
-        .map((e) =>
-            '$_svVariables.put("${e.dartArgumentName}", ${_serializeArgumentValue(def, e.token, container)});')
-        .forEach(buffer.writeln);
-
-    return buffer.toString();
-  }
-
-  String _serializeAdapterCall(GLQueryDefinition def) {
-    switch (def.type) {
-      case GLQueryType.query:
-        return _serializeQueryAdapterCall(def);
-      case GLQueryType.mutation:
-        return _serializeMutationAdapterCall(def);
-      case GLQueryType.subscription:
-        return _serializeSubscriptionAdapterCall(def);
-    }
-  }
-
-  String _serializeQueryAdapterCall(GLQueryDefinition def) {
-    final fullResponseToken = def.getFullResponseTypeDefinition(_grammar).token;
-    final isCE = def.isCaptureErrors(_grammar);
-    return [
-      'String $_svResponseText = glCallAdapter($_svPayload);',
-      '$fullResponseToken $_svDecodedResponse = $fullResponseToken.fromJson($_svDecoder.decode($_svResponseText));',
-      if (!isCE)
-        codeGenUtils.ifStatement(
-          condition: '$_svDecodedResponse.getErrors() != null && !$_svDecodedResponse.getErrors().isEmpty()',
-          ifBlockStatements: ['throw ${clientExceptionName}.of($_svDecodedResponse.getErrors());'],
-        ),
-      if (isCE) 'return $_svDecodedResponse;'
-      else 'return $_svDecodedResponse.getData();',
-    ].join('\n');
-  }
-
-  String _serializeMutationAdapterCall(GLQueryDefinition def) {
-    final fullResponseToken = def.getFullResponseTypeDefinition(_grammar).token;
-    final isCE = def.isCaptureErrors(_grammar);
-    final invalidation = _serializeInvalidationCall(def);
-    return [
-      'String $_svResponseText = glCallAdapter($_svPayload);',
-      '$fullResponseToken $_svDecodedResponse = $fullResponseToken.fromJson($_svDecoder.decode($_svResponseText));',
-      if (!isCE) ...[
-        codeGenUtils.ifStatement(
-          condition: '$_svDecodedResponse.getErrors() != null && !$_svDecodedResponse.getErrors().isEmpty()',
-          ifBlockStatements: ['throw ${clientExceptionName}.of($_svDecodedResponse.getErrors());'],
-        ),
-        invalidation,
-        'return $_svDecodedResponse.getData();',
-      ] else ...[
-        if(def.invalidateCacheTags.isNotEmpty)
-          codeGenUtils.ifStatement(
-            condition: '$_svDecodedResponse.getErrors() == null',
-            ifBlockStatements: [invalidation],
-          ),
-        'return $_svDecodedResponse;',
-      ],
-    ].join('\n');
-  }
-
-  String _serializeInvalidationCall(GLQueryDefinition def) {
-    for (var e in def.elements) {
-      if (e.cacheInvalidateAll) {
-        return '$_svStore.invalidateAll();';
-      }
-    }
-    final tags = def.elements.expand((e) => e.invalidateCacheTags).toSet();
-    if (tags.isNotEmpty) {
-      return 'invalidateByTags(Arrays.asList(${tags.map((e) => '"$e"').join(', ')}));';
-    }
-    return '// no tag to invalidate';
-  }
-
-  String _serializeSubscriptionAdapterCall(GLQueryDefinition def) {
-    var method = codeGenUtils.createMethod(
-        methodName:
-            '${subscriptionListenerRef}<Map<String, Object>> $_svRawListener = new ${subscriptionListenerRef}<Map<String, Object>>',
-        statements: [
-          '@Override',
-          codeGenUtils.createMethod(
-            returnType: 'public void',
-            methodName: 'onMessage',
-            arguments: ['Map<String, Object> response'],
-            statements: [
-              'listener.onMessage(${def.typeDefinition?.token}.fromJson(response));'
-            ],
-          ),
-          '@Override',
-          codeGenUtils.createMethod(
-            returnType: 'public void',
-            methodName: 'onComplete',
-            arguments: [],
-            statements: ['listener.onComplete();'],
-          ),
-          '@Override',
-          codeGenUtils.createMethod(
-            returnType: 'public void',
-            methodName: 'onError',
-            arguments: ['${clientExceptionNameRef} error'],
-            statements: ['listener.onError(error);'],
-          )
-        ]);
-    return ['${method};', '$_svHandler.handlePayload($_svPayload, $_svRawListener);']
-        .join('\n');
-  }
-
-  String _serializeArgumentValue(
-      GLQueryDefinition def, String argName, GLImportContainer container) {
-    var arg = def.findByName(argName);
-    if (_grammar.uploadScalarNames.contains(arg.type.firstType.token)) {
-      if (arg.type.isList) {
-        container.imports
-            .addAll([JavaImports.arrayList, JavaImports.collections]);
-        return 'new ArrayList<>(Collections.nCopies(${arg.dartArgumentName}.size(), null))';
-      } else {
-        return 'null';
-      }
-    }
-    return _callToJson(arg.dartArgumentName, arg.type, 0, container);
-  }
-
-  String _callToJson(String variableName, GLType type, int index,
-      GLImportContainer container) {
-    if (type.isList) {
-      var inlineType = type.inlineType;
-      String varName = "e${index}";
-      var inlineCallToJson =
-          _callToJson(varName, inlineType, index + 1, container);
-      String method;
-      if (varName == inlineCallToJson) {
-        container.imports.add(JavaImports.collectors);
-        method = "stream().${javaCollectorsToList}";
-      } else {
-        container.imports.add(JavaImports.collectors);
-        method =
-            "stream().map(${varName} -> ${inlineCallToJson}).${javaCollectorsToList}";
-      }
-      return JavaCodeGenUtils.safeCall(variableName, method, type.nullable);
-    } else if (_grammar.isEnum(type.token) || _grammar.isInput(type.token)) {
-      return JavaCodeGenUtils.safeCall(variableName, "toJson()", type.nullable);
-    } else {
-      return variableName;
-    }
-  }
-
-  String _resolveArgType(arg) {
-    final uploadNames = _grammar.uploadScalarNames;
-    if (uploadNames.contains(arg.type.firstType.token)) {
-      return arg.type.isList ? 'List<GLUpload>' : 'GLUpload';
-    }
-    return serializer.serializeType(arg.type, false);
-  }
-
-  List<String> getArguments(GLQueryDefinition def) {
-    final result = def.arguments
-        .map((e) => '${_resolveArgType(e)} ${e.dartArgumentName}')
-        .toList();
-    if (def.type == GLQueryType.subscription) {
-      result.add(
-          '${subscriptionListenerRef}<${def.typeDefinition?.token}> listener');
-    }
-    return result;
-  }
-
-  String returnTypeByQueryType(GLQueryDefinition def) {
-    if (def.type == GLQueryType.subscription) {
-      return "void";
-    }
-    if (def.isCaptureErrors(_grammar)) {
-      return def.getFullResponseTypeDefinition(_grammar).token;
-    }
-    return def.getGeneratedTypeDefinition().token;
-  }
-
-  String serializeSubscriptions() {
-    return "";
   }
 
   GLClassModel generateGraphLinkResolverBaseFile(String importPrefix) {

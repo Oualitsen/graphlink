@@ -6,7 +6,7 @@ import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_fragment.dart';
-import 'package:graphlink/src/excpetions/parse_exception.dart';
+import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/model/gl_directives_mixin.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_type.dart';

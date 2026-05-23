@@ -1,4 +1,4 @@
-import 'package:graphlink/src/excpetions/parse_exception.dart';
+import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_directives_mixin.dart';
 import 'package:graphlink/src/model/gl_queries.dart';

@@ -1,4 +1,5 @@
 import 'package:graphlink/src/constants.dart';
+import 'package:graphlink/src/serializers/java_imports.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/java_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
