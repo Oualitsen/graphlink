@@ -24,6 +24,8 @@ class TypeScriptSerializer extends GLSerializer {
     'Int': 'number',
     'Float': 'number',
     'Boolean': 'boolean',
+    'gqlMapStrObj': 'Record<string, unknown>',
+    'dynamicValue': 'unknown',
   };
 
   TypeScriptSerializer(

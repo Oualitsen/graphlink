@@ -1,6 +1,7 @@
 import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/excpetions/parse_exception.dart';
 import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/model/gl_query_element.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_controller.dart';
@@ -912,8 +913,17 @@ extension GLGrammarExtension on GLParser {
             "Type ${projectedType.tokenInfo.token} has already been defined, please rename it",
             info: projectedType.tokenInfo);
       }
-      var def = addToProjectedTypes(projectedType);
+      var def = addToProjectedTypes(projectedType, similarityCheck: false);
       query.updateTypeDefinition(def);
+
+
+      var fullResponseType = query.getFullResponseTypeDefinition(this);
+      if (projectedTypes.containsKey(fullResponseType.token)) {
+        throw ParseException(
+            "Type ${fullResponseType.tokenInfo.token} has already been defined, please rename it",
+            info: projectedType.tokenInfo);
+      }
+      addToProjectedTypes(fullResponseType, similarityCheck: false);
     });
   }
 
@@ -1131,7 +1141,7 @@ extension GLGrammarExtension on GLParser {
     var argValues = field.arguments.map((arg) {
       return GLArgumentValue(arg.tokenInfo, "\$${arg.tokenInfo}");
     }).toList();
-    const inheritedDirectives = [glCache, glNoCache, glCacheInvalidate];
+    const inheritedDirectives = [glCache, glNoCache, glCacheInvalidate, glCaptureErrors];
     var directives = field
         .getDirectives()
         .where((e) => inheritedDirectives.contains(e.token))

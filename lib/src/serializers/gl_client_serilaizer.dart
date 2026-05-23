@@ -57,7 +57,8 @@ abstract class GLClientSerilaizer {
       "GraphLinkSubscriptionErrorMessageBase",
       "GraphLinkSubscriptionErrorMessage",
       "GraphLinkSubscriptionMessage",
-      "GraphLinkSubscriptionMessageType"
+      "GraphLinkSubscriptionMessageType",
+      "GraphLinkFullResponse"
     ]
         .map(g.getTokenByKey)
         .where((e) => e != null)
@@ -69,6 +70,12 @@ abstract class GLClientSerilaizer {
         .where((element) => element.typeDefinition != null)
         .map((e) => e.typeDefinition!)
         .forEach(result.add);
+
+    if (g.getTypeByName('GraphLinkError') != null) {
+      g.queries.values
+          .map((e) => e.getFullResponseTypeDefinition(g))
+          .forEach(result.add);
+    }
 
     g.queries.values.expand((e) => e.arguments).forEach((arg) {
       if (g.isEnum(arg.type.token)) {

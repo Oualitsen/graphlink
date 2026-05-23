@@ -1,6 +1,7 @@
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 
 
 
@@ -61,11 +62,15 @@ query getData {
       }
     });
 
+    final userInterfaces = g.projectedInterfaces.values
+        .where((i) => i.getDirectiveByName(glInternal) == null)
+        .toList();
+
     // Animal and User each appear twice → 2 extra interfaces created, 3 total
-    expect(g.projectedInterfaces.length, 3);
+    expect(userInterfaces.length, 3);
 
     // no interface may have two implementations from the same original schema type
-    for (var iface in g.projectedInterfaces.values) {
+    for (var iface in userInterfaces) {
       final seen = <String>{};
       for (var impl in iface.implementations) {
         final origin = impl.derivedFromType?.token ?? impl.token;
@@ -132,11 +137,15 @@ query getData {
       }
     });
 
+    final userInterfaces = g.projectedInterfaces.values
+        .where((i) => i.getDirectiveByName(glInternal) == null)
+        .toList();
+
     // Animal appears twice (getAnimal + getEntity) → 1 extra interface, 2 total
-    expect(g.projectedInterfaces.length, 2);
+    expect(userInterfaces.length, 2);
 
     // no interface may have two implementations from the same original schema type
-    for (var iface in g.projectedInterfaces.values) {
+    for (var iface in userInterfaces) {
       final seen = <String>{};
       for (var impl in iface.implementations) {
         final origin = impl.derivedFromType?.token ?? impl.token;

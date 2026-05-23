@@ -42,12 +42,12 @@ class FlutterInputsCompanionSerializer {
     return _u.createClass(
       className: '${inputName}Labels',
       statements: [
-        ...fields.map((f) => 'final Widget? ${f.name};'),
+        ...fields.expand((f) => ['final Widget? ${f.name};', 'final String? ${f.name}Info;']),
         _u.createMethod(
           isConst: true,
           methodName: '${inputName}Labels',
           namedArguments: true,
-          arguments: fields.map((f) => 'this.${f.name}').toList(),
+          arguments: fields.expand((f) => ['this.${f.name}', 'this.${f.name}Info']).toList(),
         ),
       ],
     );

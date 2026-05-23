@@ -1,4 +1,3 @@
-import 'package:graphlink/src/constants.dart';
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
@@ -12,8 +11,6 @@ void main() async {
       autoGenerateQueries: true,
     );
     g.parse('''
-${getClientObjects('dynamic', 'Map<String, dynamic>')}
-
   type Person {
     name: String
   }

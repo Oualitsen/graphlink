@@ -109,3 +109,8 @@ const glUpload = "@glUpload";
 /// Default depth is 1 (one level of inline expansion).
 const glExpand = "@glExpand";
 const glExpandDepth = "depth";
+
+/// When applied to a query or mutation, errors are returned inline inside the response
+/// object instead of being thrown. The method never throws for GraphQL-level errors.
+/// The caller checks response.hasErrors instead of using try/catch.
+const glCaptureErrors = "@glCaptureErrors";

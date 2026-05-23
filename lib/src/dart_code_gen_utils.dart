@@ -17,7 +17,7 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
   String ifStatement(
       {required String condition, required List<String> ifBlockStatements, List<String>? elseBlockStatements}) {
     var buffer = StringBuffer();
-    buffer.write("if");
+    buffer.write("if ");
     buffer.write(parentheses([condition]));
     buffer.write(" ");
     buffer.write(block(ifBlockStatements));
@@ -81,12 +81,18 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
     required String expression,
     required List<CaseStatement> cases,
     List<String>? defaultStatements,
+    bool generateBreaks = true,
   }) {
     var buffer = StringBuffer();
     buffer.write("switch");
     buffer.write(parentheses([expression]));
     buffer.write(" ");
-    var myCases = [...cases.map((e) => e.toCaseStatement())];
+    var myCases = [...cases.map((e) {
+      if (!generateBreaks && e is DartCaseStatement) {
+        return DartCaseStatement(caseValue: e.caseValue, statement: e.statement, generateBreak: false).toCaseStatement();
+      }
+      return e.toCaseStatement();
+    })];
     if (defaultStatements != null) {
       myCases.add("default:");
       myCases.add(defaultStatements.map((e) => e.ident()).join("\n"));
@@ -288,14 +294,16 @@ class DartSwitchExpressionCase {
 }
 
 class DartCaseStatement extends CaseStatement {
-  DartCaseStatement({required super.caseValue, required super.statement});
+  final bool generateBreak;
+
+  DartCaseStatement({required super.caseValue, required super.statement, this.generateBreak = true});
 
   @override
   String toCaseStatement() {
     var buffer = StringBuffer();
-    buffer.writeln("case ${caseValue}:");
+    buffer.writeln(caseValue == 'default' ? 'default:' : 'case ${caseValue}:');
     buffer.writeln(statement.ident());
-    if (!statement.trim().startsWith("return ")) {
+    if (generateBreak && !statement.trim().startsWith("return ")) {
       buffer.writeln("break;");
     }
     return buffer.toString();

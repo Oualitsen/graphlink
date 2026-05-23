@@ -90,6 +90,8 @@ class JavaSerializer extends GLSerializer {
     "Boolean": "Boolean",
     "Long": "Long",
     "Null": "null",
+    "gqlMapStrObj": "Map<String, Object>",
+    "dynamicValue": "Object",
   };
 
   JavaSerializer(

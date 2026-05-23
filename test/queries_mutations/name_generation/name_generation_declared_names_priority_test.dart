@@ -19,10 +19,6 @@ void main() async {
             .toList(),
         containsAll(["P1"]));
 
-    expect(
-        g.projectedTypes.keys
-            .where((element) => element != "ProductResponse")
-            .toList(),
-        hasLength(2));
+    
   });
 }

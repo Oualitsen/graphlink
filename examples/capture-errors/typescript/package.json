@@ -1,0 +1,15 @@
+{
+  "name": "capture-errors-typescript",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "generate": "dart run main.dart --config config.json",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx src/main.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

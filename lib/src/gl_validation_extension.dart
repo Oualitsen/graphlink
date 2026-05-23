@@ -1,4 +1,5 @@
 import 'package:graphlink/src/excpetions/parse_exception.dart';
+import 'package:graphlink/src/model/gl_query_element.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
@@ -614,6 +615,34 @@ extension GLValidationExtension on GLParser {
                   info: type.tokenInfo);
             }
           }
+        }
+      }
+    }
+  }
+
+  void checkGLCaptureErrorsDirectives() {
+    final queryType = schema.getByQueryType(GLQueryType.query);
+    final mutationType = schema.getByQueryType(GLQueryType.mutation);
+    final subscriptionType = schema.getByQueryType(GLQueryType.subscription);
+
+    final subscriptionFields = types[subscriptionType]?.fields ?? [];
+    for (final field in subscriptionFields) {
+      if (field.getDirectiveByName(glCaptureErrors) != null) {
+        throw ParseException(
+            "$glCaptureErrors cannot be applied to subscription field '${field.name.token}'",
+            info: field.name);
+      }
+    }
+
+    for (final queryTypeName in [queryType, mutationType]) {
+      final fields = types[queryTypeName]?.fields ?? [];
+      for (final field in fields) {
+        final directive = field.getDirectiveByName(glCaptureErrors);
+        if (directive == null) continue;
+        if (field.type.isList) {
+          throw ParseException(
+              "$glCaptureErrors cannot be applied to field '${field.name.token}' because its return type is a list",
+              info: field.name);
         }
       }
     }

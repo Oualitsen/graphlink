@@ -1,0 +1,34 @@
+enum UserRole { ADMIN MEMBER GUEST }
+
+type User {
+  id: ID!
+  name: String!
+  email: String!
+  role: UserRole!
+}
+
+input CreateUserInput {
+  name: String!
+  email: String!
+  role: UserRole!
+}
+
+type Query {
+  # @glCaptureErrors — errors come back in the response, method never throws
+  getUser(id: ID!): User!        @glCaptureErrors
+  findUserByEmail(email: String!): User @glCaptureErrors @glCache(ttl: "1m")
+
+  # Regular query — throws on errors as usual
+  listUsers: [User!]!
+}
+
+type Mutation {
+  # @glCaptureErrors on object return
+  createUser(input: CreateUserInput!): User !
+
+  # @glCaptureErrors on scalar return
+  deleteUser(id: ID!): Boolean!  @glCaptureErrors
+
+  # Regular mutation — throws on errors as usual
+  resetDatabase: Boolean!
+}

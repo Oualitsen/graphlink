@@ -57,8 +57,10 @@ Future<Set<String>> generateJavaClientClasses(
   final allProjectedTypes = <String, GLTypeDefinition>{}
     ..addAll(parser.projectedTypes)
     ..addAll(parser.projectedInterfaces);
-  ['GraphLinkClientAdapter', 'GraphLinkJsonEncoder', 'GraphLinkJsonDecoder']
-      .map((e) => parser.interfaces[e]!)
+  ['GraphLinkClientAdapter', 'GraphLinkJsonEncoder', 'GraphLinkJsonDecoder', 'GraphLinkFullResponse']
+      .map((e) => parser.interfaces[e])
+      .where((e) => e != null)
+      .map((e) => e!)
       .forEach((def) => allProjectedTypes[def.token] = def);
 
   allProjectedTypes.forEach((k, def) {

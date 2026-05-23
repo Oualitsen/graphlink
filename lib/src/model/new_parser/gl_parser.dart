@@ -2,6 +2,7 @@ import 'package:graphlink/src/excpetions/parse_exception.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_fragment.dart';
+import 'package:graphlink/src/model/gl_query_element.dart';
 import 'package:graphlink/src/model/gl_schema.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
@@ -34,6 +35,7 @@ import 'package:graphlink/src/model/gl_service.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/serializers/graphq_serializer.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+import 'package:graphlink/src/constants.dart';
 export 'package:graphlink/src/gl_grammar_extension.dart';
 export 'package:graphlink/src/gl_validation_extension.dart';
 
@@ -129,6 +131,12 @@ class GLParser {
       {GLDirectiveScope.OBJECT},
       false,
     ),
+    glCaptureErrors: GLDirectiveDefinition(
+      glCaptureErrors.toToken(),
+      [],
+      {GLDirectiveScope.FIELD_DEFINITION},
+      false,
+    ),
   };
 
   final bool _validate = true;
@@ -166,6 +174,7 @@ class GLParser {
   final int? defaultCacheTTL;
   final bool disableCache;
   final int defaultExpandDepth;
+  final bool captureErrors;
   late final GLGraphqSerializer serializer;
 
   GLParser({
@@ -179,6 +188,7 @@ class GLParser {
     this.defaultCacheTTL,
     this.disableCache = false,
     this.defaultExpandDepth = 1,
+    this.captureErrors = false,
   }) : assert(
           !autoGenerateQueries || generateAllFieldsFragments,
           'autoGenerateQueries can only be true if generateAllFieldsFragments is also true',
@@ -249,6 +259,7 @@ class GLParser {
       checkGLCacheTags();
       if (disableCache) stripCacheDirectives();
       validateMapsToDirectives();
+      checkGLCaptureErrorsDirectives();
       checkUploadDirectivePlacement();
       checkUploadScalarUsage();
       checkUploadListDepth();
@@ -380,7 +391,12 @@ class GLParser {
     while (!check(GLTokenType.eof)) {
       _parseDefinition();
     }
-    if (validate) validateSemantics();
+    if (validate) {
+      if (mode == CodeGenerationMode.client) {
+        parse(clientObjects, validate: false);
+      }
+      validateSemantics();
+    }
   }
 
   void _parseDefinition() {

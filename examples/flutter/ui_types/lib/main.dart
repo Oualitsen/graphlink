@@ -43,7 +43,7 @@ class MyApp extends StatelessWidget {
       title: 'GraphLink Flutter UI Example',
       theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.indigo),
       home: DefaultTabController(
-        length: 15,
+        length: 16,
         child: Scaffold(
           appBar: AppBar(
             title: const Text('GraphLink Flutter UI'),
@@ -65,6 +65,7 @@ class MyApp extends StatelessWidget {
                 Tab(text: 'onChange'),
                 Tab(text: 'Stepper'),
                 Tab(text: 'Expandable'),
+                Tab(text: 'Field Info'),
               ],
             ),
           ),
@@ -85,6 +86,7 @@ class MyApp extends StatelessWidget {
               _OnChangeTab(),
               _StepperTab(),
               _ExpandableTab(),
+              _FieldInfoTab(),
             ],
           ),
         ),
@@ -1861,7 +1863,6 @@ class _StepperTabState extends State<_StepperTab> {
             '  Step 0 — scalar fields: name, email  (validates on Next)\n'
             '  Step 1 — sub-input: address          (calls AddressInputForm.read() on Next)\n\n'
             'Navigation is linear: Next validates + reads the current step before proceeding. '
-            'isSkippable bypasses that check for optional review steps. '
             'Tapping a previous step header always works; tapping ahead is blocked.',
           ),
           const Divider(height: 24),
@@ -2191,6 +2192,178 @@ class _DynamicFormsTabState extends State<_DynamicFormsTab> {
   void _submit() {
     try {
       setState(() => _result = _key.currentState!.read());
+    } on InputReadException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+      );
+    }
+  }
+}
+
+// ── Tab 16: Field info dialog ─────────────────────────────────────────────────
+
+class _FieldInfoTab extends StatefulWidget {
+  const _FieldInfoTab();
+  @override
+  State<_FieldInfoTab> createState() => _FieldInfoTabState();
+}
+
+class _FieldInfoTabState extends State<_FieldInfoTab> {
+  bool _showInfo = true;
+  AddVehicleInputLabelPosition _labelPosition = AddVehicleInputLabelPosition.floatingLabel;
+  GlobalKey<AddVehicleInputFormState> _formKey = GlobalKey<AddVehicleInputFormState>();
+  AddVehicleInput? _result;
+
+  static Vehicle _sampleVehicle() => Vehicle(
+        id: '1',
+        brand: 'Toyota',
+        model: 'Camry',
+        year: 2023,
+        fuelType: FuelType.HYBRID,
+        available: true,
+        mileage: 12500.5,
+        notes: 'Great condition',
+      );
+
+  VehicleLabels? get _vehicleLabels => _showInfo
+      ? const VehicleLabels(
+          brand: Text('Brand'),
+          brandInfo: 'The vehicle manufacturer — e.g. Toyota, BMW, Tesla.',
+          model: Text('Model'),
+          modelInfo: 'The specific model name within the manufacturer\'s lineup.',
+          year: Text('Year'),
+          yearInfo: 'The model year the vehicle was manufactured.',
+          fuelType: Text('Fuel type'),
+          fuelTypeInfo: 'The propulsion technology: gasoline, diesel, hybrid, or electric.',
+          available: Text('Available'),
+          availableInfo: 'Whether this vehicle is currently available for rental or sale.',
+          mileage: Text('Mileage'),
+          mileageInfo: 'Total kilometres driven. Leave blank if unknown.',
+          notes: Text('Notes'),
+          notesInfo: 'Any additional remarks visible to staff only.',
+        )
+      : null;
+
+  AddVehicleInputLabels? get _inputLabels => _showInfo
+      ? const AddVehicleInputLabels(
+          brand: Text('Brand'),
+          brandInfo: 'The vehicle manufacturer — e.g. Toyota, BMW, Tesla.',
+          model: Text('Model'),
+          modelInfo: 'The specific model name within the manufacturer\'s lineup.',
+          year: Text('Year'),
+          yearInfo: 'The 4-digit model year. Must be between 1990 and 2030.',
+          fuelType: Text('Fuel type'),
+          fuelTypeInfo: 'The propulsion technology used by this vehicle.',
+          available: Text('Available'),
+          availableInfo: 'Check if this vehicle is currently listed as available.',
+          mileage: Text('Mileage (km)'),
+          mileageInfo: 'Total kilometres driven. Optional — leave blank if unknown.',
+          notes: Text('Notes'),
+          notesInfo: 'Internal remarks visible to staff only. Not shown to customers.',
+        )
+      : null;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final v = _sampleVehicle();
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Field Info Dialog', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 4),
+          const Text(
+            'Each field in Labels now accepts a companion String? *Info value. '
+            'When set, a small info icon appears next to the label. '
+            'Tapping it opens an AlertDialog with the help text. '
+            'Works on both display widgets and input forms.',
+          ),
+          const Divider(height: 24),
+
+          // ── Controls ─────────────────────────────────────────────────────────
+          Row(
+            children: [
+              const Text('Show info icons'),
+              const SizedBox(width: 12),
+              Switch(
+                value: _showInfo,
+                onChanged: (on) => setState(() => _showInfo = on),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 8),
+          Text('Form label position', style: theme.textTheme.labelSmall),
+          const SizedBox(height: 6),
+          SegmentedButton<AddVehicleInputLabelPosition>(
+            segments: const [
+              ButtonSegment(
+                value: AddVehicleInputLabelPosition.floatingLabel,
+                label: Text('Floating'),
+              ),
+              ButtonSegment(
+                value: AddVehicleInputLabelPosition.above,
+                label: Text('Above'),
+              ),
+              ButtonSegment(
+                value: AddVehicleInputLabelPosition.beside,
+                label: Text('Beside'),
+              ),
+            ],
+            selected: {_labelPosition},
+            onSelectionChanged: (s) => setState(() {
+              _labelPosition = s.first;
+              _formKey = GlobalKey<AddVehicleInputFormState>();
+              _result = null;
+            }),
+          ),
+
+          const Divider(height: 24),
+
+          // ── Section 1: display widget ────────────────────────────────────────
+          Text('Display widget — VehicleWidget', style: theme.textTheme.labelLarge),
+          const SizedBox(height: 12),
+          VehicleWidget(
+            v,
+            labels: _vehicleLabels,
+          ),
+
+          const Divider(height: 32),
+
+          // ── Section 2: input form ────────────────────────────────────────────
+          Text('Input form — AddVehicleInputForm', style: theme.textTheme.labelLarge),
+          const SizedBox(height: 12),
+          AddVehicleInputForm(
+            key: _formKey,
+            labels: _inputLabels,
+            labelPosition: _labelPosition,
+            requiredIndicator: RequiredIndicator.asterisk,
+          ),
+
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _submit,
+            child: const Text('Submit'),
+          ),
+
+          if (_result != null) ...[
+            const SizedBox(height: 16),
+            const Divider(),
+            const Text('Result:', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            _ResultCard(result: _result!),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _submit() {
+    try {
+      setState(() => _result = _formKey.currentState!.read());
     } on InputReadException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message), backgroundColor: Colors.red),

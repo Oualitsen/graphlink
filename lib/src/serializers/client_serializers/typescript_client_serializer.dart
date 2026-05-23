@@ -1,3 +1,4 @@
+import 'package:graphlink/src/capture_errors_utils.dart';
 import 'package:graphlink/src/gl_grammar_cache_extension.dart';
 import 'package:graphlink/src/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
@@ -56,6 +57,16 @@ class TypeScriptClientSerializer extends GLClientSerilaizer {
     this.observables = false,
   }) : super(tsSerializer) {
     _gqlSerializer = GLGraphqSerializer(_parser, false);
+  }
+
+  bool get _hasFullResponseSupport =>
+      _parser.getTypeByName('GraphLinkError') != null;
+
+  String _returnTypeName(GLQueryDefinition def) {
+    if (def.isCaptureErrors(_parser) && _hasFullResponseSupport) {
+      return def.getFullResponseTypeDefinition(_parser).tokenInfo.token;
+    }
+    return def.getGeneratedTypeDefinition().tokenInfo.token;
   }
 
   // ── Top-level client file ─────────────────────────────────────────────────
@@ -337,30 +348,66 @@ private _buildPayload(
   }
 
   String _parseAndCacheMethod() {
-    return '''
-private _parseAndCache(
-  data: string,
-  cachedResponse: Record<string, unknown>,
-  remainingQueries: _GraphLinkPartialQuery[],
-): Record<string, unknown> {
-  const result = JSON.parse(data);
-  if (result['errors']) throw result['errors'] as GraphLinkError[];
-  const dataMap: Record<string, unknown> = result['data'];
-  for (const q of remainingQueries) {
-    if (q.ttl > 0 && dataMap[q.elementKey] != null) {
-      const entry = new _GraphLinkCacheEntry(JSON.stringify(dataMap[q.elementKey]), Date.now() + q.ttl * 1000);
-      void this.$_svStore.set(q.cacheKey!, JSON.stringify(entry.toJson()));
-      if (q.tags.length > 0) void this._addKeyToTags(q.cacheKey!, q.tags);
-    }
-  }
-  return { ...dataMap, ...cachedResponse };
-}''';
+    return _cg.createMethod(
+      methodName: 'private _parseAndCache',
+      returnType: 'Record<string, unknown>',
+      arguments: [
+        'data: string',
+        'cachedResponse: Record<string, unknown>',
+        'remainingQueries: _GraphLinkPartialQuery[]',
+        'captureErrors = false',
+      ],
+      statements: [
+        'const result = JSON.parse(data);',
+        "const dataMap: Record<string, unknown> = (result['data'] as Record<string, unknown>) ?? {};",
+        _cg.forEachLoop(
+          variable: 'q',
+          iterable: 'remainingQueries',
+          statements: [
+            _cg.ifStatement(
+              condition: 'q.ttl > 0 && dataMap[q.elementKey] != null',
+              ifBlockStatements: [
+                'const entry = new _GraphLinkCacheEntry(JSON.stringify(dataMap[q.elementKey]), Date.now() + q.ttl * 1000);',
+                'void this.$_svStore.set(q.cacheKey!, JSON.stringify(entry.toJson()));',
+                _cg.ifStatement(
+                  condition: 'q.tags.length > 0',
+                  ifBlockStatements: ['void this._addKeyToTags(q.cacheKey!, q.tags);'],
+                ),
+              ],
+            ),
+          ],
+        ),
+        'Object.assign(dataMap, cachedResponse);',
+        "const fullResponse: Record<string, unknown> = { 'data': dataMap };",
+        _cg.ifStatement(
+          condition: "result['errors'] != null",
+          ifBlockStatements: ["fullResponse['errors'] = result['errors'];"],
+        ),
+        _cg.ifStatement(
+          condition: 'captureErrors',
+          ifBlockStatements: ['return fullResponse;'],
+        ),
+        "const errors = result['errors'] as unknown[] | null | undefined;",
+        _cg.ifStatement(
+          condition: 'errors != null && errors.length > 0',
+          ifBlockStatements: ["throw errors as GraphLinkError[];"],
+        ),
+        'return fullResponse;',
+      ],
+    );
   }
 
   // ── Query method ──────────────────────────────────────────────────────────
 
   String _queryToMethod(GLQueryDefinition def) {
-    final returnTypeName = def.getGeneratedTypeDefinition().tokenInfo.token;
+    final returnTypeName = _returnTypeName(def);
+    final fullResponseTypeName = def.getFullResponseTypeDefinition(_parser).tokenInfo.token;
+    final isCE = def.isCaptureErrors(_parser);
+    final cacheHitValue = isCE ? '{ data: $_svResponseMap, errors: null }' : '$_svResponseMap';
+    final parseAndCacheCall = isCE
+        ? 'this._parseAndCache($_svResponseText, $_svResponseMap, $_svRemaining, true)'
+        : 'this._parseAndCache($_svResponseText, $_svResponseMap, $_svRemaining)';
+
     final args = _getMethodArgs(def);
     final dividedQueries = _gqlSerializer.divideQueryDefinition(def, _parser);
     final hasFrags = def.fragments(_parser).isNotEmpty;
@@ -387,7 +434,7 @@ private _parseAndCache(
       _cg.ifStatement(
         condition: '$_svRemaining.length === 0',
         ifBlockStatements: [
-          '${observables ? 'subscriber.next' : 'return'}($_svResponseMap as unknown as $returnTypeName);',
+          '${observables ? 'subscriber.next' : 'return'}($cacheHitValue as unknown as $returnTypeName);',
           if (observables) 'subscriber.complete(); return;',
         ],
       ),
@@ -395,12 +442,12 @@ private _parseAndCache(
       _cg.tryCatchFinally(
         tryStatements: [
           'const $_svResponseText = await this._glCallAdapter($_svPayload);',
-          'const $_svResult = this._parseAndCache($_svResponseText, $_svResponseMap, $_svRemaining) as unknown as $returnTypeName;',
+          'const $_svResult = $parseAndCacheCall as unknown as $fullResponseTypeName;',
           if (observables) ...[
-            'subscriber.next($_svResult);',
+            isCE ? 'subscriber.next($_svResult);' : "subscriber.next($_svResult['data'] as $returnTypeName);",
             'subscriber.complete();',
           ] else
-            'return $_svResult;',
+            isCE ? 'return $_svResult;' : "return $_svResult['data'] as $returnTypeName;",
         ],
         catchVariable: 'e',
         catchStatements: [
@@ -413,10 +460,10 @@ private _parseAndCache(
             ],
           ),
           if (observables) ...[
-            'subscriber.next($_svResponseMap as unknown as $returnTypeName);',
+            'subscriber.next($cacheHitValue as unknown as $returnTypeName);',
             'subscriber.complete();',
           ] else
-            'return $_svResponseMap as unknown as $returnTypeName;',
+            'return $cacheHitValue as unknown as $returnTypeName;',
         ],
       ),
     ];
@@ -451,7 +498,9 @@ private _parseAndCache(
   String _mutationToMethod(GLQueryDefinition def) {
     if (_parser.mutationHasUploads(def)) return _mutationToMultipartMethod(def);
 
-    final returnTypeName = def.getGeneratedTypeDefinition().tokenInfo.token;
+    final returnTypeName = _returnTypeName(def);
+    final fullResponseTypeName = def.getFullResponseTypeDefinition(_parser).tokenInfo.token;
+    final isCaptureErrors = def.isCaptureErrors(_parser);
     final args = _getMethodArgs(def);
     final queryStr = _gqlSerializer.serializeQueryDefinition(def);
     final hasFrags = def.fragments(_parser).isNotEmpty;
@@ -474,19 +523,20 @@ private _parseAndCache(
       statements.add("const $_svQuery = '${queryStr}';");
     }
 
-    final innerStatements = [
+    statements.addAll([
       "const $_svPayload: GraphLinkPayload = { query: $_svQuery, operationName: $_svOperationName, variables: $_svVariables };",
       "const $_svResponse = await this._glCallAdapter($_svPayload);",
-      "const $_svResult = JSON.parse($_svResponse);",
-      "if ($_svResult['errors']) ${observables ? "{ subscriber.error($_svResult['errors']); return; }" : "throw $_svResult['errors'] as GraphLinkError[];"}",
-      if (invalidation.isNotEmpty) invalidation,
+      "const $_svResult = JSON.parse($_svResponse) as $fullResponseTypeName;",
+      if (!isCaptureErrors)
+        "if ($_svResult['errors']) ${observables ? "{ subscriber.error($_svResult['errors']); return; }" : "throw $_svResult['errors'] as GraphLinkError[];"}",
+      if (invalidation.isNotEmpty)
+        isCaptureErrors ? "if (!($_svResult as any)['errors']) { $invalidation }" : invalidation,
       if (observables) ...[
-        "subscriber.next($_svResult['data'] as $returnTypeName);",
+        isCaptureErrors ? "subscriber.next($_svResult);" : "subscriber.next($_svResult['data'] as $returnTypeName);",
         "subscriber.complete();",
       ] else
-        "return $_svResult['data'] as $returnTypeName;",
-    ];
-    statements.addAll(innerStatements);
+        isCaptureErrors ? "return $_svResult;" : "return $_svResult['data'] as $returnTypeName;",
+    ]);
 
     if (observables) {
       return _cg.createMethod(
@@ -803,7 +853,7 @@ private _parseAndCache(
           'readonly mutations: ${classNameFromType(GLQueryType.mutation)};',
         if (hasSubs)
           'readonly subscriptions: ${classNameFromType(GLQueryType.subscription)};',
-        'readonly $_svStore: $_cacheStoreType;',
+        'readonly store: $_cacheStoreType;',
         _buildClientConstructor(
           hasQueries: hasQueries,
           hasMutations: hasMutations,
@@ -838,16 +888,16 @@ private _parseAndCache(
       arguments: args,
       statements: [
         ...fragAssignments,
-        'this.$_svStore = store ?? new $_inMemoryCacheStoreType();',
+        'this.store = store ?? new $_inMemoryCacheStoreType();',
         "for (const tag of [$allTags]) this.$_svTagLocks.set(tag, new _Lock());",
         if (hasQueries)
-          'this.queries = new ${classNameFromType(GLQueryType.query)}(adapter, this.$_svFragMap, this.$_svStore, this.$_svTagLocks);',
+          'this.queries = new ${classNameFromType(GLQueryType.query)}(adapter, this.$_svFragMap, this.store, this.$_svTagLocks);',
         if (hasMutations)
           _parser.hasUploadMutations
-            ? 'this.mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, multipartAdapter, this.$_svFragMap, this.$_svStore, this.$_svTagLocks);'
-            : 'this.mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, this.$_svFragMap, this.$_svStore, this.$_svTagLocks);',
+            ? 'this.mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, multipartAdapter, this.$_svFragMap, this.store, this.$_svTagLocks);'
+            : 'this.mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, this.$_svFragMap, this.store, this.$_svTagLocks);',
         if (hasSubs)
-          'this.subscriptions = new ${classNameFromType(GLQueryType.subscription)}(wsAdapter, this.$_svFragMap, this.$_svStore, this.$_svTagLocks);',
+          'this.subscriptions = new ${classNameFromType(GLQueryType.subscription)}(wsAdapter, this.$_svFragMap, this.store, this.$_svTagLocks);',
       ],
     );
   }

@@ -14,6 +14,7 @@ abstract class CodeGenUtilsBase {
     required String expression,
     required List<CaseStatement> cases,
     List<String>? defaultStatements,
+    bool generateBreaks = true,
   });
   String ternaryOp({required String condition, required String positiveStatement, required String negativeStatement});
 
