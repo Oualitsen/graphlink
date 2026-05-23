@@ -13,15 +13,26 @@ class ParseException {
   }
 
   String get errorMessage {
-    var info = this.info;
-    if(info == null) {
-      return message;
+    final info = this.info;
+    if (info == null) return message;
+
+    final buffer = StringBuffer('Parse error: $message');
+
+    final location = info.fileName != null
+        ? '${info.fileName}:${info.line}:${info.column}'
+        : 'line ${info.line}, column ${info.column}';
+    buffer.write('\n  --> $location');
+
+    final sourceLine = info.sourceLine;
+    if (sourceLine != null && info.line > 0) {
+      final lineNum = '${info.line}';
+      final pad = lineNum.length;
+      final caretCol = (info.column - 1).clamp(0, sourceLine.length);
+      buffer.write('\n${' ' * pad} |');
+      buffer.write('\n$lineNum | $sourceLine');
+      buffer.write('\n${' ' * pad} | ${' ' * caretCol}^');
     }
-    var buffer = StringBuffer(message);
-    if(info.fileName != null) {
-      buffer.write(" at file: ${info.fileName ?? ''}");
-    }
-    buffer.write(' line: ${info.line} column: ${info.column}');
+
     return buffer.toString();
   }
 }

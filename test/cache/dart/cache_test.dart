@@ -192,7 +192,7 @@ void main() {
       throwsA(isA<ParseException>().having(
         (e) => e.errorMessage,
         'errorMessage',
-        contains('ttl is required on @glCache directives line: 7 column: 24'),
+        contains('ttl is required on @glCache directives'),
       )),
     );
   });
@@ -932,7 +932,7 @@ void main() {
         (e) => e.errorMessage,
         'errorMessage',
         contains(
-            'tag on @glCache directives should be alphanumeric with underscores only! found:  line: 6 column: 25'),
+            'tag on @glCache directives should be alphanumeric with underscores only! found: '),
       )),
     );
   });

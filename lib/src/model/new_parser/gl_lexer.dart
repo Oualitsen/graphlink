@@ -141,10 +141,7 @@ class GLLexer {
         if (_isIdentifierChar(source.codeUnitAt(_pos))) {
           _scanIdentifier();
         } else {
-          final loc = locationOf(_pos);
-          throw ParseException("Unexpected character '${source[_pos]}'",
-              info: TokenInfo(
-                  token: source[_pos], line: loc.line, column: loc.column));
+          throw errorAt(_pos, "Unexpected character '${source[_pos]}'");
         }
     }
   }
@@ -311,6 +308,14 @@ class GLLexer {
     return _pos >= source.length;
   }
 
+  String? lineAt(int lineNumber) {
+    final idx = lineNumber - 1;
+    if (idx < 0 || idx >= _lineOffsets.length) return null;
+    final start = _lineOffsets[idx];
+    final end = source.indexOf('\n', start);
+    return end == -1 ? source.substring(start) : source.substring(start, end);
+  }
+
   ParseException errorAt(int offset, String message) {
     final loc = locationOf(offset);
     return ParseException(message,
@@ -318,7 +323,8 @@ class GLLexer {
             token: _pos < source.length ? source[_pos] : '',
             line: loc.line,
             column: loc.column,
-            fileName: fileName));
+            fileName: fileName,
+            sourceLine: lineAt(loc.line)));
   }
 
   void _tryReadStringBlock() {

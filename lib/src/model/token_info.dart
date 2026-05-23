@@ -6,12 +6,14 @@ class TokenInfo {
   final int line;
   final String token;
   final String? fileName;
+  final String? sourceLine;
 
   TokenInfo(
       {required String token,
       required this.line,
       required this.column,
-      this.fileName})
+      this.fileName,
+      this.sourceLine})
       : token = token.trim();
 
   static TokenInfo ofLexer(GLLexerToken token, GLLexer lexer) {
@@ -20,7 +22,8 @@ class TokenInfo {
         token: token.value,
         line: loc.line,
         column: loc.column,
-        fileName: lexer.fileName);
+        fileName: lexer.fileName,
+        sourceLine: lexer.lineAt(loc.line));
   }
 
   static TokenInfo ofString(String token) {
@@ -29,7 +32,11 @@ class TokenInfo {
 
   TokenInfo ofNewName(String token) {
     return TokenInfo(
-        token: token, line: line, column: column, fileName: fileName);
+        token: token,
+        line: line,
+        column: column,
+        fileName: fileName,
+        sourceLine: sourceLine);
   }
 
   @override

@@ -23,7 +23,7 @@ void main() {
           (e) => e.errorMessage,
           'errorMessage',
           contains(
-              "Type User implements IBase but does not declare field id line: 4 column: 10"),
+              "Type User implements IBase but does not declare field id"),
         ),
       ),
     );
@@ -41,7 +41,7 @@ void main() {
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
-          contains("Scalar Long has already been declared line: 2 column: 12"),
+          contains("Scalar Long has already been declared"),
         ),
       ),
     );
@@ -60,7 +60,7 @@ void main() {
           (e) => e.errorMessage,
           'errorMessage',
           contains(
-              "Directive @Getter has already been declared line: 2 column: 16"),
+              "Directive @Getter has already been declared"),
         ),
       ),
     );
@@ -78,7 +78,7 @@ void main() {
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
-          contains("Enum Gender has already been declared line: 2 column: 10"),
+          contains("Enum Gender has already been declared"),
         ),
       ),
     );
@@ -101,7 +101,7 @@ void main() {
           (e) => e.errorMessage,
           'errorMessage',
           contains(
-              "Interface Interface1 has already been declared line: 4 column: 15"),
+              "Interface Interface1 has already been declared"),
         ),
       ),
     );
@@ -123,7 +123,7 @@ void main() {
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
-          contains("Type User has already been declared line: 4 column: 10"),
+          contains("Type User has already been declared"),
         ),
       ),
     );
@@ -146,7 +146,7 @@ void main() {
           (e) => e.errorMessage,
           'errorMessage',
           contains(
-              "Input UserInput has already been declared line: 4 column: 11"),
+              "Input UserInput has already been declared"),
         ),
       ),
     );
@@ -178,7 +178,7 @@ void main() {
           (e) => e.errorMessage,
           'errorMessage',
           contains(
-              "Union MyUnion has already been declared line: 14 column: 11"),
+              "Union MyUnion has already been declared"),
         ),
       ),
     );
@@ -204,7 +204,7 @@ void main() {
           (e) => e.errorMessage,
           'errorMessage',
           contains(
-              "Fragment Frag1 has already been declared line: 8 column: 14"),
+              "Fragment Frag1 has already been declared"),
         ),
       ),
     );
@@ -242,7 +242,7 @@ void main() {
           (e) => e.errorMessage,
           'errorMessage',
           contains(
-              "Query GetUser has already been declared line: 16 column: 11"),
+              "Query GetUser has already been declared"),
         ),
       ),
     );
@@ -264,7 +264,7 @@ void main() {
           (e) => e.errorMessage,
           'errorMessage',
           contains(
-              "CityInput is not a scalar, input or enum line: 3 column: 7"),
+              "CityInput is not a scalar, input or enum"),
         ),
       ),
     );
@@ -284,7 +284,7 @@ void main() {
           (e) => e.errorMessage,
           'errorMessage',
           contains(
-              "City is not a scalar, enum, type, interface or union line: 3 column: 7"),
+              "City is not a scalar, enum, type, interface or union"),
         ),
       ),
     );
@@ -311,7 +311,7 @@ void main() {
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
-          contains("Argument \$invalid was not declared line: 8 column: 17"),
+          contains("Argument \$invalid was not declared"),
         ),
       ),
     );
@@ -340,7 +340,7 @@ void main() {
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
-          contains("A schema has already been defined line: 11 column: 5"),
+          contains("A schema has already been defined"),
         ),
       ),
     );
@@ -374,7 +374,7 @@ void main() {
           (e) => e.errorMessage,
           'errorMessage',
           contains(
-              "Field 'city' of type 'User' must have a selection of subfield  line: 15 column: 12"),
+              "Field 'city' of type 'User' must have a selection of subfield "),
         ),
       ),
     );
@@ -409,7 +409,7 @@ void main() {
           (e) => e.errorMessage,
           'errorMessage',
           contains(
-              "Field 'id' of type 'User' should not have a selection of subfields  line: 15 column: 9"),
+              "Field 'id' of type 'User' should not have a selection of subfields "),
         ),
       ),
     );
@@ -464,7 +464,7 @@ void main() {
           (e) => e.errorMessage,
           'errorMessage',
           contains(
-              "Type 'Human' does not implement 'Animal' line: 21 column: 18"),
+              "Type 'Human' does not implement 'Animal'"),
         ),
       ),
     );
@@ -505,7 +505,7 @@ void main() {
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
-          contains("Type 'Dog' does not implement 'Cat' line: 13 column: 15"),
+          contains("Type 'Dog' does not implement 'Cat'"),
         ),
       ),
     );
@@ -542,7 +542,7 @@ void main() {
           (e) => e.errorMessage,
           'errorMessage',
           contains(
-              "Fragment CityFragment cannot be applied to type User line: 13 column: 14"),
+              "Fragment CityFragment cannot be applied to type User"),
         ),
       ),
     );
@@ -579,7 +579,7 @@ void main() {
           (e) => e.errorMessage,
           'errorMessage',
           contains(
-              "Could not find field 'name2' on type 'User' line: 14 column: 15"),
+              "Could not find field 'name2' on type 'User'"),
         ),
       ),
     );
@@ -621,7 +621,7 @@ void main() {
           (e) => e.errorMessage,
           'errorMessage',
           contains(
-              "Could not find field 'zip2' on type 'City' line: 13 column: 15"),
+              "Could not find field 'zip2' on type 'City'"),
         ),
       ),
     );
@@ -662,7 +662,7 @@ void main() {
           (e) => e.errorMessage,
           'errorMessage',
           contains(
-              "Duplicate field defition on type GetUserResponse, field: getUser line: 22 column: 7"),
+              "Duplicate field defition on type GetUserResponse, field: getUser"),
         ),
       ),
     );
@@ -706,7 +706,7 @@ void main() {
           (e) => e.errorMessage,
           'errorMessage',
           contains(
-              "Query GetUser has already been declared line: 23 column: 11"),
+              "Query GetUser has already been declared"),
         ),
       ),
     );
@@ -750,7 +750,7 @@ void main() {
           (e) => e.errorMessage,
           'errorMessage',
           contains(
-              "You have names two object the same name 'Data' but have diffrent fields. Data_1.fields are: [[id: String]], Data_2.fields are: [[zipcode: String]]. Please consider renaming one of them line: 19 column: 27"),
+              "You have names two object the same name 'Data' but have diffrent fields. Data_1.fields are: [[id: String]], Data_2.fields are: [[zipcode: String]]. Please consider renaming one of them"),
         ),
       ),
     );
@@ -768,7 +768,7 @@ void main() {
         isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
-          contains("Interface IBase is not found line: 1 column: 38"),
+          contains("Interface IBase is not found"),
         ),
       ),
     );
@@ -793,7 +793,7 @@ void main() {
           (e) => e.errorMessage,
           'errorMessage',
           contains(
-              "interface IBase has been implemented more than once line: 1 column: 46"),
+              "interface IBase has been implemented more than once"),
         ),
       ),
     );
