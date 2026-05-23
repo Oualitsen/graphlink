@@ -10,6 +10,7 @@ import com.example.generated.interfaces.GraphLinkJsonEncoder;
 import com.example.generated.interfaces.GraphLinkJsonDecoder;
 import com.example.generated.types.GraphLinkPayload;
 import com.example.generated.interfaces.GraphLinkClientAdapter;
+import com.example.generated.interfaces.GraphLinkFullResponse;
 import java.util.Map;
 import java.util.List;
 import java.util.HashMap;
@@ -34,23 +35,32 @@ public class GraphLinkResolverBase {
          __gl_tagLocks__.put(tag, new ReentrantLock());
       }
    }
-   protected <T> T parseToObjectAndCache(String data, Map<String, Object> cachedResponse, Function<Map<String, Object>, T> parser, List<GraphLinkPartialQuery> remainingQueries, boolean captureErrors) {
+   protected <T extends GraphLinkFullResponse> T parseToObjectAndCache(String data, Map<String, Object> cachedResponse, Function<Map<String, Object>, T> parser, List<GraphLinkPartialQuery> remainingQueries, boolean captureErrors) {
       Map<String, Object> result = __gl_decoder__.decode(data);
-      if(result.containsKey("errors") && captureErrors) {
-         throw GraphLinkException.of((List) result.get("errors"));
-      }
       Map<String, Object> dataMap = (Map<String, Object>) result.get("data");
       for (var q : remainingQueries) {
-         if(q.ttl > 0 && dataMap.get(q.elementKey) != null) {
+         if (q.ttl > 0 && dataMap.get(q.elementKey) != null) {
             GraphLinkCacheEntry entry = new GraphLinkCacheEntry(__gl_encoder__.encode(dataMap.get(q.elementKey)), System.currentTimeMillis() + q.ttl * 1000L);
             __gl_store__.set(q.cacheKey, __gl_encoder__.encode(entry.toJson()));
-            if(!q.tags.isEmpty()) {
+            if (!q.tags.isEmpty()) {
                addKeyToTags(q.cacheKey, q.tags);
             }
          }
       }
       dataMap.putAll(cachedResponse);
-      return parser.apply(result);
+      Map<String, Object> fullResponse = new HashMap<>();
+      fullResponse.put("data", dataMap);
+      if (result.containsKey("errors")) {
+         fullResponse.put("errors", result.get("errors"));
+      }
+      T parsed = parser.apply(fullResponse);
+      if (captureErrors) {
+         return parsed;
+      }
+      if (result.containsKey("errors") && !((List<?>) result.get("errors")).isEmpty()) {
+         throw GraphLinkException.of(parsed.getErrors());
+      }
+      return parsed;
    }
    private String tagKey(String tag) {
       return "__tag__" + tag;
@@ -60,15 +70,15 @@ public class GraphLinkResolverBase {
    }
    GraphLinkCacheEntry getFromCache(String key, List<String> tags, boolean staleIfOffline) {
       String result = __gl_store__.get(key);
-      if(result != null) {
+      if (result != null) {
          Map<String, Object> entryMap = __gl_decoder__.decode(result);
          GraphLinkCacheEntry entry = GraphLinkCacheEntry.fromJson(entryMap);
-         if(entry.isExpired()) {
-            if(staleIfOffline) {
+         if (entry.isExpired()) {
+            if (staleIfOffline) {
                return entry.asStale();
             }
             __gl_store__.invalidate(key);
-            if(!tags.isEmpty()) {
+            if (!tags.isEmpty()) {
                removeKeyFromTags(key, tags);
             }
             return null;
@@ -85,7 +95,7 @@ public class GraphLinkResolverBase {
          lock.lock();
          try {
             String data = __gl_store__.get(tKey);
-            if(data != null) {
+            if (data != null) {
                GraphLinkTagEntry entry = GraphLinkTagEntry.fromJson(__gl_decoder__.decode(data));
                for (var k : entry.keys) {
                   __gl_store__.invalidate(k);
@@ -119,10 +129,10 @@ public class GraphLinkResolverBase {
          lock.lock();
          try {
             String data = __gl_store__.get(tKey);
-            if(data != null) {
+            if (data != null) {
                GraphLinkTagEntry entry = GraphLinkTagEntry.fromJson(__gl_decoder__.decode(data));
                entry.remove(key);
-               if(entry.keys.isEmpty()) {
+               if (entry.keys.isEmpty()) {
                   __gl_store__.invalidate(tKey);
                } else {
                   __gl_store__.set(tKey, __gl_encoder__.encode(entry.toJson()));

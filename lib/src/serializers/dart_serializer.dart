@@ -28,6 +28,8 @@ class DartSerializer extends GLSerializer {
     "Boolean": "bool",
     "Null": "null",
     "Long": "int",
+    "gqlMapStrObj": "Map<String, dynamic>",
+    "dynamicValue": "dynamic",
   };
 
   DartSerializer(super.grammar,

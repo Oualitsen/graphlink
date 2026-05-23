@@ -8,13 +8,14 @@
 package com.example.generated.types;
 import com.example.generated.types.GraphLinkError;
 import com.example.generated.types.FindUserByEmailResponse;
+import com.example.generated.interfaces.GraphLinkFullResponse;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.HashMap;
 import java.util.Map;
 
 
-public class FindUserByEmailFullResponse {
+public class FindUserByEmailFullResponse implements GraphLinkFullResponse{
    private final List<GraphLinkError> errors;
    private final FindUserByEmailResponse data;
 

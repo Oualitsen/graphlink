@@ -1,6 +1,6 @@
 ---
 title: Directives Reference — GraphLink Docs
-description: Complete reference for all GraphLink schema directives — @glCache, @glCacheInvalidate, @glMapsTo, @glMapField, @glSkipOnServer (with forward mappings), @glExternal, @glValidate, and more.
+description: Complete reference for all GraphLink schema directives — @glCache, @glCacheInvalidate, @glCaptureErrors, @glMapsTo, @glMapField, @glSkipOnServer (with forward mappings), @glExternal, @glValidate, and more.
 ---
 
 # Directives Reference
@@ -64,6 +64,10 @@ directive @glUpload on SCALAR
 # ── Cyclic expansion ──────────────────────────────────────────────────────────
 
 directive @glExpand(depth: Int) on OBJECT
+
+# ── Error capture ─────────────────────────────────────────────────────────────
+
+directive @glCaptureErrors on FIELD_DEFINITION
 ```
 
 ---
@@ -118,6 +122,68 @@ type Mutation {
   resetDatabase: Boolean! @glCacheInvalidate(all: true)
 }
 ```
+
+---
+
+## @glCaptureErrors
+
+**Target:** CLIENT · **Placement:** `FIELD_DEFINITION` on `Query` and `Mutation` fields
+
+Changes the method contract so errors are returned inline instead of thrown. The generated method return type changes from `{OperationName}Response` to `{OperationName}FullResponse`. A separate `{OperationName}FullResponse` class is generated alongside the original response class (which is left unchanged). The caller inspects `response.errors` directly — the method never throws for GraphQL errors.
+
+No arguments.
+
+```graphql title="Example"
+type Query {
+  getUser(id: ID!): User! @glCaptureErrors
+  listUsers: [User!]! @glCaptureErrors
+}
+
+type Mutation {
+  createUser(input: CreateUserInput!): User! @glCaptureErrors
+}
+```
+
+Generated wrapper class (Dart):
+
+```dart title="Generated GetUserFullResponse"
+class GetUserFullResponse {
+  final GetUserResponse? data;
+  final List<GraphLinkError>? errors;
+
+  GetUserFullResponse({this.data, this.errors});
+}
+```
+
+Generated wrapper interface (TypeScript):
+
+```typescript title="Generated GetUserFullResponse"
+export interface GetUserFullResponse {
+  data?: GetUserResponse;
+  errors?: GraphLinkError[];
+}
+```
+
+Generated wrapper class (Java):
+
+```java title="Generated GetUserFullResponse.java"
+public class GetUserFullResponse {
+    private final GetUserResponse data;       // nullable
+    private final List<GraphLinkError> errors; // nullable
+}
+```
+
+**Call-site comparison:**
+
+| Without `@glCaptureErrors` | With `@glCaptureErrors` |
+|---|---|
+| `try { final user = await client.queries.getUser(id: id); } catch (e) { … }` | `final r = await client.queries.getUser(id: id); if (r.errors != null) { … }` |
+
+**Caching interaction:** error responses are never cached. On a cache hit, `errors` is always `null`.
+
+**Validation:** applying `@glCaptureErrors` to a subscription field is rejected at parse time with a `ParseException`.
+
+**Global config alternative:** instead of annotating each field, set `captureErrors: true` in `clientConfig.dart` / `clientConfig.java` / `clientConfig.typescript` to apply the behaviour to every query and mutation automatically.
 
 ---
 

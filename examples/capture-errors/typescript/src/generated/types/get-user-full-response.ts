@@ -7,6 +7,7 @@
 
 import { GraphLinkError } from '../types/graph-link-error.js';
 import { GetUserResponse } from '../types/get-user-response.js';
+import { GraphLinkFullResponse } from '../interfaces/graph-link-full-response.js';
 
 
 export interface GetUserFullResponse {

@@ -7,6 +7,7 @@
 
 import { GraphLinkError } from '../types/graph-link-error.js';
 import { FindUserByEmailResponse } from '../types/find-user-by-email-response.js';
+import { GraphLinkFullResponse } from '../interfaces/graph-link-full-response.js';
 
 
 export interface FindUserByEmailFullResponse {

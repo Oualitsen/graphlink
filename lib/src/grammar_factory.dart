@@ -27,7 +27,6 @@ String? buildExtraGql(GLParser parser, GeneratorConfig config) {
   final lang = config.clientConfig!.language;
   if (lang is JavaClientConfig) {
     return [
-      getClientObjects("Object", "Map<String, Object>"),
       javaJsonEncoderDecorder,
       if (parser.operationNameAsParameter)
         javaClientAdapterWithParamSync
@@ -35,12 +34,6 @@ String? buildExtraGql(GLParser parser, GeneratorConfig config) {
         javaClientAdapterNoParamSync,
       javaGraphLinkWebSocketAdapter,
     ].join();
-  }
-  if (lang is DartClientConfig) {
-    return getClientObjects("dynamic", "Map<String, dynamic>");
-  }
-  if (lang is TypeScriptClientConfig) {
-    return getClientObjects("unknown", "Record<string, unknown>");
   }
   return null;
 }

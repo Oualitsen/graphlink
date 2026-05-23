@@ -16,7 +16,7 @@ input CreateUserInput {
 type Query {
   # @glCaptureErrors — errors come back in the response, method never throws
   getUser(id: ID!): User!        @glCaptureErrors
-  findUserByEmail(email: String!): User @glCaptureErrors
+  findUserByEmail(email: String!): User @glCaptureErrors @glCache(ttl: "1m")
 
   # Regular query — throws on errors as usual
   listUsers: [User!]!

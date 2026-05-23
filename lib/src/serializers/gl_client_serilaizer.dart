@@ -57,7 +57,8 @@ abstract class GLClientSerilaizer {
       "GraphLinkSubscriptionErrorMessageBase",
       "GraphLinkSubscriptionErrorMessage",
       "GraphLinkSubscriptionMessage",
-      "GraphLinkSubscriptionMessageType"
+      "GraphLinkSubscriptionMessageType",
+      "GraphLinkFullResponse"
     ]
         .map(g.getTokenByKey)
         .where((e) => e != null)

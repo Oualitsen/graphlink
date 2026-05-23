@@ -22,7 +22,7 @@ public class GraphLinkClient {
       this(adapter, encoder, decoder, null);
    }
    public GraphLinkClient(GraphLinkClientAdapter adapter, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder, GraphLinkCacheStore store) {
-      if(store == null) {
+      if (store == null) {
          store = new InMemoryGraphLinkCacheStore();
       }
       Objects.requireNonNull(adapter);

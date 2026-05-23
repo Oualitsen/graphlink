@@ -17,7 +17,7 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
   String ifStatement(
       {required String condition, required List<String> ifBlockStatements, List<String>? elseBlockStatements}) {
     var buffer = StringBuffer();
-    buffer.write("if");
+    buffer.write("if ");
     buffer.write(parentheses([condition]));
     buffer.write(" ");
     buffer.write(block(ifBlockStatements));

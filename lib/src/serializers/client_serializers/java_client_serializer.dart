@@ -5,7 +5,6 @@ import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/java_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
-import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/gl_grammar_cache_extension.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
@@ -40,7 +39,6 @@ class JavaClientSerializer extends GLClientSerilaizer {
   String get _svVariables => codeGenUtils.safeLocalVar('variables');
   String get _svResponseText => codeGenUtils.safeLocalVar('responseText');
   String get _svDecodedResponse => codeGenUtils.safeLocalVar('decodedResponse');
-  String get _svData => codeGenUtils.safeLocalVar('data');
   String get _svPartialQueries => codeGenUtils.safeLocalVar('partialQueries');
   String get _svResponseMap => codeGenUtils.safeLocalVar('responseMap');
   String get _svStaleData => codeGenUtils.safeLocalVar('staleData');
@@ -455,6 +453,12 @@ class JavaClientSerializer extends GLClientSerilaizer {
         .map((e) => e.typeDefinition!)
         .forEach(result.add);
 
+    if (_grammar.getTypeByName('GraphLinkError') != null) {
+      queries
+          .map((e) => e.getFullResponseTypeDefinition(_grammar))
+          .forEach(result.add);
+    }
+
     queries.expand((e) => e.arguments).forEach((arg) {
       if (_grammar.isEnum(arg.type.token)) {
         result.add(_grammar.enums[arg.type.token]!);
@@ -498,8 +502,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
     final dividedQueries = gqlSerializer.divideQueryDefinition(def, _grammar);
     final directives = gqlSerializer
         .serializeDirectiveValueList(def.getDirectives(skipGenerated: true));
-    final returnType = def.isCaptureErrors(_grammar) ? def.getFullResponseTypeDefinition(_grammar).token : def.getGeneratedTypeDefinition().token;
-    
+    final parseType = def.getFullResponseTypeDefinition(_grammar).token;
     container.imports.addAll([
       JavaImports.map,
       JavaImports.hashMap,
@@ -564,13 +567,13 @@ class JavaClientSerializer extends GLClientSerilaizer {
           codeGenUtils.ifStatement(
               condition: '$_svRemaining.isEmpty()',
               ifBlockStatements: [
-                'return $returnType.fromJson($_svResponseMap);',
+                'return $parseType.fromJson($_svResponseMap)${_getDataCall(def)};',
               ]),
           'GraphLinkPayload $_svPayload = buildPayload($_svRemaining, $_svOperationName, "$directives");',
           codeGenUtils.tryCatchFinally(
             tryStatements: [
               'String $_svResponseText = glCallAdapter($_svPayload);',
-              'return parseToObjectAndCache($_svResponseText, $_svResponseMap, $returnType::fromJson, $_svRemaining, ${def.isCaptureErrors(_grammar) ? 'true': 'false'})${_getDataCall(def)};',
+              'return parseToObjectAndCache($_svResponseText, $_svResponseMap, $parseType::fromJson, $_svRemaining, ${def.isCaptureErrors(_grammar) ? 'true': 'false'})${_getDataCall(def)};',
             ],
             catchStatements: [
               '$_svResponseMap.putAll($_svStaleData);',
@@ -580,7 +583,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
                   ifBlockStatements: [
                     'throw new RuntimeException(exception);',
                   ]),
-              'return $returnType.fromJson($_svResponseMap)${_getDataCall(def)};',
+              'return $parseType.fromJson($_svResponseMap)${_getDataCall(def)};',
             ],
             catchVariable: 'exception',
           ),
@@ -691,7 +694,9 @@ class JavaClientSerializer extends GLClientSerilaizer {
     final uploadArgs = def.arguments
         .where((a) => uploadNames.contains(a.type.firstType.token))
         .toList();
-    final returnType = def.getGeneratedTypeDefinition().tokenInfo.token;
+    final returnType = def.isCaptureErrors(_grammar)
+        ? def.getFullResponseTypeDefinition(_grammar).token
+        : def.getGeneratedTypeDefinition().tokenInfo.token;
     final hasListArg = uploadArgs.any((a) => a.type.isList);
     container.imports.addAll(
         [JavaImports.linkedHashMap, JavaImports.hashMap, JavaImports.arrays]);
@@ -740,16 +745,22 @@ class JavaClientSerializer extends GLClientSerilaizer {
       'String ${_svOperations} = $_svEncoder.encode(${_svOperationsMap});',
       'String ${_svMapJson} = $_svEncoder.encode(${_svFileMap});',
       'String $_svResponseText = $_svMultipartAdapter.executeMultipart(${_svOperations}, ${_svMapJson}, ${_svFiles}, onProgress);',
-      'Map<String, Object> $_svDecodedResponse = $_svDecoder.decode($_svResponseText);',
-      codeGenUtils.ifStatement(
-        condition: '$_svDecodedResponse.containsKey("errors")',
-        ifBlockStatements: [
-          'throw ${clientExceptionName}.of((List)$_svDecodedResponse.get("errors"));'
-        ],
-      ),
-      'Map<String, Object> $_svData = (Map<String, Object>) $_svDecodedResponse.get("data");',
-      _serializeInvalidationCall(def),
-      'return $returnType.fromJson($_svData);',
+      '$returnType $_svDecodedResponse = $returnType.fromJson($_svDecoder.decode($_svResponseText));',
+      if (!def.isCaptureErrors(_grammar)) ...[
+        codeGenUtils.ifStatement(
+          condition: '$_svDecodedResponse.getErrors() != null && !$_svDecodedResponse.getErrors().isEmpty()',
+          ifBlockStatements: ['throw ${clientExceptionName}.of($_svDecodedResponse.getErrors());'],
+        ),
+        _serializeInvalidationCall(def),
+        'return $_svDecodedResponse.getData();',
+      ] else ...[
+        if(def.invalidateCacheTags.isNotEmpty)
+          codeGenUtils.ifStatement(
+            condition: '$_svDecodedResponse.getErrors() == null',
+            ifBlockStatements: [_serializeInvalidationCall(def)],
+          ),
+        'return $_svDecodedResponse;',
+      ],
     ]);
 
     return statements.join('\n');
@@ -800,33 +811,44 @@ class JavaClientSerializer extends GLClientSerilaizer {
   }
 
   String _serializeQueryAdapterCall(GLQueryDefinition def) {
+    final fullResponseToken = def.getFullResponseTypeDefinition(_grammar).token;
+    final isCE = def.isCaptureErrors(_grammar);
     return [
-      "String $_svResponseText = glCallAdapter($_svPayload);",
-      "Map<String, Object> $_svDecodedResponse = $_svDecoder.decode($_svResponseText);",
-      codeGenUtils.ifStatement(
-          condition: '$_svDecodedResponse.containsKey("errors")',
-          ifBlockStatements: [
-            'throw ${clientExceptionName}.of((List)$_svDecodedResponse.get("errors"));'
-          ],
-          elseBlockStatements: [
-            'return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson((Map<String, Object>)$_svDecodedResponse.get("data"));'
-          ])
-    ].join("\n");
+      'String $_svResponseText = glCallAdapter($_svPayload);',
+      '$fullResponseToken $_svDecodedResponse = $fullResponseToken.fromJson($_svDecoder.decode($_svResponseText));',
+      if (!isCE)
+        codeGenUtils.ifStatement(
+          condition: '$_svDecodedResponse.getErrors() != null && !$_svDecodedResponse.getErrors().isEmpty()',
+          ifBlockStatements: ['throw ${clientExceptionName}.of($_svDecodedResponse.getErrors());'],
+        ),
+      if (isCE) 'return $_svDecodedResponse;'
+      else 'return $_svDecodedResponse.getData();',
+    ].join('\n');
   }
 
   String _serializeMutationAdapterCall(GLQueryDefinition def) {
+    final fullResponseToken = def.getFullResponseTypeDefinition(_grammar).token;
+    final isCE = def.isCaptureErrors(_grammar);
+    final invalidation = _serializeInvalidationCall(def);
     return [
-      "String $_svResponseText = glCallAdapter($_svPayload);",
-      "Map<String, Object> $_svDecodedResponse = $_svDecoder.decode($_svResponseText);",
-      codeGenUtils.ifStatement(
-          condition: '$_svDecodedResponse.containsKey("errors")',
-          ifBlockStatements: [
-            'throw ${clientExceptionName}.of((List)$_svDecodedResponse.get("errors"));',
-          ]),
-      'Map<String, Object> $_svData = (Map<String, Object>) $_svDecodedResponse.get("data");',
-      _serializeInvalidationCall(def),
-      'return ${def.getGeneratedTypeDefinition().tokenInfo}.fromJson($_svData);',
-    ].join("\n");
+      'String $_svResponseText = glCallAdapter($_svPayload);',
+      '$fullResponseToken $_svDecodedResponse = $fullResponseToken.fromJson($_svDecoder.decode($_svResponseText));',
+      if (!isCE) ...[
+        codeGenUtils.ifStatement(
+          condition: '$_svDecodedResponse.getErrors() != null && !$_svDecodedResponse.getErrors().isEmpty()',
+          ifBlockStatements: ['throw ${clientExceptionName}.of($_svDecodedResponse.getErrors());'],
+        ),
+        invalidation,
+        'return $_svDecodedResponse.getData();',
+      ] else ...[
+        if(def.invalidateCacheTags.isNotEmpty)
+          codeGenUtils.ifStatement(
+            condition: '$_svDecodedResponse.getErrors() == null',
+            ifBlockStatements: [invalidation],
+          ),
+        'return $_svDecodedResponse;',
+      ],
+    ].join('\n');
   }
 
   String _serializeInvalidationCall(GLQueryDefinition def) {
@@ -934,12 +956,13 @@ class JavaClientSerializer extends GLClientSerilaizer {
   }
 
   String returnTypeByQueryType(GLQueryDefinition def) {
-    var gen = def.getGeneratedTypeDefinition();
-
     if (def.type == GLQueryType.subscription) {
       return "void";
     }
-    return gen.tokenInfo.token;
+    if (def.isCaptureErrors(_grammar)) {
+      return def.getFullResponseTypeDefinition(_grammar).token;
+    }
+    return def.getGeneratedTypeDefinition().token;
   }
 
   String serializeSubscriptions() {
@@ -981,7 +1004,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
           ],
         ),
         codeGenUtils.createMethod(
-          returnType: 'protected <T> T',
+          returnType: 'protected <T extends GraphLinkFullResponse> T',
           methodName: 'parseToObjectAndCache',
           arguments: [
             'String data',
@@ -992,11 +1015,6 @@ class JavaClientSerializer extends GLClientSerilaizer {
           ],
           statements: [
             'Map<String, Object> result = $_svDecoder.decode(data);',
-            codeGenUtils.ifStatement(
-                condition: 'result.containsKey("errors") && captureErrors',
-                ifBlockStatements: [
-                  'throw ${clientExceptionName}.of((List) result.get("errors"));',
-                ]),
             'Map<String, Object> dataMap = (Map<String, Object>) result.get("data");',
             codeGenUtils.forEachLoop(
                 variable: 'q',
@@ -1016,7 +1034,23 @@ class JavaClientSerializer extends GLClientSerilaizer {
                       ]),
                 ]),
             'dataMap.putAll(cachedResponse);',
-            'return parser.apply(result);',
+            'Map<String, Object> fullResponse = new HashMap<>();',
+            'fullResponse.put("data", dataMap);',
+            codeGenUtils.ifStatement(
+                condition: 'result.containsKey("errors")',
+                ifBlockStatements: [
+                  'fullResponse.put("errors", result.get("errors"));',
+                ]),
+            'T parsed = parser.apply(fullResponse);',
+            codeGenUtils.ifStatement(
+                condition: 'captureErrors',
+                ifBlockStatements: ['return parsed;']),
+            codeGenUtils.ifStatement(
+                condition: 'result.containsKey("errors") && !((List<?>) result.get("errors")).isEmpty()',
+                ifBlockStatements: [
+                  'throw ${clientExceptionName}.of(parsed.getErrors());',
+                ]),
+            'return parsed;',
           ],
         ),
         codeGenUtils.createMethod(
@@ -1164,6 +1198,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
         _grammar.getTokenByKey("GraphLinkJsonDecoder")!,
         _grammar.getTokenByKey("GraphLinkPayload")!,
         _grammar.getTokenByKey("GraphLinkClientAdapter")!,
+        _grammar.getTokenByKey("GraphLinkFullResponse")!,
       ],
       body: classBody,
     );

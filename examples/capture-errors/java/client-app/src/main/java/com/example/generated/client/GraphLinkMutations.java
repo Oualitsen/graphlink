@@ -10,6 +10,9 @@ import com.example.generated.types.GraphLinkPayload;
 import com.example.generated.types.CreateUserResponse;
 import com.example.generated.types.DeleteUserResponse;
 import com.example.generated.types.ResetDatabaseResponse;
+import com.example.generated.types.CreateUserFullResponse;
+import com.example.generated.types.DeleteUserFullResponse;
+import com.example.generated.types.ResetDatabaseFullResponse;
 import com.example.generated.inputs.CreateUserInput;
 import com.example.generated.interfaces.GraphLinkClientAdapter;
 import com.example.generated.interfaces.GraphLinkJsonEncoder;
@@ -32,15 +35,14 @@ public class GraphLinkMutations extends GraphLinkResolverBase {
 
       GraphLinkPayload __gl_payload__ = GraphLinkPayload.builder().query(__gl_query__).operationName(__gl_operationName__).variables(__gl_variables__).build();
       String __gl_responseText__ = glCallAdapter(__gl_payload__);
-      Map<String, Object> __gl_decodedResponse__ = __gl_decoder__.decode(__gl_responseText__);
-      if(__gl_decodedResponse__.containsKey("errors")) {
-         throw GraphLinkException.of((List)__gl_decodedResponse__.get("errors"));
+      CreateUserFullResponse __gl_decodedResponse__ = CreateUserFullResponse.fromJson(__gl_decoder__.decode(__gl_responseText__));
+      if (__gl_decodedResponse__.getErrors() != null && !__gl_decodedResponse__.getErrors().isEmpty()) {
+         throw GraphLinkException.of(__gl_decodedResponse__.getErrors());
       }
-      Map<String, Object> __gl_data__ = (Map<String, Object>) __gl_decodedResponse__.get("data");
       // no tag to invalidate
-      return CreateUserResponse.fromJson(__gl_data__);
+      return __gl_decodedResponse__.getData();
    }
-   public DeleteUserResponse deleteUser(String id) {
+   public DeleteUserFullResponse deleteUser(String id) {
       String __gl_operationName__ = "deleteUser";
       String __gl_query__ = "mutation deleteUser($id: ID!){deleteUser(id: $id)}";
       Map<String, Object> __gl_variables__ = new HashMap<>();
@@ -48,13 +50,8 @@ public class GraphLinkMutations extends GraphLinkResolverBase {
 
       GraphLinkPayload __gl_payload__ = GraphLinkPayload.builder().query(__gl_query__).operationName(__gl_operationName__).variables(__gl_variables__).build();
       String __gl_responseText__ = glCallAdapter(__gl_payload__);
-      Map<String, Object> __gl_decodedResponse__ = __gl_decoder__.decode(__gl_responseText__);
-      if(__gl_decodedResponse__.containsKey("errors")) {
-         throw GraphLinkException.of((List)__gl_decodedResponse__.get("errors"));
-      }
-      Map<String, Object> __gl_data__ = (Map<String, Object>) __gl_decodedResponse__.get("data");
-      // no tag to invalidate
-      return DeleteUserResponse.fromJson(__gl_data__);
+      DeleteUserFullResponse __gl_decodedResponse__ = DeleteUserFullResponse.fromJson(__gl_decoder__.decode(__gl_responseText__));
+      return __gl_decodedResponse__;
    }
    public ResetDatabaseResponse resetDatabase() {
       String __gl_operationName__ = "resetDatabase";
@@ -63,13 +60,12 @@ public class GraphLinkMutations extends GraphLinkResolverBase {
 
       GraphLinkPayload __gl_payload__ = GraphLinkPayload.builder().query(__gl_query__).operationName(__gl_operationName__).variables(__gl_variables__).build();
       String __gl_responseText__ = glCallAdapter(__gl_payload__);
-      Map<String, Object> __gl_decodedResponse__ = __gl_decoder__.decode(__gl_responseText__);
-      if(__gl_decodedResponse__.containsKey("errors")) {
-         throw GraphLinkException.of((List)__gl_decodedResponse__.get("errors"));
+      ResetDatabaseFullResponse __gl_decodedResponse__ = ResetDatabaseFullResponse.fromJson(__gl_decoder__.decode(__gl_responseText__));
+      if (__gl_decodedResponse__.getErrors() != null && !__gl_decodedResponse__.getErrors().isEmpty()) {
+         throw GraphLinkException.of(__gl_decodedResponse__.getErrors());
       }
-      Map<String, Object> __gl_data__ = (Map<String, Object>) __gl_decodedResponse__.get("data");
       // no tag to invalidate
-      return ResetDatabaseResponse.fromJson(__gl_data__);
+      return __gl_decodedResponse__.getData();
    }
 }
 

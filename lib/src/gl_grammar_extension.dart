@@ -913,19 +913,17 @@ extension GLGrammarExtension on GLParser {
             "Type ${projectedType.tokenInfo.token} has already been defined, please rename it",
             info: projectedType.tokenInfo);
       }
-      var def = addToProjectedTypes(projectedType);
+      var def = addToProjectedTypes(projectedType, similarityCheck: false);
       query.updateTypeDefinition(def);
 
 
-      if (getTypeByName('GraphLinkError') != null) {
-        var fullResponseType = query.getFullResponseTypeDefinition(this);
-        if (projectedTypes.containsKey(fullResponseType.token)) {
-          throw ParseException(
-              "Type ${fullResponseType.tokenInfo.token} has already been defined, please rename it",
-              info: projectedType.tokenInfo);
-        }
-        addToProjectedTypes(fullResponseType, similarityCheck: false);
+      var fullResponseType = query.getFullResponseTypeDefinition(this);
+      if (projectedTypes.containsKey(fullResponseType.token)) {
+        throw ParseException(
+            "Type ${fullResponseType.tokenInfo.token} has already been defined, please rename it",
+            info: projectedType.tokenInfo);
       }
+      addToProjectedTypes(fullResponseType, similarityCheck: false);
     });
   }
 

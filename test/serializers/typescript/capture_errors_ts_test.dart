@@ -1,5 +1,4 @@
 import 'package:graphlink/src/capture_errors_utils.dart';
-import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/excpetions/parse_exception.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/serializers/client_serializers/typescript_client_serializer.dart';
@@ -11,7 +10,6 @@ import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 // Helpers
 // ---------------------------------------------------------------------------
 
-final _clientObjects = getClientObjects('unknown', 'Record<string, unknown>');
 
 GLParser _parse(String schema, {bool captureErrors = false}) {
   final g = GLParser(
@@ -19,7 +17,7 @@ GLParser _parse(String schema, {bool captureErrors = false}) {
     generateAllFieldsFragments: true,
     captureErrors: captureErrors,
   );
-  g.parse('$_clientObjects\n$schema');
+  g.parse(schema);
   return g;
 }
 
@@ -163,19 +161,19 @@ type Mutation { deleteUser(id: ID!): Boolean! }
     late String queries;
     setUpAll(() => queries = _queries(_parse(_schema)));
 
-    test('cache hit wraps responseMap with data key', () {
-      expect(queries, contains('{ data: __gl_responseMap__ }'));
+    test('cache hit wraps responseMap with data key and null errors', () {
+      expect(queries, contains('{ data: __gl_responseMap__, errors: null }'));
     });
 
     test('_parseAndCache called with captureErrors=true', () {
       expect(queries, contains('_parseAndCache(__gl_responseText__, __gl_responseMap__, __gl_remaining__, true)'));
     });
 
-    test('stale fallback also wraps with data key', () {
+    test('stale fallback also wraps with data key and null errors', () {
       final start = queries.indexOf('Promise<GetUserFullResponse>');
       final end   = queries.indexOf('Promise<FindUserFullResponse>');
       final body  = queries.substring(start, end);
-      expect(body, contains('{ data: __gl_responseMap__ }'));
+      expect(body, contains('{ data: __gl_responseMap__, errors: null }'));
     });
 
     test('no explicit GraphQL-error throw in captureErrors query body', () {
@@ -264,15 +262,13 @@ type Mutation { deleteUser(id: ID!): Boolean! }
     });
 
     test('throws on errors when captureErrors is false', () {
-      expect(queries, contains("if (!captureErrors) throw result['errors']"));
+      expect(queries, contains("errors != null && errors.length > 0"));
+      expect(queries, contains("throw errors as GraphLinkError[];"));
     });
 
-    test('returns full result on errors when captureErrors is true', () {
-      expect(queries, contains('return result;'));
-    });
-
-    test('wraps merged data in { data: merged } when captureErrors is true', () {
-      expect(queries, contains('if (captureErrors) return { data: merged };'));
+    test('constructs fullResponse map and returns it', () {
+      expect(queries, contains("const fullResponse: Record<string, unknown> = { 'data': dataMap };"));
+      expect(queries, contains('return fullResponse;'));
     });
   });
 

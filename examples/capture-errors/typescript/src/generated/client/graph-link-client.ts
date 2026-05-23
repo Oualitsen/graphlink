@@ -12,6 +12,7 @@ import { GraphLinkAckStatus } from '../enums/graph-link-ack-status.js';
 import { GraphLinkSubscriptionErrorMessageBase } from '../interfaces/graph-link-subscription-error-message-base.js';
 import { GraphLinkSubscriptionErrorMessage } from '../types/graph-link-subscription-error-message.js';
 import { GraphLinkSubscriptionMessage } from '../types/graph-link-subscription-message.js';
+import { GraphLinkFullResponse } from '../interfaces/graph-link-full-response.js';
 import { GetUserResponse } from '../types/get-user-response.js';
 import { FindUserByEmailResponse } from '../types/find-user-by-email-response.js';
 import { ListUsersResponse } from '../types/list-users-response.js';
@@ -257,29 +258,31 @@ class GraphLinkQueries extends _ResolverBase {
      query += Array.from(fragNames).map(n => this.__gl_fragMap__[n]!).join('');
      return { query, operationName, variables };
    }
-   private _parseAndCache(
-     data: string,
-     cachedResponse: Record<string, unknown>,
-     remainingQueries: _GraphLinkPartialQuery[],
-     captureErrors = false,
-   ): Record<string, unknown> {
-     const result = JSON.parse(data);
-     const hasErrors = result['errors'] != null;
-     if (hasErrors) {
-       if (!captureErrors) throw result['errors'] as GraphLinkError[];
-       return result;
-     }
-     const dataMap: Record<string, unknown> = result['data'];
-     for (const q of remainingQueries) {
-       if (q.ttl > 0 && dataMap[q.elementKey] != null) {
-         const entry = new _GraphLinkCacheEntry(JSON.stringify(dataMap[q.elementKey]), Date.now() + q.ttl * 1000);
-         void this.__gl_store__.set(q.cacheKey!, JSON.stringify(entry.toJson()));
-         if (q.tags.length > 0) void this._addKeyToTags(q.cacheKey!, q.tags);
-       }
-     }
-     const merged = { ...dataMap, ...cachedResponse };
-     if (captureErrors) return { data: merged };
-     return merged;
+   private _parseAndCache(data: string, cachedResponse: Record<string, unknown>, remainingQueries: _GraphLinkPartialQuery[], captureErrors = false): Record<string, unknown> {
+      const result = JSON.parse(data);
+      const dataMap: Record<string, unknown> = (result['data'] as Record<string, unknown>) ?? {};
+      for (const q of remainingQueries) {
+         if (q.ttl > 0 && dataMap[q.elementKey] != null) {
+            const entry = new _GraphLinkCacheEntry(JSON.stringify(dataMap[q.elementKey]), Date.now() + q.ttl * 1000);
+            void this.__gl_store__.set(q.cacheKey!, JSON.stringify(entry.toJson()));
+            if (q.tags.length > 0) {
+               void this._addKeyToTags(q.cacheKey!, q.tags);
+            }
+         }
+      }
+      Object.assign(dataMap, cachedResponse);
+      const fullResponse: Record<string, unknown> = { 'data': dataMap };
+      if (result['errors'] != null) {
+         fullResponse['errors'] = result['errors'];
+      }
+      if (captureErrors) {
+         return fullResponse;
+      }
+      const errors = result['errors'] as unknown[] | null | undefined;
+      if (errors != null && errors.length > 0) {
+         throw errors as GraphLinkError[];
+      }
+      return fullResponse;
    }
    async getUser(args: { id: string }): Promise<GetUserFullResponse> {
       const __gl_operationName__ = 'getUser';
@@ -311,7 +314,7 @@ class GraphLinkQueries extends _ResolverBase {
       await Promise.all(__gl_cacheFutures__);
       const __gl_remaining__ = __gl_partialQueries__.filter(pq => !(pq.elementKey in __gl_responseMap__));
       if (__gl_remaining__.length === 0) {
-         return({ data: __gl_responseMap__ } as unknown as GetUserFullResponse);
+         return({ data: __gl_responseMap__, errors: null } as unknown as GetUserFullResponse);
       }
       const __gl_payload__ = this._buildPayload(__gl_remaining__, __gl_operationName__, ''); 
       try {
@@ -324,7 +327,7 @@ class GraphLinkQueries extends _ResolverBase {
          if (__gl_remainingCount__ > 0) {
             throw e;
          }
-         return { data: __gl_responseMap__ } as unknown as GetUserFullResponse;
+         return { data: __gl_responseMap__, errors: null } as unknown as GetUserFullResponse;
       }
    }
    async findUserByEmail(args: { email: string }): Promise<FindUserByEmailFullResponse> {
@@ -334,9 +337,9 @@ class GraphLinkQueries extends _ResolverBase {
       };
       const __gl_partialQueries__ = [
         new _GraphLinkPartialQuery(
-          'findUserByEmail(email: $email){..._all_fields_User}',
+          'findUserByEmail(email: $email) {..._all_fields_User}',
           { 'email': __gl_variables__['email'], },
-          0,
+          60,
           [],
           'findUserByEmail__findUserByEmail',
           'findUserByEmail',
@@ -357,7 +360,7 @@ class GraphLinkQueries extends _ResolverBase {
       await Promise.all(__gl_cacheFutures__);
       const __gl_remaining__ = __gl_partialQueries__.filter(pq => !(pq.elementKey in __gl_responseMap__));
       if (__gl_remaining__.length === 0) {
-         return({ data: __gl_responseMap__ } as unknown as FindUserByEmailFullResponse);
+         return({ data: __gl_responseMap__, errors: null } as unknown as FindUserByEmailFullResponse);
       }
       const __gl_payload__ = this._buildPayload(__gl_remaining__, __gl_operationName__, ''); 
       try {
@@ -370,7 +373,7 @@ class GraphLinkQueries extends _ResolverBase {
          if (__gl_remainingCount__ > 0) {
             throw e;
          }
-         return { data: __gl_responseMap__ } as unknown as FindUserByEmailFullResponse;
+         return { data: __gl_responseMap__, errors: null } as unknown as FindUserByEmailFullResponse;
       }
    }
    async listUsers(): Promise<ListUsersResponse> {
@@ -406,8 +409,8 @@ class GraphLinkQueries extends _ResolverBase {
       const __gl_payload__ = this._buildPayload(__gl_remaining__, __gl_operationName__, ''); 
       try {
          const __gl_responseText__ = await this._glCallAdapter(__gl_payload__);
-         const __gl_result__ = this._parseAndCache(__gl_responseText__, __gl_responseMap__, __gl_remaining__) as unknown as ListUsersResponse;
-         return __gl_result__;
+         const __gl_result__ = this._parseAndCache(__gl_responseText__, __gl_responseMap__, __gl_remaining__) as unknown as ListUsersFullResponse;
+         return __gl_result__['data'] as ListUsersResponse;
       } catch (e) {
          Object.assign(__gl_responseMap__, __gl_staleData__);
          const __gl_remainingCount__ = __gl_partialQueries__.filter(pq => !(pq.elementKey in __gl_responseMap__)).length;
@@ -435,7 +438,7 @@ class GraphLinkMutations extends _ResolverBase {
       const __gl_query__ = `mutation createUser($input: CreateUserInput!){createUser(input: $input){..._all_fields_User}} ${__gl_fragsValues__}`;
       const __gl_payload__: GraphLinkPayload = { query: __gl_query__, operationName: __gl_operationName__, variables: __gl_variables__ };
       const __gl_response__ = await this._glCallAdapter(__gl_payload__);
-      const __gl_result__ = JSON.parse(__gl_response__);
+      const __gl_result__ = JSON.parse(__gl_response__) as CreateUserFullResponse;
       if (__gl_result__['errors']) throw __gl_result__['errors'] as GraphLinkError[];
       return __gl_result__['data'] as CreateUserResponse;
    }
@@ -456,7 +459,7 @@ class GraphLinkMutations extends _ResolverBase {
       const __gl_query__ = 'mutation resetDatabase{resetDatabase}';
       const __gl_payload__: GraphLinkPayload = { query: __gl_query__, operationName: __gl_operationName__, variables: __gl_variables__ };
       const __gl_response__ = await this._glCallAdapter(__gl_payload__);
-      const __gl_result__ = JSON.parse(__gl_response__);
+      const __gl_result__ = JSON.parse(__gl_response__) as ResetDatabaseFullResponse;
       if (__gl_result__['errors']) throw __gl_result__['errors'] as GraphLinkError[];
       return __gl_result__['data'] as ResetDatabaseResponse;
    }
@@ -466,13 +469,13 @@ export class GraphLinkClient {
    private readonly __gl_tagLocks__: Map<string, _Lock> = new Map();
    readonly queries: GraphLinkQueries;
    readonly mutations: GraphLinkMutations;
-   readonly __gl_store__: GraphLinkCacheStore;
+   readonly store: GraphLinkCacheStore;
    constructor(adapter: GraphLinkAdapter, store?: GraphLinkCacheStore) {
       this.__gl_fragMap__['_all_fields_User'] = 'fragment _all_fields_User on User{id name email role}';
-      this.__gl_store__ = store ?? new InMemoryGraphLinkCacheStore();
+      this.store = store ?? new InMemoryGraphLinkCacheStore();
       for (const tag of []) this.__gl_tagLocks__.set(tag, new _Lock());
-      this.queries = new GraphLinkQueries(adapter, this.__gl_fragMap__, this.__gl_store__, this.__gl_tagLocks__);
-      this.mutations = new GraphLinkMutations(adapter, this.__gl_fragMap__, this.__gl_store__, this.__gl_tagLocks__);
+      this.queries = new GraphLinkQueries(adapter, this.__gl_fragMap__, this.store, this.__gl_tagLocks__);
+      this.mutations = new GraphLinkMutations(adapter, this.__gl_fragMap__, this.store, this.__gl_tagLocks__);
    }
 }
 

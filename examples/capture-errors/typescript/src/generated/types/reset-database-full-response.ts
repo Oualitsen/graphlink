@@ -7,6 +7,7 @@
 
 import { GraphLinkError } from '../types/graph-link-error.js';
 import { ResetDatabaseResponse } from '../types/reset-database-response.js';
+import { GraphLinkFullResponse } from '../interfaces/graph-link-full-response.js';
 
 
 export interface ResetDatabaseFullResponse {

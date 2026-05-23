@@ -35,6 +35,7 @@ import 'package:graphlink/src/model/gl_service.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/serializers/graphq_serializer.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+import 'package:graphlink/src/constants.dart';
 export 'package:graphlink/src/gl_grammar_extension.dart';
 export 'package:graphlink/src/gl_validation_extension.dart';
 
@@ -390,7 +391,12 @@ class GLParser {
     while (!check(GLTokenType.eof)) {
       _parseDefinition();
     }
-    if (validate) validateSemantics();
+    if (validate) {
+      if (mode == CodeGenerationMode.client) {
+        parse(clientObjects, validate: false);
+      }
+      validateSemantics();
+    }
   }
 
   void _parseDefinition() {

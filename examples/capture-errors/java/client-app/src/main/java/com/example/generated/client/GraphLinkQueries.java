@@ -6,7 +6,13 @@
 // ignore_for_file: use_rethrow_when_possible, camel_case_types, constant_identifier_names, unused_import, non_constant_identifier_names, no_leading_underscores_for_local_identifiers, unused_local_variable, annotate_overrides, library_private_types_in_public_api
 
 package com.example.generated.client;
-import com.example.generated.types.*;
+import com.example.generated.types.GraphLinkPayload;
+import com.example.generated.types.GetUserResponse;
+import com.example.generated.types.FindUserByEmailResponse;
+import com.example.generated.types.ListUsersResponse;
+import com.example.generated.types.GetUserFullResponse;
+import com.example.generated.types.FindUserByEmailFullResponse;
+import com.example.generated.types.ListUsersFullResponse;
 import com.example.generated.interfaces.GraphLinkClientAdapter;
 import com.example.generated.interfaces.GraphLinkJsonEncoder;
 import com.example.generated.interfaces.GraphLinkJsonDecoder;
@@ -22,7 +28,7 @@ public class GraphLinkQueries extends GraphLinkResolverBase {
    public GraphLinkQueries(GraphLinkClientAdapter adapter, Map<String, String> fragmentMap, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder, GraphLinkCacheStore store) {
       super(adapter, fragmentMap, store, encoder, decoder);
    }
-   public GetUserResponse getUser(String id) {
+   public GetUserFullResponse getUser(String id) {
       String __gl_operationName__ = "getUser";
       Map<String, Object> __gl_variables__ = new HashMap<>();
       __gl_variables__.put("id", id);
@@ -47,11 +53,11 @@ public class GraphLinkQueries extends GraphLinkResolverBase {
       Map<String, Object> __gl_responseMap__ = new HashMap<>();
       Map<String, Object> __gl_staleData__ = new HashMap<>();
       for (var partQuery : __gl_partialQueries__) {
-         if(partQuery.ttl > 0) {
+         if (partQuery.ttl > 0) {
             try {
                GraphLinkCacheEntry entry = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline);
-               if(entry != null) {
-                  if(entry.stale) {
+               if (entry != null) {
+                  if (entry.stale) {
                      __gl_staleData__.put(partQuery.elementKey, __gl_decoder__.decode(entry.data));
                   } else {
                      __gl_responseMap__.put(partQuery.elementKey, __gl_decoder__.decode(entry.data));
@@ -63,27 +69,27 @@ public class GraphLinkQueries extends GraphLinkResolverBase {
       }
       List<GraphLinkPartialQuery> __gl_remaining__ = new ArrayList<>();
       for (var partQuery : __gl_partialQueries__) {
-         if(!__gl_responseMap__.containsKey(partQuery.elementKey)) {
+         if (!__gl_responseMap__.containsKey(partQuery.elementKey)) {
             __gl_remaining__.add(partQuery);
          }
       }
-      if(__gl_remaining__.isEmpty()) {
-         return GetUserResponse.fromJson(__gl_responseMap__);
+      if (__gl_remaining__.isEmpty()) {
+         return GetUserFullResponse.fromJson(__gl_responseMap__);
       }
       GraphLinkPayload __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "");
       try {
          String __gl_responseText__ = glCallAdapter(__gl_payload__);
-         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, GetUserResponse::fromJson, __gl_remaining__, true);
+         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, GetUserFullResponse::fromJson, __gl_remaining__, true);
       } catch (Exception exception) {
          __gl_responseMap__.putAll(__gl_staleData__);
          long remainingCount = __gl_partialQueries__.stream().filter(e -> !__gl_responseMap__.containsKey(e.elementKey)).count();
-         if(remainingCount > 0) {
+         if (remainingCount > 0) {
             throw new RuntimeException(exception);
          }
-         return GetUserResponse.fromJson(__gl_responseMap__);
+         return GetUserFullResponse.fromJson(__gl_responseMap__);
       }
    }
-   public FindUserByEmailResponse findUserByEmail(String email) {
+   public FindUserByEmailFullResponse findUserByEmail(String email) {
       String __gl_operationName__ = "findUserByEmail";
       Map<String, Object> __gl_variables__ = new HashMap<>();
       __gl_variables__.put("email", email);
@@ -93,9 +99,9 @@ public class GraphLinkQueries extends GraphLinkResolverBase {
         Map<String, Object> pqVars = new HashMap<>();
         pqVars.put("email", __gl_variables__.get("email"));
         __gl_partialQueries__.add(new GraphLinkPartialQuery(
-          "findUserByEmail(email: $email){..._all_fields_User}",
+          "findUserByEmail(email: $email) {..._all_fields_User}",
           pqVars,
-          0,
+          60,
           new ArrayList<>(),
           "findUserByEmail__findUserByEmail",
           "findUserByEmail",
@@ -108,11 +114,11 @@ public class GraphLinkQueries extends GraphLinkResolverBase {
       Map<String, Object> __gl_responseMap__ = new HashMap<>();
       Map<String, Object> __gl_staleData__ = new HashMap<>();
       for (var partQuery : __gl_partialQueries__) {
-         if(partQuery.ttl > 0) {
+         if (partQuery.ttl > 0) {
             try {
                GraphLinkCacheEntry entry = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline);
-               if(entry != null) {
-                  if(entry.stale) {
+               if (entry != null) {
+                  if (entry.stale) {
                      __gl_staleData__.put(partQuery.elementKey, __gl_decoder__.decode(entry.data));
                   } else {
                      __gl_responseMap__.put(partQuery.elementKey, __gl_decoder__.decode(entry.data));
@@ -124,24 +130,24 @@ public class GraphLinkQueries extends GraphLinkResolverBase {
       }
       List<GraphLinkPartialQuery> __gl_remaining__ = new ArrayList<>();
       for (var partQuery : __gl_partialQueries__) {
-         if(!__gl_responseMap__.containsKey(partQuery.elementKey)) {
+         if (!__gl_responseMap__.containsKey(partQuery.elementKey)) {
             __gl_remaining__.add(partQuery);
          }
       }
-      if(__gl_remaining__.isEmpty()) {
-         return FindUserByEmailResponse.fromJson(__gl_responseMap__);
+      if (__gl_remaining__.isEmpty()) {
+         return FindUserByEmailFullResponse.fromJson(__gl_responseMap__);
       }
       GraphLinkPayload __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "");
       try {
          String __gl_responseText__ = glCallAdapter(__gl_payload__);
-         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, FindUserByEmailResponse::fromJson, __gl_remaining__, true);
+         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, FindUserByEmailFullResponse::fromJson, __gl_remaining__, true);
       } catch (Exception exception) {
          __gl_responseMap__.putAll(__gl_staleData__);
          long remainingCount = __gl_partialQueries__.stream().filter(e -> !__gl_responseMap__.containsKey(e.elementKey)).count();
-         if(remainingCount > 0) {
+         if (remainingCount > 0) {
             throw new RuntimeException(exception);
          }
-         return FindUserByEmailResponse.fromJson(__gl_responseMap__);
+         return FindUserByEmailFullResponse.fromJson(__gl_responseMap__);
       }
    }
    public ListUsersResponse listUsers() {
@@ -167,11 +173,11 @@ public class GraphLinkQueries extends GraphLinkResolverBase {
       Map<String, Object> __gl_responseMap__ = new HashMap<>();
       Map<String, Object> __gl_staleData__ = new HashMap<>();
       for (var partQuery : __gl_partialQueries__) {
-         if(partQuery.ttl > 0) {
+         if (partQuery.ttl > 0) {
             try {
                GraphLinkCacheEntry entry = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline);
-               if(entry != null) {
-                  if(entry.stale) {
+               if (entry != null) {
+                  if (entry.stale) {
                      __gl_staleData__.put(partQuery.elementKey, __gl_decoder__.decode(entry.data));
                   } else {
                      __gl_responseMap__.put(partQuery.elementKey, __gl_decoder__.decode(entry.data));
@@ -183,12 +189,12 @@ public class GraphLinkQueries extends GraphLinkResolverBase {
       }
       List<GraphLinkPartialQuery> __gl_remaining__ = new ArrayList<>();
       for (var partQuery : __gl_partialQueries__) {
-         if(!__gl_responseMap__.containsKey(partQuery.elementKey)) {
+         if (!__gl_responseMap__.containsKey(partQuery.elementKey)) {
             __gl_remaining__.add(partQuery);
          }
       }
-      if(__gl_remaining__.isEmpty()) {
-         return ListUsersFullResponse.fromJson(__gl_responseMap__);
+      if (__gl_remaining__.isEmpty()) {
+         return ListUsersFullResponse.fromJson(__gl_responseMap__).getData();
       }
       GraphLinkPayload __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "");
       try {
@@ -197,7 +203,7 @@ public class GraphLinkQueries extends GraphLinkResolverBase {
       } catch (Exception exception) {
          __gl_responseMap__.putAll(__gl_staleData__);
          long remainingCount = __gl_partialQueries__.stream().filter(e -> !__gl_responseMap__.containsKey(e.elementKey)).count();
-         if(remainingCount > 0) {
+         if (remainingCount > 0) {
             throw new RuntimeException(exception);
          }
          return ListUsersFullResponse.fromJson(__gl_responseMap__).getData();
@@ -213,12 +219,12 @@ public class GraphLinkQueries extends GraphLinkResolverBase {
       for (var partQuery : partQueries) {
          args.addAll(partQuery.argumentDeclarations);
       }
-      if(!args.isEmpty()) {
+      if (!args.isEmpty()) {
          queryBuilder.append("(");
          queryBuilder.append(String.join(", ", args));
          queryBuilder.append(")");
       }
-      if(!directives.isEmpty()) {
+      if (!directives.isEmpty()) {
          queryBuilder.append(directives);
       }
       queryBuilder.append("{");
