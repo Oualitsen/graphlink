@@ -3,6 +3,11 @@ import 'dart:io';
 import 'package:graphlink/src/constants.dart';
 
 final lastGeneratedFiles = <String>{};
+final _outputHashCache = <String, int>{};
+var _writeCount = 0;
+
+void resetWriteCount() => _writeCount = 0;
+int get writeCount => _writeCount;
 
 Future<void> cleanUpObsoleteFiles(Set<String> newFiles) async {
   final stale = lastGeneratedFiles.where((p) => !newFiles.contains(p)).toList();
@@ -45,17 +50,21 @@ Future<File> saveSource({
   bool graphqlSource = false,
   bool typescriptSource = false,
 }) {
-  var file = File(path);
-  if (!file.existsSync()) {
-    file.createSync(recursive: true);
-  }
   final header = graphqlSource
       ? graphqlHeadComment
       : typescriptSource
           ? fileHeadComment
           : "$fileHeadComment$dartIgnoreForFile\n";
-  return file.writeAsString('''
-$header
-$data
-''');
+  final content = '$header\n$data\n';
+  final hash = content.hashCode;
+  if (_outputHashCache[path] == hash) {
+    return Future.value(File(path));
+  }
+  _outputHashCache[path] = hash;
+  _writeCount++;
+  var file = File(path);
+  if (!file.existsSync()) {
+    file.createSync(recursive: true);
+  }
+  return file.writeAsString(content);
 }
