@@ -1,9 +1,9 @@
-import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_token_with_fields.dart';
 import 'package:graphlink/src/serializers/client_serializers/dart_client_serializer.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
+import 'package:graphlink/src/serializers/java_imports.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/spring_server_serializer.dart';

@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:graphlink/src/excpetions/parse_exception.dart';
+import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/spring_server_serializer.dart';

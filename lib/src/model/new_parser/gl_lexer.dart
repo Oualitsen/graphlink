@@ -1,5 +1,5 @@
-import 'package:graphlink/src/excpetions/parse_exception.dart';
-import 'package:graphlink/src/model/new_parser/gl_lexter_token.dart';
+import 'package:graphlink/src/exceptions/parse_exception.dart';
+import 'package:graphlink/src/model/new_parser/gl_lexer_token.dart';
 import 'package:graphlink/src/model/new_parser/gl_token_type.dart';
 import 'package:graphlink/src/model/token_info.dart';
 
