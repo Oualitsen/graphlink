@@ -1,5 +1,8 @@
+import 'package:graphlink/src/config.dart';
+
 class FlutterInputsSharedSerializer {
-  const FlutterInputsSharedSerializer();
+  final FlutterConfig _config;
+  const FlutterInputsSharedSerializer(this._config);
 
   String serializeSharedInputFormWidget(String importPrefix) => '''
 import 'package:flutter/material.dart';
@@ -114,7 +117,10 @@ class StepperStrings {
 }
 ''';
 
-  String serializeSharedDateInputConfig() => '''
+  String serializeSharedDateInputConfig() {
+    final mode = _config.defaultDateMode.name;
+    final pattern = _config.defaultDatePattern;
+    return '''
 import 'package:flutter/material.dart';
 
 enum DateType { date, dateTime }
@@ -133,8 +139,8 @@ class DateInputConfig {
 
   const DateInputConfig({
     this.type = DateType.date,
-    this.mode = DateInputMode.dialog,
-    this.pattern = 'yyyy-MM-dd',
+    this.mode = DateInputMode.$mode,
+    this.pattern = '$pattern',
     this.allowKeyboardInput = true,
     this.useCupertino,
     this.firstDate,
@@ -143,6 +149,7 @@ class DateInputConfig {
   });
 }
 ''';
+  }
 
   String serializeSharedDateInputFormatter() => '''
 import 'package:flutter/services.dart';

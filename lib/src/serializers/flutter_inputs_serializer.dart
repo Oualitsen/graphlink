@@ -4,7 +4,9 @@ import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_ui_entity.dart' show GlInputEntity;
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
+import 'package:graphlink/src/utils.dart' as gl_utils;
 import 'package:graphlink/src/serializers/flutter_inputs/flutter_inputs_companion_serializer.dart';
 import 'package:graphlink/src/serializers/flutter_inputs/flutter_inputs_date_serializer.dart';
 import 'package:graphlink/src/serializers/flutter_inputs/flutter_inputs_field_serializer.dart';
@@ -19,17 +21,19 @@ class FlutterInputsSerializer {
 
   late final _u = DartCodeGenUtils();
   late final _types = FlutterInputsTypeHelpers(_parser, _dartSerializer, _config);
-  late final _shared = const FlutterInputsSharedSerializer();
+  late final _shared = FlutterInputsSharedSerializer(_config);
   late final _companions = FlutterInputsCompanionSerializer(_u, _types);
   late final _fields = FlutterInputsFieldSerializer(_u, _config, _types);
-  late final _date = FlutterInputsDateSerializer(_u, _types, _fields);
-  late final _state = FlutterInputsStateSerializer(_u, _types, _fields, _date);
+  late final _date = FlutterInputsDateSerializer(_u, _config, _types, _fields);
+  late final _state = FlutterInputsStateSerializer(_u, _config, _types, _fields, _date);
 
   FlutterInputsSerializer(this._parser, this._dartSerializer, this._config);
 
   // ── File names ────────────────────────────────────────────────────────────────
 
-  bool shouldSkip(GLInputDefinition def) => _config.inputsToSkip.contains(def.token);
+  bool shouldSkip(GLInputDefinition def) =>
+      _config.inputsToSkip.contains(def.token) ||
+      gl_utils.shouldSkip(def, CodeGenerationMode.client);
 
   String getFormFileNameFor(GLInputDefinition def) =>
       '${def.token.toSnakeCase()}_form.dart';
@@ -47,6 +51,11 @@ class FlutterInputsSerializer {
   String serializeSharedDateInputConfig() => _shared.serializeSharedDateInputConfig();
   String serializeSharedDateInputFormatter() => _shared.serializeSharedDateInputFormatter();
   String serializeSharedBooleanLabels() => _shared.serializeSharedBooleanLabels();
+  String serializeSharedFieldVisibility() => _shared.serializeSharedFieldVisibility();
+  String serializeSharedSimpleFieldForm() => _shared.serializeSharedSimpleFieldForm();
+  String serializeSharedInputStepOptions() => _shared.serializeSharedInputStepOptions();
+  String serializeSharedStepperStrings() => _shared.serializeSharedStepperStrings();
+  String serializeSharedInputStepGroup() => _shared.serializeSharedInputStepGroup();
 
   // ── Per-input entry point ─────────────────────────────────────────────────────
 
@@ -68,41 +77,47 @@ class FlutterInputsSerializer {
     final inputListFields = listFields.where(_types.isInputListField).toList();
     final formFields = [...textFields, ...enumFields, ...boolFields, ...inputFields];
     final enumListFields = listFields.where(_types.isEnumListField).toList();
+    final hasSubInputs = inputFields.isNotEmpty || inputListFields.isNotEmpty;
+    final hasScalarFields = fields.any((f) => !_types.isInputField(f) && !_types.isInputListField(f));
 
     final buffer = StringBuffer();
 
-    // imports
-    buffer.writeln("import 'package:flutter/material.dart';");
-    buffer.writeln("import '$importPrefix/inputs/${inputName.toSnakeCase()}.dart';");
-    buffer.writeln("import '$importPrefix/widgets/inputs/input_form_widget.dart';");
-    buffer.writeln("import '$importPrefix/widgets/inputs/input_read_exception.dart';");
-    for (final imp in entity.enumDataImports(importPrefix)) { buffer.writeln(imp); }
-    for (final imp in entity.enumLabelImports(importPrefix)) { buffer.writeln(imp); }
-    if (boolFields.isNotEmpty) {
-      buffer.writeln("import '$importPrefix/widgets/inputs/boolean_labels.dart';");
-    }
-    if (enumFields.isNotEmpty || boolFields.isNotEmpty) {
-      buffer.writeln("import '$importPrefix/widgets/inputs/field_widgets.dart';");
-    }
-    if (textFields.isNotEmpty) {
-      buffer.writeln("import '$importPrefix/widgets/inputs/text_field_options.dart';");
-    }
-    if (dateEligibleFields.isNotEmpty) {
-      buffer.writeln("import 'package:flutter/cupertino.dart';");
-      buffer.writeln("import 'package:intl/intl.dart';");
-      buffer.writeln("import '$importPrefix/widgets/inputs/date_input_config.dart';");
-      buffer.writeln("import '$importPrefix/widgets/inputs/date_input_formatter.dart';");
-    }
-    buffer.writeln("import '$importPrefix/widgets/inputs/required_indicator.dart';");
-    buffer.writeln("import '$importPrefix/widgets/inputs/form_strings.dart';");
-    for (final f in inputFields) {
-      final childType = f.type.firstType.token;
-      buffer.writeln("import '$importPrefix/inputs/${childType.toSnakeCase()}.dart';");
-      buffer.writeln("import '$importPrefix/widgets/inputs/${childType.toSnakeCase()}_form.dart';");
-    }
+    final imports = <String>{
+      "import 'dart:async';",
+      "import 'package:flutter/material.dart';",
+      "import '$importPrefix/inputs/${inputName.toSnakeCase()}.dart';",
+      "import '$importPrefix/widgets/inputs/input_form_widget.dart';",
+      "import '$importPrefix/widgets/inputs/input_read_exception.dart';",
+      ...entity.enumDataImports(importPrefix),
+      ...entity.enumLabelImports(importPrefix),
+      if (boolFields.isNotEmpty) "import '$importPrefix/widgets/inputs/boolean_labels.dart';",
+      if (enumFields.isNotEmpty || boolFields.isNotEmpty) "import '$importPrefix/widgets/inputs/field_widgets.dart';",
+      if (textFields.isNotEmpty) "import '$importPrefix/widgets/inputs/text_field_options.dart';",
+      if (dateEligibleFields.isNotEmpty) ...{
+        "import 'package:flutter/cupertino.dart';",
+        "import 'package:intl/intl.dart';",
+        "import '$importPrefix/widgets/inputs/date_input_config.dart';",
+        "import '$importPrefix/widgets/inputs/date_input_formatter.dart';",
+      },
+      "import '$importPrefix/widgets/inputs/field_visibility.dart';",
+      "import '$importPrefix/widgets/inputs/required_indicator.dart';",
+      "import '$importPrefix/widgets/inputs/form_strings.dart';",
+      for (final f in inputFields) ...{
+        "import '$importPrefix/inputs/${f.type.firstType.token.toSnakeCase()}.dart';",
+        "import '$importPrefix/widgets/inputs/${f.type.firstType.token.toSnakeCase()}_form.dart';",
+      },
+      for (final f in inputListFields)
+        "import '$importPrefix/inputs/${f.type.inlineType.firstType.token.toSnakeCase()}.dart';",
+      if (hasSubInputs) "import '$importPrefix/widgets/inputs/input_step_options.dart';",
+      if (hasSubInputs) "import '$importPrefix/widgets/inputs/stepper_strings.dart';",
+    };
+    for (final imp in imports) { buffer.writeln(imp); }
     buffer.writeln();
 
     final validatableFields = [...textFields, ...enumFields, ...boolFields];
+    final contextFields = fields.where((f) => !_types.isInputField(f)).toList();
+    buffer.writeln(_companions.serializeFormContextClass(inputName, contextFields));
+    buffer.writeln();
     buffer.writeln(_companions.serializeDropdownLabelsClass(inputName, enumFields, boolFields, enumListFields));
     buffer.writeln();
     buffer.writeln(_companions.serializeLabelsClass(inputName, entity.fields));
@@ -129,7 +144,11 @@ class FlutterInputsSerializer {
       buffer.writeln(_companions.serializeDateConfigClass(inputName, dateEligibleFields));
       buffer.writeln();
     }
-    buffer.writeln('enum ${inputName}Layout { column, twoColumn }');
+    if (hasSubInputs) {
+      buffer.writeln(_companions.serializeStepConfigClass(inputName, hasScalarFields, inputFields, inputListFields));
+      buffer.writeln();
+    }
+    buffer.writeln('enum ${inputName}Layout { column, twoColumn${hasSubInputs ? ', stepper' : ''} }');
     buffer.writeln();
     buffer.writeln('enum ${inputName}LabelPosition { beside, above, floatingLabel }');
     buffer.writeln();

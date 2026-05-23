@@ -21,11 +21,11 @@ class FlutterInputsSerializer {
 
   late final _u = DartCodeGenUtils();
   late final _types = FlutterInputsTypeHelpers(_parser, _dartSerializer, _config);
-  late final _shared = const FlutterInputsSharedSerializer();
+  late final _shared = FlutterInputsSharedSerializer(_config);
   late final _companions = FlutterInputsCompanionSerializer(_u, _types);
   late final _fields = FlutterInputsFieldSerializer(_u, _config, _types);
-  late final _date = FlutterInputsDateSerializer(_u, _types, _fields);
-  late final _state = FlutterInputsStateSerializer(_u, _types, _fields, _date);
+  late final _date = FlutterInputsDateSerializer(_u, _config, _types, _fields);
+  late final _state = FlutterInputsStateSerializer(_u, _config, _types, _fields, _date);
 
   FlutterInputsSerializer(this._parser, this._dartSerializer, this._config);
 
