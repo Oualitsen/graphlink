@@ -6,7 +6,7 @@ import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/serializers/client_serializers/typescript_client_constants.dart';
 import 'package:graphlink/src/config.dart';
-import 'package:graphlink/src/serializers/gl_client_serilaizer.dart';
+import 'package:graphlink/src/serializers/gl_client_serializer.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
 import 'package:graphlink/src/serializers/graphq_serializer.dart';
 import 'package:graphlink/src/typescript_code_gen_utils.dart';

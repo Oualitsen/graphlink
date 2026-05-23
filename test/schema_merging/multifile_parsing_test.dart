@@ -1,4 +1,4 @@
-import 'package:graphlink/src/excpetions/parse_exception.dart';
+import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/gl_grammar_io.dart' as grammar_io;
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';

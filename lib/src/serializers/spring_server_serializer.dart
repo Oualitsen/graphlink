@@ -1,6 +1,6 @@
 import 'dart:io';
-import 'package:graphlink/src/constants.dart';
-import 'package:graphlink/src/excpetions/parse_exception.dart';
+import 'package:graphlink/src/serializers/java_imports.dart';
+import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/java_code_gen_utils.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
@@ -11,7 +11,7 @@ import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_service.dart';
-import 'package:graphlink/src/model/gl_shcema_mapping.dart';
+import 'package:graphlink/src/model/gl_schema_mapping.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_token_with_fields.dart';
 import 'package:graphlink/src/model/gl_type.dart';

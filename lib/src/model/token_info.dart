@@ -1,5 +1,5 @@
 import 'package:graphlink/src/model/new_parser/gl_lexer.dart';
-import 'package:graphlink/src/model/new_parser/gl_lexter_token.dart';
+import 'package:graphlink/src/model/new_parser/gl_lexer_token.dart';
 
 class TokenInfo {
   final int column;

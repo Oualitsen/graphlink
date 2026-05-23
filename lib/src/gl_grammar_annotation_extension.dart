@@ -1,0 +1,106 @@
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/model/gl_directives_mixin.dart';
+import 'package:graphlink/src/model/gl_directive.dart';
+import 'package:graphlink/src/model/gl_token_with_fields.dart';
+import 'package:graphlink/src/model/gl_field.dart';
+import 'package:graphlink/src/serializers/code_generation_mode.dart';
+import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+
+extension GLGrammarAnnotationExtension on GLParser {
+  void convertAnnotationsToDecorators(List<GLDirectivesMixin> mixins,
+      String Function(GLDirectiveValue value) serializer) {
+    for (var elm in mixins) {
+      elm
+          .getAnnotations(mode: mode)
+          .map(
+            (an) => GLDirectiveValue.createGqDecorators(
+                decorators: [serializer(an)],
+                applyOnClient: mode == CodeGenerationMode.client,
+                applyOnServer: mode == CodeGenerationMode.server,
+                import: an.getArgValueAsString(glImport)),
+          )
+          .forEach(elm.addDirective);
+    }
+  }
+
+  void handleAnnotations(String Function(GLDirectiveValue value) serializer) {
+    if (annotationsProcessed) {
+      return;
+    }
+    annotationsProcessed = true;
+    convertAnnotationsToDecorators(_getDirectiveObjects(), serializer);
+  }
+
+  List<GLDirectivesMixin> _getDirectiveObjects() {
+    var result = [
+      ...inputs.values,
+      ...typesWithNoResolvers,
+      ...interfaces.values,
+      ...scalars.values,
+      ...enums.values,
+      ...repositories.values,
+    ].map((f) => f as GLDirectivesMixin).toList();
+
+    var inputFields = inputs.values.expand((e) => e.fields);
+    var interfaceFields = interfaces.values.expand((e) => e.fields);
+    var repositoryFields = repositories.values.expand((e) => e.fields);
+    var typeFields = typesWithNoResolvers.expand((e) => e.fields);
+    var enumValues = enums.values.expand((e) => e.values);
+    result.addAll([
+      ...inputFields,
+      ...interfaceFields,
+      ...typeFields,
+      ...enumValues,
+      ...repositoryFields,
+    ]);
+    var params = <GLDirectivesMixin>[];
+    result
+        .whereType<GLField>()
+        .where((f) => f.arguments.isNotEmpty)
+        .forEach((f) {
+      params.addAll(f.arguments);
+    });
+    result.addAll(params);
+
+    return result;
+  }
+
+  void setDirectivesDefaultValues() {
+    var values = [...directiveValues];
+    for (var value in values) {
+      var def = directiveDefinitions[value.token];
+      if (def != null) {
+        value.setDefualtArguments(def.arguments);
+      }
+    }
+  }
+
+  void proparageAnnotationsOnFields() {
+    extensibleTokens.values
+        .expand((e) => e.data)
+        .whereType<GLTokenWithFields>()
+        .forEach(_propagateAnnotations);
+  }
+
+  void _propagateAnnotations(GLTokenWithFields tokenWithFields) {
+    if (tokenWithFields is! GLDirectivesMixin) {
+      return;
+    }
+    var mixin = tokenWithFields as GLDirectivesMixin;
+
+    var annotations = mixin
+        .getDirectives()
+        .where((d) =>
+            d.getArgValueAsBool(glAnnotation) &&
+            d.getArgValueAsBool(glApplyOnFields))
+        .toList();
+    if (annotations.isEmpty) {
+      return;
+    }
+    for (var field in tokenWithFields.fields) {
+      annotations.forEach(field.addDirectiveIfAbsent);
+    }
+    // remove directives from the super class.
+    annotations.map((e) => e.token).forEach(mixin.removeDirectiveByName);
+  }
+}
