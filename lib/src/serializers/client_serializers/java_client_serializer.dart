@@ -38,18 +38,6 @@ class JavaClientSerializer extends GLClientSerilaizer {
   }
 
   // Safe generated local variable names — avoids clashing with user-defined method arguments.
-  String get _svOperationName => codeGenUtils.safeLocalVar('operationName');
-  String get _svFragsValues => codeGenUtils.safeLocalVar('fragsValues');
-  String get _svQuery => codeGenUtils.safeLocalVar('query');
-  String get _svPayload => codeGenUtils.safeLocalVar('payload');
-  String get _svVariables => codeGenUtils.safeLocalVar('variables');
-  String get _svResponseText => codeGenUtils.safeLocalVar('responseText');
-  String get _svDecodedResponse => codeGenUtils.safeLocalVar('decodedResponse');
-  String get _svPartialQueries => codeGenUtils.safeLocalVar('partialQueries');
-  String get _svResponseMap => codeGenUtils.safeLocalVar('responseMap');
-  String get _svStaleData => codeGenUtils.safeLocalVar('staleData');
-  String get _svRemaining => codeGenUtils.safeLocalVar('remaining');
-  String get _svRawListener => codeGenUtils.safeLocalVar('rawListener');
   String get _svHandler => codeGenUtils.safeLocalVar('handler');
   String get _svFragmentNap => codeGenUtils.safeLocalVar('fragmentMap');
   String get _svTagLocks => codeGenUtils.safeLocalVar('tagLocks');
@@ -58,11 +46,6 @@ class JavaClientSerializer extends GLClientSerilaizer {
   String get _svStore => codeGenUtils.safeLocalVar('store');
   String get _svEncoder => codeGenUtils.safeLocalVar('encoder');
   String get _svDecoder => codeGenUtils.safeLocalVar('decoder');
-  String get _svFiles => codeGenUtils.safeLocalVar('files');
-  String get _svFileMap => codeGenUtils.safeLocalVar('fileMap');
-  String get _svOperationsMap => codeGenUtils.safeLocalVar('operationsMap');
-  String get _svOperations => codeGenUtils.safeLocalVar('operations');
-  String get _svMapJson => codeGenUtils.safeLocalVar('mapJson');
 
   @override
   GLClassModel generateClient(String importPrefix,
