@@ -116,10 +116,10 @@ void main() {
     const maxDepth = 20;
     int depth = 0;
     while (depth < maxDepth) {
-      final managerField =
-          current.fields.where((f) => f.name.token == "manager").firstOrNull;
-      if (managerField == null) break;
-      current = g.projectedTypes[managerField.type.inlineType.token]!;
+      final managerMatches =
+          current.fields.where((f) => f.name.token == "manager");
+      if (managerMatches.isEmpty) break;
+      current = g.projectedTypes[managerMatches.first.type.inlineType.token]!;
       depth++;
     }
     expect(depth, lessThan(maxDepth),
@@ -177,10 +177,9 @@ void main() {
     outer:
     while (steps < maxSteps) {
       for (final name in fieldSequence) {
-        final f =
-            current.fields.where((f) => f.name.token == name).firstOrNull;
-        if (f == null) break outer;
-        final next = g.projectedTypes[f.type.inlineType.token];
+        final fMatches = current.fields.where((f) => f.name.token == name);
+        if (fMatches.isEmpty) break outer;
+        final next = g.projectedTypes[fMatches.first.type.inlineType.token];
         if (next == null) break outer;
         current = next;
         steps++;
@@ -204,9 +203,9 @@ void main() {
     int depth = 0;
     const maxDepth = 20;
     while (depth < maxDepth) {
-      final f = current.fields.where((f) => f.name.token == "manager").firstOrNull;
-      if (f == null) break;
-      current = g.projectedTypes[f.type.inlineType.token]!;
+      final fMatches = current.fields.where((f) => f.name.token == "manager");
+      if (fMatches.isEmpty) break;
+      current = g.projectedTypes[fMatches.first.type.inlineType.token]!;
       depth++;
     }
     expect(depth, greaterThan(1),

@@ -65,19 +65,37 @@ class GlTypeEntity {
 
   List<GLField> get fields => type.getSerializableFields(_parser.mode);
 
-  /// Enum data imports for scalar enum fields.
-  Set<String> enumDataImports(String prefix) => {
-        for (final f in fields)
-          if (!f.type.isList &&
-              _parser.enums.containsKey(f.type.firstType.token))
-            "import '$prefix/enums/${f.type.firstType.token.toSnakeCase()}.dart';",
-      };
+  /// Enum data imports: scalar enum fields + list-of-enum fields.
+  Set<String> enumDataImports(String prefix) {
+    final result = <String>{};
+    for (final f in fields) {
+      if (!f.type.isList) {
+        if (_parser.enums.containsKey(f.type.firstType.token)) {
+          result.add("import '$prefix/enums/${f.type.firstType.token.toSnakeCase()}.dart';");
+        }
+      } else {
+        final itemToken = f.type.inlineType.firstType.token;
+        if (_parser.enums.containsKey(itemToken)) {
+          result.add("import '$prefix/enums/${itemToken.toSnakeCase()}.dart';");
+        }
+      }
+    }
+    return result;
+  }
 
-  /// Label imports for scalar enum fields.
-  Set<String> enumLabelImports(String prefix) => {
-        for (final f in fields)
-          if (!f.type.isList &&
-              _parser.enums.containsKey(f.type.firstType.token))
-            "import '$prefix/widgets/enums/${f.type.firstType.token.toSnakeCase()}_labels.dart';",
-      };
+  /// Label imports: scalar enum fields + list-of-enum fields.
+  Set<String> enumLabelImports(String prefix) {
+    final result = <String>{};
+    for (final f in fields) {
+      if (!f.type.isList && _parser.enums.containsKey(f.type.firstType.token)) {
+        result.add("import '$prefix/widgets/enums/${f.type.firstType.token.toSnakeCase()}_labels.dart';");
+      } else if (f.type.isList) {
+        final itemToken = f.type.inlineType.firstType.token;
+        if (_parser.enums.containsKey(itemToken)) {
+          result.add("import '$prefix/widgets/enums/${itemToken.toSnakeCase()}_labels.dart';");
+        }
+      }
+    }
+    return result;
+  }
 }

@@ -1050,7 +1050,9 @@ extension GLGrammarExtension on GLParser {
     if (!generateAllFieldsFragments) return false;
     final resultFieldNames = result.map((f) => f.name.token).toSet();
     if (!realType.getSerializableFields(mode)
-        .every((f) => resultFieldNames.contains(f.name.token))) return false;
+        .every((f) => resultFieldNames.contains(f.name.token))) {
+          return false;
+        }
     return result.where((f) => typeRequiresProjection(f.type)).every((f) {
       final sub = projectedTypes[f.type.firstType.token]
                ?? projectedInterfaces[f.type.firstType.token];
