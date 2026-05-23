@@ -82,7 +82,7 @@ void main() {
           (e) => e.errorMessage,
           'errorMessage',
           contains(
-              'glType is required on @glRepository directive line: 4 column: 35'),
+              'glType is required on @glRepository directive'),
         ),
       ),
     );

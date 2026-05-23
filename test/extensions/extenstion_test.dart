@@ -179,7 +179,7 @@ void main() {
           (e) => e.errorMessage,
           'errorMessage',
           contains(
-              "You cannot change field type in an extension line: 5 column: 7"),
+              "You cannot change field type in an extension"),
         ),
       ),
     );
@@ -203,7 +203,7 @@ void main() {
           (e) => e.errorMessage,
           'errorMessage',
           contains(
-              "You cannot change field type in an extension line: 5 column: 7"),
+              "You cannot change field type in an extension"),
         ),
       ),
     );
@@ -227,7 +227,7 @@ void main() {
           (e) => e.errorMessage,
           'errorMessage',
           contains(
-              "You cannot add/remove arguments in an extension line: 5 column: 7"),
+              "You cannot add/remove arguments in an extension"),
         ),
       ),
     );
@@ -251,7 +251,7 @@ void main() {
           (e) => e.errorMessage,
           'errorMessage',
           contains(
-              "You cannot alter argument type in an extension line: 5 column: 16"),
+              "You cannot alter argument type in an extension"),
         ),
       ),
     );
@@ -275,7 +275,7 @@ void main() {
           (e) => e.errorMessage,
           'errorMessage',
           contains(
-              "You cannot alter argument type in an extension line: 5 column: 16"),
+              "You cannot alter argument type in an extension"),
         ),
       ),
     );

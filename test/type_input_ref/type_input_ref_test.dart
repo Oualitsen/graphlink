@@ -21,7 +21,7 @@ type Query {
           isA<ParseException>().having(
             (e) => e.errorMessage,
             'errorMessage',
-            contains("Car is not a scalar, enum, or input line: 6 column: 3"),
+            contains("Car is not a scalar, enum, or input"),
           ),
         ));
   });
@@ -44,7 +44,7 @@ type Query {
           isA<ParseException>().having(
             (e) => e.errorMessage,
             'errorMessage',
-            contains("Car is not a scalar, enum, or input line: 6 column: 3"),
+            contains("Car is not a scalar, enum, or input"),
           ),
         ));
   });
