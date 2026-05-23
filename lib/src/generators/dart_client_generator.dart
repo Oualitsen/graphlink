@@ -173,6 +173,22 @@ Future<Set<String>> generateDartClientClasses(
       destinationDir: destinationDir,
     ));
 
+    futures.add(writeToFile(
+      data: inputsSerializer.serializeSharedInputStepOptions(),
+      fileName: 'input_step_options.dart',
+      subdir: 'widgets/inputs',
+      imports: [],
+      destinationDir: destinationDir,
+    ));
+
+    futures.add(writeToFile(
+      data: inputsSerializer.serializeSharedStepperStrings(),
+      fileName: 'stepper_strings.dart',
+      subdir: 'widgets/inputs',
+      imports: [],
+      destinationDir: destinationDir,
+    ));
+
     parser.inputs.forEach((k, def) {
       final content = inputsSerializer.serializeInputForm(def, prefix);
       if (content.isNotEmpty) {

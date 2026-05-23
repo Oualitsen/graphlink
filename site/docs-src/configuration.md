@@ -75,7 +75,8 @@ Used when `mode` is `"client"` and you want Dart/Flutter output.
           "immutableTypeFields": true,
           "generateUiTypes": false,
           "generateUiInputs": false,
-          "appLocalizationsImport": null
+          "appLocalizationsImport": null,
+          "captureErrors": false
         }
       }
     }
@@ -100,6 +101,7 @@ Used when `mode` is `"client"` and you want Dart/Flutter output.
         generateUiTypes: false
         generateUiInputs: false
         appLocalizationsImport: null
+        captureErrors: false
     ```
 
 | Option | Type | Default | Description |
@@ -118,6 +120,7 @@ Used when `mode` is `"client"` and you want Dart/Flutter output.
 | `generateUiTypes` | `boolean` | `false` | Generates Flutter widget classes for every `type` in the schema — useful for rapid prototyping. Requires Flutter. |
 | `generateUiInputs` | `boolean` | `false` | Generates Flutter form widgets for every `input` type — renders a form with one field per schema field. |
 | `appLocalizationsImport` | `string` \| `null` | `null` | Import path for an `AppLocalizations` class injected into generated Flutter UI widgets. Only relevant when `generateUiTypes` or `generateUiInputs` is `true`. |
+| `captureErrors` | `boolean` | `false` | When `true`, applies `@glCaptureErrors` behaviour to every query and mutation. Each method returns a `{OperationName}FullResponse` holding nullable `data` and nullable `errors` instead of throwing on GraphQL errors. Equivalent to annotating every query and mutation field with `@glCaptureErrors` in the schema. |
 
 ---
 
@@ -143,7 +146,8 @@ Used when `mode` is `"client"` and you want a Java client.
           "immutableInputFields": true,
           "immutableTypeFields": true,
           "inputAsRecord": false,
-          "typeAsRecord": false
+          "typeAsRecord": false,
+          "captureErrors": false
         }
       }
     }
@@ -167,6 +171,7 @@ Used when `mode` is `"client"` and you want a Java client.
         immutableTypeFields: true
         inputAsRecord: false
         typeAsRecord: false
+        captureErrors: false
     ```
 
 | Option | Type | Default | Description |
@@ -183,6 +188,7 @@ Used when `mode` is `"client"` and you want a Java client.
 | `immutableTypeFields` | `boolean` | `true` | Response type fields are `private final` with only getters. Recommended for client-side. |
 | `inputAsRecord` | `boolean` | `false` | Generates input types as Java records instead of classes with builders. Records use component accessor syntax (`field()`) instead of getters (`getField()`). Requires Java 16+. |
 | `typeAsRecord` | `boolean` | `false` | Generates response types as Java records. Affects how `fromJson` and mapping methods access fields. Requires Java 16+. |
+| `captureErrors` | `boolean` | `false` | When `true`, applies `@glCaptureErrors` behaviour to every query and mutation. Each method returns a `{OperationName}FullResponse` holding nullable `data` and nullable `errors` instead of throwing on GraphQL errors. Equivalent to annotating every query and mutation field with `@glCaptureErrors` in the schema. |
 
 ---
 
@@ -204,7 +210,8 @@ Used when `mode` is `"client"` and you want TypeScript output.
           "defaultAlias": null,
           "operationNameAsParameter": false,
           "optionalNullableInputFields": true,
-          "immutableTypeFields": true
+          "immutableTypeFields": true,
+          "captureErrors": false
         }
       }
     }
@@ -224,6 +231,7 @@ Used when `mode` is `"client"` and you want TypeScript output.
         operationNameAsParameter: false
         optionalNullableInputFields: true
         immutableTypeFields: true
+        captureErrors: false
     ```
 
 | Option | Type | Default | Description |
@@ -237,6 +245,7 @@ Used when `mode` is `"client"` and you want TypeScript output.
 | `operationNameAsParameter` | `boolean` | `false` | When `true`, the adapter function signature includes an `operationName` parameter and the client appends it to the request URL. |
 | `optionalNullableInputFields` | `boolean` | `true` | When `true`, nullable fields in generated input interfaces use `field?: T \| null` (TypeScript optional property). When `false`, they use `field: T \| null` (required but nullable). |
 | `immutableTypeFields` | `boolean` | `true` | When `true`, generated type interfaces use `readonly` on all fields. |
+| `captureErrors` | `boolean` | `false` | When `true`, applies `@glCaptureErrors` behaviour to every query and mutation. Each method returns a `{OperationName}FullResponse` holding optional `data` and optional `errors` instead of throwing on GraphQL errors. Equivalent to annotating every query and mutation field with `@glCaptureErrors` in the schema. |
 
 ---
 

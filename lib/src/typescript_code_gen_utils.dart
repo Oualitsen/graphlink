@@ -55,10 +55,16 @@ class TypeScriptCodeGenUtils implements CodeGenUtilsBase {
     required String expression,
     required List<CaseStatement> cases,
     List<String>? defaultStatements,
+    bool generateBreaks = true,
   }) {
     var buffer = StringBuffer();
     buffer.write("switch ($expression) ");
-    var myCases = [...cases.map((e) => e.toCaseStatement())];
+    var myCases = [...cases.map((e) {
+      if (!generateBreaks && e is TypeScriptCaseStatement) {
+        return TypeScriptCaseStatement(caseValue: e.caseValue, statement: e.statement, generateBreak: false).toCaseStatement();
+      }
+      return e.toCaseStatement();
+    })];
     if (defaultStatements != null) {
       myCases.add("default:");
       myCases.add(defaultStatements.map((e) => e.ident()).join("\n"));
@@ -283,14 +289,16 @@ class TypeScriptCodeGenUtils implements CodeGenUtilsBase {
 }
 
 class TypeScriptCaseStatement extends CaseStatement {
-  TypeScriptCaseStatement({required super.caseValue, required super.statement});
+  final bool generateBreak;
+
+  TypeScriptCaseStatement({required super.caseValue, required super.statement, this.generateBreak = true});
 
   @override
   String toCaseStatement() {
     var buffer = StringBuffer();
     buffer.writeln("case $caseValue:");
     buffer.writeln(statement.ident());
-    if (!statement.trim().startsWith("return ")) {
+    if (generateBreak && !statement.trim().startsWith("return ")) {
       buffer.writeln("break;".ident());
     }
     return buffer.toString();

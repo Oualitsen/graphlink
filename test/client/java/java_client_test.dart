@@ -28,7 +28,6 @@ void main() async {
     final GLParser g =
         GLParser(generateAllFieldsFragments: true, autoGenerateQueries: true);
     var text = '''
-  ${getClientObjects("Object", "Map<String, Object>")}
   ${javaJsonEncoderDecorder}
   ${javaClientAdapterNoParamSync}
   ${javaGraphLinkWebSocketAdapter}

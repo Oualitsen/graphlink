@@ -157,13 +157,18 @@ class FlutterTypesSerializer {
     return _u.createClass(
       className: '${typeName}Labels',
       statements: [
-        ...fields.map((f) => 'final Widget? ${f.name};'),
+        ...fields.expand((f) => ['final Widget? ${f.name};', 'final String? ${f.name}Info;']),
         r'final Widget? $group;',
+        r'final String? $groupInfo;',
         _u.createMethod(
           isConst: true,
           methodName: '${typeName}Labels',
           namedArguments: true,
-          arguments: [...fields.map((f) => 'this.${f.name}'), r'this.$group'],
+          arguments: [
+            ...fields.expand((f) => ['this.${f.name}', 'this.${f.name}Info']),
+            r'this.$group',
+            r'this.$groupInfo',
+          ],
         ),
       ],
     );
@@ -253,20 +258,20 @@ class FlutterTypesSerializer {
               caseValue: '${typeName}Layout.labeledRow',
               statement: 'return ${_u.callExpression('Table', [
                 'columnWidths: const {0: IntrinsicColumnWidth(), 1: FlexColumnWidth()}',
-                'children: _labeledTableRows()',
+                'children: _labeledTableRows(context)',
               ])};',
             ),
             DartCaseStatement(
               caseValue: '${typeName}Layout.listTile',
-              statement: 'return ${_u.callExpression('Column', ['children: _spaced(_listTileItems())'])};',
+              statement: 'return ${_u.callExpression('Column', ['children: _spaced(_listTileItems(context))'])};',
             ),
             DartCaseStatement(
               caseValue: '${typeName}Layout.listTileReversed',
-              statement: 'return ${_u.callExpression('Column', ['children: _spaced(_listTileReversedItems())'])};',
+              statement: 'return ${_u.callExpression('Column', ['children: _spaced(_listTileReversedItems(context))'])};',
             ),
             DartCaseStatement(
               caseValue: '${typeName}Layout.expandable',
-              statement: 'return ${_u.callExpression('Column', ['children: _spaced(_expandableItems())'])};',
+              statement: 'return ${_u.callExpression('Column', ['children: _spaced(_expandableItems(context))'])};',
             ),
           ],
         ),
@@ -308,11 +313,14 @@ class FlutterTypesSerializer {
         buildMethod,
         _serializeToTableRowMethod(typeName, varName, fields),
         _serializeToTableHeaderRowMethod(typeName, varName, fields),
+        _serializeToDataRowMethod(typeName, varName, fields),
+        _serializeToDataColumnsMethod(typeName, varName, fields),
         _serializeLabeledTableRowsMethod(typeName, varName, fields),
         _serializeListTileItemsMethod(typeName, varName, fields),
         _serializeListTileReversedItemsMethod(typeName, varName, fields),
         _serializeExpandableItemsMethod(typeName, varName, fields),
         _serializeSpacedMethod(),
+        _serializeLabelWithInfoMethod(),
       ],
     );
   }
@@ -363,12 +371,58 @@ class FlutterTypesSerializer {
     );
   }
 
+  String _serializeToDataRowMethod(String typeName, String varName, List<GLField> fields) {
+    return _u.createMethod(
+      returnType: 'DataRow',
+      methodName: 'toDataRow',
+      namedArguments: false,
+      arguments: [],
+      statements: [
+        'final vis = visibility ?? const ${typeName}Visibility();',
+        'final ord = order ?? const ${typeName}Order();',
+        'final entries = <MapEntry<int, DataCell>>[];',
+        ...fields.asMap().entries.map((e) {
+          final defaultVal = _defaultValueExpression(e.value, varName);
+          return _u.ifStatement(
+            condition: 'vis.${e.value.name}',
+            ifBlockStatements: ['entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, DataCell(values?.${e.value.name} ?? $defaultVal)));'],
+          );
+        }),
+        'entries.sort((a, b) => a.key.compareTo(b.key));',
+        'return DataRow(cells: entries.map((e) => e.value).toList());',
+      ],
+    );
+  }
+
+  String _serializeToDataColumnsMethod(String typeName, String varName, List<GLField> fields) {
+    return _u.createMethod(
+      returnType: 'List<DataColumn>',
+      methodName: 'toDataColumns',
+      namedArguments: false,
+      arguments: [],
+      statements: [
+        'final vis = visibility ?? const ${typeName}Visibility();',
+        'final ord = order ?? const ${typeName}Order();',
+        'final entries = <MapEntry<int, DataColumn>>[];',
+        ...fields.asMap().entries.map((e) {
+          final label = _humanize(e.value.name.token);
+          return _u.ifStatement(
+            condition: 'vis.${e.value.name}',
+            ifBlockStatements: ["entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, DataColumn(label: labels?.${e.value.name} ?? const Text('$label'))));"],
+          );
+        }),
+        'entries.sort((a, b) => a.key.compareTo(b.key));',
+        'return entries.map((e) => e.value).toList();',
+      ],
+    );
+  }
+
   String _serializeLabeledTableRowsMethod(String typeName, String varName, List<GLField> fields) {
     return _u.createMethod(
       returnType: 'List<TableRow>',
       methodName: '_labeledTableRows',
       namedArguments: false,
-      arguments: [],
+      arguments: ['BuildContext context'],
       statements: [
         'final vis = visibility ?? const ${typeName}Visibility();',
         'final ord = order ?? const ${typeName}Order();',
@@ -380,7 +434,7 @@ class FlutterTypesSerializer {
             _u.listArg('children', [
               _u.callExpression('Padding', [
                 'padding: EdgeInsets.only(right: gap, bottom: gap)',
-                "child: labels?.${e.value.name} ?? const Text('$label')",
+                "child: _labelWithInfo(context, labels?.${e.value.name} ?? const Text('$label'), labels?.${e.value.name}Info)",
               ]),
               _u.callExpression('Padding', [
                 'padding: EdgeInsets.only(bottom: gap)',
@@ -404,7 +458,7 @@ class FlutterTypesSerializer {
       returnType: 'List<Widget>',
       methodName: '_listTileItems',
       namedArguments: false,
-      arguments: [],
+      arguments: ['BuildContext context'],
       statements: [
         'final vis = visibility ?? const ${typeName}Visibility();',
         'final ord = order ?? const ${typeName}Order();',
@@ -413,7 +467,7 @@ class FlutterTypesSerializer {
           final label = _humanize(e.value.name.token);
           final defaultVal = _defaultValueExpression(e.value, varName);
           final tile = _u.callExpression('ListTile', [
-            "title: labels?.${e.value.name} ?? const Text('$label')",
+            "title: _labelWithInfo(context, labels?.${e.value.name} ?? const Text('$label'), labels?.${e.value.name}Info)",
             'subtitle: values?.${e.value.name} ?? $defaultVal',
           ]);
           return _u.ifStatement(
@@ -432,7 +486,7 @@ class FlutterTypesSerializer {
       returnType: 'List<Widget>',
       methodName: '_listTileReversedItems',
       namedArguments: false,
-      arguments: [],
+      arguments: ['BuildContext context'],
       statements: [
         'final vis = visibility ?? const ${typeName}Visibility();',
         'final ord = order ?? const ${typeName}Order();',
@@ -447,7 +501,7 @@ class FlutterTypesSerializer {
             _u.listArg('children', [
               _u.callExpression('Semantics', [
                 'sortKey: const OrdinalSortKey(1.0)',
-                "child: labels?.${e.value.name} ?? const Text('$label', style: TextStyle(fontSize: 12))",
+                "child: _labelWithInfo(context, labels?.${e.value.name} ?? const Text('$label', style: TextStyle(fontSize: 12)), labels?.${e.value.name}Info)",
               ]),
               _u.callExpression('Semantics', [
                 'sortKey: const OrdinalSortKey(2.0)',
@@ -501,7 +555,7 @@ class FlutterTypesSerializer {
           _u.listArg('children', [
             _u.callExpression('Padding', [
               'padding: EdgeInsets.only(right: gap, bottom: gap)',
-              "child: labels?.${f.name} ?? const Text('$label')",
+              "child: _labelWithInfo(context, labels?.${f.name} ?? const Text('$label'), labels?.${f.name}Info)",
             ]),
             _u.callExpression('Padding', [
               'padding: EdgeInsets.only(bottom: gap)',
@@ -528,7 +582,7 @@ class FlutterTypesSerializer {
         final label = _humanize(f.name.token);
         final defaultVal = _defaultValueExpression(f, varName);
         final tile = _u.callExpression('ListTile', [
-          "title: labels?.${f.name} ?? const Text('$label')",
+          "title: _labelWithInfo(context, labels?.${f.name} ?? const Text('$label'), labels?.${f.name}Info)",
           'subtitle: values?.${f.name} ?? $defaultVal',
         ]);
         tileStmts.add(_u.ifStatement(
@@ -548,7 +602,7 @@ class FlutterTypesSerializer {
         final defaultVal = _defaultValueExpression(f, varName);
         final tile = _u.callExpression('ListTile', [
           'title: values?.${f.name} ?? $defaultVal',
-          "subtitle: labels?.${f.name} ?? const Text('$label')",
+          "subtitle: _labelWithInfo(context, labels?.${f.name} ?? const Text('$label'), labels?.${f.name}Info)",
         ]);
         reversedStmts.add(_u.ifStatement(
           condition: 'vis.${f.name}',
@@ -578,10 +632,10 @@ class FlutterTypesSerializer {
       ));
 
       final accordionTile = _u.callExpression('ExpansionTile', [
-        r"title: labels?.$group ?? const Text('Details')",
-        _u.listArg('children', ['scalarContent!']),
+        r"title: _labelWithInfo(context, labels?.$group ?? const Text('Details'), labels?.$groupInfo)",
+        _u.listArg('children', ['scalarContent']),
       ]);
-      statements.add(r'if (scalarContent != null) accordions.add(MapEntry(ord.$group ?? 0, ' + '$accordionTile));');
+      statements.add('accordions.add(MapEntry(ord.\$group ?? 0, $accordionTile));');
     }
 
     // Each single nested type → its own ExpansionTile
@@ -597,7 +651,7 @@ class FlutterTypesSerializer {
           ? '${childType}Widget($varName.${f.name}!, strings: strings)'
           : '${childType}Widget($varName.${f.name}, strings: strings)';
       final tile = _u.callExpression('ExpansionTile', [
-        "title: labels?.${f.name} ?? const Text('$label')",
+        "title: _labelWithInfo(context, labels?.${f.name} ?? const Text('$label'), labels?.${f.name}Info)",
         _u.listArg('children', ["values?.${f.name} ?? $childExpr"]),
       ]);
       statements.add(_u.ifStatement(
@@ -617,7 +671,7 @@ class FlutterTypesSerializer {
           ? 'vis.${f.name} && ($varName.${f.name}?.isNotEmpty ?? false)'
           : 'vis.${f.name} && $varName.${f.name}.isNotEmpty';
       final tile = _u.callExpression('ExpansionTile', [
-        "title: labels?.${f.name} ?? const Text('$label')",
+        "title: _labelWithInfo(context, labels?.${f.name} ?? const Text('$label'), labels?.${f.name}Info)",
         'children: $listAccess.map((item) => ${childType}Widget(item, strings: strings)).toList()',
       ]);
       statements.add(_u.ifStatement(
@@ -633,7 +687,7 @@ class FlutterTypesSerializer {
       returnType: 'List<Widget>',
       methodName: '_expandableItems',
       namedArguments: false,
-      arguments: [],
+      arguments: ['BuildContext context'],
       statements: statements,
     );
   }
@@ -648,6 +702,30 @@ class FlutterTypesSerializer {
         'final result = <Widget>[];',
         'for (var i = 0; i < items.length; i++) { if (i > 0) result.add(SizedBox(height: gap)); result.add(items[i]); }',
         'return result;',
+      ],
+    );
+  }
+
+  String _serializeLabelWithInfoMethod() {
+    return _u.createMethod(
+      returnType: 'Widget',
+      methodName: '_labelWithInfo',
+      namedArguments: false,
+      arguments: ['BuildContext context', 'Widget label', 'String? info'],
+      statements: [
+        'if (info == null) return label;',
+        'return ${_u.callExpression('Row', [
+          'mainAxisSize: MainAxisSize.min',
+          _u.listArg('children', [
+            'label',
+            _u.callExpression('IconButton', [
+              'icon: const Icon(Icons.info_outline, size: 16)',
+              'padding: EdgeInsets.zero',
+              'constraints: const BoxConstraints()',
+              "onPressed: () => showDialog(context: context, builder: (_) => AlertDialog(content: Text(info), actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('OK'))]))",
+            ]),
+          ]),
+        ])};',
       ],
     );
   }

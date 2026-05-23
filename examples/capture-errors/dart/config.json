@@ -1,0 +1,27 @@
+{
+    "schemaPaths": [
+        "../schema/*.gql"
+    ],
+    "mode": "client",
+    "identityFields": [],
+    "typeMappings": {
+        "ID": "String",
+        "String": "String",
+        "Float": "double",
+        "Int": "int",
+        "Boolean": "bool",
+        "Null": "null"
+    },
+    "outputDir": "lib/generated",
+    "clientConfig": {
+        "dart": {
+            "packageName": "capture_errors_dart",
+            "generateAllFieldsFragments": true,
+            "nullableFieldsRequired": false,
+            "autoGenerateQueries": true,
+            "immutableInputFields": true,
+            "immutableTypeFields": true,
+            "httpAdapter": "dio"
+        }
+    }
+}

@@ -286,6 +286,8 @@ class FlutterInputsStateSerializer {
         ...dateEligibleFields.map(_date.dateRowMethod),
         ...inputFields.map(_inputFieldRowMethod),
         _requiredLabelHelper(inputName),
+        _labelWithInfoHelper(inputName),
+        _withFloatingInfoHelper(inputName),
         _onFieldChangedMethod(),
         _notifyContextChangeMethod(),
         _scheduleOnChangeMethod(),
@@ -555,6 +557,7 @@ class FlutterInputsStateSerializer {
         'final _${f.name}Vis = vis.${f.name}?.call(_ctx) ?? FieldVisibility.enabled;').toList();
 
     final rowLines = _buildFieldLines(
+      inputName,
       fields, textFields, enumFields, boolFields, listFields, dateEligibleFields, inputFields,
       (f, idx, w) => "entries.add(MapEntry(ord.${f.name} ?? $idx, $w))",
     );
@@ -669,6 +672,51 @@ class FlutterInputsStateSerializer {
             ],
             defaultStatements: ['return label;'],
           ),
+        ],
+      );
+
+  String _labelWithInfoHelper(String inputName) => _u.createMethod(
+        returnType: 'Widget',
+        methodName: '_labelWithInfo',
+        namedArguments: false,
+        arguments: ['Widget label', 'String? info'],
+        statements: [
+          'if (info == null) return label;',
+          'if (_form.labelPosition == ${inputName}LabelPosition.floatingLabel) return label;',
+          'return ${_u.callExpression('Row', [
+            'mainAxisSize: MainAxisSize.min',
+            _u.listArg('children', [
+              'label',
+              _u.callExpression('IconButton', [
+                'icon: const Icon(Icons.info_outline, size: 16)',
+                'padding: EdgeInsets.zero',
+                'constraints: const BoxConstraints()',
+                "onPressed: () => showDialog(context: context, builder: (_) => AlertDialog(content: Text(info), actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('OK'))]))",
+              ]),
+            ]),
+          ])};',
+        ],
+      );
+
+  String _withFloatingInfoHelper(String inputName) => _u.createMethod(
+        returnType: 'Widget',
+        methodName: '_withFloatingInfo',
+        namedArguments: false,
+        arguments: ['Widget field', 'String? info'],
+        statements: [
+          'if (info == null || _form.labelPosition != ${inputName}LabelPosition.floatingLabel) return field;',
+          'return ${_u.callExpression('Row', [
+            'crossAxisAlignment: CrossAxisAlignment.center',
+            _u.listArg('children', [
+              'Expanded(child: field)',
+              _u.callExpression('IconButton', [
+                'icon: const Icon(Icons.info_outline, size: 16)',
+                'padding: EdgeInsets.zero',
+                'constraints: const BoxConstraints()',
+                "onPressed: () => showDialog(context: context, builder: (_) => AlertDialog(content: Text(info), actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('OK'))]))",
+              ]),
+            ]),
+          ])};',
         ],
       );
 
@@ -932,6 +980,7 @@ class FlutterInputsStateSerializer {
   /// [accumulate] receives (field, defaultOrderIdx, widgetExpr) and returns
   /// the accumulation statement string — the only thing that differs between the two.
   List<String> _buildFieldLines(
+    String inputName,
     List<GLField> fields,
     List<GLField> textFields,
     List<GLField> enumFields,
@@ -954,7 +1003,7 @@ class FlutterInputsStateSerializer {
       final fieldWidget = _fields.fieldWidgetExpr(f, textFields, enumFields, boolFields, listFields, enabledExpr);
       final defaultIdx = 1000 + i;
       final isRequired = !f.type.nullable;
-      final labelStmt = "final label = _requiredLabel(_form.labels?.${f.name} ?? const Text('$humanLabel'), $isRequired);";
+      final labelStmt = "final _rl = _requiredLabel(_form.labels?.${f.name} ?? const Text('$humanLabel'), $isRequired); final label = _form.labelPosition == ${inputName}LabelPosition.floatingLabel ? _rl : _labelWithInfo(_rl, _form.labels?.${f.name}Info);";
 
       final String widgetExpr;
       if (inputFields.contains(f)) {
@@ -971,7 +1020,7 @@ class FlutterInputsStateSerializer {
 
       return _u.ifStatement(
         condition: '_${f.name}Vis != FieldVisibility.hidden',
-        ifBlockStatements: [labelStmt, '${accumulate(f, defaultIdx, widgetExpr)};'],
+        ifBlockStatements: [labelStmt, '${accumulate(f, defaultIdx, "_withFloatingInfo($widgetExpr, _form.labels?.${f.name}Info)")};'],
       );
     }).toList();
   }
@@ -1078,10 +1127,6 @@ class FlutterInputsStateSerializer {
       String inputName, List<_StepBucket> buckets) {
     final cases = buckets.map((b) {
       final idx = b.index;
-      final skippableExpr = b.type == _StepType.scalar
-          ? '_form.stepConfig?.scalarFields?.isSkippable ?? false'
-          : '_form.stepConfig?.${b.field!.name}?.isSkippable ?? false';
-
       List<String> validateStatements;
       if (b.type == _StepType.scalar) {
         validateStatements = [
@@ -1114,13 +1159,7 @@ class FlutterInputsStateSerializer {
 
       return DartCaseStatement(
         caseValue: '$idx',
-        statement: _u.block([
-          _u.ifStatement(
-            condition: skippableExpr,
-            ifBlockStatements: ['return true;'],
-          ),
-          ...validateStatements,
-        ]),
+        statement: _u.block(validateStatements),
       );
     }).toList();
 
@@ -1134,6 +1173,7 @@ class FlutterInputsStateSerializer {
           expression: '_currentStep',
           cases: cases,
           defaultStatements: ['return true;'],
+          generateBreaks: false,
         ),
       ],
     );

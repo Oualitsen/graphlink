@@ -50,13 +50,21 @@ For each concrete, non-response GraphQL `type`, one file is generated containing
 ### Companion classes
 
 **`VehicleLabels`** — override the label (left side) of any field. `null` = use the auto-humanized default (`Text('Brand')`). Also holds `$group` — the scalar group title in `expandable` layout (default `Text('Details')`). The `$` prefix is a valid Dart identifier character and is impossible in GraphQL field names, eliminating any collision risk.
+
+Each field also has a companion `String? ${field}Info` (e.g. `brandInfo`). When non-null, a small `Icons.info_outline` button is rendered next to the label; tapping/clicking it opens an `AlertDialog` containing that string. `null` = no info button. `$groupInfo` works the same way for the expandable scalar accordion title.
+
+**Note:** the info button is only rendered in the four main layout helpers (`labeledRow`, `listTile`, `listTileReversed`, `expandable`). `toTableRow()` and `toTableHeaderRow()` have no `BuildContext` and omit it.
+
 ```dart
 class VehicleLabels {
   final Widget? id;
+  final String? idInfo;
   final Widget? brand;
-  // ... one field per schema field
-  final Widget? $group;  // scalar accordion title in expandable layout
-  const VehicleLabels({this.id, this.brand, ..., this.$group});
+  final String? brandInfo;
+  // ... one Widget? + one String? per schema field
+  final Widget? $group;   // scalar accordion title in expandable layout
+  final String? $groupInfo;
+  const VehicleLabels({this.id, this.idInfo, this.brand, this.brandInfo, ..., this.$group, this.$groupInfo});
 }
 ```
 
@@ -143,6 +151,12 @@ class VehicleWidget extends StatelessWidget {
 
   // Returns a header row for use inside a Table widget (labels only, respects visibility/order).
   TableRow toTableHeaderRow() { ... }
+
+  // Returns a DataRow for use inside a DataTable widget (values wrapped in DataCell).
+  DataRow toDataRow() { ... }
+
+  // Returns List<DataColumn> for the columns: parameter of a DataTable widget (labels wrapped in DataColumn).
+  List<DataColumn> toDataColumns() { ... }
 }
 ```
 
@@ -233,7 +247,7 @@ Per-enum labels classes live in `widgets/enums/` and are generated once regardle
 | `lib/src/model/gl_type_definition.dart` | Added `final bool isResponseType` (default `false`) |
 | `lib/src/model/gl_queries.dart` | Sets `isResponseType: true` in `getGeneratedTypeDefinition()` |
 | `lib/src/dart_code_gen_utils.dart` | Added `extendsClassName` to `createClass`; added `isConst`/`positionalArguments` to `createMethod`; added `switchExpression` + `DartSwitchExpressionCase` |
-| `lib/src/serializers/flutter_types_serializer.dart` | New — `FlutterTypesSerializer`; also emits per-enum `FuelTypeLabels` classes into `widgets/enums/`; generates `VehicleOrder` for field reordering and `toTableHeaderRow()` for table header rows |
+| `lib/src/serializers/flutter_types_serializer.dart` | New — `FlutterTypesSerializer`; also emits per-enum `FuelTypeLabels` classes into `widgets/enums/`; generates `VehicleOrder` for field reordering and `toTableHeaderRow()` for table header rows; adds `String? ${field}Info` / `$groupInfo` to `VehicleLabels` with `_labelWithInfo` dialog helper |
 | `lib/src/generators/dart_client_generator.dart` | Hooks `FlutterTypesSerializer` when `flutter.generateTypes` is enabled |
 | `examples/flutter/ui_types/` | New Flutter 3.32.7 example project |
 
@@ -248,7 +262,7 @@ Schema types:
 - `Owner` — has two nested `Vehicle` fields (`primaryVehicle`, `secondaryVehicle?`) — demonstrates nested type auto-embed.
 - `Fleet` — has scalar fields, a nested `Owner` field, and a `[Vehicle!]` list field — demonstrates the `expandable` layout with all three accordion groups.
 
-Tabs (15 total):
+Tabs (16 total):
 
 | # | Tab | What it demonstrates |
 |---|---|---|
@@ -267,6 +281,7 @@ Tabs (15 total):
 | 13 | onChange | `onContextChange`, debounced `onChange`, `tryRead` |
 | 14 | Stepper | Stepper layout for nested inputs |
 | 15 | Expandable | `FleetWidget` with `expandable` layout — scalar accordion, nested-type accordion, list accordion |
+| 16 | Field Info | `VehicleLabels` + `AddVehicleInputLabels` `*Info` strings — toggle on/off to compare; tapping a `?` icon opens an `AlertDialog` |
 
 ```
 make get        # fvm flutter pub get

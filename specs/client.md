@@ -16,6 +16,7 @@ Rules for generating client-side code from a GraphQL schema. Reference targets a
 | `operationNameAsParameter` | bool | `false` | Pass operation name as a parameter to the adapter |
 | `immutableInputFields` | bool | `true` | Generate input fields as `final` |
 | `immutableTypeFields` | bool | `true` | Generate type fields as `final` |
+| `captureErrors` | bool | `false` | Apply `@glCaptureErrors` to all queries and mutations — syntactic sugar equivalent to annotating every field in the schema |
 
 ### Dart-specific (`clientConfig.dart`)
 
@@ -38,6 +39,7 @@ Rules for generating client-side code from a GraphQL schema. Reference targets a
 | `typeAsRecord` | bool | `false` | Emit types as Java records |
 | `wsAdapter` | `java11`\|`okhttp`\|`none` | `java11` | Which WebSocket adapter to generate |
 | `jsonCodec` | `jackson`\|`gson`\|`none` | `jackson` | Which JSON codec adapter to generate |
+| `captureErrors` | bool | `false` | Apply `@glCaptureErrors` to all queries and mutations |
 
 ---
 
@@ -112,6 +114,14 @@ Applied to a type or field: included on the client, excluded on the server. Clie
 ### `@glTypeName(name: "NewName")`
 
 Applied to a type: the generated class uses `NewName` instead of the schema type name. Useful when the schema name conflicts with a language keyword or existing class.
+
+### `@glCaptureErrors`
+
+Applied to a query or mutation field: errors are returned inline instead of thrown. The generated method return type changes from `{OperationName}Response` to `{OperationName}FullResponse`. A `{OperationName}FullResponse` wrapper class is generated alongside the original response class (unchanged), holding `data` (nullable) and `errors` (nullable). The method never throws for GraphQL errors; the caller checks `response.errors`.
+
+- Rejected on subscription fields at parse time.
+- Error responses are never cached.
+- `captureErrors: true` in the config applies this to all queries and mutations without schema annotation.
 
 ### `@glCache(ttl: 120, tags: ["tag1"], staleIfOffline: false)`
 

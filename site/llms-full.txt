@@ -117,7 +117,7 @@ type Mutation {
 - TypeScript client (fetch/axios adapters, RxJS observables, WebSocket subscriptions, Angular/React/Vue examples): https://graphlink.dev/docs/typescript-client.html
 - Spring Boot server (MVC + reactive/WebFlux, service interfaces, file upload, security context propagation): https://graphlink.dev/docs/spring-server.html
 - Caching (@glCache, @glCacheInvalidate, tag invalidation, staleIfOffline): https://graphlink.dev/docs/caching.html
-- Directives (@glMapsTo, @glMapField, @glCache, @glCacheInvalidate, @glSkipOnServer forward mappings, and more): https://graphlink.dev/docs/directives.html
+- Directives (@glMapsTo, @glMapField, @glCache, @glCacheInvalidate, @glCaptureErrors, @glSkipOnServer forward mappings, and more): https://graphlink.dev/docs/directives.html
 - "@glSkipOnServer & @glSkipOnClient" (two-layer server-side access control, schema stripping, @SchemaMapping, @BatchMapping, mapTo, forward mappings, ID/object field-pair pattern for N+1-safe loading): https://graphlink.dev/docs/skip-directives.html
 - Configuration (all config keys for Dart, Java, TypeScript, Spring; reactive; useSpringSecurity; typeMappings; CLI flags; YAML config): https://graphlink.dev/docs/configuration.html
 
@@ -3107,6 +3107,10 @@ directive @glUpload on SCALAR
 # ── Cyclic expansion ──────────────────────────────────────────────────────────
 
 directive @glExpand(depth: Int) on OBJECT
+
+# ── Error capture ─────────────────────────────────────────────────────────────
+
+directive @glCaptureErrors on FIELD_DEFINITION
 ```
 
 ---
@@ -3151,6 +3155,31 @@ type Mutation {
   resetDatabase: Boolean! @glCacheInvalidate(all: true)
 }
 ```
+
+---
+
+## @glCaptureErrors
+
+**Target:** CLIENT · **Placement:** `FIELD_DEFINITION` on `Query` and `Mutation` fields
+
+Changes the method contract so errors are returned inline instead of thrown. The generated method return type changes from `{OperationName}Response` to `{OperationName}FullResponse`. A separate `{OperationName}FullResponse` class is generated alongside the original (unchanged). The caller inspects `response.errors` directly — the method never throws for GraphQL errors.
+
+No arguments.
+
+```graphql title="Example"
+type Query {
+  getUser(id: ID!): User! @glCaptureErrors
+}
+type Mutation {
+  createUser(input: CreateUserInput!): User! @glCaptureErrors
+}
+```
+
+Caching interaction: error responses are never cached. On a cache hit, `errors` is always null.
+
+Validation: applying `@glCaptureErrors` to a subscription field is rejected at parse time.
+
+Global config alternative: set `captureErrors: true` in `clientConfig.dart` / `clientConfig.java` / `clientConfig.typescript` to apply to every query and mutation without schema annotation.
 
 ---
 

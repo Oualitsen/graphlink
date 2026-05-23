@@ -35,6 +35,7 @@ const clientTypes = {
 };
 const clientInterfaces = {
   'GraphLinkSubscriptionErrorMessageBase',
+  'GraphLinkFullResponse',
 };
 
 const javaClientAdapterNoParamSync = '''
@@ -101,11 +102,9 @@ public interface GraphLinkWebSocketAdapter {
 }
 ''';
 
-String getClientObjects(String dynamicValue, String mapValue) {
- 
-  return '''
-scalar gqlMapStrObj ${glExternal}(glClass: "${mapValue}")
-scalar dynamicValue ${glExternal}(glClass: "${dynamicValue}")
+const clientObjects = '''
+scalar gqlMapStrObj
+scalar dynamicValue
 
 
 type GraphLinkPayload ${glInternal} {
@@ -139,6 +138,10 @@ interface GraphLinkSubscriptionErrorMessageBase ${glInternal} {
   id: String
 }
 
+interface GraphLinkFullResponse ${glInternal} {
+  errors: [GraphLinkError!]
+}
+
 type GraphLinkSubscriptionErrorMessage implements GraphLinkSubscriptionErrorMessageBase ${glInternal} {
   id: String
   type: String
@@ -154,7 +157,6 @@ type GraphLinkSubscriptionMessage implements GraphLinkSubscriptionErrorMessageBa
 enum GraphLinkAckStatus {none progress acknoledged }
 
 ''';
-}
 
 /// Content of the generated `graph_link_uploads.dart` file.
 /// Imported by both the client and adapter files — no circular dependency.

@@ -63,7 +63,7 @@ void main() {
       generateAllFieldsFragments: true,
     );
 
-    const text = '''
+    String text = '''
   type Person { id: ID! }
   type Query {
     getPerson: Person ${glCache}(ttl: "90s")
