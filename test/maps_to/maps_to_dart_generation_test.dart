@@ -261,7 +261,7 @@ void main() {
   // Case 5 — Nullable nested mapped input in fromXxx()
   // -------------------------------------------------------------------------
 
-  const _case5 = '''
+  const case5 = '''
     input PeriodInput @glMapsTo(type: "Period") {
       value: Int!
       unit: String!
@@ -361,7 +361,7 @@ void main() {
 
   group('Case 5 — nullable nested mapped input in fromXxx()', () {
     test('fromEquipment() generates a null guard for maintenancePeriod', () {
-      final lines = _lines(_case5, 'EquipmentInput');
+      final lines = _lines(case5, 'EquipmentInput');
       expect(
         lines,
         contains(

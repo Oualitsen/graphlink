@@ -53,6 +53,7 @@
 ///   Subscriptions:
 ///     commentAdded(postId)   fires whenever a comment is added to a post
 ///     postPublished          fires whenever a post is published
+library;
 
 // ignore_for_file: avoid_print
 import 'dart:typed_data';
