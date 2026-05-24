@@ -15,7 +15,7 @@ const _adapterType = 'GraphLinkAdapter';
 const _cacheStoreType = 'GraphLinkCacheStore';
 const _inMemoryCacheStoreType = 'InMemoryGraphLinkCacheStore';
 
-class TypeScriptClientSerializer extends GLClientSerilaizer {
+class TypeScriptClientSerializer extends GLClientSerializer {
   final GLParser _parser;
   final bool generateDefaultWsAdapter;
   final bool observables;

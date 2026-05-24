@@ -20,7 +20,7 @@ const _operationNameParam = "operationName";
 const _cacheStoreClassName = 'GraphLinkCacheStore';
 const _inMemorycacheStoreClassName = 'InMemoryGraphLinkCacheStore';
 
-class DartClientSerializer extends GLClientSerilaizer {
+class DartClientSerializer extends GLClientSerializer {
   final GLParser _parser;
   final bool generateAdapters;
   final DartHttpAdapter httpAdapter;

@@ -20,7 +20,7 @@ import 'package:graphlink/src/serializers/client_serializers/java_client_operati
 
 
 
-class JavaClientSerializer extends GLClientSerilaizer {
+class JavaClientSerializer extends GLClientSerializer {
   final GLParser _grammar;
   final codeGenUtils = JavaCodeGenUtils();
   final JavaJsonCodec jsonCodec;
