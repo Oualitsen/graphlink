@@ -927,19 +927,19 @@ private _buildPayload(
   // ── GLClientSerilaizer overrides ──────────────────────────────────────────
 
   @override
-  GLClassModel? getQueriesClass(String importPrefix) {
+  GLClassModel? getQueriesClass() {
     final body = _buildClass(GLQueryType.query);
     return body != null ? GLClassModel(body: body) : null;
   }
 
   @override
-  GLClassModel? getMutationsClass(String importPrefix) {
+  GLClassModel? getMutationsClass() {
     final body = _buildClass(GLQueryType.mutation);
     return body != null ? GLClassModel(body: body) : null;
   }
 
   @override
-  GLClassModel? getSubscriptionsClass(String importPrefix) {
+  GLClassModel? getSubscriptionsClass() {
     final body = _buildClass(GLQueryType.subscription);
     return body != null ? GLClassModel(body: body) : null;
   }
