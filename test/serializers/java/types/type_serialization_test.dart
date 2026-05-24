@@ -20,10 +20,10 @@ void main() {
 
     g.parse(text);
 
-    var javaSerialzer = JavaSerializer(g);
+    var javaSerialzer = JavaSerializer(g, importPrefix: "");
 
     var userServer = g.getTypeByName("User")!;
-    var result = javaSerialzer.serializeTypeDefinition(userServer, "");
+    var result = javaSerialzer.serializeTypeDefinition(userServer);
     expect(result, isNot(contains("String companyId")));
   });
 
@@ -39,22 +39,22 @@ void main() {
 
     g.parse(text);
 
-    var javaSerialzer = JavaSerializer(g);
+    var javaSerialzer = JavaSerializer(g, importPrefix: "");
 
     var userServer = g.getTypeByName("User")!;
-    var result = javaSerialzer.serializeTypeDefinition(userServer, "");
+    var result = javaSerialzer.serializeTypeDefinition(userServer);
     expect(result, isNot(contains("Company company")));
 
     var input = g.inputs["SkipInput"]!;
     var skippedInputSerialized =
-        javaSerialzer.serializeInputDefinition(input, "");
+        javaSerialzer.serializeInputDefinition(input);
     expect(skippedInputSerialized, "");
 
     var enum_ = g.enums["Gender"]!;
-    var serializedEnum = javaSerialzer.serializeEnumDefinition(enum_, "");
+    var serializedEnum = javaSerialzer.serializeEnumDefinition(enum_);
     expect(serializedEnum, "");
     var type = g.getTypeByName("SkipType")!;
-    var serilzedType = javaSerialzer.serializeTypeDefinition(type, "");
+    var serilzedType = javaSerialzer.serializeTypeDefinition(type);
     expect(serilzedType, "");
   });
 
@@ -66,7 +66,7 @@ void main() {
 
     g.parse(text);
 
-    var javaSerialzer = JavaSerializer(g);
+    var javaSerialzer = JavaSerializer(g, importPrefix: "");
 
     var user = g.getTypeByName("User")!;
 
@@ -81,11 +81,11 @@ void main() {
     expect(ibaseText.trim(), startsWith("@Logger"));
 
     var gender = g.enums["Gender"]!;
-    var genderText = javaSerialzer.serializeEnumDefinition(gender, "");
+    var genderText = javaSerialzer.serializeEnumDefinition(gender);
     expect(genderText.trim(), startsWith("@Logger"));
 
     var input = g.inputs["UserInput"]!;
-    var inputText = javaSerialzer.serializeInputDefinition(input, "");
+    var inputText = javaSerialzer.serializeInputDefinition(input);
     expect(inputText.trim(), contains("@Input"));
   });
 
@@ -97,7 +97,7 @@ void main() {
 
     g.parse(text);
 
-    var javaSerialzer = JavaSerializer(g);
+    var javaSerialzer = JavaSerializer(g, importPrefix: "");
     var user = g.getTypeByName("User")!;
     var idField = user.fields.where((f) => f.name.token == "id").first;
     var id = javaSerialzer.serializeField(idField, false, true);
@@ -112,7 +112,7 @@ void main() {
 
     g.parse(text);
 
-    var javaSerialzer = JavaSerializer(g);
+    var javaSerialzer = JavaSerializer(g, importPrefix: "");
     var user = g.getTypeByName("User")!;
     var idField = user.fields.where((f) => f.name.token == "id").first;
     var id = javaSerialzer.serializeArgumentField(idField);
@@ -127,7 +127,7 @@ void main() {
 
     g.parse(text);
 
-    var javaSerialzer = JavaSerializer(g);
+    var javaSerialzer = JavaSerializer(g, importPrefix: "");
     var user = g.getTypeByName("User")!;
     var idField = user.fields.where((f) => f.name.token == "id").first;
     var listExample =
@@ -146,9 +146,9 @@ void main() {
 
     g.parse(text);
 
-    var javaSerialzer = JavaSerializer(g, generateJsonMethods: true);
+    var javaSerialzer = JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
     var genderEnum = g.enums["Gender"]!;
-    var enum_ = javaSerialzer.serializeEnumDefinition(genderEnum, "");
+    var enum_ = javaSerialzer.serializeEnumDefinition(genderEnum);
     expect(enum_.split("\n").map((e) => e.trim()).toList(),
         containsAllInOrder(['public enum Gender {', 'male, female;', '}']));
   });
@@ -161,7 +161,7 @@ void main() {
 
     g.parse(text);
 
-    var javaSerialzer = JavaSerializer(g);
+    var javaSerialzer = JavaSerializer(g, importPrefix: "");
 
     var user = g.getTypeByName("User")!;
     var idField = user.fields.where((f) => f.name.token == "id").first;
@@ -187,7 +187,7 @@ void main() {
 
     g.parse(text);
 
-    var javaSerialzer = JavaSerializer(g);
+    var javaSerialzer = JavaSerializer(g, importPrefix: "");
 
     var user = g.getTypeByName("User")!;
     var idField = user.fields.where((f) => f.name.token == "id").first;
@@ -221,7 +221,7 @@ void main() {
 
     g.parse(text);
 
-    var javaSerialzer = JavaSerializer(g);
+    var javaSerialzer = JavaSerializer(g, importPrefix: "");
 
     var user = g.getTypeByName("User")!;
     var idField = user.fields.where((f) => f.name.token == "id").first;
@@ -258,8 +258,8 @@ void main() {
     g.parse(text);
 
     var user = g.getTypeByName("User")!;
-    var javaSerialzer = JavaSerializer(g);
-    var class_ = javaSerialzer.serializeTypeDefinition(user, "");
+    var javaSerialzer = JavaSerializer(g, importPrefix: "");
+    var class_ = javaSerialzer.serializeTypeDefinition(user);
     expect(
       class_.split("\n").map((str) => str.trim()),
       containsAllInOrder([
@@ -283,9 +283,9 @@ void main() {
     g.parse(text);
 
     var user = g.inputs["UserInput"];
-    var javaSerialzer = JavaSerializer(g,
+    var javaSerialzer = JavaSerializer(g, importPrefix: "",
         immutableInputFields: false, immutableTypeFields: false);
-    var class_ = javaSerialzer.serializeInputDefinition(user!, "");
+    var class_ = javaSerialzer.serializeInputDefinition(user!);
 
     expect(
       class_.split("\n").map((str) => str.trim()),
@@ -308,7 +308,7 @@ void main() {
     g.parse(text);
 
     var entity = g.interfaces["Interface1"]!;
-    var javaSerialzer = JavaSerializer(g);
+    var javaSerialzer = JavaSerializer(g, importPrefix: "");
     var class_ = javaSerialzer.serializeInterface(entity, getters: true).trim();
     expect(class_, startsWith("public interface Interface1 {"));
     expect(class_, endsWith("}"));
@@ -329,7 +329,7 @@ void main() {
     g.parse(text);
 
     var entity = g.interfaces["Interface2"]!;
-    var javaSerialzer = JavaSerializer(g);
+    var javaSerialzer = JavaSerializer(g, importPrefix: "");
     var class_ = javaSerialzer.serializeInterface(entity, getters: true).trim();
     print(class_);
     expect(class_, startsWith("public interface Interface2 extends IBase {"));
@@ -351,7 +351,7 @@ void main() {
     g.parse(text);
 
     var entity = g.interfaces["Interface3"]!;
-    var javaSerialzer = JavaSerializer(g);
+    var javaSerialzer = JavaSerializer(g, importPrefix: "");
     var class_ = javaSerialzer.serializeInterface(entity, getters: true).trim();
     expect(class_,
         startsWith("public interface Interface3 extends IBase, IBase2 {"));
@@ -376,8 +376,8 @@ void main() {
     g.parse(text);
 
     var repo = g.repositories["UserRepository"]!;
-    var serialzer = SpringServerSerializer(g);
-    var repoSerial = serialzer.serializeRepository(repo, "com.myorg");
+    var serialzer = SpringServerSerializer(g, packageName: "");
+    var repoSerial = serialzer.serializeRepository(repo);
     expect(
         repoSerial,
         stringContainsInOrder([
@@ -415,9 +415,9 @@ void main() {
 ''');
 
     var user = g.getTypeByName("User")!;
-    var serializer = JavaSerializer(g);
+    var serializer = JavaSerializer(g, importPrefix: "");
 
-    print(serializer.serializeTypeDefinition(user, "com.myorg"));
+    print(serializer.serializeTypeDefinition(user));
   });
 
   test("serialize input with null checks", () {
@@ -431,10 +431,10 @@ void main() {
 ''');
 
     var userInput = g.inputs['UserInput']!;
-    var serializer = JavaSerializer(g,
+    var serializer = JavaSerializer(g, importPrefix: "",
         immutableInputFields: false, immutableTypeFields: false);
     var serializedInput =
-        serializer.serializeInputDefinition(userInput, "com.myorg");
+        serializer.serializeInputDefinition(userInput);
     // nullcheck on contrcutor
     var lines = serializedInput
         .split('\n')
@@ -493,10 +493,10 @@ void main() {
 ''');
 
     var userInput = g.inputs['UserInput']!;
-    var serializer = JavaSerializer(g, typeMapOverrides: {"Int": "int"},
+    var serializer = JavaSerializer(g, importPrefix: "", typeMapOverrides: {"Int": "int"},
         immutableInputFields: false, immutableTypeFields: false);
     var serializedInput =
-        serializer.serializeInputDefinition(userInput, "com.myorg");
+        serializer.serializeInputDefinition(userInput);
     // no nullcheck on contrcutor primitives
     var lines = serializedInput
         .split('\n')
@@ -531,10 +531,10 @@ void main() {
 ''');
 
     var userInput = g.inputs['UserInput']!;
-    var serializer = JavaSerializer(g,
+    var serializer = JavaSerializer(g, importPrefix: "",
         immutableInputFields: true, immutableTypeFields: false);
     var serializedInput =
-        serializer.serializeInputDefinition(userInput, "com.myorg");
+        serializer.serializeInputDefinition(userInput);
 
     print(serializedInput);
     expect(serializedInput, contains("private final String age;"));
@@ -553,10 +553,10 @@ void main() {
 ''');
 
     var userInput = g.types['UserInput']!;
-    var serializer = JavaSerializer(g,
+    var serializer = JavaSerializer(g, importPrefix: "",
         immutableInputFields: true, immutableTypeFields: true);
     var serializedInput =
-        serializer.serializeTypeDefinition(userInput, "com.myorg");
+        serializer.serializeTypeDefinition(userInput);
 
     print(serializedInput);
     expect(serializedInput, contains("private final String age;"));

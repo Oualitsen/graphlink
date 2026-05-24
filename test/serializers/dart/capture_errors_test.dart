@@ -17,7 +17,7 @@ GLParser _parse(String schema, {bool captureErrors = false}) {
 }
 
 String _client(GLParser g) =>
-    DartClientSerializer(g, DartSerializer(g)).generateClient('package').toFileContent();
+    DartClientSerializer(g, DartSerializer(g, importPrefix: "")).generateClient().toFileContent();
 
 const _schema = '''
 type User { id: ID!  name: String! }

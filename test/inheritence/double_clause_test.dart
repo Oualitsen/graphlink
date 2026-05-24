@@ -51,14 +51,14 @@ query getData {
 
 ''';
     g.parse(text);
-    var dartSerializer = DartSerializer(g);
+    var dartSerializer = DartSerializer(g, importPrefix: "org");
     g.projectedInterfaces.forEach((k, v) {
-      print(dartSerializer.serializeTypeDefinition(v, 'org'));
+      print(dartSerializer.serializeTypeDefinition(v));
     });
 
     g.projectedTypes.forEach((k, v) {
       if(!k.endsWith('Response')){
-        print(dartSerializer.serializeTypeDefinition(v, 'org'));
+        print(dartSerializer.serializeTypeDefinition(v));
       }
     });
 
@@ -126,14 +126,14 @@ query getData {
 
 ''';
     g.parse(text);
-    var dartSerializer = DartSerializer(g);
+    var dartSerializer = DartSerializer(g, importPrefix: "org");
     g.projectedInterfaces.forEach((k, v) {
-      print(dartSerializer.serializeTypeDefinition(v, 'org'));
+      print(dartSerializer.serializeTypeDefinition(v));
     });
 
     g.projectedTypes.forEach((k, v) {
       if(!k.endsWith('Response')){
-        print(dartSerializer.serializeTypeDefinition(v, 'org'));
+        print(dartSerializer.serializeTypeDefinition(v));
       }
     });
 

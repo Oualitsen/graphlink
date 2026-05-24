@@ -64,22 +64,22 @@ void main() async {
 
     g.parse(schema);
 
-    var dartSerializer = DartSerializer(g);
+    var dartSerializer = DartSerializer(g, importPrefix: "");
     var animal = g.interfaces['Animal']!;
     expect(animal.getSerializableImplementations(g.mode).map((e) => e.token), containsAll(['Cat', 'Dog']));
     expect(animal.getSerializableImplementations(g.mode).map((e) => e.token), isNot(contains('Tiger')));
-    final serializedInterface = dartSerializer.serializeTypeDefinition(animal, '');
+    final serializedInterface = dartSerializer.serializeTypeDefinition(animal);
     //print(serializedInterface);
     expect(serializedInterface, isNot(contains('Tiger')));
 
     // Java
-    var javaSerializer = JavaSerializer(g, generateJsonMethods: true);
-    final javaInterface = javaSerializer.serializeTypeDefinition(animal, 'org.example');
+    var javaSerializer = JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
+    final javaInterface = javaSerializer.serializeTypeDefinition(animal);
     expect(javaInterface, isNot(contains('Tiger')));
     // typescript
 
-    var tsSerializer = TypeScriptSerializer(g);
-    final tsInterface = tsSerializer.serializeTypeDefinition(animal, '');
+    var tsSerializer = TypeScriptSerializer(g, importPrefix: "");
+    final tsInterface = tsSerializer.serializeTypeDefinition(animal);
     expect(tsInterface, isNot(contains('Tiger')));
 
   });

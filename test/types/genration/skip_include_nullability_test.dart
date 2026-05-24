@@ -24,7 +24,7 @@ void main() async {
         .where((element) => element.name.token == "name")
         .first;
     expect(nameField.type.nullable, false);
-    var serilaizer = DartSerializer(g);
+    var serilaizer = DartSerializer(g, importPrefix: "");
     expect(serilaizer.serializeField(nameField, true, true), contains("String?"));
 
     GLField getProductList = productTypeDef.fields
@@ -37,7 +37,7 @@ void main() async {
         .where((element) => element.name.token == "description")
         .first;
     expect(descriptionField.type.nullable, false);
-    var serializer = DartSerializer(g);
+    var serializer = DartSerializer(g, importPrefix: "");
     expect(
         serializer.serializeField(descriptionField, true, true), contains("String?"));
   });

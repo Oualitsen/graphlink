@@ -14,8 +14,9 @@ class FlutterTypesSerializer {
   final DartSerializer _dartSerializer;
   final FlutterConfig _config;
   final _u = DartCodeGenUtils();
+  final String importPrefix;
 
-  FlutterTypesSerializer(this._parser, this._dartSerializer, this._config);
+  FlutterTypesSerializer(this._parser, this._dartSerializer, this._config, this.importPrefix);
 
   static const _internalTypes = {
     'GraphLinkError',
@@ -45,7 +46,7 @@ class FlutterTypesSerializer {
 
   // ── Enum labels ────────────────────────────────────────────────────────────
 
-  String serializeEnumLabels(GLEnumDefinition def, String importPrefix) {
+  String serializeEnumLabels(GLEnumDefinition def) {
     final enumName = def.token;
     final values = def.values;
     final buffer = StringBuffer();
@@ -92,7 +93,7 @@ class FlutterTypesSerializer {
 
   // ── Type widget ────────────────────────────────────────────────────────────
 
-  String serializeTypeWidget(GLTypeDefinition def, String importPrefix) {
+  String serializeTypeWidget(GLTypeDefinition def) {
     if (def is GLInterfaceDefinition) return '';
     if (def.isResponseType) return '';
     if (shouldSkip(def)) return '';

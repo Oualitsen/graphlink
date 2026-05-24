@@ -1,5 +1,6 @@
 import 'package:build/build.dart';
 import 'package:glob/glob.dart';
+import 'package:graphlink/src/utils.dart';
 import 'package:logger/logger.dart';
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/grammar_factory.dart';
@@ -135,8 +136,8 @@ class GraphlinkGeneratorBuilder implements Builder {
 
     final schema = await readSchema(buildStep);
     grammar.parse(schema);
-
-    await generateDartClientClasses(grammar, config, now);
+    final dartConfig = config.clientConfig!.language as DartClientConfig;
+    await generateDartClientClasses(grammar, createPrifix(config.outputDir, dartConfig.packageName ?? ''), config, now);
   }
 
   /// Builds a [GeneratorConfig] from the current [options].

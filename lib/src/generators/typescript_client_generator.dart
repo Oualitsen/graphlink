@@ -15,7 +15,7 @@ Future<Set<String>> generateTypeScriptClientClasses(
     {String? pack}) async {
   final tsConfig = config.clientConfig!.language as TypeScriptClientConfig;
   final serializer = TypeScriptSerializer(parser,
-      typeMapOverrides: config.typeMappings ?? {});
+      typeMapOverrides: config.typeMappings ?? {}, importPrefix: '');
   final clientSerializer = TypeScriptClientSerializer(
     parser,
     serializer,
@@ -24,11 +24,10 @@ Future<Set<String>> generateTypeScriptClientClasses(
   );
   final futures = <Future<File>>[];
   final destinationDir = config.outputDir;
-  const prefix = '';
 
   parser.enums.forEach((k, def) {
     futures.add(writeToFile(
-      data: serializer.serializeEnumDefinition(def, ''),
+      data: serializer.serializeEnumDefinition(def),
       fileName: serializer.getFileNameFor(def),
       subdir: 'enums',
       imports: [],
@@ -38,7 +37,7 @@ Future<Set<String>> generateTypeScriptClientClasses(
 
   parser.inputs.forEach((k, def) {
     futures.add(writeToFile(
-      data: serializer.serializeInputDefinition(def, prefix),
+      data: serializer.serializeInputDefinition(def),
       fileName: serializer.getFileNameFor(def),
       subdir: 'inputs',
       imports: [],
@@ -52,7 +51,7 @@ Future<Set<String>> generateTypeScriptClientClasses(
   allProjectedTypes.forEach((k, def) {
     final subdir = def is GLInterfaceDefinition ? 'interfaces' : 'types';
     futures.add(writeToFile(
-      data: serializer.serializeTypeDefinition(def, prefix),
+      data: serializer.serializeTypeDefinition(def),
       fileName: serializer.getFileNameFor(def),
       subdir: subdir,
       imports: [],
@@ -61,7 +60,7 @@ Future<Set<String>> generateTypeScriptClientClasses(
   });
 
   futures.add(writeToFile(
-    data: serializer.serializeGlClass(clientSerializer.generateClient(prefix), importPrefix: prefix),
+    data: serializer.serializeGlClass(clientSerializer.generateClient()),
     fileName: 'graph-link-client${clientSerializer.fileExtension}',
     subdir: 'client',
     imports: [],
@@ -70,7 +69,7 @@ Future<Set<String>> generateTypeScriptClientClasses(
 
   if (parser.hasUploadMutations) {
     futures.add(writeToFile(
-      data: serializer.serializeGlClass(clientSerializer.generateUploadsFile(), importPrefix: prefix),
+      data: serializer.serializeGlClass(clientSerializer.generateUploadsFile()),
       fileName: 'graph-link-uploads${clientSerializer.fileExtension}',
       subdir: 'client',
       imports: [],
@@ -81,7 +80,7 @@ Future<Set<String>> generateTypeScriptClientClasses(
   final adaptersModel = clientSerializer.generateAdaptersFile(tsConfig.httpAdapter);
   if (adaptersModel != null) {
     futures.add(writeToFile(
-      data: serializer.serializeGlClass(adaptersModel, importPrefix: prefix),
+      data: serializer.serializeGlClass(adaptersModel),
       fileName: 'graph-link-adapters${clientSerializer.fileExtension}',
       subdir: 'client',
       imports: [],

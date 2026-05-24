@@ -13,24 +13,21 @@ import 'package:graphlink/src/serializers/flutter_types_serializer.dart';
 import 'package:graphlink/src/utils.dart';
 
 Future<Set<String>> generateDartClientClasses(
-    GLParser parser, GeneratorConfig config, DateTime started,
-    {String? pack}) async {
+    GLParser parser, String importPrefix, GeneratorConfig config, DateTime started,
+    ) async {
   final dartConfig = config.clientConfig!.language as DartClientConfig;
   final serializer = DartSerializer(parser,
       generateJsonMethods: true,
-      typeMapOverrides: config.typeMappings ?? {});
+      typeMapOverrides: config.typeMappings ?? {}, importPrefix: importPrefix);
   final clientSerializer = DartClientSerializer(parser, serializer,
       generateAdapters: dartConfig.generateAdapters,
       httpAdapter: dartConfig.httpAdapter);
   final futures = <Future<File>>[];
   final destinationDir = config.outputDir;
-  final packageName = dartConfig.packageName;
-  final prefix =
-      'package:$packageName/${(pack ?? config.outputDir).replaceFirst("lib/", "")}';
 
   parser.enums.forEach((k, def) {
     futures.add(writeToFile(
-      data: serializer.serializeEnumDefinition(def, ''),
+      data: serializer.serializeEnumDefinition(def),
       fileName: serializer.getFileNameFor(def),
       subdir: 'enums',
       imports: [],
@@ -40,7 +37,7 @@ Future<Set<String>> generateDartClientClasses(
 
   parser.inputs.forEach((k, def) {
     futures.add(writeToFile(
-      data: serializer.serializeInputDefinition(def, prefix),
+      data: serializer.serializeInputDefinition(def),
       fileName: serializer.getFileNameFor(def),
       subdir: 'inputs',
       imports: [],
@@ -54,7 +51,7 @@ Future<Set<String>> generateDartClientClasses(
   allProjectedTypes.forEach((k, def) {
     final subdir = def is GLInterfaceDefinition ? 'interfaces' : 'types';
     futures.add(writeToFile(
-      data: serializer.serializeTypeDefinition(def, prefix),
+      data: serializer.serializeTypeDefinition(def),
       fileName: serializer.getFileNameFor(def),
       subdir: subdir,
       imports: [],
@@ -64,12 +61,12 @@ Future<Set<String>> generateDartClientClasses(
 
   final flutterConfig = dartConfig.flutter;
   if (flutterConfig != null && flutterConfig.generateTypes) {
-    final flutterSerializer = FlutterTypesSerializer(parser, serializer, flutterConfig);
+    final flutterSerializer = FlutterTypesSerializer(parser, serializer, flutterConfig, importPrefix);
 
     parser.enums.forEach((k, def) {
       if (flutterSerializer.shouldSkipEnum(def)) return;
       futures.add(writeToFile(
-        data: flutterSerializer.serializeEnumLabels(def, prefix),
+        data: flutterSerializer.serializeEnumLabels(def),
         fileName: flutterSerializer.getEnumLabelsFileNameFor(def),
         subdir: 'widgets/enums',
         imports: [],
@@ -78,7 +75,7 @@ Future<Set<String>> generateDartClientClasses(
     });
 
     parser.projectedTypes.forEach((k, def) {
-      final content = flutterSerializer.serializeTypeWidget(def, prefix);
+      final content = flutterSerializer.serializeTypeWidget(def);
       if (content.isNotEmpty) {
         futures.add(writeToFile(
           data: content,
@@ -92,11 +89,11 @@ Future<Set<String>> generateDartClientClasses(
   }
 
   if (flutterConfig != null && flutterConfig.generateInputs) {
-    final inputsSerializer = FlutterInputsSerializer(parser, serializer, flutterConfig);
+    final inputsSerializer = FlutterInputsSerializer(parser, serializer, flutterConfig, importPrefix);
 
     // shared once-generated files
     futures.add(writeToFile(
-      data: inputsSerializer.serializeSharedInputFormWidget(prefix),
+      data: inputsSerializer.serializeSharedInputFormWidget(),
       fileName: 'input_form_widget.dart',
       subdir: 'widgets/inputs',
       imports: [],
@@ -190,7 +187,7 @@ Future<Set<String>> generateDartClientClasses(
     ));
 
     parser.inputs.forEach((k, def) {
-      final content = inputsSerializer.serializeInputForm(def, prefix);
+      final content = inputsSerializer.serializeInputForm(def);
       if (content.isNotEmpty) {
         futures.add(writeToFile(
           data: content,
@@ -205,7 +202,7 @@ Future<Set<String>> generateDartClientClasses(
  
 
   futures.add(writeToFile(
-    data: serializer.serializeGlClass(clientSerializer.generateClient(prefix), importPrefix: prefix),
+    data: serializer.serializeGlClass(clientSerializer.generateClient()),
     fileName: 'graph_link_client${clientSerializer.fileExtension}',
     subdir: 'client',
     imports: [],
@@ -214,7 +211,7 @@ Future<Set<String>> generateDartClientClasses(
 
   if (parser.hasUploadMutations) {
     futures.add(writeToFile(
-      data: serializer.serializeGlClass(clientSerializer.generateUploadsFile(), importPrefix: prefix),
+      data: serializer.serializeGlClass(clientSerializer.generateUploadsFile()),
       fileName: 'graph_link_uploads${clientSerializer.fileExtension}',
       subdir: 'client',
       imports: [],
@@ -230,7 +227,7 @@ Future<Set<String>> generateDartClientClasses(
             httpAdapter == DartHttpAdapter.dio
                 ? clientSerializer.generateDioAdapterFile()
                 : clientSerializer.generateHttpAdapterFile(),
-            importPrefix: prefix),
+           ),
         fileName: httpAdapter == DartHttpAdapter.dio
             ? 'graph_link_dio_adapter${clientSerializer.fileExtension}'
             : 'graph_link_http_adapter${clientSerializer.fileExtension}',
@@ -241,7 +238,7 @@ Future<Set<String>> generateDartClientClasses(
     }
     if (parser.hasSubscriptions) {
       futures.add(writeToFile(
-        data: serializer.serializeGlClass(clientSerializer.generateDefaultWebSocketAdapterFile(), importPrefix: prefix),
+        data: serializer.serializeGlClass(clientSerializer.generateDefaultWebSocketAdapterFile()),
         fileName: 'graph_link_websocket_adapter${clientSerializer.fileExtension}',
         subdir: 'client',
         imports: [],

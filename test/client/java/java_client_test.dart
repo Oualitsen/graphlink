@@ -75,8 +75,7 @@ type Subscription {
 ''';
     g.parse(text);
 
-    await generateJavaClientClasses(g, getConfig(g), DateTime.now(),
-        pack: 'org.gqlclient.generated');
+    await generateJavaClientClasses(g, 'org.gqlclient.generated', getConfig(g), DateTime.now());
   });
 
   test("GraphLinkJsonEncoder serialization", () {
@@ -86,10 +85,10 @@ type Subscription {
   ${javaJsonEncoderDecorder}
 ''');
 
-    var serializer = JavaSerializer(g);
+    var serializer = JavaSerializer(g, importPrefix: "com.myorg");
 
     var serial = serializer.serializeTypeDefinition(
-        g.interfaces['GraphLinkJsonEncoder']!, 'com.myorg');
+        g.interfaces['GraphLinkJsonEncoder']!);
     expect(
         serial.split("\n").map((e) => e.trim()).where((e) => e.isNotEmpty),
         containsAllInOrder([
@@ -107,10 +106,10 @@ type Subscription {
   ${javaJsonEncoderDecorder}
 ''');
 
-    var serializer = JavaSerializer(g);
+    var serializer = JavaSerializer(g, importPrefix: 'com.myorg');
 
     var serial = serializer.serializeTypeDefinition(
-        g.interfaces['GraphLinkJsonDecoder']!, 'com.myorg');
+        g.interfaces['GraphLinkJsonDecoder']!);
     expect(
         serial.split("\n").map((e) => e.trim()).where((e) => e.isNotEmpty),
         containsAllInOrder([
@@ -129,10 +128,10 @@ type Subscription {
   ${javaClientAdapterNoParamSync}
 ''');
 
-    var serializer = JavaSerializer(g);
+    var serializer = JavaSerializer(g, importPrefix: "com.myorg");
 
     var serial = serializer.serializeTypeDefinition(
-        g.interfaces['GraphLinkClientAdapter']!, 'com.myorg');
+        g.interfaces['GraphLinkClientAdapter']!);
     expect(
         serial.split("\n").map((e) => e.trim()).where((e) => e.isNotEmpty),
         containsAllInOrder([

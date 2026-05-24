@@ -13,7 +13,7 @@ GLParser _parser() =>
 List<String> _lines(String schema, String inputName) {
   final g = _parser()..parse(schema);
   final input = g.inputs[inputName]!;
-  final result = DartSerializer(g).serializeInputDefinition(input, '');
+  final result = DartSerializer(g, importPrefix: "").serializeInputDefinition(input);
   return result.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
 }
 

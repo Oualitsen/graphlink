@@ -33,6 +33,7 @@ class TypeScriptSerializer extends GLSerializer {
     this.immutableTypeFields = true,
     this.optionalNullableInputFields = true,
     super.typeMapOverrides = const {},
+    required super.importPrefix,
   });
 
   @override
@@ -150,12 +151,12 @@ class TypeScriptSerializer extends GLSerializer {
   /// Overridden to add interface implementations as import deps for union types,
   /// since the base only does this when generateJsonMethods is true.
   @override
-  String serializeImports(GLToken token, String importPrefix) {
+  String serializeImports(GLToken token) {
     if (token is GLInterfaceDefinition && token.getSerializableImplementations(mode).isNotEmpty) {
       var deps = {...token.getImportDependecies(grammar), ...token.getSerializableImplementations(mode)};
       final buffer = StringBuffer();
       for (final dep in deps) {
-        final import = serializeImportToken(dep, importPrefix);
+        final import = serializeImportToken(dep);
         if (import.isNotEmpty) buffer.writeln(import);
       }
       for (final i in token.getImports(grammar)) {
@@ -164,7 +165,7 @@ class TypeScriptSerializer extends GLSerializer {
       }
       return buffer.toString();
     }
-    return super.serializeImports(token, importPrefix);
+    return super.serializeImports(token);
   }
 
   // ── File naming & imports ──────────────────────────────────────────────────
@@ -174,7 +175,7 @@ class TypeScriptSerializer extends GLSerializer {
       "${token.token.toKebabCase()}.ts";
 
   @override
-  String serializeImportToken(GLToken token, String importPrefix) {
+  String serializeImportToken(GLToken token) {
     String? subDir;
     if (token is GLEnumDefinition) {
       subDir = "enums";
@@ -201,13 +202,13 @@ class TypeScriptSerializer extends GLSerializer {
 
   @override
   String serializeGlClass(GLClassModel theClass,
-      {bool withImports = true, required String importPrefix}) {
+      {bool withImports = true}) {
     if (!withImports || theClass.importDepencies.isEmpty) {
       return super.serializeGlClass(theClass,
-          withImports: withImports, importPrefix: importPrefix);
+          withImports: withImports);
     }
     final tokenImports = theClass.importDepencies
-        .map((dep) => serializeImportToken(dep, importPrefix))
+        .map((dep) => serializeImportToken(dep))
         .where((l) => l.trim().isNotEmpty)
         .toList();
     final simpleImports =
@@ -217,6 +218,6 @@ class TypeScriptSerializer extends GLSerializer {
       body: theClass.body,
     );
     return super.serializeGlClass(merged,
-        withImports: withImports, importPrefix: importPrefix);
+        withImports: withImports);
   }
 }

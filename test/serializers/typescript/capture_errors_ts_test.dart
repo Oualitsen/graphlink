@@ -22,19 +22,19 @@ GLParser _parse(String schema, {bool captureErrors = false}) {
 }
 
 String _client(GLParser g) {
-  final ts = TypeScriptSerializer(g);
+  final ts = TypeScriptSerializer(g, importPrefix: "");
   return TypeScriptClientSerializer(g, ts)
-      .generateClient('')
+      .generateClient()
       .toFileContent();
 }
 
 String _queries(GLParser g) {
-  final ts = TypeScriptSerializer(g);
+  final ts = TypeScriptSerializer(g, importPrefix: "");
   return TypeScriptClientSerializer(g, ts).getQueriesClass('')?.toFileContent() ?? '';
 }
 
 String _mutations(GLParser g) {
-  final ts = TypeScriptSerializer(g);
+  final ts = TypeScriptSerializer(g, importPrefix: "");
   return TypeScriptClientSerializer(g, ts).getMutationsClass('')?.toFileContent() ?? '';
 }
 

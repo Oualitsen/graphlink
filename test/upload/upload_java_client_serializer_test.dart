@@ -37,7 +37,7 @@ JavaClientSerializer _serializer(String schema, {JavaJsonCodec codec = JavaJsonC
   ].join();
   final parser = GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true)
     ..parse(fullSchema);
-  final javaSerializer = JavaSerializer(parser, generateJsonMethods: true);
+  final javaSerializer = JavaSerializer(parser, importPrefix: "", generateJsonMethods: true);
   return JavaClientSerializer(parser, javaSerializer, jsonCodec: codec);
 }
 
@@ -49,7 +49,7 @@ void main() {
     late String out;
     setUpAll(() {
       final s = _serializer(_schema);
-      return out =  s.serializer.serializeGlClass( s.generateGLUploadFile(), importPrefix: 'com.example');
+      return out =  s.serializer.serializeGlClass( s.generateGLUploadFile());
     });
    
 
@@ -68,7 +68,7 @@ void main() {
     late String out;
     setUpAll(() {
       final s = _serializer(_schema);
-      return out =  s.serializer.serializeGlClass( s.generateUploadProgressCallbackFile(), importPrefix: 'com.example');
+      return out =  s.serializer.serializeGlClass( s.generateUploadProgressCallbackFile());
     });
 
     test('is FunctionalInterface', () => expect(out, contains('@FunctionalInterface')));
@@ -82,7 +82,7 @@ void main() {
     late String out;
     setUpAll(() {
       final s = _serializer(_schema);
-      return out =  s.serializer.serializeGlClass( s.generateMultipartAdapterFile('com.example.generated'), importPrefix: 'com.example.generated');
+      return out =  s.serializer.serializeGlClass( s.generateMultipartAdapterFile('com.example.generated'));
     });
     test('declares executeMultipart', () => expect(out, contains('executeMultipart')));
     test('takes Map<String, GLUpload>', () => expect(out, contains('Map<String, GLUpload>')));
@@ -128,7 +128,7 @@ void main() {
   // ---------------------------------------------------------------------------
   group('GraphLinkClient — upload constructors', () {
     late String out;
-    setUpAll(() => out = _serializer(_schema).generateClient('com.example.generated').toFileContent());
+    setUpAll(() => out = _serializer(_schema).generateClient().toFileContent());
 
     test('full constructor takes multipartAdapter', () => expect(out, contains('GraphLinkMultipartAdapter multipartAdapter')));
     test('mutations instantiation passes multipartAdapter', () => expect(out, contains('new GraphLinkMutations(adapter, multipartAdapter')));
@@ -141,7 +141,7 @@ void main() {
   // ---------------------------------------------------------------------------
   group('GraphLinkClient — no upload constructors', () {
     late String out;
-    setUpAll(() => out = _serializer(_plainSchema).generateClient('').toFileContent());
+    setUpAll(() => out = _serializer(_plainSchema).generateClient().toFileContent());
 
     test('no multipartAdapter in constructor', () => expect(out, isNot(contains('GraphLinkMultipartAdapter'))));
     test('mutations instantiation has no multipartAdapter', () => expect(out, isNot(contains('new GraphLinkMutations(adapter, multipartAdapter'))));
@@ -154,7 +154,7 @@ void main() {
     late String out;
     setUpAll(() {
       var s = _serializer(_schema);
-      return out = s.serializer.serializeGlClass(s.generateDefaultClientAdapterFile('okhttp', ''), importPrefix: 'com.example');
+      return out = s.serializer.serializeGlClass(s.generateDefaultClientAdapterFile('okhttp', ''));
     });
 
     test('implements GraphLinkMultipartAdapter', () => expect(out, contains('implements GraphLinkClientAdapter, GraphLinkMultipartAdapter')));
@@ -186,17 +186,17 @@ void main() {
   // ---------------------------------------------------------------------------
   group('convenience constructor codec', () {
     test('jackson codec uses JacksonGraphLinkJsonCodec', () {
-      final out = _serializer(_plainSchema, codec: JavaJsonCodec.jackson).generateClient('').toFileContent();
+      final out = _serializer(_plainSchema, codec: JavaJsonCodec.jackson).generateClient().toFileContent();
       expect(out, contains('new JacksonGraphLinkJsonCodec()'));
     });
 
     test('gson codec uses GsonGraphLinkJsonCodec', () {
-      final out = _serializer(_plainSchema, codec: JavaJsonCodec.gson).generateClient('').toFileContent();
+      final out = _serializer(_plainSchema, codec: JavaJsonCodec.gson).generateClient().toFileContent();
       expect(out, contains('new GsonGraphLinkJsonCodec()'));
     });
 
     test('none codec omits url-only constructor', () {
-      final out = _serializer(_plainSchema, codec: JavaJsonCodec.none).generateClient('').toFileContent();
+      final out = _serializer(_plainSchema, codec: JavaJsonCodec.none).generateClient().toFileContent();
       expect(out, isNot(contains('this(url,')));
     });
   });

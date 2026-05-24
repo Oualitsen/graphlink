@@ -18,8 +18,8 @@ const _directives = '''
 String _class(String schema, String inputName) {
   final g = GLParser(mode: CodeGenerationMode.server)
     ..parse('$_directives $schema');
-  return JavaSerializer(g, generateJsonMethods: false, typeMapOverrides: {"Boolean": "boolean"})
-      .serializeInputDefinition(g.inputs[inputName]!, '');
+  return JavaSerializer(g, importPrefix: "", generateJsonMethods: false, typeMapOverrides: {"Boolean": "boolean"})
+      .serializeInputDefinition(g.inputs[inputName]!);
 }
 
 /// Serializes [inputName] from [schema] in record mode (inputs + types as records).
@@ -27,10 +27,11 @@ String _record(String schema, String inputName) {
   final g = GLParser(mode: CodeGenerationMode.server)
     ..parse('$_directives $schema');
   return JavaSerializer(g,
+          importPrefix: '',
           generateJsonMethods: false,
           inputsAsRecords: true,
           typesAsRecords: true)
-      .serializeInputDefinition(g.inputs[inputName]!, '');
+      .serializeInputDefinition(g.inputs[inputName]!);
 }
 
 // ---------------------------------------------------------------------------

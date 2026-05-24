@@ -15,9 +15,10 @@ List<String> _lines(String schema, String inputName,
   final g = _parser()..parse(schema);
   final input = g.inputs[inputName]!;
   final result = JavaSerializer(g,
+          importPrefix: "",
           inputsAsRecords: inputsAsRecords,
           typesAsRecords: typesAsRecords)
-      .serializeInputDefinition(input, '');
+      .serializeInputDefinition(input);
   return result.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
 }
 
@@ -153,7 +154,7 @@ void main() {
     test("get instead of is for Boolean in Java", () {
      var p =  GLParser(mode: CodeGenerationMode.server);
      p.parse(_mappedToBool);
-     var serializer = JavaSerializer(p, typeMapOverrides: {
+     var serializer = JavaSerializer(p, importPrefix: "dev.graphlink", typeMapOverrides: {
       "ID": "String",
       "String": "String",
       "Float": "Double",
@@ -162,7 +163,7 @@ void main() {
       "Bool": "Boolean",
       "Null": "null"
      });
-     var input = serializer.serializeInputDefinition(p.inputs['MissionInfoInput']!, 'dev.graphlink');
+     var input = serializer.serializeInputDefinition(p.inputs['MissionInfoInput']!);
      expect(input, contains('missionInfo.getLookingForFullTime()'));
      expect(input, contains('missionInfo.getAcceptsEveningShifts()'));
     });

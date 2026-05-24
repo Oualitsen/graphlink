@@ -15,7 +15,7 @@ void main() {
 
     g.parse(text);
 
-    var javaSerialzer = JavaSerializer(g);
+    var javaSerialzer = JavaSerializer(g, importPrefix: "");
     var person = g.getTypeByName("Person")!;
     var aged = person.fields.where((f) => f.name.token == "aged").first;
 
@@ -33,7 +33,7 @@ void main() {
 
     g.parse(text);
 
-    var javaSerialzer = JavaSerializer(g);
+    var javaSerialzer = JavaSerializer(g, importPrefix: "");
     var person = g.getTypeByName("Person")!;
     var aged = person.fields.where((f) => f.name.token == "aged").first;
 
@@ -51,7 +51,7 @@ void main() {
 
     g.parse(text);
 
-    var javaSerialzer = JavaSerializer(g);
+    var javaSerialzer = JavaSerializer(g, importPrefix: "");
     var person = g.getTypeByName("Person")!;
     var ids = person.fields.where((f) => f.name.token == "ids").first;
 
@@ -70,7 +70,7 @@ void main() {
 
     g.parse(text);
 
-    var javaSerialzer = JavaSerializer(g);
+    var javaSerialzer = JavaSerializer(g, importPrefix: "");
     var person = g.getTypeByName("Person")!;
     var age = person.fields.where((f) => f.name.token == "age").first;
     var age2 = person.fields.where((f) => f.name.token == "age2").first;

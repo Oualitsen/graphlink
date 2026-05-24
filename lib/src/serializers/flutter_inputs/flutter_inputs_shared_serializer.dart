@@ -4,7 +4,7 @@ class FlutterInputsSharedSerializer {
   final FlutterConfig _config;
   const FlutterInputsSharedSerializer(this._config);
 
-  String serializeSharedInputFormWidget(String importPrefix) => '''
+  String serializeSharedInputFormWidget() => '''
 import 'package:flutter/material.dart';
 
 abstract class InputFormWidget<T> extends StatefulWidget {

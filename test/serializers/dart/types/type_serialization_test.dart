@@ -16,9 +16,9 @@ void main() {
 
     g.parse(text);
 
-    var javaSerialzer = DartSerializer(g);
+    var javaSerialzer = DartSerializer(g, importPrefix: "");
     var user = g.getTypeByName("User")!;
-    var result = javaSerialzer.serializeTypeDefinition(user, "");
+    var result = javaSerialzer.serializeTypeDefinition(user);
     expect(result, isNot(contains("String companyId")));
   });
 
@@ -32,21 +32,21 @@ void main() {
 
     g.parse(text);
 
-    var javaSerialzer = DartSerializer(g);
+    var javaSerialzer = DartSerializer(g, importPrefix: "");
     var user = g.getTypeByName("User")!;
-    var result = javaSerialzer.serializeTypeDefinition(user, "");
+    var result = javaSerialzer.serializeTypeDefinition(user);
     expect(result, isNot(contains("Company company")));
 
     var input = g.inputs["SkipInput"]!;
     var skippedInputSerialized =
-        javaSerialzer.serializeInputDefinition(input, "");
+        javaSerialzer.serializeInputDefinition(input);
     expect(skippedInputSerialized, "");
 
     var enum_ = g.enums["Gender"]!;
-    var serializedEnum = javaSerialzer.serializeEnumDefinition(enum_, "");
+    var serializedEnum = javaSerialzer.serializeEnumDefinition(enum_);
     expect(serializedEnum, "");
     var type = g.getTypeByName("SkipType")!;
-    var serilzedType = javaSerialzer.serializeTypeDefinition(type, "");
+    var serilzedType = javaSerialzer.serializeTypeDefinition(type);
     expect(serilzedType, "");
   });
 
@@ -59,8 +59,8 @@ void main() {
     g.parse(text);
 
     var user = g.getTypeByName("User")!;
-    var dartSerialzer = DartSerializer(g);
-    var class_ = dartSerialzer.serializeTypeDefinition(user, "");
+    var dartSerialzer = DartSerializer(g, importPrefix: "");
+    var class_ = dartSerialzer.serializeTypeDefinition(user);
     expect(
       class_.split("\n").map((str) => str.trim()),
       containsAllInOrder([
@@ -83,8 +83,8 @@ void main() {
     g.parse(text);
 
     var user = g.inputs["UserInput"];
-    var dartSerialzer = DartSerializer(g);
-    var class_ = dartSerialzer.serializeInputDefinition(user!, "");
+    var dartSerialzer = DartSerializer(g, importPrefix: "");
+    var class_ = dartSerialzer.serializeInputDefinition(user!);
     expect(
       class_.split("\n").map((str) => str.trim()),
       containsAllInOrder([
@@ -107,7 +107,7 @@ void main() {
     g.parse('type Product { name: String! }');
 
     final product = g.getTypeByName("Product")!;
-    final result = DartSerializer(g).serializeTypeDefinition(product, "");
+    final result = DartSerializer(g, importPrefix: "").serializeTypeDefinition(product);
     expect(result, contains("String? name"));
   });
 
@@ -116,7 +116,7 @@ void main() {
     g.parse('input ProductInput { name: String! }');
 
     final input = g.inputs["ProductInput"]!;
-    final result = DartSerializer(g).serializeInputDefinition(input, "");
+    final result = DartSerializer(g, importPrefix: "").serializeInputDefinition(input);
     expect(result, contains("String name"));
     expect(result, isNot(contains("String? name")));
   });
@@ -130,7 +130,7 @@ void main() {
     g.parse(text);
 
     var entity = g.interfaces["Interface1"]!;
-    var dartSerialzer = DartSerializer(g);
+    var dartSerialzer = DartSerializer(g, importPrefix: "");
     var class_ = dartSerialzer.serializeInterface(entity).trim();
     expect(class_, startsWith("abstract class Interface1 {"));
     expect(class_, endsWith("}"));
@@ -148,7 +148,7 @@ void main() {
     g.parse(text);
 
     var entity = g.interfaces["Interface2"]!;
-    var dartSerialzer = DartSerializer(g);
+    var dartSerialzer = DartSerializer(g, importPrefix: "");
     var class_ = dartSerialzer.serializeInterface(entity).trim();
 
     expect(class_, startsWith("abstract class Interface2 extends IBase {"));
@@ -167,7 +167,7 @@ void main() {
     g.parse(text);
 
     var entity = g.interfaces["Interface3"]!;
-    var dartSerialzer = DartSerializer(g);
+    var dartSerialzer = DartSerializer(g, importPrefix: "");
     var class_ = dartSerialzer.serializeInterface(entity).trim();
     expect(class_,
         startsWith("abstract class Interface3 extends IBase, IBase2 {"));

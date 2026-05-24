@@ -71,7 +71,7 @@ abstract class GLClientSerializer {
 
   // ── File-level generation (abstract) ──────────────────────────────────────
 
-  GLClassModel generateClient(String importPrefix);
+  GLClassModel generateClient();
 
   GLClassModel generateUploadsFile();
 
@@ -144,11 +144,11 @@ abstract class GLClientSerializer {
     return Set.unmodifiable(result);
   }
 
-  String serializeImports(GLParser g, String importPrefix) {
+  String serializeImports(GLParser g) {
     var deps = getImportDependecies(g);
     final set = <String>{};
     for (var dep in deps) {
-      var import = serializer.serializeImportToken(dep, importPrefix);
+      var import = serializer.serializeImportToken(dep);
       if (import.isNotEmpty) {
         set.add(import);
       }

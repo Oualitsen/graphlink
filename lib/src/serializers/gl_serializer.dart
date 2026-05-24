@@ -19,6 +19,7 @@ abstract class GLSerializer {
   final GLParser grammar;
   late final CodeGenerationMode mode;
   bool get generateJsonMethods;
+  final String importPrefix;
 
   /// Language-specific scalar defaults (e.g. Boolean→bool for Dart).
   /// Subclasses must override this.
@@ -33,18 +34,18 @@ abstract class GLSerializer {
   /// field is populated.
   bool get forceFieldNullable => mode == CodeGenerationMode.server;
 
-  GLSerializer(this.grammar, {Map<String, String> typeMapOverrides = const {}})
+  GLSerializer(this.grammar, {Map<String, String> typeMapOverrides = const {}, required this.importPrefix})
       : mode = grammar.mode {
     typeMap = {...defaultTypeMap, ...typeMapOverrides};
     grammar.typeMap = typeMap;
   }
 
-  String serializeEnumDefinition(GLEnumDefinition def, String importPrefix) {
+  String serializeEnumDefinition(GLEnumDefinition def) {
     if (shouldSkipSerialization(directives: def.getDirectives(), mode: mode)) {
       return "";
     }
     return serializeWithImport(
-        def, importPrefix, doSerializeEnumDefinition(def));
+        def, doSerializeEnumDefinition(def));
   }
 
   String serialzeEnumValue(GLEnumValue value) {
@@ -69,22 +70,22 @@ abstract class GLSerializer {
   String doSerializeField(GLField def, bool immutable, bool isTypeField);
   String serializeType(GLType def, bool forceNullable);
 
-  String serializeInputDefinition(GLInputDefinition def, String importPrefix) {
+  String serializeInputDefinition(GLInputDefinition def) {
     if (shouldSkipSerialization(directives: def.getDirectives(), mode: mode)) {
       return "";
     }
     return serializeWithImport(
-        def, importPrefix, doSerializeInputDefinition(def));
+        def, doSerializeInputDefinition(def));
   }
 
   String doSerializeInputDefinition(GLInputDefinition def);
 
-  String serializeTypeDefinition(GLTypeDefinition def, String importPrefix) {
+  String serializeTypeDefinition(GLTypeDefinition def) {
     if (shouldSkipSerialization(directives: def.getDirectives(), mode: mode)) {
       return "";
     }
     return serializeWithImport(
-        def, importPrefix, doSerializeTypeDefinition(def));
+        def, doSerializeTypeDefinition(def));
   }
 
   String doSerializeTypeDefinition(GLTypeDefinition def);
@@ -118,11 +119,11 @@ abstract class GLSerializer {
 
   String getFileNameFor(GLToken token);
 
-  String serializeImportToken(GLToken token, String importPrefix);
+  String serializeImportToken(GLToken token);
   String serializeImport(String import);
 
-  String serializeWithImport(GLToken token, String importPrefix, String data) {
-    var imports = serializeImports(token, importPrefix);
+  String serializeWithImport(GLToken token, String data) {
+    var imports = serializeImports(token);
     var buffer = StringBuffer();
     buffer.writeln(imports);
     buffer.writeln();
@@ -130,7 +131,7 @@ abstract class GLSerializer {
     return buffer.toString();
   }
 
-  String serializeImports(GLToken token, String importPrefix) {
+  String serializeImports(GLToken token) {
     var deps = token.getImportDependecies(grammar);
     if (token is GLInterfaceDefinition && generateJsonMethods) {
       deps = {...deps, ...token.getSerializableImplementations(mode)};
@@ -141,7 +142,7 @@ abstract class GLSerializer {
     }
     var buffer = StringBuffer();
     for (var dep in deps) {
-      var import = serializeImportToken(dep, importPrefix);
+      var import = serializeImportToken(dep);
       if (import.isNotEmpty) {
         buffer.writeln(import);
       }
@@ -199,20 +200,20 @@ abstract class GLSerializer {
   /// Language-specific subclasses should override this to handle token
   /// dependencies via [serializeImportToken].
   String serializeGlClass(GLClassModel theClass,
-      {bool withImports = true, required String importPrefix}) {
+      {bool withImports = true}) {
     if (!withImports) return theClass.body.trim();
     return theClass.toFileContent();
   }
 
-  String serializeToken(GLToken token, String importPrefix) {
+  String serializeToken(GLToken token) {
     if (token is GLEnumDefinition) {
-      return serializeEnumDefinition(token, importPrefix);
+      return serializeEnumDefinition(token);
     }
     if (token is GLTypeDefinition) {
-      return serializeTypeDefinition(token, importPrefix);
+      return serializeTypeDefinition(token);
     }
     if (token is GLInputDefinition) {
-      return serializeInputDefinition(token, importPrefix);
+      return serializeInputDefinition(token);
     }
 
     throw "${token} is not an enum/type/input definition";

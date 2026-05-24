@@ -16,9 +16,9 @@ void main() {
         }
       ''');
 
-      final serializer = TypeScriptSerializer(g);
+      final serializer = TypeScriptSerializer(g, importPrefix: "");
       final result = serializer.serializeInputDefinition(
-          g.inputs['AddVehicleInput']!, '');
+          g.inputs['AddVehicleInput']!);
 
       expect(result, contains('export interface AddVehicleInput'));
       expect(result, contains('brand: string;'));
@@ -35,9 +35,9 @@ void main() {
         }
       ''');
 
-      final serializer = TypeScriptSerializer(g);
+      final serializer = TypeScriptSerializer(g, importPrefix: "");
       final result = serializer.serializeInputDefinition(
-          g.inputs['UpdateVehicleInput']!, '');
+          g.inputs['UpdateVehicleInput']!);
 
       expect(result, contains('brand: string;'));
       expect(result, contains('note?: string | null;'));
@@ -53,9 +53,9 @@ void main() {
       ''');
 
       final serializer =
-          TypeScriptSerializer(g, optionalNullableInputFields: false);
+          TypeScriptSerializer(g, importPrefix: "", optionalNullableInputFields: false);
       final result = serializer.serializeInputDefinition(
-          g.inputs['UpdateVehicleInput']!, '');
+          g.inputs['UpdateVehicleInput']!);
 
       expect(result, contains('brand: string;'));
       expect(result, contains('note: string | null;'));
@@ -69,9 +69,9 @@ void main() {
         }
       ''');
 
-      final serializer = TypeScriptSerializer(g);
+      final serializer = TypeScriptSerializer(g, importPrefix: "");
       final result = serializer.serializeInputDefinition(
-          g.inputs['TagsInput']!, '');
+          g.inputs['TagsInput']!);
 
       expect(result, contains('tags: string[];'));
     });
@@ -84,9 +84,9 @@ void main() {
         }
       ''');
 
-      final serializer = TypeScriptSerializer(g);
+      final serializer = TypeScriptSerializer(g, importPrefix: "");
       final result = serializer.serializeInputDefinition(
-          g.inputs['TagsInput']!, '');
+          g.inputs['TagsInput']!);
 
       expect(result, contains('tags?: string[] | null;'));
     });
@@ -99,9 +99,9 @@ void main() {
         }
       ''');
 
-      final serializer = TypeScriptSerializer(g);
+      final serializer = TypeScriptSerializer(g, importPrefix: "");
       final result = serializer.serializeInputDefinition(
-          g.inputs['TagsInput']!, '');
+          g.inputs['TagsInput']!);
 
       expect(result, contains('tags: (string | null)[];'));
     });
@@ -110,9 +110,9 @@ void main() {
       final g = GLParser(mode: CodeGenerationMode.client);
       g.parse('input InternalInput @glSkipOnClient { id: ID! }');
 
-      final serializer = TypeScriptSerializer(g);
+      final serializer = TypeScriptSerializer(g, importPrefix: "");
       final result = serializer.serializeInputDefinition(
-          g.inputs['InternalInput']!, '');
+          g.inputs['InternalInput']!);
 
       expect(result, isEmpty);
     });

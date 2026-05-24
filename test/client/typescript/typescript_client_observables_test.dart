@@ -5,13 +5,13 @@ import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 TypeScriptClientSerializer _makeSerializer(GLParser parser,
     {bool observables = false}) {
-  final serializer = TypeScriptSerializer(parser);
+  final serializer = TypeScriptSerializer(parser, importPrefix: "");
   return TypeScriptClientSerializer(parser, serializer, observables: observables);
 }
 
 String _client(GLParser parser, {bool observables = false}) =>
     _makeSerializer(parser, observables: observables)
-        .generateClient('')
+        .generateClient()
         .toFileContent();
 
 void main() {

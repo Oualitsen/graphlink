@@ -22,10 +22,10 @@ void main() {
 
     g.parse(text);
 
-    var serializer = DartSerializer(g);
+    var serializer = DartSerializer(g, importPrefix: "");
     var clientSerializer = DartClientSerializer(g, serializer);
 
-    var client = clientSerializer.generateClient("package").toFileContent();
+    var client = clientSerializer.generateClient().toFileContent();
     var lines =
         client.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty);
     expect(

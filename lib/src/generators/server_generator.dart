@@ -3,11 +3,9 @@ import 'dart:io';
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/io_utils.dart';
-import 'package:graphlink/src/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/express_apollo_server_serializer.dart';
-import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:graphlink/src/serializers/spring_server_serializer.dart';
 import 'package:graphlink/src/serializers/typescript_serializer.dart';
@@ -31,8 +29,10 @@ Future<Set<String>> generateServerClasses(
     immutableInputFields: springConfig.immutableInputFields,
     immutableTypeFields: springConfig.immutableTypeFields,
     typeMapOverrides: config.typeMappings ?? {},
+    importPrefix: springConfig.basePackage,
   );
   final springSerializer = SpringServerSerializer(grammar,
+      packageName: packageName,
       javaSerializer: serializer,
       generateSchema: springConfig.generateSchema,
       injectDataFetching: springConfig.injectDataFetching,
@@ -42,7 +42,7 @@ Future<Set<String>> generateServerClasses(
 
   grammar.getSerializableTypes().forEach((def) {
     futures.add(writeToFile(
-      data: serializer.serializeTypeDefinition(def, packageName),
+      data: serializer.serializeTypeDefinition(def),
       fileName: serializer.getFileNameFor(def),
       subdir: 'types',
       imports: [],
@@ -53,7 +53,7 @@ Future<Set<String>> generateServerClasses(
   });
   grammar.getSerializableInterfaces().forEach((def) {
     futures.add(writeToFile(
-      data: serializer.serializeTypeDefinition(def, packageName),
+      data: serializer.serializeTypeDefinition(def),
       fileName: serializer.getFileNameFor(def),
       subdir: 'interfaces',
       imports: [],
@@ -64,7 +64,7 @@ Future<Set<String>> generateServerClasses(
   });
   grammar.getSerializableEnums().forEach((def) {
     futures.add(writeToFile(
-      data: serializer.serializeEnumDefinition(def, packageName),
+      data: serializer.serializeEnumDefinition(def),
       fileName: serializer.getFileNameFor(def),
       subdir: 'enums',
       imports: [],
@@ -75,7 +75,7 @@ Future<Set<String>> generateServerClasses(
   });
   grammar.getSerializableInputs().forEach((def) {
     futures.add(writeToFile(
-      data: serializer.serializeInputDefinition(def, packageName),
+      data: serializer.serializeInputDefinition(def),
       fileName: serializer.getFileNameFor(def),
       subdir: 'inputs',
       imports: [],
@@ -86,7 +86,7 @@ Future<Set<String>> generateServerClasses(
   });
   grammar.services.forEach((k, def) {
     futures.add(writeToFile(
-      data: springSerializer.serializeService(def, packageName),
+      data: springSerializer.serializeService(def),
       fileName: serializer.getFileNameFor(def),
       subdir: 'services',
       imports: [],
@@ -97,7 +97,7 @@ Future<Set<String>> generateServerClasses(
   });
   grammar.controllers.forEach((k, def) {
     futures.add(writeToFile(
-      data: springSerializer.serializeController(def, packageName),
+      data: springSerializer.serializeController(def),
       fileName: serializer.getFileNameFor(def),
       subdir: 'controllers',
       imports: [],
@@ -108,7 +108,7 @@ Future<Set<String>> generateServerClasses(
   });
   grammar.repositories.forEach((k, def) {
     futures.add(writeToFile(
-      data: springSerializer.serializeRepository(def, packageName),
+      data: springSerializer.serializeRepository(def),
       fileName: '$k.java',
       subdir: 'repositories',
       imports: [],
@@ -118,9 +118,10 @@ Future<Set<String>> generateServerClasses(
     ));
   });
 
-  if (springConfig.generateSchema) {
+  final schema = springSerializer.serializeTypeDefs();
+  if (schema.isNotEmpty) {
     futures.add(saveSource(
-      data: GLGraphqlSerializer(grammar).generateSchema(),
+      data: schema,
       path: springConfig.schemaTargetPath!,
       graphqlSource: true,
     ));
@@ -137,7 +138,7 @@ Future<Set<String>> _generateExpressApolloClasses(
     GLParser grammar, GeneratorConfig config, DateTime started) async {
   final apolloConfig = config.serverConfig!.language as ExpressApolloServerConfig;
   final destinationDir = config.outputDir;
-  final tsSerializer = TypeScriptSerializer(grammar,
+  final tsSerializer = TypeScriptSerializer(grammar, importPrefix: '',
       typeMapOverrides: config.typeMappings ?? {});
   final serverSerializer = ExpressApolloServerSerializer(grammar, tsSerializer, apolloConfig);
   final futures = <Future<File>>[];
@@ -150,21 +151,21 @@ Future<Set<String>> _generateExpressApolloClasses(
 
   grammar.getSerializableEnums().forEach((def) {
     futures.add(saveSource(
-      data: tsSerializer.serializeEnumDefinition(def, ''),
+      data: tsSerializer.serializeEnumDefinition(def),
       path: '$destinationDir/enums/${tsSerializer.getFileNameFor(def)}',
       typescriptSource: true,
     ));
   });
   grammar.getSerializableInputs().forEach((def) {
     futures.add(saveSource(
-      data: tsSerializer.serializeInputDefinition(def, ''),
+      data: tsSerializer.serializeInputDefinition(def),
       path: '$destinationDir/inputs/${tsSerializer.getFileNameFor(def)}',
       typescriptSource: true,
     ));
   });
   grammar.getSerializableTypes().forEach((def) {
     futures.add(saveSource(
-      data: tsSerializer.serializeTypeDefinition(def, ''),
+      data: tsSerializer.serializeTypeDefinition(def),
       path: '$destinationDir/types/${tsSerializer.getFileNameFor(def)}',
       typescriptSource: true,
     ));
@@ -202,11 +203,7 @@ Future<Set<String>> _generateExpressApolloClasses(
     typescriptSource: true,
   ));
 
-  final hasUploads = grammar.uploadScalarNames.isNotEmpty &&
-      grammar.services.values.any((s) =>
-          s.fields.any((f) => f.arguments.any((a) =>
-              grammar.uploadScalarNames.contains(a.type.firstType.token))));
-  if (hasUploads) {
+  if (serverSerializer.hasUploads) {
     futures.add(saveSource(
       data: serverSerializer.serializeFileUploadType(),
       path: '$destinationDir/file-upload.ts',
@@ -220,7 +217,7 @@ Future<Set<String>> _generateExpressApolloClasses(
   }
 
   futures.add(saveSource(
-    data: serverSerializer.serializeResolvers(),
+    data: serverSerializer.serializeResolvers().first,
     path: '$destinationDir/resolvers/build-resolvers.ts',
     typescriptSource: true,
   ));
