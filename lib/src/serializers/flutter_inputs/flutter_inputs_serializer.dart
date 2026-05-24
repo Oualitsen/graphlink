@@ -18,6 +18,7 @@ class FlutterInputsSerializer {
   final GLParser _parser;
   final DartSerializer _dartSerializer;
   final FlutterConfig _config;
+  final String importPrefix;
 
   late final _u = DartCodeGenUtils();
   late final _types = FlutterInputsTypeHelpers(_parser, _dartSerializer, _config);
@@ -27,7 +28,7 @@ class FlutterInputsSerializer {
   late final _date = FlutterInputsDateSerializer(_u, _config, _types, _fields);
   late final _state = FlutterInputsStateSerializer(_u, _config, _types, _fields, _date);
 
-  FlutterInputsSerializer(this._parser, this._dartSerializer, this._config);
+  FlutterInputsSerializer(this._parser, this._dartSerializer, this._config, this.importPrefix);
 
   // ── File names ────────────────────────────────────────────────────────────────
 
@@ -40,8 +41,8 @@ class FlutterInputsSerializer {
 
   // ── Shared files (delegated) ──────────────────────────────────────────────────
 
-  String serializeSharedInputFormWidget(String importPrefix) =>
-      _shared.serializeSharedInputFormWidget(importPrefix);
+  String serializeSharedInputFormWidget() =>
+      _shared.serializeSharedInputFormWidget();
 
   String serializeSharedInputReadException() => _shared.serializeSharedInputReadException();
   String serializeSharedFieldWidgets() => _shared.serializeSharedFieldWidgets();
@@ -59,7 +60,7 @@ class FlutterInputsSerializer {
 
   // ── Per-input entry point ─────────────────────────────────────────────────────
 
-  String serializeInputForm(GLInputDefinition def, String importPrefix) {
+  String serializeInputForm(GLInputDefinition def) {
     if (shouldSkip(def)) return '';
 
     final entity = GlInputEntity(def, _parser);

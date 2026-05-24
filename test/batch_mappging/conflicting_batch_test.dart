@@ -65,9 +65,9 @@ void main() {
     final mapping = g.getMappingByName('recordDetails')!;
     expect(mapping.batch, isTrue);
 
-    final serializer = SpringServerSerializer(g);
+    final serializer = SpringServerSerializer(g, packageName: "com.example");
     final ctrl = g.controllers[g.controllerMappingName('Record')]!;
-    expect(serializer.serializeController(ctrl, 'com.example'),
+    expect(serializer.serializeController(ctrl),
         contains('@BatchMapping'));
   });
 }

@@ -29,7 +29,7 @@ DartClientSerializer _serializer(String schema,
     {DartHttpAdapter adapter = DartHttpAdapter.dio}) {
   final parser = GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true)
     ..parse(schema);
-  return DartClientSerializer(parser, DartSerializer(parser, generateJsonMethods: true),
+  return DartClientSerializer(parser, DartSerializer(parser, importPrefix: "", generateJsonMethods: true),
       generateAdapters: true, httpAdapter: adapter);
 }
 
@@ -47,7 +47,7 @@ void main() {
   group('client file — upload mutations', () {
     late String out;
     setUpAll(() {
-       out = _serializer(_schema).generateClient('').toFileContent();
+       out = _serializer(_schema).generateClient().toFileContent();
        print(out);
     });
 
@@ -87,7 +87,7 @@ void main() {
 
   group('no uploads — nothing emitted', () {
     test('client has no upload imports', () {
-      final out = _serializer(_plainSchema).generateClient('').toFileContent();
+      final out = _serializer(_plainSchema).generateClient().toFileContent();
       expect(out, isNot(contains('graph_link_uploads')));
       expect(out, isNot(contains('GLUploadConverter')));
     });

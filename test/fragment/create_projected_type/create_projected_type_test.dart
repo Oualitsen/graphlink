@@ -74,10 +74,10 @@ void main() async {
 
 ''');
 
-    var serializer = DartSerializer(g);
+    var serializer = DartSerializer(g, importPrefix: "");
     for (var pt in g.projectedTypes.values) {
       print("############## ${pt.token} ###########");
-      print(serializer.serializeTypeDefinition(pt, ""));
+      print(serializer.serializeTypeDefinition(pt));
     }
   });
 
@@ -130,10 +130,10 @@ void main() async {
 
 ''');
 
-    var serializer = DartSerializer(g);
+    var serializer = DartSerializer(g, importPrefix: "");
     for (var pt in g.projectedTypes.values) {
       print("############## ${pt.token} ###########2");
-      print(serializer.serializeTypeDefinition(pt, ""));
+      print(serializer.serializeTypeDefinition(pt));
     }
   });
 
@@ -159,10 +159,10 @@ void main() async {
 
 ''');
 
-    var serializer = DartSerializer(g);
+    var serializer = DartSerializer(g, importPrefix: "");
     for (var pt in g.projectedTypes.values) {
       print("############## ${pt.token} ###########");
-      print(serializer.serializeTypeDefinition(pt, ""));
+      print(serializer.serializeTypeDefinition(pt));
     }
   });
 
@@ -214,7 +214,7 @@ void main() async {
 
 ''');
 
-    var serializer = DartSerializer(g);
+    var serializer = DartSerializer(g, importPrefix: "");
     print(g.projectedInterfaces.keys);
     var iface1 = g.projectedInterfaces['BasicEntity_CreationDateId']!;
     var iface2 = g.projectedInterfaces['BasicEntity_Id']!;
@@ -229,7 +229,7 @@ void main() async {
       ...g.projectedInterfaces.values
     ]) {
       if (!pt.token.endsWith('Response')) {
-        print(serializer.serializeTypeDefinition(pt, ""));
+        print(serializer.serializeTypeDefinition(pt));
       }
     }
   });

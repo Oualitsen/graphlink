@@ -42,9 +42,9 @@ void main() {
     ''');
 
     var personService = g.services['PersonService']!;
-    var springSerializer = SpringServerSerializer(g);
+    var springSerializer = SpringServerSerializer(g, packageName: 'com.myorg');
     var serialzedService =
-        springSerializer.serializeService(personService, 'com.myorg');
+        springSerializer.serializeService(personService);
 
     expect(
         serialzedService
@@ -75,9 +75,9 @@ void main() {
     ''');
 
     var personService = g.services['PersonService']!;
-    var springSerializer = SpringServerSerializer(g, injectDataFetching: true);
+    var springSerializer = SpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
     var serialzedService =
-        springSerializer.serializeService(personService, 'com.myorg');
+        springSerializer.serializeService(personService);
     expect(
         serialzedService
             .split('\n')
@@ -107,9 +107,9 @@ void main() {
     ''');
 
     var personController = g.controllers['PersonServiceController']!;
-    var springSerializer = SpringServerSerializer(g);
+    var springSerializer = SpringServerSerializer(g, packageName: "");
     var serializedController =
-        springSerializer.serializeController(personController, 'com.myorg');
+        springSerializer.serializeController(personController);
     expect(
         serializedController
             .split('\n')
@@ -143,9 +143,9 @@ void main() {
     ''');
 
     var personController = g.controllers['PersonServiceController']!;
-    var springSerializer = SpringServerSerializer(g, injectDataFetching: true);
+    var springSerializer = SpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
     var serializedController =
-        springSerializer.serializeController(personController, 'com.myorg');
+        springSerializer.serializeController(personController);
     expect(
         serializedController
             .split('\n')

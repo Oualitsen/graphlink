@@ -14,10 +14,10 @@ void main() async {
     final GLParser g = GLParser(generateAllFieldsFragments: true);
     g.parse(text);
 
-    var serialize = DartSerializer(g);
+    var serialize = DartSerializer(g, importPrefix: "");
     for (var pt in g.projectedTypes.values) {
       print("############# ${pt.token} #############");
-      print(serialize.serializeTypeDefinition(pt, ""));
+      print(serialize.serializeTypeDefinition(pt));
     }
   });
 
@@ -28,9 +28,9 @@ void main() async {
     final GLParser g = GLParser(generateAllFieldsFragments: true);
     g.parse(text);
 
-    var serialize = DartSerializer(g);
+    var serialize = DartSerializer(g, importPrefix: "");
     for (var pt in g.projectedTypes.values) {
-      print(serialize.serializeTypeDefinition(pt, ""));
+      print(serialize.serializeTypeDefinition(pt));
     }
   });
 }

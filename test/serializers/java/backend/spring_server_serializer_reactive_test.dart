@@ -21,9 +21,9 @@ void main() {
 
   test("reactive service interface uses Mono/Flux return types", () {
     final g = buildParser();
-    final serializer = SpringServerSerializer(g, reactive: true);
+    final serializer = SpringServerSerializer(g, packageName: "myorg", reactive: true);
     final service = g.services["UserService"]!;
-    final result = serializer.serializeService(service, "myorg");
+    final result = serializer.serializeService(service);
 
     expect(
       result.split('\n').map((e) => e.trim()).toList(),
@@ -51,9 +51,9 @@ void main() {
         make: String!
       }
     ''');
-    final serializer = SpringServerSerializer(g, reactive: true);
+    final serializer = SpringServerSerializer(g, packageName: 'com.example', reactive: true);
     final ctrl = g.controllers['CarServiceController']!;
-    final result = serializer.serializeController(ctrl, 'com.example');
+    final result = serializer.serializeController(ctrl);
     print(result);
     expect(
       result.split('\n').map((e) => e.trim()).toList(),
@@ -69,9 +69,9 @@ void main() {
 
   test("reactive controller uses Mono/Flux return types without CompletableFuture", () {
     final g = buildParser();
-    final serializer = SpringServerSerializer(g, reactive: true);
+    final serializer = SpringServerSerializer(g, packageName: "myorg", reactive: true);
     final ctrl = g.controllers["UserServiceController"]!;
-    final result = serializer.serializeController(ctrl, "myorg");
+    final result = serializer.serializeController(ctrl);
 
     // must NOT contain CompletableFuture anywhere
     expect(result, isNot(contains("CompletableFuture")));

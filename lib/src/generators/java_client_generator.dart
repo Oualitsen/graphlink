@@ -12,8 +12,7 @@ import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:graphlink/src/utils.dart';
 
 Future<Set<String>> generateJavaClientClasses(
-    GLParser parser, GeneratorConfig config, DateTime started,
-    {String? pack}) async {
+    GLParser parser, String importPrefix, GeneratorConfig config, DateTime started) async {
   final javaConfig = config.clientConfig!.language as JavaClientConfig;
   final jsonCodec = javaConfig.jsonCodec;
   final serializer = JavaSerializer(
@@ -24,6 +23,7 @@ Future<Set<String>> generateJavaClientClasses(
     inputsAsRecords: javaConfig.inputAsRecord,
     typesAsRecords: javaConfig.typeAsRecord,
     typeMapOverrides: config.typeMappings ?? {},
+    importPrefix: importPrefix,
   );
   final clientSerializer = JavaClientSerializer(parser, serializer, jsonCodec: jsonCodec);
   final futures = <Future<File>>[];
@@ -34,7 +34,7 @@ Future<Set<String>> generateJavaClientClasses(
 
   parser.enums.forEach((k, def) {
     futures.add(writeToFile(
-      data: serializer.serializeEnumDefinition(def, ''),
+      data: serializer.serializeEnumDefinition(def),
       fileName: serializer.getFileNameFor(def),
       subdir: 'enums',
       imports: [],
@@ -45,7 +45,7 @@ Future<Set<String>> generateJavaClientClasses(
 
   parser.inputs.forEach((k, def) {
     futures.add(writeToFile(
-      data: serializer.serializeInputDefinition(def, prefix),
+      data: serializer.serializeInputDefinition(def),
       fileName: serializer.getFileNameFor(def),
       subdir: 'inputs',
       imports: [],
@@ -66,7 +66,7 @@ Future<Set<String>> generateJavaClientClasses(
   allProjectedTypes.forEach((k, def) {
     final subdir = def is GLInterfaceDefinition ? 'interfaces' : 'types';
     futures.add(writeToFile(
-      data: serializer.serializeTypeDefinition(def, prefix),
+      data: serializer.serializeTypeDefinition(def),
       fileName: serializer.getFileNameFor(def),
       subdir: subdir,
       imports: [],
@@ -76,7 +76,7 @@ Future<Set<String>> generateJavaClientClasses(
   });
 
   futures.add(writeToFile(
-    data: serializer.serializeGlClass(clientSerializer.generateClient(prefix, hasDefaultAdapters: wsAdapter != JavaWsAdapter.none), importPrefix: prefix),
+    data: serializer.serializeGlClass(clientSerializer.generateClient(hasDefaultAdapters: wsAdapter != JavaWsAdapter.none)),
     fileName: 'GraphLinkClient${clientSerializer.fileExtension}',
     subdir: 'client',
     imports: [],
@@ -84,7 +84,7 @@ Future<Set<String>> generateJavaClientClasses(
     packageName: packageName,
   ));
   futures.add(writeToFile(
-    data: serializer.serializeGlClass(clientSerializer.generateGraphLinkResolverBaseFile(prefix), importPrefix: prefix),
+    data: serializer.serializeGlClass(clientSerializer.generateGraphLinkResolverBaseFile(prefix)),
     fileName: 'GraphLinkResolverBase.java',
     subdir: 'client',
     imports: [],
@@ -96,7 +96,7 @@ Future<Set<String>> generateJavaClientClasses(
     final model = clientSerializer.generateQueriesClassFile(type, prefix);
     if (model != null) {
       futures.add(writeToFile(
-        data: serializer.serializeGlClass(model, importPrefix: prefix),
+        data: serializer.serializeGlClass(model),
         fileName: '${clientSerializer.classNameFromType(type)}.java',
         subdir: 'client',
         imports: [],
@@ -114,7 +114,7 @@ Future<Set<String>> generateJavaClientClasses(
     'InMemoryGraphLinkCacheStore.java': clientSerializer.generateInMemoryGraphLinkCacheStoreFile(),
   }.entries) {
     futures.add(writeToFile(
-      data: serializer.serializeGlClass(entry.value, importPrefix: prefix),
+      data: serializer.serializeGlClass(entry.value),
       fileName: entry.key,
       subdir: 'client',
       imports: [],
@@ -124,7 +124,7 @@ Future<Set<String>> generateJavaClientClasses(
   }
 
   futures.add(writeToFile(
-    data: serializer.serializeGlClass(clientSerializer.generateGraphLinkExceptionFile(prefix), importPrefix: prefix),
+    data: serializer.serializeGlClass(clientSerializer.generateGraphLinkExceptionFile(prefix)),
     fileName: clientSerializer.exceptionFileName,
     subdir: 'client',
     imports: [],
@@ -138,7 +138,7 @@ Future<Set<String>> generateJavaClientClasses(
       'UploadProgressCallback.java': clientSerializer.generateUploadProgressCallbackFile(),
     }.entries) {
       futures.add(writeToFile(
-        data: serializer.serializeGlClass(entry.value, importPrefix: prefix),
+        data: serializer.serializeGlClass(entry.value),
         fileName: entry.key,
         subdir: 'client',
         imports: [],
@@ -147,7 +147,7 @@ Future<Set<String>> generateJavaClientClasses(
       ));
     }
     futures.add(writeToFile(
-      data: serializer.serializeGlClass(clientSerializer.generateMultipartAdapterFile(prefix), importPrefix: prefix),
+      data: serializer.serializeGlClass(clientSerializer.generateMultipartAdapterFile(prefix)),
       fileName: 'GraphLinkMultipartAdapter.java',
       subdir: 'client',
       imports: [],
@@ -158,7 +158,7 @@ Future<Set<String>> generateJavaClientClasses(
 
   if (wsAdapter != JavaWsAdapter.none) {
     futures.add(writeToFile(
-      data: serializer.serializeGlClass(clientSerializer.generateDefaultClientAdapterFile(wsAdapter.name, prefix), importPrefix: prefix),
+      data: serializer.serializeGlClass(clientSerializer.generateDefaultClientAdapterFile(wsAdapter.name, prefix)),
       fileName: 'DefaultGraphLinkClientAdapter.java',
       subdir: 'client',
       imports: [],
@@ -169,7 +169,7 @@ Future<Set<String>> generateJavaClientClasses(
 
   if (jsonCodec != JavaJsonCodec.none) {
     futures.add(writeToFile(
-      data: serializer.serializeGlClass(clientSerializer.generateJsonCodecFile(jsonCodec.name, prefix), importPrefix: prefix),
+      data: serializer.serializeGlClass(clientSerializer.generateJsonCodecFile(jsonCodec.name, prefix)),
       fileName: jsonCodec == JavaJsonCodec.jackson
           ? 'JacksonGraphLinkJsonCodec.java'
           : 'GsonGraphLinkJsonCodec.java',
@@ -187,7 +187,7 @@ Future<Set<String>> generateJavaClientClasses(
       'GraphqlWsMessageTypes.java': clientSerializer.generateGraphqlWsMessageTypesFile(),
     }.entries) {
       futures.add(writeToFile(
-        data: serializer.serializeGlClass(entry.value, importPrefix: prefix),
+        data: serializer.serializeGlClass(entry.value),
         fileName: entry.key,
         subdir: 'client',
         imports: [],
@@ -196,7 +196,7 @@ Future<Set<String>> generateJavaClientClasses(
       ));
     }
     futures.add(writeToFile(
-      data: serializer.serializeGlClass(clientSerializer.generateGraphLinkSubscriptionHandlerFile(prefix), importPrefix: prefix),
+      data: serializer.serializeGlClass(clientSerializer.generateGraphLinkSubscriptionHandlerFile(prefix)),
       fileName: 'GraphLinkSubscriptionHandler.java',
       subdir: 'client',
       imports: [],
@@ -205,7 +205,7 @@ Future<Set<String>> generateJavaClientClasses(
     ));
     if (wsAdapter != JavaWsAdapter.none) {
       futures.add(writeToFile(
-        data: serializer.serializeGlClass(clientSerializer.generateDefaultWebSocketAdapterFile(wsAdapter.name, prefix), importPrefix: prefix),
+        data: serializer.serializeGlClass(clientSerializer.generateDefaultWebSocketAdapterFile(wsAdapter.name, prefix)),
         fileName: 'DefaultGraphLinkWebSocketAdapter.java',
         subdir: 'client',
         imports: [],

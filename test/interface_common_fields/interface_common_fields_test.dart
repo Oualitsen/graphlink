@@ -69,8 +69,8 @@ void main() async {
     expect(vehicle.fieldNames, containsAll(["make", "model"]));
     print(
         "implementations = ${vehicle.implementations.map((e) => e.token).toList()}");
-    var serial = DartSerializer(g);
-    print(serial.serializeTypeDefinition(vehicle, ''));
+    var serial = DartSerializer(g, importPrefix: "");
+    print(serial.serializeTypeDefinition(vehicle));
     expect(vehicle.implementations.length, 2);
   });
 

@@ -56,11 +56,11 @@ void main() {
 
     g.parse(text);
 
-    var javaSerialzer = JavaSerializer(g,
+    var javaSerialzer = JavaSerializer(g, importPrefix: "",
         immutableTypeFields: false, immutableInputFields: false);
 
     var user = g.inputs["UserInput"]!;
-    var userSerial = javaSerialzer.serializeInputDefinition(user, "");
+    var userSerial = javaSerialzer.serializeInputDefinition(user);
     print(userSerial);
     expect(
         userSerial,
@@ -83,7 +83,7 @@ void main() {
 
     g.parse(text);
 
-    var javaSerialzer = JavaSerializer(g);
+    var javaSerialzer = JavaSerializer(g, importPrefix: "");
 
     var ibase = g.interfaces["IBase"]!;
     var ibaseSerial = javaSerialzer.serializeInterface(ibase, getters: true);
@@ -109,10 +109,10 @@ void main() {
 
     g.parse(text);
 
-    var javaSerialzer = JavaSerializer(g);
+    var javaSerialzer = JavaSerializer(g, importPrefix: "");
 
     var user = g.getTypeByName("User")!;
-    var userSerial = javaSerialzer.serializeTypeDefinition(user, "");
+    var userSerial = javaSerialzer.serializeTypeDefinition(user);
     expect(
         userSerial,
         stringContainsInOrder([
@@ -135,10 +135,10 @@ void main() {
 
     g.parse(text);
 
-    var javaSerialzer = JavaSerializer(g);
+    var javaSerialzer = JavaSerializer(g, importPrefix: "");
 
     var gender = g.enums["Gender"]!;
-    var genderSerial = javaSerialzer.serializeEnumDefinition(gender, "");
+    var genderSerial = javaSerialzer.serializeEnumDefinition(gender);
     expect(
         genderSerial,
         stringContainsInOrder([
@@ -158,9 +158,9 @@ void main() {
 
     g.parse(text);
 
-    var springSerialzer = SpringServerSerializer(g);
+    var springSerialzer = SpringServerSerializer(g, packageName: "");
     var userCtrl = g.controllers["UserServiceController"]!;
-    var userController = springSerialzer.serializeController(userCtrl, "");
+    var userController = springSerialzer.serializeController(userCtrl);
     expect(
         userController,
         stringContainsInOrder(
@@ -183,11 +183,11 @@ void main() {
  }
 ''');
 
-    var serialzer = JavaSerializer(g);
-    var dartSerialzer = DartSerializer(g);
+    var serialzer = JavaSerializer(g, importPrefix: "");
+    var dartSerialzer = DartSerializer(g, importPrefix: "");
     var iface = g.interfaces['BasicEntity']!;
-    var javaSerial = serialzer.serializeTypeDefinition(iface, "com.myorg");
-    var dartSerial = dartSerialzer.serializeTypeDefinition(iface, "com.myorg");
+    var javaSerial = serialzer.serializeTypeDefinition(iface);
+    var dartSerial = dartSerialzer.serializeTypeDefinition(iface);
 
     expect(
         javaSerial,
@@ -199,8 +199,8 @@ void main() {
         stringContainsInOrder(
             ['abstract class BasicEntity ', '@Id()', 'String? get id;']));
 
-    print(serialzer.serializeTypeDefinition(iface, "com.myorg"));
-    print(dartSerialzer.serializeTypeDefinition(iface, "com.myorg"));
+    print(serialzer.serializeTypeDefinition(iface));
+    print(dartSerialzer.serializeTypeDefinition(iface));
   });
 
   test("annotations glApplyOnFields", () {
@@ -242,9 +242,9 @@ void main() {
     var countAnimals = query.getFieldByName("countAnimals")!;
     expect(countAnimals.getDirectiveByName("@auth2"), isNotNull);
     expect(countAnimals.getDirectiveByName("@auth"), isNull);
-    var springSerial = SpringServerSerializer(g);
+    var springSerial = SpringServerSerializer(g, packageName: "");
     var mainController = g.controllers["MainServiceController"]!;
-    print(springSerial.serializeController(mainController, "com.myorg"));
+    print(springSerial.serializeController(mainController));
 
     //print(serializer.serializeTypeDefinition(query, "com.myorg"));
   });

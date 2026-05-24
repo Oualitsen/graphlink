@@ -400,8 +400,8 @@ directive @gqQuery(
 ''');
 
     var repo = g.repositories["PersonRepo"]!;
-    var serializer = SpringServerSerializer(g);
-    serializer.serializeRepository(repo, "org.myorg");
+    var serializer = SpringServerSerializer(g, packageName: "org.myorg");
+    serializer.serializeRepository(repo);
     expect(repo.getImports(g),
         contains("org.springframework.stereotype.Repository"));
   });
@@ -521,8 +521,8 @@ type Cat implements Animal {
 ''');
 
     var animal = g.projectedInterfaces['Animal']!;
-    var serializer = DartSerializer(g, generateJsonMethods: true);
-    var animalSerial = serializer.serializeTypeDefinition(animal, "myorg");
+    var serializer = DartSerializer(g, importPrefix:  "myorg", generateJsonMethods: true);
+    var animalSerial = serializer.serializeTypeDefinition(animal);
     expect(animalSerial,
         stringContainsInOrder(["import 'myorg/types/cat.dart';"]));
   });
@@ -532,7 +532,7 @@ type Cat implements Animal {
         generateAllFieldsFragments: true,
         mode: CodeGenerationMode.client,
         autoGenerateQueries: true);
-    var serilazer = DartSerializer(g);
+    var serilazer = DartSerializer(g, importPrefix: "");
     var clientGen = DartClientSerializer(g, serilazer);
     const text = '''
 
@@ -561,7 +561,7 @@ type Cat  {
         generateAllFieldsFragments: true,
         mode: CodeGenerationMode.client,
         autoGenerateQueries: true);
-    var serilazer = DartSerializer(g);
+    var serilazer = DartSerializer(g, importPrefix: "");
     var clientGen = DartClientSerializer(g, serilazer);
 
     g.parse('''
@@ -589,7 +589,7 @@ type Cat  {
         generateAllFieldsFragments: true,
         mode: CodeGenerationMode.client,
         autoGenerateQueries: true);
-    var serilazer = DartSerializer(g);
+    var serilazer = DartSerializer(g, importPrefix: "");
     var clientGen = DartClientSerializer(g, serilazer);
 
     g.parse('''
@@ -612,7 +612,7 @@ type Query {
         generateAllFieldsFragments: true,
         mode: CodeGenerationMode.client,
         autoGenerateQueries: true);
-    var serilazer = DartSerializer(g);
+    var serilazer = DartSerializer(g, importPrefix: "");
     var clientGen = DartClientSerializer(g, serilazer);
 
     g.parse('''
@@ -881,11 +881,11 @@ type Query {
   
 ''');
 
-    var serializer = SpringServerSerializer(g, injectDataFetching: true);
+    var serializer = SpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
 
     var service = g.services["PersonService"]!;
 
-    serializer.serializeService(service, "com.myorg");
+    serializer.serializeService(service);
     expect(service.getImports(g),
         contains(SpringImports.gqlDataFetchingEnvironment));
   });
@@ -905,9 +905,9 @@ type Query {
   
 ''');
 
-    var serializer = SpringServerSerializer(g, injectDataFetching: true);
+    var serializer = SpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
     var controller = g.controllers["PersonServiceController"]!;
-    serializer.serializeController(controller, "com.myorg");
+    serializer.serializeController(controller);
     expect(controller.getImports(g),
         contains(SpringImports.gqlDataFetchingEnvironment));
   });
@@ -934,10 +934,10 @@ type Query {
   
 ''');
 
-    var serializer = JavaSerializer(g, generateJsonMethods: true);
+    var serializer = JavaSerializer(g, importPrefix: 'com.myorg', generateJsonMethods: true);
     var basicEntity = g.interfaces["BasicEntity"]!;
     var basicEntitySerial =
-        serializer.serializeTypeDefinition(basicEntity, 'com.myorg');
+        serializer.serializeTypeDefinition(basicEntity, );
     expect(basicEntitySerial, stringContainsInOrder(['import java.util.Map;']));
   });
 
@@ -956,9 +956,9 @@ type Query {
   
 ''');
 
-    var serializer = SpringServerSerializer(g, injectDataFetching: true);
+    var serializer = SpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
     var controller = g.controllers["PersonServiceController"]!;
-    var serial = serializer.serializeController(controller, "com.myorg");
+    var serial = serializer.serializeController(controller);
     print(serial);
     expect(controller.getImports(g), contains(SpringImports.gqlArgument));
   });

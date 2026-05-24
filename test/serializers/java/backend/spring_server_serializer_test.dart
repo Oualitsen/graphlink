@@ -21,9 +21,9 @@ void main() {
 
     g.parse(text);
 
-    var serverSerialzer = SpringServerSerializer(g);
+    var serverSerialzer = SpringServerSerializer(g, packageName: "");
     var userCtrl = g.controllers["UserServiceController"]!;
-    var result = serverSerialzer.serializeController(userCtrl, "myorg");
+    var result = serverSerialzer.serializeController(userCtrl);
     print(result);
     expect(
       result.split('\n').map((e) => e.trim()).toList(),
@@ -75,9 +75,9 @@ void main() {
 
     g.parse(text);
 
-    var serverSerialzer = SpringServerSerializer(g);
+    var serverSerialzer = SpringServerSerializer(g, packageName: "");
     var userUser = g.controllers["UserServiceController"]!;
-    var result = serverSerialzer.serializeController(userUser, "");
+    var result = serverSerialzer.serializeController(userUser);
 
     expect(
       result.split('\n').map((e) => e.trim()).toList(),
@@ -129,9 +129,9 @@ void main() {
 
     g.parse(text);
 
-    var serverSerialzer = SpringServerSerializer(g, generateSchema: true);
+    var serverSerialzer = SpringServerSerializer(g, packageName: "dev.graphlink", generateSchema: true);
     var userUser = g.controllers["UserServiceController"]!;
-    var result = serverSerialzer.serializeController(userUser, "");
+    var result = serverSerialzer.serializeController(userUser);
     expect(
       result.split('\n').map((e) => e.trim()).toList(),
       containsAllInOrder([
@@ -188,9 +188,9 @@ void main() {
     var userCarService = g.services["UserCarService"]!;
     var userCarCtrl = g.controllers["UserCarServiceController"]!;
 
-    var serialzer = SpringServerSerializer(g);
-    var serviceSerial = serialzer.serializeService(userCarService, "");
-    var controllerSerial = serialzer.serializeController(userCarCtrl, "");
+    var serialzer = SpringServerSerializer(g, packageName: "");
+    var serviceSerial = serialzer.serializeService(userCarService);
+    var controllerSerial = serialzer.serializeController(userCarCtrl);
 
     expect(
         serviceSerial,
@@ -217,14 +217,14 @@ void main() {
 
     g.parse(text);
 
-    var serialzer = SpringServerSerializer(g);
+    var serialzer = SpringServerSerializer(g, packageName: "");
 
     var ownerAnimalService = g.services["OwnerWithAnimalService"]!;
     var ownerAnimalMappingService =
         g.services[g.serviceMappingName("OwnerWithAnimal")]!;
-    var ownerServiceSerial = serialzer.serializeService(ownerAnimalService, "");
+    var ownerServiceSerial = serialzer.serializeService(ownerAnimalService);
     var ownerServiceMappingSerial =
-        serialzer.serializeService(ownerAnimalMappingService, "");
+        serialzer.serializeService(ownerAnimalMappingService);
 
     expect(ownerServiceSerial,
         stringContainsInOrder(["List<Owner> getOwnwers();"]));
@@ -247,14 +247,14 @@ void main() {
 
     g.parse(text);
 
-    var serialzer = SpringServerSerializer(g);
+    var serialzer = SpringServerSerializer(g, packageName: "");
 
     var ownerAnimalService = g.services["OwnerWithAnimal2Service"]!;
     var ownerAnimalMappingService =
         g.services[g.serviceMappingName("OwnerWithAnimal2")]!;
-    var ownerServiceSerial = serialzer.serializeService(ownerAnimalService, "");
+    var ownerServiceSerial = serialzer.serializeService(ownerAnimalService);
     var ownerServiceMappingSerial =
-        serialzer.serializeService(ownerAnimalMappingService, "");
+        serialzer.serializeService(ownerAnimalMappingService);
     expect(
         ownerServiceSerial,
         stringContainsInOrder([
@@ -280,14 +280,14 @@ void main() {
 
     g.parse(text);
 
-    var serialzer = SpringServerSerializer(g);
+    var serialzer = SpringServerSerializer(g, packageName: "");
 
     var ownerAnimalService = g.services["OwnerWithAnimal3Service"]!;
     var ownerAnimalServiceMapping =
         g.services[g.serviceMappingName("OwnerWithAnimal3")]!;
-    var ownerServiceSerial = serialzer.serializeService(ownerAnimalService, "");
+    var ownerServiceSerial = serialzer.serializeService(ownerAnimalService);
     var ownerServiceMappingSerial =
-        serialzer.serializeService(ownerAnimalServiceMapping, "");
+        serialzer.serializeService(ownerAnimalServiceMapping);
     expect(
         ownerServiceSerial,
         stringContainsInOrder([
@@ -313,9 +313,9 @@ void main() {
 
     g.parse(text);
 
-    var serverSerialzer = SpringServerSerializer(g, injectDataFetching: true);
+    var serverSerialzer = SpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
     var userCtrl = g.controllers["UserServiceController"]!;
-    var result = serverSerialzer.serializeController(userCtrl, "");
+    var result = serverSerialzer.serializeController(userCtrl);
     expect(
         result,
         stringContainsInOrder([
@@ -346,9 +346,9 @@ void main() {
 
     g.parse(text);
 
-    var serverSerialzer = SpringServerSerializer(g);
+    var serverSerialzer = SpringServerSerializer(g, packageName: "");
     var userService = g.services["UserService"]!;
-    var serializedService = serverSerialzer.serializeService(userService, "");
+    var serializedService = serverSerialzer.serializeService(userService);
     expect(
         serializedService,
         stringContainsInOrder([
@@ -374,10 +374,10 @@ void main() {
 
     g.parse(text);
 
-    var serverSerialzer = SpringServerSerializer(g);
+    var serverSerialzer = SpringServerSerializer(g, packageName: "");
 
     var carService = g.services["CarService"]!;
-    var serializedCarService = serverSerialzer.serializeService(carService, "");
+    var serializedCarService = serverSerialzer.serializeService(carService);
     expect(
         serializedCarService,
         stringContainsInOrder([
@@ -398,11 +398,11 @@ void main() {
 
     g.parse(text);
 
-    var serverSerialzer = SpringServerSerializer(g, injectDataFetching: true);
+    var serverSerialzer = SpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
 
     var carService = g.services["CarService"]!;
 
-    var serializedCarService = serverSerialzer.serializeService(carService, "");
+    var serializedCarService = serverSerialzer.serializeService(carService);
     expect(
         serializedCarService,
         stringContainsInOrder([
@@ -423,9 +423,9 @@ void main() {
 
     g.parse(text);
 
-    var serverSerialzer = SpringServerSerializer(g);
+    var serverSerialzer = SpringServerSerializer(g, packageName: "");
     var userService = g.services["UserService"]!;
-    var serializedService = serverSerialzer.serializeService(userService, "");
+    var serializedService = serverSerialzer.serializeService(userService);
     expect(serializedService, contains("public interface UserService"));
   });
 
@@ -451,11 +451,11 @@ void main() {
 
     g.parse(text);
 
-    var serverSerialzer = SpringServerSerializer(g);
+    var serverSerialzer = SpringServerSerializer(g, packageName: "com.myorg");
     var userController = g.controllers["UserServiceController"]!;
 
     var controllerSerial =
-        serverSerialzer.serializeController(userController, "com.myorg");
+        serverSerialzer.serializeController(userController);
 
     expect(controllerSerial, contains('public CompletableFuture<Void> deleteUser()'));
     expect(
@@ -475,7 +475,7 @@ void main() {
       }
     ''');
     expect(
-      () => SpringServerSerializer(g),
+      () => SpringServerSerializer(g, packageName: ""),
       throwsA(isA<ParseException>()),
     );
   });
@@ -491,7 +491,7 @@ void main() {
       }
     ''');
     expect(
-      () => SpringServerSerializer(g),
+      () => SpringServerSerializer(g, packageName: ""),
       throwsA(isA<ParseException>()),
     );
   });
@@ -504,7 +504,7 @@ void main() {
         vehicles(year: Int): [String] @glSkipOnServer(batch: false)
       }
     ''');
-    expect(() => SpringServerSerializer(g), returnsNormally);
+    expect(() => SpringServerSerializer(g, packageName: ""), returnsNormally);
   });
 
   test('field with arguments on root type (Query) does not throw', () {
@@ -515,7 +515,7 @@ void main() {
       }
       type User { name: String }
     ''');
-    expect(() => SpringServerSerializer(g), returnsNormally);
+    expect(() => SpringServerSerializer(g, packageName: ""), returnsNormally);
   });
 
   test('schema mapping with field arguments prints generated code', () {
@@ -530,9 +530,9 @@ void main() {
         id: String
       }
     ''');
-    final serializer = SpringServerSerializer(g);
+    final serializer = SpringServerSerializer(g, packageName: "com.example");
     final ctrl = g.controllers[g.controllerMappingName('User')]!;
-    final result = serializer.serializeController(ctrl, 'com.example');
+    final result = serializer.serializeController(ctrl);
     print(result);
   });
 
@@ -547,9 +547,9 @@ void main() {
         name: String!
       }
     ''');
-    final serializer = SpringServerSerializer(g, useSpringSecurity: true);
+    final serializer = SpringServerSerializer(g, packageName: 'com.example', useSpringSecurity: true);
     final ctrl = g.controllers['UserServiceController']!;
-    final result = serializer.serializeController(ctrl, 'com.example');
+    final result = serializer.serializeController(ctrl);
     print(result);
     final lines = result.split('\n').map((e) => e.trim()).toList();
     expect(lines, containsAllInOrder([

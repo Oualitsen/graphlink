@@ -15,9 +15,9 @@ void main() {
         }
       ''');
 
-      final serializer = TypeScriptSerializer(g);
+      final serializer = TypeScriptSerializer(g, importPrefix: "");
       final result =
-          serializer.serializeTypeDefinition(g.getTypeByName('Vehicle')!, '');
+          serializer.serializeTypeDefinition(g.getTypeByName('Vehicle')!);
       print(result);
       expect(result, contains('export interface Vehicle'));
       expect(result, contains('readonly id: string;'));
@@ -34,9 +34,9 @@ void main() {
         }
       ''');
 
-      final serializer = TypeScriptSerializer(g);
+      final serializer = TypeScriptSerializer(g, importPrefix: "");
       final result =
-          serializer.serializeTypeDefinition(g.getTypeByName('Vehicle')!, '');
+          serializer.serializeTypeDefinition(g.getTypeByName('Vehicle')!);
       expect(result, contains('readonly owner: string | null;'));
     });
 
@@ -49,9 +49,9 @@ void main() {
         }
       ''');
 
-      final serializer = TypeScriptSerializer(g, immutableTypeFields: false);
+      final serializer = TypeScriptSerializer(g, importPrefix: "", immutableTypeFields: false);
       final result =
-          serializer.serializeTypeDefinition(g.getTypeByName('Vehicle')!, '');
+          serializer.serializeTypeDefinition(g.getTypeByName('Vehicle')!);
 
       expect(result, contains('id: string;'));
       expect(result, isNot(contains('readonly')));
@@ -65,9 +65,9 @@ void main() {
         }
       ''');
 
-      final serializer = TypeScriptSerializer(g);
+      final serializer = TypeScriptSerializer(g, importPrefix: "");
       final result =
-          serializer.serializeTypeDefinition(g.getTypeByName('Fleet')!, '');
+          serializer.serializeTypeDefinition(g.getTypeByName('Fleet')!);
 
       expect(result, contains('readonly ids: string[];'));
     });
@@ -80,9 +80,9 @@ void main() {
         }
       ''');
 
-      final serializer = TypeScriptSerializer(g);
+      final serializer = TypeScriptSerializer(g, importPrefix: "");
       final result =
-          serializer.serializeTypeDefinition(g.getTypeByName('Fleet')!, '');
+          serializer.serializeTypeDefinition(g.getTypeByName('Fleet')!);
 
       expect(result, contains('readonly ids: string[] | null;'));
     });
@@ -95,9 +95,9 @@ void main() {
         }
       ''');
 
-      final serializer = TypeScriptSerializer(g);
+      final serializer = TypeScriptSerializer(g, importPrefix: "");
       final result =
-          serializer.serializeTypeDefinition(g.getTypeByName('Fleet')!, '');
+          serializer.serializeTypeDefinition(g.getTypeByName('Fleet')!);
 
       expect(result, contains('readonly ids: (string | null)[];'));
     });
@@ -121,9 +121,9 @@ void main() {
         }
       ''');
 
-      final serializer = TypeScriptSerializer(g);
+      final serializer = TypeScriptSerializer(g, importPrefix: "");
       final result = serializer.serializeTypeDefinition(
-          g.interfaces['Animal']!, '');
+          g.interfaces['Animal']!);
 
       expect(result, contains('export type Animal ='));
       expect(result, contains('Dog'));
@@ -145,9 +145,9 @@ void main() {
         }
       ''');
 
-      final serializer = TypeScriptSerializer(g);
+      final serializer = TypeScriptSerializer(g, importPrefix: "");
       final result =
-          serializer.serializeTypeDefinition(g.getTypeByName('Dog')!, '');
+          serializer.serializeTypeDefinition(g.getTypeByName('Dog')!);
       print(result);
       expect(result, contains('export interface Dog'));
       expect(result, contains('readonly breed: string;'));
@@ -158,9 +158,9 @@ void main() {
       final g = GLParser(mode: CodeGenerationMode.client);
       g.parse('type InternalType @glSkipOnClient { id: ID! }');
 
-      final serializer = TypeScriptSerializer(g);
+      final serializer = TypeScriptSerializer(g, importPrefix: "");
       final result = serializer.serializeTypeDefinition(
-          g.getTypeByName('InternalType')!, '');
+          g.getTypeByName('InternalType')!);
       print(result);
       expect(result, isEmpty);
     });
@@ -175,9 +175,9 @@ void main() {
         }
       ''');
 
-      final serializer = TypeScriptSerializer(g);
+      final serializer = TypeScriptSerializer(g, importPrefix: "");
       final result =
-          serializer.serializeTypeDefinition(g.getTypeByName('Vehicle')!, '');
+          serializer.serializeTypeDefinition(g.getTypeByName('Vehicle')!);
 
       expect(result, contains("import { FuelType } from"));
       expect(result, contains('readonly fuelType: FuelType;'));

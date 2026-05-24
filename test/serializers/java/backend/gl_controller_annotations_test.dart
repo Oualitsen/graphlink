@@ -23,8 +23,8 @@ void main() {
     var personServiceController = g.controllers['PersonServiceController']!;
 
     // needed for converting controller's annotations to decorators
-    SpringServerSerializer(g)
-        .serializeController(personServiceController, "com.myorg");
+    SpringServerSerializer(g, packageName: "com.myorg")
+        .serializeController(personServiceController);
     expect(
         personServiceController.getImports(g),
         containsAll(

@@ -51,8 +51,8 @@ void main() {
 
     var userRepository = g.repositories["UserRepository"]!;
 
-    var serializer = SpringServerSerializer(g);
-    var result = serializer.serializeRepository(userRepository, "com.myorg");
+    var serializer = SpringServerSerializer(g, packageName: "");
+    var result = serializer.serializeRepository(userRepository);
     expect(
         result,
         stringContainsInOrder([
@@ -145,9 +145,9 @@ void main() {
         """;
     g.parse(text);
 
-    var springSerializer = SpringServerSerializer(g);
+    var springSerializer = SpringServerSerializer(g, packageName: "");
     var userRepo = g.repositories["UserRepository"]!;
-    var repoSerial = springSerializer.serializeRepository(userRepo, "myorg");
+    var repoSerial = springSerializer.serializeRepository(userRepo);
     expect(
         repoSerial.split("\n").map((e) => e.trim()),
         containsAll([
