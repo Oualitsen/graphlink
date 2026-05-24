@@ -1,0 +1,23 @@
+{
+  "schemaPaths": ["../dart_client_tests/schema/*.gql"],
+  "mode": "client",
+  "typeMappings": {
+    "ID":      "string",
+    "String":  "string",
+    "Float":   "number",
+    "Int":     "number",
+    "Boolean": "boolean",
+    "Null":    "null"
+  },
+  "outputDir": "lib/generated",
+  "clientConfig": {
+    "typescript": {
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries":        true,
+      "httpAdapter":                "none",
+      "immutableTypeFields":        true,
+      "optionalNullableInputFields": true,
+      "generateDefaultWsAdapter":   true
+    }
+  }
+}

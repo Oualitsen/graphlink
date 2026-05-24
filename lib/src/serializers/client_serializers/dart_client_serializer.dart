@@ -67,7 +67,7 @@ class DartClientSerializer extends GLClientSerilaizer {
       "import 'dart:convert';",
       "import 'dart:async';",
       if (_parser.hasSubscriptions) "import 'dart:math';",
-      if (generateAdapters)
+      if (generateAdapters && httpAdapter != DartHttpAdapter.none)
         _useDio
             ? "import 'graph_link_dio_adapter.dart';"
             : "import 'graph_link_http_adapter.dart';",
@@ -287,9 +287,9 @@ class DartClientSerializer extends GLClientSerilaizer {
             "subscriptions = ${classNameFromType(GLQueryType.subscription)}(adapter, wsAdapter, $_svFragMap, this.store, $_svTagLocks);",
         ],
       ),
-      if (_parser.hasSubscriptions && generateAdapters)
+      if (_parser.hasSubscriptions && generateAdapters && httpAdapter != DartHttpAdapter.none)
         _fromUrlConstructor(),
-      if (generateAdapters)
+      if (generateAdapters && httpAdapter != DartHttpAdapter.none)
         _withHttpConstructor(),
     ]));
 
@@ -472,7 +472,8 @@ GraphLinkClient.fromUrl({
                 namedArguments: false,
                 statements: [
                   'final result = jsonDecode(data) as Map<String, dynamic>;',
-                  'final dataMap = result["data"] as Map<String, dynamic>? ?? <String, dynamic>{};',
+                  'final rawData = result["data"];',
+                  'final dataMap = rawData as Map<String, dynamic>? ?? <String, dynamic>{};',
                   codeGenUtils.forEachLoop(
                       variable: 'q',
                       iterable: 'remainingQueries',
@@ -491,7 +492,7 @@ GraphLinkClient.fromUrl({
                             ])
                       ]),
                   'dataMap.addAll(cachedResponse);',
-                  "final fullResponse = <String, dynamic>{'data': dataMap};",
+                  "final fullResponse = <String, dynamic>{'data': rawData != null ? dataMap : null};",
                   codeGenUtils.ifStatement(
                       condition: 'result["errors"] != null',
                       ifBlockStatements: [
