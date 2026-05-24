@@ -77,20 +77,20 @@ abstract class GLClientSerializer {
 
   // ── Queries / mutations / subscriptions class generation (abstract) ────────
 
-  GLClassModel? getQueriesClass(String importPrefix);
-  GLClassModel? getMutationsClass(String importPrefix);
-  GLClassModel? getSubscriptionsClass(String importPrefix);
+  GLClassModel? getQueriesClass();
+  GLClassModel? getMutationsClass();
+  GLClassModel? getSubscriptionsClass();
 
   /// Dispatches to [getQueriesClass], [getMutationsClass], or
   /// [getSubscriptionsClass] based on [type].
-  GLClassModel? getClassForType(GLQueryType type, String importPrefix) {
+  GLClassModel? getClassForType(GLQueryType type) {
     switch (type) {
       case GLQueryType.query:
-        return getQueriesClass(importPrefix);
+        return getQueriesClass();
       case GLQueryType.mutation:
-        return getMutationsClass(importPrefix);
+        return getMutationsClass();
       case GLQueryType.subscription:
-        return getSubscriptionsClass(importPrefix);
+        return getSubscriptionsClass();
     }
   }
 

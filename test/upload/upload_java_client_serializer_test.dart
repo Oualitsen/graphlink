@@ -49,7 +49,7 @@ void main() {
     late String out;
     setUpAll(() {
       final s = _serializer(_schema);
-      return out =  s.serializer.serializeGlClass( s.generateGLUploadFile());
+      return out =  s.serializer.serializeGlClass(s.generateUploadsFile());
     });
    
 
@@ -96,7 +96,7 @@ void main() {
   // ---------------------------------------------------------------------------
   group('mutations class — upload methods', () {
     late String out;
-    setUpAll(() => out = _serializer(_schema).generateQueriesClassFile(GLQueryType.mutation, 'com.example.generated')!.toFileContent());
+    setUpAll(() => out = _serializer(_schema).generateQueriesClassFile(GLQueryType.mutation)!.toFileContent());
 
     test('has multipartAdapter field', () => expect(out, contains('GraphLinkMultipartAdapter multipartAdapter')));
     test('single upload arg is GLUpload', () => expect(out, contains('GLUpload file')));
@@ -116,7 +116,7 @@ void main() {
   // ---------------------------------------------------------------------------
   group('mutations class — no uploads', () {
     late String out;
-    setUpAll(() => out = _serializer(_plainSchema).generateQueriesClassFile(GLQueryType.mutation, '')!.toFileContent());
+    setUpAll(() => out = _serializer(_plainSchema).generateQueriesClassFile(GLQueryType.mutation)!.toFileContent());
 
     test('no multipartAdapter field', () => expect(out, isNot(contains('multipartAdapter'))));
     test('no GLUpload', () => expect(out, isNot(contains('GLUpload'))));

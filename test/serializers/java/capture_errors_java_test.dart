@@ -18,8 +18,8 @@ GLParser _parser(String schema, {bool captureErrors = false}) {
 
 JavaClientSerializer _serializer(GLParser g) => JavaClientSerializer(g, JavaSerializer(g, importPrefix: ""));
 
-String _queries(GLParser g) => _serializer(g).getQueriesClass('')?.toFileContent() ?? '';
-String _mutations(GLParser g) => _serializer(g).getMutationsClass('')?.toFileContent() ?? '';
+String _queries(GLParser g) => _serializer(g).getQueriesClass()?.toFileContent() ?? '';
+String _mutations(GLParser g) => _serializer(g).getMutationsClass()?.toFileContent() ?? '';
 
 String _fullResponseType(GLParser g) {
   final java = JavaSerializer(g, importPrefix: "");
