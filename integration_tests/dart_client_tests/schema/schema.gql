@@ -6,10 +6,10 @@
 #
 # Sections:
 #   1. Directives
-#   2. Enums
-#   3. Scalar container type
-#   4. Nested / relationship types
-#   5. List types
+#   2. Upload scalar
+#   3. Enums
+#   4. Scalar container type
+#   5. Nested / relationship types
 #   6. Input types
 #   7. Queries  — plain
 #   8. Queries  — cached
@@ -17,8 +17,9 @@
 #  10. Mutations — plain
 #  11. Mutations — cache invalidation
 #  12. Mutations — error capture
-#  13. Subscriptions
-#  14. Custom operations (multi-resolver, alias, projection, union)
+#  13. Mutations — upload
+#  14. Subscriptions
+#  15. Custom operations (multi-resolver, alias, projection, union)
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -41,8 +42,17 @@ directive @glEqualsHashcode(fields: [String!]!) on OBJECT | INPUT_OBJECT
 
 directive @glSkipOnClient on OBJECT | INPUT_OBJECT | SCALAR | FIELD_DEFINITION
 
+directive @glUpload on SCALAR
 
-# ── 2. Enums ──────────────────────────────────────────────────────────────────
+
+# ── 2. Upload scalar ──────────────────────────────────────────────────────────
+
+# File upload — @glUpload marks this scalar so mutations accepting it
+# receive a GLUpload argument and go through the multipart adapter.
+scalar Upload @glUpload
+
+
+# ── 3. Enums ──────────────────────────────────────────────────────────────────
 
 # Used to test enum serialization in both query args and response fields.
 enum UserStatus {
@@ -271,6 +281,15 @@ type Mutation {
 
   # Errors returned inline.
   createUserOrErrors(input: CreateUserInput!): User! @glCaptureErrors
+
+
+# ── 13. Mutations — upload ────────────────────────────────────────────────────
+
+  # Single file upload — file arg becomes GLUpload, goes through multipart adapter.
+  uploadOneFile(userId: ID!, file: Upload!): User!
+
+  # List of files — files arg becomes List<GLUpload>.
+  uploadFileList(userId: ID!, files: [Upload!]!): User!
 }
 
 

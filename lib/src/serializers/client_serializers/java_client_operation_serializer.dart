@@ -6,7 +6,7 @@ import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/client_serializers/java_client_constants.dart';
 import 'package:graphlink/src/serializers/client_serializers/java_client_context.dart';
-import 'package:graphlink/src/serializers/graphq_serializer.dart';
+import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 import 'package:graphlink/src/serializers/java_imports.dart';
 import 'package:graphlink/src/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/capture_errors_utils.dart';
@@ -216,9 +216,7 @@ String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
     final uploadArgs = def.arguments
         .where((a) => uploadNames.contains(a.type.firstType.token))
         .toList();
-    final returnType = def.isCaptureErrors(_ctx.grammar)
-        ? def.getFullResponseTypeDefinition(_ctx.grammar).token
-        : def.getGeneratedTypeDefinition().tokenInfo.token;
+    final returnType = def.getFullResponseTypeDefinition(_ctx.grammar).token;
     final hasListArg = uploadArgs.any((a) => a.type.isList);
     container.imports.addAll(
         [JavaImports.linkedHashMap, JavaImports.hashMap, JavaImports.arrays]);

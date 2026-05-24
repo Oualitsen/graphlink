@@ -37,7 +37,7 @@ import 'package:graphlink/src/model/gl_controller.dart';
 import 'package:graphlink/src/model/gl_repository.dart';
 import 'package:graphlink/src/model/gl_service.dart';
 import 'package:graphlink/src/model/gl_token.dart';
-import 'package:graphlink/src/serializers/graphq_serializer.dart';
+import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/constants.dart';
 export 'package:graphlink/src/gl_grammar_extension.dart';
@@ -183,7 +183,7 @@ class GLParser {
   final bool disableCache;
   final int defaultExpandDepth;
   final bool captureErrors;
-  late final GLGraphqSerializer serializer;
+  late final GLGraphqlSerializer serializer;
 
   GLParser({
     this.generateAllFieldsFragments = false,
@@ -201,7 +201,7 @@ class GLParser {
           !autoGenerateQueries || generateAllFieldsFragments,
           'autoGenerateQueries can only be true if generateAllFieldsFragments is also true',
         ) {
-    serializer = GLGraphqSerializer(this);
+    serializer = GLGraphqlSerializer(this);
   }
 
   GLLexerToken peek() => _lexer.tokens[_pos];

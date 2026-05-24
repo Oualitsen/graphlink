@@ -1,14 +1,14 @@
 import 'package:graphlink/src/java_code_gen_utils.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
-import 'package:graphlink/src/serializers/graphq_serializer.dart';
+import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 
 /// Bundles shared dependencies and pre-computed safe variable names for
 /// [JavaClientSerializer] and its helper classes.
 class JavaClientContext {
   final GLParser grammar;
   final JavaCodeGenUtils codeGenUtils;
-  final GLGraphqSerializer gqlSerializer;
+  final GLGraphqlSerializer gqlSerializer;
   final GLSerializer serializer;
 
   final String svOperationName;
