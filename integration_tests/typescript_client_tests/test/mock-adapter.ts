@@ -1,3 +1,5 @@
+import type { GLUpload, UploadProgressCallback } from '../lib/generated/client/graph-link-uploads.js';
+
 // Local copy of the interface — structurally compatible with the generated one.
 export interface GraphLinkWsAdapter {
   connect(): Promise<void>;
@@ -135,4 +137,40 @@ export class MockWsAdapter implements GraphLinkWsAdapter {
 
   get onMessageStream(): AsyncIterable<string> { return this._messages.iterable; }
   get onReconnect(): AsyncIterable<void> { return this._reconnects.iterable; }
+}
+
+export interface MultipartCall {
+  parts: Record<string, unknown>;
+  operationName: string | null;
+}
+
+export class MockMultipartAdapter {
+  private readonly _responses = new Map<string, string>();
+  private readonly _calls: MultipartCall[] = [];
+
+  register(operationName: string, jsonResponse: string): void {
+    this._responses.set(operationName, jsonResponse);
+  }
+
+  registerData(operationName: string, data: Record<string, unknown>): void {
+    this.register(operationName, JSON.stringify({ data }));
+  }
+
+  get calls(): readonly MultipartCall[] { return this._calls; }
+  get lastCall(): MultipartCall | null { return this._calls.at(-1) ?? null; }
+  get callCount(): number { return this._calls.length; }
+
+  reset(): void {
+    this._calls.length = 0;
+    this._responses.clear();
+  }
+
+  readonly call = async (parts: Record<string, unknown>, _onProgress?: UploadProgressCallback): Promise<string> => {
+    const ops = JSON.parse(parts['operations'] as string) as { query?: string };
+    const opName = /(?:query|mutation|subscription)\s+(\w+)/.exec(ops.query?.trim() ?? '')?.[1] ?? null;
+    this._calls.push({ parts, operationName: opName });
+    const response = opName != null ? this._responses.get(opName) : undefined;
+    if (response != null) return response;
+    throw new Error(`MockMultipartAdapter: no response registered for "${opName ?? 'unknown'}"`);
+  };
 }

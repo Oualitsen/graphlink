@@ -8,7 +8,7 @@ import 'package:graphlink/src/serializers/client_serializers/typescript_client_c
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/serializers/gl_client_serializer.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
-import 'package:graphlink/src/serializers/graphq_serializer.dart';
+import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 import 'package:graphlink/src/typescript_code_gen_utils.dart';
 
 const _adapterType = 'GraphLinkAdapter';
@@ -20,7 +20,6 @@ class TypeScriptClientSerializer extends GLClientSerializer {
   final bool generateDefaultWsAdapter;
   final bool observables;
   final _cg = TypeScriptCodeGenUtils();
-  late final GLGraphqSerializer _gqlSerializer;
 
   // Safe local variable names
   String get _svOperationName => _cg.safeLocalVar('operationName');
@@ -55,9 +54,19 @@ class TypeScriptClientSerializer extends GLClientSerializer {
     GLSerializer tsSerializer, {
     this.generateDefaultWsAdapter = true,
     this.observables = false,
-  }) : super(tsSerializer) {
-    _gqlSerializer = GLGraphqSerializer(_parser, false);
-  }
+  }) : super(tsSerializer, GLGraphqlSerializer(_parser, false));
+
+  @override
+  String renderQueryMethod(GLQueryDefinition def) => _queryToMethod(def);
+
+  @override
+  String renderMutationMethod(GLQueryDefinition def) => _mutationToMethod(def);
+
+  @override
+  String renderUploadMutationMethod(GLQueryDefinition def) => _mutationToMultipartMethod(def);
+
+  @override
+  String renderSubscriptionMethod(GLQueryDefinition def) => _subscriptionToMethod(def);
 
   bool get _hasFullResponseSupport =>
       _parser.getTypeByName('GraphLinkError') != null;
@@ -262,16 +271,8 @@ class TypeScriptClientSerializer extends GLClientSerializer {
   // ── Queries class ─────────────────────────────────────────────────────────
 
   String? _buildClass(GLQueryType type) {
-    final queries = _parser.queries.values
-        .where((q) => q.type == type && _parser.hasQueryType(type))
-        .toList();
-    if (queries.isEmpty) return null;
-
-    final methods = queries.map((q) {
-      if (type == GLQueryType.query) return _queryToMethod(q);
-      if (type == GLQueryType.mutation) return _mutationToMethod(q);
-      return _subscriptionToMethod(q);
-    }).toList();
+    final methods = buildOperationMethods(type);
+    if (methods.isEmpty) return null;
 
     return _cg.createClass(
       className: '${classNameFromType(type)} extends _ResolverBase',
@@ -405,9 +406,9 @@ private _buildPayload(
         : 'this._parseAndCache($_svResponseText, $_svResponseMap, $_svRemaining)';
 
     final args = _getMethodArgs(def);
-    final dividedQueries = _gqlSerializer.divideQueryDefinition(def, _parser);
+    final dividedQueries = gqlSerializer.divideQueryDefinition(def, _parser);
     final hasFrags = def.fragments(_parser).isNotEmpty;
-    final directives = _gqlSerializer
+    final directives = gqlSerializer
         .serializeDirectiveValueList(def.getDirectives(skipGenerated: true));
 
     final innerStatements = [
@@ -492,13 +493,13 @@ private _buildPayload(
   // ── Mutation method ───────────────────────────────────────────────────────
 
   String _mutationToMethod(GLQueryDefinition def) {
-    if (_parser.mutationHasUploads(def)) return _mutationToMultipartMethod(def);
+    if (isUploadMutation(def)) return _mutationToMultipartMethod(def);
 
     final returnTypeName = _returnTypeName(def);
     final fullResponseTypeName = def.getFullResponseTypeDefinition(_parser).tokenInfo.token;
     final isCaptureErrors = def.isCaptureErrors(_parser);
     final args = _getMethodArgs(def);
-    final queryStr = _gqlSerializer.serializeQueryDefinition(def);
+    final queryStr = gqlSerializer.serializeQueryDefinition(def);
     final hasFrags = def.fragments(_parser).isNotEmpty;
     final invalidation = _serializeInvalidation(def);
 
@@ -564,7 +565,7 @@ private _buildPayload(
   String _mutationToMultipartMethod(GLQueryDefinition def) {
     final returnTypeName = def.getGeneratedTypeDefinition().tokenInfo.token;
     final args = _getMethodArgs(def);
-    final queryStr = _gqlSerializer.serializeQueryDefinition(def);
+    final queryStr = gqlSerializer.serializeQueryDefinition(def);
     final hasFrags = def.fragments(_parser).isNotEmpty;
     final invalidation = _serializeInvalidation(def);
     final uploadNames = _parser.uploadScalarNames;
@@ -661,7 +662,7 @@ private _buildPayload(
   String _subscriptionToMethod(GLQueryDefinition def) {
     final returnTypeName = def.getGeneratedTypeDefinition().tokenInfo.token;
     final queryArgs = _getMethodArgs(def);
-    final queryStr = _gqlSerializer.serializeQueryDefinition(def);
+    final queryStr = gqlSerializer.serializeQueryDefinition(def);
     final hasFrags = def.fragments(_parser).isNotEmpty;
 
     final statements = <String>[_generateVariables(def)];
@@ -799,7 +800,7 @@ private _buildPayload(
       }).join('; ');
       result.add('args: { $fields }');
     }
-    if (_parser.mutationHasUploads(def)) {
+    if (isUploadMutation(def)) {
       result.add('onProgress?: UploadProgressCallback');
     }
     return result;
@@ -816,13 +817,10 @@ private _buildPayload(
   // ── Invalidation ─────────────────────────────────────────────────────────
 
   String _serializeInvalidation(GLQueryDefinition def) {
-    for (final e in def.elements) {
-      if (e.cacheInvalidateAll) {
-        return 'await this.$_svStore.invalidateAll();';
-      }
+    if (shouldInvalidateAll(def)) {
+      return 'await this.$_svStore.invalidateAll();';
     }
-    final tags =
-        def.elements.expand((e) => e.invalidateCacheTags).toSet();
+    final tags = getInvalidationTags(def);
     if (tags.isNotEmpty) {
       return 'await this._invalidateByTags([${tags.map((t) => "'$t'").join(', ')}]);';
     }
@@ -876,7 +874,7 @@ private _buildPayload(
 
     final fragAssignments = _parser.fragments.values
         .map((f) =>
-            "this.$_svFragMap['${f.tokenInfo}'] = '${_gqlSerializer.serializeFragmentDefinitionBase(f)}';")
+            "this.$_svFragMap['${f.tokenInfo}'] = '${gqlSerializer.serializeFragmentDefinitionBase(f)}';")
         .toList();
 
     return _cg.createMethod(
@@ -923,6 +921,7 @@ private _buildPayload(
 
   // ── Uploads file (v2) ────────────────────────────────────────────────────
 
+  @override
   GLClassModel generateUploadsFile() => const GLClassModel(body: tsUploadsFile);
 
   // ── GLClientSerilaizer overrides ──────────────────────────────────────────

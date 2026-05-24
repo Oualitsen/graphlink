@@ -7,7 +7,7 @@ import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_token_with_fields.dart';
 import 'package:graphlink/src/model/token_info.dart';
-import 'package:graphlink/src/serializers/graphq_serializer.dart';
+import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 
 class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
   final Set<TokenInfo> _interfaceNames = {};
@@ -83,7 +83,7 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
 
   String getHash(GLParser g) {
     if (_cachedHash != null) return _cachedHash!;
-    var serilaize = GLGraphqSerializer(g);
+    var serilaize = GLGraphqlSerializer(g);
     _cachedHash = getSerializableFields(g.mode)
         .map((f) =>
             "${f.name}:${serilaize.serializeType(f.type, forceNullable: f.hasInculeOrSkipDiretives)}")

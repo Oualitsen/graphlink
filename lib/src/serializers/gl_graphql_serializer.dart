@@ -49,11 +49,11 @@ bool _shouldSkipDriectiveValue(GLDirectiveValue def) {
 // this is for skipping generating objects that should be hidden from the client
 const clientMode = CodeGenerationMode.client;
 
-class GLGraphqSerializer {
+class GLGraphqlSerializer {
   final GLParser parser;
   final bool escapeDolar;
 
-  GLGraphqSerializer(this.parser, [this.escapeDolar = true]);
+  GLGraphqlSerializer(this.parser, [this.escapeDolar = true]);
 
   String generateSchema() {
     final buffer = StringBuffer();

@@ -1,4 +1,4 @@
-import 'package:graphlink/src/serializers/graphq_serializer.dart';
+import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
@@ -21,7 +21,7 @@ void main() {
     }
   ''');
 
-    final serializer = GLGraphqSerializer(g);
+    final serializer = GLGraphqlSerializer(g);
 
     var schema = serializer.generateSchema();
     // user should declare a pet: Pet but should not declare a petId
@@ -44,7 +44,7 @@ void main() {
     }
   ''');
 
-    final serializer = GLGraphqSerializer(g);
+    final serializer = GLGraphqlSerializer(g);
     var myDirective = serializer
         .serializeDirectiveDefinition(g.directiveDefinitions["@myDirective"]!);
     expect(myDirective, "directive @myDirective(value: User!) on OBJECT");
@@ -74,7 +74,7 @@ void main() {
     }
   ''');
 
-    final serializer = GLGraphqSerializer(g);
+    final serializer = GLGraphqlSerializer(g);
     var user = g.getTypeByName("User")!;
     var myDirective =
         user.getFieldByName("id")!.getDirectiveByName("@myDirective")!;
@@ -110,7 +110,7 @@ void main() {
     }
   ''');
 
-    final serializer = GLGraphqSerializer(g);
+    final serializer = GLGraphqlSerializer(g);
     var serial = serializer.serializeSchemaDefinition(g.schema);
     expect(
       serial.split("\n").map((str) => str.trim()),
@@ -136,7 +136,7 @@ void main() {
     }
   ''');
 
-    final serializer = GLGraphqSerializer(g);
+    final serializer = GLGraphqlSerializer(g);
     var serial = serializer.serializeSchemaDefinition(g.schema);
     expect(serial.contains("query"), isFalse);
     expect(
@@ -162,7 +162,7 @@ void main() {
     }
   ''');
 
-    final serializer = GLGraphqSerializer(g);
+    final serializer = GLGraphqlSerializer(g);
     var serial = serializer.serializeSchemaDefinition(g.schema);
     expect(serial.contains("mutation"), isFalse);
     expect(
@@ -184,7 +184,7 @@ void main() {
     }
   ''');
 
-    final serializer = GLGraphqSerializer(g);
+    final serializer = GLGraphqlSerializer(g);
     var serial = serializer.serializeSchemaDefinition(g.schema);
     expect(serial.contains("subscription"), isFalse);
     expect(
@@ -202,7 +202,7 @@ void main() {
     }
   ''');
 
-    final serializer = GLGraphqSerializer(g);
+    final serializer = GLGraphqlSerializer(g);
     var serial = serializer.serializeSchemaDefinition(g.schema);
     expect(serial.trim().isEmpty, true);
   });
@@ -213,7 +213,7 @@ void main() {
   scalar Long
 ''');
 
-    final serializer = GLGraphqSerializer(g);
+    final serializer = GLGraphqlSerializer(g);
     var serial = serializer.serializeScalarDefinition(g.scalars["Long"]!);
     expect(serial, "scalar Long");
   });
@@ -224,7 +224,7 @@ void main() {
     directive @myDirective(arg1: String) on FIELD_DEFINITION|OBJECT
 ''');
 
-    final serializer = GLGraphqSerializer(g);
+    final serializer = GLGraphqlSerializer(g);
     var serial = serializer
         .serializeDirectiveDefinition(g.directiveDefinitions["@myDirective"]!);
     expect(serial.trim(),
@@ -242,7 +242,7 @@ void main() {
     }
 ''');
 
-    final serializer = GLGraphqSerializer(g);
+    final serializer = GLGraphqlSerializer(g);
     var serial = serializer.serializeInputDefinition(
         g.inputs["UserInput"]!, CodeGenerationMode.client);
     expect(
@@ -275,7 +275,7 @@ void main() {
     }
 ''');
 
-    final serializer = GLGraphqSerializer(g);
+    final serializer = GLGraphqlSerializer(g);
     var serial = serializer.generateSchema();
     // should seriaze skip on client types
     // but should skip fields with @glSkipOnServer directive
@@ -315,7 +315,7 @@ void main() {
     }
 ''');
 
-    final serializer = GLGraphqSerializer(g);
+    final serializer = GLGraphqlSerializer(g);
     var serial = serializer.generateSchema();
     // should seriaze skip on client types
     // but should skip fields with @glSkipOnServer directive
@@ -359,7 +359,7 @@ void main() {
     }
 ''');
 
-    final serializer = GLGraphqSerializer(g);
+    final serializer = GLGraphqlSerializer(g);
     var serial = serializer.generateSchema();
     // should seriaze skip on client types
     // but should skip fields with @glSkipOnServer directive
@@ -396,7 +396,7 @@ void main() {
     }
 ''');
 
-    final serializer = GLGraphqSerializer(g);
+    final serializer = GLGraphqlSerializer(g);
     var serial = serializer.generateSchema();
 
     expect(
@@ -435,7 +435,7 @@ interface IBase {
     }
 ''');
 
-    final serializer = GLGraphqSerializer(g);
+    final serializer = GLGraphqlSerializer(g);
     var serial = serializer.generateSchema();
 
     expect(
@@ -478,7 +478,7 @@ interface IBase {
     }
 ''');
 
-    final serializer = GLGraphqSerializer(g);
+    final serializer = GLGraphqlSerializer(g);
     var serial = serializer.generateSchema();
 
     expect(
@@ -504,7 +504,7 @@ interface IBase {
     enum Gender {male, female}
 ''');
 
-    final serializer = GLGraphqSerializer(g);
+    final serializer = GLGraphqlSerializer(g);
     var serial = serializer.serializeEnumDefinition(g.enums["Gender"]!);
     expect(
       serial.split("\n").map((str) => str.trim()),
