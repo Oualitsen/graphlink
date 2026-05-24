@@ -372,19 +372,19 @@ GraphLinkClient.fromUrl({
   }
 
   @override
-  GLClassModel? getQueriesClass(String importPrefix) {
+  GLClassModel? getQueriesClass() {
     final body = generateQueriesClassByType(GLQueryType.query);
     return body != null ? GLClassModel(body: body) : null;
   }
 
   @override
-  GLClassModel? getMutationsClass(String importPrefix) {
+  GLClassModel? getMutationsClass() {
     final body = generateQueriesClassByType(GLQueryType.mutation);
     return body != null ? GLClassModel(body: body) : null;
   }
 
   @override
-  GLClassModel? getSubscriptionsClass(String importPrefix) {
+  GLClassModel? getSubscriptionsClass() {
     final body = generateQueriesClassByType(GLQueryType.subscription);
     return body != null ? GLClassModel(body: body) : null;
   }

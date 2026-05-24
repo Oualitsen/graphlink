@@ -53,7 +53,16 @@ class JavaClientSerializer extends GLClientSerializer {
       _opSer.subscriptionToMethod(def, _activeContainer!);
 
   @override
-  GLClassModel generateUploadsFile() => generateGLUploadFile();
+  GLClassModel generateUploadsFile() => const GLClassModel(
+        imports: [
+          JavaImports.inputStream,
+          JavaImports.byteArrayInputStream,
+          JavaImports.fileInputStream,
+          JavaImports.file,
+          JavaImports.ioException,
+        ],
+        body: javaGLUpload,
+      );
 
   // Safe generated local variable names — avoids clashing with user-defined method arguments.
   String get _svHandler => codeGenUtils.safeLocalVar('handler');
@@ -312,24 +321,24 @@ class JavaClientSerializer extends GLClientSerializer {
   }
 
   @override
-  GLClassModel? getQueriesClass(String importPrefix) =>
-      _buildClassForType(GLQueryType.query, importPrefix);
+  GLClassModel? getQueriesClass() =>
+      _buildClassForType(GLQueryType.query);
 
   @override
-  GLClassModel? getMutationsClass(String importPrefix) =>
-      _buildClassForType(GLQueryType.mutation, importPrefix);
+  GLClassModel? getMutationsClass() =>
+      _buildClassForType(GLQueryType.mutation);
 
   @override
-  GLClassModel? getSubscriptionsClass(String importPrefix) =>
-      _buildClassForType(GLQueryType.subscription, importPrefix);
+  GLClassModel? getSubscriptionsClass() =>
+      _buildClassForType(GLQueryType.subscription);
 
   /// Kept for backwards compatibility — prefer [getQueriesClass],
   /// [getMutationsClass], or [getSubscriptionsClass] via the base-class API.
   GLClassModel? generateQueriesClassByType(
-          GLQueryType type, String importPrefix) =>
-      _buildClassForType(type, importPrefix);
+          GLQueryType type) =>
+      _buildClassForType(type);
 
-  GLClassModel? _buildClassForType(GLQueryType type, String importPrefix) {
+  GLClassModel? _buildClassForType(GLQueryType type) {
     final importContainer = GLImportContainer();
     _activeContainer = importContainer;
 
@@ -728,8 +737,8 @@ class JavaClientSerializer extends GLClientSerializer {
   }
 
   GLClassModel? generateQueriesClassFile(
-          GLQueryType type, String importPrefix) =>
-      generateQueriesClassByType(type, importPrefix);
+          GLQueryType type) =>
+      generateQueriesClassByType(type);
 
   GLClassModel generateGraphLinkCacheEntryFile() => const GLClassModel(
         imports: [JavaImports.map, JavaImports.hashMap],
@@ -879,16 +888,7 @@ class JavaClientSerializer extends GLClientSerializer {
         body: javaGraphLinkMultipartAdapter,
       );
 
-  GLClassModel generateGLUploadFile() => const GLClassModel(
-        imports: [
-          JavaImports.inputStream,
-          JavaImports.byteArrayInputStream,
-          JavaImports.fileInputStream,
-          JavaImports.file,
-          JavaImports.ioException,
-        ],
-        body: javaGLUpload,
-      );
+
 
   GLClassModel generateWebSocketAdapterFile() =>
       const GLClassModel(body: javaWebSocketAdapter);

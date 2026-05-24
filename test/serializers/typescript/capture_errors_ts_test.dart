@@ -30,12 +30,12 @@ String _client(GLParser g) {
 
 String _queries(GLParser g) {
   final ts = TypeScriptSerializer(g, importPrefix: "");
-  return TypeScriptClientSerializer(g, ts).getQueriesClass('')?.toFileContent() ?? '';
+  return TypeScriptClientSerializer(g, ts).getQueriesClass()?.toFileContent() ?? '';
 }
 
 String _mutations(GLParser g) {
   final ts = TypeScriptSerializer(g, importPrefix: "");
-  return TypeScriptClientSerializer(g, ts).getMutationsClass('')?.toFileContent() ?? '';
+  return TypeScriptClientSerializer(g, ts).getMutationsClass()?.toFileContent() ?? '';
 }
 
 // Schema: mix of captureErrors and plain operations.

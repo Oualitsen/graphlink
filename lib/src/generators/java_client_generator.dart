@@ -93,7 +93,7 @@ Future<Set<String>> generateJavaClientClasses(
   ));
 
   for (final type in GLQueryType.values) {
-    final model = clientSerializer.generateQueriesClassFile(type, prefix);
+    final model = clientSerializer.generateQueriesClassFile(type);
     if (model != null) {
       futures.add(writeToFile(
         data: serializer.serializeGlClass(model),
@@ -134,7 +134,7 @@ Future<Set<String>> generateJavaClientClasses(
 
   if (parser.hasUploadMutations) {
     for (final entry in {
-      'GLUpload.java': clientSerializer.generateGLUploadFile(),
+      'GLUpload.java': clientSerializer.generateUploadsFile(),
       'UploadProgressCallback.java': clientSerializer.generateUploadProgressCallbackFile(),
     }.entries) {
       futures.add(writeToFile(
