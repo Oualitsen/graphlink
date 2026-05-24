@@ -58,10 +58,10 @@ String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
                                 _ctx.codeGenUtils.ifStatement(
                                   condition: 'entry.stale',
                                   ifBlockStatements: [
-                                    '${_ctx.svStaleData}.put(partQuery.elementKey, ${_ctx.svDecoder}.decode(entry.data));'
+                                    '${_ctx.svStaleData}.put(partQuery.elementKey, ${_ctx.svDecoder}.decode(entry.data).get("__gl_v__"));'
                                   ],
                                   elseBlockStatements: [
-                                    '${_ctx.svResponseMap}.put(partQuery.elementKey, ${_ctx.svDecoder}.decode(entry.data));'
+                                    '${_ctx.svResponseMap}.put(partQuery.elementKey, ${_ctx.svDecoder}.decode(entry.data).get("__gl_v__"));'
                                   ],
                                 ),
                               ]),
@@ -85,7 +85,9 @@ String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
           _ctx.codeGenUtils.ifStatement(
               condition: '${_ctx.svRemaining}.isEmpty()',
               ifBlockStatements: [
-                'return $parseType.fromJson(${_ctx.svResponseMap})${_getDataCall(def)};',
+                'Map<String, Object> __gl_wrappedResponse__ = new HashMap<>();',
+                '__gl_wrappedResponse__.put("data", ${_ctx.svResponseMap});',
+                'return $parseType.fromJson(__gl_wrappedResponse__)${_getDataCall(def)};',
               ]),
           'GraphLinkPayload ${_ctx.svPayload} = buildPayload(${_ctx.svRemaining}, ${_ctx.svOperationName}, "$directives");',
           _ctx.codeGenUtils.tryCatchFinally(
@@ -101,7 +103,9 @@ String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
                   ifBlockStatements: [
                     'throw new RuntimeException(exception);',
                   ]),
-              'return $parseType.fromJson(${_ctx.svResponseMap})${_getDataCall(def)};',
+              'Map<String, Object> __gl_wrappedResponse__ = new HashMap<>();',
+              '__gl_wrappedResponse__.put("data", ${_ctx.svResponseMap});',
+              'return $parseType.fromJson(__gl_wrappedResponse__)${_getDataCall(def)};',
             ],
             catchVariable: 'exception',
           ),

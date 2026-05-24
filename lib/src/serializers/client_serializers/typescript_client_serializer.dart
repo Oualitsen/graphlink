@@ -378,11 +378,7 @@ private _buildPayload(
           ],
         ),
         'Object.assign(dataMap, cachedResponse);',
-        "const fullResponse: Record<string, unknown> = { 'data': dataMap };",
-        _cg.ifStatement(
-          condition: "result['errors'] != null",
-          ifBlockStatements: ["fullResponse['errors'] = result['errors'];"],
-        ),
+        "const fullResponse: Record<string, unknown> = { 'data': result['data'] != null ? dataMap : null, 'errors': result['errors'] ?? null };",
         _cg.ifStatement(
           condition: 'captureErrors',
           ifBlockStatements: ['return fullResponse;'],
