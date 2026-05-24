@@ -1,0 +1,14 @@
+name: graphlink_client_integration_tests
+description: Mock-adapter integration tests for the GraphLink Dart client generator.
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ">=2.19.0 <4.0.0"
+
+dependencies:
+  graphlink:
+    path: ../../
+
+dev_dependencies:
+  test: ^1.24.0

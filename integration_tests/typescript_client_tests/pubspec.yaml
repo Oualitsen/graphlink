@@ -1,0 +1,11 @@
+name: graphlink_typescript_client_tests_generator
+description: Generator runner for GraphLink TypeScript client integration tests.
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ">=2.19.0 <4.0.0"
+
+dependencies:
+  graphlink:
+    path: ../../

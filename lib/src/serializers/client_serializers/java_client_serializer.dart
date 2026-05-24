@@ -533,7 +533,8 @@ class JavaClientSerializer extends GLClientSerilaizer {
           ],
           statements: [
             'Map<String, Object> result = $_svDecoder.decode(data);',
-            'Map<String, Object> dataMap = (Map<String, Object>) result.get("data");',
+            'Map<String, Object> __gl_rawData__ = (Map<String, Object>) result.get("data");',
+            'Map<String, Object> dataMap = __gl_rawData__ != null ? __gl_rawData__ : new HashMap<>();',
             codeGenUtils.forEachLoop(
                 variable: 'q',
                 iterable: 'remainingQueries',
@@ -542,7 +543,9 @@ class JavaClientSerializer extends GLClientSerilaizer {
                       condition:
                           'q.ttl > 0 && dataMap.get(q.elementKey) != null',
                       ifBlockStatements: [
-                        'GraphLinkCacheEntry entry = new GraphLinkCacheEntry($_svEncoder.encode(dataMap.get(q.elementKey)), System.currentTimeMillis() + q.ttl * 1000L);',
+                        'Map<String, Object> __gl_cacheWrap__ = new HashMap<>();',
+                        '__gl_cacheWrap__.put("__gl_v__", dataMap.get(q.elementKey));',
+                        'GraphLinkCacheEntry entry = new GraphLinkCacheEntry($_svEncoder.encode(__gl_cacheWrap__), System.currentTimeMillis() + q.ttl * 1000L);',
                         '$_svStore.set(q.cacheKey, $_svEncoder.encode(entry.toJson()));',
                         codeGenUtils.ifStatement(
                             condition: '!q.tags.isEmpty()',
@@ -553,7 +556,7 @@ class JavaClientSerializer extends GLClientSerilaizer {
                 ]),
             'dataMap.putAll(cachedResponse);',
             'Map<String, Object> fullResponse = new HashMap<>();',
-            'fullResponse.put("data", dataMap);',
+            'fullResponse.put("data", __gl_rawData__ != null ? dataMap : null);',
             codeGenUtils.ifStatement(
                 condition: 'result.containsKey("errors")',
                 ifBlockStatements: [
