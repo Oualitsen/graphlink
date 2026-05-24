@@ -167,3 +167,7 @@ bool filterByParserMode(GLDirectivesMixin mixin, CodeGenerationMode mode) {
         return mixin.getDirectiveByName(glSkipOnServer) == null;
     }
 }
+
+String createPrifix(String outputDir, String packageName) {
+  return 'package:$packageName/${outputDir.replaceFirst("lib/", "")}';
+}

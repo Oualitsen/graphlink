@@ -19,7 +19,7 @@ void main() {
       }
     ''');
     expect(
-      () => SpringServerSerializer(g),
+      () => SpringServerSerializer(g, packageName: ""),
       throwsA(isA<ParseException>()),
     );
   });
@@ -38,12 +38,12 @@ void main() {
       }
     ''');
 
-    final serializer = SpringServerSerializer(g);
+    final serializer = SpringServerSerializer(g, packageName: "com.example");
     final ctrl = g.controllers[g.controllerMappingName('User')]!;
     final service = g.services[g.serviceMappingName('User')]!;
 
-    final controllerCode = serializer.serializeController(ctrl, 'com.example');
-    final serviceCode = serializer.serializeService(service, 'com.example');
+    final controllerCode = serializer.serializeController(ctrl);
+    final serviceCode = serializer.serializeService(service);
 
     // controller: @SchemaMapping with @Argument params and correct service call
     expect(controllerCode, contains('@SchemaMapping(typeName="User", field="vehicles")'));

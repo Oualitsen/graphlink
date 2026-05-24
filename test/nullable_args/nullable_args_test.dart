@@ -23,12 +23,12 @@ void main() async {
 
     g.parse(text);
 
-    var serializer = DartSerializer(g);
+    var serializer = DartSerializer(g, importPrefix: "");
     var types = g.types.values
-        .map((t) => serializer.serializeTypeDefinition(t, ""))
+        .map((t) => serializer.serializeTypeDefinition(t))
         .join("\n");
     var inputs = g.inputs.values
-        .map((t) => serializer.serializeInputDefinition(t, ""))
+        .map((t) => serializer.serializeInputDefinition(t))
         .join("\n");
 
     expect(inputs, contains("this.middleName"));
@@ -51,7 +51,7 @@ void main() async {
         type: nonNullableString,
         arguments: [],
         directives: []);
-    var serializer1 = DartSerializer(g1);
+    var serializer1 = DartSerializer(g1, importPrefix: "");
 
     var dartContructorTypeNullable =
         serializer1.toConstructorDeclaration(nullableField);
@@ -62,7 +62,7 @@ void main() async {
     expect(dartContructorTypeNonNullable, "required this.name");
 
     final GLParser g2 = GLParser(nullableFieldsRequired: true);
-    var serializer2 = DartSerializer(g2);
+    var serializer2 = DartSerializer(g2, importPrefix: "");
 
     var dartContructorTypeNullable2 =
         serializer2.toConstructorDeclaration(nullableField);

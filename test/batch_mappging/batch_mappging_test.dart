@@ -80,9 +80,9 @@ type Query {
 
     g.parse(text);
 
-    var springSerializer = SpringServerSerializer(g);
+    var springSerializer = SpringServerSerializer(g, packageName: "");
     var serice = g.services["UserWithCarService"]!;
-    var serviceSerial = springSerializer.serializeService(serice, "");
+    var serviceSerial = springSerializer.serializeService(serice);
     expect(serviceSerial,
         isNot(contains("Map<User, User> userWithCarUser(List<User> value);")));
   });
@@ -96,9 +96,9 @@ type Query {
 
     g.parse(text);
 
-    var springSerializer = SpringServerSerializer(g);
+    var springSerializer = SpringServerSerializer(g, packageName: "");
     var ctrl = g.controllers[g.controllerMappingName("UserWithCar")]!;
-    var serviceSerial = springSerializer.serializeController(ctrl, "");
+    var serviceSerial = springSerializer.serializeController(ctrl);
     expect(
         serviceSerial,
         stringContainsInOrder([
@@ -118,9 +118,9 @@ type Query {
 
     g.parse(text);
 
-    var springSerializer = SpringServerSerializer(g);
+    var springSerializer = SpringServerSerializer(g, packageName: "");
     var ctrl = g.controllers[g.controllerMappingName("UserWithCar")]!;
-    var serviceSerial = springSerializer.serializeController(ctrl, "");
+    var serviceSerial = springSerializer.serializeController(ctrl);
     expect(
         serviceSerial,
         stringContainsInOrder([
@@ -201,13 +201,13 @@ type Query {
 ''';
 
     g.parse(text);
-    var serializer = SpringServerSerializer(g, injectDataFetching: true);
+    var serializer = SpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
 
     var mappingService = g.services[g.serviceMappingName('User')]!;
     var mappingController = g.controllers[g.controllerMappingName('User')]!;
-    var serialService = serializer.serializeService(mappingService, "myOrg");
+    var serialService = serializer.serializeService(mappingService);
     var serialController =
-        serializer.serializeController(mappingController, "myOrg");
+        serializer.serializeController(mappingController);
     expect(
         serialService,
         contains(

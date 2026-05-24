@@ -17,8 +17,8 @@ void main() {
 ''');
 
     var gender = g.enums["Gender"]!;
-    var serializer = JavaSerializer(g, generateJsonMethods: true);
-    var genderSerial = serializer.serializeEnumDefinition(gender, "");
+    var serializer = JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
+    var genderSerial = serializer.serializeEnumDefinition(gender);
     expect(
         genderSerial.split("\n").map((e) => e.trim()),
         containsAllInOrder([
@@ -36,8 +36,8 @@ void main() {
 ''');
 
     var gender = g.enums["Gender"]!;
-    var serializer = JavaSerializer(g, generateJsonMethods: true);
-    var genderSerial = serializer.serializeEnumDefinition(gender, "");
+    var serializer = JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
+    var genderSerial = serializer.serializeEnumDefinition(gender);
     expect(
         genderSerial.split("\n").map((e) => e.trim()),
         containsAllInOrder([
@@ -74,7 +74,7 @@ void main() {
 ''');
 
     var userInput = g.inputs["UserInput"]!;
-    var serializer = JavaSerializer(g, generateJsonMethods: true);
+    var serializer = JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
     var inputSerial = serializer.doSerializeInputDefinition(userInput);
 
     expect(
@@ -116,7 +116,7 @@ void main() {
 ''');
 
     var userInput = g.inputs["UserInput"]!;
-    var serializer = JavaSerializer(g, generateJsonMethods: true);
+    var serializer = JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
     var inputSerial = serializer.doSerializeInputDefinition(userInput);
 
     expect(
@@ -156,7 +156,7 @@ void main() {
 ''');
 
     var useer = g.types["User"]!;
-    var serializer = JavaSerializer(g, generateJsonMethods: true);
+    var serializer = JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
     var userSerial = serializer.doSerializeTypeDefinition(useer);
 
     // same as input, so we only check for the existance of toJson method
@@ -181,7 +181,7 @@ void main() {
 
     var userInput = g.inputs["UserInput"]!;
 
-    var serializer = JavaSerializer(g, generateJsonMethods: true);
+    var serializer = JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
     var fromJson = serializer.generateFromJson(
         userInput.getSerializableFields(g.mode), "UserInput", userInput);
 
@@ -207,7 +207,7 @@ void main() {
 
     var userInput = g.inputs["UserInput"]!;
 
-    var serializer = JavaSerializer(g, generateJsonMethods: true);
+    var serializer = JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
     var fromJson = serializer.generateFromJson(
         userInput.getSerializableFields(g.mode), "UserInput", userInput);
 
@@ -233,7 +233,7 @@ void main() {
 
     var userInput = g.inputs["UserInput"]!;
 
-    var serializer = JavaSerializer(g, generateJsonMethods: true);
+    var serializer = JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
     var fromJson = serializer.generateFromJson(
         userInput.getSerializableFields(g.mode), "UserInput", userInput);
 
@@ -259,7 +259,7 @@ void main() {
 
     var userInput = g.inputs["UserInput"]!;
 
-    var serializer = JavaSerializer(g, generateJsonMethods: true);
+    var serializer = JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
     var fromJson = serializer.generateFromJson(
         userInput.getSerializableFields(g.mode), "UserInput", userInput);
 
@@ -285,7 +285,7 @@ void main() {
 
     var userInput = g.inputs["UserInput"]!;
 
-    var serializer = JavaSerializer(g, generateJsonMethods: true);
+    var serializer = JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
     var fromJson = serializer.generateFromJson(
         userInput.getSerializableFields(g.mode), "UserInput", userInput);
     expect(
@@ -311,7 +311,7 @@ void main() {
 
     var userInput = g.inputs["UserInput"]!;
 
-    var serializer = JavaSerializer(g, generateJsonMethods: true);
+    var serializer = JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
     var fromJson = serializer.generateFromJson(
         userInput.getSerializableFields(g.mode), "UserInput", userInput);
     expect(
@@ -337,7 +337,7 @@ void main() {
 
     var userInput = g.inputs["UserInput"]!;
 
-    var serializer = JavaSerializer(g, generateJsonMethods: true);
+    var serializer = JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
     var fromJson = serializer.generateFromJson(
         userInput.getSerializableFields(g.mode), "UserInput", userInput);
     expect(
@@ -365,7 +365,7 @@ void main() {
 
     var userInput = g.inputs["UserInput"]!;
 
-    var serializer = JavaSerializer(g, generateJsonMethods: true);
+    var serializer = JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
     var fromJson = serializer.generateFromJson(
         userInput.getSerializableFields(g.mode), "UserInput", userInput);
     expect(
@@ -393,7 +393,7 @@ void main() {
 
     var userInput = g.inputs["UserInput"]!;
 
-    var serializer = JavaSerializer(g, generateJsonMethods: true);
+    var serializer = JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
     var fromJson = serializer.generateFromJson(
         userInput.getSerializableFields(g.mode), "UserInput", userInput);
     expect(
@@ -428,7 +428,7 @@ void main() {
 ''');
 
     var user = g.interfaces["BasicEntity"]!;
-    var serializer = JavaSerializer(g, generateJsonMethods: true);
+    var serializer = JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
     var userSerial = serializer.serializeInterface(user, getters: true);
 
     expect(

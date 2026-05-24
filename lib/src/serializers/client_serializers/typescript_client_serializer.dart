@@ -81,8 +81,8 @@ class TypeScriptClientSerializer extends GLClientSerializer {
   // ── Top-level client file ─────────────────────────────────────────────────
 
   @override
-  GLClassModel generateClient(String importPrefix) {
-    final imports = _buildImports(importPrefix);
+  GLClassModel generateClient() {
+    final imports = _buildImports();
     final buffer = StringBuffer();
 
     buffer.writeln(_adapterTypeAlias());
@@ -104,9 +104,9 @@ class TypeScriptClientSerializer extends GLClientSerializer {
     return GLClassModel(imports: imports, body: buffer.toString());
   }
 
-  List<String> _buildImports(String importPrefix) {
+  List<String> _buildImports() {
     return [
-      ...serializeImports(_parser, importPrefix)
+      ...serializeImports(_parser)
           .split('\n')
           .where((l) => l.trim().isNotEmpty),
       if (_parser.hasUploadMutations)

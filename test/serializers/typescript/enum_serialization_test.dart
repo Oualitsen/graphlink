@@ -9,9 +9,9 @@ void main() {
       final g = GLParser();
       g.parse('enum FuelType { GASOLINE DIESEL ELECTRIC HYBRID }');
 
-      final serializer = TypeScriptSerializer(g);
+      final serializer = TypeScriptSerializer(g, importPrefix: "");
       final result = serializer.serializeEnumDefinition(
-          g.enums['FuelType']!, '');
+          g.enums['FuelType']!);
 
       print(result);
 
@@ -32,9 +32,9 @@ void main() {
         }
       ''');
 
-      final serializer = TypeScriptSerializer(g);
+      final serializer = TypeScriptSerializer(g, importPrefix: "");
       final result = serializer.serializeEnumDefinition(
-          g.enums['Role']!, '');
+          g.enums['Role']!);
 
       print(result);
 
@@ -47,9 +47,9 @@ void main() {
       final g = GLParser(mode: CodeGenerationMode.client);
       g.parse('enum InternalStatus @glSkipOnClient { PENDING DONE }');
 
-      final serializer = TypeScriptSerializer(g);
+      final serializer = TypeScriptSerializer(g, importPrefix: "");
       final result = serializer.serializeEnumDefinition(
-          g.enums['InternalStatus']!, '');
+          g.enums['InternalStatus']!);
 
       print('(empty: "$result")');
 
@@ -60,7 +60,7 @@ void main() {
       final g = GLParser();
       g.parse('enum FuelType { GASOLINE }');
 
-      final serializer = TypeScriptSerializer(g);
+      final serializer = TypeScriptSerializer(g, importPrefix: "");
       final fileName = serializer.getFileNameFor(g.enums['FuelType']!);
 
       print(fileName);

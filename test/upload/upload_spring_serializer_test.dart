@@ -31,13 +31,13 @@ void main() {
   setUp(() {
     g = GLParser( mode: CodeGenerationMode.server);
     g.parse(schema);
-    serializer = SpringServerSerializer(g);
+    serializer = SpringServerSerializer(g, packageName: "");
   });
 
   group('upload — controller', () {
     test('single upload arg is MultipartFile', () {
       final ctrl = g.controllers['UploadedFileServiceController']!;
-      final result = serializer.serializeController(ctrl, 'com.example');
+      final result = serializer.serializeController(ctrl);
       final lines = result.split('\n').map((e) => e.trim()).toList();
 
       expect(
@@ -51,7 +51,7 @@ void main() {
 
     test('list upload arg is List<MultipartFile>', () {
       final ctrl = g.controllers['UploadedFileServiceController']!;
-      final result = serializer.serializeController(ctrl, 'com.example');
+      final result = serializer.serializeController(ctrl);
       final lines = result.split('\n').map((e) => e.trim()).toList();
 
       expect(
@@ -65,7 +65,7 @@ void main() {
 
     test('MultipartFile import is present', () {
       final ctrl = g.controllers['UploadedFileServiceController']!;
-      final result = serializer.serializeController(ctrl, 'com.example');
+      final result = serializer.serializeController(ctrl);
 
       expect(result, contains('import org.springframework.web.multipart.MultipartFile'));
     });
@@ -74,7 +74,7 @@ void main() {
   group('upload — service interface', () {
     test('single upload arg is MultipartFile', () {
       final service = g.services['UploadedFileService']!;
-      final result = serializer.serializeService(service, 'com.example');
+      final result = serializer.serializeService(service);
       final lines = result.split('\n').map((e) => e.trim()).toList();
 
       expect(
@@ -87,7 +87,7 @@ void main() {
 
     test('list upload arg is List<MultipartFile>', () {
       final service = g.services['UploadedFileService']!;
-      final result = serializer.serializeService(service, 'com.example');
+      final result = serializer.serializeService(service);
       final lines = result.split('\n').map((e) => e.trim()).toList();
 
       expect(

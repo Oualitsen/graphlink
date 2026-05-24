@@ -16,14 +16,14 @@ void main() {
         .readAsStringSync());
     logger.i("g.projectedTypes.length = ${g.projectedTypes.length}");
 
-    var serializer = DartSerializer(g);
+    var serializer = DartSerializer(g, importPrefix: "");
     logger.i("""
     _______________ projected types _________________
-    ${g.projectedTypes.values.map((e) => serializer.serializeTypeDefinition(e, "")).toList()}
+    ${g.projectedTypes.values.map((e) => serializer.serializeTypeDefinition(e)).toList()}
     _________________________________________________
 
     _______________ inputs types _________________
-    ${g.inputs.values.map((e) => serializer.serializeInputDefinition(e, "")).toList()}
+    ${g.inputs.values.map((e) => serializer.serializeInputDefinition(e)).toList()}
     _________________________________________________
 
 
@@ -38,10 +38,10 @@ void main() {
         .readAsStringSync());
     logger.i("g.projectedTypes.length = ${g.projectedTypes.length}");
 
-    final serializer = DartSerializer(g);
+    final serializer = DartSerializer(g, importPrefix: "");
     logger.i("""
     _______________ projected types _________________
-    ${g.projectedTypes.values.map((e) => serializer.serializeTypeDefinition(e, "")).toList()}
+    ${g.projectedTypes.values.map((e) => serializer.serializeTypeDefinition(e)).toList()}
     _________________________________________________
 
 """);

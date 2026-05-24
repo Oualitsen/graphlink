@@ -13,7 +13,7 @@ void main() {
 
     g.parse(text);
 
-    var dartSerialzer = DartSerializer(g);
+    var dartSerialzer = DartSerializer(g, importPrefix: "");
 
     var user = g.getTypeByName("User")!;
 
@@ -40,11 +40,11 @@ void main() {
     expect(ibaseText.trim(), startsWith("@Logger"));
 
     var gender = g.enums["Gender"]!;
-    var genderText = dartSerialzer.serializeEnumDefinition(gender, "");
+    var genderText = dartSerialzer.serializeEnumDefinition(gender);
     expect(genderText.trim(), startsWith("@Logger"));
 
     var input = g.inputs["UserInput"]!;
-    var inputText = dartSerialzer.serializeInputDefinition(input, "");
+    var inputText = dartSerialzer.serializeInputDefinition(input);
     expect(inputText.trim(), startsWith("@Input"));
   });
 }

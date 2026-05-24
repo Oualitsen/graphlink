@@ -105,6 +105,7 @@ class JavaSerializer extends GLSerializer {
     this.immutableInputFields = true,
     this.immutableTypeFields = false,
     super.typeMapOverrides = const {},
+    required super.importPrefix,
   }) {
     _initAnnotations();
   }
@@ -1065,7 +1066,7 @@ class JavaSerializer extends GLSerializer {
   }
 
   @override
-  String serializeImportToken(GLToken token, String importPrefix) {
+  String serializeImportToken(GLToken token) {
     String? path;
 
     if (grammar.enums.containsKey(token.token)) {
@@ -1096,12 +1097,12 @@ class JavaSerializer extends GLSerializer {
 
   @override
   String serializeGlClass(GLClassModel theClass,
-      {bool withImports = true, required String importPrefix}) {
+      {bool withImports = true}) {
     if (!withImports || theClass.importDepencies.isEmpty && theClass.imports.isEmpty) {
-      return super.serializeGlClass(theClass, withImports: withImports, importPrefix: importPrefix);
+      return super.serializeGlClass(theClass, withImports: withImports);
     }
     final tokenImports = theClass.importDepencies
-        .map((dep) => serializeImportToken(dep, importPrefix))
+        .map((dep) => serializeImportToken(dep))
         .where((l) => l.trim().isNotEmpty)
         .toList();
     final simpleImports = theClass.imports.map((imp) => serializeImport(imp)).toList();
@@ -1109,6 +1110,6 @@ class JavaSerializer extends GLSerializer {
       imports: {...tokenImports, ...simpleImports}.toList(),
       body: theClass.body,
     );
-    return super.serializeGlClass(merged, withImports: withImports, importPrefix: importPrefix);
+    return super.serializeGlClass(merged, withImports: withImports);
   }
 }

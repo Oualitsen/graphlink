@@ -21,12 +21,13 @@ void main() {
 
     var javaSerial = JavaSerializer(
       g,
+      importPrefix: '',
       inputsAsRecords: true,
       typesAsRecords: true,
       generateJsonMethods: false,
     );
     var input = g.inputs["PersonInput"]!;
-    var inputSerial = javaSerial.serializeInputDefinition(input, "").trim();
+    var inputSerial = javaSerial.serializeInputDefinition(input).trim();
     expect(inputSerial,
         startsWith("public record PersonInput(String name, Integer age) {"));
     expect(inputSerial, endsWith("}"));
@@ -45,13 +46,14 @@ void main() {
     g.parse(text);
 
     var javaSerial = JavaSerializer(g,
+      importPrefix: '',
         inputsAsRecords: true,
         typesAsRecords: true,
         generateJsonMethods: false);
 
     var type = g.getTypeByName("Person")!;
 
-    var typeSerial = javaSerial.serializeTypeDefinition(type, "").trim();
+    var typeSerial = javaSerial.serializeTypeDefinition(type).trim();
     expect(
         typeSerial,
         startsWith(
@@ -72,10 +74,10 @@ void main() {
     g.parse(text);
 
     var javaSerial =
-        JavaSerializer(g, inputsAsRecords: true, typesAsRecords: true);
+        JavaSerializer(g, importPrefix: '', inputsAsRecords: true, typesAsRecords: true);
 
     var type = g.getTypeByName("Car")!;
-    var typeSerial = javaSerial.serializeTypeDefinition(type, "");
+    var typeSerial = javaSerial.serializeTypeDefinition(type);
 
     expect(
         typeSerial.split("\n").map((e) => e.trim()).toList(),
@@ -99,10 +101,10 @@ void main() {
     g.parse(text);
 
     var javaSerial =
-        JavaSerializer(g, inputsAsRecords: true, typesAsRecords: true);
+        JavaSerializer(g, importPrefix: '', inputsAsRecords: true, typesAsRecords: true);
 
     var input = g.inputs["CarInput"]!;
-    var inputSerial = javaSerial.serializeInputDefinition(input, "");
+    var inputSerial = javaSerial.serializeInputDefinition(input);
     expect(
         inputSerial,
         stringContainsInOrder([
@@ -125,10 +127,10 @@ void main() {
     g.parse(text);
 
     var javaSerial =
-        JavaSerializer(g, inputsAsRecords: true, typesAsRecords: true);
+        JavaSerializer(g, importPrefix: '', inputsAsRecords: true, typesAsRecords: true);
 
     var iface = g.interfaces["Entity"]!;
-    var interfaceSerial = javaSerial.serializeTypeDefinition(iface, "");
+    var interfaceSerial = javaSerial.serializeTypeDefinition(iface);
 
     expect(
         interfaceSerial,
@@ -152,10 +154,10 @@ void main() {
     g.parse(text);
 
     var javaSerial =
-        JavaSerializer(g, inputsAsRecords: true, typesAsRecords: true);
+        JavaSerializer(g, importPrefix: '', inputsAsRecords: true, typesAsRecords: true);
 
     var iface = g.getTypeByName("MyType")!;
-    var typeSerial = javaSerial.serializeTypeDefinition(iface, "");
+    var typeSerial = javaSerial.serializeTypeDefinition(iface);
     expect(
         typeSerial,
         contains(
@@ -175,10 +177,10 @@ void main() {
     g.parse(text);
 
     var javaSerial =
-        JavaSerializer(g, inputsAsRecords: true, typesAsRecords: true);
+        JavaSerializer(g, importPrefix: '', inputsAsRecords: true, typesAsRecords: true);
 
     var input = g.inputs["CreateAddressInput"]!;
-    var inputSerial = javaSerial.serializeInputDefinition(input, "");
+    var inputSerial = javaSerial.serializeInputDefinition(input);
 
     expect(inputSerial, contains("public record CreateAddressInput("));
     expect(inputSerial, contains("public Address toAddress()"));

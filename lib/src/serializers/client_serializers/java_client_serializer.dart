@@ -66,8 +66,7 @@ class JavaClientSerializer extends GLClientSerializer {
   String get _svDecoder => codeGenUtils.safeLocalVar('decoder');
 
   @override
-  GLClassModel generateClient(String importPrefix,
-      {bool hasDefaultAdapters = true}) {
+  GLClassModel generateClient({bool hasDefaultAdapters = true}) {
     final container = GLImportContainer();
     container.imports.addAll([
       JavaImports.map,

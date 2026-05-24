@@ -11,8 +11,8 @@ void main() {
 ''');
 
     var gender = g.enums["Gender"]!;
-    var serializer = DartSerializer(g);
-    var genderSerial = serializer.serializeEnumDefinition(gender, "");
+    var serializer = DartSerializer(g, importPrefix: "");
+    var genderSerial = serializer.serializeEnumDefinition(gender);
     print(genderSerial);
     expect(
         genderSerial.split("\n").map((e) => e.trim()),
@@ -35,8 +35,8 @@ void main() {
 ''');
 
     var gender = g.enums["Gender"]!;
-    var serializer = DartSerializer(g);
-    var genderSerial = serializer.serializeEnumDefinition(gender, "");
+    var serializer = DartSerializer(g, importPrefix: "");
+    var genderSerial = serializer.serializeEnumDefinition(gender);
     expect(
         genderSerial.split("\n").map((e) => e.trim()),
         containsAllInOrder([
@@ -79,7 +79,7 @@ void main() {
 ''');
 
     var userInput = g.inputs["UserInput"]!;
-    var serializer = DartSerializer(g);
+    var serializer = DartSerializer(g, importPrefix: "");
     var toJsonSerial =
         serializer.generateToJson(userInput.getSerializableFields(g.mode));
     expect(
@@ -117,7 +117,7 @@ void main() {
 ''');
 
     var userInput = g.inputs["UserInput"]!;
-    var serializer = DartSerializer(g);
+    var serializer = DartSerializer(g, importPrefix: "");
     var toJsonSerial =
         serializer.generateToJson(userInput.getSerializableFields(g.mode));
 
@@ -156,7 +156,7 @@ void main() {
 ''');
 
     var useer = g.types["User"]!;
-    var serializer = DartSerializer(g);
+    var serializer = DartSerializer(g, importPrefix: "");
     var toJsonSerial =
         serializer.generateToJson(useer.getSerializableFields(g.mode));
     expect(
@@ -207,7 +207,7 @@ void main() {
 ''');
 
     var userInput = g.inputs["UserInput"]!;
-    var serializer = DartSerializer(g);
+    var serializer = DartSerializer(g, importPrefix: "");
     var inputSerial = serializer.generateFromJson(
         userInput.getSerializableFields(g.mode), userInput.token);
     expect(
@@ -261,7 +261,7 @@ void main() {
 ''');
 
     var user = g.types["User"]!;
-    var serializer = DartSerializer(g);
+    var serializer = DartSerializer(g, importPrefix: "");
     var userSerial = serializer.generateFromJson(
         user.getSerializableFields(g.mode), user.token);
     expect(
@@ -309,7 +309,7 @@ void main() {
 ''');
 
     var user = g.interfaces["BasicEntity"]!;
-    var serializer = DartSerializer(g);
+    var serializer = DartSerializer(g, importPrefix: "");
     var userSerial = serializer.serializeInterface(user);
     print(userSerial);
 

@@ -72,7 +72,7 @@ class DartClientSerializer extends GLClientSerializer {
   String get _svParts => codeGenUtils.safeLocalVar('parts');
 
   @override
-  GLClassModel generateClient(String importPrefix) {
+  GLClassModel generateClient() {
     final dartImports = [
       "import 'dart:convert';",
       "import 'dart:async';",
@@ -83,7 +83,7 @@ class DartClientSerializer extends GLClientSerializer {
             : "import 'graph_link_http_adapter.dart';",
       if (generateAdapters && _parser.hasSubscriptions)
         "import 'graph_link_websocket_adapter.dart';",
-      ...serializeImports(_parser, importPrefix)
+      ...serializeImports(_parser)
           .split('\n')
           .where((l) => l.trim().isNotEmpty),
       if (_parser.hasMutations && _parser.hasUploadMutations)

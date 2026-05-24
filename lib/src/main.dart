@@ -14,6 +14,7 @@ import 'package:graphlink/src/gl_grammar_io.dart' as grammar_io;
 import 'package:graphlink/src/grammar_factory.dart';
 import 'package:graphlink/src/io_utils.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
+import 'package:graphlink/src/utils.dart';
 import 'package:yaml/yaml.dart';
 
 export 'package:graphlink/src/generators/dart_client_generator.dart' show generateDartClientClasses;
@@ -297,13 +298,13 @@ void handleGeneration(GeneratorConfig config) async {
 
     final mode = config.getMode();
     if (mode == CodeGenerationMode.server) {
-      await generateServerClasses(grammar, config, now);
+      await generateServerClasses(grammar,  config, now);
     } else if (mode == CodeGenerationMode.client) {
       final lang = config.clientConfig!.language;
       if (lang is JavaClientConfig) {
-        await generateJavaClientClasses(grammar, config, now);
+        await generateJavaClientClasses(grammar, lang.packageName, config, now);
       } else if (lang is DartClientConfig) {
-        await generateDartClientClasses(grammar, config, now);
+        await generateDartClientClasses(grammar, createPrifix(config.outputDir, lang.packageName ?? '') , config, now);
       } else if (lang is TypeScriptClientConfig) {
         await generateTypeScriptClientClasses(grammar, config, now);
       }

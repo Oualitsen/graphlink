@@ -16,13 +16,13 @@ GLParser _parser(String schema, {bool captureErrors = false}) {
   return g;
 }
 
-JavaClientSerializer _serializer(GLParser g) => JavaClientSerializer(g, JavaSerializer(g));
+JavaClientSerializer _serializer(GLParser g) => JavaClientSerializer(g, JavaSerializer(g, importPrefix: ""));
 
 String _queries(GLParser g) => _serializer(g).getQueriesClass('')?.toFileContent() ?? '';
 String _mutations(GLParser g) => _serializer(g).getMutationsClass('')?.toFileContent() ?? '';
 
 String _fullResponseType(GLParser g) {
-  final java = JavaSerializer(g);
+  final java = JavaSerializer(g, importPrefix: "");
   return g.queries.values
       .where((q) => q.isCaptureErrors(g))
       .map((q) => java.doSerializeTypeDefinition(q.getFullResponseTypeDefinition(g)))
