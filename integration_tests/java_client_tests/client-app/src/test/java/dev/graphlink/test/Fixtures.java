@@ -17,10 +17,18 @@ public final class Fixtures {
 
     // ── Client factory ────────────────────────────────────────────────────────
 
-    /** Create a fresh GraphLinkClient wired to the given mock adapters. */
+    /** Create a fresh GraphLinkClient wired to the given mock adapters (no upload support). */
     public static GraphLinkClient newClient(MockAdapter adapter, MockWebSocketAdapter wsAdapter) {
         JacksonGraphLinkJsonCodec codec = new JacksonGraphLinkJsonCodec();
-        return new GraphLinkClient(adapter, codec, codec, wsAdapter);
+        return new GraphLinkClient(adapter, null, codec, codec, wsAdapter);
+    }
+
+    /** Create a fresh GraphLinkClient with upload support. */
+    public static GraphLinkClient newClientWithUpload(MockAdapter adapter,
+                                                      MockMultipartAdapter multipart,
+                                                      MockWebSocketAdapter wsAdapter) {
+        JacksonGraphLinkJsonCodec codec = new JacksonGraphLinkJsonCodec();
+        return new GraphLinkClient(adapter, multipart, codec, codec, wsAdapter);
     }
 
     // ── Address ───────────────────────────────────────────────────────────────

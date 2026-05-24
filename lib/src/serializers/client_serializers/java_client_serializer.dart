@@ -13,7 +13,7 @@ import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/serializers/client_serializers/java_client_constants.dart';
 import 'package:graphlink/src/serializers/gl_client_serializer.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
-import 'package:graphlink/src/serializers/graphq_serializer.dart';
+import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 import 'package:graphlink/src/serializers/client_serializers/java_client_context.dart';
 import 'package:graphlink/src/serializers/client_serializers/java_client_operation_serializer.dart';
 
@@ -25,17 +25,35 @@ class JavaClientSerializer extends GLClientSerializer {
   final codeGenUtils = JavaCodeGenUtils();
   final JavaJsonCodec jsonCodec;
 
-  final GLGraphqSerializer gqlSerializer;
   late final JavaClientContext _ctx;
   late final JavaClientOperationSerializer _opSer;
+  GLImportContainer? _activeContainer;
 
   JavaClientSerializer(this._grammar, GLSerializer serializer,
       {this.jsonCodec = JavaJsonCodec.jackson})
-      : gqlSerializer = GLGraphqSerializer(_grammar, false),
-        super(serializer) {
+      : super(serializer, GLGraphqlSerializer(_grammar, false)) {
     _ctx = JavaClientContext(_grammar, codeGenUtils, gqlSerializer, serializer);
     _opSer = JavaClientOperationSerializer(_ctx);
   }
+
+  @override
+  String renderQueryMethod(GLQueryDefinition def) =>
+      _opSer.queryToMethod(def, _activeContainer!);
+
+  @override
+  String renderMutationMethod(GLQueryDefinition def) =>
+      _opSer.mutationToMethod(def, _activeContainer!);
+
+  @override
+  String renderUploadMutationMethod(GLQueryDefinition def) =>
+      _opSer.mutationToMethod(def, _activeContainer!);
+
+  @override
+  String renderSubscriptionMethod(GLQueryDefinition def) =>
+      _opSer.subscriptionToMethod(def, _activeContainer!);
+
+  @override
+  GLClassModel generateUploadsFile() => generateGLUploadFile();
 
   // Safe generated local variable names — avoids clashing with user-defined method arguments.
   String get _svHandler => codeGenUtils.safeLocalVar('handler');
@@ -313,25 +331,18 @@ class JavaClientSerializer extends GLClientSerializer {
       _buildClassForType(type, importPrefix);
 
   GLClassModel? _buildClassForType(GLQueryType type, String importPrefix) {
-    var queries = _grammar.queries.values;
-    var queryList = queries
-        .where((element) => element.type == type && _grammar.hasQueryType(type))
-        .toList();
-    if (queryList.isEmpty) {
-      return null;
-    }
     final importContainer = GLImportContainer();
-    if (type == GLQueryType.subscription) {
-      importContainer.importDepencies
-          .add(_grammar.getTypeByName("GraphLinkClientAdapter")!);
-    } else {
-      importContainer.importDepencies
-          .add(_grammar.getTypeByName("GraphLinkClientAdapter")!);
-    }
+    _activeContainer = importContainer;
+
+    importContainer.importDepencies
+        .add(_grammar.getTypeByName("GraphLinkClientAdapter")!);
     importContainer.importDepencies.addAll([
       'GraphLinkJsonEncoder',
       'GraphLinkJsonDecoder'
     ].map((e) => _grammar.getTypeByName(e)!));
+
+    final methods = buildOperationMethods(type);
+    if (methods.isEmpty) return null;
 
     final classBody = codeGenUtils.createClass(
         staticClass: false,
@@ -349,15 +360,7 @@ class JavaClientSerializer extends GLClientSerializer {
                 if (type == GLQueryType.subscription)
                   '$_svHandler = new GraphLinkSubscriptionHandler(wsAdapter, decoder, encoder);',
               ]),
-          ...queryList
-              .where((e) => e.type == GLQueryType.query)
-              .map((e) => _opSer.queryToMethod(e, importContainer)),
-          ...queryList
-              .where((e) => e.type == GLQueryType.subscription)
-              .map((e) => _opSer.subscriptionToMethod(e, importContainer)),
-          ...queryList
-              .where((e) => e.type == GLQueryType.mutation)
-              .map((e) => _opSer.mutationToMethod(e, importContainer)),
+          ...methods,
           if (type == GLQueryType.query)
             codeGenUtils.createMethod(
               returnType: 'private GraphLinkPayload',

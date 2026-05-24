@@ -7,7 +7,7 @@ import 'package:graphlink/src/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/express_apollo_server_serializer.dart';
-import 'package:graphlink/src/serializers/graphq_serializer.dart';
+import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:graphlink/src/serializers/spring_server_serializer.dart';
 import 'package:graphlink/src/serializers/typescript_serializer.dart';
@@ -120,7 +120,7 @@ Future<Set<String>> generateServerClasses(
 
   if (springConfig.generateSchema) {
     futures.add(saveSource(
-      data: GLGraphqSerializer(grammar).generateSchema(),
+      data: GLGraphqlSerializer(grammar).generateSchema(),
       path: springConfig.schemaTargetPath!,
       graphqlSource: true,
     ));

@@ -1,5 +1,5 @@
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
-import 'package:graphlink/src/serializers/graphq_serializer.dart';
+import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -24,7 +24,7 @@ void main() {
     parser.parse(schema);
 
     final def = parser.queries['GetSetupStatus']!;
-    final serializer = GLGraphqSerializer(parser);
+    final serializer = GLGraphqlSerializer(parser);
     final result = serializer.serializeQueryDefinition(def);
 
     print('serializeQueryDefinition:\n$result');
@@ -35,7 +35,7 @@ void main() {
     parser.parse(schema);
 
     final def = parser.queries['GetSetupStatus']!;
-    final serializer = GLGraphqSerializer(parser);
+    final serializer = GLGraphqlSerializer(parser);
     final divided = serializer.divideQueryDefinition(def, parser);
 
     print('divided queries:');
