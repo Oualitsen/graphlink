@@ -6,6 +6,7 @@ import 'package:graphlink/src/io_utils.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/generators/barrel_file_handler.dart';
 import 'package:graphlink/src/serializers/client_serializers/typescript_client_serializer.dart';
 import 'package:graphlink/src/serializers/typescript_serializer.dart';
 import 'package:graphlink/src/utils.dart';
@@ -89,8 +90,9 @@ Future<Set<String>> generateTypeScriptClientClasses(
   }
 
   final result = await Future.wait(futures);
-  stdout.writeln('Generated ${futures.length} files in ${formatElapsedTime(started)}');
-  final paths = result.map((f) => f.path).toSet();
+  final barrelFile = await TypeScriptBarrelFileHandler(parser, destinationDir, serializer).generate();
+  stdout.writeln('Generated ${futures.length + 1} files in ${formatElapsedTime(started)}');
+  final paths = result.map((f) => f.path).toSet()..add(barrelFile.path);
   await cleanUpObsoleteFiles(paths);
   return paths;
 }

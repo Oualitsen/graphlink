@@ -10,6 +10,7 @@ import 'package:graphlink/src/serializers/client_serializers/dart_client_seriali
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:graphlink/src/serializers/flutter_inputs/flutter_inputs_serializer.dart';
 import 'package:graphlink/src/serializers/flutter_types_serializer.dart';
+import 'package:graphlink/src/generators/barrel_file_handler.dart';
 import 'package:graphlink/src/utils.dart';
 
 Future<Set<String>> generateDartClientClasses(
@@ -248,8 +249,9 @@ Future<Set<String>> generateDartClientClasses(
   }
 
   final result = await Future.wait(futures);
-  stdout.writeln('Generated ${futures.length} files in ${formatElapsedTime(started)}');
-  final paths = result.map((f) => f.path).toSet();
+  final barrelFile = await DartBarrelFileHandler(parser, destinationDir, serializer).generate();
+  stdout.writeln('Generated ${futures.length + 1} files in ${formatElapsedTime(started)}');
+  final paths = result.map((f) => f.path).toSet()..add(barrelFile.path);
   await cleanUpObsoleteFiles(paths);
   return paths;
 }
