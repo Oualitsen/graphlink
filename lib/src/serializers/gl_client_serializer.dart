@@ -4,10 +4,10 @@ import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
 
-abstract class GLClientSerilaizer {
+abstract class GLClientSerializer {
   final GLSerializer serializer;
 
-  GLClientSerilaizer(this.serializer);
+  GLClientSerializer(this.serializer);
 
   GLClassModel generateClient(String importPrefix);
 
