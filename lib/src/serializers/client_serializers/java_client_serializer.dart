@@ -131,9 +131,9 @@ class JavaClientSerializer extends GLClientSerializer {
           if (_grammar.hasQueries)
             "queries = new ${classNameFromType(GLQueryType.query)}(adapter, $_svFragmentNap, encoder, decoder, store);",
           if (_grammar.hasMutations)
-            "mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, ${_grammar.hasUploadMutations ? 'multipartAdapter, ' : ''}$_svFragmentNap, encoder, decoder, store);",
+            "mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, ${_grammar.hasUploadMutations ? 'multipartAdapter, ' : ''}encoder, decoder, store);",
           if (_grammar.hasSubscriptions)
-            "subscriptions = new ${classNameFromType(GLQueryType.subscription)}(adapter, wsAdapter, $_svFragmentNap, encoder, decoder, store);",
+            "subscriptions = new ${classNameFromType(GLQueryType.subscription)}(adapter, wsAdapter, encoder, decoder, store);",
           ..._grammar.fragments.values.map((value) =>
               '$_svFragmentNap.put("${value.tokenInfo}", "${gqlSerializer.serializeFragmentDefinitionBase(value)}");'),
         ],
@@ -362,7 +362,7 @@ class JavaClientSerializer extends GLClientSerializer {
               methodName: classNameFromType(type),
               arguments: _declareConstructorArgs(type),
               statements: [
-                'super(adapter, fragmentMap, store, encoder, decoder);',
+                'super(adapter, ${type == GLQueryType.query ? 'fragmentMap' : 'null'}, store, encoder, decoder);',
                 if (type == GLQueryType.mutation && _grammar.hasUploadMutations)
                   'this.$_svMultipartAdapter = multipartAdapter;',
                 if (type == GLQueryType.subscription)
@@ -476,7 +476,7 @@ class JavaClientSerializer extends GLClientSerializer {
         'GraphLinkWebSocketAdapter wsAdapter',
       if (type == GLQueryType.mutation && _grammar.hasUploadMutations)
         'GraphLinkMultipartAdapter multipartAdapter',
-      'Map<String, String> fragmentMap',
+      if (type == GLQueryType.query) 'Map<String, String> fragmentMap',
       'GraphLinkJsonEncoder encoder',
       'GraphLinkJsonDecoder decoder',
       'GraphLinkCacheStore store',
