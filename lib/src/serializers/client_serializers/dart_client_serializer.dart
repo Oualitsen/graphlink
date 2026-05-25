@@ -291,10 +291,10 @@ class DartClientSerializer extends GLClientSerializer {
             "queries = ${classNameFromType(GLQueryType.query)}(adapter, $_svFragMap, this.store, $_svTagLocks);",
           if (_parser.hasMutations)
             _parser.hasUploadMutations
-                ? "mutations = ${classNameFromType(GLQueryType.mutation)}(adapter, uploadConverter, uploadAdapter, $_svFragMap, this.store, $_svTagLocks);"
-                : "mutations = ${classNameFromType(GLQueryType.mutation)}(adapter, $_svFragMap, this.store, $_svTagLocks);",
+                ? "mutations = ${classNameFromType(GLQueryType.mutation)}(adapter, uploadConverter, uploadAdapter, this.store, $_svTagLocks);"
+                : "mutations = ${classNameFromType(GLQueryType.mutation)}(adapter, this.store, $_svTagLocks);",
           if (_parser.hasSubscriptions)
-            "subscriptions = ${classNameFromType(GLQueryType.subscription)}(adapter, wsAdapter, $_svFragMap, this.store, $_svTagLocks);",
+            "subscriptions = ${classNameFromType(GLQueryType.subscription)}(adapter, wsAdapter, this.store, $_svTagLocks);",
         ],
       ),
       if (_parser.hasSubscriptions && generateAdapters && httpAdapter != DartHttpAdapter.none)
@@ -396,7 +396,7 @@ GraphLinkClient.fromUrl({
     return codeGenUtils.createClass(
         className: "${classNameFromType(type)} extends _ResolverBase",
         statements: [
-          'late final Map<String, String> $_svFragMap;',
+          if (type == GLQueryType.query) 'late final Map<String, String> $_svFragMap;',
           declareAdapter(type),
           codeGenUtils.createConstructor(
               className: classNameFromType(type),
@@ -407,7 +407,7 @@ GraphLinkClient.fromUrl({
                 'httpAdapter',
               ],
               statements: [
-                '$_svFragMap = fragmentMap;',
+                if (type == GLQueryType.query) '$_svFragMap = fragmentMap;',
                 if (type == GLQueryType.subscription)
                   '$_svHandler = _SubscriptionHandler(adapter);',
               ]),
@@ -526,7 +526,7 @@ GraphLinkClient.fromUrl({
         'this.$_svUploadConverter',
         'this.$_svUploadAdapter',
       ],
-      'Map<String, String> fragmentMap',
+      if (type == GLQueryType.query) 'Map<String, String> fragmentMap',
       'GraphLinkCacheStore store',
       'Map<String, _Lock> $_svTagLocks'
       
@@ -564,15 +564,7 @@ GraphLinkClient.fromUrl({
         statements: [
           if (!isUploadMutation(def))
             "const $_svOperationName = '${def.tokenInfo}';",
-          if (hasFragments(def)) ...[
-            "final $_svFragsValues = [",
-            ...getFragmentsForDef(def).map((e) => '"${e.tokenInfo}",'),
-            '].map((fragName) => $_svFragMap[fragName]!).join(' ');'
-          ],
-          if (!hasFragments(def))
-            "const $_svQuery = '''${serializeQueryString(def)}''';"
-          else
-            "final $_svQuery = '''${serializeQueryString(def)} \${$_svFragsValues}''';",
+          "const $_svQuery = '''${buildQueryString(def)}''';",
           generateVariables(def),
           if (!isUploadMutation(def))
             "final $_svPayload = GraphLinkPayload(query: $_svQuery, operationName: $_svOperationName, variables: $_svVariables);",

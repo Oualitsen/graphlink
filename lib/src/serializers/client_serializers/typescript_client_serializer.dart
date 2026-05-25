@@ -284,7 +284,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
         ] else ...[
           'private readonly $_svHandler: _SubscriptionHandler;',
         ],
-        'private readonly $_svFragMap: Record<string, string>;',
+        if (type == GLQueryType.query) 'private readonly $_svFragMap: Record<string, string>;',
         _buildConstructor(type),
         if (type == GLQueryType.query) ...[
           _buildPayloadMethod(),
@@ -303,7 +303,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
         'adapter: $_adapterType',
       if (type == GLQueryType.mutation && _parser.hasUploadMutations)
         'multipartAdapter: GLMultipartAdapter | undefined',
-      'fragMap: Record<string, string>',
+      if (type == GLQueryType.query) 'fragMap: Record<string, string>',
       'store: $_cacheStoreType',
       'tagLocks: Map<string, _Lock>',
     ];
@@ -321,7 +321,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
           if (type == GLQueryType.mutation && _parser.hasUploadMutations)
             'this.$_svMultipartAdapter = multipartAdapter;',
         ],
-        'this.$_svFragMap = fragMap;',
+        if (type == GLQueryType.query) 'this.$_svFragMap = fragMap;',
       ],
     );
   }
@@ -499,26 +499,13 @@ private _buildPayload(
     final fullResponseTypeName = def.getFullResponseTypeDefinition(_parser).tokenInfo.token;
     final isCaptureErrors = def.isCaptureErrors(_parser);
     final args = _getMethodArgs(def);
-    final queryStr = gqlSerializer.serializeQueryDefinition(def);
-    final hasFrags = def.fragments(_parser).isNotEmpty;
     final invalidation = _serializeInvalidation(def);
 
     final statements = <String>[
       "const $_svOperationName = '${def.tokenInfo}';",
       _generateVariables(def),
+      "const $_svQuery = '${buildQueryString(def)}';",
     ];
-
-    if (hasFrags) {
-      statements.add("const $_svFragsValues = [");
-      for (final frag in def.fragments(_parser)) {
-        statements.add("  '${frag.tokenInfo}',");
-      }
-      statements.add("].map(name => this.$_svFragMap[name]!).join('');");
-      statements.add(
-          "const $_svQuery = `${queryStr} \${$_svFragsValues}`;");
-    } else {
-      statements.add("const $_svQuery = '${queryStr}';");
-    }
 
     statements.addAll([
       "const $_svPayload: GraphLinkPayload = { query: $_svQuery, operationName: $_svOperationName, variables: $_svVariables };",
@@ -565,8 +552,6 @@ private _buildPayload(
   String _mutationToMultipartMethod(GLQueryDefinition def) {
     final returnTypeName = def.getGeneratedTypeDefinition().tokenInfo.token;
     final args = _getMethodArgs(def);
-    final queryStr = gqlSerializer.serializeQueryDefinition(def);
-    final hasFrags = def.fragments(_parser).isNotEmpty;
     final invalidation = _serializeInvalidation(def);
     final uploadNames = _parser.uploadScalarNames;
     final uploadArgs = def.arguments
@@ -576,18 +561,8 @@ private _buildPayload(
     final statements = <String>[
       "const $_svOperationName = '${def.tokenInfo}';",
       _generateVariables(def, nullifyUploads: true),
+      "const $_svQuery = '${buildQueryString(def)}';",
     ];
-
-    if (hasFrags) {
-      statements.add("const $_svFragsValues = [");
-      for (final frag in def.fragments(_parser)) {
-        statements.add("  '${frag.tokenInfo}',");
-      }
-      statements.add("].map(name => this.$_svFragMap[name]!).join('');");
-      statements.add("const $_svQuery = `${queryStr} \${$_svFragsValues}`;");
-    } else {
-      statements.add("const $_svQuery = '${queryStr}';");
-    }
 
     statements.addAll([
       "const $_svMap: Record<string, string[]> = {};",
@@ -662,21 +637,9 @@ private _buildPayload(
   String _subscriptionToMethod(GLQueryDefinition def) {
     final returnTypeName = def.getGeneratedTypeDefinition().tokenInfo.token;
     final queryArgs = _getMethodArgs(def);
-    final queryStr = gqlSerializer.serializeQueryDefinition(def);
-    final hasFrags = def.fragments(_parser).isNotEmpty;
 
     final statements = <String>[_generateVariables(def)];
-
-    if (hasFrags) {
-      statements.add("const $_svFragsValues = [");
-      for (final frag in def.fragments(_parser)) {
-        statements.add("  '${frag.tokenInfo}',");
-      }
-      statements.add("].map(name => this.$_svFragMap[name]!).join('');");
-      statements.add("const $_svQuery = `${queryStr} \${$_svFragsValues}`;");
-    } else {
-      statements.add("const $_svQuery = '${queryStr}';");
-    }
+    statements.add("const $_svQuery = '${buildQueryString(def)}';");
 
     statements.addAll([
       "const $_svPayload: GraphLinkPayload = {",
@@ -888,10 +851,10 @@ private _buildPayload(
           'this.queries = new ${classNameFromType(GLQueryType.query)}(adapter, this.$_svFragMap, this.store, this.$_svTagLocks);',
         if (hasMutations)
           _parser.hasUploadMutations
-            ? 'this.mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, multipartAdapter, this.$_svFragMap, this.store, this.$_svTagLocks);'
-            : 'this.mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, this.$_svFragMap, this.store, this.$_svTagLocks);',
+            ? 'this.mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, multipartAdapter, this.store, this.$_svTagLocks);'
+            : 'this.mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, this.store, this.$_svTagLocks);',
         if (hasSubs)
-          'this.subscriptions = new ${classNameFromType(GLQueryType.subscription)}(wsAdapter, this.$_svFragMap, this.store, this.$_svTagLocks);',
+          'this.subscriptions = new ${classNameFromType(GLQueryType.subscription)}(wsAdapter, this.store, this.$_svTagLocks);',
       ],
     );
   }

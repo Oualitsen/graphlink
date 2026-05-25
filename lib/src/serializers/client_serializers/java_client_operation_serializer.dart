@@ -154,21 +154,20 @@ String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
     return buffer.toString();
   }
 
+  String _buildQueryString(GLQueryDefinition def) {
+    final query = _ctx.gqlSerializer.serializeQueryDefinition(def);
+    final frags = def.fragments(_ctx.grammar)
+        .map((f) => _ctx.gqlSerializer.serializeFragmentDefinitionBase(f))
+        .join(' ');
+    return frags.isEmpty ? query : '$query $frags';
+  }
+
   String mutationToMethod(GLQueryDefinition def, GLImportContainer container) {
-    final frags = def.fragments(_ctx.grammar);
     final returnType = 'public ${returnTypeByQueryType(def)}';
     final methodName = def.tokenInfo.token;
-    final queryLine = frags.isNotEmpty
-        ? [
-            'List<String> ${_ctx.svFragsValues} = Arrays.asList(${frags.map((e) => '${_ctx.svFragmentMap}.get("${e.token}")').join(", ")});',
-            'String ${_ctx.svQuery} = "${_ctx.gqlSerializer.serializeQueryDefinition(def)} " + String.join(" ", ${_ctx.svFragsValues});',
-          ]
-        : ['String ${_ctx.svQuery} = "${_ctx.gqlSerializer.serializeQueryDefinition(def)}";'];
+    final queryLine = ['String ${_ctx.svQuery} = "${_buildQueryString(def)}";'];
     container.imports
-        .addAll([JavaImports.map, JavaImports.hashMap, JavaImports.arrays]);
-    if (frags.isNotEmpty) {
-      container.imports.add(JavaImports.list);
-    }
+        .addAll([JavaImports.map, JavaImports.hashMap, JavaImports.arrays, JavaImports.list]);
 
     if (_ctx.grammar.mutationHasUploads(def)) {
       final argsNoProgress = getArguments(def);
@@ -288,19 +287,14 @@ String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
 
   String subscriptionToMethod(
       GLQueryDefinition def, GLImportContainer container) {
-        container.imports.addAll([JavaImports.map, JavaImports.hashMap, JavaImports.list, JavaImports.arrays]);
-    final frags = def.fragments(_ctx.grammar);
+        container.imports.addAll([JavaImports.map, JavaImports.hashMap, JavaImports.list]);
     return _ctx.codeGenUtils.createMethod(
         returnType: 'public ${returnTypeByQueryType(def)}',
         methodName: def.tokenInfo.token,
         arguments: getArguments(def),
         statements: [
           'String ${_ctx.svOperationName} = "${def.tokenInfo}";',
-          if (frags.isNotEmpty) ...[
-            'List<String> ${_ctx.svFragsValues} = Arrays.asList(${frags.map((e) => '${_ctx.svFragmentMap}.get("${e.token}")').join(", ")});',
-            'String ${_ctx.svQuery} = "${_ctx.gqlSerializer.serializeQueryDefinition(def)} " + String.join(" ", ${_ctx.svFragsValues});',
-          ] else
-            'String ${_ctx.svQuery} = "${_ctx.gqlSerializer.serializeQueryDefinition(def)}";',
+          'String ${_ctx.svQuery} = "${_buildQueryString(def)}";',
           generateVariables(def, container),
           "GraphLinkPayload ${_ctx.svPayload} = GraphLinkPayload.builder().query(${_ctx.svQuery}).operationName(${_ctx.svOperationName}).variables(${_ctx.svVariables}).build();",
           _serializeSubscriptionAdapterCall(def),
