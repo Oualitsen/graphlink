@@ -37,6 +37,9 @@ Declare caching once with `@glCache` and `@glCacheInvalidate` — the generated 
 **Only what the server needs.**
 GraphLink generates minimal, precise query strings. No full-schema dumps that break Spring Boot's strict GraphQL validation.
 
+**Inline error handling.**
+Annotate any query or mutation with `@glCaptureErrors` (or set `captureErrors: true` globally) and the generated method returns a `FullResponse` with `data` and `errors` side by side — no try/catch required. Works in Dart, Java, and TypeScript.
+
 **Single source of truth.**
 One `.graphql` file drives the Dart client, the Java client, and the Spring Boot controllers + service interfaces. Add a field once, regenerate, and both ends stay in sync.
 
@@ -47,7 +50,7 @@ One `.graphql` file drives the Dart client, the Java client, and the Spring Boot
 | Target | Status |
 |---|---|
 | Dart client | Stable |
-| Flutter client | Stable |
+| Flutter client (UI widget generation) | Stable |
 | Java client | Stable |
 | Spring Boot server | Stable |
 | TypeScript client | Stable |
@@ -106,8 +109,8 @@ input AddVehicleInput {
 }
 
 type Query {
-  getVehicle(id: ID!): Vehicle!    @glCache(ttl: 120, tags: ["vehicles"])
-  listVehicles: [Vehicle!]!        @glCache(ttl: 60,  tags: ["vehicles"])
+  getVehicle(id: ID!): Vehicle!    @glCache(ttl: "2m", tags: ["vehicles"])
+  listVehicles: [Vehicle!]!        @glCache(ttl: "1m", tags: ["vehicles"])
 }
 
 type Mutation {
@@ -127,9 +130,7 @@ Create a `glink.json` (or `glink.yaml` / `glink.yml`) in your project root:
   "outputDir": "lib/generated",
   "clientConfig": {
     "dart": {
-      "packageName": "my_app",
-      "generateAllFieldsFragments": true,
-      "autoGenerateQueries": true
+      "packageName": "my_app"
     }
   }
 }
@@ -150,8 +151,6 @@ outputDir: lib/generated
 clientConfig:
   dart:
     packageName: my_app
-    generateAllFieldsFragments: true
-    autoGenerateQueries: true
 ```
 
 ### 3. Generate
@@ -272,10 +271,10 @@ Cache control lives in the schema, not scattered through your application code.
 ```graphql
 type Query {
   # Cache for 2 minutes, tagged "vehicles"
-  getVehicle(id: ID!): Vehicle!  @glCache(ttl: 120, tags: ["vehicles"])
+  getVehicle(id: ID!): Vehicle!  @glCache(ttl: "2m", tags: ["vehicles"])
 
   # Serve stale data when offline instead of throwing
-  getUserProfile(id: ID!): UserProfile @glCache(ttl: 60, staleIfOffline: true)
+  getUserProfile(id: ID!): UserProfile @glCache(ttl: "1m", staleIfOffline: true)
 }
 
 type Mutation {
@@ -316,7 +315,7 @@ Full documentation at **[graphlink.dev](https://graphlink.dev/docs/index.html)**
 - [TypeScript Client](https://graphlink.dev/docs/typescript-client.html) — fetch/axios, RxJS observables, Angular/React/Vue
 - [Spring Boot Server](https://graphlink.dev/docs/spring-server.html) — controllers, service interfaces, subscriptions
 - [Caching](https://graphlink.dev/docs/caching.html) — `@glCache`, `@glCacheInvalidate`, partial caching, offline
-- [Directives Reference](https://graphlink.dev/docs/directives.html) — all 13 directives with examples
+- [Directives Reference](https://graphlink.dev/docs/directives.html) — all directives with examples
 - [Configuration Reference](https://graphlink.dev/docs/configuration.html) — every config key explained
 
 ---
