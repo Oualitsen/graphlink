@@ -49,8 +49,15 @@ client and server code. Developers define their API once in a `.graphql` schema 
   stays on the server for persistence; the resolved object (`cashier @glSkipOnServer(batch: true)`)
   is loaded by the server and delivered to the client. This eliminates N+1 queries and keeps
   each side's model clean without any shared representation.
+- **Inline error handling (`@glCaptureErrors`).** Annotate any query or mutation with
+  `@glCaptureErrors` (or set `captureErrors: true` in config) to return a `FullResponse` with
+  `data` and `errors` side by side instead of throwing on GraphQL errors. Dart, Java, TypeScript.
+- **Barrel file generation.** Dart and TypeScript generators emit a single barrel/index file that
+  re-exports all generated enums, inputs, types, and interfaces. One import covers the entire layer.
+- **Flutter UI widget generation.** The `flutter` config block generates display widgets for output
+  types and form widgets for input types, with extensive layout and style options.
 
-## Supported targets (as of v4.6.0)
+## Supported targets (as of v4.7.0)
 
 - Dart client (stable)
 - Flutter client (stable)
@@ -88,9 +95,7 @@ glink -h                # show help
   "outputDir": "src/main/java/com/example/generated",
   "clientConfig": {
     "java": {
-      "packageName": "com.example.generated",
-      "generateAllFieldsFragments": true,
-      "autoGenerateQueries": true
+      "packageName": "com.example.generated"
     }
   }
 }
@@ -100,7 +105,7 @@ glink -h                # show help
 
 ```graphql
 type Query {
-  getCar(id: ID!): Car! @glCache(ttl: 300, tags: ["cars"])
+  getCar(id: ID!): Car! @glCache(ttl: "5m", tags: ["cars"])
 }
 type Mutation {
   createCar(input: CreateCarInput!): Car! @glCacheInvalidate(tags: ["cars"])
