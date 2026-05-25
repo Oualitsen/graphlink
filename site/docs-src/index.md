@@ -133,8 +133,8 @@ input AddVehicleInput {
 }
 
 type Query {
-  getVehicle(id: ID!): Vehicle!  @glCache(ttl: 120, tags: ["vehicles"])
-  listVehicles: [Vehicle!]!      @glCache(ttl: 60,  tags: ["vehicles"])
+  getVehicle(id: ID!): Vehicle!  @glCache(ttl: "2m", tags: ["vehicles"])
+  listVehicles: [Vehicle!]!      @glCache(ttl: "1m", tags: ["vehicles"])
 }
 
 type Mutation {
@@ -354,7 +354,7 @@ glink -w                # watch mode — regenerate on every save
 ??? "How does the built-in caching work?"
 
     Cache behaviour is declared in the schema using two directives.
-    `@glCache(ttl: 300, tags: ["cars"])` caches a query result for 300 seconds under the
+    `@glCache(ttl: "5m", tags: ["cars"])` caches a query result for 5 minutes under the
     tag `"cars"`. `@glCacheInvalidate(tags: ["cars"])` on a mutation evicts all entries
     tagged `"cars"` when the mutation succeeds. Individual fields inside a compound query
     can each carry their own TTL — if one tag is invalidated, the others stay warm.

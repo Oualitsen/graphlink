@@ -93,7 +93,7 @@ def on_post_build(config):
         '- Website: https://graphlink.dev/\n' \
         '- Docs: https://graphlink.dev/docs/index.html\n' \
         '- GitHub: https://github.com/Oualitsen/graphlink\n' \
-        '- pub.dev: https://pub.dev/packages/retrofit_graphql\n' \
+        '- pub.dev: https://pub.dev/packages/graphlink\n' \
         '- Issues: https://github.com/Oualitsen/graphlink/issues\n' \
         '- Releases: https://github.com/Oualitsen/graphlink/releases\n'
 

@@ -98,11 +98,11 @@ input AddVehicleInput {
   ownerId: ID
 }
 
-# Queries — @glCache caches the result; ttl in seconds; tags for group invalidation
+# Queries — @glCache caches the result; ttl as duration string; tags for group invalidation
 type Query {
   getPerson(id: ID!): Person
-  getVehicle(id: ID!): Vehicle!  @glCache(ttl: 120, tags: ["vehicles"])
-  listVehicles: [Vehicle!]!      @glCache(ttl: 60,  tags: ["vehicles"])
+  getVehicle(id: ID!): Vehicle!  @glCache(ttl: "2m", tags: ["vehicles"])
+  listVehicles: [Vehicle!]!      @glCache(ttl: "1m", tags: ["vehicles"])
 }
 
 # Mutations — @glCacheInvalidate evicts all entries with matching tags on success

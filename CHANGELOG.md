@@ -263,7 +263,7 @@
 ### Internal
 - `MappingPlan` split into `ToMappingPlan` (forward direction) and `FromMappingPlan` (reverse direction) — all field-categorization logic is now fully encapsulated in the model; serializers are pure emitters with no resolution logic of their own
 
-## 4.7.0 - 2026-05-20
+## 4.7.0 - 2026-05-25
 
 ### Breaking changes
 
@@ -293,6 +293,22 @@
 
 ### New features
 
+- **`@glCaptureErrors` directive** — opt a query or mutation into inline error handling. The generated method returns `{OperationName}FullResponse` with a nullable `data` field and a nullable `errors: List<GraphLinkError>` field instead of throwing on GraphQL errors. Supported in Dart, Java, and TypeScript.
+
+  ```graphql
+  type Query {
+    getUser(id: ID!): User! @glCaptureErrors
+  }
+  ```
+
+  Enable globally for all queries and mutations via config:
+
+  ```json
+  "clientConfig": { "dart": { "captureErrors": true } }
+  ```
+
+  Error responses are never written to the cache. Non-annotated operations are unaffected.
+
 - **Flutter UI widget generation** — new `flutter` config block generates Flutter widgets for GraphQL types and inputs. Configurable options:
   - `generateTypes` (default `true`) — generate display widgets for output types
   - `generateInputs` (default `false`) — generate form widgets for input types
@@ -301,6 +317,15 @@
   - `booleanWidget` — `switchWidget` (default), `checkbox`, or `tristate`
   - `nullableBooleanWidget` — `checkbox` (default) or `tristate`
   - `listWidget` — `chips` (default) or `checkboxes`
+  - `defaultLabelPosition` — `floatingLabel` (default), `beside`, or `above`
+  - `defaultFormLayout` — `column` (default) or `twoColumn`
+  - `defaultRequiredIndicator` — `asterisk` (default), `none`, `requiredText`, or `optionalText`
+  - `defaultStepperOrientation` — `vertical` (default) or `horizontal`
+  - `defaultTypeLayout` / `defaultGroupLayout` — `labeledRow` (default), `listTile`, `listTileReversed`, or `expandable`
+  - `defaultDatePattern`, `defaultDateFirstYear`, `defaultDateLastYear`, `defaultDateMode` (`dialog` or `inline`)
+  - `defaultDebounceDuration` (default `300` ms) — debounce delay for text input fields
+
+- **Barrel file generation** — Dart and TypeScript generators now emit a single barrel/index file that re-exports all generated enums, inputs, types, and interfaces. A single import is enough to access the entire generated layer.
 
 - **`@glExpand` directive** — controls inline expansion depth for cyclic types in `_all_fields` fragment generation. When a cycle is detected, the generator inlines the cyclic type's fields up to `depth` levels instead of emitting an invalid recursive fragment spread. Default depth is `1`. Use `depth: 0` to omit the cyclic field entirely.
 
@@ -315,6 +340,14 @@
 - **Exhaustive projection reuse** — when a query projects all fields of a type completely (recursively), the generator now reuses the base type name instead of generating a new projected type name. This reduces the number of generated classes and makes generated code easier to navigate.
 
 - **`generateAllFieldsFragments` and `autoGenerateQueries` default to `true`** — these options no longer need to be explicitly set in `config.json`; they are enabled by default.
+
+- **Incremental file writes** — the generator now hashes each output file's content before writing. Files whose content has not changed are skipped, making repeated generation and watch mode significantly faster on large schemas.
+
+### Fixes
+
+- Fixed Flutter input form widget generation (state management, date fields, companion handling)
+- Fixed missing import for enum list labels in generated Flutter display widgets
+- Improved parse error messages now include line and column numbers
 
 ### Documentation
 

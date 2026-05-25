@@ -305,7 +305,7 @@ You can also reference `_all_fields_Vehicle` by name in any hand-written queries
 ```graphql title="Using _all_fields in a custom query"
 type Query {
   # GraphLink resolves _all_fields to _all_fields_Vehicle for this field
-  getVehicle(id: ID!): Vehicle! @glCache(ttl: 120, tags: ["vehicles"])
+  getVehicle(id: ID!): Vehicle! @glCache(ttl: "2m", tags: ["vehicles"])
 }
 ```
 
