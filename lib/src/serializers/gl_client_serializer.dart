@@ -50,6 +50,14 @@ abstract class GLClientSerializer {
   List<DividedQuery> divideQuery(GLQueryDefinition def) =>
       gqlSerializer.divideQueryDefinition(def, _parser);
 
+  String buildQueryString(GLQueryDefinition def) {
+    final query = gqlSerializer.serializeQueryDefinition(def);
+    final frags = getFragmentsForDef(def)
+        .map((f) => gqlSerializer.serializeFragmentDefinitionBase(f))
+        .join(' ');
+    return frags.isEmpty ? query : '$query $frags';
+  }
+
   // ── Operation-level rendering (abstract) ──────────────────────────────────
 
   String renderQueryMethod(GLQueryDefinition def);
