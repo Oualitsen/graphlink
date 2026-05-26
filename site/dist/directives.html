@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Complete reference for all GraphLink schema directives — @glCache, @glCacheInvalidate, @glMapsTo, @glMapField, @glSkipOnServer (with forward mappings), @glExternal, @glValidate, and more.">
+        <meta name="description" content="Complete reference for all GraphLink schema directives — @glCache, @glCacheInvalidate, @glCaptureErrors, @glMapsTo, @glMapField, @glSkipOnServer (with forward mappings), @glExternal, @glValidate, and more.">
       
       
         <meta name="author" content="GraphLink">
@@ -984,6 +984,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#glcaptureerrors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        @glCaptureErrors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#glskiponserver" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1318,6 +1329,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#glcaptureerrors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        @glCaptureErrors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#glskiponserver" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1569,6 +1591,10 @@
 <a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a><span class="c"># ── Cyclic expansion ──────────────────────────────────────────────────────────</span>
 <a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a>
 <a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a><span class="k">directive</span><span class="w"> </span><span class="err">@glExpand(depth:</span><span class="w"> </span><span class="err">Int)</span><span class="w"> </span><span class="err">on</span><span class="w"> </span><span class="k">OBJECT</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a>
+<a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a><span class="c"># ── Error capture ─────────────────────────────────────────────────────────────</span>
+<a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a>
+<a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a><span class="k">directive</span><span class="w"> </span><span class="err">@glCaptureErrors</span><span class="w"> </span><span class="err">on</span><span class="w"> </span><span class="k">FIELD_DEFINITION</span>
 </code></pre></div>
 <hr />
 <h2 id="glcache">@glCache<a class="headerlink" href="#glcache" title="Permanent link">&para;</a></h2>
@@ -1685,6 +1711,58 @@
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="p">}</span>
 </code></pre></div>
 <hr />
+<h2 id="glcaptureerrors">@glCaptureErrors<a class="headerlink" href="#glcaptureerrors" title="Permanent link">&para;</a></h2>
+<p><strong>Target:</strong> CLIENT · <strong>Placement:</strong> <code>FIELD_DEFINITION</code> on <code>Query</code> and <code>Mutation</code> fields</p>
+<p>Changes the method contract so errors are returned inline instead of thrown. The generated method return type changes from <code>{OperationName}Response</code> to <code>{OperationName}FullResponse</code>. A separate <code>{OperationName}FullResponse</code> class is generated alongside the original response class (which is left unchanged). The caller inspects <code>response.errors</code> directly — the method never throws for GraphQL errors.</p>
+<p>No arguments.</p>
+<div class="highlight"><span class="filename">Example</span><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">type</span><span class="w"> </span><span class="err">Query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="n">getUser</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">User</span><span class="err">!</span><span class="w"> </span><span class="nd">@glCaptureErrors</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="err">listUsers:</span><span class="w"> </span><span class="err">[User!]!</span><span class="w"> </span><span class="err">@glCaptureErrors</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="err">}</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="err">type</span><span class="w"> </span><span class="err">Mutation</span><span class="w"> </span><span class="err">{</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span><span class="err">createUser</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="no">CreateUserInput</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">User</span><span class="err">!</span><span class="w"> </span><span class="nd">@glCaptureErrors</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="err">}</span>
+</code></pre></div>
+<p>Generated wrapper class (Dart):</p>
+<div class="highlight"><span class="filename">Generated GetUserFullResponse</span><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kd">class</span><span class="w"> </span><span class="nc">GetUserFullResponse</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">GetUserResponse</span><span class="o">?</span><span class="w"> </span><span class="n">data</span><span class="p">;</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">GraphLinkError</span><span class="o">&gt;?</span><span class="w"> </span><span class="n">errors</span><span class="p">;</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="n">GetUserFullResponse</span><span class="p">({</span><span class="k">this</span><span class="p">.</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="n">errors</span><span class="p">});</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="p">}</span>
+</code></pre></div>
+<p>Generated wrapper interface (TypeScript):</p>
+<div class="highlight"><span class="filename">Generated GetUserFullResponse</span><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">export</span><span class="w"> </span><span class="kd">interface</span><span class="w"> </span><span class="nx">GetUserFullResponse</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nx">data?</span><span class="o">:</span><span class="w"> </span><span class="kt">GetUserResponse</span><span class="p">;</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="nx">errors?</span><span class="o">:</span><span class="w"> </span><span class="kt">GraphLinkError</span><span class="p">[];</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="p">}</span>
+</code></pre></div>
+<p>Generated wrapper class (Java):</p>
+<div class="highlight"><span class="filename">Generated GetUserFullResponse.java</span><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">GetUserFullResponse</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">GetUserResponse</span><span class="w"> </span><span class="n">data</span><span class="p">;</span><span class="w">       </span><span class="c1">// nullable</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">GraphLinkError</span><span class="o">&gt;</span><span class="w"> </span><span class="n">errors</span><span class="p">;</span><span class="w"> </span><span class="c1">// nullable</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>Call-site comparison:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Without <code>@glCaptureErrors</code></th>
+<th>With <code>@glCaptureErrors</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>try { final user = await client.queries.getUser(id: id); } catch (e) { … }</code></td>
+<td><code>final r = await client.queries.getUser(id: id); if (r.errors != null) { … }</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Caching interaction:</strong> error responses are never cached. On a cache hit, <code>errors</code> is always <code>null</code>.</p>
+<p><strong>Validation:</strong> applying <code>@glCaptureErrors</code> to a subscription field is rejected at parse time with a <code>ParseException</code>.</p>
+<p><strong>Global config alternative:</strong> instead of annotating each field, set <code>captureErrors: true</code> in <code>clientConfig.dart</code> / <code>clientConfig.java</code> / <code>clientConfig.typescript</code> to apply the behaviour to every query and mutation automatically.</p>
+<hr />
 <h2 id="glskiponserver">@glSkipOnServer<a class="headerlink" href="#glskiponserver" title="Permanent link">&para;</a></h2>
 <p><strong>Target:</strong> SERVER · <strong>Placement:</strong> <code>OBJECT</code>, <code>SCALAR</code>, <code>FIELD_DEFINITION</code></p>
 <p>Excludes a type or field from server generation and generates <code>@SchemaMapping</code> or <code>@BatchMapping</code> to resolve it. Supports <code>mapTo</code> for substituting an existing class and <code>batch</code> for N+1-safe batch resolution.</p>
@@ -1719,17 +1797,17 @@
 </tr>
 </tbody>
 </table>
-<div class="highlight"><span class="filename">Example</span><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c"># Map the DateTime scalar to Java&#39;s OffsetDateTime</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">scalar</span><span class="w"> </span><span class="err">DateTime</span><span class="w"> </span><span class="err">@glExternal(</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="err">glClass:</span><span class="w"> </span><span class="err">&quot;OffsetDateTime&quot;</span><span class="p">,</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="err">glImport:</span><span class="w"> </span><span class="err">&quot;java.time.OffsetDateTime&quot;</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="err">)</span>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c"># Map the BigDecimal scalar to Java&#39;s BigDecimal</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="k">scalar</span><span class="w"> </span><span class="err">BigDecimal</span><span class="w"> </span><span class="err">@glExternal(</span>
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">  </span><span class="err">glClass:</span><span class="w"> </span><span class="err">&quot;BigDecimal&quot;</span><span class="p">,</span>
-<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span><span class="err">glImport:</span><span class="w"> </span><span class="err">&quot;java.math.BigDecimal&quot;</span>
-<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="err">)</span>
+<div class="highlight"><span class="filename">Example</span><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c"># Map the DateTime scalar to Java&#39;s OffsetDateTime</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">scalar</span><span class="w"> </span><span class="err">DateTime</span><span class="w"> </span><span class="err">@glExternal(</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="err">glClass:</span><span class="w"> </span><span class="err">&quot;OffsetDateTime&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span><span class="err">glImport:</span><span class="w"> </span><span class="err">&quot;java.time.OffsetDateTime&quot;</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="err">)</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="c"># Map the BigDecimal scalar to Java&#39;s BigDecimal</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="k">scalar</span><span class="w"> </span><span class="err">BigDecimal</span><span class="w"> </span><span class="err">@glExternal(</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">  </span><span class="err">glClass:</span><span class="w"> </span><span class="err">&quot;BigDecimal&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">  </span><span class="err">glImport:</span><span class="w"> </span><span class="err">&quot;java.math.BigDecimal&quot;</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="err">)</span>
 </code></pre></div>
 <hr />
 <h2 id="gltypename">@glTypeName<a class="headerlink" href="#gltypename" title="Permanent link">&para;</a></h2>
@@ -1751,11 +1829,11 @@
 </tr>
 </tbody>
 </table>
-<div class="highlight"><span class="filename">Example</span><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c"># GraphQL type is &quot;GQLVehicle&quot;, but generated class will be named &quot;Vehicle&quot;</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">type</span><span class="w"> </span><span class="err">GQLVehicle</span><span class="w"> </span><span class="err">@glTypeName(name:</span><span class="w"> </span><span class="err">&quot;Vehicle&quot;)</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nl">brand</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="p">}</span>
+<div class="highlight"><span class="filename">Example</span><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c"># GraphQL type is &quot;GQLVehicle&quot;, but generated class will be named &quot;Vehicle&quot;</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="k">type</span><span class="w"> </span><span class="err">GQLVehicle</span><span class="w"> </span><span class="err">@glTypeName(name:</span><span class="w"> </span><span class="err">&quot;Vehicle&quot;)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span><span class="nl">brand</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="p">}</span>
 </code></pre></div>
 <hr />
 <h2 id="gldecorators">@glDecorators<a class="headerlink" href="#gldecorators" title="Permanent link">&para;</a></h2>
@@ -1777,18 +1855,18 @@
 </tr>
 </tbody>
 </table>
-<div class="highlight"><span class="filename">Example</span><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">type</span><span class="w"> </span><span class="err">Vehicle</span><span class="w"> </span><span class="err">@glDecorators(value:</span><span class="w"> </span><span class="err">[&quot;@Entity&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">&quot;@Table(name</span><span class="w"> </span><span class="err">=</span><span class="w"> </span><span class="err">\&quot;vehicles\&quot;)&quot;])</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="nl">brand</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="nl">model</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="p">}</span>
+<div class="highlight"><span class="filename">Example</span><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">type</span><span class="w"> </span><span class="err">Vehicle</span><span class="w"> </span><span class="err">@glDecorators(value:</span><span class="w"> </span><span class="err">[&quot;@Entity&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">&quot;@Table(name</span><span class="w"> </span><span class="err">=</span><span class="w"> </span><span class="err">\&quot;vehicles\&quot;)&quot;])</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="nl">brand</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">  </span><span class="nl">model</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="p">}</span>
 </code></pre></div>
 <p>Generated output:</p>
-<div class="highlight"><span class="filename">Generated Vehicle.java</span><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nd">@Entity</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nd">@Table</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;vehicles&quot;</span><span class="p">)</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Vehicle</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span><span class="c1">// ...</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="p">}</span>
+<div class="highlight"><span class="filename">Generated Vehicle.java</span><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nd">@Entity</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="nd">@Table</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;vehicles&quot;</span><span class="p">)</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Vehicle</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">    </span><span class="c1">// ...</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="p">}</span>
 </code></pre></div>
 <hr />
 <h2 id="glservicename">@glServiceName<a class="headerlink" href="#glservicename" title="Permanent link">&para;</a></h2>
@@ -1810,11 +1888,11 @@
 </tr>
 </tbody>
 </table>
-<div class="highlight"><span class="filename">Example</span><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c"># Generates FleetManagementService instead of VehicleService</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">type</span><span class="w"> </span><span class="err">Vehicle</span><span class="w"> </span><span class="err">@glServiceName(name:</span><span class="w"> </span><span class="err">&quot;FleetManagementService&quot;)</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span><span class="nl">brand</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="p">}</span>
+<div class="highlight"><span class="filename">Example</span><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c"># Generates FleetManagementService instead of VehicleService</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="k">type</span><span class="w"> </span><span class="err">Vehicle</span><span class="w"> </span><span class="err">@glServiceName(name:</span><span class="w"> </span><span class="err">&quot;FleetManagementService&quot;)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">  </span><span class="nl">brand</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="p">}</span>
 </code></pre></div>
 <hr />
 <h2 id="glequalshashcode">@glEqualsHashcode<a class="headerlink" href="#glequalshashcode" title="Permanent link">&para;</a></h2>
@@ -1836,20 +1914,20 @@
 </tr>
 </tbody>
 </table>
-<div class="highlight"><span class="filename">Example</span><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c"># Two Vehicles are equal if they have the same id</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="k">type</span><span class="w"> </span><span class="err">Vehicle</span><span class="w"> </span><span class="err">@glEqualsHashcode(fields:</span><span class="w"> </span><span class="err">[&quot;id&quot;])</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span><span class="nl">brand</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">  </span><span class="nl">model</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="p">}</span>
-<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="c"># Two AddVehicleInputs are equal if all fields match</span>
-<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="k">input</span><span class="w"> </span><span class="err">AddVehicleInput</span><span class="w"> </span><span class="err">@glEqualsHashcode(fields:</span><span class="w"> </span><span class="err">[&quot;brand&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">&quot;model&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">&quot;year&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">&quot;fuelType&quot;])</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="w">  </span><span class="nl">brand</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
-<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="w">  </span><span class="nl">model</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
-<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="w">  </span><span class="nl">year</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
-<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="w">  </span><span class="nl">fuelType</span><span class="p">:</span><span class="w"> </span><span class="n">FuelType</span><span class="err">!</span>
-<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="p">}</span>
+<div class="highlight"><span class="filename">Example</span><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c"># Two Vehicles are equal if they have the same id</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="k">type</span><span class="w"> </span><span class="err">Vehicle</span><span class="w"> </span><span class="err">@glEqualsHashcode(fields:</span><span class="w"> </span><span class="err">[&quot;id&quot;])</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">  </span><span class="nl">brand</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">  </span><span class="nl">model</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="p">}</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="c"># Two AddVehicleInputs are equal if all fields match</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="k">input</span><span class="w"> </span><span class="err">AddVehicleInput</span><span class="w"> </span><span class="err">@glEqualsHashcode(fields:</span><span class="w"> </span><span class="err">[&quot;brand&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">&quot;model&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">&quot;year&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">&quot;fuelType&quot;])</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="w">  </span><span class="nl">brand</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="w">  </span><span class="nl">model</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="w">  </span><span class="nl">year</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a><span class="w">  </span><span class="nl">fuelType</span><span class="p">:</span><span class="w"> </span><span class="n">FuelType</span><span class="err">!</span>
+<a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a><span class="p">}</span>
 </code></pre></div>
 <hr />
 <h2 id="glrepository">@glRepository<a class="headerlink" href="#glrepository" title="Permanent link">&para;</a></h2>
@@ -1876,44 +1954,44 @@
 </tr>
 </tbody>
 </table>
-<div class="highlight"><span class="filename">Example</span><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">type</span><span class="w"> </span><span class="err">Vehicle</span><span class="w"> </span><span class="err">@glRepository(glType:</span><span class="w"> </span><span class="err">&quot;Vehicle&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">glIdType:</span><span class="w"> </span><span class="err">&quot;String&quot;)</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="nl">brand</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="p">}</span>
+<div class="highlight"><span class="filename">Example</span><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="k">type</span><span class="w"> </span><span class="err">Vehicle</span><span class="w"> </span><span class="err">@glRepository(glType:</span><span class="w"> </span><span class="err">&quot;Vehicle&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">glIdType:</span><span class="w"> </span><span class="err">&quot;String&quot;)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span><span class="nl">brand</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="p">}</span>
 </code></pre></div>
 <p>Generated output (when <code>generateRepositories: true</code>):</p>
-<div class="highlight"><span class="filename">Generated VehicleRepository.java</span><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">org.springframework.data.jpa.repository.JpaRepository</span><span class="p">;</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="kd">public</span><span class="w"> </span><span class="kd">interface</span> <span class="nc">VehicleRepository</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">JpaRepository</span><span class="o">&lt;</span><span class="n">Vehicle</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="p">}</span>
+<div class="highlight"><span class="filename">Generated VehicleRepository.java</span><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">org.springframework.data.jpa.repository.JpaRepository</span><span class="p">;</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="kd">public</span><span class="w"> </span><span class="kd">interface</span> <span class="nc">VehicleRepository</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">JpaRepository</span><span class="o">&lt;</span><span class="n">Vehicle</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="p">}</span>
 </code></pre></div>
 <hr />
 <h2 id="glinternal">@glInternal<a class="headerlink" href="#glinternal" title="Permanent link">&para;</a></h2>
 <p><strong>Target:</strong> BOTH · <strong>Placement:</strong> <code>OBJECT</code></p>
 <p>Marks a type as internal to the GraphLink runtime. Internal types are excluded from <code>_all_fields</code> fragment generation and from any UI widget generation. Use this for generated infrastructure types like error wrappers or pagination metadata that should not appear in user-facing code.</p>
-<div class="highlight"><span class="filename">Example</span><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c"># This type will not get an _all_fields fragment and will be skipped by UI generators</span>
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="k">type</span><span class="w"> </span><span class="err">GraphLinkError</span><span class="w"> </span><span class="err">@glInternal</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span><span class="nl">message</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
-<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">  </span><span class="nl">locations</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">GraphLinkErrorLocation</span><span class="err">]</span>
-<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">  </span><span class="nl">path</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">String</span><span class="err">]</span>
-<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="p">}</span>
+<div class="highlight"><span class="filename">Example</span><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c"># This type will not get an _all_fields fragment and will be skipped by UI generators</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="k">type</span><span class="w"> </span><span class="err">GraphLinkError</span><span class="w"> </span><span class="err">@glInternal</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span><span class="nl">message</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">  </span><span class="nl">locations</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">GraphLinkErrorLocation</span><span class="err">]</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="w">  </span><span class="nl">path</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">String</span><span class="err">]</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="p">}</span>
 </code></pre></div>
 <hr />
 <h2 id="glvalidate">@glValidate<a class="headerlink" href="#glvalidate" title="Permanent link">&para;</a></h2>
 <p><strong>Target:</strong> SERVER · <strong>Placement:</strong> <code>FIELD_DEFINITION</code> on <code>Mutation</code> fields</p>
 <p>Generates a <code>validate{OperationName}()</code> method in the service interface. The generated controller calls this method before the main operation method. Throw any exception in the validate method to abort the mutation.</p>
-<div class="highlight"><span class="filename">Example</span><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="k">type</span><span class="w"> </span><span class="err">Mutation</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="n">addVehicle</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="no">AddVehicleInput</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">Vehicle</span><span class="err">!</span><span class="w"> </span><span class="nd">@glValidate</span>
-<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="err">}</span>
+<div class="highlight"><span class="filename">Example</span><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="k">type</span><span class="w"> </span><span class="err">Mutation</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span><span class="n">addVehicle</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="no">AddVehicleInput</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">Vehicle</span><span class="err">!</span><span class="w"> </span><span class="nd">@glValidate</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="err">}</span>
 </code></pre></div>
 <p>Generated service interface additions:</p>
-<div class="highlight"><span class="filename">Generated VehicleService.java</span><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kd">public</span><span class="w"> </span><span class="kd">interface</span> <span class="nc">VehicleService</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">    </span><span class="c1">// Called before addVehicle — throw to reject</span>
-<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">validateAddVehicle</span><span class="p">(</span><span class="n">AddVehicleInput</span><span class="w"> </span><span class="n">input</span><span class="p">);</span>
-<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>
-<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">    </span><span class="n">Vehicle</span><span class="w"> </span><span class="nf">addVehicle</span><span class="p">(</span><span class="n">AddVehicleInput</span><span class="w"> </span><span class="n">input</span><span class="p">);</span>
-<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">    </span><span class="c1">// ...</span>
-<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="p">}</span>
+<div class="highlight"><span class="filename">Generated VehicleService.java</span><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="kd">public</span><span class="w"> </span><span class="kd">interface</span> <span class="nc">VehicleService</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">    </span><span class="c1">// Called before addVehicle — throw to reject</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">validateAddVehicle</span><span class="p">(</span><span class="n">AddVehicleInput</span><span class="w"> </span><span class="n">input</span><span class="p">);</span>
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="w">    </span><span class="n">Vehicle</span><span class="w"> </span><span class="nf">addVehicle</span><span class="p">(</span><span class="n">AddVehicleInput</span><span class="w"> </span><span class="n">input</span><span class="p">);</span>
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="w">    </span><span class="c1">// ...</span>
+<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="p">}</span>
 </code></pre></div>
 <hr />
 <h2 id="glarray-removed-in-v440">@glArray — Removed in v4.4.0<a class="headerlink" href="#glarray-removed-in-v440" title="Permanent link">&para;</a></h2>
@@ -1941,15 +2019,15 @@
 </tr>
 </tbody>
 </table>
-<div class="highlight"><span class="filename">Example</span><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c"># Map GraphQL input to an existing Java/Dart class</span>
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="k">input</span><span class="w"> </span><span class="err">UpdateVehicleInput</span><span class="w"> </span><span class="err">@glMapsTo(</span><span class="k">type</span><span class="err">:</span><span class="w"> </span><span class="err">&quot;com.example.domain.UpdateVehicleCommand&quot;)</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
-<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">  </span><span class="nl">brand</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
-<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">  </span><span class="nl">model</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
-<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">  </span><span class="nl">year</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
-<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="w">  </span><span class="c"># Rename during mapping — see @glMapField below</span>
-<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="w">  </span><span class="nl">fuelKind</span><span class="p">:</span><span class="w"> </span><span class="n">FuelType</span><span class="err">!</span><span class="w"> </span><span class="nd">@glMapField</span><span class="p">(</span><span class="n">to</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;fuelType&quot;</span><span class="p">)</span>
-<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a><span class="p">}</span>
+<div class="highlight"><span class="filename">Example</span><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c"># Map GraphQL input to an existing Java/Dart class</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="k">input</span><span class="w"> </span><span class="err">UpdateVehicleInput</span><span class="w"> </span><span class="err">@glMapsTo(</span><span class="k">type</span><span class="err">:</span><span class="w"> </span><span class="err">&quot;com.example.domain.UpdateVehicleCommand&quot;)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="w">  </span><span class="nl">brand</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="w">  </span><span class="nl">model</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="w">  </span><span class="nl">year</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="w">  </span><span class="c"># Rename during mapping — see @glMapField below</span>
+<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="w">  </span><span class="nl">fuelKind</span><span class="p">:</span><span class="w"> </span><span class="n">FuelType</span><span class="err">!</span><span class="w"> </span><span class="nd">@glMapField</span><span class="p">(</span><span class="n">to</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;fuelType&quot;</span><span class="p">)</span>
+<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a><span class="p">}</span>
 </code></pre></div>
 <p>GraphLink generates a <code>toMappedType()</code> method on the input class that constructs the target type from the input fields, applying any <code>@glMapField</code> renames in the process.</p>
 <hr />
@@ -1972,24 +2050,24 @@
 </tr>
 </tbody>
 </table>
-<div class="highlight"><span class="filename">Example</span><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="k">input</span><span class="w"> </span><span class="err">UpdateVehicleInput</span><span class="w"> </span><span class="err">@glMapsTo(</span><span class="k">type</span><span class="err">:</span><span class="w"> </span><span class="err">&quot;com.example.domain.UpdateVehicleCommand&quot;)</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
-<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span><span class="nl">brand</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
-<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">  </span><span class="c"># GraphQL field is &quot;fuelKind&quot;, target class field is &quot;fuelType&quot;</span>
-<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="w">  </span><span class="nl">fuelKind</span><span class="p">:</span><span class="w"> </span><span class="n">FuelType</span><span class="err">!</span><span class="w"> </span><span class="nd">@glMapField</span><span class="p">(</span><span class="n">to</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;fuelType&quot;</span><span class="p">)</span>
-<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="p">}</span>
+<div class="highlight"><span class="filename">Example</span><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="k">input</span><span class="w"> </span><span class="err">UpdateVehicleInput</span><span class="w"> </span><span class="err">@glMapsTo(</span><span class="k">type</span><span class="err">:</span><span class="w"> </span><span class="err">&quot;com.example.domain.UpdateVehicleCommand&quot;)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="w">  </span><span class="nl">brand</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="w">  </span><span class="c"># GraphQL field is &quot;fuelKind&quot;, target class field is &quot;fuelType&quot;</span>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="w">  </span><span class="nl">fuelKind</span><span class="p">:</span><span class="w"> </span><span class="n">FuelType</span><span class="err">!</span><span class="w"> </span><span class="nd">@glMapField</span><span class="p">(</span><span class="n">to</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;fuelType&quot;</span><span class="p">)</span>
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="p">}</span>
 </code></pre></div>
 <p>GraphLink validates at generation time that the <code>to</code> field name exists on the target class. If it does not, generation fails with a clear error message.</p>
 <hr />
 <h2 id="glupload">@glUpload<a class="headerlink" href="#glupload" title="Permanent link">&para;</a></h2>
 <p><strong>Target:</strong> BOTH · <strong>Placement:</strong> <code>SCALAR</code></p>
 <p>Marks a scalar as a file upload type. In Dart, the scalar is mapped to <code>GLUpload</code>. In Java MVC, mutation arguments become <code>MultipartFile</code> (or <code>List&lt;MultipartFile&gt;</code>). In WebFlux, they become <code>FilePart</code> (or <code>List&lt;FilePart&gt;</code>). The generated client adapter handles multipart encoding automatically.</p>
-<div class="highlight"><span class="filename">Example</span><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="k">scalar</span><span class="w"> </span><span class="err">Upload</span><span class="w"> </span><span class="err">@glUpload</span>
-<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>
-<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="k">type</span><span class="w"> </span><span class="err">Mutation</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">  </span><span class="n">uploadAvatar</span><span class="p">(</span><span class="n">userId</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">,</span><span class="w"> </span><span class="n">file</span><span class="p">:</span><span class="w"> </span><span class="no">Upload</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">User</span><span class="err">!</span>
-<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="w">  </span><span class="n">uploadDocuments</span><span class="p">(</span><span class="n">files</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="no">Upload</span><span class="err">!]!):</span><span class="w"> </span><span class="p">[</span><span class="no">Document</span><span class="err">!]!</span>
-<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="err">}</span>
+<div class="highlight"><span class="filename">Example</span><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="k">scalar</span><span class="w"> </span><span class="err">Upload</span><span class="w"> </span><span class="err">@glUpload</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="k">type</span><span class="w"> </span><span class="err">Mutation</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="w">  </span><span class="n">uploadAvatar</span><span class="p">(</span><span class="n">userId</span><span class="p">:</span><span class="w"> </span><span class="no">ID</span><span class="err">!</span><span class="p">,</span><span class="w"> </span><span class="n">file</span><span class="p">:</span><span class="w"> </span><span class="no">Upload</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">User</span><span class="err">!</span>
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="w">  </span><span class="n">uploadDocuments</span><span class="p">(</span><span class="n">files</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="no">Upload</span><span class="err">!]!):</span><span class="w"> </span><span class="p">[</span><span class="no">Document</span><span class="err">!]!</span>
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a><span class="err">}</span>
 </code></pre></div>
 <hr />
 <h2 id="glexpand">@glExpand<a class="headerlink" href="#glexpand" title="Permanent link">&para;</a></h2>
@@ -2013,25 +2091,25 @@
 </tr>
 </tbody>
 </table>
-<div class="highlight"><span class="filename">Example — self-referential type</span><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="k">type</span><span class="w"> </span><span class="err">Employee</span><span class="w"> </span><span class="err">@glExpand(depth:</span><span class="w"> </span><span class="err">2)</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
-<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
-<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="w">  </span><span class="nl">manager</span><span class="p">:</span><span class="w"> </span><span class="n">Employee</span>
-<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="p">}</span>
+<div class="highlight"><span class="filename">Example — self-referential type</span><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="k">type</span><span class="w"> </span><span class="err">Employee</span><span class="w"> </span><span class="err">@glExpand(depth:</span><span class="w"> </span><span class="err">2)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="w">  </span><span class="nl">manager</span><span class="p">:</span><span class="w"> </span><span class="n">Employee</span>
+<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="p">}</span>
 </code></pre></div>
 <p>Generated fragment (depth 2 — two levels of inline expansion):</p>
-<div class="highlight"><span class="filename">Generated _all_fields_Employee</span><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="k">fragment</span><span class="w"> </span><span class="nf">_all_fields_Employee</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">Employee</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">  </span><span class="n">id</span>
-<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">  </span><span class="n">name</span>
-<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="w">  </span><span class="n">manager</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="w">    </span><span class="n">id</span>
-<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="w">    </span><span class="n">name</span>
-<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="w">    </span><span class="n">manager</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="w">      </span><span class="n">id</span>
-<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a><span class="w">      </span><span class="n">name</span>
-<a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a><span class="w">    </span><span class="p">}</span>
-<a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a><span class="w">  </span><span class="p">}</span>
-<a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a><span class="p">}</span>
+<div class="highlight"><span class="filename">Generated _all_fields_Employee</span><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="k">fragment</span><span class="w"> </span><span class="nf">_all_fields_Employee</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">Employee</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="w">  </span><span class="n">id</span>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="w">  </span><span class="n">name</span>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="w">  </span><span class="n">manager</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="w">    </span><span class="n">id</span>
+<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="w">    </span><span class="n">name</span>
+<a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a><span class="w">    </span><span class="n">manager</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a><span class="w">      </span><span class="n">id</span>
+<a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a><span class="w">      </span><span class="n">name</span>
+<a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-22-11" name="__codelineno-22-11" href="#__codelineno-22-11"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-22-12" name="__codelineno-22-12" href="#__codelineno-22-12"></a><span class="p">}</span>
 </code></pre></div>
 <p>Without <code>@glExpand</code>, the default depth is <code>1</code> — one level of inline expansion. Use <code>depth: 0</code> to omit the cyclic field entirely from the fragment.</p>
 <div class="admonition note">
@@ -2041,28 +2119,28 @@
 <hr />
 <h2 id="_all_fields-the-magic-fragment">_all_fields — the magic fragment<a class="headerlink" href="#_all_fields-the-magic-fragment" title="Permanent link">&para;</a></h2>
 <p>When <code>generateAllFieldsFragments: true</code> is set in the config, GraphLink generates a named fragment for every type in the schema. The fragment selects all fields of that type and is named <code>_all_fields_{TypeName}</code>:</p>
-<div class="highlight"><span class="filename">Generated _all_fields_Vehicle fragment</span><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="k">fragment</span><span class="w"> </span><span class="nf">_all_fields_Vehicle</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">Vehicle</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="w">  </span><span class="n">id</span>
-<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="w">  </span><span class="n">brand</span>
-<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="w">  </span><span class="n">model</span>
-<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="w">  </span><span class="n">year</span>
-<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="w">  </span><span class="n">fuelType</span>
-<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="w">  </span><span class="n">ownerId</span>
-<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="p">}</span>
+<div class="highlight"><span class="filename">Generated _all_fields_Vehicle fragment</span><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="k">fragment</span><span class="w"> </span><span class="nf">_all_fields_Vehicle</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">Vehicle</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="w">  </span><span class="n">id</span>
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="w">  </span><span class="n">brand</span>
+<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="w">  </span><span class="n">model</span>
+<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="w">  </span><span class="n">year</span>
+<a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a><span class="w">  </span><span class="n">fuelType</span>
+<a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a><span class="w">  </span><span class="n">ownerId</span>
+<a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a><span class="p">}</span>
 </code></pre></div>
 <p>You can reference these fragments in hand-written queries as a shorthand:</p>
-<div class="highlight"><span class="filename">Using _all_fields in a query</span><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="k">query</span><span class="w"> </span><span class="nf">getVehicle</span><span class="p">(</span><span class="nv">$id</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="w">  </span><span class="n">getVehicle</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="nv">$id</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="n">_all_fields_Vehicle</span>
-<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="w">  </span><span class="p">}</span>
-<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="p">}</span>
-<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>
-<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="c"># Or use the shorthand — resolves to the type-appropriate fragment</span>
-<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a><span class="k">query</span><span class="w"> </span><span class="nf">getVehicle</span><span class="p">(</span><span class="nv">$id</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a><span class="w">  </span><span class="n">getVehicle</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="nv">$id</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a><span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="n">_all_fields</span>
-<a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a><span class="w">  </span><span class="p">}</span>
-<a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a><span class="p">}</span>
+<div class="highlight"><span class="filename">Using _all_fields in a query</span><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="k">query</span><span class="w"> </span><span class="nf">getVehicle</span><span class="p">(</span><span class="nv">$id</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="w">  </span><span class="n">getVehicle</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="nv">$id</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="n">_all_fields_Vehicle</span>
+<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a><span class="p">}</span>
+<a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>
+<a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a><span class="c"># Or use the shorthand — resolves to the type-appropriate fragment</span>
+<a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a><span class="k">query</span><span class="w"> </span><span class="nf">getVehicle</span><span class="p">(</span><span class="nv">$id</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a><span class="w">  </span><span class="n">getVehicle</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="nv">$id</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a><span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="n">_all_fields</span>
+<a id="__codelineno-24-11" name="__codelineno-24-11" href="#__codelineno-24-11"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-24-12" name="__codelineno-24-12" href="#__codelineno-24-12"></a><span class="p">}</span>
 </code></pre></div>
 <p>The shorthand <code>... _all_fields</code> (without the type suffix) is resolved by GraphLink based on the return type of the field. It is equivalent to writing <code>... _all_fields_Vehicle</code> when the field returns <code>Vehicle</code>.</p>
 <p>The <code>autoGenerateQueries: true</code> config option uses these fragments internally to generate query strings for every operation in the schema — you never write query strings by hand at all.</p>

@@ -28,6 +28,7 @@ Future<Set<String>> generateServerClasses(
     typesCheckForNulls: grammar.mode == CodeGenerationMode.client,
     immutableInputFields: springConfig.immutableInputFields,
     immutableTypeFields: springConfig.immutableTypeFields,
+    jspecify: springConfig.jspecify,
     typeMapOverrides: config.typeMappings ?? {},
     importPrefix: springConfig.basePackage,
   );

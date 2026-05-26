@@ -22,6 +22,7 @@ Future<Set<String>> generateJavaClientClasses(
     immutableTypeFields: javaConfig.immutableTypeFields,
     inputsAsRecords: javaConfig.inputAsRecord,
     typesAsRecords: javaConfig.typeAsRecord,
+    jspecify: javaConfig.jspecify,
     typeMapOverrides: config.typeMappings ?? {},
     importPrefix: importPrefix,
   );

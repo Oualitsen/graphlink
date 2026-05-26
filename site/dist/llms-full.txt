@@ -49,8 +49,15 @@ client and server code. Developers define their API once in a `.graphql` schema 
   stays on the server for persistence; the resolved object (`cashier @glSkipOnServer(batch: true)`)
   is loaded by the server and delivered to the client. This eliminates N+1 queries and keeps
   each side's model clean without any shared representation.
+- **Inline error handling (`@glCaptureErrors`).** Annotate any query or mutation with
+  `@glCaptureErrors` (or set `captureErrors: true` in config) to return a `FullResponse` with
+  `data` and `errors` side by side instead of throwing on GraphQL errors. Dart, Java, TypeScript.
+- **Barrel file generation.** Dart and TypeScript generators emit a single barrel/index file that
+  re-exports all generated enums, inputs, types, and interfaces. One import covers the entire layer.
+- **Flutter UI widget generation.** The `flutter` config block generates display widgets for output
+  types and form widgets for input types, with extensive layout and style options.
 
-## Supported targets (as of v4.6.0)
+## Supported targets (as of v4.7.0)
 
 - Dart client (stable)
 - Flutter client (stable)
@@ -88,9 +95,7 @@ glink -h                # show help
   "outputDir": "src/main/java/com/example/generated",
   "clientConfig": {
     "java": {
-      "packageName": "com.example.generated",
-      "generateAllFieldsFragments": true,
-      "autoGenerateQueries": true
+      "packageName": "com.example.generated"
     }
   }
 }
@@ -100,7 +105,7 @@ glink -h                # show help
 
 ```graphql
 type Query {
-  getCar(id: ID!): Car! @glCache(ttl: 300, tags: ["cars"])
+  getCar(id: ID!): Car! @glCache(ttl: "5m", tags: ["cars"])
 }
 type Mutation {
   createCar(input: CreateCarInput!): Car! @glCacheInvalidate(tags: ["cars"])
@@ -264,8 +269,8 @@ input AddVehicleInput {
 }
 
 type Query {
-  getVehicle(id: ID!): Vehicle!  @glCache(ttl: 120, tags: ["vehicles"])
-  listVehicles: [Vehicle!]!      @glCache(ttl: 60,  tags: ["vehicles"])
+  getVehicle(id: ID!): Vehicle!  @glCache(ttl: "2m", tags: ["vehicles"])
+  listVehicles: [Vehicle!]!      @glCache(ttl: "1m", tags: ["vehicles"])
 }
 
 type Mutation {
@@ -485,7 +490,7 @@ glink -w                # watch mode — regenerate on every save
 ??? "How does the built-in caching work?"
 
     Cache behaviour is declared in the schema using two directives.
-    `@glCache(ttl: 300, tags: ["cars"])` caches a query result for 300 seconds under the
+    `@glCache(ttl: "5m", tags: ["cars"])` caches a query result for 5 minutes under the
     tag `"cars"`. `@glCacheInvalidate(tags: ["cars"])` on a mutation evicts all entries
     tagged `"cars"` when the mutation succeeds. Individual fields inside a compound query
     can each carry their own TTL — if one tag is invalidated, the others stay warm.
@@ -709,11 +714,11 @@ input AddVehicleInput {
   ownerId: ID
 }
 
-# Queries — @glCache caches the result; ttl in seconds; tags for group invalidation
+# Queries — @glCache caches the result; ttl as duration string; tags for group invalidation
 type Query {
   getPerson(id: ID!): Person
-  getVehicle(id: ID!): Vehicle!  @glCache(ttl: 120, tags: ["vehicles"])
-  listVehicles: [Vehicle!]!      @glCache(ttl: 60,  tags: ["vehicles"])
+  getVehicle(id: ID!): Vehicle!  @glCache(ttl: "2m", tags: ["vehicles"])
+  listVehicles: [Vehicle!]!      @glCache(ttl: "1m", tags: ["vehicles"])
 }
 
 # Mutations — @glCacheInvalidate evicts all entries with matching tags on success
@@ -1325,7 +1330,7 @@ You can also reference `_all_fields_Vehicle` by name in any hand-written queries
 ```graphql title="Using _all_fields in a custom query"
 type Query {
   # GraphLink resolves _all_fields to _all_fields_Vehicle for this field
-  getVehicle(id: ID!): Vehicle! @glCache(ttl: 120, tags: ["vehicles"])
+  getVehicle(id: ID!): Vehicle! @glCache(ttl: "2m", tags: ["vehicles"])
 }
 ```
 
@@ -3538,6 +3543,10 @@ directive @glUpload on SCALAR
 # ── Cyclic expansion ──────────────────────────────────────────────────────────
 
 directive @glExpand(depth: Int) on OBJECT
+
+# ── Error capture ─────────────────────────────────────────────────────────────
+
+directive @glCaptureErrors on FIELD_DEFINITION
 ```
 
 ---
@@ -3592,6 +3601,68 @@ type Mutation {
   resetDatabase: Boolean! @glCacheInvalidate(all: true)
 }
 ```
+
+---
+
+## @glCaptureErrors
+
+**Target:** CLIENT · **Placement:** `FIELD_DEFINITION` on `Query` and `Mutation` fields
+
+Changes the method contract so errors are returned inline instead of thrown. The generated method return type changes from `{OperationName}Response` to `{OperationName}FullResponse`. A separate `{OperationName}FullResponse` class is generated alongside the original response class (which is left unchanged). The caller inspects `response.errors` directly — the method never throws for GraphQL errors.
+
+No arguments.
+
+```graphql title="Example"
+type Query {
+  getUser(id: ID!): User! @glCaptureErrors
+  listUsers: [User!]! @glCaptureErrors
+}
+
+type Mutation {
+  createUser(input: CreateUserInput!): User! @glCaptureErrors
+}
+```
+
+Generated wrapper class (Dart):
+
+```dart title="Generated GetUserFullResponse"
+class GetUserFullResponse {
+  final GetUserResponse? data;
+  final List<GraphLinkError>? errors;
+
+  GetUserFullResponse({this.data, this.errors});
+}
+```
+
+Generated wrapper interface (TypeScript):
+
+```typescript title="Generated GetUserFullResponse"
+export interface GetUserFullResponse {
+  data?: GetUserResponse;
+  errors?: GraphLinkError[];
+}
+```
+
+Generated wrapper class (Java):
+
+```java title="Generated GetUserFullResponse.java"
+public class GetUserFullResponse {
+    private final GetUserResponse data;       // nullable
+    private final List<GraphLinkError> errors; // nullable
+}
+```
+
+**Call-site comparison:**
+
+| Without `@glCaptureErrors` | With `@glCaptureErrors` |
+|---|---|
+| `try { final user = await client.queries.getUser(id: id); } catch (e) { … }` | `final r = await client.queries.getUser(id: id); if (r.errors != null) { … }` |
+
+**Caching interaction:** error responses are never cached. On a cache hit, `errors` is always `null`.
+
+**Validation:** applying `@glCaptureErrors` to a subscription field is rejected at parse time with a `ParseException`.
+
+**Global config alternative:** instead of annotating each field, set `captureErrors: true` in `clientConfig.dart` / `clientConfig.java` / `clientConfig.typescript` to apply the behaviour to every query and mutation automatically.
 
 ---
 
@@ -4574,7 +4645,7 @@ Used when `mode` is `"client"` and you want Dart/Flutter output.
       "clientConfig": {
         "dart": {
           "packageName": "my_app",
-          "httpAdapter": "dio",
+          "httpAdapter": "http",
           "generateAdapters": true,
           "generateAllFieldsFragments": true,
           "autoGenerateQueries": true,
@@ -4584,9 +4655,29 @@ Used when `mode` is `"client"` and you want Dart/Flutter output.
           "nullableFieldsRequired": false,
           "immutableInputFields": true,
           "immutableTypeFields": true,
-          "generateUiTypes": false,
-          "generateUiInputs": false,
-          "appLocalizationsImport": null
+          "captureErrors": false,
+          "flutter": {
+            "generateTypes": true,
+            "generateInputs": false,
+            "typesToSkip": [],
+            "inputsToSkip": [],
+            "defaultGap": 16,
+            "booleanWidget": "switchWidget",
+            "nullableBooleanWidget": "checkbox",
+            "listWidget": "chips",
+            "defaultLabelPosition": "floatingLabel",
+            "defaultLabelWidth": 120,
+            "defaultFormLayout": "column",
+            "defaultRequiredIndicator": "asterisk",
+            "defaultDebounceDuration": 300,
+            "defaultStepperOrientation": "vertical",
+            "defaultTypeLayout": "labeledRow",
+            "defaultGroupLayout": "labeledRow",
+            "defaultDatePattern": "yyyy-MM-dd",
+            "defaultDateFirstYear": 1900,
+            "defaultDateLastYear": 2100,
+            "defaultDateMode": "dialog"
+          }
         }
       }
     }
@@ -4598,7 +4689,7 @@ Used when `mode` is `"client"` and you want Dart/Flutter output.
     clientConfig:
       dart:
         packageName: my_app
-        httpAdapter: dio
+        httpAdapter: http
         generateAdapters: true
         generateAllFieldsFragments: true
         autoGenerateQueries: true
@@ -4608,9 +4699,28 @@ Used when `mode` is `"client"` and you want Dart/Flutter output.
         nullableFieldsRequired: false
         immutableInputFields: true
         immutableTypeFields: true
-        generateUiTypes: false
-        generateUiInputs: false
-        appLocalizationsImport: null
+        captureErrors: false
+        flutter:
+          generateTypes: true
+          generateInputs: false
+          typesToSkip: []
+          inputsToSkip: []
+          defaultGap: 16
+          booleanWidget: switchWidget
+          nullableBooleanWidget: checkbox
+          listWidget: chips
+          defaultLabelPosition: floatingLabel
+          defaultLabelWidth: 120
+          defaultFormLayout: column
+          defaultRequiredIndicator: asterisk
+          defaultDebounceDuration: 300
+          defaultStepperOrientation: vertical
+          defaultTypeLayout: labeledRow
+          defaultGroupLayout: labeledRow
+          defaultDatePattern: "yyyy-MM-dd"
+          defaultDateFirstYear: 1900
+          defaultDateLastYear: 2100
+          defaultDateMode: dialog
     ```
 
 | Option | Type | Default | Description |
@@ -4626,9 +4736,66 @@ Used when `mode` is `"client"` and you want Dart/Flutter output.
 | `nullableFieldsRequired` | `boolean` | `false` | When `true`, nullable fields in generated constructors are emitted as `required this.fieldName` instead of optional `this.fieldName`. Use this to enforce that all fields are always explicitly passed at construction sites. |
 | `immutableInputFields` | `boolean` | `true` | Input class fields are `final`. Recommended. |
 | `immutableTypeFields` | `boolean` | `true` | Response type class fields are `final`. Recommended for client-side code. |
-| `generateUiTypes` | `boolean` | `false` | Generates Flutter widget classes for every `type` in the schema — useful for rapid prototyping. Requires Flutter. |
-| `generateUiInputs` | `boolean` | `false` | Generates Flutter form widgets for every `input` type — renders a form with one field per schema field. |
-| `appLocalizationsImport` | `string` \| `null` | `null` | Import path for an `AppLocalizations` class injected into generated Flutter UI widgets. Only relevant when `generateUiTypes` or `generateUiInputs` is `true`. |
+| `captureErrors` | `boolean` | `false` | When `true`, applies `@glCaptureErrors` behaviour to every query and mutation. Each method returns a `{OperationName}FullResponse` holding nullable `data` and nullable `errors` instead of throwing on GraphQL errors. Equivalent to annotating every query and mutation field with `@glCaptureErrors` in the schema. |
+| `appLocalizationsImport` | `string` \| `null` | `null` | Import path for an `AppLocalizations` class injected into generated Flutter UI widgets. Only relevant when `flutter` is configured. |
+| `flutter` | `object` | — | Enables Flutter widget generation and sets project-wide UI defaults. Omit the key entirely to disable Flutter generation. See [`clientConfig.dart.flutter`](#clientconfigdartflutter) for the full sub-key reference. |
+
+---
+
+## `clientConfig.dart.flutter`
+
+Flutter widget generation is enabled by adding a `flutter:` block inside `clientConfig.dart`. Omitting the block entirely disables Flutter generation. All keys are optional — unset keys use the built-in default.
+
+Keys split into two groups: **generation toggles** (what to generate) and **UI defaults** (what values are baked into generated widget constructors).
+
+### Generation toggles
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `generateTypes` | `boolean` | `true` | Generate stateless display widgets for schema `type` definitions (e.g. `VehicleWidget`). |
+| `generateInputs` | `boolean` | `false` | Generate stateful form widgets for schema `input` definitions (e.g. `AddVehicleInputForm`). |
+| `typesToSkip` | `string[]` | `[]` | Type names excluded from display widget generation. |
+| `inputsToSkip` | `string[]` | `[]` | Input names excluded from form widget generation. |
+
+### Global widget style
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `defaultGap` | `number` | `16` | Default spacing (dp) between rows in every generated widget and form. |
+| `booleanWidget` | `"switchWidget"` \| `"checkbox"` \| `"tristate"` | `"switchWidget"` | Default widget for non-nullable `Boolean` fields. `switchWidget` → `Switch`/`SwitchListTile`. `checkbox` → `Checkbox`. `tristate` → Yes/No/— dropdown. |
+| `nullableBooleanWidget` | `"checkbox"` \| `"tristate"` | `"checkbox"` | Default widget for nullable `Boolean?` fields. `switchWidget` is excluded — `Switch` cannot represent `null`. |
+| `listWidget` | `"chips"` \| `"checkboxes"` | `"chips"` | Default widget for enum-list and scalar-list fields. |
+
+### Input form defaults
+
+These values are emitted as the default constructor parameter values in every generated form widget. They can be overridden per widget call site at runtime.
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `defaultLabelPosition` | `"floatingLabel"` \| `"beside"` \| `"above"` | `"floatingLabel"` | Default label position across all generated forms. |
+| `defaultLabelWidth` | `number` | `120` | Default width (dp) of the label column in `beside` mode. |
+| `defaultFormLayout` | `"column"` \| `"twoColumn"` | `"column"` | Default layout for all generated forms. |
+| `defaultRequiredIndicator` | `"asterisk"` \| `"none"` \| `"requiredText"` \| `"optionalText"` | `"asterisk"` | Default required-field indicator style. |
+| `defaultDebounceDuration` | `number` | `300` | Milliseconds to wait after the last field change before firing `onChange`. |
+| `defaultStepperOrientation` | `"vertical"` \| `"horizontal"` | `"vertical"` | Default Flutter `StepperType` for forms that use the stepper layout (inputs with nested input fields). |
+
+### Type display widget defaults
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `defaultTypeLayout` | `"labeledRow"` \| `"listTile"` \| `"listTileReversed"` \| `"expandable"` | `"labeledRow"` | Default layout for all generated display widgets. |
+| `defaultGroupLayout` | `"labeledRow"` \| `"listTile"` \| `"listTileReversed"` | `"labeledRow"` | Default layout of the scalar accordion group inside the `expandable` layout. |
+
+### Date picker defaults
+
+These values are baked into the generated `DateInputConfig` class defaults and into every generated date-picker helper. Per-field `DateInputConfig` values always take precedence.
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `defaultDatePattern` | `string` | `"yyyy-MM-dd"` | Default `pattern` in the generated `DateInputConfig` class. Use `"dd/MM/yyyy"`, `"MM/dd/yyyy"`, etc. to match your locale. |
+| `defaultDateFirstYear` | `number` | `1900` | Fallback `firstDate` year used by all generated date pickers when no `firstDate` is provided in `DateInputConfig`. |
+| `defaultDateLastYear` | `number` | `2100` | Fallback `lastDate` year used by all generated date pickers when no `lastDate` is provided in `DateInputConfig`. |
+| `defaultDateMode` | `"dialog"` \| `"inline"` | `"dialog"` | Default `DateInputMode` in the generated `DateInputConfig` class. |
 
 ---
 
@@ -4654,7 +4821,8 @@ Used when `mode` is `"client"` and you want a Java client.
           "immutableInputFields": true,
           "immutableTypeFields": true,
           "inputAsRecord": false,
-          "typeAsRecord": false
+          "typeAsRecord": false,
+          "captureErrors": false
         }
       }
     }
@@ -4678,6 +4846,7 @@ Used when `mode` is `"client"` and you want a Java client.
         immutableTypeFields: true
         inputAsRecord: false
         typeAsRecord: false
+        captureErrors: false
     ```
 
 | Option | Type | Default | Description |
@@ -4694,6 +4863,7 @@ Used when `mode` is `"client"` and you want a Java client.
 | `immutableTypeFields` | `boolean` | `true` | Response type fields are `private final` with only getters. Recommended for client-side. |
 | `inputAsRecord` | `boolean` | `false` | Generates input types as Java records instead of classes with builders. Records use component accessor syntax (`field()`) instead of getters (`getField()`). Requires Java 16+. |
 | `typeAsRecord` | `boolean` | `false` | Generates response types as Java records. Affects how `fromJson` and mapping methods access fields. Requires Java 16+. |
+| `captureErrors` | `boolean` | `false` | When `true`, applies `@glCaptureErrors` behaviour to every query and mutation. Each method returns a `{OperationName}FullResponse` holding nullable `data` and nullable `errors` instead of throwing on GraphQL errors. Equivalent to annotating every query and mutation field with `@glCaptureErrors` in the schema. |
 
 ---
 
@@ -4715,7 +4885,8 @@ Used when `mode` is `"client"` and you want TypeScript output.
           "defaultAlias": null,
           "operationNameAsParameter": false,
           "optionalNullableInputFields": true,
-          "immutableTypeFields": true
+          "immutableTypeFields": true,
+          "captureErrors": false
         }
       }
     }
@@ -4735,6 +4906,7 @@ Used when `mode` is `"client"` and you want TypeScript output.
         operationNameAsParameter: false
         optionalNullableInputFields: true
         immutableTypeFields: true
+        captureErrors: false
     ```
 
 | Option | Type | Default | Description |
@@ -4748,6 +4920,7 @@ Used when `mode` is `"client"` and you want TypeScript output.
 | `operationNameAsParameter` | `boolean` | `false` | When `true`, the adapter function signature includes an `operationName` parameter and the client appends it to the request URL. |
 | `optionalNullableInputFields` | `boolean` | `true` | When `true`, nullable fields in generated input interfaces use `field?: T \| null` (TypeScript optional property). When `false`, they use `field: T \| null` (required but nullable). |
 | `immutableTypeFields` | `boolean` | `true` | When `true`, generated type interfaces use `readonly` on all fields. |
+| `captureErrors` | `boolean` | `false` | When `true`, applies `@glCaptureErrors` behaviour to every query and mutation. Each method returns a `{OperationName}FullResponse` holding optional `data` and optional `errors` instead of throwing on GraphQL errors. Equivalent to annotating every query and mutation field with `@glCaptureErrors` in the schema. |
 
 ---
 
