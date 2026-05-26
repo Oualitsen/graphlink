@@ -117,9 +117,9 @@ extension GLGrammarProjectionExtension on GLParser {
     }
     var map = <String, int>{};
     var token = def.derivedFromType!.token;
-    final fields = interfaces[token]!.fields;
-    var interfaceFieldNames =
-        interfaces[token]!.fields.map((f) => f.name.token).toSet();
+    final iface = (interfaces[token] ?? projectedInterfaces[token])!;
+    final fields = iface.fields;
+    var interfaceFieldNames = iface.fields.map((f) => f.name.token).toSet();
 
     types.expand((t) => t.fields).forEach((f) {
       if (map.containsKey(f.name.token)) {
