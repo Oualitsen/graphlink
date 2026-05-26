@@ -263,6 +263,7 @@
 ### Internal
 - `MappingPlan` split into `ToMappingPlan` (forward direction) and `FromMappingPlan` (reverse direction) — all field-categorization logic is now fully encapsulated in the model; serializers are pure emitters with no resolution logic of their own
 
+
 ## 4.7.0 - 2026-05-25
 
 ### Breaking changes
@@ -357,3 +358,9 @@
 
 ---
 
+
+## 4.7.1 - 2026-05-26
+
+### Fixes
+
+- Fixed crash when a type's common interface is a projected interface
