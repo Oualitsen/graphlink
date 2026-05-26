@@ -114,3 +114,8 @@ const glExpandDepth = "depth";
 /// object instead of being thrown. The method never throws for GraphQL-level errors.
 /// The caller checks response.hasErrors instead of using try/catch.
 const glCaptureErrors = "@glCaptureErrors";
+
+
+var jspecifyNullable = '@Nullable';
+var jspecifyNonNull = '@NonNull';
+

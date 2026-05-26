@@ -41,14 +41,19 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - **Watch mode.** Run `glink -w` to watch schema files and regenerate automatically on every save.
 - **Single source of truth.** The schema drives both ends. No duplicate type definitions. No
   schema drift. Adding a field means editing one file.
+- **Inline error handling (`@glCaptureErrors`).** Annotate any query or mutation with
+  `@glCaptureErrors` (or set `captureErrors: true` in config) to return a `FullResponse` with
+  `data` and `errors` side by side instead of throwing. Dart, Java, and TypeScript.
+- **Barrel file generation.** Dart and TypeScript generators emit a barrel/index file that
+  re-exports all generated types, inputs, and enums from a single import.
 
-## Supported targets (as of v4.5.0)
+## Supported targets (as of v4.7.0)
 
 - Dart client (stable)
-- Flutter client (stable)
+- Flutter client (stable, including UI widget generation)
 - Java client (stable)
 - Spring Boot server (stable, MVC and reactive/WebFlux)
-- TypeScript client (stable as of v4.5.0 — fetch/axios, RxJS observables, WebSocket subscriptions)
+- TypeScript client (stable — fetch/axios, RxJS observables, WebSocket subscriptions)
 - Express / Node.js server (planned)
 - Go (planned, demand-based)
 - Kotlin (planned, demand-based)
@@ -80,9 +85,7 @@ glink -h                    # show help
   "outputDir": "src/main/java/com/example/generated",
   "clientConfig": {
     "java": {
-      "packageName": "com.example.generated",
-      "generateAllFieldsFragments": true,
-      "autoGenerateQueries": true
+      "packageName": "com.example.generated"
     }
   }
 }
@@ -110,7 +113,7 @@ type Mutation {
 - Spring Boot Server (GraphLink generates Spring Boot GraphQL scaffolding from your schema — controllers, service interfaces, inputs, enums. MVC and reactive WebFlux modes, file uploads, Spring Security context propagation, and forward mappings.): https://graphlink.dev/docs/llms/spring-server.txt
 - Custom Queries & Mutations (Write your own GraphQL operation documents alongside the schema. Custom queries, mutations, aliases, fragments, multi-resolver queries, and specific field projections — all generate fully typed client methods.): https://graphlink.dev/docs/llms/custom-queries.txt
 - Caching (GraphLink's built-in caching — @glCache and @glCacheInvalidate directives, TTL, tag-based invalidation, partial query caching, staleIfOffline, and custom cache stores.): https://graphlink.dev/docs/llms/caching.txt
-- Directives Reference (Complete reference for all GraphLink schema directives — @glCache, @glCacheInvalidate, @glMapsTo, @glMapField, @glSkipOnServer (with forward mappings), @glExternal, @glValidate, and more.): https://graphlink.dev/docs/llms/directives.txt
+- Directives Reference (Complete reference for all GraphLink schema directives — @glCache, @glCacheInvalidate, @glCaptureErrors, @glMapsTo, @glMapField, @glSkipOnServer (with forward mappings), @glExternal, @glValidate, and more.): https://graphlink.dev/docs/llms/directives.txt
 - "@glSkipOnServer & @glSkipOnClient" ("@glSkipOnServer and @glSkipOnClient — two-layer server-side access control, schema stripping, @SchemaMapping, @BatchMapping, mapTo, forward mappings, and the ID/object field-pair pattern for N+1-safe relationship loading."): https://graphlink.dev/docs/llms/skip-directives.txt
 - Configuration Reference (Complete reference for all GraphLink glink.json / glink.yaml options — schemaPaths, typeMappings, outputDir, clientConfig (Dart, Java, TypeScript), serverConfig (Spring Boot), and CLI flags.): https://graphlink.dev/docs/llms/configuration.txt
 - Using GraphLink with AI Agents (Ready-to-copy agent instruction files for Claude Code, Gemini CLI, and other AI coding assistants in GraphLink projects.): https://graphlink.dev/docs/llms/ai-agents.txt
@@ -120,6 +123,6 @@ type Mutation {
 - Website: https://graphlink.dev/
 - Docs: https://graphlink.dev/docs/index.html
 - GitHub: https://github.com/Oualitsen/graphlink
-- pub.dev: https://pub.dev/packages/retrofit_graphql
+- pub.dev: https://pub.dev/packages/graphlink
 - Issues: https://github.com/Oualitsen/graphlink/issues
 - Releases: https://github.com/Oualitsen/graphlink/releases

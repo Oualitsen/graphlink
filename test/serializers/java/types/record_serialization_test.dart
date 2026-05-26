@@ -64,7 +64,6 @@ void main() {
   test("type serialization as records with decorators", () {
     final GLParser g = GLParser(
       identityFields: ["id"],
-     
       mode: CodeGenerationMode.server,
     );
     final text =
@@ -83,7 +82,7 @@ void main() {
         typeSerial.split("\n").map((e) => e.trim()).toList(),
         containsAllInOrder([
           '@lombok.experimental.FieldNameConstants()',
-          'public record Car(@com.fasterxml.jackson.annotation.JsonProperty(value = "car_model")  String model, @com.fasterxml.jackson.annotation.JsonProperty(value = "car_make")  String make) {',
+          'public record Car(@com.fasterxml.jackson.annotation.JsonProperty(value = "car_model") String model, @com.fasterxml.jackson.annotation.JsonProperty(value = "car_make") String make) {',
           '}'
         ]));
   });
@@ -105,11 +104,12 @@ void main() {
 
     var input = g.inputs["CarInput"]!;
     var inputSerial = javaSerial.serializeInputDefinition(input);
+    print(inputSerial);
     expect(
         inputSerial,
         stringContainsInOrder([
           "@lombok.experimental.FieldNameConstants()",
-          'public record CarInput(@com.fasterxml.jackson.annotation.JsonProperty(value = "car_model")  String model, @com.fasterxml.jackson.annotation.JsonProperty(value = "car_make")  String make) {',
+          'public record CarInput(@com.fasterxml.jackson.annotation.JsonProperty(value = "car_model") String model, @com.fasterxml.jackson.annotation.JsonProperty(value = "car_make") String make) {',
           '}'
         ]));
   });

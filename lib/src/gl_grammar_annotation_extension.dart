@@ -3,6 +3,7 @@ import 'package:graphlink/src/model/gl_directives_mixin.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_token_with_fields.dart';
 import 'package:graphlink/src/model/gl_field.dart';
+import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 
@@ -63,6 +64,59 @@ extension GLGrammarAnnotationExtension on GLParser {
     result.addAll(params);
 
     return result;
+  }
+
+  void applyJspecifyAnnotations({required bool Function(GLType) isPrimitive}) {
+    if (jspecifyAnnotationsProcessed) return;
+    jspecifyAnnotationsProcessed = true;
+    const nonNullImport = 'org.jspecify.annotations.NonNull';
+    const nullableImport = 'org.jspecify.annotations.Nullable';
+    final forceFieldNullable = mode == CodeGenerationMode.server;
+
+    List<String> annotateAndGetImports(List<GLField> fields, {required bool isTypeField}) {
+      final imports = <String>{};
+      for (final field in fields) {
+        if (isPrimitive(field.type)) continue;
+        final isNullable = field.type.nullable ||
+            (isTypeField && (field.hasInculeOrSkipDiretives || forceFieldNullable));
+        if (isNullable) {
+          field.addDirective(GLDirectiveValue.createGqDecorators(
+            decorators: [jspecifyNullable],
+            applyOnClient: mode == CodeGenerationMode.client,
+            applyOnServer: mode == CodeGenerationMode.server,
+          ));
+          imports.add(nullableImport);
+        } else {
+          field.addDirective(GLDirectiveValue.createGqDecorators(
+            decorators: [jspecifyNonNull],
+            applyOnClient: mode == CodeGenerationMode.client,
+            applyOnServer: mode == CodeGenerationMode.server,
+          ));
+          imports.add(nonNullImport);
+        }
+      }
+      return imports.toList();
+    }
+
+    final typeTargets = mode == CodeGenerationMode.server
+        ? typesWithNoResolvers
+        : projectedTypes.values.toList();
+    final interfaceTargets = mode == CodeGenerationMode.server
+        ? interfaces.values.toList()
+        : projectedInterfaces.values.toList();
+
+    for (final def in typeTargets) {
+      final imports = annotateAndGetImports(def.getSerializableFields(mode), isTypeField: true);
+      imports.forEach(def.addImport);
+    }
+    for (final def in interfaceTargets) {
+      final imports = annotateAndGetImports(def.getSerializableFields(mode), isTypeField: true);
+      imports.forEach(def.addImport);
+    }
+    for (final def in inputs.values) {
+      final imports = annotateAndGetImports(def.getSerializableFields(mode), isTypeField: false);
+      imports.forEach(def.addImport);
+    }
   }
 
   void setDirectivesDefaultValues() {
