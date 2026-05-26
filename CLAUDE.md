@@ -1,0 +1,260 @@
+# GraphLink — Agent Codebase Guide
+
+GraphLink is a Dart CLI (`glink`) that reads `.graphql` schema files and generates
+fully-typed client and server code for Dart/Flutter, Java, TypeScript, and Spring Boot.
+Generated files have **zero runtime dependency** on GraphLink.
+
+---
+
+## Repository layout
+
+```
+lib/src/
+  main.dart                        # CLI entry: arg parsing, config loading, dispatch
+  config.dart                      # GeneratorConfig + all per-target config types
+  grammar_factory.dart             # Builds GlSchema from parsed tokens
+  gl_grammar_io.dart               # Reads .graphql files → LogicalFile structures
+  gl_grammar_extension.dart        # Computed props on GlSchema (caching, directives …)
+  gl_grammar_annotation_extension.dart
+  gl_grammar_cache_extension.dart
+  gl_grammar_fragment_extension.dart
+  gl_grammar_maps_to_extension.dart   # @glMapsTo / @glMapField logic
+  gl_grammar_projection_extension.dart
+  gl_grammar_service_extension.dart
+  gl_grammar_upload_extension.dart    # File upload directive logic
+  gl_validation_extension.dart        # Schema validation rules
+  model/                           # Intermediate representation (see Key model types)
+  generators/                      # One entry-point generator per target
+  serializers/                     # Code-writing logic (see Serializer map)
+  tree/                            # AST / token tree used by lexer+parser
+  excpetions/                      # Custom exception types
+
+test/                              # One subdirectory per scenario (schema + test file)
+plans/                             # Design docs for past/future features (read-only)
+examples/                          # End-to-end example projects per language
+site/                              # graphlink.dev website (MkDocs + custom landing page)
+```
+
+---
+
+## Generation pipeline
+
+```
+.graphql files
+    │
+    ▼
+grammar_factory.createGrammar(config)           → GLParser instance
+    │
+    ▼
+gl_grammar_io.parseFiles(parser, logicalFiles)  → populates parser.types, .queries …
+    │
+    ▼
+Extension methods run lazily (gl_grammar_*_extension.dart)
+  — compute derived data as Dart getters on GLParser
+    │
+    ▼
+Generator (dart/java/typescript/server)
+  — iterates GLParser, calls serializers
+    │
+    ▼
+Serializers → emit String code → write output files
+```
+
+`GLParser` (`model/new_parser/gl_parser.dart`) is the central IR that flows through the
+entire pipeline. Extensions on it add computed getters (cached queries, upload fields,
+mapped inputs, etc.) so generators never duplicate derivation logic.
+
+---
+
+## Key model types
+
+| Type | File | What it represents |
+|---|---|---|
+| `GLParser` | `model/new_parser/gl_parser.dart` | Central object holding the entire parsed schema (types, inputs, queries, fragments, enums, unions, …) — this is what generators receive |
+| `GLSchema` | `model/gl_schema.dart` | Model for the GraphQL `schema { query: … }` declaration block — maps operation types to their root type names |
+| `GlTypeDefinition` | `model/gl_type_definition.dart` | GraphQL `type` |
+| `GlInputDefinition` | `model/gl_input_definition.dart` | GraphQL `input` |
+| `GlField` | `model/gl_field.dart` | Field on a type or input |
+| `GlQueries` | `model/gl_queries.dart` | All queries, mutations, subscriptions |
+| `GlDirective` | `model/gl_directive.dart` | Directive instance on a field/type |
+| `GlFragment` | `model/gl_fragment.dart` | GraphQL fragment |
+| `GlUnion` | `model/gl_union.dart` | Union type |
+| `GlEnumDefinition` | `model/gl_enum_definition.dart` | Enum definition |
+| `GeneratorConfig` | `config.dart` | Parsed `glink.json` / `glink.yaml` |
+
+---
+
+## Generator map
+
+| File | Responsibility |
+|---|---|
+| `generators/dart_client_generator.dart` | Dart/Flutter client output |
+| `generators/java_client_generator.dart` | Java client output |
+| `generators/typescript_client_generator.dart` | TypeScript client output |
+| `generators/server_generator.dart` | Spring Boot / Express server output |
+| `generators/barrel_file_handler.dart` | Barrel/index file generation |
+
+Each generator owns the decision of *which* files to emit and *which* serializers to
+call. It does not contain string-building logic — that lives in serializers.
+
+---
+
+## Serializer map
+
+```
+serializers/
+  gl_serializer.dart               # Base serializer interface/utilities
+  gl_client_serializer.dart        # Shared client serializer base
+  gl_graphql_serializer.dart       # Query string generation (shared)
+  annotation_serializer.dart       # Annotation helpers
+  code_generation_mode.dart        # Enum: client vs server mode
+  server_serializer.dart           # Abstract server serializer base
+  server_serializer_utils.dart     # Shared server utilities
+  spring_server_serializer.dart    # Spring Boot controller + service interface
+  spring_controller_serializer.dart
+  express_apollo_server_serializer.dart  # Express/Node.js server (planned)
+  dart_serializer.dart             # Dart types, inputs, enums
+  java_serializer.dart             # Java types, inputs, enums
+  java_imports.dart                # Java import resolution
+  typescript_serializer.dart       # TypeScript types, inputs, enums
+  flutter_types_serializer.dart    # Flutter widget types
+  client_serializers/
+    dart_client_serializer.dart    # Dart client methods (queries/mutations/subs)
+    dart_client_constants.dart
+    java_client_serializer.dart    # Java client methods
+    java_client_operation_serializer.dart
+    java_client_context.dart
+    java_client_constants.dart
+    typescript_client_serializer.dart
+    typescript_client_constants.dart
+  flutter_inputs/
+    flutter_inputs_serializer.dart          # Flutter InputFormWidget generation
+    flutter_inputs_companion_serializer.dart
+    flutter_inputs_field_serializer.dart
+    flutter_inputs_state_serializer.dart
+    flutter_inputs_date_serializer.dart
+    flutter_inputs_shared_serializer.dart
+    flutter_inputs_type_helpers.dart
+```
+
+---
+
+## Adding a new directive (feature)
+
+1. **Register it** — add to `model/built_in_dirctive_definitions.dart` so the parser
+   accepts it without a validation error.
+2. **Expose it** — add a getter on the relevant extension file
+   (`gl_grammar_extension.dart` for schema-wide, `gl_grammar_cache_extension.dart` for
+   cache-related, etc.). Keep derivation logic here, not in generators.
+3. **Generate it** — call the new getter in the relevant generator and pass the result to
+   the serializer.
+4. **Emit it** — write the code-string logic in the relevant serializer under
+   `serializers/`.
+5. **Test it** — add a subdirectory under `test/` with a minimal `.graphql` schema and a
+   Dart test file that asserts on the generated output string.
+
+---
+
+## Adding a new target language
+
+1. Create `generators/<lang>_client_generator.dart` (or `<lang>_server_generator.dart`).
+2. Create `serializers/client_serializers/<lang>_client_serializer.dart` for operation
+   methods, and `serializers/<lang>_serializer.dart` for types/inputs/enums.
+3. Add a new config section to `config.dart` (follow the pattern of `DartClientConfig`).
+4. Wire the new generator into `main.dart` dispatch logic.
+5. Add end-to-end examples under `examples/<lang>/`.
+
+---
+
+## Test structure
+
+```
+test/
+  new_parser/          # Lexer + parser unit tests for every grammar construct
+  queries_mutations/   # Query/mutation code generation
+  cache/               # @glCache / @glCacheInvalidate generation
+  maps_to/             # @glMapsTo / @glMapField (input mapping)
+  upload/              # File upload directive
+  fragments/           # Fragment generation and referencing
+  interface/           # Interface and common-field handling
+  inheritence/         # Type inheritance scenarios
+  extensions/          # GraphQL schema extensions
+  projections/         # @glProjection directive
+  input/               # Input type generation
+  input_types_ref_check/
+  base_types_and_unions/
+  similar_types/
+  schema_merging/      # Multi-file schema merging
+  batch_mappging/      # Batch query generation
+  queries_auto_gen/    # Auto-generated query strings
+  serializers/         # Serializer unit tests
+  server/              # Server (Spring Boot) generation
+  java/                # Java-specific generation
+  dart/                # Dart-specific generation
+  client/              # Client mode tests
+  responses/           # Response type generation
+  validation/          # Schema validation error tests
+  parse_errors/        # Parser error handling
+  gl_expand/           # Query expansion
+  gl_internal/         # Internal utilities
+  ...
+```
+
+Each test directory is self-contained: a `.graphql` schema + a Dart test that calls the
+generator and asserts on the emitted output. There is no shared fixture — each test builds
+its own `GlSchema`.
+
+```bash
+dart test                          # all tests
+dart test test/cache/              # single directory
+dart test test/cache/cache_test.dart  # single file
+```
+
+---
+
+## Build & run
+
+```bash
+dart pub get                       # install deps
+dart run lib/src/main.dart -c path/to/config.json   # run without compiling
+dart compile exe lib/src/main.dart -o glink          # compile binary
+make deploy                        # compile + install to ~/bin
+```
+
+---
+
+## Conventions
+
+- Extension files (`gl_grammar_*_extension.dart`) use Dart `extension` on `GlSchema`.
+  Keep all derived/computed logic there — not in generators or serializers.
+- Serializers return `String` or write via `writeToFile`. Keep them pure where possible.
+- Config types in `config.dart` use `fromJson` named constructors — add new keys there.
+- Built-in directive names are defined in `model/built_in_dirctive_definitions.dart`.
+- Generated files start with a `// GENERATED` header. Never edit them.
+- `plans/` contains Markdown design docs for past decisions. Read-only context.
+
+---
+
+## What to avoid
+
+- Never edit files under `generated/` directories — they are outputs.
+- Do not modify `pubspec.lock` unless explicitly changing dependencies.
+- Do not add runtime dependencies to `pubspec.yaml` — generated code must stay
+  dependency-free.
+- Do not run `dart compile exe` on every change — use `dart run` for development.
+- Do not run `make generate` across all `examples/` unless explicitly asked
+  (`make generate-examples`).
+
+---
+
+## Site (graphlink.dev)
+
+```bash
+make site-dev      # live-reload MkDocs preview at http://localhost:8000
+make site-docs     # build MkDocs docs → site/docs/
+make site-local    # build + serve full site at http://localhost:8082
+```
+
+Doc sources: `site/docs-src/*.md`. Built HTML: `site/docs/`.
+When editing a doc page, also update `site/llms.txt`, `site/llms-full.txt`, and SEO meta
+tags — see `site/CLAUDE.md` for sync rules.

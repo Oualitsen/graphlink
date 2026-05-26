@@ -41,14 +41,19 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - **Watch mode.** Run `glink -w` to watch schema files and regenerate automatically on every save.
 - **Single source of truth.** The schema drives both ends. No duplicate type definitions. No
   schema drift. Adding a field means editing one file.
+- **Inline error handling (`@glCaptureErrors`).** Annotate any query or mutation with
+  `@glCaptureErrors` (or set `captureErrors: true` in config) to return a `FullResponse` with
+  `data` and `errors` side by side instead of throwing. Dart, Java, and TypeScript.
+- **Barrel file generation.** Dart and TypeScript generators emit a barrel/index file that
+  re-exports all generated types, inputs, and enums from a single import.
 
-## Supported targets (as of v4.5.0)
+## Supported targets (as of v4.7.0)
 
 - Dart client (stable)
-- Flutter client (stable)
+- Flutter client (stable, including UI widget generation)
 - Java client (stable)
 - Spring Boot server (stable, MVC and reactive/WebFlux)
-- TypeScript client (stable as of v4.5.0 — fetch/axios, RxJS observables, WebSocket subscriptions)
+- TypeScript client (stable — fetch/axios, RxJS observables, WebSocket subscriptions)
 - Express / Node.js server (planned)
 - Go (planned, demand-based)
 - Kotlin (planned, demand-based)
@@ -80,9 +85,7 @@ glink -h                    # show help
   "outputDir": "src/main/java/com/example/generated",
   "clientConfig": {
     "java": {
-      "packageName": "com.example.generated",
-      "generateAllFieldsFragments": true,
-      "autoGenerateQueries": true
+      "packageName": "com.example.generated"
     }
   }
 }

@@ -32,8 +32,8 @@ push: build
 
 # Deploy to Kubernetes (push first, then rolling restart)
 deploy: push
-	kubectl rollout restart deployment/graphlink-site
-	kubectl rollout status deployment/graphlink-site
+	kubectl rollout restart deployment/graphlink-site -n default
+	kubectl rollout status deployment/graphlink-site -n default
 
 # Full release: build docs → build image → push → deploy
 release: deploy

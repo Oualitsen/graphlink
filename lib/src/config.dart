@@ -124,6 +124,7 @@ class SpringServerConfig extends ServerLanguageConfig {
   final String? schemaTargetPath;
   final bool immutableInputFields;
   final bool immutableTypeFields;
+  final bool jspecify;
 
   SpringServerConfig({
     required this.basePackage,
@@ -139,6 +140,7 @@ class SpringServerConfig extends ServerLanguageConfig {
     required this.useSpringSecurity,
     required this.immutableInputFields,
     required this.immutableTypeFields,
+    this.jspecify = false,
     this.schemaTargetPath,
   }) : assert(
           !generateSchema ||
@@ -160,6 +162,7 @@ class SpringServerConfig extends ServerLanguageConfig {
       generateSchema: (json['generateSchema'] as bool?) ?? false,
       immutableInputFields: (json['immutableInputFields'] as bool?) ?? true,
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? false,
+      jspecify: (json['jspecify'] as bool?) ?? false,
       schemaTargetPath: json['schemaTargetPath'] as String?,
       injectDataFetching: (json['injectDataFetching'] as bool?) ?? false,
       reactive: (json['reactive'] as bool?) ?? false,
@@ -369,6 +372,7 @@ class JavaClientConfig extends ClientLanguageConfig {
   final bool immutableInputFields;
   final bool inputAsRecord;
   final bool typeAsRecord;
+  final bool jspecify;
   final JavaWsAdapter wsAdapter;
   final JavaJsonCodec jsonCodec;
 
@@ -383,6 +387,7 @@ class JavaClientConfig extends ClientLanguageConfig {
     this.immutableTypeFields = true,
     this.inputAsRecord = false,
     this.typeAsRecord = false,
+    this.jspecify = false,
     this.wsAdapter = JavaWsAdapter.java11,
     this.jsonCodec = JavaJsonCodec.jackson,
     this.defaultAlias,
@@ -400,6 +405,7 @@ class JavaClientConfig extends ClientLanguageConfig {
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
       inputAsRecord: (json['inputAsRecord'] as bool?) ?? false,
       typeAsRecord: (json['typeAsRecord'] as bool?) ?? false,
+      jspecify: (json['jspecify'] as bool?) ?? false,
       defaultAlias: json['defaultAlias'] as String?,
       wsAdapter: JavaWsAdapter.values.firstWhere(
         (e) => e.name == json['wsAdapter'],

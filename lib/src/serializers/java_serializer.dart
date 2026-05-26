@@ -78,6 +78,7 @@ class JavaSerializer extends GLSerializer {
   final bool inputsCheckForNulls;
   final bool immutableInputFields;
   final bool immutableTypeFields;
+  final bool jspecify;
   final codeGenUtils = JavaCodeGenUtils();
   @override
   final bool generateJsonMethods;
@@ -104,10 +105,12 @@ class JavaSerializer extends GLSerializer {
     this.inputsCheckForNulls = true,
     this.immutableInputFields = true,
     this.immutableTypeFields = false,
+    this.jspecify = false,
     super.typeMapOverrides = const {},
     required super.importPrefix,
   }) {
     _initAnnotations();
+    if (jspecify) grammar.applyJspecifyAnnotations(isPrimitive: _isPrimitiveType);
   }
 
   void _initAnnotations() {
@@ -218,7 +221,7 @@ class JavaSerializer extends GLSerializer {
       var decorators =
           serializeDecorators(def.getDirectives(), joiner: decoratorJoiner);
       if (decorators.trim().isNotEmpty) {
-        buffer.write(decorators);
+        buffer.write(decorators.trim());
         buffer.write(decoratorJoiner);
       }
     }
@@ -721,19 +724,21 @@ class JavaSerializer extends GLSerializer {
     buffer.writeln();
     buffer.writeln(codeGenUtils
         .createClass(staticClass: true, className: 'Builder', statements: [
-      ...fields
-          .map((field) => GLField(
-              name: field.name,
-              type: field.type,
-              arguments: field.arguments,
-              directives: []))
-          .map((field) => serializeField(field, false, !forInput)),
+      ...fields.map((field) {
+        final annotation = _isPrimitiveType(field.type) ? null : getJSpecifyAnnoation(field);
+        final copy = GLField(name: field.name, type: field.type, arguments: field.arguments, directives: []);
+        final serialized = serializeField(copy, false, !forInput);
+        return annotation != null ? '$annotation\n$serialized' : serialized;
+      }),
       "",
-      ...fields.map((e) => codeGenUtils.createMethod(
-          returnType: 'public Builder',
-          methodName: e.name.token,
-          arguments: [serializeArgumentField(e)],
-          statements: ['this.${e.name} = ${e.name};', 'return this;'])),
+      ...fields.map((e) {
+        final annotation = _isPrimitiveType(e.type) ? null : getJSpecifyAnnoation(e);
+        return codeGenUtils.createMethod(
+            returnType: 'public Builder',
+            methodName: e.name.token,
+            arguments: ['${annotation != null ? "$annotation " : ""}${serializeArgumentField(e)}'],
+            statements: ['this.${e.name} = ${e.name};', 'return this;']);
+      }),
       "",
       codeGenUtils.createMethod(
           returnType: 'public $name',
@@ -753,7 +758,8 @@ class JavaSerializer extends GLSerializer {
     }
     final forceNullable = isTypeField && (field.hasInculeOrSkipDiretives || forceFieldNullable);
     var returnType = serializeType(field.type, forceNullable);
-    return codeGenUtils.createMethod(
+    var jspecifyAnnotation = _isPrimitiveType(field.type) ? null : getJSpecifyAnnoation(field);
+    var result = codeGenUtils.createMethod(
         returnType: "public ${returnType}",
         methodName: _getterName(field.name.token, returnType == "boolean"),
         statements: [
@@ -763,6 +769,31 @@ class JavaSerializer extends GLSerializer {
             'Objects.requireNonNull(${field.name});',
           'return ${field.name};'
         ]);
+        if(jspecifyAnnotation == null) {
+          return result;
+        }
+        var buffer = StringBuffer();
+        buffer.writeln(jspecifyAnnotation);
+        buffer.write(result);
+        return buffer.toString();
+  }
+
+  String? getJSpecifyAnnoation(GLField field) {
+    var decorators = field.getDirectives(skipGenerated: false).where((e) => e.token == glDecorators).toList();
+    if(decorators.isEmpty) {
+      return null;
+    }
+    final directive = decorators.first;
+    var value = directive.getArgValue("value");
+    if(value is List<String>) {
+      for(var v in value) {
+        var vv = v.substring(1, v.length - 1);
+        if(vv == jspecifyNonNull || vv == jspecifyNullable) {
+          return vv;
+        }
+      }
+    }
+    return null;
   }
 
   String serializeMethod(GLField field, {String? modifier, bool forceNullable = false}) {
@@ -793,10 +824,13 @@ class JavaSerializer extends GLSerializer {
   }) {
     return codeGenUtils.createRecord(
         recordName: recordName,
-        components: fields
-            .map((f) => serializeArgumentField(f,
-                withDecorators: true, decoratorJoiner: " "))
-            .toList(),
+        components: fields.map((f) {
+          final annotation = _isPrimitiveType(f.type) ? null : getJSpecifyAnnoation(f);
+          final component = serializeArgumentField(f, withDecorators: true, decoratorJoiner: " ");
+          // withDecorators already emits jspecify for type fields; only prepend for input fields
+          if (annotation == null || component.startsWith(annotation)) return component;
+          return '$annotation $component';
+        }).toList(),
         interfaces: interfaceNames.toList(),
         statements: [
           if (generateJsonMethods) ...[
@@ -861,11 +895,12 @@ class JavaSerializer extends GLSerializer {
     if (checkForNulls) {
       context.addImport(JavaImports.objects);
     }
+    final annotation = _isPrimitiveType(field.type) ? null : getJSpecifyAnnoation(field);
     return codeGenUtils.createMethod(
         returnType: 'public void',
         methodName: _setterName(field.name.token),
         arguments: [
-          serializeArgumentField(field)
+          '${annotation != null ? "$annotation " : ""}${serializeArgumentField(field)}'
         ],
         statements: [
           if (checkForNulls &&

@@ -52,6 +52,7 @@ class GLParser {
   int _pos = 0;
 
   bool annotationsProcessed = false;
+  bool jspecifyAnnotationsProcessed = false;
   var logger = Logger();
   static const typename = "__typename";
   static final typenameField = GLField(
