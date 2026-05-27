@@ -202,18 +202,24 @@ Future<Set<String>> generateDartClientClasses(
   }
  
 
+  final clientFiles = <String>[];
+
+  final clientFileName = 'graph_link_client${clientSerializer.fileExtension}';
+  clientFiles.add(clientFileName);
   futures.add(writeToFile(
     data: serializer.serializeGlClass(clientSerializer.generateClient()),
-    fileName: 'graph_link_client${clientSerializer.fileExtension}',
+    fileName: clientFileName,
     subdir: 'client',
     imports: [],
     destinationDir: destinationDir,
   ));
 
   if (parser.hasUploadMutations) {
+    final uploadsFileName = 'graph_link_uploads${clientSerializer.fileExtension}';
+    clientFiles.add(uploadsFileName);
     futures.add(writeToFile(
       data: serializer.serializeGlClass(clientSerializer.generateUploadsFile()),
-      fileName: 'graph_link_uploads${clientSerializer.fileExtension}',
+      fileName: uploadsFileName,
       subdir: 'client',
       imports: [],
       destinationDir: destinationDir,
@@ -223,24 +229,28 @@ Future<Set<String>> generateDartClientClasses(
   if (dartConfig.generateAdapters) {
     final httpAdapter = dartConfig.httpAdapter;
     if (httpAdapter != DartHttpAdapter.none) {
+      final adapterFileName = httpAdapter == DartHttpAdapter.dio
+          ? 'graph_link_dio_adapter${clientSerializer.fileExtension}'
+          : 'graph_link_http_adapter${clientSerializer.fileExtension}';
+      clientFiles.add(adapterFileName);
       futures.add(writeToFile(
         data: serializer.serializeGlClass(
             httpAdapter == DartHttpAdapter.dio
                 ? clientSerializer.generateDioAdapterFile()
                 : clientSerializer.generateHttpAdapterFile(),
            ),
-        fileName: httpAdapter == DartHttpAdapter.dio
-            ? 'graph_link_dio_adapter${clientSerializer.fileExtension}'
-            : 'graph_link_http_adapter${clientSerializer.fileExtension}',
+        fileName: adapterFileName,
         subdir: 'client',
         imports: [],
         destinationDir: destinationDir,
       ));
     }
     if (parser.hasSubscriptions) {
+      final wsFileName = 'graph_link_websocket_adapter${clientSerializer.fileExtension}';
+      clientFiles.add(wsFileName);
       futures.add(writeToFile(
         data: serializer.serializeGlClass(clientSerializer.generateDefaultWebSocketAdapterFile()),
-        fileName: 'graph_link_websocket_adapter${clientSerializer.fileExtension}',
+        fileName: wsFileName,
         subdir: 'client',
         imports: [],
         destinationDir: destinationDir,
@@ -249,7 +259,7 @@ Future<Set<String>> generateDartClientClasses(
   }
 
   final result = await Future.wait(futures);
-  final barrelFile = await DartBarrelFileHandler(parser, destinationDir, serializer).generate();
+  final barrelFile = await DartBarrelFileHandler(parser, destinationDir, serializer, clientFiles: clientFiles).generate();
   stdout.writeln('Generated ${futures.length + 1} files in ${formatElapsedTime(started)}');
   final paths = result.map((f) => f.path).toSet()..add(barrelFile.path);
   await cleanUpObsoleteFiles(paths);

@@ -10,8 +10,9 @@ import 'package:graphlink/src/serializers/typescript_serializer.dart';
 abstract class GLBarrelFileHandler {
   final GLParser parser;
   final String destinationDir;
+  final List<String> clientFiles;
 
-  GLBarrelFileHandler(this.parser, this.destinationDir);
+  GLBarrelFileHandler(this.parser, this.destinationDir, {this.clientFiles = const []});
 
   String get barrelFileName;
   bool get isTypeScript;
@@ -41,6 +42,10 @@ abstract class GLBarrelFileHandler {
       lines.add(exportLine('interfaces', fileNameFor(def)));
     });
 
+    for (final fileName in clientFiles) {
+      lines.add(exportLine('client', fileName));
+    }
+
     return saveSource(
       data: lines.join('\n'),
       path: '$destinationDir/$barrelFileName',
@@ -52,7 +57,7 @@ abstract class GLBarrelFileHandler {
 class DartBarrelFileHandler extends GLBarrelFileHandler {
   final DartSerializer serializer;
 
-  DartBarrelFileHandler(super.parser, super.destinationDir, this.serializer);
+  DartBarrelFileHandler(super.parser, super.destinationDir, this.serializer, {super.clientFiles = const []});
 
   @override
   String get barrelFileName => 'graphlink.dart';
@@ -70,7 +75,7 @@ class DartBarrelFileHandler extends GLBarrelFileHandler {
 class TypeScriptBarrelFileHandler extends GLBarrelFileHandler {
   final TypeScriptSerializer serializer;
 
-  TypeScriptBarrelFileHandler(super.parser, super.destinationDir, this.serializer);
+  TypeScriptBarrelFileHandler(super.parser, super.destinationDir, this.serializer, {super.clientFiles = const []});
 
   @override
   String get barrelFileName => 'graphlink.ts';

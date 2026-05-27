@@ -60,18 +60,24 @@ Future<Set<String>> generateTypeScriptClientClasses(
     ));
   });
 
+  final clientFiles = <String>[];
+
+  final clientFileName = 'graph-link-client${clientSerializer.fileExtension}';
+  clientFiles.add(clientFileName);
   futures.add(writeToFile(
     data: serializer.serializeGlClass(clientSerializer.generateClient()),
-    fileName: 'graph-link-client${clientSerializer.fileExtension}',
+    fileName: clientFileName,
     subdir: 'client',
     imports: [],
     destinationDir: destinationDir,
   ));
 
   if (parser.hasUploadMutations) {
+    final uploadsFileName = 'graph-link-uploads${clientSerializer.fileExtension}';
+    clientFiles.add(uploadsFileName);
     futures.add(writeToFile(
       data: serializer.serializeGlClass(clientSerializer.generateUploadsFile()),
-      fileName: 'graph-link-uploads${clientSerializer.fileExtension}',
+      fileName: uploadsFileName,
       subdir: 'client',
       imports: [],
       destinationDir: destinationDir,
@@ -80,9 +86,11 @@ Future<Set<String>> generateTypeScriptClientClasses(
 
   final adaptersModel = clientSerializer.generateAdaptersFile(tsConfig.httpAdapter);
   if (adaptersModel != null) {
+    final adaptersFileName = 'graph-link-adapters${clientSerializer.fileExtension}';
+    clientFiles.add(adaptersFileName);
     futures.add(writeToFile(
       data: serializer.serializeGlClass(adaptersModel),
-      fileName: 'graph-link-adapters${clientSerializer.fileExtension}',
+      fileName: adaptersFileName,
       subdir: 'client',
       imports: [],
       destinationDir: destinationDir,
@@ -90,7 +98,7 @@ Future<Set<String>> generateTypeScriptClientClasses(
   }
 
   final result = await Future.wait(futures);
-  final barrelFile = await TypeScriptBarrelFileHandler(parser, destinationDir, serializer).generate();
+  final barrelFile = await TypeScriptBarrelFileHandler(parser, destinationDir, serializer, clientFiles: clientFiles).generate();
   stdout.writeln('Generated ${futures.length + 1} files in ${formatElapsedTime(started)}');
   final paths = result.map((f) => f.path).toSet()..add(barrelFile.path);
   await cleanUpObsoleteFiles(paths);
