@@ -170,7 +170,7 @@ class FlutterInputsDateSerializer {
       'final _ctx = _buildContext();',
       'if ((_form.visibility?.$name?.call(_ctx) ?? FieldVisibility.enabled) != FieldVisibility.enabled) return null;',
       if (!nullable) "if (v == null || v.isEmpty) return _form.strings.required;",
-      'return _form.validations?.$name?.call(v, _ctx);',
+      'return _${name}AsyncError;',
     ];
     final errorText = _fields.errorTextWidget();
     final errorBorderDecoration = 'field.hasError ? ${_u.callExpression('BoxDecoration', [
@@ -179,6 +179,7 @@ class FlutterInputsDateSerializer {
     ])} : null';
 
     final selectChipsCase = 'return ${_u.callExpression('FormField<String>', [
+      'key: _${name}FieldKey',
       'initialValue: _${name}Controller.text',
       'autovalidateMode: AutovalidateMode.onUserInteraction',
       'validator: ${_u.functionLiteral(['v'], selectValidators)}',
@@ -202,6 +203,7 @@ class FlutterInputsDateSerializer {
     ])};';
 
     final selectRadioCase = 'return ${_u.callExpression('FormField<String>', [
+      'key: _${name}FieldKey',
       'initialValue: _${name}Controller.text',
       'autovalidateMode: AutovalidateMode.onUserInteraction',
       'validator: ${_u.functionLiteral(['v'], selectValidators)}',
@@ -230,6 +232,7 @@ class FlutterInputsDateSerializer {
     ])};';
 
     final selectDropdownExpr = _u.callExpression('DropdownButtonFormField<String?>', [
+      'key: _${name}FieldKey',
       'decoration: _decoration(label).copyWith(enabled: enabled)',
       'value: _${name}Controller.text.isEmpty ? null : _${name}Controller.text',
       _u.listArg('items', [
@@ -282,10 +285,11 @@ class FlutterInputsDateSerializer {
         catchVariable: '_',
         catchStatements: ['return _form.strings.invalidDate;'],
       ),
-      'return _form.validations?.$name?.call(v, _ctx);',
+      'return _${name}AsyncError;',
     ];
 
     final dialogField = _u.callExpression('TextFormField', [
+      'key: _${name}FieldKey',
       'controller: _${name}Controller',
       'enabled: enabled',
       'readOnly: !(_form.dateConfig!.$name!.allowKeyboardInput)',
@@ -352,6 +356,7 @@ class FlutterInputsDateSerializer {
     ]);
 
     final inlineField = _u.callExpression('FormField<String>', [
+      'key: _${name}FieldKey',
       'initialValue: _${name}Controller.text',
       'autovalidateMode: AutovalidateMode.onUserInteraction',
       'validator: ${_u.functionLiteral(['v'], dateValidators)}',

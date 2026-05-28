@@ -1,6 +1,6 @@
 # Flutter UI Input Form Generation
 
-## Status: Implemented (phase 11 — SelectFieldConfig: pick-one widgets for String/Int/Float fields)
+## Status: Implemented (phase 11 — SelectFieldConfig, reset(), isDirty, scroll-to-first-error, setSubmitting)
 
 ---
 
@@ -428,6 +428,144 @@ final draft = _key.currentState!.tryRead(); // null if form not fully parseable
 
 ---
 
+### `setSubmitting()` / `isSubmitting` ⚡ added
+
+Two public members on every generated state class for managing async submit operations.
+
+```dart
+void setSubmitting(bool value)  // override on InputFormState<T>
+bool get isSubmitting            // override on InputFormState<T>
+```
+
+**`setSubmitting(true)`:**
+- Calls `setState(() => _submitting = true)`
+- All fields become non-interactive — `enabledExpr` is `!_submitting && _${f.name}Vis == FieldVisibility.enabled`, so every field evaluates to disabled
+- Stepper Next/Submit button `onPressed` becomes `null`
+- `read()` throws `InputReadException('Form is submitting')` immediately, before validation
+
+**`setSubmitting(false)`:**
+- Restores all fields to their normal enabled/disabled state
+- `read()` proceeds normally
+
+**Sub-input propagation:** `setSubmitting` also calls `_${field}Key.currentState?.setSubmitting(value)` for every sub-input field. This is necessary for the stepper layout, where child forms are rendered as direct `Step.content` and are not wrapped in `IgnorePointer` — without propagation, child form fields remain interactive while the parent is submitting. In column/twoColumn layouts the child form is already wrapped in `IgnorePointer` via `_inputFieldRowMethod`, but propagation is harmless and keeps `isSubmitting` consistent on child states.
+
+**Base class:** `InputFormState<T>` declares both as no-ops so `SimpleFieldForm` and custom override widgets compile without implementing them.
+
+**Typical usage:**
+```dart
+FilledButton(
+  onPressed: () async {
+    try {
+      final result = _key.currentState!.read();
+      _key.currentState!.setSubmitting(true);
+      await myApi.save(result);
+    } on InputReadException {
+      // validation failed — form already scrolled to first error
+    } finally {
+      _key.currentState!.setSubmitting(false);
+    }
+  },
+  child: const Text('Save'),
+)
+```
+
+---
+
+### Scroll to first error ⚡ added
+
+After `read()` fails validation, the form automatically scrolls to the first invalid field before throwing `InputReadException`. No developer action required — the form just scrolls.
+
+**How it works**: `read()` calls `validate()`, and if it fails calls `_scrollToFirstError()` before throwing. `_scrollToFirstError()` uses `Scrollable.ensureVisible(ctx)` which walks up the widget tree to find the nearest enclosing `Scrollable` — works with `SingleChildScrollView`, `ListView`, `CustomScrollView`, etc. If the form fits on screen (no ancestor `Scrollable`), the call is silently ignored.
+
+**Field ordering**: the scroll target respects `${Input}Order` — fields are sorted by their effective order index (same sort as `_visibleRows()`) so the first field in visual order is scrolled to, not necessarily the first in schema order.
+
+**Implementation**:
+- A `GlobalKey<FormFieldState> _${field}FieldKey` is generated per text/enum/bool field and attached to its `TextFormField` / `DropdownButtonFormField` / `FormField<T>` widget
+- `_scrollToFirstError()` builds a `List<MapEntry<int, GlobalKey<FormFieldState>>>` with effective order indices, sorts it, iterates and calls `Scrollable.ensureVisible` on the first key where `currentState?.hasError == true`
+- Hidden/disabled fields naturally have `hasError == false` (validators return null for them), so they are skipped
+
+**Developer usage** — nothing changes:
+```dart
+SingleChildScrollView(
+  child: AddVehicleInputForm(key: _key, ...),
+)
+
+// On submit:
+try {
+  final result = _key.currentState!.read();
+} on InputReadException {
+  // form already scrolled to first error
+}
+```
+
+---
+
+### `isDirty` ⚡ added
+
+`isDirty` is a public getter on every generated state class. Returns `true` if any field's current value differs from its initial value (`initialValues`), `false` otherwise. Useful for unsaved-changes guards (`PopScope`, `onWillPop`).
+
+```dart
+bool get isDirty  // override on InputFormState<T>
+```
+
+**Per-field comparison logic:**
+
+| Field type | Dirty check |
+|---|---|
+| Text (`String`, `Int`, `Float`) | `controller.text != initialTextExpr(field)` (includes date-formatted int fields) |
+| Enum | `_field != _form.initialValues?.field` |
+| Bool | `_field != initialBoolExpr(field)` |
+| Enum / scalar list | `_list.length != _form.list.length \|\| !_list.toSet().containsAll(_form.list)` (order-insensitive) |
+| Input list | delegates to `_overrideKey.currentState?.isDirty ?? false` |
+| Sub-input | delegates to `_fieldKey.currentState?.isDirty ?? false` |
+
+**Base class default:** `InputFormState<T>` declares `bool get isDirty => false;` so override widgets that don't implement it are treated as clean.
+
+**Example:**
+```dart
+PopScope(
+  canPop: !_key.currentState!.isDirty,
+  onPopInvoked: (didPop) { ... },
+  child: AddVehicleInputForm(key: _key, ...),
+)
+```
+
+---
+
+### `reset()` ⚡ added
+
+`reset()` is a public method on every generated state class. It restores all field state back to `initialValues` (or empty if `initialValues` is null), then calls `_formKey.currentState?.reset()` to clear validation errors.
+
+```dart
+// reset all fields
+_key.currentState!.reset();
+
+// reset specific fields only
+_key.currentState!.reset(fields: ['brand', 'fuelType']);
+```
+
+**Signature:**
+```dart
+void reset({List<String>? fields})
+```
+
+- `fields == null` — resets every field + calls `_formKey.currentState?.reset()` (clears all validators)
+- `fields` provided — resets only the named fields; validators on other fields are untouched
+
+**Per-field reset logic:**
+- Text fields: `controller.text = initialValues?.field ?? ''`
+- Int/Float text fields: `controller.text = initialValues?.field?.toString() ?? ''`
+- Int date fields: re-formats via `DateFormat(config.pattern).format(DateTime.fromMillisecondsSinceEpoch(...))` when `dateConfig` is set
+- Enum fields: `_field = initialValues?.field`
+- Bool fields: `_field = initialValues?.field ?? false` (nullable: `initialValues?.field`)
+- Inline calendar open state (`_fieldCalendarOpen`) reset to `false`
+
+**`_isResetting` guard:** a `bool _isResetting` flag is set for the duration of the reset. `_onFieldChanged()` checks this flag and skips `onContextChange`/`onChange` notifications during reset, preventing spurious debounce callbacks.
+
+**Debounce timer:** `_debounceTimer?.cancel()` is called before the reset so a pending `onChange` from a prior edit does not fire after the reset.
+
+---
+
 ### onChange / onContextChange ⚡ added (phase 10)
 
 Three new widget params:
@@ -850,6 +988,9 @@ lib/generated/
 39. `isInputListField` — new type helper for list-of-input fields; missing imports fixed. ✅ (phase 10)
 40. `isPasswordField` — tightened to word-boundary check for `pin`; prevents false positives like `stopingDate`. ✅ (phase 10)
 43. `SelectFieldConfig` — `String`/`Int`/`Float` fields can opt into dropdown/chips/radio at runtime via `${Input}SelectConfig`; no schema change required; `labelBuilder` controls display; `selectConfig` checked before `dateConfig` in row methods. ✅ (phase 11)
+44. `setSubmitting(bool)` / `isSubmitting` — disables all fields and blocks `read()` while submitting; stepper Next/Submit button also disabled; `_submitting` flag set via `setState`; base class stubs both members. ✅ (phase 11)
+45. Scroll to first error — `_scrollToFirstError()` called by `read()` before throwing; `GlobalKey<FormFieldState>` per field attached to every FormField widget; order-aware using `${Input}Order`; `Scrollable.ensureVisible` works with any parent scroll container. ✅ (phase 11)
+46. `isDirty` getter — returns true if any field differs from `initialValues`; text uses controller text vs initial expression, enum/bool by value, lists order-insensitive set comparison, sub-inputs delegated; base class defaults to `false`. ✅ (phase 11)
 41. `didUpdateWidget` parameter name — fixed to `oldWidget` to match Flutter's override signature. ✅ (phase 10)
 42. Dead helper guard — `_switchBoolField`/`_checkboxBoolField`/`_fieldHelper`/`_decorationHelper` only generated when their actual call sites exist in the form. ✅ (phase 10)
 

@@ -45,7 +45,9 @@ class FlutterInputsFieldSerializer {
       ],
     ]);
 
+    final spinnerExpr = 'const SizedBox(width: 44, height: 44, child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2)))';
     return _u.callExpression('TextFormField', [
+      'key: _${name}FieldKey',
       'controller: _${name}Controller',
       'enabled: $enabledExpr',
       'obscureText: _form.textConfig?.$name?.obscureText ?? false',
@@ -56,7 +58,7 @@ class FlutterInputsFieldSerializer {
       'enableSuggestions: _form.textConfig?.$name?.enableSuggestions ?? ${_types.smartEnableSuggestions(f)}',
       'maxLength: _form.textConfig?.$name?.maxLength',
       'maxLines: _form.textConfig?.$name?.maxLines ?? 1',
-      'decoration: _textDecoration(label, _form.textConfig?.$name, null)',
+      'decoration: _textDecoration(label, _form.textConfig?.$name, _${name}Validating ? $spinnerExpr : null)',
       'onChanged: (_) => _onFieldChanged()',
       'validator: ${_u.functionLiteral(['v'], validators)}',
     ]);
@@ -78,11 +80,13 @@ class FlutterInputsFieldSerializer {
           statement: 'return _form.strings.mustBeWholeNumber;',
         ),
     ]);
+    final spinnerExpr = 'const SizedBox(width: 44, height: 44, child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2)))';
     return _u.callExpression('TextFormField', [
+      'key: _${name}FieldKey',
       'controller: _${name}Controller',
       'enabled: $enabledExpr',
       'keyboardType: TextInputType.number',
-      'decoration: _textDecoration(label, _form.textConfig?.$name, null)',
+      'decoration: _textDecoration(label, _form.textConfig?.$name, _${name}Validating ? $spinnerExpr : null)',
       'onChanged: (_) => _onFieldChanged()',
       'validator: ${_u.functionLiteral(['v'], validators)}',
     ]);
@@ -96,6 +100,7 @@ class FlutterInputsFieldSerializer {
       if (!nullable) "if (v == null || v.isEmpty) return _form.strings.required;",
     ]);
 
+    final spinnerExpr = 'const SizedBox(width: 44, height: 44, child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2)))';
     final obscureExpr = isPassword ? '_${name}Obscured' : '_form.textConfig?.$name?.obscureText ?? false';
     final suffixIconExpr = isPassword
         ? _u.callExpression('IconButton', [
@@ -103,9 +108,10 @@ class FlutterInputsFieldSerializer {
             'icon: Icon(_${name}Obscured ? Icons.visibility_off : Icons.visibility)',
             'onPressed: () => setState(() => _${name}Obscured = !_${name}Obscured)',
           ])
-        : 'null';
+        : '_${name}Validating ? $spinnerExpr : null';
 
     return _u.callExpression('TextFormField', [
+      'key: _${name}FieldKey',
       'controller: _${name}Controller',
       'enabled: $enabledExpr',
       'obscureText: $obscureExpr',
@@ -133,6 +139,7 @@ class FlutterInputsFieldSerializer {
     ]);
 
     return _u.callExpression('DropdownButtonFormField<$enumType?>', [
+      'key: _${name}FieldKey',
       'decoration: _decoration(label).copyWith(enabled: $enabledExpr)',
       'value: _$name',
       _u.listArg('items', [
@@ -155,6 +162,7 @@ class FlutterInputsFieldSerializer {
     final errorText = errorTextWidget();
 
     final chipsCase = 'return ${_u.callExpression('FormField<$enumType?>', [
+      'key: _${name}FieldKey',
       'initialValue: _$name',
       'autovalidateMode: AutovalidateMode.onUserInteraction',
       'validator: ${_u.functionLiteral(['v'], validators)}',
@@ -179,6 +187,7 @@ class FlutterInputsFieldSerializer {
     ])};';
 
     final radioCase = 'return ${_u.callExpression('FormField<$enumType?>', [
+      'key: _${name}FieldKey',
       'initialValue: _$name',
       'autovalidateMode: AutovalidateMode.onUserInteraction',
       'validator: ${_u.functionLiteral(['v'], validators)}',
@@ -263,6 +272,7 @@ class FlutterInputsFieldSerializer {
 
     if (fieldType == 'bool?') {
       final chipsCase = 'return ${_u.callExpression('FormField<bool?>', [
+        'key: _${name}FieldKey',
         'initialValue: _$name',
         'autovalidateMode: AutovalidateMode.onUserInteraction',
         'validator: ${_u.functionLiteral(['v'], validators)}',
@@ -296,6 +306,7 @@ class FlutterInputsFieldSerializer {
       ])};';
 
       final radioCase = 'return ${_u.callExpression('FormField<bool?>', [
+        'key: _${name}FieldKey',
         'initialValue: _$name',
         'autovalidateMode: AutovalidateMode.onUserInteraction',
         'validator: ${_u.functionLiteral(['v'], validators)}',
@@ -354,6 +365,7 @@ class FlutterInputsFieldSerializer {
       );
     } else {
       final chipsCase = 'return ${_u.callExpression('FormField<bool>', [
+        'key: _${name}FieldKey',
         'initialValue: _$name',
         'autovalidateMode: AutovalidateMode.onUserInteraction',
         'validator: ${_u.functionLiteral(['v'], validators)}',
@@ -387,6 +399,7 @@ class FlutterInputsFieldSerializer {
       ])};';
 
       final radioCase = 'return ${_u.callExpression('FormField<bool>', [
+        'key: _${name}FieldKey',
         'initialValue: _$name',
         'autovalidateMode: AutovalidateMode.onUserInteraction',
         'validator: ${_u.functionLiteral(['v'], validators)}',
@@ -547,8 +560,9 @@ class FlutterInputsFieldSerializer {
 
   String _switchFormFieldExpr(String name, String enabledExpr) {
     return _u.callExpression('FormField<bool>', [
+      'key: _${name}FieldKey',
       'initialValue: _$name',
-      'validator: (v) { final _ctx = _buildContext(); if ((_form.visibility?.$name?.call(_ctx) ?? FieldVisibility.enabled) != FieldVisibility.enabled) return null; return _form.validations?.$name?.call(v, _ctx); }',
+      'validator: (v) { final _ctx = _buildContext(); if ((_form.visibility?.$name?.call(_ctx) ?? FieldVisibility.enabled) != FieldVisibility.enabled) return null; return _${name}AsyncError; }',
       'builder: (field) => ${_u.callExpression('_switchBoolField', [
         'label',
         'field.value ?? false',
@@ -563,8 +577,9 @@ class FlutterInputsFieldSerializer {
         ? '$enabledExpr ? (v) { setState(() => _$name = v); field.didChange(v); } : null'
         : '$enabledExpr ? (v) { if (v != null) { setState(() => _$name = v); field.didChange(v); } } : null';
     return _u.callExpression('FormField<$fieldType>', [
+      'key: _${name}FieldKey',
       'initialValue: _$name',
-      'validator: (v) { final _ctx = _buildContext(); if ((_form.visibility?.$name?.call(_ctx) ?? FieldVisibility.enabled) != FieldVisibility.enabled) return null; return _form.validations?.$name?.call(v, _ctx); }',
+      'validator: (v) { final _ctx = _buildContext(); if ((_form.visibility?.$name?.call(_ctx) ?? FieldVisibility.enabled) != FieldVisibility.enabled) return null; return _${name}AsyncError; }',
       'builder: (field) => ${_u.callExpression('_checkboxBoolField', [
         'label',
         'field.value',
@@ -582,6 +597,7 @@ class FlutterInputsFieldSerializer {
     ]);
 
     return _u.callExpression('DropdownButtonFormField<bool?>', [
+      'key: _${name}FieldKey',
       'decoration: _decoration(label).copyWith(enabled: $enabledExpr)',
       'value: _$name',
       _u.listArg('items', [
@@ -594,12 +610,12 @@ class FlutterInputsFieldSerializer {
     ]);
   }
 
-  /// Builds the validator statement list: disabled-guard, custom checks, context-aware validation call.
+  /// Builds the validator statement list: disabled-guard, custom sync checks, async error echo.
   List<String> _validatorStatements(String name, List<String> checks) => [
     'final _ctx = _buildContext();',
     'if ((_form.visibility?.$name?.call(_ctx) ?? FieldVisibility.enabled) != FieldVisibility.enabled) return null;',
     ...checks,
-    'return _form.validations?.$name?.call(v, _ctx);',
+    'return _${name}AsyncError;',
   ];
 
   String errorTextWidget() => _u.inlineIfStatement(

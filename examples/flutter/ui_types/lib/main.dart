@@ -250,6 +250,7 @@ class _AddVehicleTabState extends State<_AddVehicleTab> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    _key.currentState!.reset();
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
