@@ -156,13 +156,118 @@ class FlutterInputsDateSerializer {
         ],
       );
 
-  // ── Per-field date row method ─────────────────────────────────────────────────
+  // ── Per-field scalar row method (select → date → plain text) ─────────────────
 
-  String dateRowMethod(GLField f) {
+  String scalarRowMethod(GLField f) {
     final name = f.name.token;
     final nullable = f.type.nullable;
-    final isInt = _types.dartScalarType(f) == 'int';
+    final dartType = _types.dartScalarType(f);
+    final isDateEligible = dartType == 'int' || dartType == 'String';
+    final isInt = dartType == 'int';
 
+    // --- Select widget expressions ---
+    final selectValidators = [
+      'final _ctx = _buildContext();',
+      'if ((_form.visibility?.$name?.call(_ctx) ?? FieldVisibility.enabled) != FieldVisibility.enabled) return null;',
+      if (!nullable) "if (v == null || v.isEmpty) return _form.strings.required;",
+      'return _form.validations?.$name?.call(v, _ctx);',
+    ];
+    final errorText = _fields.errorTextWidget();
+    final errorBorderDecoration = 'field.hasError ? ${_u.callExpression('BoxDecoration', [
+      'border: Border.all(color: Theme.of(context).colorScheme.error)',
+      'borderRadius: BorderRadius.circular(4)',
+    ])} : null';
+
+    final selectChipsCase = 'return ${_u.callExpression('FormField<String>', [
+      'initialValue: _${name}Controller.text',
+      'autovalidateMode: AutovalidateMode.onUserInteraction',
+      'validator: ${_u.functionLiteral(['v'], selectValidators)}',
+      'builder: (field) => ${_u.callExpression('Column', [
+        'crossAxisAlignment: CrossAxisAlignment.start',
+        _u.listArg('children', [
+          'label',
+          'const SizedBox(height: 4)',
+          _u.callExpression('Wrap', [
+            'spacing: 8',
+            'children: _selectCfg.options.map((e) => ${_u.callExpression('ChoiceChip', [
+              'label: _selectCfg.labelBuilder?.call(e) ?? Text(e.toString())',
+              'selected: _${name}Controller.text == e.toString()',
+              'side: field.hasError ? BorderSide(color: Theme.of(context).colorScheme.error) : null',
+              'onSelected: enabled ? (on) { final v = on ? e.toString() : \'\'; setState(() => _${name}Controller.text = v); field.didChange(v); } : null',
+            ])}).toList()',
+          ]),
+          errorText,
+        ]),
+      ])}',
+    ])};';
+
+    final selectRadioCase = 'return ${_u.callExpression('FormField<String>', [
+      'initialValue: _${name}Controller.text',
+      'autovalidateMode: AutovalidateMode.onUserInteraction',
+      'validator: ${_u.functionLiteral(['v'], selectValidators)}',
+      'builder: (field) => ${_u.callExpression('Column', [
+        'crossAxisAlignment: CrossAxisAlignment.start',
+        _u.listArg('children', [
+          'label',
+          _u.callExpression('Semantics', [
+            "label: field.hasError ? field.errorText ?? '' : null",
+            'child: ${_u.callExpression('Container', [
+              'decoration: $errorBorderDecoration',
+              'child: ${_u.callExpression('Column', [
+                'children: _selectCfg.options.map((e) => ${_u.callExpression('RadioListTile<String>', [
+                  'contentPadding: EdgeInsets.zero',
+                  'title: _selectCfg.labelBuilder?.call(e) ?? Text(e.toString())',
+                  'value: e.toString()',
+                  'groupValue: _${name}Controller.text.isEmpty ? null : _${name}Controller.text',
+                  'onChanged: enabled ? (v) { setState(() => _${name}Controller.text = v ?? \'\'); field.didChange(v ?? \'\'); } : null',
+                ])}).toList()',
+              ])}',
+            ])}',
+          ]),
+          errorText,
+        ]),
+      ])}',
+    ])};';
+
+    final selectDropdownExpr = _u.callExpression('DropdownButtonFormField<String?>', [
+      'decoration: _decoration(label).copyWith(enabled: enabled)',
+      'value: _${name}Controller.text.isEmpty ? null : _${name}Controller.text',
+      _u.listArg('items', [
+        "DropdownMenuItem<String?>(value: null, child: Text(_form.strings.chooseAnOption, style: TextStyle(fontStyle: FontStyle.italic, color: Theme.of(context).hintColor)))",
+        '..._selectCfg.options.map((e) => DropdownMenuItem<String?>(value: e.toString(), child: _selectCfg.labelBuilder?.call(e) ?? Text(e.toString())))',
+      ]),
+      'onChanged: enabled ? (v) => setState(() => _${name}Controller.text = v ?? \'\') : null',
+      'validator: ${_u.functionLiteral(['v'], selectValidators)}',
+    ]);
+
+    final selectBlock = _u.switchStatement(
+      expression: '_selectCfg.widget',
+      cases: [
+        DartCaseStatement(caseValue: 'SelectWidget.chips', statement: selectChipsCase),
+        DartCaseStatement(caseValue: 'SelectWidget.radio', statement: selectRadioCase),
+      ],
+      defaultStatements: ['return _field(label, $selectDropdownExpr);'],
+    );
+
+    // --- Body: select → date (int/String only) → plain ---
+    final statements = <String>[
+      'final _selectCfg = _form.selectConfig?.$name;',
+      _u.ifStatement(condition: '_selectCfg != null', ifBlockStatements: [selectBlock]),
+    ];
+
+    if (!isDateEligible) {
+      // double / other scalar — no date branch
+      statements.add('return _field(label, ${_fields.textFormFieldExpr(f, 'enabled')});');
+      return _u.createMethod(
+        returnType: 'Widget',
+        methodName: '_${name}ScalarRow',
+        namedArguments: false,
+        arguments: ['Widget label', 'bool enabled'],
+        statements: statements,
+      );
+    }
+
+    // Date branch (int / String fields) — same logic as the old dateRowMethod
     final regularExpr = isInt ? _fields.intRegularExpr(f, 'enabled') : _fields.stringRegularExpr(f, 'enabled');
 
     final dateValidators = <String>[
@@ -196,17 +301,7 @@ class FlutterInputsDateSerializer {
       'validator: ${_u.functionLiteral(['v'], dateValidators)}',
     ]);
 
-    final errorText = _u.inlineIfStatement(
-      condition: 'field.errorText != null',
-      statement: _u.callExpression('Semantics', [
-        'liveRegion: true',
-        'child: ${_u.callExpression('Padding', [
-          'padding: const EdgeInsets.only(top: 4, left: 4)',
-          'child: Text(field.errorText!, style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12))',
-        ])}',
-      ]),
-    );
-
+    // errorText is already declared above for the select branch (identical content)
     const parsedDateDecl = 'DateTime? _parsedDate;';
     final parsedDateInit = _u.tryCatchFinally(
       tryStatements: [
@@ -285,23 +380,25 @@ class FlutterInputsDateSerializer {
       ])}',
     ]);
 
+    statements.addAll([
+      'final config = _form.dateConfig?.$name;',
+      _u.ifStatement(
+        condition: 'config == null',
+        ifBlockStatements: ['return _field(label, $regularExpr);'],
+      ),
+      _u.ifStatement(
+        condition: 'config.mode == DateInputMode.inline',
+        ifBlockStatements: ['return $inlineField;'],
+      ),
+      'return _field(label, $dialogField);',
+    ]);
+
     return _u.createMethod(
       returnType: 'Widget',
-      methodName: '_${name}DateRow',
+      methodName: '_${name}ScalarRow',
       namedArguments: false,
       arguments: ['Widget label', 'bool enabled'],
-      statements: [
-        'final config = _form.dateConfig?.$name;',
-        _u.ifStatement(
-          condition: 'config == null',
-          ifBlockStatements: ['return _field(label, $regularExpr);'],
-        ),
-        _u.ifStatement(
-          condition: 'config.mode == DateInputMode.inline',
-          ifBlockStatements: ['return $inlineField;'],
-        ),
-        'return _field(label, $dialogField);',
-      ],
+      statements: statements,
     );
   }
 }

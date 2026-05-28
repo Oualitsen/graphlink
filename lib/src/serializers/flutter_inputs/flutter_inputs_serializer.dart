@@ -57,6 +57,7 @@ class FlutterInputsSerializer {
   String serializeSharedInputStepOptions() => _shared.serializeSharedInputStepOptions();
   String serializeSharedStepperStrings() => _shared.serializeSharedStepperStrings();
   String serializeSharedInputStepGroup() => _shared.serializeSharedInputStepGroup();
+  String serializeSharedSelectFieldConfig() => _shared.serializeSharedSelectFieldConfig();
 
   // ── Per-input entry point ─────────────────────────────────────────────────────
 
@@ -92,8 +93,9 @@ class FlutterInputsSerializer {
       ...entity.enumDataImports(importPrefix),
       ...entity.enumLabelImports(importPrefix),
       if (boolFields.isNotEmpty) "import '$importPrefix/widgets/inputs/boolean_labels.dart';",
-      if (enumFields.isNotEmpty || boolFields.isNotEmpty) "import '$importPrefix/widgets/inputs/field_widgets.dart';",
+      if (enumFields.isNotEmpty || boolFields.isNotEmpty || textFields.isNotEmpty) "import '$importPrefix/widgets/inputs/field_widgets.dart';",
       if (textFields.isNotEmpty) "import '$importPrefix/widgets/inputs/text_field_options.dart';",
+      if (textFields.isNotEmpty) "import '$importPrefix/widgets/inputs/select_field_config.dart';",
       if (dateEligibleFields.isNotEmpty) ...{
         "import 'package:flutter/cupertino.dart';",
         "import 'package:intl/intl.dart';",
@@ -143,6 +145,10 @@ class FlutterInputsSerializer {
     }
     if (dateEligibleFields.isNotEmpty) {
       buffer.writeln(_companions.serializeDateConfigClass(inputName, dateEligibleFields));
+      buffer.writeln();
+    }
+    if (textFields.isNotEmpty) {
+      buffer.writeln(_companions.serializeSelectConfigClass(inputName, textFields));
       buffer.writeln();
     }
     if (hasSubInputs) {

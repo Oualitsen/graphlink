@@ -1,6 +1,6 @@
 # Flutter UI Input Form Generation
 
-## Status: Implemented (phase 10 — onChange/onContextChange/tryRead, stepper layout, validate() fix, bug fixes)
+## Status: Implemented (phase 11 — SelectFieldConfig: pick-one widgets for String/Int/Float fields)
 
 ---
 
@@ -338,6 +338,7 @@ class AddVehicleInputForm extends InputFormWidget<AddVehicleInput> {
   final AddVehicleInputValidations?    validations;
   final AddVehicleInputWidgets?        widgets;            // ⚡ added (phase 3)
   final AddVehicleInputTextConfig?     textConfig;         // ⚡ added (phase 4)
+  final AddVehicleInputSelectConfig?   selectConfig;       // ⚡ added (phase 11)
   final AddVehicleInputLayout          layout;
   final AddVehicleInputLabelPosition   labelPosition;
   final double                         labelWidth;
@@ -637,7 +638,7 @@ Generated once into `widgets/inputs/`:
 | `input_form_widget.dart` | `InputFormWidget<T>` / `InputFormState<T>` |
 | `input_read_exception.dart` | `InputReadException` |
 | `boolean_labels.dart` | `BooleanLabels` |
-| `field_widgets.dart` | `EnumFieldWidget`, `BoolFieldWidget` ⚡ added (phase 3) |
+| `field_widgets.dart` | `EnumFieldWidget`, `BoolFieldWidget`, `SelectWidget` ⚡ added (phase 3/11) |
 | `text_field_options.dart` | `TextFieldOptions` ⚡ added (phase 4) |
 | `required_indicator.dart` | `RequiredIndicator` ⚡ added (phase 5) |
 | `date_input_config.dart` | `DateInputConfig`, `DateInputMode`, `DateType` ⚡ added (phase 7) |
@@ -645,6 +646,90 @@ Generated once into `widgets/inputs/`:
 | `field_visibility.dart` | `FieldVisibility { enabled, disabled, hidden }` ⚡ added (phase 9) |
 | `simple_field_form.dart` | `SimpleFieldForm<T>` — thin helper for inline field overrides ⚡ added (phase 9) |
 | `input_step_options.dart` | `InputStepOptions` — per-step title/subtitle/isSkippable config ⚡ added (phase 10) |
+| `select_field_config.dart` | `SelectFieldConfig<T>` ⚡ added (phase 11) |
+
+---
+
+### Select fields ⚡ added (phase 11)
+
+Any `String`, `Int`, or `Float` field can become a pick-one widget **at runtime** — no schema change required. Opt-in per field via `${Input}SelectConfig`.
+
+**`SelectWidget`** — added to `field_widgets.dart`:
+
+```dart
+enum SelectWidget { dropdown, chips, radio }
+```
+
+**`SelectFieldConfig<T>`** — generated once into `select_field_config.dart`:
+
+```dart
+class SelectFieldConfig<T> {
+  final List<T> options;
+  final SelectWidget widget;
+  final Widget Function(T)? labelBuilder;
+  const SelectFieldConfig({
+    required this.options,
+    this.widget = SelectWidget.dropdown,
+    this.labelBuilder,
+  });
+}
+```
+
+`labelBuilder` is optional — defaults to `Text(e.toString())`.
+
+**`${Input}SelectConfig`** — companion class generated when the input has at least one `String`, `Int`, or `Float` field:
+
+```dart
+class AddVehicleInputSelectConfig {
+  final SelectFieldConfig<String>? brand;   // String field
+  final SelectFieldConfig<String>? model;   // String field
+  final SelectFieldConfig<int>?    year;    // Int field
+  final SelectFieldConfig<double>? mileage; // Float field
+  final SelectFieldConfig<String>? notes;   // String? field
+  const AddVehicleInputSelectConfig({this.brand, this.model, this.year, this.mileage, this.notes});
+}
+```
+
+Added as `final AddVehicleInputSelectConfig? selectConfig;` on the form widget.
+
+**Widget behaviour** — for each eligible field the generated row method branches at runtime:
+
+```
+selectConfig?.field != null
+    → chips / radio / dropdown driven by selectConfig.widget
+    → each option rendered as ChoiceChip / RadioListTile / DropdownMenuItem
+    → value stored by writing controller.text = e.toString()
+    → read() returns the typed value via int.parse / double.parse / controller.text as before
+else
+    → regular TextFormField / date field (unchanged)
+```
+
+- **Chips**: `ChoiceChip` per option; `side` error border; `field.didChange` on select/deselect.
+- **Radio**: `RadioListTile<T>` per option; `Container` outline error border + `Semantics(label)`.
+- **Dropdown**: `DropdownButtonFormField<T?>` with null hint item; existing `_field` wrapper.
+- All three variants use `FormField` with `autovalidateMode: onUserInteraction` and the standard visibility + custom validator chain.
+- `labelBuilder` is used in every variant — falls back to `Text(e.toString())` when null.
+
+**Priority**: `selectConfig` takes precedence over `dateConfig` (checked first in the row method). A field cannot be both a select field and a date field simultaneously.
+
+**Example:**
+
+```dart
+AddVehicleInputForm(
+  key: _key,
+  selectConfig: AddVehicleInputSelectConfig(
+    brand: SelectFieldConfig(
+      options: ['Toyota', 'Renault', 'Hyundai'],
+      widget: SelectWidget.chips,
+      labelBuilder: (b) => Text(b, style: const TextStyle(fontWeight: FontWeight.w500)),
+    ),
+    year: SelectFieldConfig(
+      options: [2021, 2022, 2023, 2024],
+      widget: SelectWidget.dropdown,
+    ),
+  ),
+)
+```
 
 ---
 
@@ -719,7 +804,7 @@ lib/generated/
 | `lib/src/serializers/flutter_inputs/flutter_inputs_date_serializer.dart` | Date row method + picker helpers ⚡ added (phase 9) |
 | `lib/src/serializers/flutter_inputs/flutter_inputs_state_serializer.dart` | Widget class, state class, layout helpers ⚡ added (phase 9); `_labelWithInfo` helper generated into every state class for info-dialog support |
 | `lib/src/generators/dart_client_generator.dart` | Hooks both serializers, writes shared files |
-| `examples/flutter/ui_types/` | Live example — 14 tabs covering all features (tabs 13-14: onChange, Stepper) ⚡ phase 10 |
+| `examples/flutter/ui_types/` | Live example — 15 tabs covering all features (tab 15: Select Fields) ⚡ phase 11 |
 | `examples/flutter/ui_types/GRAPHLINK_FLUTTER_GUIDE.md` | AI agent reference guide ⚡ added (phase 9) |
 
 ---
@@ -764,6 +849,7 @@ lib/generated/
 38. `@glSkipOnClient` respected — inputs tagged with this directive are skipped by the Flutter input generator. ✅ (phase 10)
 39. `isInputListField` — new type helper for list-of-input fields; missing imports fixed. ✅ (phase 10)
 40. `isPasswordField` — tightened to word-boundary check for `pin`; prevents false positives like `stopingDate`. ✅ (phase 10)
+43. `SelectFieldConfig` — `String`/`Int`/`Float` fields can opt into dropdown/chips/radio at runtime via `${Input}SelectConfig`; no schema change required; `labelBuilder` controls display; `selectConfig` checked before `dateConfig` in row methods. ✅ (phase 11)
 41. `didUpdateWidget` parameter name — fixed to `oldWidget` to match Flutter's override signature. ✅ (phase 10)
 42. Dead helper guard — `_switchBoolField`/`_checkboxBoolField`/`_fieldHelper`/`_decorationHelper` only generated when their actual call sites exist in the form. ✅ (phase 10)
 

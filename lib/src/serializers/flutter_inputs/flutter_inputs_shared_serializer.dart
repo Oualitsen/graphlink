@@ -29,7 +29,7 @@ class InputReadException implements Exception {
 ''';
 
   String serializeSharedFieldWidgets() => '''
-enum EnumFieldWidget { dropdown, chips, radio }
+enum SelectWidget { dropdown, chips, radio }
 
 enum BoolFieldWidget { chips, radio }
 ''';
@@ -230,6 +230,22 @@ class InputStepGroup {
   final Widget? title;
   final Widget? subtitle;
   const InputStepGroup({required this.fields, this.title, this.subtitle});
+}
+''';
+
+  String serializeSharedSelectFieldConfig() => '''
+import 'package:flutter/widgets.dart';
+import 'field_widgets.dart';
+
+class SelectFieldConfig<T> {
+  final List<T> options;
+  final SelectWidget widget;
+  final Widget Function(T)? labelBuilder;
+  const SelectFieldConfig({
+    required this.options,
+    this.widget = SelectWidget.dropdown,
+    this.labelBuilder,
+  });
 }
 ''';
 

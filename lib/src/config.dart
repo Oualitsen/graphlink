@@ -194,6 +194,7 @@ enum RequiredIndicator { none, asterisk, requiredText, optionalText }
 enum StepperOrientation { vertical, horizontal }
 enum TypeLayout { labeledRow, listTile, listTileReversed, expandable }
 enum DateFieldMode { dialog, inline }
+enum FlutterLabelStyle { bold, muted }
 
 class FlutterConfig {
   final List<String> typesToSkip;
@@ -212,6 +213,7 @@ class FlutterConfig {
   final StepperOrientation defaultStepperOrientation;
   final TypeLayout defaultTypeLayout;
   final TypeLayout defaultGroupLayout;
+  final FlutterLabelStyle labelStyle;
   final String defaultDatePattern;
   final int defaultDateFirstYear;
   final int defaultDateLastYear;
@@ -234,6 +236,7 @@ class FlutterConfig {
     this.defaultStepperOrientation = StepperOrientation.vertical,
     this.defaultTypeLayout = TypeLayout.labeledRow,
     this.defaultGroupLayout = TypeLayout.labeledRow,
+    this.labelStyle = FlutterLabelStyle.bold,
     this.defaultDatePattern = 'yyyy-MM-dd',
     this.defaultDateFirstYear = 1900,
     this.defaultDateLastYear = 2100,
@@ -288,6 +291,10 @@ class FlutterConfig {
       defaultGroupLayout: TypeLayout.values.firstWhere(
         (e) => e.name == (json['defaultGroupLayout'] as String? ?? 'labeledRow'),
         orElse: () => TypeLayout.labeledRow,
+      ),
+      labelStyle: FlutterLabelStyle.values.firstWhere(
+        (e) => e.name == (json['labelStyle'] as String? ?? 'bold'),
+        orElse: () => FlutterLabelStyle.bold,
       ),
       defaultDatePattern: (json['defaultDatePattern'] as String?) ?? 'yyyy-MM-dd',
       defaultDateFirstYear: (json['defaultDateFirstYear'] as int?) ?? 1900,

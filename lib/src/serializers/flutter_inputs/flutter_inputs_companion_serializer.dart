@@ -139,7 +139,7 @@ class FlutterInputsCompanionSerializer {
     return _u.createClass(
       className: '${inputName}Widgets',
       statements: [
-        ...enumFields.map((f) => 'final EnumFieldWidget? ${f.name};'),
+        ...enumFields.map((f) => 'final SelectWidget? ${f.name};'),
         ...boolFields.map((f) => 'final BoolFieldWidget? ${f.name};'),
         _u.createMethod(
           isConst: true,
@@ -222,6 +222,21 @@ class FlutterInputsCompanionSerializer {
             if (hasScalarFields) 'this.scalarFields',
             ...stepFields.map((f) => 'this.${f.name}'),
           ],
+        ),
+      ],
+    );
+  }
+
+  String serializeSelectConfigClass(String inputName, List<GLField> textFields) {
+    return _u.createClass(
+      className: '${inputName}SelectConfig',
+      statements: [
+        ...textFields.map((f) => 'final SelectFieldConfig<${_types.dartScalarType(f)}>? ${f.name};'),
+        _u.createMethod(
+          isConst: true,
+          methodName: '${inputName}SelectConfig',
+          namedArguments: true,
+          arguments: textFields.map((f) => 'this.${f.name}').toList(),
         ),
       ],
     );

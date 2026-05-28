@@ -20,6 +20,7 @@ import 'package:flutter_ui_example/generated/widgets/inputs/address_input_form.d
 import 'package:flutter_ui_example/generated/widgets/inputs/person_input_form.dart';
 import 'package:flutter_ui_example/generated/widgets/inputs/simple_field_form.dart';
 import 'package:flutter_ui_example/generated/widgets/inputs/field_widgets.dart';
+import 'package:flutter_ui_example/generated/widgets/inputs/select_field_config.dart';
 import 'package:flutter_ui_example/generated/widgets/inputs/field_visibility.dart';
 import 'package:flutter_ui_example/generated/widgets/inputs/input_read_exception.dart';
 import 'package:flutter_ui_example/generated/widgets/inputs/required_indicator.dart';
@@ -43,7 +44,7 @@ class MyApp extends StatelessWidget {
       title: 'GraphLink Flutter UI Example',
       theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.indigo),
       home: DefaultTabController(
-        length: 16,
+        length: 17,
         child: Scaffold(
           appBar: AppBar(
             title: const Text('GraphLink Flutter UI'),
@@ -66,6 +67,7 @@ class MyApp extends StatelessWidget {
                 Tab(text: 'Stepper'),
                 Tab(text: 'Expandable'),
                 Tab(text: 'Field Info'),
+                Tab(text: 'Select Fields'),
               ],
             ),
           ),
@@ -87,6 +89,7 @@ class MyApp extends StatelessWidget {
               _StepperTab(),
               _ExpandableTab(),
               _FieldInfoTab(),
+              _SelectFieldsTab(),
             ],
           ),
         ),
@@ -632,7 +635,7 @@ class _FieldWidgetsTabState extends State<_FieldWidgetsTab> {
   final _key = GlobalKey<AddVehicleInputFormState>();
   AddVehicleInput? _result;
 
-  EnumFieldWidget _fuelTypeWidget = EnumFieldWidget.dropdown;
+  SelectWidget _fuelTypeWidget = SelectWidget.dropdown;
   BoolFieldWidget _availableWidget = BoolFieldWidget.chips;
 
   @override
@@ -658,20 +661,20 @@ class _FieldWidgetsTabState extends State<_FieldWidgetsTab> {
           // ── fuelType override ───────────────────────────────────────────────
           Text('fuelType widget', style: theme.textTheme.labelLarge),
           const SizedBox(height: 8),
-          SegmentedButton<EnumFieldWidget>(
+          SegmentedButton<SelectWidget>(
             segments: const [
               ButtonSegment(
-                value: EnumFieldWidget.dropdown,
+                value: SelectWidget.dropdown,
                 label: Text('Dropdown'),
                 icon: Icon(Icons.arrow_drop_down_circle_outlined),
               ),
               ButtonSegment(
-                value: EnumFieldWidget.chips,
+                value: SelectWidget.chips,
                 label: Text('Chips'),
                 icon: Icon(Icons.label_outline),
               ),
               ButtonSegment(
-                value: EnumFieldWidget.radio,
+                value: SelectWidget.radio,
                 label: Text('Radio'),
                 icon: Icon(Icons.radio_button_checked_outlined),
               ),
@@ -969,7 +972,7 @@ class _ChipValidationTabState extends State<_ChipValidationTab> {
 
           AddVehicleInputForm(
             key: _key,
-            widgets: const AddVehicleInputWidgets(fuelType: EnumFieldWidget.chips),
+            widgets: const AddVehicleInputWidgets(fuelType: SelectWidget.chips),
             requiredIndicator: _indicator,
             // custom overrides — developer can pass any widget
             requiredLabel: const Text('(mandatory)', style: TextStyle(fontSize: 11, color: Colors.deepOrange)),
@@ -2370,6 +2373,143 @@ class _FieldInfoTabState extends State<_FieldInfoTab> {
       );
     }
   }
+}
+
+// ── Tab 17: Select fields ─────────────────────────────────────────────────────
+
+class _SelectFieldsTab extends StatefulWidget {
+  const _SelectFieldsTab();
+  @override
+  State<_SelectFieldsTab> createState() => _SelectFieldsTabState();
+}
+
+class _SelectFieldsTabState extends State<_SelectFieldsTab> {
+  final _key = GlobalKey<AddVehicleInputFormState>();
+  SelectWidget _brandWidget = SelectWidget.dropdown;
+  SelectWidget _yearWidget = SelectWidget.chips;
+  AddVehicleInput? _result;
+
+  static const _brands = ['Toyota', 'Renault', 'Hyundai', 'Kia', 'Ford', 'BMW'];
+  static const _years = [2019, 2020, 2021, 2022, 2023, 2024];
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Select Fields', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 4),
+          const Text(
+            'Any String, Int, or Float field can become a pick-one widget at runtime '
+            'by providing a SelectFieldConfig. No schema change required.',
+          ),
+          const Divider(height: 24),
+
+          // brand widget picker
+          Text('brand widget', style: Theme.of(context).textTheme.labelSmall),
+          const SizedBox(height: 4),
+          SegmentedButton<SelectWidget>(
+            segments: const [
+              ButtonSegment(value: SelectWidget.dropdown, label: Text('Dropdown')),
+              ButtonSegment(value: SelectWidget.chips, label: Text('Chips')),
+              ButtonSegment(value: SelectWidget.radio, label: Text('Radio')),
+            ],
+            selected: {_brandWidget},
+            onSelectionChanged: (s) => setState(() => _brandWidget = s.first),
+          ),
+
+          const SizedBox(height: 12),
+
+          // year widget picker
+          Text('year widget', style: Theme.of(context).textTheme.labelSmall),
+          const SizedBox(height: 4),
+          SegmentedButton<SelectWidget>(
+            segments: const [
+              ButtonSegment(value: SelectWidget.dropdown, label: Text('Dropdown')),
+              ButtonSegment(value: SelectWidget.chips, label: Text('Chips')),
+              ButtonSegment(value: SelectWidget.radio, label: Text('Radio')),
+            ],
+            selected: {_yearWidget},
+            onSelectionChanged: (s) => setState(() => _yearWidget = s.first),
+          ),
+
+          const Divider(height: 24),
+
+          AddVehicleInputForm(
+            key: _key,
+            // brand: String select — custom labels show display name
+            // year: Int select — picker from a fixed list of model years
+            selectConfig: AddVehicleInputSelectConfig(
+              brand: SelectFieldConfig(
+                options: _brands,
+                widget: _brandWidget,
+                labelBuilder: (b) => Text(b, style: const TextStyle(fontWeight: FontWeight.w500)),
+              ),
+              year: SelectFieldConfig(
+                options: _years,
+                widget: _yearWidget,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: _submit,
+              child: const Text('Submit'),
+            ),
+          ),
+
+          if (_result != null) ...[
+            const SizedBox(height: 16),
+            const Divider(),
+            const Text('Result:', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _row('brand', _result!.brand),
+                    _row('model', _result!.model),
+                    _row('year', _result!.year.toString()),
+                    _row('fuelType', _result!.fuelType.name),
+                    _row('available', _result!.available.toString()),
+                    _row('mileage', _result!.mileage?.toString() ?? '—'),
+                    _row('notes', _result!.notes ?? '—'),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _submit() {
+    try {
+      setState(() => _result = _key.currentState!.read());
+    } on InputReadException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  Widget _row(String label, String value) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          children: [
+            SizedBox(width: 90, child: Text('$label:', style: const TextStyle(fontWeight: FontWeight.bold))),
+            Expanded(child: Text(value)),
+          ],
+        ),
+      );
 }
 
 // ── Shared result display ─────────────────────────────────────────────────────

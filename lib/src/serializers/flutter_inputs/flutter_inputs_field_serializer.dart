@@ -152,7 +152,7 @@ class FlutterInputsFieldSerializer {
     final validators = _validatorStatements(name, [
       if (!nullable) "if (v == null) return _form.strings.required;",
     ]);
-    final errorText = _errorTextWidget();
+    final errorText = errorTextWidget();
 
     final chipsCase = 'return ${_u.callExpression('FormField<$enumType?>', [
       'initialValue: _$name',
@@ -219,8 +219,8 @@ class FlutterInputsFieldSerializer {
         _u.switchStatement(
           expression: '_form.widgets?.$name',
           cases: [
-            DartCaseStatement(caseValue: 'EnumFieldWidget.chips', statement: chipsCase),
-            DartCaseStatement(caseValue: 'EnumFieldWidget.radio', statement: radioCase),
+            DartCaseStatement(caseValue: 'SelectWidget.chips', statement: chipsCase),
+            DartCaseStatement(caseValue: 'SelectWidget.radio', statement: radioCase),
           ],
           defaultStatements: ['return _field(label, $dropdownExpr);'],
         ),
@@ -253,7 +253,7 @@ class FlutterInputsFieldSerializer {
         ? 'return _field(label, ${boolFieldExpr(f, 'enabled')});'
         : 'return ${boolFieldExpr(f, 'enabled')};';
 
-    final errorText = _errorTextWidget();
+    final errorText = errorTextWidget();
     final errorBorderDecoration = 'field.hasError ? ${_u.callExpression('BoxDecoration', [
       'border: Border.all(color: Theme.of(context).colorScheme.error)',
       'borderRadius: BorderRadius.circular(4)',
@@ -602,7 +602,7 @@ class FlutterInputsFieldSerializer {
     'return _form.validations?.$name?.call(v, _ctx);',
   ];
 
-  String _errorTextWidget() => _u.inlineIfStatement(
+  String errorTextWidget() => _u.inlineIfStatement(
         condition: 'field.errorText != null',
         statement: _u.callExpression('Semantics', [
           'liveRegion: true',

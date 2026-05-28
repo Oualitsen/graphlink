@@ -118,6 +118,7 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
       List<String>? positionalArguments,
       List<String>? arguments,
       bool namedArguments = true,
+      List<String>? initializers,
       List<String>? statements,
       bool async = false,
       bool isConst = false,
@@ -145,6 +146,9 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
     }
     if (async) {
       buffer.write(" async");
+    }
+    if (initializers != null && initializers.isNotEmpty) {
+      buffer.write(' : ${initializers.join(', ')}');
     }
     if (statements != null) {
       buffer.write(" ");

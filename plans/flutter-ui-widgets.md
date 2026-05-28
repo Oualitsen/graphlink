@@ -99,6 +99,26 @@ class VehicleVisibility {
 }
 ```
 
+**`VehicleShowOnly`** — inverse of `VehicleVisibility`: all fields default to `false`; set specific fields to `true` to show only those. Converts to a `VehicleVisibility` via `toVisibility()`. Pass it to the widget via `showOnly:`; using both `visibility` and `showOnly` on the same widget triggers an `assert`.
+```dart
+class VehicleShowOnly {
+  final bool id;
+  final bool brand;
+  // ... all default to false
+  const VehicleShowOnly({this.id = false, this.brand = false, ...});
+  VehicleVisibility toVisibility() => VehicleVisibility(id: id, brand: brand, ...);
+}
+```
+
+Usage:
+```dart
+VehicleWidget(vehicle, showOnly: VehicleShowOnly(brand: true, mileage: true))
+// → only brand and mileage are visible; all other fields hidden
+
+// Using both raises an assert in debug mode:
+VehicleWidget(vehicle, visibility: VehicleVisibility(), showOnly: VehicleShowOnly()) // ❌ assert fires
+```
+
 **`VehicleEnumLabels`** — per-value label overrides for every enum field in the type, including list-of-enum fields. Each field holds a `FuelTypeLabels?`. `null` field = use default for that enum field; `null` widget inside = use `Text(value.name)` (or `Chip(label: Text(value.name))` for list fields) for that specific value.
 ```dart
 class VehicleEnumLabels {
@@ -122,6 +142,7 @@ class VehicleWidget extends StatelessWidget {
   final VehicleLabels? labels;
   final VehicleValues? values;
   final VehicleVisibility? visibility;
+  final VehicleShowOnly? showOnly;
   final VehicleOrder? order;
   final VehicleEnumLabels? enumLabels;
   final VehicleLayout layout;
@@ -135,13 +156,15 @@ class VehicleWidget extends StatelessWidget {
     this.labels,
     this.values,
     this.visibility,
+    this.showOnly,
     this.order,
     this.enumLabels,
     this.layout = VehicleLayout.labeledRow,
     this.groupLayout = VehicleLayout.labeledRow,
     this.gap = 16,
     this.strings = const FormStrings(),
-  });
+  }) : assert(visibility == null || showOnly == null,
+           'VehicleWidget: use visibility or showOnly, not both');
 
   @override
   Widget build(BuildContext context) { ... }
@@ -247,7 +270,11 @@ Per-enum labels classes live in `widgets/enums/` and are generated once regardle
 | `lib/src/model/gl_type_definition.dart` | Added `final bool isResponseType` (default `false`) |
 | `lib/src/model/gl_queries.dart` | Sets `isResponseType: true` in `getGeneratedTypeDefinition()` |
 | `lib/src/dart_code_gen_utils.dart` | Added `extendsClassName` to `createClass`; added `isConst`/`positionalArguments` to `createMethod`; added `switchExpression` + `DartSwitchExpressionCase` |
-| `lib/src/serializers/flutter_types_serializer.dart` | New — `FlutterTypesSerializer`; also emits per-enum `FuelTypeLabels` classes into `widgets/enums/`; generates `VehicleOrder` for field reordering and `toTableHeaderRow()` for table header rows; adds `String? ${field}Info` / `$groupInfo` to `VehicleLabels` with `_labelWithInfo` dialog helper |
+| `lib/src/serializers/flutter_types_serializer.dart` | Thin orchestrator — delegates to `flutter_types/` sub-serializers; emits per-enum `FuelTypeLabels` classes into `widgets/enums/`; wires `VehicleShowOnly` into the widget |
+| `lib/src/serializers/flutter_types/flutter_types_companion_serializer.dart` | Generates Labels, Values, Visibility, **ShowOnly**, Order, EnumLabels companion classes |
+| `lib/src/serializers/flutter_types/flutter_types_layout_serializer.dart` | All layout method bodies; resolves `showOnly?.toVisibility() ?? visibility` |
+| `lib/src/serializers/flutter_types/flutter_types_value_renderer.dart` | `defaultValueExpression`, `labelTextWidget`, `humanize` |
+| `lib/src/serializers/flutter_types/flutter_types_constants.dart` | Shared `flutterInternalTypes` / `flutterInternalEnums` sets |
 | `lib/src/generators/dart_client_generator.dart` | Hooks `FlutterTypesSerializer` when `flutter.generateTypes` is enabled |
 | `examples/flutter/ui_types/` | New Flutter 3.32.7 example project |
 
