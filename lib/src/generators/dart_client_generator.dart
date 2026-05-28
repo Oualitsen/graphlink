@@ -186,6 +186,13 @@ Future<Set<String>> generateDartClientClasses(
       imports: [],
       destinationDir: destinationDir,
     ));
+    futures.add(writeToFile(
+      data: inputsSerializer.serializeSharedSelectFieldConfig(),
+      fileName: 'select_field_config.dart',
+      subdir: 'widgets/inputs',
+      imports: [],
+      destinationDir: destinationDir,
+    ));
 
     parser.inputs.forEach((k, def) {
       final content = inputsSerializer.serializeInputForm(def);
