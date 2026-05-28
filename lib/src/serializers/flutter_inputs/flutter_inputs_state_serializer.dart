@@ -67,6 +67,7 @@ class FlutterInputsStateSerializer {
         if (enumFields.isNotEmpty || boolFields.isNotEmpty) 'final ${inputName}Widgets? widgets;',
         if (textFields.isNotEmpty) 'final ${inputName}TextConfig? textConfig;',
         if (dateEligibleFields.isNotEmpty) 'final ${inputName}DateConfig? dateConfig;',
+        if (textFields.isNotEmpty) 'final ${inputName}SelectConfig? selectConfig;',
         'final ${inputName}Layout layout;',
         'final ${inputName}LabelPosition labelPosition;',
         'final double labelWidth;',
@@ -111,6 +112,7 @@ class FlutterInputsStateSerializer {
             if (enumFields.isNotEmpty || boolFields.isNotEmpty) 'this.widgets',
             if (textFields.isNotEmpty) 'this.textConfig',
             if (dateEligibleFields.isNotEmpty) 'this.dateConfig',
+            if (textFields.isNotEmpty) 'this.selectConfig',
             'this.layout = ${inputName}Layout.${_config.defaultFormLayout.name}',
             'this.labelPosition = ${inputName}LabelPosition.${_config.defaultLabelPosition.name}',
             'this.labelWidth = ${_config.defaultLabelWidth % 1 == 0 ? _config.defaultLabelWidth.toInt() : _config.defaultLabelWidth}',
@@ -276,16 +278,16 @@ class FlutterInputsStateSerializer {
           ],
         ),
         if (hasSubInputs) _serializeBuildStepsMethod(inputName, stepBuckets, hasScalarFields),
-        if (hasSubInputs) _serializeScalarRowsMethod(inputName, fields, textFields, enumFields, boolFields, listFields, dateEligibleFields),
+        if (hasSubInputs) _serializeScalarRowsMethod(inputName, fields, textFields, enumFields, boolFields, listFields),
         if (hasSubInputs) _serializeValidateAndReadCurrentStepMethod(inputName, stepBuckets),
         if (hasSubInputs) _serializeOnStepContinueMethod(stepBuckets.length),
         if (hasSubInputs) _serializeOnStepCancelMethod(),
         if (hasSubInputs) _serializeBuildStepControlsMethod(stepBuckets.length),
-        _serializeVisibleRowsMethod('_visibleRows', inputName, fields, textFields, enumFields, boolFields, listFields, dateEligibleFields, inputFields),
+        _serializeVisibleRowsMethod('_visibleRows', inputName, fields, textFields, enumFields, boolFields, listFields, inputFields),
         _buildContextMethod(inputName, fields.where((f) => !_types.isInputField(f)).toList()),
         ...enumFields.map(_fields.enumRowMethod),
         ...boolFields.map(_fields.boolRowMethod),
-        ...dateEligibleFields.map(_date.dateRowMethod),
+        ...textFields.map(_date.scalarRowMethod),
         ...inputFields.map(_inputFieldRowMethod),
         _requiredLabelHelper(inputName),
         _labelWithInfoHelper(inputName),
@@ -552,7 +554,6 @@ class FlutterInputsStateSerializer {
     List<GLField> enumFields,
     List<GLField> boolFields,
     List<GLField> listFields,
-    List<GLField> dateEligibleFields,
     List<GLField> inputFields,
   ) {
     final visDecls = fields.map((f) =>
@@ -560,7 +561,7 @@ class FlutterInputsStateSerializer {
 
     final rowLines = _buildFieldLines(
       inputName,
-      fields, textFields, enumFields, boolFields, listFields, dateEligibleFields, inputFields,
+      fields, textFields, enumFields, boolFields, listFields, inputFields,
       (f, idx, w) => "entries.add(MapEntry(ord.${f.name} ?? $idx, $w))",
     );
 
@@ -988,14 +989,13 @@ class FlutterInputsStateSerializer {
     List<GLField> enumFields,
     List<GLField> boolFields,
     List<GLField> listFields,
-    List<GLField> dateEligibleFields,
     List<GLField> inputFields,
     String Function(GLField f, int defaultIdx, String widgetExpr) accumulate,
   ) {
     final directFields = {
       ...listFields.where((f) => _types.isEnumListField(f) || _types.isScalarListField(f)),
     };
-    final rowMethodFields = {...enumFields, ...boolFields, ...dateEligibleFields, ...inputFields};
+    final rowMethodFields = {...enumFields, ...boolFields, ...inputFields};
 
     return fields.asMap().entries.map((entry) {
       final i = entry.key;
@@ -1010,8 +1010,8 @@ class FlutterInputsStateSerializer {
       final String widgetExpr;
       if (inputFields.contains(f)) {
         widgetExpr = '_${f.name}InputRow(label, $enabledExpr)';
-      } else if (dateEligibleFields.contains(f)) {
-        widgetExpr = '_form.values?.${f.name}?.call(_${f.name}OverrideKey) ?? _${f.name}DateRow(label, $enabledExpr)';
+      } else if (textFields.contains(f)) {
+        widgetExpr = '_form.values?.${f.name}?.call(_${f.name}OverrideKey) ?? _${f.name}ScalarRow(label, $enabledExpr)';
       } else if (rowMethodFields.contains(f)) {
         widgetExpr = '_form.values?.${f.name}?.call(_${f.name}OverrideKey) ?? _${f.name}Row(label, $enabledExpr)';
       } else if (directFields.contains(f)) {
@@ -1104,8 +1104,7 @@ class FlutterInputsStateSerializer {
       List<GLField> textFields,
       List<GLField> enumFields,
       List<GLField> boolFields,
-      List<GLField> listFields,
-      List<GLField> dateEligibleFields) {
+      List<GLField> listFields) {
     final scalarFields = fields
         .where((f) => !_types.isInputField(f) && !_types.isInputListField(f))
         .toList();
@@ -1120,7 +1119,6 @@ class FlutterInputsStateSerializer {
       enumFields,
       boolFields,
       scalarListFields,
-      dateEligibleFields,
       [],
     );
   }
