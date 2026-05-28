@@ -162,6 +162,8 @@ class FlutterInputsSerializer {
     buffer.writeln(_state.serializeWidgetClass(inputName, listFields, formFields, enumFields, boolFields, textFields, dateEligibleFields, inputFields, inputListFields));
     buffer.writeln();
     buffer.write(_state.serializeStateClass(inputName, fields, listFields, textFields, enumFields, boolFields, intFields, dateEligibleFields, inputFields));
+    buffer.writeln();
+    buffer.writeln(_state.serializeErrorSummaryClass(inputName, fields, textFields, enumFields, boolFields));
 
     return buffer.toString();
   }
