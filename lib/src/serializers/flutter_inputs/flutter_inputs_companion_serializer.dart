@@ -242,6 +242,21 @@ class FlutterInputsCompanionSerializer {
     );
   }
 
+  String serializeFocusNodesClass(String inputName, List<GLField> textFields) {
+    return _u.createClass(
+      className: '${inputName}FocusNodes',
+      statements: [
+        ...textFields.map((f) => 'final FocusNode? ${f.name};'),
+        _u.createMethod(
+          isConst: true,
+          methodName: '${inputName}FocusNodes',
+          namedArguments: true,
+          arguments: textFields.map((f) => 'this.${f.name}').toList(),
+        ),
+      ],
+    );
+  }
+
   String? _heuristicDateConfig(GLField f) {
     final n = f.name.token.toLowerCase();
     if (n.endsWith('at')) return 'const DateInputConfig(type: DateType.dateTime)';

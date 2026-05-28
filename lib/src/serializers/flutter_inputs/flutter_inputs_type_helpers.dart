@@ -79,9 +79,9 @@ class FlutterInputsTypeHelpers {
 
   String validatorType(GLField f, List<GLField> enumFields, List<GLField> boolFields, String inputName) {
     final ctx = '${inputName}FormContext';
-    if (enumFields.contains(f)) return 'String? Function(${f.type.firstType.token}?, $ctx)?';
-    if (boolFields.contains(f)) return 'String? Function(bool?, $ctx)?';
-    return 'String? Function(String?, $ctx)?';
+    if (enumFields.contains(f)) return 'FutureOr<String?> Function(${f.type.firstType.token}?, $ctx)?';
+    if (boolFields.contains(f)) return 'FutureOr<String?> Function(bool?, $ctx)?';
+    return 'FutureOr<String?> Function(String?, $ctx)?';
   }
 
   // ── Values / override helpers ────────────────────────────────────────────────

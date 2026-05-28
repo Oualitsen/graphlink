@@ -68,6 +68,7 @@ class FlutterInputsStateSerializer {
         if (textFields.isNotEmpty) 'final ${inputName}TextConfig? textConfig;',
         if (dateEligibleFields.isNotEmpty) 'final ${inputName}DateConfig? dateConfig;',
         if (textFields.isNotEmpty) 'final ${inputName}SelectConfig? selectConfig;',
+        if (textFields.isNotEmpty) 'final ${inputName}FocusNodes? focusNodes;',
         'final ${inputName}Layout layout;',
         'final ${inputName}LabelPosition labelPosition;',
         'final double labelWidth;',
@@ -113,6 +114,7 @@ class FlutterInputsStateSerializer {
             if (textFields.isNotEmpty) 'this.textConfig',
             if (dateEligibleFields.isNotEmpty) 'this.dateConfig',
             if (textFields.isNotEmpty) 'this.selectConfig',
+            if (textFields.isNotEmpty) 'this.focusNodes',
             'this.layout = ${inputName}Layout.${_config.defaultFormLayout.name}',
             'this.labelPosition = ${inputName}LabelPosition.${_config.defaultLabelPosition.name}',
             'this.labelWidth = ${_config.defaultLabelWidth % 1 == 0 ? _config.defaultLabelWidth.toInt() : _config.defaultLabelWidth}',
@@ -169,11 +171,20 @@ class FlutterInputsStateSerializer {
     // list-of-inputs interleaved in schema declaration order.
     final stepBuckets = _buildStepBuckets(fields, hasScalarFields, inputFields, inputListFields);
 
+    final validatableFields = [...textFields, ...enumFields, ...boolFields];
+
     final stateVarDecls = <String>[
       'final _formKey = GlobalKey<FormState>();',
       '${formName} get _form => widget as ${formName};',
       'Timer? _debounceTimer;',
       'bool _isResetting = false;',
+      'bool _submitting = false;',
+      'bool _asyncNotifying = false;',
+      'final _errorsNotifier = ValueNotifier<Map<String, String>>({});',
+      if (validatableFields.isNotEmpty) '// async validation state',
+      ...validatableFields.map((f) => 'bool _${f.name}Validating = false;'),
+      ...validatableFields.map((f) => 'String? _${f.name}AsyncError;'),
+      ...validatableFields.map((f) => 'Timer? _${f.name}AsyncTimer;'),
       if (hasSubInputs) 'int _currentStep = 0;',
       if (textFields.isNotEmpty) '// text controllers',
       ...textFields.map((f) => 'late final TextEditingController _${f.name}Controller;'),
@@ -196,6 +207,9 @@ class FlutterInputsStateSerializer {
       ...dateEligibleFields.map((f) => 'bool _${f.name}CalendarOpen = false;'),
       if (inputFields.isNotEmpty) '// nested input keys',
       ...inputFields.map((f) => 'final _${f.name}Key = GlobalKey<${f.type.firstType.token}FormState>();'),
+      '// field keys — used by _scrollToFirstError to locate first invalid field',
+      ...fields.where((f) => textFields.contains(f) || enumFields.contains(f) || boolFields.contains(f))
+          .map((f) => 'final _${f.name}FieldKey = GlobalKey<FormFieldState>();'),
       '// field override keys',
       ...fields.where((f) => !_types.isInputField(f)).map((f) =>
           'final _${f.name}OverrideKey = GlobalKey<InputFormState<${_types.valuesFieldType(f)}>>();'),
@@ -240,6 +254,8 @@ class FlutterInputsStateSerializer {
 
     final disposeStatements = <String>[
       '_debounceTimer?.cancel();',
+      ...validatableFields.map((f) => '_${f.name}AsyncTimer?.cancel();'),
+      '_errorsNotifier.dispose();',
       ...textFields.map((f) => '_${f.name}Controller.dispose();'),
       'super.dispose();',
     ];
@@ -261,6 +277,29 @@ class FlutterInputsStateSerializer {
             override: true, returnType: 'void', methodName: 'dispose',
             arguments: [], namedArguments: false, statements: disposeStatements),
         _serializeResetMethod(textFields, enumFields, boolFields, listFields, inputFields, hasSubInputs),
+        _serializeIsDirtyGetter(textFields, enumFields, boolFields, listFields, inputFields),
+        _serializeScrollToFirstErrorMethod(inputName, fields, textFields, enumFields, boolFields),
+        _updateErrorsNotifierMethod(inputName, fields, textFields, enumFields, boolFields),
+        _scrollToFieldMethod(inputName, fields, textFields, enumFields, boolFields),
+        '@override\nbool get isSubmitting => _submitting;',
+        validatableFields.isEmpty
+            ? 'bool get _isAsyncValidating => false;'
+            : 'bool get _isAsyncValidating => ${validatableFields.map((f) => '_${f.name}Validating').join(' || ')};',
+        'ValueNotifier<Map<String, String>> get errorsNotifier => _errorsNotifier;',
+        _u.createMethod(
+          override: true,
+          returnType: 'void',
+          methodName: 'setSubmitting',
+          namedArguments: false,
+          arguments: ['bool value'],
+          statements: [
+            'setState(() => _submitting = value);',
+            // propagate to sub-input forms so stepper child forms are also disabled
+            ...inputFields.map((f) => '_${f.name}Key.currentState?.setSubmitting(value);'),
+            // cancel any in-flight async validation when submitting
+            ...validatableFields.map((f) => '_${f.name}AsyncTimer?.cancel();'),
+          ],
+        ),
         _serializeBuildMethod(inputName, hasSubInputs),
         _serializeValidateMethod(inputFields),
         _serializeBuildResultMethod(inputName, textFields, enumFields, boolFields, listFields, inputFields),
@@ -295,6 +334,8 @@ class FlutterInputsStateSerializer {
         _onFieldChangedMethod(),
         _notifyContextChangeMethod(),
         _scheduleOnChangeMethod(),
+        _scheduleAllAsyncValidationsMethod(validatableFields),
+        ..._asyncSchedulerMethods(validatableFields, textFields),
         if (_needsFieldHelper(textFields, enumFields, boolFields, inputListFields)) _fieldHelper(inputName),
         if (_types.needsSwitchBoolHelper(boolFields)) _switchBoolFieldHelper(inputName),
         if (_types.needsCheckboxBoolHelper(boolFields)) _checkboxBoolFieldHelper(inputName),
@@ -355,8 +396,13 @@ class FlutterInputsStateSerializer {
     // Full reset → clear entire form validation + all sub-forms.
     // Partial reset → only reset explicitly listed sub-input keys; leave validation as-is
     //                 so errors on untouched fields remain visible.
+    final validatableForReset = [...textFields, ...enumFields, ...boolFields];
     final postResetStatements = [
       '_debounceTimer?.cancel();',
+      // Cancel any in-flight async validators and clear their shadow errors.
+      ...validatableForReset.map((f) => '_${f.name}AsyncTimer?.cancel();'),
+      ...validatableForReset.map((f) => '_${f.name}AsyncError = null;'),
+      ...validatableForReset.map((f) => '_${f.name}Validating = false;'),
       _u.ifStatement(
         condition: 'fields == null',
         ifBlockStatements: [
@@ -386,6 +432,96 @@ class FlutterInputsStateSerializer {
             ...postResetStatements,
           ],
           finallyStatements: ['_isResetting = false;'],
+        ),
+      ],
+    );
+  }
+
+  String _serializeIsDirtyGetter(
+    List<GLField> textFields,
+    List<GLField> enumFields,
+    List<GLField> boolFields,
+    List<GLField> listFields,
+    List<GLField> inputFields,
+  ) {
+    final checks = <String>[];
+
+    for (final f in textFields) {
+      checks.add("if (_${f.name}Controller.text != (${_types.initialTextExpr(f)})) return true;");
+    }
+    for (final f in enumFields) {
+      checks.add("if (_${f.name} != _form.initialValues?.${f.name}) return true;");
+    }
+    for (final f in boolFields) {
+      checks.add("if (_${f.name} != (${_types.initialBoolExpr(f)})) return true;");
+    }
+    for (final f in listFields) {
+      if (_types.isEnumListField(f) || _types.isScalarListField(f)) {
+        // Order-insensitive comparison — chips selections are unordered
+        checks.add(
+          "if (_${f.name}.length != _form.${f.name}.length || !_${f.name}.toSet().containsAll(_form.${f.name})) return true;",
+        );
+      } else if (_types.isInputListField(f)) {
+        checks.add("if (_${f.name}OverrideKey.currentState?.isDirty ?? false) return true;");
+      }
+    }
+    for (final f in inputFields) {
+      checks.add("if (_${f.name}Key.currentState?.isDirty ?? false) return true;");
+    }
+
+    final body = _u.block([...checks, 'return false;']);
+    return '@override\nbool get isDirty $body';
+  }
+
+  String _serializeScrollToFirstErrorMethod(
+    String inputName,
+    List<GLField> fields,
+    List<GLField> textFields,
+    List<GLField> enumFields,
+    List<GLField> boolFields,
+  ) {
+    final scrollableFields = fields
+        .where((f) => textFields.contains(f) || enumFields.contains(f) || boolFields.contains(f))
+        .toList();
+
+    if (scrollableFields.isEmpty) {
+      return _u.createMethod(
+        returnType: 'void',
+        methodName: '_scrollToFirstError',
+        arguments: [],
+        namedArguments: false,
+        statements: [],
+      );
+    }
+
+    final addEntries = scrollableFields.map((f) {
+      final defaultIdx = 1000 + fields.indexOf(f);
+      return "entries.add(MapEntry(ord.${f.name} ?? $defaultIdx, _${f.name}FieldKey));";
+    }).toList();
+
+    return _u.createMethod(
+      returnType: 'void',
+      methodName: '_scrollToFirstError',
+      arguments: [],
+      namedArguments: false,
+      statements: [
+        'final ord = _form.order ?? const ${inputName}Order();',
+        'final entries = <MapEntry<int, GlobalKey<FormFieldState>>>[];',
+        ...addEntries,
+        'entries.sort((a, b) => a.key.compareTo(b.key));',
+        _u.forEachLoop(
+          variable: 'e',
+          iterable: 'entries',
+          statements: [
+            'final ctx = e.value.currentContext;',
+            _u.ifStatement(
+              condition: 'ctx != null && (e.value.currentState?.hasError ?? false)',
+              ifBlockStatements: [
+                'Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);',
+                'return;',
+              ],
+            ),
+          ],
         ),
       ],
     );
@@ -506,8 +642,19 @@ class FlutterInputsStateSerializer {
         namedArguments: false,
         statements: [
           _u.ifStatement(
+            condition: '_submitting',
+            ifBlockStatements: ["throw InputReadException('Form is submitting');"],
+          ),
+          _u.ifStatement(
+            condition: '_isAsyncValidating',
+            ifBlockStatements: ["throw InputReadException('Async validation in progress');"],
+          ),
+          _u.ifStatement(
             condition: '!validate()',
-            ifBlockStatements: ["throw InputReadException('Validation failed');"],
+            ifBlockStatements: [
+              '_scrollToFirstError();',
+              "throw InputReadException('Validation failed');",
+            ],
           ),
           'return _buildResult();',
         ],
@@ -535,11 +682,13 @@ class FlutterInputsStateSerializer {
       arguments: [],
       namedArguments: false,
       statements: [
+        'if (_isAsyncValidating) return false;',
         'var _valid = _formKey.currentState?.validate() ?? false;',
         // Use &= (non-short-circuit) so every sub-form is validated even if a previous one failed.
         // currentState is null when a sub-form is hidden/unmounted — ?? true treats it as valid.
         ...inputFields.map((f) =>
             '_valid &= _${f.name.token}Key.currentState?.validate() ?? true;'),
+        '_updateErrorsNotifier();',
         'return _valid;',
       ],
     );
@@ -931,6 +1080,8 @@ class FlutterInputsStateSerializer {
           _u.inlineIfStatement(condition: '!mounted', statement: 'return;'),
           '_notifyContextChange();',
           '_scheduleOnChange();',
+          'if (!_asyncNotifying) _scheduleAllAsyncValidations();',
+          '_updateErrorsNotifier();',
         ],
       );
 
@@ -1001,7 +1152,7 @@ class FlutterInputsStateSerializer {
       final i = entry.key;
       final f = entry.value;
       final humanLabel = _types.humanize(f.name.token);
-      final enabledExpr = '_${f.name}Vis == FieldVisibility.enabled';
+      final enabledExpr = '!_submitting && _${f.name}Vis == FieldVisibility.enabled';
       final fieldWidget = _fields.fieldWidgetExpr(f, textFields, enumFields, boolFields, listFields, enabledExpr);
       final defaultIdx = 1000 + i;
       final isRequired = !f.type.nullable;
@@ -1234,7 +1385,7 @@ class FlutterInputsStateSerializer {
               ]),
               // Next / Submit
               _u.callExpression('ElevatedButton', [
-                'onPressed: details.onStepContinue',
+                'onPressed: _submitting ? null : details.onStepContinue',
                 'child: Text(isLast ? _form.stepperStrings.submit : _form.stepperStrings.next)',
               ]),
             ]),
@@ -1247,6 +1398,205 @@ class FlutterInputsStateSerializer {
         ? inputName.substring(0, inputName.length - 5)
         : inputName;
     return _types.humanize(withoutSuffix);
+  }
+
+  // ── Async validation scheduling ───────────────────────────────────────────────
+
+  String _scheduleAllAsyncValidationsMethod(List<GLField> validatableFields) =>
+      _u.createMethod(
+        returnType: 'void',
+        methodName: '_scheduleAllAsyncValidations',
+        arguments: [],
+        namedArguments: false,
+        statements: validatableFields.map((f) {
+          final cap = '${f.name.token[0].toUpperCase()}${f.name.token.substring(1)}';
+          return '_schedule${cap}AsyncValidation();';
+        }).toList(),
+      );
+
+  List<String> _asyncSchedulerMethods(List<GLField> validatableFields, List<GLField> textFields) =>
+      validatableFields.map((f) {
+        final name = f.name.token;
+        final cap = '${name[0].toUpperCase()}${name.substring(1)}';
+        final valueExpr = textFields.contains(f) ? '_${name}Controller.text' : '_$name';
+        return _u.createMethod(
+          returnType: 'void',
+          methodName: '_schedule${cap}AsyncValidation',
+          arguments: [],
+          namedArguments: false,
+          statements: [
+            '_${name}AsyncTimer?.cancel();',
+            'if (_form.validations?.$name == null) return;',
+            '_${name}AsyncTimer = Timer(_form.debounceDuration, () async ${_u.block([
+              'if (!mounted) return;',
+              '_asyncNotifying = true;',
+              'setState(() { _${name}Validating = true; _${name}AsyncError = null; });',
+              '_asyncNotifying = false;',
+              'final _r = await _form.validations!.$name!($valueExpr, _buildContext());',
+              'if (!mounted) return;',
+              '_asyncNotifying = true;',
+              'setState(() { _${name}Validating = false; _${name}AsyncError = _r; });',
+              '_asyncNotifying = false;',
+              '_${name}FieldKey.currentState?.validate();',
+              '_updateErrorsNotifier();',
+            ])});',
+          ],
+        );
+      }).toList();
+
+  // ── Error summary support ─────────────────────────────────────────────────────
+
+  String _updateErrorsNotifierMethod(
+    String inputName,
+    List<GLField> allFields,
+    List<GLField> textFields,
+    List<GLField> enumFields,
+    List<GLField> boolFields,
+  ) {
+    final scrollableFields = allFields
+        .where((f) => textFields.contains(f) || enumFields.contains(f) || boolFields.contains(f))
+        .toList();
+
+    if (scrollableFields.isEmpty) {
+      return _u.createMethod(
+        returnType: 'void', methodName: '_updateErrorsNotifier',
+        arguments: [], namedArguments: false, statements: [],
+      );
+    }
+
+    final addEntries = scrollableFields.map((f) {
+      final defaultIdx = 1000 + allFields.indexOf(f);
+      return _u.ifStatement(
+        condition: "_${f.name}FieldKey.currentState?.hasError == true",
+        ifBlockStatements: [
+          "entries.add(MapEntry(ord.${f.name} ?? $defaultIdx, MapEntry('${f.name.token}', _${f.name}FieldKey.currentState!.errorText!)));",
+        ],
+      );
+    }).toList();
+
+    return _u.createMethod(
+      returnType: 'void',
+      methodName: '_updateErrorsNotifier',
+      arguments: [],
+      namedArguments: false,
+      statements: [
+        'final ord = _form.order ?? const ${inputName}Order();',
+        'final entries = <MapEntry<int, MapEntry<String, String>>>[];',
+        ...addEntries,
+        'entries.sort((a, b) => a.key.compareTo(b.key));',
+        '_errorsNotifier.value = Map.fromEntries(entries.map((e) => e.value));',
+      ],
+    );
+  }
+
+  String _scrollToFieldMethod(
+    String inputName,
+    List<GLField> allFields,
+    List<GLField> textFields,
+    List<GLField> enumFields,
+    List<GLField> boolFields,
+  ) {
+    final scrollableFields = allFields
+        .where((f) => textFields.contains(f) || enumFields.contains(f) || boolFields.contains(f))
+        .toList();
+
+    final cases = scrollableFields.map((f) => DartCaseStatement(
+      caseValue: "'${f.name.token}'",
+      statement: _u.block([
+        'final ctx = _${f.name}FieldKey.currentContext;',
+        'if (ctx != null) Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);',
+      ]),
+    )).toList();
+
+    return _u.createMethod(
+      returnType: 'void',
+      methodName: 'scrollToField',
+      namedArguments: false,
+      arguments: ['String fieldName'],
+      statements: [
+        _u.switchStatement(expression: 'fieldName', cases: cases, defaultStatements: []),
+      ],
+    );
+  }
+
+  String serializeErrorSummaryClass(
+    String inputName,
+    List<GLField> allFields,
+    List<GLField> textFields,
+    List<GLField> enumFields,
+    List<GLField> boolFields,
+  ) {
+    final scrollableFields = allFields
+        .where((f) => textFields.contains(f) || enumFields.contains(f) || boolFields.contains(f))
+        .toList();
+
+    final labelCases = scrollableFields
+        .map((f) => "case '${f.name.token}': return '${_types.humanize(f.name.token)}';")
+        .join('\n      ');
+
+    return '''
+class ${inputName}ErrorSummary extends StatefulWidget {
+  final GlobalKey<${inputName}FormState> formKey;
+  const ${inputName}ErrorSummary({required this.formKey, super.key});
+
+  @override
+  State<${inputName}ErrorSummary> createState() => _${inputName}ErrorSummaryState();
+}
+
+class _${inputName}ErrorSummaryState extends State<${inputName}ErrorSummary> {
+  @override
+  void initState() {
+    super.initState();
+    // Trigger a rebuild once the form state is available.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  String _label(String field) {
+    switch (field) {
+      $labelCases
+      default: return field;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = widget.formKey.currentState;
+    if (state == null) return const SizedBox.shrink();
+    return ListenableBuilder(
+      listenable: state.errorsNotifier,
+      builder: (context, _) {
+        final errors = state.errorsNotifier.value;
+        if (errors.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: errors.entries.map((e) => Semantics(
+            liveRegion: true,
+            child: InkWell(
+              onTap: () => widget.formKey.currentState?.scrollToField(e.key),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '\${_label(e.key)}: \${e.value}',
+                        style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          )).toList(),
+        );
+      },
+    );
+  }
+}''';
   }
 
   // _field is used by: text fields, enum fields, tristate bool, date fields, and input list fields (catch-all).

@@ -15,6 +15,9 @@ abstract class InputFormState<T> extends State<InputFormWidget<T>> {
   T read();
   bool validate() => true;
   void reset({List<String>? fields}) {}
+  bool get isDirty => false;
+  bool get isSubmitting => false;
+  void setSubmitting(bool value) {}
 }
 ''';
 
