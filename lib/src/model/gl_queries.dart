@@ -83,7 +83,7 @@ class GLQueryDefinition extends GLToken with GLDirectivesMixin {
       result = _glFullResponse = GLTypeDefinition(name: tokenInfo.ofNewName(_fullResponseName()), nameDeclared: false, fields: [
         GLField(name: "errors".toToken(), type: errorsType, arguments: [], directives: []),
         GLField(name: "data".toToken(), type: dataType, arguments: [], directives: []),
-      ], interfaceNames: {"GraphLinkFullResponse".toToken()}, directives: [], derivedFromType: null, extension: false, isResponseType: true);
+      ], interfaceNames: {}, directives: [], derivedFromType: null, extension: false, isResponseType: true);
       result.addInterface(parser.interfaces["GraphLinkFullResponse"]!);
       result.addDirective(
           GLDirectiveValue(glInternal.toToken(), [], [], generated: true));

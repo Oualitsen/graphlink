@@ -8,6 +8,7 @@ import 'package:glob/list_local_fs.dart';
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/generators/dart_client_generator.dart';
 import 'package:graphlink/src/generators/java_client_generator.dart';
+import 'package:graphlink/src/generators/kotlin_client_generator.dart';
 import 'package:graphlink/src/generators/server_generator.dart';
 import 'package:graphlink/src/generators/typescript_client_generator.dart';
 import 'package:graphlink/src/gl_grammar_io.dart' as grammar_io;
@@ -19,8 +20,10 @@ import 'package:yaml/yaml.dart';
 
 export 'package:graphlink/src/generators/dart_client_generator.dart' show generateDartClientClasses;
 export 'package:graphlink/src/generators/java_client_generator.dart' show generateJavaClientClasses;
+export 'package:graphlink/src/generators/kotlin_client_generator.dart' show generateKotlinClientClasses;
 export 'package:graphlink/src/generators/server_generator.dart' show generateServerClasses;
 export 'package:graphlink/src/generators/typescript_client_generator.dart' show generateTypeScriptClientClasses;
+export 'package:graphlink/src/config.dart' show KotlinClientConfig, KotlinWsAdapter;
 export 'package:graphlink/src/grammar_factory.dart' show createGrammar, buildExtraGql;
 export 'package:graphlink/src/io_utils.dart' show writeToFile, cleanUpObsoleteFiles;
 
@@ -123,6 +126,17 @@ clientConfig.java
   immutableTypeFields             bool    Generate type fields as final           [true]
   inputAsRecord                   bool    Generate inputs as Java records         [false]
   typeAsRecord                    bool    Generate types as Java records          [false]
+
+clientConfig.kotlin
+  packageName                     string  Kotlin package name (required)
+  generateAllFieldsFragments      bool    Generate _all_fields fragments          [true]
+  nullableFieldsRequired          bool    Nullable fields required in ctors       [false]
+  autoGenerateQueries             bool    Auto-generate queries from schema        [true]
+  operationNameAsParameter        bool    Pass operation name as a parameter      [false]
+  captureErrors                   bool    Return full response including errors   [false]
+  inputAsDataClass                bool    Generate inputs as data class           [true]
+  typeAsDataClass                 bool    Generate types as data class            [true]
+  wsAdapter                       string  WS adapter: "okhttp" | "none"          [okhttp]
 
 clientConfig.typescript
   generateAllFieldsFragments      bool    Generate _all_fields fragments          [false]
@@ -307,6 +321,8 @@ void handleGeneration(GeneratorConfig config) async {
         await generateDartClientClasses(grammar, createPrifix(config.outputDir, lang.packageName ?? '') , config, now);
       } else if (lang is TypeScriptClientConfig) {
         await generateTypeScriptClientClasses(grammar, config, now);
+      } else if (lang is KotlinClientConfig) {
+        await generateKotlinClientClasses(grammar, lang.packageName, config, now);
       }
     }
     stdout.writeln('✅ $writeCount file(s) written.');
