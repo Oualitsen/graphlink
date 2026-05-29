@@ -65,12 +65,34 @@ const javaJsonEncoderDecorder = '''
     encode(json: gqlJavaObject!): String!
   }
 
-  interface GraphLinkJsonDecoder 
+  interface GraphLinkJsonDecoder
   ${glDecorators}(${glDecoratorsArgumentName}: ["@FunctionalInterface"], ${glApplyOnClient}: true, ${glApplyOnServer}: false)
    ${glInterfaceFieldAsProperties} ${glInternal} {
      decode(json: String!): gqlJavaMap!
   }
 
+''';
+
+const kotlinJsonEncoderDecoder = '''
+  scalar gqlKotlinMap ${glExternal}(glClass: "Map<String, Any?>")
+  scalar gqlKotlinAny ${glExternal}(glClass: "Any?")
+
+  interface GraphLinkJsonEncoder
+  ${glInterfaceFieldAsProperties} ${glInternal} {
+    encode(json: gqlKotlinAny!): String!
+  }
+
+  interface GraphLinkJsonDecoder
+  ${glInterfaceFieldAsProperties} ${glInternal} {
+    decode(json: String!): gqlKotlinMap!
+  }
+
+''';
+
+const kotlinClientAdapterGql = '''
+  interface GraphLinkClientAdapter ${glInterfaceFieldAsProperties} ${glInternal} {
+    execute(payload: String!): String!
+  }
 ''';
 
 const javaGraphLinkWebSocketAdapter = '''

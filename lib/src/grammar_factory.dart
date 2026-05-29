@@ -35,5 +35,11 @@ String? buildExtraGql(GLParser parser, GeneratorConfig config) {
       javaGraphLinkWebSocketAdapter,
     ].join();
   }
+  if (lang is KotlinClientConfig) {
+    return [
+      kotlinJsonEncoderDecoder,
+      kotlinClientAdapterGql,
+    ].join();
+  }
   return null;
 }
