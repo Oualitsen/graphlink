@@ -6,6 +6,8 @@ enum TypeScriptHttpAdapter { fetch, axios, none }
 
 enum JavaWsAdapter { java11, okhttp, none }
 
+enum KotlinWsAdapter { okhttp, none }
+
 enum JavaJsonCodec { jackson, gson, none }
 
 // ── Abstract base classes ────────────────────────────────────────────────────
@@ -23,7 +25,8 @@ abstract class ClientLanguageConfig {
     if (json['dart'] != null) return DartClientConfig.fromJson(json['dart'] as Map<String, dynamic>);
     if (json['java'] != null) return JavaClientConfig.fromJson(json['java'] as Map<String, dynamic>);
     if (json['typescript'] != null) return TypeScriptClientConfig.fromJson(json['typescript'] as Map<String, dynamic>);
-    throw ArgumentError('clientConfig must specify one of: dart, java, typescript');
+    if (json['kotlin'] != null) return KotlinClientConfig.fromJson(json['kotlin'] as Map<String, dynamic>);
+    throw ArgumentError('clientConfig must specify one of: dart, java, typescript, kotlin');
   }
 }
 
@@ -467,6 +470,54 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
         orElse: () => TypeScriptHttpAdapter.fetch,
       ),
       defaultAlias: json['defaultAlias'] as String?,
+    );
+  }
+}
+
+class KotlinClientConfig extends ClientLanguageConfig {
+  @override final bool generateAllFieldsFragments;
+  @override final bool nullableFieldsRequired;
+  @override final bool autoGenerateQueries;
+  @override final bool operationNameAsParameter;
+  @override final bool immutableTypeFields;
+  @override final bool captureErrors;
+  @override final String? defaultAlias;
+
+  final String packageName;
+  final bool inputAsDataClass;
+  final bool typeAsDataClass;
+  final KotlinWsAdapter wsAdapter;
+
+  KotlinClientConfig({
+    required this.packageName,
+    this.generateAllFieldsFragments = true,
+    this.nullableFieldsRequired = false,
+    this.autoGenerateQueries = true,
+    this.operationNameAsParameter = false,
+    this.captureErrors = false,
+    this.immutableTypeFields = true,
+    this.inputAsDataClass = true,
+    this.typeAsDataClass = true,
+    this.wsAdapter = KotlinWsAdapter.okhttp,
+    this.defaultAlias,
+  });
+
+  factory KotlinClientConfig.fromJson(Map<String, dynamic> json) {
+    return KotlinClientConfig(
+      packageName: json['packageName'] as String,
+      generateAllFieldsFragments: (json['generateAllFieldsFragments'] as bool?) ?? true,
+      nullableFieldsRequired: (json['nullableFieldsRequired'] as bool?) ?? false,
+      autoGenerateQueries: (json['autoGenerateQueries'] as bool?) ?? true,
+      operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
+      captureErrors: (json['captureErrors'] as bool?) ?? false,
+      immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
+      inputAsDataClass: (json['inputAsDataClass'] as bool?) ?? true,
+      typeAsDataClass: (json['typeAsDataClass'] as bool?) ?? true,
+      defaultAlias: json['defaultAlias'] as String?,
+      wsAdapter: KotlinWsAdapter.values.firstWhere(
+        (e) => e.name == json['wsAdapter'],
+        orElse: () => KotlinWsAdapter.okhttp,
+      ),
     );
   }
 }
