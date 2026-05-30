@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.graphlink.test.MutationsTest$CreateUser" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-05-30T03:59:27.326Z" hostname="MacBook-Pro.local" time="0.005">
+  <properties/>
+  <testcase name="response_returnsCreatedUser()" classname="dev.graphlink.test.MutationsTest$CreateUser" time="0.001"/>
+  <testcase name="response_user_hasNestedAddress()" classname="dev.graphlink.test.MutationsTest$CreateUser" time="0.001"/>
+  <testcase name="operationName_isCreateUser()" classname="dev.graphlink.test.MutationsTest$CreateUser" time="0.001"/>
+  <testcase name="inputObject_isSentAsVariables()" classname="dev.graphlink.test.MutationsTest$CreateUser" time="0.001"/>
+  <testcase name="response_user_hasCorrectStatus()" classname="dev.graphlink.test.MutationsTest$CreateUser" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

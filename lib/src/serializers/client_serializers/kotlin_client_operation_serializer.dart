@@ -266,7 +266,9 @@ class KotlinClientOperationSerializer {
     final frags = def.fragments(_ctx.grammar)
         .map((f) => _ctx.gqlSerializer.serializeFragmentDefinitionBase(f))
         .join(' ');
-    return frags.isEmpty ? query : '$query $frags';
+    final raw = frags.isEmpty ? query : '$query $frags';
+    // Escape $ so GraphQL variable references don't trigger Kotlin string interpolation.
+    return raw.replaceAll(r'$', r'\$');
   }
 
   String _generateVariables(GLQueryDefinition def, GLImportContainer container) {
@@ -326,7 +328,7 @@ class KotlinClientOperationSerializer {
     final argDeclsStr = e.argumentDeclarations.isEmpty
         ? 'emptyList()'
         : 'listOf(${e.argumentDeclarations.map((a) => '"$a"').join(', ')})';
-    final queryStr = e.query.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
+    final queryStr = e.query.replaceAll('\\', '\\\\').replaceAll('"', '\\"').replaceAll(r'$', r'\$');
 
     final varAssignments = e.variables.map((v) {
       final argName = v.substring(1);

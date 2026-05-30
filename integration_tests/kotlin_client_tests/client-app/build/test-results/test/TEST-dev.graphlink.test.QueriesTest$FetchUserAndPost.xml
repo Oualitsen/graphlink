@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.graphlink.test.QueriesTest$FetchUserAndPost" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-05-30T03:59:27.391Z" hostname="MacBook-Pro.local" time="0.01">
+  <properties/>
+  <testcase name="response_isNotNull()" classname="dev.graphlink.test.QueriesTest$FetchUserAndPost" time="0.002"/>
+  <testcase name="singleAdapterCall_forBothResolvers()" classname="dev.graphlink.test.QueriesTest$FetchUserAndPost" time="0.001"/>
+  <testcase name="user_isNotNull()" classname="dev.graphlink.test.QueriesTest$FetchUserAndPost" time="0.001"/>
+  <testcase name="post_hasCorrectId()" classname="dev.graphlink.test.QueriesTest$FetchUserAndPost" time="0.001"/>
+  <testcase name="post_hasCorrectTitle()" classname="dev.graphlink.test.QueriesTest$FetchUserAndPost" time="0.001"/>
+  <testcase name="post_author_hasCorrectId()" classname="dev.graphlink.test.QueriesTest$FetchUserAndPost" time="0.001"/>
+  <testcase name="post_isNotNull()" classname="dev.graphlink.test.QueriesTest$FetchUserAndPost" time="0.001"/>
+  <testcase name="user_hasCorrectId()" classname="dev.graphlink.test.QueriesTest$FetchUserAndPost" time="0.001"/>
+  <testcase name="user_hasCorrectName()" classname="dev.graphlink.test.QueriesTest$FetchUserAndPost" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

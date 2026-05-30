@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.graphlink.test.ErrorCaptureTest$FindUserOrErrorsSuccess" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-05-30T03:59:27.246Z" hostname="MacBook-Pro.local" time="0.002">
+  <properties/>
+  <testcase name="data_isPresent_whenNoErrors()" classname="dev.graphlink.test.ErrorCaptureTest$FindUserOrErrorsSuccess" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

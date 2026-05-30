@@ -71,7 +71,7 @@ open class GraphLinkQueries(
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
          __gl_pqVars__["userId"] = __gl_variables__["userId"]
          __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "user:getUser(id: $userId){..._all_fields_User}",
+             "user:getUser(id: \$userId){..._all_fields_User}",
              __gl_pqVars__,
              0,
              emptyList(),
@@ -87,7 +87,7 @@ open class GraphLinkQueries(
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
          __gl_pqVars__["postId"] = __gl_variables__["postId"]
          __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "post:getPost(id: $postId){id title author{..._all_fields_User}}",
+             "post:getPost(id: \$postId){id title author{..._all_fields_User}}",
              __gl_pqVars__,
              0,
              emptyList(),
@@ -143,7 +143,7 @@ open class GraphLinkQueries(
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
          __gl_pqVars__["id"] = __gl_variables__["id"]
          __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "getUser(id: $id){id name status}",
+             "getUser(id: \$id){id name status}",
              __gl_pqVars__,
              0,
              emptyList(),
@@ -199,7 +199,7 @@ open class GraphLinkQueries(
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
          __gl_pqVars__["term"] = __gl_variables__["term"]
          __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "search(term: $term){... on UserResult  {id name email __typename}  ... on PostResult  {id title __typename}}",
+             "search(term: \$term){... on UserResult  {id name email __typename}  ... on PostResult  {id title __typename}}",
              __gl_pqVars__,
              0,
              emptyList(),
@@ -255,7 +255,7 @@ open class GraphLinkQueries(
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
          __gl_pqVars__["userId"] = __gl_variables__["userId"]
          __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "user:getCachedUser(id: $userId){..._all_fields_User}",
+             "user:getCachedUser(id: \$userId){..._all_fields_User}",
              __gl_pqVars__,
              120,
              listOf("users", "pair"),
@@ -271,7 +271,7 @@ open class GraphLinkQueries(
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
          __gl_pqVars__["postId"] = __gl_variables__["postId"]
          __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "post:getCachedPost(id: $postId){..._all_fields_Post}",
+             "post:getCachedPost(id: \$postId){..._all_fields_Post}",
              __gl_pqVars__,
              300,
              listOf("posts", "pair"),
@@ -327,7 +327,7 @@ open class GraphLinkQueries(
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
          __gl_pqVars__["id"] = __gl_variables__["id"]
          __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "getUser(id: $id){..._all_fields_User}",
+             "getUser(id: \$id){..._all_fields_User}",
              __gl_pqVars__,
              0,
              emptyList(),
@@ -383,7 +383,7 @@ open class GraphLinkQueries(
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
          __gl_pqVars__["id"] = __gl_variables__["id"]
          __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "findUser(id: $id){..._all_fields_User}",
+             "findUser(id: \$id){..._all_fields_User}",
              __gl_pqVars__,
              0,
              emptyList(),
@@ -494,7 +494,7 @@ open class GraphLinkQueries(
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
          __gl_pqVars__["status"] = __gl_variables__["status"]
          __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "listUsersByStatus(status: $status){..._all_fields_User}",
+             "listUsersByStatus(status: \$status){..._all_fields_User}",
              __gl_pqVars__,
              0,
              emptyList(),
@@ -551,7 +551,7 @@ open class GraphLinkQueries(
          __gl_pqVars__["name"] = __gl_variables__["name"]
          __gl_pqVars__["limit"] = __gl_variables__["limit"]
          __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "searchUsers(name: $name,limit: $limit){..._all_fields_User}",
+             "searchUsers(name: \$name,limit: \$limit){..._all_fields_User}",
              __gl_pqVars__,
              0,
              emptyList(),
@@ -607,7 +607,7 @@ open class GraphLinkQueries(
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
          __gl_pqVars__["id"] = __gl_variables__["id"]
          __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "getAllScalars(id: $id){..._all_fields_AllScalars}",
+             "getAllScalars(id: \$id){..._all_fields_AllScalars}",
              __gl_pqVars__,
              0,
              emptyList(),
@@ -663,7 +663,7 @@ open class GraphLinkQueries(
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
          __gl_pqVars__["id"] = __gl_variables__["id"]
          __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "getPost(id: $id){..._all_fields_Post}",
+             "getPost(id: \$id){..._all_fields_Post}",
              __gl_pqVars__,
              0,
              emptyList(),
@@ -774,7 +774,7 @@ open class GraphLinkQueries(
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
          __gl_pqVars__["id"] = __gl_variables__["id"]
          __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "getAuditEntry(id: $id){..._all_fields_AuditEntry}",
+             "getAuditEntry(id: \$id){..._all_fields_AuditEntry}",
              __gl_pqVars__,
              0,
              emptyList(),
@@ -830,13 +830,13 @@ open class GraphLinkQueries(
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
          __gl_pqVars__["term"] = __gl_variables__["term"]
          __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "search(term: $term){...Inline_c267c1b5_6b13_6975_a122_30fdaadae229}",
+             "search(term: \$term){...Inline_e9d9b0b9_4153_306a_6372_f7fa2e31ac14}",
              __gl_pqVars__,
              0,
              emptyList(),
              "search__search",
              "search",
-             setOf("Inline_c267c1b5_6b13_6975_a122_30fdaadae229", "_all_fields_UserResult", "_all_fields_PostResult"),
+             setOf("Inline_e9d9b0b9_4153_306a_6372_f7fa2e31ac14", "_all_fields_UserResult", "_all_fields_PostResult"),
              listOf("$term: String!"),
              false,
              encoder,
@@ -886,7 +886,7 @@ open class GraphLinkQueries(
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
          __gl_pqVars__["id"] = __gl_variables__["id"]
          __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "getCachedUser(id: $id){..._all_fields_User}",
+             "getCachedUser(id: \$id){..._all_fields_User}",
              __gl_pqVars__,
              120,
              listOf("users"),
@@ -997,7 +997,7 @@ open class GraphLinkQueries(
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
          __gl_pqVars__["id"] = __gl_variables__["id"]
          __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "getCachedPost(id: $id){..._all_fields_Post}",
+             "getCachedPost(id: \$id){..._all_fields_Post}",
              __gl_pqVars__,
              300,
              listOf("posts"),
@@ -1108,7 +1108,7 @@ open class GraphLinkQueries(
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
          __gl_pqVars__["id"] = __gl_variables__["id"]
          __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "getStaleUser(id: $id){..._all_fields_User}",
+             "getStaleUser(id: \$id){..._all_fields_User}",
              __gl_pqVars__,
              1,
              listOf("users"),
@@ -1164,7 +1164,7 @@ open class GraphLinkQueries(
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
          __gl_pqVars__["id"] = __gl_variables__["id"]
          __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "getUserOrErrors(id: $id){..._all_fields_User}",
+             "getUserOrErrors(id: \$id){..._all_fields_User}",
              __gl_pqVars__,
              0,
              emptyList(),
@@ -1220,7 +1220,7 @@ open class GraphLinkQueries(
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
          __gl_pqVars__["id"] = __gl_variables__["id"]
          __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "findUserOrErrors(id: $id){..._all_fields_User}",
+             "findUserOrErrors(id: \$id){..._all_fields_User}",
              __gl_pqVars__,
              0,
              emptyList(),

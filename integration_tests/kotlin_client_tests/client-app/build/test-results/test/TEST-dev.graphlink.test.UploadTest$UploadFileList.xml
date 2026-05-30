@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.graphlink.test.UploadTest$UploadFileList" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-05-30T03:59:27.474Z" hostname="MacBook-Pro.local" time="0.006">
+  <properties/>
+  <testcase name="singleFileList_producesOneSlot()" classname="dev.graphlink.test.UploadTest$UploadFileList" time="0.001"/>
+  <testcase name="response_id_isCorrect()" classname="dev.graphlink.test.UploadTest$UploadFileList" time="0.0"/>
+  <testcase name="mapSlot0_pointsTo_variablesFiles0()" classname="dev.graphlink.test.UploadTest$UploadFileList" time="0.001"/>
+  <testcase name="mapSlot1_pointsTo_variablesFiles1()" classname="dev.graphlink.test.UploadTest$UploadFileList" time="0.001"/>
+  <testcase name="bothFileParts_present()" classname="dev.graphlink.test.UploadTest$UploadFileList" time="0.001"/>
+  <testcase name="filesVariables_areAllNull_inOperations()" classname="dev.graphlink.test.UploadTest$UploadFileList" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
