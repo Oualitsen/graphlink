@@ -2,6 +2,7 @@ import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/dart_code_gen_utils.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
+import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/gl_ui_entity.dart' show GlTypeEntity;
@@ -112,6 +113,8 @@ class FlutterTypesSerializer {
         .toList();
 
     final buffer = StringBuffer();
+    buffer.write(_serializeAgentHeader(typeName, varName, fields, enumFields,
+        nestedTypeFields, nestedTypeListFields));
 
     final imports = <String>{
       "import 'package:flutter/material.dart';",
@@ -148,6 +151,93 @@ class FlutterTypesSerializer {
 
     return buffer.toString();
   }
+
+  // ── Agent header ──────────────────────────────────────────────────────────
+
+  String _serializeAgentHeader(
+    String typeName,
+    String varName,
+    List<GLField> fields,
+    List<GLField> enumFields,
+    List<GLField> nestedTypeFields,
+    List<GLField> nestedTypeListFields,
+  ) {
+    final sep = '// ${'=' * 77}';
+    final buf = StringBuffer();
+
+    buf.writeln(sep);
+    buf.writeln('// AGENT GUIDE — ${typeName}Widget');
+    buf.writeln(sep);
+    buf.writeln('// Stateless display widget. Renders a $typeName instance in a chosen layout.');
+    buf.writeln('//');
+    buf.writeln('// USAGE:');
+    buf.writeln('//   ${typeName}Widget($varName)');
+    buf.writeln('//   ${typeName}Widget($varName, layout: ${typeName}Layout.listTile, labels: ...)');
+    buf.writeln('//');
+
+    // ── Fields ────────────────────────────────────────────────────────────────
+    buf.writeln('// FIELDS (schema order):');
+    final pad = fields.map((f) => f.name.token.length).fold<int>(0, (a, b) => a > b ? a : b) + 2;
+    for (final f in fields) {
+      final name = f.name.token.padRight(pad);
+      final baseToken = f.type.firstType.token;
+      final q = f.type.nullable ? '?' : '';
+      final String typeDesc;
+      if (nestedTypeListFields.contains(f)) {
+        typeDesc = 'List<$baseToken>  → ${baseToken}Widget per item';
+      } else if (nestedTypeFields.contains(f)) {
+        typeDesc = '$baseToken$q  → ${baseToken}Widget inline';
+      } else if (f.type.isList && _parser.enums.containsKey(baseToken)) {
+        typeDesc = 'List<$baseToken>  → Wrap of Chips  → EnumLabels for labels';
+      } else if (f.type.isList) {
+        final inner = _dartTypeFor(baseToken);
+        typeDesc = 'List<$inner>  → Wrap of Chips';
+      } else if (enumFields.contains(f)) {
+        typeDesc = '$baseToken$q  → EnumLabels for custom label widgets';
+      } else {
+        final dartT = _dartTypeFor(baseToken);
+        final suffix = dartT == 'bool' ? '  → Icon(check / close)' : '';
+        typeDesc = '$dartT$q$suffix';
+      }
+      buf.writeln('//   $name$typeDesc');
+    }
+
+    // ── Layouts ───────────────────────────────────────────────────────────────
+    buf.writeln('//');
+    buf.writeln('// LAYOUTS:');
+    buf.writeln('//   ${typeName}Layout.labeledRow        two-column Table (label | value)');
+    buf.writeln('//   ${typeName}Layout.listTile          ListTile per field (label above, value below)');
+    buf.writeln('//   ${typeName}Layout.listTileReversed  ListTile per field (value above, label below)');
+    buf.writeln('//   ${typeName}Layout.expandable        ExpansionTile per nested type; scalars grouped');
+
+    // ── Companion classes ─────────────────────────────────────────────────────
+    buf.writeln('//');
+    buf.writeln('// COMPANION CLASSES (all optional):');
+    buf.writeln('//   ${typeName}Labels      per-field label widgets + \$group/\$groupInfo for expandable header');
+    buf.writeln('//   ${typeName}Values      replace any field\'s display with a custom Widget');
+    buf.writeln('//   ${typeName}Visibility  per-field bool (default: true; ID fields default: false)');
+    buf.writeln('//   ${typeName}ShowOnly    show only the listed fields (use instead of Visibility)');
+    buf.writeln('//   ${typeName}Order       render-order overrides (int? per field + \$group)');
+    if (enumFields.isNotEmpty) {
+      buf.writeln('//   ${typeName}EnumLabels  per-enum-field label widgets (uses \${Enum}Labels)');
+    }
+
+    // ── Table integration ─────────────────────────────────────────────────────
+    buf.writeln('//');
+    buf.writeln('// TABLE INTEGRATION (call on the widget instance):');
+    buf.writeln('//   toTableRow()       → TableRow          (cells = visible field values)');
+    buf.writeln('//   toTableHeaderRow() → TableRow          (cells = visible field labels)');
+    buf.writeln('//   toDataRow()        → DataRow           (DataCell per visible field)');
+    buf.writeln('//   toDataColumns()    → List<DataColumn>');
+    buf.writeln(sep);
+    buf.writeln();
+
+    return buf.toString();
+  }
+
+  String _dartTypeFor(String graphqlToken) =>
+      const {'String': 'String', 'Int': 'int', 'Float': 'double', 'Boolean': 'bool', 'ID': 'String'}[graphqlToken] ??
+      graphqlToken;
 
   // ── Widget class ───────────────────────────────────────────────────────────
 
