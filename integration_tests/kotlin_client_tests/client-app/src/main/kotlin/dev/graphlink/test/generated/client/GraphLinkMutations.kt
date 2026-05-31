@@ -42,7 +42,7 @@ open class GraphLinkMutations(
 
    suspend fun createUser(input: CreateUserInput): CreateUserResponse {
       val __gl_operationName__ = "createUser"
-      val __gl_query__ = "mutation createUser($input: CreateUserInput!){createUser(input: $input){..._all_fields_User}} fragment _all_fields_User on User{id name email status priority address{..._all_fields_Address} billingAddress{..._all_fields_Address} tags scores posts{..._all_fields_Post}} fragment _all_fields_Address on Address{street city country zip} fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
+      val __gl_query__ = "mutation createUser(\$input: CreateUserInput!){createUser(input: \$input){..._all_fields_User}} fragment _all_fields_User on User{id name email status priority address{..._all_fields_Address} billingAddress{..._all_fields_Address} tags scores posts{..._all_fields_Post}} fragment _all_fields_Address on Address{street city country zip} fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
       val __gl_variables__ = mapOf("input" to input.toJson())
       val __gl_payload__ = GraphLinkPayload(query = __gl_query__, operationName = __gl_operationName__, variables = __gl_variables__)
       val __gl_responseText__ = glCallAdapter(__gl_payload__)
@@ -54,7 +54,7 @@ open class GraphLinkMutations(
    }
    suspend fun deleteUser(id: String): DeleteUserResponse {
       val __gl_operationName__ = "deleteUser"
-      val __gl_query__ = "mutation deleteUser($id: ID!){deleteUser(id: $id)}"
+      val __gl_query__ = "mutation deleteUser(\$id: ID!){deleteUser(id: \$id)}"
       val __gl_variables__ = mapOf("id" to id)
       val __gl_payload__ = GraphLinkPayload(query = __gl_query__, operationName = __gl_operationName__, variables = __gl_variables__)
       val __gl_responseText__ = glCallAdapter(__gl_payload__)
@@ -66,7 +66,7 @@ open class GraphLinkMutations(
    }
    suspend fun updateUser(id: String, input: UpdateUserInput): UpdateUserResponse {
       val __gl_operationName__ = "updateUser"
-      val __gl_query__ = "mutation updateUser($id: ID!,$input: UpdateUserInput!){updateUser(id: $id,input: $input){..._all_fields_User}} fragment _all_fields_User on User{id name email status priority address{..._all_fields_Address} billingAddress{..._all_fields_Address} tags scores posts{..._all_fields_Post}} fragment _all_fields_Address on Address{street city country zip} fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
+      val __gl_query__ = "mutation updateUser(\$id: ID!,\$input: UpdateUserInput!){updateUser(id: \$id,input: \$input){..._all_fields_User}} fragment _all_fields_User on User{id name email status priority address{..._all_fields_Address} billingAddress{..._all_fields_Address} tags scores posts{..._all_fields_Post}} fragment _all_fields_Address on Address{street city country zip} fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
       val __gl_variables__ = mapOf("id" to id, "input" to input.toJson())
       val __gl_payload__ = GraphLinkPayload(query = __gl_query__, operationName = __gl_operationName__, variables = __gl_variables__)
       val __gl_responseText__ = glCallAdapter(__gl_payload__)
@@ -78,7 +78,7 @@ open class GraphLinkMutations(
    }
    suspend fun createCachedUser(input: CreateUserInput): CreateCachedUserResponse {
       val __gl_operationName__ = "createCachedUser"
-      val __gl_query__ = "mutation createCachedUser($input: CreateUserInput!){createCachedUser(input: $input){..._all_fields_User}} fragment _all_fields_User on User{id name email status priority address{..._all_fields_Address} billingAddress{..._all_fields_Address} tags scores posts{..._all_fields_Post}} fragment _all_fields_Address on Address{street city country zip} fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
+      val __gl_query__ = "mutation createCachedUser(\$input: CreateUserInput!){createCachedUser(input: \$input){..._all_fields_User}} fragment _all_fields_User on User{id name email status priority address{..._all_fields_Address} billingAddress{..._all_fields_Address} tags scores posts{..._all_fields_Post}} fragment _all_fields_Address on Address{street city country zip} fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
       val __gl_variables__ = mapOf("input" to input.toJson())
       val __gl_payload__ = GraphLinkPayload(query = __gl_query__, operationName = __gl_operationName__, variables = __gl_variables__)
       val __gl_responseText__ = glCallAdapter(__gl_payload__)
@@ -91,7 +91,7 @@ open class GraphLinkMutations(
    }
    suspend fun transferPost(postId: String, newAuthorId: String): TransferPostResponse {
       val __gl_operationName__ = "transferPost"
-      val __gl_query__ = "mutation transferPost($postId: ID!,$newAuthorId: ID!){transferPost(postId: $postId,newAuthorId: $newAuthorId){..._all_fields_Post}} fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
+      val __gl_query__ = "mutation transferPost(\$postId: ID!,\$newAuthorId: ID!){transferPost(postId: \$postId,newAuthorId: \$newAuthorId){..._all_fields_Post}} fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
       val __gl_variables__ = mapOf("postId" to postId, "newAuthorId" to newAuthorId)
       val __gl_payload__ = GraphLinkPayload(query = __gl_query__, operationName = __gl_operationName__, variables = __gl_variables__)
       val __gl_responseText__ = glCallAdapter(__gl_payload__)
@@ -117,7 +117,7 @@ open class GraphLinkMutations(
    }
    suspend fun createUserOrErrors(input: CreateUserInput): CreateUserOrErrorsFullResponse {
       val __gl_operationName__ = "createUserOrErrors"
-      val __gl_query__ = "mutation createUserOrErrors($input: CreateUserInput!){createUserOrErrors(input: $input){..._all_fields_User}} fragment _all_fields_User on User{id name email status priority address{..._all_fields_Address} billingAddress{..._all_fields_Address} tags scores posts{..._all_fields_Post}} fragment _all_fields_Address on Address{street city country zip} fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
+      val __gl_query__ = "mutation createUserOrErrors(\$input: CreateUserInput!){createUserOrErrors(input: \$input){..._all_fields_User}} fragment _all_fields_User on User{id name email status priority address{..._all_fields_Address} billingAddress{..._all_fields_Address} tags scores posts{..._all_fields_Post}} fragment _all_fields_Address on Address{street city country zip} fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
       val __gl_variables__ = mapOf("input" to input.toJson())
       val __gl_payload__ = GraphLinkPayload(query = __gl_query__, operationName = __gl_operationName__, variables = __gl_variables__)
       val __gl_responseText__ = glCallAdapter(__gl_payload__)
@@ -130,7 +130,7 @@ open class GraphLinkMutations(
 
    suspend fun uploadOneFile(userId: String, file: GLUpload, onProgress: UploadProgressCallback?): UploadOneFileResponse {
       val __gl_operationName__ = "uploadOneFile"
-      val __gl_query__ = "mutation uploadOneFile($userId: ID!,$file: Upload!){uploadOneFile(userId: $userId,file: $file){..._all_fields_User}} fragment _all_fields_User on User{id name email status priority address{..._all_fields_Address} billingAddress{..._all_fields_Address} tags scores posts{..._all_fields_Post}} fragment _all_fields_Address on Address{street city country zip} fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
+      val __gl_query__ = "mutation uploadOneFile(\$userId: ID!,\$file: Upload!){uploadOneFile(userId: \$userId,file: \$file){..._all_fields_User}} fragment _all_fields_User on User{id name email status priority address{..._all_fields_Address} billingAddress{..._all_fields_Address} tags scores posts{..._all_fields_Post}} fragment _all_fields_Address on Address{street city country zip} fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
       val __gl_variables__ = mutableMapOf<String, Any?>("userId" to userId, "file" to null)
       val __gl_files__ = linkedMapOf<String, GLUpload>()
       val __gl_fileMap__ = mutableMapOf<String, Any?>()
@@ -152,7 +152,7 @@ open class GraphLinkMutations(
 
    suspend fun uploadFileList(userId: String, files: List<GLUpload>, onProgress: UploadProgressCallback?): UploadFileListResponse {
       val __gl_operationName__ = "uploadFileList"
-      val __gl_query__ = "mutation uploadFileList($userId: ID!,$files: [Upload!]!){uploadFileList(userId: $userId,files: $files){..._all_fields_User}} fragment _all_fields_User on User{id name email status priority address{..._all_fields_Address} billingAddress{..._all_fields_Address} tags scores posts{..._all_fields_Post}} fragment _all_fields_Address on Address{street city country zip} fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
+      val __gl_query__ = "mutation uploadFileList(\$userId: ID!,\$files: [Upload!]!){uploadFileList(userId: \$userId,files: \$files){..._all_fields_User}} fragment _all_fields_User on User{id name email status priority address{..._all_fields_Address} billingAddress{..._all_fields_Address} tags scores posts{..._all_fields_Post}} fragment _all_fields_Address on Address{street city country zip} fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
       val __gl_variables__ = mutableMapOf<String, Any?>("userId" to userId, "files" to MutableList(files.size) { null })
       val __gl_files__ = linkedMapOf<String, GLUpload>()
       val __gl_fileMap__ = mutableMapOf<String, Any?>()
