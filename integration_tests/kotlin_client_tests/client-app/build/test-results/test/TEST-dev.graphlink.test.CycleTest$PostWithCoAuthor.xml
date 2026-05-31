@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.graphlink.test.CycleTest$PostWithCoAuthor" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-05-30T03:59:27.199Z" hostname="MacBook-Pro.local" time="0.006">
+  <properties/>
+  <testcase name="post_coAuthor_isTruncatedUserType()" classname="dev.graphlink.test.CycleTest$PostWithCoAuthor" time="0.002"/>
+  <testcase name="post_coAuthor_hasCorrectId()" classname="dev.graphlink.test.CycleTest$PostWithCoAuthor" time="0.001"/>
+  <testcase name="post_coAuthor_isNotNull()" classname="dev.graphlink.test.CycleTest$PostWithCoAuthor" time="0.001"/>
+  <testcase name="post_author_and_coAuthor_haveDifferentIds()" classname="dev.graphlink.test.CycleTest$PostWithCoAuthor" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

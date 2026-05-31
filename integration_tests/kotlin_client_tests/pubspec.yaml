@@ -1,0 +1,10 @@
+name: graphlink_kotlin_client_integration_tests
+description: Kotlin client integration tests for GraphLink
+version: 1.0.0
+publish_to: none
+environment:
+  sdk: '>=2.19.0 <4.0.0'
+
+dependencies:
+  graphlink:
+    path: ../..

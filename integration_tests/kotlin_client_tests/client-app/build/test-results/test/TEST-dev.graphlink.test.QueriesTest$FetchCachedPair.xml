@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.graphlink.test.QueriesTest$FetchCachedPair" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-05-30T03:59:27.383Z" hostname="MacBook-Pro.local" time="0.008">
+  <properties/>
+  <testcase name="cachedResponse_user_hasCorrectId()" classname="dev.graphlink.test.QueriesTest$FetchCachedPair" time="0.002"/>
+  <testcase name="differentArgs_bypassCache()" classname="dev.graphlink.test.QueriesTest$FetchCachedPair" time="0.002"/>
+  <testcase name="firstCall_hitsAdapter()" classname="dev.graphlink.test.QueriesTest$FetchCachedPair" time="0.001"/>
+  <testcase name="cachedResponse_post_hasCorrectId()" classname="dev.graphlink.test.QueriesTest$FetchCachedPair" time="0.001"/>
+  <testcase name="secondCall_servedFromCache()" classname="dev.graphlink.test.QueriesTest$FetchCachedPair" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

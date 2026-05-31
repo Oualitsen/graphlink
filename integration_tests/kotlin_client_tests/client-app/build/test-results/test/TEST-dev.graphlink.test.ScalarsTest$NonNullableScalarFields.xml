@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.graphlink.test.ScalarsTest$NonNullableScalarFields" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-05-30T03:59:27.423Z" hostname="MacBook-Pro.local" time="0.007">
+  <properties/>
+  <testcase name="floatVal_deserializesToDouble()" classname="dev.graphlink.test.ScalarsTest$NonNullableScalarFields" time="0.003"/>
+  <testcase name="strVal_deserializesToString()" classname="dev.graphlink.test.ScalarsTest$NonNullableScalarFields" time="0.001"/>
+  <testcase name="id_deserializesToString()" classname="dev.graphlink.test.ScalarsTest$NonNullableScalarFields" time="0.001"/>
+  <testcase name="intVal_deserializesToInt()" classname="dev.graphlink.test.ScalarsTest$NonNullableScalarFields" time="0.001"/>
+  <testcase name="boolVal_deserializesToBoolean()" classname="dev.graphlink.test.ScalarsTest$NonNullableScalarFields" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

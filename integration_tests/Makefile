@@ -1,4 +1,4 @@
-.PHONY: dart typescript java all
+.PHONY: dart typescript java kotlin all
 
 dart:
 	$(MAKE) -C dart_client_tests ci
@@ -10,4 +10,7 @@ typescript:
 java:
 	$(MAKE) -C java_client_tests ci
 
-all: dart typescript java
+kotlin:
+	$(MAKE) -C kotlin_client_tests ci
+
+all: dart typescript java kotlin
