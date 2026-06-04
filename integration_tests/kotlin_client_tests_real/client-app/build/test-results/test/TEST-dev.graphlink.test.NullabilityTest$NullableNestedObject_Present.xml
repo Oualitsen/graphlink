@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.graphlink.test.NullabilityTest$NullableNestedObject_Present" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-06-04T04:01:59.754Z" hostname="MacBook-Pro.local" time="0.011">
+  <properties/>
+  <testcase name="billingAddress_hasCorrectCity()" classname="dev.graphlink.test.NullabilityTest$NullableNestedObject_Present" time="0.006"/>
+  <testcase name="billingAddress_isNotNull_forBob()" classname="dev.graphlink.test.NullabilityTest$NullableNestedObject_Present" time="0.005"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

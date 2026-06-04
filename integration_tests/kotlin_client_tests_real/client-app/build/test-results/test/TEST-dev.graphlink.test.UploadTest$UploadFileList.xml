@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.graphlink.test.UploadTest$UploadFileList" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-06-04T04:02:00.090Z" hostname="MacBook-Pro.local" time="0.026">
+  <properties/>
+  <testcase name="returns true for single file in list()" classname="dev.graphlink.test.UploadTest$UploadFileList" time="0.012"/>
+  <testcase name="returns true for two files()" classname="dev.graphlink.test.UploadTest$UploadFileList" time="0.007"/>
+  <testcase name="returns true for three files()" classname="dev.graphlink.test.UploadTest$UploadFileList" time="0.007"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

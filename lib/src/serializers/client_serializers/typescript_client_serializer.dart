@@ -511,6 +511,8 @@ private _buildPayload(
       "const $_svPayload: GraphLinkPayload = { query: $_svQuery, operationName: $_svOperationName, variables: $_svVariables };",
       "const $_svResponse = await this._glCallAdapter($_svPayload);",
       "const $_svResult = JSON.parse($_svResponse) as $fullResponseTypeName;",
+      if (isCaptureErrors)
+        "if (!($_svResult as any)['errors']) ($_svResult as any)['errors'] = null;",
       if (!isCaptureErrors)
         "if ($_svResult['errors']) ${observables ? "{ subscriber.error($_svResult['errors']); return; }" : "throw $_svResult['errors'] as GraphLinkError[];"}",
       if (invalidation.isNotEmpty)

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.graphlink.test.ErrorCaptureTest$NonCaptureErrorsThrows" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-06-04T04:01:59.387Z" hostname="MacBook-Pro.local" time="0.007">
+  <properties/>
+  <testcase name="getUser_throws_forUnknownId()" classname="dev.graphlink.test.ErrorCaptureTest$NonCaptureErrorsThrows" time="0.007"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.graphlink.test.CacheTest$ListCachedUsers" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-06-04T04:01:57.618Z" hostname="MacBook-Pro.local" time="0.008">
+  <properties/>
+  <testcase name="createCachedUser_invalidatesListCachedUsers()" classname="dev.graphlink.test.CacheTest$ListCachedUsers" time="0.005"/>
+  <testcase name="listCachedUsers_isCachedAfterFirstCall()" classname="dev.graphlink.test.CacheTest$ListCachedUsers" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
