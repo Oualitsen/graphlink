@@ -291,8 +291,9 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
   }
 
   private void connectInternal(Runnable onConnect, Consumer<Throwable> onFailure) {
-    java.net.http.WebSocket.Builder wsBuilder = httpClient.newWebSocketBuilder();
-        
+    java.net.http.WebSocket.Builder wsBuilder = httpClient.newWebSocketBuilder()
+        .subprotocols("graphql-transport-ws");
+
     if (headersProvider != null) {
       Map<String, String> h = headersProvider.get();
       if (h != null) h.forEach(wsBuilder::header);

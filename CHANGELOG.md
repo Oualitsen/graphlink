@@ -357,10 +357,44 @@
 - Configuration, client, and server docs updated throughout
 
 ---
-
-
 ## 4.7.1 - 2026-05-26
 
 ### Fixes
 
 - Fixed crash when a type's common interface is a projected interface
+---
+
+## 4.8.0 - 2026-06-04
+
+### New features
+
+- **Kotlin client code generation** — new `clientConfig.kotlin` block in `config.json`
+  - Generates typed client for queries, mutations, and subscriptions
+  - Data classes for types and inputs (configurable via `typeAsDataClass` / `inputAsDataClass`)
+  - `toJson` / `fromJson` serialization using `kotlinx.serialization`
+  - WebSocket adapter: `okhttp` (default) or `none`
+  - Enums, interfaces, and union types fully supported
+  - `@glMapsTo` / `@glMapField` mapping methods generated
+
+- **JSpecify null-safety annotations for Java** — new `jspecify: true` option in `clientConfig.java` and `clientConfig.server`
+  - Adds `@NonNull` / `@Nullable` from `org.jspecify.annotations` to all generated type, input, and interface fields
+  - Respects `@glSkipOnClient` / `@glSkipOnServer` and server-mode forced nullability rules
+  - Imports are only emitted when the option is enabled
+
+- **Flutter display widget improvements**
+  - Serializer split into focused sub-files: `flutter_types_layout_serializer.dart`, `flutter_types_companion_serializer.dart`, `flutter_types_value_renderer.dart`, `flutter_types_constants.dart`
+  - New `labelStyle` config option (`bold` / `muted`) for companion label classes
+  - Generated `{Type}Widget` now includes an **agent guide header** comment block listing every field, its Dart type, and how it is rendered — makes generated widgets easier to navigate with AI tools
+  - New layout helpers: `toTableRow`, `toDataRow`, `toDataColumns`, `labeledTableRows`, `listTileItems`, `expandableItems`
+
+- **Flutter input form enhancements**
+  - Async validation state per field (`_<field>Validating`, `_<field>AsyncError`, `_<field>AsyncTimer`) with debounce support
+  - Field keys (`GlobalKey<FormFieldState>`) generated for every validatable field — enables `_scrollToFirstError`
+  - `isDirty` getter, `scrollToFirstError`, `updateErrorsNotifier`, and `scrollToField` helpers emitted automatically
+  - `setSubmitting` propagated to nested sub-input forms (stepper child forms disabled together)
+  - Optional `focusNodes` parameter when text fields are present
+
+### Fixes
+
+- Fixed barrel file to include generated client files (Dart and TypeScript)
+

@@ -327,7 +327,7 @@ class KotlinClientOperationSerializer {
         : 'setOf(${e.fragmentNames.map((f) => '"$f"').join(', ')})';
     final argDeclsStr = e.argumentDeclarations.isEmpty
         ? 'emptyList()'
-        : 'listOf(${e.argumentDeclarations.map((a) => '"$a"').join(', ')})';
+        : 'listOf(${e.argumentDeclarations.map((a) => '"${a.replaceAll(r'$', r'\$')}"').join(', ')})';
     final queryStr = e.query.replaceAll('\\', '\\\\').replaceAll('"', '\\"').replaceAll(r'$', r'\$');
 
     final varAssignments = e.variables.map((v) {

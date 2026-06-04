@@ -1,0 +1,81 @@
+name: Real-Server Integration Tests
+
+on:
+  workflow_dispatch:
+
+jobs:
+  integration-tests-dart-real:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: integration_tests/dart_client_tests_real
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Build servers
+        run: |
+          cd ../spring_server && ./gradlew build -x test
+          cd ../spring_upload_server && ./gradlew build -x test
+      - run: make ci
+
+  integration-tests-typescript-real:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: integration_tests/typescript_client_tests_real
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Build servers
+        run: |
+          cd ../spring_server && ./gradlew build -x test
+          cd ../spring_upload_server && ./gradlew build -x test
+      - run: make install
+      - run: make ci
+
+  integration-tests-java-real:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: integration_tests/java_client_tests_real
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Build servers
+        run: |
+          cd ../spring_server && ./gradlew build -x test
+          cd ../spring_upload_server && ./gradlew build -x test
+      - run: make ci
+
+  integration-tests-kotlin-real:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: integration_tests/kotlin_client_tests_real
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Build servers
+        run: |
+          cd ../spring_server && ./gradlew build -x test
+          cd ../spring_upload_server && ./gradlew build -x test
+      - run: make ci
