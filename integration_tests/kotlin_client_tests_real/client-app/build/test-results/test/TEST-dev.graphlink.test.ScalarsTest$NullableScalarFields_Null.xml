@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.graphlink.test.ScalarsTest$NullableScalarFields_Null" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-06-04T04:01:59.929Z" hostname="MacBook-Pro.local" time="0.026">
+  <properties/>
+  <testcase name="nullableId_isNull()" classname="dev.graphlink.test.ScalarsTest$NullableScalarFields_Null" time="0.005"/>
+  <testcase name="nullableInt_isNull()" classname="dev.graphlink.test.ScalarsTest$NullableScalarFields_Null" time="0.005"/>
+  <testcase name="nullableFloat_isNull()" classname="dev.graphlink.test.ScalarsTest$NullableScalarFields_Null" time="0.005"/>
+  <testcase name="nullableStr_isNull()" classname="dev.graphlink.test.ScalarsTest$NullableScalarFields_Null" time="0.006"/>
+  <testcase name="nullableBool_isNull()" classname="dev.graphlink.test.ScalarsTest$NullableScalarFields_Null" time="0.005"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.graphlink.test.SubscriptionsTest$UserCreated" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-06-04T04:01:59.992Z" hostname="MacBook-Pro.local" time="0.08">
+  <properties/>
+  <testcase name="bothEvents_deliveredInOrder()" classname="dev.graphlink.test.SubscriptionsTest$UserCreated" time="0.058"/>
+  <testcase name="firstEvent_status_deserializesToEnum()" classname="dev.graphlink.test.SubscriptionsTest$UserCreated" time="0.007"/>
+  <testcase name="firstEvent_name_isAliceSmith()" classname="dev.graphlink.test.SubscriptionsTest$UserCreated" time="0.007"/>
+  <testcase name="firstEvent_isAlice()" classname="dev.graphlink.test.SubscriptionsTest$UserCreated" time="0.007"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

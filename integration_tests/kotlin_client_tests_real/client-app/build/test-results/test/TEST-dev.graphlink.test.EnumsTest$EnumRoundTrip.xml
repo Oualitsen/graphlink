@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.graphlink.test.EnumsTest$EnumRoundTrip" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-06-04T04:01:59.231Z" hostname="MacBook-Pro.local" time="0.003">
+  <properties/>
+  <testcase name="fromJson_null_returnsNull()" classname="dev.graphlink.test.EnumsTest$EnumRoundTrip" time="0.0"/>
+  <testcase name="priority_CRITICAL_roundTrips()" classname="dev.graphlink.test.EnumsTest$EnumRoundTrip" time="0.0"/>
+  <testcase name="userStatus_SUSPENDED_roundTrips()" classname="dev.graphlink.test.EnumsTest$EnumRoundTrip" time="0.001"/>
+  <testcase name="priority_LOW_roundTrips()" classname="dev.graphlink.test.EnumsTest$EnumRoundTrip" time="0.0"/>
+  <testcase name="userStatus_ACTIVE_roundTrips()" classname="dev.graphlink.test.EnumsTest$EnumRoundTrip" time="0.001"/>
+  <testcase name="userStatus_INACTIVE_roundTrips()" classname="dev.graphlink.test.EnumsTest$EnumRoundTrip" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

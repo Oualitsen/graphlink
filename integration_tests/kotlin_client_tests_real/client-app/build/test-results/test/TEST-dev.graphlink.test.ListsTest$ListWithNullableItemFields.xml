@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.graphlink.test.ListsTest$ListWithNullableItemFields" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-06-04T04:01:59.469Z" hostname="MacBook-Pro.local" time="0.027">
+  <properties/>
+  <testcase name="getTags_firstItem_hasColor()" classname="dev.graphlink.test.ListsTest$ListWithNullableItemFields" time="0.008"/>
+  <testcase name="getTags_firstItem_isTagType()" classname="dev.graphlink.test.ListsTest$ListWithNullableItemFields" time="0.005"/>
+  <testcase name="getTags_hasTwoItems()" classname="dev.graphlink.test.ListsTest$ListWithNullableItemFields" time="0.005"/>
+  <testcase name="getTags_secondItem_colorIsNull()" classname="dev.graphlink.test.ListsTest$ListWithNullableItemFields" time="0.005"/>
+  <testcase name="getTags_secondItem_hasLabel()" classname="dev.graphlink.test.ListsTest$ListWithNullableItemFields" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

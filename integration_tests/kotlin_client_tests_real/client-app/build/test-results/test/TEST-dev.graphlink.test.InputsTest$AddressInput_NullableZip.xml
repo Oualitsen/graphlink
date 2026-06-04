@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.graphlink.test.InputsTest$AddressInput_NullableZip" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-06-04T04:01:59.395Z" hostname="MacBook-Pro.local" time="0.002">
+  <properties/>
+  <testcase name="addressInput_zip_isNull_whenNotSet()" classname="dev.graphlink.test.InputsTest$AddressInput_NullableZip" time="0.001"/>
+  <testcase name="addressInput_zip_isPresent_whenSet()" classname="dev.graphlink.test.InputsTest$AddressInput_NullableZip" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
