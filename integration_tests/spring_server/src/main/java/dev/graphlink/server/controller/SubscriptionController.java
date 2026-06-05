@@ -36,6 +36,7 @@ public class SubscriptionController {
 
     @SubscriptionMapping
     public Flux<Integer> counterTick() {
-        return Flux.interval(Duration.ofSeconds(2)).map(i -> i.intValue());
+        return Flux.interval(Duration.ofSeconds(1)).map(i -> i.intValue() + 1);
     }
+
 }
