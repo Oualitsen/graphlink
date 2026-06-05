@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.graphlink.test.SubscriptionsTest$MultipleDifferentSubscriptions" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-06-05T13:57:35.981Z" hostname="MacBook-Pro.local" time="0.075">
+  <properties/>
+  <testcase name="userStatusChanged_differentArgs_receiveIndependentEvents()" classname="dev.graphlink.test.SubscriptionsTest$MultipleDifferentSubscriptions" time="0.056"/>
+  <testcase name="userCreated_and_userCreateds_runConcurrently()" classname="dev.graphlink.test.SubscriptionsTest$MultipleDifferentSubscriptions" time="0.01"/>
+  <testcase name="userCreated_and_userStatusChanged_runConcurrently()" classname="dev.graphlink.test.SubscriptionsTest$MultipleDifferentSubscriptions" time="0.008"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

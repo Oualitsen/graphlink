@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="dev.graphlink.test.NullabilityTest$NonNullableQueryReturn" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-06-04T04:01:59.716Z" hostname="MacBook-Pro.local" time="0.01">
+<testsuite name="dev.graphlink.test.NullabilityTest$NonNullableQueryReturn" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-06-05T13:57:35.773Z" hostname="MacBook-Pro.local" time="0.009">
   <properties/>
-  <testcase name="getUser_hasCorrectId()" classname="dev.graphlink.test.NullabilityTest$NonNullableQueryReturn" time="0.005"/>
-  <testcase name="getUser_returnsNonNullUser()" classname="dev.graphlink.test.NullabilityTest$NonNullableQueryReturn" time="0.005"/>
+  <testcase name="getUser_hasCorrectId()" classname="dev.graphlink.test.NullabilityTest$NonNullableQueryReturn" time="0.004"/>
+  <testcase name="getUser_returnsNonNullUser()" classname="dev.graphlink.test.NullabilityTest$NonNullableQueryReturn" time="0.004"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="dev.graphlink.test.NestedTypesTest$MultiLevelNesting" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-06-04T04:01:59.621Z" hostname="MacBook-Pro.local" time="0.048">
+<testsuite name="dev.graphlink.test.NestedTypesTest$MultiLevelNesting" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-06-05T13:57:35.698Z" hostname="MacBook-Pro.local" time="0.039">
   <properties/>
   <testcase name="post_deserializesToPostType()" classname="dev.graphlink.test.NestedTypesTest$MultiLevelNesting" time="0.005"/>
-  <testcase name="post_author_isNotNull()" classname="dev.graphlink.test.NestedTypesTest$MultiLevelNesting" time="0.005"/>
-  <testcase name="post_hasCorrectTitle()" classname="dev.graphlink.test.NestedTypesTest$MultiLevelNesting" time="0.005"/>
-  <testcase name="post_author_status_deserializesToEnum()" classname="dev.graphlink.test.NestedTypesTest$MultiLevelNesting" time="0.005"/>
+  <testcase name="post_author_isNotNull()" classname="dev.graphlink.test.NestedTypesTest$MultiLevelNesting" time="0.004"/>
+  <testcase name="post_hasCorrectTitle()" classname="dev.graphlink.test.NestedTypesTest$MultiLevelNesting" time="0.004"/>
+  <testcase name="post_author_status_deserializesToEnum()" classname="dev.graphlink.test.NestedTypesTest$MultiLevelNesting" time="0.004"/>
   <testcase name="post_author_hasCorrectId()" classname="dev.graphlink.test.NestedTypesTest$MultiLevelNesting" time="0.005"/>
   <testcase name="post_author_deserializesToFragmentType()" classname="dev.graphlink.test.NestedTypesTest$MultiLevelNesting" time="0.004"/>
-  <testcase name="post_isNotNull()" classname="dev.graphlink.test.NestedTypesTest$MultiLevelNesting" time="0.005"/>
-  <testcase name="post_author_address_city_isAccessible()" classname="dev.graphlink.test.NestedTypesTest$MultiLevelNesting" time="0.005"/>
+  <testcase name="post_isNotNull()" classname="dev.graphlink.test.NestedTypesTest$MultiLevelNesting" time="0.004"/>
+  <testcase name="post_author_address_city_isAccessible()" classname="dev.graphlink.test.NestedTypesTest$MultiLevelNesting" time="0.004"/>
   <testcase name="post_viewCount_deserializesToInt()" classname="dev.graphlink.test.NestedTypesTest$MultiLevelNesting" time="0.005"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>

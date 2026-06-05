@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="dev.graphlink.test.CycleTest$UserWithPosts" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-06-04T04:01:59.123Z" hostname="MacBook-Pro.local" time="0.07">
+<testsuite name="dev.graphlink.test.CycleTest$UserWithPosts" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-06-05T13:57:35.282Z" hostname="MacBook-Pro.local" time="0.056">
   <properties/>
-  <testcase name="user_posts_author_hasCorrectId()" classname="dev.graphlink.test.CycleTest$UserWithPosts" time="0.009"/>
-  <testcase name="user_posts_firstEntry_hasCorrectTitle()" classname="dev.graphlink.test.CycleTest$UserWithPosts" time="0.007"/>
-  <testcase name="user_posts_author_address_city_isAccessible()" classname="dev.graphlink.test.CycleTest$UserWithPosts" time="0.007"/>
-  <testcase name="user_posts_firstEntry_isPostType()" classname="dev.graphlink.test.CycleTest$UserWithPosts" time="0.007"/>
-  <testcase name="user_posts_author_isTruncatedUserType()" classname="dev.graphlink.test.CycleTest$UserWithPosts" time="0.008"/>
-  <testcase name="user_posts_firstEntry_hasCorrectId()" classname="dev.graphlink.test.CycleTest$UserWithPosts" time="0.007"/>
-  <testcase name="user_posts_hasOneEntry()" classname="dev.graphlink.test.CycleTest$UserWithPosts" time="0.007"/>
-  <testcase name="user_posts_author_address_isNotNull()" classname="dev.graphlink.test.CycleTest$UserWithPosts" time="0.007"/>
-  <testcase name="user_posts_isNotNull()" classname="dev.graphlink.test.CycleTest$UserWithPosts" time="0.006"/>
+  <testcase name="user_posts_author_hasCorrectId()" classname="dev.graphlink.test.CycleTest$UserWithPosts" time="0.006"/>
+  <testcase name="user_posts_firstEntry_hasCorrectTitle()" classname="dev.graphlink.test.CycleTest$UserWithPosts" time="0.006"/>
+  <testcase name="user_posts_author_address_city_isAccessible()" classname="dev.graphlink.test.CycleTest$UserWithPosts" time="0.006"/>
+  <testcase name="user_posts_firstEntry_isPostType()" classname="dev.graphlink.test.CycleTest$UserWithPosts" time="0.006"/>
+  <testcase name="user_posts_author_isTruncatedUserType()" classname="dev.graphlink.test.CycleTest$UserWithPosts" time="0.006"/>
+  <testcase name="user_posts_firstEntry_hasCorrectId()" classname="dev.graphlink.test.CycleTest$UserWithPosts" time="0.006"/>
+  <testcase name="user_posts_hasOneEntry()" classname="dev.graphlink.test.CycleTest$UserWithPosts" time="0.006"/>
+  <testcase name="user_posts_author_address_isNotNull()" classname="dev.graphlink.test.CycleTest$UserWithPosts" time="0.005"/>
+  <testcase name="user_posts_isNotNull()" classname="dev.graphlink.test.CycleTest$UserWithPosts" time="0.005"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

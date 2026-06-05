@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="dev.graphlink.test.EnumsTest$EnumDeserialization" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-06-04T04:01:59.205Z" hostname="MacBook-Pro.local" time="0.025">
+<testsuite name="dev.graphlink.test.EnumsTest$EnumDeserialization" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-06-05T13:57:35.350Z" hostname="MacBook-Pro.local" time="0.023">
   <properties/>
-  <testcase name="status_deserializesToUserStatus_ACTIVE()" classname="dev.graphlink.test.EnumsTest$EnumDeserialization" time="0.006"/>
+  <testcase name="status_deserializesToUserStatus_ACTIVE()" classname="dev.graphlink.test.EnumsTest$EnumDeserialization" time="0.005"/>
   <testcase name="status_deserializesToUserStatus_INACTIVE()" classname="dev.graphlink.test.EnumsTest$EnumDeserialization" time="0.006"/>
-  <testcase name="priority_deserializesToPriority_HIGH()" classname="dev.graphlink.test.EnumsTest$EnumDeserialization" time="0.006"/>
-  <testcase name="priority_isNull_whenAbsent()" classname="dev.graphlink.test.EnumsTest$EnumDeserialization" time="0.006"/>
+  <testcase name="priority_deserializesToPriority_HIGH()" classname="dev.graphlink.test.EnumsTest$EnumDeserialization" time="0.005"/>
+  <testcase name="priority_isNull_whenAbsent()" classname="dev.graphlink.test.EnumsTest$EnumDeserialization" time="0.005"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

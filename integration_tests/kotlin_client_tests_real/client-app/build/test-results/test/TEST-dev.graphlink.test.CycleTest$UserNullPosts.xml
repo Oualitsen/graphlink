@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="dev.graphlink.test.CycleTest$UserNullPosts" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-06-04T04:01:59.110Z" hostname="MacBook-Pro.local" time="0.011">
+<testsuite name="dev.graphlink.test.CycleTest$UserNullPosts" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-06-05T13:57:35.273Z" hostname="MacBook-Pro.local" time="0.008">
   <properties/>
-  <testcase name="user_posts_isNull_whenNotPopulated()" classname="dev.graphlink.test.CycleTest$UserNullPosts" time="0.011"/>
+  <testcase name="user_posts_isNull_whenNotPopulated()" classname="dev.graphlink.test.CycleTest$UserNullPosts" time="0.008"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>
