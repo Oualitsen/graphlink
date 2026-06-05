@@ -1,6 +1,6 @@
 # Flutter UI Input Form Generation
 
-## Status: Implemented (phase 11 — SelectFieldConfig, reset(), isDirty, scroll-to-first-error, setSubmitting)
+## Status: Implemented (phase 12 — FieldIcons, TextFieldOptions.prefixIcon/suffixIcon, Widgets avatarBuilder)
 
 ---
 
@@ -988,6 +988,9 @@ lib/generated/
 39. `isInputListField` — new type helper for list-of-input fields; missing imports fixed. ✅ (phase 10)
 40. `isPasswordField` — tightened to word-boundary check for `pin`; prevents false positives like `stopingDate`. ✅ (phase 10)
 43. `SelectFieldConfig` — `String`/`Int`/`Float` fields can opt into dropdown/chips/radio at runtime via `${Input}SelectConfig`; no schema change required; `labelBuilder` controls display; `selectConfig` checked before `dateConfig` in row methods. ✅ (phase 11)
+47. `TextFieldOptions.prefixIcon`/`.suffixIcon` — shorthand on `TextFieldOptions`; `_textDecoration` applies prefix first, then opts.suffixIcon, then the explicit suffixIcon param (password toggle/spinner always wins); decoration callback runs last so it can still override. ✅ (phase 12)
+48. `${Input}FieldIcons` companion — `Widget? prefixIcon` per text field + per enum field; piped through `_textDecoration` 4th param for text fields; via `.copyWith` on enum dropdown decoration; not applied to chips/radio. ✅ (phase 12)
+49. `Widgets.${field}Avatar` — `Widget? Function(T)?` per enum chip field, `Widget? Function(bool)?` per bool chip field; maps to `ChoiceChip.avatar`; chips-only, radio out of scope. ✅ (phase 12)
 44. `setSubmitting(bool)` / `isSubmitting` — disables all fields and blocks `read()` while submitting; stepper Next/Submit button also disabled; `_submitting` flag set via `setState`; base class stubs both members. ✅ (phase 11)
 45. Scroll to first error — `_scrollToFirstError()` called by `read()` before throwing; `GlobalKey<FormFieldState>` per field attached to every FormField widget; order-aware using `${Input}Order`; `Scrollable.ensureVisible` works with any parent scroll container. ✅ (phase 11)
 46. `isDirty` getter — returns true if any field differs from `initialValues`; text uses controller text vs initial expression, enum/bool by value, lists order-insensitive set comparison, sub-inputs delegated; base class defaults to `false`. ✅ (phase 11)
@@ -1278,6 +1281,140 @@ DateTime _clampDate(DateTime date, DateTime first, DateTime last) {
   return date;
 }
 ```
+
+---
+
+---
+
+## Field icons ⚡ added (phase 12)
+
+### Overview
+
+Three independent mechanisms add icons to form fields — all opt-in at runtime, no schema change required.
+
+1. **`TextFieldOptions.prefixIcon` / `.suffixIcon`** — shorthand for text/scalar/date fields  
+2. **`${Input}FieldIcons`** — companion class covering text fields **and** enum dropdown fields  
+3. **`${Input}Widgets.${field}Avatar`** — per-value `ChoiceChip.avatar` builder for chips fields
+
+Priority for text fields: `fieldIcons?.field` (level 2) takes precedence over `textConfig?.field?.prefixIcon` (level 1). The explicit `suffixIcon` param on `_textDecoration` (password toggle, validation spinner) always wins over `opts.suffixIcon`.
+
+---
+
+### 1. `TextFieldOptions` shorthand ⚡ added (phase 12)
+
+Two new fields on `TextFieldOptions`:
+
+```dart
+class TextFieldOptions {
+  ...
+  final Widget? prefixIcon;   // applied before decoration callback
+  final Widget? suffixIcon;   // applied before password toggle / spinner override
+}
+```
+
+Usage — bundle icon with keyboard config in one place:
+
+```dart
+AddVehicleInputForm(
+  textConfig: AddVehicleInputTextConfig(
+    email: TextFieldOptions(
+      keyboardType: TextInputType.emailAddress,
+      prefixIcon: const Icon(Icons.email_outlined),
+    ),
+  ),
+)
+```
+
+**`_textDecoration` helper** updated to apply both shortcuts before the `decoration` callback:
+
+```dart
+InputDecoration _textDecoration(Widget label, TextFieldOptions? opts, Widget? suffixIcon, [Widget? prefixIcon]) {
+  var d = _decoration(label);
+  final _pi = prefixIcon ?? opts?.prefixIcon;   // fieldIcons wins over textConfig
+  if (_pi != null) d = d.copyWith(prefixIcon: _pi);
+  if (opts?.suffixIcon != null) d = d.copyWith(suffixIcon: opts!.suffixIcon);
+  if (suffixIcon != null) d = d.copyWith(suffixIcon: suffixIcon); // toggle/spinner wins
+  return opts?.decoration?.call(d) ?? d;
+}
+```
+
+---
+
+### 2. `${Input}FieldIcons` companion ⚡ added (phase 12)
+
+Generated when the input has at least one text field **or** enum field. One `Widget? prefixIcon` slot per eligible field:
+
+```dart
+class AddVehicleInputFieldIcons {
+  final Widget? brand;    // text field
+  final Widget? model;    // text field
+  final Widget? fuelType; // enum field — applied to DropdownButtonFormField decoration
+  const AddVehicleInputFieldIcons({this.brand, this.model, this.fuelType});
+}
+```
+
+Added as `final AddVehicleInputFieldIcons? fieldIcons;` on the form widget.
+
+**Enum dropdown fields**: `prefixIcon` is piped via `.copyWith(prefixIcon: _form.fieldIcons?.field)` on the `_decoration(label)` call. Not applied to chips/radio variants — the group label handles those visually.
+
+**Text/scalar/date fields**: passed as the 4th argument to `_textDecoration` (highest priority, overrides `textConfig.prefixIcon`).
+
+Usage:
+
+```dart
+AddVehicleInputForm(
+  key: _key,
+  fieldIcons: AddVehicleInputFieldIcons(
+    brand: const Icon(Icons.directions_car_outlined),
+    fuelType: const Icon(Icons.local_gas_station_outlined),
+  ),
+)
+```
+
+---
+
+### 3. `Widgets.${field}Avatar` — chip avatars ⚡ added (phase 12)
+
+`${Input}Widgets` gains an `avatarBuilder` per enum chip field and per bool chip field.  
+Maps directly to `ChoiceChip.avatar`.
+
+```dart
+class AddVehicleInputWidgets {
+  final SelectWidget? fuelType;
+  final Widget? Function(FuelType)? fuelTypeAvatar;    // ← new
+
+  final BoolFieldWidget? available;
+  final Widget? Function(bool)? availableAvatar;       // ← new
+
+  const AddVehicleInputWidgets({
+    this.fuelType,
+    this.fuelTypeAvatar,
+    this.available,
+    this.availableAvatar,
+  });
+}
+```
+
+Only applied when the field is rendered as chips (`SelectWidget.chips` / `BoolFieldWidget.chips`). Ignored for radio and dropdown variants.
+
+Usage:
+
+```dart
+AddVehicleInputForm(
+  widgets: AddVehicleInputWidgets(
+    fuelType: EnumFieldWidget.chips,
+    fuelTypeAvatar: (ft) => Icon(switch (ft) {
+      FuelType.ELECTRIC => Icons.electric_bolt,
+      FuelType.HYBRID   => Icons.bolt,
+      _                 => Icons.local_gas_station,
+    }, size: 16),
+    available: BoolFieldWidget.chips,
+    availableAvatar: (v) => Icon(v ? Icons.check_circle_outline : Icons.cancel_outlined, size: 16),
+  ),
+)
+```
+
+**Scope**: chips only. Radio per-value icons are out of scope for phase 12 (`RadioListTile` has no native leading slot without custom rendering).
 
 ---
 

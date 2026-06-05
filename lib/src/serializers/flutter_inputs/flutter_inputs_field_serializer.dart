@@ -58,7 +58,7 @@ class FlutterInputsFieldSerializer {
       'enableSuggestions: _form.textConfig?.$name?.enableSuggestions ?? ${_types.smartEnableSuggestions(f)}',
       'maxLength: _form.textConfig?.$name?.maxLength',
       'maxLines: _form.textConfig?.$name?.maxLines ?? 1',
-      'decoration: _textDecoration(label, _form.textConfig?.$name, _${name}Validating ? $spinnerExpr : null)',
+      'decoration: _textDecoration(label, _form.textConfig?.$name, _${name}Validating ? $spinnerExpr : null, _form.fieldIcons?.$name)',
       'onChanged: (_) => _onFieldChanged()',
       'validator: ${_u.functionLiteral(['v'], validators)}',
     ]);
@@ -86,7 +86,7 @@ class FlutterInputsFieldSerializer {
       'controller: _${name}Controller',
       'enabled: $enabledExpr',
       'keyboardType: TextInputType.number',
-      'decoration: _textDecoration(label, _form.textConfig?.$name, _${name}Validating ? $spinnerExpr : null)',
+      'decoration: _textDecoration(label, _form.textConfig?.$name, _${name}Validating ? $spinnerExpr : null, _form.fieldIcons?.$name)',
       'onChanged: (_) => _onFieldChanged()',
       'validator: ${_u.functionLiteral(['v'], validators)}',
     ]);
@@ -122,7 +122,7 @@ class FlutterInputsFieldSerializer {
       'enableSuggestions: _form.textConfig?.$name?.enableSuggestions ?? ${_types.smartEnableSuggestions(f)}',
       'maxLength: _form.textConfig?.$name?.maxLength',
       'maxLines: _form.textConfig?.$name?.maxLines ?? 1',
-      'decoration: _textDecoration(label, _form.textConfig?.$name, $suffixIconExpr)',
+      'decoration: _textDecoration(label, _form.textConfig?.$name, $suffixIconExpr, _form.fieldIcons?.$name)',
       'onChanged: (_) => _onFieldChanged()',
       'validator: ${_u.functionLiteral(['v'], validators)}',
     ]);
@@ -140,7 +140,7 @@ class FlutterInputsFieldSerializer {
 
     return _u.callExpression('DropdownButtonFormField<$enumType?>', [
       'key: _${name}FieldKey',
-      'decoration: _decoration(label).copyWith(enabled: $enabledExpr)',
+      'decoration: _decoration(label).copyWith(enabled: $enabledExpr, prefixIcon: _form.fieldIcons?.$name)',
       'value: _$name',
       _u.listArg('items', [
         "DropdownMenuItem<$enumType?>(value: null, child: _form.dropdownLabels?.$name?.unselected ?? Text(_form.strings.chooseAnOption, style: TextStyle(fontStyle: FontStyle.italic, color: Theme.of(context).hintColor)))",
@@ -175,6 +175,7 @@ class FlutterInputsFieldSerializer {
             'spacing: 8',
             'children: $enumType.values.map((e) => ${_u.callExpression('ChoiceChip', [
               'key: ValueKey(e)',
+              'avatar: _form.widgets?.${name}Avatar?.call(e)',
               'label: _form.dropdownLabels?.$name?.call(e) ?? Text(e.name)',
               'selected: field.value == e',
               'side: field.hasError ? BorderSide(color: Theme.of(context).colorScheme.error) : null',
@@ -286,6 +287,7 @@ class FlutterInputsFieldSerializer {
               _u.listArg('children', [
                 _u.callExpression('ChoiceChip', [
                   'key: const ValueKey(true)',
+                  'avatar: _form.widgets?.${name}Avatar?.call(true)',
                   'label: tl',
                   'selected: field.value == true',
                   'side: field.hasError ? BorderSide(color: Theme.of(context).colorScheme.error) : null',
@@ -293,6 +295,7 @@ class FlutterInputsFieldSerializer {
                 ]),
                 _u.callExpression('ChoiceChip', [
                   'key: const ValueKey(false)',
+                  'avatar: _form.widgets?.${name}Avatar?.call(false)',
                   'label: fl',
                   'selected: field.value == false',
                   'side: field.hasError ? BorderSide(color: Theme.of(context).colorScheme.error) : null',
@@ -379,6 +382,7 @@ class FlutterInputsFieldSerializer {
               _u.listArg('children', [
                 _u.callExpression('ChoiceChip', [
                   'key: const ValueKey(true)',
+                  'avatar: _form.widgets?.${name}Avatar?.call(true)',
                   'label: tl',
                   'selected: field.value ?? false',
                   'side: field.hasError ? BorderSide(color: Theme.of(context).colorScheme.error) : null',
@@ -386,6 +390,7 @@ class FlutterInputsFieldSerializer {
                 ]),
                 _u.callExpression('ChoiceChip', [
                   'key: const ValueKey(false)',
+                  'avatar: _form.widgets?.${name}Avatar?.call(false)',
                   'label: fl',
                   'selected: !(field.value ?? false)',
                   'side: field.hasError ? BorderSide(color: Theme.of(context).colorScheme.error) : null',
