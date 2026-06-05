@@ -303,8 +303,11 @@ type Subscription {
   # Subscription with a scalar argument.
   userStatusChanged(userId: ID!): User!
 
-  # Emits an incrementing counter every 2 s — used for the reconnect test.
+  # Emits an incrementing counter every 1 s.
   counterTick: Int!
+
+  # Like counterTick but the server self-restarts after emitting tick stopAt.
+  counterTickRestart(stopAt: Int!): Int!
 }
 
 
