@@ -233,7 +233,7 @@ class FlutterInputsDateSerializer {
 
     final selectDropdownExpr = _u.callExpression('DropdownButtonFormField<String?>', [
       'key: _${name}FieldKey',
-      'decoration: _decoration(label).copyWith(enabled: enabled)',
+      'decoration: _decoration(label).copyWith(enabled: enabled, prefixIcon: _form.fieldIcons?.$name)',
       'value: _${name}Controller.text.isEmpty ? null : _${name}Controller.text',
       _u.listArg('items', [
         "DropdownMenuItem<String?>(value: null, child: Text(_form.strings.chooseAnOption, style: TextStyle(fontStyle: FontStyle.italic, color: Theme.of(context).hintColor)))",
@@ -301,7 +301,7 @@ class FlutterInputsDateSerializer {
         "tooltip: _form.dateConfig!.$name!.type == DateType.dateTime ? _form.strings.pickDateAndTime : _form.strings.pickDate",
         'icon: const Icon(Icons.calendar_today_outlined)',
         'onPressed: enabled ? () => _pickDate(_${name}Controller, _form.dateConfig!.$name!) : null',
-      ])})',
+      ])}, _form.fieldIcons?.$name)',
       'validator: ${_u.functionLiteral(['v'], dateValidators)}',
     ]);
 
@@ -370,7 +370,7 @@ class FlutterInputsDateSerializer {
             _u.callExpression('InkWell', [
               'onTap: enabled ? () => setState(() => _${name}CalendarOpen = !_${name}CalendarOpen) : null',
               'child: ${_u.callExpression('InputDecorator', [
-                'decoration: _decoration(label).copyWith(errorText: field.errorText, suffixIcon: Icon(_${name}CalendarOpen ? Icons.keyboard_arrow_up_outlined : Icons.calendar_today_outlined))',
+                'decoration: _decoration(label).copyWith(errorText: field.errorText, prefixIcon: _form.fieldIcons?.$name, suffixIcon: Icon(_${name}CalendarOpen ? Icons.keyboard_arrow_up_outlined : Icons.calendar_today_outlined))',
                 'child: Text(_${name}Controller.text.isEmpty ? \'\' : _${name}Controller.text)',
               ])}',
             ]),

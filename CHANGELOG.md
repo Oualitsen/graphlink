@@ -393,6 +393,9 @@
   - `isDirty` getter, `scrollToFirstError`, `updateErrorsNotifier`, and `scrollToField` helpers emitted automatically
   - `setSubmitting` propagated to nested sub-input forms (stepper child forms disabled together)
   - Optional `focusNodes` parameter when text fields are present
+  - New `${Input}FieldIcons` companion class — pass a `Widget?` per text or dropdown field to render as `prefixIcon` in its `InputDecoration`
+  - `TextFieldOptions` gains `prefixIcon` and `suffixIcon` fields — lower-priority icon slot overridden by `FieldIcons` at the field level; password-toggle always wins the suffix
+  - New `{field}Avatar` callbacks on `${Input}Widgets` — `Widget? Function(T)?` per enum field and `Widget? Function(bool)?` per bool field; rendered as `ChoiceChip.avatar` in chip/radio rows
 
 ### Fixes
 

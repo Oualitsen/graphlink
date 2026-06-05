@@ -44,7 +44,7 @@ class MyApp extends StatelessWidget {
       title: 'GraphLink Flutter UI Example',
       theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.indigo),
       home: DefaultTabController(
-        length: 17,
+        length: 18,
         child: Scaffold(
           appBar: AppBar(
             title: const Text('GraphLink Flutter UI'),
@@ -68,6 +68,7 @@ class MyApp extends StatelessWidget {
                 Tab(text: 'Expandable'),
                 Tab(text: 'Field Info'),
                 Tab(text: 'Select Fields'),
+                Tab(text: 'Field Icons'),
               ],
             ),
           ),
@@ -90,6 +91,7 @@ class MyApp extends StatelessWidget {
               _ExpandableTab(),
               _FieldInfoTab(),
               _SelectFieldsTab(),
+              _FieldIconsTab(),
             ],
           ),
         ),
@@ -2511,6 +2513,236 @@ class _SelectFieldsTabState extends State<_SelectFieldsTab> {
           ],
         ),
       );
+}
+
+// ── Tab 18: Field Icons ────────────────────────────────────────────────────────
+
+class _FieldIconsTab extends StatefulWidget {
+  const _FieldIconsTab();
+  @override
+  State<_FieldIconsTab> createState() => _FieldIconsTabState();
+}
+
+class _FieldIconsTabState extends State<_FieldIconsTab> {
+  // Demo 1 — FieldIcons companion (covers text + dropdown fields)
+  final _key1 = GlobalKey<AddVehicleInputFormState>();
+  bool _showFieldIcons = true;
+  AddVehicleInput? _result1;
+
+  // Demo 2 — TextFieldOptions.prefixIcon / .suffixIcon shorthand
+  final _key2 = GlobalKey<AddVehicleInputFormState>();
+  bool _showTextConfigIcons = true;
+  AddVehicleInput? _result2;
+
+  // Demo 3 — Widgets.{field}Avatar for chips
+  final _key3 = GlobalKey<AddVehicleInputFormState>();
+  bool _showAvatars = true;
+  AddVehicleInput? _result3;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Field Icons', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 4),
+          const Text(
+            'Three independent ways to add icons to form fields. '
+            'Toggle each on/off to compare with and without icons.',
+          ),
+          const Divider(height: 24),
+
+          // ── Demo 1: FieldIcons companion ────────────────────────────────────
+          Text('1. ${r"AddVehicleInputFieldIcons"} companion',
+              style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 4),
+          const Text(
+            'Prefix icons on text and dropdown fields in one companion object. '
+            'Takes precedence over TextFieldOptions.prefixIcon.',
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Text('Show icons'),
+              const SizedBox(width: 8),
+              Switch(
+                value: _showFieldIcons,
+                onChanged: (v) => setState(() => _showFieldIcons = v),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          AddVehicleInputForm(
+            key: _key1,
+            fieldIcons: _showFieldIcons
+                ? const AddVehicleInputFieldIcons(
+                    brand: Icon(Icons.directions_car_outlined),
+                    model: Icon(Icons.text_fields_outlined),
+                    year: Icon(Icons.calendar_today_outlined),
+                    fuelType: Icon(Icons.local_gas_station_outlined),
+                    mileage: Icon(Icons.speed_outlined),
+                    notes: Icon(Icons.notes_outlined),
+                  )
+                : null,
+          ),
+          const SizedBox(height: 12),
+          _submitRow(onSubmit: () {
+            try {
+              setState(() => _result1 = _key1.currentState!.read());
+            } on InputReadException catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+              );
+            }
+          }),
+          if (_result1 != null) ...[
+            const SizedBox(height: 12),
+            _ResultCard(result: _result1!),
+          ],
+
+          const Divider(height: 32),
+
+          // ── Demo 2: TextFieldOptions.prefixIcon / .suffixIcon ───────────────
+          Text('2. TextFieldOptions.prefixIcon / .suffixIcon',
+              style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 4),
+          const Text(
+            'Per-field shorthand on TextFieldOptions — convenient when you are '
+            'already configuring keyboard type in the same object. '
+            'suffixIcon shown on the mileage field (the km label).',
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Text('Show icons'),
+              const SizedBox(width: 8),
+              Switch(
+                value: _showTextConfigIcons,
+                onChanged: (v) => setState(() => _showTextConfigIcons = v),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          AddVehicleInputForm(
+            key: _key2,
+            textConfig: _showTextConfigIcons
+                ? AddVehicleInputTextConfig(
+                    brand: const TextFieldOptions(
+                      prefixIcon: Icon(Icons.directions_car_outlined),
+                    ),
+                    model: const TextFieldOptions(
+                      prefixIcon: Icon(Icons.text_fields_outlined),
+                    ),
+                    year: const TextFieldOptions(
+                      keyboardType: TextInputType.number,
+                      prefixIcon: Icon(Icons.calendar_today_outlined),
+                    ),
+                    mileage: TextFieldOptions(
+                      keyboardType: TextInputType.number,
+                      prefixIcon: const Icon(Icons.speed_outlined),
+                      suffixIcon: Text(
+                        'km',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    notes: const TextFieldOptions(
+                      prefixIcon: Icon(Icons.notes_outlined),
+                    ),
+                  )
+                : null,
+          ),
+          const SizedBox(height: 12),
+          _submitRow(onSubmit: () {
+            try {
+              setState(() => _result2 = _key2.currentState!.read());
+            } on InputReadException catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+              );
+            }
+          }),
+          if (_result2 != null) ...[
+            const SizedBox(height: 12),
+            _ResultCard(result: _result2!),
+          ],
+
+          const Divider(height: 32),
+
+          // ── Demo 3: Chip avatars ─────────────────────────────────────────────
+          Text('3. Widgets.{field}Avatar — chip avatars',
+              style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 4),
+          const Text(
+            'Per-value icons on ChoiceChip widgets. '
+            'fuelType gets a fuel-specific icon; available gets a check/cancel icon. '
+            'Chips only — avatars are ignored for dropdown and radio variants.',
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Text('Show avatars'),
+              const SizedBox(width: 8),
+              Switch(
+                value: _showAvatars,
+                onChanged: (v) => setState(() => _showAvatars = v),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          AddVehicleInputForm(
+            key: _key3,
+            widgets: AddVehicleInputWidgets(
+              fuelType: SelectWidget.chips,
+              fuelTypeAvatar: _showAvatars
+                  ? (ft) => Icon(_fuelTypeIcon(ft), size: 16)
+                  : null,
+              available: BoolFieldWidget.chips,
+              availableAvatar: _showAvatars
+                  ? (v) => Icon(
+                        v ? Icons.check_circle_outline : Icons.cancel_outlined,
+                        size: 16,
+                      )
+                  : null,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _submitRow(onSubmit: () {
+            try {
+              setState(() => _result3 = _key3.currentState!.read());
+            } on InputReadException catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+              );
+            }
+          }),
+          if (_result3 != null) ...[
+            const SizedBox(height: 12),
+            _ResultCard(result: _result3!),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _submitRow({required VoidCallback onSubmit}) => SizedBox(
+        width: double.infinity,
+        child: FilledButton(
+          onPressed: onSubmit,
+          child: const Text('Read'),
+        ),
+      );
+
+  IconData _fuelTypeIcon(FuelType ft) => switch (ft) {
+        FuelType.ELECTRIC => Icons.electric_bolt,
+        FuelType.HYBRID => Icons.bolt,
+        FuelType.DIESEL => Icons.opacity,
+        FuelType.GASOLINE => Icons.local_gas_station,
+      };
 }
 
 // ── Shared result display ─────────────────────────────────────────────────────

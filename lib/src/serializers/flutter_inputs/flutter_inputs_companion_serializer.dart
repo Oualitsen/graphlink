@@ -140,15 +140,34 @@ class FlutterInputsCompanionSerializer {
       className: '${inputName}Widgets',
       statements: [
         ...enumFields.map((f) => 'final SelectWidget? ${f.name};'),
+        ...enumFields.map((f) => 'final Widget? Function(${f.type.firstType.token})? ${f.name}Avatar;'),
         ...boolFields.map((f) => 'final BoolFieldWidget? ${f.name};'),
+        ...boolFields.map((f) => 'final Widget? Function(bool)? ${f.name}Avatar;'),
         _u.createMethod(
           isConst: true,
           methodName: '${inputName}Widgets',
           namedArguments: true,
           arguments: [
-            ...enumFields.map((f) => 'this.${f.name}'),
-            ...boolFields.map((f) => 'this.${f.name}'),
+            ...enumFields.expand((f) => ['this.${f.name}', 'this.${f.name}Avatar']),
+            ...boolFields.expand((f) => ['this.${f.name}', 'this.${f.name}Avatar']),
           ],
+        ),
+      ],
+    );
+  }
+
+  String serializeFieldIconsClass(String inputName, List<GLField> textFields, List<GLField> enumFields) {
+    final iconFields = [...textFields, ...enumFields];
+    if (iconFields.isEmpty) return '';
+    return _u.createClass(
+      className: '${inputName}FieldIcons',
+      statements: [
+        ...iconFields.map((f) => 'final Widget? ${f.name};'),
+        _u.createMethod(
+          isConst: true,
+          methodName: '${inputName}FieldIcons',
+          namedArguments: true,
+          arguments: iconFields.map((f) => 'this.${f.name}').toList(),
         ),
       ],
     );

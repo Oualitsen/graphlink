@@ -53,6 +53,8 @@ class TextFieldOptions {
   final bool obscureText;
   final int? maxLength;
   final int? maxLines;
+  final Widget? prefixIcon;
+  final Widget? suffixIcon;
   final InputDecoration Function(InputDecoration)? decoration;
 
   const TextFieldOptions({
@@ -64,6 +66,8 @@ class TextFieldOptions {
     this.obscureText = false,
     this.maxLength,
     this.maxLines = 1,
+    this.prefixIcon,
+    this.suffixIcon,
     this.decoration,
   });
 }

@@ -142,11 +142,14 @@ class FlutterInputsSerializer {
       buf.writeln('//   ${inputName}DropdownLabels label overrides for enum / bool / list-of-enum options');
     }
     if (enumFields.isNotEmpty || boolFields.isNotEmpty) {
-      buf.writeln('//   ${inputName}Widgets        per-field widget style (dropdown / chips / radio)');
+      buf.writeln('//   ${inputName}Widgets        per-field widget style (dropdown / chips / radio); .{field}Avatar for chip avatars');
     }
     if (textFields.isNotEmpty) {
-      buf.writeln('//   ${inputName}TextConfig     TextFieldOptions per text/scalar field');
+      buf.writeln('//   ${inputName}TextConfig     TextFieldOptions per text/scalar field (includes .prefixIcon/.suffixIcon)');
       buf.writeln('//   ${inputName}SelectConfig   turn any text/int/float field into a pick-one widget');
+    }
+    if (textFields.isNotEmpty || enumFields.isNotEmpty) {
+      buf.writeln('//   ${inputName}FieldIcons     prefixIcon per text/dropdown field (wins over TextFieldOptions.prefixIcon)');
     }
     if (dateEligibleFields.isNotEmpty) {
       buf.writeln('//   ${inputName}DateConfig     make int/string fields into date pickers');
@@ -264,6 +267,15 @@ class FlutterInputsSerializer {
     if (textFields.isNotEmpty) {
       buffer.writeln(_companions.serializeSelectConfigClass(inputName, textFields));
       buffer.writeln();
+      buffer.writeln(_companions.serializeFocusNodesClass(inputName, textFields));
+      buffer.writeln();
+    }
+    if (textFields.isNotEmpty || enumFields.isNotEmpty) {
+      final fieldIcons = _companions.serializeFieldIconsClass(inputName, textFields, enumFields);
+      if (fieldIcons.isNotEmpty) {
+        buffer.writeln(fieldIcons);
+        buffer.writeln();
+      }
     }
     if (hasSubInputs) {
       buffer.writeln(_companions.serializeStepConfigClass(inputName, hasScalarFields, inputFields, inputListFields));
