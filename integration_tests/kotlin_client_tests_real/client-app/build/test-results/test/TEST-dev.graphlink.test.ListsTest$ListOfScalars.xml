@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="dev.graphlink.test.ListsTest$ListOfScalars" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-06-04T04:01:59.444Z" hostname="MacBook-Pro.local" time="0.024">
+<testsuite name="dev.graphlink.test.ListsTest$ListOfScalars" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-06-05T13:57:35.557Z" hostname="MacBook-Pro.local" time="0.02">
   <properties/>
-  <testcase name="scores_onAlice_isListOfInts()" classname="dev.graphlink.test.ListsTest$ListOfScalars" time="0.006"/>
-  <testcase name="scores_onBob_isNull()" classname="dev.graphlink.test.ListsTest$ListOfScalars" time="0.006"/>
+  <testcase name="scores_onAlice_isListOfInts()" classname="dev.graphlink.test.ListsTest$ListOfScalars" time="0.005"/>
+  <testcase name="scores_onBob_isNull()" classname="dev.graphlink.test.ListsTest$ListOfScalars" time="0.004"/>
   <testcase name="tags_onAlice_isListOfStrings()" classname="dev.graphlink.test.ListsTest$ListOfScalars" time="0.005"/>
-  <testcase name="tags_onBob_isEmpty()" classname="dev.graphlink.test.ListsTest$ListOfScalars" time="0.005"/>
+  <testcase name="tags_onBob_isEmpty()" classname="dev.graphlink.test.ListsTest$ListOfScalars" time="0.004"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

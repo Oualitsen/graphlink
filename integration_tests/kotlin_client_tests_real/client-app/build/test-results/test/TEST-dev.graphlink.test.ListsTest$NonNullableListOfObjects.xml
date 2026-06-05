@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="dev.graphlink.test.ListsTest$NonNullableListOfObjects" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-06-04T04:01:59.497Z" hostname="MacBook-Pro.local" time="0.034">
+<testsuite name="dev.graphlink.test.ListsTest$NonNullableListOfObjects" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-06-05T13:57:35.599Z" hostname="MacBook-Pro.local" time="0.027">
   <properties/>
-  <testcase name="listUsers_secondItem_hasCorrectId()" classname="dev.graphlink.test.ListsTest$NonNullableListOfObjects" time="0.007"/>
-  <testcase name="listUsers_isNotNull()" classname="dev.graphlink.test.ListsTest$NonNullableListOfObjects" time="0.005"/>
-  <testcase name="listUsers_firstItem_isUserType()" classname="dev.graphlink.test.ListsTest$NonNullableListOfObjects" time="0.005"/>
-  <testcase name="listUsers_hasTwoItems()" classname="dev.graphlink.test.ListsTest$NonNullableListOfObjects" time="0.005"/>
-  <testcase name="listUsers_items_haveDeserializedEnums()" classname="dev.graphlink.test.ListsTest$NonNullableListOfObjects" time="0.005"/>
-  <testcase name="listUsers_firstItem_hasCorrectId()" classname="dev.graphlink.test.ListsTest$NonNullableListOfObjects" time="0.005"/>
+  <testcase name="listUsers_secondItem_hasCorrectId()" classname="dev.graphlink.test.ListsTest$NonNullableListOfObjects" time="0.005"/>
+  <testcase name="listUsers_isNotNull()" classname="dev.graphlink.test.ListsTest$NonNullableListOfObjects" time="0.004"/>
+  <testcase name="listUsers_firstItem_isUserType()" classname="dev.graphlink.test.ListsTest$NonNullableListOfObjects" time="0.004"/>
+  <testcase name="listUsers_hasTwoItems()" classname="dev.graphlink.test.ListsTest$NonNullableListOfObjects" time="0.004"/>
+  <testcase name="listUsers_items_haveDeserializedEnums()" classname="dev.graphlink.test.ListsTest$NonNullableListOfObjects" time="0.004"/>
+  <testcase name="listUsers_firstItem_hasCorrectId()" classname="dev.graphlink.test.ListsTest$NonNullableListOfObjects" time="0.004"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

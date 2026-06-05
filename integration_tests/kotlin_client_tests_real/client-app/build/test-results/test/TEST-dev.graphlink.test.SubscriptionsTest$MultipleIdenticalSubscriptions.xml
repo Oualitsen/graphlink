@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.graphlink.test.SubscriptionsTest$MultipleIdenticalSubscriptions" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-06-05T13:57:36.057Z" hostname="MacBook-Pro.local" time="0.016">
+  <properties/>
+  <testcase name="userCreated_registeredTwice_bothReceiveAllEvents()" classname="dev.graphlink.test.SubscriptionsTest$MultipleIdenticalSubscriptions" time="0.008"/>
+  <testcase name="userStatusChanged_sameArg_registeredTwice_bothReceiveEvent()" classname="dev.graphlink.test.SubscriptionsTest$MultipleIdenticalSubscriptions" time="0.008"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

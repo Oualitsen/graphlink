@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="dev.graphlink.test.CycleTest$PostWithCoAuthor" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-06-04T04:01:59.067Z" hostname="MacBook-Pro.local" time="0.042">
+<testsuite name="dev.graphlink.test.CycleTest$PostWithCoAuthor" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-06-05T13:57:35.242Z" hostname="MacBook-Pro.local" time="0.03">
   <properties/>
-  <testcase name="post_coAuthor_isTruncatedUserType()" classname="dev.graphlink.test.CycleTest$PostWithCoAuthor" time="0.01"/>
-  <testcase name="post_coAuthor_hasCorrectId()" classname="dev.graphlink.test.CycleTest$PostWithCoAuthor" time="0.009"/>
-  <testcase name="post_coAuthor_isNotNull()" classname="dev.graphlink.test.CycleTest$PostWithCoAuthor" time="0.012"/>
-  <testcase name="post_author_and_coAuthor_haveDifferentIds()" classname="dev.graphlink.test.CycleTest$PostWithCoAuthor" time="0.01"/>
+  <testcase name="post_coAuthor_isTruncatedUserType()" classname="dev.graphlink.test.CycleTest$PostWithCoAuthor" time="0.008"/>
+  <testcase name="post_coAuthor_hasCorrectId()" classname="dev.graphlink.test.CycleTest$PostWithCoAuthor" time="0.007"/>
+  <testcase name="post_coAuthor_isNotNull()" classname="dev.graphlink.test.CycleTest$PostWithCoAuthor" time="0.006"/>
+  <testcase name="post_author_and_coAuthor_haveDifferentIds()" classname="dev.graphlink.test.CycleTest$PostWithCoAuthor" time="0.007"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>
