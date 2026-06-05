@@ -141,4 +141,5 @@ type Subscription {
   userCreated: User!
   userCreateds(ids: [ID!]!): [User!]
   userStatusChanged(userId: ID!): User!
+  counterTick: Int!
 }

@@ -7,6 +7,7 @@ import org.springframework.graphql.data.method.annotation.SubscriptionMapping;
 import org.springframework.stereotype.Controller;
 import reactor.core.publisher.Flux;
 
+import java.time.Duration;
 import java.util.List;
 
 @Controller
@@ -31,5 +32,10 @@ public class SubscriptionController {
         User user = DataFixtures.userById(userId);
         if (user == null) user = DataFixtures.ALICE;
         return Flux.just(user);
+    }
+
+    @SubscriptionMapping
+    public Flux<Integer> counterTick() {
+        return Flux.interval(Duration.ofSeconds(2)).map(i -> i.intValue());
     }
 }
