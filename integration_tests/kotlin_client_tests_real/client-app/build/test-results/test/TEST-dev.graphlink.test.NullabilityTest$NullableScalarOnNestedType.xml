@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="dev.graphlink.test.NullabilityTest$NullableScalarOnNestedType" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-06-05T13:57:35.821Z" hostname="MacBook-Pro.local" time="0.008">
-  <properties/>
-  <testcase name="address_zip_isNull_forBob()" classname="dev.graphlink.test.NullabilityTest$NullableScalarOnNestedType" time="0.004"/>
-  <testcase name="address_zip_isPresent_forAlice()" classname="dev.graphlink.test.NullabilityTest$NullableScalarOnNestedType" time="0.004"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

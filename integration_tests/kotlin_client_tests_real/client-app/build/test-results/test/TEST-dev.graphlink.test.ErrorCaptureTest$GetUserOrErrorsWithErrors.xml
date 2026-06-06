@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="dev.graphlink.test.ErrorCaptureTest$GetUserOrErrorsWithErrors" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-06-05T13:57:35.488Z" hostname="MacBook-Pro.local" time="0.019">
-  <properties/>
-  <testcase name="doesNotThrow_whenServerReturnsError()" classname="dev.graphlink.test.ErrorCaptureTest$GetUserOrErrorsWithErrors" time="0.006"/>
-  <testcase name="errors_hasMessage_forUnknownId()" classname="dev.graphlink.test.ErrorCaptureTest$GetUserOrErrorsWithErrors" time="0.006"/>
-  <testcase name="errors_isNonEmpty_forUnknownId()" classname="dev.graphlink.test.ErrorCaptureTest$GetUserOrErrorsWithErrors" time="0.006"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

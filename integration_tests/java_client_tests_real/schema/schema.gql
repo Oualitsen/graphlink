@@ -302,6 +302,9 @@ type Subscription {
 
   # Subscription with a scalar argument.
   userStatusChanged(userId: ID!): User!
+
+  # Counter that ticks every second — used for reconnect tests.
+  counterTick: Int!
 }
 
 

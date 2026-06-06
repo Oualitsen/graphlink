@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="dev.graphlink.test.InputsTest$CreateUserInput_OptionalFields" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-06-05T13:57:35.517Z" hostname="MacBook-Pro.local" time="0.007">
-  <properties/>
-  <testcase name="createUser_withPriority_isReflectedInResponse()" classname="dev.graphlink.test.InputsTest$CreateUserInput_OptionalFields" time="0.007"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

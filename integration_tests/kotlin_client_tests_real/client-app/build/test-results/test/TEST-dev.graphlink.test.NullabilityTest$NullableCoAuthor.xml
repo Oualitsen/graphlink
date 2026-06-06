@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="dev.graphlink.test.NullabilityTest$NullableCoAuthor" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-06-05T13:57:35.783Z" hostname="MacBook-Pro.local" time="0.008">
-  <properties/>
-  <testcase name="coAuthor_isNotNull_forPost2()" classname="dev.graphlink.test.NullabilityTest$NullableCoAuthor" time="0.004"/>
-  <testcase name="coAuthor_isNull_forPost1()" classname="dev.graphlink.test.NullabilityTest$NullableCoAuthor" time="0.004"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

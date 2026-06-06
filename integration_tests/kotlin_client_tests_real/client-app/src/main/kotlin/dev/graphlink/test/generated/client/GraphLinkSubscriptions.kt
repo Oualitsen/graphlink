@@ -10,9 +10,11 @@ import dev.graphlink.test.generated.types.GraphLinkPayload
 import dev.graphlink.test.generated.types.UserCreatedResponse
 import dev.graphlink.test.generated.types.UserCreatedsResponse
 import dev.graphlink.test.generated.types.UserStatusChangedResponse
+import dev.graphlink.test.generated.types.CounterTickResponse
 import dev.graphlink.test.generated.types.UserCreatedFullResponse
 import dev.graphlink.test.generated.types.UserCreatedsFullResponse
 import dev.graphlink.test.generated.types.UserStatusChangedFullResponse
+import dev.graphlink.test.generated.types.CounterTickFullResponse
 import dev.graphlink.test.generated.interfaces.GraphLinkClientAdapter
 import dev.graphlink.test.generated.interfaces.GraphLinkJsonEncoder
 import dev.graphlink.test.generated.interfaces.GraphLinkJsonDecoder
@@ -52,6 +54,13 @@ open class GraphLinkSubscriptions(
       val __gl_variables__ = mapOf("userId" to userId)
       val __gl_payload__ = GraphLinkPayload(query = __gl_query__, operationName = __gl_operationName__, variables = __gl_variables__)
       return handler.handle(__gl_payload__).map { UserStatusChangedResponse.fromJson(it) }
+   }
+   fun counterTick(): Flow<CounterTickResponse> {
+      val __gl_operationName__ = "counterTick"
+      val __gl_query__ = "subscription counterTick{counterTick}"
+      val __gl_variables__ = emptyMap<String, Any?>()
+      val __gl_payload__ = GraphLinkPayload(query = __gl_query__, operationName = __gl_operationName__, variables = __gl_variables__)
+      return handler.handle(__gl_payload__).map { CounterTickResponse.fromJson(it) }
    }
 }
 

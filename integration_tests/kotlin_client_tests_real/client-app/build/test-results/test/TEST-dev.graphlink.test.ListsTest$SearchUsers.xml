@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="dev.graphlink.test.ListsTest$SearchUsers" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-06-05T13:57:35.627Z" hostname="MacBook-Pro.local" time="0.013">
-  <properties/>
-  <testcase name="searchUsers_returnsMatchingUsers()" classname="dev.graphlink.test.ListsTest$SearchUsers" time="0.008"/>
-  <testcase name="searchUsers_withLimit_respectsLimit()" classname="dev.graphlink.test.ListsTest$SearchUsers" time="0.005"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

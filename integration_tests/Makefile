@@ -1,4 +1,4 @@
-.PHONY: dart typescript java kotlin dart-real typescript-real java-real kotlin-real server upload-server all all-real kill-servers start-server start-upload-server start-main-server start-servers
+.PHONY: dart typescript java kotlin dart-real typescript-real java-real kotlin-real server upload-server all all-real kill-servers kill-ports start-server start-upload-server start-main-server start-servers
 
 dart:
 	$(MAKE) -C dart_client_tests ci
@@ -53,12 +53,14 @@ start-upload-server:
 	@echo "Upload server running on http://localhost:9998/graphql"
 
 start-main-server:
+	$(eval _PORT := $(word 2,$(MAKECMDGOALS)))
+	@if [ -z "$(_PORT)" ]; then echo "Usage: make start-main-server <port>"; exit 1; fi
 	curl -s -X POST http://localhost:9990/actuator/shutdown || true
-	lsof -ti :9999 | xargs kill -9 2>/dev/null || true
+	lsof -ti :$(_PORT) | xargs kill -9 2>/dev/null || true
 	sleep 1
-	java -jar spring_server/build/libs/graphlink-test-server-0.0.1.jar &
+	java -Dserver.port=$(_PORT) -jar spring_server/build/libs/graphlink-test-server-0.0.1.jar &
 	sleep 6
-	@echo "Test server running on http://localhost:9999/graphql"
+	@echo "Test server running on http://localhost:$(_PORT)/graphql"
 
 start-servers: start-server start-upload-server
 
@@ -67,3 +69,16 @@ kill-servers:
 	curl -s -X POST http://localhost:9991/actuator/shutdown || true
 	lsof -ti :9999 | xargs kill -9 2>/dev/null || true
 	lsof -ti :9998 | xargs kill -9 2>/dev/null || true
+
+%:
+	@:
+
+kill-ports:
+	for port in $$(seq 9990 9999); do \
+		pids=$$(lsof -ti :$$port 2>/dev/null); \
+		if [ -n "$$pids" ]; then \
+			echo "$$pids" | xargs kill -9 2>/dev/null && echo "Killed process(es) on port $$port: $$pids" || echo "Failed to kill process(es) on port $$port: $$pids"; \
+		else \
+			echo "No process on port $$port"; \
+		fi; \
+	done
