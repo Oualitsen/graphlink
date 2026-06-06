@@ -82,7 +82,6 @@ class _SubscriptionHandler {
   }
 
   Future<void> _onReconnect() async {
-    print('[handler] _onReconnect: handshakeStatus=\$_handshakeStatus payloads=\${_payloads.length}');
     if (_handshakeStatus == _HandshakeStatus.progress) return;
     _handshakeStatus = _HandshakeStatus.none;
     if (_payloads.isEmpty) return;
@@ -90,11 +89,9 @@ class _SubscriptionHandler {
     final completer = _sinkCompleter;
     try {
       final sink = await _doHandshake();
-      print('[handler] _onReconnect: handshake done, re-subscribing \${_payloads.length} subscription(s)');
       completer?.complete(sink);
       for (final entry in _payloads.entries) {
         final id = entry.key;
-        print('[handler] _onReconnect: re-sending subscribe for \${entry.value.operationName} id=\$id');
         // Listener may have been cancelled when the initial connection failed;
         // re-establish it so incoming events reach the stream controller.
         if (!_subs.containsKey(id)) {
@@ -114,9 +111,7 @@ class _SubscriptionHandler {
             ));
         await sink.sendMessage(json.encode(msg.toJson()));
       }
-      print('[handler] _onReconnect: done');
     } catch (e) {
-      print('[handler] _onReconnect: error \$e');
       completer?.completeError(e);
       _sinkCompleter = null;
       for (final uuid in _map.keys) {
@@ -297,7 +292,6 @@ class DefaultGraphLinkWebSocketAdapter extends GraphLinkWebSocketAdapter {
   }
 
   Future<void> _createConnection() async {
-    print('[adapter] _createConnection: connecting to \$url');
     try {
       _channel = WebSocketChannel.connect(Uri.parse(url));
       _subscription = _channel!.stream.listen(
@@ -306,10 +300,8 @@ class DefaultGraphLinkWebSocketAdapter extends GraphLinkWebSocketAdapter {
         onDone: _onDone,
       );
       await _channel!.ready;
-      print('[adapter] _createConnection: connected');
       _connectionCompleter?.complete();
     } catch (e) {
-      print('[adapter] _createConnection: failed — \$e');
       _subscription?.cancel();
       _subscription = null;
       _channel = null;
@@ -324,7 +316,6 @@ class DefaultGraphLinkWebSocketAdapter extends GraphLinkWebSocketAdapter {
 
   void _onError(Object error) {
     if (_subscription == null) return;
-    print('[adapter] signal=ERROR error=\$error willReconnect=\${reconnect && !_reconnecting}');
     _subscription?.cancel();
     _subscription = null;
     _channel = null;
@@ -334,16 +325,6 @@ class DefaultGraphLinkWebSocketAdapter extends GraphLinkWebSocketAdapter {
   void _onDone() {
     if (_subscription == null) return;
     final closeCode = _channel?.closeCode;
-    final meaning = closeCode == null
-        ? 'abrupt drop (no close frame)'
-        : closeCode == 1000
-            ? 'normal closure — will NOT reconnect'
-            : closeCode == 1001
-                ? 'going away'
-                : closeCode == 1006
-                    ? 'abnormal closure'
-                    : 'code \$closeCode';
-    print('[adapter] signal=DONE closeCode=\$closeCode (\$meaning) willReconnect=\${reconnect && closeCode != 1000 && !_reconnecting}');
     _subscription?.cancel();
     _subscription = null;
     _channel = null;
@@ -352,27 +333,22 @@ class DefaultGraphLinkWebSocketAdapter extends GraphLinkWebSocketAdapter {
 
   Future<void> _reconnect() async {
     final cap = maxReconnectAttempts;
-    print('[adapter] reconnect: starting (max=\${cap ?? "∞"})');
     _reconnecting = true;
     try {
       while (!_disposed && (cap == null || _reconnectAttempts < cap)) {
         final delay = _backoffDelay(_reconnectAttempts);
         _reconnectAttempts++;
-        final label = cap != null ? '\$_reconnectAttempts/\$cap' : '\$_reconnectAttempts';
-        print('[adapter] reconnect: attempt \$label — retrying in \${(delay.inMilliseconds / 1000).toStringAsFixed(1)}s');
         await Future.delayed(delay);
         if (_disposed) break;
         try {
           await _connectOnce();
-          print('[adapter] reconnect: SUCCESS on attempt \$_reconnectAttempts');
           _reconnectAttempts = 0;
           _reconnectController.add(null);
           return;
         } catch (e) {
-          print('[adapter] reconnect: attempt \$_reconnectAttempts FAILED — \$e');
+          // retry
         }
       }
-      if (!_disposed) print('[adapter] reconnect: gave up after \$_reconnectAttempts attempts');
     } finally {
       _reconnecting = false;
     }
