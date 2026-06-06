@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.graphlink.test.SubscriptionReconnectTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-06-06T00:07:39.063Z" hostname="Host-002.lan" time="37.738">
+  <properties/>
+  <testcase name="counterTick_resumesAfterServerHalt()" classname="dev.graphlink.test.SubscriptionReconnectTest" time="9.847"/>
+  <testcase name="counterTick_nullMaxReconnectAttemptsRetriesIndefinitely()" classname="dev.graphlink.test.SubscriptionReconnectTest" time="21.718"/>
+  <testcase name="counterTick_subscribesBeforeServerIsAvailable()" classname="dev.graphlink.test.SubscriptionReconnectTest" time="6.169"/>
+  <system-out><![CDATA[[test] reconnectAttempts=1
+[test] reconnectAttempts=1
+[test] reconnectAttempts=2
+[test] reconnectAttempts=2
+[test] reconnectAttempts=2
+[test] reconnectAttempts=2
+[test] reconnectAttempts=2
+[test] reconnectAttempts=3
+[test] reconnectAttempts=3
+[test] reconnectAttempts=3
+[test] reconnectAttempts=3
+[test] reconnectAttempts=3
+[test] reconnectAttempts=4
+[test] reconnectAttempts=4
+[test] reconnectAttempts=4
+[test] reconnectAttempts=4
+[test] reconnectAttempts=4
+[test] reconnectAttempts=5
+[test] reconnectAttempts=5
+[test] reconnectAttempts=5
+[test] reconnectAttempts=5
+[test] reconnectAttempts=5
+[test] reconnectAttempts=6
+[test] reconnectAttempts=6
+[test] reconnectAttempts=6
+[test] reconnectAttempts=6
+[test] reconnectAttempts=6
+[test] reconnectAttempts=6
+[test] reconnectAttempts=7
+[test] reconnectAttempts=7
+[test] reconnectAttempts=7
+[test] reconnectAttempts=7
+[test] reconnectAttempts=7
+[test] reconnectAttempts=8
+[test] reconnectAttempts=8
+[test] reconnectAttempts=8
+[test] reconnectAttempts=8
+[test] reconnectAttempts=8
+[test] reconnectAttempts=9
+[test] reconnectAttempts=9
+[test] reconnectAttempts=9
+[test] reconnectAttempts=9
+[test] reconnectAttempts=10
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

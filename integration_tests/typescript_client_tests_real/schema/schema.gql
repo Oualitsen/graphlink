@@ -302,6 +302,9 @@ type Subscription {
 
   # Subscription with a scalar argument.
   userStatusChanged(userId: ID!): User!
+
+  # Emits an incrementing counter every 1 s.
+  counterTick: Int!
 }
 
 

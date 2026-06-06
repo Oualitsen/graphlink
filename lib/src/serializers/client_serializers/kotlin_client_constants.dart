@@ -245,7 +245,8 @@ import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okio.BufferedSink
-import okio.Okio
+import okio.buffer
+import okio.source
 
 class DefaultGraphLinkClientAdapter(
     private val url: String,
@@ -277,7 +278,7 @@ class DefaultGraphLinkClientAdapter(
                 override fun contentType() = upload.mimeType.toMediaType()
                 override fun contentLength() = upload.length
                 override fun writeTo(sink: BufferedSink) {
-                    sink.writeAll(Okio.source(upload.stream))
+                    sink.writeAll(upload.stream.source())
                 }
             }
             val uploadBody = if (onProgress != null) ProgressRequestBody(fileBody, onProgress) else fileBody
@@ -304,7 +305,7 @@ class DefaultGraphLinkClientAdapter(
                     callback.onProgress(sent, total)
                 }
             }
-            val buffered = Okio.buffer(counting)
+            val buffered = counting.buffer()
             delegate.writeTo(buffered)
             buffered.flush()
         }
@@ -323,22 +324,28 @@ import okhttp3.WebSocketListener
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.math.min
 
 class DefaultGraphLinkWebSocketAdapter(
     private val url: String,
     private val headersProvider: (() -> Map<String, String>)? = null,
     private val httpClient: OkHttpClient = OkHttpClient(),
+    private val maxReconnectAttempts: Int? = 10,
+    private val maxReconnectDelayMs: Long = 30_000L,
 ) : GraphLinkWebSocketAdapter {
 
     private val scheduler = Executors.newSingleThreadScheduledExecutor()
-    private val reconnectAttempts = AtomicInteger(0)
+    private val _reconnectAttempts = AtomicInteger(0)
+    val reconnectAttempts: Int get() = _reconnectAttempts.get()
 
     @Volatile private var webSocket: WebSocket? = null
     @Volatile private var messageListener: ((String) -> Unit)? = null
     @Volatile private var reconnectListener: (() -> Unit)? = null
+    @Volatile private var disposed = false
 
     override fun connect(onConnect: () -> Unit, onFailure: (Throwable) -> Unit) {
-        reconnectAttempts.set(0)
+        disposed = false
+        _reconnectAttempts.set(0)
         connectInternal(onConnect, onFailure)
     }
 
@@ -354,24 +361,38 @@ class DefaultGraphLinkWebSocketAdapter(
                 messageListener?.invoke(text)
             }
             override fun onClosed(ws: WebSocket, code: Int, reason: String) {
-                scheduleReconnect(onFailure)
+                if (!disposed) scheduleReconnect(onFailure)
             }
             override fun onFailure(ws: WebSocket, t: Throwable, response: Response?) {
-                scheduleReconnect(onFailure)
+                if (!disposed) scheduleReconnect(onFailure)
             }
         })
     }
 
     private fun scheduleReconnect(onFailure: (Throwable) -> Unit) {
-        val attempts = reconnectAttempts.incrementAndGet()
-        val delay = Math.pow(2.0, minOf(attempts, 5).toDouble()).toLong()
+        if (disposed) return
+        val attempts = _reconnectAttempts.incrementAndGet()
+        if (maxReconnectAttempts != null && attempts > maxReconnectAttempts) {
+            onFailure(RuntimeException("Max reconnect attempts reached"))
+            return
+        }
+        val baseDelay = min(1000L * (1L shl min(attempts - 1, 30)), maxReconnectDelayMs)
+        val jitter = (Math.random() * 1000).toLong()
         scheduler.schedule({
-            connectInternal({ reconnectListener?.invoke() }, onFailure)
-        }, delay, TimeUnit.SECONDS)
+            if (disposed) return@schedule
+            connectInternal(
+                onConnect = {
+                    _reconnectAttempts.set(0)
+                    reconnectListener?.invoke()
+                },
+                onFailure = onFailure,
+            )
+        }, baseDelay + jitter, TimeUnit.MILLISECONDS)
     }
 
     override fun sendMessage(message: String) { webSocket?.send(message) }
     override fun close() {
+        disposed = true
         scheduler.shutdownNow()
         webSocket?.close(1000, null)
     }

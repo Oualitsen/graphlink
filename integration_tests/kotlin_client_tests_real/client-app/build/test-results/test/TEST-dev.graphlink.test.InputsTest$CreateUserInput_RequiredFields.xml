@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="dev.graphlink.test.InputsTest$CreateUserInput_RequiredFields" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-06-05T13:57:35.525Z" hostname="MacBook-Pro.local" time="0.016">
-  <properties/>
-  <testcase name="createUser_response_deserializesCorrectly()" classname="dev.graphlink.test.InputsTest$CreateUserInput_RequiredFields" time="0.005"/>
-  <testcase name="createUser_status_isReflectedInResponse()" classname="dev.graphlink.test.InputsTest$CreateUserInput_RequiredFields" time="0.006"/>
-  <testcase name="createUser_address_isReflectedInResponse()" classname="dev.graphlink.test.InputsTest$CreateUserInput_RequiredFields" time="0.005"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

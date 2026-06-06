@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="dev.graphlink.test.UploadTest$UploadOneFile" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-06-05T13:57:36.132Z" hostname="MacBook-Pro.local" time="0.017">
-  <properties/>
-  <testcase name="returns true for a larger file()" classname="dev.graphlink.test.UploadTest$UploadOneFile" time="0.006"/>
-  <testcase name="returns true for a different userId()" classname="dev.graphlink.test.UploadTest$UploadOneFile" time="0.006"/>
-  <testcase name="returns true when file is provided()" classname="dev.graphlink.test.UploadTest$UploadOneFile" time="0.005"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>
