@@ -17,7 +17,7 @@
       "nullableFieldsRequired":     false,
       "inputAsDataClass":           true,
       "typeAsDataClass":            true,
-      "wsAdapter":                  "none",
+      "wsAdapter":                  "okhttp",
       "captureErrors":              false
     }
   }

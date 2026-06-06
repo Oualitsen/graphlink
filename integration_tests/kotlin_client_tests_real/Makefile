@@ -3,7 +3,7 @@ GENERATED_DIR     = client-app/src/main/kotlin/dev/graphlink/test/generated
 SERVER_JAR        = ../spring_server/build/libs/graphlink-test-server-0.0.1.jar
 UPLOAD_SERVER_JAR = ../spring_upload_server/build/libs/graphlink-upload-server-0.0.1.jar
 
-.PHONY: generate test clean ci start-server stop-server start-upload-server stop-upload-server
+.PHONY: generate test clean ci start-server stop-server start-upload-server stop-upload-server reconnect-test
 
 clean:
 	rm -rf $(GENERATED_DIR)
@@ -34,3 +34,6 @@ stop-upload-server:
 	curl -s -X POST http://localhost:9991/actuator/shutdown || true
 
 ci: start-server start-upload-server generate test stop-server stop-upload-server
+
+reconnect-test: generate
+	cd $(CLIENT_DIR) && SERVER_JAR=$(abspath $(SERVER_JAR)) ./gradlew reconnectTest

@@ -40,6 +40,7 @@ import dev.graphlink.test.generated.types.UploadFileListFullResponse
 import dev.graphlink.test.generated.types.UserCreatedFullResponse
 import dev.graphlink.test.generated.types.UserCreatedsFullResponse
 import dev.graphlink.test.generated.types.UserStatusChangedFullResponse
+import dev.graphlink.test.generated.types.CounterTickFullResponse
 
 
 interface GraphLinkFullResponse {
@@ -80,6 +81,7 @@ interface GraphLinkFullResponse {
          "UserCreatedFullResponse" -> UserCreatedFullResponse.fromJson(map)
          "UserCreatedsFullResponse" -> UserCreatedsFullResponse.fromJson(map)
          "UserStatusChangedFullResponse" -> UserStatusChangedFullResponse.fromJson(map)
+         "CounterTickFullResponse" -> CounterTickFullResponse.fromJson(map)
          else -> throw IllegalArgumentException("Unknown __typename: " + map["__typename"])
       }
    }

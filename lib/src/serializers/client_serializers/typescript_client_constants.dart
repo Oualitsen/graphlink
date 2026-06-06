@@ -230,6 +230,42 @@ function _makeChannel<T>() {
   };
 }
 
+// Broadcast channel — each [Symbol.asyncIterator] call gets its own queue so
+// all concurrent listeners receive every push (unlike _makeChannel which is
+// single-consumer).
+function _makeBroadcastChannel<T>() {
+  type _Sub = { q: T[]; res: (() => void) | null; done: boolean };
+  const _subs: _Sub[] = [];
+  let _closed = false;
+  return {
+    push(item: T): void {
+      for (const s of _subs) { s.q.push(item); s.res?.(); s.res = null; }
+    },
+    close(): void {
+      _closed = true;
+      for (const s of _subs) { s.done = true; s.res?.(); s.res = null; }
+    },
+    [Symbol.asyncIterator](): AsyncIterator<T> {
+      const s: _Sub = { q: [], res: null, done: _closed };
+      _subs.push(s);
+      return {
+        async next(): Promise<IteratorResult<T>> {
+          while (true) {
+            if (s.q.length > 0) return { value: s.q.shift()!, done: false };
+            if (s.done) return { value: undefined as unknown as T, done: true };
+            await new Promise<void>(r => { s.res = r; });
+          }
+        },
+        return(): Promise<IteratorResult<T>> {
+          const i = _subs.indexOf(s);
+          if (i !== -1) _subs.splice(i, 1);
+          return Promise.resolve({ value: undefined as unknown as T, done: true });
+        },
+      };
+    },
+  };
+}
+
 type _HandshakeStatus = 'none' | 'progress' | 'acknowledged';
 
 class _SubscriptionHandler {
@@ -385,14 +421,13 @@ class _SubscriptionHandler {
     this._channels.set(uuid, ch);
     this._payloads.set(uuid, pl);
 
-    let sink: { send: (msg: string) => Promise<void> } | null = null;
-    try {
-      sink = await this._initWs();
+    // Fire-and-forget: on failure keep _payloads alive so _onReconnect can
+    // re-subscribe once the adapter comes back up (mirrors Dart behaviour).
+    this._initWs().then(async (sink) => {
       await this._sendSubscribe(sink, uuid, pl);
-    } catch (e) {
-      this._cleanup(uuid);
-      throw e;
-    }
+    }).catch((_e) => {
+      // Intentionally swallowed — subscription resumes on reconnect.
+    });
 
     try {
       for await (const item of ch) {
@@ -403,7 +438,9 @@ class _SubscriptionHandler {
       // this is a client-initiated cancel, so notify the server.
       // If uuid is gone, the server already sent complete; skip to avoid double cleanup.
       if (this._channels.has(uuid)) {
-        void sink?.send(JSON.stringify({ id: uuid, type: _GL_WS.complete }));
+        void this.adapter.sendMessage(
+          JSON.stringify({ id: uuid, type: _GL_WS.complete })
+        ).catch(() => {});
         this._cleanup(uuid);
       }
     }
@@ -511,16 +548,20 @@ const tsDefaultWsAdapter = r'''
 export class DefaultGraphLinkWsAdapter implements GraphLinkWsAdapter {
   private _ws: WebSocket | null = null;
   private readonly _messageChannel = _makeChannel<string>();
-  private readonly _reconnectChannel = _makeChannel<void>();
+  private readonly _reconnectChannel = _makeBroadcastChannel<void>();
   private _connectPromise: Promise<void> | null = null;
   private _reconnectAttempts = 0;
+  private _reconnecting = false;
   private _closed = false;
-  private static readonly _MAX_RECONNECT = 10;
 
   constructor(
     private readonly url: string,
     private readonly headersProvider?: () => Promise<Record<string, string> | null>,
+    private readonly maxReconnectAttempts: number | null = 10,
+    private readonly maxReconnectDelay: number = 30_000,
   ) {}
+
+  get reconnectAttempts(): number { return this._reconnectAttempts; }
 
   async connect(): Promise<void> {
     this._connectPromise ??= this._doConnect();
@@ -539,15 +580,24 @@ export class DefaultGraphLinkWsAdapter implements GraphLinkWsAdapter {
 
   private _scheduleReconnect(): void {
     if (this._closed) return;
-    if (this._reconnectAttempts >= DefaultGraphLinkWsAdapter._MAX_RECONNECT) return;
-    const delay = Math.min(1000 * Math.pow(2, this._reconnectAttempts), 30_000);
+    if (this.maxReconnectAttempts !== null && this._reconnectAttempts >= this.maxReconnectAttempts) return;
+    // Guard against duplicate timers from concurrent onerror + onclose events.
+    if (this._reconnecting) return;
+    this._reconnecting = true;
+    const delay = Math.min(1000 * Math.pow(2, this._reconnectAttempts), this.maxReconnectDelay);
     this._reconnectAttempts++;
     setTimeout(async () => {
+      this._reconnecting = false;
+      if (this._closed) return;
       try {
-        this._connectPromise = null;
-        await this._doConnect();
+        // Assign before awaiting so concurrent connect() calls reuse this promise.
+        this._connectPromise = this._doConnect();
+        await this._connectPromise;
         this._reconnectChannel.push();
-      } catch { this._scheduleReconnect(); }
+      } catch {
+        this._connectPromise = null;
+        this._scheduleReconnect();
+      }
     }, delay);
   }
 

@@ -258,34 +258,54 @@ public class GraphLinkSubscriptionHandler {
 const defaultWsAdapterJava11 = '''
 public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapter {
 
-  private static final int MAX_BACKOFF_EXPONENT = 5;
-
   private final String url;
   private final Supplier<Map<String, String>> headersProvider;
   private final HttpClient httpClient;
   private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+  private final Integer maxReconnectAttempts;
+  private final long maxReconnectDelayMs;
 
   private volatile WebSocket webSocket;
   private volatile Consumer<String> messageListener;
   private volatile Runnable reconnectListener;
+  private volatile boolean disposed = false;
   private final AtomicInteger reconnectAttempts = new AtomicInteger(0);
 
   public DefaultGraphLinkWebSocketAdapter(String url) {
-    this(url, null, HttpClient.newHttpClient());
+    this(url, null, HttpClient.newHttpClient(), 10, 30_000L);
   }
 
   public DefaultGraphLinkWebSocketAdapter(String url, Supplier<Map<String, String>> headersProvider) {
-    this(url, headersProvider, HttpClient.newHttpClient());
+    this(url, headersProvider, HttpClient.newHttpClient(), 10, 30_000L);
   }
 
   public DefaultGraphLinkWebSocketAdapter(String url, Supplier<Map<String, String>> headersProvider, HttpClient httpClient) {
+    this(url, headersProvider, httpClient, 10, 30_000L);
+  }
+
+  public DefaultGraphLinkWebSocketAdapter(String url, Integer maxReconnectAttempts, long maxReconnectDelayMs) {
+    this(url, null, HttpClient.newHttpClient(), maxReconnectAttempts, maxReconnectDelayMs);
+  }
+
+  public DefaultGraphLinkWebSocketAdapter(String url, Supplier<Map<String, String>> headersProvider, Integer maxReconnectAttempts, long maxReconnectDelayMs) {
+    this(url, headersProvider, HttpClient.newHttpClient(), maxReconnectAttempts, maxReconnectDelayMs);
+  }
+
+  public DefaultGraphLinkWebSocketAdapter(String url, Supplier<Map<String, String>> headersProvider, HttpClient httpClient, Integer maxReconnectAttempts, long maxReconnectDelayMs) {
     this.url = url;
     this.headersProvider = headersProvider;
     this.httpClient = httpClient;
+    this.maxReconnectAttempts = maxReconnectAttempts;
+    this.maxReconnectDelayMs = maxReconnectDelayMs;
+  }
+
+  public int getReconnectAttempts() {
+    return reconnectAttempts.get();
   }
 
   @Override
   public void connect(Runnable onConnect, Consumer<Throwable> onFailure) {
+    disposed = false;
     reconnectAttempts.set(0);
     connectInternal(onConnect, onFailure);
   }
@@ -323,24 +343,37 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
 
           @Override
           public CompletionStage<?> onClose(WebSocket ws, int statusCode, String reason) {
-            scheduleReconnect(onFailure);
+            if (!disposed) scheduleReconnect(onFailure);
             return CompletableFuture.completedFuture(null);
           }
 
           @Override
           public void onError(WebSocket ws, Throwable error) {
-            scheduleReconnect(onFailure);
+            if (!disposed) scheduleReconnect(onFailure);
           }
+        }).exceptionally(t -> {
+          if (!disposed) scheduleReconnect(onFailure);
+          return null;
         });
   }
 
   private void scheduleReconnect(Consumer<Throwable> onFailure) {
+    if (disposed) return;
     int attempts = reconnectAttempts.incrementAndGet();
-    long delaySeconds = (long) Math.pow(2, Math.min(attempts, MAX_BACKOFF_EXPONENT));
-    scheduler.schedule(() -> connectInternal(() -> {
-      Runnable listener = reconnectListener;
-      if (listener != null) listener.run();
-    }, onFailure), delaySeconds, TimeUnit.SECONDS);
+    if (maxReconnectAttempts != null && attempts > maxReconnectAttempts) {
+      onFailure.accept(new RuntimeException("Max reconnect attempts reached"));
+      return;
+    }
+    long baseDelay = Math.min(1000L * (1L << Math.min(attempts - 1, 30)), maxReconnectDelayMs);
+    long jitter = (long) (Math.random() * 1000);
+    scheduler.schedule(() -> {
+      if (disposed) return;
+      connectInternal(() -> {
+        reconnectAttempts.set(0);
+        Runnable listener = reconnectListener;
+        if (listener != null) listener.run();
+      }, onFailure);
+    }, baseDelay + jitter, TimeUnit.MILLISECONDS);
   }
 
   @Override
@@ -356,6 +389,7 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
 
   @Override
   public void close() {
+    disposed = true;
     scheduler.shutdownNow();
     WebSocket ws = webSocket;
     if (ws != null) ws.sendClose(WebSocket.NORMAL_CLOSURE, "");
@@ -379,30 +413,49 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
 const defaultWsAdapterOkHttp = '''
 public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapter {
 
-  private static final int MAX_BACKOFF_EXPONENT = 5;
-
   private final String url;
   private final Supplier<Map<String, String>> headersProvider;
   private final OkHttpClient httpClient;
   private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+  private final Integer maxReconnectAttempts;
+  private final long maxReconnectDelayMs;
 
   private volatile WebSocket webSocket;
   private volatile Consumer<String> messageListener;
   private volatile Runnable reconnectListener;
+  private volatile boolean disposed = false;
   private final AtomicInteger reconnectAttempts = new AtomicInteger(0);
 
   public DefaultGraphLinkWebSocketAdapter(String url) {
-    this(url, null, new OkHttpClient());
+    this(url, null, new OkHttpClient(), 10, 30_000L);
   }
 
   public DefaultGraphLinkWebSocketAdapter(String url, Supplier<Map<String, String>> headersProvider) {
-    this(url, headersProvider, new OkHttpClient());
+    this(url, headersProvider, new OkHttpClient(), 10, 30_000L);
   }
 
   public DefaultGraphLinkWebSocketAdapter(String url, Supplier<Map<String, String>> headersProvider, OkHttpClient httpClient) {
+    this(url, headersProvider, httpClient, 10, 30_000L);
+  }
+
+  public DefaultGraphLinkWebSocketAdapter(String url, Integer maxReconnectAttempts, long maxReconnectDelayMs) {
+    this(url, null, new OkHttpClient(), maxReconnectAttempts, maxReconnectDelayMs);
+  }
+
+  public DefaultGraphLinkWebSocketAdapter(String url, Supplier<Map<String, String>> headersProvider, Integer maxReconnectAttempts, long maxReconnectDelayMs) {
+    this(url, headersProvider, new OkHttpClient(), maxReconnectAttempts, maxReconnectDelayMs);
+  }
+
+  public DefaultGraphLinkWebSocketAdapter(String url, Supplier<Map<String, String>> headersProvider, OkHttpClient httpClient, Integer maxReconnectAttempts, long maxReconnectDelayMs) {
     this.url = url;
     this.headersProvider = headersProvider;
     this.httpClient = httpClient;
+    this.maxReconnectAttempts = maxReconnectAttempts;
+    this.maxReconnectDelayMs = maxReconnectDelayMs;
+  }
+
+  public int getReconnectAttempts() {
+    return reconnectAttempts.get();
   }
 
   protected Request buildRequest() {
@@ -417,6 +470,7 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
 
   @Override
   public void connect(Runnable onConnect, Consumer<Throwable> onFailure) {
+    disposed = false;
     reconnectAttempts.set(0);
     connectInternal(onConnect, onFailure);
   }
@@ -437,23 +491,33 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
 
       @Override
       public void onClosed(WebSocket ws, int code, String reason) {
-        scheduleReconnect(onFailure);
+        if (!disposed) scheduleReconnect(onFailure);
       }
 
       @Override
       public void onFailure(WebSocket ws, Throwable t, Response response) {
-        scheduleReconnect(onFailure);
+        if (!disposed) scheduleReconnect(onFailure);
       }
     });
   }
 
   private void scheduleReconnect(Consumer<Throwable> onFailure) {
+    if (disposed) return;
     int attempts = reconnectAttempts.incrementAndGet();
-    long delaySeconds = (long) Math.pow(2, Math.min(attempts, MAX_BACKOFF_EXPONENT));
-    scheduler.schedule(() -> connectInternal(() -> {
-      Runnable listener = reconnectListener;
-      if (listener != null) listener.run();
-    }, onFailure), delaySeconds, TimeUnit.SECONDS);
+    if (maxReconnectAttempts != null && attempts > maxReconnectAttempts) {
+      onFailure.accept(new RuntimeException("Max reconnect attempts reached"));
+      return;
+    }
+    long baseDelay = Math.min(1000L * (1L << Math.min(attempts - 1, 30)), maxReconnectDelayMs);
+    long jitter = (long) (Math.random() * 1000);
+    scheduler.schedule(() -> {
+      if (disposed) return;
+      connectInternal(() -> {
+        reconnectAttempts.set(0);
+        Runnable listener = reconnectListener;
+        if (listener != null) listener.run();
+      }, onFailure);
+    }, baseDelay + jitter, TimeUnit.MILLISECONDS);
   }
 
   @Override
@@ -469,6 +533,7 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
 
   @Override
   public void close() {
+    disposed = true;
     scheduler.shutdownNow();
     WebSocket ws = webSocket;
     if (ws != null) ws.close(1000, null);

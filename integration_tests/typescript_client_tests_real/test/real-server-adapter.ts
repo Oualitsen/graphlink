@@ -1,9 +1,76 @@
+import { execSync, spawn } from 'node:child_process';
+import { createConnection } from 'node:net';
 import { GraphLinkClient, DefaultGraphLinkWsAdapter } from '../lib/generated/client/graph-link-client.js';
 import type { GLUpload, GLMultipartAdapter, UploadProgressCallback } from '../lib/generated/client/graph-link-uploads.js';
 
+const DEFAULT_PORT = 9999;
+const UPLOAD_PORT = 9998;
 const HTTP_URL = 'http://localhost:9999/graphql';
 const UPLOAD_URL = 'http://localhost:9998/graphql';
 export const WS_URL = 'ws://localhost:9999/graphql';
+
+export function httpUrlForPort(port: number): string {
+  return `http://localhost:${port}/graphql`;
+}
+
+export function wsUrlForPort(port: number): string {
+  return `ws://localhost:${port}/graphql`;
+}
+
+export function httpAdapterForPort(port: number) {
+  return async (payload: string): Promise<string> => {
+    const response = await fetch(httpUrlForPort(port), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: payload,
+    });
+    return response.text();
+  };
+}
+
+export function newWsAdapterForPort(port: number): DefaultGraphLinkWsAdapter {
+  return new DefaultGraphLinkWsAdapter(wsUrlForPort(port));
+}
+
+/** Adapter with maxReconnectAttempts=null (retry forever) and maxReconnectDelay=2s. */
+export function newWsAdapterNeverStop(port: number): DefaultGraphLinkWsAdapter {
+  return new DefaultGraphLinkWsAdapter(wsUrlForPort(port), undefined, null, 2_000);
+}
+
+// ---------------------------------------------------------------------------
+// Server lifecycle utilities
+// ---------------------------------------------------------------------------
+
+const JAR_PATH = new URL('../../spring_server/build/libs/graphlink-test-server-0.0.1.jar', import.meta.url).pathname;
+
+export function killPort(port: number): void {
+  try {
+    execSync(`lsof -ti :${port} -sTCP:LISTEN | xargs kill -9 2>/dev/null || true`, { shell: '/bin/bash' });
+  } catch { /* ignore */ }
+}
+
+function waitForPort(port: number, timeoutMs = 30_000): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const deadline = Date.now() + timeoutMs;
+    function attempt() {
+      const sock = createConnection(port, 'localhost');
+      sock.once('connect', () => { sock.destroy(); resolve(); });
+      sock.once('error', () => {
+        sock.destroy();
+        if (Date.now() >= deadline) { reject(new Error(`Port ${port} did not open within ${timeoutMs}ms`)); return; }
+        setTimeout(attempt, 500);
+      });
+    }
+    attempt();
+  });
+}
+
+export async function startServer(port: number): Promise<void> {
+  killPort(port);
+  const proc = spawn('java', ['-jar', JAR_PATH, `--server.port=${port}`], { stdio: 'ignore', detached: true });
+  proc.unref();
+  await waitForPort(port);
+}
 
 export async function realHttpAdapter(payload: string): Promise<string> {
   const response = await fetch(HTTP_URL, {
