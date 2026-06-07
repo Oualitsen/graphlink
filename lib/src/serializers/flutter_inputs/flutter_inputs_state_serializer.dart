@@ -319,7 +319,7 @@ class FlutterInputsStateSerializer {
           ],
         ),
         if (hasSubInputs) _serializeBuildStepsMethod(inputName, stepBuckets, hasScalarFields),
-        if (hasSubInputs) _serializeScalarRowsMethod(inputName, fields, textFields, enumFields, boolFields, listFields),
+        if (hasSubInputs && hasScalarFields) _serializeScalarRowsMethod(inputName, fields, textFields, enumFields, boolFields, listFields),
         if (hasSubInputs) _serializeValidateAndReadCurrentStepMethod(inputName, stepBuckets),
         if (hasSubInputs) _serializeOnStepContinueMethod(stepBuckets.length),
         if (hasSubInputs) _serializeOnStepCancelMethod(),
@@ -1235,12 +1235,13 @@ class FlutterInputsStateSerializer {
       }
 
       // inputList
+      final lengthExpr = f.type.nullable ? '_$name?.length ?? 0' : '_$name.length';
       return _u.callExpression('Step', [
         'title: _form.stepConfig?.$name?.title ?? const Text(\'$humanLabel\')',
         'subtitle: _form.stepConfig?.$name?.subtitle',
         'isActive: _currentStep >= $idx',
         'state: $stateExpr',
-        'content: _form.values?.$name?.call(_${name}OverrideKey) ?? Text(\'\${_$name.length} items\')',
+        'content: _form.values?.$name?.call(_${name}OverrideKey) ?? Text(\'\${$lengthExpr} items\')',
       ]);
     }).toList();
 
