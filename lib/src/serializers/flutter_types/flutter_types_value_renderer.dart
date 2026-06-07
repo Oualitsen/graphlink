@@ -21,22 +21,27 @@ class FlutterTypesValueRenderer {
     final dartType = _dartSerializer.typeMap[baseToken] ?? baseToken;
 
     if (type.isList) {
+      final elementNullable = type.inlineType.nullable;
       if (_parser.types.containsKey(baseToken) && !flutterInternalTypes.contains(baseToken)) {
         final typeDef = _parser.types[baseToken]!;
         final widgetGenerated = !typeDef.isResponseType && !_config.typesToSkip.contains(baseToken);
         final list = '$accessor${nullable ? '!' : ''}';
+        final mapSource = elementNullable ? '$list.whereType<$baseToken>()' : list;
         final inner = widgetGenerated
-            ? "Column(children: $list.map((e) => ${baseToken}Widget(e, strings: strings)).toList())"
+            ? "Column(children: $mapSource.map((e) => ${baseToken}Widget(e, strings: strings)).toList())"
             : "Chip(label: Text('\${$list.length} ${humanize(baseToken)}'))";
         return nullable ? "($accessor == null ? const SizedBox.shrink() : $inner)" : inner;
       }
       if (_parser.enums.containsKey(baseToken)) {
         final fieldName = field.name;
         final list = '$accessor${nullable ? '!' : ''}';
-        final wrap = "Wrap(spacing: 4, runSpacing: 4, children: $list.map((e) => Chip(label: enumLabels?.$fieldName?.call(e) ?? Text(e.name))).toList())";
+        final mapSource = elementNullable ? '$list.whereType<$baseToken>()' : list;
+        final wrap = "Wrap(spacing: 4, runSpacing: 4, children: $mapSource.map((e) => Chip(label: enumLabels?.$fieldName?.call(e) ?? Text(e.name))).toList())";
         return nullable ? "($accessor == null ? const SizedBox.shrink() : $wrap)" : wrap;
       }
-      final wrap = "Wrap(spacing: 4, runSpacing: 4, children: $accessor${nullable ? '!' : ''}.map((e) => Chip(label: Text(e.toString()))).toList())";
+      final list = '$accessor${nullable ? '!' : ''}';
+      final mapSource = elementNullable ? '$list.whereType<$dartType>()' : list;
+      final wrap = "Wrap(spacing: 4, runSpacing: 4, children: $mapSource.map((e) => Chip(label: Text(e.toString()))).toList())";
       return nullable ? "($accessor == null ? const SizedBox.shrink() : $wrap)" : wrap;
     }
 

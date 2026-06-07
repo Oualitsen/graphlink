@@ -394,12 +394,13 @@ class FlutterTypesLayoutSerializer {
     final labelWidget = _renderer.labelTextWidget(label);
     final childType = f.type.firstType.token;
     final listAccess = f.type.nullable ? '$varName.${f.name}!' : '$varName.${f.name}';
+    final mapSource = f.type.inlineType.nullable ? '$listAccess.whereType<$childType>()' : listAccess;
     final condition = f.type.nullable
         ? 'vis.${f.name} && ($varName.${f.name}?.isNotEmpty ?? false)'
         : 'vis.${f.name} && $varName.${f.name}.isNotEmpty';
     final tile = _u.callExpression('ExpansionTile', [
       "title: _labelWithInfo(context, labels?.${f.name} ?? $labelWidget, labels?.${f.name}Info)",
-      'children: $listAccess.map((item) => ${childType}Widget(item, strings: strings)).toList()',
+      'children: $mapSource.map((item) => ${childType}Widget(item, strings: strings)).toList()',
     ]);
     return [
       _u.ifStatement(
