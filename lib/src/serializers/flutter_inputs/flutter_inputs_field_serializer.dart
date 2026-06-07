@@ -17,7 +17,8 @@ class FlutterInputsFieldSerializer {
     if (listFields.contains(f)) {
       if (_types.isEnumListField(f)) return enumListWidgetExpr(f, enabledExpr);
       if (_types.isScalarListField(f)) return scalarListWidgetExpr(f, enabledExpr);
-      return "Text('\${_${f.name}.length} items')";
+      final lengthExpr = f.type.nullable ? '_${f.name}?.length ?? 0' : '_${f.name}.length';
+      return "Text('\${$lengthExpr} items')";
     }
     if (textFields.contains(f)) return textFormFieldExpr(f, enabledExpr);
     if (enumFields.contains(f)) return enumDropdownExpr(f, enabledExpr);
