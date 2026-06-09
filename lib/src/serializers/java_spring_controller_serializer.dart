@@ -11,49 +11,36 @@ import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_schema_mapping.dart';
 import 'package:graphlink/src/model/gl_service.dart';
 import 'package:graphlink/src/model/gl_token.dart';
-import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_token_with_fields.dart';
+import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/token_info.dart';
 import 'package:graphlink/src/serializers/java_imports.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
+import 'package:graphlink/src/serializers/jvm_spring_controller_serializer_base.dart';
 import 'package:graphlink/src/utils.dart';
 
-class SpringControllerSerializer {
-  final GLParser grammar;
+class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
   final JavaSerializer serializer;
-  final bool reactive;
-  final bool injectDataFetching;
-  final bool useSpringSecurity;
-  final bool generateSchema;
-  final codeGenUtils = JavaCodeGenUtils();
 
-  SpringControllerSerializer({
-    required this.grammar,
+  JavaSpringControllerSerializer({
+    required GLParser grammar,
     required this.serializer,
-    required this.reactive,
-    required this.injectDataFetching,
-    required this.useSpringSecurity,
-    required this.generateSchema,
-  });
-
-  // ── Initialization ─────────────────────────────────────────────────────────
-
-  void annotateControllers() {
-    for (var ctrl in grammar.controllers.values) {
-      ctrl.addDirective(_createControllerDirective());
-      for (var method in ctrl.fields) {
-        var queryType = ctrl.getTypeByFieldName(method.name.token)!;
-        method.addDirective(_createResolverDirective(queryType));
-        for (var arg in method.arguments) {
-          arg.addDirective(_createArgumentDirective());
-        }
-      }
-    }
-  }
+    required bool reactive,
+    required bool injectDataFetching,
+    required bool useSpringSecurity,
+    required bool generateSchema,
+  }) : super(
+          grammar: grammar,
+          reactive: reactive,
+          injectDataFetching: injectDataFetching,
+          useSpringSecurity: useSpringSecurity,
+          generateSchema: generateSchema,
+        );
 
   // ── Controller ─────────────────────────────────────────────────────────────
 
+  @override
   String serializeController(GLController ctrl) {
     var body = _serializeControllerBody(ctrl);
     return serializer.serializeWithImport(ctrl, body);
@@ -61,7 +48,7 @@ class SpringControllerSerializer {
 
   String _serializeControllerBody(GLController ctrl) {
     final controllerName = ctrl.token;
-    final sericeInstanceName = ctrl.serviceName.firstLow;
+    final serviceInstanceName = ctrl.serviceName.firstLow;
     if (!reactive) {
       ctrl.addImport(JavaImports.completableFuture);
     }
@@ -74,14 +61,14 @@ class SpringControllerSerializer {
     buffer.writeln(decorators);
     buffer.writeln(codeGenUtils.createClass(className: controllerName, statements: [
       if (grammar.services.containsKey(ctrl.serviceName))
-        'private final ${ctrl.serviceName} $sericeInstanceName;',
+        'private final ${ctrl.serviceName} $serviceInstanceName;',
       '',
       serializer.generateContructor(
           controllerName,
           [
             if (grammar.services.containsKey(ctrl.serviceName))
               GLField(
-                  name: sericeInstanceName.toToken(),
+                  name: serviceInstanceName.toToken(),
                   type: GLType(ctrl.serviceName.toToken(), false),
                   arguments: [],
                   directives: [])
@@ -92,18 +79,19 @@ class SpringControllerSerializer {
       ...ctrl.fields.map((field) => serializehandlerMethod(
           ctrl.getTypeByFieldName(field.name.token)!,
           field,
-          sericeInstanceName,
+          serviceInstanceName,
           ctrl,
           qualifier: "public")),
       '',
-      ...ctrl.mappings.map((m) => serializeMappingMethod(m, sericeInstanceName, ctrl))
+      ...ctrl.mappings.map((m) => serializeMappingMethod(m, serviceInstanceName, ctrl))
     ]));
 
     return buffer.toString();
   }
 
+  @override
   String serializehandlerMethod(GLQueryType type, GLField method,
-      String sericeInstanceName, GLToken context,
+      String serviceInstanceName, GLToken context,
       {String? qualifier}) {
     final decorators =
         serializer.serializeDecorators(method.getDirectives()).trim();
@@ -112,7 +100,7 @@ class SpringControllerSerializer {
       buffer.writeln(decorators);
     }
     var args = method.arguments.map((arg) {
-      final argType = _resolveArgType(arg, context);
+      final argType = resolveArgType(arg, context);
       var argDecorators =
           serializer.serializeDecorators(arg.getDirectives()).trim();
       if (argDecorators.isNotEmpty) {
@@ -130,12 +118,12 @@ class SpringControllerSerializer {
       serviceArgs.add('dataFetchingEnvironment');
     }
     final serviceCall =
-        '$sericeInstanceName.${method.name}(${serviceArgs.join(", ")})';
+        '$serviceInstanceName.${method.name}(${serviceArgs.join(", ")})';
     final String returnType;
     final List<String> statements;
 
     final validationMethodCall = method.getDirectiveByName(glValidate) != null
-        ? '$sericeInstanceName.${GLService.getValidationMethodName(method.name.token)}(${serviceArgs.join(", ")})'
+        ? '$serviceInstanceName.${GLService.getValidationMethodName(method.name.token)}(${serviceArgs.join(", ")})'
         : null;
     final validationCall =
         validationMethodCall != null ? '$validationMethodCall;' : null;
@@ -144,7 +132,7 @@ class SpringControllerSerializer {
       returnType = serializer.serializeTypeReactive(
           context: context,
           glType: createListTypeOnSubscription(
-              _getServiceReturnType(method.type), type),
+              getServiceReturnType(method.type), type),
           reactive: true);
       statements = [
         if (validationCall != null) validationCall,
@@ -153,7 +141,7 @@ class SpringControllerSerializer {
     } else if (reactive) {
       returnType = serializer.serializeTypeReactive(
           context: context,
-          glType: _getServiceReturnType(method.type),
+          glType: getServiceReturnType(method.type),
           reactive: true);
       statements = [
         validationMethodCall != null
@@ -164,7 +152,7 @@ class SpringControllerSerializer {
       context.addImport(JavaImports.completableFuture);
       final baseReturnType = serializer.serializeTypeReactive(
           context: context,
-          glType: _getServiceReturnType(method.type),
+          glType: getServiceReturnType(method.type),
           reactive: false);
       final returnTypeIsVoid = baseReturnType == "void";
       returnType =
@@ -219,15 +207,9 @@ class SpringControllerSerializer {
     ];
   }
 
-  GLType createListTypeOnSubscription(GLType type, GLQueryType queryType) {
-    if (queryType == GLQueryType.subscription) {
-      return GLListType(type, false);
-    }
-    return type;
-  }
-
   // ── Mapping methods ────────────────────────────────────────────────────────
 
+  @override
   String serializeMappingMethod(
       GLSchemaMapping mapping, String serviceInstanceName, GLToken context) {
     if (mapping.forwarded) {
@@ -262,19 +244,10 @@ class SpringControllerSerializer {
     return '${serializeControllerMethodHeader(mapping, context)} ${codeGenUtils.block(bodyStatements)}';
   }
 
-  String _getAnnotation(GLSchemaMapping mapping, GLToken context) {
-    if (mapping.isBatch) {
-      context.addImport(SpringImports.batchMapping);
-      return '@BatchMapping(typeName="${mapping.type.tokenInfo}", field="${mapping.field.name}")';
-    } else {
-      context.addImport(SpringImports.schemaMapping);
-      return '@SchemaMapping(typeName="${mapping.type.tokenInfo}", field="${mapping.field.name}")';
-    }
-  }
-
+  @override
   String serializeIdentityMapping(GLSchemaMapping mapping, GLToken context) {
     var buffer = StringBuffer();
-    var annotation = _getAnnotation(mapping, context);
+    var annotation = getAnnotationForMapping(mapping, context);
     if (annotation.isNotEmpty) {
       buffer.writeln(annotation);
     }
@@ -322,16 +295,17 @@ class SpringControllerSerializer {
     return '$prefix${fieldName.firstUp}';
   }
 
+  @override
   String serializeForwardedMapping(GLSchemaMapping mapping, GLToken context) {
     var buffer = StringBuffer();
-    buffer.writeln(_getAnnotation(mapping, context));
+    buffer.writeln(getAnnotationForMapping(mapping, context));
 
     final fieldName = mapping.field.name.token;
     final fieldType = serializer.serializeTypeReactive(
         context: context, glType: mapping.field.type, reactive: false);
     final boxedFieldType = convertPrimitiveToBoxed(fieldType);
     final argType = serializer.serializeType(
-        _getServiceReturnType(GLType(mapping.type.tokenInfo, false)), false);
+        getServiceReturnType(GLType(mapping.type.tokenInfo, false)), false);
 
     final getterCall = 'value.${_getterMethodName(fieldName, fieldType)}()';
 
@@ -359,7 +333,7 @@ class SpringControllerSerializer {
   String _getReturnType(GLSchemaMapping mapping, GLToken context) {
     if (mapping.isBatch) {
       var keyType = serializer.serializeType(
-          _getServiceReturnType(GLType(mapping.type.tokenInfo, false)), false);
+          getServiceReturnType(GLType(mapping.type.tokenInfo, false)), false);
       if (keyType == "Object") {
         keyType = "?";
       }
@@ -376,7 +350,7 @@ Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(serializer.se
 
   String _getMappingArgument(GLSchemaMapping mapping, GLToken context) {
     var argType = serializer.serializeType(
-        _getServiceReturnType(GLType(mapping.type.tokenInfo, false)), false);
+        getServiceReturnType(GLType(mapping.type.tokenInfo, false)), false);
     if (mapping.isBatch) {
       context.addImport(importList);
       return "List<${convertPrimitiveToBoxed(argType)}> value";
@@ -385,10 +359,11 @@ Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(serializer.se
     }
   }
 
+  @override
   String serializeControllerMethodHeader(
       GLSchemaMapping mapping, GLToken context) {
     var buffer = StringBuffer();
-    buffer.writeln(_getAnnotation(mapping, context));
+    buffer.writeln(getAnnotationForMapping(mapping, context));
     buffer.write("public ");
 
     final returnType = _getReturnType(mapping, context);
@@ -402,7 +377,7 @@ Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(serializer.se
           "CompletableFuture<${convertPrimitiveToBoxed(returnType)}> ${mapping.key}(${_getMappingArgument(mapping, context)}");
     }
     for (var arg in mapping.field.arguments) {
-      final argType = _resolveArgType(arg, context);
+      final argType = resolveArgType(arg, context);
       context.addImport(SpringImports.gqlArgument);
       buffer.write(', @Argument $argType ${arg.tokenInfo}');
     }
@@ -417,6 +392,7 @@ Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(serializer.se
 
   // ── Service declarations ───────────────────────────────────────────────────
 
+  @override
   String serializeMethodDeclaration(
       GLField method, GLQueryType type, GLToken context,
       {String? argPrefix}) {
@@ -424,7 +400,7 @@ Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(serializer.se
     if (method.getDirectiveByName(glValidate)?.generated == true) {
       returnType = GLType('void'.toToken(), false);
     } else {
-      returnType = _getServiceReturnType(method.type);
+      returnType = getServiceReturnType(method.type);
     }
     var result =
         "${serializer.serializeTypeReactive(context: context, glType: createListTypeOnSubscription(returnType, type), reactive: reactive || type == GLQueryType.subscription)} ${method.name}(${serializeArgs(method.arguments, context, argPrefix)}";
@@ -440,6 +416,7 @@ Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(serializer.se
     return "${result})";
   }
 
+  @override
   String serializeServiceMappingImplMethodHeader(
       GLSchemaMapping mapping, GLToken context) {
     var buffer = StringBuffer();
@@ -454,7 +431,7 @@ Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(serializer.se
           "$returnType ${mapping.key}(${_getMappingArgument(mapping, context)}");
     }
     for (var arg in mapping.field.arguments) {
-      final argType = _resolveArgType(arg, context);
+      final argType = resolveArgType(arg, context);
       buffer.write(', $argType ${arg.tokenInfo}');
     }
     if (injectDataFetching) {
@@ -466,23 +443,10 @@ Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(serializer.se
     return buffer.toString();
   }
 
-  // ── Args ───────────────────────────────────────────────────────────────────
+  // ── Arg type resolution ────────────────────────────────────────────────────
 
-  String serializeArgs(List<GLArgumentDefinition> args, GLToken context,
-      [String? prefix]) {
-    return args.map((a) => serializeArg(a, context)).map((e) {
-      if (prefix != null) {
-        return "$prefix $e";
-      }
-      return e;
-    }).join(", ");
-  }
-
-  String serializeArg(GLArgumentDefinition arg, GLToken context) {
-    return "${_resolveArgType(arg, context)} ${arg.tokenInfo}";
-  }
-
-  String _resolveArgType(GLArgumentDefinition arg, GLToken context) {
+  @override
+  String resolveArgType(GLArgumentDefinition arg, GLToken context) {
     final uploadNames = grammar.uploadScalarNames;
     if (uploadNames.contains(arg.type.firstType.token)) {
       if (reactive) {
@@ -502,114 +466,5 @@ Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(serializer.se
       }
     }
     return serializer.serializeType(arg.type, false);
-  }
-
-  // ── Return type helpers ────────────────────────────────────────────────────
-
-  GLType _getServiceReturnType(GLType type) {
-    var token = type.token;
-    if (grammar.isNonProjectableType(token)) {
-      return type;
-    }
-
-    var returnType = grammar.getType(type.tokenInfo);
-    var skipOnserverDir = returnType.getDirectiveByName(glSkipOnServer);
-    if (skipOnserverDir != null) {
-      var mapTo = getMapTo(type.tokenInfo);
-
-      var rt = GLType(mapTo.toToken(), false);
-      if (type.isList) {
-        if (mapTo == "Object") {
-          rt = GLType("?".toToken(), false);
-        }
-        return GLListType(rt, false);
-      } else {
-        return rt;
-      }
-    }
-    return type;
-  }
-
-  String getMapTo(TokenInfo typeToken) {
-    var type = grammar.getType(typeToken);
-    var dir = type.getDirectiveByName(glSkipOnServer);
-    if (dir == null) {
-      return type.token;
-    }
-    var mapTo = dir.getArgValueAsString(glMapTo);
-    if (mapTo == null) {
-      return "Object";
-    }
-    var mappedTo = grammar
-        .getType(dir.getArgumentByName(glMapTo)!.tokenInfo.ofNewName(mapTo));
-    if (mappedTo.getDirectiveByName(glSkipOnServer) != null) {
-      throw ParseException(
-          "You cannot mapTo ${mappedTo.tokenInfo} because it is annotated with $glSkipOnServer",
-          info: mappedTo.tokenInfo);
-    }
-    return mappedTo.token;
-  }
-
-  // ── Directive factories ────────────────────────────────────────────────────
-
-  GLDirectiveValue _createResolverDirective(GLQueryType type) {
-    return GLDirectiveValue(
-        "_gqMapping".toToken(),
-        [],
-        [
-          GLArgumentValue(glAnnotation.toToken(), true),
-          GLArgumentValue(glClass.toToken(), _toMappingAnnotationValue(type)),
-          GLArgumentValue(glImport.toToken(), _toMappingAnnotationImport(type)),
-          GLArgumentValue(glOnServer.toToken(), true),
-        ],
-        generated: true);
-  }
-
-  GLDirectiveValue _createControllerDirective() {
-    return GLDirectiveValue(
-        "_gqController".toToken(),
-        [],
-        [
-          GLArgumentValue(glAnnotation.toToken(), true),
-          GLArgumentValue(glClass.toToken(), "@Controller"),
-          GLArgumentValue(glImport.toToken(), SpringImports.controller),
-          GLArgumentValue(glOnServer.toToken(), true),
-        ],
-        generated: true);
-  }
-
-  GLDirectiveValue _createArgumentDirective() {
-    return GLDirectiveValue(
-        "_gqController".toToken(),
-        [],
-        [
-          GLArgumentValue(glAnnotation.toToken(), true),
-          GLArgumentValue(glClass.toToken(), "@Argument"),
-          GLArgumentValue(glImport.toToken(), SpringImports.gqlArgument),
-          GLArgumentValue(glOnServer.toToken(), true),
-        ],
-        generated: true);
-  }
-
-  String _toMappingAnnotationValue(GLQueryType queryType) {
-    switch (queryType) {
-      case GLQueryType.query:
-        return "@QueryMapping";
-      case GLQueryType.mutation:
-        return "@MutationMapping";
-      case GLQueryType.subscription:
-        return "@SubscriptionMapping";
-    }
-  }
-
-  String _toMappingAnnotationImport(GLQueryType queryType) {
-    switch (queryType) {
-      case GLQueryType.query:
-        return SpringImports.queryMapping;
-      case GLQueryType.mutation:
-        return SpringImports.mutationMapping;
-      case GLQueryType.subscription:
-        return SpringImports.subscriptionMapping;
-    }
   }
 }

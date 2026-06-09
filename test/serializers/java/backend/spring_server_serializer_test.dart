@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
-import 'package:graphlink/src/serializers/spring_server_serializer.dart';
+import 'package:graphlink/src/serializers/java_spring_server_serializer.dart';
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
@@ -21,7 +21,7 @@ void main() {
 
     g.parse(text);
 
-    var serverSerialzer = SpringServerSerializer(g, packageName: "");
+    var serverSerialzer = JavaSpringServerSerializer(g, packageName: "");
     var userCtrl = g.controllers["UserServiceController"]!;
     var result = serverSerialzer.serializeController(userCtrl);
     print(result);
@@ -75,7 +75,7 @@ void main() {
 
     g.parse(text);
 
-    var serverSerialzer = SpringServerSerializer(g, packageName: "");
+    var serverSerialzer = JavaSpringServerSerializer(g, packageName: "");
     var userUser = g.controllers["UserServiceController"]!;
     var result = serverSerialzer.serializeController(userUser);
 
@@ -129,7 +129,7 @@ void main() {
 
     g.parse(text);
 
-    var serverSerialzer = SpringServerSerializer(g, packageName: "dev.graphlink", generateSchema: true);
+    var serverSerialzer = JavaSpringServerSerializer(g, packageName: "dev.graphlink", generateSchema: true);
     var userUser = g.controllers["UserServiceController"]!;
     var result = serverSerialzer.serializeController(userUser);
     expect(
@@ -188,7 +188,7 @@ void main() {
     var userCarService = g.services["UserCarService"]!;
     var userCarCtrl = g.controllers["UserCarServiceController"]!;
 
-    var serialzer = SpringServerSerializer(g, packageName: "");
+    var serialzer = JavaSpringServerSerializer(g, packageName: "");
     var serviceSerial = serialzer.serializeService(userCarService);
     var controllerSerial = serialzer.serializeController(userCarCtrl);
 
@@ -217,7 +217,7 @@ void main() {
 
     g.parse(text);
 
-    var serialzer = SpringServerSerializer(g, packageName: "");
+    var serialzer = JavaSpringServerSerializer(g, packageName: "");
 
     var ownerAnimalService = g.services["OwnerWithAnimalService"]!;
     var ownerAnimalMappingService =
@@ -247,7 +247,7 @@ void main() {
 
     g.parse(text);
 
-    var serialzer = SpringServerSerializer(g, packageName: "");
+    var serialzer = JavaSpringServerSerializer(g, packageName: "");
 
     var ownerAnimalService = g.services["OwnerWithAnimal2Service"]!;
     var ownerAnimalMappingService =
@@ -280,7 +280,7 @@ void main() {
 
     g.parse(text);
 
-    var serialzer = SpringServerSerializer(g, packageName: "");
+    var serialzer = JavaSpringServerSerializer(g, packageName: "");
 
     var ownerAnimalService = g.services["OwnerWithAnimal3Service"]!;
     var ownerAnimalServiceMapping =
@@ -313,7 +313,7 @@ void main() {
 
     g.parse(text);
 
-    var serverSerialzer = SpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
+    var serverSerialzer = JavaSpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
     var userCtrl = g.controllers["UserServiceController"]!;
     var result = serverSerialzer.serializeController(userCtrl);
     expect(
@@ -346,7 +346,7 @@ void main() {
 
     g.parse(text);
 
-    var serverSerialzer = SpringServerSerializer(g, packageName: "");
+    var serverSerialzer = JavaSpringServerSerializer(g, packageName: "");
     var userService = g.services["UserService"]!;
     var serializedService = serverSerialzer.serializeService(userService);
     expect(
@@ -374,7 +374,7 @@ void main() {
 
     g.parse(text);
 
-    var serverSerialzer = SpringServerSerializer(g, packageName: "");
+    var serverSerialzer = JavaSpringServerSerializer(g, packageName: "");
 
     var carService = g.services["CarService"]!;
     var serializedCarService = serverSerialzer.serializeService(carService);
@@ -398,7 +398,7 @@ void main() {
 
     g.parse(text);
 
-    var serverSerialzer = SpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
+    var serverSerialzer = JavaSpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
 
     var carService = g.services["CarService"]!;
 
@@ -423,7 +423,7 @@ void main() {
 
     g.parse(text);
 
-    var serverSerialzer = SpringServerSerializer(g, packageName: "");
+    var serverSerialzer = JavaSpringServerSerializer(g, packageName: "");
     var userService = g.services["UserService"]!;
     var serializedService = serverSerialzer.serializeService(userService);
     expect(serializedService, contains("public interface UserService"));
@@ -451,7 +451,7 @@ void main() {
 
     g.parse(text);
 
-    var serverSerialzer = SpringServerSerializer(g, packageName: "com.myorg");
+    var serverSerialzer = JavaSpringServerSerializer(g, packageName: "com.myorg");
     var userController = g.controllers["UserServiceController"]!;
 
     var controllerSerial =
@@ -475,7 +475,7 @@ void main() {
       }
     ''');
     expect(
-      () => SpringServerSerializer(g, packageName: ""),
+      () => JavaSpringServerSerializer(g, packageName: ""),
       throwsA(isA<ParseException>()),
     );
   });
@@ -491,7 +491,7 @@ void main() {
       }
     ''');
     expect(
-      () => SpringServerSerializer(g, packageName: ""),
+      () => JavaSpringServerSerializer(g, packageName: ""),
       throwsA(isA<ParseException>()),
     );
   });
@@ -504,7 +504,7 @@ void main() {
         vehicles(year: Int): [String] @glSkipOnServer(batch: false)
       }
     ''');
-    expect(() => SpringServerSerializer(g, packageName: ""), returnsNormally);
+    expect(() => JavaSpringServerSerializer(g, packageName: ""), returnsNormally);
   });
 
   test('field with arguments on root type (Query) does not throw', () {
@@ -515,7 +515,7 @@ void main() {
       }
       type User { name: String }
     ''');
-    expect(() => SpringServerSerializer(g, packageName: ""), returnsNormally);
+    expect(() => JavaSpringServerSerializer(g, packageName: ""), returnsNormally);
   });
 
   test('schema mapping with field arguments prints generated code', () {
@@ -530,7 +530,7 @@ void main() {
         id: String
       }
     ''');
-    final serializer = SpringServerSerializer(g, packageName: "com.example");
+    final serializer = JavaSpringServerSerializer(g, packageName: "com.example");
     final ctrl = g.controllers[g.controllerMappingName('User')]!;
     final result = serializer.serializeController(ctrl);
     print(result);
@@ -547,7 +547,7 @@ void main() {
         name: String!
       }
     ''');
-    final serializer = SpringServerSerializer(g, packageName: 'com.example', useSpringSecurity: true);
+    final serializer = JavaSpringServerSerializer(g, packageName: 'com.example', useSpringSecurity: true);
     final ctrl = g.controllers['UserServiceController']!;
     final result = serializer.serializeController(ctrl);
     print(result);

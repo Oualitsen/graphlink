@@ -1,6 +1,6 @@
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
-import 'package:graphlink/src/serializers/spring_server_serializer.dart';
+import 'package:graphlink/src/serializers/java_spring_server_serializer.dart';
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
@@ -23,7 +23,7 @@ void main() {
     var personServiceController = g.controllers['PersonServiceController']!;
 
     // needed for converting controller's annotations to decorators
-    SpringServerSerializer(g, packageName: "com.myorg")
+    JavaSpringServerSerializer(g, packageName: "com.myorg")
         .serializeController(personServiceController);
     expect(
         personServiceController.getImports(g),

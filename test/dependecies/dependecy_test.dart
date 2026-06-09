@@ -6,7 +6,7 @@ import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:graphlink/src/serializers/java_imports.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
-import 'package:graphlink/src/serializers/spring_server_serializer.dart';
+import 'package:graphlink/src/serializers/java_spring_server_serializer.dart';
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
@@ -400,7 +400,7 @@ directive @gqQuery(
 ''');
 
     var repo = g.repositories["PersonRepo"]!;
-    var serializer = SpringServerSerializer(g, packageName: "org.myorg");
+    var serializer = JavaSpringServerSerializer(g, packageName: "org.myorg");
     serializer.serializeRepository(repo);
     expect(repo.getImports(g),
         contains("org.springframework.stereotype.Repository"));
@@ -881,7 +881,7 @@ type Query {
   
 ''');
 
-    var serializer = SpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
+    var serializer = JavaSpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
 
     var service = g.services["PersonService"]!;
 
@@ -905,7 +905,7 @@ type Query {
   
 ''');
 
-    var serializer = SpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
+    var serializer = JavaSpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
     var controller = g.controllers["PersonServiceController"]!;
     serializer.serializeController(controller);
     expect(controller.getImports(g),
@@ -956,7 +956,7 @@ type Query {
   
 ''');
 
-    var serializer = SpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
+    var serializer = JavaSpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
     var controller = g.controllers["PersonServiceController"]!;
     var serial = serializer.serializeController(controller);
     print(serial);

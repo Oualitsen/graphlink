@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
-import 'package:graphlink/src/serializers/spring_server_serializer.dart';
+import 'package:graphlink/src/serializers/java_spring_server_serializer.dart';
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
@@ -51,7 +51,7 @@ void main() {
 
     var userRepository = g.repositories["UserRepository"]!;
 
-    var serializer = SpringServerSerializer(g, packageName: "");
+    var serializer = JavaSpringServerSerializer(g, packageName: "");
     var result = serializer.serializeRepository(userRepository);
     expect(
         result,
@@ -145,7 +145,7 @@ void main() {
         """;
     g.parse(text);
 
-    var springSerializer = SpringServerSerializer(g, packageName: "");
+    var springSerializer = JavaSpringServerSerializer(g, packageName: "");
     var userRepo = g.repositories["UserRepository"]!;
     var repoSerial = springSerializer.serializeRepository(userRepo);
     expect(

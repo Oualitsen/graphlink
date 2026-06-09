@@ -1,7 +1,7 @@
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
-import 'package:graphlink/src/serializers/spring_server_serializer.dart';
+import 'package:graphlink/src/serializers/java_spring_server_serializer.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -26,12 +26,12 @@ void main() {
   ''';
 
   late GLParser g;
-  late SpringServerSerializer serializer;
+  late JavaSpringServerSerializer serializer;
 
   setUp(() {
     g = GLParser( mode: CodeGenerationMode.server);
     g.parse(schema);
-    serializer = SpringServerSerializer(g, packageName: "");
+    serializer = JavaSpringServerSerializer(g, packageName: "");
   });
 
   group('upload — controller', () {
