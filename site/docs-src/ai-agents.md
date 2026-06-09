@@ -115,6 +115,45 @@ This page provides ready-to-use instruction files for common setups.
 
 ---
 
+## Kotlin client project
+
+=== "AGENTS.md / CLAUDE.md"
+
+    ```markdown
+    ## Code generation — GraphLink
+
+    This project uses [GraphLink](https://graphlink.dev) (`glink`) to generate
+    Kotlin client code from a GraphQL schema.
+
+    - **Schema**: `schema/*.graphql` (or wherever your .graphql files are)
+    - **Config**: `glink.json` (or `glink.yaml`) at the project root
+    - **Generated files**: `src/main/kotlin/com/example/generated/` — DO NOT edit these manually
+
+    To regenerate after any schema change:
+    ```bash
+    glink -c glink.json
+    # or with watch mode:
+    glink -c glink.json -w
+    ```
+
+    ### Rules
+    - To add a field, type, query, or mutation: edit the `.graphql` schema file, then run `glink`.
+    - Never edit files inside the `generated/` package — they will be overwritten on next run.
+    - `GraphLinkClient` is the entry point. Queries are on `client.queries`, mutations on
+      `client.mutations`, subscriptions on `client.subscriptions`.
+    - All query and mutation methods are `suspend` functions — call them from a coroutine or `runBlocking`.
+    - Subscription methods return a `Flow<T>` — collect them inside a coroutine scope.
+    - Generated types and inputs are `data class` by default — construct them directly, no builder needed.
+    - Nullable input fields have `= null` defaults — only pass the fields you need.
+    - Enums are in `generated/enums/` with `toJson()` / `fromJson()` — use them directly, do not re-serialize.
+
+    ### Caching
+    Cache behaviour is declared in the schema via `@glCache` and `@glCacheInvalidate` directives.
+    Do not implement caching in application code — add or modify the directive in the schema instead.
+    ```
+
+---
+
 ## Spring Boot server project
 
 === "AGENTS.md / CLAUDE.md"

@@ -57,6 +57,7 @@ nav:
     - Dart / Flutter: dart-client.md
     - Java: java-client.md
     - TypeScript: typescript-client.md
+    - Kotlin: kotlin-client.md
   - Backend:
     - Spring Boot: spring-server.md
   - Features:
