@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
-import 'package:graphlink/src/serializers/spring_server_serializer.dart';
+import 'package:graphlink/src/serializers/java_spring_server_serializer.dart';
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
@@ -21,7 +21,7 @@ void main() {
 
   test("reactive service interface uses Mono/Flux return types", () {
     final g = buildParser();
-    final serializer = SpringServerSerializer(g, packageName: "myorg", reactive: true);
+    final serializer = JavaSpringServerSerializer(g, packageName: "myorg", reactive: true);
     final service = g.services["UserService"]!;
     final result = serializer.serializeService(service);
 
@@ -51,7 +51,7 @@ void main() {
         make: String!
       }
     ''');
-    final serializer = SpringServerSerializer(g, packageName: 'com.example', reactive: true);
+    final serializer = JavaSpringServerSerializer(g, packageName: 'com.example', reactive: true);
     final ctrl = g.controllers['CarServiceController']!;
     final result = serializer.serializeController(ctrl);
     print(result);
@@ -69,7 +69,7 @@ void main() {
 
   test("reactive controller uses Mono/Flux return types without CompletableFuture", () {
     final g = buildParser();
-    final serializer = SpringServerSerializer(g, packageName: "myorg", reactive: true);
+    final serializer = JavaSpringServerSerializer(g, packageName: "myorg", reactive: true);
     final ctrl = g.controllers["UserServiceController"]!;
     final result = serializer.serializeController(ctrl);
 

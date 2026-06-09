@@ -1,6 +1,6 @@
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
-import 'package:graphlink/src/serializers/spring_server_serializer.dart';
+import 'package:graphlink/src/serializers/java_spring_server_serializer.dart';
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
@@ -42,7 +42,7 @@ void main() {
     ''');
 
     var personService = g.services['PersonService']!;
-    var springSerializer = SpringServerSerializer(g, packageName: 'com.myorg');
+    var springSerializer = JavaSpringServerSerializer(g, packageName: 'com.myorg');
     var serialzedService =
         springSerializer.serializeService(personService);
 
@@ -75,7 +75,7 @@ void main() {
     ''');
 
     var personService = g.services['PersonService']!;
-    var springSerializer = SpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
+    var springSerializer = JavaSpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
     var serialzedService =
         springSerializer.serializeService(personService);
     expect(
@@ -107,7 +107,7 @@ void main() {
     ''');
 
     var personController = g.controllers['PersonServiceController']!;
-    var springSerializer = SpringServerSerializer(g, packageName: "");
+    var springSerializer = JavaSpringServerSerializer(g, packageName: "");
     var serializedController =
         springSerializer.serializeController(personController);
     expect(
@@ -143,7 +143,7 @@ void main() {
     ''');
 
     var personController = g.controllers['PersonServiceController']!;
-    var springSerializer = SpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
+    var springSerializer = JavaSpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
     var serializedController =
         springSerializer.serializeController(personController);
     expect(

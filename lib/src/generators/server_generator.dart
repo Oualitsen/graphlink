@@ -7,7 +7,7 @@ import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/express_apollo_server_serializer.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
-import 'package:graphlink/src/serializers/spring_server_serializer.dart';
+import 'package:graphlink/src/serializers/java_spring_server_serializer.dart';
 import 'package:graphlink/src/serializers/typescript_serializer.dart';
 import 'package:graphlink/src/utils.dart';
 
@@ -32,7 +32,7 @@ Future<Set<String>> generateServerClasses(
     typeMapOverrides: config.typeMappings ?? {},
     importPrefix: springConfig.basePackage,
   );
-  final springSerializer = SpringServerSerializer(grammar,
+  final springSerializer = JavaSpringServerSerializer(grammar,
       packageName: packageName,
       javaSerializer: serializer,
       generateSchema: springConfig.generateSchema,

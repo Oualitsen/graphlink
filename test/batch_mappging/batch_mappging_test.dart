@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
-import 'package:graphlink/src/serializers/spring_server_serializer.dart';
+import 'package:graphlink/src/serializers/java_spring_server_serializer.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -80,7 +80,7 @@ type Query {
 
     g.parse(text);
 
-    var springSerializer = SpringServerSerializer(g, packageName: "");
+    var springSerializer = JavaSpringServerSerializer(g, packageName: "");
     var serice = g.services["UserWithCarService"]!;
     var serviceSerial = springSerializer.serializeService(serice);
     expect(serviceSerial,
@@ -96,7 +96,7 @@ type Query {
 
     g.parse(text);
 
-    var springSerializer = SpringServerSerializer(g, packageName: "");
+    var springSerializer = JavaSpringServerSerializer(g, packageName: "");
     var ctrl = g.controllers[g.controllerMappingName("UserWithCar")]!;
     var serviceSerial = springSerializer.serializeController(ctrl);
     expect(
@@ -118,7 +118,7 @@ type Query {
 
     g.parse(text);
 
-    var springSerializer = SpringServerSerializer(g, packageName: "");
+    var springSerializer = JavaSpringServerSerializer(g, packageName: "");
     var ctrl = g.controllers[g.controllerMappingName("UserWithCar")]!;
     var serviceSerial = springSerializer.serializeController(ctrl);
     expect(
@@ -201,7 +201,7 @@ type Query {
 ''';
 
     g.parse(text);
-    var serializer = SpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
+    var serializer = JavaSpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
 
     var mappingService = g.services[g.serviceMappingName('User')]!;
     var mappingController = g.controllers[g.controllerMappingName('User')]!;

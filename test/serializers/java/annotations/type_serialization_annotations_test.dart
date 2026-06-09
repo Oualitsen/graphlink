@@ -4,7 +4,7 @@ import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/serializers/annotation_serializer.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
-import 'package:graphlink/src/serializers/spring_server_serializer.dart';
+import 'package:graphlink/src/serializers/java_spring_server_serializer.dart';
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
@@ -158,7 +158,7 @@ void main() {
 
     g.parse(text);
 
-    var springSerialzer = SpringServerSerializer(g, packageName: "");
+    var springSerialzer = JavaSpringServerSerializer(g, packageName: "");
     var userCtrl = g.controllers["UserServiceController"]!;
     var userController = springSerialzer.serializeController(userCtrl);
     expect(
@@ -242,7 +242,7 @@ void main() {
     var countAnimals = query.getFieldByName("countAnimals")!;
     expect(countAnimals.getDirectiveByName("@auth2"), isNotNull);
     expect(countAnimals.getDirectiveByName("@auth"), isNull);
-    var springSerial = SpringServerSerializer(g, packageName: "");
+    var springSerial = JavaSpringServerSerializer(g, packageName: "");
     var mainController = g.controllers["MainServiceController"]!;
     print(springSerial.serializeController(mainController));
 

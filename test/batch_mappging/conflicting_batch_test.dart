@@ -1,7 +1,7 @@
 import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
-import 'package:graphlink/src/serializers/spring_server_serializer.dart';
+import 'package:graphlink/src/serializers/java_spring_server_serializer.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -65,7 +65,7 @@ void main() {
     final mapping = g.getMappingByName('recordDetails')!;
     expect(mapping.batch, isTrue);
 
-    final serializer = SpringServerSerializer(g, packageName: "com.example");
+    final serializer = JavaSpringServerSerializer(g, packageName: "com.example");
     final ctrl = g.controllers[g.controllerMappingName('Record')]!;
     expect(serializer.serializeController(ctrl),
         contains('@BatchMapping'));
