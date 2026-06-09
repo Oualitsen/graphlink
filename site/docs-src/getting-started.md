@@ -1,6 +1,6 @@
 ---
 title: Getting Started — GraphLink Docs
-description: Install the GraphLink CLI, write your first GraphQL schema, configure the generator, and produce type-safe Dart, Java, and TypeScript code in under 5 minutes.
+description: Install the GraphLink CLI, write your first GraphQL schema, configure the generator, and produce type-safe Dart, Java, TypeScript, and Kotlin code in under 5 minutes.
 ---
 
 # Getting Started

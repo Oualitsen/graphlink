@@ -364,7 +364,7 @@
 - Fixed crash when a type's common interface is a projected interface
 ---
 
-## 4.8.0 - 2026-06-04
+## 4.8.0 - 2026-06-09
 
 ### New features
 

@@ -616,6 +616,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="kotlin-client.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kotlin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1130,6 +1158,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#kotlin-client-project" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kotlin client project
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Kotlin client project">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rules_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rules
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#caching_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Caching
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#spring-boot-server-project" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1142,7 +1209,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#rules_3" class="md-nav__link">
+  <a href="#rules_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         Rules
@@ -1170,7 +1237,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#rules_4" class="md-nav__link">
+  <a href="#rules_5" class="md-nav__link">
     <span class="md-ellipsis">
       
         Rules
@@ -1315,6 +1382,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#kotlin-client-project" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kotlin client project
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Kotlin client project">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rules_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rules
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#caching_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Caching
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#spring-boot-server-project" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1327,7 +1433,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#rules_3" class="md-nav__link">
+  <a href="#rules_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         Rules
@@ -1355,7 +1461,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#rules_4" class="md-nav__link">
+  <a href="#rules_5" class="md-nav__link">
     <span class="md-ellipsis">
       
         Rules
@@ -1522,24 +1628,63 @@ Do not implement caching in application code — add or modify the directive in 
 </div>
 </div>
 <hr />
-<h2 id="spring-boot-server-project">Spring Boot server project<a class="headerlink" href="#spring-boot-server-project" title="Permanent link">&para;</a></h2>
+<h2 id="kotlin-client-project">Kotlin client project<a class="headerlink" href="#kotlin-client-project" title="Permanent link">&para;</a></h2>
 <div class="tabbed-set tabbed-alternate" data-tabs="4:1"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1">AGENTS.md / CLAUDE.md</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="gu">## Code generation — GraphLink</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>This project uses [<span class="nt">GraphLink</span>](<span class="na">https://graphlink.dev</span>) (<span class="sb">`glink`</span>) to generate
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>Spring Boot server code from a GraphQL schema.
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>Kotlin client code from a GraphQL schema.
 <a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="k">-</span><span class="w"> </span><span class="gs">**Schema**</span>: <span class="sb">`src/main/resources/graphql/*.graphqls`</span>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="k">-</span><span class="w"> </span><span class="gs">**Config**</span>: <span class="sb">`glink.json`</span> at the project root
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="k">-</span><span class="w"> </span><span class="gs">**Generated files**</span>: <span class="sb">`src/main/java/com/example/generated/`</span> — DO NOT edit these manually
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="k">-</span><span class="w"> </span><span class="gs">**Schema**</span>: <span class="sb">`schema/*.graphql`</span> (or wherever your .graphql files are)
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="k">-</span><span class="w"> </span><span class="gs">**Config**</span>: <span class="sb">`glink.json`</span> (or <span class="sb">`glink.yaml`</span>) at the project root
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="k">-</span><span class="w"> </span><span class="gs">**Generated files**</span>: <span class="sb">`src/main/kotlin/com/example/generated/`</span> — DO NOT edit these manually
 <a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
 <a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>To regenerate after any schema change:
 <a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>```bash
 <a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>glink -c glink.json
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="gh"># or with watch mode:</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>glink -c glink.json -w
 </code></pre></div>
 <h3 id="rules_3">Rules<a class="headerlink" href="#rules_3" title="Permanent link">&para;</a></h3>
+<ul>
+<li>To add a field, type, query, or mutation: edit the <code>.graphql</code> schema file, then run <code>glink</code>.</li>
+<li>Never edit files inside the <code>generated/</code> package — they will be overwritten on next run.</li>
+<li><code>GraphLinkClient</code> is the entry point. Queries are on <code>client.queries</code>, mutations on
+  <code>client.mutations</code>, subscriptions on <code>client.subscriptions</code>.</li>
+<li>All query and mutation methods are <code>suspend</code> functions — call them from a coroutine or <code>runBlocking</code>.</li>
+<li>Subscription methods return a <code>Flow&lt;T&gt;</code> — collect them inside a coroutine scope.</li>
+<li>Generated types and inputs are <code>data class</code> by default — construct them directly, no builder needed.</li>
+<li>Nullable input fields have <code>= null</code> defaults — only pass the fields you need.</li>
+<li>Enums are in <code>generated/enums/</code> with <code>toJson()</code> / <code>fromJson()</code> — use them directly, do not re-serialize.</li>
+</ul>
+<h3 id="caching_1">Caching<a class="headerlink" href="#caching_1" title="Permanent link">&para;</a></h3>
+<p>Cache behaviour is declared in the schema via <code>@glCache</code> and <code>@glCacheInvalidate</code> directives.
+Do not implement caching in application code — add or modify the directive in the schema instead.
+```</p>
+</div>
+</div>
+</div>
+<hr />
+<h2 id="spring-boot-server-project">Spring Boot server project<a class="headerlink" href="#spring-boot-server-project" title="Permanent link">&para;</a></h2>
+<div class="tabbed-set tabbed-alternate" data-tabs="5:1"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">AGENTS.md / CLAUDE.md</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="gu">## Code generation — GraphLink</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>This project uses [<span class="nt">GraphLink</span>](<span class="na">https://graphlink.dev</span>) (<span class="sb">`glink`</span>) to generate
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>Spring Boot server code from a GraphQL schema.
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="k">-</span><span class="w"> </span><span class="gs">**Schema**</span>: <span class="sb">`src/main/resources/graphql/*.graphqls`</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="k">-</span><span class="w"> </span><span class="gs">**Config**</span>: <span class="sb">`glink.json`</span> at the project root
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="k">-</span><span class="w"> </span><span class="gs">**Generated files**</span>: <span class="sb">`src/main/java/com/example/generated/`</span> — DO NOT edit these manually
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>To regenerate after any schema change:
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>```bash
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>glink -c glink.json
+</code></pre></div>
+<h3 id="rules_4">Rules<a class="headerlink" href="#rules_4" title="Permanent link">&para;</a></h3>
 <ul>
 <li>To add a field, type, query, or mutation: edit the <code>.graphqls</code> schema file, then run <code>glink</code>.</li>
 <li>Never edit files inside the <code>generated/</code> package — controllers, inputs, and types are all generated.</li>
@@ -1553,31 +1698,31 @@ Do not implement caching in application code — add or modify the directive in 
 </div>
 <hr />
 <h2 id="full-stack-project-flutter-spring-boot">Full-stack project (Flutter + Spring Boot)<a class="headerlink" href="#full-stack-project-flutter-spring-boot" title="Permanent link">&para;</a></h2>
-<div class="tabbed-set tabbed-alternate" data-tabs="5:1"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">AGENTS.md / CLAUDE.md</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="6:1"><input checked="checked" id="__tabbed_6_1" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="__tabbed_6_1">AGENTS.md / CLAUDE.md</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="gu">## Code generation — GraphLink</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>This project uses [<span class="nt">GraphLink</span>](<span class="na">https://graphlink.dev</span>) (<span class="sb">`glink`</span>) to generate code
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>from a single GraphQL schema for both the Flutter client and the Spring Boot backend.
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="gu">### Schema</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>One schema file drives both ends: <span class="sb">`schema/schema.graphql`</span>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="gu">### Client (Flutter)</span>
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="k">-</span><span class="w"> </span><span class="gs">**Config**</span>: <span class="sb">`client/glink.json`</span>
-<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="k">-</span><span class="w"> </span><span class="gs">**Generated files**</span>: <span class="sb">`client/lib/generated/`</span> — DO NOT edit
-<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>
-<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="gu">### Server (Spring Boot)</span>
-<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="k">-</span><span class="w"> </span><span class="gs">**Config**</span>: <span class="sb">`server/glink.json`</span>
-<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="k">-</span><span class="w"> </span><span class="gs">**Generated files**</span>: <span class="sb">`server/src/main/java/com/example/generated/`</span> — DO NOT edit
-<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>
-<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>To regenerate both after a schema change:
-<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>```bash
-<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>glink -c client/glink.json
-<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>glink -c server/glink.json
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="gu">## Code generation — GraphLink</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>This project uses [<span class="nt">GraphLink</span>](<span class="na">https://graphlink.dev</span>) (<span class="sb">`glink`</span>) to generate code
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>from a single GraphQL schema for both the Flutter client and the Spring Boot backend.
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="gu">### Schema</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>One schema file drives both ends: <span class="sb">`schema/schema.graphql`</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="gu">### Client (Flutter)</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="k">-</span><span class="w"> </span><span class="gs">**Config**</span>: <span class="sb">`client/glink.json`</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="k">-</span><span class="w"> </span><span class="gs">**Generated files**</span>: <span class="sb">`client/lib/generated/`</span> — DO NOT edit
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="gu">### Server (Spring Boot)</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="k">-</span><span class="w"> </span><span class="gs">**Config**</span>: <span class="sb">`server/glink.json`</span>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="k">-</span><span class="w"> </span><span class="gs">**Generated files**</span>: <span class="sb">`server/src/main/java/com/example/generated/`</span> — DO NOT edit
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>To regenerate both after a schema change:
+<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>```bash
+<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>glink -c client/glink.json
+<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a>glink -c server/glink.json
 </code></pre></div>
-<h3 id="rules_4">Rules<a class="headerlink" href="#rules_4" title="Permanent link">&para;</a></h3>
+<h3 id="rules_5">Rules<a class="headerlink" href="#rules_5" title="Permanent link">&para;</a></h3>
 <ul>
 <li>All data model changes go in <code>schema/schema.graphql</code> first — then regenerate.</li>
 <li>On the server, implement the generated service interfaces. Never edit generated controllers.</li>
