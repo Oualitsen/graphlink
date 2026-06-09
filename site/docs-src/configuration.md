@@ -1,6 +1,6 @@
 ---
 title: Configuration Reference — GraphLink Docs
-description: Complete reference for all GraphLink glink.json / glink.yaml options — schemaPaths, typeMappings, outputDir, clientConfig (Dart, Java, TypeScript), serverConfig (Spring Boot), and CLI flags.
+description: Complete reference for all GraphLink glink.json / glink.yaml options — schemaPaths, typeMappings, outputDir, clientConfig (Dart, Java, TypeScript, Kotlin), serverConfig (Spring Boot), and CLI flags.
 ---
 
 # Configuration Reference
@@ -339,6 +339,66 @@ Used when `mode` is `"client"` and you want TypeScript output.
 | `optionalNullableInputFields` | `boolean` | `true` | When `true`, nullable fields in generated input interfaces use `field?: T \| null` (TypeScript optional property). When `false`, they use `field: T \| null` (required but nullable). |
 | `immutableTypeFields` | `boolean` | `true` | When `true`, generated type interfaces use `readonly` on all fields. |
 | `captureErrors` | `boolean` | `false` | When `true`, applies `@glCaptureErrors` behaviour to every query and mutation. Each method returns a `{OperationName}FullResponse` holding optional `data` and optional `errors` instead of throwing on GraphQL errors. Equivalent to annotating every query and mutation field with `@glCaptureErrors` in the schema. |
+
+---
+
+## `clientConfig.kotlin`
+
+Used when `mode` is `"client"` and you want Kotlin output.
+
+=== "JSON"
+
+    ```json title="glink.json — clientConfig.kotlin"
+    {
+      "clientConfig": {
+        "kotlin": {
+          "packageName": "com.example.generated",
+          "generateAllFieldsFragments": true,
+          "autoGenerateQueries": true,
+          "typeAsDataClass": true,
+          "inputAsDataClass": true,
+          "nullableFieldsRequired": false,
+          "immutableTypeFields": true,
+          "operationNameAsParameter": false,
+          "captureErrors": false,
+          "wsAdapter": "okhttp",
+          "defaultAlias": null
+        }
+      }
+    }
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — clientConfig.kotlin"
+    clientConfig:
+      kotlin:
+        packageName: com.example.generated
+        generateAllFieldsFragments: true
+        autoGenerateQueries: true
+        typeAsDataClass: true
+        inputAsDataClass: true
+        nullableFieldsRequired: false
+        immutableTypeFields: true
+        operationNameAsParameter: false
+        captureErrors: false
+        wsAdapter: okhttp
+        defaultAlias: null
+    ```
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `packageName` | `string` | — | **Required.** Kotlin package name for all generated files. |
+| `generateAllFieldsFragments` | `boolean` | `true` | Generates `_all_fields_TypeName` fragments for every type. Required for `autoGenerateQueries`. |
+| `autoGenerateQueries` | `boolean` | `true` | Automatically builds query strings for every operation using `_all_fields` fragments. |
+| `typeAsDataClass` | `boolean` | `true` | Emit output types as `data class`. When `false`, uses `open class`. |
+| `inputAsDataClass` | `boolean` | `true` | Emit input types as `data class`. When `false`, uses `open class`. |
+| `nullableFieldsRequired` | `boolean` | `false` | When `true`, nullable constructor parameters have no default — callers must pass them explicitly. |
+| `immutableTypeFields` | `boolean` | `true` | Generate `val` (immutable) fields instead of `var`. |
+| `operationNameAsParameter` | `boolean` | `false` | When `true`, appends the operation name as a `?operationName=` query parameter in the HTTP request URL. |
+| `captureErrors` | `boolean` | `false` | When `true`, applies `@glCaptureErrors` to every query and mutation. Each method returns a `{OperationName}FullResponse` with `data` and `errors` instead of throwing. |
+| `wsAdapter` | `"okhttp"` \| `"none"` | `"okhttp"` | WebSocket adapter to generate. `"okhttp"` emits `DefaultGraphLinkWebSocketAdapter` using OkHttp; `"none"` emits only the `GraphLinkWebSocketAdapter` interface. |
+| `defaultAlias` | `string?` | `null` | Default alias applied to all generated query fields globally. |
 
 ---
 

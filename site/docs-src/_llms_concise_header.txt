@@ -1,6 +1,6 @@
 # GraphLink
 
-> GraphQL code generation tool for Dart, Flutter, Java, TypeScript, and Spring Boot. Open source. MIT License.
+> GraphQL code generation tool for Dart, Flutter, Java, TypeScript, Kotlin, and Spring Boot. Open source. MIT License.
 
 GraphLink is a command-line tool (`glink`) that reads a GraphQL schema and generates fully type-safe
 client and server code. Developers define their API once in a `.graphql` schema file and run
@@ -18,6 +18,9 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - **TypeScript client**: typed interfaces, enums, input types, a fully typed client with Fetch
   (default) or Axios HTTP adapter, optional RxJS observables mode (Angular-friendly), and a default
   WebSocket adapter for subscriptions. Works in Angular, React, Vue, Svelte, and Node/Bun.
+- **Kotlin client**: typed data classes, input classes, enums, and a coroutine-based GraphQL client
+  using `kotlinx.serialization`. Supports queries, mutations, and subscriptions (OkHttp WebSocket
+  with auto-reconnect). Works in Android, JVM server projects, and Kotlin Multiplatform.
 - **Spring Boot server**: controllers, service interfaces, repository stubs, and input classes
   generated from the schema's type definitions and queries. Supports MVC and reactive (WebFlux) mode.
 
@@ -41,22 +44,26 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - **Watch mode.** Run `glink -w` to watch schema files and regenerate automatically on every save.
 - **Single source of truth.** The schema drives both ends. No duplicate type definitions. No
   schema drift. Adding a field means editing one file.
+- **WebSocket auto-reconnect by default.** Every generated WebSocket adapter reconnects automatically
+  after a network drop, server restart, or idle timeout — Dart, Java, TypeScript, and Kotlin.
+  Most GraphQL clients generate the subscription method but leave reconnection to the user.
+  GraphLink handles the full connection lifecycle, integration-tested across all targets.
 - **Inline error handling (`@glCaptureErrors`).** Annotate any query or mutation with
   `@glCaptureErrors` (or set `captureErrors: true` in config) to return a `FullResponse` with
-  `data` and `errors` side by side instead of throwing. Dart, Java, and TypeScript.
+  `data` and `errors` side by side instead of throwing. Dart, Java, TypeScript, and Kotlin.
 - **Barrel file generation.** Dart and TypeScript generators emit a barrel/index file that
   re-exports all generated types, inputs, and enums from a single import.
 
-## Supported targets (as of v4.7.0)
+## Supported targets (as of v4.8.0)
 
 - Dart client (stable)
 - Flutter client (stable, including UI widget generation)
 - Java client (stable)
 - Spring Boot server (stable, MVC and reactive/WebFlux)
 - TypeScript client (stable — fetch/axios, RxJS observables, WebSocket subscriptions)
+- Kotlin client (stable — coroutines, kotlinx.serialization, OkHttp WebSocket)
 - Express / Node.js server (planned)
 - Go (planned, demand-based)
-- Kotlin (planned, demand-based)
 
 ## Installation
 
