@@ -1,7 +1,7 @@
 import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
-import 'package:graphlink/src/serializers/spring_server_serializer.dart';
+import 'package:graphlink/src/serializers/java_spring_server_serializer.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -19,7 +19,7 @@ void main() {
       }
     ''');
     expect(
-      () => SpringServerSerializer(g, packageName: ""),
+      () => JavaSpringServerSerializer(g, packageName: ""),
       throwsA(isA<ParseException>()),
     );
   });
@@ -38,7 +38,7 @@ void main() {
       }
     ''');
 
-    final serializer = SpringServerSerializer(g, packageName: "com.example");
+    final serializer = JavaSpringServerSerializer(g, packageName: "com.example");
     final ctrl = g.controllers[g.controllerMappingName('User')]!;
     final service = g.services[g.serviceMappingName('User')]!;
 

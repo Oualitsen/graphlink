@@ -1,60 +1,46 @@
 import 'dart:io';
 import 'package:graphlink/src/exceptions/parse_exception.dart';
+import 'package:graphlink/src/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/java_code_gen_utils.dart';
-import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_controller.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_directives_mixin.dart';
-import 'package:graphlink/src/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_service.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/annotation_serializer.dart';
-import 'package:graphlink/src/serializers/java_imports.dart';
-import 'package:graphlink/src/serializers/java_serializer.dart';
-import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
-import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
+import 'package:graphlink/src/serializers/gl_serializer.dart';
+import 'package:graphlink/src/serializers/jvm_spring_controller_serializer_base.dart';
 import 'package:graphlink/src/serializers/server_serializer.dart';
-import 'package:graphlink/src/serializers/spring_controller_serializer.dart';
 
-class SpringServerSerializer extends ServerSerializer with ServerSerializerUtils {
-  final String? defaultRepositoryBase;
+abstract class JvmSpringServerSerializerBase extends ServerSerializer
+    with ServerSerializerUtils {
   final String packageName;
-
-  final JavaSerializer serializer;
   final bool generateSchema;
   final bool injectDataFetching;
   final bool reactive;
   final bool useSpringSecurity;
   final codeGenUtils = JavaCodeGenUtils();
-  late final SpringControllerSerializer _ctrl;
+  late final JvmSpringControllerSerializerBase _ctrl;
 
-  SpringServerSerializer(GLParser grammar,
-      {required this.packageName,
-      this.defaultRepositoryBase,
-      JavaSerializer? javaSerializer,
-      this.generateSchema = false,
-      this.injectDataFetching = false,
-      this.reactive = false,
-      this.useSpringSecurity = false})
-      : assert(grammar.mode == CodeGenerationMode.server,
+  GLSerializer get serializer;
+
+  JvmSpringServerSerializerBase(
+    GLParser grammar,
+    JvmSpringControllerSerializerBase ctrl, {
+    required this.packageName,
+    this.generateSchema = false,
+    this.injectDataFetching = false,
+    this.reactive = false,
+    this.useSpringSecurity = false,
+  })  : assert(grammar.mode == CodeGenerationMode.server,
             "Grammar must be in code generation mode = `CodeGenerationMode.server`"),
-        serializer = javaSerializer ??
-            JavaSerializer(grammar,
-                inputsCheckForNulls: true,
-                typesCheckForNulls: grammar.mode == CodeGenerationMode.client,
-                importPrefix: packageName),
         super(grammar) {
-    _ctrl = SpringControllerSerializer(
-      grammar: grammar,
-      serializer: serializer,
-      reactive: reactive,
-      injectDataFetching: injectDataFetching,
-      useSpringSecurity: useSpringSecurity,
-      generateSchema: generateSchema,
-    );
+    _ctrl = ctrl;
     _validateFieldArguments();
     _annotateRepositories();
     _ctrl.annotateControllers();
@@ -152,7 +138,7 @@ class SpringServerSerializer extends ServerSerializer with ServerSerializerUtils
     }
   }
 
-  // ── Base class overrides ───────────────────────────────────────────────────
+  // ── ServerSerializer overrides ─────────────────────────────────────────────
 
   @override
   String serializeService(GLService service) {
@@ -171,14 +157,8 @@ class SpringServerSerializer extends ServerSerializer with ServerSerializerUtils
   String serializeTypeDefs() =>
       generateSchema ? GLGraphqlSerializer(grammar).generateSchema() : '';
 
-  // ── Spring-specific public API ─────────────────────────────────────────────
-
-  String serializeController(GLController ctrl) => _ctrl.serializeController(ctrl);
-
-  String serializeRepository(GLInterfaceDefinition interface) {
-    var body = _serializeRepositoryBody(interface);
-    return serializer.serializeWithImport(interface, body);
-  }
+  String serializeController(GLController ctrl) =>
+      _ctrl.serializeController(ctrl);
 
   // ── Private body builders ──────────────────────────────────────────────────
 
@@ -198,35 +178,5 @@ class SpringServerSerializer extends ServerSerializer with ServerSerializerUtils
           .map((e) => "${e};")
     ]));
     return buffer.toString();
-  }
-
-  String _serializeRepositoryBody(GLInterfaceDefinition interface) {
-    interface
-        .getSerializableFields(grammar.mode)
-        .where((f) => f.name.token == "_")
-        .forEach((f) {
-      f.addDirective(
-          GLDirectiveValue(glSkipOnServer.toToken(), [], [], generated: true));
-    });
-    interface.addImport(SpringImports.repository);
-
-    var gqRepo = interface.getDirectiveByName(glRepository)!;
-    var className = gqRepo.getArgValueAsString(glClass);
-    if (className == null) {
-      className = "JpaRepository";
-      interface.addImport(SpringImports.jpaRepository);
-    }
-    var id = gqRepo.getArgValueAsString(glIdType);
-    var ontType = gqRepo.getArgValueAsString(glType)!;
-
-    interface.addInterface(GLInterfaceDefinition(
-        name: "$className<$ontType, ${id}>".toToken(),
-        nameDeclared: false,
-        fields: [],
-        directives: [],
-        interfaceNames: {},
-        extension: false));
-
-    return serializer.serializeInterface(interface, getters: false);
   }
 }
