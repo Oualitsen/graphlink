@@ -4,7 +4,8 @@ import 'package:graphlink_client_integration_tests/generated/client/graph_link_c
 import 'package:graphlink_client_integration_tests/generated/client/graph_link_uploads.dart';
 import 'real_server_adapter.dart';
 
-GLUpload _makeFile(List<int> bytes, {String name = 'test.png'}) => GLUpload.fromBytes(
+GLUpload _makeFile(List<int> bytes, {String name = 'test.png'}) =>
+    GLUpload.fromBytes(
       Uint8List.fromList(bytes),
       filename: name,
       mimeType: 'image/png',
@@ -48,7 +49,9 @@ void main() {
     test('returns true for a single file in the list', () async {
       final res = await client.mutations.uploadFileList(
         userId: 'user-1',
-        files: [_makeFile([1, 2, 3])],
+        files: [
+          _makeFile([1, 2, 3])
+        ],
       );
       expect(res.uploadFileList, isTrue);
     });

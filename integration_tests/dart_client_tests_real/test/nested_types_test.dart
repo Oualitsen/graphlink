@@ -8,7 +8,7 @@ void main() {
 
   group('required nested object', () {
     test('User.address is correctly deserialized', () async {
-      final res = await client.queries.getUser(id: 'user-1');
+      final res = await client.queries.getUser(id: 'user-1', limit: 10);
       expect(res.getUser.address.street, equals('123 Main St'));
       expect(res.getUser.address.city, equals('Springfield'));
       expect(res.getUser.address.country, equals('US'));
@@ -18,12 +18,12 @@ void main() {
 
   group('nullable nested object', () {
     test('User.billingAddress is null for Alice', () async {
-      final res = await client.queries.getUser(id: 'user-1');
+      final res = await client.queries.getUser(id: 'user-1', limit: 10);
       expect(res.getUser.billingAddress, isNull);
     });
 
     test('User.billingAddress is correctly deserialized for Bob', () async {
-      final res = await client.queries.getUser(id: 'user-2');
+      final res = await client.queries.getUser(id: 'user-2', limit: 10);
       expect(res.getUser.billingAddress, isNotNull);
       expect(res.getUser.billingAddress!.street, equals('789 Pine Rd'));
       expect(res.getUser.billingAddress!.city, equals('Capital City'));

@@ -257,6 +257,7 @@ class GLParser {
       fillTypedFragments();
       validateProjections();
       updateFragmentDependencies();
+      propagateFieldArgumentVariables();
       // cache handling — must run before createProjectedTypes to catch errors early
       fixTagListValues();
       validateTagValues();
@@ -893,6 +894,7 @@ class GLParser {
       consume(); // consume colon
     }
     final name = expectName();
+    final args = _parseArgumentValues();
     final directives = _parseDirectiveValueList(GLDirectiveScope.FIELD);
     GLFragmentBlockDefinition? block;
     if (check(GLTokenType.openBrace)) {
@@ -904,6 +906,7 @@ class GLParser {
       alias: alias,
       block: block,
       directives: directives,
+      arguments: args,
     );
   }
 

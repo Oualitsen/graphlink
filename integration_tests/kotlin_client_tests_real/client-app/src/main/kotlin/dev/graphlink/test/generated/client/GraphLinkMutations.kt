@@ -40,10 +40,10 @@ open class GraphLinkMutations(
 ) : GraphLinkResolverBase(adapter, null, store, encoder, decoder) {
 
 
-   suspend fun createUser(input: CreateUserInput): CreateUserResponse {
+   suspend fun createUser(input: CreateUserInput, limit: Int): CreateUserResponse {
       val __gl_operationName__ = "createUser"
-      val __gl_query__ = "mutation createUser(\$input: CreateUserInput!){createUser(input: \$input){..._all_fields_User}} fragment _all_fields_User on User{id name email status priority address{..._all_fields_Address} billingAddress{..._all_fields_Address} tags scores posts{..._all_fields_Post}} fragment _all_fields_Address on Address{street city country zip} fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
-      val __gl_variables__ = mapOf("input" to input.toJson())
+      val __gl_query__ = "mutation createUser(\$input: CreateUserInput!,\$limit: Int!){createUser(input: \$input){..._all_fields_User}} fragment _all_fields_User on User{id name email status priority address{..._all_fields_Address} billingAddress{..._all_fields_Address} tags scores posts{..._all_fields_Post} recentPosts(limit: \$limit){..._all_fields_Post}} fragment _all_fields_Address on Address{street city country zip} fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
+      val __gl_variables__ = mapOf("input" to input.toJson(), "limit" to limit)
       val __gl_payload__ = GraphLinkPayload(query = __gl_query__, operationName = __gl_operationName__, variables = __gl_variables__)
       val __gl_responseText__ = glCallAdapter(__gl_payload__)
       val __gl_decodedResponse__ = CreateUserFullResponse.fromJson(decoder.decode(__gl_responseText__))
@@ -64,10 +64,10 @@ open class GraphLinkMutations(
       }
       return __gl_decodedResponse__.data!!
    }
-   suspend fun updateUser(id: String, input: UpdateUserInput): UpdateUserResponse {
+   suspend fun updateUser(id: String, input: UpdateUserInput, limit: Int): UpdateUserResponse {
       val __gl_operationName__ = "updateUser"
-      val __gl_query__ = "mutation updateUser(\$id: ID!,\$input: UpdateUserInput!){updateUser(id: \$id,input: \$input){..._all_fields_User}} fragment _all_fields_User on User{id name email status priority address{..._all_fields_Address} billingAddress{..._all_fields_Address} tags scores posts{..._all_fields_Post}} fragment _all_fields_Address on Address{street city country zip} fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
-      val __gl_variables__ = mapOf("id" to id, "input" to input.toJson())
+      val __gl_query__ = "mutation updateUser(\$id: ID!,\$input: UpdateUserInput!,\$limit: Int!){updateUser(id: \$id,input: \$input){..._all_fields_User}} fragment _all_fields_User on User{id name email status priority address{..._all_fields_Address} billingAddress{..._all_fields_Address} tags scores posts{..._all_fields_Post} recentPosts(limit: \$limit){..._all_fields_Post}} fragment _all_fields_Address on Address{street city country zip} fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
+      val __gl_variables__ = mapOf("id" to id, "input" to input.toJson(), "limit" to limit)
       val __gl_payload__ = GraphLinkPayload(query = __gl_query__, operationName = __gl_operationName__, variables = __gl_variables__)
       val __gl_responseText__ = glCallAdapter(__gl_payload__)
       val __gl_decodedResponse__ = UpdateUserFullResponse.fromJson(decoder.decode(__gl_responseText__))
@@ -76,10 +76,10 @@ open class GraphLinkMutations(
       }
       return __gl_decodedResponse__.data!!
    }
-   suspend fun createCachedUser(input: CreateUserInput): CreateCachedUserResponse {
+   suspend fun createCachedUser(input: CreateUserInput, limit: Int): CreateCachedUserResponse {
       val __gl_operationName__ = "createCachedUser"
-      val __gl_query__ = "mutation createCachedUser(\$input: CreateUserInput!){createCachedUser(input: \$input){..._all_fields_User}} fragment _all_fields_User on User{id name email status priority address{..._all_fields_Address} billingAddress{..._all_fields_Address} tags scores posts{..._all_fields_Post}} fragment _all_fields_Address on Address{street city country zip} fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
-      val __gl_variables__ = mapOf("input" to input.toJson())
+      val __gl_query__ = "mutation createCachedUser(\$input: CreateUserInput!,\$limit: Int!){createCachedUser(input: \$input){..._all_fields_User}} fragment _all_fields_User on User{id name email status priority address{..._all_fields_Address} billingAddress{..._all_fields_Address} tags scores posts{..._all_fields_Post} recentPosts(limit: \$limit){..._all_fields_Post}} fragment _all_fields_Address on Address{street city country zip} fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
+      val __gl_variables__ = mapOf("input" to input.toJson(), "limit" to limit)
       val __gl_payload__ = GraphLinkPayload(query = __gl_query__, operationName = __gl_operationName__, variables = __gl_variables__)
       val __gl_responseText__ = glCallAdapter(__gl_payload__)
       val __gl_decodedResponse__ = CreateCachedUserFullResponse.fromJson(decoder.decode(__gl_responseText__))
@@ -115,10 +115,10 @@ open class GraphLinkMutations(
       store.invalidateAll()
       return __gl_decodedResponse__.data!!
    }
-   suspend fun createUserOrErrors(input: CreateUserInput): CreateUserOrErrorsFullResponse {
+   suspend fun createUserOrErrors(input: CreateUserInput, limit: Int): CreateUserOrErrorsFullResponse {
       val __gl_operationName__ = "createUserOrErrors"
-      val __gl_query__ = "mutation createUserOrErrors(\$input: CreateUserInput!){createUserOrErrors(input: \$input){..._all_fields_User}} fragment _all_fields_User on User{id name email status priority address{..._all_fields_Address} billingAddress{..._all_fields_Address} tags scores posts{..._all_fields_Post}} fragment _all_fields_Address on Address{street city country zip} fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
-      val __gl_variables__ = mapOf("input" to input.toJson())
+      val __gl_query__ = "mutation createUserOrErrors(\$input: CreateUserInput!,\$limit: Int!){createUserOrErrors(input: \$input){..._all_fields_User}} fragment _all_fields_User on User{id name email status priority address{..._all_fields_Address} billingAddress{..._all_fields_Address} tags scores posts{..._all_fields_Post} recentPosts(limit: \$limit){..._all_fields_Post}} fragment _all_fields_Address on Address{street city country zip} fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
+      val __gl_variables__ = mapOf("input" to input.toJson(), "limit" to limit)
       val __gl_payload__ = GraphLinkPayload(query = __gl_query__, operationName = __gl_operationName__, variables = __gl_variables__)
       val __gl_responseText__ = glCallAdapter(__gl_payload__)
       val __gl_decodedResponse__ = CreateUserOrErrorsFullResponse.fromJson(decoder.decode(__gl_responseText__))

@@ -5,6 +5,7 @@ import dev.graphlink.server.model.*;
 import graphql.GraphqlErrorException;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.stereotype.Controller;
 
 import java.util.List;
@@ -115,5 +116,13 @@ public class QueryController {
     @QueryMapping
     public User findUserOrErrors(@Argument String id) {
         return findUser(id);
+    }
+
+    // ── Field-level arguments ─────────────────────────────────────────────────
+
+    @SchemaMapping(typeName = "User", field = "recentPosts")
+    public List<Post> recentPosts(User user, @Argument int limit) {
+        if (user.posts() == null) return List.of();
+        return user.posts().stream().limit(limit).toList();
     }
 }

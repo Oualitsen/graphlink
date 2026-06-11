@@ -69,7 +69,8 @@ DefaultGraphLinkWebSocketAdapter newWsAdapter({int port = _defaultPort}) =>
 
 /// Adapter with maxReconnectAttempts=null (retry forever) and a reduced
 /// maxReconnectDelay so integration tests run fast.
-DefaultGraphLinkWebSocketAdapter newWsAdapterNeverStop({int port = _defaultPort}) =>
+DefaultGraphLinkWebSocketAdapter newWsAdapterNeverStop(
+        {int port = _defaultPort}) =>
     DefaultGraphLinkWebSocketAdapter(
       url: _wsUrl(port),
       reconnect: true,
@@ -86,8 +87,10 @@ String _jarPath() =>
 
 /// Kills any process listening on [port].
 Future<void> killPort(int port) async {
-  await Process.run(
-      'bash', ['-c', 'lsof -ti :$port -sTCP:LISTEN | xargs kill -9 2>/dev/null || true']);
+  await Process.run('bash', [
+    '-c',
+    'lsof -ti :$port -sTCP:LISTEN | xargs kill -9 2>/dev/null || true'
+  ]);
   await Future.delayed(const Duration(milliseconds: 500));
 }
 
@@ -97,8 +100,8 @@ Future<void> startServer(int port) async {
   print("Killing process with port $port");
   await killPort(port);
   print("starting spring server with port ${port}");
-  final process = await Process.start(
-      'java', ['-jar', _jarPath(), '--server.port=$port']);
+  final process =
+      await Process.start('java', ['-jar', _jarPath(), '--server.port=$port']);
   unawaited(process.stdout.drain());
   unawaited(process.stderr.drain());
   print("waiting for port ${port}");

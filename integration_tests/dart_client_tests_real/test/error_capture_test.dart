@@ -19,17 +19,20 @@ void main() {
 
   group('getUserOrErrors — error response (unknown id)', () {
     test('errors is non-null', () async {
-      final res = await client.queries.getUserOrErrors(id: 'error-id');
+      final res =
+          await client.queries.getUserOrErrors(id: 'error-id', limit: 10);
       expect(res.errors, isNotNull);
     });
 
     test('data is null', () async {
-      final res = await client.queries.getUserOrErrors(id: 'error-id');
+      final res =
+          await client.queries.getUserOrErrors(id: 'error-id', limit: 10);
       expect(res.data, isNull);
     });
 
     test('first error has a non-empty message', () async {
-      final res = await client.queries.getUserOrErrors(id: 'error-id');
+      final res =
+          await client.queries.getUserOrErrors(id: 'error-id', limit: 10);
       expect(res.errors!.first.message, isNotEmpty);
     });
   });
@@ -38,22 +41,22 @@ void main() {
 
   group('getUserOrErrors — success response', () {
     test('errors is null', () async {
-      final res = await client.queries.getUserOrErrors(id: 'user-1');
+      final res = await client.queries.getUserOrErrors(id: 'user-1', limit: 10);
       expect(res.errors, isNull);
     });
 
     test('data is non-null', () async {
-      final res = await client.queries.getUserOrErrors(id: 'user-1');
+      final res = await client.queries.getUserOrErrors(id: 'user-1', limit: 10);
       expect(res.data, isNotNull);
     });
 
     test('data.getUserOrErrors.name is Alice Smith', () async {
-      final res = await client.queries.getUserOrErrors(id: 'user-1');
+      final res = await client.queries.getUserOrErrors(id: 'user-1', limit: 10);
       expect(res.data!.getUserOrErrors.name, equals('Alice Smith'));
     });
 
     test('data.getUserOrErrors.id is user-1', () async {
-      final res = await client.queries.getUserOrErrors(id: 'user-1');
+      final res = await client.queries.getUserOrErrors(id: 'user-1', limit: 10);
       expect(res.data!.getUserOrErrors.id, equals('user-1'));
     });
   });
@@ -64,12 +67,14 @@ void main() {
 
   group('findUserOrErrors — error response (error-id)', () {
     test('errors is non-null', () async {
-      final res = await client.queries.findUserOrErrors(id: 'error-id');
+      final res =
+          await client.queries.findUserOrErrors(id: 'error-id', limit: 10);
       expect(res.errors, isNotNull);
     });
 
     test('data.findUserOrErrors is null when error occurs', () async {
-      final res = await client.queries.findUserOrErrors(id: 'error-id');
+      final res =
+          await client.queries.findUserOrErrors(id: 'error-id', limit: 10);
       expect(res.data!.findUserOrErrors, isNull);
     });
   });
@@ -78,7 +83,8 @@ void main() {
 
   group('findUserOrErrors — null return (unknown non-error id)', () {
     test('errors is null and data.findUserOrErrors is null', () async {
-      final res = await client.queries.findUserOrErrors(id: 'missing');
+      final res =
+          await client.queries.findUserOrErrors(id: 'missing', limit: 10);
       expect(res.errors, isNull);
       expect(res.data!.findUserOrErrors, isNull);
     });
@@ -95,12 +101,14 @@ void main() {
     );
 
     test('errors is non-null', () async {
-      final res = await client.mutations.createUserOrErrors(input: errorInput);
+      final res = await client.mutations
+          .createUserOrErrors(input: errorInput, limit: 10);
       expect(res.errors, isNotNull);
     });
 
     test('data is null', () async {
-      final res = await client.mutations.createUserOrErrors(input: errorInput);
+      final res = await client.mutations
+          .createUserOrErrors(input: errorInput, limit: 10);
       expect(res.data, isNull);
     });
   });
@@ -112,21 +120,25 @@ void main() {
       name: 'Alice Smith',
       email: 'alice@test.com',
       status: UserStatus.ACTIVE,
-      address: AddressInput(street: '123 Main St', city: 'Springfield', country: 'US'),
+      address: AddressInput(
+          street: '123 Main St', city: 'Springfield', country: 'US'),
     );
 
     test('errors is null', () async {
-      final res = await client.mutations.createUserOrErrors(input: goodInput);
+      final res = await client.mutations
+          .createUserOrErrors(input: goodInput, limit: 10);
       expect(res.errors, isNull);
     });
 
     test('data is non-null', () async {
-      final res = await client.mutations.createUserOrErrors(input: goodInput);
+      final res = await client.mutations
+          .createUserOrErrors(input: goodInput, limit: 10);
       expect(res.data, isNotNull);
     });
 
     test('data.createUserOrErrors.name is correct', () async {
-      final res = await client.mutations.createUserOrErrors(input: goodInput);
+      final res = await client.mutations
+          .createUserOrErrors(input: goodInput, limit: 10);
       expect(res.data!.createUserOrErrors.name, equals('Alice Smith'));
     });
   });
@@ -136,7 +148,7 @@ void main() {
   group('getUser — throws on error response', () {
     test('throws a List<GraphLinkError> when server returns errors', () {
       expect(
-        client.queries.getUser(id: 'error-id'),
+        client.queries.getUser(id: 'error-id', limit: 10),
         throwsA(isA<List<GraphLinkError>>()),
       );
     });
@@ -144,7 +156,7 @@ void main() {
     test('thrown error list has a non-empty message', () async {
       List<GraphLinkError>? thrown;
       try {
-        await client.queries.getUser(id: 'error-id');
+        await client.queries.getUser(id: 'error-id', limit: 10);
       } catch (e) {
         thrown = e as List<GraphLinkError>;
       }

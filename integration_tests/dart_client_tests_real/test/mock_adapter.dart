@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:graphlink_client_integration_tests/generated/client/graph_link_client.dart'
     show GraphLinkWebSocketAdapter;
 import 'package:graphlink_client_integration_tests/generated/client/graph_link_uploads.dart'
-    show  UploadProgressCallback;
+    show UploadProgressCallback;
 
 /// One recorded outgoing GraphQL request.
 class GraphLinkCall {

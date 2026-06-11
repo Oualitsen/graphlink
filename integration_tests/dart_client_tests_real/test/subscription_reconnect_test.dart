@@ -8,14 +8,14 @@ void main() {
   // Test 1: subscription resumes after mid-run server halt + restart
   // ---------------------------------------------------------------------------
   group('reconnect: server halts during active subscription', () {
-
     const port = 9996;
     setUpAll(() async => startServer(port));
     tearDownAll(() async => killPort(port));
 
     test('counterTick resumes after server halt', () async {
       final ws = newWsAdapter(port: port);
-      final client = GraphLinkClient(adapter: httpAdapterForPort(port), wsAdapter: ws);
+      final client =
+          GraphLinkClient(adapter: httpAdapterForPort(port), wsAdapter: ws);
       const stopAt = 5;
 
       var reconnected = false;
@@ -77,7 +77,8 @@ void main() {
     setUpAll(() async => killPort(port));
     tearDownAll(() async => killPort(port));
 
-    test('makes $targetAttempts connection attempts without giving up', () async {
+    test('makes $targetAttempts connection attempts without giving up',
+        () async {
       // maxReconnectAttempts=null + maxReconnectDelay=2s: caps at ~2–3 s per
       // attempt. Poll ws.reconnectAttempts until it reaches targetAttempts,
       // confirming the adapter never gives up when the cap is null.
@@ -92,22 +93,24 @@ void main() {
 
       StreamSubscription? subscription;
       subscription = client.subscriptions.counterTick().listen(
-        (_) {},
-        onError: (e) => print('[stream] error: $e'),
-        onDone: () => print('[stream] closed'),
-      );
+            (_) {},
+            onError: (e) => print('[stream] error: $e'),
+            onDone: () => print('[stream] closed'),
+          );
 
       try {
         final deadline = DateTime.now().add(const Duration(minutes: 1));
         while (ws.reconnectAttempts < targetAttempts) {
           if (DateTime.now().isAfter(deadline)) {
-            fail('Timed out — only reached ${ws.reconnectAttempts}/$targetAttempts attempts');
+            fail(
+                'Timed out — only reached ${ws.reconnectAttempts}/$targetAttempts attempts');
           }
           await Future.delayed(const Duration(milliseconds: 500));
           print('[test] reconnectAttempts=${ws.reconnectAttempts}');
         }
         expect(ws.reconnectAttempts, greaterThanOrEqualTo(targetAttempts),
-            reason: 'adapter must keep retrying when maxReconnectAttempts is null');
+            reason:
+                'adapter must keep retrying when maxReconnectAttempts is null');
         expect(reconnected, isFalse,
             reason: 'no successful reconnect expected — no server is running');
       } finally {
@@ -152,11 +155,13 @@ void main() {
       await startServer(port);
 
       try {
-        final tick = await firstTick.future.timeout(const Duration(seconds: 30));
+        final tick =
+            await firstTick.future.timeout(const Duration(seconds: 30));
         expect(tick, greaterThan(0),
             reason: 'should receive a tick once server is up');
         expect(reconnected, isTrue,
-            reason: 'onReconnect should fire when the server becomes available');
+            reason:
+                'onReconnect should fire when the server becomes available');
       } finally {
         await subscription?.cancel();
         await ws.close();
