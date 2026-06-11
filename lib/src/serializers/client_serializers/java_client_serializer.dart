@@ -964,6 +964,7 @@ class JavaClientSerializer extends GLClientSerializer {
                 ]),
           ...([
             JavaImports.hashMap,
+            JavaImports.list,
             JavaImports.map,
             'java.util.concurrent.Executors',
             'java.util.concurrent.ScheduledExecutorService',
