@@ -31,13 +31,13 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
   ].join('\n');
 
   String serializeGraphqlUploadDeclarations() => [
-    "declare module 'graphql-upload/GraphQLUpload.js' {",
+    "declare module 'graphql-upload/GraphQLUpload.mjs' {",
     "  import { GraphQLScalarType } from 'graphql';",
     '  const GraphQLUpload: GraphQLScalarType;',
     '  export default GraphQLUpload;',
     '}',
     '',
-    "declare module 'graphql-upload/graphqlUploadExpress.js' {",
+    "declare module 'graphql-upload/graphqlUploadExpress.mjs' {",
     "  import { RequestHandler } from 'express';",
     '  function graphqlUploadExpress(options?: {',
     '    maxFileSize?: number;',
@@ -225,7 +225,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     buf.writeln("import { $graphqlImports } from 'graphql';");
     buf.writeln("import { GraphLinkContext } from '../context.js';");
     if (hasUploads) {
-      buf.writeln("import GraphQLUpload from 'graphql-upload/GraphQLUpload.js';");
+      buf.writeln("import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';");
     }
 
     // service + guard imports (guard only if service has @glValidate fields)
@@ -426,7 +426,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       buf.writeln("import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';");
     }
     if (hasUploads) {
-      buf.writeln("import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.js';");
+      buf.writeln("import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';");
     }
     buf.writeln("import { GraphLinkContext } from './context.js';");
     buf.writeln("import { typeDefs } from './typeDefs.js';");
@@ -488,6 +488,9 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
         '',
         'const server = new ApolloServer<GraphLinkContext>(${_cg.block([
           'schema,',
+          // graphql-upload sends multipart/form-data, which Apollo's CSRF prevention
+          // blocks by default unless the client sends a preflight-style header.
+          if (hasUploads) 'csrfPrevention: false,',
           'plugins: [',
           '  ApolloServerPluginDrainHttpServer({ httpServer }),',
           '  {',
@@ -518,6 +521,9 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
         'const server = new ApolloServer<GraphLinkContext>(${_cg.block([
           'typeDefs,',
           'resolvers: buildResolvers($resolverArgs),',
+          // graphql-upload sends multipart/form-data, which Apollo's CSRF prevention
+          // blocks by default unless the client sends a preflight-style header.
+          if (hasUploads) 'csrfPrevention: false,',
         ])});',
         '',
         'await server.start();',
