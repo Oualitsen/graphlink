@@ -67,3 +67,16 @@ jobs:
           java-version: '21'
       - run: make ci
 
+  integration-tests-typescript-server:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server_integration_tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: make ci
+

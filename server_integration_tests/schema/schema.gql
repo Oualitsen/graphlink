@@ -1,0 +1,40 @@
+type Author {
+    id: ID!
+    name: String!
+    articles: [Article!]! @glSkipOnServer(batch: true)
+}
+
+type Article {
+    id: ID!
+    title: String!
+    authorId: ID!
+    author: Author! @glSkipOnServer(batch: false)
+}
+
+input CreateArticleInput {
+    title: String!
+    authorId: ID!
+}
+
+input UpdateArticleInput {
+    id: ID!
+    title: String
+}
+
+type Query {
+    getAuthor(id: ID!): Author
+    getArticle(id: ID!): Article!
+    listAuthors: [Author!]!
+    listArticles: [Article!]!
+}
+
+type Mutation {
+    createArticle(input: CreateArticleInput!): Article!
+    updateArticle(input: UpdateArticleInput!): Article!
+    deleteArticle(id: ID!): Boolean!
+}
+
+type Subscription {
+    articleCreated: Article!
+    articleUpdated(id: ID!): Article!
+}

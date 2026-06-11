@@ -128,7 +128,16 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     if (mapping.isBatch) {
       return '${mapping.key}(items: ${parentName}[]): Promise<Map<${parentName}, ${fieldTs}>>;';
     }
-    final nonBatchParams = ['item: ${parentName}', 'context: GraphLinkContext', if (apolloConfig.useResolveInfo) 'info: GraphQLResolveInfo'];
+    final argParams = mapping.field.arguments.map((arg) {
+      _collectType(arg.type, importedTypes);
+      return '${arg.token}: ${tsSerializer.serializeType(arg.type, false)}';
+    });
+    final nonBatchParams = [
+      'item: ${parentName}',
+      ...argParams,
+      'context: GraphLinkContext',
+      if (apolloConfig.useResolveInfo) 'info: GraphQLResolveInfo',
+    ];
     return '${mapping.key}(${nonBatchParams.join(', ')}): Promise<${fieldTs}>;';
   }
 
@@ -379,8 +388,17 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
         } else if (m.isBatch) {
           buf.writeln('(parent) => ${m.key}Loader.load(parent),');
         } else {
-          final mappingCallArgs = apolloConfig.useResolveInfo ? 'parent, context, info' : 'parent, context';
-          final mappingResolverArgs = apolloConfig.useResolveInfo ? '(parent, _, context, info)' : '(parent, _, context)';
+          final argNames = m.field.arguments.map((a) => a.token).toList();
+          final argsDestructure = argNames.isEmpty ? '_' : '{ ${argNames.join(', ')} }';
+          final mappingCallArgs = [
+            'parent',
+            ...argNames,
+            'context',
+            if (apolloConfig.useResolveInfo) 'info',
+          ].join(', ');
+          final mappingResolverArgs = apolloConfig.useResolveInfo
+              ? '(parent, $argsDestructure, context, info)'
+              : '(parent, $argsDestructure, context)';
           buf.writeln('$mappingResolverArgs => $sVar.${m.key}($mappingCallArgs),');
         }
       }
