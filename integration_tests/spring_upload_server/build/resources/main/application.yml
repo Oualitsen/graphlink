@@ -11,6 +11,8 @@ spring:
     path: /graphql
 
 management:
+  server:
+    port: 9991
   endpoint:
     shutdown:
       enabled: true
