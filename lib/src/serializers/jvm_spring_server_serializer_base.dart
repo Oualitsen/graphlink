@@ -1,12 +1,11 @@
 import 'dart:io';
+import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/gl_grammar_upload_extension.dart';
-import 'package:graphlink/src/java_code_gen_utils.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_controller.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_directives_mixin.dart';
-import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_service.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
@@ -24,10 +23,10 @@ abstract class JvmSpringServerSerializerBase extends ServerSerializer
   final bool injectDataFetching;
   final bool reactive;
   final bool useSpringSecurity;
-  final codeGenUtils = JavaCodeGenUtils();
   late final JvmSpringControllerSerializerBase _ctrl;
 
   GLSerializer get serializer;
+  CodeGenUtilsBase get codeGenUtils;
 
   JvmSpringServerSerializerBase(
     GLParser grammar,
@@ -142,7 +141,7 @@ abstract class JvmSpringServerSerializerBase extends ServerSerializer
 
   @override
   String serializeService(GLService service) {
-    var body = _serializeServiceBody(service);
+    var body = serializeServiceBody(service);
     return serializer.serializeWithImport(service, body);
   }
 
@@ -160,23 +159,14 @@ abstract class JvmSpringServerSerializerBase extends ServerSerializer
   String serializeController(GLController ctrl) =>
       _ctrl.serializeController(ctrl);
 
-  // ── Private body builders ──────────────────────────────────────────────────
+  // ── Abstract body builders ───────────────────────────────────────────────────
 
-  String _serializeServiceBody(GLService service) {
-    var mappings = service.serviceMapping;
-    var buffer = StringBuffer();
-    buffer.writeln(
-        codeGenUtils.createInterface(interfaceName: service.token, statements: [
-      '',
-      ...service.fields
-          .map((n) => _ctrl.serializeMethodDeclaration(
-              n, service.getTypeByFieldName(n.name.token)!, service))
-          .map((e) => "${e};"),
-      '',
-      ...mappings
-          .map((m) => _ctrl.serializeServiceMappingImplMethodHeader(m, service))
-          .map((e) => "${e};")
-    ]));
-    return buffer.toString();
-  }
+  /// Builds the service interface body. Language-specific because the
+  /// interface/method syntax differs (Java `interface`/`;` vs. Kotlin
+  /// `interface`/`fun`/`suspend fun`).
+  String serializeServiceBody(GLService service);
+
+  // ── Shared helpers for subclasses ────────────────────────────────────────────
+
+  JvmSpringControllerSerializerBase get ctrl => _ctrl;
 }
