@@ -1,0 +1,32 @@
+type Article {
+  id: ID!
+  title: String!
+}
+
+type Author {
+  id: ID!
+  name: String!
+  lastArticles(limit: Int!): [Article!]!
+}
+
+type Query {
+  getAuthor(id: ID!): Author
+}
+
+query getAuthor($id: ID!, $limit: Int!) {
+  getAuthor(id: $id) {
+    id
+    name
+    lastArticles(limit: $limit) {
+      id
+      title
+    }
+  }
+}
+
+query getAuthorWithNoArticles($id: ID!) {
+  getAuthor(id: $id) {
+    id
+    name
+  }
+}

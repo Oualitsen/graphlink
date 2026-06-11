@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="dev.graphlink.test.ListsTest$ListOfScalars" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-05-30T03:59:27.295Z" hostname="MacBook-Pro.local" time="0.004">
-  <properties/>
-  <testcase name="tags_onUser_isListOfStrings()" classname="dev.graphlink.test.ListsTest$ListOfScalars" time="0.001"/>
-  <testcase name="scores_onUser_isListOfInts()" classname="dev.graphlink.test.ListsTest$ListOfScalars" time="0.001"/>
-  <testcase name="tags_empty_returnsEmptyList()" classname="dev.graphlink.test.ListsTest$ListOfScalars" time="0.001"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

@@ -35,12 +35,27 @@ public final class DataFixtures {
         null, 7
     );
 
+    // Recent posts for ALICE_WITH_POSTS — author cycle broken (posts=null) like
+    // POST_WITH_AUTHOR_CYCLE, used to exercise field-level arguments via recentPosts(limit:).
+    private static final User ALICE_NO_POSTS = new User(
+        "user-1", "Alice Smith", "alice@test.com",
+        UserStatus.ACTIVE, Priority.HIGH, ADDRESS, null,
+        List.of("admin", "beta"), List.of(10, 20, 30), null
+    );
+
+    public static final Post POST_RECENT_1 =
+        new Post("post-20", "Recent Post 1", "Body 1.", ALICE_NO_POSTS, null, 5);
+    public static final Post POST_RECENT_2 =
+        new Post("post-21", "Recent Post 2", "Body 2.", ALICE_NO_POSTS, null, 8);
+    public static final Post POST_RECENT_3 =
+        new Post("post-22", "Recent Post 3", "Body 3.", ALICE_NO_POSTS, null, 13);
+
     public static final User ALICE_WITH_POSTS = new User(
         "user-1", "Alice Smith", "alice@test.com",
         UserStatus.ACTIVE, Priority.HIGH,
         ADDRESS, null,
         List.of("admin", "beta"), List.of(10, 20, 30),
-        List.of(POST_WITH_AUTHOR_CYCLE)
+        List.of(POST_WITH_AUTHOR_CYCLE, POST_RECENT_1, POST_RECENT_2, POST_RECENT_3)
     );
 
     public static final Post POST = new Post(

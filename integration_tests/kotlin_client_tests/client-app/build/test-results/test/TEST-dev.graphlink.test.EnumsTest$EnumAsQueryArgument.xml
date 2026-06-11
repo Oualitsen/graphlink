@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="dev.graphlink.test.EnumsTest$EnumAsQueryArgument" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-05-30T03:59:27.224Z" hostname="MacBook-Pro.local" time="0.005">
-  <properties/>
-  <testcase name="operationName_isListUsersByStatus()" classname="dev.graphlink.test.EnumsTest$EnumAsQueryArgument" time="0.002"/>
-  <testcase name="response_containsDeserializedUsers()" classname="dev.graphlink.test.EnumsTest$EnumAsQueryArgument" time="0.002"/>
-  <testcase name="enumArg_isSentAsStringInVariables()" classname="dev.graphlink.test.EnumsTest$EnumAsQueryArgument" time="0.001"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

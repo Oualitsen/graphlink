@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="dev.graphlink.test.NullabilityTest$NullableQueryReturn_Present" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-05-30T03:59:27.379Z" hostname="MacBook-Pro.local" time="0.001">
-  <properties/>
-  <testcase name="findUser_returnsUser_whenServerReturnsData()" classname="dev.graphlink.test.NullabilityTest$NullableQueryReturn_Present" time="0.001"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

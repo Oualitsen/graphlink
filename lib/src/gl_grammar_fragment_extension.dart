@@ -118,6 +118,15 @@ extension GLGrammarFragmentExtension on GLParser {
     });
   }
 
+  /// Generates `(arg: $arg, ...)` argument values referencing same-named
+  /// variables for every argument the field declares, so that selecting the
+  /// field always carries its required arguments along.
+  List<GLArgumentValue> _argumentValuesForField(GLField field) {
+    return field.arguments
+        .map((a) => GLArgumentValue(a.tokenInfo, "\$${a.tokenInfo}"))
+        .toList();
+  }
+
   GLFragmentDefinition createAllFieldsFragment(
       GLTypeDefinition typeDefinition, Set<String> inProgress) {
     var key = typeDefinition.token;
@@ -146,6 +155,7 @@ extension GLGrammarFragmentExtension on GLParser {
             // depth-1: so depth=1 gives scalars only, depth=2 gives one sub-level, etc.
             block: _createInlineExpandBlock(fieldTypeName, depth - 1, inProgress),
             directives: [],
+            arguments: _argumentValuesForField(field),
           );
         }
       }
@@ -155,6 +165,7 @@ extension GLGrammarFragmentExtension on GLParser {
         alias: null,
         block: createAllFieldBlock(field),
         directives: [],
+        arguments: _argumentValuesForField(field),
       );
     }).whereType<GLProjection>().toList();
 
@@ -226,6 +237,7 @@ extension GLGrammarFragmentExtension on GLParser {
           alias: null,
           block: null,
           directives: [],
+          arguments: _argumentValuesForField(field),
         );
       }
 
@@ -241,6 +253,7 @@ extension GLGrammarFragmentExtension on GLParser {
         alias: null,
         block: _createInlineExpandBlock(fieldTypeName, nextDepth, cycleTypes),
         directives: [],
+        arguments: _argumentValuesForField(field),
       );
     }).whereType<GLProjection>().toList();
 

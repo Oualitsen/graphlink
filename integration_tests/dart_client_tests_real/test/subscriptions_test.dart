@@ -16,7 +16,7 @@ void main() {
       final client = GraphLinkClient(adapter: realHttpAdapter, wsAdapter: ws);
       try {
         final event = await client.subscriptions
-            .userCreated()
+            .userCreated(limit: 10)
             .first
             .timeout(const Duration(seconds: 10));
         expect(event.userCreated.id, equals('user-1'));
@@ -32,7 +32,7 @@ void main() {
       final client = GraphLinkClient(adapter: realHttpAdapter, wsAdapter: ws);
       try {
         final events = await client.subscriptions
-            .userCreated()
+            .userCreated(limit: 10)
             .take(2)
             .toList()
             .timeout(const Duration(seconds: 10));
@@ -51,7 +51,8 @@ void main() {
     test('counterTick resumes after server shutdown and restart', () async {
       final serverJar = Platform.environment['SERVER_JAR'];
       if (serverJar == null) {
-        markTestSkipped('SERVER_JAR env var not set — run via make reconnect-test');
+        markTestSkipped(
+            'SERVER_JAR env var not set — run via make reconnect-test');
         return;
       }
 
@@ -84,7 +85,8 @@ void main() {
         // SIGKILL the server — abrupt drop, no close frame, triggers _onError → reconnect.
         // (actuator shutdown sends close code 1000 which the adapter skips for reconnect)
         // -sTCP:LISTEN ensures we only get the server, not our own client connection
-        final lsof = await Process.run('lsof', ['-ti', ':9999', '-sTCP:LISTEN']);
+        final lsof =
+            await Process.run('lsof', ['-ti', ':9999', '-sTCP:LISTEN']);
         final pidOutput = lsof.stdout.toString().trim();
         final pids = pidOutput.isEmpty ? <String>[] : pidOutput.split('\n');
         print('TEST: lsof found server pids=$pids');
@@ -96,8 +98,10 @@ void main() {
         }
         // Verify all are dead
         await Future.delayed(const Duration(milliseconds: 500));
-        final lsof2 = await Process.run('lsof', ['-ti', ':9999', '-sTCP:LISTEN']);
-        print('TEST: after kill, port 9999 pids="${lsof2.stdout.toString().trim()}"');
+        final lsof2 =
+            await Process.run('lsof', ['-ti', ':9999', '-sTCP:LISTEN']);
+        print(
+            'TEST: after kill, port 9999 pids="${lsof2.stdout.toString().trim()}"');
 
         // restart the server in the background
         print('TEST: starting new server...');
@@ -110,7 +114,8 @@ void main() {
 
         // existing stream resumes delivering ticks
         print('TEST: onReconnect received, waiting for next tick...');
-        await afterReconnectCompleter.future.timeout(const Duration(seconds: 15));
+        await afterReconnectCompleter.future
+            .timeout(const Duration(seconds: 15));
         print('TEST: next tick received, test passed!');
       } finally {
         await sub.cancel();
@@ -123,13 +128,14 @@ void main() {
   // ── multipleSubscriptions ─────────────────────────────────────────────────
 
   group('multipleSubscriptions', () {
-    test('userCreated and counterTick run concurrently on one connection', () async {
+    test('userCreated and counterTick run concurrently on one connection',
+        () async {
       final ws = newWsAdapter();
       final client = GraphLinkClient(adapter: realHttpAdapter, wsAdapter: ws);
       try {
         // Both futures are created (subscriptions started) before either is awaited.
         final userFuture = client.subscriptions
-            .userCreated()
+            .userCreated(limit: 10)
             .first
             .timeout(const Duration(seconds: 10));
         final counterFuture = client.subscriptions
@@ -147,16 +153,18 @@ void main() {
       }
     });
 
-    test('two userStatusChanged subscriptions with different args receive independent events', () async {
+    test(
+        'two userStatusChanged subscriptions with different args receive independent events',
+        () async {
       final ws = newWsAdapter();
       final client = GraphLinkClient(adapter: realHttpAdapter, wsAdapter: ws);
       try {
         final user1Future = client.subscriptions
-            .userStatusChanged(userId: 'user-1')
+            .userStatusChanged(userId: 'user-1', limit: 10)
             .first
             .timeout(const Duration(seconds: 10));
         final user2Future = client.subscriptions
-            .userStatusChanged(userId: 'user-2')
+            .userStatusChanged(userId: 'user-2', limit: 10)
             .first
             .timeout(const Duration(seconds: 10));
 
@@ -166,22 +174,25 @@ void main() {
         expect(user1Event.userStatusChanged.id, equals('user-1'));
         expect(user1Event.userStatusChanged.status, equals(UserStatus.ACTIVE));
         expect(user2Event.userStatusChanged.id, equals('user-2'));
-        expect(user2Event.userStatusChanged.status, equals(UserStatus.INACTIVE));
+        expect(
+            user2Event.userStatusChanged.status, equals(UserStatus.INACTIVE));
       } finally {
         await ws.close();
       }
     });
 
-    test('three concurrent subscriptions each deliver their first event independently', () async {
+    test(
+        'three concurrent subscriptions each deliver their first event independently',
+        () async {
       final ws = newWsAdapter();
       final client = GraphLinkClient(adapter: realHttpAdapter, wsAdapter: ws);
       try {
         final f1 = client.subscriptions
-            .userCreated()
+            .userCreated(limit: 10)
             .first
             .timeout(const Duration(seconds: 10));
         final f2 = client.subscriptions
-            .userStatusChanged(userId: 'user-1')
+            .userStatusChanged(userId: 'user-1', limit: 10)
             .first
             .timeout(const Duration(seconds: 10));
         final f3 = client.subscriptions
@@ -219,7 +230,7 @@ void main() {
 
         // Run userCreated to completion (server emits Alice + Bob, then closes).
         await client.subscriptions
-            .userCreated()
+            .userCreated(limit: 10)
             .drain()
             .timeout(const Duration(seconds: 10));
 
@@ -232,18 +243,20 @@ void main() {
       }
     });
 
-    test('two identical userCreated subscriptions each receive all events independently', () async {
+    test(
+        'two identical userCreated subscriptions each receive all events independently',
+        () async {
       final ws = newWsAdapter();
       final client = GraphLinkClient(adapter: realHttpAdapter, wsAdapter: ws);
       try {
         // Same operation registered twice — each gets its own UUID and server-side stream.
         final f1 = client.subscriptions
-            .userCreated()
+            .userCreated(limit: 10)
             .take(2)
             .toList()
             .timeout(const Duration(seconds: 10));
         final f2 = client.subscriptions
-            .userCreated()
+            .userCreated(limit: 10)
             .take(2)
             .toList()
             .timeout(const Duration(seconds: 10));
@@ -262,16 +275,18 @@ void main() {
       }
     });
 
-    test('two identical userStatusChanged(user-1) subscriptions each receive the event independently', () async {
+    test(
+        'two identical userStatusChanged(user-1) subscriptions each receive the event independently',
+        () async {
       final ws = newWsAdapter();
       final client = GraphLinkClient(adapter: realHttpAdapter, wsAdapter: ws);
       try {
         final f1 = client.subscriptions
-            .userStatusChanged(userId: 'user-1')
+            .userStatusChanged(userId: 'user-1', limit: 10)
             .first
             .timeout(const Duration(seconds: 10));
         final f2 = client.subscriptions
-            .userStatusChanged(userId: 'user-1')
+            .userStatusChanged(userId: 'user-1', limit: 10)
             .first
             .timeout(const Duration(seconds: 10));
 
@@ -287,16 +302,18 @@ void main() {
       }
     });
 
-    test('userCreated and userCreateds run concurrently and return distinct typed streams', () async {
+    test(
+        'userCreated and userCreateds run concurrently and return distinct typed streams',
+        () async {
       final ws = newWsAdapter();
       final client = GraphLinkClient(adapter: realHttpAdapter, wsAdapter: ws);
       try {
         final singleFuture = client.subscriptions
-            .userCreated()
+            .userCreated(limit: 10)
             .first
             .timeout(const Duration(seconds: 10));
         final listFuture = client.subscriptions
-            .userCreateds(ids: ['user-1', 'user-2'])
+            .userCreateds(ids: ['user-1', 'user-2'], limit: 10)
             .first
             .timeout(const Duration(seconds: 10));
 
@@ -322,7 +339,7 @@ void main() {
       final client = GraphLinkClient(adapter: realHttpAdapter, wsAdapter: ws);
       try {
         final event = await client.subscriptions
-            .userStatusChanged(userId: 'user-1')
+            .userStatusChanged(userId: 'user-1', limit: 10)
             .first
             .timeout(const Duration(seconds: 10));
         expect(event.userStatusChanged.id, equals('user-1'));
@@ -337,7 +354,7 @@ void main() {
       final client = GraphLinkClient(adapter: realHttpAdapter, wsAdapter: ws);
       try {
         final event = await client.subscriptions
-            .userStatusChanged(userId: 'user-2')
+            .userStatusChanged(userId: 'user-2', limit: 10)
             .first
             .timeout(const Duration(seconds: 10));
         expect(event.userStatusChanged.id, equals('user-2'));

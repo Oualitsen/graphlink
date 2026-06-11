@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="dev.graphlink.test.CacheTest$CrossTagIsolation" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-05-30T03:59:26.026Z" hostname="MacBook-Pro.local" time="0.008">
-  <properties/>
-  <testcase name="transferPost_invalidatesBothTags()" classname="dev.graphlink.test.CacheTest$CrossTagIsolation" time="0.005"/>
-  <testcase name="usersTagInvalidation_doesNotAffect_postsCache()" classname="dev.graphlink.test.CacheTest$CrossTagIsolation" time="0.003"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

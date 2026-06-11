@@ -2,11 +2,13 @@ import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_fragment.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
+import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_query_element.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/token_info.dart';
@@ -460,6 +462,73 @@ extension GLGrammarProjectionExtension on GLParser {
       }
     }
     return TypeWithInterface(type: resultType, interfaces: interfaceList);
+  }
+
+  /// Walks every operation's selection set (expanding fragment spreads and
+  /// inline fragments) and, for every selected field that carries argument
+  /// values referencing a `$variable`, ensures the owning operation declares
+  /// that variable. This is what makes a field's arguments (e.g.
+  /// `lastArticles(limit: Int!)`) turn into method parameters whenever the
+  /// field is projected — whether via an explicit query, a fragment, or the
+  /// auto-generated "all fields" projection.
+  void propagateFieldArgumentVariables() {
+    for (var def in queries.values) {
+      for (var element in def.elements) {
+        var block = element.block;
+        if (block == null) continue;
+        var rootType = getType(element.returnType.inlineType.tokenInfo);
+        _collectFieldArgumentVariables(rootType, block.projections, def);
+      }
+    }
+  }
+
+  void _collectFieldArgumentVariables(GLTypeDefinition type,
+      Map<String, GLProjection> projectionMap, GLQueryDefinition def) {
+    if (type is GLInterfaceDefinition) {
+      for (var impl in getTypesImplementing(type)) {
+        _collectFieldArgumentVariables(impl, projectionMap, def);
+      }
+      return;
+    }
+
+    var projections = _collectProjection(projectionMap, type.token);
+    for (var field in type.fields) {
+      var projection = projections[field.name.token];
+      if (projection == null) continue;
+
+      for (var argValue in projection.arguments) {
+        var value = "${argValue.value}";
+        if (!value.startsWith("\$")) continue;
+        var argDef = field.getArgumentByName(argValue.tokenInfo.token);
+        if (argDef == null) continue;
+        _addGeneratedArgument(def, value, argDef, field, projection);
+      }
+
+      if (projection.block != null && typeRequiresProjection(field.type)) {
+        var subType = getType(field.type.inlineType.tokenInfo);
+        _collectFieldArgumentVariables(
+            subType, projection.block!.projections, def);
+      }
+    }
+  }
+
+  void _addGeneratedArgument(GLQueryDefinition def, String varToken,
+      GLArgumentDefinition argDef, GLField field, GLProjection projection) {
+    var matches = def.arguments.where((a) => a.token == varToken);
+    if (matches.isNotEmpty) {
+      var existing = matches.first;
+      if (existing.type != argDef.type) {
+        throw ParseException(
+            "Variable $varToken is used for arguments of different types "
+            "(${existing.type} vs ${argDef.type}). Use a differently named "
+            "variable to disambiguate, e.g. ${field.name}(${argDef.tokenInfo}: \$myVar)",
+            info: projection.tokenInfo);
+      }
+      return;
+    }
+    def.arguments.add(GLArgumentDefinition(
+        varToken.toToken(), argDef.type, [],
+        initialValue: argDef.initialValue));
   }
 
   Map<String, GLProjection> _collectProjection(

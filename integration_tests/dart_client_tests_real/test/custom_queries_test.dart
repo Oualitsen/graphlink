@@ -13,22 +13,26 @@ void main() {
 
   group('fetchUserAndPost', () {
     test('res.user.name is Alice Smith', () async {
-      final res = await client.queries.fetchUserAndPost(userId: 'user-1', postId: 'post-1');
+      final res = await client.queries
+          .fetchUserAndPost(userId: 'user-1', postId: 'post-1', limit: 10);
       expect(res.user.name, equals('Alice Smith'));
     });
 
     test('res.user.id is user-1', () async {
-      final res = await client.queries.fetchUserAndPost(userId: 'user-1', postId: 'post-1');
+      final res = await client.queries
+          .fetchUserAndPost(userId: 'user-1', postId: 'post-1', limit: 10);
       expect(res.user.id, equals('user-1'));
     });
 
     test('res.post.title is Hello World', () async {
-      final res = await client.queries.fetchUserAndPost(userId: 'user-1', postId: 'post-1');
+      final res = await client.queries
+          .fetchUserAndPost(userId: 'user-1', postId: 'post-1', limit: 10);
       expect(res.post.title, equals('Hello World'));
     });
 
     test('res.post.author.id is user-1', () async {
-      final res = await client.queries.fetchUserAndPost(userId: 'user-1', postId: 'post-1');
+      final res = await client.queries
+          .fetchUserAndPost(userId: 'user-1', postId: 'post-1', limit: 10);
       expect(res.post.author.id, equals('user-1'));
     });
   });
@@ -56,14 +60,17 @@ void main() {
 
   group('fetchCachedPair — data correctness', () {
     test('user and post data is correct', () async {
-      final res = await client.queries.fetchCachedPair(userId: 'user-1', postId: 'post-1');
+      final res = await client.queries
+          .fetchCachedPair(userId: 'user-1', postId: 'post-1', limit: 10);
       expect(res.user.name, equals('Alice Smith'));
       expect(res.post.title, equals('Hello World'));
     });
 
     test('second call with same args returns correct data', () async {
-      await client.queries.fetchCachedPair(userId: 'user-1', postId: 'post-1');
-      final res = await client.queries.fetchCachedPair(userId: 'user-1', postId: 'post-1');
+      await client.queries
+          .fetchCachedPair(userId: 'user-1', postId: 'post-1', limit: 10);
+      final res = await client.queries
+          .fetchCachedPair(userId: 'user-1', postId: 'post-1', limit: 10);
       expect(res.user.name, equals('Alice Smith'));
       expect(res.post.title, equals('Hello World'));
     });
