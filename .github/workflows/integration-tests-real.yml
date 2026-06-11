@@ -79,3 +79,16 @@ jobs:
           cd ../spring_server && ./gradlew build -x test
           cd ../spring_upload_server && ./gradlew build -x test
       - run: make ci
+
+  integration-tests-typescript-server-real:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server_integration_tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: make ci
