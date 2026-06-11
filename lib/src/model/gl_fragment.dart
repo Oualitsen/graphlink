@@ -1,6 +1,7 @@
 import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_directives_mixin.dart';
 import 'package:graphlink/src/model/gl_token.dart';
@@ -137,12 +138,19 @@ class GLProjection extends GLToken with GLDirectivesMixin {
 
   final GLFragmentBlockDefinition? block;
 
+  ///
+  ///  Argument values applied to this field selection, e.g.
+  ///  `lastArticles(limit: $limit)` → `[limit: $limit]`
+  ///
+  final List<GLArgumentValue> arguments;
+
   GLProjection({
     required this.fragmentName,
     required TokenInfo? token,
     required this.alias,
     required this.block,
     required List<GLDirectiveValue> directives,
+    this.arguments = const [],
   }) : super(token ?? TokenInfo.ofString(fragmentName ?? "*")) {
     directives.forEach(addDirective);
   }

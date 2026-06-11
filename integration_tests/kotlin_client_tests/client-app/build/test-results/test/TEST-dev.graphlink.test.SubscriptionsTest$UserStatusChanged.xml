@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="dev.graphlink.test.SubscriptionsTest$UserStatusChanged" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-05-30T03:59:27.468Z" hostname="MacBook-Pro.local" time="0.005">
-  <properties/>
-  <testcase name="userId_sentInSubscribePayload()" classname="dev.graphlink.test.SubscriptionsTest$UserStatusChanged" time="0.001"/>
-  <testcase name="event_deserializedCorrectly()" classname="dev.graphlink.test.SubscriptionsTest$UserStatusChanged" time="0.002"/>
-  <testcase name="event_status_isCorrect()" classname="dev.graphlink.test.SubscriptionsTest$UserStatusChanged" time="0.002"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

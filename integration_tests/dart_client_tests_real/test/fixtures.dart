@@ -175,8 +175,7 @@ const kGraphQLError = <String, dynamic>{
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /// Wraps a data map as a full GraphQL HTTP response JSON string.
-String dataResponse(Map<String, dynamic> data) =>
-    jsonEncode({'data': data});
+String dataResponse(Map<String, dynamic> data) => jsonEncode({'data': data});
 
 /// Builds a GraphQL error response JSON string.
 String errorResponse(List<Map<String, dynamic>> errors) =>

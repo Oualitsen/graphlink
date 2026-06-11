@@ -63,9 +63,9 @@ open class GraphLinkQueries(
 ) : GraphLinkResolverBase(adapter, fragmentMap, store, encoder, decoder) {
 
 
-   suspend fun fetchUserAndPost(userId: String, postId: String): FetchUserAndPostResponse {
+   suspend fun fetchUserAndPost(userId: String, postId: String, limit: Int): FetchUserAndPostResponse {
       val __gl_operationName__ = "fetchUserAndPost"
-      val __gl_variables__ = mapOf("userId" to userId, "postId" to postId)
+      val __gl_variables__ = mapOf("userId" to userId, "postId" to postId, "limit" to limit)
       val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
       run {
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
@@ -247,9 +247,9 @@ open class GraphLinkQueries(
          return RunSearchFullResponse.fromJson(__gl_wrappedResponse__).data!!
       }
    }
-   suspend fun fetchCachedPair(userId: String, postId: String): FetchCachedPairResponse {
+   suspend fun fetchCachedPair(userId: String, postId: String, limit: Int): FetchCachedPairResponse {
       val __gl_operationName__ = "fetchCachedPair"
-      val __gl_variables__ = mapOf("userId" to userId, "postId" to postId)
+      val __gl_variables__ = mapOf("userId" to userId, "postId" to postId, "limit" to limit)
       val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
       run {
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
@@ -319,9 +319,9 @@ open class GraphLinkQueries(
          return FetchCachedPairFullResponse.fromJson(__gl_wrappedResponse__).data!!
       }
    }
-   suspend fun getUser(id: String): GetUserResponse {
+   suspend fun getUser(id: String, limit: Int): GetUserResponse {
       val __gl_operationName__ = "getUser"
-      val __gl_variables__ = mapOf("id" to id)
+      val __gl_variables__ = mapOf("id" to id, "limit" to limit)
       val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
       run {
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
@@ -375,9 +375,9 @@ open class GraphLinkQueries(
          return GetUserFullResponse.fromJson(__gl_wrappedResponse__).data!!
       }
    }
-   suspend fun findUser(id: String): FindUserResponse {
+   suspend fun findUser(id: String, limit: Int): FindUserResponse {
       val __gl_operationName__ = "findUser"
-      val __gl_variables__ = mapOf("id" to id)
+      val __gl_variables__ = mapOf("id" to id, "limit" to limit)
       val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
       run {
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
@@ -431,9 +431,9 @@ open class GraphLinkQueries(
          return FindUserFullResponse.fromJson(__gl_wrappedResponse__).data!!
       }
    }
-   suspend fun listUsers(): ListUsersResponse {
+   suspend fun listUsers(limit: Int): ListUsersResponse {
       val __gl_operationName__ = "listUsers"
-      val __gl_variables__ = emptyMap<String, Any?>()
+      val __gl_variables__ = mapOf("limit" to limit)
       val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
       run {
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
@@ -486,9 +486,9 @@ open class GraphLinkQueries(
          return ListUsersFullResponse.fromJson(__gl_wrappedResponse__).data!!
       }
    }
-   suspend fun listUsersByStatus(status: UserStatus): ListUsersByStatusResponse {
+   suspend fun listUsersByStatus(status: UserStatus, limit: Int): ListUsersByStatusResponse {
       val __gl_operationName__ = "listUsersByStatus"
-      val __gl_variables__ = mapOf("status" to status.toJson())
+      val __gl_variables__ = mapOf("status" to status.toJson(), "limit" to limit)
       val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
       run {
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
@@ -830,13 +830,13 @@ open class GraphLinkQueries(
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
          __gl_pqVars__["term"] = __gl_variables__["term"]
          __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "search(term: \$term){...Inline_a10848a9_c82d_2dd3_2a0e_dd3545323a8e}",
+             "search(term: \$term){...Inline_50384eb9_473c_b943_e206_4d93ee7122a8}",
              __gl_pqVars__,
              0,
              emptyList(),
              "search__search",
              "search",
-             setOf("Inline_a10848a9_c82d_2dd3_2a0e_dd3545323a8e", "_all_fields_UserResult", "_all_fields_PostResult"),
+             setOf("Inline_50384eb9_473c_b943_e206_4d93ee7122a8", "_all_fields_UserResult", "_all_fields_PostResult"),
              listOf("\$term: String!"),
              false,
              encoder,
@@ -878,9 +878,9 @@ open class GraphLinkQueries(
          return SearchFullResponse.fromJson(__gl_wrappedResponse__).data!!
       }
    }
-   suspend fun getCachedUser(id: String): GetCachedUserResponse {
+   suspend fun getCachedUser(id: String, limit: Int): GetCachedUserResponse {
       val __gl_operationName__ = "getCachedUser"
-      val __gl_variables__ = mapOf("id" to id)
+      val __gl_variables__ = mapOf("id" to id, "limit" to limit)
       val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
       run {
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
@@ -934,9 +934,9 @@ open class GraphLinkQueries(
          return GetCachedUserFullResponse.fromJson(__gl_wrappedResponse__).data!!
       }
    }
-   suspend fun listCachedUsers(): ListCachedUsersResponse {
+   suspend fun listCachedUsers(limit: Int): ListCachedUsersResponse {
       val __gl_operationName__ = "listCachedUsers"
-      val __gl_variables__ = emptyMap<String, Any?>()
+      val __gl_variables__ = mapOf("limit" to limit)
       val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
       run {
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
@@ -1100,9 +1100,9 @@ open class GraphLinkQueries(
          return GetCachedConfigFullResponse.fromJson(__gl_wrappedResponse__).data!!
       }
    }
-   suspend fun getStaleUser(id: String): GetStaleUserResponse {
+   suspend fun getStaleUser(id: String, limit: Int): GetStaleUserResponse {
       val __gl_operationName__ = "getStaleUser"
-      val __gl_variables__ = mapOf("id" to id)
+      val __gl_variables__ = mapOf("id" to id, "limit" to limit)
       val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
       run {
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
@@ -1156,9 +1156,9 @@ open class GraphLinkQueries(
          return GetStaleUserFullResponse.fromJson(__gl_wrappedResponse__).data!!
       }
    }
-   suspend fun getUserOrErrors(id: String): GetUserOrErrorsFullResponse {
+   suspend fun getUserOrErrors(id: String, limit: Int): GetUserOrErrorsFullResponse {
       val __gl_operationName__ = "getUserOrErrors"
-      val __gl_variables__ = mapOf("id" to id)
+      val __gl_variables__ = mapOf("id" to id, "limit" to limit)
       val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
       run {
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
@@ -1212,9 +1212,9 @@ open class GraphLinkQueries(
          return GetUserOrErrorsFullResponse.fromJson(__gl_wrappedResponse__)
       }
    }
-   suspend fun findUserOrErrors(id: String): FindUserOrErrorsFullResponse {
+   suspend fun findUserOrErrors(id: String, limit: Int): FindUserOrErrorsFullResponse {
       val __gl_operationName__ = "findUserOrErrors"
-      val __gl_variables__ = mapOf("id" to id)
+      val __gl_variables__ = mapOf("id" to id, "limit" to limit)
       val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
       run {
          val __gl_pqVars__ = mutableMapOf<String, Any?>()

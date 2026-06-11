@@ -323,6 +323,9 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
     } else {
       buffer.write(proj.targetToken);
     }
+    buffer.write(serializeListText(
+        proj.arguments.map(serializeArgumentValue).toList(),
+        join: ","));
     if (proj.getDirectives(skipGenerated: true).isNotEmpty) {
       buffer.write(
           serializeDirectiveValueList(proj.getDirectives(skipGenerated: true)));

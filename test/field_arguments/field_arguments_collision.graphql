@@ -1,0 +1,33 @@
+type Article {
+  id: ID!
+  title: String!
+}
+
+type Comment {
+  id: ID!
+  text: String!
+}
+
+type Author {
+  id: ID!
+  articles(limit: Int!): [Article!]!
+  comments(limit: Float!): [Comment!]!
+}
+
+type Query {
+  getAuthor(id: ID!): Author
+}
+
+query getAuthor($id: ID!, $limit: Int!) {
+  getAuthor(id: $id) {
+    id
+    articles(limit: $limit) {
+      id
+      title
+    }
+    comments(limit: $limit) {
+      id
+      text
+    }
+  }
+}

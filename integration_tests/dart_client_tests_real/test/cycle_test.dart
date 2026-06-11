@@ -12,40 +12,65 @@ void main() {
 
   group('User.posts — cycle User → Post → User', () {
     test('User.posts is deserialized as a list', () async {
-      final res = await client.queries.getUser(id: 'user-with-posts');
+      final res =
+          await client.queries.getUser(id: 'user-with-posts', limit: 10);
       expect(res.getUser.posts, isNotNull);
       expect(res.getUser.posts, isA<List>());
     });
 
     test('User.posts list has the correct length', () async {
-      final res = await client.queries.getUser(id: 'user-with-posts');
-      expect(res.getUser.posts!.length, equals(1));
+      final res =
+          await client.queries.getUser(id: 'user-with-posts', limit: 10);
+      expect(res.getUser.posts!.length, equals(4));
     });
 
     test('User.posts[0] has correct scalar fields', () async {
-      final res = await client.queries.getUser(id: 'user-with-posts');
+      final res =
+          await client.queries.getUser(id: 'user-with-posts', limit: 10);
       final post = res.getUser.posts!.first;
       expect(post.id, equals('post-10'));
       expect(post.title, equals('Cyclic Post'));
       expect(post.viewCount, equals(7));
     });
 
-    test('User.posts[0].author is deserialized (cycle broken at one level)', () async {
-      final res = await client.queries.getUser(id: 'user-with-posts');
+    test('User.posts[0].author is deserialized (cycle broken at one level)',
+        () async {
+      final res =
+          await client.queries.getUser(id: 'user-with-posts', limit: 10);
       final author = res.getUser.posts!.first.author;
       expect(author.id, equals('user-1'));
       expect(author.name, equals('Alice Smith'));
     });
 
     test('User.posts[0].author.address is accessible', () async {
-      final res = await client.queries.getUser(id: 'user-with-posts');
+      final res =
+          await client.queries.getUser(id: 'user-with-posts', limit: 10);
       final author = res.getUser.posts!.first.author;
       expect(author.address.city, equals('Springfield'));
     });
 
     test('User.posts is null for Alice (standard user-1)', () async {
-      final res = await client.queries.getUser(id: 'user-1');
+      final res = await client.queries.getUser(id: 'user-1', limit: 10);
       expect(res.getUser.posts, isNull);
+    });
+  });
+
+  group('User.recentPosts — field-level argument', () {
+    test('limit truncates the result list', () async {
+      final res =
+          await client.queries.getUser(id: 'user-with-posts', limit: 2);
+      expect(res.getUser.recentPosts, hasLength(2));
+    });
+
+    test('limit larger than the list returns all elements', () async {
+      final res =
+          await client.queries.getUser(id: 'user-with-posts', limit: 10);
+      expect(res.getUser.recentPosts, hasLength(4));
+    });
+
+    test('recentPosts is empty when the user has no posts', () async {
+      final res = await client.queries.getUser(id: 'user-1', limit: 5);
+      expect(res.getUser.recentPosts, isEmpty);
     });
   });
 
