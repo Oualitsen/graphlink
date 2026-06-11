@@ -1,4 +1,4 @@
-PORT = 9997
+PORT = 9996
 PID_FILE = .server.pid
 
 .PHONY: install generate typecheck start-server start-server-sync stop-server ci
@@ -7,14 +7,14 @@ install:
 	npm install
 
 generate:
-	dart run ../../lib/src/main.dart -c config.json
+	dart run ../../../lib/src/main.dart -c config.json
 
 typecheck:
 	npx tsc --noEmit
 
 start-server:
 	lsof -ti :$(PORT) | xargs kill -9 2>/dev/null || true
-	npx tsx src/start.ts > /tmp/ts-server-$(PORT).log 2>&1 & echo $$! > $(PID_FILE)
+	npx tsx src/start.ts > /tmp/ts-upload-server-$(PORT).log 2>&1 & echo $$! > $(PID_FILE)
 	sleep 2
 
 start-server-sync:
