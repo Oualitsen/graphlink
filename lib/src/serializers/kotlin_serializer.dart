@@ -164,7 +164,7 @@ class KotlinSerializer extends GLSerializer {
   @override
   String doSerializeTypeDefinition(GLTypeDefinition def) {
     if (def is GLInterfaceDefinition) {
-      return _serializeInterface(def);
+      return serializeInterface(def);
     }
     return _serializeClass(def);
   }
@@ -228,7 +228,7 @@ class KotlinSerializer extends GLSerializer {
     return false;
   }
 
-  String _serializeInterface(GLInterfaceDefinition def) {
+  String serializeInterface(GLInterfaceDefinition def) {
     final fields = def.getSerializableFields(grammar.mode);
     final fieldDecls = fields.map((f) {
       final forceNullable = f.hasInculeOrSkipDiretives || forceFieldNullable;
