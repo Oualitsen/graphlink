@@ -264,6 +264,7 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
   private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
   private final Integer maxReconnectAttempts;
   private final long maxReconnectDelayMs;
+  private final List<String> protocols;
 
   private volatile WebSocket webSocket;
   private volatile Consumer<String> messageListener;
@@ -292,11 +293,16 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
   }
 
   public DefaultGraphLinkWebSocketAdapter(String url, Supplier<Map<String, String>> headersProvider, HttpClient httpClient, Integer maxReconnectAttempts, long maxReconnectDelayMs) {
+    this(url, headersProvider, httpClient, maxReconnectAttempts, maxReconnectDelayMs, List.of("graphql-transport-ws"));
+  }
+
+  public DefaultGraphLinkWebSocketAdapter(String url, Supplier<Map<String, String>> headersProvider, HttpClient httpClient, Integer maxReconnectAttempts, long maxReconnectDelayMs, List<String> protocols) {
     this.url = url;
     this.headersProvider = headersProvider;
     this.httpClient = httpClient;
     this.maxReconnectAttempts = maxReconnectAttempts;
     this.maxReconnectDelayMs = maxReconnectDelayMs;
+    this.protocols = protocols;
   }
 
   public int getReconnectAttempts() {
@@ -311,8 +317,10 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
   }
 
   private void connectInternal(Runnable onConnect, Consumer<Throwable> onFailure) {
-    java.net.http.WebSocket.Builder wsBuilder = httpClient.newWebSocketBuilder()
-        .subprotocols("graphql-transport-ws");
+    java.net.http.WebSocket.Builder wsBuilder = httpClient.newWebSocketBuilder();
+    if (!protocols.isEmpty()) {
+      wsBuilder.subprotocols(protocols.get(0), protocols.subList(1, protocols.size()).toArray(new String[0]));
+    }
 
     if (headersProvider != null) {
       Map<String, String> h = headersProvider.get();
@@ -419,6 +427,7 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
   private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
   private final Integer maxReconnectAttempts;
   private final long maxReconnectDelayMs;
+  private final List<String> protocols;
 
   private volatile WebSocket webSocket;
   private volatile Consumer<String> messageListener;
@@ -447,11 +456,16 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
   }
 
   public DefaultGraphLinkWebSocketAdapter(String url, Supplier<Map<String, String>> headersProvider, OkHttpClient httpClient, Integer maxReconnectAttempts, long maxReconnectDelayMs) {
+    this(url, headersProvider, httpClient, maxReconnectAttempts, maxReconnectDelayMs, List.of("graphql-transport-ws"));
+  }
+
+  public DefaultGraphLinkWebSocketAdapter(String url, Supplier<Map<String, String>> headersProvider, OkHttpClient httpClient, Integer maxReconnectAttempts, long maxReconnectDelayMs, List<String> protocols) {
     this.url = url;
     this.headersProvider = headersProvider;
     this.httpClient = httpClient;
     this.maxReconnectAttempts = maxReconnectAttempts;
     this.maxReconnectDelayMs = maxReconnectDelayMs;
+    this.protocols = protocols;
   }
 
   public int getReconnectAttempts() {
@@ -461,6 +475,9 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
   protected Request buildRequest() {
     Request.Builder builder = new Request.Builder()
         .url(url);
+    if (!protocols.isEmpty()) {
+      builder.header("Sec-WebSocket-Protocol", String.join(", ", protocols));
+    }
     if (headersProvider != null) {
       Map<String, String> headers = headersProvider.get();
       if (headers != null) headers.forEach(builder::header);

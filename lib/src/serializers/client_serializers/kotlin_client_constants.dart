@@ -332,6 +332,7 @@ class DefaultGraphLinkWebSocketAdapter(
     private val httpClient: OkHttpClient = OkHttpClient(),
     private val maxReconnectAttempts: Int? = 10,
     private val maxReconnectDelayMs: Long = 30_000L,
+    private val protocols: List<String> = emptyList(),
 ) : GraphLinkWebSocketAdapter {
 
     private val scheduler = Executors.newSingleThreadScheduledExecutor()
@@ -351,6 +352,9 @@ class DefaultGraphLinkWebSocketAdapter(
 
     private fun connectInternal(onConnect: () -> Unit, onFailure: (Throwable) -> Unit) {
         val builder = Request.Builder().url(url)
+        if (protocols.isNotEmpty()) {
+            builder.header("Sec-WebSocket-Protocol", protocols.joinToString(", "))
+        }
         headersProvider?.invoke()?.forEach { (k, v) -> builder.header(k, v) }
         httpClient.newWebSocket(builder.build(), object : WebSocketListener() {
             override fun onOpen(ws: WebSocket, response: Response) {

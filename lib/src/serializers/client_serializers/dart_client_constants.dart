@@ -255,6 +255,7 @@ class DefaultGraphLinkWebSocketAdapter extends GraphLinkWebSocketAdapter {
   final String url;
   final Future<Map<String, String>?> Function()? headersProvider;
   final bool reconnect;
+  final List<String>? protocols;
 
   final int? maxReconnectAttempts;
   final Duration maxReconnectDelay;
@@ -274,6 +275,7 @@ class DefaultGraphLinkWebSocketAdapter extends GraphLinkWebSocketAdapter {
     required this.url,
     this.headersProvider,
     this.reconnect = true,
+    this.protocols = const ['graphql-transport-ws'],
     this.maxReconnectAttempts = 10,
     this.maxReconnectDelay = const Duration(seconds: 30),
   });
@@ -293,7 +295,7 @@ class DefaultGraphLinkWebSocketAdapter extends GraphLinkWebSocketAdapter {
 
   Future<void> _createConnection() async {
     try {
-      _channel = WebSocketChannel.connect(Uri.parse(url));
+      _channel = WebSocketChannel.connect(Uri.parse(url), protocols: protocols);
       _subscription = _channel!.stream.listen(
         (data) => _messageController.add(data as String),
         onError: _onError,
