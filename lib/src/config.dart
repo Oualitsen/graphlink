@@ -33,8 +33,9 @@ abstract class ClientLanguageConfig {
 abstract class ServerLanguageConfig {
   static ServerLanguageConfig fromJson(Map<String, dynamic> json) {
     if (json['spring'] != null) return SpringServerConfig.fromJson(json['spring'] as Map<String, dynamic>);
+    if (json['kotlinSpring'] != null) return KotlinSpringServerConfig.fromJson(json['kotlinSpring'] as Map<String, dynamic>);
     if (json['expressApollo'] != null) return ExpressApolloServerConfig.fromJson(json['expressApollo'] as Map<String, dynamic>);
-    throw ArgumentError('serverConfig must specify one of: spring, expressApollo');
+    throw ArgumentError('serverConfig must specify one of: spring, kotlinSpring, expressApollo');
   }
 }
 
@@ -112,38 +113,31 @@ class ExpressApolloServerConfig extends ServerLanguageConfig {
   }
 }
 
-class SpringServerConfig extends ServerLanguageConfig {
+/// Shared config for Spring Boot server generation, common across JVM
+/// languages (Java, Kotlin). Language-specific options (e.g. record vs.
+/// data class, reactive/security toggles) live on the subclasses.
+abstract class SpringServerConfigBase extends ServerLanguageConfig {
   final String basePackage;
   final bool generateControllers;
   final bool generateInputs;
   final bool generateTypes;
   final bool generateRepositories;
-  final bool inputAsRecord;
-  final bool typeAsRecord;
   final bool generateSchema;
-  final bool injectDataFetching;
-  final bool reactive;
-  final bool useSpringSecurity;
   final String? schemaTargetPath;
   final bool immutableInputFields;
   final bool immutableTypeFields;
-  final bool jspecify;
+  final bool injectDataFetching;
 
-  SpringServerConfig({
+  SpringServerConfigBase({
     required this.basePackage,
     required this.generateControllers,
     required this.generateInputs,
     required this.generateTypes,
     required this.generateRepositories,
-    required this.inputAsRecord,
-    required this.typeAsRecord,
     required this.generateSchema,
-    required this.injectDataFetching,
-    required this.reactive,
-    required this.useSpringSecurity,
     required this.immutableInputFields,
     required this.immutableTypeFields,
-    this.jspecify = false,
+    required this.injectDataFetching,
     this.schemaTargetPath,
   }) : assert(
           !generateSchema ||
@@ -152,6 +146,32 @@ class SpringServerConfig extends ServerLanguageConfig {
                       schemaTargetPath.endsWith('.graphqls'))),
           'schemaTargetPath must be a non-null path ending with .graphql or .graphqls when generateSchema is true',
         );
+}
+
+class SpringServerConfig extends SpringServerConfigBase {
+  final bool inputAsRecord;
+  final bool typeAsRecord;
+  final bool reactive;
+  final bool useSpringSecurity;
+  final bool jspecify;
+
+  SpringServerConfig({
+    required super.basePackage,
+    required super.generateControllers,
+    required super.generateInputs,
+    required super.generateTypes,
+    required super.generateRepositories,
+    required this.inputAsRecord,
+    required this.typeAsRecord,
+    required super.generateSchema,
+    required super.injectDataFetching,
+    required this.reactive,
+    required this.useSpringSecurity,
+    required super.immutableInputFields,
+    required super.immutableTypeFields,
+    this.jspecify = false,
+    super.schemaTargetPath,
+  });
 
   factory SpringServerConfig.fromJson(Map<String, dynamic> json) {
     return SpringServerConfig(
@@ -170,6 +190,53 @@ class SpringServerConfig extends ServerLanguageConfig {
       injectDataFetching: (json['injectDataFetching'] as bool?) ?? false,
       reactive: (json['reactive'] as bool?) ?? false,
       useSpringSecurity: (json['useSpringSecurity'] as bool?) ?? false,
+    );
+  }
+}
+
+class KotlinSpringServerConfig extends SpringServerConfigBase {
+  final bool inputAsDataClass;
+  final bool typeAsDataClass;
+
+  /// Whether the generated `*Service` interfaces are implemented by blocking
+  /// (JPA/JDBC) code. When `true`, controller methods wrap their service call
+  /// in `withContext(Dispatchers.IO + SecurityCoroutineContext()) { ... }` —
+  /// offloading blocking work and propagating `SecurityContextHolder` across
+  /// the dispatcher switch. When `false`, the service layer is assumed to be
+  /// coroutine-native/non-blocking and methods are emitted with no wrapping.
+  final bool blockingServices;
+
+  KotlinSpringServerConfig({
+    required super.basePackage,
+    required super.generateControllers,
+    required super.generateInputs,
+    required super.generateTypes,
+    required super.generateRepositories,
+    required this.inputAsDataClass,
+    required this.typeAsDataClass,
+    required this.blockingServices,
+    required super.generateSchema,
+    required super.injectDataFetching,
+    required super.immutableInputFields,
+    required super.immutableTypeFields,
+    super.schemaTargetPath,
+  });
+
+  factory KotlinSpringServerConfig.fromJson(Map<String, dynamic> json) {
+    return KotlinSpringServerConfig(
+      basePackage: json['basePackage'] as String,
+      generateControllers: (json['generateControllers'] as bool?) ?? true,
+      generateInputs: (json['generateInputs'] as bool?) ?? true,
+      generateTypes: (json['generateTypes'] as bool?) ?? true,
+      generateRepositories: (json['generateRepositories'] as bool?) ?? false,
+      inputAsDataClass: (json['inputAsDataClass'] as bool?) ?? false,
+      typeAsDataClass: (json['typeAsDataClass'] as bool?) ?? false,
+      blockingServices: (json['blockingServices'] as bool?) ?? true,
+      generateSchema: (json['generateSchema'] as bool?) ?? false,
+      immutableInputFields: (json['immutableInputFields'] as bool?) ?? true,
+      immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? false,
+      schemaTargetPath: json['schemaTargetPath'] as String?,
+      injectDataFetching: (json['injectDataFetching'] as bool?) ?? false,
     );
   }
 }

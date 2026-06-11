@@ -1,6 +1,6 @@
+import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/java_code_gen_utils.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_controller.dart';
@@ -20,7 +20,8 @@ abstract class JvmSpringControllerSerializerBase {
   final bool injectDataFetching;
   final bool useSpringSecurity;
   final bool generateSchema;
-  final codeGenUtils = JavaCodeGenUtils();
+
+  CodeGenUtilsBase get codeGenUtils;
 
   JvmSpringControllerSerializerBase({
     required this.grammar,

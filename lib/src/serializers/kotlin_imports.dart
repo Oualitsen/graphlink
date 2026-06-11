@@ -6,6 +6,8 @@ class KotlinImports {
   static const flow = 'kotlinx.coroutines.flow.Flow';
   static const flowOf = 'kotlinx.coroutines.flow.flowOf';
   static const flowMap = 'kotlinx.coroutines.flow.map';
+  static const dispatchers = 'kotlinx.coroutines.Dispatchers';
+  static const withContext = 'kotlinx.coroutines.withContext';
 
   // ── kotlinx.serialization ────────────────────────────────────────────────────
   static const json = 'kotlinx.serialization.json.Json';

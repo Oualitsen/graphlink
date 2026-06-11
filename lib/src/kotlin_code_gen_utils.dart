@@ -180,6 +180,32 @@ class KotlinCodeGenUtils implements CodeGenUtilsBase {
     return buffer.toString();
   }
 
+  /// Emits a plain (non-`open`, non-`data`) class, e.g. `@Controller class Foo(...) { ... }`.
+  String kotlinClass({
+    required String name,
+    List<String>? params,
+    List<String>? body,
+    List<String>? interfaces,
+  }) {
+    final buffer = StringBuffer();
+    buffer.write('class $name');
+    if (params != null && params.isNotEmpty) {
+      buffer.write('(\n');
+      for (final p in params) {
+        buffer.write('    $p,\n');
+      }
+      buffer.write(')');
+    }
+    if (interfaces != null && interfaces.isNotEmpty) {
+      buffer.write(' : ${interfaces.join(', ')}');
+    }
+    if (body != null && body.isNotEmpty) {
+      buffer.write(' ');
+      buffer.write(block(body));
+    }
+    return buffer.toString();
+  }
+
   String openClass({
     required String name,
     required List<String> params,

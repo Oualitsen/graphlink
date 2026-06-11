@@ -22,6 +22,8 @@ import 'package:graphlink/src/utils.dart';
 
 class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
   final JavaSerializer serializer;
+  @override
+  final JavaCodeGenUtils codeGenUtils = JavaCodeGenUtils();
 
   JavaSpringControllerSerializer({
     required GLParser grammar,

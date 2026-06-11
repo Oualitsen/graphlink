@@ -3,6 +3,7 @@ import 'package:graphlink/src/java_code_gen_utils.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
+import 'package:graphlink/src/model/gl_service.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/java_imports.dart';
@@ -13,6 +14,8 @@ import 'package:graphlink/src/serializers/jvm_spring_server_serializer_base.dart
 class JavaSpringServerSerializer extends JvmSpringServerSerializerBase {
   @override
   final JavaSerializer serializer;
+  @override
+  final JavaCodeGenUtils codeGenUtils = JavaCodeGenUtils();
   final String? defaultRepositoryBase;
 
   JavaSpringServerSerializer._(
@@ -99,5 +102,26 @@ class JavaSpringServerSerializer extends JvmSpringServerSerializerBase {
         extension: false));
 
     return serializer.serializeInterface(interface, getters: false);
+  }
+
+  // ── Service body ─────────────────────────────────────────────────────────────
+
+  @override
+  String serializeServiceBody(GLService service) {
+    var mappings = service.serviceMapping;
+    var buffer = StringBuffer();
+    buffer.writeln(
+        codeGenUtils.createInterface(interfaceName: service.token, statements: [
+      '',
+      ...service.fields
+          .map((n) => ctrl.serializeMethodDeclaration(
+              n, service.getTypeByFieldName(n.name.token)!, service))
+          .map((e) => "${e};"),
+      '',
+      ...mappings
+          .map((m) => ctrl.serializeServiceMappingImplMethodHeader(m, service))
+          .map((e) => "${e};")
+    ]));
+    return buffer.toString();
   }
 }
