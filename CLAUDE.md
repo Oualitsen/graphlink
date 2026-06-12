@@ -179,7 +179,7 @@ test/
   interface/           # Interface and common-field handling
   inheritence/         # Type inheritance scenarios
   extensions/          # GraphQL schema extensions
-  projections/         # @glProjection directive
+  projections/         # Projected types derived from query selection sets/fragments (not a directive)
   input/               # Input type generation
   input_types_ref_check/
   base_types_and_unions/
@@ -208,6 +208,30 @@ its own `GlSchema`.
 dart test                          # all tests
 dart test test/cache/              # single directory
 dart test test/cache/cache_test.dart  # single file
+```
+
+---
+
+## End-to-end integration tests
+
+Two top-level directories outside `test/`, testing opposite ends of the pipeline —
+don't confuse them:
+
+- **`integration_tests/`** — a hand-written, trusted Spring Boot server
+  (`spring_server/`, `spring_upload_server/`) paired with GraphLink-**generated clients**
+  for Dart/Java/TS/Kotlin (`*_client_tests*/`). The `_real` suites run the generated
+  client against the real running Spring Boot JAR. This validates **generated client
+  code** — most cross-language parity bugs have been caught here.
+- **`server_integration_tests/`** — organized **per generated server target**. Each
+  subdirectory pairs a GraphLink-**generated server** under test with a
+  GraphLink-generated client used purely as a harness to drive requests. Currently
+  `typescript/` covers the Apollo/Express server (with a generated Dart client as the
+  harness). Future generated server targets get their own sibling directory here. This
+  validates **generated server code**.
+
+```bash
+cd integration_tests && make all-real   # generated clients vs hand-written Spring server
+cd server_integration_tests && make ci  # generated server(s) vs generated client harness
 ```
 
 ---
