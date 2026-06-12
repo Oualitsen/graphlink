@@ -248,7 +248,7 @@ class KotlinClientOperationSerializer {
       'val ${_ctx.svQuery} = "${_buildQueryString(def)}"',
       _generateVariables(def, container),
       'val ${_ctx.svPayload} = GraphLinkPayload(query = ${_ctx.svQuery}, operationName = ${_ctx.svOperationName}, variables = ${_ctx.svVariables})',
-      'return handler.handle(${_ctx.svPayload}).map { $typeToken.fromJson(it) }',
+      'return ${KotlinCodeGenUtils.mapCall(receiver: 'handler.handle(${_ctx.svPayload})', body: '$typeToken.fromJson(it)')}',
     ];
 
     return _ctx.codeGenUtils.createMethod(
@@ -310,7 +310,7 @@ class KotlinClientOperationSerializer {
       if (varName == innerExpr) {
         return KotlinCodeGenUtils.safeCall(variable, 'toList()', type.nullable);
       }
-      return KotlinCodeGenUtils.safeCall(variable, 'map { $varName -> $innerExpr }', type.nullable);
+      return KotlinCodeGenUtils.mapCall(receiver: variable, param: varName, body: innerExpr, nullable: type.nullable);
     }
     if (_ctx.grammar.isEnum(type.token) || _ctx.grammar.isInput(type.token)) {
       return KotlinCodeGenUtils.safeCall(variable, 'toJson()', type.nullable);

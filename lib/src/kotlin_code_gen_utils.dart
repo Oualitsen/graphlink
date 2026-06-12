@@ -270,6 +270,29 @@ class KotlinCodeGenUtils implements CodeGenUtilsBase {
   static String safeCall(String variable, String method, bool nullable) =>
       nullable ? '$variable?.$method' : '$variable.$method';
 
+  /// Emits a lambda body: `{ body }`, or `{ param -> body }` if [param] is given.
+  static String lambda(String body, {String? param}) =>
+      param == null ? '{ $body }' : '{ $param -> $body }';
+
+  /// Emits `receiver.map { param -> body }`, or `receiver?.map { ... }` if [nullable].
+  static String mapCall({
+    required String receiver,
+    required String body,
+    String? param,
+    bool nullable = false,
+  }) =>
+      safeCall(receiver, 'map ${lambda(body, param: param)}', nullable);
+
+  /// Emits `receiver?.let { body }` (or `receiver.let { ... }` if not [nullable]),
+  /// referring to the receiver as `it` unless [param] is given.
+  static String letCall({
+    required String receiver,
+    required String body,
+    String? param,
+    bool nullable = true,
+  }) =>
+      safeCall(receiver, 'let ${lambda(body, param: param)}', nullable);
+
   /// Returns a local variable name that won't clash with user-defined
   /// parameters — same convention as `JavaCodeGenUtils.safeLocalVar`.
   String safeLocalVar(String name) => '__gl_${name}__';
