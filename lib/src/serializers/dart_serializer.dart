@@ -256,18 +256,19 @@ class DartSerializer extends GLSerializer {
   /// Returns a suffix to append to a source field value for toXxx() assignments.
   /// e.g. '' for direct copy, '.map((e0) => e0.toTag()).toList()' for mapped lists.
   String _callToMapping(GLType sourceType, GLType targetType, int index) {
-    final dot = sourceType.nullable ? '?.' : '.';
     if (sourceType.isList) {
       if (sourceType.firstType.token == targetType.firstType.token) {
-        return '${dot}toList()'; // same element type — copy the list
+        return DartCodeGenUtils.toListCopy('', sourceType.nullable); // same element type — copy the list
       }
       final varName = 'e$index';
       final inner = _callToMapping(
           sourceType.inlineType, targetType.inlineType, index + 1);
-      return '${dot}map(($varName) => $varName$inner).toList()';
+      return DartCodeGenUtils.mapToList(
+          receiver: '', param: varName, body: '$varName$inner', nullable: sourceType.nullable);
     }
     final sourceInput = grammar.inputs[sourceType.token];
     if (sourceInput?.mapsToType == targetType.token) {
+      final dot = sourceType.nullable ? '?.' : '.';
       return '${dot}to${targetType.token.firstUp}()';
     }
     return ''; // same type — direct copy
@@ -277,15 +278,15 @@ class DartSerializer extends GLSerializer {
   /// e.g. 'order.tags.map((e0) => TagInput.fromTag(e0)).toList()'
   String _callFromMapping(
       String variable, String sourceElemToken, GLType targetType, int index) {
-    final dot = targetType.nullable ? '?.' : '.';
     if (targetType.isList) {
       if (sourceElemToken == targetType.firstType.token) {
-        return '$variable${dot}toList()'; // same element type — copy the list
+        return DartCodeGenUtils.toListCopy(variable, targetType.nullable); // same element type — copy the list
       }
       final varName = 'e$index';
       final inner = _callFromMapping(
           varName, sourceElemToken, targetType.inlineType, index + 1);
-      return '$variable${dot}map(($varName) => $inner).toList()';
+      return DartCodeGenUtils.mapToList(
+          receiver: variable, param: varName, body: inner, nullable: targetType.nullable);
     }
     final sourceInput = grammar.inputs[sourceElemToken];
     if (sourceInput?.mapsToType == targetType.token) {
@@ -369,20 +370,12 @@ class DartSerializer extends GLSerializer {
     }
     if (grammar.isEnum(type.token)) {
       var enumFromJson = "${type.token}.fromJson(${variable} as String)";
-      if (type.nullable) {
-        return "${variable} == null ? null : ${enumFromJson}";
-      } else {
-        return enumFromJson;
-      }
+      return DartCodeGenUtils.nullSafeExpr(variable, enumFromJson, type.nullable);
     }
     if (grammar.isProjectableType(type.token)) {
       var typeFromJson =
           "${type.token}.fromJson(${variable} as Map<String, dynamic>)";
-      if (type.nullable) {
-        return "${variable} == null ? null : ${typeFromJson}";
-      } else {
-        return typeFromJson;
-      }
+      return DartCodeGenUtils.nullSafeExpr(variable, typeFromJson, type.nullable);
     }
 
     if (serializedType == "double" || serializedType == "double?") {
@@ -401,14 +394,13 @@ class DartSerializer extends GLSerializer {
   }
 
   String callFromJson(String variable, GLField field, GLType type, int index) {
-    String fromJsonCall;
-    String dot = type.nullable ? "?." : ".";
-    fromJsonCall = castDynamicToType(variable, type);
+    String fromJsonCall = castDynamicToType(variable, type);
     if (type.isList) {
       String varName = "e${index}";
       var inlneCallToJson =
           callFromJson(varName, field, type.inlineType, index + 1);
-      return "${fromJsonCall}${dot}map((${varName}) => ${inlneCallToJson}).toList()";
+      return DartCodeGenUtils.mapToList(
+          receiver: fromJsonCall, param: varName, body: inlneCallToJson, nullable: type.nullable);
     }
     return fromJsonCall;
   }
@@ -427,7 +419,8 @@ class DartSerializer extends GLSerializer {
     if (type.isList) {
       String varName = "e${index}";
       var inlneCallToJson = callToJson(field, type.inlineType, index + 1);
-      return "${dot}map((${varName}) => ${varName}${inlneCallToJson}).toList()";
+      return DartCodeGenUtils.mapToList(
+          receiver: '', param: varName, body: '$varName$inlneCallToJson', nullable: type.nullable);
     }
     return toJsonCall;
   }

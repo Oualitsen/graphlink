@@ -293,8 +293,7 @@ class KotlinSerializer extends GLSerializer {
       final varName = 'e$depth';
       final innerExpr = _fieldToJsonExpr(field, inner, varName, depth + 1);
       if (varName == innerExpr) return variable;
-      final mapCall = 'map { $varName -> $innerExpr }';
-      return KotlinCodeGenUtils.safeCall(variable, mapCall, type.nullable);
+      return KotlinCodeGenUtils.mapCall(receiver: variable, param: varName, body: innerExpr, nullable: type.nullable);
     }
     if (grammar.isEnum(type.token) || grammar.isProjectableType(type.token)) {
       return KotlinCodeGenUtils.safeCall(variable, 'toJson()', type.nullable);
@@ -319,15 +318,9 @@ class KotlinSerializer extends GLSerializer {
       final inner = type.inlineType;
       final varName = 'e$depth';
       final innerExpr = _fromJsonExpr(field, inner, varName, depth + 1, context);
-      if (varName == innerExpr) {
-        if (type.nullable) return '($access as? $_anyListType)';
-        return '($access as $_anyListType)';
-      }
-      final mapCall = 'map { $varName -> $innerExpr }';
-      if (type.nullable) {
-        return '($access as? $_anyListType)?.$mapCall';
-      }
-      return '($access as $_anyListType).$mapCall';
+      final castedList = type.nullable ? '($access as? $_anyListType)' : '($access as $_anyListType)';
+      if (varName == innerExpr) return castedList;
+      return KotlinCodeGenUtils.mapCall(receiver: castedList, param: varName, body: innerExpr, nullable: type.nullable);
     }
 
     final token = type.token;
@@ -337,13 +330,13 @@ class KotlinSerializer extends GLSerializer {
     }
     if (grammar.isEnum(token)) {
       if (type.nullable) {
-        return '($access as? String)?.let { $token.fromJson(it) }';
+        return KotlinCodeGenUtils.letCall(receiver: '($access as? String)', body: '$token.fromJson(it)');
       }
       return '$token.valueOf($access as String)';
     }
     // projectable type or input
     if (type.nullable) {
-      return '($access as? Map<*, *>)?.let { $token.fromJson(it as $_mapType) }';
+      return KotlinCodeGenUtils.letCall(receiver: '($access as? Map<*, *>)', body: '$token.fromJson(it as $_mapType)');
     }
     return '$token.fromJson($access as $_mapType)';
   }
@@ -490,9 +483,7 @@ class KotlinSerializer extends GLSerializer {
       if (sourceType.firstType.token == targetType.firstType.token) return variable;
       final varName = 'e$index';
       final inner = _toMappingExpr(varName, sourceType.inlineType, targetType.inlineType, index + 1, context);
-      final mapCall = '$variable.map { $varName -> $inner }';
-      if (sourceType.nullable) return '$variable?.map { $varName -> $inner }';
-      return mapCall;
+      return KotlinCodeGenUtils.mapCall(receiver: variable, param: varName, body: inner, nullable: sourceType.nullable);
     }
     final sourceInput = grammar.inputs[sourceType.token];
     if (sourceInput?.mapsToType == targetType.token) {
@@ -507,12 +498,13 @@ class KotlinSerializer extends GLSerializer {
       if (sourceElemToken == targetType.firstType.token) return variable;
       final varName = 'e$index';
       final inner = _fromMappingExpr(varName, sourceElemToken, targetType.inlineType, index + 1, context);
-      if (targetType.nullable) return '$variable?.map { $varName -> $inner }';
-      return '$variable.map { $varName -> $inner }';
+      return KotlinCodeGenUtils.mapCall(receiver: variable, param: varName, body: inner, nullable: targetType.nullable);
     }
     final sourceInput = grammar.inputs[sourceElemToken];
     if (sourceInput?.mapsToType == targetType.token) {
-      if (targetType.nullable) return '$variable?.let { $sourceElemToken.from${targetType.token.firstUp}(it) }';
+      if (targetType.nullable) {
+        return KotlinCodeGenUtils.letCall(receiver: variable, body: '$sourceElemToken.from${targetType.token.firstUp}(it)');
+      }
       return '$sourceElemToken.from${targetType.token.firstUp}($variable)';
     }
     return variable;
