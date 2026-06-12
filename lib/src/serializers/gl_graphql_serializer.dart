@@ -358,13 +358,13 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
         cacheTTL: element.cacheTTL,
         tags: element.cacheTags,
         elementKey: element.alias?.token ?? element.token,
-        variables: [...element.arguments.map((e) => e.value?.toString() ?? '')],
+        variables: [...def.arguments.map((arg) => arg.token)],
         fragmentNames: element
             .getFragmentsAndDependecies(grammar)
             .map((e) => e.token)
             .toSet(),
-        argumentDeclarations: element.arguments
-            .map((arg) => "${arg.value}: ${serializeType(arg.type)}")
+        argumentDeclarations: def.arguments
+            .map((arg) => "${arg.token}: ${serializeType(arg.type)}")
             .toList(),
         staleIfOffline: element
                 .getDirectiveByName(glCache)
