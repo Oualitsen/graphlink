@@ -7,6 +7,7 @@
 
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/graph_link_error.dart';
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/get_author_without_article_full_response.dart';
+import 'package:graphlink_server_integration_tests_dart_client/generated/types/get_author_and_article_full_response.dart';
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/get_author_full_response.dart';
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/get_article_full_response.dart';
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/list_authors_full_response.dart';
@@ -26,6 +27,9 @@ abstract class GraphLinkFullResponse {
       switch(typename) {
          case 'GetAuthorWithoutArticleFullResponse':
             return GetAuthorWithoutArticleFullResponse.fromJson(json);
+
+         case 'GetAuthorAndArticleFullResponse':
+            return GetAuthorAndArticleFullResponse.fromJson(json);
 
          case 'GetAuthorFullResponse':
             return GetAuthorFullResponse.fromJson(json);

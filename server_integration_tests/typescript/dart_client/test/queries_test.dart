@@ -55,6 +55,16 @@ void main() {
     });
   });
 
+  group('getAuthorAndArticle', () {
+    test('resolves both root fields with their own arguments plus a shared fragment argument', () async {
+      final res = await client.queries.getAuthorAndArticle(authorId: '1', articleId: '3', limit: 1);
+      expect(res.author!.id, equals('1'));
+      expect(res.author!.latestArticles, hasLength(1));
+      expect(res.article.id, equals('3'));
+      expect(res.article.title, equals("Alice's First Post"));
+    });
+  });
+
   group('listAuthors / listArticles', () {
     test('listAuthors returns all authors', () async {
       final res = await client.queries.listAuthors(limit: 10);

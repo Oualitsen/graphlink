@@ -19,6 +19,7 @@ import 'package:graphlink_server_integration_tests_dart_client/generated/types/g
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/graph_link_subscription_message.dart';
 import 'package:graphlink_server_integration_tests_dart_client/generated/interfaces/graph_link_full_response.dart';
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/get_author_without_article_response.dart';
+import 'package:graphlink_server_integration_tests_dart_client/generated/types/get_author_and_article_response.dart';
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/get_author_response.dart';
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/get_article_response.dart';
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/list_authors_response.dart';
@@ -29,6 +30,7 @@ import 'package:graphlink_server_integration_tests_dart_client/generated/types/d
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/article_created_response.dart';
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/article_updated_response.dart';
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/get_author_without_article_full_response.dart';
+import 'package:graphlink_server_integration_tests_dart_client/generated/types/get_author_and_article_full_response.dart';
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/get_author_full_response.dart';
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/get_article_full_response.dart';
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/list_authors_full_response.dart';
@@ -244,6 +246,79 @@ class GraphLinkQueries extends _ResolverBase {
             rethrow;
          }
          return GetAuthorWithoutArticleFullResponse.fromJson({'data': __gl_responseMap__}).data!;
+      }
+   }
+   Future<GetAuthorAndArticleResponse> getAuthorAndArticle({
+      required String authorId,
+      required String articleId,
+      required int limit
+   }) async {
+      const __gl_operationName__ = 'getAuthorAndArticle';
+      final __gl_variables__ = <String, dynamic>{
+         'authorId': authorId,
+         'articleId': articleId,
+         'limit': limit,
+      };
+
+      final __gl_partialQueries__ = [_GraphLinkPartialQuery(
+        query: 'author:getAuthor(id: \$authorId){..._all_fields_Author}',
+        operationName: "getAuthorAndArticle_author_getAuthor",
+        tags: [],
+        ttl: 0,
+        elementKey: 'author',
+        fragmentNames: {"_all_fields_Author", "_all_fields_Article"},
+        argumentDeclarations: ["\$authorId: ID!", "\$limit: Int!"],
+        variables: {
+      'authorId': __gl_variables__['authorId'],
+
+      'limit': __gl_variables__['limit'],
+      },
+        staleIfOffline: false
+      )
+      , _GraphLinkPartialQuery(
+        query: 'article:getArticle(id: \$articleId){..._all_fields_Article}',
+        operationName: "getAuthorAndArticle_article_getArticle",
+        tags: [],
+        ttl: 0,
+        elementKey: 'article',
+        fragmentNames: {"_all_fields_Article"},
+        argumentDeclarations: ["\$articleId: ID!"],
+        variables: {
+      'articleId': __gl_variables__['articleId'],
+      },
+        staleIfOffline: false
+      )
+      ];
+      final __gl_responseMap__ = <String, dynamic>{};
+      final __gl_staleData__ = <String, dynamic>{};
+      final __gl_cacheFetchFutures__ = <Future>[];
+      for (var partQuery in __gl_partialQueries__.where((e) => e.ttl > 0)) {
+         __gl_cacheFetchFutures__.add(_getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)
+         .asStream().where((e) => e != null).map((e) => e!).first.then((entry) {
+            if (entry.stale) {
+               __gl_staleData__[partQuery.elementKey] = jsonDecode(entry.data);
+            } else {
+               __gl_responseMap__[partQuery.elementKey] = jsonDecode(entry.data);
+            }
+         }));
+      }
+      await Future.wait(__gl_cacheFetchFutures__.map((f) => f.catchError((_) => null)));
+      var __gl_remaining__ = __gl_partialQueries__.where((e) => !__gl_responseMap__.containsKey(e.elementKey)).toSet();
+      if (__gl_remaining__.isEmpty) {
+         return GetAuthorAndArticleFullResponse.fromJson({'data': __gl_responseMap__}).data!;
+      }
+      final __gl_remainingQueries__ = __gl_partialQueries__.where((e) => !__gl_responseMap__.containsKey(e.elementKey)).toList();
+      final __gl_payload__ = _buildPayload(__gl_remainingQueries__, __gl_operationName__, '');
+      try {
+         final __gl_responseText__ = await _getFromSource(__gl_payload__);
+         return _parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, GetAuthorAndArticleFullResponse.fromJson, __gl_remaining__, false).data!;
+      } catch (exception) {
+         __gl_responseMap__.addAll(__gl_staleData__);
+         final remainingCount = __gl_partialQueries__.where((e) => !__gl_responseMap__.containsKey(e.elementKey)).length;
+         if (remainingCount > 0) {
+            rethrow;
+         }
+         return GetAuthorAndArticleFullResponse.fromJson({'data': __gl_responseMap__}).data!;
       }
    }
    Future<GetAuthorResponse> getAuthor({
