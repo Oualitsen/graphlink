@@ -1,0 +1,6 @@
+query getAuthorWithoutArticle($id: ID!) {
+  getAuthor(id: $id) {
+    id
+    name
+  }
+}

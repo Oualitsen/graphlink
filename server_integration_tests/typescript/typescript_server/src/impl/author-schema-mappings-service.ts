@@ -11,4 +11,11 @@ export class AuthorSchemaMappingsServiceImpl implements AuthorSchemaMappingsServ
     }
     return map;
   }
+
+  async authorLatestArticles(item: Author, limit: number): Promise<Article[]> {
+    return articles
+      .filter((a) => a.authorId === item.id)
+      .slice(-limit)
+      .reverse();
+  }
 }

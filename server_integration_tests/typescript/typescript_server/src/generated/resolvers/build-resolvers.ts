@@ -60,6 +60,7 @@ export function buildResolvers(
     },
     Author: {
       articles: (parent) => authorArticlesLoader.load(parent),
+      latestArticles: (parent, { limit }, context) => authorSchemaMappingsService.authorLatestArticles(parent, limit, context),
     },
     Article: {
       author: (parent, _, context) => articleSchemaMappingsService.articleAuthor(parent, context),
