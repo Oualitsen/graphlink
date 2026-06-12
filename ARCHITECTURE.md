@@ -121,7 +121,7 @@ These hang **lazy computed getters** off `GLParser` (or `GlSchema`).
 | `gl_grammar_annotation_extension.dart` | Annotation (`@`-prefixed) handling |
 | `gl_grammar_fragment_extension.dart` | Fragment dependency graph, typed fragments |
 | `gl_grammar_maps_to_extension.dart` | `@glMapsTo` / `@glMapField` input mapping |
-| `gl_grammar_projection_extension.dart` | `@glProjection` — projected types |
+| `gl_grammar_projection_extension.dart` | Derives "projected types" — minimal types from query selection sets/fragments (not a directive) |
 | `gl_grammar_service_extension.dart` | Service/repository definitions for server mode |
 | `gl_grammar_upload_extension.dart` | File upload mutation detection |
 | `gl_validation_extension.dart` | `validateSemantics()` — schema validation rules |
@@ -298,6 +298,34 @@ test file. No shared fixtures — each test builds its own `GLParser`.
 
 Notable suites: `new_parser/`, `queries_mutations/`, `cache/`, `maps_to/`,
 `upload/`, `fragments/`, `server/`, `java/`, `dart/`, `validation/`
+
+---
+
+## End-to-end integration tests (top-level, outside `test/`)
+
+Two separate top-level directories, easy to confuse — they test **opposite ends** of the
+pipeline:
+
+| Directory | What's hand-written (trusted) | What's generated (under test) | Validates |
+|---|---|---|---|
+| `integration_tests/` | Spring Boot server (`spring_server/`, `spring_upload_server/`) | Clients for Dart/Java/TS/Kotlin (`*_client_tests*/`) | **Generated CLIENT** code against a real server |
+| `server_integration_tests/` | A generated client (driver/harness, currently Dart under `typescript/dart_client/`) | A **generated server target** (currently Apollo/Express under `typescript/typescript_server/`, `typescript_upload_server/`) | **Generated SERVER** code for that target against a real client |
+
+In `integration_tests/`, the `_real` suites (`dart_client_tests_real/`, etc.) run the
+generated client against the actual running Spring Boot JAR — this is where most
+cross-language parity bugs (fragment argument propagation, query variable scoping, etc.)
+have been caught.
+
+`server_integration_tests/` is organized **per generated server target** — `typescript/`
+currently covers the Apollo/Express server, with a generated Dart client used purely as
+a harness to drive requests. As more server targets are generated (e.g. a future
+generated Spring Boot output, Go, etc.), each gets its own sibling directory here
+following the same pattern: generated server under test + a generated client as harness.
+
+```bash
+cd integration_tests && make all-real        # generated clients vs hand-written Spring server
+cd server_integration_tests && make ci        # generated server(s) vs generated client harness
+```
 
 ---
 
