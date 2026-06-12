@@ -18,6 +18,7 @@ import 'package:graphlink_server_integration_tests_dart_client/generated/interfa
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/graph_link_subscription_error_message.dart';
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/graph_link_subscription_message.dart';
 import 'package:graphlink_server_integration_tests_dart_client/generated/interfaces/graph_link_full_response.dart';
+import 'package:graphlink_server_integration_tests_dart_client/generated/types/get_author_without_article_response.dart';
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/get_author_response.dart';
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/get_article_response.dart';
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/list_authors_response.dart';
@@ -27,6 +28,7 @@ import 'package:graphlink_server_integration_tests_dart_client/generated/types/u
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/delete_article_response.dart';
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/article_created_response.dart';
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/article_updated_response.dart';
+import 'package:graphlink_server_integration_tests_dart_client/generated/types/get_author_without_article_full_response.dart';
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/get_author_full_response.dart';
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/get_article_full_response.dart';
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/list_authors_full_response.dart';
@@ -190,12 +192,68 @@ class GraphLinkQueries extends _ResolverBase {
    GraphLinkQueries(Future<String> Function(String payload) httpAdapter, Map<String, String> fragmentMap, GraphLinkCacheStore store, Map<String, _Lock> __gl_tagLocks__) : super(store, __gl_tagLocks__, httpAdapter) {
       __gl_fragmentMap__ = fragmentMap;
    }
-   Future<GetAuthorResponse> getAuthor({
+   Future<GetAuthorWithoutArticleResponse> getAuthorWithoutArticle({
       required String id
+   }) async {
+      const __gl_operationName__ = 'getAuthorWithoutArticle';
+      final __gl_variables__ = <String, dynamic>{
+         'id': id,
+      };
+
+      final __gl_partialQueries__ = [_GraphLinkPartialQuery(
+        query: 'getAuthor(id: \$id){id name}',
+        operationName: "getAuthorWithoutArticle__getAuthor",
+        tags: [],
+        ttl: 0,
+        elementKey: 'getAuthor',
+        fragmentNames: {},
+        argumentDeclarations: ["\$id: ID!"],
+        variables: {
+      'id': __gl_variables__['id'],
+      },
+        staleIfOffline: false
+      )
+      ];
+      final __gl_responseMap__ = <String, dynamic>{};
+      final __gl_staleData__ = <String, dynamic>{};
+      final __gl_cacheFetchFutures__ = <Future>[];
+      for (var partQuery in __gl_partialQueries__.where((e) => e.ttl > 0)) {
+         __gl_cacheFetchFutures__.add(_getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)
+         .asStream().where((e) => e != null).map((e) => e!).first.then((entry) {
+            if (entry.stale) {
+               __gl_staleData__[partQuery.elementKey] = jsonDecode(entry.data);
+            } else {
+               __gl_responseMap__[partQuery.elementKey] = jsonDecode(entry.data);
+            }
+         }));
+      }
+      await Future.wait(__gl_cacheFetchFutures__.map((f) => f.catchError((_) => null)));
+      var __gl_remaining__ = __gl_partialQueries__.where((e) => !__gl_responseMap__.containsKey(e.elementKey)).toSet();
+      if (__gl_remaining__.isEmpty) {
+         return GetAuthorWithoutArticleFullResponse.fromJson({'data': __gl_responseMap__}).data!;
+      }
+      final __gl_remainingQueries__ = __gl_partialQueries__.where((e) => !__gl_responseMap__.containsKey(e.elementKey)).toList();
+      final __gl_payload__ = _buildPayload(__gl_remainingQueries__, __gl_operationName__, '');
+      try {
+         final __gl_responseText__ = await _getFromSource(__gl_payload__);
+         return _parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, GetAuthorWithoutArticleFullResponse.fromJson, __gl_remaining__, false).data!;
+      } catch (exception) {
+         __gl_responseMap__.addAll(__gl_staleData__);
+         final remainingCount = __gl_partialQueries__.where((e) => !__gl_responseMap__.containsKey(e.elementKey)).length;
+         if (remainingCount > 0) {
+            rethrow;
+         }
+         return GetAuthorWithoutArticleFullResponse.fromJson({'data': __gl_responseMap__}).data!;
+      }
+   }
+   Future<GetAuthorResponse> getAuthor({
+      required String id,
+      required int limit
    }) async {
       const __gl_operationName__ = 'getAuthor';
       final __gl_variables__ = <String, dynamic>{
          'id': id,
+         'limit': limit,
       };
 
       final __gl_partialQueries__ = [_GraphLinkPartialQuery(
@@ -205,9 +263,11 @@ class GraphLinkQueries extends _ResolverBase {
         ttl: 0,
         elementKey: 'getAuthor',
         fragmentNames: {"_all_fields_Author", "_all_fields_Article"},
-        argumentDeclarations: ["\$id: ID!"],
+        argumentDeclarations: ["\$id: ID!", "\$limit: Int!"],
         variables: {
       'id': __gl_variables__['id'],
+
+      'limit': __gl_variables__['limit'],
       },
         staleIfOffline: false
       )
@@ -298,9 +358,12 @@ class GraphLinkQueries extends _ResolverBase {
          return GetArticleFullResponse.fromJson({'data': __gl_responseMap__}).data!;
       }
    }
-   Future<ListAuthorsResponse> listAuthors() async {
+   Future<ListAuthorsResponse> listAuthors({
+      required int limit
+   }) async {
       const __gl_operationName__ = 'listAuthors';
       final __gl_variables__ = <String, dynamic>{
+         'limit': limit,
       };
 
       final __gl_partialQueries__ = [_GraphLinkPartialQuery(
@@ -310,8 +373,10 @@ class GraphLinkQueries extends _ResolverBase {
         ttl: 0,
         elementKey: 'listAuthors',
         fragmentNames: {"_all_fields_Author", "_all_fields_Article"},
-        argumentDeclarations: [],
-        variables: {},
+        argumentDeclarations: ["\$limit: Int!"],
+        variables: {
+      'limit': __gl_variables__['limit'],
+      },
         staleIfOffline: false
       )
       ];
@@ -645,7 +710,7 @@ class GraphLinkClient {
       GraphLinkCacheStore? store
    }) {
       __gl_fragmentMap__['_all_fields_Article'] = 'fragment _all_fields_Article on Article{id title authorId author{id name}}';
-      __gl_fragmentMap__['_all_fields_Author'] = 'fragment _all_fields_Author on Author{id name articles{..._all_fields_Article}}';
+      __gl_fragmentMap__['_all_fields_Author'] = 'fragment _all_fields_Author on Author{id name articles{..._all_fields_Article} latestArticles(limit: \$limit){..._all_fields_Article}}';
       this.store = store ?? InMemoryGraphLinkCacheStore();
       final tags = [];
       for (var tag in tags) {

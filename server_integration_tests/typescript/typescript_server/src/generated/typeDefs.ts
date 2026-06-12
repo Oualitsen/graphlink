@@ -26,6 +26,7 @@ type Author {
    id: ID!
    name: String!
    articles: [Article!]!
+   latestArticles(limit: Int!): [Article!]!
 }
 type Article {
    id: ID!

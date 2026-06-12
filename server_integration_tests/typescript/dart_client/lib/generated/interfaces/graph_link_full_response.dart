@@ -6,6 +6,7 @@
 // ignore_for_file: use_rethrow_when_possible, camel_case_types, constant_identifier_names, unused_import, non_constant_identifier_names, no_leading_underscores_for_local_identifiers, unused_local_variable, annotate_overrides, library_private_types_in_public_api
 
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/graph_link_error.dart';
+import 'package:graphlink_server_integration_tests_dart_client/generated/types/get_author_without_article_full_response.dart';
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/get_author_full_response.dart';
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/get_article_full_response.dart';
 import 'package:graphlink_server_integration_tests_dart_client/generated/types/list_authors_full_response.dart';
@@ -23,6 +24,9 @@ abstract class GraphLinkFullResponse {
    static GraphLinkFullResponse fromJson(Map<String, dynamic> json) {
       var typename = json['__typename'] as String;
       switch(typename) {
+         case 'GetAuthorWithoutArticleFullResponse':
+            return GetAuthorWithoutArticleFullResponse.fromJson(json);
+
          case 'GetAuthorFullResponse':
             return GetAuthorFullResponse.fromJson(json);
 

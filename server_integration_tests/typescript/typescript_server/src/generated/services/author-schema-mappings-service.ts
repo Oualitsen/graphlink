@@ -10,4 +10,5 @@ import { Article } from '../types/article.js';
 
 export interface AuthorSchemaMappingsService {
   authorArticles(items: Author[]): Promise<Map<Author, Article[]>>;
+  authorLatestArticles(item: Author, limit: number, context: GraphLinkContext): Promise<Article[]>;
 }
