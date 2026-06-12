@@ -574,19 +574,12 @@ class JavaSerializer extends GLSerializer {
       final inner = _toMappingExpr(
           varName, sourceType.inlineType, targetType.inlineType, index + 1, context);
       context.addImport(JavaImports.collectors);
-      final streamExpr =
-          '$variable.stream().map($varName -> $inner).collect(Collectors.toList())';
-      if (sourceType.nullable) {
-        return '$variable == null ? null : $streamExpr';
-      }
-      return streamExpr;
+      return JavaCodeGenUtils.streamMapCollect(
+          receiver: variable, param: varName, body: inner, nullable: sourceType.nullable);
     }
     final sourceInput = grammar.inputs[sourceType.token];
     if (sourceInput?.mapsToType == targetType.token) {
-      if (sourceType.nullable) {
-        return '$variable == null ? null : $variable.to${targetType.token.firstUp}()';
-      }
-      return '$variable.to${targetType.token.firstUp}()';
+      return JavaCodeGenUtils.safeCall(variable, 'to${targetType.token.firstUp}()', sourceType.nullable);
     }
     return variable; // same type — direct copy
   }
@@ -602,19 +595,13 @@ class JavaSerializer extends GLSerializer {
       final inner = _fromMappingExpr(
           varName, sourceElemToken, targetType.inlineType, index + 1, context);
       context.addImport(JavaImports.collectors);
-      final streamExpr =
-          '$variable.stream().map($varName -> $inner).collect(Collectors.toList())';
-      if (targetType.nullable) {
-        return '$variable == null ? null : $streamExpr';
-      }
-      return streamExpr;
+      return JavaCodeGenUtils.streamMapCollect(
+          receiver: variable, param: varName, body: inner, nullable: targetType.nullable);
     }
     final sourceInput = grammar.inputs[sourceElemToken];
     if (sourceInput?.mapsToType == targetType.token) {
-      if (targetType.nullable) {
-        return '$variable == null ? null : $sourceElemToken.from${targetType.token.firstUp}($variable)';
-      }
-      return '$sourceElemToken.from${targetType.token.firstUp}($variable)';
+      return JavaCodeGenUtils.nullSafeExpr(
+          variable, '$sourceElemToken.from${targetType.token.firstUp}($variable)', targetType.nullable);
     }
     return variable; // same type — direct copy
   }
@@ -657,15 +644,12 @@ class JavaSerializer extends GLSerializer {
       String varName = "e${index}";
       var inlineCallToJson =
           callToJson(field, inlineType, varName, index + 1, context);
-      String method;
-        if (varName == inlineCallToJson) {
-          method = "stream().${javaCollectorsToList}";
-        } else {
-          method = "stream().map(${varName} -> ${inlineCallToJson}).${javaCollectorsToList}";
-        }
-        context.addImport(JavaImports.collectors);
-        return JavaCodeGenUtils.safeCall(variableName, method, type.nullable);
-      
+      context.addImport(JavaImports.collectors);
+      if (varName == inlineCallToJson) {
+        return JavaCodeGenUtils.streamMapCollect(receiver: variableName, nullable: type.nullable);
+      }
+      return JavaCodeGenUtils.streamMapCollect(
+          receiver: variableName, param: varName, body: inlineCallToJson, nullable: type.nullable);
     } else  if (grammar.isEnum(type.token) || grammar.isProjectableType(type.token)) {
       return JavaCodeGenUtils.safeCall(variableName, "toJson()", type.nullable);
     }

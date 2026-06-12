@@ -1,4 +1,3 @@
-import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/java_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
@@ -433,16 +432,12 @@ String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
       String varName = "e${index}";
       var inlineCallToJson =
           _callToJson(varName, inlineType, index + 1, container);
-      String method;
+      container.imports.add(JavaImports.collectors);
       if (varName == inlineCallToJson) {
-        container.imports.add(JavaImports.collectors);
-        method = "stream().${javaCollectorsToList}";
-      } else {
-        container.imports.add(JavaImports.collectors);
-        method =
-            "stream().map(${varName} -> ${inlineCallToJson}).${javaCollectorsToList}";
+        return JavaCodeGenUtils.streamMapCollect(receiver: variableName, nullable: type.nullable);
       }
-      return JavaCodeGenUtils.safeCall(variableName, method, type.nullable);
+      return JavaCodeGenUtils.streamMapCollect(
+          receiver: variableName, param: varName, body: inlineCallToJson, nullable: type.nullable);
     } else if (_ctx.grammar.isEnum(type.token) || _ctx.grammar.isInput(type.token)) {
       return JavaCodeGenUtils.safeCall(variableName, "toJson()", type.nullable);
     } else {

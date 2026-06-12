@@ -281,6 +281,23 @@ class TypeScriptCodeGenUtils implements CodeGenUtilsBase {
   /// Generates an `export const name = value;` statement.
   String exportConst(String name, String value) => "export const $name = $value;";
 
+  /// Wraps [statements] in an immediately-invoked function expression:
+  /// `(async () => { ...statements })();` (or non-async if `async: false`).
+  String iife(List<String> statements, {bool async = true}) =>
+      '(${async ? 'async ' : ''}() => ${block(statements)})();';
+
+  /// Generates `new Observable<T>(subscriber => { ...statements })`.
+  String observableExpr(String returnType, List<String> statements) =>
+      'new Observable<$returnType>(subscriber => ${block(statements)})';
+
+  /// `for await (const variable of iterable) { ...statements }`
+  String forAwaitLoop({
+    required String variable,
+    required String iterable,
+    required List<String> statements,
+  }) =>
+      'for await (const $variable of $iterable) ${block(statements)}';
+
   /// Returns a local variable name that is unlikely to clash with user-defined
   /// method arguments.
   ///

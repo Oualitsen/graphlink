@@ -10,7 +10,6 @@ import 'package:graphlink/src/model/gl_schema_mapping.dart';
 import 'package:graphlink/src/model/gl_service.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_type.dart';
-import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/java_imports.dart';
 import 'package:graphlink/src/serializers/jvm_spring_controller_serializer_base.dart';
 import 'package:graphlink/src/serializers/kotlin_imports.dart';
@@ -29,18 +28,15 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
   final KotlinCodeGenUtils codeGenUtils = KotlinCodeGenUtils();
 
   KotlinSpringControllerSerializer({
-    required GLParser grammar,
+    required super.grammar,
     required this.serializer,
     required this.packageName,
-    required bool injectDataFetching,
-    required bool generateSchema,
+    required super.injectDataFetching,
+    required super.generateSchema,
     this.blockingServices = true,
   }) : super(
-          grammar: grammar,
           reactive: false,
-          injectDataFetching: injectDataFetching,
           useSpringSecurity: false,
-          generateSchema: generateSchema,
         );
 
   // ── Controller ─────────────────────────────────────────────────────────────

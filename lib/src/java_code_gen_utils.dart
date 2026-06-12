@@ -1,4 +1,5 @@
 import 'package:graphlink/src/code_gen_utils.dart';
+import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/extensions.dart';
 
 
@@ -229,6 +230,26 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
     }
     return "${variable}.${method}";
   }
+
+  /// Emits `receiver.stream().map(param -> body).collect(Collectors.toList())`,
+  /// or `receiver.stream().collect(Collectors.toList())` if [param]/[body] are
+  /// omitted (element type unchanged). Wrapped in a null-check via [safeCall]
+  /// if [nullable].
+  static String streamMapCollect({
+    required String receiver,
+    String? param,
+    String? body,
+    bool nullable = false,
+  }) {
+    final method = param == null
+        ? 'stream().$javaCollectorsToList'
+        : 'stream().map($param -> $body).$javaCollectorsToList';
+    return safeCall(receiver, method, nullable);
+  }
+
+  /// Returns `condition == null ? null : expr` if [nullable], else [expr] unchanged.
+  static String nullSafeExpr(String condition, String expr, bool nullable) =>
+      nullable ? '$condition == null ? null : $expr' : expr;
 
   /// Returns a local variable name that is unlikely to clash with user-defined
   /// method arguments by wrapping it with a fixed prefix and suffix.

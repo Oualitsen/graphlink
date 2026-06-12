@@ -288,6 +288,25 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
   ///
   /// Example: safeLocalVar('operationName') → '__gl_operationName__'
   String safeLocalVar(String name) => '__gl_${name}__';
+
+  /// Emits `receiver.map((param) => body).toList()`, or `receiver?.map(...)`
+  /// if [nullable]. With an empty [receiver], returns just the
+  /// `.map(...).toList()` / `?.map(...).toList()` suffix.
+  static String mapToList({
+    required String receiver,
+    required String param,
+    required String body,
+    bool nullable = false,
+  }) =>
+      '$receiver${nullable ? '?.' : '.'}map(($param) => $body).toList()';
+
+  /// Emits `receiver.toList()`, or `receiver?.toList()` if [nullable].
+  static String toListCopy(String receiver, bool nullable) =>
+      '$receiver${nullable ? '?.' : '.'}toList()';
+
+  /// Returns `variable == null ? null : expr` if [nullable], else [expr] unchanged.
+  static String nullSafeExpr(String variable, String expr, bool nullable) =>
+      nullable ? '$variable == null ? null : $expr' : expr;
 }
 
 

@@ -793,7 +793,8 @@ return $_svResult.data$dataSuffix;
   String _callToJson(String argName, GLType type) {
     if (_parser.inputTypeRequiresProjection(type) || _parser.isEnum(type.token)) {
       if (type.isList) {
-        return "$argName${_getNullableText(type)}.map((e) => ${_callToJson("e", type.inlineType)}).toList()";
+        return DartCodeGenUtils.mapToList(
+            receiver: argName, param: 'e', body: _callToJson("e", type.inlineType), nullable: type.nullable);
       } else {
         return "$argName${_getNullableText(type)}.toJson()";
       }

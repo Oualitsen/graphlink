@@ -472,11 +472,7 @@ private _buildPayload(
         async: false,
         arguments: args.isEmpty ? null : args,
         statements: [
-          'return new Observable<$returnTypeName>(subscriber => {',
-          '  (async () => {',
-          ...innerStatements.map((s) => '    $s'),
-          '  })();',
-          '});',
+          'return ${_cg.observableExpr(returnTypeName, [_cg.iife(innerStatements)])};',
         ],
       );
     }
@@ -512,11 +508,18 @@ private _buildPayload(
       "const $_svResponse = await this._glCallAdapter($_svPayload);",
       "const $_svResult = JSON.parse($_svResponse) as $fullResponseTypeName;",
       if (isCaptureErrors)
-        "if (!($_svResult as any)['errors']) ($_svResult as any)['errors'] = null;",
-      if (!isCaptureErrors)
-        "if ($_svResult['errors']) ${observables ? "{ subscriber.error($_svResult['errors']); return; }" : "throw $_svResult['errors'] as GraphLinkError[];"}",
+        _cg.ifStatement(
+          condition: "!($_svResult as any)['errors']",
+          ifBlockStatements: ["($_svResult as any)['errors'] = null;"],
+        ),
+      if (!isCaptureErrors) _errorCheckStatement(),
       if (invalidation.isNotEmpty)
-        isCaptureErrors ? "if (!($_svResult as any)['errors']) { $invalidation }" : invalidation,
+        isCaptureErrors
+            ? _cg.ifStatement(
+                condition: "!($_svResult as any)['errors']",
+                ifBlockStatements: [invalidation],
+              )
+            : invalidation,
       if (observables) ...[
         isCaptureErrors ? "subscriber.next($_svResult);" : "subscriber.next($_svResult['data'] as $returnTypeName);",
         "subscriber.complete();",
@@ -531,11 +534,7 @@ private _buildPayload(
         async: false,
         arguments: args.isEmpty ? null : args,
         statements: [
-          'return new Observable<$returnTypeName>(subscriber => {',
-          '  (async () => {',
-          ...statements.map((s) => '    $s'),
-          '  })();',
-          '});',
+          'return ${_cg.observableExpr(returnTypeName, [_cg.iife(statements)])};',
         ],
       );
     }
@@ -576,10 +575,15 @@ private _buildPayload(
       final name = arg.dartArgumentName;
       if (arg.type.isList) {
         statements.addAll([
-          "for (let _i = 0; _i < args.$name.length; _i++) {",
-          "  $_svMap[String($_svSlot + _i)] = ['variables.$name.' + _i];",
-          "  $_svParts[String($_svSlot + _i)] = args.$name[_i];",
-          "}",
+          _cg.forLoop(
+            init: 'let _i = 0',
+            condition: '_i < args.$name.length',
+            increment: '_i++',
+            statements: [
+              "$_svMap[String($_svSlot + _i)] = ['variables.$name.' + _i];",
+              "$_svParts[String($_svSlot + _i)] = args.$name[_i];",
+            ],
+          ),
           "$_svSlot += args.$name.length;",
         ]);
       } else {
@@ -599,7 +603,7 @@ private _buildPayload(
       "};",
       "const $_svResponse = await this.$_svMultipartAdapter!($_svAllParts, onProgress);",
       "const $_svResult = JSON.parse($_svResponse);",
-      "if ($_svResult['errors']) ${observables ? "{ subscriber.error($_svResult['errors']); return; }" : "throw $_svResult['errors'] as GraphLinkError[];"}",
+      _errorCheckStatement(),
       if (invalidation.isNotEmpty) invalidation,
       if (observables) ...[
         "subscriber.next($_svResult['data'] as $returnTypeName);",
@@ -616,11 +620,7 @@ private _buildPayload(
         async: false,
         arguments: args.isEmpty ? null : args,
         statements: [
-          'return new Observable<$returnTypeName>(subscriber => {',
-          '  (async () => {',
-          ...statements.map((s) => '    $s'),
-          '  })();',
-          '});',
+          'return ${_cg.observableExpr(returnTypeName, [_cg.iife(statements)])};',
         ],
       );
     }
@@ -653,21 +653,22 @@ private _buildPayload(
     ]);
 
     if (observables) {
-      statements.addAll([
-        "return new Observable<$returnTypeName>(subscriber => {",
-        "  (async () => {",
-        "    try {",
-        "      for await (const $_svData of $_svGen) {",
-        "        subscriber.next($_svData as unknown as $returnTypeName);",
-        "      }",
-        "      subscriber.complete();",
-        "    } catch (e) {",
-        "      subscriber.error(e);",
-        "    }",
-        "  })();",
-        "  return () => { void $_svGen.return(undefined); };",
-        "});",
-      ]);
+      statements.add('return ${_cg.observableExpr(returnTypeName, [
+        _cg.iife([
+          _cg.tryCatchFinally(
+            tryStatements: [
+              _cg.forAwaitLoop(
+                variable: _svData,
+                iterable: _svGen,
+                statements: ['subscriber.next($_svData as unknown as $returnTypeName);'],
+              ),
+              'subscriber.complete();',
+            ],
+            catchStatements: ['subscriber.error(e);'],
+          ),
+        ]),
+        'return () => { void $_svGen.return(undefined); };',
+      ])};');
 
       return _cg.createMethod(
         methodName: def.tokenInfo.token,
@@ -678,16 +679,19 @@ private _buildPayload(
     }
 
     statements.addAll([
-      "(async () => {",
-      "  try {",
-      "    for await (const $_svData of $_svGen) {",
-      "      onEvent($_svData as unknown as $returnTypeName);",
-      "    }",
-      "  } catch (e) {",
-      "    onError?.(e);",
-      "  }",
-      "})();",
-      "return () => { void $_svGen.return(undefined); };",
+      _cg.iife([
+        _cg.tryCatchFinally(
+          tryStatements: [
+            _cg.forAwaitLoop(
+              variable: _svData,
+              iterable: _svGen,
+              statements: ['onEvent($_svData as unknown as $returnTypeName);'],
+            ),
+          ],
+          catchStatements: ['onError?.(e);'],
+        ),
+      ]),
+      'return () => { void $_svGen.return(undefined); };',
     ]);
 
     final allArgs = [
@@ -790,6 +794,17 @@ private _buildPayload(
       return 'await this._invalidateByTags([${tags.map((t) => "'$t'").join(', ')}]);';
     }
     return '';
+  }
+
+  /// `if (result['errors']) { ... }` — reports the GraphQL error either via the
+  /// observable's `subscriber.error()` or by throwing, depending on [observables].
+  String _errorCheckStatement() {
+    return _cg.ifStatement(
+      condition: "$_svResult['errors']",
+      ifBlockStatements: observables
+          ? ["subscriber.error($_svResult['errors']);", 'return;']
+          : ["throw $_svResult['errors'] as GraphLinkError[];"],
+    );
   }
 
   // ── GraphLinkClient class ─────────────────────────────────────────────────
