@@ -35,6 +35,12 @@ lib/generated
 example/lib/generated
 examples/**/lib/generated
 
+# Any directory named "generated", anywhere
+**/generated/
+
+# Server PID files
+**/.server.pid
+
 # Node
 **/node_modules/
 
