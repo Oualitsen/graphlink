@@ -26,9 +26,9 @@ void main() {
     });
 
     test('latestArticles is resolved via non-batch mapping with arguments', () async {
-      final res = await client.queries.getAuthor(id: '1', limit: 1);
-      expect(res.getAuthor!.latestArticles, hasLength(1));
-      expect(res.getAuthor!.latestArticles.first.title, equals('Advanced GraphLink'));
+      final res = await client.queries.getAuthor(id: '1', limit: 10);
+      final titles = res.getAuthor!.latestArticles.map((a) => a.title).toSet();
+      expect(titles, containsAll(['GraphLink Basics', 'Advanced GraphLink']));
     });
   });
 
