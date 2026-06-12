@@ -1,4 +1,5 @@
 import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/gl_grammar_projection_extension.dart';
 import 'package:graphlink/src/model/gl_query_element.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
@@ -352,18 +353,21 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${s
       final operationName =
           '${def.token}_${element.alias ?? ''}_${element.token}';
       var serialQuery = serializeQueryElement(element);
+      final usedVariables = grammar.elementArgumentVariables(element);
+      final elementArguments =
+          def.arguments.where((arg) => usedVariables.contains(arg.token));
       final dq = DividedQuery(
         query: serialQuery,
         operationName: operationName,
         cacheTTL: element.cacheTTL,
         tags: element.cacheTags,
         elementKey: element.alias?.token ?? element.token,
-        variables: [...def.arguments.map((arg) => arg.token)],
+        variables: [...elementArguments.map((arg) => arg.token)],
         fragmentNames: element
             .getFragmentsAndDependecies(grammar)
             .map((e) => e.token)
             .toSet(),
-        argumentDeclarations: def.arguments
+        argumentDeclarations: elementArguments
             .map((arg) => "${arg.token}: ${serializeType(arg.type)}")
             .toList(),
         staleIfOffline: element

@@ -512,6 +512,58 @@ extension GLGrammarProjectionExtension on GLParser {
     }
   }
 
+  /// Returns the `$variable` tokens (e.g. `$limit`, `$authorId`) that a
+  /// single query element actually references: its own root-field
+  /// arguments plus any field-argument variables reachable through its
+  /// selection set (including through fragments and inline fragments).
+  ///
+  /// Used to scope each divided/partial query to only the variables it
+  /// needs, instead of the full set of variables declared on the operation.
+  Set<String> elementArgumentVariables(GLQueryElement element) {
+    var result = <String>{};
+    for (var argValue in element.arguments) {
+      var value = "${argValue.value}";
+      if (value.startsWith("\$")) {
+        result.add(value);
+      }
+    }
+    var block = element.block;
+    if (block != null) {
+      var rootType = getType(element.returnType.inlineType.tokenInfo);
+      _collectFieldArgumentVariableTokens(rootType, block.projections, result);
+    }
+    return result;
+  }
+
+  void _collectFieldArgumentVariableTokens(GLTypeDefinition type,
+      Map<String, GLProjection> projectionMap, Set<String> result) {
+    if (type is GLInterfaceDefinition) {
+      for (var impl in getTypesImplementing(type)) {
+        _collectFieldArgumentVariableTokens(impl, projectionMap, result);
+      }
+      return;
+    }
+
+    var projections = _collectProjection(projectionMap, type.token);
+    for (var field in type.fields) {
+      var projection = projections[field.name.token];
+      if (projection == null) continue;
+
+      for (var argValue in projection.arguments) {
+        var value = "${argValue.value}";
+        if (value.startsWith("\$")) {
+          result.add(value);
+        }
+      }
+
+      if (projection.block != null && typeRequiresProjection(field.type)) {
+        var subType = getType(field.type.inlineType.tokenInfo);
+        _collectFieldArgumentVariableTokens(
+            subType, projection.block!.projections, result);
+      }
+    }
+  }
+
   void _addGeneratedArgument(GLQueryDefinition def, String varToken,
       GLArgumentDefinition argDef, GLField field, GLProjection projection) {
     var matches = def.arguments.where((a) => a.token == varToken);

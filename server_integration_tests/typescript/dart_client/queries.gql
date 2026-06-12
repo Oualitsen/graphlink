@@ -4,3 +4,12 @@ query getAuthorWithoutArticle($id: ID!) {
     name
   }
 }
+
+query getAuthorAndArticle($authorId: ID!, $articleId: ID!, $limit: Int!) {
+  author: getAuthor(id: $authorId) {
+    ... _all_fields
+  }
+  article: getArticle(id: $articleId) {
+    ... _all_fields
+  }
+}
