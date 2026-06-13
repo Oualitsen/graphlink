@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="dev.graphlink.kotlinclienttest.SubscriptionsTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-06-13T00:05:58.811Z" hostname="MacBook-Pro.local" time="0.658">
-  <properties/>
-  <testcase name="articleUpdated_emitsForMatchingArticle()" classname="dev.graphlink.kotlinclienttest.SubscriptionsTest" time="0.334"/>
-  <testcase name="articleCreated_emitsWhenArticleIsCreated()" classname="dev.graphlink.kotlinclienttest.SubscriptionsTest" time="0.322"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>
