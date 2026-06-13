@@ -240,6 +240,7 @@ class JavaSerializer extends GLSerializer {
     required GLType glType,
     bool forceNullable = false,
     bool reactive = false,
+    bool wildcardList = false,
     required GLToken? context,
   }) {
     if (glType is GLListType) {
@@ -248,8 +249,12 @@ class JavaSerializer extends GLSerializer {
         return "Flux<${convertPrimitiveToBoxed(serializeTypeReactive(glType: glType.inlineType, context: context))}>";
       }
       context?.addImport(importList);
-        return _listOf(
-            convertPrimitiveToBoxed(serializeType(glType.inlineType, false)));
+      var elementType =
+          convertPrimitiveToBoxed(serializeType(glType.inlineType, false));
+      if (wildcardList && grammar.interfaces.containsKey(glType.inlineType.token)) {
+        elementType = "? extends $elementType";
+      }
+      return _listOf(elementType);
     }
     final token = glType.token;
 
@@ -265,7 +270,7 @@ class JavaSerializer extends GLSerializer {
   }
 
   @override
-  String serializeType(GLType def, bool forceNullable) {
+  String serializeType(GLType def, bool forceNullable, {bool wildcardList = false}) {
     var token = def.token;
     var context = grammar.getTokenByKey(token);
     return serializeTypeReactive(
@@ -273,6 +278,7 @@ class JavaSerializer extends GLSerializer {
       glType: def,
       forceNullable: forceNullable,
       reactive: false,
+      wildcardList: wildcardList,
     );
   }
 
@@ -826,9 +832,9 @@ class JavaSerializer extends GLSerializer {
   }
 
   String serializeGetterDeclaration(GLField field,
-      {bool skipModifier = false, bool asProperty = false, bool forceNullable = false}) {
-    var returnType = serializeType(field.type, forceNullable);
-    var result = serializeType(field.type, forceNullable);
+      {bool skipModifier = false, bool asProperty = false, bool forceNullable = false, bool wildcardList = false}) {
+    var returnType = serializeType(field.type, forceNullable, wildcardList: wildcardList);
+    var result = serializeType(field.type, forceNullable, wildcardList: wildcardList);
     if (asProperty) {
       result = "$result ${field.name}";
     } else {
@@ -1010,10 +1016,13 @@ class JavaSerializer extends GLSerializer {
     if (getters) {
       if (typesAsRecords && !forceClassGetters) {
         buffer.write(
-            serializeGetterDeclaration(f, skipModifier: true, asProperty: true, forceNullable: fieldForceNullable)
+            serializeGetterDeclaration(f,
+                    skipModifier: true, asProperty: true, forceNullable: fieldForceNullable, wildcardList: true)
                 .ident());
       } else {
-        buffer.write(serializeGetterDeclaration(f, skipModifier: true, forceNullable: fieldForceNullable).ident());
+        buffer.write(
+            serializeGetterDeclaration(f, skipModifier: true, forceNullable: fieldForceNullable, wildcardList: true)
+                .ident());
       }
     } else {
       buffer.write(serializeMethod(f, forceNullable: fieldForceNullable).ident());
