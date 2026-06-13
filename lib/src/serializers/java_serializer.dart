@@ -829,7 +829,7 @@ class JavaSerializer extends GLSerializer {
       {bool skipModifier = false, bool asProperty = false, bool forceNullable = false}) {
     var returnType = serializeType(field.type, forceNullable);
     final type = field.type;
-    if (type is GLListType && grammar.interfaces.containsKey(type.inlineType.token)) {
+    if (type is GLListType && grammar.isInterface(type.inlineType.token)) {
       returnType = _listOf("? extends ${serializeType(type.inlineType, false)}");
     }
     var result = returnType;
