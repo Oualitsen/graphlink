@@ -828,7 +828,11 @@ class JavaSerializer extends GLSerializer {
   String serializeGetterDeclaration(GLField field,
       {bool skipModifier = false, bool asProperty = false, bool forceNullable = false}) {
     var returnType = serializeType(field.type, forceNullable);
-    var result = serializeType(field.type, forceNullable);
+    final type = field.type;
+    if (type is GLListType && grammar.isInterface(type.inlineType.token)) {
+      returnType = _listOf("? extends ${serializeType(type.inlineType, false)}");
+    }
+    var result = returnType;
     if (asProperty) {
       result = "$result ${field.name}";
     } else {
