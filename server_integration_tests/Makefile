@@ -1,4 +1,4 @@
-.PHONY: install generate start-server stop-server test ci
+.PHONY: install generate start-server stop-server test ci kotlin
 
 install:
 	$(MAKE) -C typescript install
@@ -17,3 +17,6 @@ test:
 
 ci:
 	$(MAKE) -C typescript ci
+
+kotlin:
+	$(MAKE) -C kotlin ci
