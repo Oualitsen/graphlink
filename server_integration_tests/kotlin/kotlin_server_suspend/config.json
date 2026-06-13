@@ -1,0 +1,22 @@
+{
+  "schemaPaths": ["../schema/schema.gql"],
+  "mode": "server",
+  "outputDir": "src/main/kotlin/dev/graphlink/kotlinserversuspend/generated",
+  "serverConfig": {
+    "kotlinSpring": {
+      "basePackage": "dev.graphlink.kotlinserversuspend.generated",
+      "generateControllers": true,
+      "generateInputs": true,
+      "generateTypes": true,
+      "generateRepositories": false,
+      "inputAsDataClass": true,
+      "typeAsDataClass": true,
+      "blockingServices": false,
+      "generateSchema": true,
+      "schemaTargetPath": "src/main/resources/graphql/schema.graphqls",
+      "immutableInputFields": true,
+      "immutableTypeFields": false,
+      "injectDataFetching": false
+    }
+  }
+}

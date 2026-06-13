@@ -65,3 +65,11 @@ integration_tests/**/target/
 integration_tests/**/.gradle/
 integration_tests/**/build/
 
+# Server integration tests — Gradle/Java build artifacts
+server_integration_tests/**/*.jar
+!server_integration_tests/**/gradle/wrapper/gradle-wrapper.jar
+server_integration_tests/**/target/
+server_integration_tests/**/.gradle/
+server_integration_tests/**/build/
+server_integration_tests/**/.server.pid
+
