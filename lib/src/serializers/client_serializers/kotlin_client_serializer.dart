@@ -165,7 +165,7 @@ class KotlinClientSerializer extends GLClientSerializer {
         'private val tagLocks = java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.locks.ReentrantLock>()',
         '',
         'init ${codeGenUtils.block([
-          'val tags = listOf(${allTags.map((t) => '"$t"').join(', ')})',
+          'val tags = listOf<String>(${allTags.map((t) => '"$t"').join(', ')})',
           codeGenUtils.forEachLoop(
             variable: 'tag',
             iterable: 'tags',

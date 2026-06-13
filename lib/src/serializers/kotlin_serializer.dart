@@ -528,6 +528,10 @@ class KotlinSerializer extends GLSerializer {
       subpkg = 'types';
     } else if (grammar.inputs.containsKey(token.token)) {
       subpkg = 'inputs';
+    } else if (grammar.services.containsKey(token.token)) {
+      subpkg = 'services';
+    } else if (grammar.controllers.containsKey(token.token)) {
+      subpkg = 'controllers';
     }
     if (subpkg == null) return '';
     return 'import $importPrefix.$subpkg.${token.token}';
