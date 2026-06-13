@@ -429,6 +429,10 @@ extension GLValidationExtension on GLParser {
     return scalars.containsKey(token);
   }
 
+  bool isInterface(String token) {
+    return getTokenByKey(token) is GLInterfaceDefinition;
+  }
+
   void addDirectiveValue(GLDirectiveValue value) {
     directiveValues.add(value);
   }
