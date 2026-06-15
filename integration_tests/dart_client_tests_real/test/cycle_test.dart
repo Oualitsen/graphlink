@@ -55,24 +55,7 @@ void main() {
     });
   });
 
-  group('User.recentPosts — field-level argument', () {
-    test('limit truncates the result list', () async {
-      final res =
-          await client.queries.getUser(id: 'user-with-posts', limit: 2);
-      expect(res.getUser.recentPosts, hasLength(2));
-    });
 
-    test('limit larger than the list returns all elements', () async {
-      final res =
-          await client.queries.getUser(id: 'user-with-posts');
-      expect(res.getUser.recentPosts, hasLength(4));
-    });
-
-    test('recentPosts is empty when the user has no posts', () async {
-      final res = await client.queries.getUser(id: 'user-1', limit: 5);
-      expect(res.getUser.recentPosts, isEmpty);
-    });
-  });
 
   group('Post.author — cycle Post → User → Post', () {
     test('Post.author is a full User', () async {

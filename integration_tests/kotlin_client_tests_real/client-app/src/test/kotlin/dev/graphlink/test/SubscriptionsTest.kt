@@ -14,16 +14,17 @@ import org.junit.jupiter.api.Nested
 import kotlin.test.*
 import dev.graphlink.test.Fixtures.SERVER_URL
 import dev.graphlink.test.Fixtures.WS_URL
+import dev.graphlink.test.generated.client.DefaultGraphLinkWebSocketAdapter
 
 class SubscriptionsTest {
 
-    private lateinit var wsAdapter: OkHttpGraphLinkWebSocketAdapter
+    private lateinit var wsAdapter: DefaultGraphLinkWebSocketAdapter
     private lateinit var client: GraphLinkClient
 
     @BeforeTest
     fun setUp() {
         val codec = KotlinxSerializationGraphLinkJsonCodec()
-        wsAdapter = OkHttpGraphLinkWebSocketAdapter(WS_URL)
+        wsAdapter = DefaultGraphLinkWebSocketAdapter(WS_URL)
         client = GraphLinkClient(
             OkHttpGraphLinkClientAdapter(SERVER_URL),
             wsAdapter,

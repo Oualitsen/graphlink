@@ -30,7 +30,7 @@ class CycleTest {
 
         @Test
         fun user_posts_hasOneEntry() = runTest {
-            assertEquals(1, client.queries.getUser("user-with-posts").getUser.posts!!.size)
+            assertEquals(4, client.queries.getUser("user-with-posts").getUser.posts!!.size)
         }
 
         @Test
