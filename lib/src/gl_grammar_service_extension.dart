@@ -18,7 +18,7 @@ extension GLGrammarServiceExtension on GLParser {
           types[schema.getByQueryType(type)]?.fields ?? [], type);
     }
     for (var s in services.values) {
-      var ctrl = GLController.ofService(s);
+      var ctrl = GLController.ofService(s, this);
       controllers[ctrl.token] = ctrl;
     }
   }
@@ -175,6 +175,7 @@ extension GLGrammarServiceExtension on GLParser {
             fields: [],
             interfaceNames: {},
             directives: [],
+            parser: this,
           );
       controllerMappings.forEach(ctrl.addMapping);
       controllers[ctrlName] = ctrl;

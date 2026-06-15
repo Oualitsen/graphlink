@@ -4,6 +4,8 @@ import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/java_spring_server_serializer.dart';
 import 'package:test/test.dart';
 
+import '../test_utils.dart';
+
 void main() {
   
 
@@ -44,7 +46,7 @@ void main() {
         lines,
         containsAllInOrder([
           '@MutationMapping()',
-          'public CompletableFuture<UploadedFile> uploadFile(@Argument() MultipartFile file, @Argument() String filename) {',
+          'public CompletableFuture<${toServerProjectionName('UploadedFile')}> uploadFile(@Argument() MultipartFile file, @Argument() String filename) {',
         ]),
       );
     });
@@ -58,7 +60,7 @@ void main() {
         lines,
         containsAllInOrder([
           '@MutationMapping()',
-          'public CompletableFuture<List<UploadedFile>> uploadFiles(@Argument() List<MultipartFile> files, @Argument() String label) {',
+          'public CompletableFuture<List<? extends ${toServerProjectionName('UploadedFile')}>> uploadFiles(@Argument() List<MultipartFile> files, @Argument() String label) {',
         ]),
       );
     });

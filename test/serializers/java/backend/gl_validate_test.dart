@@ -4,6 +4,8 @@ import 'package:graphlink/src/serializers/java_spring_server_serializer.dart';
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
+import '../../../test_utils.dart';
+
 void main() {
 
 
@@ -116,7 +118,7 @@ void main() {
             .map((e) => e.trim())
             .where((e) => e.isNotEmpty),
         containsAllInOrder([
-          'public CompletableFuture<Person> getPerson(@Argument() SearchQuery searchQuery) {',
+          'public CompletableFuture<${toServerProjectionName('Person')}> getPerson(@Argument() SearchQuery searchQuery) {',
          
           'return CompletableFuture.supplyAsync(() -> {',
           'personService.validateGetPerson(searchQuery);',
@@ -146,13 +148,14 @@ void main() {
     var springSerializer = JavaSpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
     var serializedController =
         springSerializer.serializeController(personController);
+        print(serializedController);
     expect(
         serializedController
             .split('\n')
             .map((e) => e.trim())
             .where((e) => e.isNotEmpty),
         containsAllInOrder([
-          'public CompletableFuture<Person> getPerson(@Argument() SearchQuery searchQuery, DataFetchingEnvironment dataFetchingEnvironment) {',
+          'public CompletableFuture<${toServerProjectionName('Person')}> getPerson(@Argument() SearchQuery searchQuery, DataFetchingEnvironment dataFetchingEnvironment) {',
           'return CompletableFuture.supplyAsync(() -> {',
           'personService.validateGetPerson(searchQuery, dataFetchingEnvironment);',
           'return personService.getPerson(searchQuery, dataFetchingEnvironment);',

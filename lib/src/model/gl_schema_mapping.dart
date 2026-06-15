@@ -1,5 +1,6 @@
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
+import 'package:graphlink/src/model/token_info.dart';
 import 'package:graphlink/src/extensions.dart';
 
 class GLSchemaMapping {
@@ -29,6 +30,8 @@ class GLSchemaMapping {
   ///
   final bool forwarded;
 
+  String _key;
+
   GLSchemaMapping({
     required this.type,
     required this.field,
@@ -36,6 +39,33 @@ class GLSchemaMapping {
     this.forbid = false,
     this.identity = false,
     this.forwarded = false,
-  });
-  String get key => "${type.token.firstLow}${field.name.token.firstUp}";
+    String? key
+  }): _key = key ??  "${type.token.firstLow}${field.name.token.firstUp}";
+
+  String get key => _key;
+
+  
+  /// Returns a copy of this mapping with [type] renamed to [newTypeName] and
+  /// [field]'s type renamed to [newFieldTypeName].
+  GLSchemaMapping ofNewTypes(String newTypeName, String newFieldTypeName, String key) {
+    return GLSchemaMapping(
+      type: GLTypeDefinition(
+        name: type.tokenInfo.ofNewName(newTypeName),
+        nameDeclared: type.nameDeclared,
+        fields: type.fields,
+        interfaceNames: type.interfaceNames,
+        directives: type.getDirectives(),
+        derivedFromType: type.derivedFromType,
+        extension: type.extension,
+        isResponseType: type.isResponseType,
+        documentation: type.documentation,
+      ),
+      field: field.ofType(field.type.ofNewName(TokenInfo.ofString(newFieldTypeName))),
+      batch: batch,
+      forbid: forbid,
+      identity: identity,
+      forwarded: forwarded,
+      key: key,
+    );
+  }
 }

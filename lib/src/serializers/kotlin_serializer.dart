@@ -80,7 +80,7 @@ class KotlinSerializer extends GLSerializer {
 
   @override
   String doSerializeField(GLField def, bool immutable, bool isTypeField) {
-    final forceNullable = isTypeField && (def.hasInculeOrSkipDiretives || forceFieldNullable);
+    final forceNullable = isTypeField && (def.hasInculeOrSkipDiretives);
     final type = serializeType(def.type, forceNullable);
     final keyword = _keyword(immutable);
     final nullable = def.type.nullable || forceNullable;
@@ -173,7 +173,7 @@ class KotlinSerializer extends GLSerializer {
     final fields = def.getSerializableFields(grammar.mode);
 
     final params = fields.map((f) {
-      final forceNullable = f.hasInculeOrSkipDiretives || forceFieldNullable;
+      final forceNullable = f.hasInculeOrSkipDiretives;
       final type = serializeType(f.type, forceNullable);
       final keyword = _keyword(typesAsDataClass);
       final overrides = _fieldImplementsInterface(f, def);
@@ -231,7 +231,7 @@ class KotlinSerializer extends GLSerializer {
   String serializeInterface(GLInterfaceDefinition def) {
     final fields = def.getSerializableFields(grammar.mode);
     final fieldDecls = fields.map((f) {
-      final forceNullable = f.hasInculeOrSkipDiretives || forceFieldNullable;
+      final forceNullable = f.hasInculeOrSkipDiretives;
       return 'val ${f.name}: ${serializeType(f.type, forceNullable)}';
     }).toList();
 
@@ -247,7 +247,7 @@ class KotlinSerializer extends GLSerializer {
 
     final body = <String>[
       ...fieldDecls.map((d) => d),
-      if (!isInternal) 'fun toJson(): $_mapType',
+      if (!isInternal && generateJsonMethods) 'fun toJson(): $_mapType',
       if (companionMethods.isNotEmpty) ...[
         '',
         codeGenUtils.companionObject(companionMethods),

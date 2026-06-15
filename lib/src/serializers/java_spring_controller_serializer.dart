@@ -1,11 +1,9 @@
-import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/java_code_gen_utils.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_controller.dart';
-import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_schema_mapping.dart';
@@ -14,7 +12,6 @@ import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_token_with_fields.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
-import 'package:graphlink/src/model/token_info.dart';
 import 'package:graphlink/src/serializers/java_imports.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:graphlink/src/serializers/jvm_spring_controller_serializer_base.dart';
@@ -54,7 +51,9 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     if (!reactive) {
       ctrl.addImport(JavaImports.completableFuture);
     }
-    if (ctrl.fields.isNotEmpty && injectDataFetching) {
+    if (ctrl.fields.isNotEmpty &&
+        (injectDataFetching ||
+            ctrl.fields.any((f) => f.hasDirective(glReturnsProjection)))) {
       ctrl.addImport(SpringImports.gqlDataFetchingEnvironment);
     }
     var decorators = serializer.serializeDecorators(ctrl.getDirectives()).trim();
@@ -111,12 +110,14 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
       return "$argType ${arg.token}";
     }).toList();
 
-    if (injectDataFetching) {
+    final injectFetchingEnv =
+        injectDataFetching || method.hasDirective(glReturnsProjection);
+    if (injectFetchingEnv) {
       args.add("DataFetchingEnvironment dataFetchingEnvironment");
     }
     var serviceArgs =
         method.arguments.map((arg) => arg.tokenInfo.token).toList();
-    if (injectDataFetching) {
+    if (injectFetchingEnv) {
       serviceArgs.add('dataFetchingEnvironment');
     }
     final serviceCall =
@@ -236,7 +237,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     for (var arg in mapping.field.arguments) {
       statement.write(', ${arg.tokenInfo}');
     }
-    if (injectDataFetching) {
+    if (injectDataFetching || mapping.field.hasDirective(glReturnsProjection)) {
       statement.write(', dataFetchingEnvironment');
     }
     statement.write(')');
@@ -262,16 +263,16 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     if (reactive) {
       if (mapping.isBatch) {
         context.addImport(JavaImports.flux);
-        returnType = "Flux<$boxedType>";
+        returnType = JavaCodeGenUtils.fluxOf(grammar, type);
         statement = "return Flux.fromIterable(value);";
       } else {
         context.addImport(JavaImports.mono);
-        returnType = "Mono<$boxedType>";
+        returnType = JavaCodeGenUtils.monoOf(grammar, type);
         statement = "return Mono.just(value);";
       }
     } else {
       if (mapping.isBatch) {
-        returnType = "List<$boxedType>";
+        returnType = JavaCodeGenUtils.listOf(grammar, type);
       } else {
         returnType = type;
       }
@@ -305,7 +306,6 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     final fieldName = mapping.field.name.token;
     final fieldType = serializer.serializeTypeReactive(
         context: context, glType: mapping.field.type, reactive: false);
-    final boxedFieldType = convertPrimitiveToBoxed(fieldType);
     final argType = serializer.serializeType(
         getServiceReturnType(GLType(mapping.type.tokenInfo, false)), false);
 
@@ -315,7 +315,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     final String statement;
     if (reactive) {
       context.addImport(JavaImports.mono);
-      returnType = 'Mono<$boxedFieldType>';
+      returnType = JavaCodeGenUtils.monoOf(grammar, fieldType);
       statement = 'return Mono.just($getterCall);';
     } else {
       returnType = fieldType;
@@ -340,10 +340,11 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
         keyType = "?";
       }
       context.addImport(JavaImports.map);
-      return """
-Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(serializer.serializeType(mapping.field.type, false))}>
-      """
-          .trim();
+      return JavaCodeGenUtils.mapOf(
+        grammar,
+        keyType,
+        serializer.serializeType(mapping.field.type, false),
+      );
     } else {
       return serializer.serializeTypeReactive(
           context: context, glType: mapping.field.type, reactive: false);
@@ -355,7 +356,7 @@ Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(serializer.se
         getServiceReturnType(GLType(mapping.type.tokenInfo, false)), false);
     if (mapping.isBatch) {
       context.addImport(importList);
-      return "List<${convertPrimitiveToBoxed(argType)}> value";
+      return "${JavaCodeGenUtils.listOf(grammar, argType)} value";
     } else {
       return "${argType} value";
     }
@@ -372,7 +373,7 @@ Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(serializer.se
     if (reactive) {
       context.addImport(JavaImports.mono);
       buffer.write(
-          "Mono<${convertPrimitiveToBoxed(returnType)}> ${mapping.key}(${_getMappingArgument(mapping, context)}");
+          "${JavaCodeGenUtils.monoOf(grammar, returnType)} ${mapping.key}(${_getMappingArgument(mapping, context)}");
     } else {
       context.addImport(JavaImports.completableFuture);
       buffer.write(
@@ -383,7 +384,7 @@ Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(serializer.se
       context.addImport(SpringImports.gqlArgument);
       buffer.write(', @Argument $argType ${arg.tokenInfo}');
     }
-    if (injectDataFetching) {
+    if (injectDataFetching || mapping.field.hasDirective(glReturnsProjection)) {
       context.addImport(SpringImports.gqlDataFetchingEnvironment);
       buffer.write(', DataFetchingEnvironment dataFetchingEnvironment)');
     } else {
@@ -406,7 +407,7 @@ Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(serializer.se
     }
     var result =
         "${serializer.serializeTypeReactive(context: context, glType: createListTypeOnSubscription(returnType, type), reactive: reactive || type == GLQueryType.subscription)} ${method.name}(${serializeArgs(method.arguments, context, argPrefix)}";
-    if (injectDataFetching) {
+    if (injectDataFetching || method.hasDirective(glReturnsProjection)) {
       var inject = "DataFetchingEnvironment dataFetchingEnvironment";
       context.addImport(SpringImports.gqlDataFetchingEnvironment);
       if (method.arguments.isNotEmpty) {
@@ -427,7 +428,7 @@ Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(serializer.se
     if (reactive) {
       context.addImport(JavaImports.mono);
       buffer.write(
-          "Mono<${convertPrimitiveToBoxed(returnType)}> ${mapping.key}(${_getMappingArgument(mapping, context)}");
+          "${JavaCodeGenUtils.monoOf(grammar, returnType)} ${mapping.key}(${_getMappingArgument(mapping, context)}");
     } else {
       buffer.write(
           "$returnType ${mapping.key}(${_getMappingArgument(mapping, context)}");
@@ -436,7 +437,7 @@ Map<${convertPrimitiveToBoxed(keyType)}, ${convertPrimitiveToBoxed(serializer.se
       final argType = resolveArgType(arg, context);
       buffer.write(', $argType ${arg.tokenInfo}');
     }
-    if (injectDataFetching) {
+    if (injectDataFetching || mapping.field.hasDirective(glReturnsProjection)) {
       context.addImport(SpringImports.gqlDataFetchingEnvironment);
       buffer.write(', DataFetchingEnvironment dataFetchingEnvironment)');
     } else {

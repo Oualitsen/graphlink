@@ -50,7 +50,9 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
   String _serializeControllerBody(GLController ctrl) {
     final controllerName = ctrl.token;
     final serviceInstanceName = ctrl.serviceName.firstLow;
-    if (ctrl.fields.isNotEmpty && injectDataFetching) {
+    if (ctrl.fields.isNotEmpty &&
+        (injectDataFetching ||
+            ctrl.fields.any((f) => f.hasDirective(glReturnsProjection)))) {
       ctrl.addImport(SpringImports.gqlDataFetchingEnvironment);
     }
     var decorators = serializer.serializeDecorators(ctrl.getDirectives()).trim();
@@ -92,13 +94,14 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
       return decl;
     }).toList();
 
-    if (injectDataFetching) {
+    final injectFetchingEnv = injectDataFetching || method.hasDirective(glReturnsProjection);
+    if (injectFetchingEnv) {
       context.addImport(SpringImports.gqlDataFetchingEnvironment);
       args.add('dataFetchingEnvironment: DataFetchingEnvironment');
     }
 
     var serviceArgs = method.arguments.map((arg) => arg.tokenInfo.token).toList();
-    if (injectDataFetching) {
+    if (injectFetchingEnv) {
       serviceArgs.add('dataFetchingEnvironment');
     }
     final serviceCall = '$serviceInstanceName.${method.name}(${serviceArgs.join(", ")})';
@@ -188,7 +191,7 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
     for (var arg in mapping.field.arguments) {
       statement.write(', ${arg.tokenInfo}');
     }
-    if (injectDataFetching) {
+    if (injectDataFetching || mapping.field.hasDirective(glReturnsProjection)) {
       statement.write(', dataFetchingEnvironment');
     }
     statement.write(')');
@@ -263,7 +266,7 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
       context.addImport(SpringImports.gqlArgument);
       args.add('@Argument ${arg.tokenInfo}: ${resolveArgType(arg, context)}');
     }
-    if (injectDataFetching) {
+    if (injectDataFetching || mapping.field.hasDirective(glReturnsProjection)) {
       context.addImport(SpringImports.gqlDataFetchingEnvironment);
       args.add('dataFetchingEnvironment: DataFetchingEnvironment');
     }
@@ -279,7 +282,7 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
     final isValidation = method.getDirectiveByName(glValidate)?.generated == true;
     var args = serializeArgs(method.arguments, context, argPrefix);
 
-    if (injectDataFetching) {
+    if (injectDataFetching || method.hasDirective(glReturnsProjection)) {
       context.addImport(SpringImports.gqlDataFetchingEnvironment);
       const inject = 'dataFetchingEnvironment: DataFetchingEnvironment';
       args = args.isEmpty ? inject : '$args, $inject';
@@ -298,7 +301,7 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
     for (var arg in mapping.field.arguments) {
       args.add('${arg.tokenInfo}: ${resolveArgType(arg, context)}');
     }
-    if (injectDataFetching) {
+    if (injectDataFetching || mapping.field.hasDirective(glReturnsProjection)) {
       context.addImport(SpringImports.gqlDataFetchingEnvironment);
       args.add('dataFetchingEnvironment: DataFetchingEnvironment');
     }

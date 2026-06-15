@@ -1,4 +1,5 @@
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_directives_mixin.dart';
@@ -6,7 +7,9 @@ import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_token_with_fields.dart';
+import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/token_info.dart';
+import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 
 class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
@@ -20,6 +23,16 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
   bool get exaustive => _exaustive;
 
   final Set<String> _originalTokens = <String>{};
+
+  // @glStrict — memoized result of toProjectionInterface(), so the
+  // <Type>Projection interface is synthesized only once per type.
+  GLInterfaceDefinition? _projectionInterface;
+
+  // @glStrict — true only for the synthesized GL<Type>Projection interface
+  // returned by toProjectionInterface(). Lets serializers distinguish a
+  // projection interface (own all-nullable fields, emit as a normal
+  // interface) from a real GraphQL `interface`/`union` (TS: union alias).
+  bool isServerProjection = false;
 
 
   GLTypeDefinition({
@@ -160,5 +173,101 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
       other.getDirectives().forEach(addDirective);
       other.fields.forEach(addOrMergeField);
     }
+  }
+
+  ///
+  /// @glStrict — synthesizes the `<Type>Projection` interface: every
+  /// serializable field cloned as all-nullable with zero directives, and any
+  /// field referencing another object/interface/union rewritten to
+  /// `<FieldType>Projection`. Built lazily and cached — calling this more
+  /// than once always returns the same instance.
+  ///
+  GLInterfaceDefinition toProjectionInterface(GLParser g) {
+    final cached = _projectionInterface;
+    if (cached != null) return cached;
+
+    final projectedFields = getSerializableFields(CodeGenerationMode.server)
+        .map((f) => _toProjectionField(f, g))
+        .toList();
+    var skipOnServerDirective = getDirectiveByName(glSkipOnServer);
+
+    final projection = GLInterfaceDefinition(
+      name: tokenInfo.ofNewName(serverProjectionName),
+      nameDeclared: false,
+      fields: projectedFields,
+      directives: skipOnServerDirective == null ? const [] : [_toProjectionSkipOnServerDirective(skipOnServerDirective, g)],
+      interfaceNames: const {},
+      extension: false,
+    );
+    projection.isServerProjection = true;
+
+    _projectionInterface = projection;
+    return projection;
+  }
+
+  String get serverProjectionName => getServerProjectionName(token);
+
+  static String getServerProjectionName(String token) {
+    return "GL${token}Projection";
+  }
+
+
+  GLField _toProjectionField(GLField f, GLParser g) {
+    var skipOnServerDirective = f.getDirectiveByName(glSkipOnServer);
+    return GLField(
+      name: f.name,
+      type: _toProjectionFieldType(f.type, g),
+      arguments: f.arguments,
+      initialValue: f.initialValue,
+      documentation: f.documentation,
+      directives: skipOnServerDirective == null ? const []: [_toProjectionSkipOnServerDirective(skipOnServerDirective, g)],
+    );
+  }
+
+  /// Rewrites the field's own type to all-nullable, recursing into list
+  /// types so that only the outermost type becomes nullable (matching
+  /// `List<XProjection>?`, not `List<XProjection?>?`).
+  GLType _toProjectionFieldType(GLType type, GLParser g) {
+    final rewritten = _rewriteProjectionTypeRef(type, g);
+    if (rewritten is GLListType) {
+      return GLListType(rewritten.type, true);
+    }
+    return GLType(rewritten.tokenInfo, true);
+  }
+
+  /// Clones an existing `@glSkipOnServer(mapTo: "X", ...)` directive, rewriting
+  /// `mapTo` to `GL<X>Projection` when `X` names a type or interface — all
+  /// other arguments and the directive itself are left unchanged.
+  GLDirectiveValue _toProjectionSkipOnServerDirective(GLDirectiveValue skipOnServer, GLParser g) {
+    final mapTo = skipOnServer.getArgValueAsString(glMapTo);
+    if (mapTo == null || !(g.types.containsKey(mapTo) || g.interfaces.containsKey(mapTo))) {
+      return skipOnServer;
+    }
+
+    final newArgs = skipOnServer.getArguments().map((arg) {
+      if (arg.token == glMapTo) {
+        return GLArgumentValue(arg.tokenInfo, '"${getServerProjectionName(mapTo)}"');
+      }
+      return arg;
+    }).toList();
+
+    return GLDirectiveValue(
+      skipOnServer.tokenInfo,
+      skipOnServer.locations,
+      newArgs,
+      generated: skipOnServer.generated,
+    );
+  }
+
+  /// Rewrites object/interface/union type references to `<Type>Projection`,
+  /// recursing into list element types, without touching nullability.
+  GLType _rewriteProjectionTypeRef(GLType type, GLParser g) {
+    if (type is GLListType) {
+      return GLListType(_rewriteProjectionTypeRef(type.type, g), type.nullable);
+    }
+    if (g.typeRequiresProjection(type)) {
+      return GLType(type.tokenInfo.ofNewName(GLTypeDefinition.getServerProjectionName(type.token)), type.nullable);
+    }
+    return type;
   }
 }

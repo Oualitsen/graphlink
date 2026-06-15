@@ -10,7 +10,7 @@ const _schema = '''
     description: String
   }
 
-  type Animal implements IAnimal {
+  type Animal implements IAnimal @glServerLenient {
     id: ID!
     name: String!
     description: String

@@ -31,6 +31,7 @@ import 'package:graphlink/src/gl_grammar_annotation_extension.dart';
 import 'package:graphlink/src/gl_grammar_service_extension.dart';
 import 'package:graphlink/src/gl_grammar_fragment_extension.dart';
 import 'package:graphlink/src/gl_grammar_projection_extension.dart';
+import 'package:graphlink/src/gl_grammar_strict_extension.dart';
 import 'package:graphlink/src/gl_validation_extension.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_controller.dart';
@@ -287,6 +288,8 @@ class GLParser {
       handleRepositories(true);
       generateServicesAndControllers();
       generateSchemaMappings();
+      populateServerProjections();
+      applyServerLenientNullability();
     }
   }
 
