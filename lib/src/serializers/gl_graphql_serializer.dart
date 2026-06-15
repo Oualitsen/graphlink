@@ -207,8 +207,8 @@ ${def.getSerializableFields(mode, skipGenerated: true).map(serializeField).map((
   String serializeTypeDefinition(
       GLTypeDefinition def, CodeGenerationMode mode) {
     String type;
-    Iterable<String> interfaces =
-        def.getInterfaceNames().where((i) => !parser.interfaces[i]!.fromUnion);
+    final interfaces = def.getInterfaceNames().where((i) => !parser.interfaces[i]!.fromUnion);
+    
     if (def is GLInterfaceDefinition) {
       type = "interface";
     } else {

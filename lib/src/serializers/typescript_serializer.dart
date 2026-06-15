@@ -100,7 +100,7 @@ class TypeScriptSerializer extends GLSerializer {
   String doSerializeField(GLField def, bool immutable, bool isTypeField) {
     final type = def.type;
     final name = def.name;
-    final forceNullable = isTypeField && (def.hasInculeOrSkipDiretives || forceFieldNullable);
+    final forceNullable = isTypeField && (def.hasInculeOrSkipDiretives);
     final tsType = serializeType(type, forceNullable);
 
     if (!immutable && (type.nullable || forceNullable) && optionalNullableInputFields) {
@@ -126,7 +126,7 @@ class TypeScriptSerializer extends GLSerializer {
 
   @override
   String doSerializeTypeDefinition(GLTypeDefinition def) {
-    if (def is GLInterfaceDefinition) {
+    if (def is GLInterfaceDefinition && !def.isServerProjection) {
       return _serializeInterfaceAsUnion(def);
     }
     return _serializeType(def);
@@ -152,7 +152,7 @@ class TypeScriptSerializer extends GLSerializer {
   /// since the base only does this when generateJsonMethods is true.
   @override
   String serializeImports(GLToken token) {
-    if (token is GLInterfaceDefinition && token.getSerializableImplementations(mode).isNotEmpty) {
+    if (token is GLInterfaceDefinition && !token.isServerProjection && token.getSerializableImplementations(mode).isNotEmpty) {
       var deps = {...token.getImportDependecies(grammar), ...token.getSerializableImplementations(mode)};
       final buffer = StringBuffer();
       for (final dep in deps) {

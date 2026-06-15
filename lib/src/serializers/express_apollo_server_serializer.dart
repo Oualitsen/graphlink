@@ -100,7 +100,8 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       final returnTs = tsSerializer.serializeType(field.type, false);
       _collectType(field.type, importedTypes);
       final isSubscription = service.getTypeByFieldName(field.name.token) == GLQueryType.subscription;
-      final params = [...argList, 'context: GraphLinkContext', if (apolloConfig.useResolveInfo && !isSubscription) 'info: GraphQLResolveInfo'];
+      final needsInfo = (apolloConfig.useResolveInfo || field.hasDirective(glReturnsProjection)) && !isSubscription;
+      final params = [...argList, 'context: GraphLinkContext', if (needsInfo) 'info: GraphQLResolveInfo'];
       final returnDecl = isSubscription ? 'AsyncIterable<$returnTs>' : 'Promise<$returnTs>';
       methods.add('${field.name}(${params.join(', ')}): $returnDecl;');
     }
@@ -109,10 +110,14 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       methods.add(_serviceMappingMethod(mapping, importedTypes));
     }
 
+    final needsResolveInfoImport = apolloConfig.useResolveInfo ||
+        service.fields.any((f) => f.hasDirective(glReturnsProjection)) ||
+        service.mappings.any((m) => m.field.hasDirective(glReturnsProjection));
+
     final imp = _imports(importedTypes);
     final lines = [
       "import { GraphLinkContext } from '../context.js';",
-      if (apolloConfig.useResolveInfo) "import { GraphQLResolveInfo } from 'graphql';",
+      if (needsResolveInfoImport) "import { GraphQLResolveInfo } from 'graphql';",
       if (hasUpload) "import type { FileUpload } from '../file-upload.js';",
       if (imp.isNotEmpty) imp,
     ];
@@ -136,7 +141,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       'item: ${parentName}',
       ...argParams,
       'context: GraphLinkContext',
-      if (apolloConfig.useResolveInfo) 'info: GraphQLResolveInfo',
+      if (apolloConfig.useResolveInfo || mapping.field.hasDirective(glReturnsProjection)) 'info: GraphQLResolveInfo',
     ];
     return '${mapping.key}(${nonBatchParams.join(', ')}): Promise<${fieldTs}>;';
   }
@@ -221,7 +226,11 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     final buf = StringBuffer();
 
     buf.writeln("import { IResolvers } from '@graphql-tools/utils';");
-    final graphqlImports = apolloConfig.useResolveInfo ? 'GraphQLError, GraphQLResolveInfo' : 'GraphQLError';
+    final needsResolveInfo = apolloConfig.useResolveInfo ||
+        services.any((s) =>
+            s.fields.any((f) => f.hasDirective(glReturnsProjection)) ||
+            s.mappings.any((m) => m.field.hasDirective(glReturnsProjection)));
+    final graphqlImports = needsResolveInfo ? 'GraphQLError, GraphQLResolveInfo' : 'GraphQLError';
     buf.writeln("import { $graphqlImports } from 'graphql';");
     buf.writeln("import { GraphLinkContext } from '../context.js';");
     if (hasUploads) {
@@ -293,6 +302,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
           fieldName: field.name.token,
           argNames: field.arguments.map((a) => a.token).toList(),
           argTypes: field.arguments.map((a) => a.type).toList(),
+          needsInfo: apolloConfig.useResolveInfo || field.hasDirective(glReturnsProjection),
         ));
       }
     }
@@ -318,14 +328,14 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
         }
       }
 
-      final callArgs = [...resolvedArgNames, 'context', if (apolloConfig.useResolveInfo) 'info'].join(', ');
+      final callArgs = [...resolvedArgNames, 'context', if (e.needsInfo) 'info'].join(', ');
       final serviceCall = '$sVar.${e.fieldName}($callArgs)';
       final hasValidate = fieldHasValidation(e.service.fields
           .firstWhere((f) => f.name.token == e.fieldName));
       final validateCall = hasValidate
           ? 'await $gVar.${validationMethodName(e.fieldName)}($callArgs);'
           : null;
-      final resolverSignature = apolloConfig.useResolveInfo
+      final resolverSignature = e.needsInfo
           ? '(_, $argsDestructure, context, info)'
           : '(_, $argsDestructure, context)';
 
@@ -348,6 +358,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
           fieldName: field.name.token,
           argNames: field.arguments.map((a) => a.token).toList(),
           argTypes: field.arguments.map((a) => a.type).toList(),
+          needsInfo: false,
         ));
       }
     }
@@ -390,13 +401,14 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
         } else {
           final argNames = m.field.arguments.map((a) => a.token).toList();
           final argsDestructure = argNames.isEmpty ? '_' : '{ ${argNames.join(', ')} }';
+          final needsInfo = apolloConfig.useResolveInfo || m.field.hasDirective(glReturnsProjection);
           final mappingCallArgs = [
             'parent',
             ...argNames,
             'context',
-            if (apolloConfig.useResolveInfo) 'info',
+            if (needsInfo) 'info',
           ].join(', ');
-          final mappingResolverArgs = apolloConfig.useResolveInfo
+          final mappingResolverArgs = needsInfo
               ? '(parent, $argsDestructure, context, info)'
               : '(parent, $argsDestructure, context)';
           buf.writeln('$mappingResolverArgs => $sVar.${m.key}($mappingCallArgs),');
@@ -612,7 +624,14 @@ class _RootEntry {
   final String fieldName;
   final List<String> argNames;
   final List<GLType> argTypes;
-  _RootEntry({required this.service, required this.fieldName, required this.argNames, required this.argTypes});
+  final bool needsInfo;
+  _RootEntry({
+    required this.service,
+    required this.fieldName,
+    required this.argNames,
+    required this.argTypes,
+    required this.needsInfo,
+  });
 }
 
 class _MappingEntry {

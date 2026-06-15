@@ -58,6 +58,18 @@ class GLField with GLDirectivesMixin {
       getDirectiveByName(glMapField)?.getArgValueAsString(glMapFieldTo);
 
 
+  /// Returns a copy of this field with [newType] in place of [type].
+  GLField ofType(GLType newType) {
+    return GLField(
+      name: name,
+      type: newType,
+      arguments: arguments,
+      initialValue: initialValue,
+      documentation: documentation,
+      directives: getDirectives(),
+    );
+  }
+
   void checkMerge(GLField other) {
     if (type != other.type) {
       throw ParseException("You cannot change field type in an extension", info: other.name);

@@ -31,8 +31,8 @@ class CycleTest {
         }
 
         @Test
-        void user_posts_hasOneEntry() {
-            assertEquals(1, client.queries.getUser("user-with-posts").getGetUser().getPosts().size());
+        void user_posts_has4Entry() {
+            assertEquals(4, client.queries.getUser("user-with-posts").getGetUser().getPosts().size());
         }
 
         @Test

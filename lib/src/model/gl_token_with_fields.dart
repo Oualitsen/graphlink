@@ -147,7 +147,19 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
     if (mapTo == null) {
       return null;
     }
-    return g.types[mapTo];
+    var result = g.types[mapTo];
+    if(result != null) {
+      return result;
+    }
+    var ifaceResult = g.interfaces[mapTo];
+    if(ifaceResult != null) {
+      return ifaceResult;
+    }
+    return null;
+  }
+
+  void replaceField(GLField field) {
+    _fieldMap[field.name.token] = field;
   }
 
   @override

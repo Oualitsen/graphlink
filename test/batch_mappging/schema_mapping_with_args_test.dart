@@ -4,6 +4,8 @@ import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/java_spring_server_serializer.dart';
 import 'package:test/test.dart';
 
+import '../test_utils.dart';
+
 void main() {
 
   test('batch: true with field arguments throws', () {
@@ -47,7 +49,7 @@ void main() {
 
     // controller: @SchemaMapping with @Argument params and correct service call
     expect(controllerCode, contains('@SchemaMapping(typeName="User", field="vehicles")'));
-    expect(controllerCode, contains('public CompletableFuture<List<Vehicle>> userVehicles(User value, @Argument Integer year, @Argument String category)'));
+    expect(controllerCode, contains('public CompletableFuture<List<? extends ${toServerProjectionName('Vehicle')}>> userVehicles(User value, @Argument Integer year, @Argument String category)'));
     expect(controllerCode, contains('return CompletableFuture.supplyAsync(() -> userSchemaMappingsService.userVehicles(value, year, category));'));
     expect(controllerCode, contains('import org.springframework.graphql.data.method.annotation.Argument'));
 

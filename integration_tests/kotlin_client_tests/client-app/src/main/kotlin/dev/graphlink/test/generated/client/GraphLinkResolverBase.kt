@@ -23,7 +23,7 @@ open class GraphLinkResolverBase(
    private val tagLocks = java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.locks.ReentrantLock>()
 
    init {
-      val tags = listOf("users", "posts", "pair")
+      val tags = listOf<String>("users", "posts", "pair")
       for (tag in tags) {
          tagLocks[tag] = java.util.concurrent.locks.ReentrantLock()
       }

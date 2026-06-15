@@ -1,6 +1,8 @@
 import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/utils.dart';
 
 
 class JavaCodeGenUtils implements CodeGenUtilsBase {
@@ -256,6 +258,45 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
   ///
   /// Example: safeLocalVar('operationName') → '__gl_operationName__'
   String safeLocalVar(String name) => '__gl_${name}__';
+
+  /// Boxes [token] (if it names a Java primitive) and wraps it as
+  /// `? extends $boxed` if [token] names a GraphQL interface, or if [token]
+  /// is itself a generic type whose argument is already wildcarded (e.g.
+  /// `List<? extends CarProjection>`) — Java generics are invariant, so a
+  /// wildcarded type argument forces every enclosing generic to also be
+  /// wildcarded for a covariant override to type-check (e.g.
+  /// `Flux<? extends List<? extends CarProjection>>`). Used to build the
+  /// element type of `Mono<>`, `Flux<>` and `List<>` so a covariant
+  /// implementor (e.g. `User` for `UserProjection`) remains a valid override.
+  static String wildcardExtends(GLParser grammar, String token) {
+    final boxed = convertPrimitiveToBoxed(token);
+    if (grammar.isInterface(token) ||
+        boxed.contains('? extends') ||
+        boxed.startsWith('Map<') ||
+        boxed.startsWith('List<')) {
+      return "? extends $boxed";
+    }
+    return boxed;
+  }
+
+  /// Returns `List<...>`, wrapping/boxing the element type via [wildcardExtends].
+  static String listOf(GLParser grammar, String token) =>
+      "List<${wildcardExtends(grammar, token)}>";
+
+  /// Returns `Mono<...>`, wrapping/boxing the element type via [wildcardExtends].
+  static String monoOf(GLParser grammar, String token) =>
+      "Mono<${wildcardExtends(grammar, token)}>";
+
+  /// Returns `Flux<...>`, wrapping/boxing the element type via [wildcardExtends].
+  static String fluxOf(GLParser grammar, String token) =>
+      "Flux<${wildcardExtends(grammar, token)}>";
+
+  /// Returns `Map<K, V>`, boxing the key type and wrapping/boxing the value
+  /// type via [wildcardExtends]. The key is left invariant (no wildcard) —
+  /// `Map<K, V>` is a valid covariant override of `Map<K, ? extends
+  /// VProjection>` when `V <: VProjection`, same reasoning as [listOf].
+  static String mapOf(GLParser grammar, String keyToken, String valueToken) =>
+      "Map<${convertPrimitiveToBoxed(keyToken)}, ${wildcardExtends(grammar, valueToken)}>";
 
 }
 

@@ -6,6 +6,8 @@ import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/java_spring_server_serializer.dart';
 import 'package:test/test.dart';
 
+import '../test_utils.dart';
+
 void main() {
   
 
@@ -58,13 +60,13 @@ type Query {
 
     expect(carOwner.isBatch, false);
     expect(carOwner.type.token, "Car");
-    expect(carOwner.field.type.token, "Owner");
+    expect(carOwner.field.type.token, "GLOwnerProjection");
     expect(carOwner.field.name.token, "owner");
 
     var userCars = mappings.where((e) => e.key == "userCars").first;
     expect(userCars.isBatch, false);
     expect(userCars.type.token, "User");
-    expect(userCars.field.type.token, "Car");
+    expect(userCars.field.type.token, "GLCarProjection");
     expect(userCars.field.name.token, "cars");
 
     expect(mappings.where((e) => e.key == "carUserId").first.forbid, true);
@@ -99,11 +101,12 @@ type Query {
     var springSerializer = JavaSpringServerSerializer(g, packageName: "");
     var ctrl = g.controllers[g.controllerMappingName("UserWithCar")]!;
     var serviceSerial = springSerializer.serializeController(ctrl);
+    print(serviceSerial);
     expect(
         serviceSerial,
         stringContainsInOrder([
           '@SchemaMapping(typeName="UserWithCar", field="user")',
-          "public User userWithCarUser(User value) {",
+          "public ${toServerProjectionName('User')} userWithCarUser(${toServerProjectionName('User')} value) {",
           "return value;",
           "}",
         ]));
@@ -124,7 +127,7 @@ type Query {
     expect(
         serviceSerial,
         stringContainsInOrder([
-          "public User userWithCarUser(User value) {",
+          "public ${toServerProjectionName('User')} userWithCarUser(${toServerProjectionName('User')} value) {",
           "return value;",
           "}"
         ]));
@@ -206,8 +209,8 @@ type Query {
     var mappingService = g.services[g.serviceMappingName('User')]!;
     var mappingController = g.controllers[g.controllerMappingName('User')]!;
     var serialService = serializer.serializeService(mappingService);
-    var serialController =
-        serializer.serializeController(mappingController);
+    var serialController = serializer.serializeController(mappingController);
+    print(serialController);
     expect(
         serialService,
         contains(
@@ -216,7 +219,7 @@ type Query {
     expect(
         serialController,
         contains(
-            'CompletableFuture<Map<User, Car>> userCar(List<User> value, DataFetchingEnvironment dataFetchingEnvironment)'));
+            'CompletableFuture<Map<User, ? extends GLCarProjection>> userCar(List<User> value, DataFetchingEnvironment dataFetchingEnvironment)'));
    
     expect(
         serialController,

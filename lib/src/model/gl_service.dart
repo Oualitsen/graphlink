@@ -1,4 +1,5 @@
 import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_controller.dart';
@@ -20,6 +21,21 @@ class GLService extends GLInterfaceDefinition {
       required super.directives,
       required super.interfaceNames})
       : super(extension: false);
+
+  @override
+  void addField(GLField field) {
+    if(this is GLController) {
+      return super.addField(field);
+    }
+    if (field.hasDirective(glReturnsProjection)) {
+      var newField = field.ofType(field.type.ofNewName(
+          GLTypeDefinition.getServerProjectionName(field.type.token)
+              .toToken()));
+      super.addField(newField);
+    } else {
+      super.addField(field);
+    }
+  }
 
   void setFieldType(String fieldName, GLQueryType type) {
     _fieldType[fieldName] = type;
@@ -66,16 +82,17 @@ class GLService extends GLInterfaceDefinition {
           result.add(argToken!);
         }
       }
-
-      var mappedToToken = _getMappedTo(g, typeToken);
-      if (mappedToToken != null) {
-        result.add(mappedToToken);
+      if(this is! GLController) {
+        var mappedToToken = getMappedTo(g, typeToken);
+        if (mappedToToken != null) {
+          result.add(mappedToToken);
+        }
       }
     }
     return result;
   }
 
-  GLToken? _getMappedTo(GLParser g, GLToken? token) {
+  GLToken? getMappedTo(GLParser g, GLToken? token) {
     if (token is GLDirectivesMixin) {
       var mappedTo = (token as GLDirectivesMixin)
           .getDirectiveByName(glSkipOnServer)
@@ -114,9 +131,10 @@ class GLService extends GLInterfaceDefinition {
 
   @override
   Set<String> getImports(GLParser g) {
-    var result =  [...super.getImports(g)];
-    if(this is! GLController) {
-      result.removeWhere((e) => e.startsWith('org.springframework.graphql.data.method.annotation'));
+    var result = [...super.getImports(g)];
+    if (this is! GLController) {
+      result.removeWhere((e) =>
+          e.startsWith('org.springframework.graphql.data.method.annotation'));
     }
     return result.toSet();
   }

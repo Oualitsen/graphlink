@@ -71,14 +71,13 @@ extension GLGrammarAnnotationExtension on GLParser {
     jspecifyAnnotationsProcessed = true;
     const nonNullImport = 'org.jspecify.annotations.NonNull';
     const nullableImport = 'org.jspecify.annotations.Nullable';
-    final forceFieldNullable = mode == CodeGenerationMode.server;
 
     List<String> annotateAndGetImports(List<GLField> fields, {required bool isTypeField}) {
       final imports = <String>{};
       for (final field in fields) {
         if (isPrimitive(field.type)) continue;
         final isNullable = field.type.nullable ||
-            (isTypeField && (field.hasInculeOrSkipDiretives || forceFieldNullable));
+            (isTypeField && field.hasInculeOrSkipDiretives);
         if (isNullable) {
           field.addDirective(GLDirectiveValue.createGqDecorators(
             decorators: [jspecifyNullable],

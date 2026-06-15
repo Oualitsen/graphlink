@@ -5,6 +5,8 @@ import 'package:graphlink/src/serializers/java_spring_server_serializer.dart';
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
+import '../../../test_utils.dart';
+
 void main() {
   
 
@@ -34,7 +36,7 @@ void main() {
         'Flux<User> getUsers(String name, String middle);',
         'Mono<Integer> getUserCount();',
         'Flux<User> watchUser(String userId);',
-        'Flux<List<Car>> watchCars(String userId);',
+        'Flux<? extends List<Car>> watchCars(String userId);',
         '}',
       ]),
     );
@@ -59,7 +61,7 @@ void main() {
       result.split('\n').map((e) => e.trim()).toList(),
       containsAllInOrder([
         '@QueryMapping()',
-        'public Mono<Car> getCar(@Argument() String id) {',
+        'public Mono<? extends ${toServerProjectionName('Car')}> getCar(@Argument() String id) {',
         'return carService.validateGetCar(id).then(carService.getCar(id));',
         '}',
       ]),
@@ -75,7 +77,7 @@ void main() {
 
     // must NOT contain CompletableFuture anywhere
     expect(result, isNot(contains("CompletableFuture")));
-
+    print(result);
     expect(
       result.split('\n').map((e) => e.trim()).toList(),
       containsAllInOrder([
@@ -86,15 +88,15 @@ void main() {
         'this.userService = userService;',
         '}',
         '@QueryMapping()',
-        'public Mono<User> getUser() {',
+        'public Mono<? extends ${toServerProjectionName('User')}> getUser() {',
         'return userService.getUser();',
         '}',
         '@QueryMapping()',
-        'public Mono<User> getUserById(@Argument() String id) {',
+        'public Mono<? extends ${toServerProjectionName('User')}> getUserById(@Argument() String id) {',
         'return userService.getUserById(id);',
         '}',
         '@QueryMapping()',
-        'public Flux<User> getUsers(@Argument() String name, @Argument() String middle) {',
+        'public Flux<? extends ${toServerProjectionName('User')}> getUsers(@Argument() String name, @Argument() String middle) {',
         'return userService.getUsers(name, middle);',
         '}',
         '@QueryMapping()',
@@ -102,11 +104,11 @@ void main() {
         'return userService.getUserCount();',
         '}',
         '@SubscriptionMapping()',
-        'public Flux<User> watchUser(@Argument() String userId) {',
+        'public Flux<? extends ${toServerProjectionName('User')}> watchUser(@Argument() String userId) {',
         'return userService.watchUser(userId);',
         '}',
         '@SubscriptionMapping()',
-        'public Flux<List<Car>> watchCars(@Argument() String userId) {',
+        'public Flux<? extends List<? extends ${toServerProjectionName('Car')}>> watchCars(@Argument() String userId) {',
         'return userService.watchCars(userId);',
         '}',
         '}',

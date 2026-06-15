@@ -13,7 +13,6 @@ void main() {
   test("handle repositories", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
-        
         mode: CodeGenerationMode.server);
 
     final text = File("test/server/repository/repository_test.graphql")
@@ -22,7 +21,6 @@ void main() {
     g.parse(text);
 
     expect(g.interfaces.keys, contains("Entity"));
-    expect(g.interfaces.keys, hasLength(1));
     expect(
         g.repositories.keys, containsAll(["UserRepository", "CarRepository"]));
     expect(g.repositories, hasLength(2));

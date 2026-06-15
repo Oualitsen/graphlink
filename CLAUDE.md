@@ -205,10 +205,27 @@ generator and asserts on the emitted output. There is no shared fixture — each
 its own `GlSchema`.
 
 ```bash
-dart test                          # all tests
-dart test test/cache/              # single directory
-dart test test/cache/cache_test.dart  # single file
+fvm dart test                          # all tests
+fvm dart test test/cache/              # single directory
+fvm dart test test/cache/cache_test.dart  # single file
 ```
+
+This project uses **fvm** (Flutter Version Manager) — always prefix `dart`/`flutter`
+commands with `fvm` (e.g. `fvm dart test`, `fvm dart run ...`, `fvm dart pub get`).
+
+### Running tests — mandatory output handling
+
+**Never run a test command and read its raw output directly.** Test output is huge and
+fills the context window. Always redirect to a log file and only grep for failures:
+
+```bash
+fvm dart test > /tmp/test.log 2>&1; grep -E "FAILED|Error|✗" /tmp/test.log
+fvm dart test test/cache/ > /tmp/test.log 2>&1; grep -E "FAILED|Error|✗" /tmp/test.log
+```
+
+If you need more detail on a specific failure, grep the log file for that test's name —
+do not cat/Read the whole log. If this constraint can't be satisfied for some reason,
+stop and ask the user to run the tests manually instead.
 
 ---
 
@@ -239,9 +256,9 @@ cd server_integration_tests && make ci  # generated server(s) vs generated clien
 ## Build & run
 
 ```bash
-dart pub get                       # install deps
-dart run lib/src/main.dart -c path/to/config.json   # run without compiling
-dart compile exe lib/src/main.dart -o glink          # compile binary
+fvm dart pub get                       # install deps
+fvm dart run lib/src/main.dart -c path/to/config.json   # run without compiling
+fvm dart compile exe lib/src/main.dart -o glink          # compile binary
 make deploy                        # compile + install to ~/bin
 ```
 

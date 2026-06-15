@@ -4,7 +4,6 @@ import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/io_utils.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
-import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/express_apollo_server_serializer.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:graphlink/src/serializers/java_spring_server_serializer.dart';
@@ -29,7 +28,7 @@ Future<Set<String>> generateServerClasses(
     inputsAsRecords: springConfig.inputAsRecord,
     typesAsRecords: springConfig.typeAsRecord,
     inputsCheckForNulls: true,
-    typesCheckForNulls: grammar.mode == CodeGenerationMode.client,
+    typesCheckForNulls: true,
     immutableInputFields: springConfig.immutableInputFields,
     immutableTypeFields: springConfig.immutableTypeFields,
     jspecify: springConfig.jspecify,

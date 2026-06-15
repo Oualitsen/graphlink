@@ -28,11 +28,7 @@ abstract class GLSerializer {
   /// Effective type map: language defaults merged with user-supplied overrides.
   late final Map<String, String> typeMap;
 
-  /// When `true`, type fields should be generated as nullable regardless of
-  /// the schema declaration. Required in server mode because a GraphQL client
-  /// may request only a subset of fields, so resolvers cannot guarantee every
-  /// field is populated.
-  bool get forceFieldNullable => mode == CodeGenerationMode.server;
+
 
   GLSerializer(this.grammar, {Map<String, String> typeMapOverrides = const {}, required this.importPrefix})
       : mode = grammar.mode {

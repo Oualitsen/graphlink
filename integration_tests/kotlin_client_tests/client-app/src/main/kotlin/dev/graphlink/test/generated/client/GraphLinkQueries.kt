@@ -78,7 +78,7 @@ open class GraphLinkQueries(
              "fetchUserAndPost_user_getUser",
              "user",
              setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post"),
-             listOf("$userId: ID!"),
+             listOf("\$userId: ID!"),
              false,
              encoder,
          ))
@@ -94,7 +94,7 @@ open class GraphLinkQueries(
              "fetchUserAndPost_post_getPost",
              "post",
              setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post"),
-             listOf("$postId: ID!"),
+             listOf("\$postId: ID!"),
              false,
              encoder,
          ))
@@ -150,7 +150,7 @@ open class GraphLinkQueries(
              "fetchUserSummary__getUser",
              "getUser",
              emptySet(),
-             listOf("$id: ID!"),
+             listOf("\$id: ID!"),
              false,
              encoder,
          ))
@@ -206,7 +206,7 @@ open class GraphLinkQueries(
              "runSearch__search",
              "search",
              emptySet(),
-             listOf("$term: String!"),
+             listOf("\$term: String!"),
              false,
              encoder,
          ))
@@ -262,7 +262,7 @@ open class GraphLinkQueries(
              "fetchCachedPair_user_getCachedUser",
              "user",
              setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post"),
-             listOf("$userId: ID!"),
+             listOf("\$userId: ID!"),
              false,
              encoder,
          ))
@@ -278,7 +278,7 @@ open class GraphLinkQueries(
              "fetchCachedPair_post_getCachedPost",
              "post",
              setOf("_all_fields_Post"),
-             listOf("$postId: ID!"),
+             listOf("\$postId: ID!"),
              false,
              encoder,
          ))
@@ -334,7 +334,7 @@ open class GraphLinkQueries(
              "getUser__getUser",
              "getUser",
              setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post"),
-             listOf("$id: ID!"),
+             listOf("\$id: ID!"),
              false,
              encoder,
          ))
@@ -390,7 +390,7 @@ open class GraphLinkQueries(
              "findUser__findUser",
              "findUser",
              setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post"),
-             listOf("$id: ID!"),
+             listOf("\$id: ID!"),
              false,
              encoder,
          ))
@@ -501,7 +501,7 @@ open class GraphLinkQueries(
              "listUsersByStatus__listUsersByStatus",
              "listUsersByStatus",
              setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post"),
-             listOf("$status: UserStatus!"),
+             listOf("\$status: UserStatus!"),
              false,
              encoder,
          ))
@@ -558,7 +558,7 @@ open class GraphLinkQueries(
              "searchUsers__searchUsers",
              "searchUsers",
              setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post"),
-             listOf("$name: String!", "$limit: Int!"),
+             listOf("\$name: String!", "\$limit: Int!"),
              false,
              encoder,
          ))
@@ -614,7 +614,7 @@ open class GraphLinkQueries(
              "getAllScalars__getAllScalars",
              "getAllScalars",
              setOf("_all_fields_AllScalars"),
-             listOf("$id: ID!"),
+             listOf("\$id: ID!"),
              false,
              encoder,
          ))
@@ -670,7 +670,7 @@ open class GraphLinkQueries(
              "getPost__getPost",
              "getPost",
              setOf("_all_fields_Post"),
-             listOf("$id: ID!"),
+             listOf("\$id: ID!"),
              false,
              encoder,
          ))
@@ -781,7 +781,7 @@ open class GraphLinkQueries(
              "getAuditEntry__getAuditEntry",
              "getAuditEntry",
              setOf("_all_fields_AuditEntry"),
-             listOf("$id: ID!"),
+             listOf("\$id: ID!"),
              false,
              encoder,
          ))
@@ -830,14 +830,14 @@ open class GraphLinkQueries(
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
          __gl_pqVars__["term"] = __gl_variables__["term"]
          __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "search(term: \$term){...Inline_e9d9b0b9_4153_306a_6372_f7fa2e31ac14}",
+             "search(term: \$term){...Inline_2738d100_9ca7_b1a2_fa7c_cddb56276cc7}",
              __gl_pqVars__,
              0,
              emptyList(),
              "search__search",
              "search",
-             setOf("Inline_e9d9b0b9_4153_306a_6372_f7fa2e31ac14", "_all_fields_UserResult", "_all_fields_PostResult"),
-             listOf("$term: String!"),
+             setOf("Inline_2738d100_9ca7_b1a2_fa7c_cddb56276cc7", "_all_fields_UserResult", "_all_fields_PostResult"),
+             listOf("\$term: String!"),
              false,
              encoder,
          ))
@@ -893,7 +893,7 @@ open class GraphLinkQueries(
              "getCachedUser__getCachedUser",
              "getCachedUser",
              setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post"),
-             listOf("$id: ID!"),
+             listOf("\$id: ID!"),
              false,
              encoder,
          ))
@@ -1004,7 +1004,7 @@ open class GraphLinkQueries(
              "getCachedPost__getCachedPost",
              "getCachedPost",
              setOf("_all_fields_Post"),
-             listOf("$id: ID!"),
+             listOf("\$id: ID!"),
              false,
              encoder,
          ))
@@ -1115,7 +1115,7 @@ open class GraphLinkQueries(
              "getStaleUser__getStaleUser",
              "getStaleUser",
              setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post"),
-             listOf("$id: ID!"),
+             listOf("\$id: ID!"),
              true,
              encoder,
          ))
@@ -1171,7 +1171,7 @@ open class GraphLinkQueries(
              "getUserOrErrors__getUserOrErrors",
              "getUserOrErrors",
              setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post"),
-             listOf("$id: ID!"),
+             listOf("\$id: ID!"),
              false,
              encoder,
          ))
@@ -1227,7 +1227,7 @@ open class GraphLinkQueries(
              "findUserOrErrors__findUserOrErrors",
              "findUserOrErrors",
              setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post"),
-             listOf("$id: ID!"),
+             listOf("\$id: ID!"),
              false,
              encoder,
          ))
