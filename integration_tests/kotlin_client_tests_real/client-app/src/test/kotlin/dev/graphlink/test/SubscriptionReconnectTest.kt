@@ -177,7 +177,7 @@ class SubscriptionReconnectTest {
     }
 
     private fun startJar(port: Int) {
-        ProcessBuilder("java", "-jar", jarPath(), "--server.port=$port")
+        ProcessBuilder("java", "-jar", jarPath(), "--server.port=$port", "--management.server.port=-1")
             .apply {
                 redirectOutput(ProcessBuilder.Redirect.DISCARD)
                 redirectError(ProcessBuilder.Redirect.DISCARD)

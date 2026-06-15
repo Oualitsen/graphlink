@@ -67,7 +67,7 @@ function waitForPort(port: number, timeoutMs = 30_000): Promise<void> {
 
 export async function startServer(port: number): Promise<void> {
   killPort(port);
-  const proc = spawn('java', ['-jar', JAR_PATH, `--server.port=${port}`], { stdio: 'ignore', detached: true });
+  const proc = spawn('java', ['-jar', JAR_PATH, `--server.port=${port}`, '--management.server.port=-1'], { stdio: 'ignore', detached: true });
   proc.unref();
   await waitForPort(port);
 }
