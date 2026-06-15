@@ -22,9 +22,9 @@ void main() {
 
   group('cache hit', () {
     test('second getCachedUser call returns same data as first', () async {
-      final first = await client.queries.getCachedUser(id: 'user-1', limit: 10);
+      final first = await client.queries.getCachedUser(id: 'user-1');
       final second =
-          await client.queries.getCachedUser(id: 'user-1', limit: 10);
+          await client.queries.getCachedUser(id: 'user-1');
       expect(second.getCachedUser.id, equals(first.getCachedUser.id));
       expect(second.getCachedUser.name, equals('Alice Smith'));
     });
@@ -34,15 +34,15 @@ void main() {
 
   group('tag invalidation — data still accessible after createCachedUser', () {
     test('getCachedUser works after createCachedUser invalidation', () async {
-      await client.queries.getCachedUser(id: 'user-1', limit: 10);
-      await client.mutations.createCachedUser(input: _minimalInput, limit: 10);
-      final res = await client.queries.getCachedUser(id: 'user-1', limit: 10);
+      await client.queries.getCachedUser(id: 'user-1');
+      await client.mutations.createCachedUser(input: _minimalInput);
+      final res = await client.queries.getCachedUser(id: 'user-1');
       expect(res.getCachedUser.name, equals('Alice Smith'));
     });
 
     test('listCachedUsers works after createCachedUser invalidation', () async {
       await client.queries.listCachedUsers(limit: 10);
-      await client.mutations.createCachedUser(input: _minimalInput, limit: 10);
+      await client.mutations.createCachedUser(input: _minimalInput);
       final res = await client.queries.listCachedUsers(limit: 10);
       expect(res.listCachedUsers, isNotEmpty);
     });
@@ -50,10 +50,10 @@ void main() {
 
   group('multi-tag invalidation — data accessible after transferPost', () {
     test('getCachedUser works after transferPost', () async {
-      await client.queries.getCachedUser(id: 'user-1', limit: 10);
+      await client.queries.getCachedUser(id: 'user-1');
       await client.mutations
           .transferPost(postId: 'post-1', newAuthorId: 'user-2');
-      final res = await client.queries.getCachedUser(id: 'user-1', limit: 10);
+      final res = await client.queries.getCachedUser(id: 'user-1');
       expect(res.getCachedUser.id, equals('user-1'));
     });
 
@@ -75,9 +75,9 @@ void main() {
     });
 
     test('cached queries still work after resetAll', () async {
-      await client.queries.getCachedUser(id: 'user-1', limit: 10);
+      await client.queries.getCachedUser(id: 'user-1');
       await client.mutations.resetAll();
-      final res = await client.queries.getCachedUser(id: 'user-1', limit: 10);
+      final res = await client.queries.getCachedUser(id: 'user-1');
       expect(res.getCachedUser.name, equals('Alice Smith'));
     });
   });
@@ -86,10 +86,10 @@ void main() {
 
   group('TTL expiry', () {
     test('getStaleUser re-fetches after TTL expires (ttl=1s)', () async {
-      await client.queries.getStaleUser(id: 'user-1', limit: 10);
+      await client.queries.getStaleUser(id: 'user-1');
       await Future.delayed(const Duration(seconds: 2));
       // After TTL expires the client fetches fresh — must not throw.
-      final res = await client.queries.getStaleUser(id: 'user-1', limit: 10);
+      final res = await client.queries.getStaleUser(id: 'user-1');
       expect(res.getStaleUser, isNotNull);
       expect(res.getStaleUser!.name, equals('Alice Smith'));
     });
@@ -100,8 +100,8 @@ void main() {
   group('no cache', () {
     test('getUser (no @glCache) returns correct data on repeated calls',
         () async {
-      final first = await client.queries.getUser(id: 'user-1', limit: 10);
-      final second = await client.queries.getUser(id: 'user-1', limit: 10);
+      final first = await client.queries.getUser(id: 'user-1');
+      final second = await client.queries.getUser(id: 'user-1');
       expect(first.getUser.id, equals(second.getUser.id));
     });
   });

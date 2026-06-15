@@ -10,22 +10,22 @@ void main() {
 
   group('enum deserialization', () {
     test('ACTIVE deserializes to UserStatus.ACTIVE', () async {
-      final res = await client.queries.getUser(id: 'user-1', limit: 10);
+      final res = await client.queries.getUser(id: 'user-1');
       expect(res.getUser.status, equals(UserStatus.ACTIVE));
     });
 
     test('INACTIVE deserializes to UserStatus.INACTIVE', () async {
-      final res = await client.queries.getUser(id: 'user-2', limit: 10);
+      final res = await client.queries.getUser(id: 'user-2');
       expect(res.getUser.status, equals(UserStatus.INACTIVE));
     });
 
     test('HIGH deserializes to Priority.HIGH', () async {
-      final res = await client.queries.getUser(id: 'user-1', limit: 10);
+      final res = await client.queries.getUser(id: 'user-1');
       expect(res.getUser.priority, equals(Priority.HIGH));
     });
 
     test('nullable enum is null when server returns null', () async {
-      final res = await client.queries.getUser(id: 'user-2', limit: 10);
+      final res = await client.queries.getUser(id: 'user-2');
       expect(res.getUser.priority, isNull);
     });
   });
@@ -34,7 +34,7 @@ void main() {
     test('UserStatus.ACTIVE filters correctly — returns only active users',
         () async {
       final res = await client.queries
-          .listUsersByStatus(status: UserStatus.ACTIVE, limit: 10);
+          .listUsersByStatus(status: UserStatus.ACTIVE);
       expect(res.listUsersByStatus, isNotEmpty);
       expect(res.listUsersByStatus.every((u) => u.status == UserStatus.ACTIVE),
           isTrue);
@@ -43,7 +43,7 @@ void main() {
     test('UserStatus.INACTIVE filters correctly — returns only inactive users',
         () async {
       final res = await client.queries
-          .listUsersByStatus(status: UserStatus.INACTIVE, limit: 10);
+          .listUsersByStatus(status: UserStatus.INACTIVE);
       expect(res.listUsersByStatus, isNotEmpty);
       expect(
           res.listUsersByStatus.every((u) => u.status == UserStatus.INACTIVE),
@@ -53,7 +53,7 @@ void main() {
     test('UserStatus.SUSPENDED filters correctly — returns empty list',
         () async {
       final res = await client.queries
-          .listUsersByStatus(status: UserStatus.SUSPENDED, limit: 10);
+          .listUsersByStatus(status: UserStatus.SUSPENDED);
       expect(res.listUsersByStatus, isEmpty);
     });
   });

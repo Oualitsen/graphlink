@@ -25,25 +25,25 @@ void main() {
   group('createUser — scalar fields echoed from input', () {
     test('name is returned from server', () async {
       final res =
-          await client.mutations.createUser(input: _minimalInput, limit: 10);
+          await client.mutations.createUser(input: _minimalInput);
       expect(res.createUser.name, equals('Alice Smith'));
     });
 
     test('email is returned from server', () async {
       final res =
-          await client.mutations.createUser(input: _minimalInput, limit: 10);
+          await client.mutations.createUser(input: _minimalInput);
       expect(res.createUser.email, equals('alice@test.com'));
     });
 
     test('status is returned as enum', () async {
       final res =
-          await client.mutations.createUser(input: _minimalInput, limit: 10);
+          await client.mutations.createUser(input: _minimalInput);
       expect(res.createUser.status, equals(UserStatus.ACTIVE));
     });
 
     test('priority is null when not provided in input', () async {
       final res =
-          await client.mutations.createUser(input: _minimalInput, limit: 10);
+          await client.mutations.createUser(input: _minimalInput);
       expect(res.createUser.priority, isNull);
     });
 
@@ -66,25 +66,25 @@ void main() {
   group('createUser — nested address from input', () {
     test('address.street is returned', () async {
       final res =
-          await client.mutations.createUser(input: _minimalInput, limit: 10);
+          await client.mutations.createUser(input: _minimalInput);
       expect(res.createUser.address.street, equals('123 Main St'));
     });
 
     test('address.city is returned', () async {
       final res =
-          await client.mutations.createUser(input: _minimalInput, limit: 10);
+          await client.mutations.createUser(input: _minimalInput);
       expect(res.createUser.address.city, equals('Springfield'));
     });
 
     test('address.zip is null when not provided', () async {
       final res =
-          await client.mutations.createUser(input: _minimalInput, limit: 10);
+          await client.mutations.createUser(input: _minimalInput);
       expect(res.createUser.address.zip, isNull);
     });
 
     test('nullable billingAddress is null when not provided', () async {
       final res =
-          await client.mutations.createUser(input: _minimalInput, limit: 10);
+          await client.mutations.createUser(input: _minimalInput);
       expect(res.createUser.billingAddress, isNull);
     });
   });
@@ -107,7 +107,7 @@ void main() {
 
     test('tags defaults to empty list when not provided', () async {
       final res =
-          await client.mutations.createUser(input: _minimalInput, limit: 10);
+          await client.mutations.createUser(input: _minimalInput);
       expect(res.createUser.tags, isEmpty);
     });
   });

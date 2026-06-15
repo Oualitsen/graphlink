@@ -25,22 +25,22 @@ void main() {
 
   group('list of scalars on a type', () {
     test('User.tags list deserializes correctly for Alice', () async {
-      final res = await client.queries.getUser(id: 'user-1', limit: 10);
+      final res = await client.queries.getUser(id: 'user-1');
       expect(res.getUser.tags, equals(['admin', 'beta']));
     });
 
     test('empty tags list is empty for Bob', () async {
-      final res = await client.queries.getUser(id: 'user-2', limit: 10);
+      final res = await client.queries.getUser(id: 'user-2');
       expect(res.getUser.tags, isEmpty);
     });
 
     test('nullable scores list is null for Bob', () async {
-      final res = await client.queries.getUser(id: 'user-2', limit: 10);
+      final res = await client.queries.getUser(id: 'user-2');
       expect(res.getUser.scores, isNull);
     });
 
     test('nullable scores list has values for Alice', () async {
-      final res = await client.queries.getUser(id: 'user-1', limit: 10);
+      final res = await client.queries.getUser(id: 'user-1');
       expect(res.getUser.scores, equals([10, 20, 30]));
     });
   });
@@ -58,7 +58,7 @@ void main() {
   group('list query with enum argument', () {
     test('listUsersByStatus(ACTIVE) returns only active users', () async {
       final res = await client.queries
-          .listUsersByStatus(status: UserStatus.ACTIVE, limit: 10);
+          .listUsersByStatus(status: UserStatus.ACTIVE);
       expect(res.listUsersByStatus, isNotEmpty);
       expect(res.listUsersByStatus.first.status, equals(UserStatus.ACTIVE));
     });
