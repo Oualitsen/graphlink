@@ -60,7 +60,7 @@ void main() {
 
   group('enum in list response', () {
     test('list of users contains correctly deserialized statuses', () async {
-      final res = await client.queries.listUsers(limit: 10);
+      final res = await client.queries.listUsers();
       final statuses = res.listUsers.map((u) => u.status).toList();
       expect(statuses, containsAll([UserStatus.ACTIVE, UserStatus.INACTIVE]));
     });

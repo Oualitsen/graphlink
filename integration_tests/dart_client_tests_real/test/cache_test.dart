@@ -41,9 +41,9 @@ void main() {
     });
 
     test('listCachedUsers works after createCachedUser invalidation', () async {
-      await client.queries.listCachedUsers(limit: 10);
+      await client.queries.listCachedUsers();
       await client.mutations.createCachedUser(input: _minimalInput);
-      final res = await client.queries.listCachedUsers(limit: 10);
+      final res = await client.queries.listCachedUsers();
       expect(res.listCachedUsers, isNotEmpty);
     });
   });

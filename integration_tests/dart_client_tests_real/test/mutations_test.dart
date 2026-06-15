@@ -57,7 +57,6 @@ void main() {
           address: AddressInput(
               street: '123 Main St', city: 'Springfield', country: 'US'),
         ),
-        limit: 10,
       );
       expect(res.createUser.priority, equals(Priority.HIGH));
     });
@@ -100,7 +99,6 @@ void main() {
               street: '123 Main St', city: 'Springfield', country: 'US'),
           tags: ['admin', 'beta'],
         ),
-        limit: 10,
       );
       expect(res.createUser.tags, equals(['admin', 'beta']));
     });
@@ -128,7 +126,6 @@ void main() {
       final res = await client.mutations.updateUser(
         id: 'user-1',
         input: UpdateUserInput(name: 'Updated Alice'),
-        limit: 10,
       );
       expect(res.updateUser.id, equals('user-1'));
       expect(res.updateUser.name, equals('Updated Alice'));
@@ -138,7 +135,6 @@ void main() {
       final res = await client.mutations.updateUser(
         id: 'user-1',
         input: UpdateUserInput(name: 'New Name'),
-        limit: 10,
       );
       expect(res.updateUser.email, equals('alice@test.com'));
       expect(res.updateUser.status, equals(UserStatus.ACTIVE));
@@ -148,7 +144,6 @@ void main() {
       final res = await client.mutations.updateUser(
         id: 'user-1',
         input: UpdateUserInput(status: UserStatus.SUSPENDED),
-        limit: 10,
       );
       expect(res.updateUser.status, equals(UserStatus.SUSPENDED));
     });
@@ -157,7 +152,6 @@ void main() {
       final res = await client.mutations.updateUser(
         id: 'user-1',
         input: UpdateUserInput(name: 'New Name'),
-        limit: 10,
       );
       expect(res.updateUser.address.street, equals('123 Main St'));
     });

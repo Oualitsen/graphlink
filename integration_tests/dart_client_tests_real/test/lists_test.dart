@@ -9,14 +9,14 @@ void main() {
 
   group('non-nullable list of objects', () {
     test('listUsers returns a correctly typed list with 2 users', () async {
-      final res = await client.queries.listUsers(limit: 10);
+      final res = await client.queries.listUsers();
       expect(res.listUsers.length, equals(2));
       expect(res.listUsers[0].id, equals('user-1'));
       expect(res.listUsers[1].id, equals('user-2'));
     });
 
     test('each item in the list is fully deserialized', () async {
-      final res = await client.queries.listUsers(limit: 10);
+      final res = await client.queries.listUsers();
       final user = res.listUsers.first;
       expect(user.name, equals('Alice Smith'));
       expect(user.address.city, equals('Springfield'));

@@ -23,7 +23,6 @@ void main() {
           status: UserStatus.ACTIVE,
           address: AddressInput(street: '1 St', city: 'City', country: 'US'),
         ),
-        limit: 10,
       );
       expect(res.createUser.name, equals('Alice Smith'));
     });
@@ -36,7 +35,6 @@ void main() {
           status: UserStatus.ACTIVE,
           address: AddressInput(street: '1 St', city: 'City', country: 'US'),
         ),
-        limit: 10,
       );
       expect(res.createUser.email, equals('test@example.com'));
     });
@@ -49,7 +47,6 @@ void main() {
           status: UserStatus.SUSPENDED,
           address: AddressInput(street: '1', city: 'C', country: 'US'),
         ),
-        limit: 10,
       );
       expect(res.createUser.status, equals(UserStatus.SUSPENDED));
     });
@@ -69,7 +66,6 @@ void main() {
             zip: '12345',
           ),
         ),
-        limit: 10,
       );
       expect(res.createUser.address.street, equals('123 Main St'));
       expect(res.createUser.address.city, equals('Springfield'));
@@ -84,7 +80,6 @@ void main() {
           status: UserStatus.ACTIVE,
           address: AddressInput(street: '1', city: 'C', country: 'US'),
         ),
-        limit: 10,
       );
       expect(res.createUser.address.zip, isNull);
     });
@@ -99,7 +94,6 @@ void main() {
           status: UserStatus.ACTIVE,
           address: AddressInput(street: '1', city: 'C', country: 'US'),
         ),
-        limit: 10,
       );
       expect(res.createUser.priority, isNull);
     });
@@ -113,7 +107,6 @@ void main() {
           priority: Priority.CRITICAL,
           address: AddressInput(street: '1', city: 'C', country: 'US'),
         ),
-        limit: 10,
       );
       expect(res.createUser.priority, equals(Priority.CRITICAL));
     });
@@ -127,7 +120,6 @@ void main() {
           address: AddressInput(street: '1', city: 'C', country: 'US'),
           tags: ['admin', 'beta'],
         ),
-        limit: 10,
       );
       expect(res.createUser.tags, equals(['admin', 'beta']));
     });
@@ -141,7 +133,6 @@ void main() {
           address: AddressInput(street: '1', city: 'C', country: 'US'),
           tags: [],
         ),
-        limit: 10,
       );
       expect(res.createUser.tags, isEmpty);
     });
@@ -152,7 +143,6 @@ void main() {
       final res = await client.mutations.updateUser(
         id: 'user-1',
         input: UpdateUserInput(name: 'New Name'),
-        limit: 10,
       );
       expect(res.updateUser.name, equals('New Name'));
       expect(res.updateUser.email, equals('alice@test.com'));
@@ -163,7 +153,6 @@ void main() {
       final res = await client.mutations.updateUser(
         id: 'user-2',
         input: UpdateUserInput(status: UserStatus.ACTIVE),
-        limit: 10,
       );
       expect(res.updateUser.id, equals('user-2'));
       expect(res.updateUser.status, equals(UserStatus.ACTIVE));
