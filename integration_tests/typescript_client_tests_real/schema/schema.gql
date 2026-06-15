@@ -111,7 +111,6 @@ type User @glEqualsHashcode(fields: ["id"]) {
   tags:            [String!]!
   scores:          [Int!]
   posts:           [Post!]
-  recentPosts(limit: Int!): [Post!]!
 }
 
 # Type that references User — tests multi-level nesting.

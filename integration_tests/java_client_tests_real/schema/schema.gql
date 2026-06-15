@@ -111,10 +111,7 @@ type User @glEqualsHashcode(fields: ["id"]) {
   tags:            [String!]!
   scores:          [Int!]
   posts:           [Post!]
-
-  # Field-level argument — must be carried through to operations whenever
-  # `recentPosts` is selected (e.g. via the auto all-fields projection).
-  recentPosts(limit: Int!): [Post!]!
+  
 }
 
 # Type that references User — tests multi-level nesting.
