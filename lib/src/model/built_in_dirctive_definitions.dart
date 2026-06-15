@@ -115,6 +115,24 @@ const glExpandDepth = "depth";
 /// The caller checks response.hasErrors instead of using try/catch.
 const glCaptureErrors = "@glCaptureErrors";
 
+///
+/// Per-type opt-out from the default strict (real schema nullability) server generation.
+/// A type marked @glServerLenient has its fields forced all-nullable on the server, exactly as
+/// every type did before @glStrict (see plans/glstrict-consolidated.md). It still gets a
+/// generated GL<Type>Projection interface and `implements` it — only its own field
+/// nullability reverts to all-nullable.
+const glServerLenient = "@glServerLenient";
+
+///
+/// Per-operation opt-in for selection-driven partial fetches (see
+/// plans/glstrict-consolidated.md §2/§9). Applied to a query/mutation/subscription field
+/// or a @glSkipOnServer relation field, it makes that one service method return
+/// GL<Type>Projection (all-nullable) instead of the strict concrete <Type> — the only
+/// shape that can represent "not every field was fetched". It also auto-injects
+/// DataFetchingEnvironment into that method regardless of the global injectDataFetching
+/// setting, so the resolver can inspect the selection set.
+const glReturnsProjection = "@glReturnsProjection";
+
 
 var jspecifyNullable = '@Nullable';
 var jspecifyNonNull = '@NonNull';

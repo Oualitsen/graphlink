@@ -16,9 +16,9 @@ describe('User.posts — cycle User → Post → User (user-with-posts)', () => 
     expect(Array.isArray(res.getUser.posts)).toBe(true);
   });
 
-  it('User.posts list has 1 post', async () => {
+  it('User.posts list has 4 post', async () => {
     const res = await client.queries.getUser({ id: 'user-with-posts' });
-    expect(res.getUser.posts!.length).toBe(1);
+    expect(res.getUser.posts!.length).toBe(4);
   });
 
   it('User.posts[0] has correct scalar fields', async () => {

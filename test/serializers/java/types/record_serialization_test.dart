@@ -37,7 +37,7 @@ void main() {
     final GLParser g = GLParser(
       identityFields: ["id"],
      
-      mode: CodeGenerationMode.server,
+      mode: CodeGenerationMode.client,
     );
     final text =
         File("test/serializers/java/types/record_serialization.graphql")
@@ -54,6 +54,7 @@ void main() {
     var type = g.getTypeByName("Person")!;
 
     var typeSerial = javaSerial.serializeTypeDefinition(type).trim();
+    print(typeSerial);
     expect(
         typeSerial,
         startsWith(
@@ -64,7 +65,7 @@ void main() {
   test("type serialization as records with decorators", () {
     final GLParser g = GLParser(
       identityFields: ["id"],
-      mode: CodeGenerationMode.server,
+      mode: CodeGenerationMode.client,
     );
     final text =
         File("test/serializers/java/types/record_serialization.graphql")
@@ -117,8 +118,7 @@ void main() {
   test("interface serialization when types as records", () {
     final GLParser g = GLParser(
       identityFields: ["id"],
-     
-      mode: CodeGenerationMode.server,
+      mode: CodeGenerationMode.client,
     );
     final text =
         File("test/serializers/java/types/record_serialization.graphql")

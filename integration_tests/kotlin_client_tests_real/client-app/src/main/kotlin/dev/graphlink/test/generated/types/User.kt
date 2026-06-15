@@ -23,7 +23,6 @@ data class User(
     val tags: List<String>,
     val scores: List<Int>? = null,
     val posts: List<Post>? = null,
-    val recentPosts: List<Post>,
 ) {
    fun toJson(): Map<String, Any?> = mapOf(
            "id" to id,
@@ -36,7 +35,6 @@ data class User(
            "tags" to tags,
            "scores" to scores,
            "posts" to posts?.map { e0 -> e0.toJson() },
-           "recentPosts" to recentPosts.map { e0 -> e0.toJson() },
        )
 
    companion object {
@@ -51,7 +49,6 @@ data class User(
           tags = (map["tags"] as List<*>).map { e0 -> e0 as String },
           scores = (map["scores"] as? List<*>)?.map { e0 -> (e0 as Number).toInt() },
           posts = (map["posts"] as? List<*>)?.map { e0 -> Post.fromJson(e0 as Map<String, Any?>) },
-          recentPosts = (map["recentPosts"] as List<*>).map { e0 -> Post.fromJson(e0 as Map<String, Any?>) },
       )
    }
 }

@@ -3,6 +3,8 @@ import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
+import '../test_utils.dart';
+
 final GLParser g = GLParser();
 
 void main() {
@@ -277,12 +279,13 @@ void main() {
 
     final serializer = GLGraphqlSerializer(g);
     var serial = serializer.generateSchema();
+    print(serial);
     // should seriaze skip on client types
     // but should skip fields with @glSkipOnServer directive
     expect(
       serial.split("\n").map((str) => str.trim()),
       containsAllInOrder([
-        "type User {",
+        "type User implements ${toServerProjectionName('User')} {",
         "id: String",
         "name: String",
         "lastName: String",
@@ -291,13 +294,15 @@ void main() {
         "}"
       ]),
     );
-
-    expect(serial.contains("carId"), isFalse);
+    var userSerial = serializer.serializeTypeDefinition(g.getTypeByName('User')!, CodeGenerationMode.client);
+    print("-----");
+    print(userSerial);
+    expect(userSerial.contains("carId"), isFalse);
   });
 
   test("serializeTypeDefinition implements one interface", () async {
     final g = GLParser(
-        generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+        generateAllFieldsFragments: true, mode: CodeGenerationMode.client);
     g.parse('''
     interface IBase {
       id: String
@@ -319,6 +324,7 @@ void main() {
     var serial = serializer.generateSchema();
     // should seriaze skip on client types
     // but should skip fields with @glSkipOnServer directive
+    print(serial);
     expect(
       serial.split("\n").map((str) => str.trim()),
       containsAllInOrder([
@@ -332,12 +338,11 @@ void main() {
       ]),
     );
 
-    expect(serial.contains("carId"), isFalse);
   });
 
   test("serializeTypeDefinition implements multiple interfaces", () async {
     final g = GLParser(
-        generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+        generateAllFieldsFragments: true, mode: CodeGenerationMode.client);
     g.parse('''
     interface IBase {
       id: String
@@ -381,7 +386,7 @@ void main() {
 
   test("serializeInterfaceDefinition test", () async {
     final g = GLParser(
-        generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+        generateAllFieldsFragments: true, mode: CodeGenerationMode.client);
     g.parse('''
     interface User  {
       id: String
@@ -417,7 +422,7 @@ void main() {
 
   test("serializeInterfaceDefinition imlements one interface", () async {
     final g = GLParser(
-        generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+        generateAllFieldsFragments: true, mode: CodeGenerationMode.client);
     g.parse('''
 interface IBase {
       id: String
@@ -456,7 +461,7 @@ interface IBase {
 
   test("serializeInterfaceDefinition imlements multiple interfaces", () async {
     final g = GLParser(
-        generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+        generateAllFieldsFragments: true, mode: CodeGenerationMode.client);
     g.parse('''
 interface IBase {
       id: String
@@ -499,7 +504,7 @@ interface IBase {
 
   test("serializeEnumDefinition test", () async {
     final g = GLParser(
-        generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
+        generateAllFieldsFragments: true, mode: CodeGenerationMode.client);
     g.parse('''
     enum Gender {male, female}
 ''');

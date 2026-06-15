@@ -27,7 +27,6 @@
             "immutableInputFields": true,
             "immutableTypeFields": false,
             "injectDataFetching": false,
-
             "reactive": true
         }
     }

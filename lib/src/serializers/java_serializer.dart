@@ -101,7 +101,7 @@ class JavaSerializer extends GLSerializer {
     this.inputsAsRecords = false,
     this.typesAsRecords = false,
     this.generateJsonMethods = false,
-    this.typesCheckForNulls = false,
+    this.typesCheckForNulls = true,
     this.inputsCheckForNulls = true,
     this.immutableInputFields = true,
     this.immutableTypeFields = false,
@@ -183,7 +183,7 @@ class JavaSerializer extends GLSerializer {
   String doSerializeField(GLField def, bool immutable, bool isTypeField) {
     final type = def.type;
     final name = def.name;
-    final forceNullable = isTypeField && (def.hasInculeOrSkipDiretives || forceFieldNullable);
+    final forceNullable = isTypeField && (def.hasInculeOrSkipDiretives);
     var buffer = StringBuffer();
     var decorators = serializeDecorators(def.getDirectives(), joiner: "\n");
     if (decorators.isNotEmpty) {
@@ -214,7 +214,7 @@ class JavaSerializer extends GLSerializer {
     final name = def.name;
     final hasInculeOrSkipDiretives = def.hasInculeOrSkipDiretives;
     final forceNullable = isTypeField
-        ? (hasInculeOrSkipDiretives || forceFieldNullable)
+        ? (hasInculeOrSkipDiretives)
         : hasInculeOrSkipDiretives;
     final buffer = StringBuffer();
     if (withDecorators) {
@@ -245,18 +245,19 @@ class JavaSerializer extends GLSerializer {
     if (glType is GLListType) {
       if (reactive) {
         context?.addImport(JavaImports.flux);
-        return "Flux<${convertPrimitiveToBoxed(serializeTypeReactive(glType: glType.inlineType, context: context))}>";
+        final inlineType = glType.inlineType;
+        return JavaCodeGenUtils.fluxOf(
+            grammar, serializeTypeReactive(glType: inlineType, context: context));
       }
       context?.addImport(importList);
-        return _listOf(
-            convertPrimitiveToBoxed(serializeType(glType.inlineType, false)));
+      return JavaCodeGenUtils.listOf(grammar, serializeType(glType.inlineType, false));
     }
     final token = glType.token;
 
     var type = getTypeNameFromGQExternal(token) ?? token;
     if (reactive) {
       context?.addImport(JavaImports.mono);
-      return "Mono<${convertPrimitiveToBoxed(type)}>";
+      return JavaCodeGenUtils.monoOf(grammar, type);
     }
     if (typeIsJavaPrimitive(type) && (glType.nullable || forceNullable)) {
       return convertPrimitiveToBoxed(type);
@@ -740,7 +741,7 @@ class JavaSerializer extends GLSerializer {
     if (checkForNulls) {
       context.addImport(JavaImports.objects);
     }
-    final forceNullable = isTypeField && (field.hasInculeOrSkipDiretives || forceFieldNullable);
+    final forceNullable = isTypeField && (field.hasInculeOrSkipDiretives);
     var returnType = serializeType(field.type, forceNullable);
     var jspecifyAnnotation = _isPrimitiveType(field.type) ? null : getJSpecifyAnnoation(field);
     var result = codeGenUtils.createMethod(
@@ -829,8 +830,9 @@ class JavaSerializer extends GLSerializer {
       {bool skipModifier = false, bool asProperty = false, bool forceNullable = false}) {
     var returnType = serializeType(field.type, forceNullable);
     final type = field.type;
-    if (type is GLListType && grammar.isInterface(type.inlineType.token)) {
-      returnType = _listOf("? extends ${serializeType(type.inlineType, false)}");
+    if (type is GLListType) {
+      returnType =
+          JavaCodeGenUtils.listOf(grammar, serializeType(type.inlineType, false));
     }
     var result = returnType;
     if (asProperty) {
@@ -860,7 +862,7 @@ class JavaSerializer extends GLSerializer {
      if(isRecord) {
       return "$name()";
      }
-    return '${_getterName(name, serializeType(field.type, !forInput && forceFieldNullable) == "boolean")}()';
+    return '${_getterName(name, serializeType(field.type, !forInput) == "boolean")}()';
 
   }
 
@@ -1010,7 +1012,7 @@ class JavaSerializer extends GLSerializer {
     if (fieldDecorators.isNotEmpty) {
       buffer.writeln(fieldDecorators.trim().ident());
     }
-    final fieldForceNullable = f.hasInculeOrSkipDiretives || forceFieldNullable;
+    final fieldForceNullable = f.hasInculeOrSkipDiretives;
     if (getters) {
       if (typesAsRecords && !forceClassGetters) {
         buffer.write(

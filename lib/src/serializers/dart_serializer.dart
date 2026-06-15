@@ -109,7 +109,7 @@ class DartSerializer extends GLSerializer {
   String doSerializeField(GLField def, bool immutable, bool isTypeField) {
     final type = def.type;
     final name = def.name;
-    final forceNullable = isTypeField && (def.hasInculeOrSkipDiretives || forceFieldNullable);
+    final forceNullable = isTypeField && (def.hasInculeOrSkipDiretives);
     final builder = StringBuffer(serializeDecorators(def.getDirectives()));
     if (immutable) {
       builder.write("final ");
@@ -594,7 +594,7 @@ class DartSerializer extends GLSerializer {
   }
 
   String serializeGetterDeclaration(GLField field) {
-    final forceNullable = field.hasInculeOrSkipDiretives || forceFieldNullable;
+    final forceNullable = field.hasInculeOrSkipDiretives;
     return """${serializeType(field.type, forceNullable)} get ${field.name}""";
   }
 

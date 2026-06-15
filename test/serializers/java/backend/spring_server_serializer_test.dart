@@ -7,6 +7,8 @@ import 'package:graphlink/src/serializers/java_spring_server_serializer.dart';
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
+import '../../../test_utils.dart';
+
 void main() {
 
   test("test backend handlers 1", () {
@@ -35,15 +37,15 @@ void main() {
         'this.userService = userService;',
         '}',
         '@QueryMapping()',
-        'public CompletableFuture<User> getUser() {',
+        'public CompletableFuture<${toServerProjectionName('User')}> getUser() {',
         'return CompletableFuture.supplyAsync(() -> userService.getUser());',
         '}',
         '@QueryMapping()',
-        'public CompletableFuture<User> getUserById(@Argument() String id) {',
+        'public CompletableFuture<${toServerProjectionName('User')}> getUserById(@Argument() String id) {',
         'return CompletableFuture.supplyAsync(() -> userService.getUserById(id));',
         '}',
         '@QueryMapping()',
-        'public CompletableFuture<List<User>> getUsers(@Argument() String name, @Argument() String middle) {',
+        'public CompletableFuture<List<? extends ${toServerProjectionName('User')}>> getUsers(@Argument() String name, @Argument() String middle) {',
         'return CompletableFuture.supplyAsync(() -> userService.getUsers(name, middle));',
         '}',
         '@QueryMapping()',
@@ -51,11 +53,11 @@ void main() {
         'return CompletableFuture.supplyAsync(() -> userService.getUserCount());',
         '}',
         '@SubscriptionMapping()',
-        'public Flux<User> watchUser(@Argument() String userId) {',
+        'public Flux<? extends ${toServerProjectionName('User')}> watchUser(@Argument() String userId) {',
         'return userService.watchUser(userId);',
         '}',
         '@SubscriptionMapping()',
-        'public Flux<List<Car>> watchCars(@Argument() String userId) {',
+        'public Flux<? extends List<? extends ${toServerProjectionName('Car')}>> watchCars(@Argument() String userId) {',
         'return userService.watchCars(userId);',
         '}',
         '}',
@@ -89,15 +91,15 @@ void main() {
         'this.userService = userService;',
         '}',
         '@QueryMapping()',
-        'public CompletableFuture<User> getUser() {',
+        'public CompletableFuture<${toServerProjectionName('User')}> getUser() {',
         'return CompletableFuture.supplyAsync(() -> userService.getUser());',
         '}',
         '@QueryMapping()',
-        'public CompletableFuture<User> getUserById(@Argument() String id) {',
+        'public CompletableFuture<${toServerProjectionName('User')}> getUserById(@Argument() String id) {',
         'return CompletableFuture.supplyAsync(() -> userService.getUserById(id));',
         '}',
         '@QueryMapping()',
-        'public CompletableFuture<List<User>> getUsers(@Argument() String name, @Argument() String middle) {',
+        'public CompletableFuture<List<? extends ${toServerProjectionName('User')}>> getUsers(@Argument() String name, @Argument() String middle) {',
         'return CompletableFuture.supplyAsync(() -> userService.getUsers(name, middle));',
         '}',
         '@QueryMapping()',
@@ -105,11 +107,11 @@ void main() {
         'return CompletableFuture.supplyAsync(() -> userService.getUserCount());',
         '}',
         '@SubscriptionMapping()',
-        'public Flux<User> watchUser(@Argument() String userId) {',
+        'public Flux<? extends ${toServerProjectionName('User')}> watchUser(@Argument() String userId) {',
         'return userService.watchUser(userId);',
         '}',
         '@SubscriptionMapping()',
-        'public Flux<List<Car>> watchCars(@Argument() String userId) {',
+        'public Flux<? extends List<? extends ${toServerProjectionName('Car')}>> watchCars(@Argument() String userId) {',
         'return userService.watchCars(userId);',
         '}',
         '}',
@@ -142,15 +144,15 @@ void main() {
         'this.userService = userService;',
         '}',
         '@QueryMapping()',
-        'public CompletableFuture<User> getUser() {',
+        'public CompletableFuture<${toServerProjectionName('User')}> getUser() {',
         'return CompletableFuture.supplyAsync(() -> userService.getUser());',
         '}',
         '@QueryMapping()',
-        'public CompletableFuture<User> getUserById(@Argument() String id) {',
+        'public CompletableFuture<${toServerProjectionName('User')}> getUserById(@Argument() String id) {',
         'return CompletableFuture.supplyAsync(() -> userService.getUserById(id));',
         '}',
         '@QueryMapping()',
-        'public CompletableFuture<List<User>> getUsers(@Argument() String name, @Argument() String middle) {',
+        'public CompletableFuture<List<? extends ${toServerProjectionName('User')}>> getUsers(@Argument() String name, @Argument() String middle) {',
         'return CompletableFuture.supplyAsync(() -> userService.getUsers(name, middle));',
         '}',
         '@QueryMapping()',
@@ -158,11 +160,11 @@ void main() {
         'return CompletableFuture.supplyAsync(() -> userService.getUserCount());',
         '}',
         '@SubscriptionMapping()',
-        'public Flux<User> watchUser(@Argument() String userId) {',
+        'public Flux<? extends ${toServerProjectionName('User')}> watchUser(@Argument() String userId) {',
         'return userService.watchUser(userId);',
         '}',
         '@SubscriptionMapping()',
-        'public Flux<List<Car>> watchCars(@Argument() String userId) {',
+        'public Flux<? extends List<? extends ${toServerProjectionName('Car')}>> watchCars(@Argument() String userId) {',
         'return userService.watchCars(userId);',
         '}',
         '}',
@@ -191,17 +193,16 @@ void main() {
     var serialzer = JavaSpringServerSerializer(g, packageName: "");
     var serviceSerial = serialzer.serializeService(userCarService);
     var controllerSerial = serialzer.serializeController(userCarCtrl);
-
     expect(
         serviceSerial,
         stringContainsInOrder([
           "User getUserCar();",
         ]));
-
+    print(controllerSerial);
     expect(
         controllerSerial,
         stringContainsInOrder([
-          "public CompletableFuture<User> getUserCar()",
+          "public CompletableFuture<${toServerProjectionName('User')}> getUserCar()",
         ]));
   });
 
@@ -316,21 +317,22 @@ void main() {
     var serverSerialzer = JavaSpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
     var userCtrl = g.controllers["UserServiceController"]!;
     var result = serverSerialzer.serializeController(userCtrl);
+    print(result);
     expect(
         result,
         stringContainsInOrder([
           "@Controller",
           "public class UserServiceController",
-          "private final UserService userService;",
-          "public UserServiceController(UserService userService)",
-          "this.userService = userService;",
-          "CompletableFuture<User> getUser(DataFetchingEnvironment dataFetchingEnvironment) {",
-          "return CompletableFuture.supplyAsync(() -> userService.getUser(dataFetchingEnvironment));",
-          "CompletableFuture<User> getUserById(@Argument() String id, DataFetchingEnvironment dataFetchingEnvironment)",
-          "return CompletableFuture.supplyAsync(() -> userService.getUserById(id, dataFetchingEnvironment));",
-          "@SubscriptionMapping",
-          "Flux<List<Car>> watchCars(@Argument() String userId, DataFetchingEnvironment dataFetchingEnvironment)",
-          "return userService.watchCars(userId, dataFetchingEnvironment);",
+           "private final UserService userService;",
+           "public UserServiceController(UserService userService)",
+           "this.userService = userService;",
+           "CompletableFuture<${toServerProjectionName('User')}> getUser(DataFetchingEnvironment dataFetchingEnvironment) {",
+           "return CompletableFuture.supplyAsync(() -> userService.getUser(dataFetchingEnvironment));",
+           "CompletableFuture<${toServerProjectionName('User')}> getUserById(@Argument() String id, DataFetchingEnvironment dataFetchingEnvironment)",
+           "return CompletableFuture.supplyAsync(() -> userService.getUserById(id, dataFetchingEnvironment));",
+           "@SubscriptionMapping",
+           "Flux<? extends List<? extends ${toServerProjectionName('Car')}>> watchCars(@Argument() String userId, DataFetchingEnvironment dataFetchingEnvironment)",
+           "return userService.watchCars(userId, dataFetchingEnvironment);",
         ]));
   });
 
@@ -353,12 +355,12 @@ void main() {
         serializedService,
         stringContainsInOrder([
           "public interface UserService",
-          "User getUser();",
-          "User getUserById(String id);",
-          "List<User> getUsers(String name, String middle);",
-          "Integer getUserCount();",
-          "Flux<User> watchUser(String userId);",
-          "Flux<List<Car>> watchCars(String userId);",
+           "User getUser();",
+           "User getUserById(String id);",
+           "List<User> getUsers(String name, String middle);",
+           "Integer getUserCount();",
+           "Flux<User> watchUser(String userId);",
+           "Flux<? extends List<Car>> watchCars(String userId);",
         ]));
   });
 
@@ -554,7 +556,7 @@ void main() {
     final lines = result.split('\n').map((e) => e.trim()).toList();
     expect(lines, containsAllInOrder([
       '@QueryMapping()',
-      'public CompletableFuture<User> getUser(@Argument() String id) {',
+      'public CompletableFuture<${toServerProjectionName('User')}> getUser(@Argument() String id) {',
       'SecurityContext securityContext = SecurityContextHolder.getContext();',
       'return CompletableFuture.supplyAsync(() -> {',
       'SecurityContextHolder.setContext(securityContext);',

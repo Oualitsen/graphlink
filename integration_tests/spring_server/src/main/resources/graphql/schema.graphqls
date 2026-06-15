@@ -42,7 +42,6 @@ type User {
   tags:           [String!]!
   scores:         [Int!]
   posts:          [Post!]
-  recentPosts(limit: Int!): [Post!]!
 }
 
 type Post {

@@ -10,6 +10,8 @@ import 'package:graphlink/src/serializers/java_spring_server_serializer.dart';
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
+import '../test_utils.dart';
+
 void main() async {
   test("type depends on type", () {
     final GLParser g = GLParser(generateAllFieldsFragments: true);
@@ -862,7 +864,7 @@ type Query {
     expect(service.getImportDependecies(g).map((e) => e.token),
         containsAll(['ConversationView']));
     expect(ctrl.getImportDependecies(g).map((e) => e.token),
-        containsAll(['ConversationView']));
+        containsAll([toServerProjectionName('ConversationView')]));
   });
 
   test("service should import DataFetchingEnvironment when serialized", () {

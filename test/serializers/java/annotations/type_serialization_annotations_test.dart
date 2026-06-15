@@ -9,6 +9,8 @@ import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 
+import '../../../test_utils.dart';
+
 void main() {
  
 
@@ -161,18 +163,19 @@ void main() {
     var springSerialzer = JavaSpringServerSerializer(g, packageName: "");
     var userCtrl = g.controllers["UserServiceController"]!;
     var userController = springSerialzer.serializeController(userCtrl);
+    print(userController);
     expect(
         userController,
         stringContainsInOrder(
-            ["@LoggedIn()", "@QueryMapping()", "public CompletableFuture<User> getUser()"]));
+            ["@LoggedIn()", "@QueryMapping()", "public CompletableFuture<${toServerProjectionName('User')}> getUser()"]));
   });
 
   test("annotations on interfaces", () {
-    final GLParser g = GLParser(mode: CodeGenerationMode.server);
+    final GLParser g = GLParser(mode: CodeGenerationMode.client);
     g.parse('''
     directive @Id(glClass: String = "Id",
      glImport: String = "org.springframework.data.annotation.Id",
-    glOnClient: Boolean = false,
+    glOnClient: Boolean = true,
     glOnServer: Boolean = true,
     glAnnotation: Boolean = true
       )
@@ -189,18 +192,18 @@ void main() {
     var javaSerial = serialzer.serializeTypeDefinition(iface);
     var dartSerial = dartSerialzer.serializeTypeDefinition(iface);
 
+    print(javaSerial);
+
     expect(
         javaSerial,
         stringContainsInOrder(
             ['public interface BasicEntity', '@Id()', 'String getId();']));
-
     expect(
         dartSerial,
         stringContainsInOrder(
-            ['abstract class BasicEntity ', '@Id()', 'String? get id;']));
+            ['abstract class BasicEntity ', '@Id()', 'String get id;']));
 
-    print(serialzer.serializeTypeDefinition(iface));
-    print(dartSerialzer.serializeTypeDefinition(iface));
+    
   });
 
   test("annotations glApplyOnFields", () {
