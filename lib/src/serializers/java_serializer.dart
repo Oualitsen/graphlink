@@ -113,6 +113,36 @@ class JavaSerializer extends GLSerializer {
     if (jspecify) grammar.applyJspecifyAnnotations(isPrimitive: _isPrimitiveType);
   }
 
+  @override
+  String serializeDefaultLiteral(GLType type, Object? value, {bool needsConst = false}) {
+    if (value == null) return 'null';
+    if (value is int) return '$value';
+    if (value is double) return '$value';
+    if (value is bool) return '$value';
+    if (value is List) {
+      final innerType = type.inlineType;
+      final items = value.map((e) => serializeDefaultLiteral(innerType, e)).join(', ');
+      return 'Arrays.asList($items)';
+    }
+    if (value is Map) {
+      final inputDef = grammar.inputs[type.token]!;
+      final args = inputDef.fields.map((f) {
+        return serializeDefaultLiteral(f.type, value[f.name.token]);
+      }).join(', ');
+      return 'new ${type.token}($args)';
+    }
+    if (value is String) {
+      if (grammar.enums.containsKey(type.token)) {
+        return '${type.token}.$value';
+      }
+      final content = value.startsWith('"') && value.endsWith('"')
+          ? value.substring(1, value.length - 1)
+          : value;
+      return '"$content"';
+    }
+    return '"$value"';
+  }
+
   void _initAnnotations() {
     grammar.handleAnnotations((val) =>
         AnnotationSerializer.serializeAnnotation(val, multiLineString: false));
@@ -193,7 +223,13 @@ class JavaSerializer extends GLSerializer {
     if (immutable) {
       buffer.write("final ");
     }
-    buffer.write('${serializeType(type, forceNullable)} $name;');
+    buffer.write('${serializeType(type, forceNullable)} $name');
+    // Only emit field initializer for non-final fields — final fields
+    // receive their default in the constructor body instead.
+    if (!immutable && !isTypeField && def.initialValue != null) {
+      buffer.write(' = ${serializeDefaultLiteral(type, def.initialValue)}');
+    }
+    buffer.write(';');
     return buffer.toString();
   }
 
@@ -663,7 +699,7 @@ class JavaSerializer extends GLSerializer {
     String nullCheck = "";
     if (checkForNulls) {
       var checkingFields = fields
-          .where((e) => !e.type.nullable && !_isPrimitiveType(e.type))
+          .where((e) => !e.type.nullable && e.initialValue == null && !_isPrimitiveType(e.type))
           .map((e) => "Objects.requireNonNull(${e.name});")
           .toList();
 
@@ -684,8 +720,20 @@ class JavaSerializer extends GLSerializer {
       buffer.writeln(nullCheck.ident());
     }
     if (fields.isNotEmpty) {
+      // Add Arrays import if any field has a list-type default value.
+      final hasListDefault = fields.any((e) =>
+          !isTypeField && e.initialValue != null && e.type.isList);
+      if (hasListDefault) {
+        context.addImport(JavaImports.arrays);
+      }
       buffer.writeln(serializeListText(
-              fields.map((e) => "this.${e.name} = ${e.name};").toList(),
+              fields.map((e) {
+                if (!isTypeField && e.initialValue != null) {
+                  final lit = serializeDefaultLiteral(e.type, e.initialValue);
+                  return "this.${e.name} = ${e.name} != null ? ${e.name} : $lit;";
+                }
+                return "this.${e.name} = ${e.name};";
+              }).toList(),
               join: "\n",
               withParenthesis: false)
           .ident());

@@ -9,8 +9,8 @@ import 'package:graphlink/src/model/gl_token.dart';
 
 class GLArgumentDefinition extends GLToken with GLDirectivesMixin {
   final GLType type;
-  final Object? initialValue;
-  GLArgumentDefinition(super.tokenInfo, this.type, List<GLDirectiveValue> directives, {this.initialValue}) {
+  final GLDefaultValue? defaultValue;
+  GLArgumentDefinition(super.tokenInfo, this.type, List<GLDirectiveValue> directives, {this.defaultValue}) {
     directives.forEach(addDirective);
   }
 
@@ -36,4 +36,10 @@ class GLArgumentValue extends GLToken {
   String toString() {
     return 'GraphqlArgumentValue{value: $value name: $tokenInfo}';
   }
+}
+
+
+class GLDefaultValue {
+  final Object? value;
+  GLDefaultValue(this.value);
 }

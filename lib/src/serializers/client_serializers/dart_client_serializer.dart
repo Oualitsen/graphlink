@@ -812,9 +812,16 @@ return $_svResult.data$dataSuffix;
   }
 
   List<String> getArguments(GLQueryDefinition def) {
-    final args = def.arguments
-        .map((e) => "required ${_resolveArgType(e)} ${e.dartArgumentName}")
-        .toList();
+    final args = def.arguments.map((e) {
+      final type = _resolveArgType(e);
+      final name = e.dartArgumentName;
+      if (e.defaultValue != null) {
+        final lit = serializer.serializeDefaultLiteral(e.type, e.defaultValue!.value, needsConst: true);
+        return '$type $name = $lit';
+      }
+      if (e.type.nullable) return '$type $name';
+      return 'required $type $name';
+    }).toList();
     if (isUploadMutation(def)) {
       args.add('UploadProgressCallback? onProgress');
     }

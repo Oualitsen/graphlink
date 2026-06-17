@@ -580,7 +580,7 @@ extension GLGrammarProjectionExtension on GLParser {
     }
     def.arguments.add(GLArgumentDefinition(
         varToken.toToken(), argDef.type, [],
-        initialValue: argDef.initialValue));
+        defaultValue: argDef.defaultValue));
   }
 
   Map<String, GLProjection> _collectProjection(

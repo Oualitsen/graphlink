@@ -68,7 +68,7 @@ void main() {
         "final String id;",
         "final String name;",
         "final String? middleName;",
-        "User({required this.id, required this.name, this.middleName});",
+        "const User({required this.id, required this.name, this.middleName});",
         "}"
       ]),
     );
@@ -92,7 +92,7 @@ void main() {
         "final String? id;",
         "final String name;",
         "final String? middleName;",
-        "UserInput({",
+        "const UserInput({",
         "this.id,",
         "required this.name,",
         "this.middleName",

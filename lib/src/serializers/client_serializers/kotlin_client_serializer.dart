@@ -1,3 +1,4 @@
+import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/gl_grammar_cache_extension.dart';
 import 'package:graphlink/src/gl_grammar_upload_extension.dart';
@@ -77,7 +78,7 @@ class KotlinClientSerializer extends GLClientSerializer {
       if (_grammar.hasSubscriptions)
         'subscriptions = ${_classNameFor(GLQueryType.subscription)}(adapter, wsAdapter, encoder, decoder, store)',
       ..._grammar.fragments.values.map((f) =>
-          'fragmentMap["${f.tokenInfo}"] = "${gqlSerializer.serializeFragmentDefinitionBase(f)}"'),
+          'fragmentMap["${f.tokenInfo}"] = "${gqlSerializer.serializeFragmentDefinitionBase(f).escapeForStringLiteral()}"'),
     ];
 
     final primaryCtorArgs = [

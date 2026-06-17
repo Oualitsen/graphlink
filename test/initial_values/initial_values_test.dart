@@ -62,69 +62,43 @@ void main() {
     parser.parse(_schema);
   });
 
-  test('server schema includes input field defaults', () {
-    final serializer = GLGraphqlSerializer(parser);
-    final output = serializer.generateSchema();
+  test('input field defaults appear in generated server schema', () {
+    final out = GLGraphqlSerializer(parser).generateSchema();
+    print('=== GENERATED SERVER SCHEMA ===\n$out');
 
-    print('=== GENERATED SERVER SCHEMA ===');
-    print(output);
-
-    expect(output, contains('role: Role'));
-    expect(output, contains('age: Int'));
-    expect(output, contains('isActive: Boolean'));
-    expect(output, contains('score: Float'));
-    expect(output, contains('nickname: String'));
-    expect(output, contains('tags: [String]'));
+    expect(out, contains('role: Role = USER'));
+    expect(out, contains('age: Int = 18'));
+    expect(out, contains('isActive: Boolean = true'));
+    expect(out, contains('score: Float = 4.5'));
+    expect(out, contains('nickname: String = "anonymous"'));
   });
 
-  test('field argument defaults appear in generated schema', () {
-    final serializer = GLGraphqlSerializer(parser);
-    final output = serializer.generateSchema();
-
-    print('=== listUsers field args ===');
-    final listUsersLine =
-        output.split('\n').where((l) => l.contains('listUsers')).join('\n');
-    print(listUsersLine);
-
-    expect(output, contains('listUsers'));
+  test('field argument defaults appear in generated server schema', () {
+    final out = GLGraphqlSerializer(parser).generateSchema();
+    expect(out, contains('listUsers(limit: Int = 20, status: Status = ACTIVE)'));
   });
 
   test('raw parsed initialValues on input fields', () {
-    final createUserInput = parser.inputs['CreateUserInput']!;
+    final input = parser.inputs['CreateUserInput']!;
+    final role = input.fields.firstWhere((f) => f.name.token == 'role');
+    final age = input.fields.firstWhere((f) => f.name.token == 'age');
+    final isActive = input.fields.firstWhere((f) => f.name.token == 'isActive');
+    final score = input.fields.firstWhere((f) => f.name.token == 'score');
+    final nickname = input.fields.firstWhere((f) => f.name.token == 'nickname');
+    final tags = input.fields.firstWhere((f) => f.name.token == 'tags');
 
-    print('=== CreateUserInput field initialValues ===');
-    for (final field in createUserInput.fields) {
-      print('  ${field.name.token}: ${field.type.token} = ${field.initialValue} (${field.initialValue.runtimeType})');
-    }
-
-    final roleField = createUserInput.fields.firstWhere((f) => f.name.token == 'role');
-    final ageField = createUserInput.fields.firstWhere((f) => f.name.token == 'age');
-    final isActiveField = createUserInput.fields.firstWhere((f) => f.name.token == 'isActive');
-    final scoreField = createUserInput.fields.firstWhere((f) => f.name.token == 'score');
-    final nicknameField = createUserInput.fields.firstWhere((f) => f.name.token == 'nickname');
-    final tagsField = createUserInput.fields.firstWhere((f) => f.name.token == 'tags');
-
-    expect(roleField.initialValue, equals('USER'));
-    expect(ageField.initialValue, equals(18));
-    expect(isActiveField.initialValue, equals(true));
-    expect(scoreField.initialValue, equals(4.5));
-    expect(nicknameField.initialValue, equals('"anonymous"'));
-    expect(tagsField.initialValue, equals(['"dart"', '"graphql"']));
+    expect(role.initialValue, equals('USER'));
+    expect(age.initialValue, equals(18));
+    expect(isActive.initialValue, equals(true));
+    expect(score.initialValue, equals(4.5));
+    expect(nickname.initialValue, equals('"anonymous"'));
+    expect(tags.initialValue, equals(['"dart"', '"graphql"']));
   });
 
   test('raw parsed initialValues on field arguments', () {
-    final queryType = parser.types['Query']!;
-    final listUsersField = queryType.fields.firstWhere((f) => f.name.token == 'listUsers');
-
-    print('=== listUsers argument initialValues ===');
-    for (final arg in listUsersField.arguments) {
-      print('  ${arg.token}: ${arg.type.token} = ${arg.initialValue} (${arg.initialValue.runtimeType})');
-    }
-
-    final limitArg = listUsersField.getArgumentByName('limit')!;
-    final statusArg = listUsersField.getArgumentByName('status')!;
-
-    expect(limitArg.initialValue, equals(20));
-    expect(statusArg.initialValue, equals('ACTIVE'));
+    final listUsers = parser.types['Query']!.fields
+        .firstWhere((f) => f.name.token == 'listUsers');
+    expect(listUsers.getArgumentByName('limit')!.defaultValue?.value, equals(20));
+    expect(listUsers.getArgumentByName('status')!.defaultValue?.value, equals('ACTIVE'));
   });
 }

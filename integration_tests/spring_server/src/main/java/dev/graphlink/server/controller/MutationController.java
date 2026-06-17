@@ -85,4 +85,41 @@ public class MutationController {
                 .message("Cannot create user").build();
         return createUser(input);
     }
+
+    // ── Default-value mutation ──────────────────────────────────────────────
+    // The SERVER schema has NO defaults — the CLIENT applies them.
+    // This resolver just echoes back the values it receives so tests can
+    // verify the client sent the correct defaults.
+
+    @MutationMapping
+    public DefaultsEcho createWithDefaults(@Argument CreateWithDefaultsInput input) {
+        return new DefaultsEcho(
+            input.name(),
+            input.role(),
+            input.age(),
+            input.isActive(),
+            input.score(),
+            input.nickname(),
+            input.tags()
+        );
+    }
+
+    // ── Nested-defaults mutation ────────────────────────────────────────────
+    // Tests object, list-of-objects, and list-of-list-of-objects defaults.
+
+    @MutationMapping
+    public NestedDefaultsEcho createWithNestedDefaults(@Argument NestedDefaultsInput input) {
+        return new NestedDefaultsEcho(
+            input.name(),
+            input.address() == null ? null : toAddress(input.address()),
+            input.contacts() == null ? null : input.contacts().stream().map(this::toAddress).toList(),
+            input.matrix() == null ? null : input.matrix().stream()
+                .map(row -> row.stream().map(this::toAddress).toList())
+                .toList()
+        );
+    }
+
+    private Address toAddress(AddressInput a) {
+        return new Address(a.street(), a.city(), a.country(), a.zip());
+    }
 }

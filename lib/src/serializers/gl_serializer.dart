@@ -25,6 +25,23 @@ abstract class GLSerializer {
   /// Subclasses must override this.
   Map<String, String> get defaultTypeMap;
 
+  /// Converts a parsed GraphQL default value into a target-language literal
+  /// expression. [type] is the field's declared GraphQL type (used to resolve
+  /// whether a bare-identifier value is an enum reference or a scalar).
+  /// [value] is the raw [GLField.initialValue] as produced by the parser:
+  ///   - [int] / [double] / [bool] — emit as-is
+  ///   - [String] with surrounding quotes (e.g. `"anonymous"`) — strip quotes,
+  ///     format as a language string literal
+  ///   - [String] bare identifier (e.g. `USER`) — format as enum reference
+  ///     (`EnumType.value`) when [type] resolves to a known enum
+  ///   - [List] — format as a language list literal (recursively)
+  ///   - `null` — emit null literal
+  /// Must be implemented by every language serializer.
+  /// When [needsConst] is true (Dart only), the outermost list/map/object
+  /// literal is prefixed with `const`.  Inner elements are NOT prefixed
+  /// because Dart's const-context propagation makes them implicitly const.
+  String serializeDefaultLiteral(GLType type, Object? value, {bool needsConst = false});
+
   /// Effective type map: language defaults merged with user-supplied overrides.
   late final Map<String, String> typeMap;
 
