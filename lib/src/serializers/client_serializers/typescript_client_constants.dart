@@ -559,7 +559,7 @@ export class DefaultGraphLinkWsAdapter implements GraphLinkWsAdapter {
     private readonly headersProvider?: () => Promise<Record<string, string> | null>,
     private readonly maxReconnectAttempts: number | null = 10,
     private readonly maxReconnectDelay: number = 30_000,
-    private readonly protocols: string | string[] = [],
+    private readonly protocols: string | string[] = ['graphql-transport-ws'],
   ) {}
 
   get reconnectAttempts(): number { return this._reconnectAttempts; }
@@ -573,7 +573,7 @@ export class DefaultGraphLinkWsAdapter implements GraphLinkWsAdapter {
     return new Promise((resolve, reject) => {
       const ws = new WebSocket(this.url, this.protocols);
       ws.onopen = () => { this._ws = ws; this._reconnectAttempts = 0; resolve(); };
-      ws.onerror = (e) => reject(e);
+      ws.onerror = (e) => { this._scheduleReconnect(); reject(e); };
       ws.onmessage = (e) => this._messageChannel.push(e.data as string);
       ws.onclose = () => this._scheduleReconnect();
     });
