@@ -231,6 +231,9 @@ class GLLexer {
     bool isFloat = false;
     var current = source[_pos];
     if (current == '-') {
+      if (_pos + 1 >= source.length || !_digits.contains(source[_pos + 1])) {
+        throw errorAt(_pos, "Expected digit after '-'");
+      }
       value.write(current);
       _pos++;
     }
@@ -337,6 +340,16 @@ class GLLexer {
         throw errorAt(start, 'Unterminated block string, expected \'"""\'');
       }
       _trackNewLines();
+      // \""" is an escaped triple-quote — keep it, do not end the block string
+      if (source[_pos] == '\\' &&
+          source.length >= _pos + 4 &&
+          source[_pos + 1] == '"' &&
+          source[_pos + 2] == '"' &&
+          source[_pos + 3] == '"') {
+        value.write(r'\"""');
+        _pos += 4;
+        continue;
+      }
       if (source[_pos] == '"' && source.length >= _pos + 3) {
         if (source[_pos + 1] == '"' && source[_pos + 2] == '"') {
           _pos += 3;
