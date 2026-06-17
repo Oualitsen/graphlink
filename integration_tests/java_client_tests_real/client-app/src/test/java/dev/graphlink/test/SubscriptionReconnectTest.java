@@ -192,7 +192,7 @@ class SubscriptionReconnectTest {
     private static void startJar(int port) throws Exception {
         log("  [startJar] launching JAR on port %d: %s", port, jarPath());
         ProcessBuilder pb = new ProcessBuilder(
-                "java", "-jar", jarPath(), "--server.port=" + port);
+                "java", "-jar", jarPath(), "--server.port=" + port, "--management.server.port=-1");
         pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
         pb.redirectError(ProcessBuilder.Redirect.DISCARD);
         pb.start();
