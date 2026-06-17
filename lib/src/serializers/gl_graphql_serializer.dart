@@ -252,8 +252,9 @@ ${enumValue.value} ${serializeDirectiveValueList(enumValue.getDirectives(skipGen
   }
 
   String serializeField(GLField field) {
+    final defaultValue = field.initialValue != null ? ' = ${field.initialValue}' : '';
     return '''
-${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)} ${serializeDirectiveValueList(field.getDirectives(skipGenerated: true))}
+${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)}$defaultValue ${serializeDirectiveValueList(field.getDirectives(skipGenerated: true))}
 '''
         .trim();
   }
