@@ -750,6 +750,9 @@ private _buildPayload(
       final isUpload = uploadNames.contains(arg.type.firstType.token);
       if (isUpload) {
         buffer.writeln("  '$name': ${arg.type.isList ? 'args.$name.map(() => null)' : 'null'},");
+      } else if (arg.defaultValue != null) {
+        final lit = serializer.serializeDefaultLiteral(arg.type, arg.defaultValue!.value);
+        buffer.writeln("  '$name': args.$name ?? $lit,");
       } else {
         buffer.writeln("  '$name': args.$name,");
       }
@@ -765,7 +768,8 @@ private _buildPayload(
     if (def.arguments.isNotEmpty) {
       final fields = def.arguments.map((arg) {
         final tsType = _resolveArgType(arg);
-        return '${arg.dartArgumentName}: $tsType';
+        final optional = (arg.type.nullable || arg.defaultValue != null) ? '?' : '';
+        return '${arg.dartArgumentName}$optional: $tsType';
       }).join('; ');
       result.add('args: { $fields }');
     }

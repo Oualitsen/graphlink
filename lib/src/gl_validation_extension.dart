@@ -651,4 +651,64 @@ extension GLValidationExtension on GLParser {
       }
     }
   }
+
+  void validateDefaultValues() {
+    for (final input in inputs.values) {
+      for (final field in input.fields) {
+        if (field.initialValue != null) {
+          _validateDefaultValue(field.type, field.initialValue, field.name);
+        }
+      }
+    }
+    for (final query in queries.values) {
+      for (final arg in query.arguments) {
+        if (arg.defaultValue != null) {
+          _validateDefaultValue(arg.type, arg.defaultValue!.value, arg.tokenInfo);
+        }
+      }
+    }
+    for (final typeDef in types.values) {
+      for (final field in typeDef.fields) {
+        for (final arg in field.arguments) {
+          if (arg.defaultValue != null) {
+            _validateDefaultValue(arg.type, arg.defaultValue!.value, arg.tokenInfo);
+          }
+        }
+      }
+    }
+  }
+
+  void _validateDefaultValue(GLType type, Object? value, TokenInfo info) {
+    if (value == null) {
+      if (!type.nullable) {
+        throw ParseException(
+            "Default value null is not valid for non-null type '${type.token}'",
+            info: info);
+      }
+      return;
+    }
+    if (value is List) {
+      if (type is GLListType) {
+        for (final item in value) {
+          _validateDefaultValue(type.inlineType, item, info);
+        }
+      }
+      return;
+    }
+    if (value is Map) {
+      final inputDef = inputs[type.token];
+      if (inputDef == null) return;
+      for (final entry in value.entries) {
+        final field = inputDef.fields
+            .where((f) => f.name.token == entry.key)
+            .firstOrNull;
+        if (field == null) {
+          throw ParseException(
+              "Unknown field '${entry.key}' in default value for input type '${type.token}'",
+              info: info);
+        }
+        _validateDefaultValue(field.type, entry.value, field.name);
+      }
+    }
+  }
 }

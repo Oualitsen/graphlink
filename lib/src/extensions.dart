@@ -62,6 +62,12 @@ extension StringExt on String {
     return replaceFirst("\$", "\\\$");
   }
 
+  /// Escapes `\`, `"`, and `$` so the string can be embedded safely inside a
+  /// Kotlin double-quoted string literal where `$` triggers interpolation.
+  String escapeForStringLiteral() {
+    return replaceAll('\\', '\\\\').replaceAll('"', '\\"').replaceAll(r'$', r'\$');
+  }
+
   TokenInfo toToken() => TokenInfo.ofString(this);
 
   String toSnakeCase() {

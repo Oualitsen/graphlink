@@ -149,6 +149,7 @@ class DartSerializer extends GLSerializer {
       codeGenUtils.createMethod(
           methodName: def.token,
           namedArguments: true,
+          isConst: true,
           arguments: fields.map((e) => toConstructorDeclaration(e)).toList()),
       if (generateJsonMethods) ...[
         generateToJson(fields),
@@ -298,9 +299,44 @@ class DartSerializer extends GLSerializer {
     return variable; // same type — direct copy
   }
 
+  @override
+  String serializeDefaultLiteral(GLType type, Object? value, {bool needsConst = false}) {
+    if (value == null) return 'null';
+    if (value is int) return '$value';
+    if (value is double) return '$value';
+    if (value is bool) return '$value';
+    if (value is List) {
+      final innerType = type.inlineType;
+      final items = value.map((e) => serializeDefaultLiteral(innerType, e, needsConst: false)).join(', ');
+      return needsConst ? 'const [$items]' : '[$items]';
+    }
+    if (value is Map) {
+      final inputDef = grammar.inputs[type.token];
+      final args = value.entries.map((e) {
+        final fieldType = inputDef?.fields.firstWhere((f) => f.name.token == e.key).type ?? type;
+        return '${e.key}: ${serializeDefaultLiteral(fieldType, e.value, needsConst: false)}';
+      }).join(', ');
+      return needsConst ? 'const ${type.token}($args)' : '${type.token}($args)';
+    }
+    if (value is String) {
+      if (grammar.enums.containsKey(type.token)) {
+        return '${type.token}.$value';
+      }
+      // quoted string — strip surrounding quotes, emit as Dart single-quoted string
+      final content = value.startsWith('"') && value.endsWith('"')
+          ? value.substring(1, value.length - 1)
+          : value;
+      return "'$content'";
+    }
+    return "'$value'";
+  }
+
   String toConstructorDeclaration(GLField field) {
-    if (grammar.nullableFieldsRequired || !field.type.nullable) {
+    if (grammar.nullableFieldsRequired || (!field.type.nullable && field.initialValue == null)) {
       return "required this.${field.name}";
+    } else if (field.initialValue != null) {
+      final lit = serializeDefaultLiteral(field.type, field.initialValue, needsConst: true);
+      return "this.${field.name} = $lit";
     } else {
       return "this.${field.name}";
     }
@@ -457,6 +493,7 @@ class DartSerializer extends GLSerializer {
         codeGenUtils.createMethod(
             methodName: token,
             namedArguments: false,
+            isConst: true,
             arguments: [serializeContructorArgs(fields)]),
         if (equalsHascodeCode.isNotEmpty) equalsHascodeCode,
         if (generateJsonMethods) ...[

@@ -113,7 +113,7 @@ void main() {
       expect(field.arguments.first.token, 'limit');
       expect(field.arguments.first.type.nullable, false);
       final offset = field.getArgumentByName('offset')!;
-      expect(offset.initialValue, 0);
+      expect(offset.defaultValue?.value, 0);
     });
 
     test('field with documentation', () {
@@ -164,7 +164,7 @@ void main() {
 
       final posts = type.getFieldByName('posts')!;
       expect(posts.arguments.length, 2);
-      expect(posts.getArgumentByName('limit')!.initialValue, 10);
+      expect(posts.getArgumentByName('limit')!.defaultValue?.value, 10);
     });
 
     test('missing type name throws', () {

@@ -150,9 +150,43 @@ class KotlinSerializer extends GLSerializer {
     return codeGenUtils.openClass(name: def.token, params: params, body: body.isEmpty ? null : body);
   }
 
+  @override
+  String serializeDefaultLiteral(GLType type, Object? value, {bool needsConst = false}) {
+    if (value == null) return 'null';
+    if (value is int) return '$value';
+    if (value is double) return '$value';
+    if (value is bool) return '$value';
+    if (value is List) {
+      final innerType = type.inlineType;
+      final items = value.map((e) => serializeDefaultLiteral(innerType, e)).join(', ');
+      return 'listOf($items)';
+    }
+    if (value is Map) {
+      final inputDef = grammar.inputs[type.token];
+      final args = value.entries.map((e) {
+        final fieldType = inputDef?.fields.firstWhere((f) => f.name.token == e.key).type ?? type;
+        return '${e.key} = ${serializeDefaultLiteral(fieldType, e.value)}';
+      }).join(', ');
+      return '${type.token}($args)';
+    }
+    if (value is String) {
+      if (grammar.enums.containsKey(type.token)) {
+        return '${type.token}.$value';
+      }
+      final content = value.startsWith('"') && value.endsWith('"')
+          ? value.substring(1, value.length - 1)
+          : value;
+      return '"$content"';
+    }
+    return '"$value"';
+  }
+
   String _inputParam(GLField f) {
     final type = serializeType(f.type, false);
     final keyword = _keyword(inputsAsDataClass);
+    if (f.initialValue != null) {
+      return '$keyword ${f.name}: $type = ${serializeDefaultLiteral(f.type, f.initialValue)}';
+    }
     if (f.type.nullable) {
       return '$keyword ${f.name}: $type = null';
     }

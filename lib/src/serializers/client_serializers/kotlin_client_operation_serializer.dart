@@ -1,3 +1,4 @@
+import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/capture_errors_utils.dart';
 import 'package:graphlink/src/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/kotlin_code_gen_utils.dart';
@@ -327,8 +328,8 @@ class KotlinClientOperationSerializer {
         : 'setOf(${e.fragmentNames.map((f) => '"$f"').join(', ')})';
     final argDeclsStr = e.argumentDeclarations.isEmpty
         ? 'emptyList()'
-        : 'listOf(${e.argumentDeclarations.map((a) => '"${a.replaceAll(r'$', r'\$')}"').join(', ')})';
-    final queryStr = e.query.replaceAll('\\', '\\\\').replaceAll('"', '\\"').replaceAll(r'$', r'\$');
+        : 'listOf(${e.argumentDeclarations.map((a) => '"${a.escapeForStringLiteral()}"').join(', ')})';
+    final queryStr = e.query.escapeForStringLiteral();
 
     final varAssignments = e.variables.map((v) {
       final argName = v.substring(1);
@@ -375,9 +376,16 @@ class KotlinClientOperationSerializer {
   }
 
   List<String> getArguments(GLQueryDefinition def) {
-    return def.arguments
-        .map((e) => '${e.dartArgumentName}: ${_resolveArgType(e)}')
-        .toList();
+    return def.arguments.map((e) {
+      final type = _resolveArgType(e);
+      final name = e.dartArgumentName;
+      if (e.defaultValue != null) {
+        final lit = _ctx.serializer.serializeDefaultLiteral(e.type, e.defaultValue!.value);
+        return '$name: $type = $lit';
+      }
+      if (e.type.nullable) return '$name: $type = null';
+      return '$name: $type';
+    }).toList();
   }
 
   String returnTypeByQueryType(GLQueryDefinition def) {

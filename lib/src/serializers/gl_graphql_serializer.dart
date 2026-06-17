@@ -157,8 +157,8 @@ directive ${def.name}${serializeDirectiveArgs(def.arguments)} on ${def.scopes.ma
   String serializeArgumentDefinition(GLArgumentDefinition def) {
     var buffer =
         StringBuffer("${_escapeDolar(def.token)}: ${serializeType(def.type)}");
-    if (def.initialValue != null) {
-      buffer.write(" = ${def.initialValue}");
+    if (def.defaultValue != null) {
+      buffer.write(" = ${def.defaultValue!.value}");
     }
     return buffer.toString();
   }

@@ -28,6 +28,8 @@ import dev.graphlink.test.generated.types.GetCachedConfigFullResponse
 import dev.graphlink.test.generated.types.GetStaleUserFullResponse
 import dev.graphlink.test.generated.types.GetUserOrErrorsFullResponse
 import dev.graphlink.test.generated.types.FindUserOrErrorsFullResponse
+import dev.graphlink.test.generated.types.ListUsersWithDefaultsFullResponse
+import dev.graphlink.test.generated.types.GetDriverFullResponse
 import dev.graphlink.test.generated.types.CreateUserFullResponse
 import dev.graphlink.test.generated.types.DeleteUserFullResponse
 import dev.graphlink.test.generated.types.UpdateUserFullResponse
@@ -35,6 +37,8 @@ import dev.graphlink.test.generated.types.CreateCachedUserFullResponse
 import dev.graphlink.test.generated.types.TransferPostFullResponse
 import dev.graphlink.test.generated.types.ResetAllFullResponse
 import dev.graphlink.test.generated.types.CreateUserOrErrorsFullResponse
+import dev.graphlink.test.generated.types.CreateWithDefaultsFullResponse
+import dev.graphlink.test.generated.types.CreateWithNestedDefaultsFullResponse
 import dev.graphlink.test.generated.types.UploadOneFileFullResponse
 import dev.graphlink.test.generated.types.UploadFileListFullResponse
 import dev.graphlink.test.generated.types.UserCreatedFullResponse
@@ -69,6 +73,8 @@ interface GraphLinkFullResponse {
          "GetStaleUserFullResponse" -> GetStaleUserFullResponse.fromJson(map)
          "GetUserOrErrorsFullResponse" -> GetUserOrErrorsFullResponse.fromJson(map)
          "FindUserOrErrorsFullResponse" -> FindUserOrErrorsFullResponse.fromJson(map)
+         "ListUsersWithDefaultsFullResponse" -> ListUsersWithDefaultsFullResponse.fromJson(map)
+         "GetDriverFullResponse" -> GetDriverFullResponse.fromJson(map)
          "CreateUserFullResponse" -> CreateUserFullResponse.fromJson(map)
          "DeleteUserFullResponse" -> DeleteUserFullResponse.fromJson(map)
          "UpdateUserFullResponse" -> UpdateUserFullResponse.fromJson(map)
@@ -76,6 +82,8 @@ interface GraphLinkFullResponse {
          "TransferPostFullResponse" -> TransferPostFullResponse.fromJson(map)
          "ResetAllFullResponse" -> ResetAllFullResponse.fromJson(map)
          "CreateUserOrErrorsFullResponse" -> CreateUserOrErrorsFullResponse.fromJson(map)
+         "CreateWithDefaultsFullResponse" -> CreateWithDefaultsFullResponse.fromJson(map)
+         "CreateWithNestedDefaultsFullResponse" -> CreateWithNestedDefaultsFullResponse.fromJson(map)
          "UploadOneFileFullResponse" -> UploadOneFileFullResponse.fromJson(map)
          "UploadFileListFullResponse" -> UploadFileListFullResponse.fromJson(map)
          "UserCreatedFullResponse" -> UserCreatedFullResponse.fromJson(map)

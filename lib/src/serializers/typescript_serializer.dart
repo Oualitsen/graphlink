@@ -39,6 +39,37 @@ class TypeScriptSerializer extends GLSerializer {
   @override
   bool get generateJsonMethods => false;
 
+  @override
+  String serializeDefaultLiteral(GLType type, Object? value, {bool needsConst = false}) {
+    if (value == null) return 'null';
+    if (value is int) return '$value';
+    if (value is double) return '$value';
+    if (value is bool) return '$value';
+    if (value is List) {
+      final innerType = type.inlineType;
+      final items = value.map((e) => serializeDefaultLiteral(innerType, e)).join(', ');
+      return '[$items]';
+    }
+    if (value is Map) {
+      final inputDef = grammar.inputs[type.token];
+      final entries = value.entries.map((e) {
+        final fieldType = inputDef?.fields.firstWhere((f) => f.name.token == e.key).type ?? type;
+        return '${e.key}: ${serializeDefaultLiteral(fieldType, e.value)}';
+      }).join(', ');
+      return '{ $entries }';
+    }
+    if (value is String) {
+      if (grammar.enums.containsKey(type.token)) {
+        return '${type.token}.$value';
+      }
+      final content = value.startsWith('"') && value.endsWith('"')
+          ? value.substring(1, value.length - 1)
+          : value;
+      return '"$content"';
+    }
+    return '"$value"';
+  }
+
   // ── Enums ──────────────────────────────────────────────────────────────────
 
   @override
@@ -103,7 +134,7 @@ class TypeScriptSerializer extends GLSerializer {
     final forceNullable = isTypeField && (def.hasInculeOrSkipDiretives);
     final tsType = serializeType(type, forceNullable);
 
-    if (!immutable && (type.nullable || forceNullable) && optionalNullableInputFields) {
+    if (!immutable && (def.type.nullable || forceNullable) && optionalNullableInputFields) {
       return '$name?: $tsType;';
     }
 
@@ -116,10 +147,19 @@ class TypeScriptSerializer extends GLSerializer {
   @override
   String doSerializeInputDefinition(GLInputDefinition def) {
     final fields = def.getSerializableFields(grammar.mode);
-    return codeGenUtils.createInterface(
+    final buffer = StringBuffer();
+    buffer.write(codeGenUtils.createInterface(
       interfaceName: def.token,
       fields: fields.map((f) => serializeField(f, false, false)).toList(),
-    );
+    ));
+    final defaultFields = fields.where((f) => f.initialValue != null).toList();
+    if (defaultFields.isNotEmpty) {
+      final entries = defaultFields
+          .map((f) => '  ${f.name.token}: ${serializeDefaultLiteral(f.type, f.initialValue)}')
+          .join(',\n');
+      buffer.writeln('\nexport const default${def.token}: Partial<${def.token}> = {\n$entries,\n};');
+    }
+    return buffer.toString();
   }
 
   // ── Types ──────────────────────────────────────────────────────────────────

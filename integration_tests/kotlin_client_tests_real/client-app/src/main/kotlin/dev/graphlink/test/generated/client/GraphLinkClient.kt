@@ -27,22 +27,25 @@ open class GraphLinkClient(
       queries = GraphLinkQueries(adapter, fragmentMap, encoder, decoder, store)
       mutations = GraphLinkMutations(adapter, multipartAdapter, encoder, decoder, store)
       subscriptions = GraphLinkSubscriptions(adapter, wsAdapter, encoder, decoder, store)
-      fragmentMap["Inline_a7797a72_8298_25c7_f506_f1d66f44bcff"] = "... on UserResult  {id name email __typename} "
-      fragmentMap["Inline_e69a340a_45d1_17f1_58e6_ab75bcc5b8c3"] = "... on PostResult  {id title __typename} "
+      fragmentMap["Inline_07680f66_15cb_ef0b_48f9_29c4f0995423"] = "... on UserResult  {id name email __typename} "
+      fragmentMap["Inline_31ce0b01_7dcd_bf59_695b_74ff22d4ae8d"] = "... on PostResult  {id title __typename} "
       fragmentMap["_all_fields_AllScalars"] = "fragment _all_fields_AllScalars on AllScalars{id strVal intVal floatVal boolVal nullableStr nullableInt nullableFloat nullableBool nullableId}"
       fragmentMap["_all_fields_Address"] = "fragment _all_fields_Address on Address{street city country zip}"
       fragmentMap["_all_fields_Post"] = "fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
       fragmentMap["_all_fields_User"] = "fragment _all_fields_User on User{id name email status priority address{..._all_fields_Address} billingAddress{..._all_fields_Address} tags scores posts{..._all_fields_Post}}"
       fragmentMap["_all_fields_Tag"] = "fragment _all_fields_Tag on Tag{id label color}"
       fragmentMap["_all_fields_AuditEntry"] = "fragment _all_fields_AuditEntry on AuditEntry{id action performedBy}"
+      fragmentMap["_all_fields_DefaultsEcho"] = "fragment _all_fields_DefaultsEcho on DefaultsEcho{name role age isActive score nickname tags}"
+      fragmentMap["_all_fields_NestedDefaultsEcho"] = "fragment _all_fields_NestedDefaultsEcho on NestedDefaultsEcho{name address{..._all_fields_Address} contacts{..._all_fields_Address} matrix{..._all_fields_Address}}"
+      fragmentMap["_all_fields_Driver"] = "fragment _all_fields_Driver on Driver{id lastUsedMillage(odometerKm: \$odometerKm) lastUsedFuel(liters: \$liters)}"
       fragmentMap["_all_fields_UserResult"] = "fragment _all_fields_UserResult on UserResult{id name email}"
       fragmentMap["_all_fields_PostResult"] = "fragment _all_fields_PostResult on PostResult{id title}"
-      fragmentMap["Inline_d234e2e3_7fa4_14e6_1973_978846a79454"] = "... on UserResult  {..._all_fields_UserResult __typename} "
-      fragmentMap["Inline_78b8cb03_0a78_bb1c_7c27_2e52e42d97df"] = "... on PostResult  {..._all_fields_PostResult __typename} "
+      fragmentMap["Inline_c7d272c5_b01e_ba59_fcbc_19aad428e558"] = "... on UserResult  {..._all_fields_UserResult __typename} "
+      fragmentMap["Inline_cc6187bb_7d51_d9d6_39d1_e1150124f29d"] = "... on PostResult  {..._all_fields_PostResult __typename} "
       fragmentMap["_all_fields_SearchResult"] = "fragment _all_fields_SearchResult on SearchResult{... on UserResult  {..._all_fields_UserResult __typename}  ... on PostResult  {..._all_fields_PostResult __typename}}"
-      fragmentMap["Inline_bad997e0_d968_cb30_dc88_ef444892caa2"] = "... on UserResult  {..._all_fields_UserResult __typename} "
-      fragmentMap["Inline_dbfeab28_81ce_965d_1749_dce3e00791e2"] = "... on PostResult  {..._all_fields_PostResult __typename} "
-      fragmentMap["Inline_1276d49a_662c_097a_1c1b_975f8ce577c2"] = "... on SearchResult  {... on UserResult  {..._all_fields_UserResult __typename}  ... on PostResult  {..._all_fields_PostResult __typename} __typename} "
+      fragmentMap["Inline_3668757e_e09b_7568_ecb4_f69ad0aced6e"] = "... on UserResult  {..._all_fields_UserResult __typename} "
+      fragmentMap["Inline_6bb00fa8_2d15_354c_eaa8_65808919b64a"] = "... on PostResult  {..._all_fields_PostResult __typename} "
+      fragmentMap["Inline_4982ddd8_e2a0_a900_09a5_63285c388376"] = "... on SearchResult  {... on UserResult  {..._all_fields_UserResult __typename}  ... on PostResult  {..._all_fields_PostResult __typename} __typename} "
    }
 
    companion object {

@@ -36,6 +36,7 @@ String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
         arguments: getArguments(def),
         statements: [
           'String ${_ctx.svOperationName} = "${def.tokenInfo}";',
+          ..._defaultCoalesces(def),
           generateVariables(def, container),
           'List<GraphLinkPartialQuery> ${_ctx.svPartialQueries} = new ArrayList<>();',
           ...dividedQueries.map(serializePartialQueryJava),
@@ -180,6 +181,7 @@ String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
       final body = _ctx.codeGenUtils.block([
         'String ${_ctx.svOperationName} = "$methodName";',
         ...queryLine,
+        ..._defaultCoalesces(def),
         generateVariables(def, container),
         _serializeMultipartAdapterCall(def, container),
       ]);
@@ -202,6 +204,7 @@ String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
         statements: [
           'String ${_ctx.svOperationName} = "$methodName";',
           ...queryLine,
+          ..._defaultCoalesces(def),
           generateVariables(def, container),
           'GraphLinkPayload ${_ctx.svPayload} = GraphLinkPayload.builder().query(${_ctx.svQuery}).operationName(${_ctx.svOperationName}).variables(${_ctx.svVariables}).build();',
           _serializeAdapterCall(def),
@@ -294,10 +297,24 @@ String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
         statements: [
           'String ${_ctx.svOperationName} = "${def.tokenInfo}";',
           'String ${_ctx.svQuery} = "${_buildQueryString(def)}";',
+          ..._defaultCoalesces(def),
           generateVariables(def, container),
           "GraphLinkPayload ${_ctx.svPayload} = GraphLinkPayload.builder().query(${_ctx.svQuery}).operationName(${_ctx.svOperationName}).variables(${_ctx.svVariables}).build();",
           _serializeSubscriptionAdapterCall(def),
         ]);
+  }
+
+  List<String> _defaultCoalesces(GLQueryDefinition def) {
+    return def.arguments
+        .where((e) => e.defaultValue != null)
+        .map((e) {
+          final lit = _ctx.serializer.serializeDefaultLiteral(e.type, e.defaultValue!.value);
+          return _ctx.codeGenUtils.ifStatement(
+            condition: '${e.dartArgumentName} == null',
+            ifBlockStatements: ['${e.dartArgumentName} = $lit;'],
+          );
+        })
+        .toList();
   }
 
   String generateVariables(GLQueryDefinition def, GLImportContainer container) {

@@ -14,6 +14,8 @@ import dev.graphlink.test.generated.types.CreateCachedUserResponse
 import dev.graphlink.test.generated.types.TransferPostResponse
 import dev.graphlink.test.generated.types.ResetAllResponse
 import dev.graphlink.test.generated.types.CreateUserOrErrorsResponse
+import dev.graphlink.test.generated.types.CreateWithDefaultsResponse
+import dev.graphlink.test.generated.types.CreateWithNestedDefaultsResponse
 import dev.graphlink.test.generated.types.UploadOneFileResponse
 import dev.graphlink.test.generated.types.UploadFileListResponse
 import dev.graphlink.test.generated.types.CreateUserFullResponse
@@ -23,10 +25,14 @@ import dev.graphlink.test.generated.types.CreateCachedUserFullResponse
 import dev.graphlink.test.generated.types.TransferPostFullResponse
 import dev.graphlink.test.generated.types.ResetAllFullResponse
 import dev.graphlink.test.generated.types.CreateUserOrErrorsFullResponse
+import dev.graphlink.test.generated.types.CreateWithDefaultsFullResponse
+import dev.graphlink.test.generated.types.CreateWithNestedDefaultsFullResponse
 import dev.graphlink.test.generated.types.UploadOneFileFullResponse
 import dev.graphlink.test.generated.types.UploadFileListFullResponse
 import dev.graphlink.test.generated.inputs.CreateUserInput
 import dev.graphlink.test.generated.inputs.UpdateUserInput
+import dev.graphlink.test.generated.inputs.CreateWithDefaultsInput
+import dev.graphlink.test.generated.inputs.NestedDefaultsInput
 import dev.graphlink.test.generated.interfaces.GraphLinkClientAdapter
 import dev.graphlink.test.generated.interfaces.GraphLinkJsonEncoder
 import dev.graphlink.test.generated.interfaces.GraphLinkJsonDecoder
@@ -123,6 +129,30 @@ open class GraphLinkMutations(
       val __gl_responseText__ = glCallAdapter(__gl_payload__)
       val __gl_decodedResponse__ = CreateUserOrErrorsFullResponse.fromJson(decoder.decode(__gl_responseText__))
       return __gl_decodedResponse__
+   }
+   suspend fun createWithDefaults(input: CreateWithDefaultsInput): CreateWithDefaultsResponse {
+      val __gl_operationName__ = "createWithDefaults"
+      val __gl_query__ = "mutation createWithDefaults(\$input: CreateWithDefaultsInput!){createWithDefaults(input: \$input){..._all_fields_DefaultsEcho}} fragment _all_fields_DefaultsEcho on DefaultsEcho{name role age isActive score nickname tags}"
+      val __gl_variables__ = mapOf("input" to input.toJson())
+      val __gl_payload__ = GraphLinkPayload(query = __gl_query__, operationName = __gl_operationName__, variables = __gl_variables__)
+      val __gl_responseText__ = glCallAdapter(__gl_payload__)
+      val __gl_decodedResponse__ = CreateWithDefaultsFullResponse.fromJson(decoder.decode(__gl_responseText__))
+      if (__gl_decodedResponse__.errors != null && __gl_decodedResponse__.errors!!.isNotEmpty()) {
+         throw GraphLinkException(__gl_decodedResponse__.errors!!)
+      }
+      return __gl_decodedResponse__.data!!
+   }
+   suspend fun createWithNestedDefaults(input: NestedDefaultsInput): CreateWithNestedDefaultsResponse {
+      val __gl_operationName__ = "createWithNestedDefaults"
+      val __gl_query__ = "mutation createWithNestedDefaults(\$input: NestedDefaultsInput!){createWithNestedDefaults(input: \$input){..._all_fields_NestedDefaultsEcho}} fragment _all_fields_NestedDefaultsEcho on NestedDefaultsEcho{name address{..._all_fields_Address} contacts{..._all_fields_Address} matrix{..._all_fields_Address}} fragment _all_fields_Address on Address{street city country zip}"
+      val __gl_variables__ = mapOf("input" to input.toJson())
+      val __gl_payload__ = GraphLinkPayload(query = __gl_query__, operationName = __gl_operationName__, variables = __gl_variables__)
+      val __gl_responseText__ = glCallAdapter(__gl_payload__)
+      val __gl_decodedResponse__ = CreateWithNestedDefaultsFullResponse.fromJson(decoder.decode(__gl_responseText__))
+      if (__gl_decodedResponse__.errors != null && __gl_decodedResponse__.errors!!.isNotEmpty()) {
+         throw GraphLinkException(__gl_decodedResponse__.errors!!)
+      }
+      return __gl_decodedResponse__.data!!
    }
    suspend fun uploadOneFile(userId: String, file: GLUpload): UploadOneFileResponse {
       return uploadOneFile(userId, file, null)

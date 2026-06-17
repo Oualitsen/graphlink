@@ -146,7 +146,7 @@ void main() {
           '"use permissions"');
 
       final posts = iface.getFieldByName('posts')!;
-      expect(posts.getArgumentByName('limit')!.initialValue, 10);
+      expect(posts.getArgumentByName('limit')!.defaultValue?.value, 10);
     });
 
     test('missing interface name throws', () {

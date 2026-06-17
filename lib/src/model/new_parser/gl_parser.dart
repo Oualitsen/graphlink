@@ -233,6 +233,7 @@ class GLParser {
       return;
     }
     validateInputReferences();
+    validateDefaultValues();
     validateTypeReferences();
     validateSkipOnServerMapTo();
     validateTypeFieldSkipOnServerDirectives();
@@ -570,7 +571,7 @@ class GLParser {
     final type = _parseType();
     Object? initialValue;
     if (canBeInitialized && tryConsume(GLTokenType.equals) != null) {
-      initialValue = _parseObject();
+      initialValue = _parseObject()?.value;
     }
     final directives = _parseDirectiveValueList(fieldScope);
     return GLField(
@@ -591,7 +592,7 @@ class GLParser {
       final name = expectName();
       expect(GLTokenType.colon);
       final type = _parseType();
-      Object? defaultValue;
+      GLDefaultValue? defaultValue;
       if (tryConsume(GLTokenType.equals) != null) {
         defaultValue = _parseObject();
       }
@@ -599,7 +600,7 @@ class GLParser {
           _parseDirectiveValueList(GLDirectiveScope.ARGUMENT_DEFINITION);
       args.add(GLArgumentDefinition(
           TokenInfo.ofLexer(name, _lexer), type, directives,
-          initialValue: defaultValue));
+          defaultValue: defaultValue));
     }
     return args;
   }
@@ -720,37 +721,37 @@ class GLParser {
 
   Object? _parseInitialValue() {
     // parse initial object here
-    return _parseObject();
+    return _parseObject()?.value;
   }
 
-  Object? _parseObject() {
+  GLDefaultValue? _parseObject() {
     var nextToken = peek();
     switch (nextToken.type) {
       case GLTokenType.string:
       case GLTokenType.blockString:
       case GLTokenType.identifier:
-        return consume().value;
+        return GLDefaultValue(consume().value);
 
       case GLTokenType.int_:
-        return int.parse(consume().value);
+        return GLDefaultValue(int.parse(consume().value));
       case GLTokenType.float_:
-        return double.parse(consume().value);
+        return GLDefaultValue(double.parse(consume().value));
 
       case GLTokenType.kwTrue:
         consume();
-        return true;
+        return GLDefaultValue(true);
       case GLTokenType.kwFalse:
         consume();
-        return false;
+        return GLDefaultValue(false);
       case GLTokenType.kwNull:
         consume();
-        return null;
+        return GLDefaultValue(null);
       case GLTokenType.openBrace:
-        return _parseMap();
+        return GLDefaultValue(_parseMap());
       case GLTokenType.openBracket:
-        return _parseList();
+        return GLDefaultValue(_parseList());
       default:
-        if (_isName(nextToken.type)) return consume().value;
+        if (_isName(nextToken.type)) return GLDefaultValue(consume().value);
         throw _lexer.errorAt(nextToken.offset, "Unexpected input");
     }
   }
@@ -761,7 +762,7 @@ class GLParser {
     while (tryConsume(GLTokenType.closeBrace) == null) {
       var key = expectName();
       expect(GLTokenType.colon);
-      result[key.value] = _parseObject();
+      result[key.value] = _parseObject()?.value;
     }
     return result;
   }
@@ -770,7 +771,7 @@ class GLParser {
     expect(GLTokenType.openBracket);
     var result = <Object?>[];
     while (tryConsume(GLTokenType.closeBracket) == null) {
-      result.add(_parseObject());
+      result.add(_parseObject()?.value);
     }
     return result;
   }
@@ -988,7 +989,7 @@ class GLParser {
     while (tryConsume(GLTokenType.closeParen) == null) {
       final name = expectName();
       expect(GLTokenType.colon);
-      final value = _parseObject();
+      final value = _parseObject()?.value;
       args.add(GLArgumentValue(TokenInfo.ofLexer(name, _lexer), value));
     }
     return args;
