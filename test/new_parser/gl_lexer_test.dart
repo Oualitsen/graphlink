@@ -373,4 +373,39 @@ void main() {
       expect(loc.column, 1);
     });
   });
+
+  // ── Issue A ───────────────────────────────────────────────────────────────
+  // A lone `-` (not followed by digits) must produce a ParseException, not
+  // a Dart FormatException from int.parse('-') deep inside _parseObject().
+  group('GLLexer — lone minus sign', () {
+    test('lone - throws ParseException during tokenization', () {
+      expect(
+        () => GLLexer('-').tokenize(),
+        throwsA(isA<ParseException>()),
+      );
+    });
+
+    test('- followed by non-digit throws ParseException during tokenization', () {
+      expect(
+        () => GLLexer('-foo').tokenize(),
+        throwsA(isA<ParseException>()),
+      );
+    });
+  });
+
+  // ── Issue B ───────────────────────────────────────────────────────────────
+  // Block strings may contain \""" (escaped triple-quote per spec Oct 2021).
+  // The lexer must not terminate the block string early on \""".
+  group('GLLexer — block string escaped triple-quote', () {
+    test(r'block string with \""" is tokenized as a single blockString', () {
+      final tokens = lex(r'"""contains \""" inside"""');
+      expect(tokens.length, 1);
+      expect(tokens[0].type, GLTokenType.blockString);
+    });
+
+    test(r'block string value preserves \""" content', () {
+      final tokens = lex(r'"""contains \""" inside"""');
+      expect(tokens[0].value, contains(r'\"""'));
+    });
+  });
 }

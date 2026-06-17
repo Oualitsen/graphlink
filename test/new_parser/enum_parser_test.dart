@@ -134,5 +134,26 @@ void main() {
         throwsA(isA<ParseException>()),
       );
     });
+
+    test('enum value named true throws', () {
+      expect(
+        () => GLParser().parse('enum Foo { true }', validate: false),
+        throwsA(isA<ParseException>()),
+      );
+    });
+
+    test('enum value named false throws', () {
+      expect(
+        () => GLParser().parse('enum Foo { false }', validate: false),
+        throwsA(isA<ParseException>()),
+      );
+    });
+
+    test('enum value named null throws', () {
+      expect(
+        () => GLParser().parse('enum Foo { null }', validate: false),
+        throwsA(isA<ParseException>()),
+      );
+    });
   });
 }

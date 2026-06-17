@@ -479,13 +479,15 @@ class GLParser {
     final name = expectName();
     final interfaceNames = _parseImplementsClause();
     final directives = _parseDirectiveValueList(GLDirectiveScope.OBJECT);
-    expect(GLTokenType.openBrace);
     final fields = <GLField>[];
-    while (tryConsume(GLTokenType.closeBrace) == null) {
-      fields.add(_parseField(
-          canBeInitialized: true,
-          acceptsArguments: true,
-          fieldScope: GLDirectiveScope.FIELD_DEFINITION));
+    if (!isExtension || check(GLTokenType.openBrace)) {
+      expect(GLTokenType.openBrace);
+      while (tryConsume(GLTokenType.closeBrace) == null) {
+        fields.add(_parseField(
+            canBeInitialized: true,
+            acceptsArguments: true,
+            fieldScope: GLDirectiveScope.FIELD_DEFINITION));
+      }
     }
     addTypeDefinition(GLTypeDefinition(
       name: TokenInfo.ofLexer(name, _lexer),
@@ -502,6 +504,7 @@ class GLParser {
   Set<TokenInfo> _parseImplementsClause() {
     if (tryConsume(GLTokenType.kwImplements) == null) return {};
     final names = <TokenInfo>{};
+    tryConsume(GLTokenType.amp);
     names.add(TokenInfo.ofLexer(expectName(), _lexer));
     while (tryConsume(GLTokenType.amp) != null) {
       final name = TokenInfo.ofLexer(expectName(), _lexer);
@@ -521,13 +524,15 @@ class GLParser {
     expect(GLTokenType.kwInput);
     final name = expectName();
     final directives = _parseDirectiveValueList(GLDirectiveScope.INPUT_OBJECT);
-    expect(GLTokenType.openBrace);
     final fields = <GLField>[];
-    while (tryConsume(GLTokenType.closeBrace) == null) {
-      fields.add(_parseField(
-          canBeInitialized: true,
-          acceptsArguments: false,
-          fieldScope: GLDirectiveScope.INPUT_FIELD_DEFINITION));
+    if (!isExtension || check(GLTokenType.openBrace)) {
+      expect(GLTokenType.openBrace);
+      while (tryConsume(GLTokenType.closeBrace) == null) {
+        fields.add(_parseField(
+            canBeInitialized: true,
+            acceptsArguments: false,
+            fieldScope: GLDirectiveScope.INPUT_FIELD_DEFINITION));
+      }
     }
     final nameToken = TokenInfo.ofLexer(name, _lexer);
     final nameFromDirective = getNameValueFromDirectives(directives);
@@ -625,13 +630,15 @@ class GLParser {
     final name = expectName();
     final interfaceNames = _parseImplementsClause();
     final directives = _parseDirectiveValueList(GLDirectiveScope.INTERFACE);
-    expect(GLTokenType.openBrace);
     final fields = <GLField>[];
-    while (tryConsume(GLTokenType.closeBrace) == null) {
-      fields.add(_parseField(
-          canBeInitialized: false,
-          acceptsArguments: true,
-          fieldScope: GLDirectiveScope.FIELD_DEFINITION));
+    if (!isExtension || check(GLTokenType.openBrace)) {
+      expect(GLTokenType.openBrace);
+      while (tryConsume(GLTokenType.closeBrace) == null) {
+        fields.add(_parseField(
+            canBeInitialized: false,
+            acceptsArguments: true,
+            fieldScope: GLDirectiveScope.FIELD_DEFINITION));
+      }
     }
     addInterfaceDefinition(GLInterfaceDefinition(
       name: TokenInfo.ofLexer(name, _lexer),
@@ -649,23 +656,31 @@ class GLParser {
     expect(GLTokenType.kwEnum);
     var name = expectName();
     var directiveValues = _parseDirectiveValueList(GLDirectiveScope.ENUM);
-    expect(GLTokenType.openBrace);
     var enumDefinition = GLEnumDefinition(
         token: TokenInfo.ofLexer(name, _lexer),
         values: [],
         directives: directiveValues,
         extension: isExtension,
         documentation: documentation);
-    while (tryConsume(GLTokenType.closeBrace) == null) {
-      final GLEnumValue enumValue = _parseEnumValue();
-      enumDefinition.addValue(enumValue);
+    if (!isExtension || check(GLTokenType.openBrace)) {
+      expect(GLTokenType.openBrace);
+      while (tryConsume(GLTokenType.closeBrace) == null) {
+        final GLEnumValue enumValue = _parseEnumValue();
+        enumDefinition.addValue(enumValue);
+      }
     }
     addEnumDefinition(enumDefinition);
   }
 
+  static const _reservedEnumValues = {'true', 'false', 'null'};
+
   GLEnumValue _parseEnumValue() {
     final doc = _parseDocumentation();
     final value = expectName();
+    if (_reservedEnumValues.contains(value.value)) {
+      throw _lexer.errorAt(
+          value.offset, "'${value.value}' is reserved and cannot be used as an enum value");
+    }
     final directives = _parseDirectiveValueList(GLDirectiveScope.ENUM_VALUE);
     return GLEnumValue(
         value: TokenInfo.ofLexer(value, _lexer),
@@ -784,6 +799,7 @@ class GLParser {
     final directives = _parseDirectiveValueList(GLDirectiveScope.UNION);
     final typeNames = <TokenInfo>[];
     if (tryConsume(GLTokenType.equals) != null) {
+      tryConsume(GLTokenType.pipe);
       typeNames.add(TokenInfo.ofLexer(expectName(), _lexer));
       while (tryConsume(GLTokenType.pipe) != null) {
         typeNames.add(TokenInfo.ofLexer(expectName(), _lexer));
@@ -813,6 +829,7 @@ class GLParser {
 
   Set<GLDirectiveScope> _parseDirectiveScopes() {
     final scopes = <GLDirectiveScope>{};
+    tryConsume(GLTokenType.pipe);
     scopes.add(_parseDirectiveScope());
     while (tryConsume(GLTokenType.pipe) != null) {
       scopes.add(_parseDirectiveScope());
