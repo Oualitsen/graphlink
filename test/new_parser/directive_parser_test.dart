@@ -125,5 +125,38 @@ void main() {
         throwsA(isA<ParseException>()),
       );
     });
+
+    test('directive argument with block string description parses correctly', () {
+      final parser = GLParser();
+      parser.parse('''
+        directive @deprecated(
+          """THIS COMMENT CAUSES PROBLEMS"""
+          reason: String = "No longer supported"
+        ) on FIELD_DEFINITION | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | ENUM_VALUE
+
+        type Product {
+          id: ID!
+          name: String
+        }
+
+        input CreateProductInput {
+          name: String!
+          price: Float
+        }
+      ''', validate: false);
+
+      final d = parser.directiveDefinitions['@deprecated']!;
+      expect(d.arguments.length, 1);
+      expect(d.arguments.first.token, 'reason');
+      expect(d.arguments.first.defaultValue?.value, '"No longer supported"');
+      expect(d.scopes, {
+        GLDirectiveScope.FIELD_DEFINITION,
+        GLDirectiveScope.ARGUMENT_DEFINITION,
+        GLDirectiveScope.INPUT_FIELD_DEFINITION,
+        GLDirectiveScope.ENUM_VALUE,
+      });
+      expect(parser.types.containsKey('Product'), true);
+      expect(parser.inputs.containsKey('CreateProductInput'), true);
+    });
   });
 }
