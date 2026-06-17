@@ -100,8 +100,12 @@ Future<void> startServer(int port) async {
   print("Killing process with port $port");
   await killPort(port);
   print("starting spring server with port ${port}");
-  final process =
-      await Process.start('java', ['-jar', _jarPath(), '--server.port=$port']);
+  final process = await Process.start('java', [
+    '-jar',
+    _jarPath(),
+    '--server.port=$port',
+    '--management.server.port=-1',
+  ]);
   unawaited(process.stdout.drain());
   unawaited(process.stderr.drain());
   print("waiting for port ${port}");
