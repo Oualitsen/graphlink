@@ -589,6 +589,7 @@ class GLParser {
     expect(GLTokenType.openParen);
     final args = <GLArgumentDefinition>[];
     while (tryConsume(GLTokenType.closeParen) == null) {
+      _parseDocumentation();
       final name = expectName();
       expect(GLTokenType.colon);
       final type = _parseType();
