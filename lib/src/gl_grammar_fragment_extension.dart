@@ -224,10 +224,21 @@ extension GLGrammarFragmentExtension on GLParser {
   /// Recursively inline-expands [typeName]'s fields up to [remainingDepth] levels.
   /// Never emits fragment spreads — everything is inlined to avoid introducing
   /// new fragment-level cycles.
+  ///
+  /// [visitedOnPath] tracks types on the current call stack to prevent stack
+  /// overflows from long non-cyclic chains that eventually loop back to a
+  /// cyclic type (e.g. Link1→Link2→...→LinkN→Root where Root is in cycleTypes
+  /// but the Links are not, so remainingDepth never decrements along the chain).
   GLFragmentBlockDefinition? _createInlineExpandBlock(
-      String typeName, int remainingDepth, Set<String> cycleTypes) {
+      String typeName, int remainingDepth, Set<String> cycleTypes,
+      [Set<String>? visitedOnPath]) {
+    final path = visitedOnPath ?? <String>{};
+    if (path.contains(typeName)) return null;
+
     final typeDef = types[typeName] ?? interfaces[typeName];
     if (typeDef == null) return null;
+
+    path.add(typeName);
 
     final projections = typeDef.getSerializableFields(mode).map((field) {
       if (!typeRequiresProjection(field.type)) {
@@ -251,12 +262,13 @@ extension GLGrammarFragmentExtension on GLParser {
         fragmentName: null,
         token: field.name,
         alias: null,
-        block: _createInlineExpandBlock(fieldTypeName, nextDepth, cycleTypes),
+        block: _createInlineExpandBlock(fieldTypeName, nextDepth, cycleTypes, path),
         directives: [],
         arguments: _argumentValuesForField(field),
       );
     }).whereType<GLProjection>().toList();
 
+    path.remove(typeName);
     return GLFragmentBlockDefinition(projections);
   }
 

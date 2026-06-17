@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
@@ -228,71 +229,85 @@ class GLParser {
     return consume();
   }
 
+  static int _rss() => ProcessInfo.currentRss;
+  static String _mb(int bytes) => '${(bytes / 1024 / 1024).toStringAsFixed(1)} MB';
+
+  void _memStep(String label, void Function() fn) {
+    final before = _rss();
+    fn();
+    final after = _rss();
+    final delta = after - before;
+    final sign = delta >= 0 ? '+' : '';
+    print('[mem] $label: ${_mb(after)} ($sign${_mb(delta)})');
+  }
+
   void validateSemantics() {
     if (!_validate) {
       return;
     }
-    validateInputReferences();
-    validateDefaultValues();
-    validateTypeReferences();
-    validateSkipOnServerMapTo();
-    validateTypeFieldSkipOnServerDirectives();
-    convertUnionsToInterfaces();
-    fillInterfaceImplementations();
-    setDirectivesDefaultValues();
-    proparageAnnotationsOnFields();
-    mergeTokens();
-    validateNonEmptyFieldLists();
-    updateInterfaceReferences();
-    checkInterfaceInheritance();
-    skipFieldOfSkipOnServerTypes();
-    handleGLExternal();
+    print('[mem] --- pipeline start: ${_mb(_rss())} ---');
+    print('[mem] types=${types.length} inputs=${inputs.length} enums=${enums.length} unions=${unions.length} interfaces=${interfaces.length}');
+    _memStep('validateInputReferences',           validateInputReferences);
+    _memStep('validateDefaultValues',             validateDefaultValues);
+    _memStep('validateTypeReferences',            validateTypeReferences);
+    _memStep('validateSkipOnServerMapTo',         validateSkipOnServerMapTo);
+    _memStep('validateTypeFieldSkipOnServerDir',  validateTypeFieldSkipOnServerDirectives);
+    _memStep('convertUnionsToInterfaces',         convertUnionsToInterfaces);
+    _memStep('fillInterfaceImplementations',      fillInterfaceImplementations);
+    _memStep('setDirectivesDefaultValues',        setDirectivesDefaultValues);
+    _memStep('proparageAnnotationsOnFields',      proparageAnnotationsOnFields);
+    _memStep('mergeTokens',                       mergeTokens);
+    _memStep('validateNonEmptyFieldLists',        validateNonEmptyFieldLists);
+    _memStep('updateInterfaceReferences',         updateInterfaceReferences);
+    _memStep('checkInterfaceInheritance',         checkInterfaceInheritance);
+    _memStep('skipFieldOfSkipOnServerTypes',      skipFieldOfSkipOnServerTypes);
+    _memStep('handleGLExternal',                  handleGLExternal);
     if (mode == CodeGenerationMode.client) {
-      handleRepositories(false);
+      _memStep('handleRepositories',              () => handleRepositories(false));
       if (generateAllFieldsFragments) {
-        createAllFieldsFragments();
+        _memStep('createAllFieldsFragments',      createAllFieldsFragments);
         if (autoGenerateQueries) {
-          generateQueryDefinitions();
+          _memStep('generateQueryDefinitions',    generateQueryDefinitions);
         }
       }
-      checkFragmentRefs();
-      fillQueryElementsReturnType();
-      fillTypedFragments();
-      validateProjections();
-      updateFragmentDependencies();
-      propagateFieldArgumentVariables();
-      // cache handling — must run before createProjectedTypes to catch errors early
-      fixTagListValues();
-      validateTagValues();
-      checkCacheAndNoCacheConflict();
-      checkCacheOnMutationsAndSubscriptions();
-      checkCacheInvalidateOnQueriesAndSubscriptions();
-      checkGLCacheDirectives();
-      checkGLCacheInvalidateDirectives();
-      checkGLCacheTags();
-      if (disableCache) stripCacheDirectives();
-      validateMapsToDirectives();
-      checkGLCaptureErrorsDirectives();
-      checkUploadDirectivePlacement();
-      checkUploadScalarUsage();
-      checkUploadListDepth();
-      createProjectedTypes();
-      cleanProjectedInterfacesImplementations();
-      fixProjectedInterfaceConflicts();
-      addClientTypesToProjectedTypes();
-      updateFragmentAllTypesDependencies();
+      _memStep('checkFragmentRefs',               checkFragmentRefs);
+      _memStep('fillQueryElementsReturnType',     fillQueryElementsReturnType);
+      _memStep('fillTypedFragments',              fillTypedFragments);
+      _memStep('validateProjections',             validateProjections);
+      _memStep('updateFragmentDependencies',      updateFragmentDependencies);
+      _memStep('propagateFieldArgumentVariables', propagateFieldArgumentVariables);
+      _memStep('fixTagListValues',                fixTagListValues);
+      _memStep('validateTagValues',               validateTagValues);
+      _memStep('checkCacheAndNoCacheConflict',    checkCacheAndNoCacheConflict);
+      _memStep('checkCacheOnMutations',           checkCacheOnMutationsAndSubscriptions);
+      _memStep('checkCacheInvalidateOnQueries',   checkCacheInvalidateOnQueriesAndSubscriptions);
+      _memStep('checkGLCacheDirectives',          checkGLCacheDirectives);
+      _memStep('checkGLCacheInvalidateDirectives',checkGLCacheInvalidateDirectives);
+      _memStep('checkGLCacheTags',                checkGLCacheTags);
+      if (disableCache) _memStep('stripCacheDirectives', stripCacheDirectives);
+      _memStep('validateMapsToDirectives',        validateMapsToDirectives);
+      _memStep('checkGLCaptureErrorsDirectives',  checkGLCaptureErrorsDirectives);
+      _memStep('checkUploadDirectivePlacement',   checkUploadDirectivePlacement);
+      _memStep('checkUploadScalarUsage',          checkUploadScalarUsage);
+      _memStep('checkUploadListDepth',            checkUploadListDepth);
+      _memStep('createProjectedTypes',            createProjectedTypes);
+      _memStep('cleanProjectedInterfaces',        cleanProjectedInterfacesImplementations);
+      _memStep('fixProjectedInterfaceConflicts',  fixProjectedInterfaceConflicts);
+      _memStep('addClientTypesToProjectedTypes',  addClientTypesToProjectedTypes);
+      _memStep('updateFragmentAllTypesDeps',      updateFragmentAllTypesDependencies);
       if (defaultCacheTTL != null) {
-        applyDefaultCacheToQueries(defaultCacheTTL!);
+        _memStep('applyDefaultCacheToQueries',    () => applyDefaultCacheToQueries(defaultCacheTTL!));
       }
-      propagateCacheTags();
-      propagateInvalidateCacheTags();
+      _memStep('propagateCacheTags',              propagateCacheTags);
+      _memStep('propagateInvalidateCacheTags',    propagateInvalidateCacheTags);
     } else {
-      handleRepositories(true);
-      generateServicesAndControllers();
-      generateSchemaMappings();
-      populateServerProjections();
-      applyServerLenientNullability();
+      _memStep('handleRepositories',              () => handleRepositories(true));
+      _memStep('generateServicesAndControllers',  generateServicesAndControllers);
+      _memStep('generateSchemaMappings',          generateSchemaMappings);
+      _memStep('populateServerProjections',       populateServerProjections);
+      _memStep('applyServerLenientNullability',   applyServerLenientNullability);
     }
+    print('[mem] --- pipeline end: ${_mb(_rss())} ---');
   }
 
   void addSchemaMapping(GLSchemaMapping mapping) {
