@@ -85,7 +85,7 @@ void main() {
       expect(q.arguments.length, 2);
       expect(q.arguments.first.token, '\$id');
       expect(q.arguments.first.type.nullable, false);
-      expect(q.arguments.last.initialValue, 10);
+      expect(q.arguments.last.defaultValue?.value, 10);
     });
 
     test('query with directive', () {

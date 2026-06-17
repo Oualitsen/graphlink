@@ -69,6 +69,12 @@ enum Priority {
   CRITICAL
 }
 
+enum Role {
+  ADMIN
+  USER
+  GUEST
+}
+
 
 # ── 3. Scalar container ───────────────────────────────────────────────────────
 
@@ -157,6 +163,31 @@ type PostResult implements SearchResult {
   title: String!
 }
 
+type DefaultsEcho {
+  name:      String!
+  role:      Role!
+  age:       Int!
+  isActive:  Boolean!
+  score:     Float!
+  nickname:  String!
+  tags:      [String]!
+}
+
+type NestedDefaultsEcho {
+  name:     String!
+  address:  Address
+  contacts: [Address]
+  matrix:   [[Address]]
+}
+
+# Type with field-level arguments — tests that the client sends default values
+# for field arguments.  The server schema has NO defaults on these fields;
+# the client applies them before sending.
+type Driver {
+  id: ID!
+  lastUsedMillage(odometerKm: Int!): Int!
+  lastUsedFuel(liters: Int! = 4): Int!
+}
 
 # ── 6. Input types ────────────────────────────────────────────────────────────
 
@@ -185,6 +216,23 @@ input UpdateUserInput {
   status:   UserStatus
   priority: Priority
   tags:     [String!]
+}
+
+input CreateWithDefaultsInput {
+  name:     String!
+  role:     Role        = USER
+  age:      Int         = 18
+  isActive: Boolean     = true
+  score:    Float       = 4.5
+  nickname: String      = "anonymous"
+  tags:     [String]    = ["dart", "graphql"]
+}
+
+input NestedDefaultsInput {
+  name:     String!
+  address:  AddressInput  = {street: "123 Main St", city: "Springfield", country: "US", zip: "12345"}
+  contacts: [AddressInput] = [{street: "456 Oak Ave", city: "Shelbyville", country: "US", zip: null}, {street: "789 Pine Rd", city: "Capital City", country: "US", zip: "99999"}]
+  matrix:   [[AddressInput]] = [[{street: "1st St", city: "Paris", country: "FR", zip: "75000"}], [{street: "2nd St", city: "Lyon", country: "FR", zip: "69000"}]]
 }
 
 
@@ -247,6 +295,12 @@ type Query {
 
   # Nullable return + error capture.
   findUserOrErrors(id: ID!): User @glCaptureErrors
+
+  # Default-value field arguments — client applies defaults before sending.
+  listUsersWithDefaults(limit: Int = 20, role: Role = USER): [User]!
+
+  # Driver with field-level argument defaults
+  getDriver(id: ID!): Driver!
 }
 
 
@@ -290,6 +344,15 @@ type Mutation {
 
   # List of files — files arg becomes List<GLUpload>.
   uploadFileList(userId: ID!, files: [Upload!]!): Boolean!
+
+
+# ── 14. Mutations — default-value inputs ──────────────────────────────────────
+
+  # Echoes back the received input so tests can verify the client applied defaults.
+  createWithDefaults(input: CreateWithDefaultsInput!): DefaultsEcho!
+
+  # Echoes back nested objects/lists so tests can verify client applied nested defaults.
+  createWithNestedDefaults(input: NestedDefaultsInput!): NestedDefaultsEcho!
 }
 
 

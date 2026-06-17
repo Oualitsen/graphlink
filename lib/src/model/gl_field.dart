@@ -58,6 +58,7 @@ class GLField with GLDirectivesMixin {
       getDirectiveByName(glMapField)?.getArgValueAsString(glMapFieldTo);
 
 
+
   /// Returns a copy of this field with [newType] in place of [type].
   GLField ofType(GLType newType) {
     return GLField(

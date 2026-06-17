@@ -117,4 +117,35 @@ public class QueryController {
     public User findUserOrErrors(@Argument String id) {
         return findUser(id);
     }
+
+    // ── Default-value query ─────────────────────────────────────────────────
+    // The SERVER schema has NO defaults — the CLIENT applies them.
+    // All args are non-null because the client always sends values.
+
+    @QueryMapping
+    public List<User> listUsersWithDefaults(@Argument int limit, @Argument Role role) {
+        return List.of(DataFixtures.ALICE, DataFixtures.BOB).stream()
+                .limit(limit)
+                .toList();
+    }
+
+    // ── Driver with field-level argument defaults ───────────────────────────
+    // The SERVER schema has NO defaults on field arguments — the CLIENT applies them.
+    // Field resolvers return the count argument directly so tests can verify
+    // the client sent the correct value (or the default).
+
+    @QueryMapping
+    public Driver getDriver(@Argument String id) {
+        return new Driver(id);
+    }
+
+    @SchemaMapping(typeName = "Driver", field = "lastUsedMillage")
+    public int lastUsedMillage(Driver driver, @Argument int odometerKm) {
+        return odometerKm;
+    }
+
+    @SchemaMapping(typeName = "Driver", field = "lastUsedFuel")
+    public int lastUsedFuel(Driver driver, @Argument int liters) {
+        return liters;
+    }
 }

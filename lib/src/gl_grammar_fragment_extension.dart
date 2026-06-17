@@ -347,7 +347,7 @@ extension GLGrammarFragmentExtension on GLParser {
         field.arguments
             .map((e) => GLArgumentDefinition(
                 "\$${e.tokenInfo}".toToken(), e.type, [],
-                initialValue: e.initialValue))
+                defaultValue: e.defaultValue))
             .toList(),
         [queryElement],
         queryType);

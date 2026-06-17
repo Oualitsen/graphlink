@@ -92,9 +92,9 @@ class GLDirectiveValue extends GLToken {
     List<GLArgumentValue> argsToAdd = [];
     for (var argDef in args) {
       var argValue = _argsMap[argDef.token];
-      if (argValue == null && argDef.initialValue != null) {
+      if (argValue == null && argDef.defaultValue != null) {
         var newArgValue =
-            GLArgumentValue(argDef.tokenInfo, argDef.initialValue);
+            GLArgumentValue(argDef.tokenInfo, argDef.defaultValue?.value);
         _argsMap[argDef.token] = newArgValue;
         argsToAdd.add(newArgValue);
       }

@@ -28,6 +28,8 @@ import dev.graphlink.test.generated.types.GetCachedConfigResponse
 import dev.graphlink.test.generated.types.GetStaleUserResponse
 import dev.graphlink.test.generated.types.GetUserOrErrorsResponse
 import dev.graphlink.test.generated.types.FindUserOrErrorsResponse
+import dev.graphlink.test.generated.types.ListUsersWithDefaultsResponse
+import dev.graphlink.test.generated.types.GetDriverResponse
 import dev.graphlink.test.generated.types.FetchUserAndPostFullResponse
 import dev.graphlink.test.generated.types.FetchUserSummaryFullResponse
 import dev.graphlink.test.generated.types.RunSearchFullResponse
@@ -49,7 +51,10 @@ import dev.graphlink.test.generated.types.GetCachedConfigFullResponse
 import dev.graphlink.test.generated.types.GetStaleUserFullResponse
 import dev.graphlink.test.generated.types.GetUserOrErrorsFullResponse
 import dev.graphlink.test.generated.types.FindUserOrErrorsFullResponse
+import dev.graphlink.test.generated.types.ListUsersWithDefaultsFullResponse
+import dev.graphlink.test.generated.types.GetDriverFullResponse
 import dev.graphlink.test.generated.enums.UserStatus
+import dev.graphlink.test.generated.enums.Role
 import dev.graphlink.test.generated.interfaces.GraphLinkClientAdapter
 import dev.graphlink.test.generated.interfaces.GraphLinkJsonEncoder
 import dev.graphlink.test.generated.interfaces.GraphLinkJsonDecoder
@@ -830,13 +835,13 @@ open class GraphLinkQueries(
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
          __gl_pqVars__["term"] = __gl_variables__["term"]
          __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "search(term: \$term){...Inline_1276d49a_662c_097a_1c1b_975f8ce577c2}",
+             "search(term: \$term){...Inline_4982ddd8_e2a0_a900_09a5_63285c388376}",
              __gl_pqVars__,
              0,
              emptyList(),
              "search__search",
              "search",
-             setOf("Inline_1276d49a_662c_097a_1c1b_975f8ce577c2", "_all_fields_UserResult", "_all_fields_PostResult"),
+             setOf("Inline_4982ddd8_e2a0_a900_09a5_63285c388376", "_all_fields_UserResult", "_all_fields_PostResult"),
              listOf("\$term: String!"),
              false,
              encoder,
@@ -1266,6 +1271,121 @@ open class GraphLinkQueries(
          }
          val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
          return FindUserOrErrorsFullResponse.fromJson(__gl_wrappedResponse__)
+      }
+   }
+   suspend fun listUsersWithDefaults(limit: Int? = 20, role: Role? = Role.USER): ListUsersWithDefaultsResponse {
+      val __gl_operationName__ = "listUsersWithDefaults"
+      val __gl_variables__ = mapOf("limit" to limit, "role" to role?.toJson())
+      val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
+      run {
+         val __gl_pqVars__ = mutableMapOf<String, Any?>()
+         __gl_pqVars__["limit"] = __gl_variables__["limit"]
+         __gl_pqVars__["role"] = __gl_variables__["role"]
+         __gl_partialQueries__.add(GraphLinkPartialQuery(
+             "listUsersWithDefaults(limit: \$limit,role: \$role){..._all_fields_User}",
+             __gl_pqVars__,
+             0,
+             emptyList(),
+             "listUsersWithDefaults__listUsersWithDefaults",
+             "listUsersWithDefaults",
+             setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post"),
+             listOf("\$limit: Int", "\$role: Role"),
+             false,
+             encoder,
+         ))
+      }
+      val __gl_responseMap__ = mutableMapOf<String, Any?>()
+      val __gl_staleData__ = mutableMapOf<String, Any?>()
+      for (partQuery in __gl_partialQueries__) {
+         if (partQuery.ttl > 0) {
+            try {
+               val __gl_entry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
+               if (__gl_entry__ != null) {
+                  if (__gl_entry__.stale) {
+                     __gl_staleData__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
+                  } else {
+                     __gl_responseMap__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
+                  }
+               }
+            } catch (ignored: Exception) {
+            }
+         }
+      }
+      val __gl_remaining__ = __gl_partialQueries__.filter { !__gl_responseMap__.containsKey(it.elementKey) }.toMutableList()
+      if (__gl_remaining__.isEmpty()) {
+         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
+         return ListUsersWithDefaultsFullResponse.fromJson(__gl_wrappedResponse__).data!!
+      }
+      val __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "")
+      try {
+         val __gl_responseText__ = glCallAdapter(__gl_payload__)
+         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, { ListUsersWithDefaultsFullResponse.fromJson(it) }, __gl_remaining__, false).data!!
+      } catch (exception: Exception) {
+         __gl_responseMap__.putAll(__gl_staleData__)
+         val __gl_remainingCount__ = __gl_partialQueries__.count { !__gl_responseMap__.containsKey(it.elementKey) }
+         if (__gl_remainingCount__ > 0) {
+            throw RuntimeException(exception)
+         }
+         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
+         return ListUsersWithDefaultsFullResponse.fromJson(__gl_wrappedResponse__).data!!
+      }
+   }
+   suspend fun getDriver(id: String, odometerKm: Int, liters: Int = 4): GetDriverResponse {
+      val __gl_operationName__ = "getDriver"
+      val __gl_variables__ = mapOf("id" to id, "odometerKm" to odometerKm, "liters" to liters)
+      val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
+      run {
+         val __gl_pqVars__ = mutableMapOf<String, Any?>()
+         __gl_pqVars__["id"] = __gl_variables__["id"]
+         __gl_pqVars__["odometerKm"] = __gl_variables__["odometerKm"]
+         __gl_pqVars__["liters"] = __gl_variables__["liters"]
+         __gl_partialQueries__.add(GraphLinkPartialQuery(
+             "getDriver(id: \$id){..._all_fields_Driver}",
+             __gl_pqVars__,
+             0,
+             emptyList(),
+             "getDriver__getDriver",
+             "getDriver",
+             setOf("_all_fields_Driver"),
+             listOf("\$id: ID!", "\$odometerKm: Int!", "\$liters: Int!"),
+             false,
+             encoder,
+         ))
+      }
+      val __gl_responseMap__ = mutableMapOf<String, Any?>()
+      val __gl_staleData__ = mutableMapOf<String, Any?>()
+      for (partQuery in __gl_partialQueries__) {
+         if (partQuery.ttl > 0) {
+            try {
+               val __gl_entry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
+               if (__gl_entry__ != null) {
+                  if (__gl_entry__.stale) {
+                     __gl_staleData__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
+                  } else {
+                     __gl_responseMap__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
+                  }
+               }
+            } catch (ignored: Exception) {
+            }
+         }
+      }
+      val __gl_remaining__ = __gl_partialQueries__.filter { !__gl_responseMap__.containsKey(it.elementKey) }.toMutableList()
+      if (__gl_remaining__.isEmpty()) {
+         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
+         return GetDriverFullResponse.fromJson(__gl_wrappedResponse__).data!!
+      }
+      val __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "")
+      try {
+         val __gl_responseText__ = glCallAdapter(__gl_payload__)
+         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, { GetDriverFullResponse.fromJson(it) }, __gl_remaining__, false).data!!
+      } catch (exception: Exception) {
+         __gl_responseMap__.putAll(__gl_staleData__)
+         val __gl_remainingCount__ = __gl_partialQueries__.count { !__gl_responseMap__.containsKey(it.elementKey) }
+         if (__gl_remainingCount__ > 0) {
+            throw RuntimeException(exception)
+         }
+         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
+         return GetDriverFullResponse.fromJson(__gl_wrappedResponse__).data!!
       }
    }
    fun buildPayload(partQueries: List<GraphLinkPartialQuery>, operationName: String, directives: String): GraphLinkPayload {

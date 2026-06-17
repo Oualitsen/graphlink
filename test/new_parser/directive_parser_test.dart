@@ -54,7 +54,7 @@ void main() {
       final args = parser.directiveDefinitions['@myDir']!.arguments;
       expect(args.length, 2);
       expect(args.first.type.nullable, false);
-      expect(args.last.initialValue, 300);
+      expect(args.last.defaultValue?.value, 300);
     });
 
     test('directive without documentation has null documentation', () {
@@ -93,7 +93,7 @@ void main() {
       expect(d.scopes,
           {GLDirectiveScope.FIELD_DEFINITION, GLDirectiveScope.OBJECT});
       expect(d.arguments.length, 2);
-      expect(d.arguments.first.initialValue, 60);
+      expect(d.arguments.first.defaultValue?.value, 60);
       expect(d.arguments.last.type.isList, true);
     });
 

@@ -11,6 +11,12 @@ enum Priority {
   CRITICAL
 }
 
+enum Role {
+  ADMIN
+  USER
+  GUEST
+}
+
 type AllScalars {
   id:            ID!
   strVal:        String!
@@ -81,6 +87,29 @@ type PostResult implements SearchResult {
   title: String!
 }
 
+type DefaultsEcho {
+  name:      String!
+  role:      Role!
+  age:       Int!
+  isActive:  Boolean!
+  score:     Float!
+  nickname:  String!
+  tags:      [String]!
+}
+
+type NestedDefaultsEcho {
+  name:     String!
+  address:  Address
+  contacts: [Address]
+  matrix:   [[Address]]
+}
+
+type Driver {
+  id: ID!
+  lastUsedMillage(odometerKm: Int!): Int!
+  lastUsedFuel(liters: Int!): Int!
+}
+
 input AddressInput {
   street:  String!
   city:    String!
@@ -107,6 +136,23 @@ input UpdateUserInput {
   tags:     [String!]
 }
 
+input CreateWithDefaultsInput {
+  name:     String!
+  role:     Role
+  age:      Int
+  isActive: Boolean
+  score:    Float
+  nickname: String
+  tags:     [String]
+}
+
+input NestedDefaultsInput {
+  name:     String!
+  address:  AddressInput
+  contacts: [AddressInput]
+  matrix:   [[AddressInput]]
+}
+
 type Query {
   getUser(id: ID!): User!
   findUser(id: ID!): User
@@ -125,6 +171,8 @@ type Query {
   getStaleUser(id: ID!): User
   getUserOrErrors(id: ID!): User!
   findUserOrErrors(id: ID!): User
+  listUsersWithDefaults(limit: Int, role: Role): [User]!
+  getDriver(id: ID!): Driver!
 }
 
 type Mutation {
@@ -135,6 +183,8 @@ type Mutation {
   transferPost(postId: ID!, newAuthorId: ID!): Post!
   resetAll: Boolean!
   createUserOrErrors(input: CreateUserInput!): User!
+  createWithDefaults(input: CreateWithDefaultsInput!): DefaultsEcho!
+  createWithNestedDefaults(input: NestedDefaultsInput!): NestedDefaultsEcho!
 }
 
 type Subscription {
