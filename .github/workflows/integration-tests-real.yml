@@ -36,7 +36,7 @@ jobs:
           java-version: '21'
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - name: Build servers
         run: |
           cd ../spring_server && ./gradlew build -x test
@@ -90,5 +90,5 @@ jobs:
       - uses: dart-lang/setup-dart@v1
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - run: make ci
