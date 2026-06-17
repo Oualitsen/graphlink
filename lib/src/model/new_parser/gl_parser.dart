@@ -242,6 +242,7 @@ class GLParser {
     setDirectivesDefaultValues();
     proparageAnnotationsOnFields();
     mergeTokens();
+    validateNonEmptyFieldLists();
     updateInterfaceReferences();
     checkInterfaceInheritance();
     skipFieldOfSkipOnServerTypes();
@@ -480,7 +481,7 @@ class GLParser {
     final interfaceNames = _parseImplementsClause();
     final directives = _parseDirectiveValueList(GLDirectiveScope.OBJECT);
     final fields = <GLField>[];
-    if (!isExtension || check(GLTokenType.openBrace)) {
+    if (check(GLTokenType.openBrace)) {
       expect(GLTokenType.openBrace);
       while (tryConsume(GLTokenType.closeBrace) == null) {
         fields.add(_parseField(
@@ -525,7 +526,7 @@ class GLParser {
     final name = expectName();
     final directives = _parseDirectiveValueList(GLDirectiveScope.INPUT_OBJECT);
     final fields = <GLField>[];
-    if (!isExtension || check(GLTokenType.openBrace)) {
+    if (check(GLTokenType.openBrace)) {
       expect(GLTokenType.openBrace);
       while (tryConsume(GLTokenType.closeBrace) == null) {
         fields.add(_parseField(
@@ -631,7 +632,7 @@ class GLParser {
     final interfaceNames = _parseImplementsClause();
     final directives = _parseDirectiveValueList(GLDirectiveScope.INTERFACE);
     final fields = <GLField>[];
-    if (!isExtension || check(GLTokenType.openBrace)) {
+    if (check(GLTokenType.openBrace)) {
       expect(GLTokenType.openBrace);
       while (tryConsume(GLTokenType.closeBrace) == null) {
         fields.add(_parseField(

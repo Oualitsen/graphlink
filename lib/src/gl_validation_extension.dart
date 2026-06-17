@@ -389,6 +389,30 @@ extension GLValidationExtension on GLParser {
     }
   }
 
+  void validateNonEmptyFieldLists() {
+    for (final type in types.values) {
+      if (type.fields.isEmpty) {
+        throw ParseException(
+            "Type '${type.token}' must have at least one field (declare a body or add an extend block)",
+            info: type.tokenInfo);
+      }
+    }
+    for (final interface in interfaces.values) {
+      if (interface.fields.isEmpty && !interface.fromUnion) {
+        throw ParseException(
+            "Interface '${interface.token}' must have at least one field (declare a body or add an extend block)",
+            info: interface.tokenInfo);
+      }
+    }
+    for (final input in inputs.values) {
+      if (input.fields.isEmpty) {
+        throw ParseException(
+            "Input '${input.token}' must have at least one field (declare a body or add an extend block)",
+            info: input.tokenInfo);
+      }
+    }
+  }
+
   void checkInterfaceDefinition(GLInterfaceDefinition interface) {
     if (checkExtensionToken(interface, interface.token, interfaces)) {
       throw ParseException(
