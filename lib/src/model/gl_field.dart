@@ -13,7 +13,7 @@ class GLField with GLDirectivesMixin {
   final String? documentation;
   final Map<String, GLArgumentDefinition> _arguments = {};
 
-
+  List<GLArgumentDefinition>? _cachedArguments;
   bool? _containsSkipOrIncludeDirective;
 
   GLField({
@@ -30,13 +30,15 @@ class GLField with GLDirectivesMixin {
 
   void _addArgument(GLArgumentDefinition arg) {
     _arguments[arg.token] = arg;
+    _cachedArguments = null;
   }
 
   GLArgumentDefinition? getArgumentByName(String name) {
     return _arguments[name];
   }
 
-  List<GLArgumentDefinition> get arguments => _arguments.values.toList();
+  List<GLArgumentDefinition> get arguments =>
+      _cachedArguments ??= _arguments.values.toList();
 
   @override
   bool operator ==(Object other) {

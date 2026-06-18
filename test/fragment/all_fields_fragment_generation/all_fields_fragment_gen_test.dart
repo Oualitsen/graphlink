@@ -7,9 +7,37 @@ void main() async {
   test("all_fields_fragments_test", () {
     final GLParser g = GLParser(generateAllFieldsFragments: true);
 
-    final text = File(
-            "test/fragment/all_fields_fragment_generation/all_fields_fragment_gen_test.graphql")
-        .readAsStringSync();
+    const text = '''
+  interface UserBase {
+    firstName: String!
+    lastName: String!
+    middleName: String
+    address: Address
+}
+
+type User implements UserBase {
+
+    firstName: String!
+    lastName: String!
+    middleName: String
+    address: Address
+
+    username: String
+}
+
+type Address {
+    street: String
+    state: State
+    zipCode: String
+}
+
+type State {
+    id: String!
+    name: String!
+    localName: String!
+}
+
+''';
     g.parse(text);
 
     var frag = g.fragments[GLGrammarExtension.allFieldsFragmentName("User")]!;

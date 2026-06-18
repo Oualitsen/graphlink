@@ -13,8 +13,8 @@ import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 
 class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
-  final Set<TokenInfo> _interfaceNames = {};
-  final Set<GLInterfaceDefinition> _interfaces = {};
+  final Map<String, TokenInfo> _interfaceNames = {};
+  final Map<String, GLInterfaceDefinition> _interfaces = {};
   final bool nameDeclared;
   final GLTypeDefinition? derivedFromType;
   final bool isResponseType;
@@ -51,23 +51,23 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
     interfaceNames.forEach(addInterfaceName);
   }
 
-  Set<GLInterfaceDefinition> get interfaces => Set.unmodifiable(_interfaces);
-  Set<TokenInfo> get interfaceNames => Set.unmodifiable(_interfaceNames);
+  Set<GLInterfaceDefinition> get interfaces => Set.unmodifiable(_interfaces.values);
+  Set<TokenInfo> get interfaceNames => Set.unmodifiable(_interfaceNames.values);
   Set<String> get originalTokens => Set.unmodifiable(_originalTokens);
 
   void addInterfaceName(TokenInfo token) {
-    _interfaceNames.add(token);
+    _interfaceNames[token.token] = token;
   }
 
   void addInterface(GLInterfaceDefinition iface) {
-    _interfaces.add(iface);
+    _interfaces[iface.token] = iface;
     addInterfaceName(iface.tokenInfo);
     iface.addImplementation(this);
   }
 
   void unlinkInterface(GLInterfaceDefinition iface) {
-    _interfaces.remove(iface);
-    _interfaceNames.removeWhere((t) => t.token == iface.token);
+    _interfaces.remove(iface.token);
+    _interfaceNames.remove(iface.token);
   }
 
   void addOriginalToken(String token) {
@@ -89,7 +89,7 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
   }
 
   bool implements(String interfaceName) {
-    return _interfaceNames.where((i) => i.token == interfaceName).isNotEmpty;
+    return _interfaceNames[interfaceName] != null;
   }
 
   String? _cachedHash;
@@ -149,16 +149,15 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
     return [...fields];
   }
 
-  bool containsInteface(String interfaceName) =>
-      interfaceNames.where((e) => e.token == interfaceName).isNotEmpty;
+  bool containsInteface(String interfaceName) => _interfaceNames[interfaceName] != null;
 
-  Set<String> getInterfaceNames() => interfaceNames.map((e) => e.token).toSet();
+  Set<String> getInterfaceNames() => _interfaceNames.keys.toSet();
 
   @override
   Set<GLToken> getImportDependecies(GLParser g) {
     var result = {...super.getImportDependecies(g)};
 
-    for (var iface in _interfaces) {
+    for (var iface in _interfaces.values) {
       var token = g.getTokenByKey(iface.token);
       if (filterDependecy(token, g)) {
         result.add(token!);

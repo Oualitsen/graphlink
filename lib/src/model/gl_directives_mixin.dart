@@ -4,12 +4,14 @@ import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 
 mixin GLDirectivesMixin {
+  List<GLDirectiveValue>? _cachedDirectives;
+
   List<GLDirectiveValue> getDirectives({bool skipGenerated = false}) {
-    final result = [..._directives.values, ..._decorators];
+    final all = _cachedDirectives ??= [..._directives.values, ..._decorators];
     if (skipGenerated) {
-      return result.where((d) => !d.generated).toList(growable: false);
+      return all.where((d) => !d.generated).toList(growable: false);
     }
-    return result;
+    return all;
   }
 
   ///
@@ -38,6 +40,7 @@ mixin GLDirectivesMixin {
   void addDirective(GLDirectiveValue directiveValue) {
     if (directiveValue.token == glDecorators) {
       _decorators.add(directiveValue);
+      _cachedDirectives = null;
       return;
     }
     if (_directives.containsKey(directiveValue.token)) {
@@ -45,14 +48,17 @@ mixin GLDirectivesMixin {
           info: directiveValue.tokenInfo);
     }
     _directives[directiveValue.token] = directiveValue;
+    _cachedDirectives = null;
   }
 
   void addDirectiveIfAbsent(GLDirectiveValue directiveValue) {
     _directives.putIfAbsent(directiveValue.token, () => directiveValue);
+    _cachedDirectives = null;
   }
 
   void removeDirectiveByName(String name) {
     _directives.remove(name);
+    _cachedDirectives = null;
   }
 
   GLDirectiveValue? getDirectiveByName(String name) {
@@ -62,6 +68,4 @@ mixin GLDirectivesMixin {
   bool hasDirective(String name) {
     return _directives.containsKey(name);
   }
-
-
 }

@@ -37,22 +37,16 @@ extension GLGrammarFragmentExtension on GLParser {
   }
 
   GLType getFieldType(TokenInfo fieldNameToken, String typeName) {
-    var fieldName = fieldNameToken.token;
-    var onType = getType(fieldNameToken.ofNewName(typeName));
-
-    var result =
-        onType.fields.where((element) => element.name.token == fieldName);
-    if (result.isEmpty && fieldName != GLParser.typename) {
+    final fieldName = fieldNameToken.token;
+    final onType = getType(fieldNameToken.ofNewName(typeName));
+    final field = onType.getFieldByName(fieldName);
+    if (field == null) {
+      if (fieldName == GLParser.typename) return GLType("String".toToken(), false);
       throw ParseException(
           "Could not find field '$fieldName' on type '$typeName'",
           info: fieldNameToken);
-    } else {
-      if (result.isNotEmpty) {
-        return result.first.type;
-      } else {
-        return GLType("String".toToken(), false);
-      }
     }
+    return field.type;
   }
 
   void updateFragmentAllTypesDependencies() {
@@ -91,17 +85,14 @@ extension GLGrammarFragmentExtension on GLParser {
 
   GLType getTypeFromFieldName(
       String fieldName, String typeName, TokenInfo fieldToken) {
-    var type = getType(fieldToken.ofNewName(typeName));
-
-    var fields = type.fields
-        .where((element) => element.name.token == fieldName)
-        .toList();
-    if (fields.isEmpty) {
+    final type = getType(fieldToken.ofNewName(typeName));
+    final field = type.getFieldByName(fieldName);
+    if (field == null) {
       throw ParseException(
           "$typeName does not declare a field with name $fieldName",
           info: type.tokenInfo);
     }
-    return fields.first.type;
+    return field.type;
   }
 
   void updateFragmentDependencies() {
@@ -134,14 +125,20 @@ extension GLGrammarFragmentExtension on GLParser {
 
     if (typeDefinition is GLInterfaceDefinition) {
       var projection = _createProjectionForInterface(typeDefinition);
-      var block = GLFragmentBlockDefinition([projection]);
+      var block = GLFragmentBlockDefinition([projection])..validated = true;
       return GLFragmentDefinition(
           allFieldsKey.toToken(), typeDefinition.tokenInfo, block, []);
     }
 
+    final queryTypeNames =
+        GLQueryType.values.map((t) => schema.getByQueryType(t)).toSet();
+
     final projections = typeDefinition.getSerializableFields(mode).map((field) {
       if (typeRequiresProjection(field.type)) {
         final fieldTypeName = field.type.inlineType.token;
+        // Query/Mutation/Subscription root types are excluded from fragment
+        // generation, so any field pointing to them must also be skipped.
+        if (queryTypeNames.contains(fieldTypeName)) return null;
         if (inProgress.contains(fieldTypeName)) {
           // Cyclic field — inline-expand using the back-referenced type's depth.
           final cyclicType = types[fieldTypeName] ?? interfaces[fieldTypeName];
@@ -172,7 +169,7 @@ extension GLGrammarFragmentExtension on GLParser {
     return GLFragmentDefinition(
         allFieldsKey.toToken(),
         typeDefinition.tokenInfo,
-        GLFragmentBlockDefinition(projections),
+        GLFragmentBlockDefinition(projections)..validated = true,
         []);
   }
 
@@ -183,6 +180,7 @@ extension GLGrammarFragmentExtension on GLParser {
 
     final Set<String> done = {};
     final Set<String> inProgress = {};
+    int count = 0;
 
     void generate(String key) {
       if (done.contains(key) || inProgress.contains(key)) return;
@@ -204,6 +202,7 @@ extension GLGrammarFragmentExtension on GLParser {
       addFragmentDefinition(createAllFieldsFragment(typeDef, inProgress));
       inProgress.remove(key);
       done.add(key);
+      count++;
     }
 
     allTypes.forEach((key, typeDef) {
@@ -233,7 +232,20 @@ extension GLGrammarFragmentExtension on GLParser {
       String typeName, int remainingDepth, Set<String> cycleTypes,
       [Set<String>? visitedOnPath]) {
     final path = visitedOnPath ?? <String>{};
-    if (path.contains(typeName)) return null;
+
+    final isCyclicType = cycleTypes.contains(typeName);
+
+    // Non-cyclic cache hit: return the previously computed block directly.
+    // fragmentBlockCache is shared across all createAllFieldsFragments calls.
+    if (!isCyclicType && fragmentBlockCache.containsKey(typeName)) {
+      return fragmentBlockCache[typeName];
+    }
+
+    // Skip non-cyclic types already on the path to prevent unbounded recursion
+    // through non-cyclic chains (e.g. Link1→Link2→...→LinkN). Cyclic types
+    // (those in cycleTypes) are bounded by remainingDepth instead, so the path
+    // check must not block them — otherwise depth>1 expansions terminate early.
+    if (path.contains(typeName) && !isCyclicType) return null;
 
     final typeDef = types[typeName] ?? interfaces[typeName];
     if (typeDef == null) return null;
@@ -258,18 +270,29 @@ extension GLGrammarFragmentExtension on GLParser {
       if (isCyclic && remainingDepth <= 0) return null;
 
       final nextDepth = isCyclic ? remainingDepth - 1 : remainingDepth;
+      final block = _createInlineExpandBlock(fieldTypeName, nextDepth, cycleTypes, path);
+      // If expansion returned null (path-skip or unknown type), omit the field
+      // entirely — a null block on an object-type field is invalid.
+      if (block == null) return null;
       return GLProjection(
         fragmentName: null,
         token: field.name,
         alias: null,
-        block: _createInlineExpandBlock(fieldTypeName, nextDepth, cycleTypes, path),
+        block: block,
         directives: [],
         arguments: _argumentValuesForField(field),
       );
     }).whereType<GLProjection>().toList();
 
     path.remove(typeName);
-    return GLFragmentBlockDefinition(projections);
+
+    final result = GLFragmentBlockDefinition(projections);
+
+    // Cache the result for non-cyclic types so all subsequent calls reuse
+    // the same block object instead of re-expanding the same subgraph.
+    if (!isCyclicType) fragmentBlockCache[typeName] = result;
+
+    return result;
   }
 
   GLFragmentBlockDefinition? createAllFieldBlock(GLField field) {
@@ -332,6 +355,15 @@ extension GLGrammarFragmentExtension on GLParser {
   void _generateForField(GLField field, GLQueryType queryType) {
     GLFragmentBlockDefinition? block;
     if (typeRequiresProjection(field.type)) {
+      final fieldTypeName = field.type.inlineType.token;
+      // Skip fields whose type is a query root (Query/Mutation/Subscription) —
+      // those types have no all-fields fragment because they are excluded from
+      // fragment generation. The GitLab schema has `relay: Query!` as a Relay
+      // workaround; attempting to generate a fragment for it would fail.
+      final queryTypeNames =
+          GLQueryType.values.map((t) => schema.getByQueryType(t)).toSet();
+      if (queryTypeNames.contains(fieldTypeName)) return;
+
       final fragName = generateAllFieldFragment(field.type);
       block = GLFragmentBlockDefinition([
         GLProjection(
@@ -367,10 +399,17 @@ extension GLGrammarFragmentExtension on GLParser {
   }
 
   GLProjection _createProjectionForInterface(GLInterfaceDefinition interface) {
-    var types = getTypesImplementing(interface);
+    var implementors = getTypesImplementing(interface);
+    // Query root types (Query/Mutation/Subscription) are excluded from fragment
+    // generation (e.g. GitLab's `type Query implements Node`). Skip them here
+    // so no _all_fields_Query spread is emitted into the interface fragment.
+    final queryTypeNames =
+        GLQueryType.values.map((t) => schema.getByQueryType(t)).toSet();
     var inlineFrags = <GLInlineFragmentDefinition>[];
 
-    types.map((t) {
+    implementors
+        .where((t) => !queryTypeNames.contains(t.token))
+        .map((t) {
       var token = t.tokenInfo.ofNewName("${allFields}_${t.token}");
       var inlineDef = GLInlineFragmentDefinition(
           t.tokenInfo,
