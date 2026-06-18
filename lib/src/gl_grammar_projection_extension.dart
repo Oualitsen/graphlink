@@ -572,7 +572,7 @@ extension GLGrammarProjectionExtension on GLParser {
       if (existing.type != argDef.type) {
         throw ParseException(
             "Variable $varToken is used for arguments of different types "
-            "(${existing.type} vs ${argDef.type}). Use a differently named "
+            "(${existing.type.token} vs ${argDef.type.token}). Use a differently named "
             "variable to disambiguate, e.g. ${field.name}(${argDef.tokenInfo}: \$myVar)",
             info: projection.tokenInfo);
       }

@@ -17,12 +17,24 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
 
   final _fieldNames = <String>{};
 
+  List<GLField>? _cachedFields;
+  List<GLField>? _cachedSerializableClient;
+  List<GLField>? _cachedSerializableServer;
   List<GLField>? _skipOnClientFields;
   List<GLField>? _skipOnServerFields;
 
   GLTokenWithFields(super.tokenInfo, super.extension, List<GLField> allFields,
       {super.documentation}) {
     allFields.forEach(addField);
+  }
+
+  void _invalidateFieldCaches() {
+    _cachedFields = null;
+    _cachedSerializableClient = null;
+    _cachedSerializableServer = null;
+    _skipOnClientFields = null;
+    _skipOnServerFields = null;
+    _fieldNames.clear();
   }
 
   void addField(GLField field) {
@@ -32,6 +44,7 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
           info: field.name);
     }
     _fieldMap[field.name.token] = field;
+    _invalidateFieldCaches();
   }
 
   void addOrMergeField(GLField field) {
@@ -42,6 +55,7 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
     } else {
       addField(field);
     }
+    _invalidateFieldCaches();
   }
 
   void checkFields(GLField oroginal, GLField newField) {}
@@ -51,7 +65,7 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
   }
 
   List<GLField> get fields {
-    return _fieldMap.values.toList();
+    return _cachedFields ??= _fieldMap.values.toList();
   }
 
   GLField? getFieldByName(String name) {
@@ -59,7 +73,7 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
   }
 
   GLField findFieldByName(String fieldName, GLParser g) {
-    var field = getFieldByName(fieldName);
+    final field = _fieldMap[fieldName];
     if (field == null) {
       if (fieldName == GLParser.typename) {
         return GLField(
@@ -78,18 +92,32 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
   }
 
   Set<String> get fieldNames {
-    if (fields.isEmpty) {
-      return {};
-    }
+    if (_fieldMap.isEmpty) return {};
     if (_fieldNames.isEmpty) {
-      _fieldNames.addAll(fields.map((e) => e.name.token));
+      _fieldNames.addAll(_fieldMap.keys);
     }
     return _fieldNames;
   }
 
+  // Caches the two common cases (client/server, skipGenerated=false).
+  // The rare skipGenerated=true path (used during Java annotation emission)
+  // is not cached since it is never on the hot path.
   List<GLField> getSerializableFields(CodeGenerationMode mode,
       {bool skipGenerated = false}) {
-    return fields
+    if (!skipGenerated) {
+      switch (mode) {
+        case CodeGenerationMode.client:
+          return _cachedSerializableClient ??= _buildSerializableFields(mode);
+        case CodeGenerationMode.server:
+          return _cachedSerializableServer ??= _buildSerializableFields(mode);
+      }
+    }
+    return _buildSerializableFields(mode, skipGenerated: skipGenerated);
+  }
+
+  List<GLField> _buildSerializableFields(CodeGenerationMode mode,
+      {bool skipGenerated = false}) {
+    return _fieldMap.values
         .where((f) => !shouldSkipSerialization(
             directives: f.getDirectives(skipGenerated: skipGenerated),
             mode: mode))
@@ -97,7 +125,7 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
   }
 
   List<GLField> getSkipOnServerFields() {
-    return _skipOnServerFields ??= fields.where((field) {
+    return _skipOnServerFields ??= _fieldMap.values.where((field) {
       return field
           .getDirectives()
           .where((d) => d.token == glSkipOnServer)
@@ -106,7 +134,7 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
   }
 
   List<GLField> getSkipOnClientFields() {
-    return _skipOnClientFields ??= fields.where((field) {
+    return _skipOnClientFields ??= _fieldMap.values.where((field) {
       return field
           .getDirectives()
           .where((d) => d.token == glSkipOnClient)
@@ -160,6 +188,7 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
 
   void replaceField(GLField field) {
     _fieldMap[field.name.token] = field;
+    _invalidateFieldCaches();
   }
 
   @override

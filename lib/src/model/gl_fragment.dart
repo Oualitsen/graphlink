@@ -7,7 +7,6 @@ import 'package:graphlink/src/model/gl_directives_mixin.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/token_info.dart';
-import 'package:graphlink/src/tree/tree.dart';
 import 'package:graphlink/src/utils.dart';
 
 class GLTypedFragment {
@@ -24,6 +23,8 @@ abstract class GLFragmentDefinitionBase extends GLToken with GLDirectivesMixin {
 
   final List<GLFragmentDefinitionBase> _dependecies = [];
 
+  bool _dependeciesUpdated = false;
+
   GLFragmentDefinitionBase(
     super.tokenInfo,
     this.onTypeName,
@@ -34,17 +35,15 @@ abstract class GLFragmentDefinitionBase extends GLToken with GLDirectivesMixin {
   }
 
   void updateDepencies(Map<String, GLFragmentDefinitionBase> map) {
-    var rootNode = TreeNode(value: tokenInfo.token);
-    block.getDependecies(map, rootNode);
-    var dependecyNames = rootNode.getAllValues(true).toSet();
-
-    for (var name in dependecyNames) {
+    if (_dependeciesUpdated) return;
+    for (final name in block.getDependecies()) {
       final def = map[name];
       if (def == null) {
         throw ParseException("Fragment $name is not defined", info: tokenInfo);
       }
       _dependecies.add(def);
     }
+    _dependeciesUpdated = true;
   }
 
   String generateName();
@@ -161,54 +160,33 @@ class GLProjection extends GLToken with GLDirectivesMixin {
       ? fragmentName!
       : tokenInfo.token;
 
-  getDependecies(Map<String, GLFragmentDefinitionBase> map, TreeNode node) {
+  Set<String>? _cachedDependencies;
+
+  Set<String> getDependecies() {
+    if (_cachedDependencies != null) return _cachedDependencies!;
+    _cachedDependencies = {};
     if (isFragmentReference) {
       if (block == null) {
-        TreeNode child;
-
-        if (!node.contains(targetToken)) {
-          child = node.addChild(targetToken);
-        } else {
-          throw ParseException(
-              "Dependecy Cycle ${[
-                targetToken,
-                ...node.getParents()
-              ].join(" -> ")}",
-              info: tokenInfo);
-        }
-
-        GLFragmentDefinitionBase? frag = map[targetToken];
-
-        if (frag == null) {
-          throw ParseException("Fragment $tokenInfo is not defined",
-              info: tokenInfo);
-        } else {
-          frag.block.getDependecies(map, child);
-        }
+        _cachedDependencies!.add(targetToken);
       } else {
-        ///
-        ///This should be an inline fragment
-        ///
-
-        var myBlock = block;
-        if (myBlock == null) {
-          throw ParseException("Inline Fragment must have a body",
-              info: tokenInfo);
-        }
-        myBlock.getDependecies(map, node);
+        _cachedDependencies!.addAll(block!.getDependecies());
       }
     }
     if (block != null) {
-      var children = block!.projections.values;
-      for (var projection in children) {
-        projection.getDependecies(map, node);
+      for (var projection in block!.projections.values) {
+        _cachedDependencies!.addAll(projection.getDependecies());
       }
     }
+    return _cachedDependencies!;
   }
 }
 
 class GLFragmentBlockDefinition {
   final Map<String, GLProjection> projections = {};
+
+  /// Set to true after this block has been fully validated. Shared blocks
+  /// (non-cyclic types stored in GlFragmentBlockCache) are only validated once.
+  bool validated = false;
 
   GLFragmentBlockDefinition(List<GLProjection> projections) {
     for (var element in projections) {
@@ -240,12 +218,17 @@ class GLFragmentBlockDefinition {
     return p;
   }
 
-  void getDependecies(
-      Map<String, GLFragmentDefinitionBase> map, TreeNode node) {
-    var projectionList = projections.values;
-    for (var projection in projectionList) {
-      projection.getDependecies(map, node);
+  Set<String>? _cachedDependencies;
+
+  Set<String> getDependecies() {
+    if (_cachedDependencies != null) return _cachedDependencies!;
+    // Sentinel: set empty set before recursing so cycles terminate instead of
+    // looping infinitely (cycles are caught earlier by checkFragmentRefs).
+    _cachedDependencies = {};
+    for (var projection in projections.values) {
+      _cachedDependencies!.addAll(projection.getDependecies());
     }
+    return _cachedDependencies!;
   }
 
   String? _uniqueName;
@@ -280,5 +263,21 @@ class GLFragmentBlockDefinition {
     return projections.values
         .where((projection) => projection.isFragmentReference)
         .toList();
+  }
+}
+
+/// Shared cache for inline-expanded blocks built by `_createInlineExpandBlock`.
+/// Keyed by type name; only non-cyclic types are stored (cyclic types depend on
+/// remainingDepth and are never cached). One instance lives for the duration of
+/// `createAllFieldsFragments` so blocks are reused across all fragment builds.
+class GlFragmentBlockCache {
+  final Map<String, GLFragmentBlockDefinition?> _cache = {};
+
+  bool containsKey(String typeName) => _cache.containsKey(typeName);
+
+  GLFragmentBlockDefinition? operator [](String typeName) => _cache[typeName];
+
+  void operator []=(String typeName, GLFragmentBlockDefinition? block) {
+    _cache[typeName] = block;
   }
 }
