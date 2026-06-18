@@ -169,6 +169,7 @@ extension GLValidationExtension on GLParser {
 
   void validateFragmentProjections() {
     fragments.forEach((key, fragment) {
+      if (fragment.block.validated) return;
       fragment.block.projections.forEach((key, projection) {
         validateProjection(projection, fragment.onTypeName, fragment.token);
       });
@@ -226,7 +227,8 @@ extension GLValidationExtension on GLParser {
             info: projection.tokenInfo);
       }
     }
-    if (projection.block != null) {
+    if (projection.block != null && !projection.block!.validated) {
+      projection.block!.validated = true;
       var myType = getTypeFromFieldName(
           projection.actualName, typeName, projection.tokenInfo);
       for (var p in projection.block!.projections.values) {
