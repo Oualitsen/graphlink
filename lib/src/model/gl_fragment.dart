@@ -36,13 +36,19 @@ abstract class GLFragmentDefinitionBase extends GLToken with GLDirectivesMixin {
 
   void updateDepencies(Map<String, GLFragmentDefinitionBase> map) {
     if (_dependeciesUpdated) return;
-    for (final name in block.getDependecies()) {
-      final def = map[name];
-      if (def == null) {
-        throw ParseException("Fragment $name is not defined", info: tokenInfo);
+    final seen = <String>{};
+    void collect(Set<String> names) {
+      for (final name in names) {
+        if (!seen.add(name)) continue;
+        final def = map[name];
+        if (def == null) {
+          throw ParseException("Fragment $name is not defined", info: tokenInfo);
+        }
+        _dependecies.add(def);
+        collect(def.block.getDependecies());
       }
-      _dependecies.add(def);
     }
+    collect(block.getDependecies());
     _dependeciesUpdated = true;
   }
 
