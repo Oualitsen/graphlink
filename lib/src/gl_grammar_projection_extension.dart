@@ -477,21 +477,22 @@ extension GLGrammarProjectionExtension on GLParser {
         var block = element.block;
         if (block == null) continue;
         var rootType = getType(element.returnType.inlineType.tokenInfo);
-        _collectFieldArgumentVariables(rootType, block.projections, def);
+        _collectFieldArgumentVariables(rootType, block.projections, def, {});
       }
     }
   }
 
   void _collectFieldArgumentVariables(GLTypeDefinition type,
-      Map<String, GLProjection> projectionMap, GLQueryDefinition def) {
+      Map<String, GLProjection> projectionMap, GLQueryDefinition def,
+      Set<String> visitedFragments) {
     if (type is GLInterfaceDefinition) {
       for (var impl in getTypesImplementing(type)) {
-        _collectFieldArgumentVariables(impl, projectionMap, def);
+        _collectFieldArgumentVariables(impl, projectionMap, def, visitedFragments);
       }
       return;
     }
 
-    var projections = _collectProjection(projectionMap, type.token);
+    var projections = _collectProjection(projectionMap, type.token, visitedFragments);
     for (var field in type.fields) {
       var projection = projections[field.name.token];
       if (projection == null) continue;
@@ -507,7 +508,7 @@ extension GLGrammarProjectionExtension on GLParser {
       if (projection.block != null && typeRequiresProjection(field.type)) {
         var subType = getType(field.type.inlineType.tokenInfo);
         _collectFieldArgumentVariables(
-            subType, projection.block!.projections, def);
+            subType, projection.block!.projections, def, visitedFragments);
       }
     }
   }
@@ -584,18 +585,24 @@ extension GLGrammarProjectionExtension on GLParser {
   }
 
   Map<String, GLProjection> _collectProjection(
-      Map<String, GLProjection> projections, String onTypeName) {
+      Map<String, GLProjection> projections, String onTypeName,
+      [Set<String>? visitedFragments]) {
     var result = <String, GLProjection>{};
     projections.forEach((k, v) {
       if (v.isFragmentReference) {
-        var fragment = getFragmentByName(v.fragmentName!)!;
-        var r = _collectProjection(fragment.block.projections, onTypeName);
+        final fragName = v.fragmentName!;
+        var fragment = getFragmentByName(fragName)!;
+        if (fragment.isGenerated) {
+          if (visitedFragments != null && visitedFragments.contains(fragName)) return;
+          visitedFragments?.add(fragName);
+        }
+        var r = _collectProjection(fragment.block.projections, onTypeName, visitedFragments);
         result.addAll(r);
       } else if (v is GLInlineFragmentsProjection) {
         v.inlineFragments
             .where((inline) => inline.onTypeName.token == onTypeName)
             .forEach((inline) {
-          var r = _collectProjection(inline.block.projections, onTypeName);
+          var r = _collectProjection(inline.block.projections, onTypeName, visitedFragments);
           result.addAll(r);
         });
       } else {

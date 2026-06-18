@@ -113,9 +113,16 @@ extension GLGrammarFragmentExtension on GLParser {
   /// variables for every argument the field declares, so that selecting the
   /// field always carries its required arguments along.
   List<GLArgumentValue> _argumentValuesForField(GLField field) {
-    return field.arguments
-        .map((a) => GLArgumentValue(a.tokenInfo, "\$${a.tokenInfo}"))
-        .toList();
+    final fieldName = field.name.token;
+    return field.arguments.map((a) {
+      final argName = a.tokenInfo.token;
+      final typeName = a.type.inlineType.token;
+      final isScalar = builtInScalars.contains(typeName) || scalars.containsKey(typeName);
+      final varName = isScalar
+          ? '\$${fieldName}${argName.firstUp}'
+          : '\$${typeName.firstLow}';
+      return GLArgumentValue(a.tokenInfo, varName);
+    }).toList();
   }
 
   GLFragmentDefinition createAllFieldsFragment(
@@ -127,7 +134,8 @@ extension GLGrammarFragmentExtension on GLParser {
       var projection = _createProjectionForInterface(typeDefinition);
       var block = GLFragmentBlockDefinition([projection])..validated = true;
       return GLFragmentDefinition(
-          allFieldsKey.toToken(), typeDefinition.tokenInfo, block, []);
+          allFieldsKey.toToken(), typeDefinition.tokenInfo, block, [],
+          isGenerated: true);
     }
 
     final queryTypeNames =
@@ -170,7 +178,8 @@ extension GLGrammarFragmentExtension on GLParser {
         allFieldsKey.toToken(),
         typeDefinition.tokenInfo,
         GLFragmentBlockDefinition(projections)..validated = true,
-        []);
+        [],
+        isGenerated: true);
   }
 
   void createAllFieldsFragments() {

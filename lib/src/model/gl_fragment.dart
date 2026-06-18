@@ -21,6 +21,8 @@ abstract class GLFragmentDefinitionBase extends GLToken with GLDirectivesMixin {
 
   final GLFragmentBlockDefinition block;
 
+  final bool isGenerated;
+
   final List<GLFragmentDefinitionBase> _dependecies = [];
 
   bool _dependeciesUpdated = false;
@@ -29,8 +31,9 @@ abstract class GLFragmentDefinitionBase extends GLToken with GLDirectivesMixin {
     super.tokenInfo,
     this.onTypeName,
     this.block,
-    List<GLDirectiveValue> directives,
-  ) {
+    List<GLDirectiveValue> directives, {
+    this.isGenerated = false,
+  }) {
     directives.forEach(addDirective);
   }
 
@@ -94,7 +97,8 @@ class GLFragmentDefinition extends GLFragmentDefinitionBase {
   final String fragmentName;
 
   GLFragmentDefinition(
-      super.token, super.onTypeName, super.block, super.directives)
+      super.token, super.onTypeName, super.block, super.directives,
+      {super.isGenerated = false})
       : fragmentName = token.token;
 
   @override
