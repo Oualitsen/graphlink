@@ -552,23 +552,39 @@ extension GLValidationExtension on GLParser {
   }
 
   List<GLField> getUnionFields(GLUnionDefinition def) {
-    var fields = <String, int>{};
+    var counts = <String, int>{};
+    var first = <String, GLField>{};
+    var incompatible = <String>{};
     var result = <GLField>[];
+
     def.typeNames
         .map((e) => getType(e))
         .expand((e) => e.getFields())
-        .forEach((e) {
-      var key = e.name.token;
-      if (fields.containsKey(key)) {
-        fields[key] = fields[key]! + 1;
+        .forEach((field) {
+      var key = field.name.token;
+      if (!counts.containsKey(key)) {
+        counts[key] = 1;
+        first[key] = field;
       } else {
-        fields[key] = 1;
+        counts[key] = counts[key]! + 1;
+        // Exclude the field if argument types differ across union members.
+        if (!incompatible.contains(key) && !_argsCompatible(first[key]!, field)) {
+          incompatible.add(key);
+        }
       }
-      if (fields[key] == def.typeNames.length) {
-        result.add(e);
+      if (counts[key] == def.typeNames.length && !incompatible.contains(key)) {
+        result.add(field);
       }
     });
     return result;
+  }
+
+  bool _argsCompatible(GLField a, GLField b) {
+    if (a.arguments.length != b.arguments.length) return false;
+    for (var i = 0; i < a.arguments.length; i++) {
+      if (a.arguments[i].type.token != b.arguments[i].type.token) return false;
+    }
+    return true;
   }
 
   void defineSchema(GLSchema schema) {

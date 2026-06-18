@@ -1,0 +1,24 @@
+union SearchResult = TypeA | TypeB
+
+type Container {
+  id: String
+  sub: Container
+  result: SearchResult
+}
+
+type TypeA {
+  id: String
+  items(filter: AFilter): String
+}
+
+type TypeB {
+  id: String
+  items(filter: BFilter): String
+}
+
+enum AFilter { A1 A2 }
+enum BFilter { B1 B2 }
+
+type Query {
+  getContainer: Container
+}
