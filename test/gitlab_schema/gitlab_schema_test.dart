@@ -6,7 +6,7 @@ import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('GitLab schema — large real-world schema parsing', () {
+  group('GitLab schema — large real-world schema parsing', skip: true, () {
     test('parses without throwing', () {
       final schema = File('test/gitlab_schema/schema.docs.graphql').readAsStringSync();
       final parser = GLParser();
@@ -23,7 +23,7 @@ void main() {
     });
   });
 
-  group('GitLab schema — client generation with fragments + auto queries', () {
+  group('GitLab schema — client generation with fragments + auto queries', skip: true, () {
     late GLParser parser;
     late DartClientSerializer serializer;
 

@@ -566,21 +566,40 @@ extension GLGrammarProjectionExtension on GLParser {
 
   void _addGeneratedArgument(GLQueryDefinition def, String varToken,
       GLArgumentDefinition argDef, GLField field, GLProjection projection) {
-    var matches = def.arguments.where((a) => a.token == varToken);
-    if (matches.isNotEmpty) {
-      var existing = matches.first;
-      if (existing.type != argDef.type) {
+    final idx = def.arguments.indexWhere((a) => a.token == varToken);
+    if (idx != -1) {
+      final existing = def.arguments[idx];
+      if (existing.type == argDef.type) return;
+      if (!_sameBaseType(existing.type, argDef.type)) {
         throw ParseException(
-            "Variable $varToken is used for arguments of different types "
+            "Variable $varToken is used for arguments of incompatible types "
             "(${existing.type.token} vs ${argDef.type.token}). Use a differently named "
             "variable to disambiguate, e.g. ${field.name}(${argDef.tokenInfo}: \$myVar)",
             info: projection.tokenInfo);
       }
+      // same base type, different nullability — upgrade to most restrictive
+      final merged = _mostRestrictiveType(existing.type, argDef.type);
+      def.arguments[idx] = GLArgumentDefinition(
+          varToken.toToken(), merged, [],
+          defaultValue: existing.defaultValue ?? argDef.defaultValue);
       return;
     }
     def.arguments.add(GLArgumentDefinition(
         varToken.toToken(), argDef.type, [],
         defaultValue: argDef.defaultValue));
+  }
+
+  bool _sameBaseType(GLType a, GLType b) {
+    if (a is GLListType && b is GLListType) return _sameBaseType(a.type, b.type);
+    if (a is GLListType || b is GLListType) return false;
+    return a.token == b.token;
+  }
+
+  GLType _mostRestrictiveType(GLType a, GLType b) {
+    if (a is GLListType && b is GLListType) {
+      return GLListType(_mostRestrictiveType(a.type, b.type), a.nullable && b.nullable);
+    }
+    return GLType(a.tokenInfo, a.nullable && b.nullable);
   }
 
   Map<String, GLProjection> _collectProjection(
