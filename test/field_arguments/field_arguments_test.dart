@@ -13,7 +13,7 @@ void main() {
     g.parse(text);
 
     final def = g.queries["getAuthor"]!;
-    expect(def.arguments.map((a) => a.token), containsAll(["\$id", "\$lastArticlesLimit"]));
+    expect(def.arguments.map((a) => a.token), containsAll(["\$id", "\$limit"]));
 
     final serializer = GLGraphqlSerializer(g, false);
     final query = serializer.serializeQueryDefinition(def);
@@ -21,7 +21,7 @@ void main() {
         .fragments(g)
         .map((f) => serializer.serializeFragmentDefinitionBase(f))
         .join(' ');
-    expect("$query $fragments", contains("lastArticles(limit: \$lastArticlesLimit)"));
+    expect("$query $fragments", contains("lastArticles(limit: \$limit)"));
   });
 
   test("field arguments written explicitly in a query are preserved without duplication", () {
