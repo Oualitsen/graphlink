@@ -113,9 +113,11 @@ extension GLGrammarFragmentExtension on GLParser {
   /// variables for every argument the field declares, so that selecting the
   /// field always carries its required arguments along.
   List<GLArgumentValue> _argumentValuesForField(GLField field) {
-    return field.arguments
-        .map((a) => GLArgumentValue(a.tokenInfo, "\$${a.tokenInfo}"))
-        .toList();
+    final fieldName = field.name.token;
+    return field.arguments.map((a) {
+      final argName = a.tokenInfo.token;
+      return GLArgumentValue(a.tokenInfo, '\$${fieldName}${argName.firstUp}');
+    }).toList();
   }
 
   GLFragmentDefinition createAllFieldsFragment(
