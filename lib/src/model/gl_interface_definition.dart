@@ -31,8 +31,28 @@ class GLInterfaceDefinition extends GLTypeDefinition {
   Set<GLTypeDefinition> get implementations => Set.unmodifiable(_implementations);
 
   Set<GLTypeDefinition> getSerializableImplementations(CodeGenerationMode mode) {
-    var result = _implementations.where((type) => filterByParserMode(type, mode)).toList();
-    return Set.unmodifiable(result);
+    return Set.unmodifiable(_collectImplementations(mode, <String>{}));
+  }
+
+  /// Flattens implementations transitively. A member of [_implementations] may
+  /// itself be a sub-interface (e.g. `Vehicle implements Entity` registers the
+  /// `Vehicle` interface against `Entity`). Sub-interfaces are never valid
+  /// `__typename` values on the wire, so we never emit them as concrete cases;
+  /// instead we descend into their own concrete implementations. [visited]
+  /// guards against cyclic interface graphs.
+  Set<GLTypeDefinition> _collectImplementations(
+      CodeGenerationMode mode, Set<String> visited) {
+    final result = <GLTypeDefinition>{};
+    for (final type in _implementations) {
+      if (type is GLInterfaceDefinition) {
+        if (visited.add(type.token)) {
+          result.addAll(type._collectImplementations(mode, visited));
+        }
+      } else if (filterByParserMode(type, mode)) {
+        result.add(type);
+      }
+    }
+    return result;
   }
 
   void addImplementation(GLTypeDefinition token) {
