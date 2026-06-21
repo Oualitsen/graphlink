@@ -10,7 +10,7 @@
 class UpdateArticleInput {
    final String id;
    final String? title;
-   UpdateArticleInput({
+   const UpdateArticleInput({
       required this.id,
       this.title
    });

@@ -26,8 +26,8 @@ open class GraphLinkClient(
       queries = GraphLinkQueries(adapter, fragmentMap, encoder, decoder, store)
       mutations = GraphLinkMutations(adapter, encoder, decoder, store)
       subscriptions = GraphLinkSubscriptions(adapter, wsAdapter, encoder, decoder, store)
-      fragmentMap["_all_fields_Article"] = "fragment _all_fields_Article on Article{id title authorId author{id name}}"
       fragmentMap["_all_fields_Author"] = "fragment _all_fields_Author on Author{id name articles{..._all_fields_Article}}"
+      fragmentMap["_all_fields_Article"] = "fragment _all_fields_Article on Article{id title authorId author{id name}}"
    }
 
    companion object {

@@ -10,7 +10,7 @@ import 'package:graphlink_server_integration_tests_dart_client/generated/types/a
 
 class GetAuthorResponse {
    final Author? getAuthor;
-   GetAuthorResponse({this.getAuthor});
+   const GetAuthorResponse({this.getAuthor});
    Map<String, dynamic> toJson() {
       return {
          'getAuthor': getAuthor?.toJson(),

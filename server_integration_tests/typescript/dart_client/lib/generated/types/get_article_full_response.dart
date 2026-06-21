@@ -13,7 +13,7 @@ import 'package:graphlink_server_integration_tests_dart_client/generated/interfa
 class GetArticleFullResponse implements GraphLinkFullResponse {
    final List<GraphLinkError>? errors;
    final GetArticleResponse? data;
-   GetArticleFullResponse({this.errors, this.data});
+   const GetArticleFullResponse({this.errors, this.data});
    Map<String, dynamic> toJson() {
       return {
          'errors': errors?.map((e0) => e0.toJson()).toList(),

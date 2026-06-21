@@ -10,7 +10,7 @@
 class GraphLinkErrorLocation {
    final int line;
    final int column;
-   GraphLinkErrorLocation({required this.line, required this.column});
+   const GraphLinkErrorLocation({required this.line, required this.column});
    Map<String, dynamic> toJson() {
       return {
          'line': line,

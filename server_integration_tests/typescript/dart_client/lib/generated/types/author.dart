@@ -11,15 +11,15 @@ import 'package:graphlink_server_integration_tests_dart_client/generated/types/a
 class Author {
    final String id;
    final String name;
-   final List<Article> articles;
-   final List<Article> latestArticles;
-   Author({required this.id, required this.name, required this.articles, required this.latestArticles});
+   final List<Article>? articles;
+   final List<Article>? latestArticles;
+   const Author({required this.id, required this.name, this.articles, this.latestArticles});
    Map<String, dynamic> toJson() {
       return {
          'id': id,
          'name': name,
-         'articles': articles.map((e0) => e0.toJson()).toList(),
-         'latestArticles': latestArticles.map((e0) => e0.toJson()).toList(),
+         'articles': articles?.map((e0) => e0.toJson()).toList(),
+         'latestArticles': latestArticles?.map((e0) => e0.toJson()).toList(),
       };
    }
 
@@ -27,8 +27,8 @@ class Author {
       return Author(
          id: json['id'] as String,
          name: json['name'] as String,
-         articles: (json['articles'] as List<dynamic>).map((e0) => Article.fromJson(e0 as Map<String, dynamic>)).toList(),
-         latestArticles: (json['latestArticles'] as List<dynamic>).map((e0) => Article.fromJson(e0 as Map<String, dynamic>)).toList(),
+         articles: (json['articles'] as List<dynamic>?)?.map((e0) => Article.fromJson(e0 as Map<String, dynamic>)).toList(),
+         latestArticles: (json['latestArticles'] as List<dynamic>?)?.map((e0) => Article.fromJson(e0 as Map<String, dynamic>)).toList(),
       );
    }
 

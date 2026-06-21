@@ -13,7 +13,7 @@ class GraphLinkSubscriptionErrorMessage implements GraphLinkSubscriptionErrorMes
    final String? id;
    final String? type;
    final List<GraphLinkError>? payload;
-   GraphLinkSubscriptionErrorMessage({this.id, this.type, this.payload});
+   const GraphLinkSubscriptionErrorMessage({this.id, this.type, this.payload});
    Map<String, dynamic> toJson() {
       return {
          'id': id,
