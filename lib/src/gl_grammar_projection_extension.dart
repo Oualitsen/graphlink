@@ -28,6 +28,19 @@ int _djb2(String s) {
 final Map<String, List<GLTypeDefinition>> _typeHashIndex = {};
 final Map<String, List<GLTypeDefinition>> _interfaceHashIndex = {};
 
+/// A single field-argument `$variable` reference discovered while walking an
+/// operation's selection set, carrying everything [_addGeneratedArgument] needs
+/// to register it on a query definition.
+class _GeneratedArgSpec {
+  final String varToken;
+  final GLArgumentDefinition argDef;
+  final GLField field;
+  final GLProjection projection;
+
+  const _GeneratedArgSpec(
+      this.varToken, this.argDef, this.field, this.projection);
+}
+
 extension GLGrammarProjectionExtension on GLParser {
   void fillInterfaceImplementations() {
     var ifaces = interfaces.values;
@@ -614,38 +627,58 @@ extension GLGrammarProjectionExtension on GLParser {
   /// field is projected — whether via an explicit query, a fragment, or the
   /// auto-generated "all fields" projection.
   void propagateFieldArgumentVariables() {
+    // The all-fields fragment graph is a single shared DAG (object fields point
+    // at shared `_all_fields_<T>` spreads), referenced by every auto-generated
+    // operation. The set of `$variable` arguments reachable from a given node —
+    // a (selection-set, type) pair — is therefore invariant across operations,
+    // so we compute it once and reuse it for each `def`. The cache is keyed
+    // first by selection-set identity (Map uses identity equality) then by type
+    // token. See [_argSpecsFor].
+    final cache =
+        <Map<String, GLProjection>, Map<String, Map<String, _GeneratedArgSpec>>>{};
     for (var def in queries.values) {
       for (var element in def.elements) {
         var block = element.block;
         if (block == null) continue;
         var rootType = getType(element.returnType.inlineType.tokenInfo);
-        // The all-fields fragment graph is a shared DAG (object fields point at
-        // shared `_all_fields_<T>` spreads). Expanding it as a tree re-walks the
-        // same (type, selection-set) pairs exponentially. Since the walk only
-        // registers `$variable`s on `def` and that registration is idempotent
-        // per pair, we dedup on (projectionMap-by-identity, type.token), scoped
-        // to this element so each operation's `def` is populated independently.
-        // The outer map is keyed by selection-set identity (Map uses identity
-        // equality), so distinct selection sets never collide.
-        final visited = <Map<String, GLProjection>, Set<String>>{};
-        _collectFieldArgumentVariables(rootType, block.projections, def, visited);
+        final specs =
+            _argSpecsFor(rootType, _spreadTargetProjections(block), cache);
+        for (final spec in specs.values) {
+          _addGeneratedArgument(
+              def, spec.varToken, spec.argDef, spec.field, spec.projection);
+        }
       }
     }
   }
 
-  void _collectFieldArgumentVariables(
+  /// Returns every distinct field-argument `$variable` reachable from the
+  /// `(type, projectionMap)` node, de-duplicated by `varToken + full type
+  /// signature` so the shared DAG never blows up into an exponential spec list.
+  /// Memoized on [cache] so each shared node is walked exactly once across all
+  /// operations. Distinct nullability variants of the same variable are kept as
+  /// separate entries so the per-`def` merge in [_addGeneratedArgument] can pick
+  /// the most-restrictive type and detect incompatible-base-type conflicts —
+  /// preserving the behaviour of the previous per-operation walk.
+  Map<String, _GeneratedArgSpec> _argSpecsFor(
       GLTypeDefinition type,
       Map<String, GLProjection> projectionMap,
-      GLQueryDefinition def,
-      Map<Map<String, GLProjection>, Set<String>> visited) {
-    final seenTypes = visited.putIfAbsent(projectionMap, () => <String>{});
-    if (!seenTypes.add(type.token)) return;
+      Map<Map<String, GLProjection>, Map<String, Map<String, _GeneratedArgSpec>>>
+          cache) {
+    final perType = cache.putIfAbsent(projectionMap, () => {});
+    final cached = perType[type.token];
+    if (cached != null) return cached;
+
+    final result = <String, _GeneratedArgSpec>{};
+    // Publish before recursing so any (pathological) re-entry returns the
+    // in-progress map rather than looping. The all-fields DAG is acyclic by
+    // construction (cyclic edges are inline-bounded), so this only guards.
+    perType[type.token] = result;
 
     if (type is GLInterfaceDefinition) {
       for (var impl in getTypesImplementing(type)) {
-        _collectFieldArgumentVariables(impl, projectionMap, def, visited);
+        _mergeArgSpecs(result, _argSpecsFor(impl, projectionMap, cache));
       }
-      return;
+      return result;
     }
 
     var projections = _collectProjection(projectionMap, type.token);
@@ -658,15 +691,48 @@ extension GLGrammarProjectionExtension on GLParser {
         if (!value.startsWith("\$")) continue;
         var argDef = field.getArgumentByName(argValue.tokenInfo.token);
         if (argDef == null) continue;
-        _addGeneratedArgument(def, value, argDef, field, projection);
+        final key = '$value ${_argTypeSignature(argDef.type)}';
+        result.putIfAbsent(
+            key, () => _GeneratedArgSpec(value, argDef, field, projection));
       }
 
       if (projection.block != null && typeRequiresProjection(field.type)) {
         var subType = getType(field.type.inlineType.tokenInfo);
-        _collectFieldArgumentVariables(
-            subType, projection.block!.projections, def, visited);
+        _mergeArgSpecs(result,
+            _argSpecsFor(subType, _spreadTargetProjections(projection.block!), cache));
       }
     }
+    return result;
+  }
+
+  /// When [block] is a single all-fields fragment spread, returns the spread
+  /// fragment's own `block.projections` — a single shared map instance reused by
+  /// every field that points at the same type. Returning the shared map (rather
+  /// than the per-field wrapper that `createAllFieldBlock` allocates fresh each
+  /// time) is what lets the identity-keyed `visited` dedup in
+  /// [_collectFieldArgumentVariables] actually fire, so the shared fragment DAG
+  /// is walked once per type instead of re-expanded as a tree.
+  ///
+  /// An implicit `__typename` is ignored when deciding "single spread": it is
+  /// auto-injected into interface/union (inline-fragment) blocks for `fromJson`
+  /// dispatch, so the spread is not necessarily the map's only entry — mirroring
+  /// [_isSoleAllFieldsSpread]. Falls back to the block's own projections for
+  /// anything that isn't a sole fragment spread (e.g. inline-expanded back-edge
+  /// blocks).
+  Map<String, GLProjection> _spreadTargetProjections(
+      GLFragmentBlockDefinition block) {
+    final projections = block.projections;
+    GLProjection? spread;
+    for (final entry in projections.entries) {
+      if (entry.key == GLParser.typename) continue;
+      if (spread != null) return projections; // more than one real selection
+      spread = entry.value;
+    }
+    if (spread != null && spread.isFragmentReference) {
+      final frag = getFragmentByName(spread.fragmentName!);
+      if (frag != null) return frag.block.projections;
+    }
+    return projections;
   }
 
   /// Returns the `$variable` tokens (e.g. `$limit`, `$authorId`) that a
@@ -721,11 +787,31 @@ extension GLGrammarProjectionExtension on GLParser {
     }
   }
 
+  /// Merges [from] into [into], keeping the first-seen spec per key so the
+  /// flattened insertion order matches a depth-first walk's first-seen order
+  /// (which determines generated argument declaration order).
+  void _mergeArgSpecs(Map<String, _GeneratedArgSpec> into,
+      Map<String, _GeneratedArgSpec> from) {
+    for (final entry in from.entries) {
+      into.putIfAbsent(entry.key, () => entry.value);
+    }
+  }
+
+  /// Stable signature of a type including list nesting and nullability — used to
+  /// key [_argSpecsFor] so two occurrences of the same `$variable` that differ
+  /// only in nullability are kept distinct (and later merged to most-restrictive
+  /// per `def`), while exact duplicates collapse.
+  String _argTypeSignature(GLType t) {
+    if (t is GLListType) {
+      return '[${_argTypeSignature(t.type)}]${t.nullable ? '?' : '!'}';
+    }
+    return '${t.token}${t.nullable ? '?' : '!'}';
+  }
+
   void _addGeneratedArgument(GLQueryDefinition def, String varToken,
       GLArgumentDefinition argDef, GLField field, GLProjection projection) {
-    final idx = def.arguments.indexWhere((a) => a.token == varToken);
-    if (idx != -1) {
-      final existing = def.arguments[idx];
+    final existing = def.getArgumentByName(varToken);
+    if (existing != null) {
       if (existing.type == argDef.type) return;
       if (!_sameBaseType(existing.type, argDef.type)) {
         throw ParseException(
@@ -736,12 +822,12 @@ extension GLGrammarProjectionExtension on GLParser {
       }
       // same base type, different nullability — upgrade to most restrictive
       final merged = _mostRestrictiveType(existing.type, argDef.type);
-      def.arguments[idx] = GLArgumentDefinition(
+      def.setArgument(GLArgumentDefinition(
           varToken.toToken(), merged, [],
-          defaultValue: existing.defaultValue ?? argDef.defaultValue);
+          defaultValue: existing.defaultValue ?? argDef.defaultValue));
       return;
     }
-    def.arguments.add(GLArgumentDefinition(
+    def.setArgument(GLArgumentDefinition(
         varToken.toToken(), argDef.type, [],
         defaultValue: argDef.defaultValue));
   }
