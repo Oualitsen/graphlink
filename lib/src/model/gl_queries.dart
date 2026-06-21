@@ -16,7 +16,23 @@ import 'package:graphlink/src/utils.dart';
 enum GLQueryType { query, mutation, subscription }
 
 class GLQueryDefinition extends GLToken with GLDirectivesMixin {
-  final List<GLArgumentDefinition> arguments;
+  /// Operation variables keyed by their `$`-token, preserving declaration order
+  /// (Dart `Map` literals/insertion preserve order). Kept private so lookups go
+  /// through [getArgumentByName] in O(1) instead of a linear scan — the
+  /// auto-generated all-fields walk merges variables millions of times.
+  final Map<String, GLArgumentDefinition> _arguments;
+
+  /// All operation variables in declaration order. Returns a fresh list, so
+  /// callers must mutate via [setArgument], not the returned list.
+  List<GLArgumentDefinition> get arguments => _arguments.values.toList();
+
+  /// O(1) lookup of an operation variable by its `$`-token, or null if absent.
+  GLArgumentDefinition? getArgumentByName(String name) => _arguments[name];
+
+  /// Inserts [arg] (or replaces the existing one with the same token, keeping
+  /// its declaration position).
+  void setArgument(GLArgumentDefinition arg) => _arguments[arg.token] = arg;
+
   final List<GLQueryElement> elements;
   final GLQueryType type; //query|mutation|subscription
   Set<GLFragmentDefinitionBase>? _allFrags;
@@ -41,7 +57,8 @@ class GLQueryDefinition extends GLToken with GLDirectivesMixin {
   }
 
   GLQueryDefinition(super.tokenInfo, List<GLDirectiveValue> directives,
-      this.arguments, this.elements, this.type) {
+      List<GLArgumentDefinition> arguments, this.elements, this.type)
+      : _arguments = {for (final a in arguments) a.token: a} {
     directives.forEach(addDirective);
     checkVariables();
   }
@@ -67,12 +84,7 @@ class GLQueryDefinition extends GLToken with GLDirectivesMixin {
   }
 
   bool checkValue(String value) {
-    for (var arg in arguments) {
-      if (arg.token == value) {
-        return true;
-      }
-    }
-    return false;
+    return _arguments.containsKey(value);
   }
 
   GLTypeDefinition getFullResponseTypeDefinition(GLParser parser) {
@@ -136,8 +148,7 @@ class GLQueryDefinition extends GLToken with GLDirectivesMixin {
         .toList();
   }
 
-  GLArgumentDefinition findByName(String name) =>
-      arguments.where((arg) => arg.token == name).first;
+  GLArgumentDefinition findByName(String name) => _arguments[name]!;
 
   void applyDefaultCache(int defaultTTL) {
     if (type != GLQueryType.query) {
