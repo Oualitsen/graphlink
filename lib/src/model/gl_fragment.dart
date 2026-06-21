@@ -149,6 +149,12 @@ class GLProjection extends GLToken with GLDirectivesMixin {
   ///
   final List<GLArgumentValue> arguments;
 
+  /// True when this projection is a spread of a GraphLink-generated
+  /// `_all_fields_<T>` fragment (i.e. it selects the *whole* type). Lets the
+  /// projection pipeline short-circuit to the declared type instead of
+  /// rebuilding + hashing + similarity-checking a fresh projected type.
+  final bool allFieldsSpread;
+
   GLProjection({
     required this.fragmentName,
     required TokenInfo? token,
@@ -156,6 +162,7 @@ class GLProjection extends GLToken with GLDirectivesMixin {
     required this.block,
     required List<GLDirectiveValue> directives,
     this.arguments = const [],
+    this.allFieldsSpread = false,
   }) : super(token ?? TokenInfo.ofString(fragmentName ?? "*")) {
     directives.forEach(addDirective);
   }

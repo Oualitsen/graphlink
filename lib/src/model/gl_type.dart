@@ -27,6 +27,13 @@ class GLType extends GLToken {
   GLType ofNewName(TokenInfo name) {
     return GLType(name, nullable);
   }
+
+  /// Returns a copy of [type] with the outermost nullability forced to true.
+  /// For list types only the outer wrapper is relaxed — `[T!]!` → `[T!]?`.
+  static GLType makeNullable(GLType type) {
+    if (type is GLListType) return GLListType(type.type, true);
+    return GLType(type.tokenInfo, true);
+  }
 }
 
 class GLListType extends GLType {
