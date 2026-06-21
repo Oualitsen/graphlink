@@ -21,6 +21,7 @@ import 'package:graphlink/src/model/new_parser/gl_token_type.dart';
 import 'package:graphlink/src/model/token_info.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/utils.dart';
+import 'package:graphlink/src/lazy.dart';
 import 'package:logger/logger.dart';
 
 import 'package:graphlink/src/gl_grammar_cache_extension.dart';
@@ -190,22 +191,23 @@ class GLParser {
 
   /// Shared cache for inline-expanded blocks built during `createAllFieldsFragments`.
   /// Lives on the parser so all extension methods can access it without extra parameters.
-  final GlFragmentBlockCache fragmentBlockCache = GlFragmentBlockCache();
+  final LazyMap<String, GLFragmentBlockDefinition?> fragmentBlockCache =
+      LazyMap();
 
   /// Lazily computed caches for the cycle-detection passes in
   /// `gl_expand_grammar_extension.dart` (SCC ids, cyclic type names, and the
   /// concrete back-edge feedback set). Held here so the extension getters can
   /// memoize without per-instance Expandos.
-  Map<String, int>? sccIdsCache;
-  Set<String>? cyclicTypeNamesCache;
-  Set<String>? backEdgesCache;
+  final Lazy<Map<String, int>> sccIdsCache = Lazy();
+  final Lazy<Set<String>> cyclicTypeNamesCache = Lazy();
+  final Lazy<Set<String>> backEdgesCache = Lazy();
 
   /// Lazily computed set of `<fieldName>|<argName>` keys whose argument
   /// resolves to more than one incompatible base type across the schema
   /// (e.g. `associatedPullRequests|orderBy` → {PullRequestOrder, IssueOrder}).
   /// Such arguments get their base type appended to the generated variable name
   /// so they don't collide; see `_argumentValuesForField`.
-  Set<String>? ambiguousArgKeysCache;
+  final Lazy<Set<String>> ambiguousArgKeysCache = Lazy();
 
   GLParser({
     this.generateAllFieldsFragments = false,
@@ -248,13 +250,24 @@ class GLParser {
     return consume();
   }
 
-  /// Runs [fn] and logs how long it took as a debug message. Used to profile
-  /// the per-step pipeline in client mode.
+  /// Steps faster than this are not worth a log line; only slow steps surface.
+  static const _slowStepThresholdMs = 5;
+
+  /// Total time spent across all `_timed` steps in the current pipeline run.
+  double _timedTotalMs = 0;
+
+  /// Runs [fn], accumulates its duration, and logs only when the step is slow
+  /// enough to matter (see [_slowStepThresholdMs]). Used to profile the
+  /// per-step pipeline in client mode without flooding the log.
   void _timed(String name, void Function() fn) {
     final sw = Stopwatch()..start();
     fn();
     sw.stop();
-    logger.d('[client] $name took ${sw.elapsedMicroseconds / 1000}ms');
+    final ms = sw.elapsedMicroseconds / 1000;
+    _timedTotalMs += ms;
+    if (ms >= _slowStepThresholdMs) {
+      logger.d('[client] $name took ${ms.toStringAsFixed(1)}ms');
+    }
   }
 
   void validateSemantics() {
@@ -320,6 +333,7 @@ class GLParser {
       }
       _timed('propagateCacheTags', propagateCacheTags);
       _timed('propagateInvalidateCacheTags', propagateInvalidateCacheTags);
+      logger.d('[client] pipeline total ${_timedTotalMs.toStringAsFixed(1)}ms');
     } else {
       handleRepositories(true);
       generateServicesAndControllers();

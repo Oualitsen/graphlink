@@ -150,32 +150,28 @@ extension GLGrammarFragmentExtension on GLParser {
   /// `<fieldName>|<argName>` keys whose argument resolves to more than one
   /// incompatible base type across all type/interface fields. Memoized on the
   /// parser. See `_argumentValuesForField`.
-  Set<String> get ambiguousArgKeys {
-    final cached = ambiguousArgKeysCache;
-    if (cached != null) return cached;
-
-    final signaturesByKey = <String, Set<String>>{};
-    void scan(Iterable<GLTypeDefinition> defs) {
-      for (final type in defs) {
-        for (final field in type.fields) {
-          for (final arg in field.arguments) {
-            final key = '${field.name.token}|${arg.tokenInfo.token}';
-            (signaturesByKey[key] ??= <String>{})
-                .add(_baseTypeSignature(arg.type));
+  Set<String> get ambiguousArgKeys => ambiguousArgKeysCache.getOrCompute(() {
+        final signaturesByKey = <String, Set<String>>{};
+        void scan(Iterable<GLTypeDefinition> defs) {
+          for (final type in defs) {
+            for (final field in type.fields) {
+              for (final arg in field.arguments) {
+                final key = '${field.name.token}|${arg.tokenInfo.token}';
+                (signaturesByKey[key] ??= <String>{})
+                    .add(_baseTypeSignature(arg.type));
+              }
+            }
           }
         }
-      }
-    }
 
-    scan(types.values);
-    scan(interfaces.values);
+        scan(types.values);
+        scan(interfaces.values);
 
-    final result = <String>{
-      for (final entry in signaturesByKey.entries)
-        if (entry.value.length > 1) entry.key,
-    };
-    return ambiguousArgKeysCache = result;
-  }
+        return <String>{
+          for (final entry in signaturesByKey.entries)
+            if (entry.value.length > 1) entry.key,
+        };
+      });
 
   GLFragmentDefinition createAllFieldsFragment(GLTypeDefinition typeDefinition) {
     var key = typeDefinition.token;
