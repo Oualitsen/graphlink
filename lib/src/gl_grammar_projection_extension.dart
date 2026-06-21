@@ -188,45 +188,65 @@ extension GLGrammarProjectionExtension on GLParser {
     });
   }
 
-  /// True when [projectionMap] is exactly one generated all-fields spread, i.e.
-  /// the field selects the whole type. See [GLProjection.allFieldsSpread].
+  /// True when, ignoring an implicit `__typename`, [projectionMap] is exactly
+  /// one generated all-fields spread — i.e. the field selects the whole type.
+  /// `__typename` is excluded because it is auto-injected into interface/union
+  /// (inline-fragment) blocks for `fromJson` dispatch, so the spread is not
+  /// necessarily the map's only entry. See [GLProjection.allFieldsSpread].
   bool _isSoleAllFieldsSpread(Map<String, GLProjection> projectionMap) {
-    if (projectionMap.length != 1) return false;
-    return projectionMap.values.first.allFieldsSpread;
+    GLProjection? spread;
+    for (final entry in projectionMap.entries) {
+      if (entry.key == GLParser.typename) continue;
+      if (spread != null) return false; // more than one real selection
+      spread = entry.value;
+    }
+    return spread != null && spread.allFieldsSpread;
   }
 
-  /// True if [type] or any object type reachable from it (via object-typed
-  /// fields) either implements an interface or declares a field whose target is
-  /// an interface or union. Those need the synthesized projected-interface
-  /// structure, so we keep them on the slow path rather than the blind
-  /// all-fields fast path.
-  bool _reachesAbstract(GLTypeDefinition type, Set<String> visited) {
-    if (!visited.add(type.token)) return false;
-    if (type.interfaceNames.isNotEmpty) return true;
+  /// Registers [type] and everything reachable from it directly into the
+  /// projected stores, skipping the field-rebuild + hash + similarity work. Safe
+  /// because the all-fields projection of a (cyclic-edge-relaxed) declared type
+  /// is structurally the declared type itself.
+  ///
+  /// Abstract types are handled too: the all-fields fragment of an interface
+  /// (or converted union) projects through *every* implementor via
+  /// `... on Impl { _all_fields_Impl }`, so the projected interface is just the
+  /// declared interface and each projected implementor is its declared type.
+  /// We therefore register the declared interface into [projectedInterfaces],
+  /// wire its implementations, and blind-register every implementor.
+  ///
+  /// The [visited] guard bounds the cyclic object graph; the per-store
+  /// containsKey check makes the walk idempotent across query elements (a type
+  /// reachable from many roots is registered exactly once).
+  void _registerAllFieldsBlind(GLTypeDefinition type, Set<String> visited) {
+    if (!visited.add(type.token)) return;
+
+    if (type is GLInterfaceDefinition) {
+      if (!projectedInterfaces.containsKey(type.token)) {
+        addToProjectedTypes(type, similarityCheck: false);
+      }
+      for (final impl in getTypesImplementing(type)) {
+        type.addImplementation(impl);
+        impl.addInterface(type);
+        _registerAllFieldsBlind(impl, visited);
+      }
+      return;
+    }
+
+    if (!projectedTypes.containsKey(type.token)) {
+      addToProjectedTypes(type, similarityCheck: false);
+    }
     for (final field in type.fields) {
       if (!typeRequiresProjection(field.type)) continue;
       final targetName = field.type.inlineType.token;
-      if (interfaces.containsKey(targetName) ||
-          unions.containsKey(targetName)) {
-        return true;
+      // Unions are converted to interfaces before this pass, so both abstract
+      // kinds resolve through the interfaces map.
+      final abstract = interfaces[targetName];
+      if (abstract != null) {
+        _registerAllFieldsBlind(abstract, visited);
+        continue;
       }
       final target = types[targetName];
-      if (target != null && _reachesAbstract(target, visited)) return true;
-    }
-    return false;
-  }
-
-  /// Registers [type] and every object type reachable from it directly into
-  /// [projectedTypes], skipping the field-rebuild + hash + similarity work. Safe
-  /// because the all-fields projection of a (cyclic-edge-relaxed) declared type
-  /// is structurally the declared type itself. The [visited] guard bounds the
-  /// cyclic object graph.
-  void _registerAllFieldsBlind(GLTypeDefinition type, Set<String> visited) {
-    if (!visited.add(type.token)) return;
-    addToProjectedTypes(type, similarityCheck: false);
-    for (final field in type.fields) {
-      if (!typeRequiresProjection(field.type)) continue;
-      final target = types[field.type.inlineType.token];
       if (target != null) _registerAllFieldsBlind(target, visited);
     }
   }
@@ -422,13 +442,15 @@ extension GLGrammarProjectionExtension on GLParser {
     // projected type IS the declared type (its cyclic edges were already
     // relaxed to nullable by forceCyclicEdgesNullable). Register it and every
     // reachable type/interface directly, skipping the field rebuild + getHash +
-    // findSimilarTo scan. Interface roots keep the regular path, which
-    // synthesizes the projected-interface structure.
-    if (type is! GLInterfaceDefinition &&
-        _isSoleAllFieldsSpread(projectionMap) &&
-        !_reachesAbstract(type, <String>{})) {
+    // findSimilarTo scan. Interfaces/unions are handled by _registerAllFieldsBlind
+    // too: their all-fields fragment projects through every implementor, so the
+    // projected interface is the declared interface and each implementor is its
+    // declared type.
+    if (_isSoleAllFieldsSpread(projectionMap)) {
       _registerAllFieldsBlind(type, <String>{});
-      return projectedTypes[type.token] ?? type;
+      return type is GLInterfaceDefinition
+          ? (projectedInterfaces[type.token] ?? type)
+          : (projectedTypes[type.token] ?? type);
     }
 
     if (type is GLInterfaceDefinition) {
