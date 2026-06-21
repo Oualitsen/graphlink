@@ -117,8 +117,64 @@ extension GLGrammarFragmentExtension on GLParser {
     final fieldName = field.name.token;
     return field.arguments.map((a) {
       final argName = a.tokenInfo.token;
-      return GLArgumentValue(a.tokenInfo, '\$${fieldName}${argName.firstUp}');
+      // Base variable token is `$<field><Arg>` — the field name keeps each
+      // field's argument independent (so unrelated `users(filter:)` and
+      // `posts(filter:)` don't share one value). Only when the *same*
+      // field+arg name resolves to incompatible base types across the schema
+      // (e.g. GitLab's Commit.associatedPullRequests(orderBy: PullRequestOrder)
+      // vs Ref.associatedPullRequests(orderBy: IssueOrder)) do we escalate by
+      // appending the base type, making each variant unique. Unambiguous
+      // arguments keep the clean name and still merge nullability-only variants.
+      var token = '${fieldName}${argName.firstUp}';
+      if (ambiguousArgKeys.contains('$fieldName|$argName')) {
+        token = '$token${a.type.firstType.token.firstUp}';
+      }
+      return GLArgumentValue(a.tokenInfo, '\$$token');
     }).toList();
+  }
+
+  /// Signature for an argument's base type that ignores nullability but
+  /// distinguishes list nesting and inner type — matching the `_sameBaseType`
+  /// notion used when merging generated query variables. Two arguments with the
+  /// same signature can safely share a variable; differing signatures cannot.
+  String _baseTypeSignature(GLType type) {
+    var depth = 0;
+    var t = type;
+    while (t is GLListType) {
+      depth++;
+      t = t.type;
+    }
+    return '$depth:${t.token}';
+  }
+
+  /// `<fieldName>|<argName>` keys whose argument resolves to more than one
+  /// incompatible base type across all type/interface fields. Memoized on the
+  /// parser. See `_argumentValuesForField`.
+  Set<String> get ambiguousArgKeys {
+    final cached = ambiguousArgKeysCache;
+    if (cached != null) return cached;
+
+    final signaturesByKey = <String, Set<String>>{};
+    void scan(Iterable<GLTypeDefinition> defs) {
+      for (final type in defs) {
+        for (final field in type.fields) {
+          for (final arg in field.arguments) {
+            final key = '${field.name.token}|${arg.tokenInfo.token}';
+            (signaturesByKey[key] ??= <String>{})
+                .add(_baseTypeSignature(arg.type));
+          }
+        }
+      }
+    }
+
+    scan(types.values);
+    scan(interfaces.values);
+
+    final result = <String>{
+      for (final entry in signaturesByKey.entries)
+        if (entry.value.length > 1) entry.key,
+    };
+    return ambiguousArgKeysCache = result;
   }
 
   GLFragmentDefinition createAllFieldsFragment(GLTypeDefinition typeDefinition) {

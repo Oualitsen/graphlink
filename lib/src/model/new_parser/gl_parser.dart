@@ -200,6 +200,13 @@ class GLParser {
   Set<String>? cyclicTypeNamesCache;
   Set<String>? backEdgesCache;
 
+  /// Lazily computed set of `<fieldName>|<argName>` keys whose argument
+  /// resolves to more than one incompatible base type across the schema
+  /// (e.g. `associatedPullRequests|orderBy` → {PullRequestOrder, IssueOrder}).
+  /// Such arguments get their base type appended to the generated variable name
+  /// so they don't collide; see `_argumentValuesForField`.
+  Set<String>? ambiguousArgKeysCache;
+
   GLParser({
     this.generateAllFieldsFragments = false,
     this.nullableFieldsRequired = false,
