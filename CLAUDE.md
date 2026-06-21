@@ -205,21 +205,25 @@ generator and asserts on the emitted output. There is no shared fixture — each
 its own `GlSchema`.
 
 ```bash
-fvm dart test                          # all tests
 fvm dart test test/cache/              # single directory
 fvm dart test test/cache/cache_test.dart  # single file
+# fvm dart test (no path) runs ALL tests — do NOT run without asking the user first
 ```
 
 This project uses **fvm** (Flutter Version Manager) — always prefix `dart`/`flutter`
 commands with `fvm` (e.g. `fvm dart test`, `fvm dart run ...`, `fvm dart pub get`).
 
-### Running tests — mandatory output handling
+### Running tests — mandatory rules
+
+**Never run the full test suite (`fvm dart test` with no path).** It is slow and floods
+the context. Only run the specific directory or file relevant to your change. If you
+believe a full run is genuinely needed, STOP and ASK the user first — do not run it on
+your own initiative.
 
 **Never run a test command and read its raw output directly.** Test output is huge and
 fills the context window. Always redirect to a log file and only grep for failures:
 
 ```bash
-fvm dart test > /tmp/test.log 2>&1; grep -E "FAILED|Error|✗" /tmp/test.log
 fvm dart test test/cache/ > /tmp/test.log 2>&1; grep -E "FAILED|Error|✗" /tmp/test.log
 ```
 
