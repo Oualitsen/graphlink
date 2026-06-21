@@ -1,1 +1,1 @@
-there is a suble fromJson bug on interfaces that implement other interfaces.
+there is a suble fromJson bug on interfaces that implement other interfaces. <Resolved>
