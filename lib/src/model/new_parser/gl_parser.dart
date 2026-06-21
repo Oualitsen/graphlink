@@ -248,6 +248,15 @@ class GLParser {
     return consume();
   }
 
+  /// Runs [fn] and logs how long it took as a debug message. Used to profile
+  /// the per-step pipeline in client mode.
+  void _timed(String name, void Function() fn) {
+    final sw = Stopwatch()..start();
+    fn();
+    sw.stop();
+    logger.d('[client] $name took ${sw.elapsedMicroseconds / 1000}ms');
+  }
+
   void validateSemantics() {
     if (!_validate) return;
     validateInputReferences();
@@ -266,41 +275,51 @@ class GLParser {
     skipFieldOfSkipOnServerTypes();
     handleGLExternal();
     if (mode == CodeGenerationMode.client) {
-      handleRepositories(false);
-      checkGLExpandDirectives();
+      _timed('handleRepositories', () => handleRepositories(false));
+      _timed('checkGLExpandDirectives', checkGLExpandDirectives);
       if (generateAllFieldsFragments) {
-        forceCyclicEdgesNullable();
-        createAllFieldsFragments();
-        if (autoGenerateQueries) generateQueryDefinitions();
+        _timed('forceCyclicEdgesNullable', forceCyclicEdgesNullable);
+        _timed('createAllFieldsFragments', createAllFieldsFragments);
+        if (autoGenerateQueries) {
+          _timed('generateQueryDefinitions', generateQueryDefinitions);
+        }
       }
-      checkFragmentRefs();
-      fillQueryElementsReturnType();
-      fillTypedFragments();
-      validateProjections();
-      updateFragmentDependencies();
-      propagateFieldArgumentVariables();
-      fixTagListValues();
-      validateTagValues();
-      checkCacheAndNoCacheConflict();
-      checkCacheOnMutationsAndSubscriptions();
-      checkCacheInvalidateOnQueriesAndSubscriptions();
-      checkGLCacheDirectives();
-      checkGLCacheInvalidateDirectives();
-      checkGLCacheTags();
-      if (disableCache) stripCacheDirectives();
-      validateMapsToDirectives();
-      checkGLCaptureErrorsDirectives();
-      checkUploadDirectivePlacement();
-      checkUploadScalarUsage();
-      checkUploadListDepth();
-      createProjectedTypes();
-      cleanProjectedInterfacesImplementations();
-      fixProjectedInterfaceConflicts();
-      addClientTypesToProjectedTypes();
-      updateFragmentAllTypesDependencies();
-      if (defaultCacheTTL != null) applyDefaultCacheToQueries(defaultCacheTTL!);
-      propagateCacheTags();
-      propagateInvalidateCacheTags();
+      _timed('checkFragmentRefs', checkFragmentRefs);
+      _timed('fillQueryElementsReturnType', fillQueryElementsReturnType);
+      _timed('fillTypedFragments', fillTypedFragments);
+      _timed('validateProjections', validateProjections);
+      _timed('updateFragmentDependencies', updateFragmentDependencies);
+      _timed('propagateFieldArgumentVariables', propagateFieldArgumentVariables);
+      _timed('fixTagListValues', fixTagListValues);
+      _timed('validateTagValues', validateTagValues);
+      _timed('checkCacheAndNoCacheConflict', checkCacheAndNoCacheConflict);
+      _timed('checkCacheOnMutationsAndSubscriptions',
+          checkCacheOnMutationsAndSubscriptions);
+      _timed('checkCacheInvalidateOnQueriesAndSubscriptions',
+          checkCacheInvalidateOnQueriesAndSubscriptions);
+      _timed('checkGLCacheDirectives', checkGLCacheDirectives);
+      _timed('checkGLCacheInvalidateDirectives',
+          checkGLCacheInvalidateDirectives);
+      _timed('checkGLCacheTags', checkGLCacheTags);
+      if (disableCache) _timed('stripCacheDirectives', stripCacheDirectives);
+      _timed('validateMapsToDirectives', validateMapsToDirectives);
+      _timed('checkGLCaptureErrorsDirectives', checkGLCaptureErrorsDirectives);
+      _timed('checkUploadDirectivePlacement', checkUploadDirectivePlacement);
+      _timed('checkUploadScalarUsage', checkUploadScalarUsage);
+      _timed('checkUploadListDepth', checkUploadListDepth);
+      _timed('createProjectedTypes', createProjectedTypes);
+      _timed('cleanProjectedInterfacesImplementations',
+          cleanProjectedInterfacesImplementations);
+      _timed('fixProjectedInterfaceConflicts', fixProjectedInterfaceConflicts);
+      _timed('addClientTypesToProjectedTypes', addClientTypesToProjectedTypes);
+      _timed('updateFragmentAllTypesDependencies',
+          updateFragmentAllTypesDependencies);
+      if (defaultCacheTTL != null) {
+        _timed('applyDefaultCacheToQueries',
+            () => applyDefaultCacheToQueries(defaultCacheTTL!));
+      }
+      _timed('propagateCacheTags', propagateCacheTags);
+      _timed('propagateInvalidateCacheTags', propagateInvalidateCacheTags);
     } else {
       handleRepositories(true);
       generateServicesAndControllers();
