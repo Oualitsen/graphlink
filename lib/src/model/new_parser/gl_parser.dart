@@ -260,6 +260,8 @@ class GLParser {
   /// enough to matter (see [_slowStepThresholdMs]). Used to profile the
   /// per-step pipeline in client mode without flooding the log.
   void _timed(String name, void Function() fn) {
+    fn();
+    return;
     final sw = Stopwatch()..start();
     fn();
     sw.stop();
@@ -333,7 +335,7 @@ class GLParser {
       }
       _timed('propagateCacheTags', propagateCacheTags);
       _timed('propagateInvalidateCacheTags', propagateInvalidateCacheTags);
-      logger.d('[client] pipeline total ${_timedTotalMs.toStringAsFixed(1)}ms');
+     // logger.d('[client] pipeline total ${_timedTotalMs.toStringAsFixed(1)}ms');
     } else {
       handleRepositories(true);
       generateServicesAndControllers();

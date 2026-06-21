@@ -146,6 +146,7 @@ extension GLGrammarProjectionExtension on GLParser {
     final _sw = Stopwatch()..start();
     void _log(String phase) {
       // ignore: avoid_print
+      return;
       print('[createProjectedTypes] $phase: ${_sw.elapsedMilliseconds}ms');
       _sw.reset();
       _sw.start();
@@ -208,7 +209,7 @@ extension GLGrammarProjectionExtension on GLParser {
     _log('queries response-type loop (queries=${queries.length})');
 
     // ignore: avoid_print
-    print('[createProjectedTypes] TOTAL: ${_swTotal.elapsedMilliseconds}ms');
+   // print('[createProjectedTypes] TOTAL: ${_swTotal.elapsedMilliseconds}ms');
   }
 
   /// True when, ignoring an implicit `__typename`, [projectionMap] is exactly
@@ -248,6 +249,10 @@ extension GLGrammarProjectionExtension on GLParser {
       if (!projectedInterfaces.containsKey(type.token)) {
         addToProjectedTypes(type, similarityCheck: false);
       }
+      // Parent interfaces (interface implements interface) are not returned by
+      // getTypesImplementing, which only scans concrete types, so follow them
+      // explicitly to keep the projected-interface inheritance chain intact.
+      _registerImplementedInterfacesBlind(type, visited);
       for (final impl in getTypesImplementing(type)) {
         type.addImplementation(impl);
         impl.addInterface(type);
@@ -259,6 +264,10 @@ extension GLGrammarProjectionExtension on GLParser {
     if (!projectedTypes.containsKey(type.token)) {
       addToProjectedTypes(type, similarityCheck: false);
     }
+    // A concrete type carries the interfaces it implements into the projected
+    // output, so register (and wire) each one even though no field selection
+    // reaches it. The slow path did this via _fillProjectedInterfaces.
+    _registerImplementedInterfacesBlind(type, visited);
     for (final field in type.fields) {
       if (!typeRequiresProjection(field.type)) continue;
       final targetName = field.type.inlineType.token;
@@ -271,6 +280,17 @@ extension GLGrammarProjectionExtension on GLParser {
       }
       final target = types[targetName];
       if (target != null) _registerAllFieldsBlind(target, visited);
+    }
+  }
+
+  /// Blind-registers every interface that [type] implements (directly declared
+  /// on the type or interface). The interface branch of [_registerAllFieldsBlind]
+  /// registers the declared interface and wires its implementations.
+  void _registerImplementedInterfacesBlind(
+      GLTypeDefinition type, Set<String> visited) {
+    for (final ifaceName in type.getInterfaceNames()) {
+      final iface = interfaces[ifaceName];
+      if (iface != null) _registerAllFieldsBlind(iface, visited);
     }
   }
 
