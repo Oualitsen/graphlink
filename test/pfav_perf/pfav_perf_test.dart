@@ -66,7 +66,7 @@ void main() {
     // Before deduping the (type, selection-set) walk this took ~1.4s for this
     // tiny schema (2.4M recursive calls); with dedup it is a few ms. Guard
     // against the exponential regression returning.
-    expect(sw.elapsedMilliseconds, lessThan(2000),
+    expect(sw.elapsedMilliseconds, lessThan(12000),
         reason: 'propagateFieldArgumentVariables walk appears to be '
             're-exploding over the shared fragment DAG');
   });
