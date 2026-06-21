@@ -42,7 +42,7 @@ void main() {
 
     test('res.post.author.id is correct', () async {
       final res = await client.queries.fetchUserAndPost(userId: 'user-1', postId: 'post-1');
-      expect(res.post.author.id, equals('user-1'));
+      expect(res.post.author?.id, equals('user-1'));
     });
   });
 

@@ -41,14 +41,14 @@ void main() {
     test('User.posts[0].author is deserialized (cycle broken at one level)', () async {
       final res = await client.queries.getUser(id: 'user-1');
       final author = res.getUser.posts!.first.author;
-      expect(author.id, equals('user-1'));
-      expect(author.name, equals('Alice Smith'));
+      expect(author?.id, equals('user-1'));
+      expect(author?.name, equals('Alice Smith'));
     });
 
     test('User.posts[0].author.address is accessible', () async {
       final res = await client.queries.getUser(id: 'user-1');
       final author = res.getUser.posts!.first.author;
-      expect(author.address.city, equals('Springfield'));
+      expect(author?.address.city, equals('Springfield'));
     });
 
     test('User.posts is null when server returns null', () async {
@@ -63,8 +63,8 @@ void main() {
 
     test('Post.author is a full User', () async {
       final res = await client.queries.getPost(id: 'post-10');
-      expect(res.getPost.author.id, equals('user-1'));
-      expect(res.getPost.author.name, equals('Alice Smith'));
+      expect(res.getPost.author?.id, equals('user-1'));
+      expect(res.getPost.author?.name, equals('Alice Smith'));
     });
 
     test('Post.author is a projected type with scalar fields accessible', () async {
@@ -72,8 +72,8 @@ void main() {
       // _all_fields_Post expands author inline (not via ..._all_fields_User)
       // so the author is a projected type — scalars and address are present,
       // but 'posts' is not part of the projected type (cycle broken at compile time).
-      expect(res.getPost.author.email, equals('alice@test.com'));
-      expect(res.getPost.author.tags, equals(['admin']));
+      expect(res.getPost.author?.email, equals('alice@test.com'));
+      expect(res.getPost.author?.tags, equals(['admin']));
     });
   });
 

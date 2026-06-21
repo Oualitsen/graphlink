@@ -38,15 +38,15 @@ void main() {
       final res =
           await client.queries.getUser(id: 'user-with-posts');
       final author = res.getUser.posts!.first.author;
-      expect(author.id, equals('user-1'));
-      expect(author.name, equals('Alice Smith'));
+      expect(author?.id, equals('user-1'));
+      expect(author?.name, equals('Alice Smith'));
     });
 
     test('User.posts[0].author.address is accessible', () async {
       final res =
           await client.queries.getUser(id: 'user-with-posts');
       final author = res.getUser.posts!.first.author;
-      expect(author.address.city, equals('Springfield'));
+      expect(author?.address.city, equals('Springfield'));
     });
 
     test('User.posts is null for Alice (standard user-1)', () async {
@@ -60,14 +60,14 @@ void main() {
   group('Post.author — cycle Post → User → Post', () {
     test('Post.author is a full User', () async {
       final res = await client.queries.getPost(id: 'post-10');
-      expect(res.getPost.author.id, equals('user-1'));
-      expect(res.getPost.author.name, equals('Alice Smith'));
+      expect(res.getPost.author?.id, equals('user-1'));
+      expect(res.getPost.author?.name, equals('Alice Smith'));
     });
 
     test('Post.author scalar fields accessible (projected type)', () async {
       final res = await client.queries.getPost(id: 'post-10');
-      expect(res.getPost.author.email, equals('alice@test.com'));
-      expect(res.getPost.author.tags, equals(['admin']));
+      expect(res.getPost.author?.email, equals('alice@test.com'));
+      expect(res.getPost.author?.tags, equals(['admin']));
     });
   });
 }

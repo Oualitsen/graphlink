@@ -13,7 +13,7 @@ import 'package:graphlink_server_integration_tests_dart_client/generated/interfa
 class DeleteArticleFullResponse implements GraphLinkFullResponse {
    final List<GraphLinkError>? errors;
    final DeleteArticleResponse? data;
-   DeleteArticleFullResponse({this.errors, this.data});
+   const DeleteArticleFullResponse({this.errors, this.data});
    Map<String, dynamic> toJson() {
       return {
          'errors': errors?.map((e0) => e0.toJson()).toList(),

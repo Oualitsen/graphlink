@@ -12,7 +12,7 @@ class GraphLinkSubscriptionPayload {
    final String? operationName;
    final Map<String, dynamic>? variables;
    final Map<String, dynamic>? data;
-   GraphLinkSubscriptionPayload({this.query, this.operationName, this.variables, this.data});
+   const GraphLinkSubscriptionPayload({this.query, this.operationName, this.variables, this.data});
    Map<String, dynamic> toJson() {
       return {
          'query': query,

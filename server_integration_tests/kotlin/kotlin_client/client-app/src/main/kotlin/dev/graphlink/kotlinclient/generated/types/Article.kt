@@ -6,20 +6,20 @@
 // ignore_for_file: use_rethrow_when_possible, camel_case_types, constant_identifier_names, unused_import, non_constant_identifier_names, no_leading_underscores_for_local_identifiers, unused_local_variable, annotate_overrides, library_private_types_in_public_api
 
 package dev.graphlink.kotlinclient.generated.types;
-import dev.graphlink.kotlinclient.generated.types.Author_IdName
+import dev.graphlink.kotlinclient.generated.types.Author
 
 
 data class Article(
     val id: String,
     val title: String,
     val authorId: String,
-    val author: Author_IdName,
+    val author: Author? = null,
 ) {
    fun toJson(): Map<String, Any?> = mapOf(
            "id" to id,
            "title" to title,
            "authorId" to authorId,
-           "author" to author.toJson(),
+           "author" to author?.toJson(),
        )
 
    companion object {
@@ -27,7 +27,7 @@ data class Article(
           id = map["id"] as String,
           title = map["title"] as String,
           authorId = map["authorId"] as String,
-          author = Author_IdName.fromJson(map["author"] as Map<String, Any?>),
+          author = (map["author"] as? Map<*, *>)?.let { Author.fromJson(it as Map<String, Any?>) },
       )
    }
 }

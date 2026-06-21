@@ -14,6 +14,7 @@ import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/token_info.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/utils.dart';
+import 'package:graphlink/src/gl_expand_grammar_extension.dart';
 
 /// Deterministic djb2 hash — same input always produces the same output.
 int _djb2(String s) {
@@ -187,6 +188,49 @@ extension GLGrammarProjectionExtension on GLParser {
     });
   }
 
+  /// True when [projectionMap] is exactly one generated all-fields spread, i.e.
+  /// the field selects the whole type. See [GLProjection.allFieldsSpread].
+  bool _isSoleAllFieldsSpread(Map<String, GLProjection> projectionMap) {
+    if (projectionMap.length != 1) return false;
+    return projectionMap.values.first.allFieldsSpread;
+  }
+
+  /// True if [type] or any object type reachable from it (via object-typed
+  /// fields) either implements an interface or declares a field whose target is
+  /// an interface or union. Those need the synthesized projected-interface
+  /// structure, so we keep them on the slow path rather than the blind
+  /// all-fields fast path.
+  bool _reachesAbstract(GLTypeDefinition type, Set<String> visited) {
+    if (!visited.add(type.token)) return false;
+    if (type.interfaceNames.isNotEmpty) return true;
+    for (final field in type.fields) {
+      if (!typeRequiresProjection(field.type)) continue;
+      final targetName = field.type.inlineType.token;
+      if (interfaces.containsKey(targetName) ||
+          unions.containsKey(targetName)) {
+        return true;
+      }
+      final target = types[targetName];
+      if (target != null && _reachesAbstract(target, visited)) return true;
+    }
+    return false;
+  }
+
+  /// Registers [type] and every object type reachable from it directly into
+  /// [projectedTypes], skipping the field-rebuild + hash + similarity work. Safe
+  /// because the all-fields projection of a (cyclic-edge-relaxed) declared type
+  /// is structurally the declared type itself. The [visited] guard bounds the
+  /// cyclic object graph.
+  void _registerAllFieldsBlind(GLTypeDefinition type, Set<String> visited) {
+    if (!visited.add(type.token)) return;
+    addToProjectedTypes(type, similarityCheck: false);
+    for (final field in type.fields) {
+      if (!typeRequiresProjection(field.type)) continue;
+      final target = types[field.type.inlineType.token];
+      if (target != null) _registerAllFieldsBlind(target, visited);
+    }
+  }
+
   GLTypeDefinition createProjectedTypeForQuery(GLQueryElement element) {
     var type = element.returnType;
     var block = element.block!;
@@ -259,6 +303,16 @@ extension GLGrammarProjectionExtension on GLParser {
             first is GLInterfaceDefinition) {
           definition.implementations.forEach(first.addImplementation);
         }
+        // Union the incoming fields into the survivor. For a cyclic type the
+        // two projections are "similar" but not identical: one is the
+        // depth-truncated shape that dropped the cyclic edge, the other carries
+        // it. Absorbing keeps the exhaustive field set on the single survivor,
+        // so e.g. Book.author resolves to the full Author (with `book`), not a
+        // truncated copy. For non-cyclic similars the field sets are identical,
+        // so this is a no-op.
+        for (final f in definition.fields) {
+          first.addOrMergeField(f);
+        }
         targetStore[first.token] = first;
         return first;
       }
@@ -309,14 +363,22 @@ extension GLGrammarProjectionExtension on GLParser {
   bool _isExhaustiveProjection(List<GLField> result, GLTypeDefinition realType) {
     if (!generateAllFieldsFragments) return false;
     final resultFieldNames = result.map((f) => f.name.token).toSet();
-    if (!realType.getSerializableFields(mode)
-        .every((f) => resultFieldNames.contains(f.name.token))) {
-          return false;
-        }
+    // A cyclic type has a single, depth-independent projected type: its
+    // depth-truncated views drop the cyclic edge but are still "the" projection
+    // of that type. Treat a missing field as covered when it's a cyclic edge, so
+    // the truncated view earns the bare schema name (e.g. `Author`) and the
+    // dedup pass folds it together with the full projection instead of minting a
+    // separate `Author_IdName`.
+    if (!realType.getSerializableFields(mode).every((f) =>
+        resultFieldNames.contains(f.name.token) ||
+        (typeRequiresProjection(f.type) &&
+            isFieldCyclic(realType.token, f.type.inlineType.token)))) {
+      return false;
+    }
     return result.where((f) => typeRequiresProjection(f.type)).every((f) {
       final sub = projectedTypes[f.type.firstType.token]
                ?? projectedInterfaces[f.type.firstType.token];
-      return sub != null && sub.isExhaustive(this);
+      return sub != null;
     });
   }
 
@@ -356,6 +418,19 @@ extension GLGrammarProjectionExtension on GLParser {
     required Map<String, GLProjection> projectionMap,
     required List<GLDirectiveValue> directives,
   }) {
+    // Fast path: the selection is just the generated all-fields spread, so the
+    // projected type IS the declared type (its cyclic edges were already
+    // relaxed to nullable by forceCyclicEdgesNullable). Register it and every
+    // reachable type/interface directly, skipping the field rebuild + getHash +
+    // findSimilarTo scan. Interface roots keep the regular path, which
+    // synthesizes the projected-interface structure.
+    if (type is! GLInterfaceDefinition &&
+        _isSoleAllFieldsSpread(projectionMap) &&
+        !_reachesAbstract(type, <String>{})) {
+      _registerAllFieldsBlind(type, <String>{});
+      return projectedTypes[type.token] ?? type;
+    }
+
     if (type is GLInterfaceDefinition) {
       var implementationTypes = getTypesImplementing(type);
       TypeWithInterface? result;
@@ -439,8 +514,10 @@ extension GLGrammarProjectionExtension on GLParser {
     for (var field in src) {
       var projection = projections[field.name.token];
       if (projection != null) {
+        final forceNull = typeRequiresProjection(field.type) &&
+            isFieldCyclic(onTypeName, field.type.inlineType.token);
         result.add(_applyProjectionToField(
-            field, projection, projection.getDirectives()));
+            field, projection, projection.getDirectives(), forceNull));
       }
     }
     final name = _isExhaustiveProjection(result, realType)
@@ -625,7 +702,8 @@ extension GLGrammarProjectionExtension on GLParser {
   }
 
   GLField _applyProjectionToField(GLField field, GLProjection projection,
-      [List<GLDirectiveValue> fieldDirectives = const []]) {
+      [List<GLDirectiveValue> fieldDirectives = const [],
+      bool forceNullable = false]) {
     final TokenInfo fieldName = projection.alias ?? field.name;
     var block = projection.block;
 
@@ -638,10 +716,12 @@ extension GLGrammarProjectionExtension on GLParser {
       );
       var fieldInlineType =
           GLType(generatedType.tokenInfo, field.type.nullable);
+      var fieldType = _createTypeFrom(field.type, fieldInlineType);
+      if (forceNullable) fieldType = GLType.makeNullable(fieldType);
 
       return GLField(
         name: fieldName,
-        type: _createTypeFrom(field.type, fieldInlineType),
+        type: fieldType,
         arguments: field.arguments,
         directives: projection.getDirectives(),
       );
