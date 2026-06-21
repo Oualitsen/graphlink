@@ -554,16 +554,31 @@ extension GLGrammarProjectionExtension on GLParser {
         var block = element.block;
         if (block == null) continue;
         var rootType = getType(element.returnType.inlineType.tokenInfo);
-        _collectFieldArgumentVariables(rootType, block.projections, def);
+        // The all-fields fragment graph is a shared DAG (object fields point at
+        // shared `_all_fields_<T>` spreads). Expanding it as a tree re-walks the
+        // same (type, selection-set) pairs exponentially. Since the walk only
+        // registers `$variable`s on `def` and that registration is idempotent
+        // per pair, we dedup on (projectionMap-by-identity, type.token), scoped
+        // to this element so each operation's `def` is populated independently.
+        // The outer map is keyed by selection-set identity (Map uses identity
+        // equality), so distinct selection sets never collide.
+        final visited = <Map<String, GLProjection>, Set<String>>{};
+        _collectFieldArgumentVariables(rootType, block.projections, def, visited);
       }
     }
   }
 
-  void _collectFieldArgumentVariables(GLTypeDefinition type,
-      Map<String, GLProjection> projectionMap, GLQueryDefinition def) {
+  void _collectFieldArgumentVariables(
+      GLTypeDefinition type,
+      Map<String, GLProjection> projectionMap,
+      GLQueryDefinition def,
+      Map<Map<String, GLProjection>, Set<String>> visited) {
+    final seenTypes = visited.putIfAbsent(projectionMap, () => <String>{});
+    if (!seenTypes.add(type.token)) return;
+
     if (type is GLInterfaceDefinition) {
       for (var impl in getTypesImplementing(type)) {
-        _collectFieldArgumentVariables(impl, projectionMap, def);
+        _collectFieldArgumentVariables(impl, projectionMap, def, visited);
       }
       return;
     }
@@ -584,7 +599,7 @@ extension GLGrammarProjectionExtension on GLParser {
       if (projection.block != null && typeRequiresProjection(field.type)) {
         var subType = getType(field.type.inlineType.tokenInfo);
         _collectFieldArgumentVariables(
-            subType, projection.block!.projections, def);
+            subType, projection.block!.projections, def, visited);
       }
     }
   }

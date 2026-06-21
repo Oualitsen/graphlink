@@ -2,7 +2,7 @@
 
 ## Goal
 GraphLink should be able to handle arbitrarily large schemas (target: 10M types).
-Currently it fails on the real-world GitLab schema (`test/gitlab_schema/schema.docs.graphql`) — **1008 types, 401 inputs, 252 enums, 47 unions, 52 interfaces**.
+Currently it fails on the real-world github schema (`test/github_schema/schema.docs.graphql`) — **1008 types, 401 inputs, 252 enums, 47 unions, 52 interfaces**.
 
 ---
 
@@ -45,7 +45,7 @@ _createInlineExpandBlock("User", depth=0, cycleTypes={User, Project})
         country: Country  (non-cyclic, depth stays 0)
           ...
 ```
-For the GitLab schema with 1008 types and deep inter-connections, this traverses hundreds of types per cyclic field, creating millions of `GLProjection` / `GLFragmentBlockDefinition` objects → OOM.
+For the github schema with 1008 types and deep inter-connections, this traverses hundreds of types per cyclic field, creating millions of `GLProjection` / `GLFragmentBlockDefinition` objects → OOM.
 
 ### Why this is hard to fix
 
@@ -95,7 +95,7 @@ GLFragmentBlockDefinition? _createInlineExpandBlock(
 ## Key constraint
 
 The path check (non-cyclic only) prevents stack overflow but not OOM because:
-- The GitLab schema has wide non-cyclic subgraphs reachable from cyclic types
+- The github schema has wide non-cyclic subgraphs reachable from cyclic types
 - Each unique type appears at most once per path (path check), but there are hundreds of unique types
 - Creating inline `GLFragmentBlockDefinition` / `GLProjection` trees for all of them simultaneously causes OOM
 
@@ -111,8 +111,8 @@ The user suggested a smarter approach: instead of inlining the non-cyclic subgra
 
 - `lib/src/gl_grammar_fragment_extension.dart` — `_createInlineExpandBlock`, `createAllFieldsFragment`, `createAllFieldsFragments`
 - `lib/src/gl_grammar_extension.dart` — `allFieldsFragmentName`, `defaultExpandDepth`
-- `test/gitlab_schema/gitlab_probe.dart` — probe script that runs generation against the GitLab schema and prints memory per step
-- `test/gitlab_schema/fragment_inspect.dart` — small test to inspect generated fragments
-- `test/gitlab_schema/schema.docs.graphql` — the 1.4MB GitLab schema
+- `test/github_schema/github_probe.dart` — probe script that runs generation against the github schema and prints memory per step
+- `test/github_schema/fragment_inspect.dart` — small test to inspect generated fragments
+- `test/github_schema/schema.docs.graphql` — the 1.4MB github schema
 - `test/gl_expand/gl_expand_test.dart` — tests for `@glExpand` depth behaviour (must all pass)
 - `test/fragment/circular_type_reference_test.dart` — regression test for the stack overflow fix

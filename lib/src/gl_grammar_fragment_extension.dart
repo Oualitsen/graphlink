@@ -449,7 +449,7 @@ extension GLGrammarFragmentExtension on GLParser {
       final fieldTypeName = field.type.inlineType.token;
       // Skip fields whose type is a query root (Query/Mutation/Subscription) —
       // those types have no all-fields fragment because they are excluded from
-      // fragment generation. The GitLab schema has `relay: Query!` as a Relay
+      // fragment generation. The github schema has `relay: Query!` as a Relay
       // workaround; attempting to generate a fragment for it would fail.
       final queryTypeNames =
           GLQueryType.values.map((t) => schema.getByQueryType(t)).toSet();

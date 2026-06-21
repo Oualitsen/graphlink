@@ -6,15 +6,15 @@ import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('GitLab schema — large real-world schema parsing', skip: true, () {
+  group('github schema — large real-world schema parsing', skip: true, () {
     test('parses without throwing', () {
-      final schema = File('test/gitlab_schema/schema.docs.graphql').readAsStringSync();
+      final schema = File('test/github_schema/schema.docs.graphql').readAsStringSync();
       final parser = GLParser();
       expect(() => parser.parse(schema, validate: false), returnsNormally);
     });
 
     test('parses expected number of types and inputs', () {
-      final schema = File('test/gitlab_schema/schema.docs.graphql').readAsStringSync();
+      final schema = File('test/github_schema/schema.docs.graphql').readAsStringSync();
       final parser = GLParser();
       parser.parse(schema, validate: false);
       expect(parser.types.isNotEmpty, true);
@@ -23,12 +23,12 @@ void main() {
     });
   });
 
-  group('GitLab schema — client generation with fragments + auto queries', skip: true, () {
+  group('github schema — client generation with fragments + auto queries', skip: true, () {
     late GLParser parser;
     late DartClientSerializer serializer;
 
     setUpAll(() {
-      final schema = File('test/gitlab_schema/schema.docs.graphql').readAsStringSync();
+      final schema = File('test/github_schema/schema.docs.graphql').readAsStringSync();
       parser = GLParser(
         generateAllFieldsFragments: true,
         autoGenerateQueries: true,

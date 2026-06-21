@@ -2,8 +2,8 @@ import 'dart:io';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 void main() {
-  print("reading gitlab schema");
-  final schema = File('test/gitlab_schema/schema.docs.graphql').readAsStringSync();
+  print("reading github schema");
+  final schema = File('test/github_schema/schema.docs.graphql').readAsStringSync();
   try {
     final parser = GLParser(
       generateAllFieldsFragments: true,
