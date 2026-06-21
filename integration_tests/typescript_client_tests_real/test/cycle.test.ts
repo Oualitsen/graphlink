@@ -32,13 +32,13 @@ describe('User.posts — cycle User → Post → User (user-with-posts)', () => 
   it('User.posts[0].author is deserialized (cycle broken at one level)', async () => {
     const res = await client.queries.getUser({ id: 'user-with-posts' });
     const author = res.getUser.posts![0].author;
-    expect(author.id).toBe('user-1');
-    expect(author.name).toBe('Alice Smith');
+    expect(author?.id).toBe('user-1');
+    expect(author?.name).toBe('Alice Smith');
   });
 
   it('User.posts[0].author.address is accessible', async () => {
     const res = await client.queries.getUser({ id: 'user-with-posts' });
-    expect(res.getUser.posts![0].author.address.city).toBe('Springfield');
+    expect(res.getUser.posts![0].author?.address?.city).toBe('Springfield');
   });
 
   it('User.posts is null for users without posts', async () => {
@@ -50,12 +50,12 @@ describe('User.posts — cycle User → Post → User (user-with-posts)', () => 
 describe('Post.author — cycle Post → User → Post (post-10)', () => {
   it('Post.author is a full User', async () => {
     const res = await client.queries.getPost({ id: 'post-10' });
-    expect(res.getPost.author.id).toBe('user-1');
-    expect(res.getPost.author.name).toBe('Alice Smith');
+    expect(res.getPost.author?.id).toBe('user-1');
+    expect(res.getPost.author?.name).toBe('Alice Smith');
   });
 
   it('Post.author projected type has scalar fields accessible', async () => {
     const res = await client.queries.getPost({ id: 'post-10' });
-    expect(res.getPost.author.email).toBe('alice@test.com');
+    expect(res.getPost.author?.email).toBe('alice@test.com');
   });
 });

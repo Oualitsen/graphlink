@@ -11,6 +11,7 @@ import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/token_info.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+import 'package:graphlink/src/gl_expand_grammar_extension.dart';
 
 extension GLGrammarFragmentExtension on GLParser {
   void fillQueryElementArgumentTypes(
@@ -120,8 +121,7 @@ extension GLGrammarFragmentExtension on GLParser {
     }).toList();
   }
 
-  GLFragmentDefinition createAllFieldsFragment(
-      GLTypeDefinition typeDefinition, Set<String> inProgress) {
+  GLFragmentDefinition createAllFieldsFragment(GLTypeDefinition typeDefinition) {
     var key = typeDefinition.token;
     var allFieldsKey = GLGrammarExtension.allFieldsFragmentName(key);
 
@@ -141,18 +141,32 @@ extension GLGrammarFragmentExtension on GLParser {
         // Query/Mutation/Subscription root types are excluded from fragment
         // generation, so any field pointing to them must also be skipped.
         if (queryTypeNames.contains(fieldTypeName)) return null;
-        if (inProgress.contains(fieldTypeName)) {
-          // Cyclic field — inline-expand using the back-referenced type's depth.
-          final cyclicType = types[fieldTypeName] ?? interfaces[fieldTypeName];
-          final depth = cyclicType != null ? _getExpandDepth(cyclicType) : defaultExpandDepth;
+        // Break the cycle's back-edges by inline-bounding them with the target
+        // type's @glExpand depth. Every other cyclic edge keeps spreading its
+        // `_all_fields_<T>` fragment, so a forward chain stays intact and
+        // interface/union edges keep their abstract fragment (and implementor
+        // projections) reachable. Back-edges come from the order-independent
+        // feedback-set pass (isBackEdgeField), not a stack.
+        if (isBackEdgeField(typeDefinition.token, field.name.token)) {
+          // The back-edge target is usually concrete, but an abstract-only cycle
+          // (closed solely through an interface/union edge) breaks the abstract
+          // edge itself — inline-expand it through its concrete members.
+          final isConcreteTarget = types.containsKey(fieldTypeName);
+          final depth = isConcreteTarget
+              ? _getExpandDepth(types[fieldTypeName]!)
+              : defaultExpandDepth;
           // depth 0 → skip the cyclic field entirely (no block, no field).
           if (depth <= 0) return null;
+          // depth-1: so depth=1 gives scalars only, depth=2 gives one sub-level, etc.
+          final block = isConcreteTarget
+              ? _createInlineExpandBlock(fieldTypeName, depth - 1)
+              : _inlineExpandTarget(fieldTypeName, depth - 1, <String>{});
+          if (block == null) return null;
           return GLProjection(
             fragmentName: null,
             token: field.name,
             alias: null,
-            // depth-1: so depth=1 gives scalars only, depth=2 gives one sub-level, etc.
-            block: _createInlineExpandBlock(fieldTypeName, depth - 1, inProgress),
+            block: block,
             directives: [],
             arguments: _argumentValuesForField(field),
           );
@@ -180,38 +194,13 @@ extension GLGrammarFragmentExtension on GLParser {
     final queryTypeNames =
         GLQueryType.values.map((t) => schema.getByQueryType(t)).toSet();
 
-    final Set<String> done = {};
-    final Set<String> inProgress = {};
-    int count = 0;
-
-    void generate(String key) {
-      if (done.contains(key) || inProgress.contains(key)) return;
-      final typeDef = allTypes[key]!;
-      inProgress.add(key);
-
-      // Ensure all non-cyclic dependencies are generated first (DFS).
-      for (final field in typeDef.getSerializableFields(mode)) {
-        if (typeRequiresProjection(field.type)) {
-          final depKey = field.type.inlineType.token;
-          if (allTypes.containsKey(depKey) &&
-              !queryTypeNames.contains(depKey) &&
-              allTypes[depKey]!.getDirectiveByName(glInternal) == null) {
-            generate(depKey);
-          }
-        }
-      }
-
-      addFragmentDefinition(createAllFieldsFragment(typeDef, inProgress));
-      inProgress.remove(key);
-      done.add(key);
-      count++;
-    }
-
+    // Cycle breaking is driven by the static SCC pass (isFieldCyclic), so each
+    // type's fragment is self-contained and can be generated in any order — no
+    // dependency DFS or in-progress stack is required.
     allTypes.forEach((key, typeDef) {
-      if (!queryTypeNames.contains(key) &&
-          typeDef.getDirectiveByName(glInternal) == null) {
-        generate(key);
-      }
+      if (queryTypeNames.contains(key)) return;
+      if (typeDef.getDirectiveByName(glInternal) != null) return;
+      addFragmentDefinition(createAllFieldsFragment(typeDef));
     });
   }
 
@@ -222,20 +211,23 @@ extension GLGrammarFragmentExtension on GLParser {
     return value is int ? value : defaultExpandDepth;
   }
 
-  /// Recursively inline-expands [typeName]'s fields up to [remainingDepth] levels.
-  /// Never emits fragment spreads — everything is inlined to avoid introducing
-  /// new fragment-level cycles.
+  /// Recursively inline-expands [typeName]'s fields up to [remainingDepth]
+  /// cyclic levels. Never emits a fragment spread for a cyclic edge — those are
+  /// inlined to keep the fragment-reference graph acyclic. Interface/union
+  /// fields encountered here are inlined as inline-fragments over their concrete
+  /// members (see [_inlineExpandTarget]).
   ///
-  /// [visitedOnPath] tracks types on the current call stack to prevent stack
-  /// overflows from long non-cyclic chains that eventually loop back to a
-  /// cyclic type (e.g. Link1→Link2→...→LinkN→Root where Root is in cycleTypes
-  /// but the Links are not, so remainingDepth never decrements along the chain).
+  /// Cyclic edges (per the SCC pass, [isFieldCyclic]) decrement [remainingDepth]
+  /// and are dropped at 0. [visitedOnPath] tracks types on the current call
+  /// stack to bound long non-cyclic chains that eventually loop back to a cyclic
+  /// type (e.g. Link1→Link2→…→LinkN→Root where the Links are not cyclic, so
+  /// remainingDepth never decrements along the chain).
   GLFragmentBlockDefinition? _createInlineExpandBlock(
-      String typeName, int remainingDepth, Set<String> cycleTypes,
+      String typeName, int remainingDepth,
       [Set<String>? visitedOnPath]) {
     final path = visitedOnPath ?? <String>{};
 
-    final isCyclicType = cycleTypes.contains(typeName);
+    final isCyclicType = cyclicTypeNames.contains(typeName);
 
     // Non-cyclic cache hit: return the previously computed block directly.
     // fragmentBlockCache is shared across all createAllFieldsFragments calls.
@@ -244,12 +236,12 @@ extension GLGrammarFragmentExtension on GLParser {
     }
 
     // Skip non-cyclic types already on the path to prevent unbounded recursion
-    // through non-cyclic chains (e.g. Link1→Link2→...→LinkN). Cyclic types
-    // (those in cycleTypes) are bounded by remainingDepth instead, so the path
-    // check must not block them — otherwise depth>1 expansions terminate early.
+    // through non-cyclic chains. Cyclic types are bounded by remainingDepth
+    // instead, so the path check must not block them — otherwise depth>1
+    // expansions terminate early.
     if (path.contains(typeName) && !isCyclicType) return null;
 
-    final typeDef = types[typeName] ?? interfaces[typeName];
+    final typeDef = types[typeName];
     if (typeDef == null) return null;
 
     path.add(typeName);
@@ -267,12 +259,12 @@ extension GLGrammarFragmentExtension on GLParser {
       }
 
       final fieldTypeName = field.type.inlineType.token;
-      final isCyclic = cycleTypes.contains(fieldTypeName);
+      final isCyclic = isFieldCyclic(typeName, fieldTypeName);
 
       if (isCyclic && remainingDepth <= 0) return null;
 
       final nextDepth = isCyclic ? remainingDepth - 1 : remainingDepth;
-      final block = _createInlineExpandBlock(fieldTypeName, nextDepth, cycleTypes, path);
+      final block = _inlineExpandTarget(fieldTypeName, nextDepth, path);
       // If expansion returned null (path-skip or unknown type), omit the field
       // entirely — a null block on an object-type field is invalid.
       if (block == null) return null;
@@ -297,6 +289,46 @@ extension GLGrammarFragmentExtension on GLParser {
     return result;
   }
 
+  /// Expands a field's [targetName] during inline expansion. Concrete types
+  /// recurse into [_createInlineExpandBlock]; interface/union targets become
+  /// inline-fragments over their concrete members, each inlined (never spread)
+  /// so the fragment-reference graph stays acyclic at any depth.
+  GLFragmentBlockDefinition? _inlineExpandTarget(
+      String targetName, int remainingDepth, Set<String> path) {
+    if (types.containsKey(targetName)) {
+      return _createInlineExpandBlock(targetName, remainingDepth, path);
+    }
+    final members = _concreteMembers(targetName);
+    if (members.isEmpty) return null;
+    final inlineFrags = <GLInlineFragmentDefinition>[];
+    for (final member in members) {
+      final block = _createInlineExpandBlock(member.token, remainingDepth, path);
+      if (block == null) continue;
+      final inline = GLInlineFragmentDefinition(member.tokenInfo, block, []);
+      addFragmentDefinition(inline);
+      inlineFrags.add(inline);
+    }
+    if (inlineFrags.isEmpty) return null;
+    return GLFragmentBlockDefinition(
+        [GLInlineFragmentsProjection(inlineFragments: inlineFrags)]);
+  }
+
+  /// Concrete member type definitions of an interface (its implementors) or a
+  /// union (its members). Empty for anything else.
+  List<GLTypeDefinition> _concreteMembers(String targetName) {
+    if (interfaces.containsKey(targetName)) {
+      return getTypesImplementing(interfaces[targetName]!);
+    }
+    if (unions.containsKey(targetName)) {
+      return unions[targetName]!
+          .typeNames
+          .map((t) => types[t.token])
+          .whereType<GLTypeDefinition>()
+          .toList();
+    }
+    return [];
+  }
+
   GLFragmentBlockDefinition? createAllFieldBlock(GLField field) {
     if (!typeRequiresProjection(field.type)) {
       return null;
@@ -309,6 +341,7 @@ extension GLGrammarFragmentExtension on GLParser {
         alias: null,
         block: null,
         directives: [],
+        allFieldsSpread: true,
       )
     ]);
   }
@@ -373,7 +406,8 @@ extension GLGrammarFragmentExtension on GLParser {
             token: fragName.toToken(),
             alias: null,
             block: null,
-            directives: [])
+            directives: [],
+            allFieldsSpread: true)
       ]);
     }
 

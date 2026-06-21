@@ -62,7 +62,7 @@ class QueriesTest {
 
         @Test
         fun post_author_hasCorrectId() = runTest {
-            assertEquals("user-1", client.queries.fetchUserAndPost("user-1", "post-1").post.author.id)
+            assertEquals("user-1", client.queries.fetchUserAndPost("user-1", "post-1").post.author?.id)
         }
     }
 

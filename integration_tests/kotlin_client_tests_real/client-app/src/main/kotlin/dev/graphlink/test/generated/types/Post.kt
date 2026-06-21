@@ -6,22 +6,22 @@
 // ignore_for_file: use_rethrow_when_possible, camel_case_types, constant_identifier_names, unused_import, non_constant_identifier_names, no_leading_underscores_for_local_identifiers, unused_local_variable, annotate_overrides, library_private_types_in_public_api
 
 package dev.graphlink.test.generated.types;
-import dev.graphlink.test.generated.types.User_AddressBillingAddressEmail_aep45g
+import dev.graphlink.test.generated.types.User
 
 
 data class Post(
     val id: String,
     val title: String,
     val body: String,
-    val author: User_AddressBillingAddressEmail_aep45g,
-    val coAuthor: User_AddressBillingAddressEmail_aep45g? = null,
+    val author: User? = null,
+    val coAuthor: User? = null,
     val viewCount: Int,
 ) {
    fun toJson(): Map<String, Any?> = mapOf(
            "id" to id,
            "title" to title,
            "body" to body,
-           "author" to author.toJson(),
+           "author" to author?.toJson(),
            "coAuthor" to coAuthor?.toJson(),
            "viewCount" to viewCount,
        )
@@ -31,8 +31,8 @@ data class Post(
           id = map["id"] as String,
           title = map["title"] as String,
           body = map["body"] as String,
-          author = User_AddressBillingAddressEmail_aep45g.fromJson(map["author"] as Map<String, Any?>),
-          coAuthor = (map["coAuthor"] as? Map<*, *>)?.let { User_AddressBillingAddressEmail_aep45g.fromJson(it as Map<String, Any?>) },
+          author = (map["author"] as? Map<*, *>)?.let { User.fromJson(it as Map<String, Any?>) },
+          coAuthor = (map["coAuthor"] as? Map<*, *>)?.let { User.fromJson(it as Map<String, Any?>) },
           viewCount = (map["viewCount"] as Number).toInt(),
       )
    }

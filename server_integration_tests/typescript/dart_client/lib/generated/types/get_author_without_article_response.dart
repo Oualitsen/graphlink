@@ -5,12 +5,12 @@
 // Pub.dev https://pub.dev/packages/graphlink
 // ignore_for_file: use_rethrow_when_possible, camel_case_types, constant_identifier_names, unused_import, non_constant_identifier_names, no_leading_underscores_for_local_identifiers, unused_local_variable, annotate_overrides, library_private_types_in_public_api
 
-import 'package:graphlink_server_integration_tests_dart_client/generated/types/author_id_name.dart';
+import 'package:graphlink_server_integration_tests_dart_client/generated/types/author.dart';
 
 
 class GetAuthorWithoutArticleResponse {
-   final Author_IdName? getAuthor;
-   GetAuthorWithoutArticleResponse({this.getAuthor});
+   final Author? getAuthor;
+   const GetAuthorWithoutArticleResponse({this.getAuthor});
    Map<String, dynamic> toJson() {
       return {
          'getAuthor': getAuthor?.toJson(),
@@ -19,7 +19,7 @@ class GetAuthorWithoutArticleResponse {
 
    static GetAuthorWithoutArticleResponse fromJson(Map<String, dynamic> json) {
       return GetAuthorWithoutArticleResponse(
-         getAuthor: json['getAuthor'] == null ? null : Author_IdName.fromJson(json['getAuthor'] as Map<String, dynamic>),
+         getAuthor: json['getAuthor'] == null ? null : Author.fromJson(json['getAuthor'] as Map<String, dynamic>),
       );
    }
 

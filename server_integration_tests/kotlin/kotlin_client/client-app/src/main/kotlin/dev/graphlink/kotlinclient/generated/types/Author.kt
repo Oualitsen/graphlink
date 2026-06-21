@@ -12,19 +12,19 @@ import dev.graphlink.kotlinclient.generated.types.Article
 data class Author(
     val id: String,
     val name: String,
-    val articles: List<Article>,
+    val articles: List<Article>? = null,
 ) {
    fun toJson(): Map<String, Any?> = mapOf(
            "id" to id,
            "name" to name,
-           "articles" to articles.map { e0 -> e0.toJson() },
+           "articles" to articles?.map { e0 -> e0.toJson() },
        )
 
    companion object {
       fun fromJson(map: Map<String, Any?>): Author = Author(
           id = map["id"] as String,
           name = map["name"] as String,
-          articles = (map["articles"] as List<*>).map { e0 -> Article.fromJson(e0 as Map<String, Any?>) },
+          articles = (map["articles"] as? List<*>)?.map { e0 -> Article.fromJson(e0 as Map<String, Any?>) },
       )
    }
 }

@@ -11,6 +11,7 @@ import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/token_info.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
+import 'package:graphlink/src/gl_expand_grammar_extension.dart';
 
 class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
   final Map<String, TokenInfo> _interfaceNames = {};
@@ -19,8 +20,6 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
   final GLTypeDefinition? derivedFromType;
   final bool isResponseType;
 
-  bool _exaustive = false;
-  bool get exaustive => _exaustive;
 
   final Set<String> _originalTokens = <String>{};
 
@@ -97,11 +96,48 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
   String getHash(GLParser g) {
     if (_cachedHash != null) return _cachedHash!;
     var serilaize = GLGraphqlSerializer(g);
-    _cachedHash = getSerializableFields(g.mode)
+    final fields = [...getSerializableFields(g.mode)];
+
+    // Client mode: a depth-truncated projection of a cyclic type drops the
+    // cyclic edge(s), so it would otherwise hash differently from the full
+    // projection. Back-fill the missing cyclic edges from the derived-from type
+    // (as nullable, matching how the full projection emits them) so both shapes
+    // hash identically and the dedup pass can collapse them into one type.
+    //
+    // Only fires for DERIVED projections (`derivedFromType != null`): the
+    // abstract-mediated (interface/union) cyclic types that take the projection
+    // slow path. Verified load-bearing — disabling it leaves duplicate
+    // truncated/full shapes (e.g. Item vs Item_IdValue, Person vs Person_IdName)
+    // that fail to dedup. It is a no-op for pure-object cycles: there
+    // forceCyclicEdgesNullable + the all-fields fast path register the declared
+    // type directly (derivedFromType is null), so the loop is skipped.
+    final origin = derivedFromType;
+    if (g.mode == CodeGenerationMode.client && origin != null) {
+      final present = fields.map((f) => f.name.token).toSet();
+      for (final sf in origin.getSerializableFields(g.mode)) {
+        if (present.contains(sf.name.token)) continue;
+        if (!g.typeRequiresProjection(sf.type)) continue;
+        if (!g.isFieldCyclic(origin.token, sf.type.inlineType.token)) continue;
+        fields.add(sf);
+      }
+    }
+
+    fields.sort((a, b) => a.name.token.compareTo(b.name.token));
+    _cachedHash = fields
         .map((f) =>
-            "${f.name}:${serilaize.serializeType(f.type, forceNullable: f.hasInculeOrSkipDiretives)}")
+            "${f.name}:${serilaize.serializeType(f.type, forceNullable: f.hasInculeOrSkipDiretives || _isBackfilledCyclic(f, origin, g))}")
         .join(",");
     return _cachedHash!;
+  }
+
+  /// True for a derived-from cyclic edge we back-filled above (not actually a
+  /// field of this projection) — those are emitted nullable in the real
+  /// projection, so the hash must serialize them nullable too.
+  bool _isBackfilledCyclic(GLField f, GLTypeDefinition? origin, GLParser g) {
+    if (origin == null || g.mode != CodeGenerationMode.client) return false;
+    if (fields.any((own) => own.name.token == f.name.token)) return false;
+    return g.typeRequiresProjection(f.type) &&
+        g.isFieldCyclic(origin.token, f.type.inlineType.token);
   }
 
   Set<String> getIdentityFields(GLParser g) {
@@ -116,29 +152,6 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
     return g.identityFields.where((e) => fieldNames.contains(e)).toSet();
   }
 
-  bool isExhaustive(GLParser g) {
-    if (_exaustive) return true;
-    if (derivedFromType == null) return true;
-
-    final schemaType = g.types[derivedFromType!.token]
-                    ?? g.interfaces[derivedFromType!.token];
-    if (schemaType == null) return false;
-
-    for (final schemaField in schemaType.getSerializableFields(g.mode)) {
-      if (!g.typeRequiresProjection(schemaField.type)) {
-        if (!fieldNames.contains(schemaField.name.token)) return false;
-      } else {
-        final projected = getFieldByName(schemaField.name.token);
-        if (projected != null) {
-          final sub = g.projectedTypes[projected.type.firstType.token]
-                   ?? g.projectedInterfaces[projected.type.firstType.token];
-          if (sub == null || !sub.isExhaustive(g)) return false;
-        }
-      }
-    }
-    _exaustive = true;
-    return true;
-  }
 
   @override
   String toString() {

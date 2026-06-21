@@ -251,13 +251,15 @@ class GraphLinkQueries extends _ResolverBase {
    Future<GetAuthorAndArticleResponse> getAuthorAndArticle({
       required String authorId,
       required String articleId,
-      required int limit
+      required int limit,
+      required int latestArticlesLimit
    }) async {
       const __gl_operationName__ = 'getAuthorAndArticle';
       final __gl_variables__ = <String, dynamic>{
          'authorId': authorId,
          'articleId': articleId,
          'limit': limit,
+         'latestArticlesLimit': latestArticlesLimit,
       };
 
       final __gl_partialQueries__ = [_GraphLinkPartialQuery(
@@ -267,11 +269,11 @@ class GraphLinkQueries extends _ResolverBase {
         ttl: 0,
         elementKey: 'author',
         fragmentNames: {"_all_fields_Author", "_all_fields_Article"},
-        argumentDeclarations: ["\$authorId: ID!", "\$limit: Int!"],
+        argumentDeclarations: ["\$authorId: ID!", "\$latestArticlesLimit: Int!"],
         variables: {
       'authorId': __gl_variables__['authorId'],
 
-      'limit': __gl_variables__['limit'],
+      'latestArticlesLimit': __gl_variables__['latestArticlesLimit'],
       },
         staleIfOffline: false
       )
@@ -323,12 +325,12 @@ class GraphLinkQueries extends _ResolverBase {
    }
    Future<GetAuthorResponse> getAuthor({
       required String id,
-      required int limit
+      required int latestArticlesLimit
    }) async {
       const __gl_operationName__ = 'getAuthor';
       final __gl_variables__ = <String, dynamic>{
          'id': id,
-         'limit': limit,
+         'latestArticlesLimit': latestArticlesLimit,
       };
 
       final __gl_partialQueries__ = [_GraphLinkPartialQuery(
@@ -338,11 +340,11 @@ class GraphLinkQueries extends _ResolverBase {
         ttl: 0,
         elementKey: 'getAuthor',
         fragmentNames: {"_all_fields_Author", "_all_fields_Article"},
-        argumentDeclarations: ["\$id: ID!", "\$limit: Int!"],
+        argumentDeclarations: ["\$id: ID!", "\$latestArticlesLimit: Int!"],
         variables: {
       'id': __gl_variables__['id'],
 
-      'limit': __gl_variables__['limit'],
+      'latestArticlesLimit': __gl_variables__['latestArticlesLimit'],
       },
         staleIfOffline: false
       )
@@ -434,11 +436,11 @@ class GraphLinkQueries extends _ResolverBase {
       }
    }
    Future<ListAuthorsResponse> listAuthors({
-      required int limit
+      required int latestArticlesLimit
    }) async {
       const __gl_operationName__ = 'listAuthors';
       final __gl_variables__ = <String, dynamic>{
-         'limit': limit,
+         'latestArticlesLimit': latestArticlesLimit,
       };
 
       final __gl_partialQueries__ = [_GraphLinkPartialQuery(
@@ -448,9 +450,9 @@ class GraphLinkQueries extends _ResolverBase {
         ttl: 0,
         elementKey: 'listAuthors',
         fragmentNames: {"_all_fields_Author", "_all_fields_Article"},
-        argumentDeclarations: ["\$limit: Int!"],
+        argumentDeclarations: ["\$latestArticlesLimit: Int!"],
         variables: {
-      'limit': __gl_variables__['limit'],
+      'latestArticlesLimit': __gl_variables__['latestArticlesLimit'],
       },
         staleIfOffline: false
       )
@@ -784,8 +786,8 @@ class GraphLinkClient {
       required GraphLinkWebSocketAdapter wsAdapter,
       GraphLinkCacheStore? store
    }) {
+      __gl_fragmentMap__['_all_fields_Author'] = 'fragment _all_fields_Author on Author{id name articles{..._all_fields_Article} latestArticles(limit: \$latestArticlesLimit){..._all_fields_Article}}';
       __gl_fragmentMap__['_all_fields_Article'] = 'fragment _all_fields_Article on Article{id title authorId author{id name}}';
-      __gl_fragmentMap__['_all_fields_Author'] = 'fragment _all_fields_Author on Author{id name articles{..._all_fields_Article} latestArticles(limit: \$limit){..._all_fields_Article}}';
       this.store = store ?? InMemoryGraphLinkCacheStore();
       final tags = [];
       for (var tag in tags) {

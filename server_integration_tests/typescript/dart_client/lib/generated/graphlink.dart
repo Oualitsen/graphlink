@@ -8,9 +8,8 @@
 export 'enums/graph_link_ack_status.dart';
 export 'inputs/create_article_input.dart';
 export 'inputs/update_article_input.dart';
-export 'types/author_id_name.dart';
-export 'types/article.dart';
 export 'types/author.dart';
+export 'types/article.dart';
 export 'types/get_author_without_article_response.dart';
 export 'types/get_author_without_article_full_response.dart';
 export 'types/get_author_and_article_response.dart';

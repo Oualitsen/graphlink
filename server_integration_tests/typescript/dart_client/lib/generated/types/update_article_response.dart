@@ -10,7 +10,7 @@ import 'package:graphlink_server_integration_tests_dart_client/generated/types/a
 
 class UpdateArticleResponse {
    final Article updateArticle;
-   UpdateArticleResponse({required this.updateArticle});
+   const UpdateArticleResponse({required this.updateArticle});
    Map<String, dynamic> toJson() {
       return {
          'updateArticle': updateArticle.toJson(),

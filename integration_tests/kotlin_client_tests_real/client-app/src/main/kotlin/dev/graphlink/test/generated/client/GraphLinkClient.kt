@@ -27,25 +27,25 @@ open class GraphLinkClient(
       queries = GraphLinkQueries(adapter, fragmentMap, encoder, decoder, store)
       mutations = GraphLinkMutations(adapter, multipartAdapter, encoder, decoder, store)
       subscriptions = GraphLinkSubscriptions(adapter, wsAdapter, encoder, decoder, store)
-      fragmentMap["Inline_07680f66_15cb_ef0b_48f9_29c4f0995423"] = "... on UserResult  {id name email __typename} "
-      fragmentMap["Inline_31ce0b01_7dcd_bf59_695b_74ff22d4ae8d"] = "... on PostResult  {id title __typename} "
+      fragmentMap["Inline_60606ed5_1407_7e13_57ce_b017bf58fe23"] = "... on UserResult  {id name email __typename} "
+      fragmentMap["Inline_cf921fe0_2001_f8bc_e5c3_cccc8505ffeb"] = "... on PostResult  {id title __typename} "
       fragmentMap["_all_fields_AllScalars"] = "fragment _all_fields_AllScalars on AllScalars{id strVal intVal floatVal boolVal nullableStr nullableInt nullableFloat nullableBool nullableId}"
       fragmentMap["_all_fields_Address"] = "fragment _all_fields_Address on Address{street city country zip}"
-      fragmentMap["_all_fields_Post"] = "fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
       fragmentMap["_all_fields_User"] = "fragment _all_fields_User on User{id name email status priority address{..._all_fields_Address} billingAddress{..._all_fields_Address} tags scores posts{..._all_fields_Post}}"
+      fragmentMap["_all_fields_Post"] = "fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
       fragmentMap["_all_fields_Tag"] = "fragment _all_fields_Tag on Tag{id label color}"
       fragmentMap["_all_fields_AuditEntry"] = "fragment _all_fields_AuditEntry on AuditEntry{id action performedBy}"
       fragmentMap["_all_fields_DefaultsEcho"] = "fragment _all_fields_DefaultsEcho on DefaultsEcho{name role age isActive score nickname tags}"
       fragmentMap["_all_fields_NestedDefaultsEcho"] = "fragment _all_fields_NestedDefaultsEcho on NestedDefaultsEcho{name address{..._all_fields_Address} contacts{..._all_fields_Address} matrix{..._all_fields_Address}}"
-      fragmentMap["_all_fields_Driver"] = "fragment _all_fields_Driver on Driver{id lastUsedMillage(odometerKm: \$odometerKm) lastUsedFuel(liters: \$liters)}"
+      fragmentMap["_all_fields_Driver"] = "fragment _all_fields_Driver on Driver{id lastUsedMillage(odometerKm: \$lastUsedMillageOdometerKm) lastUsedFuel(liters: \$lastUsedFuelLiters)}"
       fragmentMap["_all_fields_UserResult"] = "fragment _all_fields_UserResult on UserResult{id name email}"
       fragmentMap["_all_fields_PostResult"] = "fragment _all_fields_PostResult on PostResult{id title}"
-      fragmentMap["Inline_c7d272c5_b01e_ba59_fcbc_19aad428e558"] = "... on UserResult  {..._all_fields_UserResult __typename} "
-      fragmentMap["Inline_cc6187bb_7d51_d9d6_39d1_e1150124f29d"] = "... on PostResult  {..._all_fields_PostResult __typename} "
+      fragmentMap["Inline_34c42c9f_0719_df8d_a52a_0ff64ad1515c"] = "... on UserResult  {..._all_fields_UserResult __typename} "
+      fragmentMap["Inline_7807b73c_4558_b569_cdbb_69d12fda72b5"] = "... on PostResult  {..._all_fields_PostResult __typename} "
       fragmentMap["_all_fields_SearchResult"] = "fragment _all_fields_SearchResult on SearchResult{... on UserResult  {..._all_fields_UserResult __typename}  ... on PostResult  {..._all_fields_PostResult __typename}}"
-      fragmentMap["Inline_3668757e_e09b_7568_ecb4_f69ad0aced6e"] = "... on UserResult  {..._all_fields_UserResult __typename} "
-      fragmentMap["Inline_6bb00fa8_2d15_354c_eaa8_65808919b64a"] = "... on PostResult  {..._all_fields_PostResult __typename} "
-      fragmentMap["Inline_4982ddd8_e2a0_a900_09a5_63285c388376"] = "... on SearchResult  {... on UserResult  {..._all_fields_UserResult __typename}  ... on PostResult  {..._all_fields_PostResult __typename} __typename} "
+      fragmentMap["Inline_a4b5e66a_882d_fc66_afd2_2f51ad9bcdbb"] = "... on UserResult  {..._all_fields_UserResult __typename} "
+      fragmentMap["Inline_1cf62ab2_5926_4d2d_2634_10f4d920d236"] = "... on PostResult  {..._all_fields_PostResult __typename} "
+      fragmentMap["Inline_f9bb94dc_2709_9edf_2ef4_0af2cf16153f"] = "... on SearchResult  {... on UserResult  {..._all_fields_UserResult __typename}  ... on PostResult  {..._all_fields_PostResult __typename} __typename} "
    }
 
    companion object {

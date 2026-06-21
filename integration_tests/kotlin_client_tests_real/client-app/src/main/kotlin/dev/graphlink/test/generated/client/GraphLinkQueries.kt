@@ -835,13 +835,13 @@ open class GraphLinkQueries(
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
          __gl_pqVars__["term"] = __gl_variables__["term"]
          __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "search(term: \$term){...Inline_4982ddd8_e2a0_a900_09a5_63285c388376}",
+             "search(term: \$term){...Inline_f9bb94dc_2709_9edf_2ef4_0af2cf16153f}",
              __gl_pqVars__,
              0,
              emptyList(),
              "search__search",
              "search",
-             setOf("Inline_4982ddd8_e2a0_a900_09a5_63285c388376", "_all_fields_UserResult", "_all_fields_PostResult"),
+             setOf("Inline_f9bb94dc_2709_9edf_2ef4_0af2cf16153f", "_all_fields_UserResult", "_all_fields_PostResult"),
              listOf("\$term: String!"),
              false,
              encoder,
@@ -1330,15 +1330,15 @@ open class GraphLinkQueries(
          return ListUsersWithDefaultsFullResponse.fromJson(__gl_wrappedResponse__).data!!
       }
    }
-   suspend fun getDriver(id: String, odometerKm: Int, liters: Int = 4): GetDriverResponse {
+   suspend fun getDriver(id: String, lastUsedMillageOdometerKm: Int, lastUsedFuelLiters: Int = 4): GetDriverResponse {
       val __gl_operationName__ = "getDriver"
-      val __gl_variables__ = mapOf("id" to id, "odometerKm" to odometerKm, "liters" to liters)
+      val __gl_variables__ = mapOf("id" to id, "lastUsedMillageOdometerKm" to lastUsedMillageOdometerKm, "lastUsedFuelLiters" to lastUsedFuelLiters)
       val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
       run {
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
          __gl_pqVars__["id"] = __gl_variables__["id"]
-         __gl_pqVars__["odometerKm"] = __gl_variables__["odometerKm"]
-         __gl_pqVars__["liters"] = __gl_variables__["liters"]
+         __gl_pqVars__["lastUsedMillageOdometerKm"] = __gl_variables__["lastUsedMillageOdometerKm"]
+         __gl_pqVars__["lastUsedFuelLiters"] = __gl_variables__["lastUsedFuelLiters"]
          __gl_partialQueries__.add(GraphLinkPartialQuery(
              "getDriver(id: \$id){..._all_fields_Driver}",
              __gl_pqVars__,
@@ -1347,7 +1347,7 @@ open class GraphLinkQueries(
              "getDriver__getDriver",
              "getDriver",
              setOf("_all_fields_Driver"),
-             listOf("\$id: ID!", "\$odometerKm: Int!", "\$liters: Int!"),
+             listOf("\$id: ID!", "\$lastUsedMillageOdometerKm: Int!", "\$lastUsedFuelLiters: Int!"),
              false,
              encoder,
          ))

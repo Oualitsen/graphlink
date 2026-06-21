@@ -5,7 +5,7 @@ import dev.graphlink.test.generated.enums.UserStatus
 import dev.graphlink.test.generated.types.Address
 import dev.graphlink.test.generated.types.AuditEntry
 import dev.graphlink.test.generated.types.Post
-import dev.graphlink.test.generated.types.User_AddressBillingAddressEmail_aep45g
+import dev.graphlink.test.generated.types.User
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Nested
 import kotlin.test.*
@@ -99,22 +99,22 @@ class NestedTypesTest {
 
         @Test
         fun post_author_deserializesToFragmentType() = runTest {
-            assertIs<User_AddressBillingAddressEmail_aep45g>(client.queries.getPost("post-1").getPost.author)
+            assertIs<User>(client.queries.getPost("post-1").getPost.author)
         }
 
         @Test
         fun post_author_hasCorrectId() = runTest {
-            assertEquals("user-1", client.queries.getPost("post-1").getPost.author.id)
+            assertEquals("user-1", client.queries.getPost("post-1").getPost.author?.id)
         }
 
         @Test
         fun post_author_status_deserializesToEnum() = runTest {
-            assertEquals(UserStatus.ACTIVE, client.queries.getPost("post-1").getPost.author.status)
+            assertEquals(UserStatus.ACTIVE, client.queries.getPost("post-1").getPost.author?.status)
         }
 
         @Test
         fun post_author_address_city_isAccessible() = runTest {
-            assertEquals("Springfield", client.queries.getPost("post-1").getPost.author.address.city)
+            assertEquals("Springfield", client.queries.getPost("post-1").getPost.author?.address?.city)
         }
 
         @Test

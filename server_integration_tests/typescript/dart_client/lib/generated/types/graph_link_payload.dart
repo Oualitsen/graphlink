@@ -11,7 +11,7 @@ class GraphLinkPayload {
    final String query;
    final String operationName;
    final Map<String, dynamic> variables;
-   GraphLinkPayload({required this.query, required this.operationName, required this.variables});
+   const GraphLinkPayload({required this.query, required this.operationName, required this.variables});
    Map<String, dynamic> toJson() {
       return {
          'query': query,

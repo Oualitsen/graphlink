@@ -9,7 +9,7 @@
 
 class DeleteArticleResponse {
    final bool deleteArticle;
-   DeleteArticleResponse({required this.deleteArticle});
+   const DeleteArticleResponse({required this.deleteArticle});
    Map<String, dynamic> toJson() {
       return {
          'deleteArticle': deleteArticle,

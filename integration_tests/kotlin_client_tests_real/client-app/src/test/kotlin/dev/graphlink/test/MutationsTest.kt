@@ -124,7 +124,7 @@ class MutationsTest {
         @Test
         fun response_post_authorIsNewOwner() = runTest {
             val res = client.mutations.transferPost("post-1", "user-2")
-            assertEquals("user-2", res.transferPost.author.id)
+            assertEquals("user-2", res.transferPost.author?.id)
         }
     }
 

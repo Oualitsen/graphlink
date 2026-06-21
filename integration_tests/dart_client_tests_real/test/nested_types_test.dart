@@ -34,14 +34,14 @@ void main() {
   group('multi-level nesting (Post → User → Address)', () {
     test('Post.author is deserialized as a full User', () async {
       final res = await client.queries.getPost(id: 'post-1');
-      expect(res.getPost.author.id, equals('user-1'));
-      expect(res.getPost.author.name, equals('Alice Smith'));
-      expect(res.getPost.author.email, equals('alice@test.com'));
+      expect(res.getPost.author?.id, equals('user-1'));
+      expect(res.getPost.author?.name, equals('Alice Smith'));
+      expect(res.getPost.author?.email, equals('alice@test.com'));
     });
 
     test('Post.author.address is accessible at three levels deep', () async {
       final res = await client.queries.getPost(id: 'post-1');
-      expect(res.getPost.author.address.city, equals('Springfield'));
+      expect(res.getPost.author?.address.city, equals('Springfield'));
     });
 
     test('Post.coAuthor is null for post-1', () async {

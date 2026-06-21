@@ -32,6 +32,7 @@ import 'package:graphlink/src/gl_grammar_service_extension.dart';
 import 'package:graphlink/src/gl_grammar_fragment_extension.dart';
 import 'package:graphlink/src/gl_grammar_projection_extension.dart';
 import 'package:graphlink/src/gl_grammar_strict_extension.dart';
+import 'package:graphlink/src/gl_expand_grammar_extension.dart';
 import 'package:graphlink/src/gl_validation_extension.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_controller.dart';
@@ -191,6 +192,14 @@ class GLParser {
   /// Lives on the parser so all extension methods can access it without extra parameters.
   final GlFragmentBlockCache fragmentBlockCache = GlFragmentBlockCache();
 
+  /// Lazily computed caches for the cycle-detection passes in
+  /// `gl_expand_grammar_extension.dart` (SCC ids, cyclic type names, and the
+  /// concrete back-edge feedback set). Held here so the extension getters can
+  /// memoize without per-instance Expandos.
+  Map<String, int>? sccIdsCache;
+  Set<String>? cyclicTypeNamesCache;
+  Set<String>? backEdgesCache;
+
   GLParser({
     this.generateAllFieldsFragments = false,
     this.nullableFieldsRequired = false,
@@ -251,7 +260,9 @@ class GLParser {
     handleGLExternal();
     if (mode == CodeGenerationMode.client) {
       handleRepositories(false);
+      checkGLExpandDirectives();
       if (generateAllFieldsFragments) {
+        forceCyclicEdgesNullable();
         createAllFieldsFragments();
         if (autoGenerateQueries) generateQueryDefinitions();
       }

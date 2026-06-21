@@ -35,8 +35,8 @@ class QueriesTest {
     @Test
     fun getAuthor_articlesResolvedViaBatchMapping() = runTest {
         val res = client.queries.getAuthor("1")
-        val titles = res.getAuthor!!.articles.map { it.title }.toSet()
-        assertTrue(titles.containsAll(setOf("GraphLink Basics", "Advanced GraphLink")))
+        val titles = res.getAuthor!!.articles?.map { it.title }?.toSet()
+        assertTrue(titles?.containsAll(setOf("GraphLink Basics", "Advanced GraphLink")) ?: false)
     }
 
     @Test
@@ -49,8 +49,8 @@ class QueriesTest {
     @Test
     fun getArticle_authorResolvedViaSchemaMapping() = runTest {
         val res = client.queries.getArticle("1")
-        assertEquals("1", res.getArticle.author.id)
-        assertEquals("Ramdane", res.getArticle.author.name)
+        assertEquals("1", res.getArticle.author?.id)
+        assertEquals("Ramdane", res.getArticle.author?.name)
     }
 
     @Test

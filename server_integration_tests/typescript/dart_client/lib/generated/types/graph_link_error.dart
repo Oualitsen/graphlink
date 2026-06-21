@@ -13,7 +13,7 @@ class GraphLinkError {
    final List<dynamic>? path;
    final Map<String, dynamic>? extensions;
    final List<GraphLinkErrorLocation>? locations;
-   GraphLinkError({required this.message, this.path, this.extensions, this.locations});
+   const GraphLinkError({required this.message, this.path, this.extensions, this.locations});
    Map<String, dynamic> toJson() {
       return {
          'message': message,

@@ -2,11 +2,7 @@ package dev.graphlink.test;
 
 import dev.graphlink.test.generated.client.GraphLinkClient;
 import dev.graphlink.test.generated.enums.UserStatus;
-import dev.graphlink.test.generated.types.Address;
-import dev.graphlink.test.generated.types.AuditEntry;
-import dev.graphlink.test.generated.types.GetAuditEntryResponse;
-import dev.graphlink.test.generated.types.Post;
-import dev.graphlink.test.generated.types.User_AddressBillingAddressEmail_aep45g;
+import dev.graphlink.test.generated.types.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -92,7 +88,7 @@ class NestedTypesTest {
 
         @Test
         void post_author_deserializesToUserFragmentType() {
-            assertInstanceOf(User_AddressBillingAddressEmail_aep45g.class,
+            assertInstanceOf(User.class,
                     client.queries.getPost("post-1").getGetPost().getAuthor());
         }
 

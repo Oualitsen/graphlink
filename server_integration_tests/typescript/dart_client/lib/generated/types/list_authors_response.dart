@@ -10,7 +10,7 @@ import 'package:graphlink_server_integration_tests_dart_client/generated/types/a
 
 class ListAuthorsResponse {
    final List<Author> listAuthors;
-   ListAuthorsResponse({required this.listAuthors});
+   const ListAuthorsResponse({required this.listAuthors});
    Map<String, dynamic> toJson() {
       return {
          'listAuthors': listAuthors.map((e0) => e0.toJson()).toList(),

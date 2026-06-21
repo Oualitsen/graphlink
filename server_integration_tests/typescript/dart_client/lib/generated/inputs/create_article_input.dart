@@ -10,7 +10,7 @@
 class CreateArticleInput {
    final String title;
    final String authorId;
-   CreateArticleInput({
+   const CreateArticleInput({
       required this.title,
       required this.authorId
    });
