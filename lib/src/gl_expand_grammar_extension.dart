@@ -108,24 +108,22 @@ extension GLExpandGrammarExtension on GLParser {
   /// Concrete object-type names that participate in a cycle — i.e. their SCC
   /// has more than one member, or the type has a self-edge. Used to bound
   /// inline expansion of cyclic fields independently of any traversal order.
-  Set<String> get cyclicTypeNames {
-    final cached = cyclicTypeNamesCache;
-    if (cached != null) return cached;
-    final ids = _sccIds;
-    final graph = _buildTypeGraph();
-    final sizeById = <int, int>{};
-    for (final id in ids.values) {
-      sizeById[id] = (sizeById[id] ?? 0) + 1;
-    }
-    final result = <String>{};
-    ids.forEach((name, id) {
-      if ((sizeById[id] ?? 0) > 1 || (graph[name]?.contains(name) ?? false)) {
-        result.add(name);
-      }
-    });
-    cyclicTypeNamesCache = result;
-    return result;
-  }
+  Set<String> get cyclicTypeNames => cyclicTypeNamesCache.getOrCompute(() {
+        final ids = _sccIds;
+        final graph = _buildTypeGraph();
+        final sizeById = <int, int>{};
+        for (final id in ids.values) {
+          sizeById[id] = (sizeById[id] ?? 0) + 1;
+        }
+        final result = <String>{};
+        ids.forEach((name, id) {
+          if ((sizeById[id] ?? 0) > 1 ||
+              (graph[name]?.contains(name) ?? false)) {
+            result.add(name);
+          }
+        });
+        return result;
+      });
 
   /// True iff the concrete-target field [fieldName] on [ownerType] is a cycle
   /// back-edge that must be inline-broken in the all-fields fragment (every
@@ -149,55 +147,51 @@ extension GLExpandGrammarExtension on GLParser {
   /// pathological "abstract-only" cycle whose sole closing edge is abstract;
   /// there [createAllFieldsFragment] inline-breaks the abstract edge via its
   /// concrete members instead of spreading the (would-be cyclic) fragment.
-  Set<String> get _cyclicBackEdges {
-    final cached = backEdgesCache;
-    if (cached != null) return cached;
-    final result = <String>{};
-    final onStack = <String>{};
-    final visited = <String>{};
+  Set<String> get _cyclicBackEdges => backEdgesCache.getOrCompute(() {
+        final result = <String>{};
+        final onStack = <String>{};
+        final visited = <String>{};
 
-    void dfs(String typeName) {
-      final typeDef = types[typeName];
-      if (typeDef == null) return;
-      visited.add(typeName);
-      onStack.add(typeName);
-      for (final field in typeDef.fields) {
-        if (!typeRequiresProjection(field.type)) continue;
-        final targetName = field.type.inlineType.token;
-        for (final ct in _resolveConcreteTypes(targetName)) {
-          if (onStack.contains(ct)) {
-            // This edge closes a cycle. Record it as the break point — for a
-            // concrete field this is the usual feedback edge; for an abstract
-            // field it only happens in an abstract-only cycle (no concrete
-            // back-edge exists), so the abstract edge must itself be broken.
-            result.add('$typeName.${field.name.token}');
-          } else if (!visited.contains(ct)) {
-            dfs(ct);
+        void dfs(String typeName) {
+          final typeDef = types[typeName];
+          if (typeDef == null) return;
+          visited.add(typeName);
+          onStack.add(typeName);
+          for (final field in typeDef.fields) {
+            if (!typeRequiresProjection(field.type)) continue;
+            final targetName = field.type.inlineType.token;
+            for (final ct in _resolveConcreteTypes(targetName)) {
+              if (onStack.contains(ct)) {
+                // This edge closes a cycle. Record it as the break point — for a
+                // concrete field this is the usual feedback edge; for an abstract
+                // field it only happens in an abstract-only cycle (no concrete
+                // back-edge exists), so the abstract edge must itself be broken.
+                result.add('$typeName.${field.name.token}');
+              } else if (!visited.contains(ct)) {
+                dfs(ct);
+              }
+            }
           }
+          onStack.remove(typeName);
         }
-      }
-      onStack.remove(typeName);
-    }
 
-    for (final name in types.keys) {
-      if (!visited.contains(name)) dfs(name);
-    }
-    backEdgesCache = result;
-    return result;
-  }
+        for (final name in types.keys) {
+          if (!visited.contains(name)) dfs(name);
+        }
+        return result;
+      });
 
   /// Lazily computed and cached per-parser SCC id map.
-  Map<String, int> get _sccIds {
-    final cached = sccIdsCache;
-    if (cached != null) return cached;
-    final sccs = _computeSCCs();
-    final ids = <String, int>{};
-    for (var i = 0; i < sccs.length; i++) {
-      for (final name in sccs[i]) ids[name] = i;
-    }
-    sccIdsCache = ids;
-    return ids;
-  }
+  Map<String, int> get _sccIds => sccIdsCache.getOrCompute(() {
+        final sccs = _computeSCCs();
+        final ids = <String, int>{};
+        for (var i = 0; i < sccs.length; i++) {
+          for (final name in sccs[i]) {
+            ids[name] = i;
+          }
+        }
+        return ids;
+      });
 
   /// Resolves an object/interface/union name to concrete object type names.
   Set<String> _resolveConcreteTypes(String typeName) {

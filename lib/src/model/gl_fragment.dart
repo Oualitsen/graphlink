@@ -283,14 +283,3 @@ class GLFragmentBlockDefinition {
 /// Keyed by type name; only non-cyclic types are stored (cyclic types depend on
 /// remainingDepth and are never cached). One instance lives for the duration of
 /// `createAllFieldsFragments` so blocks are reused across all fragment builds.
-class GlFragmentBlockCache {
-  final Map<String, GLFragmentBlockDefinition?> _cache = {};
-
-  bool containsKey(String typeName) => _cache.containsKey(typeName);
-
-  GLFragmentBlockDefinition? operator [](String typeName) => _cache[typeName];
-
-  void operator []=(String typeName, GLFragmentBlockDefinition? block) {
-    _cache[typeName] = block;
-  }
-}
