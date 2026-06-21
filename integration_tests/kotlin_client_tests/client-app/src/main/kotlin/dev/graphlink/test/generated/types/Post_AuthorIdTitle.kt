@@ -12,19 +12,19 @@ import dev.graphlink.test.generated.types.User
 data class Post_AuthorIdTitle(
     val id: String,
     val title: String,
-    val author: User,
+    val author: User? = null,
 ) {
    fun toJson(): Map<String, Any?> = mapOf(
            "id" to id,
            "title" to title,
-           "author" to author.toJson(),
+           "author" to author?.toJson(),
        )
 
    companion object {
       fun fromJson(map: Map<String, Any?>): Post_AuthorIdTitle = Post_AuthorIdTitle(
           id = map["id"] as String,
           title = map["title"] as String,
-          author = User.fromJson(map["author"] as Map<String, Any?>),
+          author = (map["author"] as? Map<*, *>)?.let { User.fromJson(it as Map<String, Any?>) },
       )
    }
 }

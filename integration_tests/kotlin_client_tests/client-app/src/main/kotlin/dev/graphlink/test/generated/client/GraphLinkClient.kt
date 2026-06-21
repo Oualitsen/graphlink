@@ -27,22 +27,22 @@ open class GraphLinkClient(
       queries = GraphLinkQueries(adapter, fragmentMap, encoder, decoder, store)
       mutations = GraphLinkMutations(adapter, multipartAdapter, encoder, decoder, store)
       subscriptions = GraphLinkSubscriptions(adapter, wsAdapter, encoder, decoder, store)
-      fragmentMap["Inline_fd99d643_03ed_30bd_c53b_0d41ece957de"] = "... on UserResult  {id name email __typename} "
-      fragmentMap["Inline_eb9d8f2f_93d6_79cb_1e68_b7caac378cdc"] = "... on PostResult  {id title __typename} "
+      fragmentMap["Inline_d7b49aac_850d_286c_2a23_fda08e07b3d2"] = "... on UserResult  {id name email __typename} "
+      fragmentMap["Inline_b6de21ef_04c3_e77f_4ff4_237dbef38195"] = "... on PostResult  {id title __typename} "
       fragmentMap["_all_fields_AllScalars"] = "fragment _all_fields_AllScalars on AllScalars{id strVal intVal floatVal boolVal nullableStr nullableInt nullableFloat nullableBool nullableId}"
       fragmentMap["_all_fields_Address"] = "fragment _all_fields_Address on Address{street city country zip}"
-      fragmentMap["_all_fields_Post"] = "fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
       fragmentMap["_all_fields_User"] = "fragment _all_fields_User on User{id name email status priority address{..._all_fields_Address} billingAddress{..._all_fields_Address} tags scores posts{..._all_fields_Post}}"
+      fragmentMap["_all_fields_Post"] = "fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
       fragmentMap["_all_fields_Tag"] = "fragment _all_fields_Tag on Tag{id label color}"
       fragmentMap["_all_fields_AuditEntry"] = "fragment _all_fields_AuditEntry on AuditEntry{id action performedBy}"
       fragmentMap["_all_fields_UserResult"] = "fragment _all_fields_UserResult on UserResult{id name email}"
       fragmentMap["_all_fields_PostResult"] = "fragment _all_fields_PostResult on PostResult{id title}"
-      fragmentMap["Inline_f90324ff_51e0_993b_74de_d8e2033a90e4"] = "... on UserResult  {..._all_fields_UserResult __typename} "
-      fragmentMap["Inline_25e545d1_3b45_361a_4d83_dc0d82735d72"] = "... on PostResult  {..._all_fields_PostResult __typename} "
+      fragmentMap["Inline_e48b2ace_4335_c39f_9a1b_5a4fd5dc4475"] = "... on UserResult  {..._all_fields_UserResult __typename} "
+      fragmentMap["Inline_ec1e2fb9_70f2_dde6_895d_fb11cd5d1bbd"] = "... on PostResult  {..._all_fields_PostResult __typename} "
       fragmentMap["_all_fields_SearchResult"] = "fragment _all_fields_SearchResult on SearchResult{... on UserResult  {..._all_fields_UserResult __typename}  ... on PostResult  {..._all_fields_PostResult __typename}}"
-      fragmentMap["Inline_0e68c633_73da_2c59_cccd_a2ae0b628388"] = "... on UserResult  {..._all_fields_UserResult __typename} "
-      fragmentMap["Inline_8c6ad32c_2254_f763_e592_9016d0e34a9d"] = "... on PostResult  {..._all_fields_PostResult __typename} "
-      fragmentMap["Inline_2738d100_9ca7_b1a2_fa7c_cddb56276cc7"] = "... on SearchResult  {... on UserResult  {..._all_fields_UserResult __typename}  ... on PostResult  {..._all_fields_PostResult __typename} __typename} "
+      fragmentMap["Inline_f637477a_0724_97e2_b192_0e049559ed03"] = "... on UserResult  {..._all_fields_UserResult __typename} "
+      fragmentMap["Inline_e0b8f2ae_ec6d_b839_6338_5155052c925e"] = "... on PostResult  {..._all_fields_PostResult __typename} "
+      fragmentMap["Inline_762ea8cb_f229_fb78_58b1_e56616d49af9"] = "... on SearchResult  {... on UserResult  {..._all_fields_UserResult __typename}  ... on PostResult  {..._all_fields_PostResult __typename} __typename} "
    }
 }
 

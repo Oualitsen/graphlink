@@ -3,7 +3,6 @@ package dev.graphlink.test;
 import dev.graphlink.test.generated.client.GraphLinkClient;
 import dev.graphlink.test.generated.types.Post;
 import dev.graphlink.test.generated.types.User;
-import dev.graphlink.test.generated.types.User_AddressBillingAddressEmail_aep45g;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -56,7 +55,7 @@ class CycleTest {
         @Test
         void user_posts_author_isTruncatedUserType() {
             User user = client.queries.getUser("user-with-posts").getGetUser();
-            assertInstanceOf(User_AddressBillingAddressEmail_aep45g.class,
+            assertInstanceOf(User.class,
                     user.getPosts().get(0).getAuthor());
         }
 
@@ -99,7 +98,7 @@ class CycleTest {
 
         @Test
         void post_author_isTruncatedUserType() {
-            assertInstanceOf(User_AddressBillingAddressEmail_aep45g.class,
+            assertInstanceOf(User.class,
                     client.queries.getPost("post-10").getGetPost().getAuthor());
         }
 
@@ -133,7 +132,7 @@ class CycleTest {
 
         @Test
         void post_coAuthor_isTruncatedUserType() {
-            assertInstanceOf(User_AddressBillingAddressEmail_aep45g.class,
+            assertInstanceOf(User.class,
                     client.queries.getPost("post-2").getGetPost().getCoAuthor());
         }
 

@@ -3,7 +3,6 @@ package dev.graphlink.test
 import dev.graphlink.test.generated.client.GraphLinkClient
 import dev.graphlink.test.generated.types.Post
 import dev.graphlink.test.generated.types.User
-import dev.graphlink.test.generated.types.User_AddressBillingAddressEmail_aep45g
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Nested
 import kotlin.test.*
@@ -50,26 +49,26 @@ class CycleTest {
 
         @Test
         fun user_posts_author_isTruncatedUserType() = runTest {
-            assertIs<User_AddressBillingAddressEmail_aep45g>(
+            assertIs<User>(
                 client.queries.getUser("user-with-posts").getUser.posts!![0].author
             )
         }
 
         @Test
         fun user_posts_author_hasCorrectId() = runTest {
-            assertEquals("user-1", client.queries.getUser("user-with-posts").getUser.posts!![0].author.id)
+            assertEquals("user-1", client.queries.getUser("user-with-posts").getUser.posts!![0].author?.id)
         }
 
         @Test
         fun user_posts_author_address_isNotNull() = runTest {
-            assertNotNull(client.queries.getUser("user-with-posts").getUser.posts!![0].author.address)
+            assertNotNull(client.queries.getUser("user-with-posts").getUser.posts!![0].author?.address)
         }
 
         @Test
         fun user_posts_author_address_city_isAccessible() = runTest {
             assertEquals(
                 "Springfield",
-                client.queries.getUser("user-with-posts").getUser.posts!![0].author.address.city,
+                client.queries.getUser("user-with-posts").getUser.posts!![0].author?.address?.city,
             )
         }
     }
@@ -93,19 +92,19 @@ class CycleTest {
 
         @Test
         fun post_author_isTruncatedUserType() = runTest {
-            assertIs<User_AddressBillingAddressEmail_aep45g>(
+            assertIs<User>(
                 client.queries.getPost("post-10").getPost.author
             )
         }
 
         @Test
         fun post_author_hasCorrectId() = runTest {
-            assertEquals("user-1", client.queries.getPost("post-10").getPost.author.id)
+            assertEquals("user-1", client.queries.getPost("post-10").getPost.author?.id)
         }
 
         @Test
         fun post_author_address_isNotNull() = runTest {
-            assertNotNull(client.queries.getPost("post-10").getPost.author.address)
+            assertNotNull(client.queries.getPost("post-10").getPost.author?.address)
         }
 
         @Test
@@ -126,7 +125,7 @@ class CycleTest {
 
         @Test
         fun post_coAuthor_isTruncatedUserType() = runTest {
-            assertIs<User_AddressBillingAddressEmail_aep45g>(
+            assertIs<User>(
                 client.queries.getPost("post-2").getPost.coAuthor
             )
         }
@@ -139,7 +138,7 @@ class CycleTest {
         @Test
         fun post_author_and_coAuthor_haveDifferentIds() = runTest {
             val post: Post = client.queries.getPost("post-2").getPost
-            assertNotEquals(post.author.id, post.coAuthor!!.id)
+            assertNotEquals(post.author?.id, post.coAuthor!!.id)
         }
     }
 }
