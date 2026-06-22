@@ -201,6 +201,14 @@ extension GLGrammarProjectionExtension on GLParser {
     _log('assign projectedType back to elements');
 
     queries.forEach((key, query) {
+      // The generated wrappers (`<stem>Response` / `<stem>FullResponse`, both
+      // flagged isResponseType) share the same name space as user-declared
+      // types. Pick a collision-free stem before the definitions are built so
+      // the auto `<Field>Response` name doesn't clash with a declared type
+      // (e.g. GitLab declares `type VulnerabilityResponse`, which collides with
+      // the auto-generated `vulnerability` query wrapper).
+      _assignCollisionFreeResponseStem(query);
+
       var projectedType = query.getGeneratedTypeDefinition();
       if (projectedTypes.containsKey(projectedType.token)) {
         throw ParseException(
@@ -223,6 +231,60 @@ extension GLGrammarProjectionExtension on GLParser {
 
     // ignore: avoid_print
    // print('[createProjectedTypes] TOTAL: ${_swTotal.elapsedMilliseconds}ms');
+  }
+
+  /// Gives [query] a `<stem>` for its generated `<stem>Response` /
+  /// `<stem>FullResponse` wrapper types (both [GlTypeDefinition.isResponseType])
+  /// such that neither name collides with an already-known type name.
+  ///
+  /// The default `<Field>` stem is kept whenever it is free — so existing
+  /// schemas (and the client code generated for them) keep their current
+  /// `<Field>Response` names with no churn. Only on collision do we fall back
+  /// deterministically to `<Field><Operation>` (e.g. `VulnerabilityQuery`),
+  /// then to a numeric suffix. Queries that pin their name via a directive
+  /// (`@glName`) are honoured as-is and left untouched.
+  void _assignCollisionFreeResponseStem(GLQueryDefinition query) {
+    if (query.hasDeclaredResponseName) return;
+
+    bool nameTaken(String name) =>
+        types.containsKey(name) ||
+        interfaces.containsKey(name) ||
+        unions.containsKey(name) ||
+        enums.containsKey(name) ||
+        scalars.containsKey(name) ||
+        projectedTypes.containsKey(name) ||
+        projectedInterfaces.containsKey(name);
+
+    // A stem is usable only when BOTH derived names are free, so the data
+    // wrapper and its full-response wrapper stay consistent with one stem.
+    bool stemFree(String stem) =>
+        !nameTaken('${stem}Response') && !nameTaken('${stem}FullResponse');
+
+    final base = query.defaultGeneratedNameStem;
+    if (stemFree(base)) return; // common case — keep <Field>Response
+
+    final withOp = '$base${_operationWord(query.type)}';
+    if (stemFree(withOp)) {
+      query.overrideGeneratedNameStem(withOp);
+      return;
+    }
+
+    var i = 2;
+    while (!stemFree('$withOp$i')) {
+      i++;
+    }
+    query.overrideGeneratedNameStem('$withOp$i');
+  }
+
+  String _operationWord(GLQueryType type) {
+    switch (type) {
+      case GLQueryType.query:
+        return 'Query';
+      case GLQueryType.mutation:
+        return 'Mutation';
+      case GLQueryType.subscription:
+        return 'Subscription';
+    }
   }
 
   /// True when, ignoring an implicit `__typename`, [projectionMap] is exactly
