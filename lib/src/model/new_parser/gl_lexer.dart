@@ -153,35 +153,26 @@ class GLLexer {
       (code >= 48 && code <= 57);
 
   void _scanIdentifier() {
-    int start = _pos;
-    var value = StringBuffer();
-    while (!_isEofReached) {
-      var current = source[_pos];
-      if (_isIdentifierChar(current.codeUnitAt(0))) {
-        value.write(current);
-      } else {
-        break;
-      }
+    final start = _pos;
+    while (!_isEofReached && _isIdentifierChar(source.codeUnitAt(_pos))) {
       _pos++;
     }
-
-    String valueStr = value.toString();
+    final valueStr = source.substring(start, _pos);
     tokens.add(GLLexerToken(
-        keywords[valueStr] ?? GLTokenType.identifier, value.toString(), start));
+        keywords[valueStr] ?? GLTokenType.identifier, valueStr, start));
   }
 
   void _scanDollarIdentifier() {
     final start = _pos;
-    final value = StringBuffer(source[_pos]); // write '$'
-    _pos++;
+    _pos++; // skip '$' — included via substring(start, …) below
     if (_isEofReached || !_isIdentifierChar(source.codeUnitAt(_pos))) {
       throw errorAt(start, "Expected identifier after '\$'");
     }
     while (!_isEofReached && _isIdentifierChar(source.codeUnitAt(_pos))) {
-      value.write(source[_pos]);
       _pos++;
     }
-    tokens.add(GLLexerToken(GLTokenType.identifier, value.toString(), start));
+    tokens.add(
+        GLLexerToken(GLTokenType.identifier, source.substring(start, _pos), start));
   }
 
   String _readInt() {

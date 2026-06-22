@@ -7,7 +7,10 @@ mixin GLDirectivesMixin {
   List<GLDirectiveValue>? _cachedDirectives;
 
   List<GLDirectiveValue> getDirectives({bool skipGenerated = false}) {
-    final all = _cachedDirectives ??= [..._directives.values, ..._decorators];
+    final all = _cachedDirectives ??=
+        (_directives == null && _decorators == null)
+            ? const []
+            : [...?_directives?.values, ...?_decorators];
     if (skipGenerated) {
       return all.where((d) => !d.generated).toList(growable: false);
     }
@@ -18,9 +21,13 @@ mixin GLDirectivesMixin {
   /// We need to handle decorators differently as one field can have multiple
   /// decorators comming from different other annotations.
   ///
-  final _decorators = <GLDirectiveValue>[];
+  /// Both collections are lazily allocated: most fields/arguments carry no
+  /// directives, so we avoid allocating an empty List + Map per mixer (every
+  /// GLField, GLArgumentDefinition, GLTypeDefinition, GLQueryElement) across a
+  /// large schema.
+  List<GLDirectiveValue>? _decorators;
 
-  final Map<String, GLDirectiveValue> _directives = {};
+  Map<String, GLDirectiveValue>? _directives;
 
   List<GLDirectiveValue> getAnnotations({CodeGenerationMode? mode}) {
     return getDirectives().where((d) => d.getArgValueAsBool(glAnnotation)).where((d) {
@@ -39,33 +46,34 @@ mixin GLDirectivesMixin {
 
   void addDirective(GLDirectiveValue directiveValue) {
     if (directiveValue.token == glDecorators) {
-      _decorators.add(directiveValue);
+      (_decorators ??= []).add(directiveValue);
       _cachedDirectives = null;
       return;
     }
-    if (_directives.containsKey(directiveValue.token)) {
+    final directives = _directives ??= {};
+    if (directives.containsKey(directiveValue.token)) {
       throw ParseException("Directive '${directiveValue.tokenInfo}' already exists",
           info: directiveValue.tokenInfo);
     }
-    _directives[directiveValue.token] = directiveValue;
+    directives[directiveValue.token] = directiveValue;
     _cachedDirectives = null;
   }
 
   void addDirectiveIfAbsent(GLDirectiveValue directiveValue) {
-    _directives.putIfAbsent(directiveValue.token, () => directiveValue);
+    (_directives ??= {}).putIfAbsent(directiveValue.token, () => directiveValue);
     _cachedDirectives = null;
   }
 
   void removeDirectiveByName(String name) {
-    _directives.remove(name);
+    _directives?.remove(name);
     _cachedDirectives = null;
   }
 
   GLDirectiveValue? getDirectiveByName(String name) {
-    return _directives[name];
+    return _directives?[name];
   }
 
   bool hasDirective(String name) {
-    return _directives.containsKey(name);
+    return _directives?.containsKey(name) ?? false;
   }
 }

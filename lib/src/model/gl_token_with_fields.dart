@@ -61,7 +61,7 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
   void checkFields(GLField oroginal, GLField newField) {}
 
   bool hasField(String name) {
-    return fieldNames.contains(name);
+    return _fieldMap.containsKey(name);
   }
 
   List<GLField> get fields {
