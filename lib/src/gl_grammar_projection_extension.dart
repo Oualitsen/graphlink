@@ -246,46 +246,37 @@ extension GLGrammarProjectionExtension on GLParser {
   void _assignCollisionFreeResponseStem(GLQueryDefinition query) {
     if (query.hasDeclaredResponseName) return;
 
-    bool nameTaken(String name) =>
-        types.containsKey(name) ||
-        interfaces.containsKey(name) ||
-        unions.containsKey(name) ||
-        enums.containsKey(name) ||
-        scalars.containsKey(name) ||
-        projectedTypes.containsKey(name) ||
-        projectedInterfaces.containsKey(name);
-
-    // A stem is usable only when BOTH derived names are free, so the data
-    // wrapper and its full-response wrapper stay consistent with one stem.
-    bool stemFree(String stem) =>
-        !nameTaken('${stem}Response') && !nameTaken('${stem}FullResponse');
-
     final base = query.defaultGeneratedNameStem;
-    if (stemFree(base)) return; // common case — keep <Field>Response
+    if (_responseStemIsFree(base)) return; // common case — keep <Field>Response
 
-    final withOp = '$base${_operationWord(query.type)}';
-    if (stemFree(withOp)) {
+    final withOp = '$base${query.type.name.firstUp}';
+    if (_responseStemIsFree(withOp)) {
       query.overrideGeneratedNameStem(withOp);
       return;
     }
 
     var i = 2;
-    while (!stemFree('$withOp$i')) {
+    while (!_responseStemIsFree('$withOp$i')) {
       i++;
     }
     query.overrideGeneratedNameStem('$withOp$i');
   }
 
-  String _operationWord(GLQueryType type) {
-    switch (type) {
-      case GLQueryType.query:
-        return 'Query';
-      case GLQueryType.mutation:
-        return 'Mutation';
-      case GLQueryType.subscription:
-        return 'Subscription';
-    }
-  }
+  /// A [stem] is usable only when BOTH derived names (`<stem>Response` and
+  /// `<stem>FullResponse`) are free, so the data wrapper and its full-response
+  /// wrapper stay consistent under a single stem.
+  bool _responseStemIsFree(String stem) =>
+      !_typeNameTaken('${stem}Response') &&
+      !_typeNameTaken('${stem}FullResponse');
+
+  /// True when [name] is already used by a type or interface (declared or
+  /// projected) — the only definitions that can be [isResponseType], and thus
+  /// the only name spaces an auto-generated response wrapper can collide with.
+  bool _typeNameTaken(String name) =>
+      types.containsKey(name) ||
+      interfaces.containsKey(name) ||
+      projectedTypes.containsKey(name) ||
+      projectedInterfaces.containsKey(name);
 
   /// True when, ignoring an implicit `__typename`, [projectionMap] is exactly
   /// one generated all-fields spread — i.e. the field selects the whole type.

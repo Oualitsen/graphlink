@@ -1,4 +1,5 @@
 import 'package:test/test.dart';
+import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 const schema = '''
@@ -36,5 +37,39 @@ void main() {
 
     // The user-declared type keeps its own name, untouched.
     expect(g.projectedTypes.containsKey('VulnerabilityResponse'), isTrue);
+  });
+
+  test('two declared types with the same name still throw — auto-rename only '
+      'applies to generated response wrappers, never to declared types', () {
+    const duplicateSchema = '''
+type Query {
+  vulnerability(id: ID!): Vulnerability
+}
+
+type Vulnerability {
+  id: ID!
+}
+
+type Vulnerability {
+  name: String
+}
+''';
+
+    final g = GLParser(
+      generateAllFieldsFragments: true,
+      autoGenerateQueries: true,
+      defaultAlias: 'data',
+    );
+
+    expect(
+      () => g.parse(duplicateSchema),
+      throwsA(
+        isA<ParseException>().having(
+          (e) => e.errorMessage,
+          'errorMessage',
+          contains('Type Vulnerability has already been declared'),
+        ),
+      ),
+    );
   });
 }
