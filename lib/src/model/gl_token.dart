@@ -6,12 +6,16 @@ abstract class GLToken {
   GLToken(this.tokenInfo);
   String get token => tokenInfo.token;
 
-  final Set<String> _staticImports = {};
+  // Lazily allocated: the vast majority of tokens never receive an import, so
+  // we avoid allocating an empty Set per GLToken (one per GLType, argument,
+  // directive value, query element, …) across a large schema.
+  Set<String>? _staticImports;
 
-  Set<String> get staticImports => Set.unmodifiable(_staticImports);
+  Set<String> get staticImports =>
+      _staticImports == null ? const {} : Set.unmodifiable(_staticImports!);
 
   void addImport(String import) {
-    _staticImports.add(import);
+    (_staticImports ??= {}).add(import);
   }
 
   Set<String> getImports(GLParser g) {
@@ -19,7 +23,7 @@ abstract class GLToken {
   }
 
   Set<GLToken> getImportDependecies(GLParser g) {
-    return Set.unmodifiable([]);
+    return const {};
   }
 }
 
