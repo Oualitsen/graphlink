@@ -200,9 +200,25 @@ test/
   ...
 ```
 
-Each test directory is self-contained: a `.graphql` schema + a Dart test that calls the
-generator and asserts on the emitted output. There is no shared fixture — each test builds
-its own `GlSchema`.
+Each test is self-contained and builds its own `GlSchema`. There is no shared fixture.
+
+**Define the schema as an inline `const String` in the Dart test file — do NOT read a
+separate `.graphql` file.** Pass it straight to `parser.parse(schema)`. Reserve external
+`.graphql` files only for genuinely large fixtures (e.g. the real-world `gitlab_schema/`
+schema); every normal test keeps its schema inline as a `const`.
+
+```dart
+const schema = '''
+type Query { product(id: ID!): Product }
+type Product { id: ID! name: String }
+''';
+
+test('...', () {
+  final g = GLParser(/* flags */);
+  g.parse(schema);
+  expect(/* assert on generated output */);
+});
+```
 
 ```bash
 fvm dart test test/cache/              # single directory

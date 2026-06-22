@@ -128,12 +128,36 @@ class GLQueryDefinition extends GLToken with GLDirectivesMixin {
 
   GLTypeDefinition? get typeDefinition => _glTypeDefinition;
 
-  String _getGeneratedTypeName() {
-    return getNameValueFromDirectives(getDirectives()) ??
-        "${tokenInfo.token.firstUp}Response";
+  /// True when the user pinned the response type name via a directive
+  /// (e.g. `@glName`). When true, auto collision-disambiguation is skipped and
+  /// the explicit name is honoured as-is.
+  bool get hasDeclaredResponseName =>
+      getNameValueFromDirectives(getDirectives()) != null;
+
+  String? _generatedNameStem;
+
+  /// Overrides the auto-derived `<Field>` stem used to build both the
+  /// `<stem>Response` and `<stem>FullResponse` type names. Used by the
+  /// projection pass to disambiguate auto-generated wrapper names that would
+  /// otherwise collide with a user-declared type. Must be called before
+  /// [getGeneratedTypeDefinition] / [getFullResponseTypeDefinition] are first
+  /// accessed (the type definitions are cached on first build).
+  void overrideGeneratedNameStem(String stem) {
+    assert(_glTypeDefinition == null && _glFullResponse == null,
+        'response type definition already built; stem override is too late');
+    _generatedNameStem = stem;
   }
 
-  String _fullResponseName() => "${tokenInfo.token.firstUp}FullResponse";
+  /// The `<Field>`-style stem the generated wrapper names are built from.
+  String get defaultGeneratedNameStem => tokenInfo.token.firstUp;
+
+  String _getGeneratedTypeName() {
+    return getNameValueFromDirectives(getDirectives()) ??
+        "${_generatedNameStem ?? defaultGeneratedNameStem}Response";
+  }
+
+  String _fullResponseName() =>
+      "${_generatedNameStem ?? defaultGeneratedNameStem}FullResponse";
 
   List<GLField> _generateFields() {
     return elements
