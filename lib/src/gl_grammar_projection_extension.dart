@@ -201,6 +201,14 @@ extension GLGrammarProjectionExtension on GLParser {
     _log('assign projectedType back to elements');
 
     queries.forEach((key, query) {
+      // The generated wrappers (`<stem>Response` / `<stem>FullResponse`, both
+      // flagged isResponseType) share the same name space as user-declared
+      // types. Pick a collision-free stem before the definitions are built so
+      // the auto `<Field>Response` name doesn't clash with a declared type
+      // (e.g. GitLab declares `type VulnerabilityResponse`, which collides with
+      // the auto-generated `vulnerability` query wrapper).
+      _assignCollisionFreeResponseStem(query);
+
       var projectedType = query.getGeneratedTypeDefinition();
       if (projectedTypes.containsKey(projectedType.token)) {
         throw ParseException(
@@ -224,6 +232,51 @@ extension GLGrammarProjectionExtension on GLParser {
     // ignore: avoid_print
    // print('[createProjectedTypes] TOTAL: ${_swTotal.elapsedMilliseconds}ms');
   }
+
+  /// Gives [query] a `<stem>` for its generated `<stem>Response` /
+  /// `<stem>FullResponse` wrapper types (both [GlTypeDefinition.isResponseType])
+  /// such that neither name collides with an already-known type name.
+  ///
+  /// The default `<Field>` stem is kept whenever it is free — so existing
+  /// schemas (and the client code generated for them) keep their current
+  /// `<Field>Response` names with no churn. Only on collision do we fall back
+  /// deterministically to `<Field><Operation>` (e.g. `VulnerabilityQuery`),
+  /// then to a numeric suffix. Queries that pin their name via a directive
+  /// (`@glName`) are honoured as-is and left untouched.
+  void _assignCollisionFreeResponseStem(GLQueryDefinition query) {
+    if (query.hasDeclaredResponseName) return;
+
+    final base = query.defaultGeneratedNameStem;
+    if (_responseStemIsFree(base)) return; // common case — keep <Field>Response
+
+    final withOp = '$base${query.type.name.firstUp}';
+    if (_responseStemIsFree(withOp)) {
+      query.overrideGeneratedNameStem(withOp);
+      return;
+    }
+
+    var i = 2;
+    while (!_responseStemIsFree('$withOp$i')) {
+      i++;
+    }
+    query.overrideGeneratedNameStem('$withOp$i');
+  }
+
+  /// A [stem] is usable only when BOTH derived names (`<stem>Response` and
+  /// `<stem>FullResponse`) are free, so the data wrapper and its full-response
+  /// wrapper stay consistent under a single stem.
+  bool _responseStemIsFree(String stem) =>
+      !_typeNameTaken('${stem}Response') &&
+      !_typeNameTaken('${stem}FullResponse');
+
+  /// True when [name] is already used by a type or interface (declared or
+  /// projected) — the only definitions that can be [isResponseType], and thus
+  /// the only name spaces an auto-generated response wrapper can collide with.
+  bool _typeNameTaken(String name) =>
+      types.containsKey(name) ||
+      interfaces.containsKey(name) ||
+      projectedTypes.containsKey(name) ||
+      projectedInterfaces.containsKey(name);
 
   /// True when, ignoring an implicit `__typename`, [projectionMap] is exactly
   /// one generated all-fields spread — i.e. the field selects the whole type.

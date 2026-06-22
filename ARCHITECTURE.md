@@ -293,8 +293,12 @@ dart test test/cache/                  # single suite
 dart test test/cache/cache_test.dart   # single file
 ```
 
-Each directory under `test/` is self-contained: one `.graphql` schema + one Dart
-test file. No shared fixtures — each test builds its own `GLParser`.
+Each test is self-contained and builds its own `GLParser`. No shared fixtures.
+
+**Define the schema as an inline `const String` inside the Dart test file and pass it to
+`parser.parse(schema)` — do NOT read a separate `.graphql` file.** External `.graphql`
+fixtures are reserved for genuinely large schemas (e.g. `gitlab_schema/`); every normal
+test keeps its schema inline as a `const`.
 
 Notable suites: `new_parser/`, `queries_mutations/`, `cache/`, `maps_to/`,
 `upload/`, `fragments/`, `server/`, `java/`, `dart/`, `validation/`
