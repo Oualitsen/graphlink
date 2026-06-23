@@ -483,7 +483,7 @@ extension GLGrammarFragmentExtension on GLParser {
             .toList(),
         [queryElement],
         queryType);
-    addQueryDefinitionSkipIfExists(def);
+    addQueryDefinition(def);
   }
 
   GLProjection _createProjectionForInterface(GLInterfaceDefinition interface) {

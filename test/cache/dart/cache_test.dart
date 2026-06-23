@@ -217,7 +217,7 @@ void main() {
 
     g.parse(text);
 
-    GLQueryDefinition getPerson = g.queries['getPerson']!;
+    GLQueryDefinition getPerson = g.queries[GLOperationKey('getPerson', GLQueryType.query)]!;
     expect(getPerson.cacheTTL, 5000);
     expect(getPerson.cacheTags, isEmpty);
     for (var elem in getPerson.elements) {
@@ -254,7 +254,7 @@ void main() {
 
     g.parse(text);
 
-    GLQueryDefinition myGetPerson = g.queries['MyGetPerson']!;
+    GLQueryDefinition myGetPerson = g.queries[GLOperationKey('MyGetPerson', GLQueryType.query)]!;
 
     expect(myGetPerson.cacheTTL, 5000);
     expect(myGetPerson.cacheTags, isEmpty);
@@ -286,7 +286,7 @@ void main() {
 
     g.parse(text);
 
-    GLQueryDefinition myQuery = g.queries['MyQuery']!;
+    GLQueryDefinition myQuery = g.queries[GLOperationKey('MyQuery', GLQueryType.query)]!;
     expect(myQuery.cacheTTL, 5000);
     expect(myQuery.cacheTags, contains("Person"));
     var qeuryElement = myQuery.elements.first;
@@ -318,7 +318,7 @@ void main() {
 
     g.parse(text);
 
-    GLQueryDefinition myQuery = g.queries['MyQuery']!;
+    GLQueryDefinition myQuery = g.queries[GLOperationKey('MyQuery', GLQueryType.query)]!;
     expect(myQuery.cacheTTL, 5000);
     expect(myQuery.cacheTags, contains("generic"));
     var qeuryElement = myQuery.elements.first;
@@ -359,7 +359,7 @@ void main() {
 
     g.parse(text);
 
-    GLQueryDefinition myQuery = g.queries['CrPeron']!;
+    GLQueryDefinition myQuery = g.queries[GLOperationKey('CrPeron', GLQueryType.mutation)]!;
     expect(myQuery.invalidateCacheTags, contains("generic"));
     var qeuryElement = myQuery.elements.first;
     expect(
@@ -397,7 +397,7 @@ void main() {
 
     g.parse(text);
 
-    GLQueryDefinition myQuery = g.queries['CrPeron']!;
+    GLQueryDefinition myQuery = g.queries[GLOperationKey('CrPeron', GLQueryType.mutation)]!;
     expect(myQuery.cacheInvalidateAll, true);
     var qeuryElement = myQuery.elements.first;
     expect(qeuryElement.cacheInvalidateAll, true);
@@ -420,7 +420,7 @@ void main() {
 
     g.parse(text);
 
-    GLQueryDefinition getPerson = g.queries['getPerson']!;
+    GLQueryDefinition getPerson = g.queries[GLOperationKey('getPerson', GLQueryType.query)]!;
     final getPersonElement = getPerson.elements.first;
     expect(getPersonElement.cacheTTL, 5000);
     expect(getPersonElement.cacheTags, ["Person"]);
@@ -450,7 +450,7 @@ void main() {
 
     g.parse(text);
 
-    GLQueryDefinition myQuery = g.queries['MyQuery']!;
+    GLQueryDefinition myQuery = g.queries[GLOperationKey('MyQuery', GLQueryType.query)]!;
     expect(myQuery.cacheTags.first, "Person");
     expect(myQuery.cacheTTL, 5000);
     var countElement = myQuery.elements.where((e) => e.token == "count").first;
@@ -509,7 +509,7 @@ void main() {
 
     g.parse(text);
 
-    GLQueryDefinition myQuery = g.queries['MyQuery']!;
+    GLQueryDefinition myQuery = g.queries[GLOperationKey('MyQuery', GLQueryType.query)]!;
     expect(myQuery.cacheTags.first, "Person");
     expect(myQuery.cacheTTL, 5000);
     var getPersonElement =
@@ -979,7 +979,7 @@ void main() {
     getPerson: Person
   }
 
-  query getPerson {
+  query getPerson2 {
     getPerson @glCacheInvalidate(all: true) {
       id
     }

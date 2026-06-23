@@ -242,7 +242,7 @@ void main() {
           (e) => e.errorMessage,
           'errorMessage',
           contains(
-              "Query GetUser has already been declared"),
+              "query GetUser has already been declared"),
         ),
       ),
     );
@@ -690,12 +690,12 @@ void main() {
       id name 
     }
 
-    query GetUser {
+    query GetUser2 {
       getUser {
         id
       }
     }
-    query GetUser {
+    query GetUser2 {
       getCity {
         zipcode
       }
@@ -706,7 +706,7 @@ void main() {
           (e) => e.errorMessage,
           'errorMessage',
           contains(
-              "Query GetUser has already been declared"),
+              "query GetUser2 has already been declared"),
         ),
       ),
     );

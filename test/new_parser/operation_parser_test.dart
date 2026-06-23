@@ -8,31 +8,31 @@ void main() {
     test('simple query', () {
       final parser = GLParser();
       parser.parse('query GetUser { user }', validate: false);
-      expect(parser.queries.containsKey('GetUser'), true);
+      expect(parser.queries.containsKey(GLOperationKey('GetUser', GLQueryType.query)), true);
     });
 
     test('query type is query', () {
       final parser = GLParser();
       parser.parse('query GetUser { user }', validate: false);
-      expect(parser.queries['GetUser']!.type, GLQueryType.query);
+      expect(parser.queries[GLOperationKey('GetUser', GLQueryType.query)]!.type, GLQueryType.query);
     });
 
     test('mutation type is mutation', () {
       final parser = GLParser();
       parser.parse('mutation CreateUser { createUser }', validate: false);
-      expect(parser.queries['CreateUser']!.type, GLQueryType.mutation);
+      expect(parser.queries[GLOperationKey('CreateUser', GLQueryType.mutation)]!.type, GLQueryType.mutation);
     });
 
     test('subscription type is subscription', () {
       final parser = GLParser();
       parser.parse('subscription OnUser { userUpdated }', validate: false);
-      expect(parser.queries['OnUser']!.type, GLQueryType.subscription);
+      expect(parser.queries[GLOperationKey('OnUser', GLQueryType.subscription)]!.type, GLQueryType.subscription);
     });
 
     test('query with single element', () {
       final parser = GLParser();
       parser.parse('query GetUser { user }', validate: false);
-      final q = parser.queries['GetUser']!;
+      final q = parser.queries[GLOperationKey('GetUser', GLQueryType.query)]!;
       expect(q.elements.length, 1);
       expect(q.elements.first.token, 'user');
     });
@@ -40,13 +40,13 @@ void main() {
     test('query with multiple elements', () {
       final parser = GLParser();
       parser.parse('query GetData { user posts comments }', validate: false);
-      expect(parser.queries['GetData']!.elements.length, 3);
+      expect(parser.queries[GLOperationKey('GetData', GLQueryType.query)]!.elements.length, 3);
     });
 
     test('query element with alias', () {
       final parser = GLParser();
       parser.parse('query GetUser { me: user }', validate: false);
-      final elem = parser.queries['GetUser']!.elements.first;
+      final elem = parser.queries[GLOperationKey('GetUser', GLQueryType.query)]!.elements.first;
       expect(elem.token, 'user');
       expect(elem.alias?.token, 'me');
     });
@@ -54,7 +54,7 @@ void main() {
     test('query element with sub-block', () {
       final parser = GLParser();
       parser.parse('query GetUser { user { id name } }', validate: false);
-      final elem = parser.queries['GetUser']!.elements.first;
+      final elem = parser.queries[GLOperationKey('GetUser', GLQueryType.query)]!.elements.first;
       expect(elem.block, isNotNull);
       expect(elem.block!.projections.containsKey('id'), true);
       expect(elem.block!.projections.containsKey('name'), true);
@@ -63,7 +63,7 @@ void main() {
     test('query element with argument value', () {
       final parser = GLParser();
       parser.parse('query GetUser { user(id: 42) }', validate: false);
-      final elem = parser.queries['GetUser']!.elements.first;
+      final elem = parser.queries[GLOperationKey('GetUser', GLQueryType.query)]!.elements.first;
       expect(elem.arguments.length, 1);
       expect(elem.arguments.first.token, 'id');
       expect(elem.arguments.first.value, 42);
@@ -73,7 +73,7 @@ void main() {
       final parser = GLParser();
       parser.parse('query GetUser(\$userId: ID!) { user(id: \$userId) }',
           validate: false);
-      final elem = parser.queries['GetUser']!.elements.first;
+      final elem = parser.queries[GLOperationKey('GetUser', GLQueryType.query)]!.elements.first;
       expect(elem.arguments.first.value, '\$userId');
     });
 
@@ -81,7 +81,7 @@ void main() {
       final parser = GLParser();
       parser.parse('query GetUser(\$id: ID!, \$limit: Int = 10) { user }',
           validate: false);
-      final q = parser.queries['GetUser']!;
+      final q = parser.queries[GLOperationKey('GetUser', GLQueryType.query)]!;
       expect(q.arguments.length, 2);
       expect(q.arguments.first.token, '\$id');
       expect(q.arguments.first.type.nullable, false);
@@ -91,21 +91,21 @@ void main() {
     test('query with directive', () {
       final parser = GLParser();
       parser.parse('query GetUser @deprecated { user }', validate: false);
-      final q = parser.queries['GetUser']!;
+      final q = parser.queries[GLOperationKey('GetUser', GLQueryType.query)]!;
       expect(q.getDirectives().first.token, '@deprecated');
     });
 
     test('query element with directive', () {
       final parser = GLParser();
       parser.parse('query GetUser { user @deprecated }', validate: false);
-      final elem = parser.queries['GetUser']!.elements.first;
+      final elem = parser.queries[GLOperationKey('GetUser', GLQueryType.query)]!.elements.first;
       expect(elem.getDirectives().first.token, '@deprecated');
     });
 
     test('subscription enforces single root field', () {
       final parser = GLParser();
       parser.parse('subscription OnUser { userUpdated }', validate: false);
-      expect(parser.queries['OnUser']!.elements.length, 1);
+      expect(parser.queries[GLOperationKey('OnUser', GLQueryType.subscription)]!.elements.length, 1);
     });
 
     test('full query with all features', () {
@@ -119,7 +119,7 @@ void main() {
           posts
         }
       ''', validate: false);
-      final q = parser.queries['GetUser']!;
+      final q = parser.queries[GLOperationKey('GetUser', GLQueryType.query)]!;
       expect(q.type, GLQueryType.query);
       expect(q.arguments.length, 2);
       expect(q.getDirectives().first.token, '@deprecated');

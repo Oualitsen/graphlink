@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:test/test.dart';
+import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 void main() async {
@@ -17,7 +18,7 @@ void main() async {
 
     expect(productInput.token, contains("MyProductInput"));
     //renamed responses
-    expect(g.queries["getAllProducts"]!.getGeneratedTypeDefinition().token,
+    expect(g.queries[GLOperationKey("getAllProducts", GLQueryType.query)]!.getGeneratedTypeDefinition().token,
         equals("MyProductResp"));
   });
 }
