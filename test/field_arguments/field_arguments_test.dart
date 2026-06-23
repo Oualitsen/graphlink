@@ -4,6 +4,7 @@ import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 import 'package:test/test.dart';
+import 'package:graphlink/src/model/gl_queries.dart';
 
 void main() {
   test("field arguments are propagated through the auto all-fields projection", () {
@@ -12,7 +13,7 @@ void main() {
     final g = GLParser(generateAllFieldsFragments: true, autoGenerateQueries: true);
     g.parse(text);
 
-    final def = g.queries["getAuthor"]!;
+    final def = g.queries[GLOperationKey("getAuthor", GLQueryType.query)]!;
     print(def.arguments.map((a) => a.token));
     expect(def.arguments.map((a) => a.token), containsAll(["\$id", "\$lastArticlesLimit"]));
 
@@ -31,7 +32,7 @@ void main() {
     final g = GLParser();
     g.parse(text);
 
-    final def = g.queries["getAuthor"]!;
+    final def = g.queries[GLOperationKey("getAuthor", GLQueryType.query)]!;
     expect(def.arguments.map((a) => a.token).toList(), ["\$id", "\$limit"]);
 
     final serializer = GLGraphqlSerializer(g, false);
@@ -45,7 +46,7 @@ void main() {
     final g = GLParser();
     g.parse(text);
 
-    final def = g.queries["getAuthorWithNoArticles"]!;
+    final def = g.queries[GLOperationKey("getAuthorWithNoArticles", GLQueryType.query)]!;
     expect(def.arguments.map((a) => a.token).toList(), ["\$id"]);
     expect(def.arguments.map((a) => a.token), isNot(contains("\$limit")));
 

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:test/test.dart';
+import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 void main() async {
@@ -11,7 +12,7 @@ void main() async {
         .readAsStringSync();
     g.parse(text);
 
-    expect(g.queries["ProductQuery"]!.fragments(g).map((e) => e.token),
+    expect(g.queries[GLOperationKey("ProductQuery", GLQueryType.query)]!.fragments(g).map((e) => e.token),
         contains("ProductFragment"));
   });
 }

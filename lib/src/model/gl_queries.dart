@@ -15,6 +15,34 @@ import 'package:graphlink/src/utils.dart';
 
 enum GLQueryType { query, mutation, subscription }
 
+/// Composite key for the [GLParser.queries] map. An operation is uniquely
+/// identified by its field name *and* its operation type — a query and a
+/// mutation may legitimately share the same name (e.g. `transfer` as both a
+/// lookup query and an initiating mutation), so the field name alone is not a
+/// unique key.
+class GLOperationKey {
+  final String fieldName;
+  final GLQueryType type;
+
+  const GLOperationKey(this.fieldName, this.type);
+
+  GLOperationKey.of(GLQueryDefinition definition)
+      : fieldName = definition.token,
+        type = definition.type;
+
+  @override
+  bool operator ==(Object other) =>
+      other is GLOperationKey &&
+      other.fieldName == fieldName &&
+      other.type == type;
+
+  @override
+  int get hashCode => Object.hash(fieldName, type);
+
+  @override
+  String toString() => '$fieldName(${type.name})';
+}
+
 class GLQueryDefinition extends GLToken with GLDirectivesMixin {
   /// Operation variables keyed by their `$`-token, preserving declaration order
   /// (Dart `Map` literals/insertion preserve order). Kept private so lookups go

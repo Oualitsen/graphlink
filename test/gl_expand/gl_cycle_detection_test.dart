@@ -1,4 +1,5 @@
 import 'package:test/test.dart';
+import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/gl_expand_grammar_extension.dart';
@@ -208,7 +209,7 @@ type Query { getPost(id: ID!): Post! }
   group('generated fragment nullability', () {
     // Helper: walks response type → field → projected type.
     GLTypeDefinition projected(GLParser g, String query, String field) {
-      final response = g.queries[query]!.getGeneratedTypeDefinition();
+      final response = g.queries[GLOperationKey(query, GLQueryType.query)]!.getGeneratedTypeDefinition();
       final f = response.fields.firstWhere((f) => f.name.token == field);
       return g.projectedTypes[f.type.inlineType.token]!;
     }

@@ -39,7 +39,7 @@ fragment PFrag on Product{
     }
 }
 
-query getProduct {
+query getProduct2 {
     getProduct {
          ...AddrFrag
     }

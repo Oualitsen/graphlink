@@ -284,9 +284,10 @@ extension GLValidationExtension on GLParser {
     }
   }
 
-  void checkQueryDefinition(TokenInfo tokenInfo) {
-    if (queries.containsKey(tokenInfo.token)) {
-      throw ParseException("Query ${tokenInfo.token} has already been declared",
+  void checkQueryDefinition(TokenInfo tokenInfo, GLQueryType type) {
+    if (queries.containsKey(GLOperationKey(tokenInfo.token, type))) {
+      throw ParseException(
+          "${type.name} ${tokenInfo.token} has already been declared",
           info: tokenInfo);
     }
   }
@@ -525,17 +526,8 @@ extension GLValidationExtension on GLParser {
   }
 
   void addQueryDefinition(GLQueryDefinition definition) {
-    checkQueryDefinition(definition.tokenInfo);
-    queries[definition.token] = definition;
-  }
-
-  void addQueryDefinitionSkipIfExists(GLQueryDefinition definition) {
-    if (queries.containsKey(definition.token)) {
-      logger.i(
-          "${definition.type} ${definition.tokenInfo} is already defined, skipping generation");
-      return;
-    }
-    queries[definition.token] = definition;
+    checkQueryDefinition(definition.tokenInfo, definition.type);
+    queries[GLOperationKey.of(definition)] = definition;
   }
 
   void handleRepositories([bool check = true]) {

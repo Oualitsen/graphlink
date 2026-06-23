@@ -162,7 +162,7 @@ class GLParser {
   final Map<String, GLTypeDefinition> types = {};
   final Map<String, GLInterfaceDefinition> interfaces = {};
   final Map<String, GLRepository> repositories = {};
-  final Map<String, GLQueryDefinition> queries = {};
+  final Map<GLOperationKey, GLQueryDefinition> queries = {};
   final Map<String, GLEnumDefinition> enums = {};
   final Map<String, GLTypeDefinition> projectedTypes = {};
   final Map<String, GLInterfaceDefinition> projectedInterfaces = {};

@@ -1,4 +1,5 @@
 import 'package:test/test.dart';
+import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
@@ -11,7 +12,7 @@ GLParser parseAuto(String schema, {int defaultExpandDepth = 1}) => GLParser(
 
 /// Returns the projected type produced for [queryField] inside query [queryName].
 GLTypeDefinition projectedFor(GLParser g, String queryName, String queryField) {
-  final response = g.queries[queryName]!.getGeneratedTypeDefinition();
+  final response = g.queries[GLOperationKey(queryName, GLQueryType.query)]!.getGeneratedTypeDefinition();
   final field = response.fields.firstWhere((f) => f.name.token == queryField);
   return g.projectedTypes[field.type.inlineType.token]!;
 }

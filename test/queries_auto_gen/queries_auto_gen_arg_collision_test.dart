@@ -1,4 +1,5 @@
 import 'package:test/test.dart';
+import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 const _nonScalarSchema = '''
@@ -112,7 +113,7 @@ void main() {
         generateAllFieldsFragments: true, autoGenerateQueries: true);
     g.parse(_unionSchema);
 
-    final query = g.queries['getContainer']!;
+    final query = g.queries[GLOperationKey('getContainer', GLQueryType.query)]!;
     final argsByName = {for (var a in query.arguments) a.token: a.type.token};
 
     expect(argsByName[r'$itemsPage'], equals('Int'),
@@ -126,7 +127,7 @@ void main() {
         generateAllFieldsFragments: true, autoGenerateQueries: true);
     g.parse(_nonScalarSchema);
 
-    final query = g.queries['getNode']!;
+    final query = g.queries[GLOperationKey('getNode', GLQueryType.query)]!;
     final argsByName = {for (var a in query.arguments) a.token: a.type.token};
 
     expect(argsByName[r'$searchOrder'], equals('OrderInput'),
@@ -140,7 +141,7 @@ void main() {
         generateAllFieldsFragments: true, autoGenerateQueries: true);
     g.parse(_scalarSchema);
 
-    final query = g.queries['getNode']!;
+    final query = g.queries[GLOperationKey('getNode', GLQueryType.query)]!;
     final argsByName = {for (var a in query.arguments) a.token: a.type.token};
 
     expect(argsByName[r'$itemsPage'], equals('Int'),
@@ -155,7 +156,7 @@ void main() {
         generateAllFieldsFragments: true, autoGenerateQueries: true);
     g.parse(_nullabilityMergeSchema);
 
-    final query = g.queries['getNode']!;
+    final query = g.queries[GLOperationKey('getNode', GLQueryType.query)]!;
     final args = {for (var a in query.arguments) a.token: a};
 
     // only one variable — merged from Int and Int!
@@ -172,7 +173,7 @@ void main() {
         generateAllFieldsFragments: true, autoGenerateQueries: true);
     g.parse(_listNamingSchema);
 
-    final query = g.queries['getContainer']!;
+    final query = g.queries[GLOperationKey('getContainer', GLQueryType.query)]!;
     final argsByName = {for (var a in query.arguments) a.token: a.type.token};
 
     expect(argsByName[r'$aIds'], equals('String'), reason: '[String] → \$aIds');
