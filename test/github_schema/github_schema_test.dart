@@ -34,10 +34,7 @@ void main() {
         autoGenerateQueries: true,
         defaultAlias: 'data',
       );
-      final sw = Stopwatch()..start();
       parser.parse(schema);
-      sw.stop();
-      print('Parse took: ${sw.elapsedMilliseconds}ms');
       serializer = DartClientSerializer(
         parser,
         DartSerializer(parser, importPrefix: '', generateJsonMethods: true),

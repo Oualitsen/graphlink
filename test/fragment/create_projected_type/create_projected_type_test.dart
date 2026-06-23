@@ -1,6 +1,7 @@
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
+import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 final GLParser g = GLParser();
@@ -25,7 +26,7 @@ void main() async {
 
 ''');
 
-    var block = g.queries['getPerson']!.elements.first.block!;
+    var block = g.queries[GLOperationKey('getPerson', GLQueryType.query)]!.elements.first.block!;
     var type = g.getType("Person".toToken());
     var newType = g.createProjectedType(
         type: type,

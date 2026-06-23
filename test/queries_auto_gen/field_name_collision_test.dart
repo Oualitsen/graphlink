@@ -1,4 +1,5 @@
 import 'package:test/test.dart';
+import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 /// Reproduction + guard for the GitLab-schema variable collision.
@@ -79,7 +80,7 @@ void main() {
 
     g.parse(_autoGenSchema);
 
-    final query = g.queries['repository']!;
+    final query = g.queries[GLOperationKey('repository', GLQueryType.query)]!;
     final argsByName = {for (var a in query.arguments) a.token: a.type.token};
 
     // Ambiguous: associatedItems.orderBy resolves to two incompatible input
@@ -105,7 +106,7 @@ void main() {
 
     g.parse(_explicitMultiRootSchema);
 
-    final query = g.queries['getBoth']!;
+    final query = g.queries[GLOperationKey('getBoth', GLQueryType.query)]!;
     final argsByName = {for (var a in query.arguments) a.token: a.type.token};
 
     // Author-declared root variables survive untouched.

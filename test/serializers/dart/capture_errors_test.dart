@@ -3,6 +3,7 @@ import 'package:graphlink/src/capture_errors_utils.dart';
 import 'package:graphlink/src/serializers/client_serializers/dart_client_serializer.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
+import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 
@@ -50,8 +51,8 @@ type Subscription { userAdded: User! @glCaptureErrors }
     late GLParser g;
     setUpAll(() => g = _parse(_schema));
 
-    test('returns true for annotated query', () => expect(g.queries['getUser']!.isCaptureErrors(g), isTrue));
-    test('returns false for non-annotated query', () => expect(g.queries['listUsers']!.isCaptureErrors(g), isFalse));
+    test('returns true for annotated query', () => expect(g.queries[GLOperationKey('getUser', GLQueryType.query)]!.isCaptureErrors(g), isTrue));
+    test('returns false for non-annotated query', () => expect(g.queries[GLOperationKey('listUsers', GLQueryType.query)]!.isCaptureErrors(g), isFalse));
 
     test('returns true for all operations when global flag is set', () {
       const schema = '''
@@ -60,8 +61,8 @@ type Query    { getUser: User! }
 type Mutation { deleteUser(id: ID!): Boolean! }
 ''';
       final g2 = _parse(schema, captureErrors: true);
-      expect(g2.queries['getUser']!.isCaptureErrors(g2), isTrue);
-      expect(g2.queries['deleteUser']!.isCaptureErrors(g2), isTrue);
+      expect(g2.queries[GLOperationKey('getUser', GLQueryType.query)]!.isCaptureErrors(g2), isTrue);
+      expect(g2.queries[GLOperationKey('deleteUser', GLQueryType.mutation)]!.isCaptureErrors(g2), isTrue);
     });
   });
 
@@ -70,11 +71,11 @@ type Mutation { deleteUser(id: ID!): Boolean! }
     setUpAll(() => g = _parse(_schema));
 
     test('has correct name', () {
-      expect(g.queries['getUser']!.getFullResponseTypeDefinition(g).token, equals('GetUserFullResponse'));
+      expect(g.queries[GLOperationKey('getUser', GLQueryType.query)]!.getFullResponseTypeDefinition(g).token, equals('GetUserFullResponse'));
     });
 
     test('has nullable data field typed as the regular response', () {
-      final dataField = g.queries['getUser']!
+      final dataField = g.queries[GLOperationKey('getUser', GLQueryType.query)]!
           .getFullResponseTypeDefinition(g)
           .getSerializableFields(g.mode)
           .firstWhere((f) => f.name.token == 'data');
@@ -83,7 +84,7 @@ type Mutation { deleteUser(id: ID!): Boolean! }
     });
 
     test('has nullable errors field', () {
-      final errorsField = g.queries['getUser']!
+      final errorsField = g.queries[GLOperationKey('getUser', GLQueryType.query)]!
           .getFullResponseTypeDefinition(g)
           .getSerializableFields(g.mode)
           .firstWhere((f) => f.name.token == 'errors');
@@ -91,7 +92,7 @@ type Mutation { deleteUser(id: ID!): Boolean! }
     });
 
     test('regular Response is unmodified — no errors field', () {
-      final fieldNames = g.queries['getUser']!
+      final fieldNames = g.queries[GLOperationKey('getUser', GLQueryType.query)]!
           .getGeneratedTypeDefinition()
           .getSerializableFields(g.mode)
           .map((f) => f.name.token);

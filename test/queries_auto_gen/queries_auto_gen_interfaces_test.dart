@@ -4,6 +4,7 @@ import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:graphlink/src/serializers/typescript_serializer.dart';
 import 'package:test/test.dart';
+import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 final GLParser g = GLParser();
@@ -18,8 +19,8 @@ void main() async {
 
     g.parse(text);
 
-    expect(g.queries.keys, contains("getProduct"));
-    var getProduct = g.queries["getProduct"]!;
+    expect(g.queries.keys.map((k) => k.fieldName), contains("getProduct"));
+    var getProduct = g.queries[GLOperationKey("getProduct", GLQueryType.query)]!;
 
     expect(getProduct.tokenInfo.token, equals("getProduct"));
 

@@ -1,4 +1,5 @@
 import 'package:test/test.dart';
+import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/exceptions/parse_exception.dart';
@@ -63,7 +64,7 @@ void main() {
 
   /// Navigate: query → response type → field by name → its projected type.
   GLTypeDefinition fieldType(GLParser g, String queryName, String fieldName) {
-    final responseType = g.queries[queryName]!.getGeneratedTypeDefinition();
+    final responseType = g.queries[GLOperationKey(queryName, GLQueryType.query)]!.getGeneratedTypeDefinition();
     final field =
         responseType.fields.firstWhere((f) => f.name.token == fieldName);
     return g.projectedTypes[field.type.inlineType.token]!;

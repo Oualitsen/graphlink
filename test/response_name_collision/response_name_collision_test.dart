@@ -1,4 +1,5 @@
 import 'package:test/test.dart';
+import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
@@ -32,7 +33,7 @@ void main() {
 
     // `vulnerability` would default to `VulnerabilityResponse`, which clashes
     // with the declared type, so it falls back to `<Field><Operation>Response`.
-    final wrapper = g.queries['vulnerability']!.getGeneratedTypeDefinition();
+    final wrapper = g.queries[GLOperationKey('vulnerability', GLQueryType.query)]!.getGeneratedTypeDefinition();
     expect(wrapper.token, 'VulnerabilityQueryResponse');
 
     // The user-declared type keeps its own name, untouched.

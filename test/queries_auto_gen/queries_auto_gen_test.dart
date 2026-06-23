@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:test/test.dart';
+import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 final GLParser g = GLParser();
@@ -17,8 +18,8 @@ void main() async {
     g.parse(text);
 
     expect(
-        g.queries.keys,
+        g.queries.keys.map((k) => k.fieldName),
         containsAll(
-            ["getProduct", "findProucts", "addProduct", "countProducts"]));
+            ["getProduct","getProduct2", "findProucts", "addProduct", "countProducts"]));
   });
 }
