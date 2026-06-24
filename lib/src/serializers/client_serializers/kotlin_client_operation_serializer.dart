@@ -185,7 +185,10 @@ class KotlinClientOperationSerializer {
 
     var staticIndex = 0;
     for (final arg in uploadArgs) {
-      final name = arg.dartArgumentName;
+      // `name` is the Kotlin parameter identifier; `wireName` is the GraphQL
+      // variable name used as the path into the `variables` JSON.
+      final name = arg.codeName;
+      final wireName = arg.dartArgumentName;
       if (arg.type.isList) {
         body.addAll([
           _ctx.codeGenUtils.forEachLoop(
@@ -193,7 +196,7 @@ class KotlinClientOperationSerializer {
             iterable: '0 until $name.size',
             statements: [
               '${_ctx.svFiles}[(_slot + _i).toString()] = $name[_i]',
-              '${_ctx.svFileMap}[(_slot + _i).toString()] = listOf("variables.$name.\$_i")',
+              '${_ctx.svFileMap}[(_slot + _i).toString()] = listOf("variables.$wireName.\$_i")',
             ],
           ),
           '_slot += $name.size',
@@ -201,13 +204,13 @@ class KotlinClientOperationSerializer {
       } else if (hasListArg) {
         body.addAll([
           '${_ctx.svFiles}[_slot.toString()] = $name',
-          '${_ctx.svFileMap}[_slot.toString()] = listOf("variables.$name")',
+          '${_ctx.svFileMap}[_slot.toString()] = listOf("variables.$wireName")',
           '_slot++',
         ]);
       } else {
         body.addAll([
           '${_ctx.svFiles}["$staticIndex"] = $name',
-          '${_ctx.svFileMap}["$staticIndex"] = listOf("variables.$name")',
+          '${_ctx.svFileMap}["$staticIndex"] = listOf("variables.$wireName")',
         ]);
         staticIndex++;
       }
@@ -223,7 +226,7 @@ class KotlinClientOperationSerializer {
     ]);
 
     final argsNoProgress = getArguments(def);
-    final argNamesNoProgress = def.arguments.map((e) => e.dartArgumentName).join(', ');
+    final argNamesNoProgress = def.arguments.map((e) => e.codeName).join(', ');
     final argsWithProgress = [...argsNoProgress, 'onProgress: UploadProgressCallback?'];
 
     final noProgressBody = _ctx.codeGenUtils.block([
@@ -286,7 +289,7 @@ class KotlinClientOperationSerializer {
     final uploadNames = _ctx.grammar.uploadScalarNames;
     final entries = def.arguments.map((e) {
       if (uploadNames.contains(e.type.firstType.token)) {
-        return '"${e.dartArgumentName}" to ${e.type.isList ? 'MutableList(${e.dartArgumentName}.size) { null }' : 'null'}';
+        return '"${e.dartArgumentName}" to ${e.type.isList ? 'MutableList(${e.codeName}.size) { null }' : 'null'}';
       }
       return '"${e.dartArgumentName}" to ${_serializeArgumentValue(def, e.token, container)}';
     }).join(', ');
@@ -297,10 +300,10 @@ class KotlinClientOperationSerializer {
     final arg = def.findByName(argName);
     if (_ctx.grammar.uploadScalarNames.contains(arg.type.firstType.token)) {
       return arg.type.isList
-          ? 'MutableList(${arg.dartArgumentName}.size) { null }'
+          ? 'MutableList(${arg.codeName}.size) { null }'
           : 'null';
     }
-    return _callToJson(arg.dartArgumentName, arg.type, 0);
+    return _callToJson(arg.codeName, arg.type, 0);
   }
 
   String _callToJson(String variable, GLType type, int depth) {
@@ -378,7 +381,7 @@ class KotlinClientOperationSerializer {
   List<String> getArguments(GLQueryDefinition def) {
     return def.arguments.map((e) {
       final type = _resolveArgType(e);
-      final name = e.dartArgumentName;
+      final name = e.codeName;
       if (e.defaultValue != null) {
         final lit = _ctx.serializer.serializeDefaultLiteral(e.type, e.defaultValue!.value);
         return '$name: $type = $lit';

@@ -41,7 +41,7 @@ abstract class JvmSpringControllerSerializerBase {
         var queryType = ctrl.getTypeByFieldName(method.name.token)!;
         method.addDirective(_createResolverDirective(queryType));
         for (var arg in method.arguments) {
-          arg.addDirective(_createArgumentDirective());
+          arg.addDirective(_createArgumentDirective(arg));
         }
       }
     }
@@ -73,13 +73,17 @@ abstract class JvmSpringControllerSerializerBase {
         generated: true);
   }
 
-  GLDirectiveValue _createArgumentDirective() {
+  GLDirectiveValue _createArgumentDirective(GLArgumentDefinition arg) {
     return GLDirectiveValue(
         "_gqController".toToken(),
         [],
         [
           GLArgumentValue(glAnnotation.toToken(), true),
           GLArgumentValue(glClass.toToken(), "@Argument"),
+          // Spring binds @Argument by parameter name; when the name was
+          // sanitized for a keyword, pin the binding to the original wire name.
+          if (arg.codeName != arg.bareName)
+            GLArgumentValue("name".toToken(), arg.bareName),
           GLArgumentValue(glImport.toToken(), SpringImports.gqlArgument),
           GLArgumentValue(glOnServer.toToken(), true),
         ],
@@ -181,7 +185,7 @@ abstract class JvmSpringControllerSerializerBase {
   }
 
   String serializeArg(GLArgumentDefinition arg, GLToken context) {
-    return "${resolveArgType(arg, context)} ${arg.tokenInfo}";
+    return "${resolveArgType(arg, context)} ${arg.codeName}";
   }
 
   // ── Abstract ───────────────────────────────────────────────────────────────

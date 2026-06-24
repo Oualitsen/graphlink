@@ -87,7 +87,7 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
 
     var args = method.arguments.map((arg) {
       final argDecorators = serializer.serializeDecorators(arg.getDirectives()).trim();
-      final decl = '${arg.token}: ${resolveArgType(arg, context)}';
+      final decl = '${arg.codeName}: ${resolveArgType(arg, context)}';
       if (argDecorators.isNotEmpty) {
         return '$argDecorators $decl';
       }
@@ -100,7 +100,7 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
       args.add('dataFetchingEnvironment: DataFetchingEnvironment');
     }
 
-    var serviceArgs = method.arguments.map((arg) => arg.tokenInfo.token).toList();
+    var serviceArgs = method.arguments.map((arg) => arg.codeName).toList();
     if (injectFetchingEnv) {
       serviceArgs.add('dataFetchingEnvironment');
     }
@@ -189,7 +189,7 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
 
     final statement = StringBuffer('$serviceInstanceName.${mapping.key}(value');
     for (var arg in mapping.field.arguments) {
-      statement.write(', ${arg.tokenInfo}');
+      statement.write(', ${arg.codeName}');
     }
     if (injectDataFetching || mapping.field.hasDirective(glReturnsProjection)) {
       statement.write(', dataFetchingEnvironment');
@@ -264,7 +264,7 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
     final args = [_getMappingArgument(mapping, context)];
     for (var arg in mapping.field.arguments) {
       context.addImport(SpringImports.gqlArgument);
-      args.add('@Argument ${arg.tokenInfo}: ${resolveArgType(arg, context)}');
+      args.add('${_argumentAnnotation(arg)} ${arg.codeName}: ${resolveArgType(arg, context)}');
     }
     if (injectDataFetching || mapping.field.hasDirective(glReturnsProjection)) {
       context.addImport(SpringImports.gqlDataFetchingEnvironment);
@@ -299,7 +299,7 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
   String serializeServiceMappingImplMethodHeader(GLSchemaMapping mapping, GLToken context) {
     final args = [_getMappingArgument(mapping, context)];
     for (var arg in mapping.field.arguments) {
-      args.add('${arg.tokenInfo}: ${resolveArgType(arg, context)}');
+      args.add('${arg.codeName}: ${resolveArgType(arg, context)}');
     }
     if (injectDataFetching || mapping.field.hasDirective(glReturnsProjection)) {
       context.addImport(SpringImports.gqlDataFetchingEnvironment);
@@ -312,8 +312,15 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
 
   @override
   String serializeArg(GLArgumentDefinition arg, GLToken context) {
-    return '${arg.tokenInfo}: ${resolveArgType(arg, context)}';
+    return '${arg.codeName}: ${resolveArgType(arg, context)}';
   }
+
+  /// `@Argument`, pinned to the wire name when the param was sanitized for a
+  /// keyword so Spring still binds the correct GraphQL argument.
+  String _argumentAnnotation(GLArgumentDefinition arg) =>
+      arg.codeName != arg.bareName
+          ? '@Argument(name = "${arg.bareName}")'
+          : '@Argument';
 
   // ── Arg type resolution ────────────────────────────────────────────────────
 

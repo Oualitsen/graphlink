@@ -1,4 +1,5 @@
 import 'package:graphlink/src/exceptions/parse_exception.dart';
+import 'package:graphlink/src/gl_grammar_keyword_extension.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_fragment.dart';
@@ -215,7 +216,14 @@ class GLParser {
   /// so they don't collide; see `_argumentValuesForField`.
   final Lazy<Set<String>> ambiguousArgKeysCache = Lazy();
 
+  /// Reserved keywords of the target language. After parsing, any field/argument
+  /// whose GraphQL name collides with one of these is given a safe identifier
+  /// via [GLField.codeName] (see [_assignCodeNames]). The original name remains
+  /// the canonical token used for lookups, JSON keys, and GraphQL wire text.
+  final Set<String> reservedWords;
+
   GLParser({
+    this.reservedWords = const {},
     this.generateAllFieldsFragments = false,
     this.nullableFieldsRequired = false,
     this.autoGenerateQueries = false,
@@ -265,9 +273,14 @@ class GLParser {
   /// Runs [fn], accumulates its duration, and logs only when the step is slow
   /// enough to matter (see [_slowStepThresholdMs]). Used to profile the
   /// per-step pipeline in client mode without flooding the log.
+  ///
+  /// Timing is currently disabled (early return). A proper opt-in progress /
+  /// profiling facility is designed in `plans/progress_printing.md` and should
+  /// replace this ad-hoc hook.
   void _timed(String name, void Function() fn) {
     fn();
     return;
+    // ignore: dead_code
     final sw = Stopwatch()..start();
     fn();
     sw.stop();
@@ -349,6 +362,10 @@ class GLParser {
       populateServerProjections();
       applyServerLenientNullability();
     }
+    // Last step: sanitize identifiers that collide with target-language
+    // keywords. Runs here (not in doParse) so projected types/interfaces built
+    // above are covered too.
+    assignCodeNames();
   }
 
   void addSchemaMapping(GLSchemaMapping mapping) {
