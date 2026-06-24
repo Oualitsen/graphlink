@@ -66,7 +66,8 @@ class DartSerializer extends GLSerializer {
             statements: [
               codeGenUtils.switchStatement(expression: "this", cases: [
                 ...def.values.map((val) => DartCaseStatement(
-                    caseValue: val.token, statement: 'return "${val.token}";'))
+                    caseValue: val.codeName,
+                    statement: 'return "${val.token}";'))
               ])
             ])
         .ident());
@@ -85,7 +86,7 @@ class DartSerializer extends GLSerializer {
                   cases: [
                     ...def.values.map((val) => DartCaseStatement(
                         caseValue: '"${val.token}"',
-                        statement: 'return ${val.token};'))
+                        statement: 'return ${val.codeName};'))
                   ],
                   defaultStatements:
                       ['throw ArgumentError("Invalid ${def.token}: \$value");'])
@@ -99,16 +100,16 @@ class DartSerializer extends GLSerializer {
   String doSerializeEnumValue(GLEnumValue value) {
     var decorators = serializeDecorators(value.getDirectives(), joiner: " ");
     if (decorators.isEmpty) {
-      return value.value.token;
+      return value.codeName;
     } else {
-      return "$decorators ${value.value.token}";
+      return "$decorators ${value.codeName}";
     }
   }
 
   @override
   String doSerializeField(GLField def, bool immutable, bool isTypeField) {
     final type = def.type;
-    final name = def.name;
+    final name = def.codeName;
     final forceNullable = isTypeField && (def.hasInculeOrSkipDiretives);
     final builder = StringBuffer(serializeDecorators(def.getDirectives()));
     if (immutable) {
@@ -168,7 +169,7 @@ class DartSerializer extends GLSerializer {
     final params = [
       ...plan.requiredParams.map(
         (f) =>
-            'required ${serializeType(f.targetField.type, false)} ${f.targetField.name.token}',
+            'required ${serializeType(f.targetField.type, false)} ${f.targetField.codeName}',
       ),
       ...plan.defaultParams.map(
         (f) =>
@@ -180,14 +181,14 @@ class DartSerializer extends GLSerializer {
       ...plan.autoMapped.map((f) {
         final suffix =
             _callToMapping(f.sourceField!.type, f.targetField.type, 0);
-        return '${f.targetField.name.token}: ${f.sourceField!.name.token}$suffix';
+        return '${f.targetField.codeName}: ${f.sourceField!.codeName}$suffix';
       }),
       ...plan.defaultParams.map(
         (f) =>
-            '${f.targetField.name.token}: ${f.sourceField!.name.token} ?? default${f.targetField.name.token.firstUp}',
+            '${f.targetField.codeName}: ${f.sourceField!.codeName} ?? default${f.targetField.name.token.firstUp}',
       ),
       ...plan.requiredParams.map(
-        (f) => '${f.targetField.name.token}: ${f.targetField.name.token}',
+        (f) => '${f.targetField.codeName}: ${f.targetField.codeName}',
       ),
     ];
 
@@ -206,31 +207,31 @@ class DartSerializer extends GLSerializer {
     final targetVar = targetType.firstLow;
 
     final autoMappedAssignments = plan.autoMapped.map((f) {
-      final variable = '$targetVar.${f.targetField.name.token}';
+      final variable = '$targetVar.${f.targetField.codeName}';
       final expr = _callFromMapping(variable, f.sourceField!.type.firstType.token, f.targetField.type, 0);
-      return '${f.sourceField!.name.token}: $expr';
+      return '${f.sourceField!.codeName}: $expr';
     });
 
     final nullableListDefaultParams = plan.nullableListDefaults.map((f) =>
         '${serializeType(f.sourceField!.type, false)} default${f.sourceField!.name.token.firstUp} = const []');
     final nullableListAssignments = plan.nullableListDefaults.map((f) {
-      final variable = '$targetVar.${f.targetField.name.token}';
+      final variable = '$targetVar.${f.targetField.codeName}';
       final expr = _callFromMapping(variable, f.sourceField!.type.firstType.token, f.targetField.type, 0);
-      return '${f.sourceField!.name.token}: $expr ?? default${f.sourceField!.name.token.firstUp}';
+      return '${f.sourceField!.codeName}: $expr ?? default${f.sourceField!.name.token.firstUp}';
     });
 
     final promotedParams = plan.promoted.map(
-      (f) => 'required ${serializeType(f.sourceField!.type, false)} ${f.sourceField!.name.token}',
+      (f) => 'required ${serializeType(f.sourceField!.type, false)} ${f.sourceField!.codeName}',
     );
     final promotedAssignments = plan.promoted.map(
-      (f) => '${f.sourceField!.name.token}: ${f.sourceField!.name.token}',
+      (f) => '${f.sourceField!.codeName}: ${f.sourceField!.codeName}',
     );
 
     final inputOnlyParams = plan.inputOnly.map(
-      (f) => '${f.type.nullable ? '' : 'required '}${serializeType(f.type, false)} ${f.name.token}',
+      (f) => '${f.type.nullable ? '' : 'required '}${serializeType(f.type, false)} ${f.codeName}',
     );
     final inputOnlyAssignments = plan.inputOnly.map(
-      (f) => '${f.name.token}: ${f.name.token}',
+      (f) => '${f.codeName}: ${f.codeName}',
     );
 
     return codeGenUtils.createMethod(
@@ -320,7 +321,7 @@ class DartSerializer extends GLSerializer {
     }
     if (value is String) {
       if (grammar.enums.containsKey(type.token)) {
-        return '${type.token}.$value';
+        return '${type.token}.${grammar.enumConstantName(type.token, value)}';
       }
       // quoted string — strip surrounding quotes, emit as Dart single-quoted string
       final content = value.startsWith('"') && value.endsWith('"')
@@ -333,12 +334,12 @@ class DartSerializer extends GLSerializer {
 
   String toConstructorDeclaration(GLField field) {
     if (grammar.nullableFieldsRequired || (!field.type.nullable && field.initialValue == null)) {
-      return "required this.${field.name}";
+      return "required this.${field.codeName}";
     } else if (field.initialValue != null) {
       final lit = serializeDefaultLiteral(field.type, field.initialValue, needsConst: true);
-      return "this.${field.name} = $lit";
+      return "this.${field.codeName} = $lit";
     } else {
-      return "this.${field.name}";
+      return "this.${field.codeName}";
     }
   }
 
@@ -382,14 +383,16 @@ class DartSerializer extends GLSerializer {
   }
 
   String fieldToJson(GLField field) {
+    // Wire key keeps the original GraphQL name; value reads the safe identifier.
     var buffer = StringBuffer("'${field.name}': ");
     var toJosnCall = callToJson(field, field.type, 0);
-    buffer.write("${field.name}${toJosnCall}");
+    buffer.write("${field.codeName}${toJosnCall}");
     return buffer.toString();
   }
 
   String fieldFromJson(GLField field) {
-    var buffer = StringBuffer('${field.name}: ');
+    // Constructor param uses the safe identifier; json lookup uses the wire key.
+    var buffer = StringBuffer('${field.codeName}: ');
     var toJosnCall =
         callFromJson("json['${field.name}']", field, field.type, 0);
     buffer.write(toJosnCall);
@@ -632,7 +635,7 @@ class DartSerializer extends GLSerializer {
 
   String serializeGetterDeclaration(GLField field) {
     final forceNullable = field.hasInculeOrSkipDiretives;
-    return """${serializeType(field.type, forceNullable)} get ${field.name}""";
+    return """${serializeType(field.type, forceNullable)} get ${field.codeName}""";
   }
 
   @override

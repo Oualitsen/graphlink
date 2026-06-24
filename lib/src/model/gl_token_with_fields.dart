@@ -99,6 +99,31 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
     return _fieldNames;
   }
 
+  /// Resolves a target-language-safe identifier for [name]. If [name] is not a
+  /// reserved keyword it is returned unchanged. Otherwise an underscore is
+  /// appended (`default` -> `default_`); if that still clashes with another
+  /// field on this type, a numeric suffix is added (`default_2`, `default_3`,
+  /// ...) until the result is unique among [fieldNames].
+  String resolveCodeName(String name, Set<String> reservedWords) {
+    if (!reservedWords.contains(name)) return name;
+    var candidate = "${name}_";
+    var counter = 2;
+    while (fieldNames.contains(candidate)) {
+      candidate = "${name}_$counter";
+      counter++;
+    }
+    return candidate;
+  }
+
+  /// Populates [GLField.codeName] for every field, rewriting any field whose
+  /// name collides with a reserved keyword in the target language.
+  void assignCodeNames(Set<String> reservedWords) {
+    if (reservedWords.isEmpty) return;
+    for (var field in fields) {
+      field.codeName = resolveCodeName(field.name.token, reservedWords);
+    }
+  }
+
   // Caches the two common cases (client/server, skipGenerated=false).
   // The rare skipGenerated=true path (used during Java annotation emission)
   // is not cached since it is never on the hot path.

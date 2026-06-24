@@ -133,7 +133,7 @@ class JavaSerializer extends GLSerializer {
     }
     if (value is String) {
       if (grammar.enums.containsKey(type.token)) {
-        return '${type.token}.$value';
+        return '${type.token}.${grammar.enumConstantName(type.token, value)}';
       }
       final content = value.startsWith('"') && value.endsWith('"')
           ? value.substring(1, value.length - 1)
@@ -173,14 +173,38 @@ class JavaSerializer extends GLSerializer {
     return buffer.toString();
   }
 
+  /// True when any constant was renamed for keyword safety. In that case
+  /// `name()` / `valueOf()` would leak the sanitized identifier onto the wire,
+  /// so toJson/fromJson must map explicitly to the original GraphQL value.
+  bool _enumSanitized(GLEnumDefinition def) =>
+      def.values.any((v) => v.codeName != v.value.token);
+
   String serializeToJsonForEnum(GLEnumDefinition def) {
     if (!generateJsonMethods) {
       return "";
     }
+    if (!_enumSanitized(def)) {
+      return codeGenUtils.createMethod(
+        returnType: "public String",
+        methodName: "toJson",
+        statements: ["return name();"],
+      );
+    }
     return codeGenUtils.createMethod(
       returnType: "public String",
       methodName: "toJson",
-      statements: ["return name();"],
+      statements: [
+        codeGenUtils.switchStatement(
+          expression: "this",
+          cases: [
+            ...def.values.map((v) => JavaCaseStatement(
+                caseValue: v.codeName, statement: 'return "${v.value.token}";'))
+          ],
+          defaultStatements: [
+            'throw new IllegalArgumentException("Invalid ${def.token}: " + this);'
+          ],
+        )
+      ],
     );
   }
 
@@ -188,13 +212,34 @@ class JavaSerializer extends GLSerializer {
     if (!generateJsonMethods) {
       return "";
     }
-    def.addImport(JavaImports.optional);
+    if (!_enumSanitized(def)) {
+      def.addImport(JavaImports.optional);
+      return codeGenUtils.createMethod(
+        returnType: "public static ${def.token}",
+        methodName: "fromJson",
+        arguments: ["String value"],
+        statements: [
+          "return Optional.ofNullable(value).map(${def.token}::valueOf).orElse(null);"
+        ],
+      );
+    }
     return codeGenUtils.createMethod(
       returnType: "public static ${def.token}",
       methodName: "fromJson",
       arguments: ["String value"],
       statements: [
-        "return Optional.ofNullable(value).map(${def.token}::valueOf).orElse(null);"
+        "if (value == null) return null;",
+        codeGenUtils.switchStatement(
+          expression: "value",
+          cases: [
+            ...def.values.map((v) => JavaCaseStatement(
+                caseValue: '"${v.value.token}"',
+                statement: 'return ${v.codeName};'))
+          ],
+          defaultStatements: [
+            'throw new IllegalArgumentException("Invalid ${def.token}: " + value);'
+          ],
+        )
       ],
     );
   }
@@ -203,16 +248,16 @@ class JavaSerializer extends GLSerializer {
   String doSerializeEnumValue(GLEnumValue value) {
     var decorators = serializeDecorators(value.getDirectives(), joiner: " ");
     if (decorators.isEmpty) {
-      return value.value.token;
+      return value.codeName;
     } else {
-      return "$decorators ${value.value.token}";
+      return "$decorators ${value.codeName}";
     }
   }
 
   @override
   String doSerializeField(GLField def, bool immutable, bool isTypeField) {
     final type = def.type;
-    final name = def.name;
+    final name = def.codeName;
     final forceNullable = isTypeField && (def.hasInculeOrSkipDiretives);
     var buffer = StringBuffer();
     var decorators = serializeDecorators(def.getDirectives(), joiner: "\n");
@@ -247,7 +292,7 @@ class JavaSerializer extends GLSerializer {
   String serializeArgumentField(GLField def,
       {bool withDecorators = false, String decoratorJoiner = "\n", bool isTypeField = false}) {
     final type = def.type;
-    final name = def.name;
+    final name = def.codeName;
     final hasInculeOrSkipDiretives = def.hasInculeOrSkipDiretives;
     final forceNullable = isTypeField
         ? (hasInculeOrSkipDiretives)
@@ -455,7 +500,7 @@ class JavaSerializer extends GLSerializer {
 
     final params = [
       ...plan.requiredParams.map(
-        (f) => '${serializeType(f.targetField.type, false)} ${f.targetField.name.token}',
+        (f) => '${serializeType(f.targetField.type, false)} ${f.targetField.codeName}',
       ),
       ...plan.defaultParams.map(
         (f) => '${serializeType(f.targetField.type, false)} default${f.targetField.name.token.firstUp}',
@@ -488,7 +533,7 @@ class JavaSerializer extends GLSerializer {
           final getter = _getterFieldName(f.sourceField!, true);
           constructorArgs.add('$getter != null ? $getter : default${f.targetField.name.token.firstUp}');
         } else if (requiredByTarget.containsKey(name)) {
-          constructorArgs.add(name);
+          constructorArgs.add(tf.codeName);
         }
       }
 
@@ -512,14 +557,14 @@ class JavaSerializer extends GLSerializer {
       ...plan.autoMapped.map((f) {
         final getter = _getterFieldName(f.sourceField!, true);
         final expr = _toMappingExpr(getter, f.sourceField!.type, f.targetField.type, 0, def);
-        return '.${f.targetField.name.token}($expr)';
+        return '.${f.targetField.codeName}($expr)';
       }),
       ...plan.defaultParams.map((f) {
         final getter = _getterFieldName(f.sourceField!, true);
-        return '.${f.targetField.name.token}($getter != null ? $getter : default${f.targetField.name.token.firstUp})';
+        return '.${f.targetField.codeName}($getter != null ? $getter : default${f.targetField.name.token.firstUp})';
       }),
       ...plan.requiredParams.map(
-        (f) => '.${f.targetField.name.token}(${f.targetField.name.token})',
+        (f) => '.${f.targetField.codeName}(${f.targetField.codeName})',
       ),
     ];
 
@@ -544,11 +589,11 @@ class JavaSerializer extends GLSerializer {
         '${serializeType(f.sourceField!.type, false)} default${f.sourceField!.name.token.firstUp}');
 
     final promotedParams = plan.promoted.map(
-      (f) => '${serializeType(f.sourceField!.type, false)} ${f.sourceField!.name.token}',
+      (f) => '${serializeType(f.sourceField!.type, false)} ${f.sourceField!.codeName}',
     );
 
     final inputOnlyParams = plan.inputOnly.map(
-      (f) => '${serializeType(f.type, false)} ${f.name.token}',
+      (f) => '${serializeType(f.type, false)} ${f.codeName}',
     );
 
     if (plan.promoted.any((f) => f.sourceField!.type.isList) ||
@@ -576,7 +621,7 @@ class JavaSerializer extends GLSerializer {
         final expr = _fromMappingExpr(sourceExpr, f.sourceField!.type.firstType.token, f.targetField.type, 0, def);
         constructorArgs.add('$expr != null ? $expr : default${f.sourceField!.name.token.firstUp}');
       } else if (promotedNames.contains(fieldName) || inputOnlyNames.contains(fieldName)) {
-        constructorArgs.add(fieldName);
+        constructorArgs.add(field.codeName);
       }
     }
 
@@ -667,7 +712,7 @@ class JavaSerializer extends GLSerializer {
   String _fieldToJson(GLField field, GLToken context) {
     var buffer = StringBuffer();
     var toJosnCall =
-        callToJson(field, field.type, field.name.token, 0, context);
+        callToJson(field, field.type, field.codeName, 0, context);
     buffer.write(toJosnCall);
     return buffer.toString();
   }
@@ -700,7 +745,7 @@ class JavaSerializer extends GLSerializer {
     if (checkForNulls) {
       var checkingFields = fields
           .where((e) => !e.type.nullable && e.initialValue == null && !_isPrimitiveType(e.type))
-          .map((e) => "Objects.requireNonNull(${e.name});")
+          .map((e) => "Objects.requireNonNull(${e.codeName});")
           .toList();
 
       if (checkingFields.isNotEmpty) {
@@ -730,9 +775,9 @@ class JavaSerializer extends GLSerializer {
               fields.map((e) {
                 if (!isTypeField && e.initialValue != null) {
                   final lit = serializeDefaultLiteral(e.type, e.initialValue);
-                  return "this.${e.name} = ${e.name} != null ? ${e.name} : $lit;";
+                  return "this.${e.codeName} = ${e.codeName} != null ? ${e.codeName} : $lit;";
                 }
-                return "this.${e.name} = ${e.name};";
+                return "this.${e.codeName} = ${e.codeName};";
               }).toList(),
               join: "\n",
               withParenthesis: false)
@@ -759,7 +804,8 @@ class JavaSerializer extends GLSerializer {
         .createClass(staticClass: true, className: 'Builder', statements: [
       ...fields.map((field) {
         final annotation = _isPrimitiveType(field.type) ? null : getJSpecifyAnnoation(field);
-        final copy = GLField(name: field.name, type: field.type, arguments: field.arguments, directives: []);
+        final copy = GLField(name: field.name, type: field.type, arguments: field.arguments, directives: [])
+          ..codeName = field.codeName;
         final serialized = serializeField(copy, false, !forInput);
         return annotation != null ? '$annotation\n$serialized' : serialized;
       }),
@@ -768,16 +814,16 @@ class JavaSerializer extends GLSerializer {
         final annotation = _isPrimitiveType(e.type) ? null : getJSpecifyAnnoation(e);
         return codeGenUtils.createMethod(
             returnType: 'public Builder',
-            methodName: e.name.token,
+            methodName: e.codeName,
             arguments: ['${annotation != null ? "$annotation " : ""}${serializeArgumentField(e)}'],
-            statements: ['this.${e.name} = ${e.name};', 'return this;']);
+            statements: ['this.${e.codeName} = ${e.codeName};', 'return this;']);
       }),
       "",
       codeGenUtils.createMethod(
           returnType: 'public $name',
           methodName: 'build',
           statements: [
-            'return new $name(${fields.map((e) => e.name).join(", ")});'
+            'return new $name(${fields.map((e) => e.codeName).join(", ")});'
           ]),
     ]));
 
@@ -799,8 +845,8 @@ class JavaSerializer extends GLSerializer {
           if (checkForNulls &&
               !field.type.nullable &&
               !_isPrimitiveType(field.type))
-            'Objects.requireNonNull(${field.name});',
-          'return ${field.name};'
+            'Objects.requireNonNull(${field.codeName});',
+          'return ${field.codeName};'
         ]);
         if(jspecifyAnnotation == null) {
           return result;
@@ -837,7 +883,7 @@ class JavaSerializer extends GLSerializer {
         withParenthesis: false,
         join: ", ");
     var result =
-        "${serializeType(field.type, forceNullable)} ${field.name}($args)";
+        "${serializeType(field.type, forceNullable)} ${field.codeName}($args)";
     if (modifier != null) {
       result = "$modifier $result";
     }
@@ -884,7 +930,7 @@ class JavaSerializer extends GLSerializer {
     }
     var result = returnType;
     if (asProperty) {
-      result = "$result ${field.name}";
+      result = "$result ${field.codeName}";
     } else {
       result =
           "$result ${_getterName(field.name.token, returnType == "boolean")}";
@@ -908,7 +954,8 @@ class JavaSerializer extends GLSerializer {
      final name = field.name.token;
      bool isRecord = forInput && inputsAsRecords || !forInput && typesAsRecords;
      if(isRecord) {
-      return "$name()";
+      // Record accessor is the bare component name, so it must be the safe id.
+      return "${field.codeName}()";
      }
     return '${_getterName(name, serializeType(field.type, !forInput) == "boolean")}()';
 
@@ -944,8 +991,8 @@ class JavaSerializer extends GLSerializer {
           if (checkForNulls &&
               !field.type.nullable &&
               !_isPrimitiveType(field.type))
-            'Objects.requireNonNull(${field.name});',
-          "this.${field.name} = ${field.name};"
+            'Objects.requireNonNull(${field.codeName});',
+          "this.${field.codeName} = ${field.codeName};"
         ]);
   }
 

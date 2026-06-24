@@ -16,6 +16,17 @@ class GLField with GLDirectivesMixin {
   List<GLArgumentDefinition>? _cachedArguments;
   bool? _containsSkipOrIncludeDirective;
 
+  /// The target-language-safe identifier for this field. Defaults to the raw
+  /// GraphQL name and is overridden by [GLTokenWithFields.assignCodeNames] when
+  /// the name clashes with a reserved keyword (e.g. `default` -> `default_`).
+  /// Only use this in *identifier* positions; JSON keys and GraphQL query text
+  /// must keep [name].
+  String? _codeName;
+
+  String get codeName => _codeName ?? name.token;
+
+  set codeName(String value) => _codeName = value;
+
   GLField({
     required this.name,
     required this.type,

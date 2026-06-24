@@ -85,9 +85,9 @@ class KotlinSerializer extends GLSerializer {
     final keyword = _keyword(immutable);
     final nullable = def.type.nullable || forceNullable;
     if (nullable) {
-      return '$keyword ${def.name}: $type = null';
+      return '$keyword ${def.codeName}: $type = null';
     }
-    return '$keyword ${def.name}: $type';
+    return '$keyword ${def.codeName}: $type';
   }
 
   // ── Enum ────────────────────────────────────────────────────────────────────
@@ -97,19 +97,41 @@ class KotlinSerializer extends GLSerializer {
     final values = def.values.map(doSerializeEnumValue).toList();
     final body = <String>[];
 
+    // When a constant was renamed for keyword safety, `name` / `valueOf` would
+    // expose the sanitized identifier on the wire. Emit an explicit mapping so
+    // the wire string stays the original GraphQL value.
+    final sanitized = def.values.any((v) => v.codeName != v.value.token);
+
     if (generateJsonMethods) {
-      body.add(codeGenUtils.companionObject([
-        'fun fromJson(value: String?): ${def.token}? = value?.let { valueOf(it) }',
-      ]));
-      body.add('');
-      body.add('fun toJson(): String = name');
+      if (sanitized) {
+        final toCases =
+            def.values.map((v) => '${v.codeName} -> "${v.value.token}"');
+        final fromCases =
+            def.values.map((v) => '"${v.value.token}" -> ${v.codeName}');
+        body.add('fun toJson(): String = when (this) {');
+        body.add(toCases.map((c) => '    $c').join('\n'));
+        body.add('}');
+        body.add('');
+        body.add(codeGenUtils.companionObject([
+          'fun fromJson(value: String?): ${def.token}? = when (value) {',
+          fromCases.map((c) => '    $c').join('\n'),
+          '    else -> null',
+          '}',
+        ]));
+      } else {
+        body.add(codeGenUtils.companionObject([
+          'fun fromJson(value: String?): ${def.token}? = value?.let { valueOf(it) }',
+        ]));
+        body.add('');
+        body.add('fun toJson(): String = name');
+      }
     }
 
     return codeGenUtils.enumClass(name: def.token, values: values, body: body.isEmpty ? null : body);
   }
 
   @override
-  String doSerializeEnumValue(GLEnumValue value) => value.value.token;
+  String doSerializeEnumValue(GLEnumValue value) => value.codeName;
 
   // ── Input ───────────────────────────────────────────────────────────────────
 
@@ -171,7 +193,7 @@ class KotlinSerializer extends GLSerializer {
     }
     if (value is String) {
       if (grammar.enums.containsKey(type.token)) {
-        return '${type.token}.$value';
+        return '${type.token}.${grammar.enumConstantName(type.token, value)}';
       }
       final content = value.startsWith('"') && value.endsWith('"')
           ? value.substring(1, value.length - 1)
@@ -185,12 +207,12 @@ class KotlinSerializer extends GLSerializer {
     final type = serializeType(f.type, false);
     final keyword = _keyword(inputsAsDataClass);
     if (f.initialValue != null) {
-      return '$keyword ${f.name}: $type = ${serializeDefaultLiteral(f.type, f.initialValue)}';
+      return '$keyword ${f.codeName}: $type = ${serializeDefaultLiteral(f.type, f.initialValue)}';
     }
     if (f.type.nullable) {
-      return '$keyword ${f.name}: $type = null';
+      return '$keyword ${f.codeName}: $type = null';
     }
-    return '$keyword ${f.name}: $type';
+    return '$keyword ${f.codeName}: $type';
   }
 
   // ── Type definition ─────────────────────────────────────────────────────────
@@ -213,9 +235,9 @@ class KotlinSerializer extends GLSerializer {
       final overrides = _fieldImplementsInterface(f, def);
       final prefix = overrides ? 'override $keyword' : keyword;
       if (f.type.nullable || forceNullable) {
-        return '$prefix ${f.name}: $type = null';
+        return '$prefix ${f.codeName}: $type = null';
       }
-      return '$prefix ${f.name}: $type';
+      return '$prefix ${f.codeName}: $type';
     }).toList();
 
     final instanceMethods = <String>[];
@@ -266,7 +288,7 @@ class KotlinSerializer extends GLSerializer {
     final fields = def.getSerializableFields(grammar.mode);
     final fieldDecls = fields.map((f) {
       final forceNullable = f.hasInculeOrSkipDiretives;
-      return 'val ${f.name}: ${serializeType(f.type, forceNullable)}';
+      return 'val ${f.codeName}: ${serializeType(f.type, forceNullable)}';
     }).toList();
 
     final companionMethods = <String>[];
@@ -316,7 +338,7 @@ class KotlinSerializer extends GLSerializer {
 
   String _generateToJson(List<GLField> fields, GLToken context) {
     final entries = fields.map((f) {
-      return '"${f.name}" to ${_fieldToJsonExpr(f, f.type, f.name.token, 0)}';
+      return '"${f.name}" to ${_fieldToJsonExpr(f, f.type, f.codeName, 0)}';
     }).join(',\n        ');
     return 'fun toJson(): $_mapType = mapOf(\n        $entries,\n    )';
   }
@@ -339,7 +361,7 @@ class KotlinSerializer extends GLSerializer {
 
   String _generateFromJson(List<GLField> fields, String token, GLToken context) {
     final assignments = fields.map((f) {
-      return '    ${f.name} = ${_fromJsonExpr(f, f.type, 'map', 0, context)},';
+      return '    ${f.codeName} = ${_fromJsonExpr(f, f.type, 'map', 0, context)},';
     }).join('\n');
     return 'fun fromJson(map: $_mapType): $token = $token(\n$assignments\n)';
   }
@@ -391,8 +413,8 @@ class KotlinSerializer extends GLSerializer {
     if (fields.isEmpty) return [];
     context.addImport(KotlinImports.objects);
 
-    final conditions = fields.map((f) => '${f.name} == other.${f.name}').join(' && ');
-    final hashArgs = fields.map((f) => f.name.token).join(', ');
+    final conditions = fields.map((f) => '${f.codeName} == other.${f.codeName}').join(' && ');
+    final hashArgs = fields.map((f) => f.codeName).join(', ');
 
     final equalsMethod = codeGenUtils.method(
       returnType: 'Boolean',
@@ -430,7 +452,7 @@ class KotlinSerializer extends GLSerializer {
   String generateToMethod(GLInputDefinition def, String targetType, ToMappingPlan plan) {
     final params = [
       ...plan.requiredParams.map(
-        (f) => '${f.targetField.name.token}: ${serializeType(f.targetField.type, false)}',
+        (f) => '${f.targetField.codeName}: ${serializeType(f.targetField.type, false)}',
       ),
       ...plan.defaultParams.map(
         (f) => 'default${f.targetField.name.token.firstUp}: ${serializeType(f.targetField.type, false)}',
@@ -445,16 +467,17 @@ class KotlinSerializer extends GLSerializer {
 
     final args = <String>[];
     for (final tf in targetFields) {
-      final name = tf.name.token;
-      if (autoByTarget.containsKey(name)) {
-        final f = autoByTarget[name]!;
-        final getter = f.sourceField!.name.token;
+      final key = tf.name.token;
+      final name = tf.codeName;
+      if (autoByTarget.containsKey(key)) {
+        final f = autoByTarget[key]!;
+        final getter = f.sourceField!.codeName;
         args.add('$name = ${_toMappingExpr(getter, f.sourceField!.type, f.targetField.type, 0, def)}');
-      } else if (defaultByTarget.containsKey(name)) {
-        final f = defaultByTarget[name]!;
-        final getter = f.sourceField!.name.token;
+      } else if (defaultByTarget.containsKey(key)) {
+        final f = defaultByTarget[key]!;
+        final getter = f.sourceField!.codeName;
         args.add('$name = if ($getter != null) $getter else default${f.targetField.name.token.firstUp}');
-      } else if (requiredByTarget.containsKey(name)) {
+      } else if (requiredByTarget.containsKey(key)) {
         args.add('$name = $name');
       }
     }
@@ -469,10 +492,10 @@ class KotlinSerializer extends GLSerializer {
     final targetVar = targetType.firstLow;
 
     final promotedParams = plan.promoted.map(
-      (f) => '${f.sourceField!.name.token}: ${serializeType(f.sourceField!.type, false)}',
+      (f) => '${f.sourceField!.codeName}: ${serializeType(f.sourceField!.type, false)}',
     );
     final inputOnlyParams = plan.inputOnly.map(
-      (f) => '${f.name.token}: ${serializeType(f.type, false)}',
+      (f) => '${f.codeName}: ${serializeType(f.type, false)}',
     );
     final nullableListDefaultParams = plan.nullableListDefaults.map(
       (f) => 'default${f.sourceField!.name.token.firstUp}: ${serializeType(f.sourceField!.type, false)}',
@@ -486,18 +509,19 @@ class KotlinSerializer extends GLSerializer {
     final fields = def.getSerializableFields(grammar.mode);
     final args = <String>[];
     for (final field in fields) {
-      final fieldName = field.name.token;
-      if (autoBySource.containsKey(fieldName)) {
-        final f = autoBySource[fieldName]!;
-        final sourceExpr = '$targetVar.${f.targetField.name.token}';
-        args.add('$fieldName = ${_fromMappingExpr(sourceExpr, f.sourceField!.type.firstType.token, f.targetField.type, 0, def)}');
-      } else if (nullableListBySource.containsKey(fieldName)) {
-        final f = nullableListBySource[fieldName]!;
-        final sourceExpr = '$targetVar.${f.targetField.name.token}';
+      final key = field.name.token;
+      final name = field.codeName;
+      if (autoBySource.containsKey(key)) {
+        final f = autoBySource[key]!;
+        final sourceExpr = '$targetVar.${f.targetField.codeName}';
+        args.add('$name = ${_fromMappingExpr(sourceExpr, f.sourceField!.type.firstType.token, f.targetField.type, 0, def)}');
+      } else if (nullableListBySource.containsKey(key)) {
+        final f = nullableListBySource[key]!;
+        final sourceExpr = '$targetVar.${f.targetField.codeName}';
         final expr = _fromMappingExpr(sourceExpr, f.sourceField!.type.firstType.token, f.targetField.type, 0, def);
-        args.add('$fieldName = $expr ?: default${f.sourceField!.name.token.firstUp}');
-      } else if (promotedNames.contains(fieldName) || inputOnlyNames.contains(fieldName)) {
-        args.add('$fieldName = $fieldName');
+        args.add('$name = $expr ?: default${f.sourceField!.name.token.firstUp}');
+      } else if (promotedNames.contains(key) || inputOnlyNames.contains(key)) {
+        args.add('$name = $name');
       }
     }
 

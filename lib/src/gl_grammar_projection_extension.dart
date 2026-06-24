@@ -806,16 +806,33 @@ extension GLGrammarProjectionExtension on GLParser {
     var block = element.block;
     if (block != null) {
       var rootType = getType(element.returnType.inlineType.tokenInfo);
-      _collectFieldArgumentVariableTokens(rootType, block.projections, result);
+      _collectFieldArgumentVariableTokens(
+          rootType, block.projections, result, <String>{});
     }
     return result;
   }
 
-  void _collectFieldArgumentVariableTokens(GLTypeDefinition type,
-      Map<String, GLProjection> projectionMap, Set<String> result) {
+  void _collectFieldArgumentVariableTokens(
+      GLTypeDefinition type,
+      Map<String, GLProjection> projectionMap,
+      Set<String> result,
+      Set<String> visited) {
+    // Visited guard on (type, projection-block identity). `projectionMap` is a
+    // stable AST node, so the set of `$variable` tokens reachable from a given
+    // (type, block) pair is fixed. Because `result` accumulates globally, once
+    // a node has been walked its tokens are already collected — re-walking adds
+    // nothing, so skipping a revisit is safe (no per-node result to cache, so a
+    // visited set suffices; full memoization would be redundant here). This
+    // turns what was an exponential walk of the expanded selection DAG (and an
+    // infinite walk on cyclic types like GitLab's Project → … → Project) into a
+    // linear one, without changing the result.
+    final visitKey = '${type.token}#${identityHashCode(projectionMap)}';
+    if (!visited.add(visitKey)) return;
+
     if (type is GLInterfaceDefinition) {
       for (var impl in getTypesImplementing(type)) {
-        _collectFieldArgumentVariableTokens(impl, projectionMap, result);
+        _collectFieldArgumentVariableTokens(
+            impl, projectionMap, result, visited);
       }
       return;
     }
@@ -835,7 +852,7 @@ extension GLGrammarProjectionExtension on GLParser {
       if (projection.block != null && typeRequiresProjection(field.type)) {
         var subType = getType(field.type.inlineType.tokenInfo);
         _collectFieldArgumentVariableTokens(
-            subType, projection.block!.projections, result);
+            subType, projection.block!.projections, result, visited);
       }
     }
   }

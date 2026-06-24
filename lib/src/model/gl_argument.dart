@@ -20,6 +20,23 @@ class GLArgumentDefinition extends GLToken with GLDirectivesMixin {
   }
 
   String get dartArgumentName => tokenInfo.token.substring(1);
+
+  /// The argument's bare name (the variable token without the leading `$`).
+  /// This is the canonical wire name used as the GraphQL variable / variables
+  /// map key, and the base for [codeName].
+  String get bareName =>
+      tokenInfo.token.startsWith('\$') ? tokenInfo.token.substring(1) : tokenInfo.token;
+
+  /// Target-language-safe identifier for the generated parameter. Defaults to
+  /// [bareName] and is overridden by the parser's code-name pass when the name
+  /// collides with a reserved keyword (e.g. `default` -> `default_`). Only use
+  /// this in *identifier* positions; the variables-map key / GraphQL variable
+  /// must keep [bareName].
+  String? _codeName;
+
+  String get codeName => _codeName ?? bareName;
+
+  set codeName(String value) => _codeName = value;
 }
 
 ///

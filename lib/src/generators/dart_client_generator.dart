@@ -62,6 +62,7 @@ Future<Set<String>> generateDartClientClasses(
 
   final flutterConfig = dartConfig.flutter;
   if (flutterConfig != null && flutterConfig.generateTypes) {
+    
     final flutterSerializer = FlutterTypesSerializer(parser, serializer, flutterConfig, importPrefix);
 
     parser.enums.forEach((k, def) {
@@ -207,7 +208,7 @@ Future<Set<String>> generateDartClientClasses(
       }
     });
   }
- 
+
 
   final clientFiles = <String>[];
 
