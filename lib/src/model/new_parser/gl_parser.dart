@@ -117,6 +117,25 @@ class GLParser {
       {GLDirectiveScope.FIELD},
       false,
     ),
+    deprecatedDirective: GLDirectiveDefinition(
+      deprecatedDirective.toToken(),
+      [
+        GLArgumentDefinition(
+            "reason".toToken(), GLType("String".toToken(), false), [],
+            defaultValue: GLDefaultValue("No longer supported"))
+      ],
+      {GLDirectiveScope.FIELD_DEFINITION, GLDirectiveScope.ENUM_VALUE},
+      false,
+    ),
+    specifiedByDirective: GLDirectiveDefinition(
+      specifiedByDirective.toToken(),
+      [
+        GLArgumentDefinition(
+            "url".toToken(), GLType("String".toToken(), false), [])
+      ],
+      {GLDirectiveScope.SCALAR},
+      false,
+    ),
     glTypeNameDirective: GLDirectiveDefinition(
       glTypeNameDirective.toToken(),
       [
