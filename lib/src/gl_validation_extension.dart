@@ -544,23 +544,40 @@ extension GLValidationExtension on GLParser {
   }
 
   List<GLField> getUnionFields(GLUnionDefinition def) {
-    var fields = <String, int>{};
-    var result = <GLField>[];
-    def.typeNames
-        .map((e) => getType(e))
-        .expand((e) => e.getFields())
-        .forEach((e) {
-      var key = e.name.token;
-      if (fields.containsKey(key)) {
-        fields[key] = fields[key]! + 1;
-      } else {
-        fields[key] = 1;
+    final members = def.typeNames.map((e) => getType(e)).toList();
+    if (members.isEmpty) {
+      return [];
+    }
+    // A field is only promoted onto the union supertype when EVERY member
+    // declares a field with the same name, identical type, and identical
+    // argument signature. Matching by name alone would lift fields whose types
+    // diverge across members (e.g. `value: Boolean` vs `value: Int`), producing
+    // a getter contract that the members cannot satisfy — uncompilable output.
+    final result = <GLField>[];
+    for (final candidate in members.first.getFields()) {
+      final sharedByAll = members.skip(1).every((member) =>
+          member.getFields().any((f) => _unionFieldsMatch(candidate, f)));
+      if (sharedByAll) {
+        result.add(candidate);
       }
-      if (fields[key] == def.typeNames.length) {
-        result.add(e);
-      }
-    });
+    }
     return result;
+  }
+
+  /// Two fields are mergeable onto a union supertype only if name, type, and
+  /// argument signature all match. Type comparison is done both ways because
+  /// `GLType == GLListType` is asymmetric (a scalar can spuriously equal a list
+  /// in one direction).
+  bool _unionFieldsMatch(GLField a, GLField b) {
+    if (a.name.token != b.name.token) return false;
+    if (!(a.type == b.type && b.type == a.type)) return false;
+    if (a.arguments.length != b.arguments.length) return false;
+    for (final argA in a.arguments) {
+      final argB = b.getArgumentByName(argA.token);
+      if (argB == null) return false;
+      if (!(argA.type == argB.type && argB.type == argA.type)) return false;
+    }
+    return true;
   }
 
   void defineSchema(GLSchema schema) {
