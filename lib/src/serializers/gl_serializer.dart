@@ -50,7 +50,23 @@ abstract class GLSerializer {
   GLSerializer(this.grammar, {Map<String, String> typeMapOverrides = const {}, required this.importPrefix})
       : mode = grammar.mode {
     typeMap = {...defaultTypeMap, ...typeMapOverrides};
+    _applyUnknownScalarFallback();
     grammar.typeMap = typeMap;
+  }
+
+  /// Maps every custom scalar that has no explicit mapping to
+  /// `grammar.unknownScalarType`, so unrecognized scalars (e.g. `scalar UserId`)
+  /// are emitted as the configured target-language type instead of verbatim.
+  /// Scalars already resolved by [defaultTypeMap], user `typeMappings`, or an
+  /// `@glExternal` directive are left untouched — those take precedence.
+  void _applyUnknownScalarFallback() {
+    final fallback = grammar.unknownScalarType;
+    if (fallback == null) return;
+    for (final entry in grammar.scalars.entries) {
+      if (typeMap.containsKey(entry.key)) continue;
+      if (entry.value.getDirectiveByName(glExternal) != null) continue;
+      typeMap[entry.key] = fallback;
+    }
   }
 
   String serializeEnumDefinition(GLEnumDefinition def) {

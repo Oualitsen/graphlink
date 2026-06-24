@@ -1,6 +1,6 @@
 ---
 title: Configuration Reference — GraphLink Docs
-description: Complete reference for all GraphLink glink.json / glink.yaml options — schemaPaths, typeMappings, outputDir, clientConfig (Dart, Java, TypeScript, Kotlin), serverConfig (Spring Boot), and CLI flags.
+description: Complete reference for all GraphLink glink.json / glink.yaml options — schemaPaths, typeMappings, unknownScalarType, outputDir, clientConfig (Dart, Java, TypeScript, Kotlin), serverConfig (Spring Boot), and CLI flags.
 ---
 
 # Configuration Reference
@@ -16,6 +16,7 @@ Full reference for every option in `glink.json` / `glink.yaml`.
       "schemaPaths": ["schema/*.graphql"],
       "mode": "client",
       "typeMappings": { "ID": "String", "Float": "double" },
+      "unknownScalarType": "String",
       "outputDir": "lib/generated",
       "identityFields": ["id"],
       "disableCache": false,
@@ -33,6 +34,7 @@ Full reference for every option in `glink.json` / `glink.yaml`.
     typeMappings:
       ID: String
       Float: double
+    unknownScalarType: String
     outputDir: lib/generated
     identityFields:
       - id
@@ -46,6 +48,7 @@ Full reference for every option in `glink.json` / `glink.yaml`.
 | `schemaPaths` | `string[]` | — | **Required.** Glob patterns for schema files. Multiple patterns are supported — all matched files are merged into one schema. |
 | `mode` | `"client"` \| `"server"` | `"server"` | Controls which generator runs. `"client"` generates a typed client (Dart, Java, or TypeScript). `"server"` generates Spring Boot scaffolding. |
 | `typeMappings` | `Record<string, string>` | `{}` | Maps GraphQL scalar names to target-language types. Entries here override the defaults. Add entries for custom scalars. |
+| `unknownScalarType` | `string` \| `null` | `null` | Fallback target-language type for any custom scalar **not** covered by `typeMappings` or an `@glExternal` directive. Without it, an unmapped `scalar UserId` is emitted verbatim as `UserId`; set e.g. `"String"` (Dart), `"string"` (TypeScript), or `"Object"` (Java) to map all such scalars uniformly. Since one config targets a single language, write the value in that language's type syntax. `typeMappings` and `@glExternal` always take precedence. |
 | `outputDir` | `string` | `"src/main/java"` | Directory where generated files are written. Existing files are overwritten on every run. |
 | `identityFields` | `string[]` | `[]` | Field names treated as identity fields when generating `==` / `hashCode` methods (Dart and Java). Fields listed here are always included in equality regardless of `@glEqualsHashcode`. |
 | `disableCache` | `boolean` | `false` | When `true`, strips all `@glCache` and `@glCacheInvalidate` directives from the generated client — useful for debugging or environments where caching is handled externally. |
