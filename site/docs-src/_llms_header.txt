@@ -65,6 +65,22 @@ client and server code. Developers define their API once in a `.graphql` schema 
   re-exports all generated enums, inputs, types, and interfaces. One import covers the entire layer.
 - **Flutter UI widget generation.** The `flutter` config block generates display widgets for output
   types and form widgets for input types, with extensive layout and style options.
+- **Keyword-safe identifiers.** A GraphQL field, input field, argument, or enum value may legally be
+  named after a reserved word in the target language (`default`, `class`, `object`, `val`, ...).
+  GraphLink keeps two names per identifier: the wire name (the original GraphQL token, used in the
+  query string, JSON keys, and variables map — never altered) and the code name (a sanitized
+  identifier used only where the language needs one). On collision an underscore is appended
+  (`default` -> `default_`), with numeric resolution for further clashes (`default_2`). A leading
+  underscore is sanitized too, by moving it to the end (`_link` -> `link_`, and enum values
+  `_ACTIVE` -> `ACTIVE_`): in Dart a leading underscore means private, so this rule is applied across
+  all languages for consistency. The
+  serialization layer bridges the two so the wire format is unchanged. Enum values get the same
+  treatment: because Java/Kotlin couple a constant to its wire string via `valueOf()`/`name()`,
+  GraphLink emits an explicit `switch`/`when` mapping — but only when sanitization occurred, so
+  non-colliding enums keep their clean form. On Spring Boot, a sanitized resolver argument is pinned
+  to the wire name with `@Argument(name = "default")`. TypeScript needs no sanitization (reserved
+  words are legal as object properties and enum members). The whole mechanism is automatic with no
+  configuration.
 
 ## Supported targets (as of v4.8.0)
 

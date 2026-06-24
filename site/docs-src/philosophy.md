@@ -1,6 +1,6 @@
 ---
 title: Philosophy — GraphLink Docs
-description: The GraphLink philosophy — pure code generation, no runtime abstractions, schema as single source of truth, and only the fields the server actually needs.
+description: The GraphLink philosophy — pure code generation, no runtime abstractions, schema as single source of truth, keyword-safe identifiers, and only the fields the server actually needs.
 ---
 
 # The GraphLink Philosophy
@@ -76,6 +76,46 @@ System.out.println(res.getGetVehicle().getBrand());
 ```
 
 GraphLink generates a specific `getVehicle(String id)` method that returns a specific `GetVehicleResponse` type. The compiler knows the exact return type. There are no anonymous `TypeReference` subclasses, no unchecked casts, no `Map<String, Object>` to navigate manually.
+
+## Keyword-safe identifiers
+
+GraphQL has its own set of reserved words, and they rarely overlap with those of a target language. A field, input field, argument, or enum value may legally be named `default`, `class`, `object`, or `val` in your schema — all perfectly valid GraphQL, all reserved words in Dart, Java, or Kotlin. A naive generator would emit code that does not compile.
+
+GraphLink keeps two names for every identifier:
+
+- The **wire name** — the original GraphQL token. It is what travels in the query string, the JSON keys, and the variables map. It is never altered.
+- The **code name** — a sanitized identifier used only where the target language needs one. When the wire name collides with a reserved word, GraphLink appends an underscore (`default` → `default_`), resolving further collisions numerically (`default_2`, `default_3`).
+
+A **leading underscore** is sanitized the same way. In Dart a leading underscore means *private*, so a field named `_link` would be inaccessible and break the generated code. GraphLink moves the underscore to the end (`_link` → `link_`). The same applies to enum values (`_ACTIVE` → `ACTIVE_`). For consistency this rule is applied across **all** target languages, not just Dart — the wire name still keeps its leading underscore.
+
+The serialization layer bridges the two, so the wire format stays exactly as your schema declares it:
+
+```graphql title="Schema — a field named after a Dart/Java/Kotlin keyword"
+type Settings {
+  default: String
+  theme: String
+}
+```
+
+```dart title="Dart — identifier sanitized, JSON key untouched"
+class Settings {
+  final String? default_;
+  final String? theme;
+
+  Map<String, dynamic> toJson() => {
+        'default': default_,   // wire key stays "default"
+        'theme': theme,
+      };
+
+  Settings.fromJson(Map<String, dynamic> json)
+      : default_ = json['default'] as String?,
+        theme = json['theme'] as String?;
+}
+```
+
+Enum values get the same treatment. Because Java and Kotlin couple a constant's name to its wire string via `valueOf()` / `name()`, GraphLink emits an explicit `switch` / `when` mapping for the sanitized constants — but only when sanitization actually happened, so enums without keyword collisions keep their clean `name()` / `valueOf()` form. On the Spring Boot server, a sanitized resolver argument is pinned back to the wire name with `@Argument(name = "default")` so request binding still works.
+
+TypeScript needs none of this: its reserved words are legal as object property names and enum members, so identifiers are emitted verbatim. The whole mechanism is automatic — there is no configuration and nothing to opt into. Name a field after a keyword and the generated code simply compiles.
 
 ## Framework agnostic
 
