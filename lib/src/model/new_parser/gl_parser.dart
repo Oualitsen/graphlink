@@ -87,6 +87,12 @@ class GLParser {
   final Map<String, GLSchemaMapping> _schemaMappings = {};
 
   Map<String, String> typeMap = {};
+
+  /// Target-language type for custom scalars that are not explicitly mapped.
+  /// Sourced from `GeneratorConfig.unknownScalarType`; null disables the
+  /// fallback (scalars are emitted using their declared name).
+  String? unknownScalarType;
+
   late final CodeGenerationMode mode;
 
   static const directivesToSkip = [glTypeNameDirective, glEqualsHashcode];

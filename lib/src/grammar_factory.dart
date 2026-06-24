@@ -6,7 +6,8 @@ import 'package:graphlink/src/serializers/code_generation_mode.dart';
 GLParser createGrammar(GeneratorConfig config) {
   final mode = config.getMode();
   if (mode == CodeGenerationMode.server) {
-    return GLParser(mode: mode, identityFields: config.identityFields);
+    return GLParser(mode: mode, identityFields: config.identityFields)
+      ..unknownScalarType = config.unknownScalarType;
   }
   final lang = config.clientConfig!.language;
   return GLParser(
@@ -19,7 +20,7 @@ GLParser createGrammar(GeneratorConfig config) {
     defaultAlias: lang.defaultAlias,
     operationNameAsParameter: lang.operationNameAsParameter,
     captureErrors: lang.captureErrors,
-  );
+  )..unknownScalarType = config.unknownScalarType;
 }
 
 String? buildExtraGql(GLParser parser, GeneratorConfig config) {

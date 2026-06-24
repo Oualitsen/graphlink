@@ -98,6 +98,8 @@ Top-level
   outputDir        string    Directory where files are generated
   typeMappings     object    Scalar → language type mappings
                              e.g. { "ID": "String", "Float": "Double" }
+  unknownScalarType string   Target type for custom scalars not in typeMappings
+                             e.g. "String" (Dart), "string" (TS), "Object" (Java)
   identityFields   string[]  Fields used for equals/hashCode  e.g. ["id"]
 
 ━━ mode: client ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
