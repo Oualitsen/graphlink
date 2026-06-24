@@ -258,13 +258,17 @@ class JavaSerializer extends GLSerializer {
   @override
   String serializeFieldDeprecation(GLField field) {
     if (!field.isDeprecated) return '';
-    return "@Deprecated\n";
+    final reason = field.deprecationReason ?? 'No longer supported';
+    final safeReason = reason.replaceAll('*/', '*\\/').replaceAll(RegExp(r'[\r\n]+'), ' ');
+    return "/** @deprecated $safeReason */\n@Deprecated\n";
   }
 
   @override
   String serializeEnumValueDeprecation(GLEnumValue value) {
     if (!value.isDeprecated) return '';
-    return "@Deprecated";
+    final reason = value.deprecationReason ?? 'No longer supported';
+    final safeReason = reason.replaceAll('*/', '*\\/').replaceAll(RegExp(r'[\r\n]+'), ' ');
+    return "/** @deprecated $safeReason */ @Deprecated";
   }
 
   @override
