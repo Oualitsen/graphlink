@@ -37,4 +37,29 @@ void main() {
     // variables-map key stays the original (matches `\$default` in the query).
     expect(out, contains("'default':"));
   });
+
+  test("leading underscore argument: \$_links -> param links_", () {
+    const text = '''
+      type Product { id: ID! name: String! }
+      type Query { getProduct(_links: String!): Product }
+    ''';
+
+    final GLParser g = GLParser(
+      autoGenerateQueries: true,
+      generateAllFieldsFragments: true,
+      reservedWords: dartReservedWords,
+    );
+    g.parse(text);
+
+    final serializer = DartSerializer(g, importPrefix: "");
+    final clientSerializer = DartClientSerializer(g, serializer);
+    final out = clientSerializer.generateClient().toFileContent();
+
+    // method parameter: leading underscore moved to end.
+    expect(out, contains("required String links_"));
+    // variables-map key stays the original wire name.
+    expect(out, contains("'_links':"));
+    // should NOT have _links as a param name.
+    expect(out, isNot(contains("required String _links")));
+  });
 }
