@@ -66,6 +66,17 @@ class GLField with GLDirectivesMixin {
   bool get hasInculeOrSkipDiretives => _containsSkipOrIncludeDirective ??=
       getDirectives().where((d) => [includeDirective, skipDirective].contains(d.token)).isNotEmpty;
 
+  /// Whether this field is marked @deprecated.
+  bool get isDeprecated => getDirectiveByName(deprecatedDirective) != null;
+
+  /// The deprecation reason, defaulting to `"No longer supported"` per the GraphQL spec.
+  /// Returns `null` when the field is not deprecated.
+  String? get deprecationReason {
+    final d = getDirectiveByName(deprecatedDirective);
+    if (d == null) return null;
+    return d.getArgValueAsString("reason") ?? "No longer supported";
+  }
+
   /// Returns the target field name from @glMapField, or null if not declared.
   String? get mapFieldTo =>
       getDirectiveByName(glMapField)?.getArgValueAsString(glMapFieldTo);

@@ -98,12 +98,25 @@ class DartSerializer extends GLSerializer {
 
   @override
   String doSerializeEnumValue(GLEnumValue value) {
+    var deprecation = serializeEnumValueDeprecation(value);
     var decorators = serializeDecorators(value.getDirectives(), joiner: " ");
-    if (decorators.isEmpty) {
-      return value.codeName;
-    } else {
-      return "$decorators ${value.codeName}";
-    }
+    var parts = [deprecation, decorators, value.value.token].where((s) => s.isNotEmpty).join(" ");
+    // Clean up double spaces from empty deprecation or decorators.
+    return parts.replaceAll(RegExp(r'  +'), ' ').trim();
+  }
+
+  @override
+  String serializeFieldDeprecation(GLField field) {
+    if (!field.isDeprecated) return '';
+    final reason = field.deprecationReason ?? 'No longer supported';
+    return "@Deprecated('$reason')\n";
+  }
+
+  @override
+  String serializeEnumValueDeprecation(GLEnumValue value) {
+    if (!value.isDeprecated) return '';
+    final reason = value.deprecationReason ?? 'No longer supported';
+    return "@Deprecated('$reason')";
   }
 
   @override
