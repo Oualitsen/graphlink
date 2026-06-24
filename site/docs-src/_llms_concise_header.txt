@@ -53,6 +53,13 @@ client and server code. Developers define their API once in a `.graphql` schema 
   `data` and `errors` side by side instead of throwing. Dart, Java, TypeScript, and Kotlin.
 - **Barrel file generation.** Dart and TypeScript generators emit a barrel/index file that
   re-exports all generated types, inputs, and enums from a single import.
+- **Keyword-safe identifiers.** A GraphQL field, input field, argument, or enum value named after a
+  target-language reserved word (`default`, `class`, `object`, `val`, ...) is automatically sanitized
+  (`default` -> `default_`) while the original name is preserved on the wire (JSON keys, query string,
+  variables). A leading underscore is also sanitized by moving it to the end (`_link` -> `link_`, and
+  enum values `_ACTIVE` -> `ACTIVE_`), because in Dart a leading underscore means private — applied across all languages for consistency.
+  Enum constants and Spring `@Argument` bindings are pinned back to the wire name. Automatic,
+  no configuration. TypeScript needs no sanitization for reserved words (legal as properties).
 
 ## Supported targets (as of v4.8.0)
 
