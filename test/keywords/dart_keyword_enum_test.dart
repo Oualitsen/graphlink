@@ -58,4 +58,32 @@ void main() {
     expect(out, contains('case "default_":'));
     expect(out, contains('return default_;'));
   });
+
+  test("leading underscore enum value: _ACTIVE -> ACTIVE_", () {
+    const schema = '''
+      enum Status {
+        _ACTIVE
+        INACTIVE
+      }
+    ''';
+
+    final GLParser g = GLParser(reservedWords: dartReservedWords);
+    g.parse(schema);
+
+    final def = g.enums["Status"]!;
+    final serializer = DartSerializer(g, importPrefix: "");
+    final out = serializer.serializeEnumDefinition(def);
+
+    // enum constant: leading underscore moved to end.
+    expect(out, contains("ACTIVE_"));
+    expect(out, contains("INACTIVE"));
+
+    // toJson: returns the original wire string, not the sanitized identifier.
+    expect(out, contains('return "_ACTIVE";'));
+    expect(out, isNot(contains('return "ACTIVE_";')));
+
+    // fromJson: matches the original wire string, returns the safe constant.
+    expect(out, contains('case "_ACTIVE":'));
+    expect(out, contains('return ACTIVE_;'));
+  });
 }

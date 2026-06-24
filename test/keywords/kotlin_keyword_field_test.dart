@@ -103,4 +103,33 @@ void main() {
     expect(out, contains("val object_:"));
     expect(out, isNot(contains("val object:")));
   });
+
+  test("leading underscore: _links -> links_", () {
+    const schema = '''
+      input ProductInput {
+        _links: String
+        name: String
+      }
+    ''';
+
+    final GLParser g = GLParser(reservedWords: kotlinReservedWords);
+    g.parse(schema);
+
+    final input = g.inputs["ProductInput"]!;
+    final serializer =
+        KotlinSerializer(g, importPrefix: "", generateJsonMethods: true);
+    final out = serializer.doSerializeInputDefinition(input);
+
+    // property: leading underscore moved to end.
+    expect(out, contains("links_"));
+    expect(out, contains("name"));
+
+    // toJson: wire key stays `_links`.
+    expect(out, contains('"_links" to links_'));
+    expect(out, contains('"name" to name'));
+
+    // fromJson: wire key original, safe identifier.
+    expect(out, contains('links_ = '));
+    expect(out, contains('map["_links"]'));
+  });
 }
