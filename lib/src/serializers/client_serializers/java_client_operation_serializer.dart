@@ -172,7 +172,7 @@ String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
     if (_ctx.grammar.mutationHasUploads(def)) {
       final argsNoProgress = getArguments(def);
       final argNamesNoProgress =
-          def.arguments.map((e) => e.dartArgumentName).join(', ');
+          def.arguments.map((e) => e.codeName).join(', ');
       final argsWithProgress = [
         ...argsNoProgress,
         'UploadProgressCallback onProgress'
@@ -229,7 +229,10 @@ String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
 
     var staticIndex = 0;
     for (final arg in uploadArgs) {
-      final name = arg.dartArgumentName;
+      // `name` is the Java parameter identifier; `wireName` is the GraphQL
+      // variable name used as the path into the `variables` JSON.
+      final name = arg.codeName;
+      final wireName = arg.dartArgumentName;
       if (arg.type.isList) {
         statements.add(
           _ctx.codeGenUtils.forLoop(
@@ -238,7 +241,7 @@ String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
             increment: '_i++',
             statements: [
               '${_ctx.svFiles}.put(String.valueOf(_slot + _i), $name.get(_i));',
-              '${_ctx.svFileMap}.put(String.valueOf(_slot + _i), Arrays.asList("variables.$name." + _i));',
+              '${_ctx.svFileMap}.put(String.valueOf(_slot + _i), Arrays.asList("variables.$wireName." + _i));',
             ],
           ),
         );
@@ -246,13 +249,13 @@ String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
       } else if (hasListArg) {
         statements.addAll([
           '${_ctx.svFiles}.put(String.valueOf(_slot), $name);',
-          '${_ctx.svFileMap}.put(String.valueOf(_slot), Arrays.asList("variables.$name"));',
+          '${_ctx.svFileMap}.put(String.valueOf(_slot), Arrays.asList("variables.$wireName"));',
           '_slot++;',
         ]);
       } else {
         statements.addAll([
           '${_ctx.svFiles}.put("$staticIndex", $name);',
-          '${_ctx.svFileMap}.put("$staticIndex", Arrays.asList("variables.$name"));',
+          '${_ctx.svFileMap}.put("$staticIndex", Arrays.asList("variables.$wireName"));',
         ]);
         staticIndex++;
       }
@@ -310,8 +313,8 @@ String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
         .map((e) {
           final lit = _ctx.serializer.serializeDefaultLiteral(e.type, e.defaultValue!.value);
           return _ctx.codeGenUtils.ifStatement(
-            condition: '${e.dartArgumentName} == null',
-            ifBlockStatements: ['${e.dartArgumentName} = $lit;'],
+            condition: '${e.codeName} == null',
+            ifBlockStatements: ['${e.codeName} = $lit;'],
           );
         })
         .toList();
@@ -434,12 +437,12 @@ String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
       if (arg.type.isList) {
         container.imports
             .addAll([JavaImports.arrayList, JavaImports.collections]);
-        return 'new ArrayList<>(Collections.nCopies(${arg.dartArgumentName}.size(), null))';
+        return 'new ArrayList<>(Collections.nCopies(${arg.codeName}.size(), null))';
       } else {
         return 'null';
       }
     }
-    return _callToJson(arg.dartArgumentName, arg.type, 0, container);
+    return _callToJson(arg.codeName, arg.type, 0, container);
   }
 
   String _callToJson(String variableName, GLType type, int index,
@@ -472,7 +475,7 @@ String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
 
   List<String> getArguments(GLQueryDefinition def) {
     final result = def.arguments
-        .map((e) => '${_resolveArgType(e)} ${e.dartArgumentName}')
+        .map((e) => '${_resolveArgType(e)} ${e.codeName}')
         .toList();
     if (def.type == GLQueryType.subscription) {
       result.add(

@@ -66,5 +66,9 @@ Future<File> saveSource({
   if (!file.existsSync()) {
     file.createSync(recursive: true);
   }
-  return file.writeAsString(content);
+  // Write synchronously so each file is fully populated the instant it is
+  // generated, rather than left empty until a deferred Future.wait flushes
+  // thousands of concurrent writeAsString calls at the end.
+  file.writeAsStringSync(content);
+  return Future.value(file);
 }

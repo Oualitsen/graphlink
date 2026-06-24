@@ -448,6 +448,18 @@ extension GLValidationExtension on GLParser {
     return enums.containsKey(token);
   }
 
+  /// Maps a GraphQL enum value (the wire name, e.g. from a default literal) to
+  /// the keyword-safe constant identifier emitted in generated code. Falls back
+  /// to the wire name when the enum/value is unknown.
+  String enumConstantName(String enumToken, String wireValue) {
+    final def = enums[enumToken];
+    if (def == null) return wireValue;
+    for (final v in def.values) {
+      if (v.value.token == wireValue) return v.codeName;
+    }
+    return wireValue;
+  }
+
   bool isInput(String token) {
     return inputs.containsKey(token);
   }

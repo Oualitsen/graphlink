@@ -736,20 +736,23 @@ return $_svResult.data$dataSuffix;
     ];
 
     for (final arg in uploadArgs) {
-      final name = arg.dartArgumentName;
+      // `name` is the Dart parameter identifier; `wireName` is the GraphQL
+      // variable name used as the path into the `variables` JSON.
+      final name = arg.codeName;
+      final wireName = arg.dartArgumentName;
       if (arg.type.isList) {
         statements.add(codeGenUtils.forEachLoop(
           variable: '_i',
           iterable: 'Iterable.generate($name.length)',
           statements: [
-            "$_svMultipartMap['\${$_svSlot + _i}'] = ['variables.$name.\$_i'];",
+            "$_svMultipartMap['\${$_svSlot + _i}'] = ['variables.$wireName.\$_i'];",
             "$_svFileParts['\${$_svSlot + _i}'] = $_svUploadConverter($name[_i]);",
           ],
         ));
         statements.add('$_svSlot += $name.length;');
       } else {
         statements.addAll([
-          "$_svMultipartMap['\$$_svSlot'] = ['variables.$name'];",
+          "$_svMultipartMap['\$$_svSlot'] = ['variables.$wireName'];",
           "$_svFileParts['\$$_svSlot'] = $_svUploadConverter($name);",
           '$_svSlot++;',
         ]);
@@ -782,12 +785,12 @@ return $_svResult.data$dataSuffix;
     var arg = def.findByName(argName);
     if (_parser.uploadScalarNames.contains(arg.type.firstType.token)) {
       if(arg.type.isList) {
-        return '${arg.dartArgumentName}.map((e) => null).toList()';
+        return '${arg.codeName}.map((e) => null).toList()';
       } else {
         return 'null';
       }
     }
-    return _callToJson(arg.dartArgumentName, arg.type);
+    return _callToJson(arg.codeName, arg.type);
   }
 
   String _callToJson(String argName, GLType type) {
@@ -814,7 +817,7 @@ return $_svResult.data$dataSuffix;
   List<String> getArguments(GLQueryDefinition def) {
     final args = def.arguments.map((e) {
       final type = _resolveArgType(e);
-      final name = e.dartArgumentName;
+      final name = e.codeName;
       if (e.defaultValue != null) {
         final lit = serializer.serializeDefaultLiteral(e.type, e.defaultValue!.value, needsConst: true);
         return '$type $name = $lit';
