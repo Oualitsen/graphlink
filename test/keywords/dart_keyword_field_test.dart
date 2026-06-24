@@ -97,4 +97,82 @@ void main() {
     // wire key still original.
     expect(typeOut, contains("'operator': operator_,"));
   });
+
+  group("leading underscore", () {
+    test("_links -> links_ in decl/toJson/fromJson, wire stays _links", () {
+      const schema = '''
+        input ProductInput {
+          _links: String
+          name: String
+        }
+      ''';
+
+      final GLParser g = GLParser(reservedWords: dartReservedWords);
+      g.parse(schema);
+
+      final input = g.inputs["ProductInput"]!;
+      final serializer = DartSerializer(g, importPrefix: "");
+      final out = serializer.serializeInputDefinition(input);
+      final lines = out.split("\n").map((e) => e.trim());
+
+      // property: leading underscore moved to end.
+      expect(lines, contains("final String? links_;"));
+      expect(lines, contains("final String? name;"));
+
+      // toJson: wire key stays `_links`, value reads the safe identifier.
+      expect(lines, contains("'_links': links_,"));
+      expect(lines, contains("'name': name,"));
+
+      // fromJson: safe param name, original wire key.
+      expect(lines, contains("links_: json['_links'] as String?,"));
+      expect(lines, contains("name: json['name'] as String?,"));
+    });
+
+    test("_links collides with existing links_ -> links_2", () {
+      const schema = '''
+        input ProductInput {
+          _links: String
+          links_: String
+        }
+      ''';
+
+      final GLParser g = GLParser(reservedWords: dartReservedWords);
+      g.parse(schema);
+
+      final input = g.inputs["ProductInput"]!;
+      final serializer = DartSerializer(g, importPrefix: "");
+      final out = serializer.serializeInputDefinition(input);
+      final lines = out.split("\n").map((e) => e.trim());
+
+      expect(lines, contains("final String? links_2;"));
+      expect(lines, contains("final String? links_;"));
+      expect(lines, contains("'_links': links_2,"));
+      expect(lines, contains("'links_': links_,"));
+      expect(lines, contains("links_2: json['_links'] as String?,"));
+      expect(lines, contains("links_: json['links_'] as String?,"));
+    });
+
+    test("_default (leading underscore + keyword) -> default_", () {
+      const schema = '''
+        input FilterInput {
+          _default: String
+          name: String
+        }
+      ''';
+
+      final GLParser g = GLParser(reservedWords: dartReservedWords);
+      g.parse(schema);
+
+      final input = g.inputs["FilterInput"]!;
+      final serializer = DartSerializer(g, importPrefix: "");
+      final out = serializer.serializeInputDefinition(input);
+      final lines = out.split("\n").map((e) => e.trim());
+
+      // strip leading _ -> `default`, then keyword check -> `default_`.
+      expect(lines, contains("final String? default_;"));
+      // wire key stays `_default`.
+      expect(lines, contains("'_default': default_,"));
+      expect(lines, contains("default_: json['_default'] as String?,"));
+    });
+  });
 }

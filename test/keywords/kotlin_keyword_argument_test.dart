@@ -37,4 +37,30 @@ void main() {
     expect(out, contains("object_: String"));
     expect(out, contains('"object" to'));
   });
+
+  test("leading underscore argument: \$_links -> param links_", () {
+    const text = '''
+      type Product { id: ID! name: String! }
+      type Query { getProduct(_links: String!): Product }
+    ''';
+
+    final GLParser g = GLParser(
+      autoGenerateQueries: true,
+      generateAllFieldsFragments: true,
+      reservedWords: kotlinReservedWords,
+    );
+    g.parse(_preamble + text);
+
+    final serializer =
+        KotlinSerializer(g, importPrefix: 'com.example', generateJsonMethods: true);
+    final out = KotlinClientSerializer(g, serializer)
+            .getQueriesClass()
+            ?.toFileContent() ??
+        '';
+
+    // method parameter: leading underscore moved to end.
+    expect(out, contains("links_: String"));
+    // variables-map key stays the original.
+    expect(out, contains('"_links" to'));
+  });
 }

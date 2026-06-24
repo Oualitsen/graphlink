@@ -37,4 +37,29 @@ void main() {
     expect(out, contains("String default_"));
     expect(out, contains('.put("default"'));
   });
+
+  test("leading underscore argument: \$_links -> param links_", () {
+    const text = '''
+      type Product { id: ID! name: String! }
+      type Query { getProduct(_links: String!): Product }
+    ''';
+
+    final GLParser g = GLParser(
+      autoGenerateQueries: true,
+      generateAllFieldsFragments: true,
+      reservedWords: javaReservedWords,
+    );
+    g.parse(_preamble + text);
+
+    final serializer = JavaSerializer(g, importPrefix: "");
+    final out = JavaClientSerializer(g, serializer)
+            .getQueriesClass()
+            ?.toFileContent() ??
+        '';
+
+    // method parameter: leading underscore moved to end.
+    expect(out, contains("String links_"));
+    // variables-map key stays the original wire name.
+    expect(out, contains('.put("_links"'));
+  });
 }

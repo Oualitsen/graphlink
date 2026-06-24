@@ -53,4 +53,28 @@ void main() {
     expect(out, contains('"object"'));
     expect(out, contains('"object_"'));
   });
+
+  test("leading underscore enum value: _ACTIVE -> ACTIVE_", () {
+    const schema = '''
+      enum Status {
+        _ACTIVE
+        INACTIVE
+      }
+    ''';
+
+    final GLParser g = GLParser(reservedWords: kotlinReservedWords);
+    g.parse(schema);
+
+    final def = g.enums["Status"]!;
+    final serializer =
+        KotlinSerializer(g, importPrefix: "", generateJsonMethods: true);
+    final out = serializer.serializeEnumDefinition(def);
+
+    // enum constant: leading underscore moved to end.
+    expect(out, contains("ACTIVE_"));
+    expect(out, contains("INACTIVE"));
+
+    // the wire string `_ACTIVE` must still appear.
+    expect(out, contains('"_ACTIVE"'));
+  });
 }

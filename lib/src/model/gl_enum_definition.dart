@@ -23,18 +23,31 @@ class GLEnumDefinition extends GLExtensibleToken with GLDirectivesMixin {
   List<GLEnumValue> get values => _values.values.toList();
 
   /// Assigns a collision-free, keyword-safe [GLEnumValue.codeName] to each value
-  /// whose name is reserved in the target language. The original token stays the
-  /// wire string used in toJson/fromJson; only the emitted constant changes.
+  /// whose name is reserved in the target language or starts with a leading
+  /// underscore. The original token stays the wire string used in
+  /// toJson/fromJson; only the emitted constant changes.
   void assignCodeNames(Set<String> reservedWords) {
     if (reservedWords.isEmpty) return;
     final taken = _values.keys.toSet();
     for (final value in _values.values) {
       final name = value.value.token;
-      if (!reservedWords.contains(name)) continue;
-      var candidate = "${name}_";
+
+      // Compute the desired code name:
+      //   1. Strip leading underscore (_ACTIVE → ACTIVE_).
+      //   2. If reserved, append underscore.
+      var codeName = name.startsWith('_') ? '${name.substring(1)}_' : name;
+
+      // If unchanged and not reserved, skip.
+      if (codeName == name && !reservedWords.contains(name)) continue;
+
+      // Name was changed or is reserved — check for collisions.
+      if (reservedWords.contains(codeName)) {
+        codeName = '${codeName}_';
+      }
+      var candidate = codeName;
       var counter = 2;
       while (taken.contains(candidate)) {
-        candidate = "${name}_$counter";
+        candidate = '$codeName$counter';
         counter++;
       }
       value.codeName = candidate;

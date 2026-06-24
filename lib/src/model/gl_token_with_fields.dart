@@ -99,17 +99,39 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
     return _fieldNames;
   }
 
-  /// Resolves a target-language-safe identifier for [name]. If [name] is not a
-  /// reserved keyword it is returned unchanged. Otherwise an underscore is
-  /// appended (`default` -> `default_`); if that still clashes with another
-  /// field on this type, a numeric suffix is added (`default_2`, `default_3`,
-  /// ...) until the result is unique among [fieldNames].
+  /// Resolves a target-language-safe identifier for [name].
+  ///
+  /// Two transformations are applied (only when [reservedWords] is non-empty):
+  ///
+  /// 1. **Leading underscore** — if [name] starts with `_`, the underscore is
+  ///    moved to the end (`_links` → `links_`). This avoids emitting private
+  ///    identifiers in languages where `_` is a visibility modifier (Dart).
+  /// 2. **Reserved keyword** — if the resulting name is a reserved word, an
+  ///    underscore is appended (`default` → `default_`).
+  ///
+  /// When the candidate clashes with another field on the type, a numeric suffix
+  /// is added (`links_2`, `default_2`, …) until the result is unique among
+  /// [fieldNames].
   String resolveCodeName(String name, Set<String> reservedWords) {
-    if (!reservedWords.contains(name)) return name;
-    var candidate = "${name}_";
+    // Step 1: strip leading underscore (Dart privacy convention).
+    var codeName = name.startsWith('_') ? '${name.substring(1)}_' : name;
+
+    // Step 2: if the name is unchanged and not reserved, return as-is.
+    if (codeName == name && !reservedWords.contains(name)) return name;
+
+    // Step 3: the name was changed or is reserved — check for collisions.
+    if (!reservedWords.contains(codeName) && !fieldNames.contains(codeName)) {
+      return codeName;
+    }
+
+    // Step 4: disambiguate.
+    if (reservedWords.contains(codeName)) {
+      codeName = '${codeName}_';
+    }
     var counter = 2;
+    var candidate = codeName;
     while (fieldNames.contains(candidate)) {
-      candidate = "${name}_$counter";
+      candidate = '$codeName$counter';
       counter++;
     }
     return candidate;

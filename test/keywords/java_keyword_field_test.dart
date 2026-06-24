@@ -103,4 +103,32 @@ void main() {
 
     expect(out, contains("default_()"));
   });
+
+  test("leading underscore: _links -> links_", () {
+    const schema = '''
+      input ProductInput {
+        _links: String
+        name: String
+      }
+    ''';
+
+    final GLParser g = GLParser(reservedWords: javaReservedWords);
+    g.parse(schema);
+
+    final input = g.inputs["ProductInput"]!;
+    final serializer =
+        JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
+    final out = serializer.doSerializeInputDefinition(input);
+
+    // property: leading underscore moved to end.
+    expect(out, contains("String links_;"));
+    expect(out, contains("String name;"));
+
+    // toJson: wire key stays `_links`.
+    expect(out, contains('map.put("_links", links_)'));
+    expect(out, contains('map.put("name", name)'));
+
+    // fromJson: wire key original.
+    expect(out, contains('json.get("_links")'));
+  });
 }

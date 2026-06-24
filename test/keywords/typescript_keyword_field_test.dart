@@ -49,4 +49,25 @@ void main() {
     expect(out, isNot(contains("default_")));
     expect(out, contains("name"));
   });
+
+  test("leading underscore field name is preserved (no sanitization for TS)", () {
+    const schema = '''
+      input ProductInput {
+        _links: String
+        name: String
+      }
+    ''';
+
+    final GLParser g = GLParser(reservedWords: typescriptReservedWords);
+    g.parse(schema);
+
+    final input = g.inputs["ProductInput"]!;
+    final serializer = TypeScriptSerializer(g, importPrefix: "");
+    final out = serializer.doSerializeInputDefinition(input);
+
+    // TypeScript: leading underscore is fine, no rewrite.
+    expect(out, contains("_links"));
+    expect(out, isNot(contains("links_")));
+    expect(out, contains("name"));
+  });
 }

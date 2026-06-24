@@ -51,16 +51,30 @@ extension GLGrammarKeywordExtension on GLParser {
   }
 
   /// Resolves a collision-free, keyword-safe [GLArgumentDefinition.codeName] for
-  /// each argument whose bare name is reserved. Uniqueness is enforced against
-  /// the sibling argument names so generated parameter names never clash.
+  /// each argument whose bare name is reserved or starts with a leading
+  /// underscore. Uniqueness is enforced against the sibling argument names so
+  /// generated parameter names never clash.
   void _assignArgumentCodeNames(List<GLArgumentDefinition> args) {
     final taken = args.map((a) => a.bareName).toSet();
     for (final arg in args) {
-      if (!reservedWords.contains(arg.bareName)) continue;
-      var candidate = '${arg.bareName}_';
+      final bare = arg.bareName;
+
+      // Compute the desired code name:
+      //   1. Strip leading underscore (_links → links_).
+      //   2. If reserved, append underscore.
+      var codeName = bare.startsWith('_') ? '${bare.substring(1)}_' : bare;
+
+      // If unchanged and not reserved, skip.
+      if (codeName == bare && !reservedWords.contains(bare)) continue;
+
+      // Name was changed or is reserved — check for collisions.
+      if (reservedWords.contains(codeName)) {
+        codeName = '${codeName}_';
+      }
+      var candidate = codeName;
       var counter = 2;
       while (taken.contains(candidate)) {
-        candidate = '${arg.bareName}_$counter';
+        candidate = '$codeName$counter';
         counter++;
       }
       arg.codeName = candidate;
