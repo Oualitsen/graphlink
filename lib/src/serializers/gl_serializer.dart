@@ -93,11 +93,21 @@ abstract class GLSerializer {
     if (shouldSkipSerialization(directives: def.getDirectives(), mode: mode)) {
       return "";
     }
-    return doSerializeField(def, immutable, isTypeField);
+    return '${serializeFieldDeprecation(def)}${doSerializeField(def, immutable, isTypeField)}';
   }
 
   String doSerializeField(GLField def, bool immutable, bool isTypeField);
   String serializeType(GLType def, bool forceNullable);
+
+  /// Returns the language-specific deprecation marker for [field] (e.g. an
+  /// annotation or JSDoc comment), or an empty string if the field is not
+  /// marked `@deprecated`.
+  String serializeFieldDeprecation(GLField field);
+
+  /// Returns the language-specific deprecation marker for [value] (e.g. an
+  /// annotation or JSDoc comment), or an empty string if the enum value is not
+  /// marked `@deprecated`.
+  String serializeEnumValueDeprecation(GLEnumValue value);
 
   String serializeInputDefinition(GLInputDefinition def) {
     if (shouldSkipSerialization(directives: def.getDirectives(), mode: mode)) {

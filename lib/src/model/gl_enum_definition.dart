@@ -3,6 +3,7 @@ import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_directives_mixin.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/token_info.dart';
+import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 
 class GLEnumDefinition extends GLExtensibleToken with GLDirectivesMixin {
   final Map<String, GLEnumValue> _values = {};
@@ -75,5 +76,16 @@ class GLEnumValue extends GLToken with GLDirectivesMixin {
       required List<GLDirectiveValue> directives})
       : super(value) {
     directives.forEach(addDirective);
+  }
+
+  /// Whether this enum value is marked @deprecated.
+  bool get isDeprecated => getDirectiveByName(deprecatedDirective) != null;
+
+  /// The deprecation reason, defaulting to `"No longer supported"` per the GraphQL spec.
+  /// Returns `null` when the enum value is not deprecated.
+  String? get deprecationReason {
+    final d = getDirectiveByName(deprecatedDirective);
+    if (d == null) return null;
+    return d.getArgValueAsString("reason") ?? "No longer supported";
   }
 }

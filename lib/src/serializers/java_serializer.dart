@@ -246,12 +246,25 @@ class JavaSerializer extends GLSerializer {
 
   @override
   String doSerializeEnumValue(GLEnumValue value) {
+    var deprecation = serializeEnumValueDeprecation(value);
     var decorators = serializeDecorators(value.getDirectives(), joiner: " ");
-    if (decorators.isEmpty) {
-      return value.codeName;
+    if (deprecation.isEmpty && decorators.isEmpty) {
+      return value.value.token;
     } else {
-      return "$decorators ${value.codeName}";
+      return [deprecation, decorators, value.value.token].where((s) => s.isNotEmpty).join(" ");
     }
+  }
+
+  @override
+  String serializeFieldDeprecation(GLField field) {
+    if (!field.isDeprecated) return '';
+    return "@Deprecated\n";
+  }
+
+  @override
+  String serializeEnumValueDeprecation(GLEnumValue value) {
+    if (!value.isDeprecated) return '';
+    return "@Deprecated";
   }
 
   @override

@@ -42,6 +42,10 @@ const includeDirective = "@include";
 
 const skipDirective = "@skip";
 
+const deprecatedDirective = "@deprecated";
+
+const specifiedByDirective = "@specifiedBy";
+
 ///
 /// Generates a spring data jpa.
 ///
