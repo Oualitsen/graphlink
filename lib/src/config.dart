@@ -46,6 +46,12 @@ class GeneratorConfig {
   final String mode;
   final List<String> identityFields;
   Map<String, String>? typeMappings;
+
+  /// Target-language type used for any custom scalar that is not explicitly
+  /// mapped (via [typeMappings] or `@glExternal`). When null, unmapped custom
+  /// scalars are emitted verbatim using their declared scalar name.
+  /// e.g. `"String"` for Dart, `"string"` for TypeScript, `"Object"` for Java.
+  final String? unknownScalarType;
   final bool disableCache;
   final String outputDir;
   final ServerConfig? serverConfig;
@@ -60,6 +66,7 @@ class GeneratorConfig {
     required this.identityFields,
     required this.typeMappings,
     required this.outputDir,
+    this.unknownScalarType,
     this.disableCache = false,
     this.serverConfig,
     this.clientConfig,
@@ -71,6 +78,7 @@ class GeneratorConfig {
       mode: json['mode'] ?? 'server',
       identityFields: List<String>.from(json['identityFields'] ?? []),
       typeMappings: Map<String, String>.from(json['typeMappings'] ?? {}),
+      unknownScalarType: json['unknownScalarType'] as String?,
       disableCache: (json['disableCache'] as bool?) ?? false,
       outputDir: json['outputDir'] ?? 'src/main/java',
       serverConfig: json['serverConfig'] != null ? ServerConfig.fromJson(json['serverConfig'] as Map<String, dynamic>) : null,

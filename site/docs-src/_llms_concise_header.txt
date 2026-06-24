@@ -89,6 +89,7 @@ glink -h                    # show help
   "schemaPaths": ["schema/*.gql"],
   "mode": "client",
   "typeMappings": { "ID": "String", "Float": "Double", "Int": "Integer", "Boolean": "Boolean" },
+  "unknownScalarType": "Object",
   "outputDir": "src/main/java/com/example/generated",
   "clientConfig": {
     "java": {
