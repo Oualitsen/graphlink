@@ -109,14 +109,16 @@ class DartSerializer extends GLSerializer {
   String serializeFieldDeprecation(GLField field) {
     if (!field.isDeprecated) return '';
     final reason = field.deprecationReason ?? 'No longer supported';
-    return "@Deprecated('$reason')\n";
+    final escaped = reason.replaceAll(r'\', r'\\').replaceAll("'", r"\'").replaceAll(r'$', r'\$');
+    return "@Deprecated('$escaped')\n";
   }
 
   @override
   String serializeEnumValueDeprecation(GLEnumValue value) {
     if (!value.isDeprecated) return '';
     final reason = value.deprecationReason ?? 'No longer supported';
-    return "@Deprecated('$reason')";
+    final escaped = reason.replaceAll(r'\', r'\\').replaceAll("'", r"\'").replaceAll(r'$', r'\$');
+    return "@Deprecated('$escaped')";
   }
 
   @override

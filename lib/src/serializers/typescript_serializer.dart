@@ -98,14 +98,16 @@ class TypeScriptSerializer extends GLSerializer {
   String serializeFieldDeprecation(GLField field) {
     if (!field.isDeprecated) return '';
     final reason = field.deprecationReason ?? 'No longer supported';
-    return "/** @deprecated $reason */\n";
+    final safeReason = reason.replaceAll('*/', '*\\/');
+    return "/** @deprecated $safeReason */\n";
   }
 
   @override
   String serializeEnumValueDeprecation(GLEnumValue value) {
     if (!value.isDeprecated) return '';
     final reason = value.deprecationReason ?? 'No longer supported';
-    return "/** @deprecated $reason */";
+    final safeReason = reason.replaceAll('*/', '*\\/');
+    return "/** @deprecated $safeReason */";
   }
 
   // ── Type serialization ─────────────────────────────────────────────────────

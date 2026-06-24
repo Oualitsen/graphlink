@@ -83,6 +83,15 @@ enum Status { ACTIVE INACTIVE @deprecated(reason: "no longer valid") }
       final result = ser.serializeTypeDefinition(g.types['Foo']!);
       expect(result, isNot(contains('@Deprecated')));
     });
+
+    test('escapes single quote in reason', () {
+      final g = GLParser();
+      // Use a GraphQL string with an escaped single quote inside the reason
+      g.parse("type Foo { name: String @deprecated(reason: \"it's deprecated\") }");
+      final ser = DartSerializer(g, importPrefix: '');
+      final result = ser.serializeTypeDefinition(g.types['Foo']!);
+      expect(result, contains(r"@Deprecated('it\'s deprecated')"));
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -90,20 +99,32 @@ enum Status { ACTIVE INACTIVE @deprecated(reason: "no longer valid") }
   // ---------------------------------------------------------------------------
 
   group('Java', () {
-    test('field emits @Deprecated annotation', () {
+    test('field emits @Deprecated with Javadoc reason', () {
       final g = GLParser();
-      g.parse('type Foo { name: String @deprecated }');
+      g.parse('type Foo { name: String @deprecated(reason: "use bar") }');
       final ser = JavaSerializer(g, importPrefix: '');
       final result = ser.serializeTypeDefinition(g.types['Foo']!);
+      expect(result, contains('@deprecated use bar'));
       expect(result, contains('@Deprecated'));
       expect(result, contains('private'));
     });
 
-    test('enum value emits @Deprecated inline', () {
+    test('field emits default Javadoc reason when no reason provided', () {
       final g = GLParser();
-      g.parse('enum Status { ACTIVE INACTIVE @deprecated }');
+      g.parse('type Foo { name: String @deprecated }');
+      final ser = JavaSerializer(g, importPrefix: '');
+      final result = ser.serializeTypeDefinition(g.types['Foo']!);
+      expect(result, contains('@deprecated No longer supported'));
+      expect(result, contains('@Deprecated'));
+      expect(result, contains('private'));
+    });
+
+    test('enum value emits @Deprecated inline with Javadoc', () {
+      final g = GLParser();
+      g.parse('enum Status { ACTIVE INACTIVE @deprecated(reason: "gone") }');
       final ser = JavaSerializer(g, importPrefix: '');
       final result = ser.serializeEnumDefinition(g.enums['Status']!);
+      expect(result, contains('@deprecated gone'));
       expect(result, contains('@Deprecated INACTIVE'));
     });
 
@@ -113,6 +134,24 @@ enum Status { ACTIVE INACTIVE @deprecated(reason: "no longer valid") }
       final ser = JavaSerializer(g, importPrefix: '');
       final result = ser.serializeTypeDefinition(g.types['Foo']!);
       expect(result, isNot(contains('@Deprecated')));
+    });
+
+    test('reason with special characters is included in Javadoc', () {
+      final g = GLParser();
+      g.parse('type Foo { name: String @deprecated(reason: "use bar instead") }');
+      final ser = JavaSerializer(g, importPrefix: '');
+      final result = ser.serializeTypeDefinition(g.types['Foo']!);
+      expect(result, contains('/** @deprecated use bar instead */'));
+      expect(result, contains('@Deprecated'));
+      expect(result, contains('private'));
+    });
+
+    test('escapes */ in reason', () {
+      final g = GLParser();
+      g.parse(r'type Foo { name: String @deprecated(reason: "use */foo/* instead") }');
+      final ser = JavaSerializer(g, importPrefix: '');
+      final result = ser.serializeTypeDefinition(g.types['Foo']!);
+      expect(result, contains('*\\/foo/*'));
     });
   });
 
@@ -145,6 +184,15 @@ enum Status { ACTIVE INACTIVE @deprecated(reason: "no longer valid") }
       final result = ser.serializeTypeDefinition(g.types['Foo']!);
       expect(result, isNot(contains('@Deprecated')));
     });
+
+    test('escapes double quote in reason', () {
+      final g = GLParser();
+      g.parse('type Foo { name: String @deprecated(reason: "use \\"new\\" instead") }');
+      final ser = KotlinSerializer(g, importPrefix: '');
+      final result = ser.serializeTypeDefinition(g.types['Foo']!);
+      // escapeForStringLiteral escapes " → \" for Kotlin string literal
+      expect(result, contains(r'@Deprecated("use \"new\" instead")'));
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -176,6 +224,14 @@ enum Status { ACTIVE INACTIVE @deprecated(reason: "no longer valid") }
       final ser = TypeScriptSerializer(g, importPrefix: '');
       final result = ser.serializeTypeDefinition(g.types['Foo']!);
       expect(result, isNot(contains('@deprecated')));
+    });
+
+    test('escapes star-slash in reason', () {
+      final g = GLParser();
+      g.parse(r'type Foo { name: String @deprecated(reason: "use */foo/* instead") }');
+      final ser = TypeScriptSerializer(g, importPrefix: '');
+      final result = ser.serializeTypeDefinition(g.types['Foo']!);
+      expect(result, contains(r'/** @deprecated use *\/foo/* instead */'));
     });
   });
 }
