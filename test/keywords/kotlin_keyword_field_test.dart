@@ -71,7 +71,7 @@ void main() {
     final serializer =
         KotlinSerializer(g, importPrefix: "", generateJsonMethods: true);
     final out = serializer.doSerializeTypeDefinition(type);
-
+    print(out);
     expect(out, contains("object_"));
     expect(out, isNot(contains("val object:")));
     expect(out, contains('"object" to object_'));

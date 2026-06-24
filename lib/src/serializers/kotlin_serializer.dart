@@ -84,18 +84,11 @@ class KotlinSerializer extends GLSerializer {
     final type = serializeType(def.type, forceNullable);
     final keyword = _keyword(immutable);
     final nullable = def.type.nullable || forceNullable;
-<<<<<<< HEAD
-    if (nullable) {
-      return '$keyword ${def.codeName}: $type = null';
-    }
-    return '$keyword ${def.codeName}: $type';
-=======
     final deprecation = serializeFieldDeprecation(def);
     final line = nullable
-        ? '$keyword ${def.name}: $type = null'
-        : '$keyword ${def.name}: $type';
+        ? '$keyword ${def.codeName}: $type = null'
+        : '$keyword ${def.codeName}: $type';
     return '$deprecation$line';
->>>>>>> b2b94ee1 (feat/deprecated-directive-support)
   }
 
   // ── Enum ────────────────────────────────────────────────────────────────────
@@ -139,9 +132,6 @@ class KotlinSerializer extends GLSerializer {
   }
 
   @override
-<<<<<<< HEAD
-  String doSerializeEnumValue(GLEnumValue value) => value.codeName;
-=======
   String doSerializeEnumValue(GLEnumValue value) {
     final deprecation = serializeEnumValueDeprecation(value);
     if (deprecation.isEmpty) return value.value.token;
@@ -161,7 +151,6 @@ class KotlinSerializer extends GLSerializer {
     final reason = value.deprecationReason ?? 'No longer supported';
     return '@Deprecated("$reason")';
   }
->>>>>>> b2b94ee1 (feat/deprecated-directive-support)
 
   // ── Input ───────────────────────────────────────────────────────────────────
 
@@ -238,12 +227,12 @@ class KotlinSerializer extends GLSerializer {
     final keyword = _keyword(inputsAsDataClass);
     final deprecation = serializeFieldDeprecation(f);
     if (f.initialValue != null) {
-      return '${deprecation}$keyword ${f.name}: $type = ${serializeDefaultLiteral(f.type, f.initialValue)}';
+      return '${deprecation}$keyword ${f.codeName}: $type = ${serializeDefaultLiteral(f.type, f.initialValue)}';
     }
     if (f.type.nullable) {
-      return '${deprecation}$keyword ${f.name}: $type = null';
+      return '${deprecation}$keyword ${f.codeName}: $type = null';
     }
-    return '${deprecation}$keyword ${f.name}: $type';
+    return '${deprecation}$keyword ${f.codeName}: $type';
   }
 
   // ── Type definition ─────────────────────────────────────────────────────────
@@ -267,15 +256,9 @@ class KotlinSerializer extends GLSerializer {
       final prefix = overrides ? 'override $keyword' : keyword;
       final deprecation = serializeFieldDeprecation(f);
       if (f.type.nullable || forceNullable) {
-<<<<<<< HEAD
-        return '$prefix ${f.codeName}: $type = null';
+        return '${deprecation}$prefix ${f.codeName}: $type = null';
       }
-      return '$prefix ${f.codeName}: $type';
-=======
-        return '${deprecation}$prefix ${f.name}: $type = null';
-      }
-      return '${deprecation}$prefix ${f.name}: $type';
->>>>>>> b2b94ee1 (feat/deprecated-directive-support)
+      return '${deprecation}$prefix ${f.codeName}: $type';
     }).toList();
 
     final instanceMethods = <String>[];
