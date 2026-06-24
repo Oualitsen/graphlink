@@ -892,9 +892,15 @@ extension GLGrammarProjectionExtension on GLParser {
       }
       // same base type, different nullability — upgrade to most restrictive
       final merged = _mostRestrictiveType(existing.type, argDef.type);
+      final keptDefault = existing.defaultValue ?? argDef.defaultValue;
+      // A null default is incompatible with a non-nullable type — drop it so
+      // we don't emit e.g. `String x = null` (a Dart compile error).
+      final defaultValue = (!merged.nullable && keptDefault?.value == null)
+          ? null
+          : keptDefault;
       def.setArgument(GLArgumentDefinition(
           varToken.toToken(), merged, [],
-          defaultValue: existing.defaultValue ?? argDef.defaultValue));
+          defaultValue: defaultValue));
       return;
     }
     def.setArgument(GLArgumentDefinition(
