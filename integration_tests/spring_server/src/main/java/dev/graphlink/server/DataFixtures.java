@@ -122,4 +122,47 @@ public final class DataFixtures {
             default -> AUDIT_ENTRY;
         };
     }
+
+    // ── VehicleDriver / Car / Bike / VehicleOwner — 3-layer cycle fixtures ────
+    //
+    // Cycle: VehicleDriver → Car (or Bike) → VehicleOwner → VehicleDriver
+    // Broken at depth 3: the innermost VehicleDriver has car=null and bike=null.
+    // Spring only resolves selected fields, so at @glExpand(depth:3) it never
+    // asks for the third-level driver's car/bike.
+
+    // Depth-3 leaf: driver with no car/bike (cycle truncated here)
+    public static final VehicleDriver VD_ALEX_LEAF =
+        new VehicleDriver("vd-1", "Alex Driver", null, null);
+
+    public static final VehicleDriver VD_JORDAN_LEAF =
+        new VehicleDriver("vd-2", "Jordan Driver", null, null);
+
+    // Owners reference the leaf drivers
+    public static final VehicleOwner VO_ALICE =
+        new VehicleOwner("vo-1", "Alice Owner", VD_ALEX_LEAF);
+
+    public static final VehicleOwner VO_BOB =
+        new VehicleOwner("vo-2", "Bob Owner", VD_JORDAN_LEAF);
+
+    // Vehicles reference their owners
+    public static final Car CAR_TESLA =
+        new Car("car-1", "Tesla Model 3", VO_ALICE);
+
+    public static final Bike BIKE_TREK =
+        new Bike("bike-1", "Trek FX3", VO_BOB);
+
+    // Full drivers: vd-1 has a car, vd-2 has a bike
+    public static final VehicleDriver VD_ALEX =
+        new VehicleDriver("vd-1", "Alex Driver", CAR_TESLA, null);
+
+    public static final VehicleDriver VD_JORDAN =
+        new VehicleDriver("vd-2", "Jordan Driver", null, BIKE_TREK);
+
+    public static VehicleDriver vehicleDriverById(String id) {
+        return switch (id) {
+            case "vd-1" -> VD_ALEX;
+            case "vd-2" -> VD_JORDAN;
+            default -> null;
+        };
+    }
 }
