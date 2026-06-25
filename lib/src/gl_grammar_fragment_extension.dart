@@ -418,8 +418,29 @@ extension GLGrammarFragmentExtension on GLParser {
   }
 
   void generateQueries(GLTypeDefinition def, GLQueryType queryType) {
-    for (var field in def.fields) {
-      _generateForField(field, queryType);
+    final filter = autoGenerateQueriesFor?[queryType];
+    if (filter != null) {
+      final available = def.fields.map((f) => f.name.token).toSet();
+      final missing = filter.where((name) => !available.contains(name)).toList();
+      if (missing.isNotEmpty) {
+        const keyByType = {
+          GLQueryType.query: 'queries',
+          GLQueryType.mutation: 'mutations',
+          GLQueryType.subscription: 'subscriptions',
+        };
+        final key = keyByType[queryType]!;
+        throw ParseException(
+          'autoGenerateQueriesFor.$key lists unknown operation(s): ${missing.join(', ')}',
+        );
+      }
+      final filterSet = filter.toSet();
+      for (var field in def.fields) {
+        if (filterSet.contains(field.name.token)) _generateForField(field, queryType);
+      }
+    } else {
+      for (var field in def.fields) {
+        _generateForField(field, queryType);
+      }
     }
   }
 

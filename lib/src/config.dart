@@ -10,6 +10,30 @@ enum KotlinWsAdapter { okhttp, none }
 
 enum JavaJsonCodec { jackson, gson, none }
 
+// ── AutoGenerateQueriesFor ────────────────────────────────────────────────────
+
+class AutoGenerateQueriesFor {
+  final List<String> queries;
+  final List<String> mutations;
+  final List<String> subscriptions;
+
+  const AutoGenerateQueriesFor({
+    this.queries = const [],
+    this.mutations = const [],
+    this.subscriptions = const [],
+  });
+
+  bool get isEmpty => queries.isEmpty && mutations.isEmpty && subscriptions.isEmpty;
+
+  factory AutoGenerateQueriesFor.fromJson(Map<String, dynamic> json) {
+    return AutoGenerateQueriesFor(
+      queries: List<String>.from(json['queries'] ?? []),
+      mutations: List<String>.from(json['mutations'] ?? []),
+      subscriptions: List<String>.from(json['subscriptions'] ?? []),
+    );
+  }
+}
+
 // ── Abstract base classes ────────────────────────────────────────────────────
 
 abstract class ClientLanguageConfig {
@@ -20,6 +44,7 @@ abstract class ClientLanguageConfig {
   bool get immutableTypeFields => true;
   bool get captureErrors => false;
   String? get defaultAlias => null;
+  AutoGenerateQueriesFor? get autoGenerateQueriesFor => null;
 
   static ClientLanguageConfig fromJson(Map<String, dynamic> json) {
     if (json['dart'] != null) return DartClientConfig.fromJson(json['dart'] as Map<String, dynamic>);
@@ -401,6 +426,7 @@ class DartClientConfig extends ClientLanguageConfig {
   final bool immutableInputFields;
   final bool generateAdapters;
   final DartHttpAdapter httpAdapter;
+  @override final AutoGenerateQueriesFor? autoGenerateQueriesFor;
 
   DartClientConfig({
     required this.generateAllFieldsFragments,
@@ -417,6 +443,7 @@ class DartClientConfig extends ClientLanguageConfig {
     this.immutableTypeFields = true,
     this.generateAdapters = true,
     this.httpAdapter = DartHttpAdapter.http,
+    this.autoGenerateQueriesFor,
   });
 
   factory DartClientConfig.fromJson(Map<String, dynamic> json) {
@@ -440,6 +467,9 @@ class DartClientConfig extends ClientLanguageConfig {
         (e) => e.name == json['httpAdapter'],
         orElse: () => DartHttpAdapter.http,
       ),
+      autoGenerateQueriesFor: json['autoGenerateQueriesFor'] != null
+          ? AutoGenerateQueriesFor.fromJson(json['autoGenerateQueriesFor'] as Map<String, dynamic>)
+          : null,
     );
   }
 }
@@ -460,6 +490,7 @@ class JavaClientConfig extends ClientLanguageConfig {
   final bool jspecify;
   final JavaWsAdapter wsAdapter;
   final JavaJsonCodec jsonCodec;
+  @override final AutoGenerateQueriesFor? autoGenerateQueriesFor;
 
   JavaClientConfig({
     required this.packageName,
@@ -476,6 +507,7 @@ class JavaClientConfig extends ClientLanguageConfig {
     this.wsAdapter = JavaWsAdapter.java11,
     this.jsonCodec = JavaJsonCodec.jackson,
     this.defaultAlias,
+    this.autoGenerateQueriesFor,
   });
 
   factory JavaClientConfig.fromJson(Map<String, dynamic> json) {
@@ -500,6 +532,9 @@ class JavaClientConfig extends ClientLanguageConfig {
         (e) => e.name == json['jsonCodec'],
         orElse: () => JavaJsonCodec.jackson,
       ),
+      autoGenerateQueriesFor: json['autoGenerateQueriesFor'] != null
+          ? AutoGenerateQueriesFor.fromJson(json['autoGenerateQueriesFor'] as Map<String, dynamic>)
+          : null,
     );
   }
 }
@@ -516,6 +551,7 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
   final bool generateDefaultWsAdapter;
   final bool observables;
   final TypeScriptHttpAdapter httpAdapter;
+  @override final AutoGenerateQueriesFor? autoGenerateQueriesFor;
 
   TypeScriptClientConfig({
     this.generateAllFieldsFragments = true,
@@ -528,6 +564,7 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
     this.observables = false,
     this.httpAdapter = TypeScriptHttpAdapter.fetch,
     this.defaultAlias,
+    this.autoGenerateQueriesFor,
   });
 
   factory TypeScriptClientConfig.fromJson(Map<String, dynamic> json) {
@@ -545,6 +582,9 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
         orElse: () => TypeScriptHttpAdapter.fetch,
       ),
       defaultAlias: json['defaultAlias'] as String?,
+      autoGenerateQueriesFor: json['autoGenerateQueriesFor'] != null
+          ? AutoGenerateQueriesFor.fromJson(json['autoGenerateQueriesFor'] as Map<String, dynamic>)
+          : null,
     );
   }
 }
@@ -562,6 +602,7 @@ class KotlinClientConfig extends ClientLanguageConfig {
   final bool inputAsDataClass;
   final bool typeAsDataClass;
   final KotlinWsAdapter wsAdapter;
+  @override final AutoGenerateQueriesFor? autoGenerateQueriesFor;
 
   KotlinClientConfig({
     required this.packageName,
@@ -575,6 +616,7 @@ class KotlinClientConfig extends ClientLanguageConfig {
     this.typeAsDataClass = true,
     this.wsAdapter = KotlinWsAdapter.okhttp,
     this.defaultAlias,
+    this.autoGenerateQueriesFor,
   });
 
   factory KotlinClientConfig.fromJson(Map<String, dynamic> json) {
@@ -593,6 +635,9 @@ class KotlinClientConfig extends ClientLanguageConfig {
         (e) => e.name == json['wsAdapter'],
         orElse: () => KotlinWsAdapter.okhttp,
       ),
+      autoGenerateQueriesFor: json['autoGenerateQueriesFor'] != null
+          ? AutoGenerateQueriesFor.fromJson(json['autoGenerateQueriesFor'] as Map<String, dynamic>)
+          : null,
     );
   }
 }

@@ -206,6 +206,7 @@ class GLParser {
   final bool generateAllFieldsFragments;
   final bool nullableFieldsRequired;
   final bool autoGenerateQueries;
+  final Map<GLQueryType, List<String>>? autoGenerateQueriesFor;
   final String? defaultAlias;
   final bool operationNameAsParameter;
   final List<String> identityFields;
@@ -246,6 +247,7 @@ class GLParser {
     this.generateAllFieldsFragments = false,
     this.nullableFieldsRequired = false,
     this.autoGenerateQueries = false,
+    this.autoGenerateQueriesFor,
     this.operationNameAsParameter = false,
     this.identityFields = const [],
     this.defaultAlias,
@@ -255,8 +257,8 @@ class GLParser {
     this.defaultExpandDepth = 1,
     this.captureErrors = false,
   }) : assert(
-          !autoGenerateQueries || generateAllFieldsFragments,
-          'autoGenerateQueries can only be true if generateAllFieldsFragments is also true',
+          (!autoGenerateQueries && autoGenerateQueriesFor == null) || generateAllFieldsFragments,
+          'autoGenerateQueries and autoGenerateQueriesFor both require generateAllFieldsFragments: true',
         ) {
     serializer = GLGraphqlSerializer(this);
   }
@@ -333,7 +335,7 @@ class GLParser {
       if (generateAllFieldsFragments) {
         _timed('forceCyclicEdgesNullable', forceCyclicEdgesNullable);
         _timed('createAllFieldsFragments', createAllFieldsFragments);
-        if (autoGenerateQueries) {
+        if (autoGenerateQueries || autoGenerateQueriesFor != null) {
           _timed('generateQueryDefinitions', generateQueryDefinitions);
         }
       }

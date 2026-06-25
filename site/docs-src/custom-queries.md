@@ -233,6 +233,57 @@ GraphLink resolves fragment spreads and inlines the selected fields into the gen
 
 ---
 
+## Selective auto-generation (`autoGenerateQueriesFor`)
+
+`autoGenerateQueries: true` is convenient for small or medium schemas, but on large ones it can produce hundreds of client methods and megabytes of generated code you'll never use. `autoGenerateQueriesFor` solves this: list only the operations you actually need, and GraphLink generates methods exclusively for those.
+
+```json title="glink.json — generate only what you need"
+{
+  "clientConfig": {
+    "dart": {
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueriesFor": {
+        "queries":       ["getUser", "listOrders", "getDashboard"],
+        "mutations":     ["createOrder", "cancelOrder"],
+        "subscriptions": ["onOrderUpdated"]
+      }
+    }
+  }
+}
+```
+
+```yaml title="glink.yaml — same in YAML"
+clientConfig:
+  dart:
+    generateAllFieldsFragments: true
+    autoGenerateQueriesFor:
+      queries:
+        - getUser
+        - listOrders
+        - getDashboard
+      mutations:
+        - createOrder
+        - cancelOrder
+      subscriptions:
+        - onOrderUpdated
+```
+
+The three keys — `queries`, `mutations`, `subscriptions` — are independent. You can list operations under any combination of them; keys you omit (or set to `[]`) produce no auto-generated methods for that operation type.
+
+**Build error on unknown names.** If a name you list doesn't exist as a root field in the schema, GraphLink aborts with a descriptive error:
+
+```
+autoGenerateQueriesFor.queries lists unknown operation(s): getDashbord
+```
+
+This catches typos at generation time rather than at runtime.
+
+**Works alongside manual queries.** `autoGenerateQueriesFor` only controls what gets auto-generated from root fields. Any operation document you write by hand in a `.graphql` file is always generated regardless of this setting — the two approaches compose freely.
+
+**Requires `generateAllFieldsFragments: true`**, because auto-generation uses the `_all_fields` fragments to build query bodies.
+
+---
+
 ## Caching on custom queries
 
 `@glCache` and `@glCacheInvalidate` work exactly the same on custom operations. Apply them at the operation level or per resolver field:
