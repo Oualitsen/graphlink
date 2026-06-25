@@ -7,7 +7,7 @@ import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
-import 'package:graphlink/src/serializers/client_serializers/java_client_serializer.dart';
+import 'package:graphlink/src/serializers/client_serializers/java/java_client_serializer.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:graphlink/src/utils.dart';
 

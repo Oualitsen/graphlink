@@ -1,0 +1,32 @@
+{
+    "schemaPaths": [
+        "../_schema/*.graphql"
+    ],
+    "mode": "client",
+    "unknownScalarType": "String",
+    "identityFields": [],
+    "typeMappings": {
+        "ID": "String",
+        "String": "String",
+        "Float": "Double",
+        "Int": "Integer",
+        "Boolean": "Boolean",
+        "Upload": "Integer",
+        "Null": "null"
+    },
+    "outputDir": "client-app/src/main/java/dev/graphlink/gitlab/generated",
+    "clientConfig": {
+        "java": {
+            "packageName": "dev.graphlink.gitlab.generated",
+            "wsAdapter": "java11",
+            "jsonCodec": "jackson",
+            "generateAllFieldsFragments": true,
+            "autoGenerateQueries": true,
+            "nullableFieldsRequired": false,
+            "immutableInputFields": true,
+            "immutableTypeFields": true,
+            "inputAsRecord": false,
+            "typeAsRecord": false
+        }
+    }
+}

@@ -1,10 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:graphlink_client_integration_tests/generated/graphlink.dart';
 import 'package:http/http.dart' as http;
-import 'package:graphlink_client_integration_tests/generated/client/graph_link_client.dart';
-import 'package:graphlink_client_integration_tests/generated/client/graph_link_uploads.dart';
-import 'package:graphlink_client_integration_tests/generated/client/graph_link_websocket_adapter.dart';
 
 const _defaultPort = 9999;
 const _uploadPort = 9998;

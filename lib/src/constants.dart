@@ -14,8 +14,8 @@ const fileHeadComment = """
 // Pub.dev https://pub.dev/packages/graphlink
 """;
 
-const dartIgnoreForFile =
-    "// ignore_for_file: use_rethrow_when_possible, camel_case_types, constant_identifier_names, unused_import, non_constant_identifier_names, no_leading_underscores_for_local_identifiers, unused_local_variable, annotate_overrides, library_private_types_in_public_api";
+const dartIgnoreForFile = "";
+  //  "// ignore_for_file: use_rethrow_when_possible, camel_case_types, constant_identifier_names, unused_import, non_constant_identifier_names, no_leading_underscores_for_local_identifiers, unused_local_variable, annotate_overrides, library_private_types_in_public_api";
 
 const graphqlHeadComment = """
 # GENERATED CODE - DO NOT MODIFY BY HAND. ANY MODIFICATION WILL BE LOST ON NEXT GENERATION
@@ -226,7 +226,7 @@ class GLUpload {
 const dartUploadDefaultConverter = '''
 /// Default converter — passes GLUpload through as-is.
 /// The selected adapter's multipartCall handles GLUpload natively.
-Object _defaultUploadConverter(GLUpload upload) => upload;
+Object defaultUploadConverter(GLUpload upload) => upload;
 ''';
 
 const javaUploadProgressCallback = '''

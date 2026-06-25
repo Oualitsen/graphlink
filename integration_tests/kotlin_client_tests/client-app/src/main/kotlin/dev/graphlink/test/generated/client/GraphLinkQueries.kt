@@ -3,53 +3,52 @@
 // GitHub: https://github.com/Oualitsen/graphlink
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
-// ignore_for_file: use_rethrow_when_possible, camel_case_types, constant_identifier_names, unused_import, non_constant_identifier_names, no_leading_underscores_for_local_identifiers, unused_local_variable, annotate_overrides, library_private_types_in_public_api
+
 
 package dev.graphlink.test.generated.client;
 import dev.graphlink.test.generated.types.GraphLinkPayload
-import dev.graphlink.test.generated.types.FetchUserAndPostResponse
-import dev.graphlink.test.generated.types.FetchUserSummaryResponse
-import dev.graphlink.test.generated.types.RunSearchResponse
-import dev.graphlink.test.generated.types.FetchCachedPairResponse
-import dev.graphlink.test.generated.types.GetUserResponse
-import dev.graphlink.test.generated.types.FindUserResponse
-import dev.graphlink.test.generated.types.ListUsersResponse
-import dev.graphlink.test.generated.types.ListUsersByStatusResponse
-import dev.graphlink.test.generated.types.SearchUsersResponse
-import dev.graphlink.test.generated.types.GetAllScalarsResponse
-import dev.graphlink.test.generated.types.GetPostResponse
-import dev.graphlink.test.generated.types.GetTagsResponse
-import dev.graphlink.test.generated.types.GetAuditEntryResponse
-import dev.graphlink.test.generated.types.SearchResponse
-import dev.graphlink.test.generated.types.GetCachedUserResponse
-import dev.graphlink.test.generated.types.ListCachedUsersResponse
-import dev.graphlink.test.generated.types.GetCachedPostResponse
-import dev.graphlink.test.generated.types.GetCachedConfigResponse
-import dev.graphlink.test.generated.types.GetStaleUserResponse
-import dev.graphlink.test.generated.types.GetUserOrErrorsResponse
-import dev.graphlink.test.generated.types.FindUserOrErrorsResponse
+import dev.graphlink.test.generated.types.GraphLinkError
 import dev.graphlink.test.generated.types.FetchUserAndPostFullResponse
+import dev.graphlink.test.generated.types.FetchUserAndPostResponse
 import dev.graphlink.test.generated.types.FetchUserSummaryFullResponse
+import dev.graphlink.test.generated.types.FetchUserSummaryResponse
 import dev.graphlink.test.generated.types.RunSearchFullResponse
+import dev.graphlink.test.generated.types.RunSearchResponse
 import dev.graphlink.test.generated.types.FetchCachedPairFullResponse
+import dev.graphlink.test.generated.types.FetchCachedPairResponse
 import dev.graphlink.test.generated.types.GetUserFullResponse
+import dev.graphlink.test.generated.types.GetUserResponse
 import dev.graphlink.test.generated.types.FindUserFullResponse
+import dev.graphlink.test.generated.types.FindUserResponse
 import dev.graphlink.test.generated.types.ListUsersFullResponse
+import dev.graphlink.test.generated.types.ListUsersResponse
 import dev.graphlink.test.generated.types.ListUsersByStatusFullResponse
+import dev.graphlink.test.generated.types.ListUsersByStatusResponse
+import dev.graphlink.test.generated.enums.UserStatus
 import dev.graphlink.test.generated.types.SearchUsersFullResponse
+import dev.graphlink.test.generated.types.SearchUsersResponse
 import dev.graphlink.test.generated.types.GetAllScalarsFullResponse
+import dev.graphlink.test.generated.types.GetAllScalarsResponse
 import dev.graphlink.test.generated.types.GetPostFullResponse
+import dev.graphlink.test.generated.types.GetPostResponse
 import dev.graphlink.test.generated.types.GetTagsFullResponse
+import dev.graphlink.test.generated.types.GetTagsResponse
 import dev.graphlink.test.generated.types.GetAuditEntryFullResponse
+import dev.graphlink.test.generated.types.GetAuditEntryResponse
 import dev.graphlink.test.generated.types.SearchFullResponse
+import dev.graphlink.test.generated.types.SearchResponse
 import dev.graphlink.test.generated.types.GetCachedUserFullResponse
+import dev.graphlink.test.generated.types.GetCachedUserResponse
 import dev.graphlink.test.generated.types.ListCachedUsersFullResponse
+import dev.graphlink.test.generated.types.ListCachedUsersResponse
 import dev.graphlink.test.generated.types.GetCachedPostFullResponse
+import dev.graphlink.test.generated.types.GetCachedPostResponse
 import dev.graphlink.test.generated.types.GetCachedConfigFullResponse
+import dev.graphlink.test.generated.types.GetCachedConfigResponse
 import dev.graphlink.test.generated.types.GetStaleUserFullResponse
+import dev.graphlink.test.generated.types.GetStaleUserResponse
 import dev.graphlink.test.generated.types.GetUserOrErrorsFullResponse
 import dev.graphlink.test.generated.types.FindUserOrErrorsFullResponse
-import dev.graphlink.test.generated.enums.UserStatus
 import dev.graphlink.test.generated.interfaces.GraphLinkClientAdapter
 import dev.graphlink.test.generated.interfaces.GraphLinkJsonEncoder
 import dev.graphlink.test.generated.interfaces.GraphLinkJsonDecoder
@@ -830,13 +829,13 @@ open class GraphLinkQueries(
          val __gl_pqVars__ = mutableMapOf<String, Any?>()
          __gl_pqVars__["term"] = __gl_variables__["term"]
          __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "search(term: \$term){...Inline_762ea8cb_f229_fb78_58b1_e56616d49af9}",
+             "search(term: \$term){...Inline_3f42e0b1_a9ac_98a6_e26d_104ebcfe9fb3}",
              __gl_pqVars__,
              0,
              emptyList(),
              "search__search",
              "search",
-             setOf("Inline_762ea8cb_f229_fb78_58b1_e56616d49af9", "_all_fields_UserResult", "_all_fields_PostResult"),
+             setOf("Inline_3f42e0b1_a9ac_98a6_e26d_104ebcfe9fb3", "_all_fields_UserResult", "_all_fields_PostResult"),
              listOf("\$term: String!"),
              false,
              encoder,

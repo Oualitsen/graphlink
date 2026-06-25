@@ -1,7 +1,7 @@
 import 'package:graphlink/src/capture_errors_utils.dart';
 import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
-import 'package:graphlink/src/serializers/client_serializers/typescript_client_serializer.dart';
+import 'package:graphlink/src/serializers/client_serializers/typescript/typescript_client_serializer.dart';
 import 'package:graphlink/src/serializers/typescript_serializer.dart';
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
@@ -163,18 +163,18 @@ type Mutation { deleteUser(id: ID!): Boolean! }
     setUpAll(() => queries = _queries(_parse(_schema)));
 
     test('cache hit wraps responseMap with data key and null errors', () {
-      expect(queries, contains('{ data: __gl_responseMap__, errors: null }'));
+      expect(queries, contains('{ data: gl_responseMap__, errors: null }'));
     });
 
     test('_parseAndCache called with captureErrors=true', () {
-      expect(queries, contains('_parseAndCache(__gl_responseText__, __gl_responseMap__, __gl_remaining__, true)'));
+      expect(queries, contains('_parseAndCache(gl_responseText__, gl_responseMap__, gl_remaining__, true)'));
     });
 
     test('stale fallback also wraps with data key and null errors', () {
       final start = queries.indexOf('Promise<GetUserFullResponse>');
       final end   = queries.indexOf('Promise<FindUserFullResponse>');
       final body  = queries.substring(start, end);
-      expect(body, contains('{ data: __gl_responseMap__, errors: null }'));
+      expect(body, contains('{ data: gl_responseMap__, errors: null }'));
     });
 
     test('no explicit GraphQL-error throw in captureErrors query body', () {
@@ -195,12 +195,12 @@ type Mutation { deleteUser(id: ID!): Boolean! }
     test('cache hit returns responseMap directly (no data wrapping)', () {
       final start = queries.indexOf('Promise<ListUsersResponse>');
       final body  = queries.substring(start);
-      expect(body, contains('__gl_responseMap__ as unknown as ListUsersResponse'));
-      expect(body, isNot(contains('{ data: __gl_responseMap__ }')));
+      expect(body, contains('gl_responseMap__ as unknown as ListUsersResponse'));
+      expect(body, isNot(contains('{ data: gl_responseMap__ }')));
     });
 
     test('_parseAndCache called without captureErrors flag', () {
-      expect(queries, contains('_parseAndCache(__gl_responseText__, __gl_responseMap__, __gl_remaining__)'));
+      expect(queries, contains('_parseAndCache(gl_responseText__, gl_responseMap__, gl_remaining__)'));
     });
   });
 
@@ -212,15 +212,15 @@ type Mutation { deleteUser(id: ID!): Boolean! }
     setUpAll(() => mutations = _mutations(_parse(_schema)));
 
     test('parses result directly as FullResponse', () {
-      expect(mutations, contains('JSON.parse(__gl_response__) as CreateUserFullResponse'));
+      expect(mutations, contains('JSON.parse(gl_response__) as CreateUserFullResponse'));
     });
 
     test('returns result directly without unwrapping .data', () {
       final start = mutations.indexOf('Promise<CreateUserFullResponse>');
       final end   = mutations.indexOf('Promise<DeleteUserResponse>');
       final body  = mutations.substring(start, end);
-      expect(body, contains("return __gl_result__"));
-      expect(body, isNot(contains("__gl_result__['data']")));
+      expect(body, contains("return gl_result__"));
+      expect(body, isNot(contains("gl_result__['data']")));
     });
 
     test('no throw block in captureErrors mutation', () {
@@ -241,13 +241,13 @@ type Mutation { deleteUser(id: ID!): Boolean! }
     test('throws on errors', () {
       final start = mutations.indexOf('Promise<DeleteUserResponse>');
       final body  = mutations.substring(start);
-      expect(body, contains("throw __gl_result__['errors']"));
+      expect(body, contains("throw gl_result__['errors']"));
     });
 
     test('returns result[data]', () {
       final start = mutations.indexOf('Promise<DeleteUserResponse>');
       final body  = mutations.substring(start);
-      expect(body, contains("__gl_result__['data'] as DeleteUserResponse"));
+      expect(body, contains("gl_result__['data'] as DeleteUserResponse"));
     });
   });
 
@@ -296,8 +296,8 @@ type Query    { getUser: User! }
 type Mutation { deleteUser(id: ID!): Boolean! }
 ''';
       final queries = _queries(_parse(schema, captureErrors: true));
-      expect(queries, contains('_parseAndCache(__gl_responseText__, __gl_responseMap__, __gl_remaining__, true)'));
-      expect(queries, isNot(contains('_parseAndCache(__gl_responseText__, __gl_responseMap__, __gl_remaining__)')));
+      expect(queries, contains('_parseAndCache(gl_responseText__, gl_responseMap__, gl_remaining__, true)'));
+      expect(queries, isNot(contains('_parseAndCache(gl_responseText__, gl_responseMap__, gl_remaining__)')));
     });
   });
 }
