@@ -145,6 +145,24 @@ type AuditEntry {
 }
 
 
+# ── 5. Union / interface ───────────────────────────────────────────────────────
+
+# Used for custom-query union dispatch tests.
+interface SearchResult {
+  id: ID!
+}
+
+type UserResult implements SearchResult {
+  id:   ID!
+  name: String!
+  email: String!
+}
+
+type PostResult implements SearchResult {
+  id:    ID!
+  title: String!
+}
+
 type DefaultsEcho {
   name:      String!
   role:      Role!
@@ -170,25 +188,6 @@ type Driver {
   lastUsedMillage(odometerKm: Int!): Int!
   lastUsedFuel(liters: Int! = 4): Int!
 }
-
-# ── 5. Union / interface ───────────────────────────────────────────────────────
-
-# Used for custom-query union dispatch tests.
-interface SearchResult {
-  id: ID!
-}
-
-type UserResult implements SearchResult {
-  id:   ID!
-  name: String!
-  email: String!
-}
-
-type PostResult implements SearchResult {
-  id:    ID!
-  title: String!
-}
-
 
 # ── 6. Input types ────────────────────────────────────────────────────────────
 
@@ -238,6 +237,38 @@ input NestedDefaultsInput {
 
 
 # ── 7. Queries — plain ────────────────────────────────────────────────────────
+
+# ── @glExpand cycle test: VehicleDriver → Vehicle → VehicleOwner → VehicleDriver ──
+
+interface Vehicle {
+  id: ID!
+  owner: VehicleOwner!
+}
+
+type Car implements Vehicle {
+  id: ID!
+  model: String!
+  owner: VehicleOwner!
+}
+
+type Bike implements Vehicle {
+  id: ID!
+  brand: String!
+  owner: VehicleOwner!
+}
+
+type VehicleOwner {
+  id: ID!
+  name: String!
+  driver: VehicleDriver!
+}
+
+type VehicleDriver @glExpand(depth: 3) {
+  id: ID!
+  name: String!
+  vehicle: Vehicle
+}
+
 
 type Query {
   # Non-nullable single object — basic case.
@@ -302,6 +333,9 @@ type Query {
 
   # Driver with field-level argument defaults
   getDriver(id: ID!): Driver!
+
+  # @glExpand cycle test
+  getVehicleDriver(id: ID!): VehicleDriver!
 }
 
 
@@ -337,12 +371,6 @@ type Mutation {
   # Errors returned inline.
   createUserOrErrors(input: CreateUserInput!): User! @glCaptureErrors
 
-  # Echoes back the received input so tests can verify the client applied defaults.
-  createWithDefaults(input: CreateWithDefaultsInput!): DefaultsEcho!
-
-  # Echoes back nested objects/lists so tests can verify client applied nested defaults.
-  createWithNestedDefaults(input: NestedDefaultsInput!): NestedDefaultsEcho!
-
 
 # ── 13. Mutations — upload ────────────────────────────────────────────────────
 
@@ -351,6 +379,15 @@ type Mutation {
 
   # List of files — files arg becomes List<GLUpload>.
   uploadFileList(userId: ID!, files: [Upload!]!): Boolean!
+
+
+# ── 14. Mutations — default-value inputs ──────────────────────────────────────
+
+  # Echoes back the received input so tests can verify the client applied defaults.
+  createWithDefaults(input: CreateWithDefaultsInput!): DefaultsEcho!
+
+  # Echoes back nested objects/lists so tests can verify client applied nested defaults.
+  createWithNestedDefaults(input: NestedDefaultsInput!): NestedDefaultsEcho!
 }
 
 
@@ -366,6 +403,9 @@ type Subscription {
 
   # Emits an incrementing counter every 1 s.
   counterTick: Int!
+
+  # Like counterTick but the server self-restarts after emitting tick stopAt.
+  counterTickRestart(stopAt: Int!): Int!
 }
 
 
