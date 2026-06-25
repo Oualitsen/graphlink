@@ -42,3 +42,7 @@ stop-upload-server:
 	lsof -ti :9998 | xargs kill -9 2>/dev/null || true
 
 ci: start-server start-upload-server generate test stop-server stop-upload-server
+
+reconnect-test: generate start-server
+	RUN_RECONNECT_TESTS=1 npx vitest run test/subscription-reconnect.test.ts
+	curl -s -X POST http://localhost:9990/actuator/shutdown || true
