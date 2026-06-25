@@ -238,6 +238,38 @@ input NestedDefaultsInput {
 
 # ── 7. Queries — plain ────────────────────────────────────────────────────────
 
+# ── @glExpand cycle test: VehicleDriver → Vehicle → VehicleOwner → VehicleDriver ──
+
+interface Vehicle {
+  id: ID!
+  owner: VehicleOwner!
+}
+
+type Car implements Vehicle {
+  id: ID!
+  model: String!
+  owner: VehicleOwner!
+}
+
+type Bike implements Vehicle {
+  id: ID!
+  brand: String!
+  owner: VehicleOwner!
+}
+
+type VehicleOwner {
+  id: ID!
+  name: String!
+  driver: VehicleDriver!
+}
+
+type VehicleDriver @glExpand(depth: 3) {
+  id: ID!
+  name: String!
+  vehicle: Vehicle
+}
+
+
 type Query {
   # Non-nullable single object — basic case.
   getUser(id: ID!): User!
@@ -301,6 +333,9 @@ type Query {
 
   # Driver with field-level argument defaults
   getDriver(id: ID!): Driver!
+
+  # @glExpand cycle test
+  getVehicleDriver(id: ID!): VehicleDriver!
 }
 
 

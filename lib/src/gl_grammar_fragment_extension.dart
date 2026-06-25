@@ -206,7 +206,7 @@ extension GLGrammarFragmentExtension on GLParser {
           final isConcreteTarget = types.containsKey(fieldTypeName);
           final depth = isConcreteTarget
               ? _getExpandDepth(types[fieldTypeName]!)
-              : defaultExpandDepth;
+              : _getExpandDepth(typeDefinition);
           // depth 0 → skip the cyclic field entirely (no block, no field).
           if (depth <= 0) return null;
           // depth-1: so depth=1 gives scalars only, depth=2 gives one sub-level, etc.

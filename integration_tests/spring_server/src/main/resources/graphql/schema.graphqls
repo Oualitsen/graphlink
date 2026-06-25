@@ -153,6 +153,35 @@ input NestedDefaultsInput {
   matrix:   [[AddressInput]]
 }
 
+interface Vehicle {
+  id: ID!
+  owner: VehicleOwner!
+}
+
+type Car implements Vehicle {
+  id: ID!
+  model: String!
+  owner: VehicleOwner!
+}
+
+type Bike implements Vehicle {
+  id: ID!
+  brand: String!
+  owner: VehicleOwner!
+}
+
+type VehicleOwner {
+  id: ID!
+  name: String!
+  driver: VehicleDriver!
+}
+
+type VehicleDriver {
+  id: ID!
+  name: String!
+  vehicle: Vehicle
+}
+
 type Query {
   getUser(id: ID!): User!
   findUser(id: ID!): User
@@ -173,6 +202,7 @@ type Query {
   findUserOrErrors(id: ID!): User
   listUsersWithDefaults(limit: Int, role: Role): [User]!
   getDriver(id: ID!): Driver!
+  getVehicleDriver(id: ID!): VehicleDriver!
 }
 
 type Mutation {

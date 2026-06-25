@@ -148,4 +148,14 @@ public class QueryController {
     public int lastUsedFuel(Driver driver, @Argument int liters) {
         return liters;
     }
+
+    // ── VehicleDriver / Vehicle / VehicleOwner — 3-layer cycle ───────────────
+
+    @QueryMapping
+    public VehicleDriver getVehicleDriver(@Argument String id) {
+        VehicleDriver vd = DataFixtures.vehicleDriverById(id);
+        if (vd == null) throw GraphqlErrorException.newErrorException()
+                .message("VehicleDriver not found: " + id).build();
+        return vd;
+    }
 }
