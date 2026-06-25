@@ -1,7 +1,8 @@
 import { execSync, spawn } from 'node:child_process';
 import { createConnection } from 'node:net';
-import { GraphLinkClient, DefaultGraphLinkWsAdapter } from '../lib/generated/client/graph-link-client.js';
+import { GraphLinkClient } from '../lib/generated/client/graph-link-client.js';
 import type { GLUpload, GLMultipartAdapter, UploadProgressCallback } from '../lib/generated/client/graph-link-uploads.js';
+import { DefaultGraphLinkWsAdapter } from '../lib/generated/graphlink.js';
 
 const DEFAULT_PORT = 9999;
 const UPLOAD_PORT = 9998;
