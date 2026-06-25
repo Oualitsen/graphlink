@@ -23,7 +23,7 @@ start-server:
 	curl -s -X POST http://localhost:9990/actuator/shutdown || true
 	lsof -ti :9999 | xargs kill -9 2>/dev/null || true
 	sleep 1
-	java -jar $(SERVER_JAR) &
+	java -jar $(SERVER_JAR) --server.port=9999 --management.server.port=9990 &
 	sleep 6
 
 stop-server:
@@ -34,7 +34,7 @@ start-upload-server:
 	curl -s -X POST http://localhost:9991/actuator/shutdown || true
 	lsof -ti :9998 | xargs kill -9 2>/dev/null || true
 	sleep 1
-	java -jar $(UPLOAD_SERVER_JAR) &
+	java -jar $(UPLOAD_SERVER_JAR) --server.port=9998 --management.server.port=9991 &
 	sleep 6
 
 stop-upload-server:
