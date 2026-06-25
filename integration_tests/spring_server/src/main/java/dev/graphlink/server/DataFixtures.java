@@ -130,12 +130,12 @@ public final class DataFixtures {
     // Spring only resolves selected fields, so at @glExpand(depth:3) it never
     // asks for the third-level driver's car/bike.
 
-    // Depth-3 leaf: driver with no car/bike (cycle truncated here)
+    // Depth-3 leaf: driver with no vehicle (cycle truncated here)
     public static final VehicleDriver VD_ALEX_LEAF =
-        new VehicleDriver("vd-1", "Alex Driver", null, null);
+        new VehicleDriver("vd-1", "Alex Driver", null);
 
     public static final VehicleDriver VD_JORDAN_LEAF =
-        new VehicleDriver("vd-2", "Jordan Driver", null, null);
+        new VehicleDriver("vd-2", "Jordan Driver", null);
 
     // Owners reference the leaf drivers
     public static final VehicleOwner VO_ALICE =
@@ -151,12 +151,12 @@ public final class DataFixtures {
     public static final Bike BIKE_TREK =
         new Bike("bike-1", "Trek FX3", VO_BOB);
 
-    // Full drivers: vd-1 has a car, vd-2 has a bike
+    // Full drivers: vd-1 has a Car, vd-2 has a Bike
     public static final VehicleDriver VD_ALEX =
-        new VehicleDriver("vd-1", "Alex Driver", CAR_TESLA, null);
+        new VehicleDriver("vd-1", "Alex Driver", CAR_TESLA);
 
     public static final VehicleDriver VD_JORDAN =
-        new VehicleDriver("vd-2", "Jordan Driver", null, BIKE_TREK);
+        new VehicleDriver("vd-2", "Jordan Driver", BIKE_TREK);
 
     public static VehicleDriver vehicleDriverById(String id) {
         return switch (id) {
