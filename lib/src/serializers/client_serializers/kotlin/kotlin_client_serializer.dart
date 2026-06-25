@@ -74,9 +74,9 @@ class KotlinClientSerializer extends GLClientSerializer {
       if (_grammar.hasQueries)
         'queries = ${_classNameFor(GLQueryType.query)}(adapter, fragmentMap, encoder, decoder, store)',
       if (_grammar.hasMutations)
-        'mutations = ${_classNameFor(GLQueryType.mutation)}(adapter, ${_grammar.hasUploadMutations ? 'multipartAdapter, ' : ''}encoder, decoder, store)',
+        'mutations = ${_classNameFor(GLQueryType.mutation)}(adapter, ${_grammar.hasUploadMutations ? 'multipartAdapter, ' : ''}fragmentMap, encoder, decoder, store)',
       if (_grammar.hasSubscriptions)
-        'subscriptions = ${_classNameFor(GLQueryType.subscription)}(adapter, wsAdapter, encoder, decoder, store)',
+        'subscriptions = ${_classNameFor(GLQueryType.subscription)}(adapter, wsAdapter, fragmentMap, encoder, decoder, store)',
       ..._grammar.fragments.values.map((f) =>
           'fragmentMap["${f.tokenInfo}"] = "${gqlSerializer.serializeFragmentDefinitionBase(f).escapeForStringLiteral()}"'),
     ];
@@ -157,7 +157,7 @@ class KotlinClientSerializer extends GLClientSerializer {
       name: 'GraphLinkResolverBase',
       params: [
         'private val adapter: GraphLinkClientAdapter',
-        'protected val fragmentMap: Map<String, String>?',
+        'protected val fragmentMap: Map<String, String>',
         'protected val store: GraphLinkCacheStore',
         'protected val encoder: GraphLinkJsonEncoder',
         'protected val decoder: GraphLinkJsonDecoder',
@@ -187,6 +187,8 @@ class KotlinClientSerializer extends GLClientSerializer {
         _removeKeyFromTagsMethod(),
         '',
         "private fun tagKey(tag: String): String = \"__tag__\$tag\"",
+        '',
+        _assembleQueryMethod(),
       ],
     );
 
@@ -414,7 +416,7 @@ class KotlinClientSerializer extends GLClientSerializer {
           'init ${codeGenUtils.block(['handler = GraphLinkSubscriptionHandler(wsAdapter, decoder, encoder)'])}',
         '',
         ...methods,
-        if (type == GLQueryType.query) _buildPayloadMethod(),
+        if (type == GLQueryType.query) ...[_buildPayloadMethod()],
       ],
     );
 
@@ -434,17 +436,15 @@ class KotlinClientSerializer extends GLClientSerializer {
       if (type == GLQueryType.subscription) 'wsAdapter: GraphLinkWebSocketAdapter',
       if (type == GLQueryType.mutation && _grammar.hasUploadMutations)
         'private val multipartAdapter: GraphLinkMultipartAdapter',
-      if (type == GLQueryType.query) 'fragmentMap: Map<String, String>?',
+      'fragmentMap: Map<String, String>',
       'encoder: GraphLinkJsonEncoder',
       'decoder: GraphLinkJsonDecoder',
       'store: GraphLinkCacheStore',
     ];
   }
 
-  String _superCtorCall(GLQueryType type) {
-    final fragmentMapArg = type == GLQueryType.query ? 'fragmentMap' : 'null';
-    return 'GraphLinkResolverBase(adapter, $fragmentMapArg, store, encoder, decoder)';
-  }
+  String _superCtorCall(GLQueryType type) =>
+      'GraphLinkResolverBase(adapter, fragmentMap, store, encoder, decoder)';
 
 
   String _buildPayloadMethod() {
@@ -499,7 +499,7 @@ class KotlinClientSerializer extends GLClientSerializer {
         codeGenUtils.forEachLoop(
           variable: 'fragName',
           iterable: 'fragmentNames',
-          statements: ['fragmentsBuilder.append(fragmentMap?.get(fragName))'],
+          statements: ['fragmentsBuilder.append(fragmentMap[fragName])'],
         ),
         'queryBuilder.append(fragmentsBuilder)',
         codeGenUtils.constructorCall('return GraphLinkPayload', [
@@ -507,6 +507,35 @@ class KotlinClientSerializer extends GLClientSerializer {
           'operationName = operationName',
           'variables = variables',
         ]),
+      ],
+    );
+  }
+
+  String _assembleQueryMethod() {
+    return codeGenUtils.createMethod(
+      methodName: 'assembleQuery',
+      returnType: 'String',
+      arguments: [
+        'query: String',
+        'fragmentNames: Set<String>',
+      ],
+      statements: [
+        'val buffer = StringBuilder(query)',
+        codeGenUtils.forEachLoop(
+          variable: 'name',
+          iterable: 'fragmentNames',
+          statements: [
+            'val frag = fragmentMap[name]',
+            codeGenUtils.ifStatement(
+              condition: 'frag != null',
+              ifBlockStatements: [
+                'buffer.append("\\n")',
+                'buffer.append(frag)',
+              ],
+            ),
+          ],
+        ),
+        'return buffer.toString()',
       ],
     );
   }

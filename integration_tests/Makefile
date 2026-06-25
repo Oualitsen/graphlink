@@ -74,7 +74,7 @@ kill-servers:
 	@:
 
 kill-ports:
-	for port in $$(seq 9990 9999); do \
+	for port in $$(seq 9900 9999); do \
 		pids=$$(lsof -ti :$$port 2>/dev/null); \
 		if [ -n "$$pids" ]; then \
 			echo "$$pids" | xargs kill -9 2>/dev/null && echo "Killed process(es) on port $$port: $$pids" || echo "Failed to kill process(es) on port $$port: $$pids"; \

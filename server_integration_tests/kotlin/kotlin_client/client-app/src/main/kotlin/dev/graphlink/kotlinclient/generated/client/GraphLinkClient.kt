@@ -3,7 +3,7 @@
 // GitHub: https://github.com/Oualitsen/graphlink
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
-// ignore_for_file: use_rethrow_when_possible, camel_case_types, constant_identifier_names, unused_import, non_constant_identifier_names, no_leading_underscores_for_local_identifiers, unused_local_variable, annotate_overrides, library_private_types_in_public_api
+
 
 package dev.graphlink.kotlinclient.generated.client;
 import dev.graphlink.kotlinclient.generated.interfaces.GraphLinkClientAdapter
@@ -24,8 +24,8 @@ open class GraphLinkClient(
 
    init {
       queries = GraphLinkQueries(adapter, fragmentMap, encoder, decoder, store)
-      mutations = GraphLinkMutations(adapter, encoder, decoder, store)
-      subscriptions = GraphLinkSubscriptions(adapter, wsAdapter, encoder, decoder, store)
+      mutations = GraphLinkMutations(adapter, fragmentMap, encoder, decoder, store)
+      subscriptions = GraphLinkSubscriptions(adapter, wsAdapter, fragmentMap, encoder, decoder, store)
       fragmentMap["_all_fields_Author"] = "fragment _all_fields_Author on Author{id name articles{..._all_fields_Article}}"
       fragmentMap["_all_fields_Article"] = "fragment _all_fields_Article on Article{id title authorId author{id name}}"
    }

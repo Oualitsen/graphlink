@@ -16,102 +16,144 @@ class JavaClientOperationSerializer {
 
   JavaClientOperationSerializer(this._ctx);
 
-String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
-    final dividedQueries = _ctx.gqlSerializer.divideQueryDefinition(def, _ctx.grammar);
-    final directives = _ctx.gqlSerializer
-        .serializeDirectiveValueList(def.getDirectives(skipGenerated: true));
-    final parseType = def.getFullResponseTypeDefinition(_ctx.grammar).token;
-    container.imports.addAll([
-      JavaImports.map,
-      JavaImports.hashMap,
-      JavaImports.list,
-      JavaImports.arrayList
-    ]);
-    if (dividedQueries.isNotEmpty) {
-      container.imports
-          .addAll([JavaImports.set, JavaImports.hashSet, JavaImports.arrays]);
-    }
-    return _ctx.codeGenUtils.createMethod(
-        returnType: 'public ${returnTypeByQueryType(def)}',
-        methodName: def.tokenInfo.token,
-        arguments: getArguments(def),
-        statements: [
-          'String ${svOperationName} = "${def.tokenInfo}";',
-          ..._defaultCoalesces(def),
-          generateVariables(def, container),
-          'List<GraphLinkPartialQuery> ${svPartialQueries} = new ArrayList<>();',
-          ...dividedQueries.map(serializePartialQueryJava),
-          'Map<String, Object> ${svResponseMap} = new HashMap<>();',
-          'Map<String, Object> ${svStaleData} = new HashMap<>();',
-          _ctx.codeGenUtils.forEachLoop(
-              variable: 'partQuery',
-              iterable: '${svPartialQueries}',
-              statements: [
-                _ctx.codeGenUtils.ifStatement(
-                    condition: 'partQuery.ttl > 0',
-                    ifBlockStatements: [
-                      _ctx.codeGenUtils.tryCatchFinally(
-                        tryStatements: [
-                          'GraphLinkCacheEntry entry = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline);',
-                          _ctx.codeGenUtils.ifStatement(
-                              condition: 'entry != null',
-                              ifBlockStatements: [
-                                _ctx.codeGenUtils.ifStatement(
-                                  condition: 'entry.stale',
-                                  ifBlockStatements: [
-                                    '${svStaleData}.put(partQuery.elementKey, ${svDecoder}.decode(entry.data).get("__gl_v__"));'
-                                  ],
-                                  elseBlockStatements: [
-                                    '${svResponseMap}.put(partQuery.elementKey, ${svDecoder}.decode(entry.data).get("__gl_v__"));'
-                                  ],
-                                ),
-                              ]),
-                        ],
-                        catchStatements: [],
-                        catchVariable: 'ignored',
-                      ),
-                    ]),
-              ]),
-          'List<GraphLinkPartialQuery> ${svRemaining} = new ArrayList<>();',
-          _ctx.codeGenUtils.forEachLoop(
-              variable: 'partQuery',
-              iterable: '${svPartialQueries}',
-              statements: [
-                _ctx.codeGenUtils.ifStatement(
-                    condition: '!${svResponseMap}.containsKey(partQuery.elementKey)',
-                    ifBlockStatements: [
-                      '${svRemaining}.add(partQuery);',
-                    ]),
-              ]),
-          _ctx.codeGenUtils.ifStatement(
-              condition: '${svRemaining}.isEmpty()',
-              ifBlockStatements: [
-                'Map<String, Object> $svWrappedResponse = new HashMap<>();',
-                '$svWrappedResponse.put("data", ${svResponseMap});',
-                'return $parseType.fromJson($svWrappedResponse)${_getDataCall(def)};',
-              ]),
-          'GraphLinkPayload ${svPayload} = buildPayload(${svRemaining}, ${svOperationName}, "$directives");',
-          _ctx.codeGenUtils.tryCatchFinally(
-            tryStatements: [
-              'String ${svResponseText} = glCallAdapter(${svPayload});',
-              'return parseToObjectAndCache(${svResponseText}, ${svResponseMap}, $parseType::fromJson, ${svRemaining}, ${def.isCaptureErrors(_ctx.grammar) ? 'true': 'false'})${_getDataCall(def)};',
-            ],
-            catchStatements: [
-              '${svResponseMap}.putAll(${svStaleData});',
-              'long remainingCount = ${svPartialQueries}.stream().filter(e -> !${svResponseMap}.containsKey(e.elementKey)).count();',
-              _ctx.codeGenUtils.ifStatement(
-                  condition: 'remainingCount > 0',
-                  ifBlockStatements: [
-                    'throw new RuntimeException(exception);',
-                  ]),
-              'Map<String, Object> $svWrappedResponse = new HashMap<>();',
-              '$svWrappedResponse.put("data", ${svResponseMap});',
-              'return $parseType.fromJson($svWrappedResponse)${_getDataCall(def)};',
-            ],
-            catchVariable: 'exception',
-          ),
-        ]);
-  }
+	String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
+	    final dividedQueries = _ctx.gqlSerializer.divideQueryDefinition(def, _ctx.grammar);
+	    container.imports.addAll([JavaImports.map, JavaImports.hashMap, JavaImports.list, JavaImports.arrayList, JavaImports.collections]);
+	    if (dividedQueries.isNotEmpty) {
+	      container.imports.addAll([JavaImports.set, JavaImports.hashSet, JavaImports.arrays]);
+	    }
+
+	    if (dividedQueries.every((e) => e.cacheTTL == 0)) {
+	      return _simpleQueryToMethod(def, container, dividedQueries);
+	    }
+	    return _cachedQueryToMethod(def, container, dividedQueries);
+	  }
+
+	  String _simpleQueryToMethod(GLQueryDefinition def, GLImportContainer container,
+	      List<DividedQuery> dividedQueries) {
+	    final parseType = def.getFullResponseTypeDefinition(_ctx.grammar).token;
+	    final isCE = def.isCaptureErrors(_ctx.grammar);
+	    final queryString = _ctx.gqlSerializer.serializeQueryDefinition(def);
+	    final fragmentNames = def.fragments(_ctx.grammar)
+	        .map((f) => '"${f.tokenInfo.token}"').toSet();
+
+	    return _ctx.codeGenUtils.createMethod(
+	        returnType: 'public ${returnTypeByQueryType(def)}',
+	        methodName: def.tokenInfo.token,
+	        arguments: getArguments(def),
+	        statements: [
+	          'String ${svOperationName} = "${def.tokenInfo}";',
+	          ..._defaultCoalesces(def),
+	          if (def.arguments.isNotEmpty) generateVariables(def, container),
+	          'String ${svQuery} = "$queryString";',
+	          'Set<String> ${svFragmentNames} = ${fragmentNames.isEmpty ? "Collections.emptySet();" : "new HashSet<>(Arrays.asList(${fragmentNames.join(", ")}));"}',
+	          'String ${svFullQuery} = assembleQuery(${svQuery}, ${svFragmentNames});',
+	          'GraphLinkPayload ${svPayload} = GraphLinkPayload.builder().query(${svFullQuery}).operationName(${svOperationName}).variables(${def.arguments.isEmpty ? "Collections.emptyMap()" : svVariables}).build();',
+	          'String ${svResponseText} = glCallAdapter(${svPayload});',
+	          if (isCE) ...[
+	            'return $parseType.fromJson(${svDecoder}.decode(${svResponseText}));',
+	          ] else ...[
+	            '$parseType ${svDecodedResponse} = $parseType.fromJson(${svDecoder}.decode(${svResponseText}));',
+	            _ctx.codeGenUtils.ifStatement(
+	              condition: '${svDecodedResponse}.getErrors() != null && !${svDecodedResponse}.getErrors().isEmpty()',
+	              ifBlockStatements: ['throw ${clientExceptionName}.of(${svDecodedResponse}.getErrors());'],
+	            ),
+	            'return ${svDecodedResponse}.getData();',
+	          ],
+	        ]);
+	  }
+
+	  String _cachedQueryToMethod(GLQueryDefinition def, GLImportContainer container,
+	      List<DividedQuery> dividedQueries) {
+	    final directives = _ctx.gqlSerializer
+	        .serializeDirectiveValueList(def.getDirectives(skipGenerated: true));
+	    final parseType = def.getFullResponseTypeDefinition(_ctx.grammar).token;
+	    container.imports.addAll([JavaImports.list, JavaImports.arrayList]);
+	    if (dividedQueries.isNotEmpty) {
+	      container.imports
+	          .addAll([JavaImports.set, JavaImports.hashSet, JavaImports.arrays]);
+	    }
+	    return _ctx.codeGenUtils.createMethod(
+	        returnType: 'public ${returnTypeByQueryType(def)}',
+	        methodName: def.tokenInfo.token,
+	        arguments: getArguments(def),
+	        statements: [
+	          'String ${svOperationName} = "${def.tokenInfo}";',
+	          ..._defaultCoalesces(def),
+	          if (def.arguments.isNotEmpty) generateVariables(def, container),
+	          'List<GraphLinkPartialQuery> ${svPartialQueries} = new ArrayList<>();',
+	          ...dividedQueries.map(serializePartialQueryJava),
+	          'Map<String, Object> ${svResponseMap} = new HashMap<>();',
+	          'Map<String, Object> ${svStaleData} = new HashMap<>();',
+	          _ctx.codeGenUtils.forEachLoop(
+	              variable: 'partQuery',
+	              iterable: '${svPartialQueries}',
+	              statements: [
+	                _ctx.codeGenUtils.ifStatement(
+	                    condition: 'partQuery.ttl > 0',
+	                    ifBlockStatements: [
+	                      _ctx.codeGenUtils.tryCatchFinally(
+	                        tryStatements: [
+	                          'GraphLinkCacheEntry entry = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline);',
+	                          _ctx.codeGenUtils.ifStatement(
+	                              condition: 'entry != null',
+	                              ifBlockStatements: [
+	                                _ctx.codeGenUtils.ifStatement(
+	                                  condition: 'entry.stale',
+	                                  ifBlockStatements: [
+	                                    '${svStaleData}.put(partQuery.elementKey, ${svDecoder}.decode(entry.data).get("__gl_v__"));'
+	                                  ],
+	                                  elseBlockStatements: [
+	                                    '${svResponseMap}.put(partQuery.elementKey, ${svDecoder}.decode(entry.data).get("__gl_v__"));'
+	                                  ],
+	                                ),
+	                              ]),
+	                        ],
+	                        catchStatements: [],
+	                        catchVariable: 'ignored',
+	                      ),
+	                    ]),
+	              ]),
+	          'List<GraphLinkPartialQuery> ${svRemaining} = new ArrayList<>();',
+	          _ctx.codeGenUtils.forEachLoop(
+	              variable: 'partQuery',
+	              iterable: '${svPartialQueries}',
+	              statements: [
+	                _ctx.codeGenUtils.ifStatement(
+	                    condition: '!${svResponseMap}.containsKey(partQuery.elementKey)',
+	                    ifBlockStatements: [
+	                      '${svRemaining}.add(partQuery);',
+	                    ]),
+	              ]),
+	          _ctx.codeGenUtils.ifStatement(
+	              condition: '${svRemaining}.isEmpty()',
+	              ifBlockStatements: [
+	                'Map<String, Object> $svWrappedResponse = new HashMap<>();',
+	                '$svWrappedResponse.put("data", ${svResponseMap});',
+	                'return $parseType.fromJson($svWrappedResponse)${_getDataCall(def)};',
+	              ]),
+	          'GraphLinkPayload ${svPayload} = buildPayload(${svRemaining}, ${svOperationName}, "$directives");',
+	          _ctx.codeGenUtils.tryCatchFinally(
+	            tryStatements: [
+	              'String ${svResponseText} = glCallAdapter(${svPayload});',
+	              'return parseToObjectAndCache(${svResponseText}, ${svResponseMap}, $parseType::fromJson, ${svRemaining}, ${def.isCaptureErrors(_ctx.grammar) ? 'true' : 'false'})${_getDataCall(def)};',
+	            ],
+	            catchStatements: [
+	              '${svResponseMap}.putAll(${svStaleData});',
+	              'long remainingCount = ${svPartialQueries}.stream().filter(e -> !${svResponseMap}.containsKey(e.elementKey)).count();',
+	              _ctx.codeGenUtils.ifStatement(
+	                  condition: 'remainingCount > 0',
+	                  ifBlockStatements: [
+	                    'throw new RuntimeException(exception);',
+	                  ]),
+	              'Map<String, Object> $svWrappedResponse = new HashMap<>();',
+	              '$svWrappedResponse.put("data", ${svResponseMap});',
+	              'return $parseType.fromJson($svWrappedResponse)${_getDataCall(def)};',
+	            ],
+	            catchVariable: 'exception',
+	          ),
+	        ]);
+	  }
 
   String _getDataCall(GLQueryDefinition def) {
     if(def.isCaptureErrors(_ctx.grammar)) {
@@ -155,20 +197,23 @@ String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
     return buffer.toString();
   }
 
-  String _buildQueryString(GLQueryDefinition def) {
-    final query = _ctx.gqlSerializer.serializeQueryDefinition(def);
-    final frags = def.fragments(_ctx.grammar)
-        .map((f) => _ctx.gqlSerializer.serializeFragmentDefinitionBase(f))
-        .join(' ');
-    return frags.isEmpty ? query : '$query $frags';
-  }
 
   String mutationToMethod(GLQueryDefinition def, GLImportContainer container) {
     final returnType = 'public ${returnTypeByQueryType(def)}';
     final methodName = def.tokenInfo.token;
-    final queryLine = ['String ${svQuery} = "${_buildQueryString(def)}";'];
+    final queryText = _ctx.gqlSerializer.serializeQueryDefinition(def);
+    final fragmentNames = def.fragments(_ctx.grammar)
+        .map((f) => '"${f.tokenInfo.token}"').toSet();
+    final queryLine = <String>[
+      'String ${svQuery} = "$queryText";',
+      if (fragmentNames.isNotEmpty)
+        'Set<String> ${svFragmentNames} = new HashSet<>(Arrays.asList(${fragmentNames.join(", ")}));'
+      else
+        'Set<String> ${svFragmentNames} = Collections.emptySet();',
+      'String ${svFullQuery} = assembleQuery(${svQuery}, ${svFragmentNames});',
+    ];
     container.imports
-        .addAll([JavaImports.map, JavaImports.hashMap, JavaImports.arrays, JavaImports.list]);
+        .addAll([JavaImports.map, JavaImports.hashMap, JavaImports.arrays, JavaImports.list, JavaImports.set, JavaImports.hashSet, JavaImports.arrays, JavaImports.collections]);
 
     if (_ctx.grammar.mutationHasUploads(def)) {
       final argsNoProgress = getArguments(def);
@@ -183,7 +228,7 @@ String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
         'String ${svOperationName} = "$methodName";',
         ...queryLine,
         ..._defaultCoalesces(def),
-        generateVariables(def, container),
+        if (def.arguments.isNotEmpty) generateVariables(def, container),
         _serializeMultipartAdapterCall(def, container),
       ]);
 
@@ -206,8 +251,8 @@ String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
           'String ${svOperationName} = "$methodName";',
           ...queryLine,
           ..._defaultCoalesces(def),
-          generateVariables(def, container),
-          'GraphLinkPayload ${svPayload} = GraphLinkPayload.builder().query(${svQuery}).operationName(${svOperationName}).variables(${svVariables}).build();',
+          if (def.arguments.isNotEmpty) generateVariables(def, container),
+          'GraphLinkPayload ${svPayload} = GraphLinkPayload.builder().query(${svFullQuery}).operationName(${svOperationName}).variables(${def.arguments.isEmpty ? "Collections.emptyMap()" : svVariables}).build();',
           _serializeAdapterCall(def),
         ]);
   }
@@ -264,7 +309,7 @@ String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
 
     statements.addAll([
       'Map<String, Object> ${svOperationsMap} = new HashMap<>();',
-      '${svOperationsMap}.put("query", ${svQuery});',
+      '${svOperationsMap}.put("query", ${svFullQuery});',
       '${svOperationsMap}.put("operationName", ${svOperationName});',
       '${svOperationsMap}.put("variables", ${svVariables});',
       'String ${svOperations} = ${svEncoder}.encode(${svOperationsMap});',
@@ -293,17 +338,22 @@ String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
 
   String subscriptionToMethod(
       GLQueryDefinition def, GLImportContainer container) {
-        container.imports.addAll([JavaImports.map, JavaImports.hashMap, JavaImports.list]);
+        container.imports.addAll([JavaImports.map, JavaImports.hashMap, JavaImports.list, JavaImports.set, JavaImports.hashSet, JavaImports.arrays, JavaImports.collections]);
+    final queryText = _ctx.gqlSerializer.serializeQueryDefinition(def);
+    final fragmentNames = def.fragments(_ctx.grammar)
+        .map((f) => '"${f.tokenInfo.token}"').toSet();
     return _ctx.codeGenUtils.createMethod(
         returnType: 'public ${returnTypeByQueryType(def)}',
         methodName: def.tokenInfo.token,
         arguments: getArguments(def),
         statements: [
           'String ${svOperationName} = "${def.tokenInfo}";',
-          'String ${svQuery} = "${_buildQueryString(def)}";',
+          'String ${svQuery} = "$queryText";',
+          'Set<String> ${svFragmentNames} = ${fragmentNames.isEmpty ? "Collections.emptySet();" : "new HashSet<>(Arrays.asList(${fragmentNames.join(", ")}));"}',
+          'String ${svFullQuery} = assembleQuery(${svQuery}, ${svFragmentNames});',
           ..._defaultCoalesces(def),
-          generateVariables(def, container),
-          "GraphLinkPayload ${svPayload} = GraphLinkPayload.builder().query(${svQuery}).operationName(${svOperationName}).variables(${svVariables}).build();",
+          if (def.arguments.isNotEmpty) generateVariables(def, container),
+          "GraphLinkPayload ${svPayload} = GraphLinkPayload.builder().query(${svFullQuery}).operationName(${svOperationName}).variables(${def.arguments.isEmpty ? "Collections.emptyMap()" : svVariables}).build();",
           _serializeSubscriptionAdapterCall(def),
         ]);
   }
@@ -322,6 +372,7 @@ String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
   }
 
   String generateVariables(GLQueryDefinition def, GLImportContainer container) {
+    if (def.arguments.isEmpty) return '';
     var buffer =
         StringBuffer("Map<String, Object> ${svVariables} = new HashMap<>();");
     buffer.writeln();

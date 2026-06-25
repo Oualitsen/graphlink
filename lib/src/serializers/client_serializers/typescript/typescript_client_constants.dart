@@ -635,7 +635,7 @@ export class DefaultGraphLinkWsAdapter implements GraphLinkWsAdapter {
   }
 
   async connectionInitPayload(): Promise<Record<string, unknown> | null> {
-    return this.headersProvider?.() ?? null;
+    return (await this.headersProvider?.()) ?? null;
   }
 }
 ''';

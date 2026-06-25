@@ -15,7 +15,7 @@ import java.util.Objects
 
 open class GraphLinkResolverBase(
     private val adapter: GraphLinkClientAdapter,
-    protected val fragmentMap: Map<String, String>?,
+    protected val fragmentMap: Map<String, String>,
     protected val store: GraphLinkCacheStore,
     protected val encoder: GraphLinkJsonEncoder,
     protected val decoder: GraphLinkJsonDecoder,
@@ -134,5 +134,17 @@ open class GraphLinkResolverBase(
    }
 
    private fun tagKey(tag: String): String = "__tag__$tag"
+
+   fun assembleQuery(query: String, fragmentNames: Set<String>): String {
+      val buffer = StringBuilder(query)
+      for (name in fragmentNames) {
+         val frag = fragmentMap[name]
+         if (frag != null) {
+            buffer.append("\n")
+            buffer.append(frag)
+         }
+      }
+      return buffer.toString()
+   }
 }
 

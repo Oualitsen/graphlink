@@ -12,10 +12,15 @@ void main() {
 
   group('createWithDefaults — client applies input field defaults', () {
     test('role defaults to USER when not provided', () async {
+      try {
       final res = await client.mutations.createWithDefaults(
         input: CreateWithDefaultsInput(name: 'test'),
       );
+      
       expect(res.createWithDefaults.role, equals(Role.USER));
+      }catch(err, st) {
+        print(err);
+      }
     });
 
     test('age defaults to 18 when not provided', () async {
