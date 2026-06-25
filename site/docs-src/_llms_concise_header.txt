@@ -51,6 +51,10 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - **Inline error handling (`@glCaptureErrors`).** Annotate any query or mutation with
   `@glCaptureErrors` (or set `captureErrors: true` in config) to return a `FullResponse` with
   `data` and `errors` side by side instead of throwing. Dart, Java, TypeScript, and Kotlin.
+- **Selective auto-generation (`autoGenerateQueriesFor`).** On large schemas, `autoGenerateQueries: true`
+  generates a client method for every root field. `autoGenerateQueriesFor` lets you list exactly which
+  queries, mutations, and subscriptions to auto-generate. Unknown names cause a build error at generation
+  time. Supported in all four client targets.
 - **Barrel file generation.** Dart and TypeScript generators emit a barrel/index file that
   re-exports all generated types, inputs, and enums from a single import.
 - **Keyword-safe identifiers.** A GraphQL field, input field, argument, or enum value named after a
