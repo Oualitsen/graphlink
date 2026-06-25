@@ -1,5 +1,6 @@
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/constants.dart';
+import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/reserved_words.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
@@ -37,6 +38,11 @@ return GLParser(mode: mode, identityFields: config.identityFields, reservedWords
     generateAllFieldsFragments: lang.generateAllFieldsFragments,
     nullableFieldsRequired: lang.nullableFieldsRequired,
     autoGenerateQueries: lang.autoGenerateQueries,
+    autoGenerateQueriesFor: lang.autoGenerateQueriesFor == null ? null : {
+      GLQueryType.query: lang.autoGenerateQueriesFor!.queries,
+      GLQueryType.mutation: lang.autoGenerateQueriesFor!.mutations,
+      GLQueryType.subscription: lang.autoGenerateQueriesFor!.subscriptions,
+    },
     defaultAlias: lang.defaultAlias,
     operationNameAsParameter: lang.operationNameAsParameter,
     captureErrors: lang.captureErrors,

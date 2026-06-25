@@ -61,6 +61,10 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - **Inline error handling (`@glCaptureErrors`).** Annotate any query or mutation with
   `@glCaptureErrors` (or set `captureErrors: true` in config) to return a `FullResponse` with
   `data` and `errors` side by side instead of throwing on GraphQL errors. Dart, Java, TypeScript, and Kotlin.
+- **Selective auto-generation (`autoGenerateQueriesFor`).** On large schemas, `autoGenerateQueries: true`
+  generates a client method for every root field — which can be hundreds of methods. `autoGenerateQueriesFor`
+  lets you list exactly which queries, mutations, and subscriptions to auto-generate. Unknown names cause a
+  build error. Supported in all four client targets (Dart, Java, TypeScript, Kotlin).
 - **Barrel file generation.** Dart and TypeScript generators emit a single barrel/index file that
   re-exports all generated enums, inputs, types, and interfaces. One import covers the entire layer.
 - **Flutter UI widget generation.** The `flutter` config block generates display widgets for output
@@ -151,7 +155,7 @@ type Mutation {
 - Caching (@glCache, @glCacheInvalidate, tag invalidation, staleIfOffline): https://graphlink.dev/docs/caching.html
 - Directives (@glMapsTo, @glMapField, @glCache, @glCacheInvalidate, @glSkipOnServer forward mappings, and more): https://graphlink.dev/docs/directives.html
 - "@glSkipOnServer & @glSkipOnClient" (two-layer server-side access control, schema stripping, @SchemaMapping, @BatchMapping, mapTo, forward mappings, ID/object field-pair pattern for N+1-safe loading): https://graphlink.dev/docs/skip-directives.html
-- Configuration (all config keys for Dart, Java, TypeScript, Kotlin, Spring; reactive; useSpringSecurity; typeMappings; unknownScalarType fallback for unmapped custom scalars; CLI flags; YAML config): https://graphlink.dev/docs/configuration.html
+- Configuration (all config keys for Dart, Java, TypeScript, Kotlin, Spring; autoGenerateQueriesFor for selective operation generation; reactive; useSpringSecurity; typeMappings; unknownScalarType fallback for unmapped custom scalars; CLI flags; YAML config): https://graphlink.dev/docs/configuration.html
 
 ## Links
 
