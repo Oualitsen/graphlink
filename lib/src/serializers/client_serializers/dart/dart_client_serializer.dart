@@ -448,7 +448,7 @@ class DartClientSerializer extends GLClientSerializer {
           codeGenUtils.createConstructor(
               className: classNameFromType(type),
               arguments: _declareConstructorArgs(type),
-              superArguments: ['store', svTagLocks, 'httpAdapter', if (type == GLQueryType.query) 'fragmentMap' else 'const {}'],
+              superArguments: ['store', svTagLocks, 'httpAdapter', 'fragmentMap'],
               statements: [
                 if (type == GLQueryType.subscription)
                   '$svHandler = GraphLinkSubscriptionHandler(adapter);',
@@ -584,10 +584,10 @@ class DartClientSerializer extends GLClientSerializer {
             "queries = ${classNameFromType(GLQueryType.query)}(adapter, $svFragMap, this.store, $svTagLocks);",
           if (_parser.hasMutations)
             _parser.hasUploadMutations
-                ? "mutations = ${classNameFromType(GLQueryType.mutation)}(adapter, uploadConverter, uploadAdapter, this.store, $svTagLocks);"
-                : "mutations = ${classNameFromType(GLQueryType.mutation)}(adapter, this.store, $svTagLocks);",
+                ? "mutations = ${classNameFromType(GLQueryType.mutation)}(adapter, uploadConverter, uploadAdapter, $svFragMap, this.store, $svTagLocks);"
+                : "mutations = ${classNameFromType(GLQueryType.mutation)}(adapter, $svFragMap, this.store, $svTagLocks);",
           if (_parser.hasSubscriptions)
-            "subscriptions = ${classNameFromType(GLQueryType.subscription)}(adapter, wsAdapter, this.store, $svTagLocks);",
+            "subscriptions = ${classNameFromType(GLQueryType.subscription)}(adapter, wsAdapter, $svFragMap, this.store, $svTagLocks);",
         ],
       ),
       if (_parser.hasSubscriptions &&
@@ -609,7 +609,7 @@ class DartClientSerializer extends GLClientSerializer {
         'this.$svUploadConverter',
         'this.$svUploadAdapter',
       ],
-      if (type == GLQueryType.query) 'Map<String, String> fragmentMap',
+      'Map<String, String> fragmentMap',
       '$_cacheStoreClassName store',
       'Map<String, GraphLinkLock> $svTagLocks',
     ];
