@@ -4,11 +4,10 @@ import { GraphLinkClient } from '../lib/generated/client/graph-link-client.js';
 import type { GLUpload, GLMultipartAdapter, UploadProgressCallback } from '../lib/generated/client/graph-link-uploads.js';
 import { DefaultGraphLinkWsAdapter } from '../lib/generated/graphlink.js';
 
-const DEFAULT_PORT = 9999;
-const UPLOAD_PORT = 9998;
-const HTTP_URL = 'http://localhost:9999/graphql';
+
+const HTTP_URL = 'http://localhost:9988/graphql';
 const UPLOAD_URL = 'http://localhost:9998/graphql';
-export const WS_URL = 'ws://localhost:9999/graphql';
+export const WS_URL = 'ws://localhost:9988/graphql';
 
 export function httpUrlForPort(port: number): string {
   return `http://localhost:${port}/graphql`;
