@@ -283,12 +283,6 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
     return ".then(($varName) ${block(statements)})";
   }
 
-  /// Returns a local variable name that is unlikely to clash with user-defined
-  /// method arguments by wrapping it with a fixed prefix and suffix.
-  ///
-  /// Example: safeLocalVar('operationName') → '__gl_operationName__'
-  String safeLocalVar(String name) => '__gl_${name}__';
-
   /// Emits `receiver.map((param) => body).toList()`, or `receiver?.map(...)`
   /// if [nullable]. With an empty [receiver], returns just the
   /// `.map(...).toList()` / `?.map(...).toList()` suffix.

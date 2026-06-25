@@ -1,6 +1,6 @@
 import 'package:graphlink/src/capture_errors_utils.dart';
 import 'package:graphlink/src/constants.dart';
-import 'package:graphlink/src/serializers/client_serializers/java_client_serializer.dart';
+import 'package:graphlink/src/serializers/client_serializers/java/java_client_serializer.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:test/test.dart';
