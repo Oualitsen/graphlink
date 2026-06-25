@@ -58,14 +58,15 @@ void main() {
     // engine(name: String!) → required String engineName (non-null, no default)
     expect(out, contains('required String engineName'));
     expect(out, isNot(contains('String? engineName')));
+
     expect(out, isNot(contains('engineName = null')));
 
     // transmission(name: String = null) → String? transmissionName = null
     expect(out, contains('String? transmissionName = null'));
+    // query operation declaration: engineName must be String!, transmissionName
+    // must be String (nullable, not String!)
+    expect(out, contains(r'\$engineName: String!'));
 
-    // argumentDeclarations: engineName must be String!, transmissionName must
-    // be String (nullable, not String!)
-    expect(out, contains(r'"\$engineName: String!"'));
-    expect(out, isNot(contains(r'"\$transmissionName: String!"')));
+    expect(out, isNot(contains(r'\$transmissionName: String!')));
   });
 }

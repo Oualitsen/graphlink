@@ -57,6 +57,67 @@ class TypeScriptClientOperationSerializer {
   // ── Query method ──────────────────────────────────────────────────────────
 
   String queryToMethod(GLQueryDefinition def) {
+    if (_gqlSerializer.divideQueryDefinition(def, _parser).every((e) => e.cacheTTL == 0)) {
+      return _simpleQueryToMethod(def);
+    }
+    return _cachedQueryToMethod(def);
+  }
+
+  String _simpleQueryToMethod(GLQueryDefinition def) {
+    final returnTypeName = _returnTypeName(def);
+    final fullResponseTypeName =
+        def.getFullResponseTypeDefinition(_parser).tokenInfo.token;
+    final isCE = def.isCaptureErrors(_parser);
+    final args = _getMethodArgs(def);
+    final queryString = _buildQueryString(def);
+
+    final innerStatements = [
+      "const $svOperationName = '${def.tokenInfo}';",
+      _generateVariables(def),
+      "const $svQuery = '${queryString}';",
+      "const $svPayload: GraphLinkPayload = { query: $svQuery, operationName: $svOperationName, variables: $svVariables };",
+      "const $svResponse = await this._glCallAdapter($svPayload);",
+      "const $svResult = JSON.parse($svResponse) as $fullResponseTypeName;",
+      if (isCE)
+        _cg.ifStatement(
+          condition: "!($svResult as any)['errors']",
+          ifBlockStatements: ["($svResult as any)['errors'] = null;"],
+        ),
+      if (!isCE) _errorCheckStatement(),
+      if (observables) ...[
+        isCE
+            ? 'subscriber.next($svResult);'
+            : "subscriber.next($svResult['data'] as $returnTypeName);",
+        'subscriber.complete();',
+      ] else
+        isCE
+            ? 'return $svResult;'
+            : "return $svResult['data'] as $returnTypeName;",
+    ];
+
+    if (observables) {
+      return _cg.createMethod(
+        methodName: def.tokenInfo.token,
+        returnType: 'Observable<$returnTypeName>',
+        async: false,
+        arguments: args.isEmpty ? null : args,
+        statements: [
+          'return ${_cg.observableExpr(returnTypeName, [_cg.iife(innerStatements)])};',
+        ],
+      );
+    }
+
+    return _cg.createMethod(
+      methodName: def.tokenInfo.token,
+      returnType: returnTypeName,
+      async: true,
+      arguments: args.isEmpty ? null : args,
+      statements: innerStatements,
+    );
+  }
+
+  String _cachedQueryToMethod(GLQueryDefinition def) {
+    final dividedQueries = _gqlSerializer.divideQueryDefinition(def, _parser);
     final returnTypeName = _returnTypeName(def);
     final fullResponseTypeName =
         def.getFullResponseTypeDefinition(_parser).tokenInfo.token;
@@ -68,7 +129,6 @@ class TypeScriptClientOperationSerializer {
         : 'this._parseAndCache($svResponseText, $svResponseMap, $svRemaining)';
 
     final args = _getMethodArgs(def);
-    final dividedQueries = _gqlSerializer.divideQueryDefinition(def, _parser);
     final hasFrags = def.fragments(_parser).isNotEmpty;
     final directives = _gqlSerializer
         .serializeDirectiveValueList(def.getDirectives(skipGenerated: true));
@@ -97,7 +157,7 @@ class TypeScriptClientOperationSerializer {
           if (observables) 'subscriber.complete(); return;',
         ],
       ),
-      'const $svPayload = this._buildPayload($svRemaining, $svOperationName, ${directives.isEmpty ? "''" : "'${directives}'"}); ',
+      "const $svPayload = this._buildPayload($svRemaining, $svOperationName, ${directives.isEmpty ? "''" : "'${directives}'"}); ",
       _cg.tryCatchFinally(
         tryStatements: [
           'const $svResponseText = await this._glCallAdapter($svPayload);',

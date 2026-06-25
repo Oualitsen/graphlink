@@ -7,7 +7,6 @@
 
 package dev.graphlink.test.generated.client;
 import dev.graphlink.test.generated.types.GraphLinkPayload
-import dev.graphlink.test.generated.types.GraphLinkError
 import dev.graphlink.test.generated.types.CreateUserFullResponse
 import dev.graphlink.test.generated.types.CreateUserResponse
 import dev.graphlink.test.generated.inputs.CreateUserInput

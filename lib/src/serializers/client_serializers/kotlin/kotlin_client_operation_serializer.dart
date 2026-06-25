@@ -22,6 +22,44 @@ class KotlinClientOperationSerializer {
   // ── Query (cache-aware) ────────────────────────────────────────────────────
 
   String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
+    if (_ctx.gqlSerializer.divideQueryDefinition(def, _ctx.grammar).every((e) => e.cacheTTL == 0)) {
+      return _simpleQueryToMethod(def, container);
+    }
+    return _cachedQueryToMethod(def, container);
+  }
+
+  String _simpleQueryToMethod(GLQueryDefinition def, GLImportContainer container) {
+    final parseType = def.getFullResponseTypeDefinition(_ctx.grammar).token;
+    final isCE = def.isCaptureErrors(_ctx.grammar);
+    final queryString = _buildQueryString(def);
+
+    final statements = <String>[
+      'val ${svOperationName} = "${def.tokenInfo}"',
+      _generateVariables(def, container),
+      'val ${svQuery} = "$queryString"',
+      'val ${svPayload} = GraphLinkPayload.builder().query(${svQuery}).operationName(${svOperationName}).variables(${svVariables}).build()',
+      'val ${svResponseText} = glCallAdapter(${svPayload})',
+      if (isCE)
+        'return $parseType.fromJson(${svDecoder}.decode(${svResponseText}))'
+      else ...[
+        'val ${svDecodedResponse} = $parseType.fromJson(${svDecoder}.decode(${svResponseText}))',
+        _ctx.codeGenUtils.ifStatement(
+          condition: '${svDecodedResponse}.getErrors() != null && !${svDecodedResponse}.getErrors().isEmpty()',
+          ifBlockStatements: ['throw ${_clientException}.of(${svDecodedResponse}.getErrors())'],
+        ),
+        'return ${svDecodedResponse}.getData()',
+      ],
+    ];
+
+    return _ctx.codeGenUtils.suspendFun(
+      name: def.tokenInfo.token,
+      arguments: getArguments(def),
+      returnType: returnTypeByQueryType(def),
+      statements: statements,
+    );
+  }
+
+  String _cachedQueryToMethod(GLQueryDefinition def, GLImportContainer container) {
     final dividedQueries = _ctx.gqlSerializer.divideQueryDefinition(def, _ctx.grammar);
     final directives = _ctx.gqlSerializer
         .serializeDirectiveValueList(def.getDirectives(skipGenerated: true));

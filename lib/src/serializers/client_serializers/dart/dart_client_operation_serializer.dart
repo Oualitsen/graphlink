@@ -48,6 +48,42 @@ class DartClientOperationSerializer {
   // ── Public entry points ────────────────────────────────────────────────────
 
   String queryToMethod(GLQueryDefinition def) {
+    if (_divideQuery(def).every((e) => e.cacheTTL == 0)) {
+      return _simpleQueryMethodBody(def);
+    }
+    return _cachedQueryMethodBody(def);
+  }
+
+  String _simpleQueryMethodBody(GLQueryDefinition def) {
+    final fullResponseToken =
+        def.getFullResponseTypeDefinition(_grammar).tokenInfo;
+    final isCaptureErrors = def.isCaptureErrors(_grammar);
+    final queryString = _buildQueryString(def);
+
+    return _cg.createMethod(
+        returnType: returnTypeByQueryType(def),
+        methodName: def.tokenInfo.token,
+        arguments: getArguments(def),
+        async: true,
+        statements: [
+          "const $svOperationName = '${def.tokenInfo}';",
+          "const $svQuery = '''$queryString''';",
+          generateVariables(def),
+          "final $svPayload = GraphLinkPayload(query: $svQuery, operationName: $svOperationName, variables: $svVariables);",
+          if (isCaptureErrors) ...[
+            "final $svResponse = await glCallAdapter($svPayload);",
+            "return $fullResponseToken.fromJson(jsonDecode($svResponse));",
+          ] else ...[
+            "final $svResponse = await glCallAdapter($svPayload);",
+            "final $svResult = $fullResponseToken.fromJson(jsonDecode($svResponse));",
+            "if ($svResult.errors != null) throw $svResult.errors!;",
+            "return $svResult.data!;",
+          ],
+        ]);
+  }
+
+  String _cachedQueryMethodBody(GLQueryDefinition def) {
+    final dividedQueries = _divideQuery(def);
     final cacheHitReturn = StringBuffer();
     final parseAndCacheCall = StringBuffer();
     final fullResponseToken =
@@ -73,7 +109,7 @@ class DartClientOperationSerializer {
         statements: [
           "const $svOperationName = '${def.tokenInfo}';",
           generateVariables(def),
-          'final $svPartialQueries = ${_divideQuery(def).map((e) => _serializePartialQuery(e)).toList()};',
+          'final $svPartialQueries = ${dividedQueries.map((e) => _serializePartialQuery(e)).toList()};',
           'final $svResponseMap = <String, dynamic>{};',
           'final $svStaleData = <String, dynamic>{};',
           'final $svCacheFetchFutures = <Future>[];',
