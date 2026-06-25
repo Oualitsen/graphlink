@@ -1,4 +1,4 @@
-import 'package:graphlink/src/serializers/client_serializers/dart_client_serializer.dart';
+import 'package:graphlink/src/serializers/client_serializers/dart/dart_client_serializer.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';

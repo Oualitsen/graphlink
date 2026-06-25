@@ -1,0 +1,33 @@
+{
+    "schemaPaths": [
+        "../_schema/*.graphql"
+    ],
+    "mode": "client",
+    "identityFields": [],
+    "unknownScalarType": "String",
+    "typeMappings": {
+        "ID": "String",
+        "String": "String",
+        "Float": "double",
+        "Int": "int",
+        "Boolean": "bool",
+        "Null": "null",
+        "Upload": "int"
+    },
+    "outputDir": "lib/generated",
+    "clientConfig": {
+        "dart": {
+            "packageName": "graphlink_gitlab_example",
+            "generateAllFieldsFragments": true,
+            "nullableFieldsRequired": false,
+            "autoGenerateQueries": true,
+            "autoGenerateQueriesDefaultAlias": "data",
+            "operationNameAsParameter": false,
+            "generateUiTypes": false,
+            "generateUiInputs": false,
+            "immutableInputFields": true,
+            "immutableTypeFields": true,
+            "httpAdapter": "http"
+        }
+    }
+}

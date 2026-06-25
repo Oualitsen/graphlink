@@ -1,7 +1,7 @@
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
-import 'package:graphlink/src/serializers/client_serializers/dart_client_serializer.dart';
+import 'package:graphlink/src/serializers/client_serializers/dart/dart_client_serializer.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:test/test.dart';
 
@@ -52,16 +52,16 @@ void main() {
     });
 
     test('imports graph_link_uploads.dart', () => expect(out, contains("import 'graph_link_uploads.dart'")));
-    test('has _defaultUploadConverter', () => expect(out, contains('_defaultUploadConverter')));
+    test('has defaultUploadConverter', () => expect(out, contains('defaultUploadConverter')));
     test('upload arg is GLUpload', () => expect(out, contains('required GLUpload file')));
     test('list upload arg is List<GLUpload>', () => expect(out, contains('required List<GLUpload> files')));
     test('has onProgress param', () => expect(out, contains('UploadProgressCallback? onProgress')));
     test('upload variable is null', () => expect(out, contains("'file': null")));
-    test('builds multipart parts map', () => expect(out, contains('__gl_uploadAdapter__!(__gl_parts__, onProgress)')));
+    test('builds multipart parts map', () => expect(out, contains('gl_uploadAdapter__!(gl_parts__, onProgress)')));
     test('list upload uses indexed loop', () => expect(out, contains('variables.files.')));
     test('mutations class has upload fields', () {
-      expect(out, contains('GLUploadConverter __gl_uploadConverter__'));
-      expect(out, contains('GLMultipartAdapter? __gl_uploadAdapter__'));
+      expect(out, contains('GLUploadConverter gl_uploadConverter__'));
+      expect(out, contains('GLMultipartAdapter? gl_uploadAdapter__'));
     });
     test('withHttp is a factory when uploads present', () {
       expect(out, contains('factory GraphLinkClient.withHttp'));

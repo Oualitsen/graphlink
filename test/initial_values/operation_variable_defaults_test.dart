@@ -4,9 +4,9 @@ import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:graphlink/src/serializers/kotlin_serializer.dart';
 import 'package:graphlink/src/serializers/typescript_serializer.dart';
-import 'package:graphlink/src/serializers/client_serializers/dart_client_serializer.dart';
-import 'package:graphlink/src/serializers/client_serializers/kotlin_client_serializer.dart';
-import 'package:graphlink/src/serializers/client_serializers/typescript_client_serializer.dart';
+import 'package:graphlink/src/serializers/client_serializers/dart/dart_client_serializer.dart';
+import 'package:graphlink/src/serializers/client_serializers/kotlin/kotlin_client_serializer.dart';
+import 'package:graphlink/src/serializers/client_serializers/typescript/typescript_client_serializer.dart';
 import 'package:test/test.dart';
 
 // role is non-null with default to verify no nullable widening.

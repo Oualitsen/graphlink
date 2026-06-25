@@ -3,7 +3,7 @@
 // GitHub: https://github.com/Oualitsen/graphlink
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
-// ignore_for_file: use_rethrow_when_possible, camel_case_types, constant_identifier_names, unused_import, non_constant_identifier_names, no_leading_underscores_for_local_identifiers, unused_local_variable, annotate_overrides, library_private_types_in_public_api
+
 
 package dev.graphlink.test.generated.client;
 import dev.graphlink.test.generated.interfaces.GraphLinkClientAdapter
@@ -27,8 +27,8 @@ open class GraphLinkClient(
       queries = GraphLinkQueries(adapter, fragmentMap, encoder, decoder, store)
       mutations = GraphLinkMutations(adapter, multipartAdapter, encoder, decoder, store)
       subscriptions = GraphLinkSubscriptions(adapter, wsAdapter, encoder, decoder, store)
-      fragmentMap["Inline_d7b49aac_850d_286c_2a23_fda08e07b3d2"] = "... on UserResult  {id name email __typename} "
-      fragmentMap["Inline_b6de21ef_04c3_e77f_4ff4_237dbef38195"] = "... on PostResult  {id title __typename} "
+      fragmentMap["Inline_b29fe345_bc10_ae1b_6e38_f531892cfdbd"] = "... on UserResult  {id name email __typename} "
+      fragmentMap["Inline_c1f98d6f_c16c_d616_c8b6_930593b33386"] = "... on PostResult  {id title __typename} "
       fragmentMap["_all_fields_AllScalars"] = "fragment _all_fields_AllScalars on AllScalars{id strVal intVal floatVal boolVal nullableStr nullableInt nullableFloat nullableBool nullableId}"
       fragmentMap["_all_fields_Address"] = "fragment _all_fields_Address on Address{street city country zip}"
       fragmentMap["_all_fields_User"] = "fragment _all_fields_User on User{id name email status priority address{..._all_fields_Address} billingAddress{..._all_fields_Address} tags scores posts{..._all_fields_Post}}"
@@ -37,12 +37,12 @@ open class GraphLinkClient(
       fragmentMap["_all_fields_AuditEntry"] = "fragment _all_fields_AuditEntry on AuditEntry{id action performedBy}"
       fragmentMap["_all_fields_UserResult"] = "fragment _all_fields_UserResult on UserResult{id name email}"
       fragmentMap["_all_fields_PostResult"] = "fragment _all_fields_PostResult on PostResult{id title}"
-      fragmentMap["Inline_e48b2ace_4335_c39f_9a1b_5a4fd5dc4475"] = "... on UserResult  {..._all_fields_UserResult __typename} "
-      fragmentMap["Inline_ec1e2fb9_70f2_dde6_895d_fb11cd5d1bbd"] = "... on PostResult  {..._all_fields_PostResult __typename} "
+      fragmentMap["Inline_8a1bc0d8_e9e2_7367_bfeb_f3ece408adf8"] = "... on UserResult  {..._all_fields_UserResult __typename} "
+      fragmentMap["Inline_ddaab241_b516_233c_f2ee_040fc1dd7510"] = "... on PostResult  {..._all_fields_PostResult __typename} "
       fragmentMap["_all_fields_SearchResult"] = "fragment _all_fields_SearchResult on SearchResult{... on UserResult  {..._all_fields_UserResult __typename}  ... on PostResult  {..._all_fields_PostResult __typename}}"
-      fragmentMap["Inline_f637477a_0724_97e2_b192_0e049559ed03"] = "... on UserResult  {..._all_fields_UserResult __typename} "
-      fragmentMap["Inline_e0b8f2ae_ec6d_b839_6338_5155052c925e"] = "... on PostResult  {..._all_fields_PostResult __typename} "
-      fragmentMap["Inline_762ea8cb_f229_fb78_58b1_e56616d49af9"] = "... on SearchResult  {... on UserResult  {..._all_fields_UserResult __typename}  ... on PostResult  {..._all_fields_PostResult __typename} __typename} "
+      fragmentMap["Inline_2c1b05d8_47ce_5aca_233d_03367483d4e7"] = "... on UserResult  {..._all_fields_UserResult __typename} "
+      fragmentMap["Inline_2ad60da0_45f2_0d05_257b_577cadcf745d"] = "... on PostResult  {..._all_fields_PostResult __typename} "
+      fragmentMap["Inline_3f42e0b1_a9ac_98a6_e26d_104ebcfe9fb3"] = "... on SearchResult  {... on UserResult  {..._all_fields_UserResult __typename}  ... on PostResult  {..._all_fields_PostResult __typename} __typename} "
    }
 }
 

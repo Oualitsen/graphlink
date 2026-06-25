@@ -59,9 +59,9 @@ void main() {
         expect(reconnected, isTrue,
             reason: 'ws.onReconnect should have fired after server halt');
         expect(eventSet, containsAll([1, 2, 3, stopAt - 1]),
-            reason: 'should have received ticks 1–${stopAt - 1} before halt');
+            reason: 'should have received ticks 1-${stopAt - 1} before halt');
       } finally {
-        await subscription?.cancel();
+        await subscription.cancel();
         await ws.close();
       }
     }, timeout: Timeout(Duration(minutes: 2)));
@@ -114,7 +114,7 @@ void main() {
         expect(reconnected, isFalse,
             reason: 'no successful reconnect expected — no server is running');
       } finally {
-        await subscription?.cancel();
+        await subscription.cancel();
         await ws.close();
       }
     }, timeout: Timeout(Duration(minutes: 2)));
@@ -163,7 +163,7 @@ void main() {
             reason:
                 'onReconnect should fire when the server becomes available');
       } finally {
-        await subscription?.cancel();
+        await subscription.cancel();
         await ws.close();
       }
     }, timeout: Timeout(Duration(minutes: 2)));

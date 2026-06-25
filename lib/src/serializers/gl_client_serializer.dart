@@ -1,3 +1,4 @@
+import 'package:graphlink/src/capture_errors_utils.dart';
 import 'package:graphlink/src/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
@@ -164,5 +165,82 @@ abstract class GLClientSerializer {
     var buffer = StringBuffer();
     set.forEach(buffer.writeln);
     return buffer.toString();
+  }
+
+  /// Returns the deduplicated [GLToken] set for operations of [type]:
+  /// - `GraphLinkPayload` always; `GraphLinkError` for non-subscriptions
+  /// - upload / subscription → only `typeDefinition` per op
+  /// - `@glCaptureErrors` → only `fullResponse` per op
+  /// - plain query/mutation → both `fullResponse` + `typeDefinition`
+  /// - enum/input tokens for all operation arguments
+  List<GLToken> schemaTokensFor(GLQueryType type) {
+    final tokens = <GLToken>[];
+
+    final payload = _parser.getTokenByKey('GraphLinkPayload');
+    if (payload != null) tokens.add(payload);
+
+    final ops = _parser.queries.values.where((q) => q.type == type);
+    for (final op in ops) {
+      if (type == GLQueryType.subscription) {
+        final td = op.typeDefinition;
+        if (td != null) tokens.add(td);
+      } else {
+        tokens.add(op.getFullResponseTypeDefinition(_parser));
+        if (!op.isCaptureErrors(_parser)) {
+          final td = op.typeDefinition;
+          if (td != null) tokens.add(td);
+        }
+      }
+
+      for (final arg in op.arguments) {
+        _collectArgTokens(
+          arg.type.firstType.token,
+          tokens,
+          {},
+          recurse: arg.defaultValue?.value != null,
+        );
+      }
+    }
+
+    final seen = <String>{};
+    return tokens.where((t) => seen.add(t.token)).toList();
+  }
+
+  /// Collects enum/input tokens for [typeName].
+  /// When [recurse] is true (argument has a non-null default value), also
+  /// traverses the input's fields transitively so that types referenced in
+  /// the default value expression (e.g. `AuditLogOrderField`) are imported.
+  void _collectArgTokens(
+    String typeName,
+    List<GLToken> out,
+    Set<String> visited, {
+    bool recurse = false,
+  }) {
+    if (!visited.add(typeName)) return;
+    if (_parser.isEnum(typeName)) {
+      final e = _parser.enums[typeName];
+      if (e != null) out.add(e);
+    } else if (_parser.isInput(typeName)) {
+      final i = _parser.inputs[typeName];
+      if (i == null) return;
+      out.add(i);
+      if (recurse) {
+        for (final field in i.fields) {
+          _collectArgTokens(field.type.firstType.token, out, visited, recurse: true);
+        }
+      }
+    }
+  }
+
+  /// Returns import lines scoped to operations of [type].
+  /// Converts [schemaTokensFor] tokens to language-specific import strings.
+  List<String> schemaImportsFor(GLQueryType type) {
+    final seen = <String>{};
+    final result = <String>[];
+    for (final t in schemaTokensFor(type)) {
+      final imp = serializer.serializeImportToken(t);
+      if (imp.isNotEmpty && seen.add(imp)) result.add(imp);
+    }
+    return result;
   }
 }

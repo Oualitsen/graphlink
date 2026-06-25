@@ -1,0 +1,28 @@
+{
+    "schemaPaths": [
+        "../_schema/*.graphql"
+    ],
+    "mode": "client",
+    "unknownScalarType": "string",
+    "identityFields": [],
+    "typeMappings": {
+        "ID": "string",
+        "String": "string",
+        "Float": "number",
+        "Int": "number",
+        "Boolean": "boolean",
+        "Upload": "number",
+        "Null": "null"
+    },
+    "outputDir": "client-app/src/generated",
+    "clientConfig": {
+        "typescript": {
+            "generateAllFieldsFragments": true,
+            "autoGenerateQueries": true,
+            "operationNameAsParameter": false,
+            "immutableTypeFields": true,
+            "httpAdapter": "fetch",
+            "generateDefaultWsAdapter": true
+        }
+    }
+}

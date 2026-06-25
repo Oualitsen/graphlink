@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 import 'package:test/test.dart';
 import 'package:graphlink_client_integration_tests/generated/client/graph_link_client.dart';
-import 'package:graphlink_client_integration_tests/generated/client/graph_link_websocket_adapter.dart';
 import 'package:graphlink_client_integration_tests/generated/enums/user_status.dart';
 import 'package:graphlink_client_integration_tests/generated/types/counter_tick_response.dart';
 import 'real_server_adapter.dart';
@@ -104,7 +103,7 @@ void main() {
         // restart the server in the background
         print('TEST: starting new server...');
         newProc = await Process.start('java', ['-jar', serverJar]);
-        print('TEST: new server PID ${newProc!.pid}');
+        print('TEST: new server PID ${newProc.pid}');
 
         // adapter detects the drop and reconnects once the server is back up
         print('TEST: waiting for onReconnect...');

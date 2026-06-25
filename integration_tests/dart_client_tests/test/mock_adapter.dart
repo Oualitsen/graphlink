@@ -4,6 +4,7 @@ import 'package:graphlink_client_integration_tests/generated/client/graph_link_c
     show GraphLinkWebSocketAdapter;
 import 'package:graphlink_client_integration_tests/generated/client/graph_link_uploads.dart'
     show  UploadProgressCallback;
+import 'package:graphlink_client_integration_tests/generated/graphlink.dart';
 
 /// One recorded outgoing GraphQL request.
 class GraphLinkCall {

@@ -1,5 +1,5 @@
 import 'package:graphlink/src/constants.dart';
-import 'package:graphlink/src/serializers/client_serializers/kotlin_client_serializer.dart';
+import 'package:graphlink/src/serializers/client_serializers/kotlin/kotlin_client_serializer.dart';
 import 'package:graphlink/src/serializers/kotlin_serializer.dart';
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
