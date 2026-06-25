@@ -123,9 +123,9 @@ class JavaClientSerializer extends GLClientSerializer {
           if (_grammar.hasQueries)
             "queries = new ${classNameFromType(GLQueryType.query)}(adapter, $svFragmentMap, encoder, decoder, store);",
           if (_grammar.hasMutations)
-            "mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, ${_grammar.hasUploadMutations ? 'multipartAdapter, ' : ''}encoder, decoder, store);",
+            "mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, ${_grammar.hasUploadMutations ? 'multipartAdapter, ' : ''}$svFragmentMap, encoder, decoder, store);",
           if (_grammar.hasSubscriptions)
-            "subscriptions = new ${classNameFromType(GLQueryType.subscription)}(adapter, wsAdapter, encoder, decoder, store);",
+            "subscriptions = new ${classNameFromType(GLQueryType.subscription)}(adapter, wsAdapter, $svFragmentMap, encoder, decoder, store);",
           ..._grammar.fragments.values.map((value) =>
               '$svFragmentMap.put("${value.tokenInfo}", "${gqlSerializer.serializeFragmentDefinitionBase(value)}");'),
         ],
@@ -354,7 +354,7 @@ class JavaClientSerializer extends GLClientSerializer {
               methodName: classNameFromType(type),
               arguments: _declareConstructorArgs(type),
               statements: [
-                'super(adapter, ${type == GLQueryType.query ? 'fragmentMap' : 'null'}, store, encoder, decoder);',
+                'super(adapter, fragmentMap, store, encoder, decoder);',
                 if (type == GLQueryType.mutation && _grammar.hasUploadMutations)
                   'this.$svMultipartAdapter = multipartAdapter;',
                 if (type == GLQueryType.subscription)
@@ -447,7 +447,7 @@ class JavaClientSerializer extends GLClientSerializer {
         'GraphLinkWebSocketAdapter wsAdapter',
       if (type == GLQueryType.mutation && _grammar.hasUploadMutations)
         'GraphLinkMultipartAdapter multipartAdapter',
-      if (type == GLQueryType.query) 'Map<String, String> fragmentMap',
+      'Map<String, String> fragmentMap',
       'GraphLinkJsonEncoder encoder',
       'GraphLinkJsonDecoder decoder',
       'GraphLinkCacheStore store',
@@ -684,6 +684,30 @@ class JavaClientSerializer extends GLClientSerializer {
             ]),
           ],
         ),
+        codeGenUtils.createMethod(
+          returnType: 'public String',
+          methodName: 'assembleQuery',
+          arguments: [
+            'String query',
+            'Set<String> fragmentNames',
+          ],
+          statements: [
+            'StringBuilder buffer = new StringBuilder(query);',
+            codeGenUtils.forEachLoop(
+                variable: 'name',
+                iterable: 'fragmentNames',
+                statements: [
+                  'String frag = ${svFragmentMap}.get(name);',
+                  codeGenUtils.ifStatement(
+                      condition: 'frag != null',
+                      ifBlockStatements: [
+                        'buffer.append("\\n");',
+                        'buffer.append(frag);',
+                      ]),
+                ]),
+            'return buffer.toString();',
+          ],
+        ),
       ],
     );
 
@@ -691,6 +715,7 @@ class JavaClientSerializer extends GLClientSerializer {
       imports: [
         JavaImports.map,
         JavaImports.list,
+        JavaImports.set,
         JavaImports.hashMap,
         JavaImports.hashSet,
         JavaImports.reentrantLock,

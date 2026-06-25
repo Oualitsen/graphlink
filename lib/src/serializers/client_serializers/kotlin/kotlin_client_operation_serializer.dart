@@ -22,32 +22,37 @@ class KotlinClientOperationSerializer {
   // ── Query (cache-aware) ────────────────────────────────────────────────────
 
   String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
-    if (_ctx.gqlSerializer.divideQueryDefinition(def, _ctx.grammar).every((e) => e.cacheTTL == 0)) {
-      return _simpleQueryToMethod(def, container);
+    final dividedQueries = _ctx.gqlSerializer.divideQueryDefinition(def, _ctx.grammar);
+    if (dividedQueries.every((e) => e.cacheTTL == 0)) {
+      return _simpleQueryToMethod(def, container, dividedQueries);
     }
-    return _cachedQueryToMethod(def, container);
+    return _cachedQueryToMethod(def, container, dividedQueries);
   }
 
-  String _simpleQueryToMethod(GLQueryDefinition def, GLImportContainer container) {
+  String _simpleQueryToMethod(GLQueryDefinition def, GLImportContainer container,
+      List<DividedQuery> dividedQueries) {
     final parseType = def.getFullResponseTypeDefinition(_ctx.grammar).token;
     final isCE = def.isCaptureErrors(_ctx.grammar);
-    final queryString = _buildQueryString(def);
+    final queryString = _ctx.gqlSerializer.serializeQueryDefinition(def).escapeForStringLiteral();
+    final fragmentNames = def.fragments(_ctx.grammar)
+        .map((f) => '"${f.tokenInfo.token}"').toSet();
 
     final statements = <String>[
-      'val ${svOperationName} = "${def.tokenInfo}"',
       _generateVariables(def, container),
       'val ${svQuery} = "$queryString"',
-      'val ${svPayload} = GraphLinkPayload.builder().query(${svQuery}).operationName(${svOperationName}).variables(${svVariables}).build()',
+      'val ${svFragmentNames} = ${fragmentNames.isEmpty ? "emptySet<String>()" : "setOf(${fragmentNames.join(", ")})"}',
+      'val ${svFullQuery} = assembleQuery(${svQuery}, ${svFragmentNames})',
+      'val ${svPayload} = GraphLinkPayload(query = ${svFullQuery}, operationName = "${def.tokenInfo}", variables = ${_variablesExpr(def)})',
       'val ${svResponseText} = glCallAdapter(${svPayload})',
       if (isCE)
         'return $parseType.fromJson(${svDecoder}.decode(${svResponseText}))'
       else ...[
         'val ${svDecodedResponse} = $parseType.fromJson(${svDecoder}.decode(${svResponseText}))',
         _ctx.codeGenUtils.ifStatement(
-          condition: '${svDecodedResponse}.getErrors() != null && !${svDecodedResponse}.getErrors().isEmpty()',
-          ifBlockStatements: ['throw ${_clientException}.of(${svDecodedResponse}.getErrors())'],
+          condition: '${svDecodedResponse}.errors != null && ${svDecodedResponse}.errors.isNotEmpty()',
+          ifBlockStatements: ['throw $_clientException(${svDecodedResponse}.errors)'],
         ),
-        'return ${svDecodedResponse}.getData()',
+        'return ${svDecodedResponse}.data!!',
       ],
     ];
 
@@ -59,15 +64,14 @@ class KotlinClientOperationSerializer {
     );
   }
 
-  String _cachedQueryToMethod(GLQueryDefinition def, GLImportContainer container) {
-    final dividedQueries = _ctx.gqlSerializer.divideQueryDefinition(def, _ctx.grammar);
+  String _cachedQueryToMethod(GLQueryDefinition def, GLImportContainer container,
+      List<DividedQuery> dividedQueries) {
     final directives = _ctx.gqlSerializer
         .serializeDirectiveValueList(def.getDirectives(skipGenerated: true));
     final parseType = def.getFullResponseTypeDefinition(_ctx.grammar).token;
     final isCE = def.isCaptureErrors(_ctx.grammar);
 
     final statements = <String>[
-      'val ${svOperationName} = "${def.tokenInfo}"',
       _generateVariables(def, container),
       'val ${svPartialQueries} = mutableListOf<GraphLinkPartialQuery>()',
       ...dividedQueries.map(_serializePartialQueryKotlin),
@@ -76,7 +80,7 @@ class KotlinClientOperationSerializer {
       _cacheReadLoop(),
       'val ${svRemaining} = ${svPartialQueries}.filter { !${svResponseMap}.containsKey(it.elementKey) }.toMutableList()',
       _earlyReturnFromCache(parseType, isCE),
-      'val ${svPayload} = buildPayload(${svRemaining}, ${svOperationName}, "$directives")',
+      'val ${svPayload} = buildPayload(${svRemaining}, "${def.tokenInfo}", "$directives")',
       _ctx.codeGenUtils.tryCatchFinally(
         tryStatements: [
           'val ${svResponseText} = glCallAdapter(${svPayload})',
@@ -162,12 +166,17 @@ class KotlinClientOperationSerializer {
 
     final isCE = def.isCaptureErrors(_ctx.grammar);
     final fullResponseToken = def.getFullResponseTypeDefinition(_ctx.grammar).token;
+    final queryText = _ctx.gqlSerializer.serializeQueryDefinition(def).escapeForStringLiteral();
+    final fragmentNames = def.fragments(_ctx.grammar)
+        .map((f) => '"${f.tokenInfo.token}"')
+        .toSet();
 
     final statements = [
-      'val ${svOperationName} = "$methodName"',
-      'val ${svQuery} = "${_buildQueryString(def)}"',
+      'val ${svQuery} = "${queryText}"',
+      'val ${svFragmentNames} = ${fragmentNames.isEmpty ? "emptySet<String>()" : "setOf(${fragmentNames.join(", ")})"}',
+      'val ${svFullQuery} = assembleQuery(${svQuery}, ${svFragmentNames})',
       _generateVariables(def, container),
-      'val ${svPayload} = GraphLinkPayload(query = ${svQuery}, operationName = ${svOperationName}, variables = ${svVariables})',
+      'val ${svPayload} = GraphLinkPayload(query = ${svFullQuery}, operationName = "$methodName", variables = ${_variablesExpr(def)})',
       'val ${svResponseText} = glCallAdapter(${svPayload})',
       'val ${svDecodedResponse} = $fullResponseToken.fromJson(${svDecoder}.decode(${svResponseText}))',
       ..._mutationReturnStatements(def, isCE),
@@ -186,8 +195,8 @@ class KotlinClientOperationSerializer {
     if (!isCE) {
       return [
         _ctx.codeGenUtils.ifStatement(
-          condition: '${svDecodedResponse}.errors != null && ${svDecodedResponse}.errors!!.isNotEmpty()',
-          ifBlockStatements: ['throw $_clientException(${svDecodedResponse}.errors!!)'],
+          condition: '${svDecodedResponse}.errors != null && ${svDecodedResponse}.errors.isNotEmpty()',
+          ifBlockStatements: ['throw $_clientException(${svDecodedResponse}.errors)'],
         ),
         if (invalidation.isNotEmpty) invalidation,
         'return ${svDecodedResponse}.data!!',
@@ -213,9 +222,15 @@ class KotlinClientOperationSerializer {
         .toList();
     final hasListArg = uploadArgs.any((a) => a.type.isList);
 
+    final queryTextUp = _ctx.gqlSerializer.serializeQueryDefinition(def).escapeForStringLiteral();
+    final fragmentNamesUp = def.fragments(_ctx.grammar)
+        .map((f) => '"${f.tokenInfo.token}"')
+        .toSet();
+
     final body = [
-      'val ${svOperationName} = "$methodName"',
-      'val ${svQuery} = "${_buildQueryString(def)}"',
+      'val ${svQuery} = "${queryTextUp}"',
+      'val ${svFragmentNames} = ${fragmentNamesUp.isEmpty ? "emptySet<String>()" : "setOf(${fragmentNamesUp.join(", ")})"}',
+      'val ${svFullQuery} = assembleQuery(${svQuery}, ${svFragmentNames})',
       _generateVariablesForUpload(def, container),
       'val ${svFiles} = linkedMapOf<String, GLUpload>()',
       'val ${svFileMap} = mutableMapOf<String, Any?>()',
@@ -256,7 +271,7 @@ class KotlinClientOperationSerializer {
     }
 
     body.addAll([
-      'val ${svOperationsMap} = mapOf("query" to ${svQuery}, "operationName" to ${svOperationName}, "variables" to ${svVariables})',
+      'val ${svOperationsMap} = mapOf("query" to ${svFullQuery}, "operationName" to "$methodName", "variables" to ${svVariables})',
       'val ${svOperations} = ${svEncoder}.encode(${svOperationsMap})',
       'val ${svMapJson} = ${svEncoder}.encode(${svFileMap})',
       'val ${svResponseText} = ${svMultipartAdapter}.executeMultipart(${svOperations}, ${svMapJson}, ${svFiles}, onProgress)',
@@ -286,11 +301,17 @@ class KotlinClientOperationSerializer {
     container.imports.add(KotlinImports.flow);
     container.imports.add(KotlinImports.flowMap);
     final typeToken = def.typeDefinition?.token ?? 'Any';
+    final queryTextSub = _ctx.gqlSerializer.serializeQueryDefinition(def).escapeForStringLiteral();
+    final fragmentNamesSub = def.fragments(_ctx.grammar)
+        .map((f) => '"${f.tokenInfo.token}"')
+        .toSet();
+
     final statements = [
-      'val ${svOperationName} = "${def.tokenInfo}"',
-      'val ${svQuery} = "${_buildQueryString(def)}"',
+      'val ${svQuery} = "${queryTextSub}"',
+      'val ${svFragmentNames} = ${fragmentNamesSub.isEmpty ? "emptySet<String>()" : "setOf(${fragmentNamesSub.join(", ")})"}',
+      'val ${svFullQuery} = assembleQuery(${svQuery}, ${svFragmentNames})',
       _generateVariables(def, container),
-      'val ${svPayload} = GraphLinkPayload(query = ${svQuery}, operationName = ${svOperationName}, variables = ${svVariables})',
+      'val ${svPayload} = GraphLinkPayload(query = ${svFullQuery}, operationName = "${def.tokenInfo}", variables = ${_variablesExpr(def)})',
       'return ${KotlinCodeGenUtils.mapCall(receiver: 'handler.handle(${svPayload})', body: '$typeToken.fromJson(it)')}',
     ];
 
@@ -304,25 +325,16 @@ class KotlinClientOperationSerializer {
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
-  String _buildQueryString(GLQueryDefinition def) {
-    final query = _ctx.gqlSerializer.serializeQueryDefinition(def);
-    final frags = def.fragments(_ctx.grammar)
-        .map((f) => _ctx.gqlSerializer.serializeFragmentDefinitionBase(f))
-        .join(' ');
-    final raw = frags.isEmpty ? query : '$query $frags';
-    // Escape $ so GraphQL variable references don't trigger Kotlin string interpolation.
-    return raw.replaceAll(r'$', r'\$');
-  }
-
   String _generateVariables(GLQueryDefinition def, GLImportContainer container) {
-    if (def.arguments.isEmpty) {
-      return 'val ${svVariables} = emptyMap<String, Any?>()';
-    }
+    if (def.arguments.isEmpty) return '';
     final entries = def.arguments
         .map((e) => '"${e.dartArgumentName}" to ${_serializeArgumentValue(def, e.token, container)}')
         .join(', ');
     return 'val ${svVariables} = mapOf($entries)';
   }
+
+  String _variablesExpr(GLQueryDefinition def) =>
+      def.arguments.isNotEmpty ? svVariables : 'emptyMap()';
 
   String _generateVariablesForUpload(GLQueryDefinition def, GLImportContainer container) {
     final uploadNames = _ctx.grammar.uploadScalarNames;

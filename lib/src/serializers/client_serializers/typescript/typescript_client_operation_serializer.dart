@@ -33,14 +33,6 @@ class TypeScriptClientOperationSerializer {
   bool _isUploadMutation(GLQueryDefinition def) =>
       _parser.mutationHasUploads(def);
 
-  String _buildQueryString(GLQueryDefinition def) {
-    final query = _gqlSerializer.serializeQueryDefinition(def);
-    final frags = def
-        .fragments(_parser)
-        .map((f) => _gqlSerializer.serializeFragmentDefinitionBase(f))
-        .join(' ');
-    return frags.isEmpty ? query : '$query $frags';
-  }
 
   // ── Helpers shared by operation methods ────────────────────────────────────
 
@@ -57,25 +49,29 @@ class TypeScriptClientOperationSerializer {
   // ── Query method ──────────────────────────────────────────────────────────
 
   String queryToMethod(GLQueryDefinition def) {
-    if (_gqlSerializer.divideQueryDefinition(def, _parser).every((e) => e.cacheTTL == 0)) {
-      return _simpleQueryToMethod(def);
+    final dividedQueries = _gqlSerializer.divideQueryDefinition(def, _parser);
+    if (dividedQueries.every((e) => e.cacheTTL == 0)) {
+      return _simpleQueryToMethod(def, dividedQueries);
     }
     return _cachedQueryToMethod(def);
   }
 
-  String _simpleQueryToMethod(GLQueryDefinition def) {
+  String _simpleQueryToMethod(
+      GLQueryDefinition def, List<DividedQuery> dividedQueries) {
     final returnTypeName = _returnTypeName(def);
     final fullResponseTypeName =
         def.getFullResponseTypeDefinition(_parser).tokenInfo.token;
     final isCE = def.isCaptureErrors(_parser);
     final args = _getMethodArgs(def);
-    final queryString = _buildQueryString(def);
+    final queryText = _gqlSerializer.serializeQueryDefinition(def);
+    final fragmentNames = def.fragments(_parser).map((f) => "'${f.tokenInfo.token}'").toSet();
 
     final innerStatements = [
-      "const $svOperationName = '${def.tokenInfo}';",
       _generateVariables(def),
-      "const $svQuery = '${queryString}';",
-      "const $svPayload: GraphLinkPayload = { query: $svQuery, operationName: $svOperationName, variables: $svVariables };",
+      "const $svQuery = '${queryText}';",
+      "const $svFragmentNames = ${fragmentNames.isEmpty ? '[] as string[]' : '[${fragmentNames.join(", ")}]'};",
+      "const $svFullQuery = this.assembleQuery($svQuery, $svFragmentNames);",
+      "const $svPayload: GraphLinkPayload = { query: $svFullQuery, operationName: '${def.tokenInfo}', variables: $svVariables };",
       "const $svResponse = await this._glCallAdapter($svPayload);",
       "const $svResult = JSON.parse($svResponse) as $fullResponseTypeName;",
       if (isCE)
@@ -134,7 +130,6 @@ class TypeScriptClientOperationSerializer {
         .serializeDirectiveValueList(def.getDirectives(skipGenerated: true));
 
     final innerStatements = [
-      "const $svOperationName = '${def.tokenInfo}';",
       _generateVariables(def),
       'const $svPartialQueries = [',
       ...dividedQueries.map((dq) => '  ${_serializePartialQuery(dq, hasFrags)},'),
@@ -157,7 +152,7 @@ class TypeScriptClientOperationSerializer {
           if (observables) 'subscriber.complete(); return;',
         ],
       ),
-      "const $svPayload = this._buildPayload($svRemaining, $svOperationName, ${directives.isEmpty ? "''" : "'${directives}'"}); ",
+      "const $svPayload = this._buildPayload($svRemaining, '${def.tokenInfo}', ${directives.isEmpty ? "''" : "'${directives}'"}); ",
       _cg.tryCatchFinally(
         tryStatements: [
           'const $svResponseText = await this._glCallAdapter($svPayload);',
@@ -223,15 +218,20 @@ class TypeScriptClientOperationSerializer {
     final isCaptureErrors = def.isCaptureErrors(_parser);
     final args = _getMethodArgs(def);
     final invalidation = _serializeInvalidation(def);
+    final queryText = _gqlSerializer.serializeQueryDefinition(def);
+    final fragmentNames = def.fragments(_parser)
+        .map((f) => "'${f.tokenInfo.token}'")
+        .toSet();
 
     final statements = <String>[
-      "const $svOperationName = '${def.tokenInfo}';",
       _generateVariables(def),
-      "const $svQuery = '${_buildQueryString(def)}';",
+      "const $svQuery = '${queryText}';",
+      "const $svFragmentNames = ${fragmentNames.isEmpty ? '[] as string[]' : '[${fragmentNames.join(", ")}]'};",
+      "const $svFullQuery = this.assembleQuery($svQuery, $svFragmentNames);",
     ];
 
     statements.addAll([
-      "const $svPayload: GraphLinkPayload = { query: $svQuery, operationName: $svOperationName, variables: $svVariables };",
+      "const $svPayload: GraphLinkPayload = { query: $svFullQuery, operationName: '${def.tokenInfo}', variables: $svVariables };",
       "const $svResponse = await this._glCallAdapter($svPayload);",
       "const $svResult = JSON.parse($svResponse) as $fullResponseTypeName;",
       if (isCaptureErrors)
@@ -289,11 +289,17 @@ class TypeScriptClientOperationSerializer {
     final uploadArgs = def.arguments
         .where((a) => uploadNames.contains(a.type.firstType.token))
         .toList();
+    final queryTextUp = _gqlSerializer.serializeQueryDefinition(def);
+    final fragmentNamesUp = def.fragments(_parser)
+        .map((f) => "'${f.tokenInfo.token}'")
+        .toSet();
+    final fragListUp = fragmentNamesUp.isEmpty ? '[] as string[]' : '[${fragmentNamesUp.join(", ")}]';
 
     final statements = <String>[
-      "const $svOperationName = '${def.tokenInfo}';",
       _generateVariables(def, nullifyUploads: true),
-      "const $svQuery = '${_buildQueryString(def)}';",
+      "const $svQuery = '${queryTextUp}';",
+      "const $svFragmentNames = $fragListUp;",
+      "const $svFullQuery = this.assembleQuery($svQuery, $svFragmentNames);",
     ];
 
     statements.addAll([
@@ -328,7 +334,7 @@ class TypeScriptClientOperationSerializer {
 
     final innerStatements = [
       "const $svAllParts: Record<string, unknown> = {",
-      "  'operations': JSON.stringify({ query: $svQuery, operationName: $svOperationName, variables: $svVariables }),",
+      "  'operations': JSON.stringify({ query: $svFullQuery, operationName: '${def.tokenInfo}', variables: $svVariables }),",
       "  'map': JSON.stringify($svMap),",
       "  ...$svParts,",
       "};",
@@ -370,13 +376,20 @@ class TypeScriptClientOperationSerializer {
   String subscriptionToMethod(GLQueryDefinition def) {
     final returnTypeName = def.getGeneratedTypeDefinition().tokenInfo.token;
     final queryArgs = _getMethodArgs(def);
+    final queryTextSub = _gqlSerializer.serializeQueryDefinition(def);
+    final fragmentNamesSub = def.fragments(_parser)
+        .map((f) => "'${f.tokenInfo.token}'")
+        .toSet();
 
+    final fragListSub = fragmentNamesSub.isEmpty ? '[] as string[]' : '[${fragmentNamesSub.join(", ")}]';
     final statements = <String>[_generateVariables(def)];
-    statements.add("const $svQuery = '${_buildQueryString(def)}';");
+    statements.add("const $svQuery = '${queryTextSub}';");
+    statements.add("const $svFragmentNames = $fragListSub;");
+    statements.add("const $svFullQuery = this.assembleQuery($svQuery, $svFragmentNames);");
 
     statements.addAll([
       "const $svPayload: GraphLinkPayload = {",
-      "  query: $svQuery,",
+      "  query: $svFullQuery,",
       "  operationName: '${def.tokenInfo}',",
       "  variables: $svVariables,",
       "};",

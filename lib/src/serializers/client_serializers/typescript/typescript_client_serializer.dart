@@ -264,13 +264,15 @@ class TypeScriptClientSerializer extends GLClientSerializer {
       statements: [
         'protected readonly $svStore: $_cacheStoreType;',
         'protected readonly $svTagLocks: Map<string, GraphLinkLock>;',
+        'protected readonly $svFragMap: Record<string, string>;',
         'protected readonly $svAdapter?: $_adapterType;',
         _cg.createMethod(
           methodName: 'constructor',
-          arguments: ['store: $_cacheStoreType', 'tagLocks: Map<string, GraphLinkLock>', 'adapter?: $_adapterType'],
+          arguments: ['store: $_cacheStoreType', 'tagLocks: Map<string, GraphLinkLock>', 'fragMap: Record<string, string>', 'adapter?: $_adapterType'],
           statements: [
             'this.$svStore = store;',
             'this.$svTagLocks = tagLocks;',
+            'this.$svFragMap = fragMap;',
             'this.$svAdapter = adapter;',
           ],
         ),
@@ -396,6 +398,26 @@ class TypeScriptClientSerializer extends GLClientSerializer {
             ]),
           ],
         ),
+        _cg.createMethod(
+          methodName: 'assembleQuery',
+          returnType: 'string',
+          arguments: ['query: string', 'fragmentNames: string[]'],
+          statements: [
+            'let result = query;',
+            _cg.forEachLoop(
+              variable: 'name',
+              iterable: 'fragmentNames',
+              statements: [
+                'const frag = this.$svFragMap[name];',
+                _cg.ifStatement(
+                  condition: 'frag',
+                  ifBlockStatements: ["result += '\\n' + frag;"],
+                ),
+              ],
+            ),
+            'return result;',
+          ],
+        ),
       ],
     );
   }
@@ -416,8 +438,6 @@ class TypeScriptClientSerializer extends GLClientSerializer {
         ] else ...[
           'private readonly $svHandler: GraphLinkSubscriptionHandler;',
         ],
-        if (type == GLQueryType.query)
-          'private readonly $svFragMap: Record<string, string>;',
         _buildConstructor(type),
         if (type == GLQueryType.query) ...[
           _buildPayloadMethod(),
@@ -436,13 +456,13 @@ class TypeScriptClientSerializer extends GLClientSerializer {
         'adapter: $_adapterType',
       if (type == GLQueryType.mutation && _parser.hasUploadMutations)
         'multipartAdapter: GLMultipartAdapter | undefined',
-      if (type == GLQueryType.query) 'fragMap: Record<string, string>',
+      'fragMap: Record<string, string>',
       'store: $_cacheStoreType',
       'tagLocks: Map<string, GraphLinkLock>',
     ];
     final superCall = type == GLQueryType.subscription
-        ? 'super(store, tagLocks);'
-        : 'super(store, tagLocks, adapter);';
+        ? 'super(store, tagLocks, fragMap);'
+        : 'super(store, tagLocks, fragMap, adapter);';
     return _cg.createMethod(
       methodName: 'constructor',
       arguments: args,
@@ -454,7 +474,6 @@ class TypeScriptClientSerializer extends GLClientSerializer {
           if (type == GLQueryType.mutation && _parser.hasUploadMutations)
             'this.$svMultipartAdapter = multipartAdapter;',
         ],
-        if (type == GLQueryType.query) 'this.$svFragMap = fragMap;',
       ],
     );
   }
@@ -588,10 +607,10 @@ private _buildPayload(
           'this.queries = new ${classNameFromType(GLQueryType.query)}(adapter, this.$svFragMap, this.store, this.$svTagLocks);',
         if (hasMutations)
           _parser.hasUploadMutations
-            ? 'this.mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, multipartAdapter, this.store, this.$svTagLocks);'
-            : 'this.mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, this.store, this.$svTagLocks);',
+            ? 'this.mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, multipartAdapter, this.$svFragMap, this.store, this.$svTagLocks);'
+            : 'this.mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, this.$svFragMap, this.store, this.$svTagLocks);',
         if (hasSubs)
-          'this.subscriptions = new ${classNameFromType(GLQueryType.subscription)}(wsAdapter, this.store, this.$svTagLocks);',
+          'this.subscriptions = new ${classNameFromType(GLQueryType.subscription)}(wsAdapter, this.$svFragMap, this.store, this.$svTagLocks);',
       ],
     );
   }

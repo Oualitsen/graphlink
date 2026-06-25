@@ -1,6 +1,5 @@
 // Safe generated local variable names for TypeScript client code generation.
 // Pattern: 'gl_${name}__'
-const svOperationName    = 'gl_operationName__';
 const svVariables        = 'gl_variables__';
 const svPartialQueries   = 'gl_partialQueries__';
 const svResponseMap      = 'gl_responseMap__';
@@ -14,6 +13,8 @@ const svResponse         = 'gl_response__';
 const svResult           = 'gl_result__';
 const svData             = 'gl_data__';
 const svQuery            = 'gl_query__';
+const svFragmentNames    = 'gl_fragmentNames__';
+const svFullQuery        = 'gl_fullQuery__';
 const svFragMap          = 'gl_fragmentMap__';
 const svTagLocks         = 'gl_tagLocks__';
 const svStore            = 'gl_store__';

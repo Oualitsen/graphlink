@@ -746,9 +746,7 @@ extension GLValidationExtension on GLParser {
       final inputDef = inputs[type.token];
       if (inputDef == null) return;
       for (final entry in value.entries) {
-        final field = inputDef.fields
-            .where((f) => f.name.token == entry.key)
-            .firstOrNull;
+        final field = inputDef.getFieldByName(entry.key);
         if (field == null) {
           throw ParseException(
               "Unknown field '${entry.key}' in default value for input type '${type.token}'",

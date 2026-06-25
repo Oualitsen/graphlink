@@ -21,12 +21,12 @@ input UpdateArticleInput {
    title: String
 }
 
-type Author {
+type Author implements GLAuthorProjection {
    id: ID!
    name: String!
    articles: [Article!]!
 }
-type Article {
+type Article implements GLArticleProjection {
    id: ID!
    title: String!
    authorId: ID!
@@ -47,7 +47,15 @@ type Subscription {
    articleCreated: Article!
    articleUpdated(id: ID!): Article!
 }
-
+interface GLAuthorProjection {
+   id: ID
+   name: String
+}
+interface GLArticleProjection {
+   id: ID
+   title: String
+   authorId: ID
+}
 
 
 

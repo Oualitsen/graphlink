@@ -3,14 +3,12 @@
 // GitHub: https://github.com/Oualitsen/graphlink
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
-// ignore_for_file: use_rethrow_when_possible, camel_case_types, constant_identifier_names, unused_import, non_constant_identifier_names, no_leading_underscores_for_local_identifiers, unused_local_variable, annotate_overrides, library_private_types_in_public_api
+
 
 package dev.graphlink.kotlinclient.generated.client;
 import dev.graphlink.kotlinclient.generated.types.GraphLinkPayload
 import dev.graphlink.kotlinclient.generated.types.ArticleCreatedResponse
 import dev.graphlink.kotlinclient.generated.types.ArticleUpdatedResponse
-import dev.graphlink.kotlinclient.generated.types.ArticleCreatedFullResponse
-import dev.graphlink.kotlinclient.generated.types.ArticleUpdatedFullResponse
 import dev.graphlink.kotlinclient.generated.interfaces.GraphLinkClientAdapter
 import dev.graphlink.kotlinclient.generated.interfaces.GraphLinkJsonEncoder
 import dev.graphlink.kotlinclient.generated.interfaces.GraphLinkJsonDecoder
@@ -20,10 +18,11 @@ import kotlinx.coroutines.flow.map
 open class GraphLinkSubscriptions(
     adapter: GraphLinkClientAdapter,
     wsAdapter: GraphLinkWebSocketAdapter,
+    fragmentMap: Map<String, String>,
     encoder: GraphLinkJsonEncoder,
     decoder: GraphLinkJsonDecoder,
     store: GraphLinkCacheStore,
-) : GraphLinkResolverBase(adapter, null, store, encoder, decoder) {
+) : GraphLinkResolverBase(adapter, fragmentMap, store, encoder, decoder) {
    private lateinit var handler: GraphLinkSubscriptionHandler
 
    init {
@@ -31,17 +30,19 @@ open class GraphLinkSubscriptions(
    }
 
    fun articleCreated(): Flow<ArticleCreatedResponse> {
-      val __gl_operationName__ = "articleCreated"
-      val __gl_query__ = "subscription articleCreated{articleCreated{..._all_fields_Article}} fragment _all_fields_Article on Article{id title authorId author{id name}}"
+      val __gl_query__ = "subscription articleCreated{articleCreated{..._all_fields_Article}}"
+      val __gl_fragmentNames__ = setOf("_all_fields_Article")
+      val __gl_fullQuery__ = assembleQuery(__gl_query__, __gl_fragmentNames__)
       val __gl_variables__ = emptyMap<String, Any?>()
-      val __gl_payload__ = GraphLinkPayload(query = __gl_query__, operationName = __gl_operationName__, variables = __gl_variables__)
+      val __gl_payload__ = GraphLinkPayload(query = __gl_fullQuery__, operationName = "articleCreated", variables = __gl_variables__)
       return handler.handle(__gl_payload__).map { ArticleCreatedResponse.fromJson(it) }
    }
    fun articleUpdated(id: String): Flow<ArticleUpdatedResponse> {
-      val __gl_operationName__ = "articleUpdated"
-      val __gl_query__ = "subscription articleUpdated(\$id: ID!){articleUpdated(id: \$id){..._all_fields_Article}} fragment _all_fields_Article on Article{id title authorId author{id name}}"
+      val __gl_query__ = "subscription articleUpdated(\$id: ID!){articleUpdated(id: \$id){..._all_fields_Article}}"
+      val __gl_fragmentNames__ = setOf("_all_fields_Article")
+      val __gl_fullQuery__ = assembleQuery(__gl_query__, __gl_fragmentNames__)
       val __gl_variables__ = mapOf("id" to id)
-      val __gl_payload__ = GraphLinkPayload(query = __gl_query__, operationName = __gl_operationName__, variables = __gl_variables__)
+      val __gl_payload__ = GraphLinkPayload(query = __gl_fullQuery__, operationName = "articleUpdated", variables = __gl_variables__)
       return handler.handle(__gl_payload__).map { ArticleUpdatedResponse.fromJson(it) }
    }
 }

@@ -285,32 +285,7 @@ class GLParser {
     return consume();
   }
 
-  /// Steps faster than this are not worth a log line; only slow steps surface.
-  static const _slowStepThresholdMs = 5;
 
-  /// Total time spent across all `_timed` steps in the current pipeline run.
-  double _timedTotalMs = 0;
-
-  /// Runs [fn], accumulates its duration, and logs only when the step is slow
-  /// enough to matter (see [_slowStepThresholdMs]). Used to profile the
-  /// per-step pipeline in client mode without flooding the log.
-  ///
-  /// Timing is currently disabled (early return). A proper opt-in progress /
-  /// profiling facility is designed in `plans/progress_printing.md` and should
-  /// replace this ad-hoc hook.
-  void _timed(String name, void Function() fn) {
-    fn();
-    return;
-    // ignore: dead_code
-    final sw = Stopwatch()..start();
-    fn();
-    sw.stop();
-    final ms = sw.elapsedMicroseconds / 1000;
-    _timedTotalMs += ms;
-    if (ms >= _slowStepThresholdMs) {
-      logger.d('[client] $name took ${ms.toStringAsFixed(1)}ms');
-    }
-  }
 
   void validateSemantics() {
     if (!_validate) return;
@@ -330,52 +305,45 @@ class GLParser {
     skipFieldOfSkipOnServerTypes();
     handleGLExternal();
     if (mode == CodeGenerationMode.client) {
-      _timed('handleRepositories', () => handleRepositories(false));
-      _timed('checkGLExpandDirectives', checkGLExpandDirectives);
+      handleRepositories(false);
+      checkGLExpandDirectives();
       if (generateAllFieldsFragments) {
-        _timed('forceCyclicEdgesNullable', forceCyclicEdgesNullable);
-        _timed('createAllFieldsFragments', createAllFieldsFragments);
+        forceCyclicEdgesNullable();
+        createAllFieldsFragments();
         if (autoGenerateQueries || autoGenerateQueriesFor != null) {
-          _timed('generateQueryDefinitions', generateQueryDefinitions);
+          generateQueryDefinitions();
         }
       }
-      _timed('checkFragmentRefs', checkFragmentRefs);
-      _timed('fillQueryElementsReturnType', fillQueryElementsReturnType);
-      _timed('fillTypedFragments', fillTypedFragments);
-      _timed('validateProjections', validateProjections);
-      _timed('updateFragmentDependencies', updateFragmentDependencies);
-      _timed('propagateFieldArgumentVariables', propagateFieldArgumentVariables);
-      _timed('fixTagListValues', fixTagListValues);
-      _timed('validateTagValues', validateTagValues);
-      _timed('checkCacheAndNoCacheConflict', checkCacheAndNoCacheConflict);
-      _timed('checkCacheOnMutationsAndSubscriptions',
-          checkCacheOnMutationsAndSubscriptions);
-      _timed('checkCacheInvalidateOnQueriesAndSubscriptions',
-          checkCacheInvalidateOnQueriesAndSubscriptions);
-      _timed('checkGLCacheDirectives', checkGLCacheDirectives);
-      _timed('checkGLCacheInvalidateDirectives',
-          checkGLCacheInvalidateDirectives);
-      _timed('checkGLCacheTags', checkGLCacheTags);
-      if (disableCache) _timed('stripCacheDirectives', stripCacheDirectives);
-      _timed('validateMapsToDirectives', validateMapsToDirectives);
-      _timed('checkGLCaptureErrorsDirectives', checkGLCaptureErrorsDirectives);
-      _timed('checkUploadDirectivePlacement', checkUploadDirectivePlacement);
-      _timed('checkUploadScalarUsage', checkUploadScalarUsage);
-      _timed('checkUploadListDepth', checkUploadListDepth);
-      _timed('createProjectedTypes', createProjectedTypes);
-      _timed('cleanProjectedInterfacesImplementations',
-          cleanProjectedInterfacesImplementations);
-      _timed('fixProjectedInterfaceConflicts', fixProjectedInterfaceConflicts);
-      _timed('addClientTypesToProjectedTypes', addClientTypesToProjectedTypes);
-      _timed('updateFragmentAllTypesDependencies',
-          updateFragmentAllTypesDependencies);
+      checkFragmentRefs();
+      fillQueryElementsReturnType();
+      fillTypedFragments();
+      validateProjections();
+      updateFragmentDependencies();
+      propagateFieldArgumentVariables();
+      fixTagListValues();
+      validateTagValues();
+      checkCacheAndNoCacheConflict();
+      checkCacheOnMutationsAndSubscriptions();
+      checkCacheInvalidateOnQueriesAndSubscriptions();
+      checkGLCacheDirectives();
+      checkGLCacheInvalidateDirectives();
+      checkGLCacheTags();
+      if (disableCache) stripCacheDirectives();
+      validateMapsToDirectives();
+      checkGLCaptureErrorsDirectives();
+      checkUploadDirectivePlacement();
+      checkUploadScalarUsage();
+      checkUploadListDepth();
+      createProjectedTypes();
+      cleanProjectedInterfacesImplementations();
+      fixProjectedInterfaceConflicts();
+      addClientTypesToProjectedTypes();
+      updateFragmentAllTypesDependencies();
       if (defaultCacheTTL != null) {
-        _timed('applyDefaultCacheToQueries',
-            () => applyDefaultCacheToQueries(defaultCacheTTL!));
+        applyDefaultCacheToQueries(defaultCacheTTL!);
       }
-      _timed('propagateCacheTags', propagateCacheTags);
-      _timed('propagateInvalidateCacheTags', propagateInvalidateCacheTags);
-     // logger.d('[client] pipeline total ${_timedTotalMs.toStringAsFixed(1)}ms');
+      propagateCacheTags();
+      propagateInvalidateCacheTags();
     } else {
       handleRepositories(true);
       generateServicesAndControllers();
