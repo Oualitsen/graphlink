@@ -21,20 +21,24 @@ clean:
 
 start-server:
 	curl -s -X POST http://localhost:9990/actuator/shutdown || true
-	sleep 2
+	lsof -ti :9999 | xargs kill -9 2>/dev/null || true
+	sleep 1
 	java -jar $(SERVER_JAR) &
 	sleep 6
 
 stop-server:
 	curl -s -X POST http://localhost:9990/actuator/shutdown || true
+	lsof -ti :9999 | xargs kill -9 2>/dev/null || true
 
 start-upload-server:
 	curl -s -X POST http://localhost:9991/actuator/shutdown || true
-	sleep 2
+	lsof -ti :9998 | xargs kill -9 2>/dev/null || true
+	sleep 1
 	java -jar $(UPLOAD_SERVER_JAR) &
 	sleep 6
 
 stop-upload-server:
 	curl -s -X POST http://localhost:9991/actuator/shutdown || true
+	lsof -ti :9998 | xargs kill -9 2>/dev/null || true
 
 ci: start-server start-upload-server generate test stop-server stop-upload-server
