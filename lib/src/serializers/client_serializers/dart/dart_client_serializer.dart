@@ -166,6 +166,9 @@ class DartClientSerializer extends GLClientSerializer {
         "import 'graph_link_lock.dart';",
         "import 'graph_link_tag_entry.dart';",
         "import 'graph_link_cache_store.dart';",
+        "import 'graph_link_partial_query.dart';",
+        serializer.serializeImportToken(
+            _parser.getTokenByKey('GraphLinkFullResponse')!),
       ],
       body: "const tagKeyPrefix = '__tag__';\n\n${_buildResolverBaseClass()}",
     );
@@ -316,6 +319,183 @@ class DartClientSerializer extends GLClientSerializer {
                   'return await $svAdapter(json.encode(payload.toJson()));'
               ]),
           codeGenUtils.createMethod(
+              returnType: 'Future<TFull>',
+              methodName: 'executeFull<TFull extends GraphLinkFullResponse>',
+              async: true,
+              namedArguments: false,
+              arguments: [
+                'String query',
+                'Set<String> fragmentNames',
+                'String operationName',
+                'Map<String, dynamic> variables',
+                'TFull Function(Map<String, dynamic> json) fromJson',
+              ],
+              statements: [
+                'final fullQuery = assembleQuery(query, fragmentNames);',
+                'final $svPayload = GraphLinkPayload(query: fullQuery, operationName: operationName, variables: variables);',
+                'final $svResponse = await glCallAdapter($svPayload);',
+                'return fromJson(jsonDecode($svResponse));',
+              ]),
+          codeGenUtils.createMethod(
+              returnType: 'Future<TFull>',
+              methodName: 'executeData<TFull extends GraphLinkFullResponse>',
+              async: true,
+              namedArguments: false,
+              arguments: [
+                'String query',
+                'Set<String> fragmentNames',
+                'String operationName',
+                'Map<String, dynamic> variables',
+                'TFull Function(Map<String, dynamic> json) fromJson',
+              ],
+              statements: [
+                'final $svResult = await executeFull<TFull>(query, fragmentNames, operationName, variables, fromJson);',
+                'if ($svResult.errors != null) throw $svResult.errors!;',
+                'return $svResult;',
+              ]),
+          codeGenUtils.createMethod(
+              returnType: 'Future<TFull>',
+              methodName: 'executeCached<TFull extends GraphLinkFullResponse>',
+              async: true,
+              namedArguments: false,
+              arguments: [
+                'List<GraphLinkPartialQuery> partialQueries',
+                'String operationName',
+                'String directives',
+                'TFull Function(Map<String, dynamic> json) fromJson',
+                'bool captureErrors',
+              ],
+              statements: [
+                'final $svResponseMap = <String, dynamic>{};',
+                'final $svStaleData = <String, dynamic>{};',
+                'final $svCacheFetchFutures = <Future>[];',
+                codeGenUtils.forEachLoop(
+                    variable: "partQuery",
+                    iterable: "partialQueries.where((e) => e.ttl > 0)",
+                    statements: [
+                      "$svCacheFetchFutures.add(getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)",
+                      ".asStream().where((e) => e != null).map((e) => e!).first.then((entry) ${codeGenUtils.block([
+                            codeGenUtils.ifStatement(
+                                condition: 'entry.stale',
+                                ifBlockStatements: [
+                                  '$svStaleData[partQuery.elementKey] = jsonDecode(entry.data);'
+                                ],
+                                elseBlockStatements: [
+                                  '$svResponseMap[partQuery.elementKey] = jsonDecode(entry.data);'
+                                ])
+                          ])}));"
+                    ]),
+                'await Future.wait($svCacheFetchFutures.map((f) => f.catchError((_) => null)));',
+                'var $svRemaining = partialQueries.where((e) => !$svResponseMap.containsKey(e.elementKey)).toSet();',
+                codeGenUtils.ifStatement(
+                    condition: '$svRemaining.isEmpty',
+                    ifBlockStatements: [
+                      "return fromJson({'data': $svResponseMap});"
+                    ]),
+                "final $svRemainingQueries = partialQueries.where((e) => !$svResponseMap.containsKey(e.elementKey)).toList();",
+                "final $svPayload = _buildPayload($svRemainingQueries, operationName, directives);",
+                codeGenUtils.tryCatchFinally(tryStatements: [
+                  'final $svResponseText = await glCallAdapter($svPayload);',
+                  'return _parseToObjectAndCache($svResponseText, $svResponseMap, fromJson, $svRemaining, captureErrors);',
+                ], catchStatements: [
+                  "$svResponseMap.addAll($svStaleData);",
+                  'final remainingCount = partialQueries.where((e) => !$svResponseMap.containsKey(e.elementKey)).length;',
+                  codeGenUtils.ifStatement(
+                      condition: 'remainingCount > 0',
+                      ifBlockStatements: ["rethrow;"]),
+                  "return fromJson({'data': $svResponseMap});",
+                ], catchVariable: 'exception'),
+              ]),
+          codeGenUtils.createMethod(
+              returnType: "GraphLinkPayload",
+              namedArguments: false,
+              methodName: "_buildPayload",
+              arguments: [
+                "List<GraphLinkPartialQuery> partQueries",
+                "String operationName",
+                "String directives"
+              ],
+              statements: [
+                "final Map<String, dynamic> variables = {};",
+                codeGenUtils.forEachLoop(
+                    variable: "partQuery",
+                    iterable: "partQueries",
+                    statements: ["variables.addAll(partQuery.variables);"]),
+                'final queryBuilder = StringBuffer("query \${operationName}");',
+                'final args = partQueries.expand((e) => e.argumentDeclarations).toSet();',
+                codeGenUtils.ifStatement(
+                    condition: 'args.isNotEmpty',
+                    ifBlockStatements: [
+                      'queryBuilder.write("(");',
+                      'queryBuilder.writeAll(args, ", ");',
+                      'queryBuilder.write(")");'
+                    ]),
+                codeGenUtils.ifStatement(
+                    condition: 'directives.isNotEmpty',
+                    ifBlockStatements: ['queryBuilder.write(directives);']),
+                'queryBuilder.write("{");',
+                codeGenUtils.forEachLoop(
+                    variable: 'partQuery',
+                    iterable: 'partQueries',
+                    statements: [
+                      'queryBuilder.write(partQuery.query);',
+                      'queryBuilder.write(" ");',
+                    ]),
+                'queryBuilder.write("}");',
+                'final fragments = partQueries.expand((e) => e.fragmentNames).toSet().map((fragName) => $svFragMap[fragName]!).join();',
+                'queryBuilder.write(fragments);',
+                'return GraphLinkPayload(query: queryBuilder.toString(), operationName: operationName, variables: variables);',
+              ]),
+          codeGenUtils.createMethod(
+              methodName:
+                  '_parseToObjectAndCache<T extends GraphLinkFullResponse>',
+              arguments: [
+                'String data',
+                'Map<String, dynamic> cachedResponse',
+                'T Function(Map<String, dynamic> json) parser',
+                'Set<GraphLinkPartialQuery> remainingQueries',
+                'bool captureErrors',
+              ],
+              returnType: 'T',
+              namedArguments: false,
+              statements: [
+                'final result = jsonDecode(data) as Map<String, dynamic>;',
+                'final rawData = result["data"];',
+                'final dataMap = rawData as Map<String, dynamic>? ?? <String, dynamic>{};',
+                codeGenUtils.forEachLoop(
+                    variable: 'q',
+                    iterable: 'remainingQueries',
+                    statements: [
+                      codeGenUtils.ifStatement(
+                          condition: 'q.ttl > 0 && dataMap[q.elementKey] != null',
+                          ifBlockStatements: [
+                            'final entry = GraphLinkCacheEntry(jsonEncode(dataMap[q.elementKey]), DateTime.now().millisecondsSinceEpoch + q.ttl * 1000);',
+                            '$svStore.set(q.cacheKey!, jsonEncode(entry.toJson()));',
+                            codeGenUtils.ifStatement(
+                                condition: 'q.tags.isNotEmpty',
+                                ifBlockStatements: [
+                                  'addKeyToTags(q.cacheKey!, q.tags);',
+                                ]),
+                          ])
+                    ]),
+                'dataMap.addAll(cachedResponse);',
+                "final fullResponse = <String, dynamic>{'data': rawData != null ? dataMap : null};",
+                codeGenUtils.ifStatement(
+                    condition: 'result["errors"] != null',
+                    ifBlockStatements: [
+                      'fullResponse["errors"] = result["errors"];',
+                    ]),
+                'final parsed = parser.call(fullResponse);',
+                codeGenUtils.ifStatement(
+                    condition: 'captureErrors',
+                    ifBlockStatements: ['return parsed;']),
+                'final errors = result["errors"] as List?;',
+                codeGenUtils.ifStatement(
+                    condition: 'errors != null && errors.isNotEmpty',
+                    ifBlockStatements: ['throw parsed.errors!;']),
+                'return parsed;',
+              ]),
+          codeGenUtils.createMethod(
               methodName: "getFromCache",
               async: true,
               namedArguments: false,
@@ -454,97 +634,6 @@ class DartClientSerializer extends GLClientSerializer {
                   '$svHandler = GraphLinkSubscriptionHandler(adapter);',
               ]),
           ...methods,
-          if (type == GLQueryType.query) ...[
-            codeGenUtils.createMethod(
-                returnType: "GraphLinkPayload",
-                namedArguments: false,
-                methodName: "_buildPayload",
-                arguments: [
-                  "List<GraphLinkPartialQuery> partQueries",
-                  "String operationName",
-                  "String directives"
-                ],
-                statements: [
-                  "final Map<String, dynamic> variables = {};",
-                  codeGenUtils.forEachLoop(
-                      variable: "partQuery",
-                      iterable: "partQueries",
-                      statements: ["variables.addAll(partQuery.variables);"]),
-                  'final queryBuilder = StringBuffer("query \${operationName}");',
-                  'final args = partQueries.expand((e) => e.argumentDeclarations).toSet();',
-                  codeGenUtils.ifStatement(
-                      condition: 'args.isNotEmpty',
-                      ifBlockStatements: [
-                        'queryBuilder.write("(");',
-                        'queryBuilder.writeAll(args, ", ");',
-                        'queryBuilder.write(")");'
-                      ]),
-                  codeGenUtils.ifStatement(
-                      condition: 'directives.isNotEmpty',
-                      ifBlockStatements: ['queryBuilder.write(directives);']),
-                  'queryBuilder.write("{");',
-                  codeGenUtils.forEachLoop(
-                      variable: 'partQuery',
-                      iterable: 'partQueries',
-                      statements: [
-                        'queryBuilder.write(partQuery.query);',
-                        'queryBuilder.write(" ");',
-                      ]),
-                  'queryBuilder.write("}");',
-                  'final fragments = partQueries.expand((e) => e.fragmentNames).toSet().map((fragName) => $svFragMap[fragName]!).join();',
-                  'queryBuilder.write(fragments);',
-                  'return GraphLinkPayload(query: queryBuilder.toString(), operationName: operationName, variables: variables);',
-                ]),
-            codeGenUtils.createMethod(
-                methodName:
-                    '_parseToObjectAndCache<T extends GraphLinkFullResponse>',
-                arguments: [
-                  'String data',
-                  'Map<String, dynamic> cachedResponse',
-                  'T Function(Map<String, dynamic> json) parser',
-                  'Set<GraphLinkPartialQuery> remainingQueries',
-                  'bool captureErrors',
-                ],
-                returnType: 'T',
-                namedArguments: false,
-                statements: [
-                  'final result = jsonDecode(data) as Map<String, dynamic>;',
-                  'final rawData = result["data"];',
-                  'final dataMap = rawData as Map<String, dynamic>? ?? <String, dynamic>{};',
-                  codeGenUtils.forEachLoop(
-                      variable: 'q',
-                      iterable: 'remainingQueries',
-                      statements: [
-                        codeGenUtils.ifStatement(
-                            condition: 'q.ttl > 0 && dataMap[q.elementKey] != null',
-                            ifBlockStatements: [
-                              'final entry = GraphLinkCacheEntry(jsonEncode(dataMap[q.elementKey]), DateTime.now().millisecondsSinceEpoch + q.ttl * 1000);',
-                              '$svStore.set(q.cacheKey!, jsonEncode(entry.toJson()));',
-                              codeGenUtils.ifStatement(
-                                  condition: 'q.tags.isNotEmpty',
-                                  ifBlockStatements: [
-                                    'addKeyToTags(q.cacheKey!, q.tags);',
-                                  ]),
-                            ])
-                      ]),
-                  'dataMap.addAll(cachedResponse);',
-                  "final fullResponse = <String, dynamic>{'data': rawData != null ? dataMap : null};",
-                  codeGenUtils.ifStatement(
-                      condition: 'result["errors"] != null',
-                      ifBlockStatements: [
-                        'fullResponse["errors"] = result["errors"];',
-                      ]),
-                  'final parsed = parser.call(fullResponse);',
-                  codeGenUtils.ifStatement(
-                      condition: 'captureErrors',
-                      ifBlockStatements: ['return parsed;']),
-                  'final errors = result["errors"] as List?;',
-                  codeGenUtils.ifStatement(
-                      condition: 'errors != null && errors.isNotEmpty',
-                      ifBlockStatements: ['throw parsed.errors!;']),
-                  'return parsed;',
-                ]),
-          ],
         ]);
   }
 
