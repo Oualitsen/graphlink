@@ -57,11 +57,11 @@ void main() {
     test('list upload arg is List<GLUpload>', () => expect(out, contains('required List<GLUpload> files')));
     test('has onProgress param', () => expect(out, contains('UploadProgressCallback? onProgress')));
     test('upload variable is null', () => expect(out, contains("'file': null")));
-    test('builds multipart parts map', () => expect(out, contains('gl_uploadAdapter__!(gl_parts__, onProgress)')));
+    test('builds multipart parts map', () => expect(out, contains('glUploadAdapter__!(glParts__, onProgress)')));
     test('list upload uses indexed loop', () => expect(out, contains('variables.files.')));
     test('mutations class has upload fields', () {
-      expect(out, contains('GLUploadConverter gl_uploadConverter__'));
-      expect(out, contains('GLMultipartAdapter? gl_uploadAdapter__'));
+      expect(out, contains('GLUploadConverter glUploadConverter__'));
+      expect(out, contains('GLMultipartAdapter? glUploadAdapter__'));
     });
     test('withHttp is a factory when uploads present', () {
       expect(out, contains('factory GraphLinkClient.withHttp'));

@@ -155,16 +155,6 @@ extension GLGrammarProjectionExtension on GLParser {
   }
 
   void createProjectedTypes() {
-    final _swTotal = Stopwatch()..start();
-    final _sw = Stopwatch()..start();
-    void _log(String phase) {
-      // ignore: avoid_print
-      return;
-      print('[createProjectedTypes] $phase: ${_sw.elapsedMilliseconds}ms');
-      _sw.reset();
-      _sw.start();
-    }
-
     _typeHashIndex.clear();
     _interfaceHashIndex.clear();
     // pre-populate index with static schema types so findSimilarTo covers them
@@ -174,21 +164,14 @@ extension GLGrammarProjectionExtension on GLParser {
     for (var i in interfaces.values) {
       _interfaceHashIndex.putIfAbsent(i.getHash(this), () => []).add(i);
     }
-    _log('build hash index (types=${types.length}, '
-        'interfaces=${interfaces.length})');
+   
 
     final allEmenets = getAllElements();
-    _log('getAllElements (count=${allEmenets.length})');
 
-    var _withBlock = 0;
     allEmenets.where((e) => e.block != null).forEach((element) {
-      _withBlock++;
       var newType = createProjectedTypeForQuery(element);
       element.projectedTypeKey = newType.token;
     });
-    _log('createProjectedTypeForQuery loop (elementsWithBlock=$_withBlock, '
-        'projectedTypes=${projectedTypes.length}, '
-        'projectedInterfaces=${projectedInterfaces.length})');
 
     allEmenets.where((e) => e.projectedTypeKey != null).forEach((element) {
       var returnTypeToken = element.returnType.token;
@@ -198,7 +181,6 @@ extension GLGrammarProjectionExtension on GLParser {
         element.projectedType = projectedTypes[element.projectedTypeKey!]!;
       }
     });
-    _log('assign projectedType back to elements');
 
     queries.forEach((key, query) {
       // The generated wrappers (`<stem>Response` / `<stem>FullResponse`, both
@@ -227,7 +209,6 @@ extension GLGrammarProjectionExtension on GLParser {
       }
       addToProjectedTypes(fullResponseType, similarityCheck: false);
     });
-    _log('queries response-type loop (queries=${queries.length})');
 
     // ignore: avoid_print
    // print('[createProjectedTypes] TOTAL: ${_swTotal.elapsedMilliseconds}ms');

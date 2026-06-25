@@ -25,9 +25,9 @@ class FlutterTypesSerializer {
 
   FlutterTypesSerializer(this._parser, DartSerializer dartSerializer, this._config, this.importPrefix) {
     _u = DartCodeGenUtils();
-    _renderer = FlutterTypesValueRenderer(_parser, dartSerializer, _config, _u);
+    _renderer = FlutterTypesValueRenderer(_parser, dartSerializer, _config);
     _companions = FlutterTypesCompanionSerializer(_u);
-    _layout = FlutterTypesLayoutSerializer(_parser, _config, _u, _renderer);
+    _layout = FlutterTypesLayoutSerializer(_parser, _u, _renderer);
   }
 
   bool shouldSkip(GLTypeDefinition def) =>

@@ -19,10 +19,11 @@ import kotlinx.coroutines.flow.map
 open class GraphLinkSubscriptions(
     adapter: GraphLinkClientAdapter,
     wsAdapter: GraphLinkWebSocketAdapter,
+    fragmentMap: Map<String, String>,
     encoder: GraphLinkJsonEncoder,
     decoder: GraphLinkJsonDecoder,
     store: GraphLinkCacheStore,
-) : GraphLinkResolverBase(adapter, null, store, encoder, decoder) {
+) : GraphLinkResolverBase(adapter, fragmentMap, store, encoder, decoder) {
    private lateinit var handler: GraphLinkSubscriptionHandler
 
    init {
@@ -30,25 +31,28 @@ open class GraphLinkSubscriptions(
    }
 
    fun userCreated(): Flow<UserCreatedResponse> {
-      val __gl_operationName__ = "userCreated"
-      val __gl_query__ = "subscription userCreated{userCreated{..._all_fields_User}} fragment _all_fields_User on User{id name email status priority address{..._all_fields_Address} billingAddress{..._all_fields_Address} tags scores posts{..._all_fields_Post}} fragment _all_fields_Address on Address{street city country zip} fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
-      val __gl_variables__ = emptyMap<String, Any?>()
-      val __gl_payload__ = GraphLinkPayload(query = __gl_query__, operationName = __gl_operationName__, variables = __gl_variables__)
-      return handler.handle(__gl_payload__).map { UserCreatedResponse.fromJson(it) }
+      val glQuery__ = "subscription userCreated{userCreated{..._all_fields_User}}"
+      val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
+      val glFullQuery__ = assembleQuery(glQuery__, glFragmentNames__)
+
+      val glPayload__ = GraphLinkPayload(query = glFullQuery__, operationName = "userCreated", variables = emptyMap())
+      return handler.handle(glPayload__).map { UserCreatedResponse.fromJson(it) }
    }
    fun userCreateds(ids: List<String>): Flow<UserCreatedsResponse> {
-      val __gl_operationName__ = "userCreateds"
-      val __gl_query__ = "subscription userCreateds(\$ids: [ID!]!){userCreateds(ids: \$ids){..._all_fields_User}} fragment _all_fields_User on User{id name email status priority address{..._all_fields_Address} billingAddress{..._all_fields_Address} tags scores posts{..._all_fields_Post}} fragment _all_fields_Address on Address{street city country zip} fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
-      val __gl_variables__ = mapOf("ids" to ids.toList())
-      val __gl_payload__ = GraphLinkPayload(query = __gl_query__, operationName = __gl_operationName__, variables = __gl_variables__)
-      return handler.handle(__gl_payload__).map { UserCreatedsResponse.fromJson(it) }
+      val glQuery__ = "subscription userCreateds(\$ids: [ID!]!){userCreateds(ids: \$ids){..._all_fields_User}}"
+      val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
+      val glFullQuery__ = assembleQuery(glQuery__, glFragmentNames__)
+      val glVariables__ = mapOf("ids" to ids.toList())
+      val glPayload__ = GraphLinkPayload(query = glFullQuery__, operationName = "userCreateds", variables = glVariables__)
+      return handler.handle(glPayload__).map { UserCreatedsResponse.fromJson(it) }
    }
    fun userStatusChanged(userId: String): Flow<UserStatusChangedResponse> {
-      val __gl_operationName__ = "userStatusChanged"
-      val __gl_query__ = "subscription userStatusChanged(\$userId: ID!){userStatusChanged(userId: \$userId){..._all_fields_User}} fragment _all_fields_User on User{id name email status priority address{..._all_fields_Address} billingAddress{..._all_fields_Address} tags scores posts{..._all_fields_Post}} fragment _all_fields_Address on Address{street city country zip} fragment _all_fields_Post on Post{id title body author{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} coAuthor{id name email status priority address{street city country zip} billingAddress{street city country zip} tags scores} viewCount}"
-      val __gl_variables__ = mapOf("userId" to userId)
-      val __gl_payload__ = GraphLinkPayload(query = __gl_query__, operationName = __gl_operationName__, variables = __gl_variables__)
-      return handler.handle(__gl_payload__).map { UserStatusChangedResponse.fromJson(it) }
+      val glQuery__ = "subscription userStatusChanged(\$userId: ID!){userStatusChanged(userId: \$userId){..._all_fields_User}}"
+      val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
+      val glFullQuery__ = assembleQuery(glQuery__, glFragmentNames__)
+      val glVariables__ = mapOf("userId" to userId)
+      val glPayload__ = GraphLinkPayload(query = glFullQuery__, operationName = "userStatusChanged", variables = glVariables__)
+      return handler.handle(glPayload__).map { UserStatusChangedResponse.fromJson(it) }
    }
 }
 

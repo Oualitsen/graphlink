@@ -101,11 +101,11 @@ void main() {
     test('has multipartAdapter field', () => expect(out, contains('GraphLinkMultipartAdapter multipartAdapter')));
     test('single upload arg is GLUpload', () => expect(out, contains('GLUpload file')));
     test('list upload arg is List<GLUpload>', () => expect(out, contains('List<GLUpload> files')));
-    test('single upload variable is null', () => expect(out, contains('__gl_variables__.put("file", null)')));
+    test('single upload variable is null', () => expect(out, contains('glVariables__.put("file", null)')));
     test('list upload variable is nCopies null list', () => expect(out, contains('Collections.nCopies')));
-    test('single upload uses literal index', () => expect(out, contains('__gl_files__.put("0", file)')));
+    test('single upload uses literal index', () => expect(out, contains('glFiles__.put("0", file)')));
     test('list upload uses runtime loop', () => expect(out, contains('for (int _i = 0; _i < files.size(); _i++)')));
-    test('calls executeMultipart', () => expect(out, contains('__gl_multipartAdapter__.executeMultipart')));
+    test('calls executeMultipart', () => expect(out, contains('glMultipartAdapter__.executeMultipart')));
     test('overload without progress delegates with null', () => expect(out, contains('uploadFile(file, filename, null)')));
     test('overload with progress throws IOException', () => expect(out, contains('throws IOException')));
     test('non-upload mutation uses adapter.execute', () => expect(out, contains('glCallAdapter')));

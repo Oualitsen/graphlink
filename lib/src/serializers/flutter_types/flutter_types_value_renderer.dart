@@ -1,5 +1,4 @@
 import 'package:graphlink/src/config.dart';
-import 'package:graphlink/src/dart_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
@@ -9,9 +8,8 @@ class FlutterTypesValueRenderer {
   final GLParser _parser;
   final DartSerializer _dartSerializer;
   final FlutterConfig _config;
-  final DartCodeGenUtils _u;
 
-  FlutterTypesValueRenderer(this._parser, this._dartSerializer, this._config, this._u);
+  FlutterTypesValueRenderer(this._parser, this._dartSerializer, this._config);
 
   String defaultValueExpression(GLField field, String varName) {
     final accessor = '$varName.${field.name}';

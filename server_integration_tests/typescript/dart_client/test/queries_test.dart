@@ -57,7 +57,7 @@ void main() {
 
   group('getAuthorAndArticle', () {
     test('resolves both root fields with their own arguments plus a shared fragment argument', () async {
-      final res = await client.queries.getAuthorAndArticle(authorId: '1', articleId: '3', latestArticlesLimit: 1, limit: 1);
+      final res = await client.queries.getAuthorAndArticle(authorId: '1', articleId: '3', latestArticlesLimit: 1);
       expect(res.author!.id, equals('1'));
       expect(res.author!.latestArticles, hasLength(1));
       expect(res.article.id, equals('3'));

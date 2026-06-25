@@ -34,13 +34,7 @@ class DartClientOperationSerializer {
   Set<GLFragmentDefinitionBase> _getFragmentsForDef(GLQueryDefinition def) =>
       def.fragments(_grammar);
 
-  String _buildQueryString(GLQueryDefinition def) {
-    final query = _gqlSerializer.serializeQueryDefinition(def);
-    final frags = _getFragmentsForDef(def)
-        .map((f) => _gqlSerializer.serializeFragmentDefinitionBase(f))
-        .join(' ');
-    return frags.isEmpty ? query : '$query $frags';
-  }
+ 
 
   List<DividedQuery> _divideQuery(GLQueryDefinition def) =>
       _gqlSerializer.divideQueryDefinition(def, _grammar);
@@ -48,6 +42,46 @@ class DartClientOperationSerializer {
   // ── Public entry points ────────────────────────────────────────────────────
 
   String queryToMethod(GLQueryDefinition def) {
+    if (_divideQuery(def).every((e) => e.cacheTTL == 0)) {
+      return _simpleQueryMethodBody(def);
+    }
+    return _cachedQueryMethodBody(def);
+  }
+
+  String _simpleQueryMethodBody(GLQueryDefinition def) {
+    final fullResponseToken =
+        def.getFullResponseTypeDefinition(_grammar).tokenInfo;
+    final isCaptureErrors = def.isCaptureErrors(_grammar);
+    final queryString = _gqlSerializer.serializeQueryDefinition(def);
+    final fragmentNames = _getFragmentsForDef(def)
+        .map((f) => "'${f.tokenInfo.token}'")
+        .toSet();
+
+    return _cg.createMethod(
+        returnType: returnTypeByQueryType(def),
+        methodName: def.tokenInfo.token,
+        arguments: getArguments(def),
+        async: true,
+        statements: [
+          "const $svQuery = '''$queryString''';",
+          'const $svFragmentNames = ${fragmentNames.isEmpty ? "<String>{};" : "<String>{${fragmentNames.join(", ")}};"}',
+          generateVariables(def),
+          'final $svFullQuery = assembleQuery($svQuery, $svFragmentNames);',
+          "final $svPayload = GraphLinkPayload(query: $svFullQuery, operationName: '${def.tokenInfo}', variables: ${_variablesExpr(def)});",
+          if (isCaptureErrors) ...[
+            "final $svResponse = await glCallAdapter($svPayload);",
+            "return $fullResponseToken.fromJson(jsonDecode($svResponse));",
+          ] else ...[
+            "final $svResponse = await glCallAdapter($svPayload);",
+            "final $svResult = $fullResponseToken.fromJson(jsonDecode($svResponse));",
+            "if ($svResult.errors != null) throw $svResult.errors!;",
+            "return $svResult.data!;",
+          ],
+        ]);
+  }
+
+  String _cachedQueryMethodBody(GLQueryDefinition def) {
+    final dividedQueries = _divideQuery(def);
     final cacheHitReturn = StringBuffer();
     final parseAndCacheCall = StringBuffer();
     final fullResponseToken =
@@ -71,9 +105,8 @@ class DartClientOperationSerializer {
         arguments: getArguments(def),
         async: true,
         statements: [
-          "const $svOperationName = '${def.tokenInfo}';",
           generateVariables(def),
-          'final $svPartialQueries = ${_divideQuery(def).map((e) => _serializePartialQuery(e)).toList()};',
+          'final $svPartialQueries = ${dividedQueries.map((e) => _serializePartialQuery(e)).toList()};',
           'final $svResponseMap = <String, dynamic>{};',
           'final $svStaleData = <String, dynamic>{};',
           'final $svCacheFetchFutures = <Future>[];',
@@ -99,9 +132,9 @@ class DartClientOperationSerializer {
               condition: '$svRemaining.isEmpty',
               ifBlockStatements: [cacheHitReturn.toString()]),
           "final $svRemainingQueries = $svPartialQueries.where((e) => !$svResponseMap.containsKey(e.elementKey)).toList();",
-          "final $svPayload = _buildPayload($svRemainingQueries, $svOperationName, '${_gqlSerializer.serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}');",
+          "final $svPayload = _buildPayload($svRemainingQueries, '${def.tokenInfo}', '${_gqlSerializer.serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}');",
           _cg.tryCatchFinally(tryStatements: [
-            'final $svResponseText = await _getFromSource($svPayload);',
+            'final $svResponseText = await glCallAdapter($svPayload);',
             parseAndCacheCall.toString(),
           ], catchStatements: [
             "$svResponseMap.addAll($svStaleData);",
@@ -115,18 +148,23 @@ class DartClientOperationSerializer {
   }
 
   String mutationToMethod(GLQueryDefinition def) {
+    final queryText = _gqlSerializer.serializeQueryDefinition(def);
+    final fragmentNames = _getFragmentsForDef(def)
+        .map((f) => "'${f.tokenInfo.token}'")
+        .toSet();
+
     return _cg.createMethod(
         returnType: returnTypeByQueryType(def),
         methodName: def.tokenInfo.token,
         arguments: getArguments(def),
         async: def.type != GLQueryType.subscription,
         statements: [
-          if (!_isUploadMutation(def))
-            "const $svOperationName = '${def.tokenInfo}';",
-          "const $svQuery = '''${_buildQueryString(def)}''';",
+          "const $svQuery = '''$queryText''';",
+          'const $svFragmentNames = ${fragmentNames.isEmpty ? "<String>{};" : "<String>{${fragmentNames.join(", ")}};"}',
+          'final $svFullQuery = assembleQuery($svQuery, $svFragmentNames);',
           generateVariables(def),
           if (!_isUploadMutation(def))
-            "final $svPayload = GraphLinkPayload(query: $svQuery, operationName: $svOperationName, variables: $svVariables);",
+            "final $svPayload = GraphLinkPayload(query: $svFullQuery, operationName: '${def.tokenInfo}', variables: ${_variablesExpr(def)});",
           _serializeAdapterCall(def),
         ]);
   }
@@ -134,6 +172,7 @@ class DartClientOperationSerializer {
   // ── Variable generation ────────────────────────────────────────────────────
 
   String generateVariables(GLQueryDefinition def) {
+    if (def.arguments.isEmpty) return '';
     final buffer = StringBuffer("final $svVariables = <String, dynamic>{");
     buffer.writeln();
     def.arguments
@@ -143,6 +182,9 @@ class DartClientOperationSerializer {
     buffer.writeln("};");
     return buffer.toString();
   }
+
+  String _variablesExpr(GLQueryDefinition def) =>
+      def.arguments.isNotEmpty ? svVariables : 'const <String, dynamic>{}';
 
   // ── Argument helpers ───────────────────────────────────────────────────────
 
@@ -287,7 +329,7 @@ return $svResult.data!;
 
     statements.addAll([
       "final $svParts = <String, Object>{"
-          "\n  'operations': jsonEncode({'query': $svQuery, 'variables': $svVariables}),"
+          "\n  'operations': jsonEncode({'query': $svFullQuery, 'variables': $svVariables}),"
           "\n  'map': jsonEncode($svMultipartMap),"
           "\n  ...$svFileParts,"
           "\n};",

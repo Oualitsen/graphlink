@@ -162,19 +162,19 @@ type Mutation { deleteUser(id: ID!): Boolean! }
     late String queries;
     setUpAll(() => queries = _queries(_parse(_schema)));
 
-    test('cache hit wraps responseMap with data key and null errors', () {
-      expect(queries, contains('{ data: gl_responseMap__, errors: null }'));
+    test('captureErrors result sets errors field to null when absent', () {
+      expect(queries, contains("(gl_result__ as any)['errors'] = null;"));
     });
 
-    test('_parseAndCache called with captureErrors=true', () {
-      expect(queries, contains('_parseAndCache(gl_responseText__, gl_responseMap__, gl_remaining__, true)'));
+    test('captureErrors result is returned directly without unwrapping data', () {
+      expect(queries, contains('return gl_result__;'));
     });
 
-    test('stale fallback also wraps with data key and null errors', () {
+    test('both captureErrors queries set errors to null when absent', () {
       final start = queries.indexOf('Promise<GetUserFullResponse>');
       final end   = queries.indexOf('Promise<FindUserFullResponse>');
       final body  = queries.substring(start, end);
-      expect(body, contains('{ data: gl_responseMap__, errors: null }'));
+      expect(body, contains("(gl_result__ as any)['errors'] = null;"));
     });
 
     test('no explicit GraphQL-error throw in captureErrors query body', () {
@@ -192,15 +192,17 @@ type Mutation { deleteUser(id: ID!): Boolean! }
     late String queries;
     setUpAll(() => queries = _queries(_parse(_schema)));
 
-    test('cache hit returns responseMap directly (no data wrapping)', () {
+    test('non-captureErrors result returns data field directly', () {
       final start = queries.indexOf('Promise<ListUsersResponse>');
       final body  = queries.substring(start);
-      expect(body, contains('gl_responseMap__ as unknown as ListUsersResponse'));
-      expect(body, isNot(contains('{ data: gl_responseMap__ }')));
+      expect(body, contains("gl_result__['data'] as ListUsersResponse"));
+      expect(body, isNot(contains('gl_responseMap__')));
     });
 
-    test('_parseAndCache called without captureErrors flag', () {
-      expect(queries, contains('_parseAndCache(gl_responseText__, gl_responseMap__, gl_remaining__)'));
+    test('non-captureErrors result throws on errors', () {
+      final start = queries.indexOf('Promise<ListUsersResponse>');
+      final body  = queries.substring(start);
+      expect(body, contains("throw gl_result__['errors'] as GraphLinkError[];"));
     });
   });
 
@@ -289,15 +291,15 @@ type Mutation { deleteUser(id: ID!): Boolean! }
       expect(client, contains('Promise<DeleteUserFullResponse>'));
     });
 
-    test('_parseAndCache always called with true when global flag is set', () {
+    test('global captureErrors: true makes all queries set errors to null', () {
       const schema = '''
 type User { id: ID! }
 type Query    { getUser: User! }
 type Mutation { deleteUser(id: ID!): Boolean! }
 ''';
       final queries = _queries(_parse(schema, captureErrors: true));
-      expect(queries, contains('_parseAndCache(gl_responseText__, gl_responseMap__, gl_remaining__, true)'));
-      expect(queries, isNot(contains('_parseAndCache(gl_responseText__, gl_responseMap__, gl_remaining__)')));
+      expect(queries, contains("(gl_result__ as any)['errors'] = null;"));
+      expect(queries, isNot(contains("throw gl_result__['errors']")));
     });
   });
 }

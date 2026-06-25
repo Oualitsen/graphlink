@@ -3,7 +3,7 @@
 // GitHub: https://github.com/Oualitsen/graphlink
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
-// ignore_for_file: use_rethrow_when_possible, camel_case_types, constant_identifier_names, unused_import, non_constant_identifier_names, no_leading_underscores_for_local_identifiers, unused_local_variable, annotate_overrides, library_private_types_in_public_api
+
 
 package dev.graphlink.kotlinclient.generated.client;
 import dev.graphlink.kotlinclient.generated.interfaces.GraphLinkClientAdapter
@@ -15,7 +15,7 @@ import java.util.Objects
 
 open class GraphLinkResolverBase(
     private val adapter: GraphLinkClientAdapter,
-    protected val fragmentMap: Map<String, String>?,
+    protected val fragmentMap: Map<String, String>,
     protected val store: GraphLinkCacheStore,
     protected val encoder: GraphLinkJsonEncoder,
     protected val decoder: GraphLinkJsonDecoder,
@@ -134,5 +134,17 @@ open class GraphLinkResolverBase(
    }
 
    private fun tagKey(tag: String): String = "__tag__$tag"
+
+   fun assembleQuery(query: String, fragmentNames: Set<String>): String {
+      val buffer = StringBuilder(query)
+      for (name in fragmentNames) {
+         val frag = fragmentMap[name]
+         if (frag != null) {
+            buffer.append("\n")
+            buffer.append(frag)
+         }
+      }
+      return buffer.toString()
+   }
 }
 

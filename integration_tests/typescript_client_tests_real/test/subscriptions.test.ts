@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { GraphLinkClient, DefaultGraphLinkWsAdapter } from '../lib/generated/client/graph-link-client.js';
+import { GraphLinkClient } from '../lib/generated/client/graph-link-client.js';
 import type { UserCreatedResponse } from '../lib/generated/types/user-created-response.js';
 import type { UserStatusChangedResponse } from '../lib/generated/types/user-status-changed-response.js';
 import type { UserCreatedsResponse } from '../lib/generated/types/user-createds-response.js';
 import { realHttpAdapter, WS_URL } from './real-server-adapter.ts';
+import { DefaultGraphLinkWsAdapter } from '../lib/generated/graphlink.ts';
 
 // Each test creates its own ws adapter and client — subscriptions are stateful.
 function makeClient() {

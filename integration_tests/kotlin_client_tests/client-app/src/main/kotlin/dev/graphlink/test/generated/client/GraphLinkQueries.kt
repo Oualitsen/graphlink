@@ -7,7 +7,6 @@
 
 package dev.graphlink.test.generated.client;
 import dev.graphlink.test.generated.types.GraphLinkPayload
-import dev.graphlink.test.generated.types.GraphLinkError
 import dev.graphlink.test.generated.types.FetchUserAndPostFullResponse
 import dev.graphlink.test.generated.types.FetchUserAndPostResponse
 import dev.graphlink.test.generated.types.FetchUserSummaryFullResponse
@@ -55,7 +54,7 @@ import dev.graphlink.test.generated.interfaces.GraphLinkJsonDecoder
 
 open class GraphLinkQueries(
     adapter: GraphLinkClientAdapter,
-    fragmentMap: Map<String, String>?,
+    fragmentMap: Map<String, String>,
     encoder: GraphLinkJsonEncoder,
     decoder: GraphLinkJsonDecoder,
     store: GraphLinkCacheStore,
@@ -63,199 +62,53 @@ open class GraphLinkQueries(
 
 
    suspend fun fetchUserAndPost(userId: String, postId: String): FetchUserAndPostResponse {
-      val __gl_operationName__ = "fetchUserAndPost"
-      val __gl_variables__ = mapOf("userId" to userId, "postId" to postId)
-      val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
-      run {
-         val __gl_pqVars__ = mutableMapOf<String, Any?>()
-         __gl_pqVars__["userId"] = __gl_variables__["userId"]
-         __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "user:getUser(id: \$userId){..._all_fields_User}",
-             __gl_pqVars__,
-             0,
-             emptyList(),
-             "fetchUserAndPost_user_getUser",
-             "user",
-             setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post"),
-             listOf("\$userId: ID!"),
-             false,
-             encoder,
-         ))
+      val glVariables__ = mapOf("userId" to userId, "postId" to postId)
+      val glQuery__ = "query fetchUserAndPost(\$userId: ID!,\$postId: ID!){user:getUser(id: \$userId){..._all_fields_User} post:getPost(id: \$postId){id title author{..._all_fields_User}}}"
+      val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
+      val glFullQuery__ = assembleQuery(glQuery__, glFragmentNames__)
+      val glPayload__ = GraphLinkPayload(query = glFullQuery__, operationName = "fetchUserAndPost", variables = glVariables__)
+      val glResponseText__ = glCallAdapter(glPayload__)
+      val glDecodedResponse__ = FetchUserAndPostFullResponse.fromJson(decoder.decode(glResponseText__))
+      if (glDecodedResponse__.errors != null && glDecodedResponse__.errors.isNotEmpty()) {
+         throw GraphLinkException(glDecodedResponse__.errors)
       }
-      run {
-         val __gl_pqVars__ = mutableMapOf<String, Any?>()
-         __gl_pqVars__["postId"] = __gl_variables__["postId"]
-         __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "post:getPost(id: \$postId){id title author{..._all_fields_User}}",
-             __gl_pqVars__,
-             0,
-             emptyList(),
-             "fetchUserAndPost_post_getPost",
-             "post",
-             setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post"),
-             listOf("\$postId: ID!"),
-             false,
-             encoder,
-         ))
-      }
-      val __gl_responseMap__ = mutableMapOf<String, Any?>()
-      val __gl_staleData__ = mutableMapOf<String, Any?>()
-      for (partQuery in __gl_partialQueries__) {
-         if (partQuery.ttl > 0) {
-            try {
-               val __gl_entry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
-               if (__gl_entry__ != null) {
-                  if (__gl_entry__.stale) {
-                     __gl_staleData__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  } else {
-                     __gl_responseMap__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  }
-               }
-            } catch (ignored: Exception) {
-            }
-         }
-      }
-      val __gl_remaining__ = __gl_partialQueries__.filter { !__gl_responseMap__.containsKey(it.elementKey) }.toMutableList()
-      if (__gl_remaining__.isEmpty()) {
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return FetchUserAndPostFullResponse.fromJson(__gl_wrappedResponse__).data!!
-      }
-      val __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "")
-      try {
-         val __gl_responseText__ = glCallAdapter(__gl_payload__)
-         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, { FetchUserAndPostFullResponse.fromJson(it) }, __gl_remaining__, false).data!!
-      } catch (exception: Exception) {
-         __gl_responseMap__.putAll(__gl_staleData__)
-         val __gl_remainingCount__ = __gl_partialQueries__.count { !__gl_responseMap__.containsKey(it.elementKey) }
-         if (__gl_remainingCount__ > 0) {
-            throw RuntimeException(exception)
-         }
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return FetchUserAndPostFullResponse.fromJson(__gl_wrappedResponse__).data!!
-      }
+      return glDecodedResponse__.data!!
    }
    suspend fun fetchUserSummary(id: String): FetchUserSummaryResponse {
-      val __gl_operationName__ = "fetchUserSummary"
-      val __gl_variables__ = mapOf("id" to id)
-      val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
-      run {
-         val __gl_pqVars__ = mutableMapOf<String, Any?>()
-         __gl_pqVars__["id"] = __gl_variables__["id"]
-         __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "getUser(id: \$id){id name status}",
-             __gl_pqVars__,
-             0,
-             emptyList(),
-             "fetchUserSummary__getUser",
-             "getUser",
-             emptySet(),
-             listOf("\$id: ID!"),
-             false,
-             encoder,
-         ))
+      val glVariables__ = mapOf("id" to id)
+      val glQuery__ = "query fetchUserSummary(\$id: ID!){getUser(id: \$id){id name status}}"
+      val glFragmentNames__ = emptySet<String>()
+      val glFullQuery__ = assembleQuery(glQuery__, glFragmentNames__)
+      val glPayload__ = GraphLinkPayload(query = glFullQuery__, operationName = "fetchUserSummary", variables = glVariables__)
+      val glResponseText__ = glCallAdapter(glPayload__)
+      val glDecodedResponse__ = FetchUserSummaryFullResponse.fromJson(decoder.decode(glResponseText__))
+      if (glDecodedResponse__.errors != null && glDecodedResponse__.errors.isNotEmpty()) {
+         throw GraphLinkException(glDecodedResponse__.errors)
       }
-      val __gl_responseMap__ = mutableMapOf<String, Any?>()
-      val __gl_staleData__ = mutableMapOf<String, Any?>()
-      for (partQuery in __gl_partialQueries__) {
-         if (partQuery.ttl > 0) {
-            try {
-               val __gl_entry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
-               if (__gl_entry__ != null) {
-                  if (__gl_entry__.stale) {
-                     __gl_staleData__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  } else {
-                     __gl_responseMap__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  }
-               }
-            } catch (ignored: Exception) {
-            }
-         }
-      }
-      val __gl_remaining__ = __gl_partialQueries__.filter { !__gl_responseMap__.containsKey(it.elementKey) }.toMutableList()
-      if (__gl_remaining__.isEmpty()) {
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return FetchUserSummaryFullResponse.fromJson(__gl_wrappedResponse__).data!!
-      }
-      val __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "")
-      try {
-         val __gl_responseText__ = glCallAdapter(__gl_payload__)
-         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, { FetchUserSummaryFullResponse.fromJson(it) }, __gl_remaining__, false).data!!
-      } catch (exception: Exception) {
-         __gl_responseMap__.putAll(__gl_staleData__)
-         val __gl_remainingCount__ = __gl_partialQueries__.count { !__gl_responseMap__.containsKey(it.elementKey) }
-         if (__gl_remainingCount__ > 0) {
-            throw RuntimeException(exception)
-         }
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return FetchUserSummaryFullResponse.fromJson(__gl_wrappedResponse__).data!!
-      }
+      return glDecodedResponse__.data!!
    }
    suspend fun runSearch(term: String): RunSearchResponse {
-      val __gl_operationName__ = "runSearch"
-      val __gl_variables__ = mapOf("term" to term)
-      val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
-      run {
-         val __gl_pqVars__ = mutableMapOf<String, Any?>()
-         __gl_pqVars__["term"] = __gl_variables__["term"]
-         __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "search(term: \$term){... on UserResult  {id name email __typename}  ... on PostResult  {id title __typename}}",
-             __gl_pqVars__,
-             0,
-             emptyList(),
-             "runSearch__search",
-             "search",
-             emptySet(),
-             listOf("\$term: String!"),
-             false,
-             encoder,
-         ))
+      val glVariables__ = mapOf("term" to term)
+      val glQuery__ = "query runSearch(\$term: String!){search(term: \$term){... on UserResult  {id name email __typename}  ... on PostResult  {id title __typename}}}"
+      val glFragmentNames__ = emptySet<String>()
+      val glFullQuery__ = assembleQuery(glQuery__, glFragmentNames__)
+      val glPayload__ = GraphLinkPayload(query = glFullQuery__, operationName = "runSearch", variables = glVariables__)
+      val glResponseText__ = glCallAdapter(glPayload__)
+      val glDecodedResponse__ = RunSearchFullResponse.fromJson(decoder.decode(glResponseText__))
+      if (glDecodedResponse__.errors != null && glDecodedResponse__.errors.isNotEmpty()) {
+         throw GraphLinkException(glDecodedResponse__.errors)
       }
-      val __gl_responseMap__ = mutableMapOf<String, Any?>()
-      val __gl_staleData__ = mutableMapOf<String, Any?>()
-      for (partQuery in __gl_partialQueries__) {
-         if (partQuery.ttl > 0) {
-            try {
-               val __gl_entry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
-               if (__gl_entry__ != null) {
-                  if (__gl_entry__.stale) {
-                     __gl_staleData__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  } else {
-                     __gl_responseMap__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  }
-               }
-            } catch (ignored: Exception) {
-            }
-         }
-      }
-      val __gl_remaining__ = __gl_partialQueries__.filter { !__gl_responseMap__.containsKey(it.elementKey) }.toMutableList()
-      if (__gl_remaining__.isEmpty()) {
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return RunSearchFullResponse.fromJson(__gl_wrappedResponse__).data!!
-      }
-      val __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "")
-      try {
-         val __gl_responseText__ = glCallAdapter(__gl_payload__)
-         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, { RunSearchFullResponse.fromJson(it) }, __gl_remaining__, false).data!!
-      } catch (exception: Exception) {
-         __gl_responseMap__.putAll(__gl_staleData__)
-         val __gl_remainingCount__ = __gl_partialQueries__.count { !__gl_responseMap__.containsKey(it.elementKey) }
-         if (__gl_remainingCount__ > 0) {
-            throw RuntimeException(exception)
-         }
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return RunSearchFullResponse.fromJson(__gl_wrappedResponse__).data!!
-      }
+      return glDecodedResponse__.data!!
    }
    suspend fun fetchCachedPair(userId: String, postId: String): FetchCachedPairResponse {
-      val __gl_operationName__ = "fetchCachedPair"
-      val __gl_variables__ = mapOf("userId" to userId, "postId" to postId)
-      val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
+      val glVariables__ = mapOf("userId" to userId, "postId" to postId)
+      val glPartialQueries__ = mutableListOf<GraphLinkPartialQuery>()
       run {
-         val __gl_pqVars__ = mutableMapOf<String, Any?>()
-         __gl_pqVars__["userId"] = __gl_variables__["userId"]
-         __gl_partialQueries__.add(GraphLinkPartialQuery(
+         val glPqVars__ = mutableMapOf<String, Any?>()
+         glPqVars__["userId"] = glVariables__["userId"]
+         glPartialQueries__.add(GraphLinkPartialQuery(
              "user:getCachedUser(id: \$userId){..._all_fields_User}",
-             __gl_pqVars__,
+             glPqVars__,
              120,
              listOf("users", "pair"),
              "fetchCachedPair_user_getCachedUser",
@@ -267,11 +120,11 @@ open class GraphLinkQueries(
          ))
       }
       run {
-         val __gl_pqVars__ = mutableMapOf<String, Any?>()
-         __gl_pqVars__["postId"] = __gl_variables__["postId"]
-         __gl_partialQueries__.add(GraphLinkPartialQuery(
+         val glPqVars__ = mutableMapOf<String, Any?>()
+         glPqVars__["postId"] = glVariables__["postId"]
+         glPartialQueries__.add(GraphLinkPartialQuery(
              "post:getCachedPost(id: \$postId){..._all_fields_Post}",
-             __gl_pqVars__,
+             glPqVars__,
              300,
              listOf("posts", "pair"),
              "fetchCachedPair_post_getCachedPost",
@@ -282,611 +135,181 @@ open class GraphLinkQueries(
              encoder,
          ))
       }
-      val __gl_responseMap__ = mutableMapOf<String, Any?>()
-      val __gl_staleData__ = mutableMapOf<String, Any?>()
-      for (partQuery in __gl_partialQueries__) {
+      val glResponseMap__ = mutableMapOf<String, Any?>()
+      val glStaleData__ = mutableMapOf<String, Any?>()
+      for (partQuery in glPartialQueries__) {
          if (partQuery.ttl > 0) {
             try {
-               val __gl_entry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
-               if (__gl_entry__ != null) {
-                  if (__gl_entry__.stale) {
-                     __gl_staleData__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
+               val glEntry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
+               if (glEntry__ != null) {
+                  if (glEntry__.stale) {
+                     glStaleData__[partQuery.elementKey] = decoder.decode(glEntry__.data)["__gl_v__"]
                   } else {
-                     __gl_responseMap__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
+                     glResponseMap__[partQuery.elementKey] = decoder.decode(glEntry__.data)["__gl_v__"]
                   }
                }
             } catch (ignored: Exception) {
             }
          }
       }
-      val __gl_remaining__ = __gl_partialQueries__.filter { !__gl_responseMap__.containsKey(it.elementKey) }.toMutableList()
-      if (__gl_remaining__.isEmpty()) {
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return FetchCachedPairFullResponse.fromJson(__gl_wrappedResponse__).data!!
+      val glRemaining__ = glPartialQueries__.filter { !glResponseMap__.containsKey(it.elementKey) }.toMutableList()
+      if (glRemaining__.isEmpty()) {
+         val glWrappedResponse__ = mapOf("data" to glResponseMap__)
+         return FetchCachedPairFullResponse.fromJson(glWrappedResponse__).data!!
       }
-      val __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "")
+      val glPayload__ = buildPayload(glRemaining__, "fetchCachedPair", "")
       try {
-         val __gl_responseText__ = glCallAdapter(__gl_payload__)
-         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, { FetchCachedPairFullResponse.fromJson(it) }, __gl_remaining__, false).data!!
+         val glResponseText__ = glCallAdapter(glPayload__)
+         return parseToObjectAndCache(glResponseText__, glResponseMap__, { FetchCachedPairFullResponse.fromJson(it) }, glRemaining__, false).data!!
       } catch (exception: Exception) {
-         __gl_responseMap__.putAll(__gl_staleData__)
-         val __gl_remainingCount__ = __gl_partialQueries__.count { !__gl_responseMap__.containsKey(it.elementKey) }
-         if (__gl_remainingCount__ > 0) {
+         glResponseMap__.putAll(glStaleData__)
+         val glRemainingCount__ = glPartialQueries__.count { !glResponseMap__.containsKey(it.elementKey) }
+         if (glRemainingCount__ > 0) {
             throw RuntimeException(exception)
          }
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return FetchCachedPairFullResponse.fromJson(__gl_wrappedResponse__).data!!
+         val glWrappedResponse__ = mapOf("data" to glResponseMap__)
+         return FetchCachedPairFullResponse.fromJson(glWrappedResponse__).data!!
       }
    }
    suspend fun getUser(id: String): GetUserResponse {
-      val __gl_operationName__ = "getUser"
-      val __gl_variables__ = mapOf("id" to id)
-      val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
-      run {
-         val __gl_pqVars__ = mutableMapOf<String, Any?>()
-         __gl_pqVars__["id"] = __gl_variables__["id"]
-         __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "getUser(id: \$id){..._all_fields_User}",
-             __gl_pqVars__,
-             0,
-             emptyList(),
-             "getUser__getUser",
-             "getUser",
-             setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post"),
-             listOf("\$id: ID!"),
-             false,
-             encoder,
-         ))
+      val glVariables__ = mapOf("id" to id)
+      val glQuery__ = "query getUser(\$id: ID!){getUser(id: \$id){..._all_fields_User}}"
+      val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
+      val glFullQuery__ = assembleQuery(glQuery__, glFragmentNames__)
+      val glPayload__ = GraphLinkPayload(query = glFullQuery__, operationName = "getUser", variables = glVariables__)
+      val glResponseText__ = glCallAdapter(glPayload__)
+      val glDecodedResponse__ = GetUserFullResponse.fromJson(decoder.decode(glResponseText__))
+      if (glDecodedResponse__.errors != null && glDecodedResponse__.errors.isNotEmpty()) {
+         throw GraphLinkException(glDecodedResponse__.errors)
       }
-      val __gl_responseMap__ = mutableMapOf<String, Any?>()
-      val __gl_staleData__ = mutableMapOf<String, Any?>()
-      for (partQuery in __gl_partialQueries__) {
-         if (partQuery.ttl > 0) {
-            try {
-               val __gl_entry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
-               if (__gl_entry__ != null) {
-                  if (__gl_entry__.stale) {
-                     __gl_staleData__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  } else {
-                     __gl_responseMap__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  }
-               }
-            } catch (ignored: Exception) {
-            }
-         }
-      }
-      val __gl_remaining__ = __gl_partialQueries__.filter { !__gl_responseMap__.containsKey(it.elementKey) }.toMutableList()
-      if (__gl_remaining__.isEmpty()) {
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return GetUserFullResponse.fromJson(__gl_wrappedResponse__).data!!
-      }
-      val __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "")
-      try {
-         val __gl_responseText__ = glCallAdapter(__gl_payload__)
-         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, { GetUserFullResponse.fromJson(it) }, __gl_remaining__, false).data!!
-      } catch (exception: Exception) {
-         __gl_responseMap__.putAll(__gl_staleData__)
-         val __gl_remainingCount__ = __gl_partialQueries__.count { !__gl_responseMap__.containsKey(it.elementKey) }
-         if (__gl_remainingCount__ > 0) {
-            throw RuntimeException(exception)
-         }
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return GetUserFullResponse.fromJson(__gl_wrappedResponse__).data!!
-      }
+      return glDecodedResponse__.data!!
    }
    suspend fun findUser(id: String): FindUserResponse {
-      val __gl_operationName__ = "findUser"
-      val __gl_variables__ = mapOf("id" to id)
-      val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
-      run {
-         val __gl_pqVars__ = mutableMapOf<String, Any?>()
-         __gl_pqVars__["id"] = __gl_variables__["id"]
-         __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "findUser(id: \$id){..._all_fields_User}",
-             __gl_pqVars__,
-             0,
-             emptyList(),
-             "findUser__findUser",
-             "findUser",
-             setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post"),
-             listOf("\$id: ID!"),
-             false,
-             encoder,
-         ))
+      val glVariables__ = mapOf("id" to id)
+      val glQuery__ = "query findUser(\$id: ID!){findUser(id: \$id){..._all_fields_User}}"
+      val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
+      val glFullQuery__ = assembleQuery(glQuery__, glFragmentNames__)
+      val glPayload__ = GraphLinkPayload(query = glFullQuery__, operationName = "findUser", variables = glVariables__)
+      val glResponseText__ = glCallAdapter(glPayload__)
+      val glDecodedResponse__ = FindUserFullResponse.fromJson(decoder.decode(glResponseText__))
+      if (glDecodedResponse__.errors != null && glDecodedResponse__.errors.isNotEmpty()) {
+         throw GraphLinkException(glDecodedResponse__.errors)
       }
-      val __gl_responseMap__ = mutableMapOf<String, Any?>()
-      val __gl_staleData__ = mutableMapOf<String, Any?>()
-      for (partQuery in __gl_partialQueries__) {
-         if (partQuery.ttl > 0) {
-            try {
-               val __gl_entry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
-               if (__gl_entry__ != null) {
-                  if (__gl_entry__.stale) {
-                     __gl_staleData__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  } else {
-                     __gl_responseMap__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  }
-               }
-            } catch (ignored: Exception) {
-            }
-         }
-      }
-      val __gl_remaining__ = __gl_partialQueries__.filter { !__gl_responseMap__.containsKey(it.elementKey) }.toMutableList()
-      if (__gl_remaining__.isEmpty()) {
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return FindUserFullResponse.fromJson(__gl_wrappedResponse__).data!!
-      }
-      val __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "")
-      try {
-         val __gl_responseText__ = glCallAdapter(__gl_payload__)
-         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, { FindUserFullResponse.fromJson(it) }, __gl_remaining__, false).data!!
-      } catch (exception: Exception) {
-         __gl_responseMap__.putAll(__gl_staleData__)
-         val __gl_remainingCount__ = __gl_partialQueries__.count { !__gl_responseMap__.containsKey(it.elementKey) }
-         if (__gl_remainingCount__ > 0) {
-            throw RuntimeException(exception)
-         }
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return FindUserFullResponse.fromJson(__gl_wrappedResponse__).data!!
-      }
+      return glDecodedResponse__.data!!
    }
    suspend fun listUsers(): ListUsersResponse {
-      val __gl_operationName__ = "listUsers"
-      val __gl_variables__ = emptyMap<String, Any?>()
-      val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
-      run {
-         val __gl_pqVars__ = mutableMapOf<String, Any?>()
-         __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "listUsers{..._all_fields_User}",
-             __gl_pqVars__,
-             0,
-             emptyList(),
-             "listUsers__listUsers",
-             "listUsers",
-             setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post"),
-             emptyList(),
-             false,
-             encoder,
-         ))
+
+      val glQuery__ = "query listUsers{listUsers{..._all_fields_User}}"
+      val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
+      val glFullQuery__ = assembleQuery(glQuery__, glFragmentNames__)
+      val glPayload__ = GraphLinkPayload(query = glFullQuery__, operationName = "listUsers", variables = emptyMap())
+      val glResponseText__ = glCallAdapter(glPayload__)
+      val glDecodedResponse__ = ListUsersFullResponse.fromJson(decoder.decode(glResponseText__))
+      if (glDecodedResponse__.errors != null && glDecodedResponse__.errors.isNotEmpty()) {
+         throw GraphLinkException(glDecodedResponse__.errors)
       }
-      val __gl_responseMap__ = mutableMapOf<String, Any?>()
-      val __gl_staleData__ = mutableMapOf<String, Any?>()
-      for (partQuery in __gl_partialQueries__) {
-         if (partQuery.ttl > 0) {
-            try {
-               val __gl_entry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
-               if (__gl_entry__ != null) {
-                  if (__gl_entry__.stale) {
-                     __gl_staleData__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  } else {
-                     __gl_responseMap__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  }
-               }
-            } catch (ignored: Exception) {
-            }
-         }
-      }
-      val __gl_remaining__ = __gl_partialQueries__.filter { !__gl_responseMap__.containsKey(it.elementKey) }.toMutableList()
-      if (__gl_remaining__.isEmpty()) {
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return ListUsersFullResponse.fromJson(__gl_wrappedResponse__).data!!
-      }
-      val __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "")
-      try {
-         val __gl_responseText__ = glCallAdapter(__gl_payload__)
-         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, { ListUsersFullResponse.fromJson(it) }, __gl_remaining__, false).data!!
-      } catch (exception: Exception) {
-         __gl_responseMap__.putAll(__gl_staleData__)
-         val __gl_remainingCount__ = __gl_partialQueries__.count { !__gl_responseMap__.containsKey(it.elementKey) }
-         if (__gl_remainingCount__ > 0) {
-            throw RuntimeException(exception)
-         }
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return ListUsersFullResponse.fromJson(__gl_wrappedResponse__).data!!
-      }
+      return glDecodedResponse__.data!!
    }
    suspend fun listUsersByStatus(status: UserStatus): ListUsersByStatusResponse {
-      val __gl_operationName__ = "listUsersByStatus"
-      val __gl_variables__ = mapOf("status" to status.toJson())
-      val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
-      run {
-         val __gl_pqVars__ = mutableMapOf<String, Any?>()
-         __gl_pqVars__["status"] = __gl_variables__["status"]
-         __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "listUsersByStatus(status: \$status){..._all_fields_User}",
-             __gl_pqVars__,
-             0,
-             emptyList(),
-             "listUsersByStatus__listUsersByStatus",
-             "listUsersByStatus",
-             setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post"),
-             listOf("\$status: UserStatus!"),
-             false,
-             encoder,
-         ))
+      val glVariables__ = mapOf("status" to status.toJson())
+      val glQuery__ = "query listUsersByStatus(\$status: UserStatus!){listUsersByStatus(status: \$status){..._all_fields_User}}"
+      val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
+      val glFullQuery__ = assembleQuery(glQuery__, glFragmentNames__)
+      val glPayload__ = GraphLinkPayload(query = glFullQuery__, operationName = "listUsersByStatus", variables = glVariables__)
+      val glResponseText__ = glCallAdapter(glPayload__)
+      val glDecodedResponse__ = ListUsersByStatusFullResponse.fromJson(decoder.decode(glResponseText__))
+      if (glDecodedResponse__.errors != null && glDecodedResponse__.errors.isNotEmpty()) {
+         throw GraphLinkException(glDecodedResponse__.errors)
       }
-      val __gl_responseMap__ = mutableMapOf<String, Any?>()
-      val __gl_staleData__ = mutableMapOf<String, Any?>()
-      for (partQuery in __gl_partialQueries__) {
-         if (partQuery.ttl > 0) {
-            try {
-               val __gl_entry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
-               if (__gl_entry__ != null) {
-                  if (__gl_entry__.stale) {
-                     __gl_staleData__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  } else {
-                     __gl_responseMap__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  }
-               }
-            } catch (ignored: Exception) {
-            }
-         }
-      }
-      val __gl_remaining__ = __gl_partialQueries__.filter { !__gl_responseMap__.containsKey(it.elementKey) }.toMutableList()
-      if (__gl_remaining__.isEmpty()) {
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return ListUsersByStatusFullResponse.fromJson(__gl_wrappedResponse__).data!!
-      }
-      val __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "")
-      try {
-         val __gl_responseText__ = glCallAdapter(__gl_payload__)
-         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, { ListUsersByStatusFullResponse.fromJson(it) }, __gl_remaining__, false).data!!
-      } catch (exception: Exception) {
-         __gl_responseMap__.putAll(__gl_staleData__)
-         val __gl_remainingCount__ = __gl_partialQueries__.count { !__gl_responseMap__.containsKey(it.elementKey) }
-         if (__gl_remainingCount__ > 0) {
-            throw RuntimeException(exception)
-         }
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return ListUsersByStatusFullResponse.fromJson(__gl_wrappedResponse__).data!!
-      }
+      return glDecodedResponse__.data!!
    }
    suspend fun searchUsers(name: String, limit: Int): SearchUsersResponse {
-      val __gl_operationName__ = "searchUsers"
-      val __gl_variables__ = mapOf("name" to name, "limit" to limit)
-      val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
-      run {
-         val __gl_pqVars__ = mutableMapOf<String, Any?>()
-         __gl_pqVars__["name"] = __gl_variables__["name"]
-         __gl_pqVars__["limit"] = __gl_variables__["limit"]
-         __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "searchUsers(name: \$name,limit: \$limit){..._all_fields_User}",
-             __gl_pqVars__,
-             0,
-             emptyList(),
-             "searchUsers__searchUsers",
-             "searchUsers",
-             setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post"),
-             listOf("\$name: String!", "\$limit: Int!"),
-             false,
-             encoder,
-         ))
+      val glVariables__ = mapOf("name" to name, "limit" to limit)
+      val glQuery__ = "query searchUsers(\$name: String!,\$limit: Int!){searchUsers(name: \$name,limit: \$limit){..._all_fields_User}}"
+      val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
+      val glFullQuery__ = assembleQuery(glQuery__, glFragmentNames__)
+      val glPayload__ = GraphLinkPayload(query = glFullQuery__, operationName = "searchUsers", variables = glVariables__)
+      val glResponseText__ = glCallAdapter(glPayload__)
+      val glDecodedResponse__ = SearchUsersFullResponse.fromJson(decoder.decode(glResponseText__))
+      if (glDecodedResponse__.errors != null && glDecodedResponse__.errors.isNotEmpty()) {
+         throw GraphLinkException(glDecodedResponse__.errors)
       }
-      val __gl_responseMap__ = mutableMapOf<String, Any?>()
-      val __gl_staleData__ = mutableMapOf<String, Any?>()
-      for (partQuery in __gl_partialQueries__) {
-         if (partQuery.ttl > 0) {
-            try {
-               val __gl_entry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
-               if (__gl_entry__ != null) {
-                  if (__gl_entry__.stale) {
-                     __gl_staleData__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  } else {
-                     __gl_responseMap__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  }
-               }
-            } catch (ignored: Exception) {
-            }
-         }
-      }
-      val __gl_remaining__ = __gl_partialQueries__.filter { !__gl_responseMap__.containsKey(it.elementKey) }.toMutableList()
-      if (__gl_remaining__.isEmpty()) {
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return SearchUsersFullResponse.fromJson(__gl_wrappedResponse__).data!!
-      }
-      val __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "")
-      try {
-         val __gl_responseText__ = glCallAdapter(__gl_payload__)
-         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, { SearchUsersFullResponse.fromJson(it) }, __gl_remaining__, false).data!!
-      } catch (exception: Exception) {
-         __gl_responseMap__.putAll(__gl_staleData__)
-         val __gl_remainingCount__ = __gl_partialQueries__.count { !__gl_responseMap__.containsKey(it.elementKey) }
-         if (__gl_remainingCount__ > 0) {
-            throw RuntimeException(exception)
-         }
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return SearchUsersFullResponse.fromJson(__gl_wrappedResponse__).data!!
-      }
+      return glDecodedResponse__.data!!
    }
    suspend fun getAllScalars(id: String): GetAllScalarsResponse {
-      val __gl_operationName__ = "getAllScalars"
-      val __gl_variables__ = mapOf("id" to id)
-      val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
-      run {
-         val __gl_pqVars__ = mutableMapOf<String, Any?>()
-         __gl_pqVars__["id"] = __gl_variables__["id"]
-         __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "getAllScalars(id: \$id){..._all_fields_AllScalars}",
-             __gl_pqVars__,
-             0,
-             emptyList(),
-             "getAllScalars__getAllScalars",
-             "getAllScalars",
-             setOf("_all_fields_AllScalars"),
-             listOf("\$id: ID!"),
-             false,
-             encoder,
-         ))
+      val glVariables__ = mapOf("id" to id)
+      val glQuery__ = "query getAllScalars(\$id: ID!){getAllScalars(id: \$id){..._all_fields_AllScalars}}"
+      val glFragmentNames__ = setOf("_all_fields_AllScalars")
+      val glFullQuery__ = assembleQuery(glQuery__, glFragmentNames__)
+      val glPayload__ = GraphLinkPayload(query = glFullQuery__, operationName = "getAllScalars", variables = glVariables__)
+      val glResponseText__ = glCallAdapter(glPayload__)
+      val glDecodedResponse__ = GetAllScalarsFullResponse.fromJson(decoder.decode(glResponseText__))
+      if (glDecodedResponse__.errors != null && glDecodedResponse__.errors.isNotEmpty()) {
+         throw GraphLinkException(glDecodedResponse__.errors)
       }
-      val __gl_responseMap__ = mutableMapOf<String, Any?>()
-      val __gl_staleData__ = mutableMapOf<String, Any?>()
-      for (partQuery in __gl_partialQueries__) {
-         if (partQuery.ttl > 0) {
-            try {
-               val __gl_entry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
-               if (__gl_entry__ != null) {
-                  if (__gl_entry__.stale) {
-                     __gl_staleData__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  } else {
-                     __gl_responseMap__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  }
-               }
-            } catch (ignored: Exception) {
-            }
-         }
-      }
-      val __gl_remaining__ = __gl_partialQueries__.filter { !__gl_responseMap__.containsKey(it.elementKey) }.toMutableList()
-      if (__gl_remaining__.isEmpty()) {
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return GetAllScalarsFullResponse.fromJson(__gl_wrappedResponse__).data!!
-      }
-      val __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "")
-      try {
-         val __gl_responseText__ = glCallAdapter(__gl_payload__)
-         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, { GetAllScalarsFullResponse.fromJson(it) }, __gl_remaining__, false).data!!
-      } catch (exception: Exception) {
-         __gl_responseMap__.putAll(__gl_staleData__)
-         val __gl_remainingCount__ = __gl_partialQueries__.count { !__gl_responseMap__.containsKey(it.elementKey) }
-         if (__gl_remainingCount__ > 0) {
-            throw RuntimeException(exception)
-         }
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return GetAllScalarsFullResponse.fromJson(__gl_wrappedResponse__).data!!
-      }
+      return glDecodedResponse__.data!!
    }
    suspend fun getPost(id: String): GetPostResponse {
-      val __gl_operationName__ = "getPost"
-      val __gl_variables__ = mapOf("id" to id)
-      val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
-      run {
-         val __gl_pqVars__ = mutableMapOf<String, Any?>()
-         __gl_pqVars__["id"] = __gl_variables__["id"]
-         __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "getPost(id: \$id){..._all_fields_Post}",
-             __gl_pqVars__,
-             0,
-             emptyList(),
-             "getPost__getPost",
-             "getPost",
-             setOf("_all_fields_Post"),
-             listOf("\$id: ID!"),
-             false,
-             encoder,
-         ))
+      val glVariables__ = mapOf("id" to id)
+      val glQuery__ = "query getPost(\$id: ID!){getPost(id: \$id){..._all_fields_Post}}"
+      val glFragmentNames__ = setOf("_all_fields_Post")
+      val glFullQuery__ = assembleQuery(glQuery__, glFragmentNames__)
+      val glPayload__ = GraphLinkPayload(query = glFullQuery__, operationName = "getPost", variables = glVariables__)
+      val glResponseText__ = glCallAdapter(glPayload__)
+      val glDecodedResponse__ = GetPostFullResponse.fromJson(decoder.decode(glResponseText__))
+      if (glDecodedResponse__.errors != null && glDecodedResponse__.errors.isNotEmpty()) {
+         throw GraphLinkException(glDecodedResponse__.errors)
       }
-      val __gl_responseMap__ = mutableMapOf<String, Any?>()
-      val __gl_staleData__ = mutableMapOf<String, Any?>()
-      for (partQuery in __gl_partialQueries__) {
-         if (partQuery.ttl > 0) {
-            try {
-               val __gl_entry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
-               if (__gl_entry__ != null) {
-                  if (__gl_entry__.stale) {
-                     __gl_staleData__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  } else {
-                     __gl_responseMap__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  }
-               }
-            } catch (ignored: Exception) {
-            }
-         }
-      }
-      val __gl_remaining__ = __gl_partialQueries__.filter { !__gl_responseMap__.containsKey(it.elementKey) }.toMutableList()
-      if (__gl_remaining__.isEmpty()) {
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return GetPostFullResponse.fromJson(__gl_wrappedResponse__).data!!
-      }
-      val __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "")
-      try {
-         val __gl_responseText__ = glCallAdapter(__gl_payload__)
-         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, { GetPostFullResponse.fromJson(it) }, __gl_remaining__, false).data!!
-      } catch (exception: Exception) {
-         __gl_responseMap__.putAll(__gl_staleData__)
-         val __gl_remainingCount__ = __gl_partialQueries__.count { !__gl_responseMap__.containsKey(it.elementKey) }
-         if (__gl_remainingCount__ > 0) {
-            throw RuntimeException(exception)
-         }
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return GetPostFullResponse.fromJson(__gl_wrappedResponse__).data!!
-      }
+      return glDecodedResponse__.data!!
    }
    suspend fun getTags(): GetTagsResponse {
-      val __gl_operationName__ = "getTags"
-      val __gl_variables__ = emptyMap<String, Any?>()
-      val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
-      run {
-         val __gl_pqVars__ = mutableMapOf<String, Any?>()
-         __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "getTags{..._all_fields_Tag}",
-             __gl_pqVars__,
-             0,
-             emptyList(),
-             "getTags__getTags",
-             "getTags",
-             setOf("_all_fields_Tag"),
-             emptyList(),
-             false,
-             encoder,
-         ))
+
+      val glQuery__ = "query getTags{getTags{..._all_fields_Tag}}"
+      val glFragmentNames__ = setOf("_all_fields_Tag")
+      val glFullQuery__ = assembleQuery(glQuery__, glFragmentNames__)
+      val glPayload__ = GraphLinkPayload(query = glFullQuery__, operationName = "getTags", variables = emptyMap())
+      val glResponseText__ = glCallAdapter(glPayload__)
+      val glDecodedResponse__ = GetTagsFullResponse.fromJson(decoder.decode(glResponseText__))
+      if (glDecodedResponse__.errors != null && glDecodedResponse__.errors.isNotEmpty()) {
+         throw GraphLinkException(glDecodedResponse__.errors)
       }
-      val __gl_responseMap__ = mutableMapOf<String, Any?>()
-      val __gl_staleData__ = mutableMapOf<String, Any?>()
-      for (partQuery in __gl_partialQueries__) {
-         if (partQuery.ttl > 0) {
-            try {
-               val __gl_entry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
-               if (__gl_entry__ != null) {
-                  if (__gl_entry__.stale) {
-                     __gl_staleData__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  } else {
-                     __gl_responseMap__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  }
-               }
-            } catch (ignored: Exception) {
-            }
-         }
-      }
-      val __gl_remaining__ = __gl_partialQueries__.filter { !__gl_responseMap__.containsKey(it.elementKey) }.toMutableList()
-      if (__gl_remaining__.isEmpty()) {
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return GetTagsFullResponse.fromJson(__gl_wrappedResponse__).data!!
-      }
-      val __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "")
-      try {
-         val __gl_responseText__ = glCallAdapter(__gl_payload__)
-         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, { GetTagsFullResponse.fromJson(it) }, __gl_remaining__, false).data!!
-      } catch (exception: Exception) {
-         __gl_responseMap__.putAll(__gl_staleData__)
-         val __gl_remainingCount__ = __gl_partialQueries__.count { !__gl_responseMap__.containsKey(it.elementKey) }
-         if (__gl_remainingCount__ > 0) {
-            throw RuntimeException(exception)
-         }
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return GetTagsFullResponse.fromJson(__gl_wrappedResponse__).data!!
-      }
+      return glDecodedResponse__.data!!
    }
    suspend fun getAuditEntry(id: String): GetAuditEntryResponse {
-      val __gl_operationName__ = "getAuditEntry"
-      val __gl_variables__ = mapOf("id" to id)
-      val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
-      run {
-         val __gl_pqVars__ = mutableMapOf<String, Any?>()
-         __gl_pqVars__["id"] = __gl_variables__["id"]
-         __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "getAuditEntry(id: \$id){..._all_fields_AuditEntry}",
-             __gl_pqVars__,
-             0,
-             emptyList(),
-             "getAuditEntry__getAuditEntry",
-             "getAuditEntry",
-             setOf("_all_fields_AuditEntry"),
-             listOf("\$id: ID!"),
-             false,
-             encoder,
-         ))
+      val glVariables__ = mapOf("id" to id)
+      val glQuery__ = "query getAuditEntry(\$id: ID!){getAuditEntry(id: \$id){..._all_fields_AuditEntry}}"
+      val glFragmentNames__ = setOf("_all_fields_AuditEntry")
+      val glFullQuery__ = assembleQuery(glQuery__, glFragmentNames__)
+      val glPayload__ = GraphLinkPayload(query = glFullQuery__, operationName = "getAuditEntry", variables = glVariables__)
+      val glResponseText__ = glCallAdapter(glPayload__)
+      val glDecodedResponse__ = GetAuditEntryFullResponse.fromJson(decoder.decode(glResponseText__))
+      if (glDecodedResponse__.errors != null && glDecodedResponse__.errors.isNotEmpty()) {
+         throw GraphLinkException(glDecodedResponse__.errors)
       }
-      val __gl_responseMap__ = mutableMapOf<String, Any?>()
-      val __gl_staleData__ = mutableMapOf<String, Any?>()
-      for (partQuery in __gl_partialQueries__) {
-         if (partQuery.ttl > 0) {
-            try {
-               val __gl_entry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
-               if (__gl_entry__ != null) {
-                  if (__gl_entry__.stale) {
-                     __gl_staleData__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  } else {
-                     __gl_responseMap__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  }
-               }
-            } catch (ignored: Exception) {
-            }
-         }
-      }
-      val __gl_remaining__ = __gl_partialQueries__.filter { !__gl_responseMap__.containsKey(it.elementKey) }.toMutableList()
-      if (__gl_remaining__.isEmpty()) {
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return GetAuditEntryFullResponse.fromJson(__gl_wrappedResponse__).data!!
-      }
-      val __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "")
-      try {
-         val __gl_responseText__ = glCallAdapter(__gl_payload__)
-         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, { GetAuditEntryFullResponse.fromJson(it) }, __gl_remaining__, false).data!!
-      } catch (exception: Exception) {
-         __gl_responseMap__.putAll(__gl_staleData__)
-         val __gl_remainingCount__ = __gl_partialQueries__.count { !__gl_responseMap__.containsKey(it.elementKey) }
-         if (__gl_remainingCount__ > 0) {
-            throw RuntimeException(exception)
-         }
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return GetAuditEntryFullResponse.fromJson(__gl_wrappedResponse__).data!!
-      }
+      return glDecodedResponse__.data!!
    }
    suspend fun search(term: String): SearchResponse {
-      val __gl_operationName__ = "search"
-      val __gl_variables__ = mapOf("term" to term)
-      val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
-      run {
-         val __gl_pqVars__ = mutableMapOf<String, Any?>()
-         __gl_pqVars__["term"] = __gl_variables__["term"]
-         __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "search(term: \$term){...Inline_3f42e0b1_a9ac_98a6_e26d_104ebcfe9fb3}",
-             __gl_pqVars__,
-             0,
-             emptyList(),
-             "search__search",
-             "search",
-             setOf("Inline_3f42e0b1_a9ac_98a6_e26d_104ebcfe9fb3", "_all_fields_UserResult", "_all_fields_PostResult"),
-             listOf("\$term: String!"),
-             false,
-             encoder,
-         ))
+      val glVariables__ = mapOf("term" to term)
+      val glQuery__ = "query search(\$term: String!){search(term: \$term){...Inline_5b78d676_7ac8_a9df_9f3a_5c8fa92df259}}"
+      val glFragmentNames__ = setOf("Inline_5b78d676_7ac8_a9df_9f3a_5c8fa92df259", "_all_fields_UserResult", "_all_fields_PostResult")
+      val glFullQuery__ = assembleQuery(glQuery__, glFragmentNames__)
+      val glPayload__ = GraphLinkPayload(query = glFullQuery__, operationName = "search", variables = glVariables__)
+      val glResponseText__ = glCallAdapter(glPayload__)
+      val glDecodedResponse__ = SearchFullResponse.fromJson(decoder.decode(glResponseText__))
+      if (glDecodedResponse__.errors != null && glDecodedResponse__.errors.isNotEmpty()) {
+         throw GraphLinkException(glDecodedResponse__.errors)
       }
-      val __gl_responseMap__ = mutableMapOf<String, Any?>()
-      val __gl_staleData__ = mutableMapOf<String, Any?>()
-      for (partQuery in __gl_partialQueries__) {
-         if (partQuery.ttl > 0) {
-            try {
-               val __gl_entry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
-               if (__gl_entry__ != null) {
-                  if (__gl_entry__.stale) {
-                     __gl_staleData__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  } else {
-                     __gl_responseMap__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  }
-               }
-            } catch (ignored: Exception) {
-            }
-         }
-      }
-      val __gl_remaining__ = __gl_partialQueries__.filter { !__gl_responseMap__.containsKey(it.elementKey) }.toMutableList()
-      if (__gl_remaining__.isEmpty()) {
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return SearchFullResponse.fromJson(__gl_wrappedResponse__).data!!
-      }
-      val __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "")
-      try {
-         val __gl_responseText__ = glCallAdapter(__gl_payload__)
-         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, { SearchFullResponse.fromJson(it) }, __gl_remaining__, false).data!!
-      } catch (exception: Exception) {
-         __gl_responseMap__.putAll(__gl_staleData__)
-         val __gl_remainingCount__ = __gl_partialQueries__.count { !__gl_responseMap__.containsKey(it.elementKey) }
-         if (__gl_remainingCount__ > 0) {
-            throw RuntimeException(exception)
-         }
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return SearchFullResponse.fromJson(__gl_wrappedResponse__).data!!
-      }
+      return glDecodedResponse__.data!!
    }
    suspend fun getCachedUser(id: String): GetCachedUserResponse {
-      val __gl_operationName__ = "getCachedUser"
-      val __gl_variables__ = mapOf("id" to id)
-      val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
+      val glVariables__ = mapOf("id" to id)
+      val glPartialQueries__ = mutableListOf<GraphLinkPartialQuery>()
       run {
-         val __gl_pqVars__ = mutableMapOf<String, Any?>()
-         __gl_pqVars__["id"] = __gl_variables__["id"]
-         __gl_partialQueries__.add(GraphLinkPartialQuery(
+         val glPqVars__ = mutableMapOf<String, Any?>()
+         glPqVars__["id"] = glVariables__["id"]
+         glPartialQueries__.add(GraphLinkPartialQuery(
              "getCachedUser(id: \$id){..._all_fields_User}",
-             __gl_pqVars__,
+             glPqVars__,
              120,
              listOf("users"),
              "getCachedUser__getCachedUser",
@@ -897,51 +320,50 @@ open class GraphLinkQueries(
              encoder,
          ))
       }
-      val __gl_responseMap__ = mutableMapOf<String, Any?>()
-      val __gl_staleData__ = mutableMapOf<String, Any?>()
-      for (partQuery in __gl_partialQueries__) {
+      val glResponseMap__ = mutableMapOf<String, Any?>()
+      val glStaleData__ = mutableMapOf<String, Any?>()
+      for (partQuery in glPartialQueries__) {
          if (partQuery.ttl > 0) {
             try {
-               val __gl_entry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
-               if (__gl_entry__ != null) {
-                  if (__gl_entry__.stale) {
-                     __gl_staleData__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
+               val glEntry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
+               if (glEntry__ != null) {
+                  if (glEntry__.stale) {
+                     glStaleData__[partQuery.elementKey] = decoder.decode(glEntry__.data)["__gl_v__"]
                   } else {
-                     __gl_responseMap__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
+                     glResponseMap__[partQuery.elementKey] = decoder.decode(glEntry__.data)["__gl_v__"]
                   }
                }
             } catch (ignored: Exception) {
             }
          }
       }
-      val __gl_remaining__ = __gl_partialQueries__.filter { !__gl_responseMap__.containsKey(it.elementKey) }.toMutableList()
-      if (__gl_remaining__.isEmpty()) {
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return GetCachedUserFullResponse.fromJson(__gl_wrappedResponse__).data!!
+      val glRemaining__ = glPartialQueries__.filter { !glResponseMap__.containsKey(it.elementKey) }.toMutableList()
+      if (glRemaining__.isEmpty()) {
+         val glWrappedResponse__ = mapOf("data" to glResponseMap__)
+         return GetCachedUserFullResponse.fromJson(glWrappedResponse__).data!!
       }
-      val __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "")
+      val glPayload__ = buildPayload(glRemaining__, "getCachedUser", "")
       try {
-         val __gl_responseText__ = glCallAdapter(__gl_payload__)
-         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, { GetCachedUserFullResponse.fromJson(it) }, __gl_remaining__, false).data!!
+         val glResponseText__ = glCallAdapter(glPayload__)
+         return parseToObjectAndCache(glResponseText__, glResponseMap__, { GetCachedUserFullResponse.fromJson(it) }, glRemaining__, false).data!!
       } catch (exception: Exception) {
-         __gl_responseMap__.putAll(__gl_staleData__)
-         val __gl_remainingCount__ = __gl_partialQueries__.count { !__gl_responseMap__.containsKey(it.elementKey) }
-         if (__gl_remainingCount__ > 0) {
+         glResponseMap__.putAll(glStaleData__)
+         val glRemainingCount__ = glPartialQueries__.count { !glResponseMap__.containsKey(it.elementKey) }
+         if (glRemainingCount__ > 0) {
             throw RuntimeException(exception)
          }
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return GetCachedUserFullResponse.fromJson(__gl_wrappedResponse__).data!!
+         val glWrappedResponse__ = mapOf("data" to glResponseMap__)
+         return GetCachedUserFullResponse.fromJson(glWrappedResponse__).data!!
       }
    }
    suspend fun listCachedUsers(): ListCachedUsersResponse {
-      val __gl_operationName__ = "listCachedUsers"
-      val __gl_variables__ = emptyMap<String, Any?>()
-      val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
+
+      val glPartialQueries__ = mutableListOf<GraphLinkPartialQuery>()
       run {
-         val __gl_pqVars__ = mutableMapOf<String, Any?>()
-         __gl_partialQueries__.add(GraphLinkPartialQuery(
+         val glPqVars__ = mutableMapOf<String, Any?>()
+         glPartialQueries__.add(GraphLinkPartialQuery(
              "listCachedUsers{..._all_fields_User}",
-             __gl_pqVars__,
+             glPqVars__,
              60,
              listOf("users"),
              "listCachedUsers__listCachedUsers",
@@ -952,52 +374,51 @@ open class GraphLinkQueries(
              encoder,
          ))
       }
-      val __gl_responseMap__ = mutableMapOf<String, Any?>()
-      val __gl_staleData__ = mutableMapOf<String, Any?>()
-      for (partQuery in __gl_partialQueries__) {
+      val glResponseMap__ = mutableMapOf<String, Any?>()
+      val glStaleData__ = mutableMapOf<String, Any?>()
+      for (partQuery in glPartialQueries__) {
          if (partQuery.ttl > 0) {
             try {
-               val __gl_entry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
-               if (__gl_entry__ != null) {
-                  if (__gl_entry__.stale) {
-                     __gl_staleData__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
+               val glEntry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
+               if (glEntry__ != null) {
+                  if (glEntry__.stale) {
+                     glStaleData__[partQuery.elementKey] = decoder.decode(glEntry__.data)["__gl_v__"]
                   } else {
-                     __gl_responseMap__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
+                     glResponseMap__[partQuery.elementKey] = decoder.decode(glEntry__.data)["__gl_v__"]
                   }
                }
             } catch (ignored: Exception) {
             }
          }
       }
-      val __gl_remaining__ = __gl_partialQueries__.filter { !__gl_responseMap__.containsKey(it.elementKey) }.toMutableList()
-      if (__gl_remaining__.isEmpty()) {
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return ListCachedUsersFullResponse.fromJson(__gl_wrappedResponse__).data!!
+      val glRemaining__ = glPartialQueries__.filter { !glResponseMap__.containsKey(it.elementKey) }.toMutableList()
+      if (glRemaining__.isEmpty()) {
+         val glWrappedResponse__ = mapOf("data" to glResponseMap__)
+         return ListCachedUsersFullResponse.fromJson(glWrappedResponse__).data!!
       }
-      val __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "")
+      val glPayload__ = buildPayload(glRemaining__, "listCachedUsers", "")
       try {
-         val __gl_responseText__ = glCallAdapter(__gl_payload__)
-         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, { ListCachedUsersFullResponse.fromJson(it) }, __gl_remaining__, false).data!!
+         val glResponseText__ = glCallAdapter(glPayload__)
+         return parseToObjectAndCache(glResponseText__, glResponseMap__, { ListCachedUsersFullResponse.fromJson(it) }, glRemaining__, false).data!!
       } catch (exception: Exception) {
-         __gl_responseMap__.putAll(__gl_staleData__)
-         val __gl_remainingCount__ = __gl_partialQueries__.count { !__gl_responseMap__.containsKey(it.elementKey) }
-         if (__gl_remainingCount__ > 0) {
+         glResponseMap__.putAll(glStaleData__)
+         val glRemainingCount__ = glPartialQueries__.count { !glResponseMap__.containsKey(it.elementKey) }
+         if (glRemainingCount__ > 0) {
             throw RuntimeException(exception)
          }
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return ListCachedUsersFullResponse.fromJson(__gl_wrappedResponse__).data!!
+         val glWrappedResponse__ = mapOf("data" to glResponseMap__)
+         return ListCachedUsersFullResponse.fromJson(glWrappedResponse__).data!!
       }
    }
    suspend fun getCachedPost(id: String): GetCachedPostResponse {
-      val __gl_operationName__ = "getCachedPost"
-      val __gl_variables__ = mapOf("id" to id)
-      val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
+      val glVariables__ = mapOf("id" to id)
+      val glPartialQueries__ = mutableListOf<GraphLinkPartialQuery>()
       run {
-         val __gl_pqVars__ = mutableMapOf<String, Any?>()
-         __gl_pqVars__["id"] = __gl_variables__["id"]
-         __gl_partialQueries__.add(GraphLinkPartialQuery(
+         val glPqVars__ = mutableMapOf<String, Any?>()
+         glPqVars__["id"] = glVariables__["id"]
+         glPartialQueries__.add(GraphLinkPartialQuery(
              "getCachedPost(id: \$id){..._all_fields_Post}",
-             __gl_pqVars__,
+             glPqVars__,
              300,
              listOf("posts"),
              "getCachedPost__getCachedPost",
@@ -1008,51 +429,50 @@ open class GraphLinkQueries(
              encoder,
          ))
       }
-      val __gl_responseMap__ = mutableMapOf<String, Any?>()
-      val __gl_staleData__ = mutableMapOf<String, Any?>()
-      for (partQuery in __gl_partialQueries__) {
+      val glResponseMap__ = mutableMapOf<String, Any?>()
+      val glStaleData__ = mutableMapOf<String, Any?>()
+      for (partQuery in glPartialQueries__) {
          if (partQuery.ttl > 0) {
             try {
-               val __gl_entry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
-               if (__gl_entry__ != null) {
-                  if (__gl_entry__.stale) {
-                     __gl_staleData__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
+               val glEntry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
+               if (glEntry__ != null) {
+                  if (glEntry__.stale) {
+                     glStaleData__[partQuery.elementKey] = decoder.decode(glEntry__.data)["__gl_v__"]
                   } else {
-                     __gl_responseMap__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
+                     glResponseMap__[partQuery.elementKey] = decoder.decode(glEntry__.data)["__gl_v__"]
                   }
                }
             } catch (ignored: Exception) {
             }
          }
       }
-      val __gl_remaining__ = __gl_partialQueries__.filter { !__gl_responseMap__.containsKey(it.elementKey) }.toMutableList()
-      if (__gl_remaining__.isEmpty()) {
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return GetCachedPostFullResponse.fromJson(__gl_wrappedResponse__).data!!
+      val glRemaining__ = glPartialQueries__.filter { !glResponseMap__.containsKey(it.elementKey) }.toMutableList()
+      if (glRemaining__.isEmpty()) {
+         val glWrappedResponse__ = mapOf("data" to glResponseMap__)
+         return GetCachedPostFullResponse.fromJson(glWrappedResponse__).data!!
       }
-      val __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "")
+      val glPayload__ = buildPayload(glRemaining__, "getCachedPost", "")
       try {
-         val __gl_responseText__ = glCallAdapter(__gl_payload__)
-         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, { GetCachedPostFullResponse.fromJson(it) }, __gl_remaining__, false).data!!
+         val glResponseText__ = glCallAdapter(glPayload__)
+         return parseToObjectAndCache(glResponseText__, glResponseMap__, { GetCachedPostFullResponse.fromJson(it) }, glRemaining__, false).data!!
       } catch (exception: Exception) {
-         __gl_responseMap__.putAll(__gl_staleData__)
-         val __gl_remainingCount__ = __gl_partialQueries__.count { !__gl_responseMap__.containsKey(it.elementKey) }
-         if (__gl_remainingCount__ > 0) {
+         glResponseMap__.putAll(glStaleData__)
+         val glRemainingCount__ = glPartialQueries__.count { !glResponseMap__.containsKey(it.elementKey) }
+         if (glRemainingCount__ > 0) {
             throw RuntimeException(exception)
          }
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return GetCachedPostFullResponse.fromJson(__gl_wrappedResponse__).data!!
+         val glWrappedResponse__ = mapOf("data" to glResponseMap__)
+         return GetCachedPostFullResponse.fromJson(glWrappedResponse__).data!!
       }
    }
    suspend fun getCachedConfig(): GetCachedConfigResponse {
-      val __gl_operationName__ = "getCachedConfig"
-      val __gl_variables__ = emptyMap<String, Any?>()
-      val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
+
+      val glPartialQueries__ = mutableListOf<GraphLinkPartialQuery>()
       run {
-         val __gl_pqVars__ = mutableMapOf<String, Any?>()
-         __gl_partialQueries__.add(GraphLinkPartialQuery(
+         val glPqVars__ = mutableMapOf<String, Any?>()
+         glPartialQueries__.add(GraphLinkPartialQuery(
              "getCachedConfig{..._all_fields_AllScalars}",
-             __gl_pqVars__,
+             glPqVars__,
              600,
              emptyList(),
              "getCachedConfig__getCachedConfig",
@@ -1063,52 +483,51 @@ open class GraphLinkQueries(
              encoder,
          ))
       }
-      val __gl_responseMap__ = mutableMapOf<String, Any?>()
-      val __gl_staleData__ = mutableMapOf<String, Any?>()
-      for (partQuery in __gl_partialQueries__) {
+      val glResponseMap__ = mutableMapOf<String, Any?>()
+      val glStaleData__ = mutableMapOf<String, Any?>()
+      for (partQuery in glPartialQueries__) {
          if (partQuery.ttl > 0) {
             try {
-               val __gl_entry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
-               if (__gl_entry__ != null) {
-                  if (__gl_entry__.stale) {
-                     __gl_staleData__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
+               val glEntry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
+               if (glEntry__ != null) {
+                  if (glEntry__.stale) {
+                     glStaleData__[partQuery.elementKey] = decoder.decode(glEntry__.data)["__gl_v__"]
                   } else {
-                     __gl_responseMap__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
+                     glResponseMap__[partQuery.elementKey] = decoder.decode(glEntry__.data)["__gl_v__"]
                   }
                }
             } catch (ignored: Exception) {
             }
          }
       }
-      val __gl_remaining__ = __gl_partialQueries__.filter { !__gl_responseMap__.containsKey(it.elementKey) }.toMutableList()
-      if (__gl_remaining__.isEmpty()) {
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return GetCachedConfigFullResponse.fromJson(__gl_wrappedResponse__).data!!
+      val glRemaining__ = glPartialQueries__.filter { !glResponseMap__.containsKey(it.elementKey) }.toMutableList()
+      if (glRemaining__.isEmpty()) {
+         val glWrappedResponse__ = mapOf("data" to glResponseMap__)
+         return GetCachedConfigFullResponse.fromJson(glWrappedResponse__).data!!
       }
-      val __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "")
+      val glPayload__ = buildPayload(glRemaining__, "getCachedConfig", "")
       try {
-         val __gl_responseText__ = glCallAdapter(__gl_payload__)
-         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, { GetCachedConfigFullResponse.fromJson(it) }, __gl_remaining__, false).data!!
+         val glResponseText__ = glCallAdapter(glPayload__)
+         return parseToObjectAndCache(glResponseText__, glResponseMap__, { GetCachedConfigFullResponse.fromJson(it) }, glRemaining__, false).data!!
       } catch (exception: Exception) {
-         __gl_responseMap__.putAll(__gl_staleData__)
-         val __gl_remainingCount__ = __gl_partialQueries__.count { !__gl_responseMap__.containsKey(it.elementKey) }
-         if (__gl_remainingCount__ > 0) {
+         glResponseMap__.putAll(glStaleData__)
+         val glRemainingCount__ = glPartialQueries__.count { !glResponseMap__.containsKey(it.elementKey) }
+         if (glRemainingCount__ > 0) {
             throw RuntimeException(exception)
          }
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return GetCachedConfigFullResponse.fromJson(__gl_wrappedResponse__).data!!
+         val glWrappedResponse__ = mapOf("data" to glResponseMap__)
+         return GetCachedConfigFullResponse.fromJson(glWrappedResponse__).data!!
       }
    }
    suspend fun getStaleUser(id: String): GetStaleUserResponse {
-      val __gl_operationName__ = "getStaleUser"
-      val __gl_variables__ = mapOf("id" to id)
-      val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
+      val glVariables__ = mapOf("id" to id)
+      val glPartialQueries__ = mutableListOf<GraphLinkPartialQuery>()
       run {
-         val __gl_pqVars__ = mutableMapOf<String, Any?>()
-         __gl_pqVars__["id"] = __gl_variables__["id"]
-         __gl_partialQueries__.add(GraphLinkPartialQuery(
+         val glPqVars__ = mutableMapOf<String, Any?>()
+         glPqVars__["id"] = glVariables__["id"]
+         glPartialQueries__.add(GraphLinkPartialQuery(
              "getStaleUser(id: \$id){..._all_fields_User}",
-             __gl_pqVars__,
+             glPqVars__,
              1,
              listOf("users"),
              "getStaleUser__getStaleUser",
@@ -1119,153 +538,59 @@ open class GraphLinkQueries(
              encoder,
          ))
       }
-      val __gl_responseMap__ = mutableMapOf<String, Any?>()
-      val __gl_staleData__ = mutableMapOf<String, Any?>()
-      for (partQuery in __gl_partialQueries__) {
+      val glResponseMap__ = mutableMapOf<String, Any?>()
+      val glStaleData__ = mutableMapOf<String, Any?>()
+      for (partQuery in glPartialQueries__) {
          if (partQuery.ttl > 0) {
             try {
-               val __gl_entry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
-               if (__gl_entry__ != null) {
-                  if (__gl_entry__.stale) {
-                     __gl_staleData__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
+               val glEntry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
+               if (glEntry__ != null) {
+                  if (glEntry__.stale) {
+                     glStaleData__[partQuery.elementKey] = decoder.decode(glEntry__.data)["__gl_v__"]
                   } else {
-                     __gl_responseMap__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
+                     glResponseMap__[partQuery.elementKey] = decoder.decode(glEntry__.data)["__gl_v__"]
                   }
                }
             } catch (ignored: Exception) {
             }
          }
       }
-      val __gl_remaining__ = __gl_partialQueries__.filter { !__gl_responseMap__.containsKey(it.elementKey) }.toMutableList()
-      if (__gl_remaining__.isEmpty()) {
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return GetStaleUserFullResponse.fromJson(__gl_wrappedResponse__).data!!
+      val glRemaining__ = glPartialQueries__.filter { !glResponseMap__.containsKey(it.elementKey) }.toMutableList()
+      if (glRemaining__.isEmpty()) {
+         val glWrappedResponse__ = mapOf("data" to glResponseMap__)
+         return GetStaleUserFullResponse.fromJson(glWrappedResponse__).data!!
       }
-      val __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "")
+      val glPayload__ = buildPayload(glRemaining__, "getStaleUser", "")
       try {
-         val __gl_responseText__ = glCallAdapter(__gl_payload__)
-         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, { GetStaleUserFullResponse.fromJson(it) }, __gl_remaining__, false).data!!
+         val glResponseText__ = glCallAdapter(glPayload__)
+         return parseToObjectAndCache(glResponseText__, glResponseMap__, { GetStaleUserFullResponse.fromJson(it) }, glRemaining__, false).data!!
       } catch (exception: Exception) {
-         __gl_responseMap__.putAll(__gl_staleData__)
-         val __gl_remainingCount__ = __gl_partialQueries__.count { !__gl_responseMap__.containsKey(it.elementKey) }
-         if (__gl_remainingCount__ > 0) {
+         glResponseMap__.putAll(glStaleData__)
+         val glRemainingCount__ = glPartialQueries__.count { !glResponseMap__.containsKey(it.elementKey) }
+         if (glRemainingCount__ > 0) {
             throw RuntimeException(exception)
          }
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return GetStaleUserFullResponse.fromJson(__gl_wrappedResponse__).data!!
+         val glWrappedResponse__ = mapOf("data" to glResponseMap__)
+         return GetStaleUserFullResponse.fromJson(glWrappedResponse__).data!!
       }
    }
    suspend fun getUserOrErrors(id: String): GetUserOrErrorsFullResponse {
-      val __gl_operationName__ = "getUserOrErrors"
-      val __gl_variables__ = mapOf("id" to id)
-      val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
-      run {
-         val __gl_pqVars__ = mutableMapOf<String, Any?>()
-         __gl_pqVars__["id"] = __gl_variables__["id"]
-         __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "getUserOrErrors(id: \$id){..._all_fields_User}",
-             __gl_pqVars__,
-             0,
-             emptyList(),
-             "getUserOrErrors__getUserOrErrors",
-             "getUserOrErrors",
-             setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post"),
-             listOf("\$id: ID!"),
-             false,
-             encoder,
-         ))
-      }
-      val __gl_responseMap__ = mutableMapOf<String, Any?>()
-      val __gl_staleData__ = mutableMapOf<String, Any?>()
-      for (partQuery in __gl_partialQueries__) {
-         if (partQuery.ttl > 0) {
-            try {
-               val __gl_entry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
-               if (__gl_entry__ != null) {
-                  if (__gl_entry__.stale) {
-                     __gl_staleData__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  } else {
-                     __gl_responseMap__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  }
-               }
-            } catch (ignored: Exception) {
-            }
-         }
-      }
-      val __gl_remaining__ = __gl_partialQueries__.filter { !__gl_responseMap__.containsKey(it.elementKey) }.toMutableList()
-      if (__gl_remaining__.isEmpty()) {
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return GetUserOrErrorsFullResponse.fromJson(__gl_wrappedResponse__)
-      }
-      val __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "")
-      try {
-         val __gl_responseText__ = glCallAdapter(__gl_payload__)
-         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, { GetUserOrErrorsFullResponse.fromJson(it) }, __gl_remaining__, true)
-      } catch (exception: Exception) {
-         __gl_responseMap__.putAll(__gl_staleData__)
-         val __gl_remainingCount__ = __gl_partialQueries__.count { !__gl_responseMap__.containsKey(it.elementKey) }
-         if (__gl_remainingCount__ > 0) {
-            throw RuntimeException(exception)
-         }
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return GetUserOrErrorsFullResponse.fromJson(__gl_wrappedResponse__)
-      }
+      val glVariables__ = mapOf("id" to id)
+      val glQuery__ = "query getUserOrErrors(\$id: ID!){getUserOrErrors(id: \$id){..._all_fields_User}}"
+      val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
+      val glFullQuery__ = assembleQuery(glQuery__, glFragmentNames__)
+      val glPayload__ = GraphLinkPayload(query = glFullQuery__, operationName = "getUserOrErrors", variables = glVariables__)
+      val glResponseText__ = glCallAdapter(glPayload__)
+      return GetUserOrErrorsFullResponse.fromJson(decoder.decode(glResponseText__))
    }
    suspend fun findUserOrErrors(id: String): FindUserOrErrorsFullResponse {
-      val __gl_operationName__ = "findUserOrErrors"
-      val __gl_variables__ = mapOf("id" to id)
-      val __gl_partialQueries__ = mutableListOf<GraphLinkPartialQuery>()
-      run {
-         val __gl_pqVars__ = mutableMapOf<String, Any?>()
-         __gl_pqVars__["id"] = __gl_variables__["id"]
-         __gl_partialQueries__.add(GraphLinkPartialQuery(
-             "findUserOrErrors(id: \$id){..._all_fields_User}",
-             __gl_pqVars__,
-             0,
-             emptyList(),
-             "findUserOrErrors__findUserOrErrors",
-             "findUserOrErrors",
-             setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post"),
-             listOf("\$id: ID!"),
-             false,
-             encoder,
-         ))
-      }
-      val __gl_responseMap__ = mutableMapOf<String, Any?>()
-      val __gl_staleData__ = mutableMapOf<String, Any?>()
-      for (partQuery in __gl_partialQueries__) {
-         if (partQuery.ttl > 0) {
-            try {
-               val __gl_entry__ = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
-               if (__gl_entry__ != null) {
-                  if (__gl_entry__.stale) {
-                     __gl_staleData__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  } else {
-                     __gl_responseMap__[partQuery.elementKey] = decoder.decode(__gl_entry__.data)["__gl_v__"]
-                  }
-               }
-            } catch (ignored: Exception) {
-            }
-         }
-      }
-      val __gl_remaining__ = __gl_partialQueries__.filter { !__gl_responseMap__.containsKey(it.elementKey) }.toMutableList()
-      if (__gl_remaining__.isEmpty()) {
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return FindUserOrErrorsFullResponse.fromJson(__gl_wrappedResponse__)
-      }
-      val __gl_payload__ = buildPayload(__gl_remaining__, __gl_operationName__, "")
-      try {
-         val __gl_responseText__ = glCallAdapter(__gl_payload__)
-         return parseToObjectAndCache(__gl_responseText__, __gl_responseMap__, { FindUserOrErrorsFullResponse.fromJson(it) }, __gl_remaining__, true)
-      } catch (exception: Exception) {
-         __gl_responseMap__.putAll(__gl_staleData__)
-         val __gl_remainingCount__ = __gl_partialQueries__.count { !__gl_responseMap__.containsKey(it.elementKey) }
-         if (__gl_remainingCount__ > 0) {
-            throw RuntimeException(exception)
-         }
-         val __gl_wrappedResponse__ = mapOf("data" to __gl_responseMap__)
-         return FindUserOrErrorsFullResponse.fromJson(__gl_wrappedResponse__)
-      }
+      val glVariables__ = mapOf("id" to id)
+      val glQuery__ = "query findUserOrErrors(\$id: ID!){findUserOrErrors(id: \$id){..._all_fields_User}}"
+      val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
+      val glFullQuery__ = assembleQuery(glQuery__, glFragmentNames__)
+      val glPayload__ = GraphLinkPayload(query = glFullQuery__, operationName = "findUserOrErrors", variables = glVariables__)
+      val glResponseText__ = glCallAdapter(glPayload__)
+      return FindUserOrErrorsFullResponse.fromJson(decoder.decode(glResponseText__))
    }
    fun buildPayload(partQueries: List<GraphLinkPartialQuery>, operationName: String, directives: String): GraphLinkPayload {
       val variables = mutableMapOf<String, Any?>()
@@ -1297,7 +622,7 @@ open class GraphLinkQueries(
       }
       val fragmentsBuilder = StringBuilder()
       for (fragName in fragmentNames) {
-         fragmentsBuilder.append(fragmentMap?.get(fragName))
+         fragmentsBuilder.append(fragmentMap[fragName])
       }
       queryBuilder.append(fragmentsBuilder)
       return GraphLinkPayload(

@@ -1,4 +1,3 @@
-import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/dart_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
@@ -7,11 +6,10 @@ import 'flutter_types_value_renderer.dart';
 
 class FlutterTypesLayoutSerializer {
   final GLParser _parser;
-  final FlutterConfig _config;
   final DartCodeGenUtils _u;
   final FlutterTypesValueRenderer _renderer;
 
-  FlutterTypesLayoutSerializer(this._parser, this._config, this._u, this._renderer);
+  FlutterTypesLayoutSerializer(this._parser, this._u, this._renderer);
 
   // ── Table / DataTable rows ─────────────────────────────────────────────────
 

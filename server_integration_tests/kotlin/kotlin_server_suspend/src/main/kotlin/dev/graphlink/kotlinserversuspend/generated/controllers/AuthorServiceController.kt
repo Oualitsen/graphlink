@@ -3,10 +3,10 @@
 // GitHub: https://github.com/Oualitsen/graphlink
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
-// ignore_for_file: use_rethrow_when_possible, camel_case_types, constant_identifier_names, unused_import, non_constant_identifier_names, no_leading_underscores_for_local_identifiers, unused_local_variable, annotate_overrides, library_private_types_in_public_api
+
 
 package dev.graphlink.kotlinserversuspend.generated.controllers;
-import dev.graphlink.kotlinserversuspend.generated.types.Author
+import dev.graphlink.kotlinserversuspend.generated.interfaces.GLAuthorProjection
 import dev.graphlink.kotlinserversuspend.generated.services.AuthorService
 import org.springframework.stereotype.Controller
 import org.springframework.graphql.data.method.annotation.QueryMapping
@@ -18,12 +18,12 @@ class AuthorServiceController(
     private val authorService: AuthorService,
 ) {
    @QueryMapping()
-   suspend fun getAuthor(@Argument() id: String): Author? {
+   suspend fun getAuthor(@Argument() id: String): GLAuthorProjection? {
       return authorService.getAuthor(id)
    }
 
    @QueryMapping()
-   suspend fun listAuthors(): List<Author> {
+   suspend fun listAuthors(): List<GLAuthorProjection> {
       return authorService.listAuthors()
    }
 

@@ -3,35 +3,37 @@
 // GitHub: https://github.com/Oualitsen/graphlink
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
-// ignore_for_file: use_rethrow_when_possible, camel_case_types, constant_identifier_names, unused_import, non_constant_identifier_names, no_leading_underscores_for_local_identifiers, unused_local_variable, annotate_overrides, library_private_types_in_public_api
+
 
 package dev.graphlink.kotlinclient.generated.client;
 import dev.graphlink.kotlinclient.generated.types.GraphLinkPayload
-import dev.graphlink.kotlinclient.generated.types.CreateArticleResponse
-import dev.graphlink.kotlinclient.generated.types.UpdateArticleResponse
-import dev.graphlink.kotlinclient.generated.types.DeleteArticleResponse
 import dev.graphlink.kotlinclient.generated.types.CreateArticleFullResponse
-import dev.graphlink.kotlinclient.generated.types.UpdateArticleFullResponse
-import dev.graphlink.kotlinclient.generated.types.DeleteArticleFullResponse
+import dev.graphlink.kotlinclient.generated.types.CreateArticleResponse
 import dev.graphlink.kotlinclient.generated.inputs.CreateArticleInput
+import dev.graphlink.kotlinclient.generated.types.UpdateArticleFullResponse
+import dev.graphlink.kotlinclient.generated.types.UpdateArticleResponse
 import dev.graphlink.kotlinclient.generated.inputs.UpdateArticleInput
+import dev.graphlink.kotlinclient.generated.types.DeleteArticleFullResponse
+import dev.graphlink.kotlinclient.generated.types.DeleteArticleResponse
 import dev.graphlink.kotlinclient.generated.interfaces.GraphLinkClientAdapter
 import dev.graphlink.kotlinclient.generated.interfaces.GraphLinkJsonEncoder
 import dev.graphlink.kotlinclient.generated.interfaces.GraphLinkJsonDecoder
 
 open class GraphLinkMutations(
     adapter: GraphLinkClientAdapter,
+    fragmentMap: Map<String, String>,
     encoder: GraphLinkJsonEncoder,
     decoder: GraphLinkJsonDecoder,
     store: GraphLinkCacheStore,
-) : GraphLinkResolverBase(adapter, null, store, encoder, decoder) {
+) : GraphLinkResolverBase(adapter, fragmentMap, store, encoder, decoder) {
 
 
    suspend fun createArticle(input: CreateArticleInput): CreateArticleResponse {
-      val __gl_operationName__ = "createArticle"
-      val __gl_query__ = "mutation createArticle(\$input: CreateArticleInput!){createArticle(input: \$input){..._all_fields_Article}} fragment _all_fields_Article on Article{id title authorId author{id name}}"
+      val __gl_query__ = "mutation createArticle(\$input: CreateArticleInput!){createArticle(input: \$input){..._all_fields_Article}}"
+      val __gl_fragmentNames__ = setOf("_all_fields_Article")
+      val __gl_fullQuery__ = assembleQuery(__gl_query__, __gl_fragmentNames__)
       val __gl_variables__ = mapOf("input" to input.toJson())
-      val __gl_payload__ = GraphLinkPayload(query = __gl_query__, operationName = __gl_operationName__, variables = __gl_variables__)
+      val __gl_payload__ = GraphLinkPayload(query = __gl_fullQuery__, operationName = "createArticle", variables = __gl_variables__)
       val __gl_responseText__ = glCallAdapter(__gl_payload__)
       val __gl_decodedResponse__ = CreateArticleFullResponse.fromJson(decoder.decode(__gl_responseText__))
       if (__gl_decodedResponse__.errors != null && __gl_decodedResponse__.errors!!.isNotEmpty()) {
@@ -40,10 +42,11 @@ open class GraphLinkMutations(
       return __gl_decodedResponse__.data!!
    }
    suspend fun updateArticle(input: UpdateArticleInput): UpdateArticleResponse {
-      val __gl_operationName__ = "updateArticle"
-      val __gl_query__ = "mutation updateArticle(\$input: UpdateArticleInput!){updateArticle(input: \$input){..._all_fields_Article}} fragment _all_fields_Article on Article{id title authorId author{id name}}"
+      val __gl_query__ = "mutation updateArticle(\$input: UpdateArticleInput!){updateArticle(input: \$input){..._all_fields_Article}}"
+      val __gl_fragmentNames__ = setOf("_all_fields_Article")
+      val __gl_fullQuery__ = assembleQuery(__gl_query__, __gl_fragmentNames__)
       val __gl_variables__ = mapOf("input" to input.toJson())
-      val __gl_payload__ = GraphLinkPayload(query = __gl_query__, operationName = __gl_operationName__, variables = __gl_variables__)
+      val __gl_payload__ = GraphLinkPayload(query = __gl_fullQuery__, operationName = "updateArticle", variables = __gl_variables__)
       val __gl_responseText__ = glCallAdapter(__gl_payload__)
       val __gl_decodedResponse__ = UpdateArticleFullResponse.fromJson(decoder.decode(__gl_responseText__))
       if (__gl_decodedResponse__.errors != null && __gl_decodedResponse__.errors!!.isNotEmpty()) {
@@ -52,10 +55,11 @@ open class GraphLinkMutations(
       return __gl_decodedResponse__.data!!
    }
    suspend fun deleteArticle(id: String): DeleteArticleResponse {
-      val __gl_operationName__ = "deleteArticle"
       val __gl_query__ = "mutation deleteArticle(\$id: ID!){deleteArticle(id: \$id)}"
+      val __gl_fragmentNames__ = emptySet<String>()
+      val __gl_fullQuery__ = assembleQuery(__gl_query__, __gl_fragmentNames__)
       val __gl_variables__ = mapOf("id" to id)
-      val __gl_payload__ = GraphLinkPayload(query = __gl_query__, operationName = __gl_operationName__, variables = __gl_variables__)
+      val __gl_payload__ = GraphLinkPayload(query = __gl_fullQuery__, operationName = "deleteArticle", variables = __gl_variables__)
       val __gl_responseText__ = glCallAdapter(__gl_payload__)
       val __gl_decodedResponse__ = DeleteArticleFullResponse.fromJson(decoder.decode(__gl_responseText__))
       if (__gl_decodedResponse__.errors != null && __gl_decodedResponse__.errors!!.isNotEmpty()) {

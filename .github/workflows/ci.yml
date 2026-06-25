@@ -35,7 +35,7 @@ jobs:
       - uses: dart-lang/setup-dart@v1
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - run: make install
       - run: make ci
 
@@ -77,7 +77,7 @@ jobs:
       - uses: dart-lang/setup-dart@v1
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - run: make ci
 
   integration-tests-kotlin-server:
@@ -148,7 +148,7 @@ jobs:
           java-version: '21'
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - uses: actions/download-artifact@v4
         with:
           name: spring-server-jars
@@ -204,6 +204,6 @@ jobs:
       - uses: dart-lang/setup-dart@v1
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - run: make ci
 

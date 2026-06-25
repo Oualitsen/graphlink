@@ -3,10 +3,10 @@
 // GitHub: https://github.com/Oualitsen/graphlink
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
-// ignore_for_file: use_rethrow_when_possible, camel_case_types, constant_identifier_names, unused_import, non_constant_identifier_names, no_leading_underscores_for_local_identifiers, unused_local_variable, annotate_overrides, library_private_types_in_public_api
+
 
 package dev.graphlink.kotlinserverblocking.generated.controllers;
-import dev.graphlink.kotlinserverblocking.generated.types.Article
+import dev.graphlink.kotlinserverblocking.generated.interfaces.GLArticleProjection
 import dev.graphlink.kotlinserverblocking.generated.inputs.CreateArticleInput
 import dev.graphlink.kotlinserverblocking.generated.inputs.UpdateArticleInput
 import dev.graphlink.kotlinserverblocking.generated.services.ArticleService
@@ -27,7 +27,7 @@ class ArticleServiceController(
     private val articleService: ArticleService,
 ) {
    @QueryMapping()
-   suspend fun getArticle(@Argument() id: String): Article {
+   suspend fun getArticle(@Argument() id: String): GLArticleProjection {
       val securityContext = SecurityContextHolder.getContext()
       return withContext(Dispatchers.IO + SecurityCoroutineContext(securityContext)) {
          articleService.getArticle(id)
@@ -35,7 +35,7 @@ class ArticleServiceController(
    }
 
    @QueryMapping()
-   suspend fun listArticles(): List<Article> {
+   suspend fun listArticles(): List<GLArticleProjection> {
       val securityContext = SecurityContextHolder.getContext()
       return withContext(Dispatchers.IO + SecurityCoroutineContext(securityContext)) {
          articleService.listArticles()
@@ -43,7 +43,7 @@ class ArticleServiceController(
    }
 
    @MutationMapping()
-   suspend fun createArticle(@Argument() input: CreateArticleInput): Article {
+   suspend fun createArticle(@Argument() input: CreateArticleInput): GLArticleProjection {
       val securityContext = SecurityContextHolder.getContext()
       return withContext(Dispatchers.IO + SecurityCoroutineContext(securityContext)) {
          articleService.createArticle(input)
@@ -51,7 +51,7 @@ class ArticleServiceController(
    }
 
    @MutationMapping()
-   suspend fun updateArticle(@Argument() input: UpdateArticleInput): Article {
+   suspend fun updateArticle(@Argument() input: UpdateArticleInput): GLArticleProjection {
       val securityContext = SecurityContextHolder.getContext()
       return withContext(Dispatchers.IO + SecurityCoroutineContext(securityContext)) {
          articleService.updateArticle(input)
@@ -59,12 +59,12 @@ class ArticleServiceController(
    }
 
    @SubscriptionMapping()
-   fun articleCreated(): Flow<Article> {
+   fun articleCreated(): Flow<GLArticleProjection> {
       return articleService.articleCreated()
    }
 
    @SubscriptionMapping()
-   fun articleUpdated(@Argument() id: String): Flow<Article> {
+   fun articleUpdated(@Argument() id: String): Flow<GLArticleProjection> {
       return articleService.articleUpdated(id)
    }
 

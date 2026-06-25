@@ -263,6 +263,7 @@ class DartClientSerializer extends GLClientSerializer {
         statements: [
           'late final $_cacheStoreClassName $svStore;',
           'late final Map<String, GraphLinkLock> $svTagLocks;',
+                    'late final Map<String, String> $svFragMap;',
           declareHttpAdapter(),
           codeGenUtils.createMethod(
               methodName: _resolverBaseClassName,
@@ -270,11 +271,37 @@ class DartClientSerializer extends GLClientSerializer {
               arguments: [
                 '$_cacheStoreClassName store',
                 'Map<String, GraphLinkLock> locks',
-                'this.$svAdapter'
+                'this.$svAdapter',
+                'Map<String, String> fragmentMap',
               ],
               statements: [
                 '$svStore = store;',
                 '$svTagLocks = locks;',
+                '$svFragMap = fragmentMap;',
+              ]),
+          codeGenUtils.createMethod(
+              methodName: "assembleQuery",
+              namedArguments: false,
+              arguments: [
+                "String query",
+                "Set<String> fragmentNames",
+              ],
+              returnType: "String",
+              statements: [
+                'final buffer = StringBuffer(query);',
+                codeGenUtils.forEachLoop(
+                    variable: 'name',
+                    iterable: 'fragmentNames',
+                    statements: [
+                      'final frag = $svFragMap[name];',
+                      codeGenUtils.ifStatement(
+                          condition: 'frag != null',
+                          ifBlockStatements: [
+                            'buffer.write(" ");',
+                            'buffer.write(frag);',
+                          ]),
+                    ]),
+                'return buffer.toString();',
               ]),
           codeGenUtils.createMethod(
               returnType: 'Future<String>',
@@ -417,26 +444,17 @@ class DartClientSerializer extends GLClientSerializer {
     return codeGenUtils.createClass(
         className: "${classNameFromType(type)} extends $_resolverBaseClassName",
         statements: [
-          if (type == GLQueryType.query) 'late final Map<String, String> $svFragMap;',
           _declareOperationFields(type),
           codeGenUtils.createConstructor(
               className: classNameFromType(type),
               arguments: _declareConstructorArgs(type),
-              superArguments: ['store', svTagLocks, 'httpAdapter'],
+              superArguments: ['store', svTagLocks, 'httpAdapter', 'fragmentMap'],
               statements: [
-                if (type == GLQueryType.query) '$svFragMap = fragmentMap;',
                 if (type == GLQueryType.subscription)
                   '$svHandler = GraphLinkSubscriptionHandler(adapter);',
               ]),
           ...methods,
           if (type == GLQueryType.query) ...[
-            codeGenUtils.createMethod(
-                methodName: "_getFromSource",
-                async: true,
-                namedArguments: false,
-                arguments: ['GraphLinkPayload payload'],
-                returnType: 'Future<String>',
-                statements: ['return await glCallAdapter(payload);']),
             codeGenUtils.createMethod(
                 returnType: "GraphLinkPayload",
                 namedArguments: false,
@@ -566,10 +584,10 @@ class DartClientSerializer extends GLClientSerializer {
             "queries = ${classNameFromType(GLQueryType.query)}(adapter, $svFragMap, this.store, $svTagLocks);",
           if (_parser.hasMutations)
             _parser.hasUploadMutations
-                ? "mutations = ${classNameFromType(GLQueryType.mutation)}(adapter, uploadConverter, uploadAdapter, this.store, $svTagLocks);"
-                : "mutations = ${classNameFromType(GLQueryType.mutation)}(adapter, this.store, $svTagLocks);",
+                ? "mutations = ${classNameFromType(GLQueryType.mutation)}(adapter, uploadConverter, uploadAdapter, $svFragMap, this.store, $svTagLocks);"
+                : "mutations = ${classNameFromType(GLQueryType.mutation)}(adapter, $svFragMap, this.store, $svTagLocks);",
           if (_parser.hasSubscriptions)
-            "subscriptions = ${classNameFromType(GLQueryType.subscription)}(adapter, wsAdapter, this.store, $svTagLocks);",
+            "subscriptions = ${classNameFromType(GLQueryType.subscription)}(adapter, wsAdapter, $svFragMap, this.store, $svTagLocks);",
         ],
       ),
       if (_parser.hasSubscriptions &&
@@ -591,7 +609,7 @@ class DartClientSerializer extends GLClientSerializer {
         'this.$svUploadConverter',
         'this.$svUploadAdapter',
       ],
-      if (type == GLQueryType.query) 'Map<String, String> fragmentMap',
+      'Map<String, String> fragmentMap',
       '$_cacheStoreClassName store',
       'Map<String, GraphLinkLock> $svTagLocks',
     ];

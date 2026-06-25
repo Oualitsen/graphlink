@@ -8,10 +8,12 @@ import {
   startServer,
 } from './real-server-adapter.ts';
 
+const RUN_RECONNECT = !!process.env['RUN_RECONNECT_TESTS'];
+
 // ---------------------------------------------------------------------------
 // Test 1: subscription resumes after mid-run server halt + restart
 // ---------------------------------------------------------------------------
-describe('reconnect: server halts during active subscription', () => {
+describe.skipIf(!RUN_RECONNECT)('reconnect: server halts during active subscription', () => {
   const port = 9993;
   beforeAll(() => startServer(port), 40_000);
   afterAll(() => killPort(port));
@@ -65,7 +67,7 @@ describe('reconnect: server halts during active subscription', () => {
 // ---------------------------------------------------------------------------
 // Test 2: subscribe before server starts
 // ---------------------------------------------------------------------------
-describe('reconnect: subscribe before server starts', () => {
+describe.skipIf(!RUN_RECONNECT)('reconnect: subscribe before server starts', () => {
   const port = 9995;
   beforeAll(() => killPort(port));
   afterAll(() => killPort(port));
@@ -106,7 +108,7 @@ describe('reconnect: subscribe before server starts', () => {
 // ---------------------------------------------------------------------------
 // Test 3: maxReconnectAttempts=null — adapter retries indefinitely
 // ---------------------------------------------------------------------------
-describe('reconnect: null maxReconnectAttempts retries indefinitely', () => {
+describe.skipIf(!RUN_RECONNECT)('reconnect: null maxReconnectAttempts retries indefinitely', () => {
   const port = 9992;
   const targetAttempts = 10;
 
