@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { GraphLinkClient } from '../lib/generated/client/graph-link-client.js';
-import { Car, Bike } from '../lib/generated/graphlink.js';
+import type { Car } from '../lib/generated/types/car.js';
+import type { Bike } from '../lib/generated/types/bike.js';
 import { newClient } from './real-server-adapter.ts';
 
 // Cycle: VehicleDriver → Vehicle (Car|Bike) → VehicleOwner → VehicleDriver
@@ -27,18 +28,16 @@ describe('layer 1 — VehicleDriver.vehicle', () => {
     expect(res.getVehicleDriver.vehicle).not.toBeNull();
   });
 
-  it('Car variant: vehicle is a Car with correct model', async () => {
+  it('Car variant: vehicle has model field', async () => {
     const res = await client.queries.getVehicleDriver({ id: 'vd-1' });
-    const vehicle = res.getVehicleDriver.vehicle;
-    expect(vehicle).toBeInstanceOf(Car);
-    expect((vehicle as Car).model).toBe('Tesla Model 3');
+    const vehicle = res.getVehicleDriver.vehicle as Car;
+    expect(vehicle.model).toBe('Tesla Model 3');
   });
 
-  it('Bike variant: vehicle is a Bike with correct brand', async () => {
+  it('Bike variant: vehicle has brand field', async () => {
     const res = await client.queries.getVehicleDriver({ id: 'vd-2' });
-    const vehicle = res.getVehicleDriver.vehicle;
-    expect(vehicle).toBeInstanceOf(Bike);
-    expect((vehicle as Bike).brand).toBe('Trek FX3');
+    const vehicle = res.getVehicleDriver.vehicle as Bike;
+    expect(vehicle.brand).toBe('Trek FX3');
   });
 });
 

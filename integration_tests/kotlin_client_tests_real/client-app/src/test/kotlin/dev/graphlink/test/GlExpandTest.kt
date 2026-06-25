@@ -1,6 +1,7 @@
 package dev.graphlink.test
 
 import dev.graphlink.test.generated.client.GraphLinkClient
+import dev.graphlink.test.generated.interfaces.Vehicle
 import dev.graphlink.test.generated.types.Bike
 import dev.graphlink.test.generated.types.Car
 import dev.graphlink.test.generated.types.VehicleDriver
