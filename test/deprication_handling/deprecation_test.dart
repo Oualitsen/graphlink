@@ -233,5 +233,55 @@ enum Status { ACTIVE INACTIVE @deprecated(reason: "no longer valid") }
       final result = ser.serializeTypeDefinition(g.types['Foo']!);
       expect(result, contains(r'/** @deprecated use *\/foo/* instead */'));
     });
+
+    test('enum value deprecation does not duplicate comment in value string', () {
+      final g = GLParser();
+      g.parse('enum Status { ACTIVE INACTIVE @deprecated(reason: "gone") }');
+      final ser = TypeScriptSerializer(g, importPrefix: '');
+      final result = ser.serializeEnumDefinition(g.enums['Status']!);
+      // The deprecation comment must appear exactly once
+      expect(
+        '/** @deprecated gone */'.allMatches(result).length,
+        1,
+        reason: 'Deprecation comment should appear exactly once, but got:\n$result',
+      );
+      // The value assignment must be clean: INACTIVE = 'INACTIVE' (no comment inside the quotes)
+      expect(result, contains("INACTIVE = 'INACTIVE'"));
+      // Must NOT have the comment inside the string value
+      expect(result, isNot(contains("@deprecated gone'")));
+    });
+
+    test('enum value without deprecation still uses simple key=value', () {
+      final g = GLParser();
+      g.parse('enum Status { ACTIVE INACTIVE }');
+      final ser = TypeScriptSerializer(g, importPrefix: '');
+      final result = ser.serializeEnumDefinition(g.enums['Status']!);
+      expect(result, contains("ACTIVE = 'ACTIVE'"));
+      expect(result, contains("INACTIVE = 'INACTIVE'"));
+    });
+
+    test('mixed deprecated and non-deprecated enum values', () {
+      final g = GLParser();
+      g.parse('enum Status { ACTIVE INACTIVE @deprecated(reason: "gone") PENDING @deprecated(reason: "removed") }');
+      final ser = TypeScriptSerializer(g, importPrefix: '');
+      final result = ser.serializeEnumDefinition(g.enums['Status']!);
+      // ACTIVE is not deprecated — clean assignment
+      expect(result, contains("ACTIVE = 'ACTIVE'"));
+      // Each deprecation comment appears exactly once
+      expect(
+        '/** @deprecated gone */'.allMatches(result).length,
+        1,
+      );
+      expect(
+        '/** @deprecated removed */'.allMatches(result).length,
+        1,
+      );
+      // Clean assignments for deprecated values too
+      expect(result, contains("INACTIVE = 'INACTIVE'"));
+      expect(result, contains("PENDING = 'PENDING'"));
+      // No comments leak into value strings
+      expect(result, isNot(contains("@deprecated gone'")));
+      expect(result, isNot(contains("@deprecated removed'")));
+    });
   });
 }
