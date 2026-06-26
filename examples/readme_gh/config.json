@@ -1,0 +1,16 @@
+{
+  "schemaPaths": ["schema/*.graphql"],
+  "mode": "client",
+  "typeMappings": {
+    "ID": "String",
+    "Float": "double",
+    "Int": "int",
+    "Boolean": "bool"
+  },
+  "outputDir": "lib/generated",
+  "clientConfig": {
+    "dart": {
+      "packageName": "my_app"
+    }
+  }
+}
