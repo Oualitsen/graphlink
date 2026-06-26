@@ -608,7 +608,7 @@ private _buildPayload(
       'store?: $_cacheStoreType',
     ];
 
-    final fragAssignments = _parser.fragments.values
+    final fragAssignments = _parser.usedFragments
         .map((f) =>
             "this.$svFragMap['${f.tokenInfo}'] = '${gqlSerializer.serializeFragmentDefinitionBase(f)}';")
         .toList();

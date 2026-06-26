@@ -77,7 +77,7 @@ class KotlinClientSerializer extends GLClientSerializer {
         'mutations = ${_classNameFor(GLQueryType.mutation)}(adapter, ${_grammar.hasUploadMutations ? 'multipartAdapter, ' : ''}fragmentMap, encoder, decoder, store)',
       if (_grammar.hasSubscriptions)
         'subscriptions = ${_classNameFor(GLQueryType.subscription)}(adapter, wsAdapter, fragmentMap, encoder, decoder, store)',
-      ..._grammar.fragments.values.map((f) =>
+      ..._grammar.usedFragments.map((f) =>
           'fragmentMap["${f.tokenInfo}"] = "${gqlSerializer.serializeFragmentDefinitionBase(f).escapeForStringLiteral()}"'),
     ];
 
