@@ -1,3 +1,4 @@
+import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/java_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
@@ -45,7 +46,7 @@ class JavaClientOperationSerializer {
 	          'String ${svOperationName} = "${def.tokenInfo}";',
 	          ..._defaultCoalesces(def),
 	          if (def.arguments.isNotEmpty) generateVariables(def, container),
-	          'String ${svQuery} = "$queryString";',
+	          'String ${svQuery} = "${queryString.escapeForJavaStringLiteral()}";',
 	          'Set<String> ${svFragmentNames} = ${fragmentNames.isEmpty ? "Collections.emptySet();" : "new HashSet<>(Arrays.asList(${fragmentNames.join(", ")}));"}',
 	          if (isCE)
 	            'return executeFull(${svQuery}, ${svFragmentNames}, ${svOperationName}, ${def.arguments.isEmpty ? "Collections.emptyMap()" : svVariables}, $parseType::fromJson);'
@@ -95,7 +96,7 @@ class JavaClientOperationSerializer {
     final argDeclsStr = e.argumentDeclarations.isEmpty
         ? 'new ArrayList<>()'
         : 'Arrays.asList(${e.argumentDeclarations.map((a) => '"$a"').join(', ')})';
-    final queryStr = e.query.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
+    final queryStr = e.query.escapeForJavaStringLiteral();
 
     final buffer = StringBuffer();
     buffer.writeln('{');
@@ -130,7 +131,7 @@ class JavaClientOperationSerializer {
     // query + fragment-name declarations. assembleQuery / payload are only needed
     // for the upload path; plain mutations build the payload inside executeData.
     final queryLine = <String>[
-      'String ${svQuery} = "$queryText";',
+      'String ${svQuery} = "${queryText.escapeForJavaStringLiteral()}";',
       if (fragmentNames.isNotEmpty)
         'Set<String> ${svFragmentNames} = new HashSet<>(Arrays.asList(${fragmentNames.join(", ")}));'
       else
@@ -272,7 +273,7 @@ class JavaClientOperationSerializer {
         arguments: getArguments(def),
         statements: [
           'String ${svOperationName} = "${def.tokenInfo}";',
-          'String ${svQuery} = "$queryText";',
+          'String ${svQuery} = "${queryText.escapeForJavaStringLiteral()}";',
           'Set<String> ${svFragmentNames} = ${fragmentNames.isEmpty ? "Collections.emptySet();" : "new HashSet<>(Arrays.asList(${fragmentNames.join(", ")}));"}',
           'String ${svFullQuery} = assembleQuery(${svQuery}, ${svFragmentNames});',
           ..._defaultCoalesces(def),
