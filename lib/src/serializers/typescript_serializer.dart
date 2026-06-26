@@ -216,7 +216,7 @@ class TypeScriptSerializer extends GLSerializer {
   @override
   String serializeImports(GLToken token) {
     if (token is GLInterfaceDefinition && !token.isServerProjection && token.getSerializableImplementations(mode).isNotEmpty) {
-      var deps = {...token.getImportDependecies(grammar), ...token.getSerializableImplementations(mode)};
+      var deps = {...token.getImportDependecies(grammar).where((d) => d != token), ...token.getSerializableImplementations(mode)};
       final buffer = StringBuffer();
       for (final dep in deps) {
         final import = serializeImportToken(dep);
