@@ -150,7 +150,7 @@ class CustomQueriesTest {
                                 "name", "Alice", "email", "alice@test.com")
                     )
             ));
-            List<? extends SearchResult> results = client.queries.runSearch("alice").getSearch();
+            List<SearchResult> results = client.queries.runSearch("alice").getSearch();
             assertEquals(1, results.size());
             assertInstanceOf(UserResult.class, results.get(0));
             assertEquals("u-1", results.get(0).getId());
@@ -164,7 +164,7 @@ class CustomQueriesTest {
                             map("__typename", "PostResult", "id", "p-1", "title", "Hello")
                     )
             ));
-            List<? extends SearchResult> results = client.queries.runSearch("hello").getSearch();
+            List<SearchResult> results = client.queries.runSearch("hello").getSearch();
             assertEquals(1, results.size());
             assertInstanceOf(PostResult.class, results.get(0));
             assertEquals("p-1", results.get(0).getId());
@@ -180,7 +180,7 @@ class CustomQueriesTest {
                             map("__typename", "PostResult", "id", "p-1", "title", "Hello")
                     )
             ));
-            List<? extends SearchResult> results = client.queries.runSearch("a").getSearch();
+            List<SearchResult> results = client.queries.runSearch("a").getSearch();
             assertEquals(2, results.size());
             assertInstanceOf(UserResult.class, results.get(0));
             assertInstanceOf(PostResult.class, results.get(1));
@@ -189,7 +189,7 @@ class CustomQueriesTest {
         @Test
         void emptyResults_returnEmptyList() {
             adapter.registerData("runSearch", Map.of("search", List.of()));
-            List<? extends SearchResult> results = client.queries.runSearch("xyz").getSearch();
+            List<SearchResult> results = client.queries.runSearch("xyz").getSearch();
             assertNotNull(results);
             assertTrue(results.isEmpty());
         }
