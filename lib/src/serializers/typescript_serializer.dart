@@ -74,14 +74,21 @@ class TypeScriptSerializer extends GLSerializer {
 
   @override
   String doSerializeEnumDefinition(GLEnumDefinition def) {
-    final values = def.values
-        .map((e) => doSerializeEnumValue(e))
-        .where((e) => e.isNotEmpty)
-        .toList();
-    return codeGenUtils.createEnum(
-      enumName: def.token,
-      enumValues: values,
-    );
+    final entries = <String>[];
+    for (final value in def.values) {
+      final deprecation = serializeEnumValueDeprecation(value);
+      final token = serialzeEnumValue(value);
+      if (token.isEmpty) continue;
+      if (deprecation.isNotEmpty) {
+        entries.add('$deprecation\n$token = \'$token\',');
+      } else {
+        entries.add('$token = \'$token\',');
+      }
+    }
+    final buf = StringBuffer();
+    buf.write('export enum ${def.token} ');
+    buf.write(codeGenUtils.block(entries));
+    return buf.toString();
   }
 
   @override
@@ -89,9 +96,7 @@ class TypeScriptSerializer extends GLSerializer {
     if (shouldSkipSerialization(directives: value.getDirectives(), mode: mode)) {
       return '';
     }
-    final deprecation = serializeEnumValueDeprecation(value);
-    if (deprecation.isEmpty) return value.value.token;
-    return '$deprecation\n  ${value.value.token}';
+    return value.value.token;
   }
 
   @override
