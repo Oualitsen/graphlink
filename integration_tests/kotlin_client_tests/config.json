@@ -1,5 +1,5 @@
 {
-  "schemaPaths": ["../dart_client_tests/schema/*.gql"],
+  "schemaPaths": ["../schema_mock/schema.gql"],
   "mode": "client",
   "typeMappings": {
     "ID":      "String",

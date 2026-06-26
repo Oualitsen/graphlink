@@ -1,5 +1,5 @@
 {
-  "schemaPaths": ["schema/*.gql"],
+  "schemaPaths": ["../schema_mock/schema.gql"],
   "mode": "client",
   "typeMappings": {
     "ID":      "String",
