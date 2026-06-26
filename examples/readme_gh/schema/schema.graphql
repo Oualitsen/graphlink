@@ -1,0 +1,25 @@
+type Vehicle {
+  id: ID!
+  brand: String!
+  model: String!
+  year: Int!
+  fuelType: FuelType!
+}
+
+enum FuelType { GASOLINE DIESEL ELECTRIC HYBRID }
+
+input AddVehicleInput {
+  brand: String!
+  model: String!
+  year: Int!
+  fuelType: FuelType!
+}
+
+type Query {
+  getVehicle(id: ID!): Vehicle!    @glCache(ttl: "2m", tags: ["vehicles"])
+  listVehicles: [Vehicle!]!        @glCache(ttl: "1m", tags: ["vehicles"])
+}
+
+type Mutation {
+  addVehicle(input: AddVehicleInput!): Vehicle! @glCacheInvalidate(tags: ["vehicles"])
+}
