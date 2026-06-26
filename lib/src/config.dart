@@ -6,6 +6,18 @@ enum TypeScriptHttpAdapter { fetch, axios, none }
 
 enum JavaWsAdapter { java11, okhttp, none }
 
+/// Async style for the generated Java client. `blocking` keeps the existing
+/// synchronous adapters; the reactive styles wrap operation results in the
+/// library's deferred-single type (Mono/Single/Uni) and subscriptions in the
+/// deferred-many type (Flux/Observable/Multi).
+enum JavaAsyncStyle { blocking, reactor, rxjava3, mutiny }
+
+/// HTTP transport for the generated reactive default adapter. `jdk` is the
+/// universal `HttpClient.sendAsync` bridge (works with every reactive style,
+/// zero extra dependency). `webclient` is Spring WebClient and is only valid
+/// with [JavaAsyncStyle.reactor].
+enum JavaReactiveHttpClient { jdk, webclient }
+
 enum KotlinWsAdapter { okhttp, none }
 
 enum JavaJsonCodec { jackson, gson, none }
@@ -490,6 +502,8 @@ class JavaClientConfig extends ClientLanguageConfig {
   final bool jspecify;
   final JavaWsAdapter wsAdapter;
   final JavaJsonCodec jsonCodec;
+  final JavaAsyncStyle asyncStyle;
+  final JavaReactiveHttpClient reactiveHttpClient;
   @override final AutoGenerateQueriesFor? autoGenerateQueriesFor;
 
   JavaClientConfig({
@@ -506,6 +520,8 @@ class JavaClientConfig extends ClientLanguageConfig {
     this.jspecify = false,
     this.wsAdapter = JavaWsAdapter.java11,
     this.jsonCodec = JavaJsonCodec.jackson,
+    this.asyncStyle = JavaAsyncStyle.blocking,
+    this.reactiveHttpClient = JavaReactiveHttpClient.jdk,
     this.defaultAlias,
     this.autoGenerateQueriesFor,
   });
@@ -531,6 +547,14 @@ class JavaClientConfig extends ClientLanguageConfig {
       jsonCodec: JavaJsonCodec.values.firstWhere(
         (e) => e.name == json['jsonCodec'],
         orElse: () => JavaJsonCodec.jackson,
+      ),
+      asyncStyle: JavaAsyncStyle.values.firstWhere(
+        (e) => e.name == json['asyncStyle'],
+        orElse: () => JavaAsyncStyle.blocking,
+      ),
+      reactiveHttpClient: JavaReactiveHttpClient.values.firstWhere(
+        (e) => e.name == json['reactiveHttpClient'],
+        orElse: () => JavaReactiveHttpClient.jdk,
       ),
       autoGenerateQueriesFor: json['autoGenerateQueriesFor'] != null
           ? AutoGenerateQueriesFor.fromJson(json['autoGenerateQueriesFor'] as Map<String, dynamic>)
