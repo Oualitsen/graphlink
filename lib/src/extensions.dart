@@ -68,6 +68,12 @@ extension StringExt on String {
     return replaceAll('\\', '\\\\').replaceAll('"', '\\"').replaceAll(r'$', r'\$');
   }
 
+  /// Escapes `\` and `"` so the string can be embedded safely inside a
+  /// Java double-quoted string literal.
+  String escapeForJavaStringLiteral() {
+    return replaceAll('\\', '\\\\').replaceAll('"', '\\"');
+  }
+
   TokenInfo toToken() => TokenInfo.ofString(this);
 
   String toSnakeCase() {
