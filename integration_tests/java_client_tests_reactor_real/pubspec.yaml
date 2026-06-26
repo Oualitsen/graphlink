@@ -1,0 +1,10 @@
+name: graphlink_java_client_reactor_integration_tests
+description: Java reactive (Mono/Flux) client integration tests for GraphLink
+version: 1.0.0
+publish_to: none
+environment:
+  sdk: '>=2.19.0 <4.0.0'
+
+dependencies:
+  graphlink:
+    path: ../..

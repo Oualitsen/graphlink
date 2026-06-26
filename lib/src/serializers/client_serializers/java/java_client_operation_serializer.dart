@@ -51,7 +51,7 @@ class JavaClientOperationSerializer {
 	          if (isCE)
 	            'return executeFull(${svQuery}, ${svFragmentNames}, ${svOperationName}, ${def.arguments.isEmpty ? "Collections.emptyMap()" : svVariables}, $parseType::fromJson);'
 	          else
-	            'return executeData(${svQuery}, ${svFragmentNames}, ${svOperationName}, ${def.arguments.isEmpty ? "Collections.emptyMap()" : svVariables}, $parseType::fromJson).getData();',
+	            'return executeData(${svQuery}, ${svFragmentNames}, ${svOperationName}, ${def.arguments.isEmpty ? "Collections.emptyMap()" : svVariables}, $parseType::fromJson)${_getDataCall(def)};',
 	        ]);
 	  }
 
@@ -79,9 +79,17 @@ class JavaClientOperationSerializer {
 	        ]);
 	  }
 
+  /// Tail appended to an `execute*` call to unwrap the data payload.
+  /// captureErrors returns the full response (no unwrap). Blocking calls
+  /// `.getData()` directly; reactive maps over the deferred-single since you
+  /// can't call `.getData()` on a `Mono<Response>`.
   String _getDataCall(GLQueryDefinition def) {
-    if(def.isCaptureErrors(_ctx.grammar)) {
+    if (def.isCaptureErrors(_ctx.grammar)) {
       return '';
+    }
+    if (_ctx.flavor.isReactive) {
+      final parseType = def.getFullResponseTypeDefinition(_ctx.grammar).token;
+      return '.map($parseType::getData)';
     }
     return '.getData()';
   }
@@ -162,10 +170,13 @@ class JavaClientOperationSerializer {
       final noProgressBody = _ctx.codeGenUtils.block([
         'return $methodName($argNamesNoProgress, null);',
       ]);
-      container.imports.add(JavaImports.ioException);
+      // Blocking executeMultipart throws IOException; the reactive variant
+      // returns a deferred-single carrying any failure, so no checked throws.
+      final throwsClause = _ctx.flavor.isReactive ? '' : ' throws IOException';
+      if (!_ctx.flavor.isReactive) container.imports.add(JavaImports.ioException);
       return [
-        '$returnType $methodName${_ctx.codeGenUtils.parentheses(argsNoProgress)} throws IOException $noProgressBody',
-        '$returnType $methodName${_ctx.codeGenUtils.parentheses(argsWithProgress)} throws IOException $body',
+        '$returnType $methodName${_ctx.codeGenUtils.parentheses(argsNoProgress)}$throwsClause $noProgressBody',
+        '$returnType $methodName${_ctx.codeGenUtils.parentheses(argsWithProgress)}$throwsClause $body',
       ].join('\n\n');
     }
 
@@ -239,7 +250,12 @@ class JavaClientOperationSerializer {
       '${svOperationsMap}.put("variables", ${svVariables});',
       'String ${svOperations} = ${svEncoder}.encode(${svOperationsMap});',
       'String ${svMapJson} = ${svEncoder}.encode(${svFileMap});',
-      'String ${svResponseText} = ${svMultipartAdapter}.executeMultipart(${svOperations}, ${svMapJson}, ${svFiles}, onProgress);',
+    ]);
+
+    // Decode + error-check + invalidation + return, given a decoded String
+    // body in `svResponseText`. Returns the bare value/full-response; for the
+    // reactive flavors this runs inside the executeMultipart map() lambda.
+    final responseHandling = <String>[
       '$returnType ${svDecodedResponse} = $returnType.fromJson(${svDecoder}.decode(${svResponseText}));',
       if (!def.isCaptureErrors(_ctx.grammar)) ...[
         _ctx.codeGenUtils.ifStatement(
@@ -256,7 +272,19 @@ class JavaClientOperationSerializer {
           ),
         'return ${svDecodedResponse};',
       ],
-    ]);
+    ];
+
+    const call =
+        '$svMultipartAdapter.executeMultipart($svOperations, $svMapJson, $svFiles, onProgress)';
+    if (!_ctx.flavor.isReactive) {
+      statements.add('String ${svResponseText} = $call;');
+      statements.addAll(responseHandling);
+    } else {
+      // executeMultipart returns the deferred-single; compose over it.
+      statements.add('return ${_ctx.flavor.mapOpen(call, svResponseText)}');
+      statements.addAll(responseHandling.map((s) => '  $s'));
+      statements.add('});');
+    }
 
     return statements.join('\n');
   }
@@ -342,6 +370,30 @@ class JavaClientOperationSerializer {
     final invalidation = _serializeInvalidationCall(def);
     final varsArg =
         def.arguments.isEmpty ? "Collections.emptyMap()" : svVariables;
+
+    // Reactive: invalidation runs as a side-effect inside map() over the
+    // deferred-single, since there is no materialised response to act on first.
+    if (_ctx.flavor.isReactive) {
+      if (!isCE) {
+        return [
+          'return ${_ctx.flavor.mapOpen('executeData(${svQuery}, ${svFragmentNames}, ${svOperationName}, $varsArg, $fullResponseToken::fromJson)', svDecodedResponse)}',
+          '  $invalidation',
+          '  return ${svDecodedResponse}.getData();',
+          '});',
+        ].join('\n');
+      }
+      return [
+        'return ${_ctx.flavor.mapOpen('executeFull(${svQuery}, ${svFragmentNames}, ${svOperationName}, $varsArg, $fullResponseToken::fromJson)', svDecodedResponse)}',
+        if (def.invalidateCacheTags.isNotEmpty) ...[
+          '  if (${svDecodedResponse}.getErrors() == null) {',
+          '    $invalidation',
+          '  }',
+        ],
+        '  return ${svDecodedResponse};',
+        '});',
+      ].join('\n');
+    }
+
     if (!isCE) {
       return [
         '$fullResponseToken ${svDecodedResponse} = executeData(${svQuery}, ${svFragmentNames}, ${svOperationName}, $varsArg, $fullResponseToken::fromJson);',
@@ -374,6 +426,46 @@ class JavaClientOperationSerializer {
   }
 
   String _serializeSubscriptionAdapterCall(GLQueryDefinition def) {
+    // Reactive: bridge the push-based handler into the flavor's many-type
+    // stream. The raw listener forwards onto the emitter instead of a
+    // user-supplied callback.
+    if (_ctx.flavor.isReactive) {
+      final rawListener = _ctx.codeGenUtils.createMethod(
+          methodName:
+              '${subscriptionListenerRef}<Map<String, Object>> ${svRawListener} = new ${subscriptionListenerRef}<Map<String, Object>>',
+          statements: [
+            '@Override',
+            _ctx.codeGenUtils.createMethod(
+              returnType: 'public void',
+              methodName: 'onMessage',
+              arguments: ['Map<String, Object> response'],
+              statements: [
+                _ctx.flavor.emitNext(
+                    'emitter', '${def.typeDefinition?.token}.fromJson(response)')
+              ],
+            ),
+            '@Override',
+            _ctx.codeGenUtils.createMethod(
+              returnType: 'public void',
+              methodName: 'onComplete',
+              arguments: [],
+              statements: [_ctx.flavor.emitComplete('emitter')],
+            ),
+            '@Override',
+            _ctx.codeGenUtils.createMethod(
+              returnType: 'public void',
+              methodName: 'onError',
+              arguments: ['${clientExceptionNameRef} error'],
+              statements: [_ctx.flavor.emitError('emitter', 'error')],
+            )
+          ]);
+      final body = [
+        '$rawListener;',
+        '${svHandler}.handlePayload(${svPayload}, ${svRawListener});',
+      ].join('\n');
+      return 'return ${_ctx.flavor.createMany('emitter', body)};';
+    }
+
     var method = _ctx.codeGenUtils.createMethod(
         methodName:
             '${subscriptionListenerRef}<Map<String, Object>> ${svRawListener} = new ${subscriptionListenerRef}<Map<String, Object>>',
@@ -453,7 +545,9 @@ class JavaClientOperationSerializer {
     final result = def.arguments
         .map((e) => '${_resolveArgType(e)} ${e.codeName}')
         .toList();
-    if (def.type == GLQueryType.subscription) {
+    // Reactive subscriptions return the many-type stream, so no callback
+    // listener argument is taken; blocking subscriptions keep the listener.
+    if (def.type == GLQueryType.subscription && !_ctx.flavor.isReactive) {
       result.add(
           '${subscriptionListenerRef}<${def.typeDefinition?.token}> listener');
     }
@@ -462,12 +556,16 @@ class JavaClientOperationSerializer {
 
   String returnTypeByQueryType(GLQueryDefinition def) {
     if (def.type == GLQueryType.subscription) {
+      if (_ctx.flavor.isReactive) {
+        return JavaCodeGenUtils.manyOf(
+            _ctx.grammar, def.getGeneratedTypeDefinition().token, _ctx.flavor);
+      }
       return "void";
     }
-    if (def.isCaptureErrors(_ctx.grammar)) {
-      return def.getFullResponseTypeDefinition(_ctx.grammar).token;
-    }
-    return def.getGeneratedTypeDefinition().token;
+    final token = def.isCaptureErrors(_ctx.grammar)
+        ? def.getFullResponseTypeDefinition(_ctx.grammar).token
+        : def.getGeneratedTypeDefinition().token;
+    return JavaCodeGenUtils.singleOf(_ctx.grammar, token, _ctx.flavor);
   }
 
   String serializeSubscriptions() {

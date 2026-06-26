@@ -2,12 +2,14 @@ import 'dart:io';
 
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/io_utils.dart';
+import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/client_serializers/java/java_client_serializer.dart';
+import 'package:graphlink/src/serializers/client_serializers/java/java_reactive_flavor.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:graphlink/src/utils.dart';
 
@@ -26,7 +28,9 @@ Future<Set<String>> generateJavaClientClasses(
     typeMapOverrides: config.typeMappings ?? {},
     importPrefix: importPrefix,
   );
-  final clientSerializer = JavaClientSerializer(parser, serializer, jsonCodec: jsonCodec);
+  final flavor = JavaReactiveFlavor.of(javaConfig.asyncStyle);
+  final clientSerializer = JavaClientSerializer(parser, serializer,
+      jsonCodec: jsonCodec, flavor: flavor);
   final futures = <Future<File>>[];
   final destinationDir = config.outputDir;
   final packageName = javaConfig.packageName;
@@ -66,8 +70,17 @@ Future<Set<String>> generateJavaClientClasses(
 
   allProjectedTypes.forEach((k, def) {
     final subdir = def is GLInterfaceDefinition ? 'interfaces' : 'types';
+    // The reactive adapter interface can't be expressed via the GraphQL type
+    // map (Mono/Single/Uni<String>), so emit a raw-Java reactive variant when
+    // an async style is selected. The GraphQL-registered token still exists so
+    // every import/reference resolves unchanged.
+    final isReactiveAdapter =
+        flavor.isReactive && def.token == 'GraphLinkClientAdapter';
     futures.add(writeToFile(
-      data: serializer.serializeTypeDefinition(def),
+      data: isReactiveAdapter
+          ? serializer.serializeGlClass(
+              clientSerializer.generateReactiveClientAdapterInterfaceFile())
+          : serializer.serializeTypeDefinition(def),
       fileName: serializer.getFileNameFor(def),
       subdir: subdir,
       imports: [],
@@ -159,7 +172,10 @@ Future<Set<String>> generateJavaClientClasses(
 
   if (wsAdapter != JavaWsAdapter.none) {
     futures.add(writeToFile(
-      data: serializer.serializeGlClass(clientSerializer.generateDefaultClientAdapterFile(wsAdapter.name, prefix)),
+      data: serializer.serializeGlClass(
+          _reactiveDefaultAdapter(clientSerializer, javaConfig, flavor) ??
+              clientSerializer.generateDefaultClientAdapterFile(
+                  wsAdapter.name, prefix)),
       fileName: 'DefaultGraphLinkClientAdapter.java',
       subdir: 'client',
       imports: [],
@@ -221,4 +237,23 @@ Future<Set<String>> generateJavaClientClasses(
   final paths = result.map((f) => f.path).toSet();
   await cleanUpObsoleteFiles(paths);
   return paths;
+}
+
+/// Selects the reactive default `GraphLinkClientAdapter` impl based on the
+/// configured [JavaReactiveHttpClient], or returns `null` for the blocking
+/// flavor (so the caller falls back to the synchronous okhttp/java11 adapter).
+GLClassModel? _reactiveDefaultAdapter(JavaClientSerializer clientSerializer,
+    JavaClientConfig javaConfig, JavaReactiveFlavor flavor) {
+  if (!flavor.isReactive) return null;
+  switch (javaConfig.reactiveHttpClient) {
+    case JavaReactiveHttpClient.jdk:
+      return clientSerializer.generateReactiveDefaultClientAdapterFile();
+    case JavaReactiveHttpClient.webclient:
+      if (javaConfig.asyncStyle != JavaAsyncStyle.reactor) {
+        throw ArgumentError(
+            'reactiveHttpClient "webclient" requires asyncStyle "reactor" '
+            '(got "${javaConfig.asyncStyle.name}"). Use "jdk" for rxjava3/mutiny.');
+      }
+      return clientSerializer.generateWebClientDefaultClientAdapterFile();
+  }
 }
