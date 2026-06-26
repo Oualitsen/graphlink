@@ -3,7 +3,7 @@
 // GitHub: https://github.com/Oualitsen/graphlink
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
-
+// ignore_for_file:  camel_case_types, unused_import, non_constant_identifier_names, constant_identifier_names, override_on_non_overriding_member, unused_element, annotate_overrides
 
 package dev.graphlink.test.generated.client;
 import dev.graphlink.test.generated.types.GraphLinkPayload
@@ -43,92 +43,53 @@ open class GraphLinkMutations(
    suspend fun createUser(input: CreateUserInput): CreateUserResponse {
       val glQuery__ = "mutation createUser(\$input: CreateUserInput!){createUser(input: \$input){..._all_fields_User}}"
       val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
-      val glFullQuery__ = assembleQuery(glQuery__, glFragmentNames__)
       val glVariables__ = mapOf("input" to input.toJson())
-      val glPayload__ = GraphLinkPayload(query = glFullQuery__, operationName = "createUser", variables = glVariables__)
-      val glResponseText__ = glCallAdapter(glPayload__)
-      val glDecodedResponse__ = CreateUserFullResponse.fromJson(decoder.decode(glResponseText__))
-      if (glDecodedResponse__.errors != null && glDecodedResponse__.errors.isNotEmpty()) {
-         throw GraphLinkException(glDecodedResponse__.errors)
-      }
+      val glDecodedResponse__ = executeData(glQuery__, glFragmentNames__, "createUser", glVariables__, { CreateUserFullResponse.fromJson(it) })
       return glDecodedResponse__.data!!
    }
    suspend fun deleteUser(id: String): DeleteUserResponse {
       val glQuery__ = "mutation deleteUser(\$id: ID!){deleteUser(id: \$id)}"
       val glFragmentNames__ = emptySet<String>()
-      val glFullQuery__ = assembleQuery(glQuery__, glFragmentNames__)
       val glVariables__ = mapOf("id" to id)
-      val glPayload__ = GraphLinkPayload(query = glFullQuery__, operationName = "deleteUser", variables = glVariables__)
-      val glResponseText__ = glCallAdapter(glPayload__)
-      val glDecodedResponse__ = DeleteUserFullResponse.fromJson(decoder.decode(glResponseText__))
-      if (glDecodedResponse__.errors != null && glDecodedResponse__.errors.isNotEmpty()) {
-         throw GraphLinkException(glDecodedResponse__.errors)
-      }
+      val glDecodedResponse__ = executeData(glQuery__, glFragmentNames__, "deleteUser", glVariables__, { DeleteUserFullResponse.fromJson(it) })
       return glDecodedResponse__.data!!
    }
    suspend fun updateUser(id: String, input: UpdateUserInput): UpdateUserResponse {
       val glQuery__ = "mutation updateUser(\$id: ID!,\$input: UpdateUserInput!){updateUser(id: \$id,input: \$input){..._all_fields_User}}"
       val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
-      val glFullQuery__ = assembleQuery(glQuery__, glFragmentNames__)
       val glVariables__ = mapOf("id" to id, "input" to input.toJson())
-      val glPayload__ = GraphLinkPayload(query = glFullQuery__, operationName = "updateUser", variables = glVariables__)
-      val glResponseText__ = glCallAdapter(glPayload__)
-      val glDecodedResponse__ = UpdateUserFullResponse.fromJson(decoder.decode(glResponseText__))
-      if (glDecodedResponse__.errors != null && glDecodedResponse__.errors.isNotEmpty()) {
-         throw GraphLinkException(glDecodedResponse__.errors)
-      }
+      val glDecodedResponse__ = executeData(glQuery__, glFragmentNames__, "updateUser", glVariables__, { UpdateUserFullResponse.fromJson(it) })
       return glDecodedResponse__.data!!
    }
    suspend fun createCachedUser(input: CreateUserInput): CreateCachedUserResponse {
       val glQuery__ = "mutation createCachedUser(\$input: CreateUserInput!){createCachedUser(input: \$input){..._all_fields_User}}"
       val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
-      val glFullQuery__ = assembleQuery(glQuery__, glFragmentNames__)
       val glVariables__ = mapOf("input" to input.toJson())
-      val glPayload__ = GraphLinkPayload(query = glFullQuery__, operationName = "createCachedUser", variables = glVariables__)
-      val glResponseText__ = glCallAdapter(glPayload__)
-      val glDecodedResponse__ = CreateCachedUserFullResponse.fromJson(decoder.decode(glResponseText__))
-      if (glDecodedResponse__.errors != null && glDecodedResponse__.errors.isNotEmpty()) {
-         throw GraphLinkException(glDecodedResponse__.errors)
-      }
+      val glDecodedResponse__ = executeData(glQuery__, glFragmentNames__, "createCachedUser", glVariables__, { CreateCachedUserFullResponse.fromJson(it) })
       invalidateByTags(listOf("users"))
       return glDecodedResponse__.data!!
    }
    suspend fun transferPost(postId: String, newAuthorId: String): TransferPostResponse {
       val glQuery__ = "mutation transferPost(\$postId: ID!,\$newAuthorId: ID!){transferPost(postId: \$postId,newAuthorId: \$newAuthorId){..._all_fields_Post}}"
       val glFragmentNames__ = setOf("_all_fields_Post")
-      val glFullQuery__ = assembleQuery(glQuery__, glFragmentNames__)
       val glVariables__ = mapOf("postId" to postId, "newAuthorId" to newAuthorId)
-      val glPayload__ = GraphLinkPayload(query = glFullQuery__, operationName = "transferPost", variables = glVariables__)
-      val glResponseText__ = glCallAdapter(glPayload__)
-      val glDecodedResponse__ = TransferPostFullResponse.fromJson(decoder.decode(glResponseText__))
-      if (glDecodedResponse__.errors != null && glDecodedResponse__.errors.isNotEmpty()) {
-         throw GraphLinkException(glDecodedResponse__.errors)
-      }
+      val glDecodedResponse__ = executeData(glQuery__, glFragmentNames__, "transferPost", glVariables__, { TransferPostFullResponse.fromJson(it) })
       invalidateByTags(listOf("users", "posts"))
       return glDecodedResponse__.data!!
    }
    suspend fun resetAll(): ResetAllResponse {
       val glQuery__ = "mutation resetAll{resetAll}"
       val glFragmentNames__ = emptySet<String>()
-      val glFullQuery__ = assembleQuery(glQuery__, glFragmentNames__)
 
-      val glPayload__ = GraphLinkPayload(query = glFullQuery__, operationName = "resetAll", variables = emptyMap())
-      val glResponseText__ = glCallAdapter(glPayload__)
-      val glDecodedResponse__ = ResetAllFullResponse.fromJson(decoder.decode(glResponseText__))
-      if (glDecodedResponse__.errors != null && glDecodedResponse__.errors.isNotEmpty()) {
-         throw GraphLinkException(glDecodedResponse__.errors)
-      }
+      val glDecodedResponse__ = executeData(glQuery__, glFragmentNames__, "resetAll", emptyMap(), { ResetAllFullResponse.fromJson(it) })
       store.invalidateAll()
       return glDecodedResponse__.data!!
    }
    suspend fun createUserOrErrors(input: CreateUserInput): CreateUserOrErrorsFullResponse {
       val glQuery__ = "mutation createUserOrErrors(\$input: CreateUserInput!){createUserOrErrors(input: \$input){..._all_fields_User}}"
       val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
-      val glFullQuery__ = assembleQuery(glQuery__, glFragmentNames__)
       val glVariables__ = mapOf("input" to input.toJson())
-      val glPayload__ = GraphLinkPayload(query = glFullQuery__, operationName = "createUserOrErrors", variables = glVariables__)
-      val glResponseText__ = glCallAdapter(glPayload__)
-      val glDecodedResponse__ = CreateUserOrErrorsFullResponse.fromJson(decoder.decode(glResponseText__))
+      val glDecodedResponse__ = executeFull(glQuery__, glFragmentNames__, "createUserOrErrors", glVariables__, { CreateUserOrErrorsFullResponse.fromJson(it) })
       return glDecodedResponse__
    }
    suspend fun uploadOneFile(userId: String, file: GLUpload): UploadOneFileResponse {

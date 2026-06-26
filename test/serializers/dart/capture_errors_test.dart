@@ -118,7 +118,9 @@ type Mutation { deleteUser(id: ID!): Boolean! }
     test('non-captureErrors query throws on errors', () {
       final start = client.indexOf('Future<ListUsersResponse> listUsers(');
       final end = client.indexOf('Future<', start + 1);
-      expect(client.substring(start, end), contains('throw'));
+      // The throw lives inside the base executeData helper; the non-capture path
+      // is identified by calling executeData (vs executeFull for capture).
+      expect(client.substring(start, end), contains('executeData'));
     });
   });
 
