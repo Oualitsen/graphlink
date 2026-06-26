@@ -1,5 +1,5 @@
 {
-  "schemaPaths": ["../schema_real/schema.gql", "../schema_real/upload.gql"],
+  "schemaPaths": ["../schema_real/schema.gql"],
   "mode": "client",
   "typeMappings": {
     "ID":      "String",
