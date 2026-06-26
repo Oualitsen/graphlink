@@ -178,6 +178,14 @@ class KotlinClientSerializer extends GLClientSerializer {
         '',
         _parseToObjectAndCacheMethod(),
         '',
+        _executeFullMethod(),
+        '',
+        _executeDataMethod(),
+        '',
+        _executeCachedMethod(),
+        '',
+        _buildPayloadMethod(),
+        '',
         _getFromCacheMethod(),
         '',
         _invalidateByTagsMethod(),
@@ -247,6 +255,79 @@ class KotlinClientSerializer extends GLClientSerializer {
     val errors = result["errors"] as? List<*>
     if (errors != null && errors.isNotEmpty()) throw $kotlinClientException(parsed.errors ?: emptyList())
     return parsed
+}''';
+  }
+
+  String _executeFullMethod() {
+    return '''suspend fun <T : GraphLinkFullResponse> executeFull(
+    query: String,
+    fragmentNames: Set<String>,
+    operationName: String,
+    variables: Map<String, Any?>,
+    fromJson: (Map<String, Any?>) -> T,
+): T {
+    val fullQuery = assembleQuery(query, fragmentNames)
+    val payload = GraphLinkPayload(query = fullQuery, operationName = operationName, variables = variables)
+    val responseText = glCallAdapter(payload)
+    return fromJson(decoder.decode(responseText))
+}''';
+  }
+
+  String _executeDataMethod() {
+    return '''suspend fun <T : GraphLinkFullResponse> executeData(
+    query: String,
+    fragmentNames: Set<String>,
+    operationName: String,
+    variables: Map<String, Any?>,
+    fromJson: (Map<String, Any?>) -> T,
+): T {
+    val decoded = executeFull(query, fragmentNames, operationName, variables, fromJson)
+    val errors = decoded.errors
+    if (errors != null && errors.isNotEmpty()) throw $kotlinClientException(errors)
+    return decoded
+}''';
+  }
+
+  String _executeCachedMethod() {
+    return '''suspend fun <T : GraphLinkFullResponse> executeCached(
+    partialQueries: List<GraphLinkPartialQuery>,
+    operationName: String,
+    directives: String,
+    fromJson: (Map<String, Any?>) -> T,
+    captureErrors: Boolean,
+): T {
+    val responseMap = mutableMapOf<String, Any?>()
+    val staleData = mutableMapOf<String, Any?>()
+    for (partQuery in partialQueries) {
+        if (partQuery.ttl > 0) {
+            try {
+                val entry = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
+                if (entry != null) {
+                    if (entry.stale) {
+                        staleData[partQuery.elementKey] = decoder.decode(entry.data)["__gl_v__"]
+                    } else {
+                        responseMap[partQuery.elementKey] = decoder.decode(entry.data)["__gl_v__"]
+                    }
+                }
+            } catch (ignored: Exception) {}
+        }
+    }
+    val remaining = partialQueries.filter { !responseMap.containsKey(it.elementKey) }.toMutableList()
+    if (remaining.isEmpty()) {
+        val wrappedResponse = mapOf("data" to responseMap)
+        return fromJson(wrappedResponse)
+    }
+    val payload = buildPayload(remaining, operationName, directives)
+    try {
+        val responseText = glCallAdapter(payload)
+        return parseToObjectAndCache(responseText, responseMap, fromJson, remaining, captureErrors)
+    } catch (exception: Exception) {
+        responseMap.putAll(staleData)
+        val remainingCount = partialQueries.count { !responseMap.containsKey(it.elementKey) }
+        if (remainingCount > 0) throw RuntimeException(exception)
+        val wrappedResponse = mapOf("data" to responseMap)
+        return fromJson(wrappedResponse)
+    }
 }''';
   }
 
@@ -416,7 +497,6 @@ class KotlinClientSerializer extends GLClientSerializer {
           'init ${codeGenUtils.block(['handler = GraphLinkSubscriptionHandler(wsAdapter, decoder, encoder)'])}',
         '',
         ...methods,
-        if (type == GLQueryType.query) ...[_buildPayloadMethod()],
       ],
     );
 

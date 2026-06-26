@@ -41,19 +41,10 @@ class KotlinClientOperationSerializer {
       _generateVariables(def, container),
       'val ${svQuery} = "$queryString"',
       'val ${svFragmentNames} = ${fragmentNames.isEmpty ? "emptySet<String>()" : "setOf(${fragmentNames.join(", ")})"}',
-      'val ${svFullQuery} = assembleQuery(${svQuery}, ${svFragmentNames})',
-      'val ${svPayload} = GraphLinkPayload(query = ${svFullQuery}, operationName = "${def.tokenInfo}", variables = ${_variablesExpr(def)})',
-      'val ${svResponseText} = glCallAdapter(${svPayload})',
       if (isCE)
-        'return $parseType.fromJson(${svDecoder}.decode(${svResponseText}))'
-      else ...[
-        'val ${svDecodedResponse} = $parseType.fromJson(${svDecoder}.decode(${svResponseText}))',
-        _ctx.codeGenUtils.ifStatement(
-          condition: '${svDecodedResponse}.errors != null && ${svDecodedResponse}.errors.isNotEmpty()',
-          ifBlockStatements: ['throw $_clientException(${svDecodedResponse}.errors)'],
-        ),
-        'return ${svDecodedResponse}.data!!',
-      ],
+        'return executeFull(${svQuery}, ${svFragmentNames}, "${def.tokenInfo}", ${_variablesExpr(def)}, { $parseType.fromJson(it) })'
+      else
+        'return executeData(${svQuery}, ${svFragmentNames}, "${def.tokenInfo}", ${_variablesExpr(def)}, { $parseType.fromJson(it) }).data!!',
     ];
 
     return _ctx.codeGenUtils.suspendFun(
@@ -75,29 +66,7 @@ class KotlinClientOperationSerializer {
       _generateVariables(def, container),
       'val ${svPartialQueries} = mutableListOf<GraphLinkPartialQuery>()',
       ...dividedQueries.map(_serializePartialQueryKotlin),
-      'val ${svResponseMap} = mutableMapOf<String, Any?>()',
-      'val ${svStaleData} = mutableMapOf<String, Any?>()',
-      _cacheReadLoop(),
-      'val ${svRemaining} = ${svPartialQueries}.filter { !${svResponseMap}.containsKey(it.elementKey) }.toMutableList()',
-      _earlyReturnFromCache(parseType, isCE),
-      'val ${svPayload} = buildPayload(${svRemaining}, "${def.tokenInfo}", "$directives")',
-      _ctx.codeGenUtils.tryCatchFinally(
-        tryStatements: [
-          'val ${svResponseText} = glCallAdapter(${svPayload})',
-          'return parseToObjectAndCache(${svResponseText}, ${svResponseMap}, { $parseType.fromJson(it) }, ${svRemaining}, ${isCE ? 'true' : 'false'})${_dataCall(isCE)}',
-        ],
-        catchVariable: 'exception',
-        catchStatements: [
-          '${svResponseMap}.putAll(${svStaleData})',
-          'val ${svRemainingCount} = ${svPartialQueries}.count { !${svResponseMap}.containsKey(it.elementKey) }',
-          _ctx.codeGenUtils.ifStatement(
-            condition: '${svRemainingCount} > 0',
-            ifBlockStatements: ['throw RuntimeException(exception)'],
-          ),
-          'val ${svWrappedResponse} = mapOf("data" to ${svResponseMap})',
-          'return $parseType.fromJson(${svWrappedResponse})${_dataCall(isCE)}',
-        ],
-      ),
+      'return executeCached(${svPartialQueries}, "${def.tokenInfo}", "$directives", { $parseType.fromJson(it) }, ${isCE ? 'true' : 'false'})${_dataCall(isCE)}',
     ];
 
     return _ctx.codeGenUtils.suspendFun(
@@ -105,51 +74,6 @@ class KotlinClientOperationSerializer {
       arguments: getArguments(def),
       returnType: returnTypeByQueryType(def),
       statements: statements,
-    );
-  }
-
-  String _cacheReadLoop() {
-    return _ctx.codeGenUtils.forEachLoop(
-      variable: 'partQuery',
-      iterable: svPartialQueries,
-      statements: [
-        _ctx.codeGenUtils.ifStatement(
-          condition: 'partQuery.ttl > 0',
-          ifBlockStatements: [
-            _ctx.codeGenUtils.tryCatchFinally(
-              tryStatements: [
-                'val ${svEntry} = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)',
-                _ctx.codeGenUtils.ifStatement(
-                  condition: '${svEntry} != null',
-                  ifBlockStatements: [
-                    _ctx.codeGenUtils.ifStatement(
-                      condition: '${svEntry}.stale',
-                      ifBlockStatements: [
-                        '${svStaleData}[partQuery.elementKey] = ${svDecoder}.decode(${svEntry}.data)["__gl_v__"]',
-                      ],
-                      elseBlockStatements: [
-                        '${svResponseMap}[partQuery.elementKey] = ${svDecoder}.decode(${svEntry}.data)["__gl_v__"]',
-                      ],
-                    ),
-                  ],
-                ),
-              ],
-              catchVariable: 'ignored',
-              catchStatements: [],
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  String _earlyReturnFromCache(String parseType, bool isCE) {
-    return _ctx.codeGenUtils.ifStatement(
-      condition: '${svRemaining}.isEmpty()',
-      ifBlockStatements: [
-        'val ${svWrappedResponse} = mapOf("data" to ${svResponseMap})',
-        'return $parseType.fromJson(${svWrappedResponse})${_dataCall(isCE)}',
-      ],
     );
   }
 
@@ -171,15 +95,25 @@ class KotlinClientOperationSerializer {
         .map((f) => '"${f.tokenInfo.token}"')
         .toSet();
 
+    final invalidation = _serializeInvalidationCall(def);
     final statements = [
       'val ${svQuery} = "${queryText}"',
       'val ${svFragmentNames} = ${fragmentNames.isEmpty ? "emptySet<String>()" : "setOf(${fragmentNames.join(", ")})"}',
-      'val ${svFullQuery} = assembleQuery(${svQuery}, ${svFragmentNames})',
       _generateVariables(def, container),
-      'val ${svPayload} = GraphLinkPayload(query = ${svFullQuery}, operationName = "$methodName", variables = ${_variablesExpr(def)})',
-      'val ${svResponseText} = glCallAdapter(${svPayload})',
-      'val ${svDecodedResponse} = $fullResponseToken.fromJson(${svDecoder}.decode(${svResponseText}))',
-      ..._mutationReturnStatements(def, isCE),
+      // plain mutations build the payload inside executeData/executeFull
+      if (!isCE) ...[
+        'val ${svDecodedResponse} = executeData(${svQuery}, ${svFragmentNames}, "$methodName", ${_variablesExpr(def)}, { $fullResponseToken.fromJson(it) })',
+        if (invalidation.isNotEmpty) invalidation,
+        'return ${svDecodedResponse}.data!!',
+      ] else ...[
+        'val ${svDecodedResponse} = executeFull(${svQuery}, ${svFragmentNames}, "$methodName", ${_variablesExpr(def)}, { $fullResponseToken.fromJson(it) })',
+        if (def.invalidateCacheTags.isNotEmpty)
+          _ctx.codeGenUtils.ifStatement(
+            condition: '${svDecodedResponse}.errors == null',
+            ifBlockStatements: [invalidation],
+          ),
+        'return ${svDecodedResponse}',
+      ],
     ];
 
     return _ctx.codeGenUtils.suspendFun(

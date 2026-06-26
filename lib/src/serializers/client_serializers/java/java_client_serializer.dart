@@ -361,70 +361,6 @@ class JavaClientSerializer extends GLClientSerializer {
                   '$svHandler = new GraphLinkSubscriptionHandler(wsAdapter, decoder, encoder);',
               ]),
           ...methods,
-          if (type == GLQueryType.query)
-            codeGenUtils.createMethod(
-              returnType: 'private GraphLinkPayload',
-              methodName: 'buildPayload',
-              arguments: [
-                'List<GraphLinkPartialQuery> partQueries',
-                'String operationName',
-                'String directives'
-              ],
-              statements: [
-                'Map<String, Object> variables = new HashMap<>();',
-                codeGenUtils.forEachLoop(
-                    variable: 'partQuery',
-                    iterable: 'partQueries',
-                    statements: [
-                      'variables.putAll(partQuery.variables);',
-                    ]),
-                'StringBuilder queryBuilder = new StringBuilder("query " + operationName);',
-                'Set<String> args = new HashSet<>();',
-                codeGenUtils.forEachLoop(
-                    variable: 'partQuery',
-                    iterable: 'partQueries',
-                    statements: [
-                      'args.addAll(partQuery.argumentDeclarations);',
-                    ]),
-                codeGenUtils.ifStatement(
-                    condition: '!args.isEmpty()',
-                    ifBlockStatements: [
-                      'queryBuilder.append("(");',
-                      'queryBuilder.append(String.join(", ", args));',
-                      'queryBuilder.append(")");',
-                    ]),
-                codeGenUtils.ifStatement(
-                    condition: '!directives.isEmpty()',
-                    ifBlockStatements: [
-                      'queryBuilder.append(directives);',
-                    ]),
-                'queryBuilder.append("{");',
-                codeGenUtils.forEachLoop(
-                    variable: 'partQuery',
-                    iterable: 'partQueries',
-                    statements: [
-                      'queryBuilder.append(partQuery.query);',
-                      'queryBuilder.append(" ");',
-                    ]),
-                'queryBuilder.append("}");',
-                'Set<String> fragmentNames = new HashSet<>();',
-                codeGenUtils.forEachLoop(
-                    variable: 'partQuery',
-                    iterable: 'partQueries',
-                    statements: [
-                      'fragmentNames.addAll(partQuery.fragmentNames);',
-                    ]),
-                'StringBuilder fragmentsBuilder = new StringBuilder();',
-                codeGenUtils.forEachLoop(
-                    variable: 'fragName',
-                    iterable: 'fragmentNames',
-                    statements: [
-                      'fragmentsBuilder.append(${svFragmentMap}.get(fragName));',
-                    ]),
-                'queryBuilder.append(fragmentsBuilder);',
-                'return GraphLinkPayload.builder().query(queryBuilder.toString()).operationName(operationName).variables(variables).build();',
-              ],
-            ),
         ]);
 
     return GLClassModel(
@@ -467,6 +403,72 @@ class JavaClientSerializer extends GLClientSerializer {
           "private final GraphLinkSubscriptionHandler $svHandler;"
         ];
     }
+  }
+
+  String _buildPayloadMethod() {
+    return codeGenUtils.createMethod(
+      returnType: 'private GraphLinkPayload',
+      methodName: 'buildPayload',
+      arguments: [
+        'List<GraphLinkPartialQuery> partQueries',
+        'String operationName',
+        'String directives'
+      ],
+      statements: [
+        'Map<String, Object> variables = new HashMap<>();',
+        codeGenUtils.forEachLoop(
+            variable: 'partQuery',
+            iterable: 'partQueries',
+            statements: [
+              'variables.putAll(partQuery.variables);',
+            ]),
+        'StringBuilder queryBuilder = new StringBuilder("query " + operationName);',
+        'Set<String> args = new HashSet<>();',
+        codeGenUtils.forEachLoop(
+            variable: 'partQuery',
+            iterable: 'partQueries',
+            statements: [
+              'args.addAll(partQuery.argumentDeclarations);',
+            ]),
+        codeGenUtils.ifStatement(
+            condition: '!args.isEmpty()',
+            ifBlockStatements: [
+              'queryBuilder.append("(");',
+              'queryBuilder.append(String.join(", ", args));',
+              'queryBuilder.append(")");',
+            ]),
+        codeGenUtils.ifStatement(
+            condition: '!directives.isEmpty()',
+            ifBlockStatements: [
+              'queryBuilder.append(directives);',
+            ]),
+        'queryBuilder.append("{");',
+        codeGenUtils.forEachLoop(
+            variable: 'partQuery',
+            iterable: 'partQueries',
+            statements: [
+              'queryBuilder.append(partQuery.query);',
+              'queryBuilder.append(" ");',
+            ]),
+        'queryBuilder.append("}");',
+        'Set<String> fragmentNames = new HashSet<>();',
+        codeGenUtils.forEachLoop(
+            variable: 'partQuery',
+            iterable: 'partQueries',
+            statements: [
+              'fragmentNames.addAll(partQuery.fragmentNames);',
+            ]),
+        'StringBuilder fragmentsBuilder = new StringBuilder();',
+        codeGenUtils.forEachLoop(
+            variable: 'fragName',
+            iterable: 'fragmentNames',
+            statements: [
+              'fragmentsBuilder.append(${svFragmentMap}.get(fragName));',
+            ]),
+        'queryBuilder.append(fragmentsBuilder);',
+        'return GraphLinkPayload.builder().query(queryBuilder.toString()).operationName(operationName).variables(variables).build();',
+      ],
+    );
   }
 
   GLClassModel generateGraphLinkResolverBaseFile(String importPrefix) {
@@ -556,6 +558,128 @@ class JavaClientSerializer extends GLClientSerializer {
             'return parsed;',
           ],
         ),
+        codeGenUtils.createMethod(
+          returnType: 'protected <T extends GraphLinkFullResponse> T',
+          methodName: 'executeFull',
+          arguments: [
+            'String query',
+            'Set<String> fragmentNames',
+            'String operationName',
+            'Map<String, Object> variables',
+            'Function<Map<String, Object>, T> fromJson',
+          ],
+          statements: [
+            'String $svFullQuery = assembleQuery(query, fragmentNames);',
+            'GraphLinkPayload $svPayload = GraphLinkPayload.builder().query($svFullQuery).operationName(operationName).variables(variables).build();',
+            'String $svResponseText = glCallAdapter($svPayload);',
+            'return fromJson.apply($svDecoder.decode($svResponseText));',
+          ],
+        ),
+        codeGenUtils.createMethod(
+          returnType: 'protected <T extends GraphLinkFullResponse> T',
+          methodName: 'executeData',
+          arguments: [
+            'String query',
+            'Set<String> fragmentNames',
+            'String operationName',
+            'Map<String, Object> variables',
+            'Function<Map<String, Object>, T> fromJson',
+          ],
+          statements: [
+            'T $svDecodedResponse = executeFull(query, fragmentNames, operationName, variables, fromJson);',
+            codeGenUtils.ifStatement(
+                condition:
+                    '$svDecodedResponse.getErrors() != null && !$svDecodedResponse.getErrors().isEmpty()',
+                ifBlockStatements: [
+                  'throw ${clientExceptionName}.of($svDecodedResponse.getErrors());',
+                ]),
+            'return $svDecodedResponse;',
+          ],
+        ),
+        codeGenUtils.createMethod(
+          returnType: 'protected <T extends GraphLinkFullResponse> T',
+          methodName: 'executeCached',
+          arguments: [
+            'List<GraphLinkPartialQuery> $svPartialQueries',
+            'String operationName',
+            'String directives',
+            'Function<Map<String, Object>, T> fromJson',
+            'boolean captureErrors',
+          ],
+          statements: [
+            'Map<String, Object> $svResponseMap = new HashMap<>();',
+            'Map<String, Object> $svStaleData = new HashMap<>();',
+            codeGenUtils.forEachLoop(
+                variable: 'partQuery',
+                iterable: '$svPartialQueries',
+                statements: [
+                  codeGenUtils.ifStatement(
+                      condition: 'partQuery.ttl > 0',
+                      ifBlockStatements: [
+                        codeGenUtils.tryCatchFinally(
+                          tryStatements: [
+                            'GraphLinkCacheEntry entry = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline);',
+                            codeGenUtils.ifStatement(
+                                condition: 'entry != null',
+                                ifBlockStatements: [
+                                  codeGenUtils.ifStatement(
+                                    condition: 'entry.stale',
+                                    ifBlockStatements: [
+                                      '$svStaleData.put(partQuery.elementKey, $svDecoder.decode(entry.data).get("__gl_v__"));'
+                                    ],
+                                    elseBlockStatements: [
+                                      '$svResponseMap.put(partQuery.elementKey, $svDecoder.decode(entry.data).get("__gl_v__"));'
+                                    ],
+                                  ),
+                                ]),
+                          ],
+                          catchStatements: [],
+                          catchVariable: 'ignored',
+                        ),
+                      ]),
+                ]),
+            'List<GraphLinkPartialQuery> $svRemaining = new ArrayList<>();',
+            codeGenUtils.forEachLoop(
+                variable: 'partQuery',
+                iterable: '$svPartialQueries',
+                statements: [
+                  codeGenUtils.ifStatement(
+                      condition:
+                          '!$svResponseMap.containsKey(partQuery.elementKey)',
+                      ifBlockStatements: [
+                        '$svRemaining.add(partQuery);',
+                      ]),
+                ]),
+            codeGenUtils.ifStatement(
+                condition: '$svRemaining.isEmpty()',
+                ifBlockStatements: [
+                  'Map<String, Object> $svWrappedResponse = new HashMap<>();',
+                  '$svWrappedResponse.put("data", $svResponseMap);',
+                  'return fromJson.apply($svWrappedResponse);',
+                ]),
+            'GraphLinkPayload $svPayload = buildPayload($svRemaining, operationName, directives);',
+            codeGenUtils.tryCatchFinally(
+              tryStatements: [
+                'String $svResponseText = glCallAdapter($svPayload);',
+                'return parseToObjectAndCache($svResponseText, $svResponseMap, fromJson, $svRemaining, captureErrors);',
+              ],
+              catchStatements: [
+                '$svResponseMap.putAll($svStaleData);',
+                'long remainingCount = $svPartialQueries.stream().filter(e -> !$svResponseMap.containsKey(e.elementKey)).count();',
+                codeGenUtils.ifStatement(
+                    condition: 'remainingCount > 0',
+                    ifBlockStatements: [
+                      'throw new RuntimeException(exception);',
+                    ]),
+                'Map<String, Object> $svWrappedResponse = new HashMap<>();',
+                '$svWrappedResponse.put("data", $svResponseMap);',
+                'return fromJson.apply($svWrappedResponse);',
+              ],
+              catchVariable: 'exception',
+            ),
+          ],
+        ),
+        _buildPayloadMethod(),
         codeGenUtils.createMethod(
           returnType: 'private String',
           methodName: 'tagKey',
@@ -715,6 +839,7 @@ class JavaClientSerializer extends GLClientSerializer {
       imports: [
         JavaImports.map,
         JavaImports.list,
+        JavaImports.arrayList,
         JavaImports.set,
         JavaImports.hashMap,
         JavaImports.hashSet,

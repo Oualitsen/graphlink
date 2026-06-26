@@ -3,7 +3,7 @@
 // GitHub: https://github.com/Oualitsen/graphlink
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
-
+// ignore_for_file:  camel_case_types, unused_import, non_constant_identifier_names, constant_identifier_names, override_on_non_overriding_member, unused_element, annotate_overrides
 
 package dev.graphlink.test.generated.client;
 import dev.graphlink.test.generated.interfaces.GraphLinkClientAdapter
@@ -59,6 +59,113 @@ open class GraphLinkResolverBase(
        val errors = result["errors"] as? List<*>
        if (errors != null && errors.isNotEmpty()) throw GraphLinkException(parsed.errors ?: emptyList())
        return parsed
+   }
+
+   suspend fun <T : GraphLinkFullResponse> executeFull(
+       query: String,
+       fragmentNames: Set<String>,
+       operationName: String,
+       variables: Map<String, Any?>,
+       fromJson: (Map<String, Any?>) -> T,
+   ): T {
+       val fullQuery = assembleQuery(query, fragmentNames)
+       val payload = GraphLinkPayload(query = fullQuery, operationName = operationName, variables = variables)
+       val responseText = glCallAdapter(payload)
+       return fromJson(decoder.decode(responseText))
+   }
+
+   suspend fun <T : GraphLinkFullResponse> executeData(
+       query: String,
+       fragmentNames: Set<String>,
+       operationName: String,
+       variables: Map<String, Any?>,
+       fromJson: (Map<String, Any?>) -> T,
+   ): T {
+       val decoded = executeFull(query, fragmentNames, operationName, variables, fromJson)
+       val errors = decoded.errors
+       if (errors != null && errors.isNotEmpty()) throw GraphLinkException(errors)
+       return decoded
+   }
+
+   suspend fun <T : GraphLinkFullResponse> executeCached(
+       partialQueries: List<GraphLinkPartialQuery>,
+       operationName: String,
+       directives: String,
+       fromJson: (Map<String, Any?>) -> T,
+       captureErrors: Boolean,
+   ): T {
+       val responseMap = mutableMapOf<String, Any?>()
+       val staleData = mutableMapOf<String, Any?>()
+       for (partQuery in partialQueries) {
+           if (partQuery.ttl > 0) {
+               try {
+                   val entry = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
+                   if (entry != null) {
+                       if (entry.stale) {
+                           staleData[partQuery.elementKey] = decoder.decode(entry.data)["__gl_v__"]
+                       } else {
+                           responseMap[partQuery.elementKey] = decoder.decode(entry.data)["__gl_v__"]
+                       }
+                   }
+               } catch (ignored: Exception) {}
+           }
+       }
+       val remaining = partialQueries.filter { !responseMap.containsKey(it.elementKey) }.toMutableList()
+       if (remaining.isEmpty()) {
+           val wrappedResponse = mapOf("data" to responseMap)
+           return fromJson(wrappedResponse)
+       }
+       val payload = buildPayload(remaining, operationName, directives)
+       try {
+           val responseText = glCallAdapter(payload)
+           return parseToObjectAndCache(responseText, responseMap, fromJson, remaining, captureErrors)
+       } catch (exception: Exception) {
+           responseMap.putAll(staleData)
+           val remainingCount = partialQueries.count { !responseMap.containsKey(it.elementKey) }
+           if (remainingCount > 0) throw RuntimeException(exception)
+           val wrappedResponse = mapOf("data" to responseMap)
+           return fromJson(wrappedResponse)
+       }
+   }
+
+   fun buildPayload(partQueries: List<GraphLinkPartialQuery>, operationName: String, directives: String): GraphLinkPayload {
+      val variables = mutableMapOf<String, Any?>()
+      for (q in partQueries) {
+         variables.putAll(q.variables)
+      }
+      val args = mutableSetOf<String>()
+      for (q in partQueries) {
+         args.addAll(q.argumentDeclarations)
+      }
+      val queryBuilder = StringBuilder("query $operationName")
+      if (args.isNotEmpty()) {
+         queryBuilder.append("(")
+         queryBuilder.append(args.joinToString(", "))
+         queryBuilder.append(")")
+      }
+      if (directives.isNotEmpty()) {
+         queryBuilder.append(directives)
+      }
+      queryBuilder.append("{")
+      for (q in partQueries) {
+         queryBuilder.append(q.query)
+         queryBuilder.append(" ")
+      }
+      queryBuilder.append("}")
+      val fragmentNames = mutableSetOf<String>()
+      for (q in partQueries) {
+         fragmentNames.addAll(q.fragmentNames)
+      }
+      val fragmentsBuilder = StringBuilder()
+      for (fragName in fragmentNames) {
+         fragmentsBuilder.append(fragmentMap[fragName])
+      }
+      queryBuilder.append(fragmentsBuilder)
+      return GraphLinkPayload(
+          query = queryBuilder.toString(),
+          operationName = operationName,
+          variables = variables,
+      )
    }
 
    fun getFromCache(key: String, tags: List<String>, staleIfOffline: Boolean): GraphLinkCacheEntry? {

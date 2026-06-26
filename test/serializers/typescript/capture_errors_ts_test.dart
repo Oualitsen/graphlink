@@ -214,7 +214,9 @@ type Mutation { deleteUser(id: ID!): Boolean! }
     setUpAll(() => mutations = _mutations(_parse(_schema)));
 
     test('parses result directly as FullResponse', () {
-      expect(mutations, contains('JSON.parse(gl_response__) as CreateUserFullResponse'));
+      // Parsing now happens inside the base _executeFull helper; the FullResponse
+      // type flows through its generic argument.
+      expect(mutations, contains('_executeFull<CreateUserFullResponse>'));
     });
 
     test('returns result directly without unwrapping .data', () {

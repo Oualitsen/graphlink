@@ -66,38 +66,23 @@ class DartClientOperationSerializer {
           "const $svQuery = '''$queryString''';",
           'const $svFragmentNames = ${fragmentNames.isEmpty ? "<String>{};" : "<String>{${fragmentNames.join(", ")}};"}',
           generateVariables(def),
-          'final $svFullQuery = assembleQuery($svQuery, $svFragmentNames);',
-          "final $svPayload = GraphLinkPayload(query: $svFullQuery, operationName: '${def.tokenInfo}', variables: ${_variablesExpr(def)});",
-          if (isCaptureErrors) ...[
-            "final $svResponse = await glCallAdapter($svPayload);",
-            "return $fullResponseToken.fromJson(jsonDecode($svResponse));",
-          ] else ...[
-            "final $svResponse = await glCallAdapter($svPayload);",
-            "final $svResult = $fullResponseToken.fromJson(jsonDecode($svResponse));",
-            "if ($svResult.errors != null) throw $svResult.errors!;",
-            "return $svResult.data!;",
-          ],
+          if (isCaptureErrors)
+            "return executeFull($svQuery, $svFragmentNames, '${def.tokenInfo}', ${_variablesExpr(def)}, $fullResponseToken.fromJson);"
+          else
+            "return (await executeData($svQuery, $svFragmentNames, '${def.tokenInfo}', ${_variablesExpr(def)}, $fullResponseToken.fromJson)).data!;",
         ]);
   }
 
   String _cachedQueryMethodBody(GLQueryDefinition def) {
     final dividedQueries = _divideQuery(def);
-    final cacheHitReturn = StringBuffer();
-    final parseAndCacheCall = StringBuffer();
     final fullResponseToken =
         def.getFullResponseTypeDefinition(_grammar).tokenInfo;
     final isCaptureErrors = def.isCaptureErrors(_grammar);
+    final directives = _gqlSerializer
+        .serializeDirectiveValueList(def.getDirectives(skipGenerated: true));
 
-    cacheHitReturn
-        .write("return $fullResponseToken.fromJson({'data': $svResponseMap})");
-    parseAndCacheCall.write(
-        "return _parseToObjectAndCache($svResponseText, $svResponseMap, $fullResponseToken.fromJson, $svRemaining, ${isCaptureErrors ? 'true' : 'false'})");
-    if (!isCaptureErrors) {
-      cacheHitReturn.write(".data!");
-      parseAndCacheCall.write(".data!");
-    }
-    cacheHitReturn.write(";");
-    parseAndCacheCall.write(";");
+    final executeCachedCall =
+        "executeCached($svPartialQueries, '${def.tokenInfo}', '$directives', $fullResponseToken.fromJson, ${isCaptureErrors ? 'true' : 'false'})";
 
     return _cg.createMethod(
         returnType: returnTypeByQueryType(def),
@@ -107,43 +92,10 @@ class DartClientOperationSerializer {
         statements: [
           generateVariables(def),
           'final $svPartialQueries = ${dividedQueries.map((e) => _serializePartialQuery(e)).toList()};',
-          'final $svResponseMap = <String, dynamic>{};',
-          'final $svStaleData = <String, dynamic>{};',
-          'final $svCacheFetchFutures = <Future>[];',
-          _cg.forEachLoop(
-              variable: "partQuery",
-              iterable: "$svPartialQueries.where((e) => e.ttl > 0)",
-              statements: [
-                "$svCacheFetchFutures.add(getFromCache(partQuery.cacheKey!, partQuery.tags, partQuery.staleIfOffline)",
-                ".asStream().where((e) => e != null).map((e) => e!).first.then((entry) ${_cg.block([
-                      _cg.ifStatement(
-                          condition: 'entry.stale',
-                          ifBlockStatements: [
-                            '$svStaleData[partQuery.elementKey] = jsonDecode(entry.data);'
-                          ],
-                          elseBlockStatements: [
-                            '$svResponseMap[partQuery.elementKey] = jsonDecode(entry.data);'
-                          ])
-                    ])}));"
-              ]),
-          'await Future.wait($svCacheFetchFutures.map((f) => f.catchError((_) => null)));',
-          'var $svRemaining = $svPartialQueries.where((e) => !$svResponseMap.containsKey(e.elementKey)).toSet();',
-          _cg.ifStatement(
-              condition: '$svRemaining.isEmpty',
-              ifBlockStatements: [cacheHitReturn.toString()]),
-          "final $svRemainingQueries = $svPartialQueries.where((e) => !$svResponseMap.containsKey(e.elementKey)).toList();",
-          "final $svPayload = _buildPayload($svRemainingQueries, '${def.tokenInfo}', '${_gqlSerializer.serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}');",
-          _cg.tryCatchFinally(tryStatements: [
-            'final $svResponseText = await glCallAdapter($svPayload);',
-            parseAndCacheCall.toString(),
-          ], catchStatements: [
-            "$svResponseMap.addAll($svStaleData);",
-            'final remainingCount = $svPartialQueries.where((e) => !$svResponseMap.containsKey(e.elementKey)).length;',
-            _cg.ifStatement(
-                condition: 'remainingCount > 0',
-                ifBlockStatements: ["rethrow;"]),
-            cacheHitReturn.toString(),
-          ], catchVariable: 'exception'),
+          if (isCaptureErrors)
+            "return $executeCachedCall;"
+          else
+            "return (await $executeCachedCall).data!;",
         ]);
   }
 
@@ -153,17 +105,23 @@ class DartClientOperationSerializer {
         .map((f) => "'${f.tokenInfo.token}'")
         .toSet();
 
+    final isSubscription = def.type == GLQueryType.subscription;
+    final isUpload = _isUploadMutation(def);
+
     return _cg.createMethod(
         returnType: returnTypeByQueryType(def),
         methodName: def.tokenInfo.token,
         arguments: getArguments(def),
-        async: def.type != GLQueryType.subscription,
+        async: !isSubscription,
         statements: [
           "const $svQuery = '''$queryText''';",
           'const $svFragmentNames = ${fragmentNames.isEmpty ? "<String>{};" : "<String>{${fragmentNames.join(", ")}};"}',
-          'final $svFullQuery = assembleQuery($svQuery, $svFragmentNames);',
+          // assembleQuery/payload are only needed for the subscription and upload
+          // paths; plain mutations build the payload inside executeData/executeFull.
+          if (isSubscription || isUpload)
+            'final $svFullQuery = assembleQuery($svQuery, $svFragmentNames);',
           generateVariables(def),
-          if (!_isUploadMutation(def))
+          if (isSubscription)
             "final $svPayload = GraphLinkPayload(query: $svFullQuery, operationName: '${def.tokenInfo}', variables: ${_variablesExpr(def)});",
           _serializeAdapterCall(def),
         ]);
@@ -269,10 +227,10 @@ return $svHandler.handle($svPayload)
     }
     final fullResponseToken =
         def.getFullResponseTypeDefinition(_grammar).tokenInfo;
+    final varsExpr = _variablesExpr(def);
     if (def.isCaptureErrors(_grammar)) {
       return """
-final $svResponse = await glCallAdapter($svPayload);
-final $svResult = $fullResponseToken.fromJson(jsonDecode($svResponse));
+final $svResult = await executeFull($svQuery, $svFragmentNames, '${def.tokenInfo}', $varsExpr, $fullResponseToken.fromJson);
 if ($svResult.errors == null) {
   ${_serializeInvalidationCall(def)}
 }
@@ -280,11 +238,7 @@ return $svResult;
 """;
     }
     return """
-final $svResponse = await glCallAdapter($svPayload);
-final $svResult = $fullResponseToken.fromJson(jsonDecode($svResponse));
-if ($svResult.errors != null) {
-  throw $svResult.errors!;
-}
+final $svResult = await executeData($svQuery, $svFragmentNames, '${def.tokenInfo}', $varsExpr, $fullResponseToken.fromJson);
 ${_serializeInvalidationCall(def)}
 return $svResult.data!;
 """;
