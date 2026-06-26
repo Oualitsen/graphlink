@@ -17,6 +17,7 @@ import 'package:graphlink/src/serializers/gl_serializer.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 import 'package:graphlink/src/serializers/client_serializers/java/java_client_context.dart';
 import 'package:graphlink/src/serializers/client_serializers/java/java_client_operation_serializer.dart';
+import 'package:graphlink/src/serializers/client_serializers/java/java_reactive_flavor.dart';
 
 
 
@@ -25,15 +26,18 @@ class JavaClientSerializer extends GLClientSerializer {
   final GLParser _grammar;
   final codeGenUtils = JavaCodeGenUtils();
   final JavaJsonCodec jsonCodec;
+  final JavaReactiveFlavor flavor;
 
   late final JavaClientContext _ctx;
   late final JavaClientOperationSerializer _opSer;
   GLImportContainer? _activeContainer;
 
   JavaClientSerializer(this._grammar, GLSerializer serializer,
-      {this.jsonCodec = JavaJsonCodec.jackson})
+      {this.jsonCodec = JavaJsonCodec.jackson,
+      this.flavor = JavaReactiveFlavor.blocking})
       : super(serializer, GLGraphqlSerializer(_grammar, false)) {
-    _ctx = JavaClientContext(_grammar, codeGenUtils, gqlSerializer, serializer);
+    _ctx = JavaClientContext(_grammar, codeGenUtils, gqlSerializer, serializer,
+        flavor: flavor);
     _opSer = JavaClientOperationSerializer(_ctx);
   }
 
@@ -301,6 +305,11 @@ class JavaClientSerializer extends GLClientSerializer {
     ];
   }
 
+  /// Wraps [inner] in the flavor's deferred-single type, or returns it bare
+  /// for the blocking flavor.
+  String _wrapSingle(String inner) =>
+      flavor.isReactive ? '${flavor.single}<$inner>' : inner;
+
   String _adapterDeclaration(bool withStore) {
     return [
       'GraphLinkClientAdapter adapter',
@@ -368,7 +377,7 @@ class JavaClientSerializer extends GLClientSerializer {
         ..._getQueryImports(type),
         ...importContainer.importDepencies
       }.toList(),
-      imports: [...importContainer.imports],
+      imports: [...importContainer.imports, ...flavor.imports],
       body: classBody,
     );
   }
@@ -559,7 +568,7 @@ class JavaClientSerializer extends GLClientSerializer {
           ],
         ),
         codeGenUtils.createMethod(
-          returnType: 'protected <T extends GraphLinkFullResponse> T',
+          returnType: 'protected <T extends GraphLinkFullResponse> ${_wrapSingle('T')}',
           methodName: 'executeFull',
           arguments: [
             'String query',
@@ -571,12 +580,15 @@ class JavaClientSerializer extends GLClientSerializer {
           statements: [
             'String $svFullQuery = assembleQuery(query, fragmentNames);',
             'GraphLinkPayload $svPayload = GraphLinkPayload.builder().query($svFullQuery).operationName(operationName).variables(variables).build();',
-            'String $svResponseText = glCallAdapter($svPayload);',
-            'return fromJson.apply($svDecoder.decode($svResponseText));',
+            if (!flavor.isReactive) ...[
+              'String $svResponseText = glCallAdapter($svPayload);',
+              'return fromJson.apply($svDecoder.decode($svResponseText));',
+            ] else
+              'return ${flavor.mapTo('glCallAdapter($svPayload)', '$svResponseText -> fromJson.apply($svDecoder.decode($svResponseText))')};',
           ],
         ),
         codeGenUtils.createMethod(
-          returnType: 'protected <T extends GraphLinkFullResponse> T',
+          returnType: 'protected <T extends GraphLinkFullResponse> ${_wrapSingle('T')}',
           methodName: 'executeData',
           arguments: [
             'String query',
@@ -585,19 +597,28 @@ class JavaClientSerializer extends GLClientSerializer {
             'Map<String, Object> variables',
             'Function<Map<String, Object>, T> fromJson',
           ],
-          statements: [
-            'T $svDecodedResponse = executeFull(query, fragmentNames, operationName, variables, fromJson);',
-            codeGenUtils.ifStatement(
-                condition:
-                    '$svDecodedResponse.getErrors() != null && !$svDecodedResponse.getErrors().isEmpty()',
-                ifBlockStatements: [
-                  'throw ${clientExceptionName}.of($svDecodedResponse.getErrors());',
-                ]),
-            'return $svDecodedResponse;',
-          ],
+          statements: !flavor.isReactive
+              ? [
+                  'T $svDecodedResponse = executeFull(query, fragmentNames, operationName, variables, fromJson);',
+                  codeGenUtils.ifStatement(
+                      condition:
+                          '$svDecodedResponse.getErrors() != null && !$svDecodedResponse.getErrors().isEmpty()',
+                      ifBlockStatements: [
+                        'throw ${clientExceptionName}.of($svDecodedResponse.getErrors());',
+                      ]),
+                  'return $svDecodedResponse;',
+                ]
+              : [
+                  'return ${flavor.mapOpen('executeFull(query, fragmentNames, operationName, variables, fromJson)', svDecodedResponse)}',
+                  '  if ($svDecodedResponse.getErrors() != null && !$svDecodedResponse.getErrors().isEmpty()) {',
+                  '    throw ${clientExceptionName}.of($svDecodedResponse.getErrors());',
+                  '  }',
+                  '  return $svDecodedResponse;',
+                  '});',
+                ],
         ),
         codeGenUtils.createMethod(
-          returnType: 'protected <T extends GraphLinkFullResponse> T',
+          returnType: 'protected <T extends GraphLinkFullResponse> ${_wrapSingle('T')}',
           methodName: 'executeCached',
           arguments: [
             'List<GraphLinkPartialQuery> $svPartialQueries',
@@ -655,28 +676,48 @@ class JavaClientSerializer extends GLClientSerializer {
                 ifBlockStatements: [
                   'Map<String, Object> $svWrappedResponse = new HashMap<>();',
                   '$svWrappedResponse.put("data", $svResponseMap);',
-                  'return fromJson.apply($svWrappedResponse);',
+                  if (!flavor.isReactive)
+                    'return fromJson.apply($svWrappedResponse);'
+                  else
+                    'return ${flavor.wrapValue('fromJson.apply($svWrappedResponse)')};',
                 ]),
             'GraphLinkPayload $svPayload = buildPayload($svRemaining, operationName, directives);',
-            codeGenUtils.tryCatchFinally(
-              tryStatements: [
-                'String $svResponseText = glCallAdapter($svPayload);',
-                'return parseToObjectAndCache($svResponseText, $svResponseMap, fromJson, $svRemaining, captureErrors);',
-              ],
-              catchStatements: [
-                '$svResponseMap.putAll($svStaleData);',
-                'long remainingCount = $svPartialQueries.stream().filter(e -> !$svResponseMap.containsKey(e.elementKey)).count();',
-                codeGenUtils.ifStatement(
-                    condition: 'remainingCount > 0',
-                    ifBlockStatements: [
-                      'throw new RuntimeException(exception);',
-                    ]),
-                'Map<String, Object> $svWrappedResponse = new HashMap<>();',
-                '$svWrappedResponse.put("data", $svResponseMap);',
-                'return fromJson.apply($svWrappedResponse);',
-              ],
-              catchVariable: 'exception',
-            ),
+            // The network call + cache-write composes asynchronously for the
+            // reactive flavors; the stale-fallback try/catch becomes
+            // onErrorResume. Cache reads above stay imperative (sync store).
+            if (!flavor.isReactive)
+              codeGenUtils.tryCatchFinally(
+                tryStatements: [
+                  'String $svResponseText = glCallAdapter($svPayload);',
+                  'return parseToObjectAndCache($svResponseText, $svResponseMap, fromJson, $svRemaining, captureErrors);',
+                ],
+                catchStatements: [
+                  '$svResponseMap.putAll($svStaleData);',
+                  'long remainingCount = $svPartialQueries.stream().filter(e -> !$svResponseMap.containsKey(e.elementKey)).count();',
+                  codeGenUtils.ifStatement(
+                      condition: 'remainingCount > 0',
+                      ifBlockStatements: [
+                        'throw new RuntimeException(exception);',
+                      ]),
+                  'Map<String, Object> $svWrappedResponse = new HashMap<>();',
+                  '$svWrappedResponse.put("data", $svResponseMap);',
+                  'return fromJson.apply($svWrappedResponse);',
+                ],
+                catchVariable: 'exception',
+              )
+            else
+              [
+                'return ${flavor.onErrorResumeOpen(flavor.mapTo('glCallAdapter($svPayload)', '$svResponseText -> parseToObjectAndCache($svResponseText, $svResponseMap, fromJson, $svRemaining, captureErrors)'), 'exception')}',
+                '  $svResponseMap.putAll($svStaleData);',
+                '  long remainingCount = $svPartialQueries.stream().filter(e -> !$svResponseMap.containsKey(e.elementKey)).count();',
+                '  if (remainingCount > 0) {',
+                '    return ${flavor.error('new RuntimeException(exception)')};',
+                '  }',
+                '  Map<String, Object> $svWrappedResponse = new HashMap<>();',
+                '  $svWrappedResponse.put("data", $svResponseMap);',
+                '  return ${flavor.wrapValue('fromJson.apply($svWrappedResponse)')};',
+                '});',
+              ].join('\n'),
           ],
         ),
         _buildPayloadMethod(),
@@ -686,7 +727,7 @@ class JavaClientSerializer extends GLClientSerializer {
           arguments: ['String tag'],
           statements: ['return "__tag__" + tag;'],
         ),
-        codeGenUtils.createMethod(methodName: 'glCallAdapter', returnType: 'protected String', arguments: [
+        codeGenUtils.createMethod(methodName: 'glCallAdapter', returnType: 'protected ${_wrapSingle('String')}', arguments: [
           'GraphLinkPayload payload',
         ], statements: [
             if(_grammar.operationNameAsParameter)
@@ -845,6 +886,7 @@ class JavaClientSerializer extends GLClientSerializer {
         JavaImports.hashSet,
         JavaImports.reentrantLock,
         JavaImports.function,
+        ...flavor.imports,
       ],
       importDepencies: [
         _grammar.getTokenByKey("GraphLinkJsonEncoder")!,
@@ -1003,16 +1045,56 @@ class JavaClientSerializer extends GLClientSerializer {
     return const GLClassModel(body: javaUploadProgressCallback);
   }
 
-  GLClassModel generateMultipartAdapterFile(String importPrefix) =>
-      const GLClassModel(
+  GLClassModel generateMultipartAdapterFile(String importPrefix) {
+    if (!flavor.isReactive) {
+      return const GLClassModel(
         imports: [JavaImports.map],
         body: javaGraphLinkMultipartAdapter,
       );
+    }
+    // Reactive variant: executeMultipart returns the deferred-single carrying
+    // the body (or failure), so no checked IOException.
+    final ret = '${flavor.single}<String>';
+    final body = [
+      'public interface GraphLinkMultipartAdapter {',
+      '    $ret executeMultipart(String operations, String mapJson, Map<String, GLUpload> files, UploadProgressCallback onProgress);',
+      '',
+      '    default $ret executeMultipart(String operations, String mapJson, Map<String, GLUpload> files) {',
+      '        return executeMultipart(operations, mapJson, files, null);',
+      '    }',
+      '}',
+    ].join('\n');
+    return GLClassModel(
+      imports: [JavaImports.map, ...flavor.singleImports],
+      body: body,
+    );
+  }
 
 
 
   GLClassModel generateWebSocketAdapterFile() =>
       const GLClassModel(body: javaWebSocketAdapter);
+
+  /// Raw-Java reactive variant of the `GraphLinkClientAdapter` functional
+  /// interface whose `execute` returns the flavor's deferred-single type
+  /// (`Mono`/`Single`/`Uni`<String>). Used in place of the GraphQL-derived
+  /// `String`-returning interface when an async style is selected.
+  GLClassModel generateReactiveClientAdapterInterfaceFile() {
+    final ret = '${flavor.single}<String>';
+    final params = _grammar.operationNameAsParameter
+        ? 'String payload, String operationName'
+        : 'String payload';
+    final body = [
+      '@FunctionalInterface',
+      'public interface GraphLinkClientAdapter {',
+      '    $ret execute($params);',
+      '}',
+    ].join('\n');
+    return GLClassModel(
+      imports: [...flavor.singleImports],
+      body: body,
+    );
+  }
 
   GLClassModel generateJsonCodecFile(String codec, String importPrefix) =>
       GLClassModel(
@@ -1063,6 +1145,260 @@ class JavaClientSerializer extends GLClientSerializer {
                 ? defaultClientAdapterOkHttp(_grammar.operationNameAsParameter)
                 : defaultClientAdapterJava11(_grammar.operationNameAsParameter)),
       );
+
+  /// Reactive `DefaultGraphLinkClientAdapter` whose `execute` returns the
+  /// flavor's deferred-single type. Uses the JDK `HttpClient.sendAsync`
+  /// universal bridge (zero extra HTTP dependency) — native framework
+  /// transports (WebClient, Vert.x Mutiny) can be added as follow-up flavors.
+  GLClassModel generateReactiveDefaultClientAdapterFile() {
+    final ret = '${flavor.single}<String>';
+    final params = _grammar.operationNameAsParameter
+        ? 'String payload, String operationName'
+        : 'String payload';
+    const future =
+        'httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApply(HttpResponse::body)';
+    final hasUploads = _grammar.hasUploadMutations;
+    final implementsClause = hasUploads
+        ? 'implements GraphLinkClientAdapter, GraphLinkMultipartAdapter'
+        : 'implements GraphLinkClientAdapter';
+    final body = [
+      'public class DefaultGraphLinkClientAdapter $implementsClause {',
+      '    private final String url;',
+      '    private final HttpClient httpClient;',
+      '    private final Supplier<Map<String, String>> headersProvider;',
+      '',
+      '    public DefaultGraphLinkClientAdapter(String url) {',
+      '        this(url, () -> null);',
+      '    }',
+      '',
+      '    public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider) {',
+      '        this.url = url;',
+      '        this.headersProvider = headersProvider;',
+      '        this.httpClient = HttpClient.newHttpClient();',
+      '    }',
+      '',
+      '    @Override',
+      '    public $ret execute($params) {',
+      '        HttpRequest.Builder builder = HttpRequest.newBuilder()',
+      '            .uri(URI.create(url))',
+      '            .header("Content-Type", "application/json")',
+      '            .POST(HttpRequest.BodyPublishers.ofString(payload));',
+      '        Map<String, String> headers = headersProvider.get();',
+      '        if (headers != null) {',
+      '            for (Map.Entry<String, String> entry : headers.entrySet()) {',
+      '                builder.header(entry.getKey(), entry.getValue());',
+      '            }',
+      '        }',
+      '        HttpRequest request = builder.build();',
+      '        return ${flavor.bridgeFuture(future)};',
+      '    }',
+      if (hasUploads) ..._reactiveMultipartMembers(ret),
+      '}',
+    ].join('\n');
+    return GLClassModel(
+      imports: [
+        'java.net.URI',
+        'java.net.http.HttpClient',
+        'java.net.http.HttpRequest',
+        'java.net.http.HttpResponse',
+        JavaImports.map,
+        JavaImports.supplier,
+        if (hasUploads) JavaImports.ioException,
+        ...flavor.singleImports,
+      ],
+      // GraphLinkMultipartAdapter lives in the same `client` package, so it
+      // needs no import dependency (it also has no grammar token).
+      importDepencies: [_grammar.getTokenByKey('GraphLinkClientAdapter')!],
+      body: body,
+    );
+  }
+
+  /// Native Spring WebClient reactive adapter (Reactor only). `execute` and
+  /// `executeMultipart` return `Mono<String>` directly — no bridge. Multipart
+  /// uses `MultipartBodyBuilder` + `BodyInserters.fromMultipartData`; byte
+  /// progress is not wired for WebClient in this first cut (the `onProgress`
+  /// callback is accepted but not invoked).
+  GLClassModel generateWebClientDefaultClientAdapterFile() {
+    final opNameUri = _grammar.operationNameAsParameter
+        ? 'url + "?operationName=" + operationName'
+        : 'url';
+    final params = _grammar.operationNameAsParameter
+        ? 'String payload, String operationName'
+        : 'String payload';
+    final hasUploads = _grammar.hasUploadMutations;
+    final implementsClause = hasUploads
+        ? 'implements GraphLinkClientAdapter, GraphLinkMultipartAdapter'
+        : 'implements GraphLinkClientAdapter';
+    final body = [
+      'public class DefaultGraphLinkClientAdapter $implementsClause {',
+      '    private final String url;',
+      '    private final WebClient webClient;',
+      '    private final Supplier<Map<String, String>> headersProvider;',
+      '',
+      '    public DefaultGraphLinkClientAdapter(String url) {',
+      '        this(url, () -> null);',
+      '    }',
+      '',
+      '    public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider) {',
+      '        this(url, headersProvider, WebClient.create());',
+      '    }',
+      '',
+      '    public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider, WebClient webClient) {',
+      '        this.url = url;',
+      '        this.headersProvider = headersProvider;',
+      '        this.webClient = webClient;',
+      '    }',
+      '',
+      '    @Override',
+      '    public Mono<String> execute($params) {',
+      '        WebClient.RequestBodySpec request = webClient.post()',
+      '            .uri($opNameUri)',
+      '            .contentType(MediaType.APPLICATION_JSON);',
+      '        Map<String, String> headers = headersProvider.get();',
+      '        if (headers != null) {',
+      '            headers.forEach(request::header);',
+      '        }',
+      '        return request.bodyValue(payload).retrieve().bodyToMono(String.class);',
+      '    }',
+      if (hasUploads) ..._webClientMultipartMembers(),
+      '}',
+    ].join('\n');
+    return GLClassModel(
+      imports: [
+        'org.springframework.web.reactive.function.client.WebClient',
+        'org.springframework.http.MediaType',
+        if (hasUploads)
+          'org.springframework.web.reactive.function.BodyInserters',
+        if (hasUploads) 'org.springframework.util.MultipartBodyBuilder',
+        if (hasUploads) 'org.springframework.core.io.InputStreamResource',
+        JavaImports.map,
+        JavaImports.supplier,
+        'reactor.core.publisher.Mono',
+      ],
+      importDepencies: [_grammar.getTokenByKey('GraphLinkClientAdapter')!],
+      body: body,
+    );
+  }
+
+  /// WebClient multipart `executeMultipart` body (GraphQL multipart spec).
+  List<String> _webClientMultipartMembers() {
+    return [
+      '',
+      '    @Override',
+      '    public Mono<String> executeMultipart(String operations, String mapJson, Map<String, GLUpload> files, UploadProgressCallback onProgress) {',
+      '        MultipartBodyBuilder bodyBuilder = new MultipartBodyBuilder();',
+      '        bodyBuilder.part("operations", operations).contentType(MediaType.APPLICATION_JSON);',
+      '        bodyBuilder.part("map", mapJson).contentType(MediaType.APPLICATION_JSON);',
+      '        for (Map.Entry<String, GLUpload> entry : files.entrySet()) {',
+      '            GLUpload upload = entry.getValue();',
+      '            String filename = upload.getFilename() != null ? upload.getFilename() : entry.getKey();',
+      '            bodyBuilder.part(entry.getKey(), new InputStreamResource(upload.getStream()) {',
+      '                @Override public String getFilename() { return filename; }',
+      '                @Override public long contentLength() { return upload.getLength(); }',
+      '            }).filename(filename).contentType(MediaType.parseMediaType(upload.getMimeType()));',
+      '        }',
+      '        WebClient.RequestBodySpec request = webClient.post()',
+      '            .uri(url)',
+      '            .contentType(MediaType.MULTIPART_FORM_DATA);',
+      '        Map<String, String> headers = headersProvider.get();',
+      '        if (headers != null) {',
+      '            headers.forEach(request::header);',
+      '        }',
+      '        return request.body(BodyInserters.fromMultipartData(bodyBuilder.build())).retrieve().bodyToMono(String.class);',
+      '    }',
+    ];
+  }
+
+  /// The reactive `executeMultipart` (GraphQL multipart spec over JDK
+  /// `sendAsync`, bridged to the flavor single, with full byte-progress) plus
+  /// the byte-body builder and counting publisher helpers.
+  List<String> _reactiveMultipartMembers(String ret) {
+    const mpFuture =
+        'httpClient.sendAsync(mpRequest, HttpResponse.BodyHandlers.ofString()).thenApply(HttpResponse::body)';
+    return [
+      '',
+      '    @Override',
+      '    public $ret executeMultipart(String operations, String mapJson, Map<String, GLUpload> files, UploadProgressCallback onProgress) {',
+      '        String boundary = "----GraphLinkBoundary" + java.util.UUID.randomUUID().toString().replace("-", "");',
+      '        final byte[] mpBody;',
+      '        try {',
+      '            mpBody = buildMultipartBody(boundary, operations, mapJson, files);',
+      '        } catch (java.io.IOException e) {',
+      '            return ${flavor.error('new RuntimeException(e)')};',
+      '        }',
+      '        HttpRequest.BodyPublisher basePublisher = HttpRequest.BodyPublishers.ofByteArray(mpBody);',
+      '        HttpRequest.BodyPublisher publisher = onProgress != null',
+      '            ? new CountingBodyPublisher(basePublisher, mpBody.length, onProgress)',
+      '            : basePublisher;',
+      '        HttpRequest.Builder mpBuilder = HttpRequest.newBuilder()',
+      '            .uri(URI.create(url))',
+      '            .header("Content-Type", "multipart/form-data; boundary=" + boundary)',
+      '            .POST(publisher);',
+      '        Map<String, String> mpHeaders = headersProvider.get();',
+      '        if (mpHeaders != null) {',
+      '            for (Map.Entry<String, String> entry : mpHeaders.entrySet()) {',
+      '                mpBuilder.header(entry.getKey(), entry.getValue());',
+      '            }',
+      '        }',
+      '        HttpRequest mpRequest = mpBuilder.build();',
+      '        return ${flavor.bridgeFuture(mpFuture)};',
+      '    }',
+      '',
+      '    private byte[] buildMultipartBody(String boundary, String operations, String mapJson, Map<String, GLUpload> files) throws java.io.IOException {',
+      '        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();',
+      '        writePart(out, boundary, "operations", "application/json", operations.getBytes(java.nio.charset.StandardCharsets.UTF_8));',
+      '        writePart(out, boundary, "map", "application/json", mapJson.getBytes(java.nio.charset.StandardCharsets.UTF_8));',
+      '        for (Map.Entry<String, GLUpload> entry : files.entrySet()) {',
+      '            GLUpload upload = entry.getValue();',
+      '            String filename = upload.getFilename() != null ? upload.getFilename() : entry.getKey();',
+      '            out.write(("--" + boundary + "\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
+      '            out.write(("Content-Disposition: form-data; name=\\"" + entry.getKey() + "\\"; filename=\\"" + filename + "\\"\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
+      '            out.write(("Content-Type: " + upload.getMimeType() + "\\r\\n\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
+      '            upload.getStream().transferTo(out);',
+      '            out.write("\\r\\n".getBytes(java.nio.charset.StandardCharsets.UTF_8));',
+      '        }',
+      '        out.write(("--" + boundary + "--\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
+      '        return out.toByteArray();',
+      '    }',
+      '',
+      '    private void writePart(java.io.ByteArrayOutputStream out, String boundary, String name, String contentType, byte[] data) throws java.io.IOException {',
+      '        out.write(("--" + boundary + "\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
+      '        out.write(("Content-Disposition: form-data; name=\\"" + name + "\\"\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
+      '        out.write(("Content-Type: " + contentType + "\\r\\n\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
+      '        out.write(data);',
+      '        out.write("\\r\\n".getBytes(java.nio.charset.StandardCharsets.UTF_8));',
+      '    }',
+      '',
+      '    private static final class CountingBodyPublisher implements HttpRequest.BodyPublisher {',
+      '        private final HttpRequest.BodyPublisher delegate;',
+      '        private final long total;',
+      '        private final UploadProgressCallback callback;',
+      '',
+      '        CountingBodyPublisher(HttpRequest.BodyPublisher delegate, long total, UploadProgressCallback callback) {',
+      '            this.delegate = delegate;',
+      '            this.total = total;',
+      '            this.callback = callback;',
+      '        }',
+      '',
+      '        @Override public long contentLength() { return delegate.contentLength(); }',
+      '',
+      '        @Override',
+      '        public void subscribe(java.util.concurrent.Flow.Subscriber<? super java.nio.ByteBuffer> subscriber) {',
+      '            delegate.subscribe(new java.util.concurrent.Flow.Subscriber<>() {',
+      '                long sent = 0;',
+      '                @Override public void onSubscribe(java.util.concurrent.Flow.Subscription sub) { subscriber.onSubscribe(sub); }',
+      '                @Override public void onNext(java.nio.ByteBuffer item) {',
+      '                    sent += item.remaining();',
+      '                    callback.onProgress(sent, total);',
+      '                    subscriber.onNext(item);',
+      '                }',
+      '                @Override public void onError(Throwable t) { subscriber.onError(t); }',
+      '                @Override public void onComplete() { subscriber.onComplete(); }',
+      '            });',
+      '        }',
+      '    }',
+    ];
+  }
 
   GLClassModel generateDefaultWebSocketAdapterFile(
           String flavor, String importPrefix) =>

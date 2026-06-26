@@ -2,6 +2,7 @@ import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/serializers/client_serializers/java/java_reactive_flavor.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/utils.dart';
 
@@ -293,13 +294,31 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
   static String listOf(GLParser grammar, String token) =>
       "List<${wildcardExtends(grammar, token)}>";
 
+  /// Wraps [token] in [flavor]'s deferred-single type (`Mono`/`Single`/`Uni`),
+  /// or returns the bare boxed/wildcarded type when [flavor] is blocking.
+  /// Used for query/mutation return types — async-ness is the outer wrapper,
+  /// list-ness stays part of the inner type.
+  static String singleOf(
+      GLParser grammar, String token, JavaReactiveFlavor flavor) {
+    final inner = wildcardExtends(grammar, token);
+    return flavor.single == null ? inner : "${flavor.single}<$inner>";
+  }
+
+  /// Wraps [token] in [flavor]'s deferred-many type (`Flux`/`Observable`/
+  /// `Multi`). Used only for subscriptions (genuine streams).
+  static String manyOf(
+      GLParser grammar, String token, JavaReactiveFlavor flavor) {
+    final inner = wildcardExtends(grammar, token);
+    return flavor.many == null ? inner : "${flavor.many}<$inner>";
+  }
+
   /// Returns `Mono<...>`, wrapping/boxing the element type via [wildcardExtends].
   static String monoOf(GLParser grammar, String token) =>
-      "Mono<${wildcardExtends(grammar, token)}>";
+      singleOf(grammar, token, JavaReactiveFlavor.reactor);
 
   /// Returns `Flux<...>`, wrapping/boxing the element type via [wildcardExtends].
   static String fluxOf(GLParser grammar, String token) =>
-      "Flux<${wildcardExtends(grammar, token)}>";
+      manyOf(grammar, token, JavaReactiveFlavor.reactor);
 
   /// Returns `Map<K, V>`, boxing the key type and wrapping/boxing the value
   /// type via [wildcardExtends]. The key is left invariant (no wildcard) —
