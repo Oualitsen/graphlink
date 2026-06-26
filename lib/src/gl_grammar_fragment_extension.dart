@@ -102,6 +102,29 @@ extension GLGrammarFragmentExtension on GLParser {
     });
   }
 
+  /// Marks every fragment that is referenced (directly or transitively) by at
+  /// least one query, mutation, or subscription. Only fragments with
+  /// `used == true` are emitted into the generated client fragment map.
+  void markUsedFragments() {
+    // Reset all fragments to unused first.
+    for (final frag in fragments.values) {
+      frag.used = false;
+    }
+    // Iterate every operation — each op.fragments() returns the full
+    // transitive closure via the dependency graph already populated by
+    // updateFragmentDependencies + updateFragmentAllTypesDependencies.
+    for (final op in queries.values) {
+      for (final frag in op.fragments(this)) {
+        frag.used = true;
+      }
+    }
+  }
+
+  /// Returns only the fragments that are referenced by at least one operation
+  /// (query, mutation, or subscription). Call [markUsedFragments] first.
+  Iterable<GLFragmentDefinitionBase> get usedFragments =>
+      fragments.values.where((f) => f.used);
+
   void fillTypedFragments() {
     fragments.forEach((key, fragment) {
       checkIfDefined(fragment.onTypeName);

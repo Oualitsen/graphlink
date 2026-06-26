@@ -339,6 +339,7 @@ class GLParser {
       fixProjectedInterfaceConflicts();
       addClientTypesToProjectedTypes();
       updateFragmentAllTypesDependencies();
+      markUsedFragments();
       if (defaultCacheTTL != null) {
         applyDefaultCacheToQueries(defaultCacheTTL!);
       }

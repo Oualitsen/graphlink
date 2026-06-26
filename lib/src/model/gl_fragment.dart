@@ -25,6 +25,12 @@ abstract class GLFragmentDefinitionBase extends GLToken with GLDirectivesMixin {
 
   bool _dependeciesUpdated = false;
 
+  /// Set to `true` during code generation when this fragment is referenced
+  /// (directly or transitively) by at least one query, mutation, or
+  /// subscription. Only fragments with `used == true` are emitted into the
+  /// generated client fragment map.
+  bool used = false;
+
   GLFragmentDefinitionBase(
     super.tokenInfo,
     this.onTypeName,
