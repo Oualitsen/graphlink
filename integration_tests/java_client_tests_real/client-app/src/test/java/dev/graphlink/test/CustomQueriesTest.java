@@ -120,21 +120,21 @@ class CustomQueriesTest {
 
         @Test
         void results_containUserResult() {
-            List<? extends SearchResult> results = client.queries.runSearch("alice").getSearch();
+            List<SearchResult> results = client.queries.runSearch("alice").getSearch();
             assertNotNull(results);
             assertTrue(results.stream().anyMatch(r -> r instanceof UserResult));
         }
 
         @Test
         void results_containPostResult() {
-            List<? extends SearchResult> results = client.queries.runSearch("alice").getSearch();
+            List<SearchResult> results = client.queries.runSearch("alice").getSearch();
             assertNotNull(results);
             assertTrue(results.stream().anyMatch(r -> r instanceof PostResult));
         }
 
         @Test
         void userResult_hasCorrectId() {
-            List<? extends SearchResult> results = client.queries.runSearch("alice").getSearch();
+            List<SearchResult> results = client.queries.runSearch("alice").getSearch();
             UserResult user = results.stream()
                     .filter(r -> r instanceof UserResult)
                     .map(r -> (UserResult) r)
@@ -145,7 +145,7 @@ class CustomQueriesTest {
 
         @Test
         void postResult_hasCorrectId() {
-            List<? extends SearchResult> results = client.queries.runSearch("alice").getSearch();
+            List<SearchResult> results = client.queries.runSearch("alice").getSearch();
             PostResult post = results.stream()
                     .filter(r -> r instanceof PostResult)
                     .map(r -> (PostResult) r)

@@ -2,6 +2,7 @@ import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/utils.dart';
 
 
@@ -270,6 +271,15 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
   /// implementor (e.g. `User` for `UserProjection`) remains a valid override.
   static String wildcardExtends(GLParser grammar, String token) {
     final boxed = convertPrimitiveToBoxed(token);
+    // The `? extends` wildcard exists solely so a server implementor (e.g.
+    // `User implements UserProjection`) can covariantly override a method
+    // returning `List<? extends CarProjection>` — Java generics are invariant,
+    // so the wildcard is required there. Client code never overrides these
+    // signatures; emitting bare `List<Interface>` keeps return types ergonomic
+    // for callers (no wildcard leaking into their variable declarations).
+    if (grammar.mode != CodeGenerationMode.server) {
+      return boxed;
+    }
     if (grammar.isInterface(token) ||
         boxed.contains('? extends') ||
         boxed.startsWith('Map<') ||

@@ -30,7 +30,7 @@ void main() {
     final out = javaSerializer.serializeInterface(container, getters: true);
     print(out);
 
-    expect(out, contains("List<? extends Item> getItems()"));
+    expect(out, contains("List<Item> getItems()"));
   });
 
 
@@ -43,7 +43,7 @@ void main() {
     final out = javaSerializer.serializeInterface(container, getters: true);
     print(out);
 
-    expect(out, contains("List<? extends Item> items()"));
+    expect(out, contains("List<Item> items()"));
   });
 
   test("Kotlin interface with list of interface field", () {
