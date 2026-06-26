@@ -171,7 +171,7 @@ abstract class GLSerializer {
   }
 
   String serializeImports(GLToken token) {
-    var deps = token.getImportDependecies(grammar);
+    var deps = token.getImportDependecies(grammar).where((d) => d != token).toSet();
     if (token is GLInterfaceDefinition && generateJsonMethods) {
       deps = {...deps, ...token.getSerializableImplementations(mode)};
     }
