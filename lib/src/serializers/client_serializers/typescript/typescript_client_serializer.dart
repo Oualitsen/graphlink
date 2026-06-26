@@ -289,6 +289,23 @@ class TypeScriptClientSerializer extends GLClientSerializer {
           ],
         ),
         _cg.createMethod(
+          methodName: '_executeFull<T>',
+          async: true,
+          returnType: 'T',
+          arguments: [
+            'query: string',
+            'fragmentNames: string[]',
+            'operationName: string',
+            'variables: Record<string, unknown>',
+          ],
+          statements: [
+            'const fullQuery = this.assembleQuery(query, fragmentNames);',
+            'const payload: GraphLinkPayload = { query: fullQuery, operationName, variables };',
+            'const response = await this._glCallAdapter(payload);',
+            'return JSON.parse(response) as T;',
+          ],
+        ),
+        _cg.createMethod(
           methodName: '_getFromCache',
           async: true,
           arguments: [

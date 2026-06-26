@@ -70,10 +70,7 @@ class TypeScriptClientOperationSerializer {
       _generateVariables(def),
       "const $svQuery = '${queryText}';",
       "const $svFragmentNames = ${fragmentNames.isEmpty ? '[] as string[]' : '[${fragmentNames.join(", ")}]'};",
-      "const $svFullQuery = this.assembleQuery($svQuery, $svFragmentNames);",
-      "const $svPayload: GraphLinkPayload = { query: $svFullQuery, operationName: '${def.tokenInfo}', variables: $svVariables };",
-      "const $svResponse = await this._glCallAdapter($svPayload);",
-      "const $svResult = JSON.parse($svResponse) as $fullResponseTypeName;",
+      "const $svResult = await this._executeFull<$fullResponseTypeName>($svQuery, $svFragmentNames, '${def.tokenInfo}', $svVariables);",
       if (isCE)
         _cg.ifStatement(
           condition: "!($svResult as any)['errors']",
@@ -227,13 +224,10 @@ class TypeScriptClientOperationSerializer {
       _generateVariables(def),
       "const $svQuery = '${queryText}';",
       "const $svFragmentNames = ${fragmentNames.isEmpty ? '[] as string[]' : '[${fragmentNames.join(", ")}]'};",
-      "const $svFullQuery = this.assembleQuery($svQuery, $svFragmentNames);",
     ];
 
     statements.addAll([
-      "const $svPayload: GraphLinkPayload = { query: $svFullQuery, operationName: '${def.tokenInfo}', variables: $svVariables };",
-      "const $svResponse = await this._glCallAdapter($svPayload);",
-      "const $svResult = JSON.parse($svResponse) as $fullResponseTypeName;",
+      "const $svResult = await this._executeFull<$fullResponseTypeName>($svQuery, $svFragmentNames, '${def.tokenInfo}', $svVariables);",
       if (isCaptureErrors)
         _cg.ifStatement(
           condition: "!($svResult as any)['errors']",

@@ -108,7 +108,7 @@ void main() {
     test('calls executeMultipart', () => expect(out, contains('glMultipartAdapter__.executeMultipart')));
     test('overload without progress delegates with null', () => expect(out, contains('uploadFile(file, filename, null)')));
     test('overload with progress throws IOException', () => expect(out, contains('throws IOException')));
-    test('non-upload mutation uses adapter.execute', () => expect(out, contains('glCallAdapter')));
+    test('non-upload mutation uses executeData', () => expect(out, contains('executeData')));
   });
 
   // ---------------------------------------------------------------------------
@@ -120,7 +120,7 @@ void main() {
 
     test('no multipartAdapter field', () => expect(out, isNot(contains('multipartAdapter'))));
     test('no GLUpload', () => expect(out, isNot(contains('GLUpload'))));
-    test('uses adapter.execute', () => expect(out, contains('glCallAdapter')));
+    test('uses executeData', () => expect(out, contains('executeData')));
   });
 
   // ---------------------------------------------------------------------------
