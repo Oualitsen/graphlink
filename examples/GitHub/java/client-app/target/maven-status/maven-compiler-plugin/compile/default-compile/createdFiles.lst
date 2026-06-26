@@ -1,0 +1,5 @@
+dev/graphlink/github/generated/client/GraphLinkCacheStore.class
+dev/graphlink/github/generated/client/GraphLinkCacheEntry.class
+dev/graphlink/github/generated/client/GraphLinkClient.class
+dev/graphlink/github/generated/client/DefaultGraphLinkClientAdapter.class
+dev/graphlink/github/generated/interfaces/GraphLinkClientAdapter.class
