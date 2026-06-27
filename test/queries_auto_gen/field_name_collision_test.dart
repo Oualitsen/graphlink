@@ -80,24 +80,28 @@ void main() {
 
     g.parse(_autoGenSchema);
 
-    final query = g.queries[GLOperationKey('repository', GLQueryType.query)]!;
-    final argsByName = {for (var a in query.arguments) a.token: a.type.token};
+    // `repository` has no declared args, so every propagated arg is grouped into
+    // the synthesized RepositoryFieldArgs input (fields keyed by bare name, no $).
+    final byName = {
+      for (final f in g.inputs['RepositoryFieldArgs']!.fields)
+        f.name.token: f.type.token
+    };
 
     // Ambiguous: associatedItems.orderBy resolves to two incompatible input
     // types, so each variant is escalated to a distinct, type-qualified name.
-    expect(argsByName[r'$associatedItemsOrderByPullRequestOrder'],
+    expect(byName['associatedItemsOrderByPullRequestOrder'],
         equals('PullRequestOrder'),
         reason: 'Commit.associatedItems(orderBy: PullRequestOrder) escalates');
-    expect(argsByName[r'$associatedItemsOrderByIssueOrder'], equals('IssueOrder'),
+    expect(byName['associatedItemsOrderByIssueOrder'], equals('IssueOrder'),
         reason: 'Ref.associatedItems(orderBy: IssueOrder) escalates');
 
-    // No conflict: users.filter / posts.filter stay on the clean $<field><Arg>
+    // No conflict: users.filter / posts.filter stay on the clean <field><Arg>
     // name — no type suffix.
-    expect(argsByName[r'$usersFilter'], equals('String'),
+    expect(byName['usersFilter'], equals('String'),
         reason: 'unambiguous users(filter:) keeps the clean name');
-    expect(argsByName[r'$postsFilter'], equals('String'),
+    expect(byName['postsFilter'], equals('String'),
         reason: 'unambiguous posts(filter:) keeps the clean name');
-    expect(argsByName.keys.where((k) => k.startsWith(r'$filter')), isEmpty,
+    expect(byName.keys.where((k) => k.startsWith('filter')), isEmpty,
         reason: 'clean filter args must not be type-suffixed');
   });
 
@@ -107,18 +111,25 @@ void main() {
     g.parse(_explicitMultiRootSchema);
 
     final query = g.queries[GLOperationKey('getBoth', GLQueryType.query)]!;
-    final argsByName = {for (var a in query.arguments) a.token: a.type.token};
+    final declared = {for (var a in query.arguments) a.token: a.type.token};
 
-    // Author-declared root variables survive untouched.
-    expect(argsByName[r'$commitId'], equals('ID'));
-    expect(argsByName[r'$refName'], equals('String'));
+    // Author-declared root variables stay DIRECT arguments, untouched.
+    expect(declared[r'$commitId'], equals('ID'));
+    expect(declared[r'$refName'], equals('String'));
 
-    // Both ambiguous nested args are escalated and both reach the operation.
-    expect(argsByName[r'$associatedItemsOrderByPullRequestOrder'],
+    // The propagated nested args are grouped into the synthesized input
+    // (fields keyed by bare name, no $).
+    final fieldArgs = {
+      for (final f in g.inputs['GetBothFieldArgs']!.fields)
+        f.name.token: f.type.token
+    };
+
+    // Both ambiguous nested args are escalated and both reach the input.
+    expect(fieldArgs['associatedItemsOrderByPullRequestOrder'],
         equals('PullRequestOrder'));
-    expect(argsByName[r'$associatedItemsOrderByIssueOrder'], equals('IssueOrder'));
+    expect(fieldArgs['associatedItemsOrderByIssueOrder'], equals('IssueOrder'));
 
     // The unambiguous nested arg keeps its clean name.
-    expect(argsByName[r'$filesFilter'], equals('String'));
+    expect(fieldArgs['filesFilter'], equals('String'));
   });
 }

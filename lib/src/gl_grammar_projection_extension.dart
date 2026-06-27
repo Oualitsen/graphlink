@@ -881,12 +881,12 @@ extension GLGrammarProjectionExtension on GLParser {
           : keptDefault;
       def.setArgument(GLArgumentDefinition(
           varToken.toToken(), merged, [],
-          defaultValue: defaultValue));
+          defaultValue: defaultValue, isDeclared: false));
       return;
     }
     def.setArgument(GLArgumentDefinition(
         varToken.toToken(), argDef.type, [],
-        defaultValue: argDef.defaultValue));
+        defaultValue: argDef.defaultValue, isDeclared: false));
   }
 
   bool _sameBaseType(GLType a, GLType b) {

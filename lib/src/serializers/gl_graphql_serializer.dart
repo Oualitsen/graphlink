@@ -343,8 +343,36 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)}$def
     return "union ${def.tokenInfo} = ${serializeListText(def.typeNames.map((e) => e.token).toList(), withParenthesis: false, join: " | ")}";
   }
 
+  /// Flattens an operation's argument list into wire-level variables: normal args
+  /// pass through unchanged, but the synthetic hoist arg (see
+  /// [GLArgumentDefinition.hoistArgsInput]) is expanded back into one variable per
+  /// field of its `<Op>FieldArgs` input. The GraphQL document must declare these
+  /// flat `$variables` because the nested-field arguments that reference them
+  /// live in the shared all-fields fragments, not as a single `$fieldArgs` object
+  /// the server would not recognise.
+  List<GLArgumentDefinition> _wireArguments(GLQueryDefinition def) {
+    final result = <GLArgumentDefinition>[];
+    for (final arg in def.arguments) {
+      final input = arg.hoistArgsInput;
+      if (input == null) {
+        result.add(arg);
+        continue;
+      }
+      for (final f in input.fields) {
+        result.add(GLArgumentDefinition(
+          '\$${f.name.token}'.toToken(),
+          f.type,
+          const [],
+          defaultValue:
+              f.initialValue != null ? GLDefaultValue(f.initialValue) : null,
+        ));
+      }
+    }
+    return result;
+  }
+
   String serializeQueryDefinition(GLQueryDefinition def) {
-    return """${def.type.name} ${def.tokenInfo}${serializeListText(def.arguments.map(serializeArgumentDefinition).toList(), join: ",")}${serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}{${serializeListText(def.elements.map(serializeQueryElement).toList(), join: " ", withParenthesis: false)}}""";
+    return """${def.type.name} ${def.tokenInfo}${serializeListText(_wireArguments(def).map(serializeArgumentDefinition).toList(), join: ",")}${serializeDirectiveValueList(def.getDirectives(skipGenerated: true))}{${serializeListText(def.elements.map(serializeQueryElement).toList(), join: " ", withParenthesis: false)}}""";
   }
 
   List<DividedQuery> divideQueryDefinition(
@@ -356,7 +384,7 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)}$def
       var serialQuery = serializeQueryElement(element);
       final usedVariables = grammar.elementArgumentVariables(element);
       final elementArguments =
-          def.arguments.where((arg) => usedVariables.contains(arg.token));
+          _wireArguments(def).where((arg) => usedVariables.contains(arg.token));
       final dq = DividedQuery(
         query: serialQuery,
         operationName: operationName,
