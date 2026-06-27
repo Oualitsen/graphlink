@@ -14,8 +14,13 @@ void main() {
     g.parse(text);
 
     final def = g.queries[GLOperationKey("getAuthor", GLQueryType.query)]!;
-    print(def.arguments.map((a) => a.token));
-    expect(def.arguments.map((a) => a.token), containsAll(["\$id", "\$lastArticlesLimit"]));
+
+    // `id` is the operation's own declared arg → stays a direct argument.
+    expect(def.arguments.map((a) => a.token), contains("\$id"));
+    // `lastArticlesLimit` is a propagated field arg → grouped into the
+    // synthesized GetAuthorFieldArgs input, no longer a flat operation arg.
+    expect(g.inputs['GetAuthorFieldArgs']!.fields.map((f) => f.name.token),
+        contains("lastArticlesLimit"));
 
     final serializer = GLGraphqlSerializer(g, false);
     final query = serializer.serializeQueryDefinition(def);
@@ -23,6 +28,9 @@ void main() {
         .fragments(g)
         .map((f) => serializer.serializeFragmentDefinitionBase(f))
         .join(' ');
+    // the operation still DECLARES the propagated variable (expanded from the
+    // synthesized input) and the fragment still references it.
+    expect(query, contains("\$lastArticlesLimit"));
     expect("$query $fragments", contains("lastArticles(limit: \$lastArticlesLimit)"));
   });
 

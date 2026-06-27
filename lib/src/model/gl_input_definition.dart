@@ -45,15 +45,46 @@ class GLInputDefinition extends GLTokenWithFields with GLDirectivesMixin {
           }) =>
       FromMappingPlan.resolve(this, target, allInputs, allTypes, mode, typeMap: typeMap);
 
+  void _collectDefaultValueDeps(
+      Object? value, String typeName, GLParser g, Map<String, GLToken> result) {
+    final inputDef = g.inputs[typeName];
+    if (inputDef == null) return;
+    if (value is Map<String, Object?>) {
+      for (final entry in value.entries) {
+        final subField = inputDef.getFieldByName(entry.key);
+        if (subField == null) continue;
+        final subTypeName = subField.type.firstType.token;
+        final subToken = g.getTokenByKey(subTypeName);
+        if (subToken != null && filterDependecy(subToken, g)) {
+          result[subToken.token] = subToken;
+        }
+        _collectDefaultValueDeps(entry.value, subTypeName, g, result);
+      }
+    } else if (value is List<Object?>) {
+      for (final element in value) {
+        _collectDefaultValueDeps(element, typeName, g, result);
+      }
+    }
+  }
+
   @override
   Set<GLToken> getImportDependecies(GLParser g) {
     final result = {...super.getImportDependecies(g)};
+
+    final extraDeps = <String, GLToken>{};
+    for (final f in getSerializableFields(g.mode)) {
+      if (f.initialValue == null) continue;
+      _collectDefaultValueDeps(f.initialValue, f.type.firstType.token, g, extraDeps);
+    }
+    result.addAll(extraDeps.values);
+
     final targetName = mapsToType;
     if (targetName == null) return result;
 
     if (g.mode == CodeGenerationMode.client && !g.projectedTypes.containsKey(targetName)) {
       return result;
     }
+
 
     final target = g.types[targetName]!;
     result.add(target);

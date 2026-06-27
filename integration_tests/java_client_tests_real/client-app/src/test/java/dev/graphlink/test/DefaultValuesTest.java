@@ -4,9 +4,11 @@ import dev.graphlink.test.generated.client.GraphLinkClient;
 import dev.graphlink.test.generated.enums.Role;
 import dev.graphlink.test.generated.inputs.AddressInput;
 import dev.graphlink.test.generated.inputs.CreateWithDefaultsInput;
+import dev.graphlink.test.generated.inputs.GetDriverFieldArgs;
 import dev.graphlink.test.generated.inputs.NestedDefaultsInput;
 import dev.graphlink.test.generated.types.CreateWithDefaultsResponse;
 import dev.graphlink.test.generated.types.CreateWithNestedDefaultsResponse;
+import dev.graphlink.test.generated.types.GetDriverResponse;
 import dev.graphlink.test.generated.types.ListUsersWithDefaultsResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -215,6 +217,47 @@ class DefaultValuesTest {
 
             assertEquals(1, res.getCreateWithNestedDefaults().getMatrix().size());
             assertEquals("A", res.getCreateWithNestedDefaults().getMatrix().get(0).get(0).getStreet());
+        }
+    }
+
+    // ── getDriver — field-argument defaults ──────────────────────────────────
+
+    @Nested
+    class GetDriver {
+
+        @Test
+        void odometerKm_isRequired_andEchoedBack() {
+            GetDriverFieldArgs fieldArgs = GetDriverFieldArgs.builder().lastUsedMillageOdometerKm(100).build();
+            GetDriverResponse res = client.queries.getDriver("driver-1", fieldArgs);
+            assertEquals(100, res.getGetDriver().getLastUsedMillage());
+        }
+
+        @Test
+        void liters_defaultsTo4_whenNotProvided() {
+            GetDriverFieldArgs fieldArgs = GetDriverFieldArgs.builder().lastUsedMillageOdometerKm(200).build();
+            GetDriverResponse res = client.queries.getDriver("driver-1", fieldArgs);
+            assertEquals(4, res.getGetDriver().getLastUsedFuel());
+        }
+
+        @Test
+        void explicitLiters_overridesDefault() {
+            GetDriverFieldArgs fieldArgs = GetDriverFieldArgs.builder()
+                    .lastUsedMillageOdometerKm(300)
+                    .lastUsedFuelLiters(10)
+                    .build();
+            GetDriverResponse res = client.queries.getDriver("driver-1", fieldArgs);
+            assertEquals(10, res.getGetDriver().getLastUsedFuel());
+        }
+
+        @Test
+        void bothValues_echoedBack_withExplicitLiters() {
+            GetDriverFieldArgs fieldArgs = GetDriverFieldArgs.builder()
+                    .lastUsedMillageOdometerKm(500)
+                    .lastUsedFuelLiters(25)
+                    .build();
+            GetDriverResponse res = client.queries.getDriver("driver-1", fieldArgs);
+            assertEquals(500, res.getGetDriver().getLastUsedMillage());
+            assertEquals(25, res.getGetDriver().getLastUsedFuel());
         }
     }
 }

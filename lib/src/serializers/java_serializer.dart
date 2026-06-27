@@ -963,33 +963,36 @@ class JavaSerializer extends GLSerializer {
     return _accessorName(propertyName, true, false);
   }
 
-  String _getterName(String propertyName, bool isBoolean) {
-    return _accessorName(propertyName, false, isBoolean);
-  }
+  String _getterName(String propertyName, bool isBoolean) =>
+      JavaSerializer.accessorName(propertyName, isBoolean: isBoolean);
 
   String _getterFieldName(GLField field, bool forInput) {
-     final name = field.name.token;
-     bool isRecord = forInput && inputsAsRecords || !forInput && typesAsRecords;
-     if(isRecord) {
-      // Record accessor is the bare component name, so it must be the safe id.
-      return "${field.codeName}()";
-     }
-    return '${_getterName(name, serializeType(field.type, !forInput) == "boolean")}()';
-
+    final isRecord = forInput && inputsAsRecords || !forInput && typesAsRecords;
+    return JavaSerializer.getterCall(field,
+        isRecord: isRecord,
+        isBoolean: serializeType(field.type, !forInput) == "boolean");
   }
 
-  String _accessorName(String name, bool setter, bool isBoolean) {
-    String prefix;
-    if (setter) {
-      prefix = "set";
-    } else {
-      if (isBoolean) {
-        prefix = "is";
-      } else {
-        prefix = "get";
-      }
-    }
+  String _accessorName(String name, bool setter, bool isBoolean) =>
+      JavaSerializer.accessorName(name, setter: setter, isBoolean: isBoolean);
+
+  /// Java accessor name: `get`/`is`/`set` + capitalised property. Public &
+  /// static so client serializers can build input-object getter access without a
+  /// [JavaSerializer] instance.
+  static String accessorName(String name,
+      {bool setter = false, bool isBoolean = false}) {
+    final prefix = setter ? "set" : (isBoolean ? "is" : "get");
     return "$prefix${name.firstUp}";
+  }
+
+  /// The getter call for [field] on a generated input/type. Records expose the
+  /// bare component accessor (`name()`); otherwise it is `getName()` / `isFlag()`.
+  /// [isRecord] and [isBoolean] are passed in because they depend on config and
+  /// type resolution the caller already knows.
+  static String getterCall(GLField field,
+      {required bool isRecord, required bool isBoolean}) {
+    if (isRecord) return "${field.codeName}()";
+    return "${accessorName(field.name.token, isBoolean: isBoolean)}()";
   }
 
   String serializeSetter(GLField field, GLToken context,

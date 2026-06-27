@@ -329,11 +329,30 @@ class JavaClientOperationSerializer {
     var buffer =
         StringBuffer("Map<String, Object> ${svVariables} = new HashMap<>();");
     buffer.writeln();
-    def.arguments
-        .map((e) =>
-            '${svVariables}.put("${e.dartArgumentName}", ${_serializeArgumentValue(def, e.token, container)});')
-        .forEach(buffer.writeln);
-
+    final guardBlocks = <String>[];
+    for (final arg in def.arguments) {
+      final input = arg.hoistArgsInput;
+      if (input == null) {
+        buffer.writeln(
+            '${svVariables}.put("${arg.dartArgumentName}", ${_serializeArgumentValue(def, arg.token, container)});');
+        continue;
+      }
+      // Synthetic hoist arg: merge the <Op>FieldArgs object's own toJson() map,
+      // which already maps each field to its wire variable. Optional object →
+      // guard so an omitted object leaves those vars absent (document defaults
+      // apply); required → merge directly.
+      final base = arg.codeName;
+      final put = '${svVariables}.putAll(${base}.toJson());';
+      if (arg.type.nullable) {
+        guardBlocks.add(_ctx.codeGenUtils
+            .ifStatement(condition: '$base != null', ifBlockStatements: [put]));
+      } else {
+        buffer.writeln(put);
+      }
+    }
+    for (final block in guardBlocks) {
+      buffer.writeln(block);
+    }
     return buffer.toString();
   }
 

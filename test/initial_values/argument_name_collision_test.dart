@@ -1,7 +1,7 @@
+import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
-import 'package:graphlink/src/serializers/dart_serializer.dart';
-import 'package:graphlink/src/serializers/client_serializers/dart/dart_client_serializer.dart';
+import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 import 'package:test/test.dart';
 
 /// Bug hunt: when multiple fields on the same type have arguments with the
@@ -50,23 +50,25 @@ GLParser _parser() {
 void main() {
   test('non-null field argument does not get null default from sibling field', () {
     final g = _parser();
-    final s = DartSerializer(g, importPrefix: '');
-    final out =
-        DartClientSerializer(g, s).getQueriesClass()?.toFileContent() ?? '';
-    print('=== Dart client ===\n$out');
 
-    // engine(name: String!) → required String engineName (non-null, no default)
-    expect(out, contains('required String engineName'));
-    expect(out, isNot(contains('String? engineName')));
+    // engineName / transmissionName are propagated field args, now grouped into
+    // the synthesized CarFieldArgs input. Each must keep its OWN nullability —
+    // the `= null` default from transmission(name) must not leak onto the
+    // non-null engine(name) field (which would be a compile error).
+    final byName = {
+      for (final f in g.inputs['CarFieldArgs']!.fields) f.name.token: f
+    };
 
-    expect(out, isNot(contains('engineName = null')));
+    // engine(name: String!) → non-null, no default
+    expect(byName['engineName']!.type.nullable, isFalse);
+    expect(byName['engineName']!.initialValue, isNull);
+    // transmission(name: String = null) → nullable
+    expect(byName['transmissionName']!.type.nullable, isTrue);
 
-    // transmission(name: String = null) → String? transmissionName = null
-    expect(out, contains('String? transmissionName = null'));
-    // query operation declaration: engineName must be String!, transmissionName
-    // must be String (nullable, not String!)
-    expect(out, contains(r'\$engineName: String!'));
-
-    expect(out, isNot(contains(r'\$transmissionName: String!')));
+    // The query-string declaration must preserve each variable's own nullability.
+    final query = GLGraphqlSerializer(g, false).serializeQueryDefinition(
+        g.queries[GLOperationKey('car', GLQueryType.query)]!);
+    expect(query, contains(r'$engineName: String!'));
+    expect(query, isNot(contains(r'$transmissionName: String!')));
   });
 }

@@ -1012,7 +1012,7 @@ class _HeadersInterceptor extends Interceptor {
     );
   }
 
-  GLClassModel generateUploadConverterFile() => GLClassModel(
+  GLClassModel generateUploadConverterFile() => const GLClassModel(
         imports: ["import 'graph_link_uploads.dart';"],
         body: dartUploadDefaultConverter,
       );

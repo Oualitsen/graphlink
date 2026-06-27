@@ -4,6 +4,7 @@ import dev.graphlink.test.generated.client.GraphLinkClient
 import dev.graphlink.test.generated.enums.Role
 import dev.graphlink.test.generated.inputs.AddressInput
 import dev.graphlink.test.generated.inputs.CreateWithDefaultsInput
+import dev.graphlink.test.generated.inputs.GetDriverFieldArgs
 import dev.graphlink.test.generated.inputs.NestedDefaultsInput
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
@@ -207,6 +208,37 @@ class DefaultValuesTest {
 
             assertEquals(1, res.createWithNestedDefaults.matrix!!.size)
             assertEquals("A", res.createWithNestedDefaults.matrix!![0]!![0]!!.street)
+        }
+    }
+
+    // ── getDriver — field-argument defaults ──────────────────────────────────
+
+    @Nested
+    inner class GetDriver {
+
+        @Test
+        fun odometerKm_isRequired_andEchoedBack() = runTest {
+            val res = client.queries.getDriver(id = "driver-1", fieldArgs = GetDriverFieldArgs(lastUsedMillageOdometerKm = 100))
+            assertEquals(100, res.getDriver.lastUsedMillage)
+        }
+
+        @Test
+        fun liters_defaultsTo4_whenNotProvided() = runTest {
+            val res = client.queries.getDriver(id = "driver-1", fieldArgs = GetDriverFieldArgs(lastUsedMillageOdometerKm = 200))
+            assertEquals(4, res.getDriver.lastUsedFuel)
+        }
+
+        @Test
+        fun explicitLiters_overridesDefault() = runTest {
+            val res = client.queries.getDriver(id = "driver-1", fieldArgs = GetDriverFieldArgs(lastUsedMillageOdometerKm = 300, lastUsedFuelLiters = 10))
+            assertEquals(10, res.getDriver.lastUsedFuel)
+        }
+
+        @Test
+        fun bothValues_echoedBack_withExplicitLiters() = runTest {
+            val res = client.queries.getDriver(id = "driver-1", fieldArgs = GetDriverFieldArgs(lastUsedMillageOdometerKm = 500, lastUsedFuelLiters = 25))
+            assertEquals(500, res.getDriver.lastUsedMillage)
+            assertEquals(25, res.getDriver.lastUsedFuel)
         }
     }
 }

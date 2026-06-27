@@ -484,6 +484,15 @@ class TypeScriptClientOperationSerializer {
     final buffer = StringBuffer('const $svVariables: Record<string, unknown> = {\n');
     for (final arg in def.arguments) {
       final name = arg.dartArgumentName;
+      final input = arg.hoistArgsInput;
+      if (input != null) {
+        // Synthetic hoist arg: spread the <Op>FieldArgs object directly — its
+        // properties already are the wire variables. Optional object → fall back
+        // to {} when null, leaving those vars absent (document defaults apply).
+        final base = 'args.$name';
+        buffer.writeln(arg.type.nullable ? '  ...($base ?? {}),' : '  ...$base,');
+        continue;
+      }
       final isUpload = uploadNames.contains(arg.type.firstType.token);
       if (isUpload) {
         buffer.writeln(

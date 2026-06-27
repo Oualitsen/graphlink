@@ -133,10 +133,23 @@ class DartClientOperationSerializer {
     if (def.arguments.isEmpty) return '';
     final buffer = StringBuffer("final $svVariables = <String, dynamic>{");
     buffer.writeln();
-    def.arguments
-        .map((e) =>
-            "'${e.dartArgumentName}': ${_serializeArgumentValue(def, e.token)},")
-        .forEach((line) => buffer.writeln(line.ident()));
+    for (final arg in def.arguments) {
+      final input = arg.hoistArgsInput;
+      if (input == null) {
+        buffer.writeln(
+            "'${arg.dartArgumentName}': ${_serializeArgumentValue(def, arg.token)},"
+                .ident());
+        continue;
+      }
+      // Synthetic hoist arg: spread the <Op>FieldArgs object's own toJson(),
+      // which already maps each field to its wire variable. `...?` drops it when
+      // the (optional) object is null, leaving those vars absent (document
+      // defaults apply); a required object is spread directly.
+      final base = arg.codeName;
+      buffer.writeln(
+          (arg.type.nullable ? "...?$base?.toJson()," : "...$base.toJson(),")
+              .ident());
+    }
     buffer.writeln("};");
     return buffer.toString();
   }

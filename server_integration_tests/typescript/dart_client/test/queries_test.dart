@@ -8,25 +8,25 @@ void main() {
 
   group('getAuthor', () {
     test('returns author by id', () async {
-      final res = await client.queries.getAuthor(id: '1', latestArticlesLimit: 10);
+      final res = await client.queries.getAuthor(id: '1', fieldArgs: GetAuthorFieldArgs(latestArticlesLimit: 10));
       expect(res.getAuthor, isNotNull);
       expect(res.getAuthor!.id, equals('1'));
       expect(res.getAuthor!.name, equals('Ramdane'));
     });
 
     test('returns null for unknown id', () async {
-      final res = await client.queries.getAuthor(id: 'missing', latestArticlesLimit: 10);
+      final res = await client.queries.getAuthor(id: 'missing', fieldArgs: GetAuthorFieldArgs(latestArticlesLimit: 10));
       expect(res.getAuthor, isNull);
     });
 
     test('articles is resolved via batch DataLoader mapping', () async {
-      final res = await client.queries.getAuthor(id: '1', latestArticlesLimit: 10);
+      final res = await client.queries.getAuthor(id: '1', fieldArgs: GetAuthorFieldArgs(latestArticlesLimit: 10));
       final titles = res.getAuthor!.articles?.map((a) => a.title).toSet();
       expect(titles, containsAll(['GraphLink Basics', 'Advanced GraphLink']));
     });
 
     test('latestArticles is resolved via non-batch mapping with arguments', () async {
-      final res = await client.queries.getAuthor(id: '1', latestArticlesLimit: 10);
+      final res = await client.queries.getAuthor(id: '1', fieldArgs: GetAuthorFieldArgs(latestArticlesLimit: 10));
       final titles = res.getAuthor!.latestArticles?.map((a) => a.title).toSet();
       expect(titles, containsAll(['GraphLink Basics', 'Advanced GraphLink']));
     });
@@ -57,7 +57,7 @@ void main() {
 
   group('getAuthorAndArticle', () {
     test('resolves both root fields with their own arguments plus a shared fragment argument', () async {
-      final res = await client.queries.getAuthorAndArticle(authorId: '1', articleId: '3', latestArticlesLimit: 1);
+      final res = await client.queries.getAuthorAndArticle(authorId: '1', articleId: '3', fieldArgs: GetAuthorAndArticleFieldArgs(latestArticlesLimit: 1));
       expect(res.author!.id, equals('1'));
       expect(res.author!.latestArticles, hasLength(1));
       expect(res.article.id, equals('3'));
@@ -67,7 +67,7 @@ void main() {
 
   group('listAuthors / listArticles', () {
     test('listAuthors returns all authors', () async {
-      final res = await client.queries.listAuthors(latestArticlesLimit: 10);
+      final res = await client.queries.listAuthors(fieldArgs: ListAuthorsFieldArgs(latestArticlesLimit: 10));
       expect(res.listAuthors.map((a) => a.id), containsAll(['1', '2']));
     });
 
