@@ -231,3 +231,28 @@ describe('createWithNestedDefaults — nested defaults applied via companion con
     expect(res.createWithNestedDefaults.matrix![0]![0]!.street).toBe('A');
   });
 });
+
+// ── getDriver — field-argument defaults ──────────────────────────────────────
+
+describe('getDriver — client applies field-argument defaults', () => {
+  it('odometerKm is required and echoed back', async () => {
+    const res = await client.queries.getDriver({ id: 'driver-1', lastUsedMillageOdometerKm: 100 });
+    expect(res.getDriver.lastUsedMillage).toBe(100);
+  });
+
+  it('liters defaults to 4 when not provided', async () => {
+    const res = await client.queries.getDriver({ id: 'driver-1', lastUsedMillageOdometerKm: 200 });
+    expect(res.getDriver.lastUsedFuel).toBe(4);
+  });
+
+  it('explicit liters overrides the default', async () => {
+    const res = await client.queries.getDriver({ id: 'driver-1', lastUsedMillageOdometerKm: 300, lastUsedFuelLiters: 10 });
+    expect(res.getDriver.lastUsedFuel).toBe(10);
+  });
+
+  it('both values echoed back with explicit liters', async () => {
+    const res = await client.queries.getDriver({ id: 'driver-1', lastUsedMillageOdometerKm: 500, lastUsedFuelLiters: 25 });
+    expect(res.getDriver.lastUsedMillage).toBe(500);
+    expect(res.getDriver.lastUsedFuel).toBe(25);
+  });
+});

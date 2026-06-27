@@ -33,6 +33,7 @@ import 'package:graphlink/src/gl_grammar_annotation_extension.dart';
 import 'package:graphlink/src/gl_grammar_service_extension.dart';
 import 'package:graphlink/src/gl_grammar_fragment_extension.dart';
 import 'package:graphlink/src/gl_grammar_projection_extension.dart';
+import 'package:graphlink/src/gl_grammar_hoist_args_extension.dart';
 import 'package:graphlink/src/gl_grammar_strict_extension.dart';
 import 'package:graphlink/src/gl_expand_grammar_extension.dart';
 import 'package:graphlink/src/gl_validation_extension.dart';
@@ -320,6 +321,7 @@ class GLParser {
       validateProjections();
       updateFragmentDependencies();
       propagateFieldArgumentVariables();
+      groupHoistedArgsIntoInputs();
       fixTagListValues();
       validateTagValues();
       checkCacheAndNoCacheConflict();

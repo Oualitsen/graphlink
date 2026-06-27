@@ -61,6 +61,11 @@ class GLQueryDefinition extends GLToken with GLDirectivesMixin {
   /// its declaration position).
   void setArgument(GLArgumentDefinition arg) => _arguments[arg.token] = arg;
 
+  /// Drops the operation variable with [token], if present. Used by the
+  /// hoist-args pass to pull propagated args out before replacing them with a
+  /// single synthesized `<Op>FieldArgs` object argument.
+  void removeArgument(String token) => _arguments.remove(token);
+
   final List<GLQueryElement> elements;
   final GLQueryType type; //query|mutation|subscription
   Set<GLFragmentDefinitionBase>? _allFrags;

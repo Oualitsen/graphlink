@@ -2,6 +2,12 @@ import 'package:test/test.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
+// Propagated field arguments are no longer flat operation parameters — they are
+// grouped into a synthesized `<Op>FieldArgs` input object. These tests therefore
+// assert on that input's fields (keyed by the bare field name, no `$`) instead
+// of on `query.arguments`. The variable-naming / collision-disambiguation logic
+// being exercised is unchanged.
+
 const _nonScalarSchema = '''
 input OrderInput {
   direction: String
@@ -106,83 +112,75 @@ type Query {
 }
 ''';
 
+GLParser _parse(String schema) {
+  final g =
+      GLParser(generateAllFieldsFragments: true, autoGenerateQueries: true);
+  g.parse(schema);
+  return g;
+}
+
+/// The synthesized `<Op>FieldArgs` fields, keyed by bare field name → type token.
+Map<String, String> _fieldArgTypes(GLParser g, String inputName) =>
+    {for (final f in g.inputs[inputName]!.fields) f.name.token: f.type.token};
+
 void main() {
   test('union: both members register their argument variables in the auto-generated query',
       () {
-    final g = GLParser(
-        generateAllFieldsFragments: true, autoGenerateQueries: true);
-    g.parse(_unionSchema);
+    final g = _parse(_unionSchema);
+    final byName = _fieldArgTypes(g, 'GetContainerFieldArgs');
 
-    final query = g.queries[GLOperationKey('getContainer', GLQueryType.query)]!;
-    final argsByName = {for (var a in query.arguments) a.token: a.type.token};
-
-    expect(argsByName[r'$itemsPage'], equals('Int'),
-        reason: 'TypeA.items(page: Int) should produce \$itemsPage: Int');
-    expect(argsByName[r'$fetchSize'], equals('Int'),
-        reason: 'TypeB.fetch(size: Int) should produce \$fetchSize: Int');
+    expect(byName['itemsPage'], equals('Int'),
+        reason: 'TypeA.items(page: Int) should produce itemsPage: Int');
+    expect(byName['fetchSize'], equals('Int'),
+        reason: 'TypeB.fetch(size: Int) should produce fetchSize: Int');
   });
 
   test('non-scalar: different fields with same arg name do not collide', () {
-    final g = GLParser(
-        generateAllFieldsFragments: true, autoGenerateQueries: true);
-    g.parse(_nonScalarSchema);
+    final g = _parse(_nonScalarSchema);
+    final byName = _fieldArgTypes(g, 'GetNodeFieldArgs');
 
-    final query = g.queries[GLOperationKey('getNode', GLQueryType.query)]!;
-    final argsByName = {for (var a in query.arguments) a.token: a.type.token};
-
-    expect(argsByName[r'$searchOrder'], equals('OrderInput'),
-        reason: 'TypeA.search(order: OrderInput!) → \$searchOrder');
-    expect(argsByName[r'$findOrder'], equals('OrderInput'),
-        reason: 'TypeB.find(order: OrderInput) → \$findOrder');
+    expect(byName['searchOrder'], equals('OrderInput'),
+        reason: 'TypeA.search(order: OrderInput!) → searchOrder');
+    expect(byName['findOrder'], equals('OrderInput'),
+        reason: 'TypeB.find(order: OrderInput) → findOrder');
   });
 
   test('scalar: different fields with same arg name do not collide', () {
-    final g = GLParser(
-        generateAllFieldsFragments: true, autoGenerateQueries: true);
-    g.parse(_scalarSchema);
+    final g = _parse(_scalarSchema);
+    final byName = _fieldArgTypes(g, 'GetNodeFieldArgs');
 
-    final query = g.queries[GLOperationKey('getNode', GLQueryType.query)]!;
-    final argsByName = {for (var a in query.arguments) a.token: a.type.token};
-
-    expect(argsByName[r'$itemsPage'], equals('Int'),
-        reason: 'TypeA.items(page: Int!) → \$itemsPage');
-    expect(argsByName[r'$fetchPage'], equals('Int'),
-        reason: 'TypeB.fetch(page: Int) → \$fetchPage');
+    expect(byName['itemsPage'], equals('Int'),
+        reason: 'TypeA.items(page: Int!) → itemsPage');
+    expect(byName['fetchPage'], equals('Int'),
+        reason: 'TypeB.fetch(page: Int) → fetchPage');
   });
 
   test('nullability merge: same field across interface members upgrades to non-nullable',
       () {
-    final g = GLParser(
-        generateAllFieldsFragments: true, autoGenerateQueries: true);
-    g.parse(_nullabilityMergeSchema);
+    final g = _parse(_nullabilityMergeSchema);
+    final input = g.inputs['GetNodeFieldArgs']!;
+    final byName = {for (final f in input.fields) f.name.token: f};
 
-    final query = g.queries[GLOperationKey('getNode', GLQueryType.query)]!;
-    final args = {for (var a in query.arguments) a.token: a};
-
-    // only one variable — merged from Int and Int!
-    expect(args.length, equals(1),
+    // only one field — merged from Int and Int!
+    expect(input.fields.length, equals(1),
         reason: 'same field+arg across members should produce one variable');
-    expect(args[r'$fetchPage'], isNotNull,
-        reason: 'variable should be named \$fetchPage');
-    expect(args[r'$fetchPage']!.type.nullable, isFalse,
+    expect(byName['fetchPage'], isNotNull,
+        reason: 'field should be named fetchPage');
+    expect(byName['fetchPage']!.type.nullable, isFalse,
         reason: 'Int! wins over Int — most restrictive');
   });
 
   test('list args: variable names use field+arg name regardless of list depth', () {
-    final g = GLParser(
-        generateAllFieldsFragments: true, autoGenerateQueries: true);
-    g.parse(_listNamingSchema);
+    final g = _parse(_listNamingSchema);
+    final byName = _fieldArgTypes(g, 'GetContainerFieldArgs');
 
-    final query = g.queries[GLOperationKey('getContainer', GLQueryType.query)]!;
-    final argsByName = {for (var a in query.arguments) a.token: a.type.token};
-
-    expect(argsByName[r'$aIds'], equals('String'), reason: '[String] → \$aIds');
-    expect(argsByName[r'$bIds'], equals('String'), reason: '[String]! → \$bIds');
-    expect(argsByName[r'$cIds'], equals('String'), reason: '[String!] → \$cIds');
-    expect(argsByName[r'$dIds'], equals('String'), reason: '[String!]! → \$dIds');
-    expect(argsByName[r'$eIds'], equals('String'), reason: '[[String]] → \$eIds');
-    expect(argsByName[r'$fIds'], equals('String'), reason: '[[String]!] → \$fIds');
-    expect(argsByName[r'$gIds'], equals('String'), reason: '[[String!]!]! → \$gIds');
-    expect(argsByName[r'$hIds'], equals('String'), reason: '[[[String]]] → \$hIds');
+    expect(byName['aIds'], equals('String'), reason: '[String] → aIds');
+    expect(byName['bIds'], equals('String'), reason: '[String]! → bIds');
+    expect(byName['cIds'], equals('String'), reason: '[String!] → cIds');
+    expect(byName['dIds'], equals('String'), reason: '[String!]! → dIds');
+    expect(byName['eIds'], equals('String'), reason: '[[String]] → eIds');
+    expect(byName['fIds'], equals('String'), reason: '[[String]!] → fIds');
+    expect(byName['gIds'], equals('String'), reason: '[[String!]!]! → gIds');
+    expect(byName['hIds'], equals('String'), reason: '[[[String]]] → hIds');
   });
 }

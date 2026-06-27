@@ -1,3 +1,4 @@
+import 'package:graphlink_client_integration_tests/generated/inputs/get_driver_field_args.dart';
 import 'package:test/test.dart';
 import 'package:graphlink_client_integration_tests/generated/client/graph_link_client.dart';
 import 'package:graphlink_client_integration_tests/generated/enums/role.dart';
@@ -12,15 +13,10 @@ void main() {
 
   group('createWithDefaults — client applies input field defaults', () {
     test('role defaults to USER when not provided', () async {
-      try {
       final res = await client.mutations.createWithDefaults(
         input: CreateWithDefaultsInput(name: 'test'),
       );
-      
       expect(res.createWithDefaults.role, equals(Role.USER));
-      }catch(err, st) {
-        print(err);
-      }
     });
 
     test('age defaults to 18 when not provided', () async {
@@ -203,7 +199,7 @@ void main() {
     test('odometerKm is required (echoed back)', () async {
       final res = await client.queries.getDriver(
         id: 'driver-1',
-        lastUsedMillageOdometerKm: 100,
+        fieldArgs: GetDriverFieldArgs(lastUsedMillageOdometerKm: 100),
       );
       expect(res.getDriver.lastUsedMillage, equals(100));
     });
@@ -211,7 +207,7 @@ void main() {
     test('liters defaults to 4 when not provided', () async {
       final res = await client.queries.getDriver(
         id: 'driver-1',
-        lastUsedMillageOdometerKm: 200,
+        fieldArgs: GetDriverFieldArgs(lastUsedMillageOdometerKm: 200),
       );
       // Client sends liters=4 (the default), server echoes it back
       expect(res.getDriver.lastUsedFuel, equals(4));
@@ -220,8 +216,8 @@ void main() {
     test('explicit liters overrides the default', () async {
       final res = await client.queries.getDriver(
         id: 'driver-1',
-        lastUsedMillageOdometerKm: 300,
-        lastUsedFuelLiters: 10,
+        fieldArgs: GetDriverFieldArgs(lastUsedMillageOdometerKm: 300, lastUsedFuelLiters: 10),
+        
       );
       expect(res.getDriver.lastUsedFuel, equals(10));
     });
@@ -229,8 +225,7 @@ void main() {
     test('both values echoed back with explicit liters', () async {
       final res = await client.queries.getDriver(
         id: 'driver-1',
-        lastUsedMillageOdometerKm: 500,
-        lastUsedFuelLiters: 25,
+        fieldArgs: GetDriverFieldArgs(lastUsedMillageOdometerKm: 500, lastUsedFuelLiters: 25),
       );
       expect(res.getDriver.lastUsedMillage, equals(500));
       expect(res.getDriver.lastUsedFuel, equals(25));

@@ -1,7 +1,5 @@
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
-import 'package:graphlink/src/serializers/dart_serializer.dart';
-import 'package:graphlink/src/serializers/client_serializers/dart/dart_client_serializer.dart';
 import 'package:test/test.dart';
 
 /// Bug: when two types in a union share a field with the same argument name
@@ -44,24 +42,19 @@ void main() {
       generateAllFieldsFragments: true,
     );
     g.parse(_schema);
-    final s = DartSerializer(g, importPrefix: '');
-    final out =
-        DartClientSerializer(g, s).getQueriesClass()?.toFileContent() ?? '';
-    print('=== Dart client ===\n$out');
 
-    // BUG: The generated Dart code is `String provisioningStepsRunnerToken = null`
-    // which is a COMPILE ERROR — non-nullable String cannot have null default.
-    // The String! type is correct (from the merge), but the = null default
-    // leaked from the CiRunnerGoogleCloudProvisioning variant.
-    expect(out, isNot(contains('String provisioningStepsRunnerToken = null')),
-        reason: 'non-null String arg must not get a null default from '
-            'a same-named nullable arg on a sibling union member type');
+    // `provisioningStepsRunnerToken` is a propagated field arg, now grouped into
+    // the synthesized GetDataFieldArgs input. The merge across the two union
+    // members must pick the stricter (non-null) type AND drop the incompatible
+    // `= null` default — otherwise the generated input field would be
+    // `String provisioningStepsRunnerToken = null`, a compile error.
+    final field = g.inputs['GetDataFieldArgs']!.fields
+        .firstWhere((f) => f.name.token == 'provisioningStepsRunnerToken');
 
-    // It should be: required (non-null) with NO default, or nullable with default.
-    // Expected correct output: `required String provisioningStepsRunnerToken`
-    // since the stricter type wins.
-    expect(out, contains('required String provisioningStepsRunnerToken'),
-        reason: 'when merging same-named args, the stricter (non-null) type '
-            'should win AND any incompatible default value should be dropped');
+    expect(field.type.nullable, isFalse,
+        reason: 'stricter (non-null) String! type wins over the nullable variant');
+    expect(field.initialValue, isNull,
+        reason: 'the incompatible null default must be dropped, not leaked onto '
+            'the non-null field');
   });
 }

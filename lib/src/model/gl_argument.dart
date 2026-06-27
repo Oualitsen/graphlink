@@ -1,5 +1,6 @@
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_directives_mixin.dart';
+import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 
@@ -10,7 +11,21 @@ import 'package:graphlink/src/model/gl_token.dart';
 class GLArgumentDefinition extends GLToken with GLDirectivesMixin {
   final GLType type;
   final GLDefaultValue? defaultValue;
-  GLArgumentDefinition(super.tokenInfo, this.type, List<GLDirectiveValue> directives, {this.defaultValue}) {
+
+  /// False only for *propagated* (hoisted) field-argument variables added by
+  /// `_addGeneratedArgument`; true for the operation's own declared variables.
+  /// Drives the hoist-args pass, which extracts the non-declared ones into a
+  /// synthesized `<Op>FieldArgs` input.
+  final bool isDeclared;
+
+  /// Set on the single synthetic argument that *replaces* the extracted
+  /// propagated args (its [type] is the `<Op>FieldArgs` input). Non-null marks
+  /// this arg for expansion back into flat wire variables by the query-string
+  /// and variables-map serializers; null for every normal argument.
+  GLInputDefinition? hoistArgsInput;
+
+  GLArgumentDefinition(super.tokenInfo, this.type, List<GLDirectiveValue> directives,
+      {this.defaultValue, this.isDeclared = true}) {
     directives.forEach(addDirective);
   }
 

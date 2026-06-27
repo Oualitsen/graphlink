@@ -261,10 +261,25 @@ class KotlinClientOperationSerializer {
 
   String _generateVariables(GLQueryDefinition def, GLImportContainer container) {
     if (def.arguments.isEmpty) return '';
-    final entries = def.arguments
-        .map((e) => '"${e.dartArgumentName}" to ${_serializeArgumentValue(def, e.token, container)}')
-        .join(', ');
-    return 'val ${svVariables} = mapOf($entries)';
+    // Declared args build the base map; a synthetic hoist arg merges in the
+    // <Op>FieldArgs object's own toJson() map (keyed by wire variable) via `+`.
+    // An optional object falls back to emptyMap() when null, leaving those vars
+    // absent (document defaults apply).
+    final pairs = <String>[];
+    final merges = <String>[];
+    for (final arg in def.arguments) {
+      final input = arg.hoistArgsInput;
+      if (input == null) {
+        pairs.add(
+            '"${arg.dartArgumentName}" to ${_serializeArgumentValue(def, arg.token, container)}');
+        continue;
+      }
+      final base = arg.codeName;
+      merges.add(arg.type.nullable
+          ? ' + (${base}?.toJson() ?: emptyMap())'
+          : ' + ${base}.toJson()');
+    }
+    return 'val ${svVariables} = mapOf(${pairs.join(', ')})${merges.join('')}';
   }
 
   String _variablesExpr(GLQueryDefinition def) =>

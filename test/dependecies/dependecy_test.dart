@@ -964,4 +964,27 @@ type Query {
     print(serial);
     expect(controller.getImports(g), contains(SpringImports.gqlArgument));
   });
+
+  test("input with nested object default includes sub-field types as deps", () {
+    final GLParser g = GLParser();
+    g.parse('''
+  enum Direction { ASC DESC }
+  enum SortField { NAME AGE }
+  input SortOrder {
+    direction: Direction!
+    field: SortField!
+  }
+  input SearchInput {
+    query: String!
+    sort: SortOrder = {direction: ASC, field: NAME}
+  }
+  type Query { search(input: SearchInput!): String }
+''');
+
+    final searchInput = g.inputs["SearchInput"]!;
+    final deps = searchInput.getImportDependecies(g).map((t) => t.token);
+    expect(deps, contains("SortOrder"));
+    expect(deps, contains("Direction"));
+    expect(deps, contains("SortField"));
+  });
 }
