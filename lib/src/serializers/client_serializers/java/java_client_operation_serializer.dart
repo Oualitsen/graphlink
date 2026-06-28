@@ -43,16 +43,15 @@ class JavaClientOperationSerializer {
 	        methodName: def.tokenInfo.token,
 	        arguments: getArguments(def),
 	        statements: [
-	          'String ${svOperationName} = "${def.tokenInfo}";',
 	          ..._defaultCoalesces(def),
 	          ..._nullChecks(def, container),
 	          if (def.arguments.isNotEmpty) generateVariables(def, container),
 	          'String ${svQuery} = "${queryString.escapeForJavaStringLiteral()}";',
 	          'Set<String> ${svFragmentNames} = ${fragmentNames.isEmpty ? "Collections.emptySet();" : "new HashSet<>(Arrays.asList(${fragmentNames.join(", ")}));"}',
 	          if (isCE)
-	            'return executeFull(${svQuery}, ${svFragmentNames}, ${svOperationName}, ${def.arguments.isEmpty ? "Collections.emptyMap()" : svVariables}, $parseType::fromJson);'
+	            'return executeFull(${svQuery}, ${svFragmentNames}, "${def.tokenInfo.token}", ${def.arguments.isEmpty ? "Collections.emptyMap()" : svVariables}, $parseType::fromJson);'
 	          else
-	            'return executeData(${svQuery}, ${svFragmentNames}, ${svOperationName}, ${def.arguments.isEmpty ? "Collections.emptyMap()" : svVariables}, $parseType::fromJson)${_getDataCall(def)};',
+	            'return executeData(${svQuery}, ${svFragmentNames}, "${def.tokenInfo.token}", ${def.arguments.isEmpty ? "Collections.emptyMap()" : svVariables}, $parseType::fromJson)${_getDataCall(def)};',
 	        ]);
 	  }
 
@@ -71,13 +70,12 @@ class JavaClientOperationSerializer {
 	        methodName: def.tokenInfo.token,
 	        arguments: getArguments(def),
 	        statements: [
-	          'String ${svOperationName} = "${def.tokenInfo}";',
 	          ..._defaultCoalesces(def),
 	          ..._nullChecks(def, container),
 	          if (def.arguments.isNotEmpty) generateVariables(def, container),
 	          'List<GraphLinkPartialQuery> ${svPartialQueries} = new ArrayList<>();',
 	          ...dividedQueries.map(serializePartialQueryJava),
-	          'return executeCached(${svPartialQueries}, ${svOperationName}, "$directives", $parseType::fromJson, ${def.isCaptureErrors(_ctx.grammar) ? 'true' : 'false'})${_getDataCall(def)};',
+	          'return executeCached(${svPartialQueries}, "${def.tokenInfo.token}", "$directives", $parseType::fromJson, ${def.isCaptureErrors(_ctx.grammar) ? 'true' : 'false'})${_getDataCall(def)};',
 	        ]);
 	  }
 
@@ -160,7 +158,6 @@ class JavaClientOperationSerializer {
       ];
 
       final body = _ctx.codeGenUtils.block([
-        'String ${svOperationName} = "$methodName";',
         ...queryLine,
         'String ${svFullQuery} = assembleQuery(${svQuery}, ${svFragmentNames});',
         ..._defaultCoalesces(def),
@@ -188,7 +185,6 @@ class JavaClientOperationSerializer {
         methodName: methodName,
         arguments: getArguments(def),
         statements: [
-          'String ${svOperationName} = "$methodName";',
           ...queryLine,
           ..._defaultCoalesces(def),
           ..._nullChecks(def, container),
@@ -250,7 +246,7 @@ class JavaClientOperationSerializer {
     statements.addAll([
       'Map<String, Object> ${svOperationsMap} = new HashMap<>();',
       '${svOperationsMap}.put("query", ${svFullQuery});',
-      '${svOperationsMap}.put("operationName", ${svOperationName});',
+      '${svOperationsMap}.put("operationName", "${def.tokenInfo.token}");',
       '${svOperationsMap}.put("variables", ${svVariables});',
       'String ${svOperations} = ${svEncoder}.encode(${svOperationsMap});',
       'String ${svMapJson} = ${svEncoder}.encode(${svFileMap});',
@@ -304,14 +300,13 @@ class JavaClientOperationSerializer {
         methodName: def.tokenInfo.token,
         arguments: getArguments(def),
         statements: [
-          'String ${svOperationName} = "${def.tokenInfo}";',
           'String ${svQuery} = "${queryText.escapeForJavaStringLiteral()}";',
           'Set<String> ${svFragmentNames} = ${fragmentNames.isEmpty ? "Collections.emptySet();" : "new HashSet<>(Arrays.asList(${fragmentNames.join(", ")}));"}',
           'String ${svFullQuery} = assembleQuery(${svQuery}, ${svFragmentNames});',
           ..._defaultCoalesces(def),
           ..._nullChecks(def, container),
           if (def.arguments.isNotEmpty) generateVariables(def, container),
-          "GraphLinkPayload ${svPayload} = GraphLinkPayload.builder().query(${svFullQuery}).operationName(${svOperationName}).variables(${def.arguments.isEmpty ? "Collections.emptyMap()" : svVariables}).build();",
+          'GraphLinkPayload ${svPayload} = GraphLinkPayload.builder().query(${svFullQuery}).operationName("${def.tokenInfo.token}").variables(${def.arguments.isEmpty ? "Collections.emptyMap()" : svVariables}).build();',
           _serializeSubscriptionAdapterCall(def),
         ]);
   }
@@ -418,14 +413,14 @@ class JavaClientOperationSerializer {
     if (_ctx.flavor.isReactive) {
       if (!isCE) {
         return [
-          'return ${_ctx.flavor.mapOpen('executeData(${svQuery}, ${svFragmentNames}, ${svOperationName}, $varsArg, $fullResponseToken::fromJson)', svDecodedResponse)}',
+          'return ${_ctx.flavor.mapOpen('executeData(${svQuery}, ${svFragmentNames}, "${def.tokenInfo.token}", $varsArg, $fullResponseToken::fromJson)', svDecodedResponse)}',
           '  $invalidation',
           '  return ${svDecodedResponse}.getData();',
           '});',
         ].join('\n');
       }
       return [
-        'return ${_ctx.flavor.mapOpen('executeFull(${svQuery}, ${svFragmentNames}, ${svOperationName}, $varsArg, $fullResponseToken::fromJson)', svDecodedResponse)}',
+        'return ${_ctx.flavor.mapOpen('executeFull(${svQuery}, ${svFragmentNames}, "${def.tokenInfo.token}", $varsArg, $fullResponseToken::fromJson)', svDecodedResponse)}',
         if (def.invalidateCacheTags.isNotEmpty) ...[
           '  if (${svDecodedResponse}.getErrors() == null) {',
           '    $invalidation',
@@ -438,13 +433,13 @@ class JavaClientOperationSerializer {
 
     if (!isCE) {
       return [
-        '$fullResponseToken ${svDecodedResponse} = executeData(${svQuery}, ${svFragmentNames}, ${svOperationName}, $varsArg, $fullResponseToken::fromJson);',
+        '$fullResponseToken ${svDecodedResponse} = executeData(${svQuery}, ${svFragmentNames}, "${def.tokenInfo.token}", $varsArg, $fullResponseToken::fromJson);',
         invalidation,
         'return ${svDecodedResponse}.getData();',
       ].join('\n');
     }
     return [
-      '$fullResponseToken ${svDecodedResponse} = executeFull(${svQuery}, ${svFragmentNames}, ${svOperationName}, $varsArg, $fullResponseToken::fromJson);',
+      '$fullResponseToken ${svDecodedResponse} = executeFull(${svQuery}, ${svFragmentNames}, "${def.tokenInfo.token}", $varsArg, $fullResponseToken::fromJson);',
       if (def.invalidateCacheTags.isNotEmpty)
         _ctx.codeGenUtils.ifStatement(
           condition: '${svDecodedResponse}.getErrors() == null',
