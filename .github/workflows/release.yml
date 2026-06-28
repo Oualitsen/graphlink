@@ -4,6 +4,11 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build (e.g. v1.2.3)'
+        required: true
 
 permissions:
   contents: write
@@ -15,8 +20,12 @@ jobs:
         include:
           - os: ubuntu-latest
             artifact: glink-linux-x86_64
+          - os: ubuntu-24.04-arm
+            artifact: glink-linux-arm64
           - os: windows-latest
             artifact: glink-windows-x86_64.exe
+          - os: macos-13
+            artifact: glink-macos-x86_64
           - os: macos-latest
             artifact: glink-macos-arm64
 
@@ -30,7 +39,8 @@ jobs:
       - name: Compile binary
         shell: bash
         run: |
-          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //')
+          REF="${{ github.event.inputs.tag || github.ref_name }}"
+          VERSION="${REF#v}"
           dart compile exe lib/src/main.dart -o ${{ matrix.artifact }} --define=version=$VERSION
 
       - name: Compute checksum (Linux / macOS)
@@ -51,8 +61,58 @@ jobs:
             ${{ matrix.artifact }}
             ${{ matrix.artifact }}.sha256
 
-  release:
+  test-macos-x86_64:
     needs: build
+    runs-on: macos-13
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: glink-macos-x86_64
+          path: dist
+      - name: Smoke test
+        run: |
+          chmod +x dist/glink-macos-x86_64
+          dist/glink-macos-x86_64 --help
+
+  docker:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: glink-linux-x86_64
+          path: dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: glink-linux-arm64
+          path: dist
+      - name: Stage binaries for Docker build context
+        run: |
+          cp dist/glink-linux-x86_64 glink-linux-x86_64
+          cp dist/glink-linux-arm64 glink-linux-arm64
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Extract version from tag
+        id: version
+        run: |
+          REF="${{ github.event.inputs.tag || github.ref_name }}"
+          echo "tag=${REF#v}" >> $GITHUB_OUTPUT
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            oualitsen/graphlink:${{ steps.version.outputs.tag }}
+            oualitsen/graphlink:latest
+
+  release:
+    needs: [build, test-macos-x86_64]
     runs-on: ubuntu-latest
 
     steps:
@@ -69,6 +129,8 @@ jobs:
           generate_release_notes: true
           files: |
             dist/glink-linux-x86_64
+            dist/glink-linux-arm64
             dist/glink-windows-x86_64.exe
+            dist/glink-macos-x86_64
             dist/glink-macos-arm64
             dist/checksums.sha256
