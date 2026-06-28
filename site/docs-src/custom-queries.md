@@ -284,6 +284,51 @@ This catches typos at generation time rather than at runtime.
 
 ---
 
+## Auto-generated query argument limit
+
+When `autoGenerateQueries` is on, GraphLink propagates the arguments of every nested field up to the operation level. For most schemas the number of propagated arguments is small — they are grouped automatically into a single `fieldArgs` object so the method signature stays clean. On very large schemas (e.g. GitHub's `node` query), the `fieldArgs` object can grow to hundreds of fields, producing an object that is unrealistic to construct by hand and difficult to compile.
+
+`autoGenerateQueriesArgumentLimit` (default `200`) is a safety cap: if an auto-generated operation's `fieldArgs` input would contain more fields than the limit, GraphLink **skips** that operation entirely and prints a `⚠` warning:
+
+```
+⚠ Auto-generated query "node" skipped: 1219 propagated args exceed the limit of 200.
+  Write a custom query with a narrower selection, or raise autoGenerateQueriesArgumentLimit in your config.
+```
+
+**Hand-written operations are never affected** — the cap applies only to operations that GraphLink generates automatically.
+
+### What to do when an operation is skipped
+
+**Option 1 — write a custom query.** This is the recommended approach for large operations. Select only the fields you actually need:
+
+```graphql title="schema/operations.graphql — narrow selection instead of _all_fields"
+query fetchNode($id: ID!) {
+  node(id: $id) {
+    ... on Repository {
+      id
+      name
+      description
+    }
+  }
+}
+```
+
+**Option 2 — use `autoGenerateQueriesFor`** to auto-generate the operation but restrict which operations are generated overall, reducing total output without raising the limit.
+
+**Option 3 — raise the limit.** If the generated `fieldArgs` object is genuinely useful in your case, increase the cap:
+
+```json title="glink.json"
+{
+  "clientConfig": {
+    "dart": {
+      "autoGenerateQueriesArgumentLimit": 500
+    }
+  }
+}
+```
+
+---
+
 ## Caching on custom queries
 
 `@glCache` and `@glCacheInvalidate` work exactly the same on custom operations. Apply them at the operation level or per resolver field:

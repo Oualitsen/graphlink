@@ -58,6 +58,11 @@ abstract class ClientLanguageConfig {
   String? get defaultAlias => null;
   AutoGenerateQueriesFor? get autoGenerateQueriesFor => null;
 
+  /// Maximum propagated-arg count before an auto-generated operation is skipped.
+  /// `null` disables the cap entirely. Default 200 — grouping handles normal
+  /// explosions; the cap only catches absurdly large schemas.
+  int? get autoGenerateQueriesArgumentLimit => 200;
+
   static ClientLanguageConfig fromJson(Map<String, dynamic> json) {
     if (json['dart'] != null) return DartClientConfig.fromJson(json['dart'] as Map<String, dynamic>);
     if (json['java'] != null) return JavaClientConfig.fromJson(json['java'] as Map<String, dynamic>);
@@ -430,6 +435,7 @@ class DartClientConfig extends ClientLanguageConfig {
   @override final bool immutableTypeFields;
   @override final bool captureErrors;
   @override final String? defaultAlias;
+  @override final int? autoGenerateQueriesArgumentLimit;
 
   final String? autoGenerateQueriesDefaultAlias;
   final String? packageName;
@@ -456,6 +462,7 @@ class DartClientConfig extends ClientLanguageConfig {
     this.generateAdapters = true,
     this.httpAdapter = DartHttpAdapter.http,
     this.autoGenerateQueriesFor,
+    this.autoGenerateQueriesArgumentLimit = 200,
   });
 
   factory DartClientConfig.fromJson(Map<String, dynamic> json) {
@@ -482,6 +489,7 @@ class DartClientConfig extends ClientLanguageConfig {
       autoGenerateQueriesFor: json['autoGenerateQueriesFor'] != null
           ? AutoGenerateQueriesFor.fromJson(json['autoGenerateQueriesFor'] as Map<String, dynamic>)
           : null,
+      autoGenerateQueriesArgumentLimit: json['autoGenerateQueriesArgumentLimit'] as int? ?? 200,
     );
   }
 }
@@ -494,6 +502,7 @@ class JavaClientConfig extends ClientLanguageConfig {
   @override final bool immutableTypeFields;
   @override final bool captureErrors;
   @override final String? defaultAlias;
+  @override final int? autoGenerateQueriesArgumentLimit;
 
   final String packageName;
   final bool immutableInputFields;
@@ -524,6 +533,7 @@ class JavaClientConfig extends ClientLanguageConfig {
     this.reactiveHttpClient = JavaReactiveHttpClient.jdk,
     this.defaultAlias,
     this.autoGenerateQueriesFor,
+    this.autoGenerateQueriesArgumentLimit = 200,
   });
 
   factory JavaClientConfig.fromJson(Map<String, dynamic> json) {
@@ -559,6 +569,7 @@ class JavaClientConfig extends ClientLanguageConfig {
       autoGenerateQueriesFor: json['autoGenerateQueriesFor'] != null
           ? AutoGenerateQueriesFor.fromJson(json['autoGenerateQueriesFor'] as Map<String, dynamic>)
           : null,
+      autoGenerateQueriesArgumentLimit: json['autoGenerateQueriesArgumentLimit'] as int? ?? 200,
     );
   }
 }
@@ -570,6 +581,7 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
   @override final bool immutableTypeFields;
   @override final bool captureErrors;
   @override final String? defaultAlias;
+  @override final int? autoGenerateQueriesArgumentLimit;
 
   final bool optionalNullableInputFields;
   final bool generateDefaultWsAdapter;
@@ -589,6 +601,7 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
     this.httpAdapter = TypeScriptHttpAdapter.fetch,
     this.defaultAlias,
     this.autoGenerateQueriesFor,
+    this.autoGenerateQueriesArgumentLimit = 200,
   });
 
   factory TypeScriptClientConfig.fromJson(Map<String, dynamic> json) {
@@ -609,6 +622,7 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
       autoGenerateQueriesFor: json['autoGenerateQueriesFor'] != null
           ? AutoGenerateQueriesFor.fromJson(json['autoGenerateQueriesFor'] as Map<String, dynamic>)
           : null,
+      autoGenerateQueriesArgumentLimit: json['autoGenerateQueriesArgumentLimit'] as int? ?? 200,
     );
   }
 }
@@ -621,6 +635,7 @@ class KotlinClientConfig extends ClientLanguageConfig {
   @override final bool immutableTypeFields;
   @override final bool captureErrors;
   @override final String? defaultAlias;
+  @override final int? autoGenerateQueriesArgumentLimit;
 
   final String packageName;
   final bool inputAsDataClass;
@@ -641,6 +656,7 @@ class KotlinClientConfig extends ClientLanguageConfig {
     this.wsAdapter = KotlinWsAdapter.okhttp,
     this.defaultAlias,
     this.autoGenerateQueriesFor,
+    this.autoGenerateQueriesArgumentLimit = 200,
   });
 
   factory KotlinClientConfig.fromJson(Map<String, dynamic> json) {
@@ -662,6 +678,7 @@ class KotlinClientConfig extends ClientLanguageConfig {
       autoGenerateQueriesFor: json['autoGenerateQueriesFor'] != null
           ? AutoGenerateQueriesFor.fromJson(json['autoGenerateQueriesFor'] as Map<String, dynamic>)
           : null,
+      autoGenerateQueriesArgumentLimit: json['autoGenerateQueriesArgumentLimit'] as int? ?? 200,
     );
   }
 }
