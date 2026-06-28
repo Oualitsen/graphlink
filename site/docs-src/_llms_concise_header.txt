@@ -55,6 +55,10 @@ client and server code. Developers define their API once in a `.graphql` schema 
   generates a client method for every root field. `autoGenerateQueriesFor` lets you list exactly which
   queries, mutations, and subscriptions to auto-generate. Unknown names cause a build error at generation
   time. Supported in all four client targets.
+- **Propagated-arg grouping and limit.** Nested field arguments collected during auto-generation are
+  grouped into a single `fieldArgs` object parameter so method signatures stay manageable.
+  `autoGenerateQueriesArgumentLimit` (default 200) skips any auto-generated operation whose `fieldArgs`
+  would exceed the cap and prints a `⚠` warning. Hand-written operations are never skipped.
 - **Barrel file generation.** Dart and TypeScript generators emit a barrel/index file that
   re-exports all generated types, inputs, and enums from a single import.
 - **Keyword-safe identifiers.** A GraphQL field, input field, argument, or enum value named after a
