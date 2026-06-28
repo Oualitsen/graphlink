@@ -1,7 +1,7 @@
 targets:
   graphlink:
     builders:
-      graphlink|aggregatingBuilder:
+      graphlink|graphlinkGeneratorBuilder:
         enabled: true
         generate_for:
           include:
@@ -9,16 +9,13 @@ targets:
         options:
           Long: int
           ID: int
-         
 
 builders:
-  aggregatingBuilder:
+  graphlinkGeneratorBuilder:
     import: 'package:graphlink/code_generators.dart'
     builder_factories: ['graphlinkGeneratorBuilder']
     build_extensions:
       .graphql:
         - .gq.dart
-      
-     
     build_to: source
-    auto_apply: root_package 
+    auto_apply: dependents

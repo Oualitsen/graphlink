@@ -15,9 +15,12 @@ const _knownOptions = {
   'generateAllFieldsFragments',
   'autoGenerateQueries',
   'autoGenerateQueriesDefaultAlias',
+  'autoGenerateQueriesFor',
+  'autoGenerateQueriesArgumentLimit',
   'defaultAlias',
   'operationNameAsParameter',
   'nullableFieldsRequired',
+  'captureErrors',
   'immutableInputFields',
   'immutableTypeFields',
   'flutter',
@@ -65,9 +68,12 @@ const _knownOptions = {
 /// | `generateAllFieldsFragments` | `bool` | `false` |
 /// | `autoGenerateQueries` | `bool` | `false` |
 /// | `autoGenerateQueriesDefaultAlias` | `string` | `null` |
+/// | `autoGenerateQueriesArgumentLimit` | `int?` | `200` |
+/// | `autoGenerateQueriesFor` | `map` | `null` |
 /// | `defaultAlias` | `string` | `null` |
 /// | `operationNameAsParameter` | `bool` | `false` |
 /// | `nullableFieldsRequired` | `bool` | `false` |
+/// | `captureErrors` | `bool` | `false` |
 /// | `immutableInputFields` | `bool` | `true` |
 /// | `immutableTypeFields` | `bool` | `true` |
 /// | `flutter` | `map` | `null` |
@@ -159,6 +165,7 @@ class GraphlinkGeneratorBuilder implements Builder {
       defaultAlias: s('defaultAlias'),
       operationNameAsParameter: b('operationNameAsParameter', false),
       nullableFieldsRequired: b('nullableFieldsRequired', false),
+      captureErrors: b('captureErrors', false),
       immutableInputFields: b('immutableInputFields', true),
       immutableTypeFields: b('immutableTypeFields', true),
       flutter: options.config['flutter'] is Map
@@ -166,6 +173,8 @@ class GraphlinkGeneratorBuilder implements Builder {
               Map<String, dynamic>.from(options.config['flutter'] as Map))
           : null,
       appLocalizationsImport: s('appLocalizationsImport'),
+      autoGenerateQueriesArgumentLimit:
+          options.config['autoGenerateQueriesArgumentLimit'] as int? ?? 200,
     );
 
     return GeneratorConfig(
