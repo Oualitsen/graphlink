@@ -1,0 +1,16 @@
+targets:
+  $default:
+    builders:
+      graphlink|graphlinkGeneratorBuilder:
+        generate_for:
+          - lib/**/*.graphql
+          - lib/**/*.graphqls
+        options:
+          packageName: graphlink_example
+          httpAdapter: dio
+          generateAdapters: true
+          generateAllFieldsFragments: true
+          autoGenerateQueries: true
+          nullableFieldsRequired: false
+          immutableInputFields: true
+          immutableTypeFields: true
