@@ -45,6 +45,7 @@ class JavaClientOperationSerializer {
 	        statements: [
 	          'String ${svOperationName} = "${def.tokenInfo}";',
 	          ..._defaultCoalesces(def),
+	          ..._nullChecks(def, container),
 	          if (def.arguments.isNotEmpty) generateVariables(def, container),
 	          'String ${svQuery} = "${queryString.escapeForJavaStringLiteral()}";',
 	          'Set<String> ${svFragmentNames} = ${fragmentNames.isEmpty ? "Collections.emptySet();" : "new HashSet<>(Arrays.asList(${fragmentNames.join(", ")}));"}',
@@ -72,6 +73,7 @@ class JavaClientOperationSerializer {
 	        statements: [
 	          'String ${svOperationName} = "${def.tokenInfo}";',
 	          ..._defaultCoalesces(def),
+	          ..._nullChecks(def, container),
 	          if (def.arguments.isNotEmpty) generateVariables(def, container),
 	          'List<GraphLinkPartialQuery> ${svPartialQueries} = new ArrayList<>();',
 	          ...dividedQueries.map(serializePartialQueryJava),
@@ -162,6 +164,7 @@ class JavaClientOperationSerializer {
         ...queryLine,
         'String ${svFullQuery} = assembleQuery(${svQuery}, ${svFragmentNames});',
         ..._defaultCoalesces(def),
+        ..._nullChecks(def, container),
         if (def.arguments.isNotEmpty) generateVariables(def, container),
         _serializeMultipartAdapterCall(def, container),
       ]);
@@ -188,6 +191,7 @@ class JavaClientOperationSerializer {
           'String ${svOperationName} = "$methodName";',
           ...queryLine,
           ..._defaultCoalesces(def),
+          ..._nullChecks(def, container),
           if (def.arguments.isNotEmpty) generateVariables(def, container),
           _serializeAdapterCall(def),
         ]);
@@ -305,10 +309,29 @@ class JavaClientOperationSerializer {
           'Set<String> ${svFragmentNames} = ${fragmentNames.isEmpty ? "Collections.emptySet();" : "new HashSet<>(Arrays.asList(${fragmentNames.join(", ")}));"}',
           'String ${svFullQuery} = assembleQuery(${svQuery}, ${svFragmentNames});',
           ..._defaultCoalesces(def),
+          ..._nullChecks(def, container),
           if (def.arguments.isNotEmpty) generateVariables(def, container),
           "GraphLinkPayload ${svPayload} = GraphLinkPayload.builder().query(${svFullQuery}).operationName(${svOperationName}).variables(${def.arguments.isEmpty ? "Collections.emptyMap()" : svVariables}).build();",
           _serializeSubscriptionAdapterCall(def),
         ]);
+  }
+
+  static const _javaPrimitives = {
+    'boolean', 'byte', 'short', 'int', 'long', 'float', 'double', 'char',
+  };
+
+  List<String> _nullChecks(GLQueryDefinition def, GLImportContainer container) {
+    final uploadNames = _ctx.grammar.uploadScalarNames;
+    final required = def.arguments.where((e) {
+      if (e.type.nullable || e.defaultValue != null) return false;
+      if (uploadNames.contains(e.type.firstType.token)) return false;
+      return !_javaPrimitives.contains(_ctx.serializer.serializeType(e.type, false));
+    }).toList();
+    if (required.isEmpty) return [];
+    container.imports.add(JavaImports.objects);
+    return required
+        .map((e) => 'Objects.requireNonNull(${e.codeName}, "${e.codeName} is required");')
+        .toList();
   }
 
   List<String> _defaultCoalesces(GLQueryDefinition def) {
