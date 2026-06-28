@@ -46,6 +46,7 @@ return GLParser(mode: mode, identityFields: config.identityFields, reservedWords
     defaultAlias: lang.defaultAlias,
     operationNameAsParameter: lang.operationNameAsParameter,
     captureErrors: lang.captureErrors,
+    autoQueryArgumentLimit: lang.autoGenerateQueriesArgumentLimit,
   )..unknownScalarType = config.unknownScalarType;
 }
 

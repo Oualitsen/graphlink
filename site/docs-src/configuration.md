@@ -72,6 +72,7 @@ Used when `mode` is `"client"` and you want Dart/Flutter output.
           "autoGenerateQueries": true,
           "autoGenerateQueriesDefaultAlias": null,
           "autoGenerateQueriesFor": null,
+          "autoGenerateQueriesArgumentLimit": 200,
           "defaultAlias": null,
           "operationNameAsParameter": false,
           "nullableFieldsRequired": false,
@@ -117,6 +118,7 @@ Used when `mode` is `"client"` and you want Dart/Flutter output.
         autoGenerateQueries: true
         autoGenerateQueriesDefaultAlias: null
         autoGenerateQueriesFor: null
+        autoGenerateQueriesArgumentLimit: 200
         defaultAlias: null
         operationNameAsParameter: false
         nullableFieldsRequired: false
@@ -155,6 +157,7 @@ Used when `mode` is `"client"` and you want Dart/Flutter output.
 | `autoGenerateQueries` | `boolean` | `false` | Automatically builds query strings for every operation using `_all_fields` fragments. When `true`, you do not need to write any query strings by hand. |
 | `autoGenerateQueriesDefaultAlias` | `string` \| `null` | `null` | Default alias prefix to use for auto-generated query fields when `autoGenerateQueries` is `true`. Useful when multiple operations select the same root field. |
 | `autoGenerateQueriesFor` | `object` \| `null` | `null` | Generates client methods only for the listed operations instead of every root field. Use instead of (or alongside) `autoGenerateQueries` when you only need a subset — e.g. on large schemas. Each key (`queries`, `mutations`, `subscriptions`) takes a list of root field names. Any listed name not found in the schema causes a build error. Requires `generateAllFieldsFragments: true`. See [Selective auto-generation](custom-queries.md#selective-auto-generation-autogeneratequeriesfor). |
+| `autoGenerateQueriesArgumentLimit` | `integer` \| `null` | `200` | Maximum number of propagated (nested-field) arguments allowed in the synthesized `fieldArgs` object of an auto-generated operation. When the limit is exceeded, GraphLink skips the operation and prints a `⚠` warning. Hand-written operations are never affected. Raise the value for unusually large schemas, or write a custom query with a narrower field selection instead. See [Argument limit](custom-queries.md#auto-generated-query-argument-limit). |
 | `defaultAlias` | `string` \| `null` | `null` | Default alias applied to all generated query fields globally when no field-level alias is declared. |
 | `operationNameAsParameter` | `boolean` | `false` | When `true`, the generated HTTP adapter function signature includes a second `operationName` parameter: `Future<String> Function(String payload, String operationName)`. The operation name is appended to the URL as a query parameter, which is useful for server-side logging and APM tracing. |
 | `nullableFieldsRequired` | `boolean` | `false` | When `true`, nullable fields in generated constructors are emitted as `required this.fieldName` instead of optional `this.fieldName`. Use this to enforce that all fields are always explicitly passed at construction sites. |
@@ -239,6 +242,7 @@ Used when `mode` is `"client"` and you want a Java client.
           "generateAllFieldsFragments": true,
           "autoGenerateQueries": true,
           "autoGenerateQueriesFor": null,
+          "autoGenerateQueriesArgumentLimit": 200,
           "defaultAlias": null,
           "operationNameAsParameter": false,
           "nullableFieldsRequired": false,
@@ -263,6 +267,7 @@ Used when `mode` is `"client"` and you want a Java client.
         generateAllFieldsFragments: true
         autoGenerateQueries: true
         autoGenerateQueriesFor: null
+        autoGenerateQueriesArgumentLimit: 200
         defaultAlias: null
         operationNameAsParameter: false
         nullableFieldsRequired: false
@@ -281,6 +286,7 @@ Used when `mode` is `"client"` and you want a Java client.
 | `generateAllFieldsFragments` | `boolean` | `false` | Generates `_all_fields_TypeName` fragments for every type. Required for `autoGenerateQueries` and `autoGenerateQueriesFor`. |
 | `autoGenerateQueries` | `boolean` | `false` | Automatically builds query strings for every operation. |
 | `autoGenerateQueriesFor` | `object` \| `null` | `null` | Generates client methods only for the listed operations. Keys: `queries`, `mutations`, `subscriptions` — each takes a list of root field names. Unknown names cause a build error. Requires `generateAllFieldsFragments: true`. See [Selective auto-generation](custom-queries.md#selective-auto-generation-autogeneratequeriesfor). |
+| `autoGenerateQueriesArgumentLimit` | `integer` \| `null` | `200` | Maximum number of propagated (nested-field) arguments allowed in the synthesized `fieldArgs` object of an auto-generated operation. When exceeded, GraphLink skips the operation and prints a `⚠` warning. Hand-written operations are never affected. See [Argument limit](custom-queries.md#auto-generated-query-argument-limit). |
 | `defaultAlias` | `string` \| `null` | `null` | Default alias applied to all generated query fields globally. |
 | `operationNameAsParameter` | `boolean` | `false` | When `true`, the adapter interface includes an `operationName` parameter and the generated client appends it to the request URL as a query parameter. |
 | `nullableFieldsRequired` | `boolean` | `false` | When `true`, the generated input constructors do not accept `null` for nullable fields — `Objects.requireNonNull` is emitted for all fields. |
@@ -308,6 +314,7 @@ Used when `mode` is `"client"` and you want TypeScript output.
           "generateAllFieldsFragments": true,
           "autoGenerateQueries": true,
           "autoGenerateQueriesFor": null,
+          "autoGenerateQueriesArgumentLimit": 200,
           "defaultAlias": null,
           "operationNameAsParameter": false,
           "optionalNullableInputFields": true,
@@ -329,6 +336,7 @@ Used when `mode` is `"client"` and you want TypeScript output.
         generateAllFieldsFragments: true
         autoGenerateQueries: true
         autoGenerateQueriesFor: null
+        autoGenerateQueriesArgumentLimit: 200
         defaultAlias: null
         operationNameAsParameter: false
         optionalNullableInputFields: true
@@ -344,6 +352,7 @@ Used when `mode` is `"client"` and you want TypeScript output.
 | `generateAllFieldsFragments` | `boolean` | `false` | Generates `_all_fields_TypeName` fragments for every type. Required for `autoGenerateQueries` and `autoGenerateQueriesFor`. |
 | `autoGenerateQueries` | `boolean` | `false` | Automatically builds query strings for every operation using `_all_fields` fragments. |
 | `autoGenerateQueriesFor` | `object` \| `null` | `null` | Generates client methods only for the listed operations. Keys: `queries`, `mutations`, `subscriptions` — each takes a list of root field names. Unknown names cause a build error. Requires `generateAllFieldsFragments: true`. See [Selective auto-generation](custom-queries.md#selective-auto-generation-autogeneratequeriesfor). |
+| `autoGenerateQueriesArgumentLimit` | `integer` \| `null` | `200` | Maximum number of propagated (nested-field) arguments allowed in the synthesized `fieldArgs` object of an auto-generated operation. When exceeded, GraphLink skips the operation and prints a `⚠` warning. Hand-written operations are never affected. See [Argument limit](custom-queries.md#auto-generated-query-argument-limit). |
 | `defaultAlias` | `string` \| `null` | `null` | Default alias applied to all generated query fields globally. |
 | `operationNameAsParameter` | `boolean` | `false` | When `true`, the adapter function signature includes an `operationName` parameter and the client appends it to the request URL. |
 | `optionalNullableInputFields` | `boolean` | `true` | When `true`, nullable fields in generated input interfaces use `field?: T \| null` (TypeScript optional property). When `false`, they use `field: T \| null` (required but nullable). |
@@ -366,6 +375,7 @@ Used when `mode` is `"client"` and you want Kotlin output.
           "generateAllFieldsFragments": true,
           "autoGenerateQueries": true,
           "autoGenerateQueriesFor": null,
+          "autoGenerateQueriesArgumentLimit": 200,
           "typeAsDataClass": true,
           "inputAsDataClass": true,
           "nullableFieldsRequired": false,
@@ -388,6 +398,7 @@ Used when `mode` is `"client"` and you want Kotlin output.
         generateAllFieldsFragments: true
         autoGenerateQueries: true
         autoGenerateQueriesFor: null
+        autoGenerateQueriesArgumentLimit: 200
         typeAsDataClass: true
         inputAsDataClass: true
         nullableFieldsRequired: false
@@ -404,6 +415,7 @@ Used when `mode` is `"client"` and you want Kotlin output.
 | `generateAllFieldsFragments` | `boolean` | `true` | Generates `_all_fields_TypeName` fragments for every type. Required for `autoGenerateQueries` and `autoGenerateQueriesFor`. |
 | `autoGenerateQueries` | `boolean` | `true` | Automatically builds query strings for every operation using `_all_fields` fragments. |
 | `autoGenerateQueriesFor` | `object` \| `null` | `null` | Generates client methods only for the listed operations. Keys: `queries`, `mutations`, `subscriptions` — each takes a list of root field names. Unknown names cause a build error. Requires `generateAllFieldsFragments: true`. See [Selective auto-generation](custom-queries.md#selective-auto-generation-autogeneratequeriesfor). |
+| `autoGenerateQueriesArgumentLimit` | `integer` \| `null` | `200` | Maximum number of propagated (nested-field) arguments allowed in the synthesized `fieldArgs` object of an auto-generated operation. When exceeded, GraphLink skips the operation and prints a `⚠` warning. Hand-written operations are never affected. See [Argument limit](custom-queries.md#auto-generated-query-argument-limit). |
 | `typeAsDataClass` | `boolean` | `true` | Emit output types as `data class`. When `false`, uses `open class`. |
 | `inputAsDataClass` | `boolean` | `true` | Emit input types as `data class`. When `false`, uses `open class`. |
 | `nullableFieldsRequired` | `boolean` | `false` | When `true`, nullable constructor parameters have no default — callers must pass them explicitly. |

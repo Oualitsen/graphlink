@@ -312,6 +312,15 @@ void handleGeneration(GeneratorConfig config) async {
         await Future.wait(filePaths.map((p) => grammar_io.readLogicalFile(p)));
     grammar_io.parseFiles(grammar, logicalFiles, extraGql: extra);
 
+    for (final skipped in grammar.skippedAutoQueries) {
+      stderr.writeln(
+        '⚠ Auto-generated ${skipped.type.name} "${skipped.name}" skipped: '
+        '${skipped.count} propagated args exceed the limit of ${skipped.cap}. '
+        'Write a custom query with a narrower selection, or raise '
+        'autoGenerateQueriesArgumentLimit in your config.',
+      );
+    }
+
     final mode = config.getMode();
     if (mode == CodeGenerationMode.server) {
       await generateServerClasses(grammar,  config, now);

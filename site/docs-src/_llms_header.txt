@@ -65,6 +65,12 @@ client and server code. Developers define their API once in a `.graphql` schema 
   generates a client method for every root field — which can be hundreds of methods. `autoGenerateQueriesFor`
   lets you list exactly which queries, mutations, and subscriptions to auto-generate. Unknown names cause a
   build error. Supported in all four client targets (Dart, Java, TypeScript, Kotlin).
+- **Propagated-arg grouping and limit.** When auto-generating queries, nested field arguments collected
+  from sub-fields are automatically grouped into a synthesized `<Op>FieldArgs` input object (the single
+  `fieldArgs` parameter), so method signatures never explode into hundreds of positional parameters.
+  A configurable `autoGenerateQueriesArgumentLimit` (default 200) skips any auto-generated operation
+  whose `fieldArgs` would exceed the cap and prints a `⚠` warning with instructions. Hand-written
+  operations are never affected.
 - **Barrel file generation.** Dart and TypeScript generators emit a single barrel/index file that
   re-exports all generated enums, inputs, types, and interfaces. One import covers the entire layer.
 - **Flutter UI widget generation.** The `flutter` config block generates display widgets for output
@@ -155,7 +161,7 @@ type Mutation {
 - Caching (@glCache, @glCacheInvalidate, tag invalidation, staleIfOffline): https://graphlink.dev/docs/caching.html
 - Directives (@glMapsTo, @glMapField, @glCache, @glCacheInvalidate, @glSkipOnServer forward mappings, and more): https://graphlink.dev/docs/directives.html
 - "@glSkipOnServer & @glSkipOnClient" (two-layer server-side access control, schema stripping, @SchemaMapping, @BatchMapping, mapTo, forward mappings, ID/object field-pair pattern for N+1-safe loading): https://graphlink.dev/docs/skip-directives.html
-- Configuration (all config keys for Dart, Java, TypeScript, Kotlin, Spring; autoGenerateQueriesFor for selective operation generation; reactive; useSpringSecurity; typeMappings; unknownScalarType fallback for unmapped custom scalars; CLI flags; YAML config): https://graphlink.dev/docs/configuration.html
+- Configuration (all config keys for Dart, Java, TypeScript, Kotlin, Spring; autoGenerateQueriesFor for selective operation generation; autoGenerateQueriesArgumentLimit for propagated-arg cap; reactive; useSpringSecurity; typeMappings; unknownScalarType fallback for unmapped custom scalars; CLI flags; YAML config): https://graphlink.dev/docs/configuration.html
 
 ## Links
 
