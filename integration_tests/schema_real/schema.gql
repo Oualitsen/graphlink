@@ -189,6 +189,19 @@ type Driver {
   lastUsedFuel(liters: Int! = 4): Int!
 }
 
+# Keyword-collision coverage. `class` is reserved in Dart, Java, Kotlin, and TS
+# (parameter position). Used as a type field, an input field, a top-level query
+# argument, and a query operation name. The wire name stays `class`; only
+# generated identifiers are sanitized (e.g. `class_`).
+type ClassResult {
+  id:    ID!
+  class: String!
+}
+
+input ClassInput {
+  class: String!
+}
+
 # ── 6. Input types ────────────────────────────────────────────────────────────
 
 input AddressInput {
@@ -336,6 +349,9 @@ type Query {
 
   # @glExpand cycle test
   getVehicleDriver(id: ID!): VehicleDriver!
+
+  # Keyword operation + keyword top-level argument.
+  class(class: ID!): ClassResult!
 }
 
 
@@ -388,6 +404,9 @@ type Mutation {
 
   # Echoes back nested objects/lists so tests can verify client applied nested defaults.
   createWithNestedDefaults(input: NestedDefaultsInput!): NestedDefaultsEcho!
+
+  # Keyword input field round-trip.
+  makeClass(input: ClassInput!): ClassResult!
 }
 
 

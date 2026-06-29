@@ -121,7 +121,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
       serviceArgs.add('dataFetchingEnvironment');
     }
     final serviceCall =
-        '$serviceInstanceName.${method.name}(${serviceArgs.join(", ")})';
+        '$serviceInstanceName.${method.codeName}(${serviceArgs.join(", ")})';
     final String returnType;
     final List<String> statements;
 
@@ -171,7 +171,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
 
     buffer.writeln(codeGenUtils.createMethod(
         returnType: fullReturnType,
-        methodName: method.name.token,
+        methodName: method.codeName,
         arguments: args,
         statements: statements));
 
@@ -406,7 +406,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
       returnType = getServiceReturnType(method.type);
     }
     var result =
-        "${serializer.serializeTypeReactive(context: context, glType: createListTypeOnSubscription(returnType, type), reactive: reactive || type == GLQueryType.subscription)} ${method.name}(${serializeArgs(method.arguments, context, argPrefix)}";
+        "${serializer.serializeTypeReactive(context: context, glType: createListTypeOnSubscription(returnType, type), reactive: reactive || type == GLQueryType.subscription)} ${method.codeName}(${serializeArgs(method.arguments, context, argPrefix)}";
     if (injectDataFetching || method.hasDirective(glReturnsProjection)) {
       var inject = "DataFetchingEnvironment dataFetchingEnvironment";
       context.addImport(SpringImports.gqlDataFetchingEnvironment);

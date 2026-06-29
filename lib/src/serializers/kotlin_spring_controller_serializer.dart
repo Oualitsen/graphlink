@@ -104,7 +104,7 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
     if (injectFetchingEnv) {
       serviceArgs.add('dataFetchingEnvironment');
     }
-    final serviceCall = '$serviceInstanceName.${method.name}(${serviceArgs.join(", ")})';
+    final serviceCall = '$serviceInstanceName.${method.codeName}(${serviceArgs.join(", ")})';
 
     final validationMethodCall = method.getDirectiveByName(glValidate) != null
         ? '$serviceInstanceName.${GLService.getValidationMethodName(method.name.token)}(${serviceArgs.join(", ")})'
@@ -118,7 +118,7 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
         'return $serviceCall',
       ];
       buffer.writeln(codeGenUtils.method(
-          returnType: returnType, methodName: method.name.token, arguments: args, statements: statements));
+          returnType: returnType, methodName: method.codeName, arguments: args, statements: statements));
     } else {
       final statements = _wrapBody(
         [if (validationMethodCall != null) validationMethodCall],
@@ -126,7 +126,7 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
         context,
       );
       buffer.writeln(codeGenUtils.suspendFun(
-          name: method.name.token, arguments: args, returnType: returnType, statements: statements));
+          name: method.codeName, arguments: args, returnType: returnType, statements: statements));
     }
 
     return buffer.toString();
@@ -290,9 +290,9 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
 
     final prefix = type == GLQueryType.subscription ? 'fun' : 'suspend fun';
     if (isValidation) {
-      return '$prefix ${method.name}($args)';
+      return '$prefix ${method.codeName}($args)';
     }
-    return '$prefix ${method.name}($args): ${_serializeReturnType(method.type, type, context)}';
+    return '$prefix ${method.codeName}($args): ${_serializeReturnType(method.type, type, context)}';
   }
 
   @override
