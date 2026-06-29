@@ -9,5 +9,6 @@
 export interface CreateArticleInput {
    title: string;
    authorId: string;
+   class?: string | null;
 }
 

@@ -33,4 +33,9 @@ public class BulkCreateServiceImpl implements BulkCreateService {
         }
         return count;
     }
+
+    @Override
+    public void validateBulkCreate(List<? extends List<? extends List<CreateArticleInput>>> matrix) {
+
+    }
 }

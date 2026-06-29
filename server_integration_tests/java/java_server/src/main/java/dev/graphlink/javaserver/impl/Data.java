@@ -47,8 +47,8 @@ public class Data {
     }
 
     public static final Sinks.Many<Article> articleCreatedSink =
-        Sinks.many().multicast().onBackpressureBuffer();
+        Sinks.many().multicast().directBestEffort();
 
     public static final Sinks.Many<Article> articleUpdatedSink =
-        Sinks.many().multicast().onBackpressureBuffer();
+        Sinks.many().multicast().directBestEffort();
 }

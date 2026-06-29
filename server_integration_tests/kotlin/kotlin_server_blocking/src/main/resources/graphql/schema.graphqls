@@ -10,7 +10,7 @@ schema {
    subscription: Subscription
 }
 
-
+directive @glValidate on FIELD_DEFINITION
 input CreateArticleInput {
    title: String!
    authorId: ID!
@@ -44,7 +44,7 @@ type Mutation {
    createArticle(input: CreateArticleInput!): Article!
    updateArticle(input: UpdateArticleInput!): Article!
    deleteArticle(id: ID!): Boolean!
-   bulkCreate(matrix: [[[CreateArticleInput]!]]): Int!
+   bulkCreate(matrix: [[[CreateArticleInput]!]]): Int! @glValidate
 }
 type Subscription {
    articleCreated: Article!
