@@ -609,6 +609,7 @@ private _buildPayload(
     ];
 
     final fragAssignments = _parser.usedFragments
+        .where((f) => !oversizedFragmentNames.contains(f.tokenInfo.token))
         .map((f) =>
             "this.$svFragMap['${f.tokenInfo}'] = '${gqlSerializer.serializeFragmentDefinitionBase(f)}';")
         .toList();

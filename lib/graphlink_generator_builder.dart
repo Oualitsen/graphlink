@@ -27,6 +27,7 @@ const _knownOptions = {
   'appLocalizationsImport',
   'identityFields',
   'disableCache',
+  'maxFragmentBodySize',
 };
 
 /// A `build_runner` [Builder] that generates a fully typed GraphQL client
@@ -175,6 +176,7 @@ class GraphlinkGeneratorBuilder implements Builder {
       appLocalizationsImport: s('appLocalizationsImport'),
       autoGenerateQueriesArgumentLimit:
           options.config['autoGenerateQueriesArgumentLimit'] as int? ?? 200,
+      maxFragmentBodySize: options.config['maxFragmentBodySize'] as int? ?? 8192,
     );
 
     return GeneratorConfig(

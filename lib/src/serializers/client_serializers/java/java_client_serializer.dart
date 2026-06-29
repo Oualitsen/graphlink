@@ -130,8 +130,10 @@ class JavaClientSerializer extends GLClientSerializer {
             "mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, ${_grammar.hasUploadMutations ? 'multipartAdapter, ' : ''}$svFragmentMap, encoder, decoder, store);",
           if (_grammar.hasSubscriptions)
             "subscriptions = new ${classNameFromType(GLQueryType.subscription)}(adapter, wsAdapter, $svFragmentMap, encoder, decoder, store);",
-          ..._grammar.usedFragments.map((value) =>
-              '$svFragmentMap.put("${value.tokenInfo}", "${gqlSerializer.serializeFragmentDefinitionBase(value)}");'),
+          ..._grammar.usedFragments
+              .where((value) => !oversizedFragmentNames.contains(value.tokenInfo.token))
+              .map((value) =>
+                  '$svFragmentMap.put("${value.tokenInfo}", "${gqlSerializer.serializeFragmentDefinitionBase(value)}");'),
         ],
       ),
       if (hasDefaultAdapters) ..._convenienceConstructors(),

@@ -63,6 +63,7 @@ return GLParser(mode: mode, identityFields: config.identityFields, reservedWords
     operationNameAsParameter: lang.operationNameAsParameter,
     captureErrors: lang.captureErrors,
     autoQueryArgumentLimit: lang.autoGenerateQueriesArgumentLimit,
+    maxFragmentBodySize: lang.maxFragmentBodySize,
   )..unknownScalarType = config.unknownScalarType;
 }
 
