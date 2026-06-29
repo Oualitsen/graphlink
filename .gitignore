@@ -47,6 +47,9 @@ examples/**/lib/generated
 # Web related
 lib/generated_plugin_registrant.dart
 
+# Site build output
+site/dist/
+
 # Symbolication related
 app.*.symbols
 

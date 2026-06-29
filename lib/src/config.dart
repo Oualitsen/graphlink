@@ -63,6 +63,12 @@ abstract class ClientLanguageConfig {
   /// explosions; the cap only catches absurdly large schemas.
   int? get autoGenerateQueriesArgumentLimit => 200;
 
+  /// Maximum serialized size (in characters) of a generated fragment body.
+  /// Fragments exceeding this limit — and any auto-generated operations that
+  /// reference them — are silently omitted from the generated client.
+  /// Default 8192 (~8 KB). `null` disables the cap entirely.
+  int? get maxFragmentBodySize => 8192;
+
   static ClientLanguageConfig fromJson(Map<String, dynamic> json) {
     if (json['dart'] != null) return DartClientConfig.fromJson(json['dart'] as Map<String, dynamic>);
     if (json['java'] != null) return JavaClientConfig.fromJson(json['java'] as Map<String, dynamic>);
@@ -436,6 +442,7 @@ class DartClientConfig extends ClientLanguageConfig {
   @override final bool captureErrors;
   @override final String? defaultAlias;
   @override final int? autoGenerateQueriesArgumentLimit;
+  @override final int? maxFragmentBodySize;
 
   final String? autoGenerateQueriesDefaultAlias;
   final String? packageName;
@@ -463,6 +470,7 @@ class DartClientConfig extends ClientLanguageConfig {
     this.httpAdapter = DartHttpAdapter.http,
     this.autoGenerateQueriesFor,
     this.autoGenerateQueriesArgumentLimit = 200,
+    this.maxFragmentBodySize = 8192,
   });
 
   factory DartClientConfig.fromJson(Map<String, dynamic> json) {
@@ -490,6 +498,7 @@ class DartClientConfig extends ClientLanguageConfig {
           ? AutoGenerateQueriesFor.fromJson(json['autoGenerateQueriesFor'] as Map<String, dynamic>)
           : null,
       autoGenerateQueriesArgumentLimit: json['autoGenerateQueriesArgumentLimit'] as int? ?? 200,
+      maxFragmentBodySize: json['maxFragmentBodySize'] as int? ?? 8192,
     );
   }
 }
@@ -503,6 +512,7 @@ class JavaClientConfig extends ClientLanguageConfig {
   @override final bool captureErrors;
   @override final String? defaultAlias;
   @override final int? autoGenerateQueriesArgumentLimit;
+  @override final int? maxFragmentBodySize;
 
   final String packageName;
   final bool immutableInputFields;
@@ -534,6 +544,7 @@ class JavaClientConfig extends ClientLanguageConfig {
     this.defaultAlias,
     this.autoGenerateQueriesFor,
     this.autoGenerateQueriesArgumentLimit = 200,
+    this.maxFragmentBodySize = 8192,
   });
 
   factory JavaClientConfig.fromJson(Map<String, dynamic> json) {
@@ -570,6 +581,7 @@ class JavaClientConfig extends ClientLanguageConfig {
           ? AutoGenerateQueriesFor.fromJson(json['autoGenerateQueriesFor'] as Map<String, dynamic>)
           : null,
       autoGenerateQueriesArgumentLimit: json['autoGenerateQueriesArgumentLimit'] as int? ?? 200,
+      maxFragmentBodySize: json['maxFragmentBodySize'] as int? ?? 8192,
     );
   }
 }
@@ -582,6 +594,7 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
   @override final bool captureErrors;
   @override final String? defaultAlias;
   @override final int? autoGenerateQueriesArgumentLimit;
+  @override final int? maxFragmentBodySize;
 
   final bool optionalNullableInputFields;
   final bool generateDefaultWsAdapter;
@@ -602,6 +615,7 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
     this.defaultAlias,
     this.autoGenerateQueriesFor,
     this.autoGenerateQueriesArgumentLimit = 200,
+    this.maxFragmentBodySize = 8192,
   });
 
   factory TypeScriptClientConfig.fromJson(Map<String, dynamic> json) {
@@ -623,6 +637,7 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
           ? AutoGenerateQueriesFor.fromJson(json['autoGenerateQueriesFor'] as Map<String, dynamic>)
           : null,
       autoGenerateQueriesArgumentLimit: json['autoGenerateQueriesArgumentLimit'] as int? ?? 200,
+      maxFragmentBodySize: json['maxFragmentBodySize'] as int? ?? 8192,
     );
   }
 }
@@ -642,6 +657,7 @@ class KotlinClientConfig extends ClientLanguageConfig {
   final bool typeAsDataClass;
   final KotlinWsAdapter wsAdapter;
   @override final AutoGenerateQueriesFor? autoGenerateQueriesFor;
+  @override final int? maxFragmentBodySize;
 
   KotlinClientConfig({
     required this.packageName,
@@ -657,6 +673,7 @@ class KotlinClientConfig extends ClientLanguageConfig {
     this.defaultAlias,
     this.autoGenerateQueriesFor,
     this.autoGenerateQueriesArgumentLimit = 200,
+    this.maxFragmentBodySize = 8192,
   });
 
   factory KotlinClientConfig.fromJson(Map<String, dynamic> json) {
@@ -679,6 +696,7 @@ class KotlinClientConfig extends ClientLanguageConfig {
           ? AutoGenerateQueriesFor.fromJson(json['autoGenerateQueriesFor'] as Map<String, dynamic>)
           : null,
       autoGenerateQueriesArgumentLimit: json['autoGenerateQueriesArgumentLimit'] as int? ?? 200,
+      maxFragmentBodySize: json['maxFragmentBodySize'] as int? ?? 8192,
     );
   }
 }

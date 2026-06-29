@@ -66,10 +66,22 @@ abstract class GLClientSerializer {
   String renderUploadMutationMethod(GLQueryDefinition def);
   String renderSubscriptionMethod(GLQueryDefinition def);
 
+  late final Set<String> oversizedFragmentNames = {
+    if (_parser.maxFragmentBodySize != null)
+      for (final f in _parser.usedFragments)
+        if (gqlSerializer.serializeFragmentDefinitionBase(f).length >
+            _parser.maxFragmentBodySize!)
+          f.tokenInfo.token,
+  };
+
   /// Iterates all operations of [type] and dispatches to the appropriate
-  /// render method. Replaces the per-language dispatch loops.
+  /// render method. Skips operations that reference an oversized fragment.
   List<String> buildOperationMethods(GLQueryType type) {
-    return getOperationsForType(type).map((def) {
+    return getOperationsForType(type)
+        .where((def) => !def
+            .fragments(_parser)
+            .any((f) => oversizedFragmentNames.contains(f.tokenInfo.token)))
+        .map((def) {
       if (def.type == GLQueryType.query) return renderQueryMethod(def);
       if (def.type == GLQueryType.subscription) return renderSubscriptionMethod(def);
       return isUploadMutation(def)

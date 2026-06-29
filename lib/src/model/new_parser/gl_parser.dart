@@ -223,6 +223,12 @@ class GLParser {
   /// queries are never pruned. `null` disables the cap.
   final int? autoQueryArgumentLimit;
 
+  /// Maximum serialized size (in characters) of a generated fragment body.
+  /// Fragments exceeding this limit — and any auto-generated operations that
+  /// reference them — are omitted from the generated client. `null` disables
+  /// the cap. Default 8192 (~8 KB).
+  final int? maxFragmentBodySize;
+
   /// Auto-generated operations pruned by [autoQueryArgumentLimit]. Populated
   /// during `validateSemantics()` — read after parsing to emit CLI warnings.
   final List<SkippedAutoQuery> skippedAutoQueries = [];
@@ -281,8 +287,8 @@ class GLParser {
     this.defaultExpandDepth = 1,
     this.captureErrors = false,
     this.autoQueryArgumentLimit = 200,
-  })  : _parameterReservedWords = parameterReservedWords,
-        assert(
+    this.maxFragmentBodySize = 8192,
+  }) : assert(
           (!autoGenerateQueries && autoGenerateQueriesFor == null) || generateAllFieldsFragments,
           'autoGenerateQueries and autoGenerateQueriesFor both require generateAllFieldsFragments: true',
         ) {

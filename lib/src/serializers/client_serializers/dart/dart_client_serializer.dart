@@ -661,8 +661,10 @@ class DartClientSerializer extends GLClientSerializer {
         ],
         namedArguments: true,
         statements: [
-          ..._parser.usedFragments.map((value) =>
-              "$svFragMap['${value.tokenInfo}'] = '${gqlSerializer.serializeFragmentDefinitionBase(value)}';"),
+          ..._parser.usedFragments
+              .where((value) => !oversizedFragmentNames.contains(value.tokenInfo.token))
+              .map((value) =>
+                  "$svFragMap['${value.tokenInfo}'] = '${gqlSerializer.serializeFragmentDefinitionBase(value)}';"),
           'this.store = store ?? $_inMemorycacheStoreClassName();',
           'final tags = ${_parser.getAllCacheTags().map((e) => e.quote()).toList()};',
           codeGenUtils.forEachLoop(
