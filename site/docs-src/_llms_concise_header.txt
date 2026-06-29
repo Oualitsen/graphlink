@@ -59,6 +59,11 @@ client and server code. Developers define their API once in a `.graphql` schema 
   grouped into a single `fieldArgs` object parameter so method signatures stay manageable.
   `autoGenerateQueriesArgumentLimit` (default 200) skips any auto-generated operation whose `fieldArgs`
   would exceed the cap and prints a `⚠` warning. Hand-written operations are never skipped.
+- **Oversized fragment cap (`maxFragmentBodySize`).** When `generateAllFieldsFragments: true` is used on
+  a very large schema (e.g. Shopify), individual `_all_fields` fragment bodies can reach 60 KB+, bloating
+  the compiled binary and every network request. `maxFragmentBodySize` (default 8192 chars) silently
+  skips any fragment whose serialized body exceeds the cap, along with any auto-generated queries that
+  depend on it. Set to `null` to disable. Applies to all four client targets.
 - **Barrel file generation.** Dart and TypeScript generators emit a barrel/index file that
   re-exports all generated types, inputs, and enums from a single import.
 - **Keyword-safe identifiers.** A GraphQL field, input field, argument, or enum value named after a
