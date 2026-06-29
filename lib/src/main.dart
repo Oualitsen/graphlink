@@ -105,51 +105,67 @@ Top-level
 ━━ mode: client ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 clientConfig.dart
-  packageName                     string  Dart package name used in imports
-  generateAllFieldsFragments      bool    Generate _all_fields fragments          [false]
-  nullableFieldsRequired          bool    Nullable fields required in ctors       [false]
-  autoGenerateQueries             bool    Auto-generate queries from schema        [false]
-  autoGenerateQueriesDefaultAlias string  Default alias for auto-generated queries
-  operationNameAsParameter        bool    Pass operation name as a parameter      [false]
-  flutter.generateTypes           bool    Generate Flutter UI type widgets        [true]
-  flutter.generateInputs          bool    Generate Flutter UI input widgets       [false]
-  flutter.typesToSkip             list    Type names to exclude from UI gen       []
-  flutter.defaultGap              number  Default spacing between field rows      [16]
-  immutableInputFields            bool    Generate input fields as final          [true]
-  immutableTypeFields             bool    Generate type fields as final           [true]
+  packageName                     string   Dart package name used in imports
+  generateAllFieldsFragments      bool     Generate _all_fields fragments          [false]
+  nullableFieldsRequired          bool     Nullable fields required in ctors       [false]
+  autoGenerateQueries             bool     Auto-generate queries from schema        [false]
+  autoGenerateQueriesDefaultAlias string   Default alias for auto-generated queries
+  autoGenerateQueriesArgumentLimit integer Max hoisted args per auto-query         [200]
+  maxFragmentBodySize             integer  Skip fragments (and their queries) whose
+                                           serialized body exceeds this many chars.
+                                           null disables the cap.                  [8192]
+  operationNameAsParameter        bool     Pass operation name as a parameter      [false]
+  flutter.generateTypes           bool     Generate Flutter UI type widgets        [true]
+  flutter.generateInputs          bool     Generate Flutter UI input widgets       [false]
+  flutter.typesToSkip             list     Type names to exclude from UI gen       []
+  flutter.defaultGap              number   Default spacing between field rows      [16]
+  immutableInputFields            bool     Generate input fields as final          [true]
+  immutableTypeFields             bool     Generate type fields as final           [true]
 
 clientConfig.java
-  packageName                     string  Java package name (required)
-  generateAllFieldsFragments      bool    Generate _all_fields fragments          [false]
-  nullableFieldsRequired          bool    Nullable fields required                [false]
-  autoGenerateQueries             bool    Auto-generate queries from schema        [false]
-  operationNameAsParameter        bool    Pass operation name as a parameter      [false]
-  immutableInputFields            bool    Generate input fields as final          [true]
-  immutableTypeFields             bool    Generate type fields as final           [true]
-  inputAsRecord                   bool    Generate inputs as Java records         [false]
-  typeAsRecord                    bool    Generate types as Java records          [false]
+  packageName                     string   Java package name (required)
+  generateAllFieldsFragments      bool     Generate _all_fields fragments          [false]
+  nullableFieldsRequired          bool     Nullable fields required                [false]
+  autoGenerateQueries             bool     Auto-generate queries from schema        [false]
+  autoGenerateQueriesArgumentLimit integer Max hoisted args per auto-query         [200]
+  maxFragmentBodySize             integer  Skip fragments (and their queries) whose
+                                           serialized body exceeds this many chars.
+                                           null disables the cap.                  [8192]
+  operationNameAsParameter        bool     Pass operation name as a parameter      [false]
+  immutableInputFields            bool     Generate input fields as final          [true]
+  immutableTypeFields             bool     Generate type fields as final           [true]
+  inputAsRecord                   bool     Generate inputs as Java records         [false]
+  typeAsRecord                    bool     Generate types as Java records          [false]
 
 clientConfig.kotlin
-  packageName                     string  Kotlin package name (required)
-  generateAllFieldsFragments      bool    Generate _all_fields fragments          [true]
-  nullableFieldsRequired          bool    Nullable fields required in ctors       [false]
-  autoGenerateQueries             bool    Auto-generate queries from schema        [true]
-  operationNameAsParameter        bool    Pass operation name as a parameter      [false]
-  captureErrors                   bool    Return full response including errors   [false]
-  inputAsDataClass                bool    Generate inputs as data class           [true]
-  typeAsDataClass                 bool    Generate types as data class            [true]
-  wsAdapter                       string  WS adapter: "okhttp" | "none"          [okhttp]
+  packageName                     string   Kotlin package name (required)
+  generateAllFieldsFragments      bool     Generate _all_fields fragments          [true]
+  nullableFieldsRequired          bool     Nullable fields required in ctors       [false]
+  autoGenerateQueries             bool     Auto-generate queries from schema        [true]
+  autoGenerateQueriesArgumentLimit integer Max hoisted args per auto-query         [200]
+  maxFragmentBodySize             integer  Skip fragments (and their queries) whose
+                                           serialized body exceeds this many chars.
+                                           null disables the cap.                  [8192]
+  operationNameAsParameter        bool     Pass operation name as a parameter      [false]
+  captureErrors                   bool     Return full response including errors   [false]
+  inputAsDataClass                bool     Generate inputs as data class           [true]
+  typeAsDataClass                 bool     Generate types as data class            [true]
+  wsAdapter                       string   WS adapter: "okhttp" | "none"          [okhttp]
 
 clientConfig.typescript
-  generateAllFieldsFragments      bool    Generate _all_fields fragments          [false]
-  autoGenerateQueries             bool    Auto-generate queries from schema        [false]
-  autoGenerateQueriesDefaultAlias string  Default alias for auto-generated queries
-  operationNameAsParameter        bool    Pass operation name as a parameter      [false]
-  immutableTypeFields             bool    Generate type fields as final           [true]
-  optionalNullableInputFields     bool    Nullable input fields are optional      [true]
-  generateDefaultWsAdapter        bool    Generate default WebSocket adapter      [true]
-  observables                     bool    Use RxJS observables instead of promises [false]
-  httpAdapter                     string  HTTP adapter: "fetch" | "axios" | "none" [fetch]
+  generateAllFieldsFragments      bool     Generate _all_fields fragments          [false]
+  autoGenerateQueries             bool     Auto-generate queries from schema        [false]
+  autoGenerateQueriesDefaultAlias string   Default alias for auto-generated queries
+  autoGenerateQueriesArgumentLimit integer Max hoisted args per auto-query         [200]
+  maxFragmentBodySize             integer  Skip fragments (and their queries) whose
+                                           serialized body exceeds this many chars.
+                                           null disables the cap.                  [8192]
+  operationNameAsParameter        bool     Pass operation name as a parameter      [false]
+  immutableTypeFields             bool     Generate type fields as final           [true]
+  optionalNullableInputFields     bool     Nullable input fields are optional      [true]
+  generateDefaultWsAdapter        bool     Generate default WebSocket adapter      [true]
+  observables                     bool     Use RxJS observables instead of promises [false]
+  httpAdapter                     string   HTTP adapter: "fetch" | "axios" | "none" [fetch]
 
 ━━ mode: server ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
