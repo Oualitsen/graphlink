@@ -288,7 +288,8 @@ class GLParser {
     this.captureErrors = false,
     this.autoQueryArgumentLimit = 200,
     this.maxFragmentBodySize = 8192,
-  }) : assert(
+  })  : _parameterReservedWords = parameterReservedWords,
+        assert(
           (!autoGenerateQueries && autoGenerateQueriesFor == null) || generateAllFieldsFragments,
           'autoGenerateQueries and autoGenerateQueriesFor both require generateAllFieldsFragments: true',
         ) {
