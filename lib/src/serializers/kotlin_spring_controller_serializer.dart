@@ -1,5 +1,6 @@
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/gl_grammar_upload_extension.dart';
+import 'package:graphlink/src/gl_validation_extension.dart';
 import 'package:graphlink/src/kotlin_code_gen_utils.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
@@ -85,7 +86,16 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
       buffer.writeln(decorators);
     }
 
+    final inputConversions = <String>[];
     var args = method.arguments.map((arg) {
+      if (grammar.isInput(arg.type.firstType.token)) {
+        final rawParamName = '${arg.bareName}AsMap';
+        final mapType = _inputArgRawType(arg.type);
+        context.addImport(SpringImports.gqlArgument);
+        inputConversions.add(
+            'val ${arg.codeName} = ${_inputFromJsonConversion(arg.type, rawParamName)}');
+        return '@Argument(name = "${arg.bareName}") $rawParamName: $mapType';
+      }
       final argDecorators = serializer.serializeDecorators(arg.getDirectives()).trim();
       final decl = '${arg.codeName}: ${resolveArgType(arg, context)}';
       if (argDecorators.isNotEmpty) {
@@ -114,22 +124,49 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
 
     if (type == GLQueryType.subscription) {
       final statements = [
+        ...inputConversions,
         if (validationMethodCall != null) validationMethodCall,
         'return $serviceCall',
       ];
       buffer.writeln(codeGenUtils.method(
           returnType: returnType, methodName: method.codeName, arguments: args, statements: statements));
     } else {
-      final statements = _wrapBody(
-        [if (validationMethodCall != null) validationMethodCall],
-        serviceCall,
-        context,
-      );
+      final statements = [
+        ...inputConversions,
+        ..._wrapBody(
+          [if (validationMethodCall != null) validationMethodCall],
+          serviceCall,
+          context,
+        ),
+      ];
       buffer.writeln(codeGenUtils.suspendFun(
           name: method.codeName, arguments: args, returnType: returnType, statements: statements));
     }
 
     return buffer.toString();
+  }
+
+  /// Returns the raw map type for a controller parameter that receives a
+  /// GraphQL input, recursing through list nesting.
+  String _inputArgRawType(GLType type) {
+    if (type is GLListType) {
+      return 'List<${_inputArgRawType(type.inlineType)}>';
+    }
+    return 'Map<String, Any>';
+  }
+
+  /// Builds the fromJson conversion expression for an input arg, recursing
+  /// through list nesting with inline map { } chains.
+  /// Null guards are emitted wherever the element type is nullable.
+  String _inputFromJsonConversion(GLType type, String sourceExpr, [int depth = 0]) {
+    if (type is GLListType) {
+      final varName = codeGenUtils.safeLocalVar('m$depth');
+      final inner = _inputFromJsonConversion(type.inlineType, varName, depth + 1);
+      final body = type.inlineType.nullable ? 'if ($varName == null) null else $inner' : inner;
+      return KotlinCodeGenUtils.mapCall(receiver: sourceExpr, param: varName, body: body);
+    }
+    final call = '${type.token}.fromJson($sourceExpr as Map<String, Any>)';
+    return type.nullable ? 'if ($sourceExpr == null) null else $call' : call;
   }
 
   String _serializeReturnType(GLType type, GLQueryType queryType, GLToken context) {

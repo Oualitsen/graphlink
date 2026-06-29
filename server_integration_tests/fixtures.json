@@ -1,0 +1,12 @@
+{
+  "authors": [
+    {"id": "1", "name": "Ramdane"},
+    {"id": "2", "name": "Alice"}
+  ],
+  "articles": [
+    {"id": "1", "title": "GraphLink Basics", "authorId": "1"},
+    {"id": "2", "title": "Advanced GraphLink", "authorId": "1"},
+    {"id": "3", "title": "Alice's First Post", "authorId": "2"}
+  ],
+  "nextId": 4
+}

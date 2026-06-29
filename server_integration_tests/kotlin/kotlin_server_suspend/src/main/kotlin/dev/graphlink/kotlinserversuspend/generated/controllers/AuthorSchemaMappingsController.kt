@@ -3,7 +3,7 @@
 // GitHub: https://github.com/Oualitsen/graphlink
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
-
+// ignore_for_file:  camel_case_types, unused_import, non_constant_identifier_names, constant_identifier_names, override_on_non_overriding_member, unused_element, annotate_overrides
 
 package dev.graphlink.kotlinserversuspend.generated.controllers;
 import dev.graphlink.kotlinserversuspend.generated.types.Author
@@ -11,6 +11,8 @@ import dev.graphlink.kotlinserversuspend.generated.interfaces.GLArticleProjectio
 import dev.graphlink.kotlinserversuspend.generated.services.AuthorSchemaMappingsService
 import org.springframework.stereotype.Controller
 import org.springframework.graphql.data.method.annotation.BatchMapping
+import org.springframework.graphql.data.method.annotation.SchemaMapping
+import org.springframework.graphql.data.method.annotation.Argument
 
 
 @Controller()
@@ -21,6 +23,10 @@ class AuthorSchemaMappingsController(
    @BatchMapping(typeName="Author", field="articles")
    suspend fun authorArticles(value: List<Author>): Map<Author, List<GLArticleProjection>> {
       return authorSchemaMappingsService.authorArticles(value)
+   }
+   @SchemaMapping(typeName="Author", field="latestArticles")
+   suspend fun authorLatestArticles(value: Author, @Argument limit: Int): List<GLArticleProjection> {
+      return authorSchemaMappingsService.authorLatestArticles(value, limit)
    }
 }
 
