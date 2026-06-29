@@ -71,6 +71,13 @@ client and server code. Developers define their API once in a `.graphql` schema 
   A configurable `autoGenerateQueriesArgumentLimit` (default 200) skips any auto-generated operation
   whose `fieldArgs` would exceed the cap and prints a `⚠` warning with instructions. Hand-written
   operations are never affected.
+- **Oversized fragment cap (`maxFragmentBodySize`).** When `generateAllFieldsFragments: true` is used
+  on a very large schema (e.g. Shopify's public API), individual `_all_fields` fragment bodies can reach
+  60 KB+, bloating the compiled binary (JVM constant pool, Dart exe) and every network request that
+  references them. `maxFragmentBodySize` (default 8192 chars) silently omits any `_all_fields` fragment
+  whose serialized body exceeds the cap, along with any auto-generated operations that depend on it.
+  Set to `null` to disable the cap and always generate all fragments. Applies to all four client
+  targets (Dart, Java, TypeScript, Kotlin).
 - **Barrel file generation.** Dart and TypeScript generators emit a single barrel/index file that
   re-exports all generated enums, inputs, types, and interfaces. One import covers the entire layer.
 - **Flutter UI widget generation.** The `flutter` config block generates display widgets for output
@@ -161,7 +168,7 @@ type Mutation {
 - Caching (@glCache, @glCacheInvalidate, tag invalidation, staleIfOffline): https://graphlink.dev/docs/caching.html
 - Directives (@glMapsTo, @glMapField, @glCache, @glCacheInvalidate, @glSkipOnServer forward mappings, and more): https://graphlink.dev/docs/directives.html
 - "@glSkipOnServer & @glSkipOnClient" (two-layer server-side access control, schema stripping, @SchemaMapping, @BatchMapping, mapTo, forward mappings, ID/object field-pair pattern for N+1-safe loading): https://graphlink.dev/docs/skip-directives.html
-- Configuration (all config keys for Dart, Java, TypeScript, Kotlin, Spring; autoGenerateQueriesFor for selective operation generation; autoGenerateQueriesArgumentLimit for propagated-arg cap; reactive; useSpringSecurity; typeMappings; unknownScalarType fallback for unmapped custom scalars; CLI flags; YAML config): https://graphlink.dev/docs/configuration.html
+- Configuration (all config keys for Dart, Java, TypeScript, Kotlin, Spring; autoGenerateQueriesFor for selective operation generation; autoGenerateQueriesArgumentLimit for propagated-arg cap; maxFragmentBodySize to skip oversized _all_fields fragments and their dependent auto-queries; reactive; useSpringSecurity; typeMappings; unknownScalarType fallback for unmapped custom scalars; CLI flags; YAML config): https://graphlink.dev/docs/configuration.html
 
 ## Links
 
