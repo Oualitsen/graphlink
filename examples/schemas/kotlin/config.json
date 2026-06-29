@@ -1,0 +1,28 @@
+{
+    "schemaPaths": [
+        "../microsoft_graph.graphql"
+    ],
+    "mode": "client",
+    "unknownScalarType": "String",
+    "identityFields": [],
+    "typeMappings": {
+        "ID": "String",
+        "String": "String",
+        "Float": "Double",
+        "Int": "Int",
+        "Boolean": "Boolean",
+        "Null": "null"
+    },
+    "outputDir": "client-app/src/main/kotlin/dev/graphlink/github/generated",
+    "clientConfig": {
+        "kotlin": {
+            "packageName": "dev.graphlink.github.generated",
+            "wsAdapter": "okhttp",
+            "generateAllFieldsFragments": true,
+            "autoGenerateQueries": true,
+            "nullableFieldsRequired": false,
+            "inputAsDataClass": true,
+            "typeAsDataClass": true
+        }
+    }
+}

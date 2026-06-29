@@ -64,6 +64,10 @@ app.*.map.json
 # Examples — Java/Maven build artifacts
 examples/**/target/
 
+# Examples — Gradle/Java build artifacts
+examples/**/.gradle/
+examples/**/build/
+
 # Integration tests — Java build artifacts
 integration_tests/**/*.jar
 !integration_tests/**/gradle/wrapper/gradle-wrapper.jar
