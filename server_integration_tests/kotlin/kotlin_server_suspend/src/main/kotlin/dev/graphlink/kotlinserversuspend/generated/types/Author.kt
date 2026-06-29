@@ -3,7 +3,7 @@
 // GitHub: https://github.com/Oualitsen/graphlink
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
-
+// ignore_for_file:  camel_case_types, unused_import, non_constant_identifier_names, constant_identifier_names, override_on_non_overriding_member, unused_element, annotate_overrides
 
 package dev.graphlink.kotlinserversuspend.generated.types;
 import dev.graphlink.kotlinserversuspend.generated.interfaces.GLAuthorProjection
@@ -12,6 +12,18 @@ import dev.graphlink.kotlinserversuspend.generated.interfaces.GLAuthorProjection
 data class Author(
     override val id: String,
     override val name: String,
-) : GLAuthorProjection
+) : GLAuthorProjection {
+   override fun toJson(): Map<String, Any?> = mapOf(
+           "id" to id,
+           "name" to name,
+       )
+
+   companion object {
+      fun fromJson(map: Map<String, Any?>): Author = Author(
+          id = map["id"] as String,
+          name = map["name"] as String,
+      )
+   }
+}
 
 

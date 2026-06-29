@@ -1,5 +1,5 @@
 {
-  "schemaPaths": ["../schema/schema.gql"],
+  "schemaPaths": ["../../schema/schema.gql"],
   "mode": "server",
   "outputDir": "src/main/kotlin/dev/graphlink/kotlinserverblocking/generated",
   "serverConfig": {

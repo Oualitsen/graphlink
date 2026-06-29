@@ -1,18 +1,12 @@
+import { readFileSync } from 'fs';
 import { Author } from '../generated/types/author.js';
 import { Article } from '../generated/types/article.js';
 
-export const authors: Author[] = [
-  { id: '1', name: 'Ramdane' },
-  { id: '2', name: 'Alice' },
-];
+const fixtures = JSON.parse(readFileSync(process.env.FIXTURES_PATH ?? '../../fixtures.json', 'utf-8'));
 
-export const articles: Article[] = [
-  { id: '1', title: 'GraphLink Basics', authorId: '1' },
-  { id: '2', title: 'Advanced GraphLink', authorId: '1' },
-  { id: '3', title: "Alice's First Post", authorId: '2' },
-];
-
-let nextArticleId = 4;
+export const authors: Author[] = fixtures.authors;
+export const articles: Article[] = fixtures.articles;
+let nextArticleId: number = fixtures.nextId;
 
 export function nextId(): string {
   return String(nextArticleId++);

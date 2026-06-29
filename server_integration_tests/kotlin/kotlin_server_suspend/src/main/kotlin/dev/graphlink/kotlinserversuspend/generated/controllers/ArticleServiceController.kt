@@ -3,7 +3,7 @@
 // GitHub: https://github.com/Oualitsen/graphlink
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
-
+// ignore_for_file:  camel_case_types, unused_import, non_constant_identifier_names, constant_identifier_names, override_on_non_overriding_member, unused_element, annotate_overrides
 
 package dev.graphlink.kotlinserversuspend.generated.controllers;
 import dev.graphlink.kotlinserversuspend.generated.interfaces.GLArticleProjection
@@ -33,12 +33,14 @@ class ArticleServiceController(
    }
 
    @MutationMapping()
-   suspend fun createArticle(@Argument() input: CreateArticleInput): GLArticleProjection {
+   suspend fun createArticle(@Argument(name = "input") inputAsMap: Map<String, Any>): GLArticleProjection {
+      val input = CreateArticleInput.fromJson(inputAsMap as Map<String, Any>)
       return articleService.createArticle(input)
    }
 
    @MutationMapping()
-   suspend fun updateArticle(@Argument() input: UpdateArticleInput): GLArticleProjection {
+   suspend fun updateArticle(@Argument(name = "input") inputAsMap: Map<String, Any>): GLArticleProjection {
+      val input = UpdateArticleInput.fromJson(inputAsMap as Map<String, Any>)
       return articleService.updateArticle(input)
    }
 

@@ -1,9 +1,15 @@
-.PHONY: install generate start-server stop-server test ci kotlin
+.PHONY: install generate start-server stop-server test ci typescript kotlin java setup-client
+
+setup-client:
+	$(MAKE) -C dart_client install
+	$(MAKE) -C dart_client generate
 
 install:
+	$(MAKE) -C dart_client install
 	$(MAKE) -C typescript install
 
 generate:
+	$(MAKE) -C dart_client generate
 	$(MAKE) -C typescript generate
 
 start-server:
@@ -15,8 +21,14 @@ stop-server:
 test:
 	$(MAKE) -C typescript test
 
-ci:
+ci: setup-client
 	$(MAKE) -C typescript ci
 
-kotlin:
+typescript: setup-client
+	$(MAKE) -C typescript ci
+
+kotlin: setup-client
 	$(MAKE) -C kotlin ci
+
+java: setup-client
+	$(MAKE) -C java ci

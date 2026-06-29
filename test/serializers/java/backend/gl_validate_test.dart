@@ -118,8 +118,8 @@ void main() {
             .map((e) => e.trim())
             .where((e) => e.isNotEmpty),
         containsAllInOrder([
-          'public CompletableFuture<${toServerProjectionName('Person')}> getPerson(@Argument() SearchQuery searchQuery) {',
-         
+          'public CompletableFuture<${toServerProjectionName('Person')}> getPerson(@Argument(name = "searchQuery") Map<String, Object> searchQueryAsMap) {',
+          'final SearchQuery searchQuery = SearchQuery.fromJson((Map<String, Object>) searchQueryAsMap);',
           'return CompletableFuture.supplyAsync(() -> {',
           'personService.validateGetPerson(searchQuery);',
           'return personService.getPerson(searchQuery);',
@@ -155,7 +155,8 @@ void main() {
             .map((e) => e.trim())
             .where((e) => e.isNotEmpty),
         containsAllInOrder([
-          'public CompletableFuture<${toServerProjectionName('Person')}> getPerson(@Argument() SearchQuery searchQuery, DataFetchingEnvironment dataFetchingEnvironment) {',
+          'public CompletableFuture<${toServerProjectionName('Person')}> getPerson(@Argument(name = "searchQuery") Map<String, Object> searchQueryAsMap, DataFetchingEnvironment dataFetchingEnvironment) {',
+          'final SearchQuery searchQuery = SearchQuery.fromJson((Map<String, Object>) searchQueryAsMap);',
           'return CompletableFuture.supplyAsync(() -> {',
           'personService.validateGetPerson(searchQuery, dataFetchingEnvironment);',
           'return personService.getPerson(searchQuery, dataFetchingEnvironment);',

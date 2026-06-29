@@ -100,7 +100,17 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     if (decorators.isNotEmpty) {
       buffer.writeln(decorators);
     }
+
+    final inputConversions = <String>[];
     var args = method.arguments.map((arg) {
+      if (grammar.isInput(arg.type.firstType.token)) {
+        final rawParamName = '${arg.bareName}AsMap';
+        final mapType = _inputArgRawType(arg.type, context);
+        context.addImport(SpringImports.gqlArgument);
+        inputConversions.add(
+            'final ${resolveArgType(arg, context)} ${arg.codeName} = ${_inputFromJsonConversion(arg.type, rawParamName, context)};');
+        return '@Argument(name = "${arg.bareName}") $mapType $rawParamName';
+      }
       final argType = resolveArgType(arg, context);
       var argDecorators =
           serializer.serializeDecorators(arg.getDirectives()).trim();
@@ -138,6 +148,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
               getServiceReturnType(method.type), type),
           reactive: true);
       statements = [
+        ...inputConversions,
         if (validationCall != null) validationCall,
         "return $serviceCall;",
       ];
@@ -147,6 +158,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
           glType: getServiceReturnType(method.type),
           reactive: true);
       statements = [
+        ...inputConversions,
         validationMethodCall != null
             ? "return $validationMethodCall.then($serviceCall);"
             : "return $serviceCall;",
@@ -160,10 +172,13 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
       final returnTypeIsVoid = baseReturnType == "void";
       returnType =
           "CompletableFuture<${convertPrimitiveToBoxed(baseReturnType)}>";
-      statements = _wrapInCompletableFuture([
-        if (validationCall != null) validationCall,
-        serviceCall,
-      ], returnTypeIsVoid, context);
+      statements = [
+        ...inputConversions,
+        ..._wrapInCompletableFuture([
+          if (validationCall != null) validationCall,
+          serviceCall,
+        ], returnTypeIsVoid, context),
+      ];
     }
 
     final fullReturnType =
@@ -176,6 +191,35 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
         statements: statements));
 
     return buffer.toString();
+  }
+
+  /// Returns the raw map type for a controller parameter that receives a
+  /// GraphQL input, recursing through list nesting.
+  /// Input → Map<String, Object>
+  /// [Input] → List<Map<String, Object>>
+  /// [[Input]] → List<List<Map<String, Object>>>
+  String _inputArgRawType(GLType type, GLToken context) {
+    if (type is GLListType) {
+      context.addImport(JavaImports.list);
+      return 'List<${_inputArgRawType(type.inlineType, context)}>';
+    }
+    context.addImport(JavaImports.map);
+    return 'Map<String, Object>';
+  }
+
+  /// Builds the fromJson conversion expression for an input arg, recursing
+  /// through list nesting with inline stream chains.
+  /// Null guards are emitted wherever the element type is nullable.
+  String _inputFromJsonConversion(GLType type, String sourceExpr, GLToken context, [int depth = 0]) {
+    if (type is GLListType) {
+      context.addImport(JavaImports.collectors);
+      final varName = codeGenUtils.safeLocalVar('m$depth');
+      final inner = _inputFromJsonConversion(type.inlineType, varName, context, depth + 1);
+      final body = JavaCodeGenUtils.nullSafeExpr(varName, inner, type.inlineType.nullable);
+      return JavaCodeGenUtils.streamMapCollect(receiver: sourceExpr, param: varName, body: body);
+    }
+    final call = '${type.token}.fromJson((Map<String, Object>) $sourceExpr)';
+    return JavaCodeGenUtils.nullSafeExpr(sourceExpr, call, type.nullable);
   }
 
   List<String> _wrapInCompletableFuture(

@@ -19,6 +19,8 @@ import { buildResolvers } from './resolvers/build-resolvers.js';
 import { AuthorService } from './services/author-service.js';
 import { ArticleService } from './services/article-service.js';
 import { DeleteArticleService } from './services/delete-article-service.js';
+import { BulkCreateService } from './services/bulk-create-service.js';
+import { BulkCreateGuard } from './guards/bulk-create-guard.js';
 import { AuthorSchemaMappingsService } from './services/author-schema-mappings-service.js';
 import { ArticleSchemaMappingsService } from './services/article-schema-mappings-service.js';
 
@@ -26,6 +28,8 @@ export interface GraphLinkServices {
    authorService: AuthorService;
    articleService: ArticleService;
    deleteArticleService: DeleteArticleService;
+   bulkCreateService: BulkCreateService;
+   bulkCreateGuard: BulkCreateGuard;
    authorSchemaMappingsService: AuthorSchemaMappingsService;
    articleSchemaMappingsService: ArticleSchemaMappingsService;
    contextFactory?: (req: Request, res: Response) => GraphLinkContext | Promise<GraphLinkContext>;
@@ -38,7 +42,7 @@ export async function createServer(services: GraphLinkServices): Promise<Server>
 
    const schema = makeExecutableSchema({
       typeDefs,
-      resolvers: buildResolvers(services.authorService, services.articleService, services.deleteArticleService, services.authorSchemaMappingsService, services.articleSchemaMappingsService),
+      resolvers: buildResolvers(services.authorService, services.articleService, services.deleteArticleService, services.bulkCreateService, services.authorSchemaMappingsService, services.articleSchemaMappingsService, services.bulkCreateGuard),
    });
    const httpServer = createHttpServer(app);
    const wsServer = new WebSocketServer({

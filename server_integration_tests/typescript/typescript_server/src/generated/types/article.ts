@@ -4,11 +4,12 @@
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
 
+import { GLArticleProjection } from '../interfaces/glarticle-projection.js';
 
 
 export interface Article {
-   readonly id: string | null;
-   readonly title: string | null;
-   readonly authorId: string | null;
+   readonly id: string;
+   readonly title: string;
+   readonly authorId: string;
 }
 

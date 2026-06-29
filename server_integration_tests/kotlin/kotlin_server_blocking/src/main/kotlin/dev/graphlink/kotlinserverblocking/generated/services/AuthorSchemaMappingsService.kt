@@ -3,7 +3,7 @@
 // GitHub: https://github.com/Oualitsen/graphlink
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
-
+// ignore_for_file:  camel_case_types, unused_import, non_constant_identifier_names, constant_identifier_names, override_on_non_overriding_member, unused_element, annotate_overrides
 
 package dev.graphlink.kotlinserverblocking.generated.services;
 import dev.graphlink.kotlinserverblocking.generated.types.Author
@@ -12,6 +12,7 @@ import dev.graphlink.kotlinserverblocking.generated.types.Article
 
 interface AuthorSchemaMappingsService {
    suspend fun authorArticles(value: List<Author>): Map<Author, List<Article>>
+   suspend fun authorLatestArticles(value: Author, limit: Int): List<Article>
 }
 
 

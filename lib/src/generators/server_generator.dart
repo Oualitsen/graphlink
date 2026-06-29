@@ -34,6 +34,7 @@ Future<Set<String>> generateServerClasses(
     jspecify: springConfig.jspecify,
     typeMapOverrides: config.typeMappings ?? {},
     importPrefix: springConfig.basePackage,
+    generateJsonMethods: true,
   );
   final springSerializer = JavaSpringServerSerializer(grammar,
       packageName: packageName,

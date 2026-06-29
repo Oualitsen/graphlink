@@ -3,7 +3,7 @@
 // GitHub: https://github.com/Oualitsen/graphlink
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
-
+// ignore_for_file:  camel_case_types, unused_import, non_constant_identifier_names, constant_identifier_names, override_on_non_overriding_member, unused_element, annotate_overrides
 
 package dev.graphlink.kotlinserverblocking.generated.inputs;
 
@@ -11,6 +11,18 @@ package dev.graphlink.kotlinserverblocking.generated.inputs;
 data class UpdateArticleInput(
     val id: String,
     val title: String? = null,
-)
+) {
+   fun toJson(): Map<String, Any?> = mapOf(
+           "id" to id,
+           "title" to title,
+       )
+
+   companion object {
+      fun fromJson(map: Map<String, Any?>): UpdateArticleInput = UpdateArticleInput(
+          id = map["id"] as String,
+          title = map["title"] as? String,
+      )
+   }
+}
 
 
