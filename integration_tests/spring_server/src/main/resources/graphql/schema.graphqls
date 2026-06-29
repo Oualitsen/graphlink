@@ -110,6 +110,20 @@ type Driver {
   lastUsedFuel(liters: Int!): Int!
 }
 
+# ── Keyword-collision coverage ────────────────────────────────────────────────
+# `class` is reserved in Dart, Java, Kotlin, and TypeScript (parameter position).
+# Exercised as a type field, an input field, a top-level query argument, and a
+# query operation name. The wire name stays `class`; only generated identifiers
+# are sanitized.
+type ClassResult {
+  id:    ID!
+  class: String!
+}
+
+input ClassInput {
+  class: String!
+}
+
 input AddressInput {
   street:  String!
   city:    String!
@@ -203,6 +217,7 @@ type Query {
   listUsersWithDefaults(limit: Int, role: Role): [User]!
   getDriver(id: ID!): Driver!
   getVehicleDriver(id: ID!): VehicleDriver!
+  class(class: ID!): ClassResult!
 }
 
 type Mutation {
@@ -215,6 +230,7 @@ type Mutation {
   createUserOrErrors(input: CreateUserInput!): User!
   createWithDefaults(input: CreateWithDefaultsInput!): DefaultsEcho!
   createWithNestedDefaults(input: NestedDefaultsInput!): NestedDefaultsEcho!
+  makeClass(input: ClassInput!): ClassResult!
 }
 
 type Subscription {

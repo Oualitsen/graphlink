@@ -18,21 +18,37 @@ Set<String> _reservedWordsFor(GeneratorConfig config) {
   if (lang is KotlinClientConfig || lang is KotlinSpringServerConfig) {
     return kotlinReservedWords;
   }
-  // TypeScript accesses fields and arguments as object properties; reserved
-  // words are legal there, so nothing to sanitize.
+  // TypeScript accesses fields as object properties; reserved words are legal
+  // there, so fields need no sanitizing (parameters are handled separately,
+  // see [_parameterReservedWordsFor]).
   return const {};
+}
+
+/// Parameter/binding-position reserved words for the target language. Differs
+/// from [_reservedWordsFor] only for TypeScript, where reserved words are legal
+/// as object-property names (fields) but illegal as parameter / destructuring
+/// identifiers. Returning `null` lets [GLParser] default it to [reservedWords].
+Set<String>? _parameterReservedWordsFor(GeneratorConfig config) {
+  final lang = config.getMode() == CodeGenerationMode.server
+      ? config.serverConfig!.language
+      : config.clientConfig!.language;
+  if (lang is TypeScriptClientConfig || lang is ExpressApolloServerConfig) {
+    return typescriptParameterReservedWords;
+  }
+  return null;
 }
 
 GLParser createGrammar(GeneratorConfig config) {
   final mode = config.getMode();
   if (mode == CodeGenerationMode.server) {
-return GLParser(mode: mode, identityFields: config.identityFields, reservedWords: _reservedWordsFor(config),)
+return GLParser(mode: mode, identityFields: config.identityFields, reservedWords: _reservedWordsFor(config), parameterReservedWords: _parameterReservedWordsFor(config),)
       ..unknownScalarType = config.unknownScalarType;
   }
   final lang = config.clientConfig!.language;
   return GLParser(
     mode: mode,
     reservedWords: _reservedWordsFor(config),
+    parameterReservedWords: _parameterReservedWordsFor(config),
     identityFields: config.identityFields,
     disableCache: config.disableCache,
     generateAllFieldsFragments: lang.generateAllFieldsFragments,

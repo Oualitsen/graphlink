@@ -70,6 +70,14 @@ class GLQueryDefinition extends GLToken with GLDirectivesMixin {
   final GLQueryType type; //query|mutation|subscription
   Set<GLFragmentDefinitionBase>? _allFrags;
 
+  /// Target-language-safe identifier for the generated client method name.
+  /// Defaults to the wire [token]; overwritten by the keyword pass when the
+  /// operation name collides with a reserved word (e.g. `return` → `return_`).
+  /// The wire/operation name (query text, `operationName`) always uses [token].
+  String? _codeName;
+  String get codeName => _codeName ?? token;
+  set codeName(String value) => _codeName = value;
+
   GLTypeDefinition? _glTypeDefinition;
   GLTypeDefinition? _glFullResponse;
 

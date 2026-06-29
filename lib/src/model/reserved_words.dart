@@ -40,8 +40,26 @@ const Set<String> kotlinReservedWords = {
   'var', 'when', 'while',
 };
 
-/// TypeScript intentionally has NO reserved set: it accesses both fields and
-/// arguments as object properties (`{ default: T }`, `args.default`), and
+/// TypeScript intentionally has NO field reserved set: it accesses fields and
+/// JSON keys as object properties (`{ default: T }`, `args.default`), and
 /// reserved words are legal as property names / in member access. So neither
-/// fields nor query arguments need sanitizing for TypeScript.
+/// fields, enum values, nor JSON keys need sanitizing for TypeScript.
 const Set<String> typescriptReservedWords = <String>{};
+
+/// TypeScript/JavaScript reserved words that are illegal as a *binding
+/// identifier* — i.e. a function/method parameter name or a destructuring
+/// target. Unlike [typescriptReservedWords] (empty), these matter for generated
+/// resolver parameters: `getCar(return: string)` and `const { return } = args`
+/// are both syntax errors, so the parameter must be sanitized (`return_`) while
+/// the wire name stays the original (the destructuring key). Object property
+/// names are unaffected, so this set is used only for parameter identifiers.
+const Set<String> typescriptParameterReservedWords = {
+  'break', 'case', 'catch', 'class', 'const', 'continue', 'debugger',
+  'default', 'delete', 'do', 'else', 'enum', 'export', 'extends', 'false',
+  'finally', 'for', 'function', 'if', 'import', 'in', 'instanceof', 'new',
+  'null', 'return', 'super', 'switch', 'this', 'throw', 'true', 'try',
+  'typeof', 'var', 'void', 'while', 'with',
+  // Strict-mode reserved words (also illegal as binding identifiers in modules).
+  'implements', 'interface', 'let', 'package', 'private', 'protected',
+  'public', 'static', 'yield',
+};

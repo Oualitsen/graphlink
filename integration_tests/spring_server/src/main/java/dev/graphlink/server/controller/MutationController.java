@@ -122,4 +122,14 @@ public class MutationController {
     private Address toAddress(AddressInput a) {
         return new Address(a.street(), a.city(), a.country(), a.zip());
     }
+
+    // ── Keyword-collision coverage ──────────────────────────────────────────
+    // The input field `class` is a keyword; bind the input as a Map so the Java
+    // side never needs a field literally named `class`. Echoes it back through
+    // ClassResult (whose `class` field is served via @SchemaMapping).
+
+    @MutationMapping
+    public ClassResult makeClass(@Argument("input") java.util.Map<String, Object> input) {
+        return new ClassResult("made", (String) input.get("class"));
+    }
 }

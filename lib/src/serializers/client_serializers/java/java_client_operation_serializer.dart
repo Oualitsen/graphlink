@@ -40,7 +40,7 @@ class JavaClientOperationSerializer {
 
 	    return _ctx.codeGenUtils.createMethod(
 	        returnType: 'public ${returnTypeByQueryType(def)}',
-	        methodName: def.tokenInfo.token,
+	        methodName: def.codeName,
 	        arguments: getArguments(def),
 	        statements: [
 	          ..._defaultCoalesces(def),
@@ -67,7 +67,7 @@ class JavaClientOperationSerializer {
 	    }
 	    return _ctx.codeGenUtils.createMethod(
 	        returnType: 'public ${returnTypeByQueryType(def)}',
-	        methodName: def.tokenInfo.token,
+	        methodName: def.codeName,
 	        arguments: getArguments(def),
 	        statements: [
 	          ..._defaultCoalesces(def),
@@ -132,7 +132,7 @@ class JavaClientOperationSerializer {
 
   String mutationToMethod(GLQueryDefinition def, GLImportContainer container) {
     final returnType = 'public ${returnTypeByQueryType(def)}';
-    final methodName = def.tokenInfo.token;
+    final methodName = def.codeName;
     final queryText = _ctx.gqlSerializer.serializeQueryDefinition(def);
     final fragmentNames = def.fragments(_ctx.grammar)
         .map((f) => '"${f.tokenInfo.token}"').toSet();
@@ -297,7 +297,7 @@ class JavaClientOperationSerializer {
         .map((f) => '"${f.tokenInfo.token}"').toSet();
     return _ctx.codeGenUtils.createMethod(
         returnType: 'public ${returnTypeByQueryType(def)}',
-        methodName: def.tokenInfo.token,
+        methodName: def.codeName,
         arguments: getArguments(def),
         statements: [
           'String ${svQuery} = "${queryText.escapeForJavaStringLiteral()}";',

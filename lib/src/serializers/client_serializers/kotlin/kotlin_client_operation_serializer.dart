@@ -48,7 +48,7 @@ class KotlinClientOperationSerializer {
     ];
 
     return _ctx.codeGenUtils.suspendFun(
-      name: def.tokenInfo.token,
+      name: def.codeName,
       arguments: getArguments(def),
       returnType: returnTypeByQueryType(def),
       statements: statements,
@@ -70,7 +70,7 @@ class KotlinClientOperationSerializer {
     ];
 
     return _ctx.codeGenUtils.suspendFun(
-      name: def.tokenInfo.token,
+      name: def.codeName,
       arguments: getArguments(def),
       returnType: returnTypeByQueryType(def),
       statements: statements,
@@ -82,7 +82,8 @@ class KotlinClientOperationSerializer {
   // ── Mutation ───────────────────────────────────────────────────────────────
 
   String mutationToMethod(GLQueryDefinition def, GLImportContainer container) {
-    final methodName = def.tokenInfo.token;
+    final methodName = def.codeName;
+    final wireName = def.tokenInfo.token;
 
     if (_ctx.grammar.mutationHasUploads(def)) {
       return _uploadMutationMethod(def, container);
@@ -102,11 +103,11 @@ class KotlinClientOperationSerializer {
       _generateVariables(def, container),
       // plain mutations build the payload inside executeData/executeFull
       if (!isCE) ...[
-        'val ${svDecodedResponse} = executeData(${svQuery}, ${svFragmentNames}, "$methodName", ${_variablesExpr(def)}, { $fullResponseToken.fromJson(it) })',
+        'val ${svDecodedResponse} = executeData(${svQuery}, ${svFragmentNames}, "$wireName", ${_variablesExpr(def)}, { $fullResponseToken.fromJson(it) })',
         if (invalidation.isNotEmpty) invalidation,
         'return ${svDecodedResponse}.data!!',
       ] else ...[
-        'val ${svDecodedResponse} = executeFull(${svQuery}, ${svFragmentNames}, "$methodName", ${_variablesExpr(def)}, { $fullResponseToken.fromJson(it) })',
+        'val ${svDecodedResponse} = executeFull(${svQuery}, ${svFragmentNames}, "$wireName", ${_variablesExpr(def)}, { $fullResponseToken.fromJson(it) })',
         if (def.invalidateCacheTags.isNotEmpty)
           _ctx.codeGenUtils.ifStatement(
             condition: '${svDecodedResponse}.errors == null',
@@ -147,7 +148,8 @@ class KotlinClientOperationSerializer {
   }
 
   String _uploadMutationMethod(GLQueryDefinition def, GLImportContainer container) {
-    final methodName = def.tokenInfo.token;
+    final methodName = def.codeName;
+    final opWireName = def.tokenInfo.token;
     final isCE = def.isCaptureErrors(_ctx.grammar);
     final fullResponseToken = def.getFullResponseTypeDefinition(_ctx.grammar).token;
     final uploadNames = _ctx.grammar.uploadScalarNames;
@@ -205,7 +207,7 @@ class KotlinClientOperationSerializer {
     }
 
     body.addAll([
-      'val ${svOperationsMap} = mapOf("query" to ${svFullQuery}, "operationName" to "$methodName", "variables" to ${svVariables})',
+      'val ${svOperationsMap} = mapOf("query" to ${svFullQuery}, "operationName" to "$opWireName", "variables" to ${svVariables})',
       'val ${svOperations} = ${svEncoder}.encode(${svOperationsMap})',
       'val ${svMapJson} = ${svEncoder}.encode(${svFileMap})',
       'val ${svResponseText} = ${svMultipartAdapter}.executeMultipart(${svOperations}, ${svMapJson}, ${svFiles}, onProgress)',
@@ -250,7 +252,7 @@ class KotlinClientOperationSerializer {
     ];
 
     return _ctx.codeGenUtils.createMethod(
-      methodName: def.tokenInfo.token,
+      methodName: def.codeName,
       arguments: getArguments(def),
       returnType: '$_flow<$typeToken>',
       statements: statements,

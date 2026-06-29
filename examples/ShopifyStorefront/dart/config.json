@@ -1,0 +1,32 @@
+{
+    "schemaPaths": [
+        "../_schema/*.graphql"
+    ],
+    "mode": "client",
+    "unknownScalarType": "String",
+    "identityFields": [],
+    "typeMappings": {
+        "ID": "String",
+        "String": "String",
+        "Float": "double",
+        "Int": "int",
+        "Boolean": "bool",
+        "Null": "null"
+    },
+    "outputDir": "lib/generated",
+    "clientConfig": {
+        "dart": {
+            "packageName": "graphlink_shopify_storefront_example",
+            "generateAllFieldsFragments": true,
+            "nullableFieldsRequired": false,
+            "autoGenerateQueries": true,
+            "autoGenerateQueriesDefaultAlias": "data",
+            "operationNameAsParameter": false,
+            "generateUiTypes": false,
+            "generateUiInputs": false,
+            "immutableInputFields": true,
+            "immutableTypeFields": true,
+            "httpAdapter": "dio"
+        }
+    }
+}

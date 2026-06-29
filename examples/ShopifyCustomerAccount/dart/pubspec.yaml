@@ -1,0 +1,14 @@
+name: shopify_customer_account
+description: |
+  GraphLink-generated Dart client for the Shopify Customer Account GraphQL schema.
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ">=2.19.0 <4.0.0"
+
+dependencies:
+  graphlink:
+    path: ../../../
+  http: ^1.2.0
+  dio: ^4.0.0

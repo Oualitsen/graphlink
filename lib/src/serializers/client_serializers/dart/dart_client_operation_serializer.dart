@@ -59,7 +59,7 @@ class DartClientOperationSerializer {
 
     return _cg.createMethod(
         returnType: returnTypeByQueryType(def),
-        methodName: def.tokenInfo.token,
+        methodName: def.codeName,
         arguments: getArguments(def),
         async: true,
         statements: [
@@ -86,7 +86,7 @@ class DartClientOperationSerializer {
 
     return _cg.createMethod(
         returnType: returnTypeByQueryType(def),
-        methodName: def.tokenInfo.token,
+        methodName: def.codeName,
         arguments: getArguments(def),
         async: true,
         statements: [
@@ -110,7 +110,7 @@ class DartClientOperationSerializer {
 
     return _cg.createMethod(
         returnType: returnTypeByQueryType(def),
-        methodName: def.tokenInfo.token,
+        methodName: def.codeName,
         arguments: getArguments(def),
         async: !isSubscription,
         statements: [

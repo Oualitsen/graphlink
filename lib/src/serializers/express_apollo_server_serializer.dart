@@ -92,10 +92,10 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       final argList = field.arguments.map((arg) {
         if (isUploadScalar(arg.type)) {
           hasUpload = true;
-          return '${arg.token}: ${_tsUploadType(arg.type)}';
+          return '${arg.codeName}: ${_tsUploadType(arg.type)}';
         }
         _collectType(arg.type, importedTypes);
-        return '${arg.token}: ${tsSerializer.serializeType(arg.type, false)}';
+        return '${arg.codeName}: ${tsSerializer.serializeType(arg.type, false)}';
       }).toList();
       final returnTs = tsSerializer.serializeType(field.type, false);
       _collectType(field.type, importedTypes);
@@ -135,7 +135,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     }
     final argParams = mapping.field.arguments.map((arg) {
       _collectType(arg.type, importedTypes);
-      return '${arg.token}: ${tsSerializer.serializeType(arg.type, false)}';
+      return '${arg.codeName}: ${tsSerializer.serializeType(arg.type, false)}';
     });
     final nonBatchParams = [
       'item: ${parentName}',
@@ -157,7 +157,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       if (!fieldHasValidation(field)) continue;
       final argList = field.arguments.map((arg) {
         _collectType(arg.type, importedTypes);
-        return '${arg.token}: ${tsSerializer.serializeType(arg.type, false)}';
+        return '${arg.codeName}: ${tsSerializer.serializeType(arg.type, false)}';
       }).toList();
       final guardParams = [...argList, 'context: GraphLinkContext', if (apolloConfig.useResolveInfo) 'info: GraphQLResolveInfo'];
       methods.add('${validationMethodName(field.name.token)}(${guardParams.join(', ')}): Promise<void>;');
@@ -291,6 +291,22 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
 
   bool _hasGuard(GLService service) => service.fields.any(fieldHasValidation);
 
+  /// Builds the resolver `args` destructuring pattern. Each entry is plain
+  /// shorthand (`{ id }`) when the wire name is a legal identifier, or a rename
+  /// (`{ return: return_ }`) when the wire name is a reserved word, so the local
+  /// binding is safe while the property key stays the GraphQL wire name.
+  String _argsDestructure(
+      List<String> wireNames, List<String> codeNames, String emptyToken) {
+    if (wireNames.isEmpty) return emptyToken;
+    final parts = <String>[];
+    for (var i = 0; i < wireNames.length; i++) {
+      parts.add(wireNames[i] == codeNames[i]
+          ? wireNames[i]
+          : '${wireNames[i]}: ${codeNames[i]}');
+    }
+    return '{ ${parts.join(', ')} }';
+  }
+
   void _writeRootBlock(StringBuffer buf, List<GLService> services, GLQueryType type, String block) {
     final entries = <_RootEntry>[];
     for (final service in services) {
@@ -301,6 +317,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
           service: service,
           fieldName: field.name.token,
           argNames: field.arguments.map((a) => a.token).toList(),
+          argCodeNames: field.arguments.map((a) => a.codeName).toList(),
           argTypes: field.arguments.map((a) => a.type).toList(),
           needsInfo: apolloConfig.useResolveInfo || field.hasDirective(glReturnsProjection),
         ));
@@ -312,19 +329,21 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     for (final e in entries) {
       final sVar = e.service.token.firstLow;
       final gVar = _guardName(e.service).firstLow;
-      final argsDestructure = e.argNames.isEmpty ? '__' : '{ ${e.argNames.join(', ')} }';
+      final argsDestructure =
+          _argsDestructure(e.argNames, e.argCodeNames, '__');
 
-      // resolve upload args before passing to service
-      final resolvedArgNames = List<String>.from(e.argNames);
+      // resolve upload args before passing to service. The destructured local
+      // binding is the (parameter-safe) code name, so awaits/calls use it.
+      final resolvedArgNames = List<String>.from(e.argCodeNames);
       final uploadAwaitLines = <String>[];
       for (int i = 0; i < e.argTypes.length; i++) {
         if (isUploadScalar(e.argTypes[i])) {
-          final original = e.argNames[i];
-          final resolved = '_$original';
+          final local = e.argCodeNames[i];
+          final resolved = '_$local';
           resolvedArgNames[i] = resolved;
           uploadAwaitLines.add(e.argTypes[i] is GLListType
-              ? 'const $resolved = await Promise.all($original);'
-              : 'const $resolved = await $original;');
+              ? 'const $resolved = await Promise.all($local);'
+              : 'const $resolved = await $local;');
         }
       }
 
@@ -357,6 +376,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
           service: service,
           fieldName: field.name.token,
           argNames: field.arguments.map((a) => a.token).toList(),
+          argCodeNames: field.arguments.map((a) => a.codeName).toList(),
           argTypes: field.arguments.map((a) => a.type).toList(),
           needsInfo: false,
         ));
@@ -367,8 +387,9 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     buf.writeln('    Subscription: {');
     for (final e in entries) {
       final sVar = e.service.token.firstLow;
-      final argsDestructure = e.argNames.isEmpty ? '__' : '{ ${e.argNames.join(', ')} }';
-      final callArgs = [...e.argNames, 'context'].join(', ');
+      final argsDestructure =
+          _argsDestructure(e.argNames, e.argCodeNames, '__');
+      final callArgs = [...e.argCodeNames, 'context'].join(', ');
       buf.writeln('      ${e.fieldName}: {');
       buf.writeln('        subscribe: (_, $argsDestructure, context) => $sVar.${e.fieldName}($callArgs),');
       buf.writeln('        resolve: (payload: any) => payload,');
@@ -400,11 +421,13 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
           buf.writeln('(parent) => ${m.key}Loader.load(parent),');
         } else {
           final argNames = m.field.arguments.map((a) => a.token).toList();
-          final argsDestructure = argNames.isEmpty ? '_' : '{ ${argNames.join(', ')} }';
+          final argCodeNames =
+              m.field.arguments.map((a) => a.codeName).toList();
+          final argsDestructure = _argsDestructure(argNames, argCodeNames, '_');
           final needsInfo = apolloConfig.useResolveInfo || m.field.hasDirective(glReturnsProjection);
           final mappingCallArgs = [
             'parent',
-            ...argNames,
+            ...argCodeNames,
             'context',
             if (needsInfo) 'info',
           ].join(', ');
@@ -622,13 +645,22 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
 class _RootEntry {
   final GLService service;
   final String fieldName;
+
+  /// Original GraphQL argument names — the wire/property keys read off the
+  /// resolver `args` object (always the schema token).
   final List<String> argNames;
+
+  /// Parameter-safe identifiers parallel to [argNames]; equal to the wire name
+  /// unless it collides with a reserved word (`return` → `return_`). Used for
+  /// the destructuring target, local bindings, and service-call arguments.
+  final List<String> argCodeNames;
   final List<GLType> argTypes;
   final bool needsInfo;
   _RootEntry({
     required this.service,
     required this.fieldName,
     required this.argNames,
+    required this.argCodeNames,
     required this.argTypes,
     required this.needsInfo,
   });

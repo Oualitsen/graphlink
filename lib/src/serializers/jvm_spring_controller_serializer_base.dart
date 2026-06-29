@@ -4,6 +4,7 @@ import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_controller.dart';
+import 'package:graphlink/src/model/gl_service.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
@@ -39,7 +40,7 @@ abstract class JvmSpringControllerSerializerBase {
       ctrl.addDirective(_createControllerDirective());
       for (var method in ctrl.fields) {
         var queryType = ctrl.getTypeByFieldName(method.name.token)!;
-        method.addDirective(_createResolverDirective(queryType));
+        method.addDirective(_createResolverDirective(queryType, method, ctrl));
         for (var arg in method.arguments) {
           arg.addDirective(_createArgumentDirective(arg));
         }
@@ -47,13 +48,23 @@ abstract class JvmSpringControllerSerializerBase {
     }
   }
 
-  GLDirectiveValue _createResolverDirective(GLQueryType type) {
+  GLDirectiveValue _createResolverDirective(
+      GLQueryType type, GLField method, GLService ctrl) {
+    // The keyword pass (which assigns codeName) runs after this annotation step,
+    // so predict the sanitized method name with the same deterministic rule.
+    // When the bare top-level mapping (`@QueryMapping`) would otherwise bind to
+    // the renamed method, pin it to the original wire name (`name = "return"`).
+    final wire = method.name.token;
+    final code = ctrl.resolveCodeName(wire, grammar.reservedWords);
+    final annotation = code == wire
+        ? _toMappingAnnotationValue(type)
+        : '${_toMappingAnnotationValue(type)}(name = "$wire")';
     return GLDirectiveValue(
         "_gqMapping".toToken(),
         [],
         [
           GLArgumentValue(glAnnotation.toToken(), true),
-          GLArgumentValue(glClass.toToken(), _toMappingAnnotationValue(type)),
+          GLArgumentValue(glClass.toToken(), annotation),
           GLArgumentValue(glImport.toToken(), _toMappingAnnotationImport(type)),
           GLArgumentValue(glOnServer.toToken(), true),
         ],
