@@ -158,4 +158,18 @@ public class QueryController {
                 .message("VehicleDriver not found: " + id).build();
         return vd;
     }
+
+    // ── Keyword-collision coverage ───────────────────────────────────────────
+    // GraphQL operation and argument are both named `class` (a keyword). The Java
+    // method/parameter are sanitized and the bindings pinned to the wire name.
+
+    @QueryMapping(name = "class")
+    public ClassResult class_(@Argument(name = "class") String class_) {
+        return new ClassResult(class_, "class-of-" + class_);
+    }
+
+    @SchemaMapping(typeName = "ClassResult", field = "class")
+    public String classResultClass(ClassResult result) {
+        return result.classValue();
+    }
 }

@@ -255,8 +255,19 @@ class GLParser {
   /// the canonical token used for lookups, JSON keys, and GraphQL wire text.
   final Set<String> reservedWords;
 
+  /// Reserved words illegal specifically as *parameter / binding identifiers*.
+  /// Most languages treat parameters and fields identically, so this defaults to
+  /// [reservedWords]. TypeScript is the exception: reserved words are legal as
+  /// object-property names (fields) but illegal as parameter names, so it passes
+  /// a non-empty set here while leaving [reservedWords] empty. Used to sanitize
+  /// generated resolver/operation argument identifiers without touching fields.
+  final Set<String>? _parameterReservedWords;
+  Set<String> get parameterReservedWords =>
+      _parameterReservedWords ?? reservedWords;
+
   GLParser({
     this.reservedWords = const {},
+    Set<String>? parameterReservedWords,
     this.generateAllFieldsFragments = false,
     this.nullableFieldsRequired = false,
     this.autoGenerateQueries = false,
@@ -270,7 +281,8 @@ class GLParser {
     this.defaultExpandDepth = 1,
     this.captureErrors = false,
     this.autoQueryArgumentLimit = 200,
-  }) : assert(
+  })  : _parameterReservedWords = parameterReservedWords,
+        assert(
           (!autoGenerateQueries && autoGenerateQueriesFor == null) || generateAllFieldsFragments,
           'autoGenerateQueries and autoGenerateQueriesFor both require generateAllFieldsFragments: true',
         ) {

@@ -90,7 +90,7 @@ class TypeScriptClientOperationSerializer {
 
     if (observables) {
       return _cg.createMethod(
-        methodName: def.tokenInfo.token,
+        methodName: def.codeName,
         returnType: 'Observable<$returnTypeName>',
         async: false,
         arguments: args.isEmpty ? null : args,
@@ -101,7 +101,7 @@ class TypeScriptClientOperationSerializer {
     }
 
     return _cg.createMethod(
-      methodName: def.tokenInfo.token,
+      methodName: def.codeName,
       returnType: returnTypeName,
       async: true,
       arguments: args.isEmpty ? null : args,
@@ -185,7 +185,7 @@ class TypeScriptClientOperationSerializer {
 
     if (observables) {
       return _cg.createMethod(
-        methodName: def.tokenInfo.token,
+        methodName: def.codeName,
         returnType: 'Observable<$returnTypeName>',
         async: false,
         arguments: args.isEmpty ? null : args,
@@ -196,7 +196,7 @@ class TypeScriptClientOperationSerializer {
     }
 
     return _cg.createMethod(
-      methodName: def.tokenInfo.token,
+      methodName: def.codeName,
       returnType: returnTypeName,
       async: true,
       arguments: args.isEmpty ? null : args,
@@ -254,7 +254,7 @@ class TypeScriptClientOperationSerializer {
 
     if (observables) {
       return _cg.createMethod(
-        methodName: def.tokenInfo.token,
+        methodName: def.codeName,
         returnType: 'Observable<$returnTypeName>',
         async: false,
         arguments: args.isEmpty ? null : args,
@@ -265,7 +265,7 @@ class TypeScriptClientOperationSerializer {
     }
 
     return _cg.createMethod(
-      methodName: def.tokenInfo.token,
+      methodName: def.codeName,
       returnType: returnTypeName,
       async: true,
       arguments: args.isEmpty ? null : args,
@@ -346,7 +346,7 @@ class TypeScriptClientOperationSerializer {
 
     if (observables) {
       return _cg.createMethod(
-        methodName: def.tokenInfo.token,
+        methodName: def.codeName,
         returnType: 'Observable<$returnTypeName>',
         async: false,
         arguments: args.isEmpty ? null : args,
@@ -357,7 +357,7 @@ class TypeScriptClientOperationSerializer {
     }
 
     return _cg.createMethod(
-      methodName: def.tokenInfo.token,
+      methodName: def.codeName,
       returnType: returnTypeName,
       async: true,
       arguments: args.isEmpty ? null : args,
@@ -409,7 +409,7 @@ class TypeScriptClientOperationSerializer {
       ])};');
 
       return _cg.createMethod(
-        methodName: def.tokenInfo.token,
+        methodName: def.codeName,
         returnType: 'Observable<$returnTypeName>',
         arguments: queryArgs.isEmpty ? null : queryArgs,
         statements: statements,
@@ -439,7 +439,7 @@ class TypeScriptClientOperationSerializer {
     ];
 
     return _cg.createMethod(
-      methodName: def.tokenInfo.token,
+      methodName: def.codeName,
       returnType: '() => void',
       arguments: allArgs,
       statements: statements,

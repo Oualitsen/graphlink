@@ -857,7 +857,7 @@ class JavaSerializer extends GLSerializer {
     var jspecifyAnnotation = _isPrimitiveType(field.type) ? null : getJSpecifyAnnoation(field);
     var result = codeGenUtils.createMethod(
         returnType: "public ${returnType}",
-        methodName: _getterName(field.name.token, returnType == "boolean"),
+        methodName: _getterName(field.codeName, returnType == "boolean"),
         statements: [
           if (checkForNulls &&
               !field.type.nullable &&
@@ -950,7 +950,7 @@ class JavaSerializer extends GLSerializer {
       result = "$result ${field.codeName}";
     } else {
       result =
-          "$result ${_getterName(field.name.token, returnType == "boolean")}";
+          "$result ${_getterName(field.codeName, returnType == "boolean")}";
     }
     result = "$result()";
     if (skipModifier) {
@@ -1003,7 +1003,7 @@ class JavaSerializer extends GLSerializer {
     final annotation = _isPrimitiveType(field.type) ? null : getJSpecifyAnnoation(field);
     return codeGenUtils.createMethod(
         returnType: 'public void',
-        methodName: _setterName(field.name.token),
+        methodName: _setterName(field.codeName),
         arguments: [
           '${annotation != null ? "$annotation " : ""}${serializeArgumentField(field)}'
         ],

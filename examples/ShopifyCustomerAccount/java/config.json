@@ -1,0 +1,31 @@
+{
+    "schemaPaths": [
+        "../_schema/*.graphql"
+    ],
+    "mode": "client",
+    "unknownScalarType": "String",
+    "identityFields": [],
+    "typeMappings": {
+        "ID": "String",
+        "String": "String",
+        "Float": "Double",
+        "Int": "Integer",
+        "Boolean": "Boolean",
+        "Null": "null"
+    },
+    "outputDir": "client-app/src/main/java/dev/graphlink/shopify/customeraccount/generated",
+    "clientConfig": {
+        "java": {
+            "packageName": "dev.graphlink.shopify.customeraccount.generated",
+            "wsAdapter": "java11",
+            "jsonCodec": "jackson",
+            "generateAllFieldsFragments": true,
+            "autoGenerateQueries": true,
+            "nullableFieldsRequired": false,
+            "immutableInputFields": true,
+            "immutableTypeFields": true,
+            "inputAsRecord": false,
+            "typeAsRecord": false
+        }
+    }
+}
