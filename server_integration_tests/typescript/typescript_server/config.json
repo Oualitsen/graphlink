@@ -1,5 +1,5 @@
 {
-  "schemaPaths": ["../schema/schema.gql"],
+  "schemaPaths": ["../../schema/schema.gql"],
   "mode": "server",
   "typeMappings": {
     "ID":      "string",

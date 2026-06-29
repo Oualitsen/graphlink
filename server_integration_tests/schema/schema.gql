@@ -1,0 +1,45 @@
+directive @glValidate on FIELD_DEFINITION
+
+type Author {
+    id: ID!
+    name: String!
+    articles: [Article!]! @glSkipOnServer(batch: true)
+    latestArticles(limit: Int!): [Article!]! @glSkipOnServer(batch: false)
+}
+
+type Article {
+    id: ID!
+    title: String!
+    authorId: ID!
+    author: Author! @glSkipOnServer(batch: false)
+}
+
+input CreateArticleInput {
+    title: String!
+    authorId: ID!
+    class: String
+}
+
+input UpdateArticleInput {
+    id: ID!
+    title: String
+}
+
+type Query {
+    getAuthor(id: ID!): Author
+    getArticle(id: ID!): Article!
+    listAuthors: [Author!]!
+    listArticles: [Article!]!
+}
+
+type Mutation {
+    createArticle(input: CreateArticleInput!): Article!
+    updateArticle(input: UpdateArticleInput!): Article!
+    deleteArticle(id: ID!): Boolean!
+    bulkCreate(matrix: [[[CreateArticleInput]!]]): Int! @glValidate
+}
+
+type Subscription {
+    articleCreated: Article!
+    articleUpdated(id: ID!): Article!
+}

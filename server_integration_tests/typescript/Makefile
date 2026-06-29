@@ -1,14 +1,14 @@
+TS_PORT = 9997
+
 .PHONY: install generate start-server stop-server test ci
 
 install:
 	$(MAKE) -C typescript_server install
-	$(MAKE) -C dart_client install
 	$(MAKE) -C typescript_upload_server install
 	$(MAKE) -C dart_upload_client install
 
 generate:
 	$(MAKE) -C typescript_server generate
-	$(MAKE) -C dart_client generate
 	$(MAKE) -C typescript_upload_server generate
 	$(MAKE) -C dart_upload_client generate
 
@@ -21,7 +21,7 @@ stop-server:
 	$(MAKE) -C typescript_upload_server stop-server
 
 test:
-	$(MAKE) -C dart_client test
+	$(MAKE) -C ../dart_client test PORT=$(TS_PORT)
 	$(MAKE) -C dart_upload_client test
 
 ci: install generate start-server

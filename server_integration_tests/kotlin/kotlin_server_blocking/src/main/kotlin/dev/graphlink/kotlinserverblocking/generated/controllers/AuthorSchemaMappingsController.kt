@@ -3,7 +3,7 @@
 // GitHub: https://github.com/Oualitsen/graphlink
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
-
+// ignore_for_file:  camel_case_types, unused_import, non_constant_identifier_names, constant_identifier_names, override_on_non_overriding_member, unused_element, annotate_overrides
 
 package dev.graphlink.kotlinserverblocking.generated.controllers;
 import dev.graphlink.kotlinserverblocking.generated.types.Author
@@ -15,6 +15,8 @@ import kotlinx.coroutines.withContext
 import org.springframework.security.core.context.SecurityContextHolder
 import dev.graphlink.kotlinserverblocking.generated.security.SecurityCoroutineContext
 import org.springframework.graphql.data.method.annotation.BatchMapping
+import org.springframework.graphql.data.method.annotation.SchemaMapping
+import org.springframework.graphql.data.method.annotation.Argument
 
 
 @Controller()
@@ -27,6 +29,13 @@ class AuthorSchemaMappingsController(
       val securityContext = SecurityContextHolder.getContext()
       return withContext(Dispatchers.IO + SecurityCoroutineContext(securityContext)) {
          authorSchemaMappingsService.authorArticles(value)
+      }
+   }
+   @SchemaMapping(typeName="Author", field="latestArticles")
+   suspend fun authorLatestArticles(value: Author, @Argument limit: Int): List<GLArticleProjection> {
+      val securityContext = SecurityContextHolder.getContext()
+      return withContext(Dispatchers.IO + SecurityCoroutineContext(securityContext)) {
+         authorSchemaMappingsService.authorLatestArticles(value, limit)
       }
    }
 }

@@ -11,10 +11,11 @@ schema {
    subscription: Subscription
 }
 
-
+directive @glValidate on FIELD_DEFINITION
 input CreateArticleInput {
    title: String!
    authorId: ID!
+   class: String
 }
 
 input UpdateArticleInput {
@@ -22,13 +23,13 @@ input UpdateArticleInput {
    title: String
 }
 
-type Author {
+type Author implements GLAuthorProjection {
    id: ID!
    name: String!
    articles: [Article!]!
    latestArticles(limit: Int!): [Article!]!
 }
-type Article {
+type Article implements GLArticleProjection {
    id: ID!
    title: String!
    authorId: ID!
@@ -44,12 +45,21 @@ type Mutation {
    createArticle(input: CreateArticleInput!): Article!
    updateArticle(input: UpdateArticleInput!): Article!
    deleteArticle(id: ID!): Boolean!
+   bulkCreate(matrix: [[[CreateArticleInput]!]]): Int! @glValidate
 }
 type Subscription {
    articleCreated: Article!
    articleUpdated(id: ID!): Article!
 }
-
+interface GLAuthorProjection {
+   id: ID
+   name: String
+}
+interface GLArticleProjection {
+   id: ID
+   title: String
+   authorId: ID
+}
 
 
 `;

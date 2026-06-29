@@ -4,10 +4,11 @@
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
 
+import { GLAuthorProjection } from '../interfaces/glauthor-projection.js';
 
 
 export interface Author {
-   readonly id: string | null;
-   readonly name: string | null;
+   readonly id: string;
+   readonly name: string;
 }
 

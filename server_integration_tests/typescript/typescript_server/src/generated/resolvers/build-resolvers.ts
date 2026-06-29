@@ -10,6 +10,8 @@ import { GraphLinkContext } from '../context.js';
 import { AuthorService } from '../services/author-service.js';
 import { ArticleService } from '../services/article-service.js';
 import { DeleteArticleService } from '../services/delete-article-service.js';
+import { BulkCreateService } from '../services/bulk-create-service.js';
+import { BulkCreateGuard } from '../guards/bulk-create-guard.js';
 import { AuthorSchemaMappingsService } from '../services/author-schema-mappings-service.js';
 import { ArticleSchemaMappingsService } from '../services/article-schema-mappings-service.js';
 import { createAuthorArticlesLoader } from '../loaders/author-schema-mappings-loaders.js';
@@ -18,8 +20,10 @@ export function buildResolvers(
   authorService: AuthorService,
   articleService: ArticleService,
   deleteArticleService: DeleteArticleService,
+  bulkCreateService: BulkCreateService,
   authorSchemaMappingsService: AuthorSchemaMappingsService,
   articleSchemaMappingsService: ArticleSchemaMappingsService,
+  bulkCreateGuard: BulkCreateGuard,
 ): IResolvers {
   const authorArticlesLoader = createAuthorArticlesLoader(authorSchemaMappingsService);
   return {
@@ -46,6 +50,10 @@ export function buildResolvers(
       },
       deleteArticle: async (_, { id }, context) => {
         return deleteArticleService.deleteArticle(id, context);
+      },
+      bulkCreate: async (_, { matrix }, context) => {
+        await bulkCreateGuard.validateBulkCreate(matrix, context);
+        return bulkCreateService.bulkCreate(matrix, context);
       },
     },
     Subscription: {
