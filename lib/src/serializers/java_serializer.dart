@@ -249,9 +249,9 @@ class JavaSerializer extends GLSerializer {
     var deprecation = serializeEnumValueDeprecation(value);
     var decorators = serializeDecorators(value.getDirectives(), joiner: " ");
     if (deprecation.isEmpty && decorators.isEmpty) {
-      return value.value.token;
+      return value.codeName;
     } else {
-      return [deprecation, decorators, value.value.token].where((s) => s.isNotEmpty).join(" ");
+      return [deprecation, decorators, value.codeName].where((s) => s.isNotEmpty).join(" ");
     }
   }
 

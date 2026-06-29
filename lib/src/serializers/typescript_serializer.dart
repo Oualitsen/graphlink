@@ -96,7 +96,7 @@ class TypeScriptSerializer extends GLSerializer {
     if (shouldSkipSerialization(directives: value.getDirectives(), mode: mode)) {
       return '';
     }
-    return value.value.token;
+    return value.codeName;
   }
 
   @override

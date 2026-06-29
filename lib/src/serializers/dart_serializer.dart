@@ -100,7 +100,7 @@ class DartSerializer extends GLSerializer {
   String doSerializeEnumValue(GLEnumValue value) {
     var deprecation = serializeEnumValueDeprecation(value);
     var decorators = serializeDecorators(value.getDirectives(), joiner: " ");
-    var parts = [deprecation, decorators, value.value.token].where((s) => s.isNotEmpty).join(" ");
+    var parts = [deprecation, decorators, value.codeName].where((s) => s.isNotEmpty).join(" ");
     // Clean up double spaces from empty deprecation or decorators.
     return parts.replaceAll(RegExp(r'  +'), ' ').trim();
   }

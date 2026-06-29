@@ -134,8 +134,8 @@ class KotlinSerializer extends GLSerializer {
   @override
   String doSerializeEnumValue(GLEnumValue value) {
     final deprecation = serializeEnumValueDeprecation(value);
-    if (deprecation.isEmpty) return value.value.token;
-    return '$deprecation ${value.value.token}';
+    if (deprecation.isEmpty) return value.codeName;
+    return '$deprecation ${value.codeName}';
   }
 
   @override
