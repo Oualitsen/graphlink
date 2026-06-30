@@ -105,8 +105,8 @@ void main() {
       expect(out, contains('status?: Status'));
       expect(out, contains('limit?: number'));
       // variables map uses ?? fallback
-      expect(out, contains("'role': args.role ?? Role.USER"));
-      expect(out, contains("'status': args.status ?? Status.ACTIVE"));
+      expect(out, contains("'role': Role.toJson(args.role) ?? Role.USER"));
+      expect(out, contains("'status': args.status != null ? Status.toJson(args.status) : null ?? Status.ACTIVE"));
       expect(out, contains("'limit': args.limit ?? 10"));
     });
   });
