@@ -413,7 +413,7 @@ class KotlinSerializer extends GLSerializer {
       if (type.nullable) {
         return KotlinCodeGenUtils.letCall(receiver: '($access as? String)', body: '$token.fromJson(it)');
       }
-      return '$token.valueOf($access as String)';
+      return '$token.fromJson($access as String)!!';
     }
     // projectable type or input
     if (type.nullable) {
