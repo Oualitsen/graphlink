@@ -172,4 +172,33 @@ public class QueryController {
     public String classResultClass(ClassResult result) {
         return result.classValue();
     }
+
+    // ── Normalization coverage ───────────────────────────────────────────────
+    // Fields FirstName, last_name, USER_AGE, and event_type are non-standard
+    // casing in GraphQL. @SchemaMapping pins each to the correct Java accessor.
+
+    @QueryMapping
+    public NormalizedFields getNormalizedRecord(@Argument String id) {
+        return DataFixtures.normalizedById(id);
+    }
+
+    @SchemaMapping(typeName = "NormalizedFields", field = "FirstName")
+    public String normalizedFirstName(NormalizedFields r) {
+        return r.firstName();
+    }
+
+    @SchemaMapping(typeName = "NormalizedFields", field = "last_name")
+    public String normalizedLastName(NormalizedFields r) {
+        return r.lastName();
+    }
+
+    @SchemaMapping(typeName = "NormalizedFields", field = "USER_AGE")
+    public int normalizedUserAge(NormalizedFields r) {
+        return r.userAge();
+    }
+
+    @SchemaMapping(typeName = "NormalizedFields", field = "event_type")
+    public EventType normalizedEventType(NormalizedFields r) {
+        return r.eventType();
+    }
 }

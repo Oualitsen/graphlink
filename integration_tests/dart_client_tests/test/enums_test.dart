@@ -15,22 +15,22 @@ void main() {
   });
 
   group('enum deserialization', () {
-    test('ACTIVE deserializes to UserStatus.ACTIVE', () async {
+    test('ACTIVE deserializes to UserStatus.active', () async {
       adapter.registerData('getUser', {'getUser': kUserAliceJson});
       final res = await client.queries.getUser(id: 'user-1');
-      expect(res.getUser.status, equals(UserStatus.ACTIVE));
+      expect(res.getUser.status, equals(UserStatus.active));
     });
 
-    test('INACTIVE deserializes to UserStatus.INACTIVE', () async {
+    test('INACTIVE deserializes to UserStatus.inactive', () async {
       adapter.registerData('getUser', {'getUser': kUserBobJson});
       final res = await client.queries.getUser(id: 'user-2');
-      expect(res.getUser.status, equals(UserStatus.INACTIVE));
+      expect(res.getUser.status, equals(UserStatus.inactive));
     });
 
     test('HIGH deserializes to Priority.HIGH', () async {
       adapter.registerData('getUser', {'getUser': kUserAliceJson});
       final res = await client.queries.getUser(id: 'user-1');
-      expect(res.getUser.priority, equals(Priority.HIGH));
+      expect(res.getUser.priority, equals(Priority.high));
     });
 
     test('nullable enum is null when server returns null', () async {
@@ -46,20 +46,20 @@ void main() {
       adapter.registerData('listUsersByStatus', {'listUsersByStatus': []});
     });
 
-    test('UserStatus.ACTIVE is serialized as "ACTIVE" in variables', () async {
-      await client.queries.listUsersByStatus(status: UserStatus.ACTIVE);
+    test('UserStatus.active is serialized as "ACTIVE" in variables', () async {
+      await client.queries.listUsersByStatus(status: UserStatus.active);
       expect(adapter.lastCall!.variables['status'], equals('ACTIVE'));
     });
 
-    test('UserStatus.INACTIVE is serialized as "INACTIVE" in variables',
+    test('UserStatus.inactive is serialized as "INACTIVE" in variables',
         () async {
-      await client.queries.listUsersByStatus(status: UserStatus.INACTIVE);
+      await client.queries.listUsersByStatus(status: UserStatus.inactive);
       expect(adapter.lastCall!.variables['status'], equals('INACTIVE'));
     });
 
-    test('UserStatus.SUSPENDED is serialized as "SUSPENDED" in variables',
+    test('UserStatus.suspended is serialized as "SUSPENDED" in variables',
         () async {
-      await client.queries.listUsersByStatus(status: UserStatus.SUSPENDED);
+      await client.queries.listUsersByStatus(status: UserStatus.suspended);
       expect(adapter.lastCall!.variables['status'], equals('SUSPENDED'));
     });
   });
@@ -70,8 +70,8 @@ void main() {
         'listUsers': [kUserAliceJson, kUserBobJson],
       });
       final res = await client.queries.listUsers();
-      expect(res.listUsers[0].status, equals(UserStatus.ACTIVE));
-      expect(res.listUsers[1].status, equals(UserStatus.INACTIVE));
+      expect(res.listUsers[0].status, equals(UserStatus.active));
+      expect(res.listUsers[1].status, equals(UserStatus.inactive));
     });
   });
 }

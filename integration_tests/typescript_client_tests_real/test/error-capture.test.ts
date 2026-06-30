@@ -89,7 +89,7 @@ describe('createUserOrErrors — error response (error-user)', () => {
   const errorInput: CreateUserInput = {
     name: 'error-user',
     email: 'a@b.com',
-    status: UserStatus.ACTIVE,
+    status: UserStatus.Active,
     address: { street: '1', city: 'C', country: 'US' },
   };
 
@@ -110,7 +110,7 @@ describe('createUserOrErrors — success response', () => {
   const goodInput: CreateUserInput = {
     name: 'Alice Smith',
     email: 'alice@test.com',
-    status: UserStatus.ACTIVE,
+    status: UserStatus.Active,
     address: { street: '123 Main St', city: 'Springfield', country: 'US' },
   };
 

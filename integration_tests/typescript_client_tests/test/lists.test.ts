@@ -76,7 +76,7 @@ describe('list of objects with nullable fields', () => {
 describe('list query with enum argument', () => {
   it('listUsersByStatus sends enum as string variable', async () => {
     adapter.registerData('listUsersByStatus', { listUsersByStatus: [] });
-    await client.queries.listUsersByStatus({ status: UserStatus.ACTIVE });
+    await client.queries.listUsersByStatus({ status: UserStatus.Active });
     expect(adapter.lastCall!.variables['status']).toBe('ACTIVE');
   });
 });

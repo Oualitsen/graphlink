@@ -58,9 +58,9 @@ void main() {
   group('list query with enum argument', () {
     test('listUsersByStatus(ACTIVE) returns only active users', () async {
       final res = await client.queries
-          .listUsersByStatus(status: UserStatus.ACTIVE);
+          .listUsersByStatus(status: UserStatus.active);
       expect(res.listUsersByStatus, isNotEmpty);
-      expect(res.listUsersByStatus.first.status, equals(UserStatus.ACTIVE));
+      expect(res.listUsersByStatus.first.status, equals(UserStatus.active));
     });
   });
 }

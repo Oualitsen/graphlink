@@ -67,7 +67,7 @@ void main() {
 
     test('status is deserialized as enum', () async {
       final res = await client.queries.fetchUserSummary(id: 'user-1');
-      expect(res.getUser.status, equals(UserStatus.ACTIVE));
+      expect(res.getUser.status, equals(UserStatus.active));
     });
   });
 

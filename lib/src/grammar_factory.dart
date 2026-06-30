@@ -3,6 +3,7 @@ import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/reserved_words.dart';
+import 'package:graphlink/src/naming_convention.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 
 /// Reserved-word set for the target language. Only languages whose serializer
@@ -28,6 +29,17 @@ Set<String> _reservedWordsFor(GeneratorConfig config) {
 /// from [_reservedWordsFor] only for TypeScript, where reserved words are legal
 /// as object-property names (fields) but illegal as parameter / destructuring
 /// identifiers. Returning `null` lets [GLParser] default it to [reservedWords].
+NamingConvention _namingConventionFor(GeneratorConfig config) {
+  final lang = config.getMode() == CodeGenerationMode.server
+      ? config.serverConfig!.language
+      : config.clientConfig!.language;
+  if (lang is DartClientConfig) return NamingConvention.dart;
+  if (lang is JavaClientConfig || lang is SpringServerConfig) return NamingConvention.java;
+  if (lang is KotlinClientConfig || lang is KotlinSpringServerConfig) return NamingConvention.kotlin;
+  // TypeScript / Express Apollo
+  return NamingConvention.typescript;
+}
+
 Set<String>? _parameterReservedWordsFor(GeneratorConfig config) {
   final lang = config.getMode() == CodeGenerationMode.server
       ? config.serverConfig!.language
@@ -41,12 +53,18 @@ Set<String>? _parameterReservedWordsFor(GeneratorConfig config) {
 GLParser createGrammar(GeneratorConfig config) {
   final mode = config.getMode();
   if (mode == CodeGenerationMode.server) {
-return GLParser(mode: mode, identityFields: config.identityFields, reservedWords: _reservedWordsFor(config), parameterReservedWords: _parameterReservedWordsFor(config),)
-      ..unknownScalarType = config.unknownScalarType;
+    return GLParser(
+      mode: mode,
+      naming: _namingConventionFor(config),
+      identityFields: config.identityFields,
+      reservedWords: _reservedWordsFor(config),
+      parameterReservedWords: _parameterReservedWordsFor(config),
+    )..unknownScalarType = config.unknownScalarType;
   }
   final lang = config.clientConfig!.language;
   return GLParser(
     mode: mode,
+    naming: _namingConventionFor(config),
     reservedWords: _reservedWordsFor(config),
     parameterReservedWords: _parameterReservedWordsFor(config),
     identityFields: config.identityFields,

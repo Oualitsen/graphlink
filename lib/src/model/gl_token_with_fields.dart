@@ -7,6 +7,7 @@ import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
+import 'package:graphlink/src/naming_convention.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/utils.dart';
 
@@ -137,12 +138,43 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
     return candidate;
   }
 
+  /// Applies [convention] to every field, normalizing identifier casing.
+  ///
+  /// Collision with a sibling wire name or an already-assigned code name on
+  /// this type is resolved with an index suffix (`user`, `user2`, `user3`, …).
+  /// Must run before [assignCodeNames] so that keyword-safe operates on the
+  /// already-normalized name.
+  void applyFieldNaming(NamingConvention convention) {
+    // Seed the taken set with every wire name so we never produce a code name
+    // that shadows a sibling's original GraphQL identifier.
+    final taken = fieldNames.toSet();
+
+    for (final field in fields) {
+      final raw = field.name.token;
+      final normalized = convention.field(raw);
+      if (normalized == raw) continue; // already canonical
+
+      var code = normalized;
+      if (taken.contains(code)) {
+        var counter = 2;
+        while (taken.contains('$code$counter')) counter++;
+        code = '$code$counter';
+      }
+      field.codeName = code;
+      taken.add(code);
+    }
+  }
+
   /// Populates [GLField.codeName] for every field, rewriting any field whose
   /// name collides with a reserved keyword in the target language.
+  ///
+  /// Starts from [GLField.codeName] (not the raw wire name) so that a prior
+  /// [applyFieldNaming] pass is respected — keyword-safe fires on the
+  /// already-normalized identifier.
   void assignCodeNames(Set<String> reservedWords) {
     if (reservedWords.isEmpty) return;
     for (var field in fields) {
-      field.codeName = resolveCodeName(field.name.token, reservedWords);
+      field.codeName = resolveCodeName(field.codeName, reservedWords);
     }
   }
 

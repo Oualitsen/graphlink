@@ -9,13 +9,22 @@ package dev.graphlink.test.generated.enums;
 
 
 enum class GraphLinkAckStatus {
-   none, progress, acknoledged;
+   NONE, PROGRESS, ACKNOLEDGED;
 
-   companion object {
-      fun fromJson(value: String?): GraphLinkAckStatus? = value?.let { valueOf(it) }
+   fun toJson(): String = when (this) {
+       NONE -> "none"
+       PROGRESS -> "progress"
+       ACKNOLEDGED -> "acknoledged"
    }
 
-   fun toJson(): String = name
+   companion object {
+      fun fromJson(value: String?): GraphLinkAckStatus? = when (value) {
+          "none" -> NONE
+          "progress" -> PROGRESS
+          "acknoledged" -> ACKNOLEDGED
+          else -> null
+      }
+   }
 }
 
 

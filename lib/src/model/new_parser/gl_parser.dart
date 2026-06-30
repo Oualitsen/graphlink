@@ -1,5 +1,7 @@
 import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/gl_grammar_keyword_extension.dart';
+import 'package:graphlink/src/gl_grammar_normalization_extension.dart';
+import 'package:graphlink/src/naming_convention.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_fragment.dart';
@@ -255,6 +257,10 @@ class GLParser {
   /// so they don't collide; see `_argumentValuesForField`.
   final Lazy<Set<String>> ambiguousArgKeysCache = Lazy();
 
+  /// Naming convention applied to field and enum-value identifiers before
+  /// keyword-safe sanitization. `null` = identity (no casing transformation).
+  final NamingConvention? naming;
+
   /// Reserved keywords of the target language. After parsing, any field/argument
   /// whose GraphQL name collides with one of these is given a safe identifier
   /// via [GLField.codeName] (see [_assignCodeNames]). The original name remains
@@ -272,6 +278,7 @@ class GLParser {
       _parameterReservedWords ?? reservedWords;
 
   GLParser({
+    this.naming,
     this.reservedWords = const {},
     Set<String>? parameterReservedWords,
     this.generateAllFieldsFragments = false,
@@ -387,9 +394,10 @@ class GLParser {
       populateServerProjections();
       applyServerLenientNullability();
     }
-    // Last step: sanitize identifiers that collide with target-language
-    // keywords. Runs here (not in doParse) so projected types/interfaces built
-    // above are covered too.
+    // Last step: (1) apply naming-convention casing, then (2) keyword-safe.
+    // Both run after projected types/interfaces are built so every identifier
+    // is covered. normalizeIdentifiers is a no-op when naming == null.
+    normalizeIdentifiers();
     assignCodeNames();
   }
 

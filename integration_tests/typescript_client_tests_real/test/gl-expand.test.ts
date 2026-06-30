@@ -79,11 +79,11 @@ describe('layer 3 — VehicleOwner.driver', () => {
 describe('layer 4 — cycle truncated at depth 3', () => {
   it('owner.driver.vehicle is null for Car variant', async () => {
     const res = await client.queries.getVehicleDriver({ id: 'vd-1' });
-    expect(res.getVehicleDriver.vehicle?.owner?.driver?.vehicle).toBeUndefined();
+    expect(res.getVehicleDriver.vehicle?.owner?.driver?.vehicle).toBeNull();
   });
 
   it('owner.driver.vehicle is null for Bike variant', async () => {
     const res = await client.queries.getVehicleDriver({ id: 'vd-2' });
-    expect(res.getVehicleDriver.vehicle?.owner?.driver?.vehicle).toBeUndefined();
+    expect(res.getVehicleDriver.vehicle?.owner?.driver?.vehicle).toBeNull();
   });
 });

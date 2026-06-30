@@ -329,8 +329,10 @@ class DartSerializer extends GLSerializer {
     if (value is Map) {
       final inputDef = grammar.inputs[type.token];
       final args = value.entries.map((e) {
-        final fieldType = inputDef?.fields.firstWhere((f) => f.name.token == e.key).type ?? type;
-        return '${e.key}: ${serializeDefaultLiteral(fieldType, e.value, needsConst: false)}';
+        final field = inputDef?.fields.firstWhere((f) => f.name.token == e.key);
+        final fieldType = field?.type ?? type;
+        final key = field?.codeName ?? e.key;
+        return '$key: ${serializeDefaultLiteral(fieldType, e.value, needsConst: false)}';
       }).join(', ');
       return needsConst ? 'const ${type.token}($args)' : '${type.token}($args)';
     }

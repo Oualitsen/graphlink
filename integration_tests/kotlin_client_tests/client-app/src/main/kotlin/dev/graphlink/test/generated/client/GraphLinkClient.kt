@@ -35,7 +35,7 @@ open class GraphLinkClient(
       fragmentMap["_all_fields_AuditEntry"] = "fragment _all_fields_AuditEntry on AuditEntry{id action performedBy}"
       fragmentMap["_all_fields_UserResult"] = "fragment _all_fields_UserResult on UserResult{id name email}"
       fragmentMap["_all_fields_PostResult"] = "fragment _all_fields_PostResult on PostResult{id title}"
-      fragmentMap["Inline_d928e50a_7c88_3399_b235_b6d752c5359e"] = "... on SearchResult  {... on UserResult  {..._all_fields_UserResult __typename}  ... on PostResult  {..._all_fields_PostResult __typename} __typename} "
+      fragmentMap["Inline_ed5c795e_1a17_6f1b_8d6d_611f326ed01e"] = "... on SearchResult  {... on UserResult  {..._all_fields_UserResult __typename}  ... on PostResult  {..._all_fields_PostResult __typename} __typename} "
    }
 }
 

@@ -10,7 +10,7 @@ import { kUserAliceJson, kUserBobJson } from './fixtures.ts';
 const minimalInput: CreateUserInput = {
   name: 'Alice Smith',
   email: 'alice@test.com',
-  status: UserStatus.ACTIVE,
+  status: UserStatus.Active,
   address: { street: '123 Main St', city: 'Springfield', country: 'US' },
 };
 
@@ -44,12 +44,12 @@ describe('createUser — scalar fields', () => {
 
   it('status is deserialized as enum', async () => {
     const res = await client.mutations.createUser({ input: minimalInput });
-    expect(res.createUser.status).toBe(UserStatus.ACTIVE);
+    expect(res.createUser.status).toBe(UserStatus.Active);
   });
 
   it('priority is deserialized as enum when present', async () => {
     const res = await client.mutations.createUser({ input: minimalInput });
-    expect(res.createUser.priority).toBe(Priority.HIGH);
+    expect(res.createUser.priority).toBe(Priority.High);
   });
 });
 
@@ -101,7 +101,7 @@ describe('createUser — response with Bob (nullable fields populated)', () => {
 
   it('status INACTIVE is deserialized', async () => {
     const res = await client.mutations.createUser({ input: minimalInput });
-    expect(res.createUser.status).toBe(UserStatus.INACTIVE);
+    expect(res.createUser.status).toBe(UserStatus.Inactive);
   });
 
   it('nullable priority is null', async () => {
@@ -186,8 +186,8 @@ describe('updateUser — response deserialization', () => {
   });
 
   it('status is deserialized as enum', async () => {
-    const res = await client.mutations.updateUser({ id: 'user-1', input: { status: UserStatus.ACTIVE } });
-    expect(res.updateUser.status).toBe(UserStatus.ACTIVE);
+    const res = await client.mutations.updateUser({ id: 'user-1', input: { status: UserStatus.Active } });
+    expect(res.updateUser.status).toBe(UserStatus.Active);
   });
 
   it('nested address is deserialized', async () => {

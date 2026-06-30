@@ -110,11 +110,9 @@ extension GLGrammarKeywordExtension on GLParser {
   void _assignArgumentCodeNames(List<GLArgumentDefinition> args) {
     final taken = args.map((a) => a.bareName).toSet();
     for (final arg in args) {
-      final bare = arg.bareName;
+      // Start from codeName so normalization applied earlier is respected.
+      final bare = arg.codeName;
 
-      // Compute the desired code name:
-      //   1. Strip leading underscore (_links → links_).
-      //   2. If reserved, append underscore.
       var codeName = bare.startsWith('_') ? '${bare.substring(1)}_' : bare;
 
       // If unchanged and not reserved, skip.

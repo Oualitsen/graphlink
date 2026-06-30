@@ -10,7 +10,7 @@ import { newClient } from './real-server-adapter.ts';
 const minimalInput: CreateUserInput = {
   name: 'Alice Smith',
   email: 'alice@test.com',
-  status: UserStatus.ACTIVE,
+  status: UserStatus.Active,
   address: { street: '123 Main St', city: 'Springfield', country: 'US' },
 };
 

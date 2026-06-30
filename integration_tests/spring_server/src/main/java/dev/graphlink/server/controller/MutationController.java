@@ -132,4 +132,17 @@ public class MutationController {
     public ClassResult makeClass(@Argument("input") java.util.Map<String, Object> input) {
         return new ClassResult("made", (String) input.get("class"));
     }
+
+    // ── Normalization coverage ──────────────────────────────────────────────
+    // Input field names (FirstName, last_name, event_type) are non-standard.
+    // Bind as a Map to avoid needing a Java type with those exact field names.
+
+    @MutationMapping
+    public NormalizedFields createNormalizedRecord(
+            @Argument("input") java.util.Map<String, Object> input) {
+        String firstName = (String) input.get("FirstName");
+        String lastName = (String) input.get("last_name");
+        EventType eventType = EventType.valueOf((String) input.get("event_type"));
+        return new NormalizedFields("rec-new", firstName, lastName, 0, eventType);
+    }
 }

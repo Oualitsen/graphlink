@@ -54,6 +54,15 @@ scalar Upload @glUpload
 
 # ── 3. Enums ──────────────────────────────────────────────────────────────────
 
+# Used to test identifier normalization: values use non-canonical casing for
+# every target language (lowerCamelCase for Dart, SCREAMING_SNAKE for Java/Kotlin,
+# PascalCase for TypeScript). Wire names stay as declared here.
+enum EventType {
+  pending
+  in_progress
+  completed_ok
+}
+
 # Used to test enum serialization in both query args and response fields.
 enum UserStatus {
   ACTIVE
@@ -187,6 +196,25 @@ type Driver {
   id: ID!
   lastUsedMillage(odometerKm: Int!): Int!
   lastUsedFuel(liters: Int! = 4): Int!
+}
+
+# ── Identifier normalization coverage ─────────────────────────────────────────
+# Fields deliberately use non-canonical casing (PascalCase, snake_case,
+# SCREAMING_SNAKE) so that normalization is exercised end-to-end.  Wire names
+# stay as declared here; every target language maps them to its canonical form
+# (e.g. `FirstName` → `firstName` in Dart/Java/Kotlin/TypeScript).
+type NormalizedFields {
+  id:         ID!
+  FirstName:  String!
+  last_name:  String!
+  USER_AGE:   Int!
+  event_type: EventType!
+}
+
+input NormalizedInput {
+  FirstName:  String!
+  last_name:  String!
+  event_type: EventType!
 }
 
 # Keyword-collision coverage. `class` is reserved in Dart, Java, Kotlin, and TS
@@ -352,6 +380,9 @@ type Query {
 
   # Keyword operation + keyword top-level argument.
   class(class: ID!): ClassResult!
+
+  # Normalization: fields on the return type use non-canonical casing.
+  getNormalizedRecord(id: ID!): NormalizedFields!
 }
 
 
@@ -407,6 +438,9 @@ type Mutation {
 
   # Keyword input field round-trip.
   makeClass(input: ClassInput!): ClassResult!
+
+  # Normalization: input fields use non-canonical casing; echoes them back.
+  createNormalizedRecord(input: NormalizedInput!): NormalizedFields!
 }
 
 

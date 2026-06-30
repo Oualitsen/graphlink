@@ -29,7 +29,7 @@ void main() {
       final event = await future;
       expect(event.userCreated.id, equals('user-1'));
       expect(event.userCreated.name, equals('Alice Smith'));
-      expect(event.userCreated.status, equals(UserStatus.ACTIVE));
+      expect(event.userCreated.status, equals(UserStatus.active));
     });
 
     test('stream emits multiple events in order', () async {
@@ -91,7 +91,7 @@ void main() {
 
       final event = await future;
       expect(event.userStatusChanged.id, equals('user-1'));
-      expect(event.userStatusChanged.status, equals(UserStatus.ACTIVE));
+      expect(event.userStatusChanged.status, equals(UserStatus.active));
     });
 
     test('userId variable is sent in the subscribe message', () async {

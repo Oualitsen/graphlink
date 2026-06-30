@@ -26,7 +26,7 @@ void main() {
         input: CreateUserInput(
           name: 'Alice Smith',
           email: 'alice@test.com',
-          status: UserStatus.ACTIVE,
+          status: UserStatus.active,
           address: AddressInput(
             street: '123 Main St',
             city: 'Springfield',
@@ -43,7 +43,7 @@ void main() {
         input: CreateUserInput(
           name: 'Alice',
           email: 'alice@test.com',
-          status: UserStatus.ACTIVE,
+          status: UserStatus.active,
           address: AddressInput(
             street: '1 St',
             city: 'City',
@@ -60,7 +60,7 @@ void main() {
         input: CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
-          status: UserStatus.SUSPENDED,
+          status: UserStatus.suspended,
           address: AddressInput(street: '1', city: 'C', country: 'US'),
         ),
       );
@@ -75,7 +75,7 @@ void main() {
         input: CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
-          status: UserStatus.ACTIVE,
+          status: UserStatus.active,
           address: AddressInput(
             street: '123 Main St',
             city: 'Springfield',
@@ -97,7 +97,7 @@ void main() {
         input: CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
-          status: UserStatus.ACTIVE,
+          status: UserStatus.active,
           address: AddressInput(street: '1', city: 'C', country: 'US'),
         ),
       );
@@ -113,7 +113,7 @@ void main() {
         input: CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
-          status: UserStatus.ACTIVE,
+          status: UserStatus.active,
           address: AddressInput(street: '1', city: 'C', country: 'US'),
         ),
       );
@@ -126,8 +126,8 @@ void main() {
         input: CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
-          status: UserStatus.ACTIVE,
-          priority: Priority.CRITICAL,
+          status: UserStatus.active,
+          priority: Priority.critical,
           address: AddressInput(street: '1', city: 'C', country: 'US'),
         ),
       );
@@ -140,7 +140,7 @@ void main() {
         input: CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
-          status: UserStatus.ACTIVE,
+          status: UserStatus.active,
           address: AddressInput(street: '1', city: 'C', country: 'US'),
         ),
       );
@@ -153,7 +153,7 @@ void main() {
         input: CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
-          status: UserStatus.ACTIVE,
+          status: UserStatus.active,
           address: AddressInput(street: '1', city: 'C', country: 'US'),
           tags: ['admin', 'beta'],
         ),
@@ -167,7 +167,7 @@ void main() {
         input: CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
-          status: UserStatus.ACTIVE,
+          status: UserStatus.active,
           address: AddressInput(street: '1', city: 'C', country: 'US'),
           tags: [],
         ),
@@ -192,7 +192,7 @@ void main() {
     test('id is passed correctly as a top-level variable', () async {
       await client.mutations.updateUser(
         id: 'user-42',
-        input: UpdateUserInput(status: UserStatus.INACTIVE),
+        input: UpdateUserInput(status: UserStatus.inactive),
       );
       expect(adapter.lastCall!.variables['id'], equals('user-42'));
     });

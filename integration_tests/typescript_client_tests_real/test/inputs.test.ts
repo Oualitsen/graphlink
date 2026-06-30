@@ -14,7 +14,7 @@ const minimalAddress: AddressInput = { street: '123 Main St', city: 'Springfield
 const minimalInput: CreateUserInput = {
   name: 'Alice Smith',
   email: 'alice@test.com',
-  status: UserStatus.ACTIVE,
+  status: UserStatus.Active,
   address: minimalAddress,
 };
 
@@ -33,8 +33,8 @@ describe('CreateUserInput — required scalar fields echoed in response', () => 
   });
 
   it('enum status SUSPENDED is serialized and echoed', async () => {
-    const res = await client.mutations.createUser({ input: { ...minimalInput, status: UserStatus.SUSPENDED } });
-    expect(res.createUser.status).toBe(UserStatus.SUSPENDED);
+    const res = await client.mutations.createUser({ input: { ...minimalInput, status: UserStatus.Suspended } });
+    expect(res.createUser.status).toBe(UserStatus.Suspended);
   });
 });
 
@@ -62,8 +62,8 @@ describe('CreateUserInput — optional fields', () => {
   });
 
   it('priority CRITICAL is serialized and echoed', async () => {
-    const res = await client.mutations.createUser({ input: { ...minimalInput, priority: Priority.CRITICAL } });
-    expect(res.createUser.priority).toBe(Priority.CRITICAL);
+    const res = await client.mutations.createUser({ input: { ...minimalInput, priority: Priority.Critical } });
+    expect(res.createUser.priority).toBe(Priority.Critical);
   });
 
   it('billingAddress is null when not provided', async () => {
@@ -91,12 +91,12 @@ describe('UpdateUserInput — nullable fields round-trip', () => {
 
   it('other fields preserved when only name is updated', async () => {
     const res = await client.mutations.updateUser({ id: 'user-1', input: { name: 'Alice Smith' } as UpdateUserInput });
-    expect(res.updateUser.status).toBe(UserStatus.ACTIVE);
+    expect(res.updateUser.status).toBe(UserStatus.Active);
     expect(res.updateUser.address.street).toBe('123 Main St');
   });
 
   it('status update is reflected in response', async () => {
-    const res = await client.mutations.updateUser({ id: 'user-1', input: { status: UserStatus.INACTIVE } });
-    expect(res.updateUser.status).toBe(UserStatus.INACTIVE);
+    const res = await client.mutations.updateUser({ id: 'user-1', input: { status: UserStatus.Inactive } });
+    expect(res.updateUser.status).toBe(UserStatus.Inactive);
   });
 });

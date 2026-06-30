@@ -12,7 +12,7 @@ const minimalAddress: AddressInput = { street: '123 Main St', city: 'Springfield
 const minimalInput: CreateUserInput = {
   name: 'Alice Smith',
   email: 'alice@test.com',
-  status: UserStatus.ACTIVE,
+  status: UserStatus.Active,
   address: minimalAddress,
 };
 
@@ -41,7 +41,7 @@ describe('CreateUserInput — required scalar fields', () => {
 
   it('enum field status is serialized as a string', async () => {
     await client.mutations.createUser({
-      input: { ...minimalInput, status: UserStatus.SUSPENDED },
+      input: { ...minimalInput, status: UserStatus.Suspended },
     });
     const input = adapter.lastCall!.variables['input'] as Record<string, unknown>;
     expect(input['status']).toBe('SUSPENDED');
@@ -77,7 +77,7 @@ describe('CreateUserInput — optional fields', () => {
   });
 
   it('priority is serialized as string when provided', async () => {
-    await client.mutations.createUser({ input: { ...minimalInput, priority: Priority.CRITICAL } });
+    await client.mutations.createUser({ input: { ...minimalInput, priority: Priority.Critical } });
     const input = adapter.lastCall!.variables['input'] as Record<string, unknown>;
     expect(input['priority']).toBe('CRITICAL');
   });
@@ -111,7 +111,7 @@ describe('UpdateUserInput — all nullable fields', () => {
   });
 
   it('id is passed correctly as a top-level variable', async () => {
-    await client.mutations.updateUser({ id: 'user-42', input: { status: UserStatus.INACTIVE } });
+    await client.mutations.updateUser({ id: 'user-42', input: { status: UserStatus.Inactive } });
     expect(adapter.lastCall!.variables['id']).toBe('user-42');
   });
 });

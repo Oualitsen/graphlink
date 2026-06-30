@@ -20,7 +20,7 @@ void main() {
         input: CreateUserInput(
           name: 'Alice Smith',
           email: 'alice@test.com',
-          status: UserStatus.ACTIVE,
+          status: UserStatus.active,
           address: AddressInput(street: '1 St', city: 'City', country: 'US'),
         ),
       );
@@ -32,7 +32,7 @@ void main() {
         input: CreateUserInput(
           name: 'Alice',
           email: 'test@example.com',
-          status: UserStatus.ACTIVE,
+          status: UserStatus.active,
           address: AddressInput(street: '1 St', city: 'City', country: 'US'),
         ),
       );
@@ -44,11 +44,11 @@ void main() {
         input: CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
-          status: UserStatus.SUSPENDED,
+          status: UserStatus.suspended,
           address: AddressInput(street: '1', city: 'C', country: 'US'),
         ),
       );
-      expect(res.createUser.status, equals(UserStatus.SUSPENDED));
+      expect(res.createUser.status, equals(UserStatus.suspended));
     });
   });
 
@@ -58,7 +58,7 @@ void main() {
         input: CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
-          status: UserStatus.ACTIVE,
+          status: UserStatus.active,
           address: AddressInput(
             street: '123 Main St',
             city: 'Springfield',
@@ -77,7 +77,7 @@ void main() {
         input: CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
-          status: UserStatus.ACTIVE,
+          status: UserStatus.active,
           address: AddressInput(street: '1', city: 'C', country: 'US'),
         ),
       );
@@ -91,7 +91,7 @@ void main() {
         input: CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
-          status: UserStatus.ACTIVE,
+          status: UserStatus.active,
           address: AddressInput(street: '1', city: 'C', country: 'US'),
         ),
       );
@@ -103,12 +103,12 @@ void main() {
         input: CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
-          status: UserStatus.ACTIVE,
-          priority: Priority.CRITICAL,
+          status: UserStatus.active,
+          priority: Priority.critical,
           address: AddressInput(street: '1', city: 'C', country: 'US'),
         ),
       );
-      expect(res.createUser.priority, equals(Priority.CRITICAL));
+      expect(res.createUser.priority, equals(Priority.critical));
     });
 
     test('tags list is serialized correctly', () async {
@@ -116,7 +116,7 @@ void main() {
         input: CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
-          status: UserStatus.ACTIVE,
+          status: UserStatus.active,
           address: AddressInput(street: '1', city: 'C', country: 'US'),
           tags: ['admin', 'beta'],
         ),
@@ -129,7 +129,7 @@ void main() {
         input: CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
-          status: UserStatus.ACTIVE,
+          status: UserStatus.active,
           address: AddressInput(street: '1', city: 'C', country: 'US'),
           tags: [],
         ),
@@ -152,10 +152,10 @@ void main() {
     test('updateUser with different id returns that user updated', () async {
       final res = await client.mutations.updateUser(
         id: 'user-2',
-        input: UpdateUserInput(status: UserStatus.ACTIVE),
+        input: UpdateUserInput(status: UserStatus.active),
       );
       expect(res.updateUser.id, equals('user-2'));
-      expect(res.updateUser.status, equals(UserStatus.ACTIVE));
+      expect(res.updateUser.status, equals(UserStatus.active));
     });
   });
 }

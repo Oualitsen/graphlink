@@ -119,10 +119,10 @@ void main() {
         'active = map["active"] as Boolean,',
         'bigNum = (map["bigNum"] as? Number)?.toLong(),',
         'role = (map["role"] as? String)?.let { Role.fromJson(it) },',
-        'role2 = Role.valueOf(map["role2"] as String),',
+        'role2 = Role.fromJson(map["role2"] as String)!!,',
         'address = (map["address"] as? Map<*, *>)?.let { AddressInput.fromJson(it as Map<String, Any?>) },',
         'tags = (map["tags"] as List<*>).map { e0 -> e0 as String },',
-        'roles = (map["roles"] as List<*>).map { e0 -> Role.valueOf(e0 as String) },',
+        'roles = (map["roles"] as List<*>).map { e0 -> Role.fromJson(e0 as String)!! },',
       ]));
     });
 
@@ -226,7 +226,7 @@ void main() {
         'id = map["id"] as String,',
         'name = map["name"] as String,',
         'email = map["email"] as? String,',
-        'role = Role.valueOf(map["role"] as String),',
+        'role = Role.fromJson(map["role"] as String)!!,',
         'address = (map["address"] as? Map<*, *>)?.let { Address.fromJson(it as Map<String, Any?>) },',
       ]));
     });

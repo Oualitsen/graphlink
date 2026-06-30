@@ -165,4 +165,16 @@ public final class DataFixtures {
             default -> null;
         };
     }
+
+    // ── NormalizedFields fixtures ─────────────────────────────────────────────
+
+    public static final NormalizedFields NORMALIZED_1 =
+        new NormalizedFields("rec-1", "Alice", "Smith", 30, EventType.in_progress);
+
+    public static NormalizedFields normalizedById(String id) {
+        return switch (id) {
+            case "rec-1" -> NORMALIZED_1;
+            default -> NORMALIZED_1;
+        };
+    }
 }

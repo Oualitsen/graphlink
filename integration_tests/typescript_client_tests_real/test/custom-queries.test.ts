@@ -47,7 +47,7 @@ describe('fetchUserSummary — projected type', () => {
 
   it('status is deserialized as enum', async () => {
     const res = await client.queries.fetchUserSummary({ id: 'user-1' });
-    expect(res.getUser.status).toBe(UserStatus.ACTIVE);
+    expect(res.getUser.status).toBe(UserStatus.Active);
   });
 });
 
