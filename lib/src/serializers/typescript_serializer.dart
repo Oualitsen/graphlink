@@ -1,5 +1,6 @@
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_input_definition.dart';
@@ -34,10 +35,13 @@ class TypeScriptSerializer extends GLSerializer {
     this.optionalNullableInputFields = true,
     super.typeMapOverrides = const {},
     required super.importPrefix,
-  });
+    bool generateJsonMethods = true,
+  }) : _generateJsonMethods = generateJsonMethods;
+
+  final bool _generateJsonMethods;
 
   @override
-  bool get generateJsonMethods => false;
+  bool get generateJsonMethods => _generateJsonMethods;
 
   @override
   String serializeDefaultLiteral(GLType type, Object? value, {bool needsConst = false}) {
@@ -77,17 +81,28 @@ class TypeScriptSerializer extends GLSerializer {
     final entries = <String>[];
     for (final value in def.values) {
       final deprecation = serializeEnumValueDeprecation(value);
-      final token = serialzeEnumValue(value);
-      if (token.isEmpty) continue;
+      final codeName = serialzeEnumValue(value);
+      if (codeName.isEmpty) continue;
+      final wireName = value.value.token;
       if (deprecation.isNotEmpty) {
-        entries.add('$deprecation\n$token = \'$token\',');
+        entries.add('$deprecation\n$codeName = \'$wireName\',');
       } else {
-        entries.add('$token = \'$token\',');
+        entries.add('$codeName = \'$wireName\',');
       }
     }
     final buf = StringBuffer();
     buf.write('export enum ${def.token} ');
     buf.write(codeGenUtils.block(entries));
+    if (generateJsonMethods) {
+      buf.writeln();
+      buf.write(codeGenUtils.createNamespace(
+        namespaceName: def.token,
+        statements: [
+          _generateEnumToJson(def),
+          _generateEnumFromJson(def),
+        ],
+      ));
+    }
     return buf.toString();
   }
 
@@ -153,7 +168,7 @@ class TypeScriptSerializer extends GLSerializer {
   @override
   String doSerializeField(GLField def, bool immutable, bool isTypeField) {
     final type = def.type;
-    final name = def.name;
+    final name = def.codeName;
     final forceNullable = isTypeField && (def.hasInculeOrSkipDiretives);
     final tsType = serializeType(type, forceNullable);
 
@@ -182,6 +197,16 @@ class TypeScriptSerializer extends GLSerializer {
           .join(',\n');
       buffer.writeln('\nexport const default${def.token}: Partial<${def.token}> = {\n$entries,\n};');
     }
+    if (generateJsonMethods) {
+      buffer.writeln();
+      buffer.write(codeGenUtils.createNamespace(
+        namespaceName: def.token,
+        statements: [
+          _generateTypeToJson(def.token, fields),
+          _generateTypeFromJson(def.token, fields),
+        ],
+      ));
+    }
     return buffer.toString();
   }
 
@@ -199,16 +224,34 @@ class TypeScriptSerializer extends GLSerializer {
   String _serializeInterfaceAsUnion(GLInterfaceDefinition def) {
     if (def.getSerializableImplementations(mode).isEmpty) return '';
     final members = def.getSerializableImplementations(mode).map((t) => t.token).join(' | ');
-    return codeGenUtils.createTypeAlias(name: def.token, value: members);
+    final buf = StringBuffer();
+    buf.write(codeGenUtils.createTypeAlias(name: def.token, value: members));
+    if (generateJsonMethods) {
+      buf.writeln();
+      buf.write(_serializeUnionFromJson(def));
+    }
+    return buf.toString();
   }
 
   /// GraphQL `type` → `export interface Foo { readonly field: Type; }`
   String _serializeType(GLTypeDefinition def) {
     final fields = def.getSerializableFields(grammar.mode);
-    return codeGenUtils.createInterface(
+    final buf = StringBuffer();
+    buf.write(codeGenUtils.createInterface(
       interfaceName: def.token,
       fields: fields.map((f) => serializeField(f, true, true)).toList(),
-    );
+    ));
+    if (generateJsonMethods) {
+      buf.writeln();
+      buf.write(codeGenUtils.createNamespace(
+        namespaceName: def.token,
+        statements: [
+          _generateTypeToJson(def.token, fields),
+          _generateTypeFromJson(def.token, fields),
+        ],
+      ));
+    }
+    return buf.toString();
   }
 
   /// Overridden to add interface implementations as import deps for union types,
@@ -282,5 +325,132 @@ class TypeScriptSerializer extends GLSerializer {
     );
     return super.serializeGlClass(merged,
         withImports: withImports);
+  }
+
+  // ── JSON serialization helpers ─────────────────────────────────────────────
+
+  String _generateEnumToJson(GLEnumDefinition def) {
+    final func = codeGenUtils.createMethod(
+      methodName: 'toJson',
+      arguments: ['value: ${def.token}'],
+      returnType: 'string',
+      statements: ['return value;'],
+    );
+    return 'export function $func';
+  }
+
+  String _generateEnumFromJson(GLEnumDefinition def) {
+    final visibleValues = def.values.where((val) => serialzeEnumValue(val).isNotEmpty).toList();
+    final cases = visibleValues.map((val) => TypeScriptCaseStatement(
+      caseValue: '"${val.value.token}"',
+      statement: 'return ${def.token}.${val.codeName};',
+    )).toList();
+    final switchStmt = codeGenUtils.switchStatement(
+      expression: 'value',
+      cases: cases,
+      defaultStatements: ['throw new Error(`Invalid ${def.token}: \${value}`);'],
+    );
+    final func = codeGenUtils.createMethod(
+      methodName: 'fromJson',
+      arguments: ['value: string'],
+      returnType: def.token,
+      statements: [switchStmt],
+    );
+    return 'export function $func';
+  }
+
+  String _generateTypeToJson(String typeName, List<GLField> fields) {
+    final entriesBlock = codeGenUtils.block(
+      fields.map(_fieldToJsonExpr).map((e) => '$e,').toList(),
+    );
+    final func = codeGenUtils.createMethod(
+      methodName: 'toJson',
+      arguments: ['obj: $typeName'],
+      returnType: 'Record<string, unknown>',
+      statements: ['return $entriesBlock;'],
+    );
+    return 'export function $func';
+  }
+
+  String _generateTypeFromJson(String typeName, List<GLField> fields) {
+    final entriesBlock = codeGenUtils.block(
+      fields.map(_fieldFromJsonExpr).map((e) => '$e,').toList(),
+    );
+    final func = codeGenUtils.createMethod(
+      methodName: 'fromJson',
+      arguments: ['json: Record<string, unknown>'],
+      returnType: typeName,
+      statements: ['return $entriesBlock;'],
+    );
+    return 'export function $func';
+  }
+
+  String _serializeUnionFromJson(GLInterfaceDefinition def) {
+    final impls = def.getSerializableImplementations(mode).toList();
+    final cases = impls.map((t) => TypeScriptCaseStatement(
+      caseValue: '"${t.token}"',
+      statement: 'return ${t.token}.fromJson(json);',
+    )).toList();
+    final switchStmt = codeGenUtils.switchStatement(
+      expression: 'json["__typename"] as string',
+      cases: cases,
+      defaultStatements: ['throw new Error(`Unknown ${def.token}: \${json["__typename"]}`);'],
+    );
+    final func = codeGenUtils.createMethod(
+      methodName: 'fromJson',
+      arguments: ['json: Record<string, unknown>'],
+      returnType: def.token,
+      statements: [switchStmt],
+    );
+    return codeGenUtils.createNamespace(
+      namespaceName: def.token,
+      statements: ['export function $func'],
+    );
+  }
+
+  String _fieldToJsonExpr(GLField field) {
+    final wireKey = field.name.token;
+    final expr = _callToJson('obj.${field.codeName}', field.type, 0);
+    return '"$wireKey": $expr';
+  }
+
+  String _fieldFromJsonExpr(GLField field) {
+    final wireKey = field.name.token;
+    final jsonExpr = 'json["$wireKey"]';
+    final expr = _callFromJson(jsonExpr, field.type, 0);
+    return '${field.codeName}: $expr';
+  }
+
+  String _callToJson(String varName, GLType type, int depth) {
+    if (type is GLListType) {
+      final varEl = 'e$depth';
+      final elementCall = _callToJson(varEl, type.inlineType, depth + 1);
+      final mapExpr = '$varName.map(($varEl) => $elementCall)';
+      return type.nullable ? '$varName != null ? $mapExpr : null' : mapExpr;
+    }
+    if (grammar.isEnum(type.token) || grammar.isProjectableType(type.token)) {
+      final call = '${type.token}.toJson($varName)';
+      return type.nullable ? '$varName != null ? $call : null' : call;
+    }
+    return varName;
+  }
+
+  String _callFromJson(String jsonExpr, GLType type, int depth) {
+    if (type is GLListType) {
+      final varEl = 'e$depth';
+      final elementCall = _callFromJson(varEl, type.inlineType, depth + 1);
+      final mapExpr = '($jsonExpr as unknown[]).map(($varEl) => $elementCall)';
+      return type.nullable ? '$jsonExpr != null ? $mapExpr : null' : mapExpr;
+    }
+    if (grammar.isEnum(type.token)) {
+      final call = '${type.token}.fromJson($jsonExpr as string)';
+      return type.nullable ? '$jsonExpr != null ? $call : null' : call;
+    }
+    if (grammar.isProjectableType(type.token)) {
+      final call = '${type.token}.fromJson($jsonExpr as Record<string, unknown>)';
+      return type.nullable ? '$jsonExpr != null ? $call : null' : call;
+    }
+    // Scalar — pure type assertion, no runtime cost
+    return '$jsonExpr as ${serializeType(type, false)}';
   }
 }

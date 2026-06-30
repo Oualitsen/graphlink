@@ -278,6 +278,25 @@ class TypeScriptCodeGenUtils implements CodeGenUtilsBase {
     return buf.toString();
   }
 
+  /// Generates a TypeScript `namespace` block.
+  ///
+  /// ```typescript
+  /// export namespace Foo {
+  ///   export function bar(): string { ... }
+  /// }
+  /// ```
+  String createNamespace({
+    required String namespaceName,
+    required List<String> statements,
+    bool exported = true,
+  }) {
+    final buf = StringBuffer();
+    if (exported) buf.write('export ');
+    buf.write('namespace $namespaceName ');
+    buf.write(block(statements));
+    return buf.toString();
+  }
+
   /// Generates an `export const name = value;` statement.
   String exportConst(String name, String value) => "export const $name = $value;";
 
