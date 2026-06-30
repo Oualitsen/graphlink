@@ -1,0 +1,19 @@
+server:
+  port: 9996
+
+spring:
+  graphql:
+    websocket:
+      path: /graphql
+    path: /graphql
+
+management:
+  server:
+    port: 9990
+  endpoint:
+    shutdown:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: shutdown

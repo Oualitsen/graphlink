@@ -212,18 +212,15 @@ type Query {
     var serialController = serializer.serializeController(mappingController);
     print(serialController);
     expect(
-        serialService,
-        contains(
-            'Map<User, Car> userCar(List<User> value, DataFetchingEnvironment dataFetchingEnvironment);'));
-    
-    expect(
         serialController,
         contains(
-            'CompletableFuture<Map<User, ? extends GLCarProjection>> userCar(List<User> value, DataFetchingEnvironment dataFetchingEnvironment)'));
-   
+            'CompletableFuture<Map<User, ? extends Map<String, Object>>> userCar(List<User> value, DataFetchingEnvironment dataFetchingEnvironment)'));
     expect(
         serialController,
-        contains(
-            'return CompletableFuture.supplyAsync(() -> userSchemaMappingsService.userCar(value, dataFetchingEnvironment));'));
+        stringContainsInOrder([
+          'final Map<User, Map<String, Object>> __gl_tmp__ = new HashMap<>();',
+          'userSchemaMappingsService.userCar(value, dataFetchingEnvironment)',
+          'return __gl_tmp__;',
+        ]));
   });
 }

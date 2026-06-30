@@ -11,4 +11,18 @@ export interface Author {
    readonly id: string;
    readonly name: string;
 }
+export namespace Author {
+   export function toJson(obj: Author): Record<string, unknown> {
+      return {
+         "id": obj.id,
+         "name": obj.name,
+      };
+   }
+   export function fromJson(json: Record<string, unknown>): Author {
+      return {
+         id: json["id"] as string,
+         name: json["name"] as string,
+      };
+   }
+}
 

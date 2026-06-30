@@ -3,7 +3,7 @@ directive @glValidate on FIELD_DEFINITION
 type Author {
     id: ID!
     name: String!
-    articles: [Article!]! @glSkipOnServer(batch: true)
+    articles: [Article!] @glSkipOnServer(batch: true)
     latestArticles(limit: Int!): [Article!]! @glSkipOnServer(batch: false)
 }
 

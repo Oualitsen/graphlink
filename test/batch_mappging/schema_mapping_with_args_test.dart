@@ -49,8 +49,8 @@ void main() {
 
     // controller: @SchemaMapping with @Argument params and correct service call
     expect(controllerCode, contains('@SchemaMapping(typeName="User", field="vehicles")'));
-    expect(controllerCode, contains('public CompletableFuture<List<? extends ${toServerProjectionName('Vehicle')}>> userVehicles(User value, @Argument Integer year, @Argument String category)'));
-    expect(controllerCode, contains('return CompletableFuture.supplyAsync(() -> userSchemaMappingsService.userVehicles(value, year, category));'));
+    expect(controllerCode, contains('public CompletableFuture<List<Map<String, Object>>> userVehicles(User value, @Argument Integer year, @Argument String category)'));
+    expect(controllerCode, contains('return CompletableFuture.supplyAsync(() -> userSchemaMappingsService.userVehicles(value, year, category).stream().map(__gl_e0__ -> __gl_e0__.toJson()).collect(Collectors.toList()));'));
     expect(controllerCode, contains('import org.springframework.graphql.data.method.annotation.Argument'));
 
     // service: no @Argument annotation

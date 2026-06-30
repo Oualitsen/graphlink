@@ -25,17 +25,19 @@ class AuthorSchemaMappingsController(
 ) {
 
    @BatchMapping(typeName="Author", field="articles")
-   suspend fun authorArticles(value: List<Author>): Map<Author, List<GLArticleProjection>> {
+   suspend fun authorArticles(value: List<Author>): Map<Author, List<Map<String, Any?>>?> {
       val securityContext = SecurityContextHolder.getContext()
       return withContext(Dispatchers.IO + SecurityCoroutineContext(securityContext)) {
-         authorSchemaMappingsService.authorArticles(value)
+         val __gl_tmp__ = LinkedHashMap<Author, List<Map<String, Any?>>?>()
+         authorSchemaMappingsService.authorArticles(value).forEach { (__gl_k__, __gl_v__) -> __gl_tmp__[__gl_k__] = __gl_v__?.map { __gl_e0__ -> __gl_e0__.toJson() } }
+         __gl_tmp__
       }
    }
    @SchemaMapping(typeName="Author", field="latestArticles")
-   suspend fun authorLatestArticles(value: Author, @Argument limit: Int): List<GLArticleProjection> {
+   suspend fun authorLatestArticles(value: Author, @Argument limit: Int): List<Map<String, Any?>> {
       val securityContext = SecurityContextHolder.getContext()
       return withContext(Dispatchers.IO + SecurityCoroutineContext(securityContext)) {
-         authorSchemaMappingsService.authorLatestArticles(value, limit)
+         authorSchemaMappingsService.authorLatestArticles(value, limit).map { __gl_e0__ -> __gl_e0__.toJson() }
       }
    }
 }

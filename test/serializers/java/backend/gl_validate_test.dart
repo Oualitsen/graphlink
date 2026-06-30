@@ -118,11 +118,12 @@ void main() {
             .map((e) => e.trim())
             .where((e) => e.isNotEmpty),
         containsAllInOrder([
-          'public CompletableFuture<${toServerProjectionName('Person')}> getPerson(@Argument(name = "searchQuery") Map<String, Object> searchQueryAsMap) {',
+          'public CompletableFuture<Map<String, Object>> getPerson(@Argument(name = "searchQuery") Map<String, Object> searchQueryAsMap) {',
           'final SearchQuery searchQuery = SearchQuery.fromJson((Map<String, Object>) searchQueryAsMap);',
           'return CompletableFuture.supplyAsync(() -> {',
           'personService.validateGetPerson(searchQuery);',
-          'return personService.getPerson(searchQuery);',
+          "${toServerProjectionName('Person')} __gl_tmp__ = personService.getPerson(searchQuery);",
+          'return __gl_tmp__ == null ? null : __gl_tmp__.toJson();',
           '});'
         ]));
   });
@@ -155,11 +156,12 @@ void main() {
             .map((e) => e.trim())
             .where((e) => e.isNotEmpty),
         containsAllInOrder([
-          'public CompletableFuture<${toServerProjectionName('Person')}> getPerson(@Argument(name = "searchQuery") Map<String, Object> searchQueryAsMap, DataFetchingEnvironment dataFetchingEnvironment) {',
+          'public CompletableFuture<Map<String, Object>> getPerson(@Argument(name = "searchQuery") Map<String, Object> searchQueryAsMap, DataFetchingEnvironment dataFetchingEnvironment) {',
           'final SearchQuery searchQuery = SearchQuery.fromJson((Map<String, Object>) searchQueryAsMap);',
           'return CompletableFuture.supplyAsync(() -> {',
           'personService.validateGetPerson(searchQuery, dataFetchingEnvironment);',
-          'return personService.getPerson(searchQuery, dataFetchingEnvironment);',
+          "${toServerProjectionName('Person')} __gl_tmp__ = personService.getPerson(searchQuery, dataFetchingEnvironment);",
+          'return __gl_tmp__ == null ? null : __gl_tmp__.toJson();',
           '});'
         ]));
   });

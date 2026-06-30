@@ -40,6 +40,61 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
           useSpringSecurity: false,
         );
 
+  // ── Map-ification helpers ─────────────────────────────────────────────────
+
+  /// Converts a [GLType] to the map-ified Kotlin return type that controllers
+  /// expose. Projectable types → `Map<String, Any?>`, enums → `String`,
+  /// scalars stay as-is, and lists recurse.
+  String _mapifyType(GLType type) {
+    final nullable = type.nullable ? '?' : '';
+    if (type is GLListType) {
+      return 'List<${_mapifyType(type.inlineType)}>$nullable';
+    }
+    if (grammar.isEnum(type.token)) return 'String$nullable';
+    if (grammar.isProjectableType(type.token)) return 'Map<String, Any?>$nullable';
+    return serializer.serializeType(type, false);
+  }
+
+  /// Wraps [expression] with `.toJson()` / `?.toJson()` calls at each
+  /// projectable nesting level, threading null-safety through
+  /// [GLType.nullable].
+  String _wrapWithToJson(GLType type, String expression, [int depth = 0]) {
+    if (type is GLListType) {
+      final innerVar = codeGenUtils.safeLocalVar('e$depth');
+      final innerExpr =
+          _wrapWithToJson(type.inlineType, innerVar, depth + 1);
+      if (innerVar == innerExpr) return expression;
+      return KotlinCodeGenUtils.mapCall(
+          receiver: expression,
+          param: innerVar,
+          body: innerExpr,
+          nullable: type.nullable);
+    }
+    if (grammar.isEnum(type.token) || grammar.isProjectableType(type.token)) {
+      return KotlinCodeGenUtils.safeCall(expression, 'toJson()', type.nullable);
+    }
+    return expression;
+  }
+
+  /// Mirrors Java's `_wrapBatchBodyStatements`: returns a list of statements
+  /// that call `_wrapWithToJson` on every value of the `Map<K, V>` produced by
+  /// [expression]. When the value type is a scalar (no toJson needed) returns a
+  /// single-element list so the caller can skip the temp-var / forEach pattern.
+  List<String> _wrapBatchBodyStatements(
+      GLType fieldType, String expression, String keyType) {
+    final kVar = codeGenUtils.safeLocalVar('k');
+    final valVar = codeGenUtils.safeLocalVar('v');
+    final valueExpr = _wrapWithToJson(fieldType, valVar);
+    if (valueExpr == valVar) return [expression];
+    final tmpVar = codeGenUtils.safeLocalVar('tmp');
+    final mapifiedValueType = _mapifyType(fieldType);
+    return [
+      'val $tmpVar = LinkedHashMap<$keyType, $mapifiedValueType>()',
+      '$expression.forEach { ($kVar, $valVar) -> $tmpVar[$kVar] = $valueExpr }',
+      tmpVar,
+    ];
+  }
+
   // ── Controller ─────────────────────────────────────────────────────────────
 
   @override
@@ -120,22 +175,31 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
         ? '$serviceInstanceName.${GLService.getValidationMethodName(method.name.token)}(${serviceArgs.join(", ")})'
         : null;
 
-    final returnType = _serializeReturnType(method.type, type, context);
+    final returnType = _serializeControllerReturnType(method.type, type, context);
 
     if (type == GLQueryType.subscription) {
+      final subscriptionReturnType = getServiceReturnType(method.type);
+      final resultVar = codeGenUtils.safeLocalVar('result');
+      final toJsonExpr =
+          _wrapWithToJson(subscriptionReturnType, resultVar);
+      if (toJsonExpr != resultVar) {
+        context.addImport(KotlinImports.flowMap);
+      }
       final statements = [
         ...inputConversions,
         if (validationMethodCall != null) validationMethodCall,
-        'return $serviceCall',
+        'return $serviceCall.map { $resultVar -> $toJsonExpr }',
       ];
       buffer.writeln(codeGenUtils.method(
           returnType: returnType, methodName: method.codeName, arguments: args, statements: statements));
     } else {
+      final suspendReturnType = getServiceReturnType(method.type);
+      final wrappedCall = _wrapWithToJson(suspendReturnType, serviceCall);
       final statements = [
         ...inputConversions,
         ..._wrapBody(
           [if (validationMethodCall != null) validationMethodCall],
-          serviceCall,
+          wrappedCall,
           context,
         ),
       ];
@@ -176,6 +240,16 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
       return 'Flow<${serializer.serializeType(returnType, false)}>';
     }
     return serializer.serializeType(returnType, false);
+  }
+
+  String _serializeControllerReturnType(GLType type, GLQueryType queryType, GLToken context) {
+    final returnType = getServiceReturnType(type);
+    final mapifiedType = _mapifyType(returnType);
+    if (queryType == GLQueryType.subscription) {
+      context.addImport(KotlinImports.flow);
+      return 'Flow<$mapifiedType>';
+    }
+    return mapifiedType;
   }
 
   /// Builds the body of a `suspend fun` that calls into the service layer.
@@ -224,15 +298,26 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
       return serializeIdentityMapping(mapping, context);
     }
 
-    final statement = StringBuffer('$serviceInstanceName.${mapping.key}(value');
+    final rawCall = StringBuffer('$serviceInstanceName.${mapping.key}(value');
     for (var arg in mapping.field.arguments) {
-      statement.write(', ${arg.codeName}');
+      rawCall.write(', ${arg.codeName}');
     }
     if (injectDataFetching || mapping.field.hasDirective(glReturnsProjection)) {
-      statement.write(', dataFetchingEnvironment');
+      rawCall.write(', dataFetchingEnvironment');
     }
-    statement.write(')');
-    final statements = _wrapBody([], statement.toString(), context);
+    rawCall.write(')');
+    final List<String> statements;
+    if (mapping.isBatch) {
+      final keyType = serializer.serializeType(
+          getServiceReturnType(GLType(mapping.type.tokenInfo, false)), false);
+      final stmts = _wrapBatchBodyStatements(
+          mapping.field.type, rawCall.toString(), keyType);
+      final preceding = stmts.sublist(0, stmts.length - 1);
+      statements = _wrapBody(preceding, stmts.last, context);
+    } else {
+      final wrappedCall = _wrapWithToJson(mapping.field.type, rawCall.toString());
+      statements = _wrapBody([], wrappedCall, context);
+    }
     return '${serializeControllerMethodHeader(mapping, context)} ${codeGenUtils.block(statements)}';
   }
 
@@ -285,6 +370,15 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
     return serializer.serializeType(mapping.field.type, false);
   }
 
+  String _getControllerReturnType(GLSchemaMapping mapping, GLToken context) {
+    if (mapping.isBatch) {
+      final keyType = serializer.serializeType(getServiceReturnType(GLType(mapping.type.tokenInfo, false)), false);
+      final valueType = _mapifyType(mapping.field.type);
+      return 'Map<$keyType, $valueType>';
+    }
+    return _mapifyType(mapping.field.type);
+  }
+
   String _getMappingArgument(GLSchemaMapping mapping, GLToken context) {
     final argType = serializer.serializeType(getServiceReturnType(GLType(mapping.type.tokenInfo, false)), false);
     if (mapping.isBatch) {
@@ -308,7 +402,7 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
       args.add('dataFetchingEnvironment: DataFetchingEnvironment');
     }
 
-    buffer.write('suspend fun ${mapping.key}(${args.join(", ")}): ${_getReturnType(mapping, context)}');
+    buffer.write('suspend fun ${mapping.key}(${args.join(", ")}): ${_getControllerReturnType(mapping, context)}');
     return buffer.toString();
   }
 

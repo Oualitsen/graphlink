@@ -37,6 +37,74 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
           generateSchema: generateSchema,
         );
 
+  // ── Map-ification helpers ─────────────────────────────────────────────────
+
+  /// Converts a [GLType] to the map-ified Java return type that controllers
+  /// expose. Projectable types → `Map<String, Object>`, enums → `String`,
+  /// scalars stay as-is, and lists recurse.
+  String _mapifyType(GLType type, GLToken context) {
+    if (type is GLListType) {
+      context.addImport(importList);
+      return 'List<${_mapifyType(type.inlineType, context)}>';
+    }
+    if (grammar.isEnum(type.token)) return 'String';
+    if (grammar.isProjectableType(type.token)) {
+      context.addImport(JavaImports.map);
+      return 'Map<String, Object>';
+    }
+    return serializer.serializeType(type, false);
+  }
+
+  /// Returns body statements that convert the values of a batch-mapping
+  /// `Map<K,V>` to their map-ified forms using a plain for-each loop.
+  /// Handles null values and is Java 8 compatible.
+  ///
+  /// Convention (same as [_wrapInCompletableFuture]): all statements except
+  /// the last carry their own semicolons; the last is a bare expression.
+  /// Scalars: single-element list containing the raw service call expression.
+  List<String> _wrapBatchBodyStatements(
+      GLType fieldType, String expression, String keyType, GLToken context) {
+    final kVar = codeGenUtils.safeLocalVar('key');
+    final valVar = codeGenUtils.safeLocalVar('val');
+    final valueExpr = _wrapWithToJson(fieldType, valVar, context);
+    if (valueExpr == valVar) return [expression];
+    final tmpVar = codeGenUtils.safeLocalVar('tmp');
+    final mapifiedValueType = _mapifyType(fieldType, context);
+    context.addImport(JavaImports.hashMap);
+    context.addImport(JavaImports.map);
+    return [
+      'final Map<$keyType, $mapifiedValueType> $tmpVar = new HashMap<>();',
+      '$expression.forEach(($kVar, $valVar) -> { $tmpVar.put($kVar, $valueExpr); });',
+      tmpVar,
+    ];
+  }
+
+  /// Wraps [expression] with `.toJson()` calls at each projectable nesting
+  /// level, threading null-safety through [GLType.nullable] so that every
+  /// nullable layer produces a null-guard (`== null ? null : …`).
+  String _wrapWithToJson(GLType type, String expression, GLToken context,
+      [int depth = 0]) {
+    if (type is GLListType) {
+      final innerVar = codeGenUtils.safeLocalVar('e$depth');
+      final innerExpr =
+          _wrapWithToJson(type.inlineType, innerVar, context, depth + 1);
+      context.addImport(JavaImports.collectors);
+      if (innerVar == innerExpr) {
+        return JavaCodeGenUtils.streamMapCollect(
+            receiver: expression, nullable: type.nullable);
+      }
+      return JavaCodeGenUtils.streamMapCollect(
+          receiver: expression,
+          param: innerVar,
+          body: innerExpr,
+          nullable: type.nullable);
+    }
+    if (grammar.isEnum(type.token) || grammar.isProjectableType(type.token)) {
+      return JavaCodeGenUtils.safeCall(expression, 'toJson()', type.nullable);
+    }
+    return expression;
+  }
+
   // ── Controller ─────────────────────────────────────────────────────────────
 
   @override
@@ -142,42 +210,85 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
         validationMethodCall != null ? '$validationMethodCall;' : null;
 
     if (type == GLQueryType.subscription) {
-      returnType = serializer.serializeTypeReactive(
-          context: context,
-          glType: createListTypeOnSubscription(
-              getServiceReturnType(method.type), type),
-          reactive: true);
+      final subscriptionReturnType = getServiceReturnType(method.type);
+      final mapifiedInner = _mapifyType(subscriptionReturnType, context);
+      context.addImport(JavaImports.flux);
+      returnType = 'Flux<$mapifiedInner>';
+      final resultVar = codeGenUtils.safeLocalVar('result');
+      final toJsonExpr =
+          _wrapWithToJson(subscriptionReturnType, resultVar, context);
+      final returnExpr = toJsonExpr == resultVar
+          ? serviceCall
+          : '$serviceCall.map($resultVar -> $toJsonExpr)';
       statements = [
         ...inputConversions,
         if (validationCall != null) validationCall,
-        "return $serviceCall;",
+        'return $returnExpr;',
       ];
     } else if (reactive) {
-      returnType = serializer.serializeTypeReactive(
-          context: context,
-          glType: getServiceReturnType(method.type),
-          reactive: true);
+      final monoReturnType = getServiceReturnType(method.type);
+      if (monoReturnType is GLListType) {
+        // Flux: each element is emitted individually
+        final mapifiedInner = _mapifyType(monoReturnType.inlineType, context);
+        context.addImport(JavaImports.flux);
+        returnType = 'Flux<$mapifiedInner>';
+      } else {
+        final mapifiedType = _mapifyType(monoReturnType, context);
+        context.addImport(JavaImports.mono);
+        returnType = 'Mono<$mapifiedType>';
+      }
+      final resultVar = codeGenUtils.safeLocalVar('result');
+      final innerType = monoReturnType is GLListType
+          ? monoReturnType.inlineType
+          : monoReturnType;
+      final toJsonExpr = _wrapWithToJson(innerType, resultVar, context);
+      final mapsNeeded = toJsonExpr != resultVar;
       statements = [
         ...inputConversions,
-        validationMethodCall != null
-            ? "return $validationMethodCall.then($serviceCall);"
-            : "return $serviceCall;",
+        if (validationMethodCall != null)
+          'return $validationMethodCall.then($serviceCall${mapsNeeded ? '.map($resultVar -> $toJsonExpr)' : ''});'
+        else if (mapsNeeded)
+          'return $serviceCall.map($resultVar -> $toJsonExpr);'
+        else
+          'return $serviceCall;',
       ];
     } else {
       context.addImport(JavaImports.completableFuture);
+      final cfReturnType = getServiceReturnType(method.type);
       final baseReturnType = serializer.serializeTypeReactive(
-          context: context,
-          glType: getServiceReturnType(method.type),
-          reactive: false);
-      final returnTypeIsVoid = baseReturnType == "void";
-      returnType =
-          "CompletableFuture<${convertPrimitiveToBoxed(baseReturnType)}>";
+          context: context, glType: cfReturnType, reactive: false);
+      final returnTypeIsVoid = baseReturnType == 'void';
+      final mapifiedType = _mapifyType(cfReturnType, context);
+      returnType = returnTypeIsVoid
+          ? 'CompletableFuture<Void>'
+          : 'CompletableFuture<${convertPrimitiveToBoxed(mapifiedType)}>';
+
+      final innerStatements = <String>[
+        if (validationCall != null) validationCall,
+      ];
+      if (returnTypeIsVoid) {
+        innerStatements.add(serviceCall);
+      } else {
+        final needsToJson = cfReturnType is GLListType ||
+            grammar.isEnum(cfReturnType.firstType.token) ||
+            grammar.isProjectableType(cfReturnType.firstType.token);
+        if (cfReturnType.nullable && needsToJson) {
+          // Use a temp variable to avoid double-evaluating the service call
+          // inside the null-safe ternary produced by _wrapWithToJson.
+          final tempVar = codeGenUtils.safeLocalVar('tmp');
+          innerStatements.add(
+              '$baseReturnType $tempVar = $serviceCall;');
+          innerStatements
+              .add(_wrapWithToJson(cfReturnType, tempVar, context));
+        } else {
+          innerStatements
+              .add(_wrapWithToJson(cfReturnType, serviceCall, context));
+        }
+      }
       statements = [
         ...inputConversions,
-        ..._wrapInCompletableFuture([
-          if (validationCall != null) validationCall,
-          serviceCall,
-        ], returnTypeIsVoid, context),
+        ..._wrapInCompletableFuture(
+            innerStatements, returnTypeIsVoid, context),
       ];
     }
 
@@ -276,18 +387,71 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
       return serializeIdentityMapping(mapping, context);
     }
 
-    final statement =
-        StringBuffer('$serviceInstanceName.${mapping.key}(value');
+    final rawCall = StringBuffer('$serviceInstanceName.${mapping.key}(value');
     for (var arg in mapping.field.arguments) {
-      statement.write(', ${arg.codeName}');
+      rawCall.write(', ${arg.codeName}');
     }
     if (injectDataFetching || mapping.field.hasDirective(glReturnsProjection)) {
-      statement.write(', dataFetchingEnvironment');
+      rawCall.write(', dataFetchingEnvironment');
     }
-    statement.write(')');
-    final bodyStatements = reactive
-        ? ['return ${statement};']
-        : _wrapInCompletableFuture([statement.toString()], false, context);
+    rawCall.write(')');
+    final fieldType = mapping.field.type;
+
+    final List<String> bodyStatements;
+    if (mapping.isBatch) {
+      final keyType = serializer.serializeType(
+          getServiceReturnType(GLType(mapping.type.tokenInfo, false)), false);
+      final stmts = _wrapBatchBodyStatements(
+          fieldType, rawCall.toString(), keyType, context);
+      if (reactive) {
+        context.addImport(JavaImports.mono);
+        if (stmts.length == 1) {
+          // scalar — no transformation needed, wrap bare map in Mono
+          bodyStatements = ['return Mono.just(${stmts.first});'];
+        } else {
+          // projectable — service returns Mono<Map<K,V>>; unwrap via .map()
+          final srcVar = codeGenUtils.safeLocalVar('src');
+          final innerStmts = _wrapBatchBodyStatements(fieldType, srcVar, keyType, context);
+          final lambdaBody = codeGenUtils.block([
+            ...innerStmts.sublist(0, innerStmts.length - 1),
+            'return ${innerStmts.last};',
+          ]);
+          bodyStatements = ['return ${rawCall.toString()}.map($srcVar -> $lambdaBody);'];
+        }
+      } else {
+        bodyStatements = _wrapInCompletableFuture(stmts, false, context);
+      }
+    } else {
+      final needsToJson = fieldType is GLListType ||
+          grammar.isEnum(fieldType.firstType.token) ||
+          grammar.isProjectableType(fieldType.firstType.token);
+      if (reactive) {
+        // In reactive mode the service returns Mono<T> — use .map() to
+        // transform the emitted value rather than calling toJson directly.
+        if (!needsToJson) {
+          bodyStatements = ['return ${rawCall.toString()};'];
+        } else {
+          final resultVar = codeGenUtils.safeLocalVar('result');
+          final toJsonExpr = _wrapWithToJson(fieldType, resultVar, context);
+          bodyStatements = ['return ${rawCall.toString()}.map($resultVar -> $toJsonExpr);'];
+        }
+      } else if (fieldType.nullable && needsToJson) {
+        // Use a temp variable to avoid double-evaluating the service call
+        // inside the null-safe ternary produced by _wrapWithToJson.
+        final tempVar = codeGenUtils.safeLocalVar('tmp');
+        final originalType = serializer.serializeTypeReactive(
+            context: context, glType: fieldType, reactive: false);
+        final decl = '$originalType $tempVar = ${rawCall};';
+        final toJsonExpr = _wrapWithToJson(fieldType, tempVar, context);
+        bodyStatements =
+              _wrapInCompletableFuture([decl, toJsonExpr], false, context);
+      } else {
+        final toJsonExpr =
+            _wrapWithToJson(fieldType, rawCall.toString(), context);
+        bodyStatements =
+            _wrapInCompletableFuture([toJsonExpr], false, context);
+      }
+    }
     return '${serializeControllerMethodHeader(mapping, context)} ${codeGenUtils.block(bodyStatements)}';
   }
 
@@ -395,6 +559,24 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     }
   }
 
+  String _getControllerReturnType(GLSchemaMapping mapping, GLToken context) {
+    if (mapping.isBatch) {
+      var keyType = serializer.serializeType(
+          getServiceReturnType(GLType(mapping.type.tokenInfo, false)), false);
+      if (keyType == "Object") {
+        keyType = "?";
+      }
+      context.addImport(JavaImports.map);
+      return JavaCodeGenUtils.mapOf(
+        grammar,
+        keyType,
+        _mapifyType(mapping.field.type, context),
+      );
+    } else {
+      return _mapifyType(mapping.field.type, context);
+    }
+  }
+
   String _getMappingArgument(GLSchemaMapping mapping, GLToken context) {
     var argType = serializer.serializeType(
         getServiceReturnType(GLType(mapping.type.tokenInfo, false)), false);
@@ -413,7 +595,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     buffer.writeln(getAnnotationForMapping(mapping, context));
     buffer.write("public ");
 
-    final returnType = _getReturnType(mapping, context);
+    final returnType = _getControllerReturnType(mapping, context);
     if (reactive) {
       context.addImport(JavaImports.mono);
       buffer.write(
