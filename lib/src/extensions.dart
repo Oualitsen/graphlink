@@ -76,6 +76,41 @@ extension StringExt on String {
 
   TokenInfo toToken() => TokenInfo.ofString(this);
 
+  /// Splits any identifier into lowercase word tokens.
+  /// Handles PascalCase, camelCase, SCREAMING_SNAKE, snake_case, kebab-case,
+  /// and mixed abbreviations (HTMLParser → [html, parser]).
+  List<String> _splitIntoWords() {
+    return replaceAll(RegExp(r'[-_]+'), ' ')
+        .replaceAllMapped(RegExp(r'([a-z0-9])([A-Z])'), (m) => '${m[1]} ${m[2]}')
+        .replaceAllMapped(RegExp(r'([A-Z]+)([A-Z][a-z])'), (m) => '${m[1]} ${m[2]}')
+        .toLowerCase()
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .toList();
+  }
+
+  /// Any case → lowerCamelCase. Wire name is never touched.
+  String toLowerCamelCase() {
+    final words = _splitIntoWords();
+    if (words.isEmpty) return this;
+    return words.first + words.skip(1).map((w) => w[0].toUpperCase() + w.substring(1)).join();
+  }
+
+  /// Any case → PascalCase.
+  String toPascalCase() {
+    final words = _splitIntoWords();
+    if (words.isEmpty) return this;
+    return words.map((w) => w[0].toUpperCase() + w.substring(1)).join();
+  }
+
+  /// Any case → SCREAMING_SNAKE_CASE.
+  String toScreamingSnakeCase() {
+    final words = _splitIntoWords();
+    if (words.isEmpty) return this;
+    return words.join('_').toUpperCase();
+  }
+
   String toSnakeCase() {
     final snake = replaceAllMapped(
       RegExp(r'([a-z0-9])([A-Z])'),

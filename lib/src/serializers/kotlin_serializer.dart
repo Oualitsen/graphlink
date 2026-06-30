@@ -207,8 +207,10 @@ class KotlinSerializer extends GLSerializer {
     if (value is Map) {
       final inputDef = grammar.inputs[type.token];
       final args = value.entries.map((e) {
-        final fieldType = inputDef?.fields.firstWhere((f) => f.name.token == e.key).type ?? type;
-        return '${e.key} = ${serializeDefaultLiteral(fieldType, e.value)}';
+        final field = inputDef?.fields.firstWhere((f) => f.name.token == e.key);
+        final fieldType = field?.type ?? type;
+        final key = field?.codeName ?? e.key;
+        return '$key = ${serializeDefaultLiteral(fieldType, e.value)}';
       }).join(', ');
       return '${type.token}($args)';
     }
@@ -411,7 +413,7 @@ class KotlinSerializer extends GLSerializer {
       if (type.nullable) {
         return KotlinCodeGenUtils.letCall(receiver: '($access as? String)', body: '$token.fromJson(it)');
       }
-      return '$token.valueOf($access as String)';
+      return '$token.fromJson($access as String)!!';
     }
     // projectable type or input
     if (type.nullable) {

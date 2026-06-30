@@ -82,7 +82,7 @@ void main() {
   group('list query with enum argument', () {
     test('listUsersByStatus sends enum as string variable', () async {
       adapter.registerData('listUsersByStatus', {'listUsersByStatus': []});
-      await client.queries.listUsersByStatus(status: UserStatus.ACTIVE);
+      await client.queries.listUsersByStatus(status: UserStatus.active);
       expect(adapter.lastCall!.variables['status'], equals('ACTIVE'));
     });
   });

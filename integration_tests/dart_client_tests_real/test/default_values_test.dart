@@ -16,7 +16,7 @@ void main() {
       final res = await client.mutations.createWithDefaults(
         input: CreateWithDefaultsInput(name: 'test'),
       );
-      expect(res.createWithDefaults.role, equals(Role.USER));
+      expect(res.createWithDefaults.role, equals(Role.user));
     });
 
     test('age defaults to 18 when not provided', () async {
@@ -65,7 +65,7 @@ void main() {
       final res = await client.mutations.createWithDefaults(
         input: CreateWithDefaultsInput(
           name: 'override-test',
-          role: Role.ADMIN,
+          role: Role.admin,
           age: 99,
           isActive: false,
           score: 9.9,
@@ -74,7 +74,7 @@ void main() {
         ),
       );
       expect(res.createWithDefaults.name, equals('override-test'));
-      expect(res.createWithDefaults.role, equals(Role.ADMIN));
+      expect(res.createWithDefaults.role, equals(Role.admin));
       expect(res.createWithDefaults.age, equals(99));
       expect(res.createWithDefaults.isActive, isFalse);
       expect(res.createWithDefaults.score, equals(9.9));
@@ -100,7 +100,7 @@ void main() {
 
     test('explicit role can be provided', () async {
       final res =
-          await client.queries.listUsersWithDefaults(role: Role.ADMIN);
+          await client.queries.listUsersWithDefaults(role: Role.admin);
       expect(res.listUsersWithDefaults, isNotEmpty);
     });
   });

@@ -15,8 +15,8 @@ beforeEach(() => { client = newClient(); });
 // ── Companion consts ──────────────────────────────────────────────────────────
 
 describe('defaultCreateWithDefaultsInput companion const', () => {
-  it('has correct Role.USER default', () => {
-    expect(defaultCreateWithDefaultsInput.role).toBe(Role.USER);
+  it('has correct Role.User default', () => {
+    expect(defaultCreateWithDefaultsInput.role).toBe(Role.User);
   });
 
   it('has correct age default', () => {
@@ -79,7 +79,7 @@ describe('listUsersWithDefaults — client applies argument defaults', () => {
   });
 
   it('explicit role can be provided', async () => {
-    const res = await client.queries.listUsersWithDefaults({ role: Role.ADMIN });
+    const res = await client.queries.listUsersWithDefaults({ role: Role.Admin });
     expect(res.listUsersWithDefaults.length).toBeGreaterThan(0);
   });
 });
@@ -93,7 +93,7 @@ describe('createWithDefaults — input field defaults applied via companion cons
 
   it('role defaults to USER when using companion const', async () => {
     const res = await client.mutations.createWithDefaults({ input: input({ name: 'test' }) });
-    expect(res.createWithDefaults.role).toBe(Role.USER);
+    expect(res.createWithDefaults.role).toBe(Role.User);
   });
 
   it('age defaults to 18 when using companion const', async () => {
@@ -130,7 +130,7 @@ describe('createWithDefaults — input field defaults applied via companion cons
     const res = await client.mutations.createWithDefaults({
       input: input({
         name: 'override-test',
-        role: Role.ADMIN,
+        role: Role.Admin,
         age: 99,
         isActive: false,
         score: 9.9,
@@ -139,7 +139,7 @@ describe('createWithDefaults — input field defaults applied via companion cons
       }),
     });
     expect(res.createWithDefaults.name).toBe('override-test');
-    expect(res.createWithDefaults.role).toBe(Role.ADMIN);
+    expect(res.createWithDefaults.role).toBe(Role.Admin);
     expect(res.createWithDefaults.age).toBe(99);
     expect(res.createWithDefaults.isActive).toBe(false);
     expect(res.createWithDefaults.score).toBe(9.9);

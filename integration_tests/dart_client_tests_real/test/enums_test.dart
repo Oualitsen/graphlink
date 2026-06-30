@@ -9,19 +9,19 @@ void main() {
   setUp(() => client = newClient());
 
   group('enum deserialization', () {
-    test('ACTIVE deserializes to UserStatus.ACTIVE', () async {
+    test('ACTIVE deserializes to UserStatus.active', () async {
       final res = await client.queries.getUser(id: 'user-1');
-      expect(res.getUser.status, equals(UserStatus.ACTIVE));
+      expect(res.getUser.status, equals(UserStatus.active));
     });
 
-    test('INACTIVE deserializes to UserStatus.INACTIVE', () async {
+    test('INACTIVE deserializes to UserStatus.inactive', () async {
       final res = await client.queries.getUser(id: 'user-2');
-      expect(res.getUser.status, equals(UserStatus.INACTIVE));
+      expect(res.getUser.status, equals(UserStatus.inactive));
     });
 
-    test('HIGH deserializes to Priority.HIGH', () async {
+    test('HIGH deserializes to Priority.high', () async {
       final res = await client.queries.getUser(id: 'user-1');
-      expect(res.getUser.priority, equals(Priority.HIGH));
+      expect(res.getUser.priority, equals(Priority.high));
     });
 
     test('nullable enum is null when server returns null', () async {
@@ -31,29 +31,29 @@ void main() {
   });
 
   group('enum serialization in query variables', () {
-    test('UserStatus.ACTIVE filters correctly — returns only active users',
+    test('UserStatus.active filters correctly — returns only active users',
         () async {
       final res = await client.queries
-          .listUsersByStatus(status: UserStatus.ACTIVE);
+          .listUsersByStatus(status: UserStatus.active);
       expect(res.listUsersByStatus, isNotEmpty);
-      expect(res.listUsersByStatus.every((u) => u.status == UserStatus.ACTIVE),
+      expect(res.listUsersByStatus.every((u) => u.status == UserStatus.active),
           isTrue);
     });
 
-    test('UserStatus.INACTIVE filters correctly — returns only inactive users',
+    test('UserStatus.inactive filters correctly — returns only inactive users',
         () async {
       final res = await client.queries
-          .listUsersByStatus(status: UserStatus.INACTIVE);
+          .listUsersByStatus(status: UserStatus.inactive);
       expect(res.listUsersByStatus, isNotEmpty);
       expect(
-          res.listUsersByStatus.every((u) => u.status == UserStatus.INACTIVE),
+          res.listUsersByStatus.every((u) => u.status == UserStatus.inactive),
           isTrue);
     });
 
     test('UserStatus.SUSPENDED filters correctly — returns empty list',
         () async {
       final res = await client.queries
-          .listUsersByStatus(status: UserStatus.SUSPENDED);
+          .listUsersByStatus(status: UserStatus.suspended);
       expect(res.listUsersByStatus, isEmpty);
     });
   });
@@ -62,7 +62,7 @@ void main() {
     test('list of users contains correctly deserialized statuses', () async {
       final res = await client.queries.listUsers();
       final statuses = res.listUsers.map((u) => u.status).toList();
-      expect(statuses, containsAll([UserStatus.ACTIVE, UserStatus.INACTIVE]));
+      expect(statuses, containsAll([UserStatus.active, UserStatus.inactive]));
     });
   });
 }

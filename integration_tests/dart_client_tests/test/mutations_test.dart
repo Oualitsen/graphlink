@@ -11,7 +11,7 @@ import 'mock_adapter.dart';
 final _minimalInput = CreateUserInput(
   name: 'Alice Smith',
   email: 'alice@test.com',
-  status: UserStatus.ACTIVE,
+  status: UserStatus.active,
   address: AddressInput(street: '123 Main St', city: 'Springfield', country: 'US'),
 );
 
@@ -46,12 +46,12 @@ void main() {
 
     test('status is deserialized as enum', () async {
       final res = await client.mutations.createUser(input: _minimalInput);
-      expect(res.createUser.status, equals(UserStatus.ACTIVE));
+      expect(res.createUser.status, equals(UserStatus.active));
     });
 
     test('priority is deserialized as enum when present', () async {
       final res = await client.mutations.createUser(input: _minimalInput);
-      expect(res.createUser.priority, equals(Priority.HIGH));
+      expect(res.createUser.priority, equals(Priority.high));
     });
   });
 
@@ -103,7 +103,7 @@ void main() {
 
     test('status INACTIVE is deserialized', () async {
       final res = await client.mutations.createUser(input: _minimalInput);
-      expect(res.createUser.status, equals(UserStatus.INACTIVE));
+      expect(res.createUser.status, equals(UserStatus.inactive));
     });
 
     test('nullable priority is null', () async {
@@ -196,9 +196,9 @@ void main() {
     test('status is deserialized as enum', () async {
       final res = await client.mutations.updateUser(
         id: 'user-1',
-        input: UpdateUserInput(status: UserStatus.ACTIVE),
+        input: UpdateUserInput(status: UserStatus.active),
       );
-      expect(res.updateUser.status, equals(UserStatus.ACTIVE));
+      expect(res.updateUser.status, equals(UserStatus.active));
     });
 
     test('nested address is deserialized', () async {

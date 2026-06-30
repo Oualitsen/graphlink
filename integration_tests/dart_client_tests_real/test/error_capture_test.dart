@@ -96,7 +96,7 @@ void main() {
     final errorInput = CreateUserInput(
       name: 'error-user',
       email: 'a@b.com',
-      status: UserStatus.ACTIVE,
+      status: UserStatus.active,
       address: AddressInput(street: '1', city: 'C', country: 'US'),
     );
 
@@ -119,7 +119,7 @@ void main() {
     final goodInput = CreateUserInput(
       name: 'Alice Smith',
       email: 'alice@test.com',
-      status: UserStatus.ACTIVE,
+      status: UserStatus.active,
       address: AddressInput(
           street: '123 Main St', city: 'Springfield', country: 'US'),
     );

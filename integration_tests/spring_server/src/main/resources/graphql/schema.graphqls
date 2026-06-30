@@ -1,3 +1,9 @@
+enum EventType {
+  pending
+  in_progress
+  completed_ok
+}
+
 enum UserStatus {
   ACTIVE
   INACTIVE
@@ -110,6 +116,21 @@ type Driver {
   lastUsedFuel(liters: Int!): Int!
 }
 
+# ── Identifier normalization coverage ────────────────────────────────────────
+type NormalizedFields {
+  id:         ID!
+  FirstName:  String!
+  last_name:  String!
+  USER_AGE:   Int!
+  event_type: EventType!
+}
+
+input NormalizedInput {
+  FirstName:  String!
+  last_name:  String!
+  event_type: EventType!
+}
+
 # ── Keyword-collision coverage ────────────────────────────────────────────────
 # `class` is reserved in Dart, Java, Kotlin, and TypeScript (parameter position).
 # Exercised as a type field, an input field, a top-level query argument, and a
@@ -218,6 +239,7 @@ type Query {
   getDriver(id: ID!): Driver!
   getVehicleDriver(id: ID!): VehicleDriver!
   class(class: ID!): ClassResult!
+  getNormalizedRecord(id: ID!): NormalizedFields!
 }
 
 type Mutation {
@@ -231,6 +253,7 @@ type Mutation {
   createWithDefaults(input: CreateWithDefaultsInput!): DefaultsEcho!
   createWithNestedDefaults(input: NestedDefaultsInput!): NestedDefaultsEcho!
   makeClass(input: ClassInput!): ClassResult!
+  createNormalizedRecord(input: NormalizedInput!): NormalizedFields!
 }
 
 type Subscription {
