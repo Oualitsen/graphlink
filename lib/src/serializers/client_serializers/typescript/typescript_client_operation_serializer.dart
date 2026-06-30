@@ -4,14 +4,14 @@ import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/client_serializers/typescript/typescript_client_vars.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
-import 'package:graphlink/src/serializers/gl_serializer.dart';
+import 'package:graphlink/src/serializers/typescript_serializer.dart';
 import 'package:graphlink/src/typescript_code_gen_utils.dart';
 
 class TypeScriptClientOperationSerializer {
   final GLParser _parser;
   final TypeScriptCodeGenUtils _cg;
   final GLGraphqlSerializer _gqlSerializer;
-  final GLSerializer _serializer;
+  final TypeScriptSerializer _serializer;
   final bool observables;
 
   TypeScriptClientOperationSerializer(
@@ -46,6 +46,10 @@ class TypeScriptClientOperationSerializer {
     return def.getGeneratedTypeDefinition().tokenInfo.token;
   }
 
+  /// Wraps [expr] with a `TypeName.fromJson(...)` call.
+  String _fromJson(String expr, String typeName) =>
+      '$typeName.fromJson($expr as Record<string, unknown>)';
+
   // ── Query method ──────────────────────────────────────────────────────────
 
   String queryToMethod(GLQueryDefinition def) {
@@ -79,13 +83,13 @@ class TypeScriptClientOperationSerializer {
       if (!isCE) _errorCheckStatement(),
       if (observables) ...[
         isCE
-            ? 'subscriber.next($svResult);'
-            : "subscriber.next($svResult['data'] as $returnTypeName);",
+            ? "subscriber.next(${_fromJson(svResult, returnTypeName)});"
+            : "subscriber.next(${_fromJson("$svResult['data']", returnTypeName)});",
         'subscriber.complete();',
       ] else
         isCE
-            ? 'return $svResult;'
-            : "return $svResult['data'] as $returnTypeName;",
+            ? 'return ${_fromJson(svResult, returnTypeName)};'
+            : "return ${_fromJson("$svResult['data']", returnTypeName)};",
     ];
 
     if (observables) {
@@ -115,8 +119,9 @@ class TypeScriptClientOperationSerializer {
     final fullResponseTypeName =
         def.getFullResponseTypeDefinition(_parser).tokenInfo.token;
     final isCE = def.isCaptureErrors(_parser);
+    // cacheHitValue: for non-CE this is the data map; for CE it's the full response shape.
     final cacheHitValue =
-        isCE ? '{ data: $svResponseMap, errors: null }' : '$svResponseMap';
+        isCE ? '{ data: $svResponseMap, errors: null }' : svResponseMap;
     final parseAndCacheCall = isCE
         ? 'this._parseAndCache($svResponseText, $svResponseMap, $svRemaining, true)'
         : 'this._parseAndCache($svResponseText, $svResponseMap, $svRemaining)';
@@ -125,6 +130,9 @@ class TypeScriptClientOperationSerializer {
     final hasFrags = def.fragments(_parser).isNotEmpty;
     final directives = _gqlSerializer
         .serializeDirectiveValueList(def.getDirectives(skipGenerated: true));
+
+    final cacheHitReturn = 'return ${_fromJson(cacheHitValue, returnTypeName)};';
+    final cacheHitNext = 'subscriber.next(${_fromJson(cacheHitValue, returnTypeName)});';
 
     final innerStatements = [
       _generateVariables(def),
@@ -145,7 +153,7 @@ class TypeScriptClientOperationSerializer {
       _cg.ifStatement(
         condition: '$svRemaining.length === 0',
         ifBlockStatements: [
-          '${observables ? 'subscriber.next' : 'return'}($cacheHitValue as unknown as $returnTypeName);',
+          observables ? cacheHitNext : cacheHitReturn,
           if (observables) 'subscriber.complete(); return;',
         ],
       ),
@@ -156,13 +164,13 @@ class TypeScriptClientOperationSerializer {
           'const $svResult = $parseAndCacheCall as unknown as $fullResponseTypeName;',
           if (observables) ...[
             isCE
-                ? 'subscriber.next($svResult);'
-                : "subscriber.next($svResult['data'] as $returnTypeName);",
+                ? "subscriber.next(${_fromJson(svResult, returnTypeName)});"
+                : "subscriber.next(${_fromJson("$svResult['data']", returnTypeName)});",
             'subscriber.complete();',
           ] else
             isCE
-                ? 'return $svResult;'
-                : "return $svResult['data'] as $returnTypeName;",
+                ? 'return ${_fromJson(svResult, returnTypeName)};'
+                : "return ${_fromJson("$svResult['data']", returnTypeName)};",
         ],
         catchVariable: 'e',
         catchStatements: [
@@ -175,10 +183,10 @@ class TypeScriptClientOperationSerializer {
             ],
           ),
           if (observables) ...[
-            'subscriber.next($cacheHitValue as unknown as $returnTypeName);',
+            cacheHitNext,
             'subscriber.complete();',
           ] else
-            'return $cacheHitValue as unknown as $returnTypeName;',
+            cacheHitReturn,
         ],
       ),
     ];
@@ -243,13 +251,13 @@ class TypeScriptClientOperationSerializer {
             : invalidation,
       if (observables) ...[
         isCaptureErrors
-            ? "subscriber.next($svResult);"
-            : "subscriber.next($svResult['data'] as $returnTypeName);",
+            ? "subscriber.next(${_fromJson(svResult, returnTypeName)});"
+            : "subscriber.next(${_fromJson("$svResult['data']", returnTypeName)});",
         "subscriber.complete();",
       ] else
         isCaptureErrors
-            ? "return $svResult;"
-            : "return $svResult['data'] as $returnTypeName;",
+            ? "return ${_fromJson(svResult, returnTypeName)};"
+            : "return ${_fromJson("$svResult['data']", returnTypeName)};",
     ]);
 
     if (observables) {
@@ -303,24 +311,25 @@ class TypeScriptClientOperationSerializer {
     ]);
 
     for (final arg in uploadArgs) {
-      final name = arg.dartArgumentName;
+      final wireKey = arg.bareName;
+      final codeRef = arg.codeName;
       if (arg.type.isList) {
         statements.addAll([
           _cg.forLoop(
             init: 'let _i = 0',
-            condition: '_i < args.$name.length',
+            condition: '_i < args.$codeRef.length',
             increment: '_i++',
             statements: [
-              "$svMap[String($svSlot + _i)] = ['variables.$name.' + _i];",
-              "$svParts[String($svSlot + _i)] = args.$name[_i];",
+              "$svMap[String($svSlot + _i)] = ['variables.$wireKey.' + _i];",
+              "$svParts[String($svSlot + _i)] = args.$codeRef[_i];",
             ],
           ),
-          "$svSlot += args.$name.length;",
+          "$svSlot += args.$codeRef.length;",
         ]);
       } else {
         statements.addAll([
-          "$svMap[String($svSlot)] = ['variables.$name'];",
-          "$svParts[String($svSlot)] = args.$name;",
+          "$svMap[String($svSlot)] = ['variables.$wireKey'];",
+          "$svParts[String($svSlot)] = args.$codeRef;",
           "$svSlot++;",
         ]);
       }
@@ -337,10 +346,10 @@ class TypeScriptClientOperationSerializer {
       _errorCheckStatement(),
       if (invalidation.isNotEmpty) invalidation,
       if (observables) ...[
-        "subscriber.next($svResult['data'] as $returnTypeName);",
+        "subscriber.next(${_fromJson("$svResult['data']", returnTypeName)});",
         "subscriber.complete();",
       ] else
-        "return $svResult['data'] as $returnTypeName;",
+        "return ${_fromJson("$svResult['data']", returnTypeName)};",
     ];
     statements.addAll(innerStatements);
 
@@ -398,7 +407,7 @@ class TypeScriptClientOperationSerializer {
               _cg.forAwaitLoop(
                 variable: svData,
                 iterable: svGen,
-                statements: ['subscriber.next($svData as unknown as $returnTypeName);'],
+                statements: ['subscriber.next(${_fromJson(svData, returnTypeName)});'],
               ),
               'subscriber.complete();',
             ],
@@ -423,7 +432,7 @@ class TypeScriptClientOperationSerializer {
             _cg.forAwaitLoop(
               variable: svData,
               iterable: svGen,
-              statements: ['onEvent($svData as unknown as $returnTypeName);'],
+              statements: ['onEvent(${_fromJson(svData, returnTypeName)});'],
             ),
           ],
           catchStatements: ['onError?.(e);'],
@@ -483,26 +492,29 @@ class TypeScriptClientOperationSerializer {
     final uploadNames = nullifyUploads ? _parser.uploadScalarNames : <String>{};
     final buffer = StringBuffer('const $svVariables: Record<string, unknown> = {\n');
     for (final arg in def.arguments) {
-      final name = arg.dartArgumentName;
+      final wireKey = arg.bareName;
+      final codeRef = arg.codeName;
       final input = arg.hoistArgsInput;
       if (input != null) {
         // Synthetic hoist arg: spread the <Op>FieldArgs object directly — its
         // properties already are the wire variables. Optional object → fall back
         // to {} when null, leaving those vars absent (document defaults apply).
-        final base = 'args.$name';
+        final base = 'args.$codeRef';
         buffer.writeln(arg.type.nullable ? '  ...($base ?? {}),' : '  ...$base,');
         continue;
       }
       final isUpload = uploadNames.contains(arg.type.firstType.token);
       if (isUpload) {
         buffer.writeln(
-            "  '$name': ${arg.type.isList ? 'args.$name.map(() => null)' : 'null'},");
+            "  '$wireKey': ${arg.type.isList ? 'args.$codeRef.map(() => null)' : 'null'},");
       } else if (arg.defaultValue != null) {
         final lit =
             _serializer.serializeDefaultLiteral(arg.type, arg.defaultValue!.value);
-        buffer.writeln("  '$name': args.$name ?? $lit,");
+        final jsonExpr = _serializer.callToJson('args.$codeRef', arg.type);
+        buffer.writeln("  '$wireKey': $jsonExpr ?? $lit,");
       } else {
-        buffer.writeln("  '$name': args.$name,");
+        final jsonExpr = _serializer.callToJson('args.$codeRef', arg.type);
+        buffer.writeln("  '$wireKey': $jsonExpr,");
       }
     }
     buffer.write('};');
@@ -518,7 +530,7 @@ class TypeScriptClientOperationSerializer {
         final tsType = _resolveArgType(arg);
         final optional =
             (arg.type.nullable || arg.defaultValue != null) ? '?' : '';
-        return '${arg.dartArgumentName}$optional: $tsType';
+        return '${arg.codeName}$optional: $tsType';
       }).join('; ');
       result.add('args: { $fields }');
     }

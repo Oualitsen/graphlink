@@ -11,6 +11,7 @@ import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/serializers/gl_client_serializer.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
+import 'package:graphlink/src/serializers/typescript_serializer.dart';
 import 'package:graphlink/src/typescript_code_gen_utils.dart';
 
 const _adapterType = 'GraphLinkAdapter';
@@ -32,7 +33,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
     this.observables = false,
   }) : super(tsSerializer, GLGraphqlSerializer(_parser, false)) {
     _opSer = TypeScriptClientOperationSerializer(
-      _parser, _cg, gqlSerializer, serializer,
+      _parser, _cg, gqlSerializer, serializer as TypeScriptSerializer,
       observables: observables,
     );
   }
