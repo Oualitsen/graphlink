@@ -4,6 +4,7 @@ import 'package:graphlink/src/model/gl_directives_mixin.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/token_info.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+import 'package:graphlink/src/naming_convention.dart';
 
 class GLEnumDefinition extends GLExtensibleToken with GLDirectivesMixin {
   final Map<String, GLEnumValue> _values = {};
@@ -22,25 +23,46 @@ class GLEnumDefinition extends GLExtensibleToken with GLDirectivesMixin {
 
   List<GLEnumValue> get values => _values.values.toList();
 
+  /// Applies [convention] to every enum value, normalizing identifier casing.
+  ///
+  /// Collision with a sibling wire name or an already-assigned code name is
+  /// resolved with an index suffix (`MALE`, `MALE2`, …). Must run before
+  /// [assignCodeNames] so keyword-safe operates on the already-normalized name.
+  void applyEnumValueNaming(NamingConvention convention) {
+    final taken = _values.keys.toSet();
+    for (final value in _values.values) {
+      final raw = value.value.token;
+      final normalized = convention.enumValue(raw);
+      if (normalized == raw) continue;
+
+      var code = normalized;
+      if (taken.contains(code)) {
+        var counter = 2;
+        while (taken.contains('$code$counter')) counter++;
+        code = '$code$counter';
+      }
+      value.codeName = code;
+      taken.add(code);
+    }
+  }
+
   /// Assigns a collision-free, keyword-safe [GLEnumValue.codeName] to each value
   /// whose name is reserved in the target language or starts with a leading
   /// underscore. The original token stays the wire string used in
   /// toJson/fromJson; only the emitted constant changes.
+  ///
+  /// Starts from [GLEnumValue.codeName] (not the raw wire name) so that a prior
+  /// [applyEnumValueNaming] pass is respected.
   void assignCodeNames(Set<String> reservedWords) {
     if (reservedWords.isEmpty) return;
     final taken = _values.keys.toSet();
     for (final value in _values.values) {
-      final name = value.value.token;
+      // Start from codeName so normalization applied earlier is respected.
+      final name = value.codeName;
 
-      // Compute the desired code name:
-      //   1. Strip leading underscore (_ACTIVE → ACTIVE_).
-      //   2. If reserved, append underscore.
       var codeName = name.startsWith('_') ? '${name.substring(1)}_' : name;
-
-      // If unchanged and not reserved, skip.
       if (codeName == name && !reservedWords.contains(name)) continue;
 
-      // Name was changed or is reserved — check for collisions.
       if (reservedWords.contains(codeName)) {
         codeName = '${codeName}_';
       }
