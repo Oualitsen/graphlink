@@ -162,8 +162,9 @@ type Mutation { deleteUser(id: ID!): Boolean! }
     late String queries;
     setUpAll(() => queries = _queries(_parse(_schema)));
 
-    test('captureErrors result sets errors field to null when absent', () {
-      expect(queries, contains("(gl_result__ as any)['errors'] = null;"));
+    test('captureErrors result uses fromJson and returns full response directly', () {
+      expect(queries, contains("const gl_fullResponse__ = GetUserFullResponse.fromJson(gl_result__ as Record<string, unknown>)"));
+      expect(queries, contains("return gl_fullResponse__;"));
     });
 
     test('captureErrors result is returned directly without unwrapping data', () {
@@ -172,11 +173,12 @@ type Mutation { deleteUser(id: ID!): Boolean! }
       expect(queries, isNot(contains("GetUserFullResponse.fromJson(gl_result__['data']")));
     });
 
-    test('both captureErrors queries set errors to null when absent', () {
+    test('both captureErrors queries use fromJson on full response', () {
       final start = queries.indexOf('Promise<GetUserFullResponse>');
       final end   = queries.indexOf('Promise<FindUserFullResponse>');
       final body  = queries.substring(start, end);
-      expect(body, contains("(gl_result__ as any)['errors'] = null;"));
+      expect(body, contains("const gl_fullResponse__ = GetUserFullResponse.fromJson(gl_result__ as Record<string, unknown>)"));
+      expect(body, isNot(contains("(gl_result__ as any)['errors'] = null;")));
     });
 
     test('no explicit GraphQL-error throw in captureErrors query body', () {
@@ -194,17 +196,19 @@ type Mutation { deleteUser(id: ID!): Boolean! }
     late String queries;
     setUpAll(() => queries = _queries(_parse(_schema)));
 
-    test('non-captureErrors result returns data field directly', () {
+    test('non-captureErrors result returns data from full response', () {
       final start = queries.indexOf('Promise<ListUsersResponse>');
       final body  = queries.substring(start);
-      expect(body, contains("ListUsersResponse.fromJson(gl_result__['data'] as Record<string, unknown>)"));
+      expect(body, contains("ListUsersFullResponse.fromJson(gl_result__ as Record<string, unknown>)"));
+      expect(body, contains("return gl_fullResponse__.data!;"));
       expect(body, isNot(contains('gl_responseMap__')));
     });
 
     test('non-captureErrors result throws on errors', () {
       final start = queries.indexOf('Promise<ListUsersResponse>');
       final body  = queries.substring(start);
-      expect(body, contains("throw gl_result__['errors'] as GraphLinkError[];"));
+      expect(body, contains("if (gl_fullResponse__.errors)"));
+      expect(body, contains("throw gl_fullResponse__.errors;"));
     });
   });
 
@@ -248,13 +252,14 @@ type Mutation { deleteUser(id: ID!): Boolean! }
     test('throws on errors', () {
       final start = mutations.indexOf('Promise<DeleteUserResponse>');
       final body  = mutations.substring(start);
-      expect(body, contains("throw gl_result__['errors']"));
+      expect(body, contains("if (gl_fullResponse__.errors)"));
+      expect(body, contains("throw gl_fullResponse__.errors;"));
     });
 
-    test('returns result[data]', () {
+    test('returns data from full response', () {
       final start = mutations.indexOf('Promise<DeleteUserResponse>');
       final body  = mutations.substring(start);
-      expect(body, contains("DeleteUserResponse.fromJson(gl_result__['data'] as Record<string, unknown>)"));
+      expect(body, contains("return gl_fullResponse__.data!;"));
     });
   });
 
@@ -296,14 +301,14 @@ type Mutation { deleteUser(id: ID!): Boolean! }
       expect(client, contains('Promise<DeleteUserFullResponse>'));
     });
 
-    test('global captureErrors: true makes all queries set errors to null', () {
+    test('global captureErrors: true makes all operations use fromJson', () {
       const schema = '''
 type User { id: ID! }
 type Query    { getUser: User! }
 type Mutation { deleteUser(id: ID!): Boolean! }
 ''';
       final queries = _queries(_parse(schema, captureErrors: true));
-      expect(queries, contains("(gl_result__ as any)['errors'] = null;"));
+      expect(queries, contains("const gl_fullResponse__ = GetUserFullResponse.fromJson(gl_result__ as Record<string, unknown>)"));
       expect(queries, isNot(contains("throw gl_result__['errors']")));
     });
   });
