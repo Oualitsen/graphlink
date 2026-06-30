@@ -20,7 +20,7 @@ void main() {
             .timeout(const Duration(seconds: 10));
         expect(event.userCreated.id, equals('user-1'));
         expect(event.userCreated.name, equals('Alice Smith'));
-        expect(event.userCreated.status, equals(UserStatus.ACTIVE));
+        expect(event.userCreated.status, equals(UserStatus.active));
       } finally {
       }
     });
@@ -169,10 +169,10 @@ void main() {
         final user2Event = await user2Future;
 
         expect(user1Event.userStatusChanged.id, equals('user-1'));
-        expect(user1Event.userStatusChanged.status, equals(UserStatus.ACTIVE));
+        expect(user1Event.userStatusChanged.status, equals(UserStatus.active));
         expect(user2Event.userStatusChanged.id, equals('user-2'));
         expect(
-            user2Event.userStatusChanged.status, equals(UserStatus.INACTIVE));
+            user2Event.userStatusChanged.status, equals(UserStatus.inactive));
       } finally {
         await ws.close();
       }
@@ -291,9 +291,9 @@ void main() {
         final e2 = await f2;
 
         expect(e1.userStatusChanged.id, equals('user-1'));
-        expect(e1.userStatusChanged.status, equals(UserStatus.ACTIVE));
+        expect(e1.userStatusChanged.status, equals(UserStatus.active));
         expect(e2.userStatusChanged.id, equals('user-1'));
-        expect(e2.userStatusChanged.status, equals(UserStatus.ACTIVE));
+        expect(e2.userStatusChanged.status, equals(UserStatus.active));
       } finally {
         await ws.close();
       }
@@ -340,7 +340,7 @@ void main() {
             .first
             .timeout(const Duration(seconds: 10));
         expect(event.userStatusChanged.id, equals('user-1'));
-        expect(event.userStatusChanged.status, equals(UserStatus.ACTIVE));
+        expect(event.userStatusChanged.status, equals(UserStatus.active));
       } finally {
         await ws.close();
       }
@@ -355,7 +355,7 @@ void main() {
             .first
             .timeout(const Duration(seconds: 10));
         expect(event.userStatusChanged.id, equals('user-2'));
-        expect(event.userStatusChanged.status, equals(UserStatus.INACTIVE));
+        expect(event.userStatusChanged.status, equals(UserStatus.inactive));
       } finally {
         await ws.close();
       }

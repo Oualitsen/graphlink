@@ -136,6 +136,102 @@ void main() {
 
   // ── TypeScript ───────────────────────────────────────────────────────────
 
+  // Default-literal normalization guards (serializeDefaultLiteral bug fix)
+
+  group('Dart — default literal uses codeName, not wire name', () {
+    test('nested input default: named args use codeName', () {
+      final g = GLParser(
+        naming: NamingConvention.dart,
+        reservedWords: dartReservedWords,
+      );
+      g.parse('''
+        input AddrInput { First_Street: String! City: String! }
+        input OrderInput {
+          address: AddrInput = {First_Street: "1 Main", City: "Springfield"}
+        }
+      ''');
+      final out = DartSerializer(g, importPrefix: '')
+          .serializeInputDefinition(g.inputs['OrderInput']!);
+      expect(out, contains('firstStreet:'));
+      expect(out, contains('city:'));
+      expect(out, isNot(contains('First_Street:')));
+      expect(out, isNot(contains('City:')));
+    });
+
+    test('enum default: codeName (lowerCamelCase) used, not raw wire value', () {
+      final g = GLParser(
+        naming: NamingConvention.dart,
+        reservedWords: dartReservedWords,
+      );
+      g.parse('''
+        enum Status { ACTIVE INACTIVE }
+        input Filter { status: Status = ACTIVE }
+      ''');
+      final out = DartSerializer(g, importPrefix: '')
+          .serializeInputDefinition(g.inputs['Filter']!);
+      expect(out, contains('Status.active'));
+    });
+  });
+
+  group('Kotlin — default literal uses codeName, not wire name', () {
+    test('nested input default: named args use codeName', () {
+      final g = GLParser(
+        naming: NamingConvention.kotlin,
+        reservedWords: kotlinReservedWords,
+      );
+      g.parse('''
+        input AddrInput { First_Street: String! City: String! }
+        input OrderInput {
+          address: AddrInput = {First_Street: "1 Main", City: "Springfield"}
+        }
+      ''');
+      final out = KotlinSerializer(g, importPrefix: '', generateJsonMethods: true)
+          .serializeInputDefinition(g.inputs['OrderInput']!);
+      expect(out, contains('firstStreet ='));
+      expect(out, contains('city ='));
+      expect(out, isNot(contains('First_Street =')));
+      expect(out, isNot(contains('City =')));
+    });
+  });
+
+  group('TypeScript — default literal uses codeName and enumConstantName', () {
+    test('nested input default: field key is codeName', () {
+      final g = GLParser(
+        naming: NamingConvention.typescript,
+        reservedWords: const {},
+        parameterReservedWords: typescriptParameterReservedWords,
+      );
+      g.parse('''
+        input AddrInput { First_Street: String! City: String! }
+        input OrderInput {
+          address: AddrInput = {First_Street: "1 Main", City: "Springfield"}
+        }
+      ''');
+      final out = TypeScriptSerializer(g, importPrefix: '')
+          .serializeInputDefinition(g.inputs['OrderInput']!);
+      expect(out, contains('firstStreet:'));
+      expect(out, contains('city:'));
+      expect(out, isNot(contains('First_Street:')));
+      expect(out, isNot(contains('City:')));
+    });
+
+    test('enum default: PascalCase codeName used, not raw wire value', () {
+      final g = GLParser(
+        naming: NamingConvention.typescript,
+        reservedWords: const {},
+        parameterReservedWords: typescriptParameterReservedWords,
+      );
+      g.parse('''
+        enum Status { active inactive }
+        input Filter { status: Status = active }
+      ''');
+      final out = TypeScriptSerializer(g, importPrefix: '')
+          .serializeInputDefinition(g.inputs['Filter']!);
+      expect(out, contains('Status.Active'));
+      expect(out, isNot(contains('Status.active')));
+    });
+  });
+
   group('TypeScript — NamingConvention.typescript', () {
     test('enum lowerCase value: codeName is PascalCase, wire name preserved', () {
       final g = GLParser(

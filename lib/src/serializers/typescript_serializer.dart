@@ -57,14 +57,16 @@ class TypeScriptSerializer extends GLSerializer {
     if (value is Map) {
       final inputDef = grammar.inputs[type.token];
       final entries = value.entries.map((e) {
-        final fieldType = inputDef?.fields.firstWhere((f) => f.name.token == e.key).type ?? type;
-        return '${e.key}: ${serializeDefaultLiteral(fieldType, e.value)}';
+        final field = inputDef?.fields.firstWhere((f) => f.name.token == e.key);
+        final fieldType = field?.type ?? type;
+        final key = field?.codeName ?? e.key;
+        return '$key: ${serializeDefaultLiteral(fieldType, e.value)}';
       }).join(', ');
       return '{ $entries }';
     }
     if (value is String) {
       if (grammar.enums.containsKey(type.token)) {
-        return '${type.token}.$value';
+        return '${type.token}.${grammar.enumConstantName(type.token, value)}';
       }
       final content = value.startsWith('"') && value.endsWith('"')
           ? value.substring(1, value.length - 1)

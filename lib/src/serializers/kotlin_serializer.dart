@@ -207,8 +207,10 @@ class KotlinSerializer extends GLSerializer {
     if (value is Map) {
       final inputDef = grammar.inputs[type.token];
       final args = value.entries.map((e) {
-        final fieldType = inputDef?.fields.firstWhere((f) => f.name.token == e.key).type ?? type;
-        return '${e.key} = ${serializeDefaultLiteral(fieldType, e.value)}';
+        final field = inputDef?.fields.firstWhere((f) => f.name.token == e.key);
+        final fieldType = field?.type ?? type;
+        final key = field?.codeName ?? e.key;
+        return '$key = ${serializeDefaultLiteral(fieldType, e.value)}';
       }).join(', ');
       return '${type.token}($args)';
     }

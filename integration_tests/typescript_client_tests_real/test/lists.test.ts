@@ -59,7 +59,7 @@ describe('list of objects with nullable fields', () => {
 
 describe('list query with enum argument', () => {
   it('listUsersByStatus(ACTIVE) returns only active users', async () => {
-    const res = await client.queries.listUsersByStatus({ status: UserStatus.ACTIVE });
-    expect(res.listUsersByStatus.every(u => u.status === UserStatus.ACTIVE)).toBe(true);
+    const res = await client.queries.listUsersByStatus({ status: UserStatus.Active });
+    expect(res.listUsersByStatus.every(u => u.status === UserStatus.Active)).toBe(true);
   });
 });

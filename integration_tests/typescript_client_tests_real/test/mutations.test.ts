@@ -9,7 +9,7 @@ import { newClient } from './real-server-adapter.ts';
 const minimalInput: CreateUserInput = {
   name: 'Alice Smith',
   email: 'alice@test.com',
-  status: UserStatus.ACTIVE,
+  status: UserStatus.Active,
   address: { street: '123 Main St', city: 'Springfield', country: 'US' },
 };
 
@@ -36,7 +36,7 @@ describe('createUser — scalar fields', () => {
 
   it('status is deserialized as enum', async () => {
     const res = await client.mutations.createUser({ input: minimalInput });
-    expect(res.createUser.status).toBe(UserStatus.ACTIVE);
+    expect(res.createUser.status).toBe(UserStatus.Active);
   });
 
   it('priority is null when not in input', async () => {
@@ -47,13 +47,13 @@ describe('createUser — scalar fields', () => {
 
 describe('createUser — with optional fields', () => {
   it('priority is echoed when provided', async () => {
-    const res = await client.mutations.createUser({ input: { ...minimalInput, priority: Priority.HIGH } });
-    expect(res.createUser.priority).toBe(Priority.HIGH);
+    const res = await client.mutations.createUser({ input: { ...minimalInput, priority: Priority.High } });
+    expect(res.createUser.priority).toBe(Priority.High);
   });
 
   it('status INACTIVE is echoed', async () => {
-    const res = await client.mutations.createUser({ input: { ...minimalInput, status: UserStatus.INACTIVE } });
-    expect(res.createUser.status).toBe(UserStatus.INACTIVE);
+    const res = await client.mutations.createUser({ input: { ...minimalInput, status: UserStatus.Inactive } });
+    expect(res.createUser.status).toBe(UserStatus.Inactive);
   });
 });
 
@@ -107,7 +107,7 @@ describe('updateUser — response deserialization', () => {
 
   it('status preserved when not in update input', async () => {
     const res = await client.mutations.updateUser({ id: 'user-1', input: { name: 'Alice Smith' } as UpdateUserInput });
-    expect(res.updateUser.status).toBe(UserStatus.ACTIVE);
+    expect(res.updateUser.status).toBe(UserStatus.Active);
   });
 
   it('address preserved when not in update input', async () => {

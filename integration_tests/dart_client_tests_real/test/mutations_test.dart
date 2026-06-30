@@ -11,7 +11,7 @@ import 'real_server_adapter.dart';
 final _minimalInput = CreateUserInput(
   name: 'Alice Smith',
   email: 'alice@test.com',
-  status: UserStatus.ACTIVE,
+  status: UserStatus.active,
   address:
       AddressInput(street: '123 Main St', city: 'Springfield', country: 'US'),
 );
@@ -38,7 +38,7 @@ void main() {
     test('status is returned as enum', () async {
       final res =
           await client.mutations.createUser(input: _minimalInput);
-      expect(res.createUser.status, equals(UserStatus.ACTIVE));
+      expect(res.createUser.status, equals(UserStatus.active));
     });
 
     test('priority is null when not provided in input', () async {
@@ -52,13 +52,13 @@ void main() {
         input: CreateUserInput(
           name: 'Alice Smith',
           email: 'alice@test.com',
-          status: UserStatus.ACTIVE,
-          priority: Priority.HIGH,
+          status: UserStatus.active,
+          priority: Priority.high,
           address: AddressInput(
               street: '123 Main St', city: 'Springfield', country: 'US'),
         ),
       );
-      expect(res.createUser.priority, equals(Priority.HIGH));
+      expect(res.createUser.priority, equals(Priority.high));
     });
   });
 
@@ -94,7 +94,7 @@ void main() {
         input: CreateUserInput(
           name: 'Alice Smith',
           email: 'alice@test.com',
-          status: UserStatus.ACTIVE,
+          status: UserStatus.active,
           address: AddressInput(
               street: '123 Main St', city: 'Springfield', country: 'US'),
           tags: ['admin', 'beta'],
@@ -137,15 +137,15 @@ void main() {
         input: UpdateUserInput(name: 'New Name'),
       );
       expect(res.updateUser.email, equals('alice@test.com'));
-      expect(res.updateUser.status, equals(UserStatus.ACTIVE));
+      expect(res.updateUser.status, equals(UserStatus.active));
     });
 
     test('status update is applied', () async {
       final res = await client.mutations.updateUser(
         id: 'user-1',
-        input: UpdateUserInput(status: UserStatus.SUSPENDED),
+        input: UpdateUserInput(status: UserStatus.suspended),
       );
-      expect(res.updateUser.status, equals(UserStatus.SUSPENDED));
+      expect(res.updateUser.status, equals(UserStatus.suspended));
     });
 
     test('nested address is preserved', () async {
