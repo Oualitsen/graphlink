@@ -128,7 +128,10 @@ void main() {
       expect(result, contains('export type Animal ='));
       expect(result, contains('Dog'));
       expect(result, contains('Cat'));
-      expect(result, isNot(contains('__typename')));
+      // The type alias itself has no __typename field; the fromJson namespace uses it for dispatch.
+      expect(result, isNot(contains('readonly __typename')));
+      expect(result, contains('export namespace Animal'));
+      expect(result, contains('json["__typename"]'));
     });
 
     test('implementing type does not include __typename', () {

@@ -26,11 +26,36 @@ void main() {
     final out = serializer.serializeEnumDefinition(def);
 
     // enum constant: `object` keyword -> `object_`.
+    print(out);
     expect(out, contains("object_"));
     expect(out, contains("strict"));
 
     // the wire string `object` must round-trip through toJson/fromJson.
     expect(out, contains('"object"'));
+  });
+
+  test("keyword enum value 'return' -> return_, wire string preserved", () {
+    const schema = '''
+      enum Action {
+        return
+        cancel
+      }
+    ''';
+
+    final GLParser g = GLParser(reservedWords: kotlinReservedWords);
+    g.parse(schema);
+
+    final def = g.enums["Action"]!;
+    final serializer =
+        KotlinSerializer(g, importPrefix: "", generateJsonMethods: true);
+    final out = serializer.serializeEnumDefinition(def);
+
+    // enum constant: `return` keyword -> `return_`.
+    expect(out, contains("return_"));
+    expect(out, contains("cancel"));
+
+    // the wire string `return` must round-trip through toJson/fromJson.
+    expect(out, contains('"return"'));
   });
 
   test("sanitized enum value avoids collision with an existing value", () {
