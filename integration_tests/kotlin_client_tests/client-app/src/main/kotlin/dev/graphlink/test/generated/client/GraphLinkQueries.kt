@@ -172,8 +172,8 @@ open class GraphLinkQueries(
    }
    suspend fun search(term: String): SearchResponse {
       val glVariables__ = mapOf("term" to term)
-      val glQuery__ = "query search(\$term: String!){search(term: \$term){...Inline_d928e50a_7c88_3399_b235_b6d752c5359e}}"
-      val glFragmentNames__ = setOf("Inline_d928e50a_7c88_3399_b235_b6d752c5359e", "_all_fields_UserResult", "_all_fields_PostResult")
+      val glQuery__ = "query search(\$term: String!){search(term: \$term){...Inline_ed5c795e_1a17_6f1b_8d6d_611f326ed01e}}"
+      val glFragmentNames__ = setOf("Inline_ed5c795e_1a17_6f1b_8d6d_611f326ed01e", "_all_fields_UserResult", "_all_fields_PostResult")
       return executeData(glQuery__, glFragmentNames__, "search", glVariables__, { SearchFullResponse.fromJson(it) }).data!!
    }
    suspend fun getCachedUser(id: String): GetCachedUserResponse {

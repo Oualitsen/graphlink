@@ -68,7 +68,7 @@ public class GraphLinkSubscriptionHandler {
   private final GraphLinkWebSocketAdapter adapter;
   private final GraphLinkJsonDecoder decoder;
   private final GraphLinkJsonEncoder encoder;
-  private GraphLinkAckStatus ackStatus = GraphLinkAckStatus.none;
+  private GraphLinkAckStatus ackStatus = GraphLinkAckStatus.NONE;
 
   GraphLinkSubscriptionHandler(GraphLinkWebSocketAdapter adapter, GraphLinkJsonDecoder decoder, GraphLinkJsonEncoder encoder) {
     this.adapter = adapter;
@@ -112,15 +112,15 @@ public class GraphLinkSubscriptionHandler {
     boolean shouldSend = false;
     synchronized (this) {
       switch (ackStatus) {
-        case none:
+        case NONE:
           payloadsToHandle.put(id, payload);
-          ackStatus = GraphLinkAckStatus.progress;
+          ackStatus = GraphLinkAckStatus.PROGRESS;
           shouldConnect = true;
           break;
-        case progress:
+        case PROGRESS:
           payloadsToHandle.put(id, payload);
           break;
-        case acknoledged:
+        case ACKNOLEDGED:
           shouldSend = true;
           break;
       }
@@ -208,7 +208,7 @@ public class GraphLinkSubscriptionHandler {
       listeners.clear();
       activePayloads.clear();
       payloadsToHandle.clear();
-      ackStatus = GraphLinkAckStatus.none;
+      ackStatus = GraphLinkAckStatus.NONE;
     }
     ${clientExceptionNameRef} error = ${clientExceptionNameRef}.of(Collections.singletonList(Collections.singletonMap("message", t.getMessage())));
     for (${subscriptionListenerRef}<Map<String, Object>> listener : snapshot) {
@@ -220,7 +220,7 @@ public class GraphLinkSubscriptionHandler {
     Map<String, GraphLinkPayload> snapshot;
     synchronized (this) {
       snapshot = new HashMap<>(activePayloads);
-      ackStatus = snapshot.isEmpty() ? GraphLinkAckStatus.none : GraphLinkAckStatus.progress;
+      ackStatus = snapshot.isEmpty() ? GraphLinkAckStatus.NONE : GraphLinkAckStatus.PROGRESS;
       payloadsToHandle.putAll(snapshot);
     }
     if (!snapshot.isEmpty()) {
@@ -232,7 +232,7 @@ public class GraphLinkSubscriptionHandler {
   void handleConnectionAck() {
     List<Map.Entry<String, GraphLinkPayload>> entries;
     synchronized (this) {
-      this.ackStatus = GraphLinkAckStatus.acknoledged;
+      this.ackStatus = GraphLinkAckStatus.ACKNOLEDGED;
       entries = new ArrayList<>(payloadsToHandle.entrySet());
       payloadsToHandle.clear();
     }
