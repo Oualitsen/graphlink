@@ -167,7 +167,9 @@ type Mutation { deleteUser(id: ID!): Boolean! }
     });
 
     test('captureErrors result is returned directly without unwrapping data', () {
-      expect(queries, contains('return gl_result__;'));
+      // fromJson is called on the full result — data field is NOT unwrapped.
+      expect(queries, contains('GetUserFullResponse.fromJson(gl_result__ as Record<string, unknown>)'));
+      expect(queries, isNot(contains("GetUserFullResponse.fromJson(gl_result__['data']")));
     });
 
     test('both captureErrors queries set errors to null when absent', () {
@@ -195,7 +197,7 @@ type Mutation { deleteUser(id: ID!): Boolean! }
     test('non-captureErrors result returns data field directly', () {
       final start = queries.indexOf('Promise<ListUsersResponse>');
       final body  = queries.substring(start);
-      expect(body, contains("gl_result__['data'] as ListUsersResponse"));
+      expect(body, contains("ListUsersResponse.fromJson(gl_result__['data'] as Record<string, unknown>)"));
       expect(body, isNot(contains('gl_responseMap__')));
     });
 
@@ -223,7 +225,8 @@ type Mutation { deleteUser(id: ID!): Boolean! }
       final start = mutations.indexOf('Promise<CreateUserFullResponse>');
       final end   = mutations.indexOf('Promise<DeleteUserResponse>');
       final body  = mutations.substring(start, end);
-      expect(body, contains("return gl_result__"));
+      // fromJson is called on the full result — the data field is NOT unwrapped.
+      expect(body, contains("CreateUserFullResponse.fromJson(gl_result__ as Record<string, unknown>)"));
       expect(body, isNot(contains("gl_result__['data']")));
     });
 
@@ -251,7 +254,7 @@ type Mutation { deleteUser(id: ID!): Boolean! }
     test('returns result[data]', () {
       final start = mutations.indexOf('Promise<DeleteUserResponse>');
       final body  = mutations.substring(start);
-      expect(body, contains("gl_result__['data'] as DeleteUserResponse"));
+      expect(body, contains("DeleteUserResponse.fromJson(gl_result__['data'] as Record<string, unknown>)"));
     });
   });
 

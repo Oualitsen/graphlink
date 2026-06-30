@@ -193,7 +193,7 @@ class TypeScriptSerializer extends GLSerializer {
     final defaultFields = fields.where((f) => f.initialValue != null).toList();
     if (defaultFields.isNotEmpty) {
       final entries = defaultFields
-          .map((f) => '  ${f.name.token}: ${serializeDefaultLiteral(f.type, f.initialValue)}')
+          .map((f) => '  ${f.codeName}: ${serializeDefaultLiteral(f.type, f.initialValue)}')
           .join(',\n');
       buffer.writeln('\nexport const default${def.token}: Partial<${def.token}> = {\n$entries,\n};');
     }
@@ -420,6 +420,8 @@ class TypeScriptSerializer extends GLSerializer {
     final expr = _callFromJson(jsonExpr, field.type, 0);
     return '${field.codeName}: $expr';
   }
+
+  String callToJson(String varName, GLType type) => _callToJson(varName, type, 0);
 
   String _callToJson(String varName, GLType type, int depth) {
     if (type is GLListType) {
