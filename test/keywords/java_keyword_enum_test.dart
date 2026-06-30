@@ -24,6 +24,7 @@ void main() {
     final serializer =
         JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
     final out = serializer.serializeEnumDefinition(def);
+    print(out);
 
     // enum constant: `default` keyword -> `default_`.
     expect(out, contains("default_"));
@@ -52,6 +53,30 @@ void main() {
     expect(out, contains("default_2"));
     expect(out, contains('"default"'));
     expect(out, contains('"default_"'));
+  });
+
+  test("keyword enum value 'return' -> return_, wire string preserved", () {
+    const schema = '''
+      enum Action {
+        return
+        cancel
+      }
+    ''';
+
+    final GLParser g = GLParser(reservedWords: javaReservedWords);
+    g.parse(schema);
+
+    final def = g.enums["Action"]!;
+    final serializer =
+        JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
+    final out = serializer.serializeEnumDefinition(def);
+
+    // enum constant: `return` keyword -> `return_`.
+    expect(out, contains("return_"));
+    expect(out, contains("cancel"));
+
+    // the wire string `return` must round-trip through toJson/fromJson.
+    expect(out, contains('"return"'));
   });
 
   test("leading underscore enum value: _ACTIVE -> ACTIVE_", () {
