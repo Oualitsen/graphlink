@@ -75,21 +75,23 @@ class TypeScriptClientOperationSerializer {
       "const $svQuery = '${queryText}';",
       "const $svFragmentNames = ${fragmentNames.isEmpty ? '[] as string[]' : '[${fragmentNames.join(", ")}]'};",
       "const $svResult = await this._executeFull<$fullResponseTypeName>($svQuery, $svFragmentNames, '${def.tokenInfo}', $svVariables);",
-      if (isCE)
+      "const gl_fullResponse__ = ${_fromJson(svResult, fullResponseTypeName)};",
+      if (!isCE)
         _cg.ifStatement(
-          condition: "!($svResult as any)['errors']",
-          ifBlockStatements: ["($svResult as any)['errors'] = null;"],
+          condition: 'gl_fullResponse__.errors',
+          ifBlockStatements: observables
+              ? ['subscriber.error(gl_fullResponse__.errors);', 'return;']
+              : ['throw gl_fullResponse__.errors;'],
         ),
-      if (!isCE) _errorCheckStatement(),
       if (observables) ...[
         isCE
-            ? "subscriber.next(${_fromJson(svResult, returnTypeName)});"
-            : "subscriber.next(${_fromJson("$svResult['data']", returnTypeName)});",
+            ? "subscriber.next(gl_fullResponse__);"
+            : "subscriber.next(gl_fullResponse__.data!);",
         'subscriber.complete();',
       ] else
         isCE
-            ? 'return ${_fromJson(svResult, returnTypeName)};'
-            : "return ${_fromJson("$svResult['data']", returnTypeName)};",
+            ? 'return gl_fullResponse__;'
+            : "return gl_fullResponse__.data!;",
     ];
 
     if (observables) {
@@ -236,28 +238,30 @@ class TypeScriptClientOperationSerializer {
 
     statements.addAll([
       "const $svResult = await this._executeFull<$fullResponseTypeName>($svQuery, $svFragmentNames, '${def.tokenInfo}', $svVariables);",
-      if (isCaptureErrors)
+      "const gl_fullResponse__ = ${_fromJson(svResult, fullResponseTypeName)};",
+      if (!isCaptureErrors)
         _cg.ifStatement(
-          condition: "!($svResult as any)['errors']",
-          ifBlockStatements: ["($svResult as any)['errors'] = null;"],
+          condition: 'gl_fullResponse__.errors',
+          ifBlockStatements: observables
+              ? ['subscriber.error(gl_fullResponse__.errors);', 'return;']
+              : ['throw gl_fullResponse__.errors;'],
         ),
-      if (!isCaptureErrors) _errorCheckStatement(),
       if (invalidation.isNotEmpty)
         isCaptureErrors
             ? _cg.ifStatement(
-                condition: "!($svResult as any)['errors']",
+                condition: "!gl_fullResponse__.errors",
                 ifBlockStatements: [invalidation],
               )
             : invalidation,
       if (observables) ...[
         isCaptureErrors
-            ? "subscriber.next(${_fromJson(svResult, returnTypeName)});"
-            : "subscriber.next(${_fromJson("$svResult['data']", returnTypeName)});",
+            ? "subscriber.next(gl_fullResponse__);"
+            : "subscriber.next(gl_fullResponse__.data!);",
         "subscriber.complete();",
       ] else
         isCaptureErrors
-            ? "return ${_fromJson(svResult, returnTypeName)};"
-            : "return ${_fromJson("$svResult['data']", returnTypeName)};",
+            ? "return gl_fullResponse__;"
+            : "return gl_fullResponse__.data!;",
     ]);
 
     if (observables) {
@@ -285,6 +289,7 @@ class TypeScriptClientOperationSerializer {
 
   String uploadMutationToMethod(GLQueryDefinition def) {
     final returnTypeName = def.getGeneratedTypeDefinition().tokenInfo.token;
+    final fullResponseTypeName = def.getFullResponseTypeDefinition(_parser).tokenInfo.token;
     final args = _getMethodArgs(def);
     final invalidation = _serializeInvalidation(def);
     final uploadNames = _parser.uploadScalarNames;
@@ -343,13 +348,17 @@ class TypeScriptClientOperationSerializer {
       "};",
       "const $svResponse = await this.$svMultipartAdapter!($svAllParts, onProgress);",
       "const $svResult = JSON.parse($svResponse);",
-      _errorCheckStatement(),
+      "const gl_fullResponse__ = ${_fromJson(svResult, fullResponseTypeName)};",
+      _cg.ifStatement(
+        condition: 'gl_fullResponse__.errors',
+        ifBlockStatements: ['throw gl_fullResponse__.errors;'],
+      ),
       if (invalidation.isNotEmpty) invalidation,
       if (observables) ...[
-        "subscriber.next(${_fromJson("$svResult['data']", returnTypeName)});",
+        "subscriber.next(gl_fullResponse__.data!);",
         "subscriber.complete();",
       ] else
-        "return ${_fromJson("$svResult['data']", returnTypeName)};",
+        "return gl_fullResponse__.data!;",
     ];
     statements.addAll(innerStatements);
 
@@ -559,14 +568,5 @@ class TypeScriptClientOperationSerializer {
       return 'await this._invalidateByTags([${tags.map((t) => "'$t'").join(', ')}]);';
     }
     return '';
-  }
-
-  String _errorCheckStatement() {
-    return _cg.ifStatement(
-      condition: "$svResult['errors']",
-      ifBlockStatements: observables
-          ? ["subscriber.error($svResult['errors']);", 'return;']
-          : ["throw $svResult['errors'] as GraphLinkError[];"],
-    );
   }
 }
