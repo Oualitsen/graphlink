@@ -12,7 +12,17 @@ class NamingConvention {
   final String Function(String) field;
   final String Function(String) enumValue;
 
-  NamingConvention({required this.field, required this.enumValue});
+  /// Converts a raw GraphQL type / input / union / enum definition name to the
+  /// target-language class name.  All supported languages use PascalCase for
+  /// class names, so this defaults to [String.toPascalCase] and rarely needs
+  /// to be overridden.
+  final String Function(String) typeName;
+
+  NamingConvention({
+    required this.field,
+    required this.enumValue,
+    String Function(String)? typeName,
+  }) : typeName = typeName ?? ((s) => s.toPascalCase());
 
   /// Dart/Flutter: lowerCamelCase for both fields and enum values.
   static final NamingConvention dart = NamingConvention(
