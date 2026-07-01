@@ -142,7 +142,7 @@ class KotlinSerializer extends GLSerializer {
   String serializeFieldDeprecation(GLField field) {
     if (!field.isDeprecated) return '';
     final reason = field.deprecationReason ?? 'No longer supported';
-    final escaped = reason.escapeForStringLiteral();
+    final escaped = reason.escapeForStringLiteral().replaceAll('\r', '').replaceAll('\n', r'\n');
     return '@Deprecated("$escaped")\n';
   }
 
@@ -150,7 +150,7 @@ class KotlinSerializer extends GLSerializer {
   String serializeEnumValueDeprecation(GLEnumValue value) {
     if (!value.isDeprecated) return '';
     final reason = value.deprecationReason ?? 'No longer supported';
-    final escaped = reason.escapeForStringLiteral();
+    final escaped = reason.escapeForStringLiteral().replaceAll('\r', '').replaceAll('\n', r'\n');
     return '@Deprecated("$escaped")';
   }
 
