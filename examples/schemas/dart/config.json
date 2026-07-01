@@ -1,6 +1,6 @@
 {
     "schemaPaths": [
-        "../twitch.graphql"
+        "../saleor.graphql"
     ],
     "mode": "client",
     "unknownScalarType": "String",

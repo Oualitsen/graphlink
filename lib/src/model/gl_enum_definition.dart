@@ -1,4 +1,5 @@
 import 'package:graphlink/src/exceptions/parse_exception.dart';
+import 'package:graphlink/src/model/code_name_mixin.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_directives_mixin.dart';
 import 'package:graphlink/src/model/gl_token.dart';
@@ -6,7 +7,9 @@ import 'package:graphlink/src/model/token_info.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/naming_convention.dart';
 
-class GLEnumDefinition extends GLExtensibleToken with GLDirectivesMixin {
+class GLEnumDefinition extends GLExtensibleToken with GLDirectivesMixin, CodeNameMixin {
+  @override
+  String get wireName => token;
   final Map<String, GLEnumValue> _values = {};
 
   GLEnumDefinition(
@@ -94,16 +97,12 @@ class GLEnumDefinition extends GLExtensibleToken with GLDirectivesMixin {
   }
 }
 
-class GLEnumValue extends GLToken with GLDirectivesMixin {
+class GLEnumValue extends GLToken with GLDirectivesMixin, CodeNameMixin {
   final TokenInfo value;
   final String? documentation;
 
-  /// Keyword-safe identifier for the emitted enum constant. Defaults to the
-  /// original [value] token (the wire string); set by
-  /// [GLEnumDefinition.assignCodeNames] only when the name is reserved.
-  String? _codeName;
-  String get codeName => _codeName ?? value.token;
-  set codeName(String value) => _codeName = value;
+  @override
+  String get wireName => value.token;
 
   GLEnumValue(
       {required this.value,
