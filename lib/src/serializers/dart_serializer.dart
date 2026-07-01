@@ -86,7 +86,7 @@ class DartSerializer extends GLSerializer {
                   cases: [
                     ...def.values.map((val) => DartCaseStatement(
                         caseValue: '"${val.token}"',
-                        statement: 'return ${val.codeName};'))
+                        statement: 'return ${def.codeName}.${val.codeName};'))
                   ],
                   defaultStatements:
                       ['throw ArgumentError("Invalid ${def.codeName}: \$value");'])

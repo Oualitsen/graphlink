@@ -108,7 +108,7 @@ class KotlinSerializer extends GLSerializer {
         final toCases =
             def.values.map((v) => '${v.codeName} -> "${v.value.token}"');
         final fromCases =
-            def.values.map((v) => '"${v.value.token}" -> ${v.codeName}');
+            def.values.map((v) => '"${v.value.token}" -> ${def.codeName}.${v.codeName}');
         body.add('fun toJson(): String = when (this) {');
         body.add(toCases.map((c) => '    $c').join('\n'));
         body.add('}');

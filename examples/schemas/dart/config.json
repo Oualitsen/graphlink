@@ -12,7 +12,8 @@
         "Int": "int",
         "Boolean": "bool",
         "Null": "null",
-        "PositiveInt": "int"
+        "PositiveInt": "int",
+        "Minute": "int"
     },
     "outputDir": "lib/generated",
     "clientConfig": {
