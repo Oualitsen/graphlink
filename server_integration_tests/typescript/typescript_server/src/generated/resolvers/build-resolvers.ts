@@ -7,6 +7,8 @@
 import { IResolvers } from '@graphql-tools/utils';
 import { GraphQLError } from 'graphql';
 import { GraphLinkContext } from '../context.js';
+import { Author } from '../types/author.js';
+import { Article } from '../types/article.js';
 import { AuthorService } from '../services/author-service.js';
 import { ArticleService } from '../services/article-service.js';
 import { DeleteArticleService } from '../services/delete-article-service.js';
@@ -29,24 +31,24 @@ export function buildResolvers(
   return {
     Query: {
       getAuthor: async (_, { id }, context) => {
-        return authorService.getAuthor(id, context);
+        return authorService.getAuthor(id, context).then((_r) => _r != null ? Author.toJson(_r) : null);
       },
       listAuthors: async (_, __, context) => {
-        return authorService.listAuthors(context);
+        return authorService.listAuthors(context).then((_r) => _r.map((e0) => Author.toJson(e0)));
       },
       getArticle: async (_, { id }, context) => {
-        return articleService.getArticle(id, context);
+        return articleService.getArticle(id, context).then((_r) => Article.toJson(_r));
       },
       listArticles: async (_, __, context) => {
-        return articleService.listArticles(context);
+        return articleService.listArticles(context).then((_r) => _r.map((e0) => Article.toJson(e0)));
       },
     },
     Mutation: {
       createArticle: async (_, { input }, context) => {
-        return articleService.createArticle(input, context);
+        return articleService.createArticle(input, context).then((_r) => Article.toJson(_r));
       },
       updateArticle: async (_, { input }, context) => {
-        return articleService.updateArticle(input, context);
+        return articleService.updateArticle(input, context).then((_r) => Article.toJson(_r));
       },
       deleteArticle: async (_, { id }, context) => {
         return deleteArticleService.deleteArticle(id, context);
@@ -59,19 +61,19 @@ export function buildResolvers(
     Subscription: {
       articleCreated: {
         subscribe: (_, __, context) => articleService.articleCreated(context),
-        resolve: (payload: any) => payload,
+        resolve: (payload: any) => Article.toJson(payload),
       },
       articleUpdated: {
         subscribe: (_, { id }, context) => articleService.articleUpdated(id, context),
-        resolve: (payload: any) => payload,
+        resolve: (payload: any) => Article.toJson(payload),
       },
     },
     Author: {
-      articles: (parent) => authorArticlesLoader.load(parent),
-      latestArticles: (parent, { limit }, context) => authorSchemaMappingsService.authorLatestArticles(parent, limit, context),
+      articles: (parent) => authorArticlesLoader.load(parent).then((_r) => _r != null ? _r.map((e0) => Article.toJson(e0)) : null),
+      latestArticles: (parent, { limit }, context) => authorSchemaMappingsService.authorLatestArticles(parent, limit, context).then((_r) => _r.map((e0) => Article.toJson(e0))),
     },
     Article: {
-      author: (parent, _, context) => articleSchemaMappingsService.articleAuthor(parent, context),
+      author: (parent, _, context) => articleSchemaMappingsService.articleAuthor(parent, context).then((_r) => Author.toJson(_r)),
     },
   };
 }

@@ -1,4 +1,4 @@
-.PHONY: install generate start-server stop-server test ci typescript kotlin java setup-client
+.PHONY: install generate start-server stop-server test ci typescript kotlin java java-reactive setup-client
 
 setup-client:
 	$(MAKE) -C dart_client install
@@ -32,3 +32,6 @@ kotlin: setup-client
 
 java: setup-client
 	$(MAKE) -C java ci
+
+java-reactive: setup-client
+	$(MAKE) -C java ci-reactive

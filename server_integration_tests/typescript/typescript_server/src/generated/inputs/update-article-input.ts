@@ -10,4 +10,18 @@ export interface UpdateArticleInput {
    id: string;
    title?: string | null;
 }
+export namespace UpdateArticleInput {
+   export function toJson(obj: UpdateArticleInput): Record<string, unknown> {
+      return {
+         "id": obj.id,
+         "title": obj.title,
+      };
+   }
+   export function fromJson(json: Record<string, unknown>): UpdateArticleInput {
+      return {
+         id: json["id"] as string,
+         title: json["title"] as string | null,
+      };
+   }
+}
 

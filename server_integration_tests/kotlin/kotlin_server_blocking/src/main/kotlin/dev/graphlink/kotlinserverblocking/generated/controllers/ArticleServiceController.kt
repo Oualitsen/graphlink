@@ -20,6 +20,7 @@ import kotlinx.coroutines.withContext
 import org.springframework.security.core.context.SecurityContextHolder
 import dev.graphlink.kotlinserverblocking.generated.security.SecurityCoroutineContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 
 @Controller()
@@ -27,47 +28,47 @@ class ArticleServiceController(
     private val articleService: ArticleService,
 ) {
    @QueryMapping()
-   suspend fun getArticle(@Argument() id: String): GLArticleProjection {
+   suspend fun getArticle(@Argument() id: String): Map<String, Any?> {
       val securityContext = SecurityContextHolder.getContext()
       return withContext(Dispatchers.IO + SecurityCoroutineContext(securityContext)) {
-         articleService.getArticle(id)
+         articleService.getArticle(id).toJson()
       }
    }
 
    @QueryMapping()
-   suspend fun listArticles(): List<GLArticleProjection> {
+   suspend fun listArticles(): List<Map<String, Any?>> {
       val securityContext = SecurityContextHolder.getContext()
       return withContext(Dispatchers.IO + SecurityCoroutineContext(securityContext)) {
-         articleService.listArticles()
+         articleService.listArticles().map { __gl_e0__ -> __gl_e0__.toJson() }
       }
    }
 
    @MutationMapping()
-   suspend fun createArticle(@Argument(name = "input") inputAsMap: Map<String, Any>): GLArticleProjection {
+   suspend fun createArticle(@Argument(name = "input") inputAsMap: Map<String, Any>): Map<String, Any?> {
       val input = CreateArticleInput.fromJson(inputAsMap as Map<String, Any>)
       val securityContext = SecurityContextHolder.getContext()
       return withContext(Dispatchers.IO + SecurityCoroutineContext(securityContext)) {
-         articleService.createArticle(input)
+         articleService.createArticle(input).toJson()
       }
    }
 
    @MutationMapping()
-   suspend fun updateArticle(@Argument(name = "input") inputAsMap: Map<String, Any>): GLArticleProjection {
+   suspend fun updateArticle(@Argument(name = "input") inputAsMap: Map<String, Any>): Map<String, Any?> {
       val input = UpdateArticleInput.fromJson(inputAsMap as Map<String, Any>)
       val securityContext = SecurityContextHolder.getContext()
       return withContext(Dispatchers.IO + SecurityCoroutineContext(securityContext)) {
-         articleService.updateArticle(input)
+         articleService.updateArticle(input).toJson()
       }
    }
 
    @SubscriptionMapping()
-   fun articleCreated(): Flow<GLArticleProjection> {
-      return articleService.articleCreated()
+   fun articleCreated(): Flow<Map<String, Any?>> {
+      return articleService.articleCreated().map { __gl_result__ -> __gl_result__.toJson() }
    }
 
    @SubscriptionMapping()
-   fun articleUpdated(@Argument() id: String): Flow<GLArticleProjection> {
-      return articleService.articleUpdated(id)
+   fun articleUpdated(@Argument() id: String): Flow<Map<String, Any?>> {
+      return articleService.articleUpdated(id).map { __gl_result__ -> __gl_result__.toJson() }
    }
 
 

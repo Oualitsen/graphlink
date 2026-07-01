@@ -49,7 +49,7 @@ void main() {
 
     expect(ctrls,
         contains('@Argument(name = "default") Integer default_'));
-    expect(ctrls, contains('carRelated(value, default_)'));
+    expect(ctrls, contains('carRelated(Car.fromJson(value), default_)'));
     expect(svcs, contains('carRelated(Car value, Integer default_);'));
   });
 }

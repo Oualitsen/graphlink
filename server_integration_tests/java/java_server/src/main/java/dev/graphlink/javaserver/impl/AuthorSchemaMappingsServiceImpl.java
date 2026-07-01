@@ -15,6 +15,7 @@ public class AuthorSchemaMappingsServiceImpl implements AuthorSchemaMappingsServ
 
     @Override
     public Map<Author, ? extends List<Article>> authorArticles(List<Author> value) {
+        System.out.println("class = " + value.getFirst().getClass());
         Map<Author, List<Article>> result = new HashMap<>();
         for (Author author : value) {
             List<Article> articles = Data.articles.stream()
