@@ -11,4 +11,20 @@ export interface CreateArticleInput {
    authorId: string;
    class?: string | null;
 }
+export namespace CreateArticleInput {
+   export function toJson(obj: CreateArticleInput): Record<string, unknown> {
+      return {
+         "title": obj.title,
+         "authorId": obj.authorId,
+         "class": obj.class,
+      };
+   }
+   export function fromJson(json: Record<string, unknown>): CreateArticleInput {
+      return {
+         title: json["title"] as string,
+         authorId: json["authorId"] as string,
+         class: json["class"] as string | null,
+      };
+   }
+}
 

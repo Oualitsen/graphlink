@@ -22,18 +22,18 @@ class AuthorServiceController(
     private val authorService: AuthorService,
 ) {
    @QueryMapping()
-   suspend fun getAuthor(@Argument() id: String): GLAuthorProjection? {
+   suspend fun getAuthor(@Argument() id: String): Map<String, Any?>? {
       val securityContext = SecurityContextHolder.getContext()
       return withContext(Dispatchers.IO + SecurityCoroutineContext(securityContext)) {
-         authorService.getAuthor(id)
+         authorService.getAuthor(id)?.toJson()
       }
    }
 
    @QueryMapping()
-   suspend fun listAuthors(): List<GLAuthorProjection> {
+   suspend fun listAuthors(): List<Map<String, Any?>> {
       val securityContext = SecurityContextHolder.getContext()
       return withContext(Dispatchers.IO + SecurityCoroutineContext(securityContext)) {
-         authorService.listAuthors()
+         authorService.listAuthors().map { __gl_e0__ -> __gl_e0__.toJson() }
       }
    }
 

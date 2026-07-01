@@ -16,6 +16,7 @@ import org.springframework.graphql.data.method.annotation.Argument
 import org.springframework.graphql.data.method.annotation.MutationMapping
 import org.springframework.graphql.data.method.annotation.SubscriptionMapping
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 
 @Controller()
@@ -23,35 +24,35 @@ class ArticleServiceController(
     private val articleService: ArticleService,
 ) {
    @QueryMapping()
-   suspend fun getArticle(@Argument() id: String): GLArticleProjection {
-      return articleService.getArticle(id)
+   suspend fun getArticle(@Argument() id: String): Map<String, Any?> {
+      return articleService.getArticle(id).toJson()
    }
 
    @QueryMapping()
-   suspend fun listArticles(): List<GLArticleProjection> {
-      return articleService.listArticles()
+   suspend fun listArticles(): List<Map<String, Any?>> {
+      return articleService.listArticles().map { __gl_e0__ -> __gl_e0__.toJson() }
    }
 
    @MutationMapping()
-   suspend fun createArticle(@Argument(name = "input") inputAsMap: Map<String, Any>): GLArticleProjection {
+   suspend fun createArticle(@Argument(name = "input") inputAsMap: Map<String, Any>): Map<String, Any?> {
       val input = CreateArticleInput.fromJson(inputAsMap as Map<String, Any>)
-      return articleService.createArticle(input)
+      return articleService.createArticle(input).toJson()
    }
 
    @MutationMapping()
-   suspend fun updateArticle(@Argument(name = "input") inputAsMap: Map<String, Any>): GLArticleProjection {
+   suspend fun updateArticle(@Argument(name = "input") inputAsMap: Map<String, Any>): Map<String, Any?> {
       val input = UpdateArticleInput.fromJson(inputAsMap as Map<String, Any>)
-      return articleService.updateArticle(input)
+      return articleService.updateArticle(input).toJson()
    }
 
    @SubscriptionMapping()
-   fun articleCreated(): Flow<GLArticleProjection> {
-      return articleService.articleCreated()
+   fun articleCreated(): Flow<Map<String, Any?>> {
+      return articleService.articleCreated().map { __gl_result__ -> __gl_result__.toJson() }
    }
 
    @SubscriptionMapping()
-   fun articleUpdated(@Argument() id: String): Flow<GLArticleProjection> {
-      return articleService.articleUpdated(id)
+   fun articleUpdated(@Argument() id: String): Flow<Map<String, Any?>> {
+      return articleService.articleUpdated(id).map { __gl_result__ -> __gl_result__.toJson() }
    }
 
 

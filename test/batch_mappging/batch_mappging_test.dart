@@ -206,24 +206,20 @@ type Query {
     g.parse(text);
     var serializer = JavaSpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
 
-    var mappingService = g.services[g.serviceMappingName('User')]!;
     var mappingController = g.controllers[g.controllerMappingName('User')]!;
-    var serialService = serializer.serializeService(mappingService);
     var serialController = serializer.serializeController(mappingController);
     print(serialController);
     expect(
-        serialService,
-        contains(
-            'Map<User, Car> userCar(List<User> value, DataFetchingEnvironment dataFetchingEnvironment);'));
-    
-    expect(
         serialController,
         contains(
-            'CompletableFuture<Map<User, ? extends GLCarProjection>> userCar(List<User> value, DataFetchingEnvironment dataFetchingEnvironment)'));
-   
+            'CompletableFuture<Map<Map<String, Object>, ? extends Map<String, Object>>> userCar(List<Map<String, Object>> value, DataFetchingEnvironment dataFetchingEnvironment)'));
     expect(
         serialController,
-        contains(
-            'return CompletableFuture.supplyAsync(() -> userSchemaMappingsService.userCar(value, dataFetchingEnvironment));'));
+        stringContainsInOrder([
+          'final List<User> __gl_typed__ = value.stream().map(User::fromJson).collect(Collectors.toList());',
+          'userSchemaMappingsService.userCar(__gl_typed__, dataFetchingEnvironment)',
+          'final Map<Map<String, Object>, Map<String, Object>> __gl_tmp__ = new HashMap<>();',
+          'return __gl_tmp__;',
+        ]));
   });
 }

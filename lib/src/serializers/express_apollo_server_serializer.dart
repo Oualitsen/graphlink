@@ -1,6 +1,7 @@
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/gl_grammar_upload_extension.dart';
+import 'package:graphlink/src/gl_validation_extension.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_service.dart';
@@ -237,6 +238,19 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       buf.writeln("import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';");
     }
 
+    // collect types referenced via callToJson (projectable types + enums)
+    final resolverTypes = <String>{};
+    for (final service in services) {
+      for (final field in service.fields) {
+        _collectType(field.type, resolverTypes);
+      }
+      for (final mapping in service.mappings) {
+        _collectType(mapping.field.type, resolverTypes);
+      }
+    }
+    final resolverTypeImports = _imports(resolverTypes);
+    if (resolverTypeImports.isNotEmpty) buf.writeln(resolverTypeImports);
+
     // service + guard imports (guard only if service has @glValidate fields)
     for (final service in services) {
       buf.writeln("import { ${service.token} } from '../services/${_kebabJs(service.token)}';");
@@ -319,6 +333,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
           argNames: field.arguments.map((a) => a.token).toList(),
           argCodeNames: field.arguments.map((a) => a.codeName).toList(),
           argTypes: field.arguments.map((a) => a.type).toList(),
+          returnType: field.type,
           needsInfo: apolloConfig.useResolveInfo || field.hasDirective(glReturnsProjection),
         ));
       }
@@ -349,6 +364,13 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
 
       final callArgs = [...resolvedArgNames, 'context', if (e.needsInfo) 'info'].join(', ');
       final serviceCall = '$sVar.${e.fieldName}($callArgs)';
+      final toJsonExpr = tsSerializer.callToJson('_r', e.returnType);
+      final needsWrap = e.returnType is GLListType ||
+          grammar.isEnum(e.returnType.firstType.token) ||
+          grammar.isProjectableType(e.returnType.firstType.token);
+      final returnExpr = needsWrap
+          ? '$serviceCall.then((_r) => $toJsonExpr)'
+          : serviceCall;
       final hasValidate = fieldHasValidation(e.service.fields
           .firstWhere((f) => f.name.token == e.fieldName));
       final validateCall = hasValidate
@@ -361,7 +383,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       buf.writeln('      ${e.fieldName}: async $resolverSignature => {');
       for (final line in uploadAwaitLines) { buf.writeln('        $line'); }
       if (validateCall != null) buf.writeln('        $validateCall');
-      buf.writeln('        return $serviceCall;');
+      buf.writeln('        return $returnExpr;');
       buf.writeln('      },');
     }
     buf.writeln('    },');
@@ -378,6 +400,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
           argNames: field.arguments.map((a) => a.token).toList(),
           argCodeNames: field.arguments.map((a) => a.codeName).toList(),
           argTypes: field.arguments.map((a) => a.type).toList(),
+          returnType: field.type,
           needsInfo: false,
         ));
       }
@@ -390,9 +413,10 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       final argsDestructure =
           _argsDestructure(e.argNames, e.argCodeNames, '__');
       final callArgs = [...e.argCodeNames, 'context'].join(', ');
+      final toJsonExpr = tsSerializer.callToJson('payload', e.returnType);
       buf.writeln('      ${e.fieldName}: {');
       buf.writeln('        subscribe: (_, $argsDestructure, context) => $sVar.${e.fieldName}($callArgs),');
-      buf.writeln('        resolve: (payload: any) => payload,');
+      buf.writeln('        resolve: (payload: any) => $toJsonExpr,');
       buf.writeln('      },');
     }
     buf.writeln('    },');
@@ -418,7 +442,8 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
         } else if (m.identity || m.forwarded) {
           buf.writeln('(parent) => parent.${m.field.name},');
         } else if (m.isBatch) {
-          buf.writeln('(parent) => ${m.key}Loader.load(parent),');
+          final toJsonExpr = tsSerializer.callToJson('_r', m.field.type);
+          buf.writeln('(parent) => ${m.key}Loader.load(parent).then((_r) => $toJsonExpr),');
         } else {
           final argNames = m.field.arguments.map((a) => a.token).toList();
           final argCodeNames =
@@ -434,7 +459,8 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
           final mappingResolverArgs = needsInfo
               ? '(parent, $argsDestructure, context, info)'
               : '(parent, $argsDestructure, context)';
-          buf.writeln('$mappingResolverArgs => $sVar.${m.key}($mappingCallArgs),');
+          final toJsonExpr = tsSerializer.callToJson('_r', m.field.type);
+          buf.writeln('$mappingResolverArgs => $sVar.${m.key}($mappingCallArgs).then((_r) => $toJsonExpr),');
         }
       }
       buf.writeln('    },');
@@ -655,6 +681,7 @@ class _RootEntry {
   /// the destructuring target, local bindings, and service-call arguments.
   final List<String> argCodeNames;
   final List<GLType> argTypes;
+  final GLType returnType;
   final bool needsInfo;
   _RootEntry({
     required this.service,
@@ -662,6 +689,7 @@ class _RootEntry {
     required this.argNames,
     required this.argCodeNames,
     required this.argTypes,
+    required this.returnType,
     required this.needsInfo,
   });
 }

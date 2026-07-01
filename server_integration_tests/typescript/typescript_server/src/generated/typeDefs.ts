@@ -26,7 +26,7 @@ input UpdateArticleInput {
 type Author implements GLAuthorProjection {
    id: ID!
    name: String!
-   articles: [Article!]!
+   articles: [Article!]
    latestArticles(limit: Int!): [Article!]!
 }
 type Article implements GLArticleProjection {

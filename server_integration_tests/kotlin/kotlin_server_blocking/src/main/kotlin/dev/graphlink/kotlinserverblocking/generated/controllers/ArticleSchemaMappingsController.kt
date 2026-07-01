@@ -23,10 +23,10 @@ class ArticleSchemaMappingsController(
 ) {
 
    @SchemaMapping(typeName="Article", field="author")
-   suspend fun articleAuthor(value: Article): GLAuthorProjection {
+   suspend fun articleAuthor(value: Map<String, Any?>): Map<String, Any?> {
       val securityContext = SecurityContextHolder.getContext()
       return withContext(Dispatchers.IO + SecurityCoroutineContext(securityContext)) {
-         articleSchemaMappingsService.articleAuthor(value)
+         articleSchemaMappingsService.articleAuthor(Article.fromJson(value)).toJson()
       }
    }
 }

@@ -46,7 +46,7 @@ void main() {
         lines,
         containsAllInOrder([
           '@MutationMapping()',
-          'public CompletableFuture<${toServerProjectionName('UploadedFile')}> uploadFile(@Argument() MultipartFile file, @Argument() String filename) {',
+          'public CompletableFuture<Map<String, Object>> uploadFile(@Argument() MultipartFile file, @Argument() String filename) {',
         ]),
       );
     });
@@ -60,7 +60,7 @@ void main() {
         lines,
         containsAllInOrder([
           '@MutationMapping()',
-          'public CompletableFuture<List<? extends ${toServerProjectionName('UploadedFile')}>> uploadFiles(@Argument() List<MultipartFile> files, @Argument() String label) {',
+          'public CompletableFuture<List<Map<String, Object>>> uploadFiles(@Argument() List<MultipartFile> files, @Argument() String label) {',
         ]),
       );
     });

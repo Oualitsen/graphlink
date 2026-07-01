@@ -5,7 +5,7 @@ import 'package:graphlink_client_integration_tests/generated/inputs/create_user_
 import 'package:graphlink_client_integration_tests/generated/inputs/address_input.dart';
 import 'real_server_adapter.dart';
 
-final _minimalInput = CreateUserInput(
+const _minimalInput = CreateUserInput(
   name: 'Alice Smith',
   email: 'alice@test.com',
   status: UserStatus.active,

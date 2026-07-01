@@ -18,13 +18,13 @@ class AuthorServiceController(
     private val authorService: AuthorService,
 ) {
    @QueryMapping()
-   suspend fun getAuthor(@Argument() id: String): GLAuthorProjection? {
-      return authorService.getAuthor(id)
+   suspend fun getAuthor(@Argument() id: String): Map<String, Any?>? {
+      return authorService.getAuthor(id)?.toJson()
    }
 
    @QueryMapping()
-   suspend fun listAuthors(): List<GLAuthorProjection> {
-      return authorService.listAuthors()
+   suspend fun listAuthors(): List<Map<String, Any?>> {
+      return authorService.listAuthors().map { __gl_e0__ -> __gl_e0__.toJson() }
    }
 
 

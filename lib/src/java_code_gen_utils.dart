@@ -299,8 +299,9 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
   /// Used for query/mutation return types — async-ness is the outer wrapper,
   /// list-ness stays part of the inner type.
   static String singleOf(
-      GLParser grammar, String token, JavaReactiveFlavor flavor) {
-    final inner = wildcardExtends(grammar, token);
+      GLParser grammar, String token, JavaReactiveFlavor flavor,
+      {bool wildcard = true}) {
+    final inner = wildcard ? wildcardExtends(grammar, token) : convertPrimitiveToBoxed(token);
     return flavor.single == null ? inner : "${flavor.single}<$inner>";
   }
 
@@ -313,8 +314,8 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
   }
 
   /// Returns `Mono<...>`, wrapping/boxing the element type via [wildcardExtends].
-  static String monoOf(GLParser grammar, String token) =>
-      singleOf(grammar, token, JavaReactiveFlavor.reactor);
+  static String monoOf(GLParser grammar, String token, {bool wildcard = true}) =>
+      singleOf(grammar, token, JavaReactiveFlavor.reactor, wildcard: wildcard);
 
   /// Returns `Flux<...>`, wrapping/boxing the element type via [wildcardExtends].
   static String fluxOf(GLParser grammar, String token) =>

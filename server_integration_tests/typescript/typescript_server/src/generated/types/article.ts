@@ -12,4 +12,20 @@ export interface Article {
    readonly title: string;
    readonly authorId: string;
 }
+export namespace Article {
+   export function toJson(obj: Article): Record<string, unknown> {
+      return {
+         "id": obj.id,
+         "title": obj.title,
+         "authorId": obj.authorId,
+      };
+   }
+   export function fromJson(json: Record<string, unknown>): Article {
+      return {
+         id: json["id"] as string,
+         title: json["title"] as string,
+         authorId: json["authorId"] as string,
+      };
+   }
+}
 

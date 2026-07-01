@@ -11,7 +11,7 @@ import dev.graphlink.kotlinserverblocking.generated.types.Article
 
 
 interface AuthorSchemaMappingsService {
-   suspend fun authorArticles(value: List<Author>): Map<Author, List<Article>>
+   suspend fun authorArticles(value: List<Author>): Map<Author, List<Article>?>
    suspend fun authorLatestArticles(value: Author, limit: Int): List<Article>
 }
 

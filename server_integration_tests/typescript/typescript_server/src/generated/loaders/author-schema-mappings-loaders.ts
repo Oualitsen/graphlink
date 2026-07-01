@@ -10,9 +10,9 @@ import { Author } from '../types/author.js';
 import { Article } from '../types/article.js';
 
 export function createAuthorArticlesLoader(authorSchemaMappingsService: AuthorSchemaMappingsService) {
-  return new DataLoader<Author, Article[]>(async (items) => {
+  return new DataLoader<Author, Article[] | null>(async (items) => {
     const map = await authorSchemaMappingsService.authorArticles([...items]);
-    return items.map(v => map.get(v) ?? new Error(`Article[] not found for author ${(v as any).id}`));
+    return items.map(v => map.get(v) ?? new Error(`Article[] | null not found for author ${(v as any).id}`));
   });
 }
 

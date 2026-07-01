@@ -19,8 +19,8 @@ class ArticleSchemaMappingsController(
 ) {
 
    @SchemaMapping(typeName="Article", field="author")
-   suspend fun articleAuthor(value: Article): GLAuthorProjection {
-      return articleSchemaMappingsService.articleAuthor(value)
+   suspend fun articleAuthor(value: Map<String, Any?>): Map<String, Any?> {
+      return articleSchemaMappingsService.articleAuthor(Article.fromJson(value)).toJson()
    }
 }
 
