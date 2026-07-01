@@ -1,5 +1,6 @@
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
+import 'package:graphlink/src/model/code_name_mixin.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_directives_mixin.dart';
@@ -13,7 +14,9 @@ import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 import 'package:graphlink/src/gl_expand_grammar_extension.dart';
 
-class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin {
+class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin, CodeNameMixin {
+  @override
+  String get wireName => token;
   final Map<String, TokenInfo> _interfaceNames = {};
   final Map<String, GLInterfaceDefinition> _interfaces = {};
   final bool nameDeclared;
