@@ -66,7 +66,7 @@ class TypeScriptSerializer extends GLSerializer {
     }
     if (value is String) {
       if (grammar.enums.containsKey(type.token)) {
-        return '${type.token}.${grammar.enumConstantName(type.token, value)}';
+        return '${resolveCodeName(type.token)}.${grammar.enumConstantName(type.token, value)}';
       }
       final content = value.startsWith('"') && value.endsWith('"')
           ? value.substring(1, value.length - 1)
@@ -93,12 +93,12 @@ class TypeScriptSerializer extends GLSerializer {
       }
     }
     final buf = StringBuffer();
-    buf.write('export enum ${def.token} ');
+    buf.write('export enum ${def.codeName} ');
     buf.write(codeGenUtils.block(entries));
     if (generateJsonMethods) {
       buf.writeln();
       buf.write(codeGenUtils.createNamespace(
-        namespaceName: def.token,
+        namespaceName: def.codeName,
         statements: [
           _generateEnumToJson(def),
           _generateEnumFromJson(def),
@@ -156,7 +156,7 @@ class TypeScriptSerializer extends GLSerializer {
     }
 
     final token = def.token;
-    final tsType = getTypeNameFromGQExternal(token) ?? token;
+    final tsType = getTypeNameFromGQExternal(token) ?? resolveCodeName(token);
     return nullable ? '$tsType | null' : tsType;
   }
 
@@ -189,7 +189,7 @@ class TypeScriptSerializer extends GLSerializer {
     final fields = def.getSerializableFields(grammar.mode);
     final buffer = StringBuffer();
     buffer.write(codeGenUtils.createInterface(
-      interfaceName: def.token,
+      interfaceName: def.codeName,
       fields: fields.map((f) => serializeField(f, false, false)).toList(),
     ));
     final defaultFields = fields.where((f) => f.initialValue != null).toList();
@@ -197,15 +197,15 @@ class TypeScriptSerializer extends GLSerializer {
       final entries = defaultFields
           .map((f) => '  ${f.codeName}: ${serializeDefaultLiteral(f.type, f.initialValue)}')
           .join(',\n');
-      buffer.writeln('\nexport const default${def.token}: Partial<${def.token}> = {\n$entries,\n};');
+      buffer.writeln('\nexport const default${def.codeName}: Partial<${def.codeName}> = {\n$entries,\n};');
     }
     if (generateJsonMethods) {
       buffer.writeln();
       buffer.write(codeGenUtils.createNamespace(
-        namespaceName: def.token,
+        namespaceName: def.codeName,
         statements: [
-          _generateTypeToJson(def.token, fields),
-          _generateTypeFromJson(def.token, fields),
+          _generateTypeToJson(def.codeName, fields),
+          _generateTypeFromJson(def.codeName, fields),
         ],
       ));
     }
@@ -225,9 +225,9 @@ class TypeScriptSerializer extends GLSerializer {
   /// GraphQL `interface` / `union` → `export type Animal = Dog | Cat;`
   String _serializeInterfaceAsUnion(GLInterfaceDefinition def) {
     if (def.getSerializableImplementations(mode).isEmpty) return '';
-    final members = def.getSerializableImplementations(mode).map((t) => t.token).join(' | ');
+    final members = def.getSerializableImplementations(mode).map((t) => t.codeName).join(' | ');
     final buf = StringBuffer();
-    buf.write(codeGenUtils.createTypeAlias(name: def.token, value: members));
+    buf.write(codeGenUtils.createTypeAlias(name: def.codeName, value: members));
     if (generateJsonMethods) {
       buf.writeln();
       buf.write(_serializeUnionFromJson(def));
@@ -240,16 +240,16 @@ class TypeScriptSerializer extends GLSerializer {
     final fields = def.getSerializableFields(grammar.mode);
     final buf = StringBuffer();
     buf.write(codeGenUtils.createInterface(
-      interfaceName: def.token,
+      interfaceName: def.codeName,
       fields: fields.map((f) => serializeField(f, true, true)).toList(),
     ));
     if (generateJsonMethods) {
       buf.writeln();
       buf.write(codeGenUtils.createNamespace(
-        namespaceName: def.token,
+        namespaceName: def.codeName,
         statements: [
-          _generateTypeToJson(def.token, fields),
-          _generateTypeFromJson(def.token, fields),
+          _generateTypeToJson(def.codeName, fields),
+          _generateTypeFromJson(def.codeName, fields),
         ],
       ));
     }
@@ -280,7 +280,7 @@ class TypeScriptSerializer extends GLSerializer {
 
   @override
   String getFileNameFor(GLToken token) =>
-      "${token.token.toKebabCase()}.ts";
+      "${resolveCodeName(token.token).toKebabCase()}.ts";
 
   @override
   String serializeImportToken(GLToken token) {
@@ -296,7 +296,7 @@ class TypeScriptSerializer extends GLSerializer {
     }
     if (subDir == null) return "";
     final file = getFileNameFor(token).replaceAll('.ts', '.js');
-    return "import { ${token.token} } from '../$subDir/$file';";
+    return "import { ${resolveCodeName(token.token)} } from '../$subDir/$file';";
   }
 
   @override
@@ -334,7 +334,7 @@ class TypeScriptSerializer extends GLSerializer {
   String _generateEnumToJson(GLEnumDefinition def) {
     final func = codeGenUtils.createMethod(
       methodName: 'toJson',
-      arguments: ['value: ${def.token}'],
+      arguments: ['value: ${def.codeName}'],
       returnType: 'string',
       statements: ['return value;'],
     );
@@ -345,17 +345,17 @@ class TypeScriptSerializer extends GLSerializer {
     final visibleValues = def.values.where((val) => serialzeEnumValue(val).isNotEmpty).toList();
     final cases = visibleValues.map((val) => TypeScriptCaseStatement(
       caseValue: '"${val.value.token}"',
-      statement: 'return ${def.token}.${val.codeName};',
+      statement: 'return ${def.codeName}.${val.codeName};',
     )).toList();
     final switchStmt = codeGenUtils.switchStatement(
       expression: 'value',
       cases: cases,
-      defaultStatements: ['throw new Error(`Invalid ${def.token}: \${value}`);'],
+      defaultStatements: ['throw new Error(`Invalid ${def.codeName}: \${value}`);'],
     );
     final func = codeGenUtils.createMethod(
       methodName: 'fromJson',
       arguments: ['value: string'],
-      returnType: def.token,
+      returnType: def.codeName,
       statements: [switchStmt],
     );
     return 'export function $func';
@@ -391,21 +391,21 @@ class TypeScriptSerializer extends GLSerializer {
     final impls = def.getSerializableImplementations(mode).toList();
     final cases = impls.map((t) => TypeScriptCaseStatement(
       caseValue: '"${t.token}"',
-      statement: 'return ${t.token}.fromJson(json);',
+      statement: 'return ${t.codeName}.fromJson(json);',
     )).toList();
     final switchStmt = codeGenUtils.switchStatement(
       expression: 'json["__typename"] as string',
       cases: cases,
-      defaultStatements: ['throw new Error(`Unknown ${def.token}: \${json["__typename"]}`);'],
+      defaultStatements: ['throw new Error(`Unknown ${def.codeName}: \${json["__typename"]}`);'],
     );
     final func = codeGenUtils.createMethod(
       methodName: 'fromJson',
       arguments: ['json: Record<string, unknown>'],
-      returnType: def.token,
+      returnType: def.codeName,
       statements: [switchStmt],
     );
     return codeGenUtils.createNamespace(
-      namespaceName: def.token,
+      namespaceName: def.codeName,
       statements: ['export function $func'],
     );
   }
@@ -433,7 +433,7 @@ class TypeScriptSerializer extends GLSerializer {
       return type.nullable ? '$varName != null ? $mapExpr : null' : mapExpr;
     }
     if (grammar.isEnum(type.token) || grammar.isProjectableType(type.token)) {
-      final call = '${type.token}.toJson($varName)';
+      final call = '${resolveCodeName(type.token)}.toJson($varName)';
       return type.nullable ? '$varName != null ? $call : null' : call;
     }
     return varName;
@@ -447,11 +447,11 @@ class TypeScriptSerializer extends GLSerializer {
       return type.nullable ? '$jsonExpr != null ? $mapExpr : null' : mapExpr;
     }
     if (grammar.isEnum(type.token)) {
-      final call = '${type.token}.fromJson($jsonExpr as string)';
+      final call = '${resolveCodeName(type.token)}.fromJson($jsonExpr as string)';
       return type.nullable ? '$jsonExpr != null ? $call : null' : call;
     }
     if (grammar.isProjectableType(type.token)) {
-      final call = '${type.token}.fromJson($jsonExpr as Record<string, unknown>)';
+      final call = '${resolveCodeName(type.token)}.fromJson($jsonExpr as Record<string, unknown>)';
       return type.nullable ? '$jsonExpr != null ? $call : null' : call;
     }
     // Scalar — pure type assertion, no runtime cost

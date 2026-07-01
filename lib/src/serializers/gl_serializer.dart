@@ -10,6 +10,7 @@ import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
+import 'package:graphlink/src/model/gl_union.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/utils.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
@@ -44,6 +45,21 @@ abstract class GLSerializer {
 
   /// Effective type map: language defaults merged with user-supplied overrides.
   late final Map<String, String> typeMap;
+
+  /// Resolves the code name for a wire token across all schema maps.
+  ///
+  /// Returns [wireToken] unchanged when the token is not a user-defined type
+  /// (e.g. a built-in scalar), letting the type-map lookup in [serializeType]
+  /// handle it as usual.
+  String resolveCodeName(String wireToken) {
+    return grammar.types[wireToken]?.codeName ??
+        grammar.projectedTypes[wireToken]?.codeName ??
+        grammar.inputs[wireToken]?.codeName ??
+        grammar.enums[wireToken]?.codeName ??
+        grammar.unions[wireToken]?.codeName ??
+        grammar.interfaces[wireToken]?.codeName ??
+        wireToken;
+  }
 
 
 
@@ -218,7 +234,8 @@ abstract class GLSerializer {
     final toPlan = grammar.resolveToMappingPlan(def, mode);
     if (toPlan == null) return [];
     final fromPlan = grammar.resolveFromMappingPlan(def, mode)!;
-    final targetName = def.mapsToType!;
+    final targetWireName = def.mapsToType!;
+    final targetName = grammar.types[targetWireName]?.codeName ?? targetWireName;
     return [
       if (toPlan.derivesAnythingFromSource)
         generateToMethod(def, targetName, toPlan),

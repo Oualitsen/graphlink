@@ -394,10 +394,12 @@ class GLParser {
       populateServerProjections();
       applyServerLenientNullability();
     }
-    // Last step: (1) apply naming-convention casing, then (2) keyword-safe.
-    // Both run after projected types/interfaces are built so every identifier
+    // Last step: (1) apply naming-convention casing, (2) sanitize type names
+    // (leading-underscore rule), then (3) keyword-safe.
+    // All run after projected types/interfaces are built so every identifier
     // is covered. normalizeIdentifiers is a no-op when naming == null.
     normalizeIdentifiers();
+    sanitizeTypeNames();
     assignCodeNames();
   }
 

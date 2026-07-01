@@ -129,11 +129,11 @@ class JavaSerializer extends GLSerializer {
       final args = inputDef.fields.map((f) {
         return serializeDefaultLiteral(f.type, value[f.name.token]);
       }).join(', ');
-      return 'new ${type.token}($args)';
+      return 'new ${resolveCodeName(type.token)}($args)';
     }
     if (value is String) {
       if (grammar.enums.containsKey(type.token)) {
-        return '${type.token}.${grammar.enumConstantName(type.token, value)}';
+        return '${resolveCodeName(type.token)}.${grammar.enumConstantName(type.token, value)}';
       }
       final content = value.startsWith('"') && value.endsWith('"')
           ? value.substring(1, value.length - 1)
@@ -163,7 +163,7 @@ class JavaSerializer extends GLSerializer {
     var toJson = serializeToJsonForEnum(def);
     var fromJson = serializeFromJsonForEnum(def);
     var enum_ = codeGenUtils.createEnum(
-        enumName: def.token,
+        enumName: def.codeName,
         enumValues: def.values.map((e) => doSerializeEnumValue(e)).toList(),
         methods: [
           if (fromJson.isNotEmpty) fromJson,
@@ -201,7 +201,7 @@ class JavaSerializer extends GLSerializer {
                 caseValue: v.codeName, statement: 'return "${v.value.token}";'))
           ],
           defaultStatements: [
-            'throw new IllegalArgumentException("Invalid ${def.token}: " + this);'
+            'throw new IllegalArgumentException("Invalid ${def.codeName}: " + this);'
           ],
         )
       ],
@@ -215,16 +215,16 @@ class JavaSerializer extends GLSerializer {
     if (!_enumSanitized(def)) {
       def.addImport(JavaImports.optional);
       return codeGenUtils.createMethod(
-        returnType: "public static ${def.token}",
+        returnType: "public static ${def.codeName}",
         methodName: "fromJson",
         arguments: ["String value"],
         statements: [
-          "return Optional.ofNullable(value).map(${def.token}::valueOf).orElse(null);"
+          "return Optional.ofNullable(value).map(${def.codeName}::valueOf).orElse(null);"
         ],
       );
     }
     return codeGenUtils.createMethod(
-      returnType: "public static ${def.token}",
+      returnType: "public static ${def.codeName}",
       methodName: "fromJson",
       arguments: ["String value"],
       statements: [
@@ -237,7 +237,7 @@ class JavaSerializer extends GLSerializer {
                 statement: 'return ${v.codeName};'))
           ],
           defaultStatements: [
-            'throw new IllegalArgumentException("Invalid ${def.token}: " + value);'
+            'throw new IllegalArgumentException("Invalid ${def.codeName}: " + value);'
           ],
         )
       ],
@@ -352,7 +352,7 @@ class JavaSerializer extends GLSerializer {
     }
     final token = glType.token;
 
-    var type = getTypeNameFromGQExternal(token) ?? token;
+    var type = getTypeNameFromGQExternal(token) ?? resolveCodeName(token);
     if (reactive) {
       context?.addImport(JavaImports.mono);
       return JavaCodeGenUtils.monoOf(grammar, type);
@@ -383,24 +383,24 @@ class JavaSerializer extends GLSerializer {
       buffer.writeln(decorators.trim());
     }
     if (inputsAsRecords) {
-      buffer.writeln(serializeRecord(def.token, def.fields, {}, def,
+      buffer.writeln(serializeRecord(def.codeName, def.fields, {}, def,
           extraStatements: generateMappingMethods(def)));
       return buffer.toString();
     }
     var class_ =
-        codeGenUtils.createClass(className: def.tokenInfo.token, statements: [
+        codeGenUtils.createClass(className: def.codeName, statements: [
       ...def
           .getSerializableFields(grammar.mode)
           .map((e) => serializeField(e, immutableInputFields, false)),
       "",
       if (!immutableInputFields)
-        generateContructor(def.token, [], "public", def,
+        generateContructor(def.codeName, [], "public", def,
             checkForNulls: inputsCheckForNulls),
       "",
-      generateContructor(def.token, def.getSerializableFields(grammar.mode),
+      generateContructor(def.codeName, def.getSerializableFields(grammar.mode),
           immutableInputFields ? "public" : "private", def,
           checkForNulls: inputsCheckForNulls),
-      generateBuilder(def.token, def.getSerializableFields(grammar.mode), true),
+      generateBuilder(def.codeName, def.getSerializableFields(grammar.mode), true),
       ...def.getSerializableFields(grammar.mode).map(
           (e) => serializeGetter(e, def, checkForNulls: inputsCheckForNulls)),
       ...def.getSerializableFields(grammar.mode).where((field) {
@@ -410,7 +410,7 @@ class JavaSerializer extends GLSerializer {
           (e) => serializeSetter(e, def, checkForNulls: inputsCheckForNulls)),
       if (generateJsonMethods) ...[
         generateToJson(def.getSerializableFields(grammar.mode), def),
-        generateFromJson(def.getSerializableFields(mode), def.token, def)
+        generateFromJson(def.getSerializableFields(mode), def.codeName, def)
       ],
       ...generateMappingMethods(def),
     ]);
@@ -472,10 +472,10 @@ class JavaSerializer extends GLSerializer {
         result = '(${serializeType(type, false)})${varName}${callMapDotGet}';
       }
     } else if (grammar.isEnum(type.token)) {
-      result = '${type.token}.fromJson((String)${varName}${callMapDotGet})';
+      result = '${resolveCodeName(type.token)}.fromJson((String)${varName}${callMapDotGet})';
     } else {
       result =
-          '${type.token}.fromJson((${_mapOf('String', 'Object')})${varName}${callMapDotGet})';
+          '${resolveCodeName(type.token)}.fromJson((${_mapOf('String', 'Object')})${varName}${callMapDotGet})';
     }
     return nullCheckStatement.isEmpty ? result : '$nullCheckStatement $result';
   }
@@ -643,7 +643,7 @@ class JavaSerializer extends GLSerializer {
     }
 
     return codeGenUtils.createMethod(
-      returnType: 'public static ${def.token}',
+      returnType: 'public static ${def.codeName}',
       methodName: 'from${targetType.firstUp}',
       arguments: [
         '$targetType $targetVar',
@@ -652,7 +652,7 @@ class JavaSerializer extends GLSerializer {
         ...inputOnlyParams,
       ],
       statements: [
-        'return new ${def.token}(',
+        'return new ${def.codeName}(',
         ...constructorArgs.asMap().entries.map(
               (e) => e.key < constructorArgs.length - 1 ? '${e.value},' : e.value,
             ),
@@ -678,7 +678,7 @@ class JavaSerializer extends GLSerializer {
     }
     final sourceInput = grammar.inputs[sourceType.token];
     if (sourceInput?.mapsToType == targetType.token) {
-      return JavaCodeGenUtils.safeCall(variable, 'to${targetType.token.firstUp}()', sourceType.nullable);
+      return JavaCodeGenUtils.safeCall(variable, 'to${resolveCodeName(targetType.token).firstUp}()', sourceType.nullable);
     }
     return variable; // same type — direct copy
   }
@@ -699,8 +699,10 @@ class JavaSerializer extends GLSerializer {
     }
     final sourceInput = grammar.inputs[sourceElemToken];
     if (sourceInput?.mapsToType == targetType.token) {
+      final sourceCodeName = resolveCodeName(sourceElemToken);
+      final targetCodeName = resolveCodeName(targetType.token);
       return JavaCodeGenUtils.nullSafeExpr(
-          variable, '$sourceElemToken.from${targetType.token.firstUp}($variable)', targetType.nullable);
+          variable, '$sourceCodeName.from${targetCodeName.firstUp}($variable)', targetType.nullable);
     }
     return variable; // same type — direct copy
   }
@@ -1031,8 +1033,8 @@ class JavaSerializer extends GLSerializer {
   }
 
   String _doSerializeTypeDefinition(GLTypeDefinition def) {
-    final token = def.tokenInfo;
-    final interfaceNames = def.interfaceNames.map((e) => e.token).toSet();
+    final codeName = def.codeName;
+    final interfaceNames = def.interfaceNames.map((e) => resolveCodeName(e.token)).toSet();
 
     final decorators = serializeDecorators(def.getDirectives());
     var buffer = StringBuffer();
@@ -1041,11 +1043,11 @@ class JavaSerializer extends GLSerializer {
     }
     if (typesAsRecords && def.getDirectiveByName(glInternal) == null) {
       buffer
-          .writeln(serializeRecord(def.token, def.fields, interfaceNames, def));
+          .writeln(serializeRecord(codeName, def.fields, interfaceNames, def));
       return buffer.toString();
     }
     buffer.writeln(codeGenUtils.createClass(
-        className: token.token,
+        className: codeName,
         interfaceNames: interfaceNames.toList(),
         statements: [
           ...def
@@ -1053,14 +1055,14 @@ class JavaSerializer extends GLSerializer {
               .map((e) => serializeField(e, immutableTypeFields, true)),
           "",
           if (!immutableTypeFields)
-            generateContructor(def.token, [], "public", def,
+            generateContructor(codeName, [], "public", def,
                 checkForNulls: typesCheckForNulls, isTypeField: true),
           "",
-          generateContructor(def.token, def.getSerializableFields(grammar.mode),
+          generateContructor(codeName, def.getSerializableFields(grammar.mode),
               immutableTypeFields ? "public" : "private", def, isTypeField: true),
           "",
           generateBuilder(
-              def.token, def.getSerializableFields(grammar.mode), false),
+              codeName, def.getSerializableFields(grammar.mode), false),
           "",
           ...def.getSerializableFields(grammar.mode).map((e) =>
               serializeGetter(e, def, checkForNulls: typesCheckForNulls, isTypeField: true)),
@@ -1073,7 +1075,7 @@ class JavaSerializer extends GLSerializer {
           generateEqualsAndHashCode(def),
           if (generateJsonMethods) ...[
             generateFromJson(
-                def.getSerializableFields(grammar.mode), def.token, def),
+                def.getSerializableFields(grammar.mode), codeName, def),
             generateToJson(def.getSerializableFields(grammar.mode), def)
           ]
         ]));
@@ -1089,7 +1091,7 @@ class JavaSerializer extends GLSerializer {
   }
 
   String equalsHascodeCode(GLTypeDefinition def, Set<String> fields) {
-    final token = def.tokenInfo;
+    final token = def.codeName;
     def.addImport("java.util.Objects");
     var buffer = StringBuffer();
     buffer.writeln('@Override');
@@ -1145,7 +1147,7 @@ class JavaSerializer extends GLSerializer {
 
   String serializeInterface(GLInterfaceDefinition interface,
       {required bool getters, bool forceClassGetters = false}) {
-    final token = interface.tokenInfo;
+    final codeName = interface.codeName;
     final interfaces = interface.interfaces;
     final fields = interface.getSerializableFields(grammar.mode);
     var decorators = serializeDecorators(interface.getDirectives());
@@ -1159,15 +1161,15 @@ class JavaSerializer extends GLSerializer {
       interface.addImport(JavaImports.map);
     }
     buffer.writeln(codeGenUtils.createInterface(
-        interfaceName: token.token,
-        interfaceNames: interfaces.map((e) => e.tokenInfo.token).toList(),
+        interfaceName: codeName,
+        interfaceNames: interfaces.map((e) => resolveCodeName(e.tokenInfo.token)).toList(),
         statements: [
           ...fields.map((f) => _serializeInterfaceField(f, getters, forceClassGetters: forceClassGetters)),
           if (generateJsonConverstionMethods && interface.getSerializableImplementations(mode).isNotEmpty) ...[
             "",
             "Map<String, Object> toJson();",
             _serializeFromJsonForInterface(
-                interface.token, interface.getSerializableImplementations(mode))
+                codeName, interface.getSerializableImplementations(mode))
           ]
         ]));
     return buffer.toString();
@@ -1187,9 +1189,9 @@ class JavaSerializer extends GLSerializer {
     for (var st in subTypes) {
       String typeNameValue =
           st.derivedFromType?.tokenInfo.token ?? st.tokenInfo.token;
-      String currentToken = st.tokenInfo.token;
+      String currentCodeName = st.codeName;
       buffer.writeln(
-          'case "${typeNameValue}": return ${currentToken}.fromJson(json);'
+          'case "${typeNameValue}": return ${currentCodeName}.fromJson(json);'
               .ident(2));
     }
     buffer.writeln(
@@ -1202,27 +1204,28 @@ class JavaSerializer extends GLSerializer {
 
   @override
   String getFileNameFor(GLToken token) {
-    return "${token.token}.java";
+    return "${resolveCodeName(token.token)}.java";
   }
 
   @override
   String serializeImportToken(GLToken token) {
     String? path;
+    final codeName = resolveCodeName(token.token);
 
     if (grammar.enums.containsKey(token.token)) {
-      path = "enums.${token.token}";
+      path = "enums.$codeName";
     } else if (grammar.interfaces.containsKey(token.token) ||
         grammar.projectedInterfaces.containsKey(token.token)) {
-      path = "interfaces.${token.token}";
+      path = "interfaces.$codeName";
     } else if (grammar.types.containsKey(token.token) ||
         grammar.projectedTypes.containsKey(token.token)) {
-      path = "types.${token.token}";
+      path = "types.$codeName";
     } else if (grammar.inputs.containsKey(token.token)) {
-      path = "inputs.${token.token}";
+      path = "inputs.$codeName";
     } else if (grammar.services.containsKey(token.token)) {
-      path = "services.${token.token}";
+      path = "services.$codeName";
     } else if (grammar.controllers.containsKey(token.token)) {
-      path = "controllers.${token.token}";
+      path = "controllers.$codeName";
     }
     return "import ${importPrefix}.${path};";
   }
