@@ -4,9 +4,10 @@ import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_directives_mixin.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+import 'package:graphlink/src/model/code_name_mixin.dart';
 import 'package:graphlink/src/model/token_info.dart';
 
-class GLField with GLDirectivesMixin {
+class GLField with GLDirectivesMixin, CodeNameMixin {
   final TokenInfo name;
   final GLType type;
   final Object? initialValue;
@@ -16,16 +17,8 @@ class GLField with GLDirectivesMixin {
   List<GLArgumentDefinition>? _cachedArguments;
   bool? _containsSkipOrIncludeDirective;
 
-  /// The target-language-safe identifier for this field. Defaults to the raw
-  /// GraphQL name and is overridden by [GLTokenWithFields.assignCodeNames] when
-  /// the name clashes with a reserved keyword (e.g. `default` -> `default_`).
-  /// Only use this in *identifier* positions; JSON keys and GraphQL query text
-  /// must keep [name].
-  String? _codeName;
-
-  String get codeName => _codeName ?? name.token;
-
-  set codeName(String value) => _codeName = value;
+  @override
+  String get wireName => name.token;
 
   GLField({
     required this.name,

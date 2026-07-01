@@ -1,4 +1,5 @@
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+import 'package:graphlink/src/model/code_name_mixin.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_directives_mixin.dart';
@@ -10,7 +11,9 @@ import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/token_info.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 
-class GLInputDefinition extends GLTokenWithFields with GLDirectivesMixin {
+class GLInputDefinition extends GLTokenWithFields with GLDirectivesMixin, CodeNameMixin {
+  @override
+  String get wireName => token;
   final String declaredName;
   GLInputDefinition(
       {required List<GLDirectiveValue> directives,
