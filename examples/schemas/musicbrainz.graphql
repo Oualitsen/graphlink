@@ -476,11 +476,11 @@ alternate names or misspellings.
   """
   aliases: [Alias]
   """The main credited artist(s)."""
-  artistCredit: [ArtistCredit]  @deprecated(reason: "The `artistCredit` field has been renamed to
+  artistCredit: [ArtistCredit]  @deprecated(reason: """The `artistCredit` field has been renamed to
 `artistCredits`, since it is a list of credits and is referred to in the
 plural form throughout the MusicBrainz documentation. This field is deprecated
 and will be removed in a major release in the future. Use the equivalent
-`artistCredits` field.")
+`artistCredits` field.""")
   """The main credited artist(s)."""
   artistCredits: [ArtistCredit]
   """
@@ -751,11 +751,11 @@ alternate names or misspellings.
   """
   aliases: [Alias]
   """The main credited artist(s)."""
-  artistCredit: [ArtistCredit]  @deprecated(reason: "The `artistCredit` field has been renamed to
+  artistCredit: [ArtistCredit]  @deprecated(reason: """The `artistCredit` field has been renamed to
 `artistCredits`, since it is a list of credits and is referred to in the
 plural form throughout the MusicBrainz documentation. This field is deprecated
 and will be removed in a major release in the future. Use the equivalent
-`artistCredits` field.")
+`artistCredits` field.""")
   """The main credited artist(s)."""
   artistCredits: [ArtistCredit]
   """The release events for this release."""
@@ -1891,11 +1891,11 @@ alternate names or misspellings.
   """
   aliases: [Alias]
   """The main credited artist(s)."""
-  artistCredit: [ArtistCredit]  @deprecated(reason: "The `artistCredit` field has been renamed to
+  artistCredit: [ArtistCredit]  @deprecated(reason: """The `artistCredit` field has been renamed to
 `artistCredits`, since it is a list of credits and is referred to in the
 plural form throughout the MusicBrainz documentation. This field is deprecated
 and will be removed in a major release in the future. Use the equivalent
-`artistCredits` field.")
+`artistCredits` field.""")
   """The main credited artist(s)."""
   artistCredits: [ArtistCredit]
   """The date of the earliest release in the group."""
