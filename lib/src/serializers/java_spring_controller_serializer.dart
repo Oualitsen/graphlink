@@ -62,19 +62,31 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
   /// Convention (same as [_wrapInCompletableFuture]): all statements except
   /// the last carry their own semicolons; the last is a bare expression.
   /// Scalars: single-element list containing the raw service call expression.
-  List<String> _wrapBatchBodyStatements(
-      GLType fieldType, String expression, String keyType, GLToken context) {
-    final kVar = codeGenUtils.safeLocalVar('key');
+  /// Produces the output-map–building statements for a batch mapping, given
+  /// [svcExpr] (an in-scope expression that evaluates to the service's
+  /// `Map<TypedKey, V>` result) and [typedVar] (the typed list that was passed
+  /// to the service, also in scope so we can index into it for key lookup).
+  /// Returns `[tmpDecl, forLoop, tmpVarName]`.
+  List<String> _batchOutputMapStatements(
+      GLType fieldType, String svcExpr, String typedVar, GLToken context) {
     final valVar = codeGenUtils.safeLocalVar('val');
     final valueExpr = _wrapWithToJson(fieldType, valVar, context);
-    if (valueExpr == valVar) return [expression];
     final tmpVar = codeGenUtils.safeLocalVar('tmp');
+    final iVar = codeGenUtils.safeLocalVar('i');
     final mapifiedValueType = _mapifyType(fieldType, context);
     context.addImport(JavaImports.hashMap);
     context.addImport(JavaImports.map);
     return [
-      'final Map<$keyType, $mapifiedValueType> $tmpVar = new HashMap<>();',
-      '$expression.forEach(($kVar, $valVar) -> { $tmpVar.put($kVar, $valueExpr); });',
+      'final Map<Map<String, Object>, $mapifiedValueType> $tmpVar = new HashMap<>();',
+      codeGenUtils.forLoop(
+        init: 'int $iVar = 0',
+        condition: '$iVar < value.size()',
+        increment: '$iVar++',
+        statements: [
+          'final var $valVar = $svcExpr.get($typedVar.get($iVar));',
+          '$tmpVar.put(value.get($iVar), $valueExpr);',
+        ],
+      ),
       tmpVar,
     ];
   }
@@ -387,41 +399,54 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
       return serializeIdentityMapping(mapping, context);
     }
 
-    final rawCall = StringBuffer('$serviceInstanceName.${mapping.key}(value');
-    for (var arg in mapping.field.arguments) {
-      rawCall.write(', ${arg.codeName}');
-    }
-    if (injectDataFetching || mapping.field.hasDirective(glReturnsProjection)) {
-      rawCall.write(', dataFetchingEnvironment');
-    }
-    rawCall.write(')');
     final fieldType = mapping.field.type;
-
     final List<String> bodyStatements;
     if (mapping.isBatch) {
-      final keyType = serializer.serializeType(
-          getServiceReturnType(GLType(mapping.type.tokenInfo, false)), false);
-      final stmts = _wrapBatchBodyStatements(
-          fieldType, rawCall.toString(), keyType, context);
+      final parentTypeName = mapping.type.token;
+      final typedVar = codeGenUtils.safeLocalVar('typed');
+      final svcVar = codeGenUtils.safeLocalVar('svc');
+      final typedListDecl =
+          'final List<$parentTypeName> $typedVar = value.stream().map($parentTypeName::fromJson).collect(Collectors.toList());';
+      context.addImport(JavaImports.collectors);
+
+      final svcCallBuf = StringBuffer('$serviceInstanceName.${mapping.key}($typedVar');
+      for (var arg in mapping.field.arguments) {
+        svcCallBuf.write(', ${arg.codeName}');
+      }
+      if (injectDataFetching || mapping.field.hasDirective(glReturnsProjection)) {
+        svcCallBuf.write(', dataFetchingEnvironment');
+      }
+      svcCallBuf.write(')');
+      final svcCall = svcCallBuf.toString();
+
+      final outputStmts = _batchOutputMapStatements(fieldType, svcVar, typedVar, context);
+
       if (reactive) {
         context.addImport(JavaImports.mono);
-        if (stmts.length == 1) {
-          // scalar — no transformation needed, wrap bare map in Mono
-          bodyStatements = ['return Mono.just(${stmts.first});'];
-        } else {
-          // projectable — service returns Mono<Map<K,V>>; unwrap via .map()
-          final srcVar = codeGenUtils.safeLocalVar('src');
-          final innerStmts = _wrapBatchBodyStatements(fieldType, srcVar, keyType, context);
-          final lambdaBody = codeGenUtils.block([
-            ...innerStmts.sublist(0, innerStmts.length - 1),
-            'return ${innerStmts.last};',
-          ]);
-          bodyStatements = ['return ${rawCall.toString()}.map($srcVar -> $lambdaBody);'];
-        }
+        final srcVar = codeGenUtils.safeLocalVar('src');
+        final innerStmts = _batchOutputMapStatements(fieldType, srcVar, typedVar, context);
+        final lambdaBody = codeGenUtils.block([
+          ...innerStmts.sublist(0, innerStmts.length - 1),
+          'return ${innerStmts.last};',
+        ]);
+        bodyStatements = [typedListDecl, 'return $svcCall.map($srcVar -> $lambdaBody);'];
       } else {
-        bodyStatements = _wrapInCompletableFuture(stmts, false, context);
+        bodyStatements = _wrapInCompletableFuture([
+          typedListDecl,
+          'final var $svcVar = $svcCall;',
+          ...outputStmts.sublist(0, outputStmts.length - 1),
+          outputStmts.last,
+        ], false, context);
       }
     } else {
+      final rawCall = StringBuffer('$serviceInstanceName.${mapping.key}(${_fromJsonParentExpr(mapping, context)}');
+      for (var arg in mapping.field.arguments) {
+        rawCall.write(', ${arg.codeName}');
+      }
+      if (injectDataFetching || mapping.field.hasDirective(glReturnsProjection)) {
+        rawCall.write(', dataFetchingEnvironment');
+      }
+      rawCall.write(')');
       final needsToJson = fieldType is GLListType ||
           grammar.isEnum(fieldType.firstType.token) ||
           grammar.isProjectableType(fieldType.firstType.token);
@@ -561,15 +586,10 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
 
   String _getControllerReturnType(GLSchemaMapping mapping, GLToken context) {
     if (mapping.isBatch) {
-      var keyType = serializer.serializeType(
-          getServiceReturnType(GLType(mapping.type.tokenInfo, false)), false);
-      if (keyType == "Object") {
-        keyType = "?";
-      }
       context.addImport(JavaImports.map);
       return JavaCodeGenUtils.mapOf(
         grammar,
-        keyType,
+        'Map<String, Object>',
         _mapifyType(mapping.field.type, context),
       );
     } else {
@@ -588,6 +608,28 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     }
   }
 
+  /// Controller-side parameter: parent is always a plain map after mapification.
+  String _getControllerMappingArgument(GLSchemaMapping mapping, GLToken context) {
+    if (mapping.isBatch) {
+      context.addImport(importList);
+      context.addImport(JavaImports.map);
+      return "List<Map<String, Object>> value";
+    } else {
+      context.addImport(JavaImports.map);
+      return "Map<String, Object> value";
+    }
+  }
+
+  /// Expression that reconstructs the typed parent from the map `value`.
+  String _fromJsonParentExpr(GLSchemaMapping mapping, GLToken context) {
+    final parentTypeName = mapping.type.token;
+    if (mapping.isBatch) {
+      context.addImport(JavaImports.collectors);
+      return 'value.stream().map($parentTypeName::fromJson).collect(Collectors.toList())';
+    }
+    return '$parentTypeName.fromJson(value)';
+  }
+
   @override
   String serializeControllerMethodHeader(
       GLSchemaMapping mapping, GLToken context) {
@@ -599,11 +641,11 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     if (reactive) {
       context.addImport(JavaImports.mono);
       buffer.write(
-          "${JavaCodeGenUtils.monoOf(grammar, returnType)} ${mapping.key}(${_getMappingArgument(mapping, context)}");
+          "${JavaCodeGenUtils.monoOf(grammar, returnType, wildcard: !mapping.isBatch)} ${mapping.key}(${_getControllerMappingArgument(mapping, context)}");
     } else {
       context.addImport(JavaImports.completableFuture);
       buffer.write(
-          "CompletableFuture<${convertPrimitiveToBoxed(returnType)}> ${mapping.key}(${_getMappingArgument(mapping, context)}");
+          "CompletableFuture<${convertPrimitiveToBoxed(returnType)}> ${mapping.key}(${_getControllerMappingArgument(mapping, context)}");
     }
     for (var arg in mapping.field.arguments) {
       final argType = resolveArgType(arg, context);

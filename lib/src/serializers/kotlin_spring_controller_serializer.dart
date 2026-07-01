@@ -76,21 +76,20 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
     return expression;
   }
 
-  /// Mirrors Java's `_wrapBatchBodyStatements`: returns a list of statements
-  /// that call `_wrapWithToJson` on every value of the `Map<K, V>` produced by
-  /// [expression]. When the value type is a scalar (no toJson needed) returns a
-  /// single-element list so the caller can skip the temp-var / forEach pattern.
-  List<String> _wrapBatchBodyStatements(
-      GLType fieldType, String expression, String keyType) {
-    final kVar = codeGenUtils.safeLocalVar('k');
-    final valVar = codeGenUtils.safeLocalVar('v');
+  /// Returns the output-map–building statements for a batch mapping, given
+  /// [svcExpr] (the service Map result in scope) and [typedVar] (the typed list
+  /// passed to the service, used for index-based key lookup).
+  /// Returns `[tmpDecl, forLoop, tmpVarName]`.
+  List<String> _batchOutputMapStatements(
+      GLType fieldType, String svcExpr, String typedVar) {
+    final valVar = codeGenUtils.safeLocalVar('val');
     final valueExpr = _wrapWithToJson(fieldType, valVar);
-    if (valueExpr == valVar) return [expression];
     final tmpVar = codeGenUtils.safeLocalVar('tmp');
+    final iVar = codeGenUtils.safeLocalVar('i');
     final mapifiedValueType = _mapifyType(fieldType);
     return [
-      'val $tmpVar = LinkedHashMap<$keyType, $mapifiedValueType>()',
-      '$expression.forEach { ($kVar, $valVar) -> $tmpVar[$kVar] = $valueExpr }',
+      'val $tmpVar = LinkedHashMap<Map<String, Any?>, $mapifiedValueType>()',
+      'for ($iVar in value.indices) { val $valVar = $svcExpr[$typedVar[$iVar]]; $tmpVar[value[$iVar]] = $valueExpr }',
       tmpVar,
     ];
   }
@@ -298,23 +297,39 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
       return serializeIdentityMapping(mapping, context);
     }
 
-    final rawCall = StringBuffer('$serviceInstanceName.${mapping.key}(value');
-    for (var arg in mapping.field.arguments) {
-      rawCall.write(', ${arg.codeName}');
-    }
-    if (injectDataFetching || mapping.field.hasDirective(glReturnsProjection)) {
-      rawCall.write(', dataFetchingEnvironment');
-    }
-    rawCall.write(')');
     final List<String> statements;
     if (mapping.isBatch) {
-      final keyType = serializer.serializeType(
-          getServiceReturnType(GLType(mapping.type.tokenInfo, false)), false);
-      final stmts = _wrapBatchBodyStatements(
-          mapping.field.type, rawCall.toString(), keyType);
-      final preceding = stmts.sublist(0, stmts.length - 1);
-      statements = _wrapBody(preceding, stmts.last, context);
+      final parentTypeName = mapping.type.token;
+      final typedVar = codeGenUtils.safeLocalVar('typed');
+      final svcVar = codeGenUtils.safeLocalVar('svc');
+      final typedListDecl = 'val $typedVar = value.map { $parentTypeName.fromJson(it) }';
+
+      final svcCallBuf = StringBuffer('$serviceInstanceName.${mapping.key}($typedVar');
+      for (var arg in mapping.field.arguments) {
+        svcCallBuf.write(', ${arg.codeName}');
+      }
+      if (injectDataFetching || mapping.field.hasDirective(glReturnsProjection)) {
+        svcCallBuf.write(', dataFetchingEnvironment');
+      }
+      svcCallBuf.write(')');
+      final svcCall = svcCallBuf.toString();
+
+      final outputStmts = _batchOutputMapStatements(mapping.field.type, svcVar, typedVar);
+      final preceding = [
+        typedListDecl,
+        'val $svcVar = $svcCall',
+        ...outputStmts.sublist(0, outputStmts.length - 1),
+      ];
+      statements = _wrapBody(preceding, outputStmts.last, context);
     } else {
+      final rawCall = StringBuffer('$serviceInstanceName.${mapping.key}(${_fromJsonParentExpr(mapping)}');
+      for (var arg in mapping.field.arguments) {
+        rawCall.write(', ${arg.codeName}');
+      }
+      if (injectDataFetching || mapping.field.hasDirective(glReturnsProjection)) {
+        rawCall.write(', dataFetchingEnvironment');
+      }
+      rawCall.write(')');
       final wrappedCall = _wrapWithToJson(mapping.field.type, rawCall.toString());
       statements = _wrapBody([], wrappedCall, context);
     }
@@ -372,9 +387,7 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
 
   String _getControllerReturnType(GLSchemaMapping mapping, GLToken context) {
     if (mapping.isBatch) {
-      final keyType = serializer.serializeType(getServiceReturnType(GLType(mapping.type.tokenInfo, false)), false);
-      final valueType = _mapifyType(mapping.field.type);
-      return 'Map<$keyType, $valueType>';
+      return 'Map<Map<String, Any?>, ${_mapifyType(mapping.field.type)}>';
     }
     return _mapifyType(mapping.field.type);
   }
@@ -387,12 +400,27 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
     return 'value: $argType';
   }
 
+  String _getControllerMappingArgument(GLSchemaMapping mapping) {
+    if (mapping.isBatch) {
+      return 'value: List<Map<String, Any?>>';
+    }
+    return 'value: Map<String, Any?>';
+  }
+
+  String _fromJsonParentExpr(GLSchemaMapping mapping) {
+    final parentTypeName = mapping.type.token;
+    if (mapping.isBatch) {
+      return 'value.map { $parentTypeName.fromJson(it) }';
+    }
+    return '$parentTypeName.fromJson(value)';
+  }
+
   @override
   String serializeControllerMethodHeader(GLSchemaMapping mapping, GLToken context) {
     var buffer = StringBuffer();
     buffer.writeln(getAnnotationForMapping(mapping, context));
 
-    final args = [_getMappingArgument(mapping, context)];
+    final args = [_getControllerMappingArgument(mapping)];
     for (var arg in mapping.field.arguments) {
       context.addImport(SpringImports.gqlArgument);
       args.add('${_argumentAnnotation(arg)} ${arg.codeName}: ${resolveArgType(arg, context)}');

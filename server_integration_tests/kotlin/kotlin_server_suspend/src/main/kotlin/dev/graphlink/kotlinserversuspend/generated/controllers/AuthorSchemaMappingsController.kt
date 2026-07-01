@@ -21,14 +21,16 @@ class AuthorSchemaMappingsController(
 ) {
 
    @BatchMapping(typeName="Author", field="articles")
-   suspend fun authorArticles(value: List<Author>): Map<Author, List<Map<String, Any?>>?> {
-      val __gl_tmp__ = LinkedHashMap<Author, List<Map<String, Any?>>?>()
-      authorSchemaMappingsService.authorArticles(value).forEach { (__gl_k__, __gl_v__) -> __gl_tmp__[__gl_k__] = __gl_v__?.map { __gl_e0__ -> __gl_e0__.toJson() } }
+   suspend fun authorArticles(value: List<Map<String, Any?>>): Map<Map<String, Any?>, List<Map<String, Any?>>?> {
+      val __gl_typed__ = value.map { Author.fromJson(it) }
+      val __gl_svc__ = authorSchemaMappingsService.authorArticles(__gl_typed__)
+      val __gl_tmp__ = LinkedHashMap<Map<String, Any?>, List<Map<String, Any?>>?>()
+      for (__gl_i__ in value.indices) { val __gl_val__ = __gl_svc__[__gl_typed__[__gl_i__]]; __gl_tmp__[value[__gl_i__]] = __gl_val__?.map { __gl_e0__ -> __gl_e0__.toJson() } }
       return __gl_tmp__
    }
    @SchemaMapping(typeName="Author", field="latestArticles")
-   suspend fun authorLatestArticles(value: Author, @Argument limit: Int): List<Map<String, Any?>> {
-      return authorSchemaMappingsService.authorLatestArticles(value, limit).map { __gl_e0__ -> __gl_e0__.toJson() }
+   suspend fun authorLatestArticles(value: Map<String, Any?>, @Argument limit: Int): List<Map<String, Any?>> {
+      return authorSchemaMappingsService.authorLatestArticles(Author.fromJson(value), limit).map { __gl_e0__ -> __gl_e0__.toJson() }
    }
 }
 

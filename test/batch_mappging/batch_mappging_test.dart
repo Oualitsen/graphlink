@@ -206,9 +206,7 @@ type Query {
     g.parse(text);
     var serializer = JavaSpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
 
-    var mappingService = g.services[g.serviceMappingName('User')]!;
     var mappingController = g.controllers[g.controllerMappingName('User')]!;
-    var serialService = serializer.serializeService(mappingService);
     var serialController = serializer.serializeController(mappingController);
     print(serialController);
     expect(
