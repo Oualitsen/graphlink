@@ -46,7 +46,7 @@ void main() {
     final svcs = _services(g, ser);
 
     expect(ctrls, contains('@Argument(name = "object") object_: Int?'));
-    expect(ctrls, contains('carSchemaMappingsService.carRelated(value, object_)'));
+    expect(ctrls, contains('carSchemaMappingsService.carRelated(Car.fromJson(value), object_)'));
     expect(svcs, contains('carRelated(value: Car, object_: Int?)'));
   });
 }

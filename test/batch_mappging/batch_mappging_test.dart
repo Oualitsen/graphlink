@@ -212,12 +212,13 @@ type Query {
     expect(
         serialController,
         contains(
-            'CompletableFuture<Map<User, ? extends Map<String, Object>>> userCar(List<User> value, DataFetchingEnvironment dataFetchingEnvironment)'));
+            'CompletableFuture<Map<Map<String, Object>, ? extends Map<String, Object>>> userCar(List<Map<String, Object>> value, DataFetchingEnvironment dataFetchingEnvironment)'));
     expect(
         serialController,
         stringContainsInOrder([
-          'final Map<User, Map<String, Object>> __gl_tmp__ = new HashMap<>();',
-          'userSchemaMappingsService.userCar(value, dataFetchingEnvironment)',
+          'final List<User> __gl_typed__ = value.stream().map(User::fromJson).collect(Collectors.toList());',
+          'userSchemaMappingsService.userCar(__gl_typed__, dataFetchingEnvironment)',
+          'final Map<Map<String, Object>, Map<String, Object>> __gl_tmp__ = new HashMap<>();',
           'return __gl_tmp__;',
         ]));
   });
