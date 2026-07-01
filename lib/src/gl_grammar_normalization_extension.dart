@@ -1,3 +1,4 @@
+import 'package:graphlink/src/model/code_name_mixin.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
@@ -16,6 +17,24 @@ extension GLGrammarNormalizationExtension on GLParser {
     final convention = naming;
     if (convention == null) return;
 
+    // ── Type / input / union / enum definition names ───────────────────────
+    for (final t in types.values) {
+      _applyTypeNaming(t, convention);
+    }
+    for (final i in inputs.values) {
+      _applyTypeNaming(i, convention);
+    }
+    for (final iface in interfaces.values) {
+      _applyTypeNaming(iface, convention);
+    }
+    for (final u in unions.values) {
+      _applyTypeNaming(u, convention);
+    }
+    for (final e in enums.values) {
+      _applyTypeNaming(e, convention);
+    }
+
+    // ── Field identifiers ──────────────────────────────────────────────────
     for (final t in types.values) {
       t.applyFieldNaming(convention);
     }
@@ -59,6 +78,72 @@ extension GLGrammarNormalizationExtension on GLParser {
     for (final f in fields) {
       _applyArgumentNaming(f.arguments, convention);
     }
+  }
+
+  /// Strips any leading `_` from every container's [codeName] and appends it
+  /// to the end (`_Entity` → `Entity_`), then resolves collisions with an
+  /// index suffix (`Entity_2`, `Entity_3`, …).
+  ///
+  /// Runs unconditionally after [normalizeIdentifiers] so the rule fires even
+  /// when no [NamingConvention] is configured.  Cross-map collision detection
+  /// covers types, inputs, interfaces, unions, and enums simultaneously.
+  void sanitizeTypeNames() {
+    // Exclude interfaces auto-generated from unions (fromUnion == true) — they
+    // carry the same wire name as the union and must not compete for the same
+    // sanitized code name.
+    final allContainers = <CodeNameMixin>[
+      ...types.values,
+      ...inputs.values,
+      ...interfaces.values.where((i) => !i.fromUnion),
+      ...unions.values,
+      ...enums.values,
+    ];
+
+    // Seed with every wire name (always reserved) plus any code names already
+    // assigned by the normalization pass.
+    final taken = <String>{
+      ...types.keys,
+      ...inputs.keys,
+      ...interfaces.keys,
+      ...unions.keys,
+      ...enums.keys,
+      ...allContainers.map((c) => c.codeName),
+    };
+
+    for (final container in allContainers) {
+      // Check the wire name, not codeName: a naming convention (e.g. toPascalCase)
+      // may have already removed the leading _ from codeName, but the rule is
+      // "any type whose wire name starts with _ gets a trailing _ in codeName".
+      if (!container.wireName.startsWith('_')) continue;
+
+      final current = container.codeName;
+      final base = current.replaceFirst(RegExp(r'^_+'), '');
+      var candidate = '${base}_';
+      var counter = 2;
+      while (taken.contains(candidate)) {
+        candidate = '${base}_$counter';
+        counter++;
+      }
+
+      taken.remove(current);
+      container.codeName = candidate;
+      taken.add(candidate);
+    }
+
+    // Sync fromUnion interfaces to their union's final codeName so that the
+    // abstract class declaration and the `implements` clauses agree.
+    for (final iface in interfaces.values.where((i) => i.fromUnion)) {
+      final union = unions[iface.token];
+      if (union != null) iface.codeName = union.codeName;
+    }
+  }
+
+  /// Normalizes a container's definition name (type / input / union / enum)
+  /// using [convention].typeName.  No collision handling is needed here:
+  /// [sanitizeTypeNames] resolves any leading-underscore conflicts afterwards.
+  void _applyTypeNaming(CodeNameMixin container, NamingConvention convention) {
+    final normalized = convention.typeName(container.wireName);
+    if (normalized != container.wireName) container.codeName = normalized;
   }
 
   /// Normalizes argument code names using [convention].field (arguments follow

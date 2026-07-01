@@ -49,7 +49,7 @@ class DartSerializer extends GLSerializer {
     if (decorators.isNotEmpty) {
       buffer.writeln(decorators);
     }
-    buffer.writeln("enum ${def.tokenInfo} {");
+    buffer.writeln("enum ${def.codeName} {");
     buffer.write(def.values
         .map((e) => doSerializeEnumValue(e))
         .toList()
@@ -79,7 +79,7 @@ class DartSerializer extends GLSerializer {
             methodName: "fromJson",
             arguments: ['String value'],
             namedArguments: false,
-            returnType: 'static ${def.token}',
+            returnType: 'static ${def.codeName}',
             statements: [
               codeGenUtils.switchStatement(
                   expression: 'value',
@@ -89,7 +89,7 @@ class DartSerializer extends GLSerializer {
                         statement: 'return ${val.codeName};'))
                   ],
                   defaultStatements:
-                      ['throw ArgumentError("Invalid ${def.token}: \$value");'])
+                      ['throw ArgumentError("Invalid ${def.codeName}: \$value");'])
             ])
         .ident());
     buffer.writeln("}");
@@ -146,7 +146,7 @@ class DartSerializer extends GLSerializer {
       return "List<${serializeType(def.inlineType, false)}>$postfix";
     }
     final token = def.token;
-    var dartTpe = getTypeNameFromGQExternal(token) ?? token;
+    var dartTpe = getTypeNameFromGQExternal(token) ?? resolveCodeName(token);
     return "$dartTpe$postfix";
   }
 
@@ -160,16 +160,16 @@ class DartSerializer extends GLSerializer {
     final fields = def.getSerializableFields(grammar.mode);
     final mappingMethods = generateMappingMethods(def);
     var inputClass =
-        codeGenUtils.createClass(className: def.token, statements: [
+        codeGenUtils.createClass(className: def.codeName, statements: [
       ...fields.map((e) => serializeField(e, true, false)),
       codeGenUtils.createMethod(
-          methodName: def.token,
+          methodName: def.codeName,
           namedArguments: true,
           isConst: true,
           arguments: fields.map((e) => toConstructorDeclaration(e)).toList()),
       if (generateJsonMethods) ...[
         generateToJson(fields),
-        generateFromJson(fields, def.token)
+        generateFromJson(fields, def.codeName)
       ],
       ...mappingMethods,
     ]);
@@ -250,7 +250,7 @@ class DartSerializer extends GLSerializer {
     );
 
     return codeGenUtils.createMethod(
-      returnType: 'static ${def.token}',
+      returnType: 'static ${def.codeName}',
       methodName: 'from${targetType.firstUp}',
       namedArguments: true,
       arguments: [
@@ -260,7 +260,7 @@ class DartSerializer extends GLSerializer {
         ...inputOnlyParams,
       ],
       statements: [
-        'return ${def.token}(${[
+        'return ${def.codeName}(${[
           ...autoMappedAssignments,
           ...nullableListAssignments,
           ...promotedAssignments,
@@ -286,7 +286,7 @@ class DartSerializer extends GLSerializer {
     final sourceInput = grammar.inputs[sourceType.token];
     if (sourceInput?.mapsToType == targetType.token) {
       final dot = sourceType.nullable ? '?.' : '.';
-      return '${dot}to${targetType.token.firstUp}()';
+      return '${dot}to${resolveCodeName(targetType.token).firstUp}()';
     }
     return ''; // same type — direct copy
   }
@@ -307,10 +307,12 @@ class DartSerializer extends GLSerializer {
     }
     final sourceInput = grammar.inputs[sourceElemToken];
     if (sourceInput?.mapsToType == targetType.token) {
+      final sourceCodeName = resolveCodeName(sourceElemToken);
+      final targetCodeName = resolveCodeName(targetType.token);
       if (targetType.nullable) {
-        return '$variable != null ? $sourceElemToken.from${targetType.token.firstUp}(${targetType.token.firstLow}: $variable!) : null';
+        return '$variable != null ? $sourceCodeName.from${targetCodeName.firstUp}(${targetCodeName.firstLow}: $variable!) : null';
       }
-      return '$sourceElemToken.from${targetType.token.firstUp}(${targetType.token.firstLow}: $variable)';
+      return '$sourceCodeName.from${targetCodeName.firstUp}(${targetCodeName.firstLow}: $variable)';
     }
     return variable; // same type — direct copy
   }
@@ -334,11 +336,11 @@ class DartSerializer extends GLSerializer {
         final key = field?.codeName ?? e.key;
         return '$key: ${serializeDefaultLiteral(fieldType, e.value, needsConst: false)}';
       }).join(', ');
-      return needsConst ? 'const ${type.token}($args)' : '${type.token}($args)';
+      return needsConst ? 'const ${resolveCodeName(type.token)}($args)' : '${resolveCodeName(type.token)}($args)';
     }
     if (value is String) {
       if (grammar.enums.containsKey(type.token)) {
-        return '${type.token}.${grammar.enumConstantName(type.token, value)}';
+        return '${resolveCodeName(type.token)}.${grammar.enumConstantName(type.token, value)}';
       }
       // quoted string — strip surrounding quotes, emit as Dart single-quoted string
       final content = value.startsWith('"') && value.endsWith('"')
@@ -425,12 +427,12 @@ class DartSerializer extends GLSerializer {
       return "(${variable} as List<dynamic>${numSuffix})";
     }
     if (grammar.isEnum(type.token)) {
-      var enumFromJson = "${type.token}.fromJson(${variable} as String)";
+      var enumFromJson = "${resolveCodeName(type.token)}.fromJson(${variable} as String)";
       return DartCodeGenUtils.nullSafeExpr(variable, enumFromJson, type.nullable);
     }
     if (grammar.isProjectableType(type.token)) {
       var typeFromJson =
-          "${type.token}.fromJson(${variable} as Map<String, dynamic>)";
+          "${resolveCodeName(type.token)}.fromJson(${variable} as Map<String, dynamic>)";
       return DartCodeGenUtils.nullSafeExpr(variable, typeFromJson, type.nullable);
     }
 
@@ -491,13 +493,13 @@ class DartSerializer extends GLSerializer {
   }
 
   String _doSerializeTypeDefinition(GLTypeDefinition def) {
-    final token = def.token;
+    final codeName = def.codeName;
     final implementations = def is GLInterfaceDefinition
         ? def.getSerializableImplementations(mode)
         : <GLTypeDefinition>{};
 
-    final interfaceNames = def.interfaceNames.map((e) => e.token).toSet();
-    interfaceNames.addAll(implementations.map((e) => e.token));
+    final interfaceNames = def.interfaceNames.map((e) => resolveCodeName(e.token)).toSet();
+    interfaceNames.addAll(implementations.map((e) => e.codeName));
     var decorators = serializeDecorators(def.getDirectives());
     var buffer = StringBuffer();
     if (decorators.isNotEmpty) {
@@ -506,19 +508,19 @@ class DartSerializer extends GLSerializer {
     final fields = def.getSerializableFields(grammar.mode);
     var equalsHascodeCode = generateEqualsAndHashCode(def);
     buffer.writeln(codeGenUtils.createClass(
-      className: token,
+      className: codeName,
       baseClassNames: interfaceNames.toList(),
       statements: [
         ...fields.map((e) => serializeField(e, true, true)),
         codeGenUtils.createMethod(
-            methodName: token,
+            methodName: codeName,
             namedArguments: false,
             isConst: true,
             arguments: [serializeContructorArgs(fields)]),
         if (equalsHascodeCode.isNotEmpty) equalsHascodeCode,
         if (generateJsonMethods) ...[
           generateToJson(fields),
-          generateFromJson(fields, def.token)
+          generateFromJson(fields, codeName)
         ]
       ],
     ));
@@ -534,7 +536,7 @@ class DartSerializer extends GLSerializer {
   }
 
   String equalsHascodeCode(GLTypeDefinition def, Set<String> fields) {
-    final token = def.tokenInfo;
+    final token = def.codeName;
     var buffer = StringBuffer();
     buffer.writeln('@override');
     buffer.writeln(codeGenUtils.createMethod(
@@ -606,7 +608,7 @@ class DartSerializer extends GLSerializer {
               ...implementations.map((st) => DartCaseStatement(
                   caseValue:
                       "'${st.derivedFromType?.tokenInfo.token ?? st.tokenInfo.token}'",
-                  statement: 'return ${st.tokenInfo.token}.fromJson(json);'))
+                  statement: 'return ${st.codeName}.fromJson(json);'))
             ],
             defaultStatements:
                 ['throw ArgumentError("Invalid type \$typename. \$typename does not implement $token or not defined");'],
@@ -615,7 +617,7 @@ class DartSerializer extends GLSerializer {
   }
 
   String serializeInterface(GLInterfaceDefinition interface) {
-    final token = interface.tokenInfo.token;
+    final codeName = interface.codeName;
     final interfaces = interface.interfaces;
     final fields = interface.getSerializableFields(grammar.mode);
     var buffer = StringBuffer();
@@ -623,9 +625,9 @@ class DartSerializer extends GLSerializer {
     if (decorators.isNotEmpty) {
       buffer.writeln(decorators.trim());
     }
-    buffer.write("abstract class $token ");
+    buffer.write("abstract class $codeName ");
     if (interfaces.isNotEmpty) {
-      buffer.write("extends ${interfaces.map((e) => e.tokenInfo).join(", ")} ");
+      buffer.write("extends ${interfaces.map((e) => resolveCodeName(e.tokenInfo.token)).join(", ")} ");
     }
     buffer.writeln("{");
     for (var field in fields) {
@@ -637,12 +639,12 @@ class DartSerializer extends GLSerializer {
     }
 
     if (generateJsonMethods) {
-      buffer.writeln(_serializeToJsonForInterface(token).ident());
+      buffer.writeln(_serializeToJsonForInterface(codeName).ident());
     }
     final serialisableImplemenations = interface.getSerializableImplementations(mode);
     if (generateJsonMethods && serialisableImplemenations.isNotEmpty) {
       buffer.writeln(
-          _serializeFromJsonForInterface(token, serialisableImplemenations)
+          _serializeFromJsonForInterface(codeName, serialisableImplemenations)
               .ident());
     }
 
@@ -657,7 +659,7 @@ class DartSerializer extends GLSerializer {
 
   @override
   String getFileNameFor(GLToken token) {
-    return "${token.token.toSnakeCase()}.dart";
+    return "${resolveCodeName(token.token).toSnakeCase()}.dart";
   }
 
   @override

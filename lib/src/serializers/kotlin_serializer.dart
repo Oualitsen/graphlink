@@ -72,7 +72,7 @@ class KotlinSerializer extends GLSerializer {
       return (def.nullable || forceNullable) ? '$type?' : type;
     }
     final token = def.token;
-    final mapped = getTypeNameFromGQExternal(token) ?? token;
+    final mapped = getTypeNameFromGQExternal(token) ?? resolveCodeName(token);
     return (def.nullable || forceNullable) ? '$mapped?' : mapped;
   }
 
@@ -114,21 +114,21 @@ class KotlinSerializer extends GLSerializer {
         body.add('}');
         body.add('');
         body.add(codeGenUtils.companionObject([
-          'fun fromJson(value: String?): ${def.token}? = when (value) {',
+          'fun fromJson(value: String?): ${def.codeName}? = when (value) {',
           fromCases.map((c) => '    $c').join('\n'),
           '    else -> null',
           '}',
         ]));
       } else {
         body.add(codeGenUtils.companionObject([
-          'fun fromJson(value: String?): ${def.token}? = value?.let { valueOf(it) }',
+          'fun fromJson(value: String?): ${def.codeName}? = value?.let { valueOf(it) }',
         ]));
         body.add('');
         body.add('fun toJson(): String = name');
       }
     }
 
-    return codeGenUtils.enumClass(name: def.token, values: values, body: body.isEmpty ? null : body);
+    return codeGenUtils.enumClass(name: def.codeName, values: values, body: body.isEmpty ? null : body);
   }
 
   @override
@@ -166,7 +166,7 @@ class KotlinSerializer extends GLSerializer {
 
     if (generateJsonMethods) {
       instanceMethods.add(_generateToJson(fields, def));
-      companionMethods.add(_generateFromJson(fields, def.token, def));
+      companionMethods.add(_generateFromJson(fields, def.codeName, def));
     }
 
     // @glMapsTo instance methods (toXxx) and companion methods (fromXxx)
@@ -176,7 +176,7 @@ class KotlinSerializer extends GLSerializer {
     companionMethods.addAll(fromMethods);
 
     if (!inputsAsDataClass) {
-      instanceMethods.addAll(_generateEqualsHashCode(def.token, fields, def));
+      instanceMethods.addAll(_generateEqualsHashCode(def.codeName, fields, def));
     }
 
     final body = <String>[
@@ -188,9 +188,9 @@ class KotlinSerializer extends GLSerializer {
     ];
 
     if (inputsAsDataClass) {
-      return codeGenUtils.dataClass(name: def.token, params: params, body: body.isEmpty ? null : body);
+      return codeGenUtils.dataClass(name: def.codeName, params: params, body: body.isEmpty ? null : body);
     }
-    return codeGenUtils.openClass(name: def.token, params: params, body: body.isEmpty ? null : body);
+    return codeGenUtils.openClass(name: def.codeName, params: params, body: body.isEmpty ? null : body);
   }
 
   @override
@@ -212,11 +212,11 @@ class KotlinSerializer extends GLSerializer {
         final key = field?.codeName ?? e.key;
         return '$key = ${serializeDefaultLiteral(fieldType, e.value)}';
       }).join(', ');
-      return '${type.token}($args)';
+      return '${resolveCodeName(type.token)}($args)';
     }
     if (value is String) {
       if (grammar.enums.containsKey(type.token)) {
-        return '${type.token}.${grammar.enumConstantName(type.token, value)}';
+        return '${resolveCodeName(type.token)}.${grammar.enumConstantName(type.token, value)}';
       }
       final content = value.startsWith('"') && value.endsWith('"')
           ? value.substring(1, value.length - 1)
@@ -274,11 +274,11 @@ class KotlinSerializer extends GLSerializer {
     if (generateJsonMethods) {
       final toJsonPrefix = implementsNonInternalInterface ? 'override ' : '';
       instanceMethods.add('${toJsonPrefix}${_generateToJson(fields, def)}');
-      companionMethods.add(_generateFromJson(fields, def.token, def));
+      companionMethods.add(_generateFromJson(fields, def.codeName, def));
     }
 
     if (!typesAsDataClass) {
-      instanceMethods.addAll(_generateEqualsHashCode(def.token, fields, def));
+      instanceMethods.addAll(_generateEqualsHashCode(def.codeName, fields, def));
     }
 
     final body = <String>[
@@ -290,14 +290,14 @@ class KotlinSerializer extends GLSerializer {
     ];
 
     // Deduplicate by name to avoid "A supertype appears twice" compile errors.
-    final ifaces = def.interfaceNames.map((e) => e.token).toSet().toList();
+    final ifaces = def.interfaceNames.map((e) => resolveCodeName(e.token)).toSet().toList();
 
     if (typesAsDataClass) {
       return codeGenUtils.dataClass(
-          name: def.token, params: params, body: body.isEmpty ? null : body, interfaces: ifaces.isEmpty ? null : ifaces);
+          name: def.codeName, params: params, body: body.isEmpty ? null : body, interfaces: ifaces.isEmpty ? null : ifaces);
     }
     return codeGenUtils.openClass(
-        name: def.token, params: params, body: body.isEmpty ? null : body, interfaces: ifaces.isEmpty ? null : ifaces);
+        name: def.codeName, params: params, body: body.isEmpty ? null : body, interfaces: ifaces.isEmpty ? null : ifaces);
   }
 
   bool _fieldImplementsInterface(GLField f, GLTypeDefinition def) {
@@ -320,7 +320,7 @@ class KotlinSerializer extends GLSerializer {
     if (generateJsonMethods) {
       final subTypes = def.getSerializableImplementations(mode);
       if (subTypes.isNotEmpty) {
-        companionMethods.add(_serializeFromJsonForInterface(def.token, subTypes));
+        companionMethods.add(_serializeFromJsonForInterface(def.codeName, subTypes));
       }
     }
 
@@ -335,16 +335,16 @@ class KotlinSerializer extends GLSerializer {
       ],
     ];
 
-    final superIfaces = def.interfaces.map((e) => e.tokenInfo.token).toList();
+    final superIfaces = def.interfaces.map((e) => resolveCodeName(e.tokenInfo.token)).toList();
     return codeGenUtils.kotlinInterface(
-        name: def.token, body: body, superInterfaces: superIfaces.isEmpty ? null : superIfaces);
+        name: def.codeName, body: body, superInterfaces: superIfaces.isEmpty ? null : superIfaces);
   }
 
   String _serializeFromJsonForInterface(String token, Set<GLTypeDefinition> subTypes) {
     final cases = [
       ...subTypes.map((st) {
         final typeName = st.derivedFromType?.tokenInfo.token ?? st.tokenInfo.token;
-        final current = st.tokenInfo.token;
+        final current = st.codeName;
         return KotlinWhenBranch(caseValue: '"$typeName"', statement: '$current.fromJson(map)');
       }),
       KotlinWhenBranch(
@@ -404,22 +404,23 @@ class KotlinSerializer extends GLSerializer {
       return KotlinCodeGenUtils.mapCall(receiver: castedList, param: varName, body: innerExpr, nullable: type.nullable);
     }
 
-    final token = type.token;
-    if (grammar.isNonProjectableType(token) && !grammar.isEnum(token) && !grammar.isInput(token)) {
-      final mappedToken = getTypeNameFromGQExternal(token) ?? token;
+    final wireToken = type.token;
+    if (grammar.isNonProjectableType(wireToken) && !grammar.isEnum(wireToken) && !grammar.isInput(wireToken)) {
+      final mappedToken = getTypeNameFromGQExternal(wireToken) ?? wireToken;
       return _scalarCast(access, mappedToken, type.nullable, depth);
     }
-    if (grammar.isEnum(token)) {
+    final codeName = resolveCodeName(wireToken);
+    if (grammar.isEnum(wireToken)) {
       if (type.nullable) {
-        return KotlinCodeGenUtils.letCall(receiver: '($access as? String)', body: '$token.fromJson(it)');
+        return KotlinCodeGenUtils.letCall(receiver: '($access as? String)', body: '$codeName.fromJson(it)');
       }
-      return '$token.fromJson($access as String)!!';
+      return '$codeName.fromJson($access as String)!!';
     }
     // projectable type or input
     if (type.nullable) {
-      return KotlinCodeGenUtils.letCall(receiver: '($access as? Map<*, *>)', body: '$token.fromJson(it as $_mapType)');
+      return KotlinCodeGenUtils.letCall(receiver: '($access as? Map<*, *>)', body: '$codeName.fromJson(it as $_mapType)');
     }
-    return '$token.fromJson($access as $_mapType)';
+    return '$codeName.fromJson($access as $_mapType)';
   }
 
   String _scalarCast(String access, String token, bool nullable, int depth) {
@@ -462,14 +463,16 @@ class KotlinSerializer extends GLSerializer {
   List<String> _generateToMappingMethods(GLInputDefinition def) {
     final plan = grammar.resolveToMappingPlan(def, mode);
     if (plan == null || !plan.derivesAnythingFromSource) return [];
-    final targetName = def.mapsToType!;
+    final targetWireName = def.mapsToType!;
+    final targetName = grammar.types[targetWireName]?.codeName ?? targetWireName;
     return [generateToMethod(def, targetName, plan)];
   }
 
   List<String> _generateFromMappingMethods(GLInputDefinition def) {
     final fromPlan = grammar.resolveFromMappingPlan(def, mode);
     if (fromPlan == null || !fromPlan.derivesAnythingFromTarget) return [];
-    final targetName = def.mapsToType!;
+    final targetWireName = def.mapsToType!;
+    final targetName = grammar.types[targetWireName]?.codeName ?? targetWireName;
     return [generateFromMethod(def, targetName, fromPlan)];
   }
 
@@ -558,7 +561,7 @@ class KotlinSerializer extends GLSerializer {
     ].join(', ');
 
     final argsStr = args.map((a) => '    $a,').join('\n');
-    return 'fun from${targetType.firstUp}($allParams): ${def.token} = ${def.token}(\n$argsStr\n)';
+    return 'fun from${targetType.firstUp}($allParams): ${def.codeName} = ${def.codeName}(\n$argsStr\n)';
   }
 
   String _toMappingExpr(String variable, GLType sourceType, GLType targetType, int index, GLToken context) {
@@ -570,8 +573,8 @@ class KotlinSerializer extends GLSerializer {
     }
     final sourceInput = grammar.inputs[sourceType.token];
     if (sourceInput?.mapsToType == targetType.token) {
-      if (sourceType.nullable) return '$variable?.to${targetType.token.firstUp}()';
-      return '$variable.to${targetType.token.firstUp}()';
+      if (sourceType.nullable) return '$variable?.to${resolveCodeName(targetType.token).firstUp}()';
+      return '$variable.to${resolveCodeName(targetType.token).firstUp}()';
     }
     return variable;
   }
@@ -585,10 +588,12 @@ class KotlinSerializer extends GLSerializer {
     }
     final sourceInput = grammar.inputs[sourceElemToken];
     if (sourceInput?.mapsToType == targetType.token) {
+      final sourceCodeName = resolveCodeName(sourceElemToken);
+      final targetCodeName = resolveCodeName(targetType.token);
       if (targetType.nullable) {
-        return KotlinCodeGenUtils.letCall(receiver: variable, body: '$sourceElemToken.from${targetType.token.firstUp}(it)');
+        return KotlinCodeGenUtils.letCall(receiver: variable, body: '$sourceCodeName.from${targetCodeName.firstUp}(it)');
       }
-      return '$sourceElemToken.from${targetType.token.firstUp}($variable)';
+      return '$sourceCodeName.from${targetCodeName.firstUp}($variable)';
     }
     return variable;
   }
@@ -596,7 +601,7 @@ class KotlinSerializer extends GLSerializer {
   // ── File naming & imports ────────────────────────────────────────────────────
 
   @override
-  String getFileNameFor(GLToken token) => '${token.token}.kt';
+  String getFileNameFor(GLToken token) => '${resolveCodeName(token.token)}.kt';
 
   @override
   String serializeImportToken(GLToken token) {
@@ -617,7 +622,7 @@ class KotlinSerializer extends GLSerializer {
       subpkg = 'controllers';
     }
     if (subpkg == null) return '';
-    return 'import $importPrefix.$subpkg.${token.token}';
+    return 'import $importPrefix.$subpkg.${resolveCodeName(token.token)}';
   }
 
   @override

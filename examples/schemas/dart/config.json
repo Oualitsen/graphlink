@@ -11,7 +11,8 @@
         "Float": "double",
         "Int": "int",
         "Boolean": "bool",
-        "Null": "null"
+        "Null": "null",
+        "PositiveInt": "int"
     },
     "outputDir": "lib/generated",
     "clientConfig": {
