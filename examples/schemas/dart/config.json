@@ -1,6 +1,6 @@
 {
     "schemaPaths": [
-        "../musicbrainz.graphql"
+        "../twitch.graphql"
     ],
     "mode": "client",
     "unknownScalarType": "String",

@@ -120,7 +120,7 @@ class TypeScriptSerializer extends GLSerializer {
   String serializeFieldDeprecation(GLField field) {
     if (!field.isDeprecated) return '';
     final reason = field.deprecationReason ?? 'No longer supported';
-    final safeReason = reason.replaceAll('*/', '*\\/');
+    final safeReason = reason.replaceAll('*/', '*\\/').replaceAll(RegExp(r'[\r\n]+'), ' ');
     return "/** @deprecated $safeReason */\n";
   }
 
@@ -128,7 +128,7 @@ class TypeScriptSerializer extends GLSerializer {
   String serializeEnumValueDeprecation(GLEnumValue value) {
     if (!value.isDeprecated) return '';
     final reason = value.deprecationReason ?? 'No longer supported';
-    final safeReason = reason.replaceAll('*/', '*\\/');
+    final safeReason = reason.replaceAll('*/', '*\\/').replaceAll(RegExp(r'[\r\n]+'), ' ');
     return "/** @deprecated $safeReason */";
   }
 

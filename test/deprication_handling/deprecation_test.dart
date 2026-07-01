@@ -58,6 +58,80 @@ enum Status { ACTIVE INACTIVE @deprecated(reason: "no longer valid") }
   // Dart
   // ---------------------------------------------------------------------------
 
+  // ---------------------------------------------------------------------------
+  // Multiline reason (all languages)
+  // ---------------------------------------------------------------------------
+
+  group('multiline reason', () {
+    // Build a schema whose @deprecated reason contains a real newline via a
+    // GraphQL block string.  removeQuotes() strips the """ delimiters so the
+    // returned deprecationReason has an embedded \n character.
+    final schema =
+        'type Foo { name: String @deprecated(reason: """line1\nline2""") }';
+    final enumSchema =
+        'enum Status { ACTIVE INACTIVE @deprecated(reason: """first\nsecond""") }';
+
+    test('Dart — field: newline becomes \\n escape in single-quoted literal', () {
+      final g = GLParser()..parse(schema);
+      final ser = DartSerializer(g, importPrefix: '');
+      final result = ser.serializeTypeDefinition(g.types['Foo']!);
+      expect(result, contains("@Deprecated('line1\\nline2')"),
+          reason: 'Newline must be escaped, not embedded raw');
+    });
+
+    test('Dart — enum value: newline becomes \\n escape', () {
+      final g = GLParser()..parse(enumSchema);
+      final ser = DartSerializer(g, importPrefix: '');
+      final result = ser.serializeEnumDefinition(g.enums['Status']!);
+      expect(result, contains("@Deprecated('first\\nsecond')"));
+    });
+
+    test('Java — field: newline collapsed to space in Javadoc', () {
+      final g = GLParser()..parse(schema);
+      final ser = JavaSerializer(g, importPrefix: '');
+      final result = ser.serializeTypeDefinition(g.types['Foo']!);
+      expect(result, contains('/** @deprecated line1 line2 */'),
+          reason: 'Newline must be collapsed to a space');
+    });
+
+    test('Java — enum value: newline collapsed to space in Javadoc', () {
+      final g = GLParser()..parse(enumSchema);
+      final ser = JavaSerializer(g, importPrefix: '');
+      final result = ser.serializeEnumDefinition(g.enums['Status']!);
+      expect(result, contains('/** @deprecated first second */'));
+    });
+
+    test('Kotlin — field: newline becomes \\n escape in double-quoted literal', () {
+      final g = GLParser()..parse(schema);
+      final ser = KotlinSerializer(g, importPrefix: '');
+      final result = ser.serializeTypeDefinition(g.types['Foo']!);
+      expect(result, contains('@Deprecated("line1\\nline2")'),
+          reason: 'Newline must be escaped, not embedded raw');
+    });
+
+    test('Kotlin — enum value: newline becomes \\n escape', () {
+      final g = GLParser()..parse(enumSchema);
+      final ser = KotlinSerializer(g, importPrefix: '');
+      final result = ser.serializeEnumDefinition(g.enums['Status']!);
+      expect(result, contains('@Deprecated("first\\nsecond")'));
+    });
+
+    test('TypeScript — field: newline collapsed to space in JSDoc', () {
+      final g = GLParser()..parse(schema);
+      final ser = TypeScriptSerializer(g, importPrefix: '');
+      final result = ser.serializeTypeDefinition(g.types['Foo']!);
+      expect(result, contains('/** @deprecated line1 line2 */'),
+          reason: 'Newline must be collapsed to a space');
+    });
+
+    test('TypeScript — enum value: newline collapsed to space in JSDoc', () {
+      final g = GLParser()..parse(enumSchema);
+      final ser = TypeScriptSerializer(g, importPrefix: '');
+      final result = ser.serializeEnumDefinition(g.enums['Status']!);
+      expect(result, contains('/** @deprecated first second */'));
+    });
+  });
+
   group('Dart', () {
     test('field emits @Deprecated annotation', () {
       final g = GLParser();
