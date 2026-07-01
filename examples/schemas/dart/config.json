@@ -1,6 +1,6 @@
 {
     "schemaPaths": [
-        "../anilist.graphql"
+        "../musicbrainz.graphql"
     ],
     "mode": "client",
     "unknownScalarType": "String",
