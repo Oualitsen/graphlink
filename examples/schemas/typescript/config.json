@@ -12,8 +12,8 @@
         "Int": "number",
         "Boolean": "boolean",
         "Null": "null",
-        "PositiveInt": "int",
-        "Minute": "int"
+        "PositiveInt": "number",
+        "Minute": "number"
     },
     "outputDir": "client-app/src/generated",
     "clientConfig": {
