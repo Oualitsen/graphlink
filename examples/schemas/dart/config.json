@@ -1,6 +1,6 @@
 {
     "schemaPaths": [
-        "../github.graphql"
+        "../twitch.graphql"
     ],
     "mode": "client",
     "unknownScalarType": "String",
