@@ -915,12 +915,24 @@ class JavaSerializer extends GLSerializer {
         ]);
   }
 
+  /// Recursively wildcards every `List<...>` nesting level (e.g.
+  /// `List<? extends List<? extends Node>>`) so a narrowed override like
+  /// `List<List<Alpha>>` type-checks against `List<List<Node>>` — Java
+  /// generics are invariant, so covariance must be threaded through every
+  /// nested list layer, not just the outermost one.
+  String _wildcardListReturnType(GLType type) {
+    if (type is GLListType) {
+      final inner = _wildcardListReturnType(type.inlineType);
+      return 'List<? extends $inner>';
+    }
+    return serializeType(type, false);
+  }
+
   String serializeGetterDeclaration(GLField field,
       {bool skipModifier = false, bool asProperty = false, bool forceNullable = false, GLInterfaceDefinition? owner}) {
     var returnType = serializeType(field.type, forceNullable);
     final type = field.type;
     if (type is GLListType) {
-      final inner = serializeType(type.inlineType, false);
       // Java generics are invariant: List<Alpha> is not a subtype of
       // List<Node> even when Alpha implements Node. A covariant override
       // only type-checks if the interface declares `List<? extends Node>`.
@@ -930,8 +942,8 @@ class JavaSerializer extends GLSerializer {
       final needsWildcard =
           owner != null && _isFieldNarrowedInImplementers(owner, field);
       returnType = needsWildcard
-          ? 'List<? extends $inner>'
-          : JavaCodeGenUtils.listOf(grammar, inner);
+          ? _wildcardListReturnType(type)
+          : JavaCodeGenUtils.listOf(grammar, serializeType(type.inlineType, false));
     }
     var result = returnType;
     if (asProperty) {
