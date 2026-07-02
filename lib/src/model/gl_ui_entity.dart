@@ -12,7 +12,7 @@ class GlInputEntity {
 
   GlInputEntity(this.input, this._parser);
 
-  String get name => input.token;
+  String get name => input.codeName;
 
   List<GLField> get fields =>
       input.getSerializableFields(CodeGenerationMode.client);
@@ -22,15 +22,16 @@ class GlInputEntity {
     final result = <String>{};
     for (final f in fields) {
       if (!f.type.isList) {
-        if (_parser.enums.containsKey(f.type.firstType.token)) {
-          result.add(
-              "import '$prefix/enums/${f.type.firstType.token.toSnakeCase()}.dart';");
+        final wireToken = f.type.firstType.token;
+        if (_parser.enums.containsKey(wireToken)) {
+          final codeName = _parser.enums[wireToken]!.codeName;
+          result.add("import '$prefix/enums/${codeName.toSnakeCase()}.dart';");
         }
       } else {
         final itemToken = f.type.inlineType.firstType.token;
         if (_parser.enums.containsKey(itemToken)) {
-          result.add(
-              "import '$prefix/enums/${itemToken.toSnakeCase()}.dart';");
+          final codeName = _parser.enums[itemToken]!.codeName;
+          result.add("import '$prefix/enums/${codeName.toSnakeCase()}.dart';");
         }
       }
     }
@@ -42,11 +43,13 @@ class GlInputEntity {
     final result = <String>{};
     for (final f in fields) {
       if (!f.type.isList && _parser.enums.containsKey(f.type.firstType.token)) {
-        result.add("import '$prefix/widgets/enums/${f.type.firstType.token.toSnakeCase()}_labels.dart';");
+        final codeName = _parser.enums[f.type.firstType.token]!.codeName;
+        result.add("import '$prefix/widgets/enums/${codeName.toSnakeCase()}_labels.dart';");
       } else if (f.type.isList) {
         final itemToken = f.type.inlineType.firstType.token;
         if (_parser.enums.containsKey(itemToken)) {
-          result.add("import '$prefix/widgets/enums/${itemToken.toSnakeCase()}_labels.dart';");
+          final codeName = _parser.enums[itemToken]!.codeName;
+          result.add("import '$prefix/widgets/enums/${codeName.toSnakeCase()}_labels.dart';");
         }
       }
     }
@@ -61,7 +64,7 @@ class GlTypeEntity {
 
   GlTypeEntity(this.type, this._parser);
 
-  String get name => type.token;
+  String get name => type.codeName;
 
   List<GLField> get fields => type.getSerializableFields(_parser.mode);
 
@@ -70,13 +73,16 @@ class GlTypeEntity {
     final result = <String>{};
     for (final f in fields) {
       if (!f.type.isList) {
-        if (_parser.enums.containsKey(f.type.firstType.token)) {
-          result.add("import '$prefix/enums/${f.type.firstType.token.toSnakeCase()}.dart';");
+        final wireToken = f.type.firstType.token;
+        if (_parser.enums.containsKey(wireToken)) {
+          final codeName = _parser.enums[wireToken]!.codeName;
+          result.add("import '$prefix/enums/${codeName.toSnakeCase()}.dart';");
         }
       } else {
         final itemToken = f.type.inlineType.firstType.token;
         if (_parser.enums.containsKey(itemToken)) {
-          result.add("import '$prefix/enums/${itemToken.toSnakeCase()}.dart';");
+          final codeName = _parser.enums[itemToken]!.codeName;
+          result.add("import '$prefix/enums/${codeName.toSnakeCase()}.dart';");
         }
       }
     }
@@ -88,11 +94,13 @@ class GlTypeEntity {
     final result = <String>{};
     for (final f in fields) {
       if (!f.type.isList && _parser.enums.containsKey(f.type.firstType.token)) {
-        result.add("import '$prefix/widgets/enums/${f.type.firstType.token.toSnakeCase()}_labels.dart';");
+        final codeName = _parser.enums[f.type.firstType.token]!.codeName;
+        result.add("import '$prefix/widgets/enums/${codeName.toSnakeCase()}_labels.dart';");
       } else if (f.type.isList) {
         final itemToken = f.type.inlineType.firstType.token;
         if (_parser.enums.containsKey(itemToken)) {
-          result.add("import '$prefix/widgets/enums/${itemToken.toSnakeCase()}_labels.dart';");
+          final codeName = _parser.enums[itemToken]!.codeName;
+          result.add("import '$prefix/widgets/enums/${codeName.toSnakeCase()}_labels.dart';");
         }
       }
     }

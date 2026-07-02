@@ -24,11 +24,12 @@ class FlutterTypesLayoutSerializer {
         'final ord = order ?? const ${typeName}Order();',
         'final entries = <MapEntry<int, Widget>>[];',
         ...fields.asMap().entries.map((e) {
-          final defaultVal = _renderer.defaultValueExpression(e.value, varName);
+          final f = e.value;
+          final defaultVal = _renderer.defaultValueExpression(f, varName);
           return _u.ifStatement(
-            condition: 'vis.${e.value.name}',
+            condition: 'vis.${f.codeName}',
             ifBlockStatements: [
-              'entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, values?.${e.value.name} ?? $defaultVal));',
+              'entries.add(MapEntry(ord.${f.codeName} ?? ${1000 + e.key}, values?.${f.codeName} ?? $defaultVal));',
             ],
           );
         }),
@@ -49,12 +50,13 @@ class FlutterTypesLayoutSerializer {
         'final ord = order ?? const ${typeName}Order();',
         'final entries = <MapEntry<int, Widget>>[];',
         ...fields.asMap().entries.map((e) {
-          final label = _renderer.humanize(e.value.name.token);
+          final f = e.value;
+          final label = _renderer.humanize(f.name.token);
           final labelWidget = _renderer.labelTextWidget(label, hasContext: false);
           return _u.ifStatement(
-            condition: 'vis.${e.value.name}',
+            condition: 'vis.${f.codeName}',
             ifBlockStatements: [
-              "entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, labels?.${e.value.name} ?? $labelWidget));",
+              "entries.add(MapEntry(ord.${f.codeName} ?? ${1000 + e.key}, labels?.${f.codeName} ?? $labelWidget));",
             ],
           );
         }),
@@ -75,11 +77,12 @@ class FlutterTypesLayoutSerializer {
         'final ord = order ?? const ${typeName}Order();',
         'final entries = <MapEntry<int, DataCell>>[];',
         ...fields.asMap().entries.map((e) {
-          final defaultVal = _renderer.defaultValueExpression(e.value, varName);
+          final f = e.value;
+          final defaultVal = _renderer.defaultValueExpression(f, varName);
           return _u.ifStatement(
-            condition: 'vis.${e.value.name}',
+            condition: 'vis.${f.codeName}',
             ifBlockStatements: [
-              'entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, DataCell(values?.${e.value.name} ?? $defaultVal)));',
+              'entries.add(MapEntry(ord.${f.codeName} ?? ${1000 + e.key}, DataCell(values?.${f.codeName} ?? $defaultVal)));',
             ],
           );
         }),
@@ -100,12 +103,13 @@ class FlutterTypesLayoutSerializer {
         'final ord = order ?? const ${typeName}Order();',
         'final entries = <MapEntry<int, DataColumn>>[];',
         ...fields.asMap().entries.map((e) {
-          final label = _renderer.humanize(e.value.name.token);
+          final f = e.value;
+          final label = _renderer.humanize(f.name.token);
           final labelWidget = _renderer.labelTextWidget(label, hasContext: false);
           return _u.ifStatement(
-            condition: 'vis.${e.value.name}',
+            condition: 'vis.${f.codeName}',
             ifBlockStatements: [
-              "entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, DataColumn(label: labels?.${e.value.name} ?? $labelWidget)));",
+              "entries.add(MapEntry(ord.${f.codeName} ?? ${1000 + e.key}, DataColumn(label: labels?.${f.codeName} ?? $labelWidget)));",
             ],
           );
         }),
@@ -128,24 +132,25 @@ class FlutterTypesLayoutSerializer {
         'final ord = order ?? const ${typeName}Order();',
         'final entries = <MapEntry<int, TableRow>>[];',
         ...fields.asMap().entries.map((e) {
-          final label = _renderer.humanize(e.value.name.token);
+          final f = e.value;
+          final label = _renderer.humanize(f.name.token);
           final labelWidget = _renderer.labelTextWidget(label);
-          final defaultVal = _renderer.defaultValueExpression(e.value, varName);
+          final defaultVal = _renderer.defaultValueExpression(f, varName);
           final row = _u.callExpression('TableRow', [
             _u.listArg('children', [
               _u.callExpression('Padding', [
                 'padding: EdgeInsets.only(right: gap, bottom: gap)',
-                "child: _labelWithInfo(context, labels?.${e.value.name} ?? $labelWidget, labels?.${e.value.name}Info)",
+                "child: _labelWithInfo(context, labels?.${f.codeName} ?? $labelWidget, labels?.${f.codeName}Info)",
               ]),
               _u.callExpression('Padding', [
                 'padding: EdgeInsets.only(bottom: gap)',
-                'child: values?.${e.value.name} ?? $defaultVal',
+                'child: values?.${f.codeName} ?? $defaultVal',
               ]),
             ]),
           ]);
           return _u.ifStatement(
-            condition: 'vis.${e.value.name}',
-            ifBlockStatements: ['entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, $row));'],
+            condition: 'vis.${f.codeName}',
+            ifBlockStatements: ['entries.add(MapEntry(ord.${f.codeName} ?? ${1000 + e.key}, $row));'],
           );
         }),
         'entries.sort((a, b) => a.key.compareTo(b.key));',
@@ -165,16 +170,17 @@ class FlutterTypesLayoutSerializer {
         'final ord = order ?? const ${typeName}Order();',
         'final entries = <MapEntry<int, Widget>>[];',
         ...fields.asMap().entries.map((e) {
-          final label = _renderer.humanize(e.value.name.token);
+          final f = e.value;
+          final label = _renderer.humanize(f.name.token);
           final labelWidget = _renderer.labelTextWidget(label);
-          final defaultVal = _renderer.defaultValueExpression(e.value, varName);
+          final defaultVal = _renderer.defaultValueExpression(f, varName);
           final tile = _u.callExpression('ListTile', [
-            "title: _labelWithInfo(context, labels?.${e.value.name} ?? $labelWidget, labels?.${e.value.name}Info)",
-            'subtitle: values?.${e.value.name} ?? $defaultVal',
+            "title: _labelWithInfo(context, labels?.${f.codeName} ?? $labelWidget, labels?.${f.codeName}Info)",
+            'subtitle: values?.${f.codeName} ?? $defaultVal',
           ]);
           return _u.ifStatement(
-            condition: 'vis.${e.value.name}',
-            ifBlockStatements: ['entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, $tile));'],
+            condition: 'vis.${f.codeName}',
+            ifBlockStatements: ['entries.add(MapEntry(ord.${f.codeName} ?? ${1000 + e.key}, $tile));'],
           );
         }),
         'entries.sort((a, b) => a.key.compareTo(b.key));',
@@ -194,25 +200,26 @@ class FlutterTypesLayoutSerializer {
         'final ord = order ?? const ${typeName}Order();',
         'final entries = <MapEntry<int, Widget>>[];',
         ...fields.asMap().entries.map((e) {
-          final label = _renderer.humanize(e.value.name.token);
+          final f = e.value;
+          final label = _renderer.humanize(f.name.token);
           final labelWidget = _renderer.labelTextWidget(label, small: true);
-          final defaultVal = _renderer.defaultValueExpression(e.value, varName);
+          final defaultVal = _renderer.defaultValueExpression(f, varName);
           final tile = _u.callExpression('Column', [
             'crossAxisAlignment: CrossAxisAlignment.start',
             _u.listArg('children', [
               _u.callExpression('Semantics', [
                 'sortKey: const OrdinalSortKey(1.0)',
-                "child: _labelWithInfo(context, labels?.${e.value.name} ?? $labelWidget, labels?.${e.value.name}Info)",
+                "child: _labelWithInfo(context, labels?.${f.codeName} ?? $labelWidget, labels?.${f.codeName}Info)",
               ]),
               _u.callExpression('Semantics', [
                 'sortKey: const OrdinalSortKey(2.0)',
-                'child: values?.${e.value.name} ?? $defaultVal',
+                'child: values?.${f.codeName} ?? $defaultVal',
               ]),
             ]),
           ]);
           return _u.ifStatement(
-            condition: 'vis.${e.value.name}',
-            ifBlockStatements: ['entries.add(MapEntry(ord.${e.value.name} ?? ${1000 + e.key}, $tile));'],
+            condition: 'vis.${f.codeName}',
+            ifBlockStatements: ['entries.add(MapEntry(ord.${f.codeName} ?? ${1000 + e.key}, $tile));'],
           );
         }),
         'entries.sort((a, b) => a.key.compareTo(b.key));',
@@ -281,17 +288,17 @@ class FlutterTypesLayoutSerializer {
         _u.listArg('children', [
           _u.callExpression('Padding', [
             'padding: EdgeInsets.only(right: gap, bottom: gap)',
-            "child: _labelWithInfo(context, labels?.${f.name} ?? $labelWidget, labels?.${f.name}Info)",
+            "child: _labelWithInfo(context, labels?.${f.codeName} ?? $labelWidget, labels?.${f.codeName}Info)",
           ]),
           _u.callExpression('Padding', [
             'padding: EdgeInsets.only(bottom: gap)',
-            'child: values?.${f.name} ?? $defaultVal',
+            'child: values?.${f.codeName} ?? $defaultVal',
           ]),
         ]),
       ]);
       tableStmts.add(_u.ifStatement(
-        condition: 'vis.${f.name}',
-        ifBlockStatements: ['scalarRows.add(MapEntry(ord.${f.name} ?? ${1000 + idx}, $row));'],
+        condition: 'vis.${f.codeName}',
+        ifBlockStatements: ['scalarRows.add(MapEntry(ord.${f.codeName} ?? ${1000 + idx}, $row));'],
       ));
     }
     tableStmts.add('scalarRows.sort((a, b) => a.key.compareTo(b.key));');
@@ -309,12 +316,12 @@ class FlutterTypesLayoutSerializer {
       final labelWidget = _renderer.labelTextWidget(label);
       final defaultVal = _renderer.defaultValueExpression(f, varName);
       final tile = _u.callExpression('ListTile', [
-        "title: _labelWithInfo(context, labels?.${f.name} ?? $labelWidget, labels?.${f.name}Info)",
-        'subtitle: values?.${f.name} ?? $defaultVal',
+        "title: _labelWithInfo(context, labels?.${f.codeName} ?? $labelWidget, labels?.${f.codeName}Info)",
+        'subtitle: values?.${f.codeName} ?? $defaultVal',
       ]);
       tileStmts.add(_u.ifStatement(
-        condition: 'vis.${f.name}',
-        ifBlockStatements: ['scalarTiles.add(MapEntry(ord.${f.name} ?? ${1000 + idx}, $tile));'],
+        condition: 'vis.${f.codeName}',
+        ifBlockStatements: ['scalarTiles.add(MapEntry(ord.${f.codeName} ?? ${1000 + idx}, $tile));'],
       ));
     }
     tileStmts.add('scalarTiles.sort((a, b) => a.key.compareTo(b.key));');
@@ -329,12 +336,12 @@ class FlutterTypesLayoutSerializer {
       final labelWidget = _renderer.labelTextWidget(label);
       final defaultVal = _renderer.defaultValueExpression(f, varName);
       final tile = _u.callExpression('ListTile', [
-        'title: values?.${f.name} ?? $defaultVal',
-        "subtitle: _labelWithInfo(context, labels?.${f.name} ?? $labelWidget, labels?.${f.name}Info)",
+        'title: values?.${f.codeName} ?? $defaultVal',
+        "subtitle: _labelWithInfo(context, labels?.${f.codeName} ?? $labelWidget, labels?.${f.codeName}Info)",
       ]);
       reversedStmts.add(_u.ifStatement(
-        condition: 'vis.${f.name}',
-        ifBlockStatements: ['scalarReversed.add(MapEntry(ord.${f.name} ?? ${1000 + idx}, $tile));'],
+        condition: 'vis.${f.codeName}',
+        ifBlockStatements: ['scalarReversed.add(MapEntry(ord.${f.codeName} ?? ${1000 + idx}, $tile));'],
       ));
     }
     reversedStmts.add('scalarReversed.sort((a, b) => a.key.compareTo(b.key));');
@@ -366,21 +373,22 @@ class FlutterTypesLayoutSerializer {
     final f = e.value;
     final label = _renderer.humanize(f.name.token);
     final labelWidget = _renderer.labelTextWidget(label);
-    final childType = f.type.firstType.token;
+    final wireToken = f.type.firstType.token;
+    final childType = _parser.types[wireToken]?.codeName ?? wireToken;
     final condition = f.type.nullable
-        ? 'vis.${f.name} && $varName.${f.name} != null'
-        : 'vis.${f.name}';
+        ? 'vis.${f.codeName} && $varName.${f.codeName} != null'
+        : 'vis.${f.codeName}';
     final childExpr = f.type.nullable
-        ? '${childType}Widget($varName.${f.name}!, strings: strings)'
-        : '${childType}Widget($varName.${f.name}, strings: strings)';
+        ? '${childType}Widget($varName.${f.codeName}!, strings: strings)'
+        : '${childType}Widget($varName.${f.codeName}, strings: strings)';
     final tile = _u.callExpression('ExpansionTile', [
-      "title: _labelWithInfo(context, labels?.${f.name} ?? $labelWidget, labels?.${f.name}Info)",
-      _u.listArg('children', ["values?.${f.name} ?? $childExpr"]),
+      "title: _labelWithInfo(context, labels?.${f.codeName} ?? $labelWidget, labels?.${f.codeName}Info)",
+      _u.listArg('children', ["values?.${f.codeName} ?? $childExpr"]),
     ]);
     return [
       _u.ifStatement(
         condition: condition,
-        ifBlockStatements: ['accordions.add(MapEntry(ord.${f.name} ?? ${1000 + idx}, $tile));'],
+        ifBlockStatements: ['accordions.add(MapEntry(ord.${f.codeName} ?? ${1000 + idx}, $tile));'],
       ),
     ];
   }
@@ -390,20 +398,21 @@ class FlutterTypesLayoutSerializer {
     final f = e.value;
     final label = _renderer.humanize(f.name.token);
     final labelWidget = _renderer.labelTextWidget(label);
-    final childType = f.type.firstType.token;
-    final listAccess = f.type.nullable ? '$varName.${f.name}!' : '$varName.${f.name}';
+    final wireToken = f.type.firstType.token;
+    final childType = _parser.types[wireToken]?.codeName ?? wireToken;
+    final listAccess = f.type.nullable ? '$varName.${f.codeName}!' : '$varName.${f.codeName}';
     final mapSource = f.type.inlineType.nullable ? '$listAccess.whereType<$childType>()' : listAccess;
     final condition = f.type.nullable
-        ? 'vis.${f.name} && ($varName.${f.name}?.isNotEmpty ?? false)'
-        : 'vis.${f.name} && $varName.${f.name}.isNotEmpty';
+        ? 'vis.${f.codeName} && ($varName.${f.codeName}?.isNotEmpty ?? false)'
+        : 'vis.${f.codeName} && $varName.${f.codeName}.isNotEmpty';
     final tile = _u.callExpression('ExpansionTile', [
-      "title: _labelWithInfo(context, labels?.${f.name} ?? $labelWidget, labels?.${f.name}Info)",
+      "title: _labelWithInfo(context, labels?.${f.codeName} ?? $labelWidget, labels?.${f.codeName}Info)",
       'children: $mapSource.map((item) => ${childType}Widget(item, strings: strings)).toList()',
     ]);
     return [
       _u.ifStatement(
         condition: condition,
-        ifBlockStatements: ['accordions.add(MapEntry(ord.${f.name} ?? ${1000 + idx}, $tile));'],
+        ifBlockStatements: ['accordions.add(MapEntry(ord.${f.codeName} ?? ${1000 + idx}, $tile));'],
       ),
     ];
   }

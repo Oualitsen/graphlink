@@ -54,18 +54,25 @@ class FlutterInputsTypeHelpers {
 
   // ── Type expressions ──────────────────────────────────────────────────────────
 
+  String resolveTypeCodeName(String wireToken) =>
+      _parser.types[wireToken]?.codeName ??
+      _parser.inputs[wireToken]?.codeName ??
+      _parser.enums[wireToken]?.codeName ??
+      _parser.interfaces[wireToken]?.codeName ??
+      wireToken;
+
   String dartScalarType(GLField f) =>
-      _dartSerializer.typeMap[f.type.firstType.token] ?? f.type.firstType.token;
+      _dartSerializer.typeMap[f.type.firstType.token] ?? resolveTypeCodeName(f.type.firstType.token);
 
   String listItemType(GLField f) {
     final inner = f.type.inlineType;
-    final base = _dartSerializer.typeMap[inner.firstType.token] ?? inner.firstType.token;
+    final base = _dartSerializer.typeMap[inner.firstType.token] ?? resolveTypeCodeName(inner.firstType.token);
     return inner.nullable ? '$base?' : base;
   }
 
   String listItemTypeNonNull(GLField f) {
     final inner = f.type.inlineType;
-    return _dartSerializer.typeMap[inner.firstType.token] ?? inner.firstType.token;
+    return _dartSerializer.typeMap[inner.firstType.token] ?? resolveTypeCodeName(inner.firstType.token);
   }
 
   String listDartType(GLField f) {
@@ -79,7 +86,7 @@ class FlutterInputsTypeHelpers {
 
   String validatorType(GLField f, List<GLField> enumFields, List<GLField> boolFields, String inputName) {
     final ctx = '${inputName}FormContext';
-    if (enumFields.contains(f)) return 'FutureOr<String?> Function(${f.type.firstType.token}?, $ctx)?';
+    if (enumFields.contains(f)) return 'FutureOr<String?> Function(${resolveTypeCodeName(f.type.firstType.token)}?, $ctx)?';
     if (boolFields.contains(f)) return 'FutureOr<String?> Function(bool?, $ctx)?';
     return 'FutureOr<String?> Function(String?, $ctx)?';
   }
@@ -90,7 +97,7 @@ class FlutterInputsTypeHelpers {
   String valuesFieldType(GLField f) {
     if (isListField(f)) return listDartType(f);
     if (isEnumField(f)) {
-      final base = f.type.firstType.token;
+      final base = resolveTypeCodeName(f.type.firstType.token);
       return f.type.nullable ? '$base?' : base;
     }
     if (isBoolField(f)) return f.type.nullable ? 'bool?' : 'bool';
@@ -105,20 +112,20 @@ class FlutterInputsTypeHelpers {
       if (isEnumListField(f) || isScalarListField(f)) return 'List<${listItemTypeNonNull(f)}>';
       return listDartType(f);
     }
-    if (isEnumField(f)) return '${f.type.firstType.token}?';
+    if (isEnumField(f)) return '${resolveTypeCodeName(f.type.firstType.token)}?';
     if (isBoolField(f)) return f.type.nullable ? 'bool?' : 'bool';
     return 'String';
   }
 
   String formContextFieldInitExpr(GLField f) {
-    if (isTextField(f)) return '_${f.name.token}Controller.text';
-    return '_${f.name.token}';
+    if (isTextField(f)) return '_${f.codeName}Controller.text';
+    return '_${f.codeName}';
   }
 
   // ── State initialisation expressions ─────────────────────────────────────────
 
   String initialTextExpr(GLField f) {
-    final name = f.name.token;
+    final name = f.codeName;
     final type = dartScalarType(f);
     final nullable = f.type.nullable;
     if (type == 'int') {
@@ -141,7 +148,7 @@ class FlutterInputsTypeHelpers {
   }
 
   String initialBoolExpr(GLField f) {
-    final name = f.name.token;
+    final name = f.codeName;
     return boolStateType(f) == 'bool?'
         ? '_form.initialValues?.$name'
         : '_form.initialValues?.$name ?? false';

@@ -1,6 +1,6 @@
 {
     "schemaPaths": [
-        "../saleor.graphql"
+        "../artsy.graphql"
     ],
     "mode": "client",
     "unknownScalarType": "String",

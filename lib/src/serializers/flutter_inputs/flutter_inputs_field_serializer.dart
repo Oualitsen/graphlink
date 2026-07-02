@@ -33,7 +33,7 @@ class FlutterInputsFieldSerializer {
     if (dartType == 'int') return intRegularExpr(f, enabledExpr);
     if (dartType == 'String') return stringRegularExpr(f, enabledExpr);
 
-    final name = f.name.token;
+    final name = f.codeName;
     final nullable = f.type.nullable;
     final validators = _validatorStatements(name, [
       if (!nullable)
@@ -66,7 +66,7 @@ class FlutterInputsFieldSerializer {
   }
 
   String intRegularExpr(GLField f, String enabledExpr) {
-    final name = f.name.token;
+    final name = f.codeName;
     final nullable = f.type.nullable;
     final validators = _validatorStatements(name, [
       if (!nullable) "if (v == null || v.isEmpty) return _form.strings.required;",
@@ -94,7 +94,7 @@ class FlutterInputsFieldSerializer {
   }
 
   String stringRegularExpr(GLField f, String enabledExpr) {
-    final name = f.name.token;
+    final name = f.codeName;
     final nullable = f.type.nullable;
     final isPassword = _types.isPasswordField(f);
     final validators = _validatorStatements(name, [
@@ -132,8 +132,8 @@ class FlutterInputsFieldSerializer {
   // ── Enum fields ───────────────────────────────────────────────────────────────
 
   String enumDropdownExpr(GLField f, String enabledExpr) {
-    final name = f.name.token;
-    final enumType = f.type.firstType.token;
+    final name = f.codeName;
+    final enumType = _types.resolveTypeCodeName(f.type.firstType.token);
     final nullable = f.type.nullable;
     final validators = _validatorStatements(name, [
       if (!nullable) "if (v == null) return _form.strings.required;",
@@ -153,8 +153,8 @@ class FlutterInputsFieldSerializer {
   }
 
   String enumRowMethod(GLField f) {
-    final name = f.name.token;
-    final enumType = f.type.firstType.token;
+    final name = f.codeName;
+    final enumType = _types.resolveTypeCodeName(f.type.firstType.token);
     final nullable = f.type.nullable;
     final dropdownExpr = enumDropdownExpr(f, 'enabled');
     final validators = _validatorStatements(name, [
@@ -242,7 +242,7 @@ class FlutterInputsFieldSerializer {
   // ── Bool fields ───────────────────────────────────────────────────────────────
 
   String boolFieldExpr(GLField f, String enabledExpr) {
-    final name = f.name.token;
+    final name = f.codeName;
     final nullable = f.type.nullable;
 
     if (nullable) {
@@ -258,7 +258,7 @@ class FlutterInputsFieldSerializer {
   }
 
   String boolRowMethod(GLField f) {
-    final name = f.name.token;
+    final name = f.codeName;
     final fieldType = _types.boolStateType(f);
     final defaultReturn = _types.isTristateField(f)
         ? 'return _field(label, ${boolFieldExpr(f, 'enabled')});'
@@ -494,8 +494,8 @@ class FlutterInputsFieldSerializer {
   }
 
   String enumListWidgetExpr(GLField f, String enabledExpr) {
-    final name = f.name.token;
-    final enumType = f.type.inlineType.firstType.token;
+    final name = f.codeName;
+    final enumType = _types.resolveTypeCodeName(f.type.inlineType.firstType.token);
     if (_config.listWidget == ListWidget.checkboxes) {
       return _u.callExpression('Column', [
         'crossAxisAlignment: CrossAxisAlignment.start',
@@ -529,7 +529,7 @@ class FlutterInputsFieldSerializer {
   }
 
   String scalarListWidgetExpr(GLField f, String enabledExpr) {
-    final name = f.name.token;
+    final name = f.codeName;
     if (_config.listWidget == ListWidget.checkboxes) {
       return _u.callExpression('Column', [
         'crossAxisAlignment: CrossAxisAlignment.start',
@@ -596,7 +596,7 @@ class FlutterInputsFieldSerializer {
   }
 
   String _boolTristateDropdownExpr(GLField f, String enabledExpr) {
-    final name = f.name.token;
+    final name = f.codeName;
     final nullable = f.type.nullable;
     final validators = _validatorStatements(name, [
       if (!nullable) "if (v == null) return _form.strings.required;",
