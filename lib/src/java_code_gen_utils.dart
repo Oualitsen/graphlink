@@ -150,6 +150,7 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
     if (interfaceNames != null && interfaceNames.isNotEmpty) {
       buffer.write("implements ");
       buffer.write(interfaceNames.join(", "));
+      buffer.write(" ");
     }
     buffer.write(block(statements));
     return buffer.toString();
