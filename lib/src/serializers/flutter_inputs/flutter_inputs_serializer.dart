@@ -1,8 +1,10 @@
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/dart_code_gen_utils.dart';
 import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_input_definition.dart';
+import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_ui_entity.dart' show GlInputEntity;
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
@@ -197,43 +199,56 @@ class FlutterInputsSerializer {
     final hasSubInputs = inputFields.isNotEmpty || inputListFields.isNotEmpty;
     final hasScalarFields = fields.any((f) => !_types.isInputField(f) && !_types.isInputListField(f));
 
-    final buffer = StringBuffer();
-    buffer.write(_serializeAgentHeader(inputName, fields, textFields, enumFields, boolFields,
-        listFields, inputFields, inputListFields, dateEligibleFields, hasSubInputs));
+    final header = _serializeAgentHeader(inputName, fields, textFields, enumFields, boolFields,
+        listFields, inputFields, inputListFields, dateEligibleFields, hasSubInputs);
+
+    final enumTokens = <GLToken>{
+      for (final f in fields)
+        if (!f.type.isList && _parser.enums.containsKey(f.type.firstType.token))
+          _parser.enums[f.type.firstType.token]!,
+      for (final f in fields)
+        if (f.type.isList && _parser.enums.containsKey(f.type.inlineType.firstType.token))
+          _parser.enums[f.type.inlineType.firstType.token]!,
+    };
+    final nestedInputTokens = <GLToken>{
+      for (final f in inputFields)
+        if (_parser.inputs[f.type.firstType.token] != null) _parser.inputs[f.type.firstType.token]!,
+      for (final f in inputListFields)
+        if (_parser.inputs[f.type.inlineType.firstType.token] != null) _parser.inputs[f.type.inlineType.firstType.token]!,
+    };
+    final importDeps = <GLToken>[def, ...enumTokens, ...nestedInputTokens];
 
     final imports = <String>{
-      "import 'dart:async';",
-      "import 'package:flutter/material.dart';",
-      "import '$importPrefix/inputs/${inputName.toSnakeCase()}.dart';",
-      "import '$importPrefix/widgets/inputs/input_form_widget.dart';",
-      "import '$importPrefix/widgets/inputs/input_read_exception.dart';",
-      ...entity.enumDataImports(importPrefix),
-      ...entity.enumLabelImports(importPrefix),
-      if (boolFields.isNotEmpty) "import '$importPrefix/widgets/inputs/boolean_labels.dart';",
-      if (enumFields.isNotEmpty || boolFields.isNotEmpty || textFields.isNotEmpty) "import '$importPrefix/widgets/inputs/field_widgets.dart';",
-      if (textFields.isNotEmpty) "import '$importPrefix/widgets/inputs/text_field_options.dart';",
-      if (textFields.isNotEmpty) "import '$importPrefix/widgets/inputs/select_field_config.dart';",
+      'dart:async',
+      'package:flutter/material.dart',
+      '$importPrefix/widgets/inputs/input_form_widget.dart',
+      '$importPrefix/widgets/inputs/input_read_exception.dart',
+      for (final f in fields)
+        if (!f.type.isList && _parser.enums.containsKey(f.type.firstType.token))
+          '$importPrefix/widgets/enums/${_parser.enums[f.type.firstType.token]!.codeName.toSnakeCase()}_labels.dart',
+      for (final f in fields)
+        if (f.type.isList && _parser.enums.containsKey(f.type.inlineType.firstType.token))
+          '$importPrefix/widgets/enums/${_parser.enums[f.type.inlineType.firstType.token]!.codeName.toSnakeCase()}_labels.dart',
+      if (boolFields.isNotEmpty) '$importPrefix/widgets/inputs/boolean_labels.dart',
+      if (enumFields.isNotEmpty || boolFields.isNotEmpty || textFields.isNotEmpty) '$importPrefix/widgets/inputs/field_widgets.dart',
+      if (textFields.isNotEmpty) '$importPrefix/widgets/inputs/text_field_options.dart',
+      if (textFields.isNotEmpty) '$importPrefix/widgets/inputs/select_field_config.dart',
       if (dateEligibleFields.isNotEmpty) ...{
-        "import 'package:flutter/cupertino.dart';",
-        "import 'package:intl/intl.dart';",
-        "import '$importPrefix/widgets/inputs/date_input_config.dart';",
-        "import '$importPrefix/widgets/inputs/date_input_formatter.dart';",
+        'package:flutter/cupertino.dart',
+        'package:intl/intl.dart',
+        '$importPrefix/widgets/inputs/date_input_config.dart',
+        '$importPrefix/widgets/inputs/date_input_formatter.dart',
       },
-      "import '$importPrefix/widgets/inputs/field_visibility.dart';",
-      "import '$importPrefix/widgets/inputs/required_indicator.dart';",
-      "import '$importPrefix/widgets/inputs/form_strings.dart';",
-      for (final f in inputFields) ...{
-        "import '$importPrefix/inputs/${(_parser.inputs[f.type.firstType.token]?.codeName ?? f.type.firstType.token).toSnakeCase()}.dart';",
-        "import '$importPrefix/widgets/inputs/${(_parser.inputs[f.type.firstType.token]?.codeName ?? f.type.firstType.token).toSnakeCase()}_form.dart';",
-      },
-      for (final f in inputListFields)
-        "import '$importPrefix/inputs/${(_parser.inputs[f.type.inlineType.firstType.token]?.codeName ?? f.type.inlineType.firstType.token).toSnakeCase()}.dart';",
-      if (hasSubInputs) "import '$importPrefix/widgets/inputs/input_step_options.dart';",
-      if (hasSubInputs) "import '$importPrefix/widgets/inputs/stepper_strings.dart';",
+      '$importPrefix/widgets/inputs/field_visibility.dart',
+      '$importPrefix/widgets/inputs/required_indicator.dart',
+      '$importPrefix/widgets/inputs/form_strings.dart',
+      for (final f in inputFields)
+        '$importPrefix/widgets/inputs/${(_parser.inputs[f.type.firstType.token]?.codeName ?? f.type.firstType.token).toSnakeCase()}_form.dart',
+      if (hasSubInputs) '$importPrefix/widgets/inputs/input_step_options.dart',
+      if (hasSubInputs) '$importPrefix/widgets/inputs/stepper_strings.dart',
     };
-    for (final imp in imports) { buffer.writeln(imp); }
-    buffer.writeln();
 
+    final buffer = StringBuffer();
     final validatableFields = [...textFields, ...enumFields, ...boolFields];
     final contextFields = fields.where((f) => !_types.isInputField(f)).toList();
     buffer.writeln(_companions.serializeFormContextClass(inputName, contextFields));
@@ -291,6 +306,12 @@ class FlutterInputsSerializer {
     buffer.writeln();
     buffer.writeln(_state.serializeErrorSummaryClass(inputName, fields, textFields, enumFields, boolFields));
 
-    return buffer.toString();
+    final file = _dartSerializer.serializeGlClass(GLClassModel(
+      imports: imports.toList(),
+      importDepencies: importDeps,
+      body: buffer.toString(),
+    ));
+
+    return '$header$file';
   }
 }
