@@ -173,22 +173,9 @@ class JavaSerializer extends GLSerializer {
     return buffer.toString();
   }
 
-  /// True when any constant was renamed for keyword safety. In that case
-  /// `name()` / `valueOf()` would leak the sanitized identifier onto the wire,
-  /// so toJson/fromJson must map explicitly to the original GraphQL value.
-  bool _enumSanitized(GLEnumDefinition def) =>
-      def.values.any((v) => v.codeName != v.value.token);
-
   String serializeToJsonForEnum(GLEnumDefinition def) {
     if (!generateJsonMethods) {
       return "";
-    }
-    if (!_enumSanitized(def)) {
-      return codeGenUtils.createMethod(
-        returnType: "public String",
-        methodName: "toJson",
-        statements: ["return name();"],
-      );
     }
     return codeGenUtils.createMethod(
       returnType: "public String",
@@ -211,17 +198,6 @@ class JavaSerializer extends GLSerializer {
   String serializeFromJsonForEnum(GLEnumDefinition def) {
     if (!generateJsonMethods) {
       return "";
-    }
-    if (!_enumSanitized(def)) {
-      def.addImport(JavaImports.optional);
-      return codeGenUtils.createMethod(
-        returnType: "public static ${def.codeName}",
-        methodName: "fromJson",
-        arguments: ["String value"],
-        statements: [
-          "return Optional.ofNullable(value).map(${def.codeName}::valueOf).orElse(null);"
-        ],
-      );
     }
     return codeGenUtils.createMethod(
       returnType: "public static ${def.codeName}",

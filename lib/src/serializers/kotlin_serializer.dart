@@ -98,34 +98,32 @@ class KotlinSerializer extends GLSerializer {
     final values = def.values.map(doSerializeEnumValue).toList();
     final body = <String>[];
 
-    // When a constant was renamed for keyword safety, `name` / `valueOf` would
-    // expose the sanitized identifier on the wire. Emit an explicit mapping so
-    // the wire string stays the original GraphQL value.
-    final sanitized = def.values.any((v) => v.codeName != v.value.token);
-
     if (generateJsonMethods) {
-      if (sanitized) {
-        final toCases =
-            def.values.map((v) => '${v.codeName} -> "${v.value.token}"');
-        final fromCases =
-            def.values.map((v) => '"${v.value.token}" -> ${def.codeName}.${v.codeName}');
-        body.add('fun toJson(): String = when (this) {');
-        body.add(toCases.map((c) => '    $c').join('\n'));
-        body.add('}');
-        body.add('');
-        body.add(codeGenUtils.companionObject([
-          'fun fromJson(value: String?): ${def.codeName}? = when (value) {',
-          fromCases.map((c) => '    $c').join('\n'),
-          '    else -> null',
-          '}',
-        ]));
-      } else {
-        body.add(codeGenUtils.companionObject([
-          'fun fromJson(value: String?): ${def.codeName}? = value?.let { valueOf(it) }',
-        ]));
-        body.add('');
-        body.add('fun toJson(): String = name');
-      }
+      final whenToJson = codeGenUtils.switchStatement(
+        expression: 'this',
+        cases: def.values.map((v) => KotlinWhenBranch(
+          caseValue: v.codeName,
+          statement: '"${v.value.token}"',
+        )).toList(),
+      );
+      final whenFromJson = codeGenUtils.switchStatement(
+        expression: 'value',
+        cases: [
+          ...def.values.map((v) => KotlinWhenBranch(
+            caseValue: '"${v.value.token}"',
+            statement: '${def.codeName}.${v.codeName}',
+          )),
+          KotlinWhenBranch(
+            caseValue: 'else',
+            statement: 'throw IllegalArgumentException("Invalid ${def.codeName}: \$value")',
+          ),
+        ],
+      );
+      body.add('fun toJson(): String = $whenToJson');
+      body.add('');
+      body.add(codeGenUtils.companionObject([
+        'fun fromJson(value: String): ${def.codeName} = $whenFromJson',
+      ]));
     }
 
     return codeGenUtils.enumClass(name: def.codeName, values: values, body: body.isEmpty ? null : body);
