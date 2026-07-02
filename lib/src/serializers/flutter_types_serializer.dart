@@ -1,9 +1,11 @@
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/dart_code_gen_utils.dart';
 import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
+import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/gl_ui_entity.dart' show GlTypeEntity;
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
@@ -19,12 +21,14 @@ class FlutterTypesSerializer {
   final String importPrefix;
 
   late final DartCodeGenUtils _u;
+  late final DartSerializer _dartSerializer;
   late final FlutterTypesValueRenderer _renderer;
   late final FlutterTypesCompanionSerializer _companions;
   late final FlutterTypesLayoutSerializer _layout;
 
   FlutterTypesSerializer(this._parser, DartSerializer dartSerializer, this._config, this.importPrefix) {
     _u = DartCodeGenUtils();
+    _dartSerializer = dartSerializer;
     _renderer = FlutterTypesValueRenderer(_parser, dartSerializer, _config);
     _companions = FlutterTypesCompanionSerializer(_u, _parser);
     _layout = FlutterTypesLayoutSerializer(_parser, _u, _renderer);
@@ -46,12 +50,8 @@ class FlutterTypesSerializer {
   String serializeEnumLabels(GLEnumDefinition def) {
     final enumName = def.codeName;
     final values = def.values;
-    final buffer = StringBuffer();
 
-    buffer.writeln("import 'package:flutter/material.dart';");
-    buffer.writeln("import '$importPrefix/enums/${enumName.toSnakeCase()}.dart';");
-    buffer.writeln();
-    buffer.write(_u.createClass(
+    final body = _u.createClass(
       className: '${enumName}Labels',
       statements: [
         'final Widget? unselected;',
@@ -80,9 +80,13 @@ class FlutterTypesSerializer {
           ],
         ),
       ],
-    ));
+    );
 
-    return buffer.toString();
+    return _dartSerializer.serializeGlClass(GLClassModel(
+      imports: ['package:flutter/material.dart'],
+      importDepencies: [def],
+      body: body,
+    ));
   }
 
   // ── Type widget file ───────────────────────────────────────────────────────
@@ -112,44 +116,63 @@ class FlutterTypesSerializer {
             !flutterInternalTypes.contains(f.type.firstType.token))
         .toList();
 
-    final buffer = StringBuffer();
-    buffer.write(_serializeAgentHeader(typeName, varName, fields, enumFields,
-        nestedTypeFields, nestedTypeListFields));
+    final header = _serializeAgentHeader(typeName, varName, fields, enumFields,
+        nestedTypeFields, nestedTypeListFields);
+
+    final enumTokens = <GLToken>{
+      for (final f in fields)
+        if (!f.type.isList && _parser.enums.containsKey(f.type.firstType.token))
+          _parser.enums[f.type.firstType.token]!,
+      for (final f in fields)
+        if (f.type.isList && _parser.enums.containsKey(f.type.inlineType.firstType.token))
+          _parser.enums[f.type.inlineType.firstType.token]!,
+    };
+    final nestedTypeTokens = <GLToken>{
+      for (final f in [...nestedTypeFields, ...nestedTypeListFields])
+        if (_parser.types[f.type.firstType.token] != null) _parser.types[f.type.firstType.token]!,
+    };
+    final importDeps = <GLToken>[def, ...enumTokens, ...nestedTypeTokens];
 
     final imports = <String>{
-      "import 'package:flutter/material.dart';",
-      "import 'package:flutter/semantics.dart';",
-      "import '$importPrefix/types/${typeName.toSnakeCase()}.dart';",
-      "import '$importPrefix/widgets/inputs/form_strings.dart';",
-      ...entity.enumDataImports(importPrefix),
-      ...entity.enumLabelImports(importPrefix),
-      for (final f in [...nestedTypeFields, ...nestedTypeListFields]) ...{
-        "import '$importPrefix/types/${(_parser.types[f.type.firstType.token]?.codeName ?? f.type.firstType.token).toSnakeCase()}.dart';",
-        "import '$importPrefix/widgets/types/${(_parser.types[f.type.firstType.token]?.codeName ?? f.type.firstType.token).toSnakeCase()}_widget.dart';",
-      },
+      'package:flutter/material.dart',
+      'package:flutter/semantics.dart',
+      '$importPrefix/widgets/inputs/form_strings.dart',
+      for (final f in fields)
+        if (!f.type.isList && _parser.enums.containsKey(f.type.firstType.token))
+          '$importPrefix/widgets/enums/${_parser.enums[f.type.firstType.token]!.codeName.toSnakeCase()}_labels.dart',
+      for (final f in fields)
+        if (f.type.isList && _parser.enums.containsKey(f.type.inlineType.firstType.token))
+          '$importPrefix/widgets/enums/${_parser.enums[f.type.inlineType.firstType.token]!.codeName.toSnakeCase()}_labels.dart',
+      for (final f in [...nestedTypeFields, ...nestedTypeListFields])
+        '$importPrefix/widgets/types/${(_parser.types[f.type.firstType.token]?.codeName ?? f.type.firstType.token).toSnakeCase()}_widget.dart',
     };
-    for (final imp in imports) { buffer.writeln(imp); }
-    buffer.writeln();
 
-    buffer.writeln(_companions.serializeLabelsClass(typeName, fields));
-    buffer.writeln();
-    buffer.writeln(_companions.serializeValuesClass(typeName, fields));
-    buffer.writeln();
-    buffer.writeln(_companions.serializeVisibilityClass(typeName, fields));
-    buffer.writeln();
-    buffer.writeln(_companions.serializeShowOnlyClass(typeName, fields));
-    buffer.writeln();
+    final bodyBuffer = StringBuffer();
+    bodyBuffer.writeln(_companions.serializeLabelsClass(typeName, fields));
+    bodyBuffer.writeln();
+    bodyBuffer.writeln(_companions.serializeValuesClass(typeName, fields));
+    bodyBuffer.writeln();
+    bodyBuffer.writeln(_companions.serializeVisibilityClass(typeName, fields));
+    bodyBuffer.writeln();
+    bodyBuffer.writeln(_companions.serializeShowOnlyClass(typeName, fields));
+    bodyBuffer.writeln();
     if (enumFields.isNotEmpty) {
-      buffer.writeln(_companions.serializeEnumLabelsClass(typeName, enumFields));
-      buffer.writeln();
+      bodyBuffer.writeln(_companions.serializeEnumLabelsClass(typeName, enumFields));
+      bodyBuffer.writeln();
     }
-    buffer.writeln(_companions.serializeOrderClass(typeName, fields));
-    buffer.writeln();
-    buffer.writeln('enum ${typeName}Layout { labeledRow, listTile, listTileReversed, expandable }');
-    buffer.writeln();
-    buffer.write(_serializeWidgetClass(typeName, varName, fields, enumFields));
+    bodyBuffer.writeln(_companions.serializeOrderClass(typeName, fields));
+    bodyBuffer.writeln();
+    bodyBuffer.writeln('enum ${typeName}Layout { labeledRow, listTile, listTileReversed, expandable }');
+    bodyBuffer.writeln();
+    bodyBuffer.write(_serializeWidgetClass(typeName, varName, fields, enumFields));
 
-    return buffer.toString();
+    final file = _dartSerializer.serializeGlClass(GLClassModel(
+      imports: imports.toList(),
+      importDepencies: importDeps,
+      body: bodyBuffer.toString(),
+    ));
+
+    return '$header$file';
   }
 
   // ── Agent header ──────────────────────────────────────────────────────────
