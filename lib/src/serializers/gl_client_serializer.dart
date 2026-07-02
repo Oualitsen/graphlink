@@ -66,13 +66,20 @@ abstract class GLClientSerializer {
   String renderUploadMutationMethod(GLQueryDefinition def);
   String renderSubscriptionMethod(GLQueryDefinition def);
 
-  late final Set<String> oversizedFragmentNames = {
-    if (_parser.maxFragmentBodySize != null)
+  late final Set<String> oversizedFragmentNames = _computeOversizedFragmentNames();
+
+  Set<String> _computeOversizedFragmentNames() {
+    final limit = _parser.maxFragmentBodySize;
+    if (limit == null) return const {};
+    final names = {
       for (final f in _parser.usedFragments)
-        if (gqlSerializer.serializeFragmentDefinitionBase(f).length >
-            _parser.maxFragmentBodySize!)
+        if (gqlSerializer.serializeFragmentDefinitionBase(f).length > limit)
           f.tokenInfo.token,
-  };
+    };
+    // Cache on the parser so hasQueryType can consult the same set.
+    _parser.oversizedFragmentNamesCache = names;
+    return names;
+  }
 
   /// Iterates all operations of [type] and dispatches to the appropriate
   /// render method. Skips operations that reference an oversized fragment.
