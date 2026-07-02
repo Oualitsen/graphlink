@@ -1,7 +1,6 @@
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/gl_expand_grammar_extension.dart';
-import 'package:graphlink/src/gl_grammar_extension.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 
 // Tests for @glExpand depth propagation through interface-mediated cycles.
@@ -218,7 +217,7 @@ void main() {
   // (union-typed) as the abstract back-edge.
 
   group('union back-edge @glExpand(depth:2)', () {
-    const _unionBackEdgeDepth2 = '''
+    const unionBackEdgeDepth2 = '''
 type Car {
   id: ID!
   model: String!
@@ -244,12 +243,12 @@ type Query { getVehicleDriver(id: ID!): VehicleDriver! }
 ''';
 
     test('VehicleDriver.vehicle is the union back-edge', () {
-      final g = parseAuto(_unionBackEdgeDepth2);
+      final g = parseAuto(unionBackEdgeDepth2);
       expect(g.isBackEdgeField('VehicleDriver', 'vehicle'), isTrue);
     });
 
     test('owner appears at layer 2 inside Car/Bike inline fragments', () {
-      final g = parseAuto(_unionBackEdgeDepth2);
+      final g = parseAuto(unionBackEdgeDepth2);
       final frag = fragFor(g, 'VehicleDriver');
       expect(frag, contains('owner'),
           reason: '@glExpand(depth:2) on a union back-edge must also '
@@ -257,7 +256,7 @@ type Query { getVehicleDriver(id: ID!): VehicleDriver! }
     });
 
     test('driver is absent — depth:2 terminates at VehicleOwner', () {
-      final g = parseAuto(_unionBackEdgeDepth2);
+      final g = parseAuto(unionBackEdgeDepth2);
       expect(fragFor(g, 'VehicleDriver'), isNot(contains('driver')));
     });
   });
@@ -265,7 +264,7 @@ type Query { getVehicleDriver(id: ID!): VehicleDriver! }
   // ── defaultExpandDepth fallback (no @glExpand) ─────────────────────────────
 
   group('no @glExpand — defaultExpandDepth controls abstract back-edge depth', () {
-    const _noDirective = '''
+    const noDirective = '''
 type Car implements Vehicle { id: ID! model: String! owner: VehicleOwner! }
 interface Vehicle { id: ID! owner: VehicleOwner! }
 type VehicleOwner { id: ID! name: String! driver: VehicleDriver! }
@@ -274,7 +273,7 @@ type Query { getVehicleDriver(id: ID!): VehicleDriver! }
 ''';
 
     test('defaultExpandDepth:1 → owner absent (only layer-1 scalars)', () {
-      final g = parseAuto(_noDirective, defaultExpandDepth: 1);
+      final g = parseAuto(noDirective, defaultExpandDepth: 1);
       final frag = fragFor(g, 'VehicleDriver');
       expect(frag, contains('vehicle'));
       expect(frag, contains('model'));
@@ -283,7 +282,7 @@ type Query { getVehicleDriver(id: ID!): VehicleDriver! }
     });
 
     test('defaultExpandDepth:2 → owner present', () {
-      final g = parseAuto(_noDirective, defaultExpandDepth: 2);
+      final g = parseAuto(noDirective, defaultExpandDepth: 2);
       expect(fragFor(g, 'VehicleDriver'), contains('owner'));
     });
   });

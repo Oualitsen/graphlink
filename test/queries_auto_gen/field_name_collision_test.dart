@@ -110,7 +110,7 @@ void main() {
 
     g.parse(_explicitMultiRootSchema);
 
-    final query = g.queries[GLOperationKey('getBoth', GLQueryType.query)]!;
+    final query = g.queries[const GLOperationKey('getBoth', GLQueryType.query)]!;
     final declared = {for (var a in query.arguments) a.token: a.type.token};
 
     // Author-declared root variables stay DIRECT arguments, untouched.

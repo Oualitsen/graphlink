@@ -24,7 +24,7 @@ void main() {
     final parser = GLParser();
     parser.parse(schema);
 
-    final def = parser.queries[GLOperationKey('GetSetupStatus', GLQueryType.query)]!;
+    final def = parser.queries[const GLOperationKey('GetSetupStatus', GLQueryType.query)]!;
     final serializer = GLGraphqlSerializer(parser);
     final result = serializer.serializeQueryDefinition(def);
 
@@ -35,7 +35,7 @@ void main() {
     final parser = GLParser();
     parser.parse(schema);
 
-    final def = parser.queries[GLOperationKey('GetSetupStatus', GLQueryType.query)]!;
+    final def = parser.queries[const GLOperationKey('GetSetupStatus', GLQueryType.query)]!;
     final serializer = GLGraphqlSerializer(parser);
     final divided = serializer.divideQueryDefinition(def, parser);
 

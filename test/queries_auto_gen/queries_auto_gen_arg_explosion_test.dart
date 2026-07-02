@@ -46,7 +46,7 @@ type Salary {
     );
     g.parse(schema);
 
-    final query = g.queries[GLOperationKey('getCompanies', GLQueryType.query)]!;
+    final query = g.queries[const GLOperationKey('getCompanies', GLQueryType.query)]!;
 
     // ignore: avoid_print
     print('=== operation args after hoist (${query.arguments.length}) ===');

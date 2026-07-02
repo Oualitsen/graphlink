@@ -36,9 +36,9 @@ type Leaf {
     );
     g.parse(schema);
 
-    expect(g.queries.containsKey(GLOperationKey('simple', GLQueryType.query)), isTrue,
+    expect(g.queries.containsKey(const GLOperationKey('simple', GLQueryType.query)), isTrue,
         reason: 'simple has no propagated args and must be kept');
-    expect(g.queries.containsKey(GLOperationKey('heavy', GLQueryType.query)), isFalse,
+    expect(g.queries.containsKey(const GLOperationKey('heavy', GLQueryType.query)), isFalse,
         reason: 'heavy has 4 propagated args and must be pruned');
     expect(g.inputs.containsKey('HeavyFieldArgs'), isFalse,
         reason: 'synthesized input for pruned query must also be removed');
@@ -59,7 +59,7 @@ type Leaf {
     );
     g.parse(schema);
 
-    expect(g.queries.containsKey(GLOperationKey('heavy', GLQueryType.query)), isTrue);
+    expect(g.queries.containsKey(const GLOperationKey('heavy', GLQueryType.query)), isTrue);
     expect(g.skippedAutoQueries, isEmpty);
   });
 
@@ -71,7 +71,7 @@ type Leaf {
     );
     g.parse(schema);
 
-    expect(g.queries.containsKey(GLOperationKey('heavy', GLQueryType.query)), isTrue,
+    expect(g.queries.containsKey(const GLOperationKey('heavy', GLQueryType.query)), isTrue,
         reason: '4 propagated args with cap 4 must not be pruned');
     expect(g.skippedAutoQueries, isEmpty);
   });

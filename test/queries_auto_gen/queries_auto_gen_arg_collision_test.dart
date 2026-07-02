@@ -1,5 +1,4 @@
 import 'package:test/test.dart';
-import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 // Propagated field arguments are no longer flat operation parameters — they are

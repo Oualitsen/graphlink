@@ -104,19 +104,19 @@ type Mutation { deleteUser(id: ID!): Boolean! @glCaptureErrors }
     setUpAll(() => g = _parse(_schema));
 
     test('annotated query element carries @glCaptureErrors', () {
-      expect(g.queries[GLOperationKey('getUser', GLQueryType.query)]!.elements.first.hasDirective(glCaptureErrors), isTrue);
+      expect(g.queries[const GLOperationKey('getUser', GLQueryType.query)]!.elements.first.hasDirective(glCaptureErrors), isTrue);
     });
 
     test('non-annotated query element does not carry @glCaptureErrors', () {
-      expect(g.queries[GLOperationKey('listUsers', GLQueryType.query)]!.elements.first.hasDirective(glCaptureErrors), isFalse);
+      expect(g.queries[const GLOperationKey('listUsers', GLQueryType.query)]!.elements.first.hasDirective(glCaptureErrors), isFalse);
     });
 
     test('isCaptureErrors() returns true for annotated operation', () {
-      expect(g.queries[GLOperationKey('createUser', GLQueryType.mutation)]!.isCaptureErrors(g), isTrue);
+      expect(g.queries[const GLOperationKey('createUser', GLQueryType.mutation)]!.isCaptureErrors(g), isTrue);
     });
 
     test('isCaptureErrors() returns false for non-annotated operation', () {
-      expect(g.queries[GLOperationKey('deleteUser', GLQueryType.mutation)]!.isCaptureErrors(g), isFalse);
+      expect(g.queries[const GLOperationKey('deleteUser', GLQueryType.mutation)]!.isCaptureErrors(g), isFalse);
     });
 
     test('global captureErrors: true makes all operations captureErrors', () {
@@ -126,8 +126,8 @@ type Query    { getUser: User! }
 type Mutation { deleteUser(id: ID!): Boolean! }
 ''';
       final g2 = _parse(schema, captureErrors: true);
-      expect(g2.queries[GLOperationKey('getUser', GLQueryType.query)]!.isCaptureErrors(g2), isTrue);
-      expect(g2.queries[GLOperationKey('deleteUser', GLQueryType.mutation)]!.isCaptureErrors(g2), isTrue);
+      expect(g2.queries[const GLOperationKey('getUser', GLQueryType.query)]!.isCaptureErrors(g2), isTrue);
+      expect(g2.queries[const GLOperationKey('deleteUser', GLQueryType.mutation)]!.isCaptureErrors(g2), isTrue);
     });
   });
 

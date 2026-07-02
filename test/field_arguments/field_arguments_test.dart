@@ -13,7 +13,7 @@ void main() {
     final g = GLParser(generateAllFieldsFragments: true, autoGenerateQueries: true);
     g.parse(text);
 
-    final def = g.queries[GLOperationKey("getAuthor", GLQueryType.query)]!;
+    final def = g.queries[const GLOperationKey("getAuthor", GLQueryType.query)]!;
 
     // `id` is the operation's own declared arg → stays a direct argument.
     expect(def.arguments.map((a) => a.token), contains("\$id"));
@@ -40,7 +40,7 @@ void main() {
     final g = GLParser();
     g.parse(text);
 
-    final def = g.queries[GLOperationKey("getAuthor", GLQueryType.query)]!;
+    final def = g.queries[const GLOperationKey("getAuthor", GLQueryType.query)]!;
     expect(def.arguments.map((a) => a.token).toList(), ["\$id", "\$limit"]);
 
     final serializer = GLGraphqlSerializer(g, false);
@@ -54,7 +54,7 @@ void main() {
     final g = GLParser();
     g.parse(text);
 
-    final def = g.queries[GLOperationKey("getAuthorWithNoArticles", GLQueryType.query)]!;
+    final def = g.queries[const GLOperationKey("getAuthorWithNoArticles", GLQueryType.query)]!;
     expect(def.arguments.map((a) => a.token).toList(), ["\$id"]);
     expect(def.arguments.map((a) => a.token), isNot(contains("\$limit")));
 

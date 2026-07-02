@@ -8,7 +8,7 @@ import 'package:graphlink_client_integration_tests/generated/inputs/address_inpu
 import 'real_server_adapter.dart';
 
 // The server echoes input fields back — priority is null when not in input.
-final _minimalInput = CreateUserInput(
+const _minimalInput = CreateUserInput(
   name: 'Alice Smith',
   email: 'alice@test.com',
   status: UserStatus.active,
@@ -49,7 +49,7 @@ void main() {
 
     test('priority is deserialized as enum when provided', () async {
       final res = await client.mutations.createUser(
-        input: CreateUserInput(
+        input: const CreateUserInput(
           name: 'Alice Smith',
           email: 'alice@test.com',
           status: UserStatus.active,
@@ -91,7 +91,7 @@ void main() {
   group('createUser — list fields from input', () {
     test('tags list is echoed back from input', () async {
       final res = await client.mutations.createUser(
-        input: CreateUserInput(
+        input: const CreateUserInput(
           name: 'Alice Smith',
           email: 'alice@test.com',
           status: UserStatus.active,
@@ -125,7 +125,7 @@ void main() {
     test('updated name is reflected in response', () async {
       final res = await client.mutations.updateUser(
         id: 'user-1',
-        input: UpdateUserInput(name: 'Updated Alice'),
+        input: const UpdateUserInput(name: 'Updated Alice'),
       );
       expect(res.updateUser.id, equals('user-1'));
       expect(res.updateUser.name, equals('Updated Alice'));
@@ -134,7 +134,7 @@ void main() {
     test('unchanged fields are preserved from base user', () async {
       final res = await client.mutations.updateUser(
         id: 'user-1',
-        input: UpdateUserInput(name: 'New Name'),
+        input: const UpdateUserInput(name: 'New Name'),
       );
       expect(res.updateUser.email, equals('alice@test.com'));
       expect(res.updateUser.status, equals(UserStatus.active));
@@ -143,7 +143,7 @@ void main() {
     test('status update is applied', () async {
       final res = await client.mutations.updateUser(
         id: 'user-1',
-        input: UpdateUserInput(status: UserStatus.suspended),
+        input: const UpdateUserInput(status: UserStatus.suspended),
       );
       expect(res.updateUser.status, equals(UserStatus.suspended));
     });
@@ -151,7 +151,7 @@ void main() {
     test('nested address is preserved', () async {
       final res = await client.mutations.updateUser(
         id: 'user-1',
-        input: UpdateUserInput(name: 'New Name'),
+        input: const UpdateUserInput(name: 'New Name'),
       );
       expect(res.updateUser.address.street, equals('123 Main St'));
     });

@@ -6,7 +6,7 @@ import 'package:graphlink_client_integration_tests/generated/inputs/address_inpu
 import 'fixtures.dart';
 import 'mock_adapter.dart';
 
-final _minimalInput = CreateUserInput(
+const _minimalInput = CreateUserInput(
   name: 'Alice Smith',
   email: 'alice@test.com',
   status: UserStatus.active,

@@ -14,7 +14,7 @@ void main() {
     type Query { noop: String }
   ''';
 
-  String _out() {
+  String out() {
     final g = GLParser(
       reservedWords: kotlinReservedWords,
       mode: CodeGenerationMode.server,
@@ -24,10 +24,10 @@ void main() {
   }
 
   test("toAddress() maps the keyword field via the sanitized identifier", () {
-    expect(_out(), contains("object_ = object_"));
+    expect(out(), contains("object_ = object_"));
   });
 
   test("fromAddress() maps the keyword field via the sanitized identifier", () {
-    expect(_out(), contains("object_ = address.object_"));
+    expect(out(), contains("object_ = address.object_"));
   });
 }

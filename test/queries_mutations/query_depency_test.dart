@@ -12,7 +12,7 @@ void main() async {
         .readAsStringSync();
     g.parse(text);
 
-    expect(g.queries[GLOperationKey("ProductQuery", GLQueryType.query)]!.fragments(g).map((e) => e.token),
+    expect(g.queries[const GLOperationKey("ProductQuery", GLQueryType.query)]!.fragments(g).map((e) => e.token),
         contains("ProductFragment"));
   });
 }

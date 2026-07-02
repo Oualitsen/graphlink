@@ -102,10 +102,10 @@ type Message {
 
     g.parse(chatSchema);
 
-    final query = g.queries[GLOperationKey('message', GLQueryType.query)];
-    final mutation = g.queries[GLOperationKey('message', GLQueryType.mutation)];
+    final query = g.queries[const GLOperationKey('message', GLQueryType.query)];
+    final mutation = g.queries[const GLOperationKey('message', GLQueryType.mutation)];
     final subscription =
-        g.queries[GLOperationKey('message', GLQueryType.subscription)];
+        g.queries[const GLOperationKey('message', GLQueryType.subscription)];
 
     // All three operations survive — none clobbers another.
     expect(query, isNotNull, reason: 'the `message` query should be present');
