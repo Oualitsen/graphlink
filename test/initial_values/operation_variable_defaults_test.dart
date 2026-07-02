@@ -102,12 +102,14 @@ void main() {
       // non-null, has default → optional in args type
       expect(out, contains('role?: Role'));
       // nullable, has default → optional
+
       expect(out, contains('status?: Status'));
       expect(out, contains('limit?: number'));
       // variables map uses ?? fallback
-      expect(out, contains("'role': Role.toJson(args.role) ?? Role.USER"));
-      expect(out, contains("'status': args.status != null ? Status.toJson(args.status) : null ?? Status.ACTIVE"));
-      expect(out, contains("'limit': args.limit ?? 10"));
+
+      expect(out, contains("'role': (args.role != null ? Role.toJson(args.role) : null) ?? Role.USER"));
+      expect(out, contains("'status': (args.status != null ? Status.toJson(args.status) : null) ?? Status.ACTIVE"));
+      expect(out, contains("'limit': (args.limit) ?? 10"));
     });
   });
 }
