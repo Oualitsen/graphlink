@@ -93,7 +93,7 @@ void main() {
   // ── createUserOrErrors — error response ───────────────────────────────────
 
   group('createUserOrErrors — error response', () {
-    final errorInput = CreateUserInput(
+    const errorInput =  CreateUserInput(
       name: 'error-user',
       email: 'a@b.com',
       status: UserStatus.active,
@@ -116,7 +116,7 @@ void main() {
   // ── createUserOrErrors — success response ─────────────────────────────────
 
   group('createUserOrErrors — success response', () {
-    final goodInput = CreateUserInput(
+    const goodInput = CreateUserInput(
       name: 'Alice Smith',
       email: 'alice@test.com',
       status: UserStatus.active,

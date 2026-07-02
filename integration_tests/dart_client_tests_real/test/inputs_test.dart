@@ -17,7 +17,7 @@ void main() {
   group('CreateUserInput — required scalar fields', () {
     test('name is sent and echoed back', () async {
       final res = await client.mutations.createUser(
-        input: CreateUserInput(
+        input: const CreateUserInput(
           name: 'Alice Smith',
           email: 'alice@test.com',
           status: UserStatus.active,
@@ -29,7 +29,7 @@ void main() {
 
     test('email is sent and echoed back', () async {
       final res = await client.mutations.createUser(
-        input: CreateUserInput(
+        input: const CreateUserInput(
           name: 'Alice',
           email: 'test@example.com',
           status: UserStatus.active,
@@ -41,7 +41,7 @@ void main() {
 
     test('enum field status is sent and deserialized', () async {
       final res = await client.mutations.createUser(
-        input: CreateUserInput(
+        input: const CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
           status: UserStatus.suspended,
@@ -55,7 +55,7 @@ void main() {
   group('CreateUserInput — nested AddressInput', () {
     test('address fields are sent and echoed back', () async {
       final res = await client.mutations.createUser(
-        input: CreateUserInput(
+        input: const CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
           status: UserStatus.active,
@@ -74,7 +74,7 @@ void main() {
 
     test('nullable zip is null when not provided', () async {
       final res = await client.mutations.createUser(
-        input: CreateUserInput(
+        input: const  CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
           status: UserStatus.active,
@@ -88,7 +88,7 @@ void main() {
   group('CreateUserInput — optional fields', () {
     test('priority is null when not provided', () async {
       final res = await client.mutations.createUser(
-        input: CreateUserInput(
+        input: const CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
           status: UserStatus.active,
@@ -100,7 +100,7 @@ void main() {
 
     test('priority is deserialized when provided', () async {
       final res = await client.mutations.createUser(
-        input: CreateUserInput(
+        input: const CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
           status: UserStatus.active,
@@ -113,7 +113,7 @@ void main() {
 
     test('tags list is serialized correctly', () async {
       final res = await client.mutations.createUser(
-        input: CreateUserInput(
+        input: const CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
           status: UserStatus.active,
@@ -126,7 +126,7 @@ void main() {
 
     test('empty tags list is serialized as empty list', () async {
       final res = await client.mutations.createUser(
-        input: CreateUserInput(
+        input: const CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
           status: UserStatus.active,
@@ -142,7 +142,7 @@ void main() {
     test('only name is updated; other fields preserved', () async {
       final res = await client.mutations.updateUser(
         id: 'user-1',
-        input: UpdateUserInput(name: 'New Name'),
+        input: const UpdateUserInput(name: 'New Name'),
       );
       expect(res.updateUser.name, equals('New Name'));
       expect(res.updateUser.email, equals('alice@test.com'));
@@ -152,7 +152,7 @@ void main() {
     test('updateUser with different id returns that user updated', () async {
       final res = await client.mutations.updateUser(
         id: 'user-2',
-        input: UpdateUserInput(status: UserStatus.active),
+        input: const UpdateUserInput(status: UserStatus.active),
       );
       expect(res.updateUser.id, equals('user-2'));
       expect(res.updateUser.status, equals(UserStatus.active));

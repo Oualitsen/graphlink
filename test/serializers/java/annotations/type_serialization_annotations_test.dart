@@ -9,7 +9,6 @@ import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 
-import '../../../test_utils.dart';
 
 void main() {
  

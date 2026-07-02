@@ -91,7 +91,7 @@ void main() {
 
     test('errors is non-null', () async {
       final res = await client.mutations.createUserOrErrors(
-        input: CreateUserInput(
+        input: const CreateUserInput(
           name: 'Alice Smith',
           email: 'alice@test.com',
           status: UserStatus.active,
@@ -103,7 +103,7 @@ void main() {
 
     test('data is null', () async {
       final res = await client.mutations.createUserOrErrors(
-        input: CreateUserInput(
+        input: const CreateUserInput(
           name: 'Alice Smith',
           email: 'alice@test.com',
           status: UserStatus.active,
@@ -115,7 +115,7 @@ void main() {
 
     test('first error has correct message', () async {
       final res = await client.mutations.createUserOrErrors(
-        input: CreateUserInput(
+        input: const CreateUserInput(
           name: 'Alice Smith',
           email: 'alice@test.com',
           status: UserStatus.active,
@@ -133,7 +133,7 @@ void main() {
 
     test('errors is null', () async {
       final res = await client.mutations.createUserOrErrors(
-        input: CreateUserInput(
+        input: const CreateUserInput(
           name: 'Alice Smith',
           email: 'alice@test.com',
           status: UserStatus.active,
@@ -145,7 +145,7 @@ void main() {
 
     test('data is non-null', () async {
       final res = await client.mutations.createUserOrErrors(
-        input: CreateUserInput(
+        input: const CreateUserInput(
           name: 'Alice Smith',
           email: 'alice@test.com',
           status: UserStatus.active,
@@ -157,7 +157,7 @@ void main() {
 
     test('data.createUserOrErrors.name is correct', () async {
       final res = await client.mutations.createUserOrErrors(
-        input: CreateUserInput(
+        input: const CreateUserInput(
           name: 'Alice Smith',
           email: 'alice@test.com',
           status: UserStatus.active,

@@ -64,7 +64,7 @@ void main() {
         await subscription.cancel();
         await ws.close();
       }
-    }, timeout: Timeout(Duration(minutes: 2)));
+    }, timeout: const Timeout(Duration(minutes: 2)));
   });
 
   // ---------------------------------------------------------------------------
@@ -117,7 +117,7 @@ void main() {
         await subscription.cancel();
         await ws.close();
       }
-    }, timeout: Timeout(Duration(minutes: 2)));
+    }, timeout: const Timeout(Duration(minutes: 2)));
   });
 
   // ---------------------------------------------------------------------------
@@ -166,6 +166,6 @@ void main() {
         await subscription.cancel();
         await ws.close();
       }
-    }, timeout: Timeout(Duration(minutes: 2)));
+    }, timeout: const Timeout(Duration(minutes: 2)));
   });
 }

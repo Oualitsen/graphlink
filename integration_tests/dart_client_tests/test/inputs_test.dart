@@ -23,7 +23,7 @@ void main() {
   group('CreateUserInput — required scalar fields', () {
     test('name is serialized correctly', () async {
       await client.mutations.createUser(
-        input: CreateUserInput(
+        input: const CreateUserInput(
           name: 'Alice Smith',
           email: 'alice@test.com',
           status: UserStatus.active,
@@ -40,7 +40,7 @@ void main() {
 
     test('email is serialized correctly', () async {
       await client.mutations.createUser(
-        input: CreateUserInput(
+        input: const CreateUserInput(
           name: 'Alice',
           email: 'alice@test.com',
           status: UserStatus.active,
@@ -57,7 +57,7 @@ void main() {
 
     test('enum field status is serialized as a string', () async {
       await client.mutations.createUser(
-        input: CreateUserInput(
+        input: const CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
           status: UserStatus.suspended,
@@ -72,7 +72,7 @@ void main() {
   group('CreateUserInput — nested AddressInput', () {
     test('address fields are serialized correctly', () async {
       await client.mutations.createUser(
-        input: CreateUserInput(
+        input: const CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
           status: UserStatus.active,
@@ -94,7 +94,7 @@ void main() {
 
     test('nullable zip is null when not provided', () async {
       await client.mutations.createUser(
-        input: CreateUserInput(
+        input: const CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
           status: UserStatus.active,
@@ -110,7 +110,7 @@ void main() {
   group('CreateUserInput — optional fields', () {
     test('nullable priority is absent or null when not provided', () async {
       await client.mutations.createUser(
-        input: CreateUserInput(
+        input: const CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
           status: UserStatus.active,
@@ -123,7 +123,7 @@ void main() {
 
     test('priority is serialized as string when provided', () async {
       await client.mutations.createUser(
-        input: CreateUserInput(
+        input: const CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
           status: UserStatus.active,
@@ -137,7 +137,7 @@ void main() {
 
     test('billingAddress is null when not provided', () async {
       await client.mutations.createUser(
-        input: CreateUserInput(
+        input: const CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
           status: UserStatus.active,
@@ -150,7 +150,7 @@ void main() {
 
     test('tags list is serialized correctly', () async {
       await client.mutations.createUser(
-        input: CreateUserInput(
+        input: const CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
           status: UserStatus.active,
@@ -164,7 +164,7 @@ void main() {
 
     test('empty tags list is serialized as empty list', () async {
       await client.mutations.createUser(
-        input: CreateUserInput(
+        input: const CreateUserInput(
           name: 'Alice',
           email: 'a@b.com',
           status: UserStatus.active,
@@ -181,7 +181,7 @@ void main() {
     test('only provided fields are non-null in variables', () async {
       await client.mutations.updateUser(
         id: 'user-1',
-        input: UpdateUserInput(name: 'New Name'),
+        input: const UpdateUserInput(name: 'New Name'),
       );
       final input = adapter.lastCall!.variables['input'] as Map<String, dynamic>;
       expect(input['name'], equals('New Name'));
@@ -192,7 +192,7 @@ void main() {
     test('id is passed correctly as a top-level variable', () async {
       await client.mutations.updateUser(
         id: 'user-42',
-        input: UpdateUserInput(status: UserStatus.inactive),
+        input: const UpdateUserInput(status: UserStatus.inactive),
       );
       expect(adapter.lastCall!.variables['id'], equals('user-42'));
     });

@@ -17,22 +17,22 @@ void main() {
     }
   ''';
 
-  GLParser _parser() => GLParser(
+  GLParser parser() => GLParser(
         reservedWords: kotlinReservedWords,
         mode: CodeGenerationMode.server,
       )..parse(schema);
 
-  String _controllers(GLParser g, KotlinSpringServerSerializer ser) =>
+  String controllers(GLParser g, KotlinSpringServerSerializer ser) =>
       g.controllers.values.map(ser.serializeController).join('\n');
-  String _services(GLParser g, KotlinSpringServerSerializer ser) =>
+  String services(GLParser g, KotlinSpringServerSerializer ser) =>
       g.services.values.map(ser.serializeService).join('\n');
 
   test("top-level query arg: param sanitized, @Argument pinned to wire name",
       () {
-    final g = _parser();
+    final g = parser();
     final ser = KotlinSpringServerSerializer(g, packageName: 'com.example');
-    final ctrls = _controllers(g, ser);
-    final svcs = _services(g, ser);
+    final ctrls = controllers(g, ser);
+    final svcs = services(g, ser);
 
     expect(ctrls, contains('@Argument(name = "object") object_: String'));
     expect(ctrls, contains('carService.getCar(object_)'));
@@ -40,10 +40,10 @@ void main() {
   });
 
   test("type-field (schema mapping) arg: param sanitized, @Argument pinned", () {
-    final g = _parser();
+    final g = parser();
     final ser = KotlinSpringServerSerializer(g, packageName: 'com.example');
-    final ctrls = _controllers(g, ser);
-    final svcs = _services(g, ser);
+    final ctrls = controllers(g, ser);
+    final svcs = services(g, ser);
 
     expect(ctrls, contains('@Argument(name = "object") object_: Int?'));
     expect(ctrls, contains('carSchemaMappingsService.carRelated(Car.fromJson(value), object_)'));

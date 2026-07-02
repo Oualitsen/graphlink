@@ -14,56 +14,56 @@ void main() {
   group('createWithDefaults — client applies input field defaults', () {
     test('role defaults to USER when not provided', () async {
       final res = await client.mutations.createWithDefaults(
-        input: CreateWithDefaultsInput(name: 'test'),
+        input: const CreateWithDefaultsInput(name: 'test'),
       );
       expect(res.createWithDefaults.role, equals(Role.user));
     });
 
     test('age defaults to 18 when not provided', () async {
       final res = await client.mutations.createWithDefaults(
-        input: CreateWithDefaultsInput(name: 'test'),
+        input: const CreateWithDefaultsInput(name: 'test'),
       );
       expect(res.createWithDefaults.age, equals(18));
     });
 
     test('isActive defaults to true when not provided', () async {
       final res = await client.mutations.createWithDefaults(
-        input: CreateWithDefaultsInput(name: 'test'),
+        input: const CreateWithDefaultsInput(name: 'test'),
       );
       expect(res.createWithDefaults.isActive, isTrue);
     });
 
     test('score defaults to 4.5 when not provided', () async {
       final res = await client.mutations.createWithDefaults(
-        input: CreateWithDefaultsInput(name: 'test'),
+        input: const CreateWithDefaultsInput(name: 'test'),
       );
       expect(res.createWithDefaults.score, equals(4.5));
     });
 
     test('nickname defaults to "anonymous" when not provided', () async {
       final res = await client.mutations.createWithDefaults(
-        input: CreateWithDefaultsInput(name: 'test'),
+        input: const CreateWithDefaultsInput(name: 'test'),
       );
       expect(res.createWithDefaults.nickname, equals('anonymous'));
     });
 
     test('tags defaults to ["dart", "graphql"] when not provided', () async {
       final res = await client.mutations.createWithDefaults(
-        input: CreateWithDefaultsInput(name: 'test'),
+        input: const CreateWithDefaultsInput(name: 'test'),
       );
       expect(res.createWithDefaults.tags, equals(['dart', 'graphql']));
     });
 
     test('name is echoed from provided value', () async {
       final res = await client.mutations.createWithDefaults(
-        input: CreateWithDefaultsInput(name: 'explicit-name'),
+        input: const CreateWithDefaultsInput(name: 'explicit-name'),
       );
       expect(res.createWithDefaults.name, equals('explicit-name'));
     });
 
     test('explicit values override defaults', () async {
       final res = await client.mutations.createWithDefaults(
-        input: CreateWithDefaultsInput(
+        input: const CreateWithDefaultsInput(
           name: 'override-test',
           role: Role.admin,
           age: 99,
@@ -108,7 +108,7 @@ void main() {
   group('createWithNestedDefaults — client applies nested object/list defaults', () {
     test('name is echoed from provided value', () async {
       final res = await client.mutations.createWithNestedDefaults(
-        input: NestedDefaultsInput(name: 'nested-test'),
+        input: const NestedDefaultsInput(name: 'nested-test'),
       );
       expect(res.createWithNestedDefaults.name, equals('nested-test'));
     });
@@ -117,7 +117,7 @@ void main() {
 
     test('address defaults to full AddressInput object', () async {
       final res = await client.mutations.createWithNestedDefaults(
-        input: NestedDefaultsInput(name: 'obj-default'),
+        input: const NestedDefaultsInput(name: 'obj-default'),
       );
       final a = res.createWithNestedDefaults.address!;
       expect(a.street, equals('123 Main St'));
@@ -130,7 +130,7 @@ void main() {
 
     test('contacts defaults to list of two AddressInput objects', () async {
       final res = await client.mutations.createWithNestedDefaults(
-        input: NestedDefaultsInput(name: 'list-default'),
+        input: const NestedDefaultsInput(name: 'list-default'),
       );
       final contacts = res.createWithNestedDefaults.contacts!;
       expect(contacts, hasLength(2));
@@ -146,7 +146,7 @@ void main() {
 
     test('matrix defaults to nested list of AddressInput objects', () async {
       final res = await client.mutations.createWithNestedDefaults(
-        input: NestedDefaultsInput(name: 'matrix-default'),
+        input: const NestedDefaultsInput(name: 'matrix-default'),
       );
       final matrix = res.createWithNestedDefaults.matrix!;
       expect(matrix, hasLength(2));
@@ -168,7 +168,7 @@ void main() {
 
     test('explicit values override nested defaults', () async {
       final res = await client.mutations.createWithNestedDefaults(
-        input: NestedDefaultsInput(
+        input: const NestedDefaultsInput(
           name: 'override-nested',
           address: AddressInput(
               street: 'Custom St', city: 'Custom City', country: 'XX'),
@@ -199,7 +199,7 @@ void main() {
     test('odometerKm is required (echoed back)', () async {
       final res = await client.queries.getDriver(
         id: 'driver-1',
-        fieldArgs: GetDriverFieldArgs(lastUsedMillageOdometerKm: 100),
+        fieldArgs: const GetDriverFieldArgs(lastUsedMillageOdometerKm: 100),
       );
       expect(res.getDriver.lastUsedMillage, equals(100));
     });
@@ -207,7 +207,7 @@ void main() {
     test('liters defaults to 4 when not provided', () async {
       final res = await client.queries.getDriver(
         id: 'driver-1',
-        fieldArgs: GetDriverFieldArgs(lastUsedMillageOdometerKm: 200),
+        fieldArgs: const GetDriverFieldArgs(lastUsedMillageOdometerKm: 200),
       );
       // Client sends liters=4 (the default), server echoes it back
       expect(res.getDriver.lastUsedFuel, equals(4));
@@ -216,7 +216,7 @@ void main() {
     test('explicit liters overrides the default', () async {
       final res = await client.queries.getDriver(
         id: 'driver-1',
-        fieldArgs: GetDriverFieldArgs(lastUsedMillageOdometerKm: 300, lastUsedFuelLiters: 10),
+        fieldArgs: const GetDriverFieldArgs(lastUsedMillageOdometerKm: 300, lastUsedFuelLiters: 10),
         
       );
       expect(res.getDriver.lastUsedFuel, equals(10));
@@ -225,7 +225,7 @@ void main() {
     test('both values echoed back with explicit liters', () async {
       final res = await client.queries.getDriver(
         id: 'driver-1',
-        fieldArgs: GetDriverFieldArgs(lastUsedMillageOdometerKm: 500, lastUsedFuelLiters: 25),
+        fieldArgs: const GetDriverFieldArgs(lastUsedMillageOdometerKm: 500, lastUsedFuelLiters: 25),
       );
       expect(res.getDriver.lastUsedMillage, equals(500));
       expect(res.getDriver.lastUsedFuel, equals(25));

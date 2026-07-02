@@ -17,22 +17,22 @@ void main() {
     }
   ''';
 
-  GLParser _parser() => GLParser(
+  GLParser parser() => GLParser(
         reservedWords: javaReservedWords,
         mode: CodeGenerationMode.server,
       )..parse(schema);
 
-  String _controllers(GLParser g, JavaSpringServerSerializer ser) =>
+  String controllers(GLParser g, JavaSpringServerSerializer ser) =>
       g.controllers.values.map(ser.serializeController).join('\n');
-  String _services(GLParser g, JavaSpringServerSerializer ser) =>
+  String services(GLParser g, JavaSpringServerSerializer ser) =>
       g.services.values.map(ser.serializeService).join('\n');
 
   test("top-level query arg: param sanitized, @Argument pinned to wire name",
       () {
-    final g = _parser();
+    final g = parser();
     final ser = JavaSpringServerSerializer(g, packageName: 'com.example');
-    final ctrls = _controllers(g, ser);
-    final svcs = _services(g, ser);
+    final ctrls = controllers(g, ser);
+    final svcs = services(g, ser);
 
     expect(ctrls, contains('@Argument(name = "default") String default_'));
     expect(ctrls, contains('carService.getCar(default_)'));
@@ -42,10 +42,10 @@ void main() {
   });
 
   test("type-field (schema mapping) arg: param sanitized, @Argument pinned", () {
-    final g = _parser();
+    final g = parser();
     final ser = JavaSpringServerSerializer(g, packageName: 'com.example');
-    final ctrls = _controllers(g, ser);
-    final svcs = _services(g, ser);
+    final ctrls = controllers(g, ser);
+    final svcs = services(g, ser);
 
     expect(ctrls,
         contains('@Argument(name = "default") Integer default_'));

@@ -67,7 +67,7 @@ void main() {
 
     // The query-string declaration must preserve each variable's own nullability.
     final query = GLGraphqlSerializer(g, false).serializeQueryDefinition(
-        g.queries[GLOperationKey('car', GLQueryType.query)]!);
+        g.queries[const GLOperationKey('car', GLQueryType.query)]!);
     expect(query, contains(r'$engineName: String!'));
     expect(query, isNot(contains(r'$transmissionName: String!')));
   });

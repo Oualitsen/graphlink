@@ -13,7 +13,7 @@ void main() async {
     g.parse(File("test/types/genration/skip_include_nullability_test.graphql")
         .readAsStringSync());
 
-    GLQueryDefinition products = g.queries[GLOperationKey("products", GLQueryType.query)]!;
+    GLQueryDefinition products = g.queries[const GLOperationKey("products", GLQueryType.query)]!;
     var productTypeDef = products.getGeneratedTypeDefinition();
     GLField getProduct = productTypeDef.fields
         .where((field) => field.name.token == "getProduct")

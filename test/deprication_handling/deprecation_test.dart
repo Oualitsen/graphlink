@@ -66,9 +66,9 @@ enum Status { ACTIVE INACTIVE @deprecated(reason: "no longer valid") }
     // Build a schema whose @deprecated reason contains a real newline via a
     // GraphQL block string.  removeQuotes() strips the """ delimiters so the
     // returned deprecationReason has an embedded \n character.
-    final schema =
+    const schema =
         'type Foo { name: String @deprecated(reason: """line1\nline2""") }';
-    final enumSchema =
+    const enumSchema =
         'enum Status { ACTIVE INACTIVE @deprecated(reason: """first\nsecond""") }';
 
     test('Dart — field: newline becomes \\n escape in single-quoted literal', () {

@@ -24,7 +24,7 @@ void main() {
     type Query { noop: String }
   ''';
 
-  List<String> _lines() {
+  List<String> lines() {
     final g = GLParser(
       reservedWords: dartReservedWords,
       mode: CodeGenerationMode.server,
@@ -36,11 +36,11 @@ void main() {
   }
 
   test("toAddress() maps the keyword field via the sanitized identifier", () {
-    expect(_lines(), contains('return Address(default_: default_, city: city);'));
+    expect(lines(), contains('return Address(default_: default_, city: city);'));
   });
 
   test("fromAddress() maps the keyword field via the sanitized identifier", () {
-    expect(_lines(),
+    expect(lines(),
         contains(
             'return CreateAddressInput(default_: address.default_, city: address.city);'));
   });
