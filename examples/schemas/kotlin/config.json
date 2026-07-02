@@ -1,6 +1,6 @@
 {
     "schemaPaths": [
-        "../saleor.graphql"
+        "../anilist.graphql"
     ],
     "mode": "client",
     "unknownScalarType": "String",

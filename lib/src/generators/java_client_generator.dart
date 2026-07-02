@@ -19,7 +19,6 @@ Future<Set<String>> generateJavaClientClasses(
   final jsonCodec = javaConfig.jsonCodec;
   final serializer = JavaSerializer(
     parser,
-    generateJsonMethods: true,
     immutableInputFields: javaConfig.immutableInputFields,
     immutableTypeFields: javaConfig.immutableTypeFields,
     inputsAsRecords: javaConfig.inputAsRecord,

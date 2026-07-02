@@ -82,7 +82,7 @@ void main() {
       );
       g.parse('enum Sex { male female }');
 
-      final out = JavaSerializer(g, importPrefix: '', generateJsonMethods: true)
+      final out = JavaSerializer(g, importPrefix: '')
           .serializeEnumDefinition(g.enums['Sex']!);
       final lines = out.split('\n').map((l) => l.trim()).toList();
 
@@ -104,7 +104,7 @@ void main() {
         type User { id: ID! }
       ''');
 
-      final out = JavaSerializer(g, importPrefix: '', generateJsonMethods: true)
+      final out = JavaSerializer(g, importPrefix: '')
           .serializeTypeDefinition(g.types['Company']!);
       final lines = out.split('\n').map((l) => l.trim()).toList();
 
@@ -123,7 +123,7 @@ void main() {
       );
       g.parse('enum Sex { male female }');
 
-      final out = KotlinSerializer(g, importPrefix: '', generateJsonMethods: true)
+      final out = KotlinSerializer(g, importPrefix: '')
           .serializeEnumDefinition(g.enums['Sex']!);
       final lines = out.split('\n').map((l) => l.trim()).toList();
 
@@ -185,7 +185,7 @@ void main() {
           address: AddrInput = {First_Street: "1 Main", City: "Springfield"}
         }
       ''');
-      final out = KotlinSerializer(g, importPrefix: '', generateJsonMethods: true)
+      final out = KotlinSerializer(g, importPrefix: '')
           .serializeInputDefinition(g.inputs['OrderInput']!);
       expect(out, contains('firstStreet ='));
       expect(out, contains('city ='));

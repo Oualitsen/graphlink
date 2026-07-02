@@ -86,7 +86,7 @@ void main() {
     expect(g.types['Dog']!.getFieldByName('nodeList')!.type.token, 'Alpha');
     expect(g.types['Cat']!.getFieldByName('nodeList')!.type.token, 'Beta');
 
-    final serializer = JavaSerializer(g, importPrefix: _package, generateJsonMethods: true);
+    final serializer = JavaSerializer(g, importPrefix: _package);
     final srcDir = Directory.systemTemp.createTempSync('glink_java_step2_');
     addTearDown(() => srcDir.deleteSync(recursive: true));
 

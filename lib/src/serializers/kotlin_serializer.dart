@@ -36,9 +36,6 @@ class KotlinSerializer extends GLSerializer {
   final codeGenUtils = KotlinCodeGenUtils();
 
   @override
-  final bool generateJsonMethods;
-
-  @override
   Map<String, String> get defaultTypeMap => const {
         'ID': 'String',
         'String': 'String',
@@ -55,7 +52,6 @@ class KotlinSerializer extends GLSerializer {
     super.grammar, {
     this.inputsAsDataClass = true,
     this.typesAsDataClass = true,
-    this.generateJsonMethods = false,
     super.typeMapOverrides = const {},
     required super.importPrefix,
   });
@@ -98,33 +94,31 @@ class KotlinSerializer extends GLSerializer {
     final values = def.values.map(doSerializeEnumValue).toList();
     final body = <String>[];
 
-    if (generateJsonMethods) {
-      final whenToJson = codeGenUtils.switchStatement(
-        expression: 'this',
-        cases: def.values.map((v) => KotlinWhenBranch(
-          caseValue: v.codeName,
-          statement: '"${v.value.token}"',
-        )).toList(),
-      );
-      final whenFromJson = codeGenUtils.switchStatement(
-        expression: 'value',
-        cases: [
-          ...def.values.map((v) => KotlinWhenBranch(
-            caseValue: '"${v.value.token}"',
-            statement: '${def.codeName}.${v.codeName}',
-          )),
-          KotlinWhenBranch(
-            caseValue: 'else',
-            statement: 'throw IllegalArgumentException("Invalid ${def.codeName}: \$value")',
-          ),
-        ],
-      );
-      body.add('fun toJson(): String = $whenToJson');
-      body.add('');
-      body.add(codeGenUtils.companionObject([
-        'fun fromJson(value: String): ${def.codeName} = $whenFromJson',
-      ]));
-    }
+    final whenToJson = codeGenUtils.switchStatement(
+      expression: 'this',
+      cases: def.values.map((v) => KotlinWhenBranch(
+        caseValue: v.codeName,
+        statement: '"${v.value.token}"',
+      )).toList(),
+    );
+    final whenFromJson = codeGenUtils.switchStatement(
+      expression: 'value',
+      cases: [
+        ...def.values.map((v) => KotlinWhenBranch(
+          caseValue: '"${v.value.token}"',
+          statement: '${def.codeName}.${v.codeName}',
+        )),
+        KotlinWhenBranch(
+          caseValue: 'else',
+          statement: 'throw IllegalArgumentException("Invalid ${def.codeName}: \$value")',
+        ),
+      ],
+    );
+    body.add('fun toJson(): String = $whenToJson');
+    body.add('');
+    body.add(codeGenUtils.companionObject([
+      'fun fromJson(value: String): ${def.codeName} = $whenFromJson',
+    ]));
 
     return codeGenUtils.enumClass(name: def.codeName, values: values, body: body.isEmpty ? null : body);
   }
@@ -162,10 +156,8 @@ class KotlinSerializer extends GLSerializer {
     final instanceMethods = <String>[];
     final companionMethods = <String>[];
 
-    if (generateJsonMethods) {
-      instanceMethods.add(_generateToJson(fields, def));
-      companionMethods.add(_generateFromJson(fields, def.codeName, def));
-    }
+    instanceMethods.add(_generateToJson(fields, def));
+    companionMethods.add(_generateFromJson(fields, def.codeName, def));
 
     // @glMapsTo instance methods (toXxx) and companion methods (fromXxx)
     final toMethods = _generateToMappingMethods(def);
@@ -269,11 +261,9 @@ class KotlinSerializer extends GLSerializer {
     final implementsNonInternalInterface = def.interfaces
         .any((i) => !i.hasDirective(glInternal));
 
-    if (generateJsonMethods) {
-      final toJsonPrefix = implementsNonInternalInterface ? 'override ' : '';
-      instanceMethods.add('${toJsonPrefix}${_generateToJson(fields, def)}');
-      companionMethods.add(_generateFromJson(fields, def.codeName, def));
-    }
+    final toJsonPrefix = implementsNonInternalInterface ? 'override ' : '';
+    instanceMethods.add('${toJsonPrefix}${_generateToJson(fields, def)}');
+    companionMethods.add(_generateFromJson(fields, def.codeName, def));
 
     if (!typesAsDataClass) {
       instanceMethods.addAll(_generateEqualsHashCode(def.codeName, fields, def));
@@ -315,18 +305,16 @@ class KotlinSerializer extends GLSerializer {
     }).toList();
 
     final companionMethods = <String>[];
-    if (generateJsonMethods) {
-      final subTypes = def.getSerializableImplementations(mode);
-      if (subTypes.isNotEmpty) {
-        companionMethods.add(_serializeFromJsonForInterface(def.codeName, subTypes));
-      }
+    final subTypes = def.getSerializableImplementations(mode);
+    if (subTypes.isNotEmpty) {
+      companionMethods.add(_serializeFromJsonForInterface(def.codeName, subTypes));
     }
 
     final isInternal = def.hasDirective(glInternal);
 
     final body = <String>[
       ...fieldDecls.map((d) => d),
-      if (!isInternal && generateJsonMethods) 'fun toJson(): $_mapType',
+      if (!isInternal) 'fun toJson(): $_mapType',
       if (companionMethods.isNotEmpty) ...[
         '',
         codeGenUtils.companionObject(companionMethods),

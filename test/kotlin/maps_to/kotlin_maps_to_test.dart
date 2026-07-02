@@ -11,7 +11,6 @@ List<String> _lines(String schema, String inputName,
   final input = g.inputs[inputName]!;
   final result = KotlinSerializer(
     g,
-    generateJsonMethods: false,
     inputsAsDataClass: inputsAsDataClass,
     importPrefix: '',
   ).serializeInputDefinition(input);

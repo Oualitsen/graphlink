@@ -154,25 +154,6 @@ void main() {
       expect(out, contains('throw new Error(`Unknown Animal: \${json["__typename"]}`)'));
     });
 
-    test('generateJsonMethods: false suppresses namespaces', () {
-      const schema = '''
-        enum Status { active inactive }
-        type Item { id: ID! status: Status! }
-      ''';
-
-      final g = GLParser(reservedWords: typescriptReservedWords);
-      g.parse(schema);
-
-      final serializer = TypeScriptSerializer(g, importPrefix: '', generateJsonMethods: false);
-
-      final enumOut = serializer.serializeEnumDefinition(g.enums['Status']!);
-      expect(enumOut, isNot(contains('namespace')));
-      expect(enumOut, isNot(contains('fromJson')));
-
-      final typeOut = serializer.doSerializeTypeDefinition(g.types['Item']!);
-      expect(typeOut, isNot(contains('namespace')));
-      expect(typeOut, isNot(contains('toJson')));
-    });
   });
 
   group('nested list serialization', () {

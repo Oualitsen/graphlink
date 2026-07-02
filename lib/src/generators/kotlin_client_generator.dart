@@ -17,7 +17,6 @@ Future<Set<String>> generateKotlinClientClasses(
   final kotlinConfig = config.clientConfig!.language as KotlinClientConfig;
   final serializer = KotlinSerializer(
     parser,
-    generateJsonMethods: true,
     inputsAsDataClass: kotlinConfig.inputAsDataClass,
     typesAsDataClass: kotlinConfig.typeAsDataClass,
     typeMapOverrides: config.typeMappings ?? {},

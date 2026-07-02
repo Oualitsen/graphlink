@@ -19,7 +19,6 @@ Future<Set<String>> generateDartClientClasses(
     ) async {
   final dartConfig = config.clientConfig!.language as DartClientConfig;
   final serializer = DartSerializer(parser,
-      generateJsonMethods: true,
       typeMapOverrides: config.typeMappings ?? {}, importPrefix: importPrefix);
   final clientSerializer = DartClientSerializer(parser, serializer,
       generateAdapters: dartConfig.generateAdapters,

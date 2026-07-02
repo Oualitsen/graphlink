@@ -6,7 +6,6 @@ KotlinSerializer _serializer(GLParser g, {bool inputsAsDataClass = true, bool ty
     KotlinSerializer(
       g,
       importPrefix: 'com.example',
-      generateJsonMethods: true,
       inputsAsDataClass: inputsAsDataClass,
       typesAsDataClass: typesAsDataClass,
     );

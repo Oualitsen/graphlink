@@ -19,7 +19,7 @@ void main() {
       reservedWords: kotlinReservedWords,
       mode: CodeGenerationMode.server,
     )..parse(schema);
-    return KotlinSerializer(g, importPrefix: "", generateJsonMethods: true)
+    return KotlinSerializer(g, importPrefix: "")
         .serializeInputDefinition(g.inputs['CreateAddressInput']!);
   }
 
