@@ -1,6 +1,6 @@
 {
     "schemaPaths": [
-        "../microsoft_graph.graphql"
+        "../shopify_store_front.graphql"
     ],
     "mode": "client",
     "unknownScalarType": "String",

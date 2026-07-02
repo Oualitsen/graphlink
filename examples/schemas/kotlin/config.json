@@ -1,6 +1,6 @@
 {
     "schemaPaths": [
-        "../gitlab.graphql"
+        "../shopify_store_front.graphql"
     ],
     "mode": "client",
     "unknownScalarType": "String",
