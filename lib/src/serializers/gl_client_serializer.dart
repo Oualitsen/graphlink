@@ -202,7 +202,9 @@ abstract class GLClientSerializer {
     final payload = _parser.getTokenByKey('GraphLinkPayload');
     if (payload != null) tokens.add(payload);
 
-    final ops = _parser.queries.values.where((q) => q.type == type);
+    final ops = _parser.queries.values.where((q) =>
+        q.type == type &&
+        !q.fragments(_parser).any((f) => oversizedFragmentNames.contains(f.tokenInfo.token)));
     for (final op in ops) {
       if (type == GLQueryType.subscription) {
         final td = op.typeDefinition;
