@@ -1,4 +1,5 @@
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/model/code_name_mixin.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
@@ -22,6 +23,13 @@ extension GLGrammarKeywordExtension on GLParser {
   /// One pass over every container of identifiers. No-op when [reservedWords]
   /// is empty (e.g. TypeScript, which accepts reserved words as properties).
   void assignCodeNames() {
+    // Type/input/interface/union/enum *declaration* names — `class`, `in`,
+    // `fun`, etc. are illegal here in every target language, including
+    // TypeScript (`interface class { … }` is a syntax error even though
+    // `{ class: string }` as a property is fine). This is a binding-identifier
+    // position, so it uses [parameterReservedWords], not [reservedWords].
+    _assignTypeCodeNames();
+
     // Field/property-position identifiers (class fields, enum values, JSON keys,
     // and generated method names). TypeScript leaves this empty because reserved
     // words are legal as object-property names and method names.
@@ -78,6 +86,57 @@ extension GLGrammarKeywordExtension on GLParser {
       for (final q in queries.values) {
         _assignArgumentCodeNames(q.arguments);
       }
+    }
+  }
+
+  /// Resolves a collision-free, keyword-safe [CodeNameMixin.codeName] for every
+  /// type/input/interface/union/enum whose (possibly already naming-convention-
+  /// normalized) code name collides with a reserved keyword, e.g. `input class`
+  /// → `class_`. Mirrors the container scope and collision handling of
+  /// [GLGrammarNormalizationExtension.sanitizeTypeNames] (interfaces created
+  /// from a union are excluded and re-synced to the union's final name
+  /// afterwards, since they must always agree).
+  void _assignTypeCodeNames() {
+    if (parameterReservedWords.isEmpty) return;
+
+    final allContainers = <CodeNameMixin>[
+      ...types.values,
+      ...inputs.values,
+      ...interfaces.values.where((i) => !i.fromUnion),
+      ...unions.values,
+      ...enums.values,
+    ];
+
+    final taken = <String>{
+      ...types.keys,
+      ...inputs.keys,
+      ...interfaces.keys,
+      ...unions.keys,
+      ...enums.keys,
+      ...allContainers.map((c) => c.codeName),
+    };
+
+    for (final container in allContainers) {
+      final current = container.codeName;
+      if (!parameterReservedWords.contains(current)) continue;
+
+      var candidate = '${current}_';
+      var counter = 2;
+      while (taken.contains(candidate)) {
+        candidate = '${current}_$counter';
+        counter++;
+      }
+
+      taken.remove(current);
+      container.codeName = candidate;
+      taken.add(candidate);
+    }
+
+    // Sync fromUnion interfaces to their union's final codeName so that the
+    // abstract class declaration and the `implements` clauses agree.
+    for (final iface in interfaces.values.where((i) => i.fromUnion)) {
+      final union = unions[iface.token];
+      if (union != null) iface.codeName = union.codeName;
     }
   }
 
