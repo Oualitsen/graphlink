@@ -33,7 +33,7 @@ void main() {
 
     // fromJson: matches the original wire string, returns the safe constant.
     expect(out, contains('case "default":'));
-    expect(out, contains('return default_;'));
+    expect(out, contains('return FilterMode.default_;'));
   });
 
   test("sanitized enum value avoids collision with an existing value", () {
@@ -54,9 +54,9 @@ void main() {
 
     expect(out, contains("default_2"));
     expect(out, contains('case "default":'));
-    expect(out, contains('return default_2;'));
+    expect(out, contains('return FilterMode.default_2;'));
     expect(out, contains('case "default_":'));
-    expect(out, contains('return default_;'));
+    expect(out, contains('return FilterMode.default_;'));
   });
 
   test("leading underscore enum value: _ACTIVE -> ACTIVE_", () {
@@ -84,6 +84,6 @@ void main() {
 
     // fromJson: matches the original wire string, returns the safe constant.
     expect(out, contains('case "_ACTIVE":'));
-    expect(out, contains('return ACTIVE_;'));
+    expect(out, contains('return Status.ACTIVE_;'));
   });
 }

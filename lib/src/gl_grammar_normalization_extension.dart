@@ -13,6 +13,19 @@ import 'package:graphlink/src/naming_convention.dart';
 ///
 /// No-op when [GLParser.naming] is null.
 extension GLGrammarNormalizationExtension on GLParser {
+  /// Applies the naming convention to operation names only (no fields, no
+  /// types). Called before [createProjectedTypes] so that
+  /// [GLQueryDefinition.getGeneratedTypeDefinition] sees the final codeName
+  /// when it builds and caches the `<stem>Response` type name.
+  void normalizeQueryNames() {
+    final convention = naming;
+    if (convention == null) return;
+    for (final q in queries.values) {
+      final normalized = convention.field(q.token);
+      if (normalized != q.token) q.codeName = normalized;
+    }
+  }
+
   void normalizeIdentifiers() {
     final convention = naming;
     if (convention == null) return;
@@ -62,8 +75,10 @@ extension GLGrammarNormalizationExtension on GLParser {
       _applyArgumentNamingToFields(iface.fields, convention);
     }
 
-    // Operation arguments (queries / mutations / subscriptions).
+    // Operation names and arguments (queries / mutations / subscriptions).
     for (final q in queries.values) {
+      final normalized = convention.field(q.token);
+      if (normalized != q.token) q.codeName = normalized;
       _applyArgumentNaming(q.arguments, convention);
     }
 
