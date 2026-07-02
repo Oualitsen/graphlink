@@ -29,6 +29,7 @@ class JavaImports {
   static const completableFuture = "java.util.concurrent.CompletableFuture";
   static const securityContext = "org.springframework.security.core.context.SecurityContext";
   static const securityContextHolder = "org.springframework.security.core.context.SecurityContextHolder";
+  static const suppressWarnings = "java.lang.SuppressWarnings";
 }
 
 class SpringImports {

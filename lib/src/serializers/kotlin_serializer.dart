@@ -416,7 +416,7 @@ class KotlinSerializer extends GLSerializer {
     final assignments = fields.map((f) {
       return '    ${f.codeName} = ${_fromJsonExpr(f, f.type, 'map', 0, context)},';
     }).join('\n');
-    return 'fun fromJson(map: $_mapType): $token = $token(\n$assignments\n)';
+    return '@Suppress("UNCHECKED_CAST")\nfun fromJson(map: $_mapType): $token = $token(\n$assignments\n)';
   }
 
   String _fromJsonExpr(GLField field, GLType type, String mapVar, int depth, GLToken context) {
