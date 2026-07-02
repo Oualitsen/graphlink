@@ -235,6 +235,9 @@ class GLParser {
   /// during `validateSemantics()` — read after parsing to emit CLI warnings.
   final List<SkippedAutoQuery> skippedAutoQueries = [];
 
+  /// Cache for [oversizedFragmentNames]. Populated on first access.
+  Set<String>? oversizedFragmentNamesCache;
+
   late final GLGraphqlSerializer serializer;
 
   /// Shared cache for inline-expanded blocks built during `createAllFieldsFragments`.
@@ -450,7 +453,7 @@ class GLParser {
   bool get hasMutations => hasQueryType(GLQueryType.mutation);
 
   bool hasQueryType(GLQueryType type) =>
-      queries.values.where((query) => query.type == type).isNotEmpty;
+      hasEffectiveQueryType(type, oversizedFragmentNames);
 
   String? lastParsedFile;
 
