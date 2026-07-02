@@ -452,8 +452,12 @@ class GLParser {
   bool get hasQueries => hasQueryType(GLQueryType.query);
   bool get hasMutations => hasQueryType(GLQueryType.mutation);
 
-  bool hasQueryType(GLQueryType type) =>
-      hasEffectiveQueryType(type, oversizedFragmentNames);
+  bool hasQueryType(GLQueryType type) {
+    final oversized = oversizedFragmentNames;
+    return queries.values.any((q) =>
+        q.type == type &&
+        !q.fragments(this).any((f) => oversized.contains(f.tokenInfo.token)));
+  }
 
   String? lastParsedFile;
 
