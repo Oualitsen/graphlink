@@ -23,7 +23,11 @@ void main() {
         genderSerial.split("\n").map((e) => e.trim()),
         containsAllInOrder([
           "public String toJson() {",
-          "return name();",
+          "switch(this) {",
+          "case male:",
+          'return "male";',
+          "case female:",
+          'return "female";',
           "}",
         ]));
   });
@@ -42,7 +46,12 @@ void main() {
         genderSerial.split("\n").map((e) => e.trim()),
         containsAllInOrder([
           "public static Gender fromJson(String value) {",
-          "return Optional.ofNullable(value).map(Gender::valueOf).orElse(null);",
+          "if (value == null) return null;",
+          "switch(value) {",
+          'case "male":',
+          "return male;",
+          'case "female":',
+          "return female;",
           "}",
         ]));
   });

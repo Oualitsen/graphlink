@@ -30,12 +30,23 @@ void main() {
 
     test('toJson', () {
       final out = _serializer(g).serializeEnumDefinition(g.enums['Status']!);
-      expect(lines(out), contains('fun toJson(): String = name'));
+      expect(lines(out), containsAllInOrder([
+        'fun toJson(): String = when (this) {',
+        'active -> "active"',
+        'inactive -> "inactive"',
+        '}',
+      ]));
     });
 
-    test('fromJson — nullable return', () {
+    test('fromJson — non-null return, throws on invalid', () {
       final out = _serializer(g).serializeEnumDefinition(g.enums['Status']!);
-      expect(lines(out), contains('fun fromJson(value: String?): Status? = value?.let { valueOf(it) }'));
+      expect(lines(out), containsAllInOrder([
+        'fun fromJson(value: String): Status = when (value) {',
+        '"active" -> Status.active',
+        '"inactive" -> Status.inactive',
+        'else -> throw IllegalArgumentException("Invalid Status: \$value")',
+        '}',
+      ]));
     });
   });
 
