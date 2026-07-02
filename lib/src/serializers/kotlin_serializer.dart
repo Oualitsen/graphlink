@@ -186,8 +186,20 @@ class KotlinSerializer extends GLSerializer {
   @override
   String serializeDefaultLiteral(GLType type, Object? value, {bool needsConst = false}) {
     if (value == null) return 'null';
-    if (value is int) return '$value';
-    if (value is double) return '$value';
+    if (value is int) {
+      // A GraphQL Float default without a decimal point (e.g. `min: Float = 0`)
+      // parses as a Dart int, but Kotlin's Double/Float types don't accept an
+      // Int literal in a default-value position — emit a floating literal.
+      final kotlinType = getTypeNameFromGQExternal(type.token) ?? resolveCodeName(type.token);
+      if (kotlinType == 'Double' || kotlinType == 'Float') {
+        return _serializeFloatingLiteral(value.toDouble(), kotlinType);
+      }
+      return '$value';
+    }
+    if (value is double) {
+      final kotlinType = getTypeNameFromGQExternal(type.token) ?? resolveCodeName(type.token);
+      return _serializeFloatingLiteral(value, kotlinType);
+    }
     if (value is bool) return '$value';
     if (value is List) {
       final innerType = type.inlineType;
@@ -214,6 +226,20 @@ class KotlinSerializer extends GLSerializer {
       return '"$content"';
     }
     return '"$value"';
+  }
+
+  // Dart's double.toString() can emit "NaN"/"Infinity"/"-Infinity", none of
+  // which are valid Kotlin literals — those need the Double/Float companion
+  // constants instead. A Kotlin Float literal also needs an explicit `f`
+  // suffix, since a bare decimal literal defaults to Double.
+  String _serializeFloatingLiteral(double value, String kotlinType) {
+    final isFloat = kotlinType == 'Float';
+    if (value.isNaN) return isFloat ? 'Float.NaN' : 'Double.NaN';
+    if (value.isInfinite) {
+      final sign = value.isNegative ? 'NEGATIVE' : 'POSITIVE';
+      return isFloat ? 'Float.${sign}_INFINITY' : 'Double.${sign}_INFINITY';
+    }
+    return isFloat ? '${value}f' : '$value';
   }
 
   String _inputParam(GLField f) {
