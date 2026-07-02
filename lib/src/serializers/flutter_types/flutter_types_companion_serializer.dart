@@ -1,16 +1,18 @@
 import 'package:graphlink/src/dart_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_field.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 class FlutterTypesCompanionSerializer {
   final DartCodeGenUtils _u;
+  final GLParser _parser;
 
-  FlutterTypesCompanionSerializer(this._u);
+  FlutterTypesCompanionSerializer(this._u, this._parser);
 
   String serializeLabelsClass(String typeName, List<GLField> fields) {
     return _u.createClass(
       className: '${typeName}Labels',
       statements: [
-        ...fields.expand((f) => ['final Widget? ${f.name};', 'final String? ${f.name}Info;']),
+        ...fields.expand((f) => ['final Widget? ${f.codeName};', 'final String? ${f.codeName}Info;']),
         r'final Widget? $group;',
         r'final String? $groupInfo;',
         _u.createMethod(
@@ -18,7 +20,7 @@ class FlutterTypesCompanionSerializer {
           methodName: '${typeName}Labels',
           namedArguments: true,
           arguments: [
-            ...fields.expand((f) => ['this.${f.name}', 'this.${f.name}Info']),
+            ...fields.expand((f) => ['this.${f.codeName}', 'this.${f.codeName}Info']),
             r'this.$group',
             r'this.$groupInfo',
           ],
@@ -31,12 +33,12 @@ class FlutterTypesCompanionSerializer {
     return _u.createClass(
       className: '${typeName}Values',
       statements: [
-        ...fields.map((f) => 'final Widget? ${f.name};'),
+        ...fields.map((f) => 'final Widget? ${f.codeName};'),
         _u.createMethod(
           isConst: true,
           methodName: '${typeName}Values',
           namedArguments: true,
-          arguments: fields.map((f) => 'this.${f.name}').toList(),
+          arguments: fields.map((f) => 'this.${f.codeName}').toList(),
         ),
       ],
     );
@@ -46,13 +48,13 @@ class FlutterTypesCompanionSerializer {
     return _u.createClass(
       className: '${typeName}Visibility',
       statements: [
-        ...fields.map((f) => 'final bool ${f.name};'),
+        ...fields.map((f) => 'final bool ${f.codeName};'),
         _u.createMethod(
           isConst: true,
           methodName: '${typeName}Visibility',
           namedArguments: true,
           arguments: fields
-              .map((f) => 'this.${f.name} = ${f.type.firstType.token == 'ID' ? 'false' : 'true'}')
+              .map((f) => 'this.${f.codeName} = ${f.type.firstType.token == 'ID' ? 'false' : 'true'}')
               .toList(),
         ),
       ],
@@ -63,13 +65,13 @@ class FlutterTypesCompanionSerializer {
     return _u.createClass(
       className: '${typeName}Order',
       statements: [
-        ...fields.map((f) => 'final int? ${f.name};'),
+        ...fields.map((f) => 'final int? ${f.codeName};'),
         r'final int? $group;',
         _u.createMethod(
           isConst: true,
           methodName: '${typeName}Order',
           namedArguments: true,
-          arguments: [...fields.map((f) => 'this.${f.name}'), r'this.$group'],
+          arguments: [...fields.map((f) => 'this.${f.codeName}'), r'this.$group'],
         ),
       ],
     );
@@ -79,12 +81,12 @@ class FlutterTypesCompanionSerializer {
     return _u.createClass(
       className: '${typeName}ShowOnly',
       statements: [
-        ...fields.map((f) => 'final bool ${f.name};'),
+        ...fields.map((f) => 'final bool ${f.codeName};'),
         _u.createMethod(
           isConst: true,
           methodName: '${typeName}ShowOnly',
           namedArguments: true,
-          arguments: fields.map((f) => 'this.${f.name} = false').toList(),
+          arguments: fields.map((f) => 'this.${f.codeName} = false').toList(),
         ),
         _u.createMethod(
           returnType: '${typeName}Visibility',
@@ -92,7 +94,7 @@ class FlutterTypesCompanionSerializer {
           namedArguments: false,
           arguments: [],
           statements: [
-            'return ${_u.callExpression('${typeName}Visibility', fields.map((f) => '${f.name}: ${f.name}').toList())};',
+            'return ${_u.callExpression('${typeName}Visibility', fields.map((f) => '${f.codeName}: ${f.codeName}').toList())};',
           ],
         ),
       ],
@@ -103,12 +105,12 @@ class FlutterTypesCompanionSerializer {
     return _u.createClass(
       className: '${typeName}EnumLabels',
       statements: [
-        ...enumFields.map((f) => 'final ${f.type.firstType.token}Labels? ${f.name};'),
+        ...enumFields.map((f) => 'final ${_parser.enums[f.type.firstType.token]?.codeName ?? f.type.firstType.token}Labels? ${f.codeName};'),
         _u.createMethod(
           isConst: true,
           methodName: '${typeName}EnumLabels',
           namedArguments: true,
-          arguments: enumFields.map((f) => 'this.${f.name}').toList(),
+          arguments: enumFields.map((f) => 'this.${f.codeName}').toList(),
         ),
       ],
     );

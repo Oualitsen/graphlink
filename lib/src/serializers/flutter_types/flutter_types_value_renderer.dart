@@ -12,7 +12,7 @@ class FlutterTypesValueRenderer {
   FlutterTypesValueRenderer(this._parser, this._dartSerializer, this._config);
 
   String defaultValueExpression(GLField field, String varName) {
-    final accessor = '$varName.${field.name}';
+    final accessor = '$varName.${field.codeName}';
     final type = field.type;
     final baseToken = type.firstType.token;
     final nullable = type.nullable;
@@ -22,16 +22,17 @@ class FlutterTypesValueRenderer {
       final elementNullable = type.inlineType.nullable;
       if (_parser.types.containsKey(baseToken) && !flutterInternalTypes.contains(baseToken)) {
         final typeDef = _parser.types[baseToken]!;
+        final typeCodeName = typeDef.codeName;
         final widgetGenerated = !typeDef.isResponseType && !_config.typesToSkip.contains(baseToken);
         final list = '$accessor${nullable ? '!' : ''}';
-        final mapSource = elementNullable ? '$list.whereType<$baseToken>()' : list;
+        final mapSource = elementNullable ? '$list.whereType<$typeCodeName>()' : list;
         final inner = widgetGenerated
-            ? "Column(children: $mapSource.map((e) => ${baseToken}Widget(e, strings: strings)).toList())"
+            ? "Column(children: $mapSource.map((e) => ${typeCodeName}Widget(e, strings: strings)).toList())"
             : "Chip(label: Text('\${$list.length} ${humanize(baseToken)}'))";
         return nullable ? "($accessor == null ? const SizedBox.shrink() : $inner)" : inner;
       }
       if (_parser.enums.containsKey(baseToken)) {
-        final fieldName = field.name;
+        final fieldName = field.codeName;
         final list = '$accessor${nullable ? '!' : ''}';
         final mapSource = elementNullable ? '$list.whereType<$baseToken>()' : list;
         final wrap = "Wrap(spacing: 4, runSpacing: 4, children: $mapSource.map((e) => Chip(label: enumLabels?.$fieldName?.call(e) ?? Text(e.name))).toList())";
@@ -51,7 +52,7 @@ class FlutterTypesValueRenderer {
     }
 
     if (_parser.enums.containsKey(baseToken)) {
-      final fieldName = field.name;
+      final fieldName = field.codeName;
       if (nullable) {
         return "($accessor == null ? const SizedBox.shrink() : enumLabels?.$fieldName?.call($accessor!) ?? Text($accessor!.name))";
       }
@@ -59,10 +60,11 @@ class FlutterTypesValueRenderer {
     }
 
     if (_parser.types.containsKey(baseToken) && !flutterInternalTypes.contains(baseToken)) {
+      final typeCodeName = _parser.types[baseToken]!.codeName;
       if (nullable) {
-        return "($accessor == null ? const SizedBox.shrink() : ${baseToken}Widget($accessor!, strings: strings))";
+        return "($accessor == null ? const SizedBox.shrink() : ${typeCodeName}Widget($accessor!, strings: strings))";
       }
-      return "${baseToken}Widget($accessor, strings: strings)";
+      return "${typeCodeName}Widget($accessor, strings: strings)";
     }
 
     if (dartType == 'String') {

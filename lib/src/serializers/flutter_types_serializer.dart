@@ -26,7 +26,7 @@ class FlutterTypesSerializer {
   FlutterTypesSerializer(this._parser, DartSerializer dartSerializer, this._config, this.importPrefix) {
     _u = DartCodeGenUtils();
     _renderer = FlutterTypesValueRenderer(_parser, dartSerializer, _config);
-    _companions = FlutterTypesCompanionSerializer(_u);
+    _companions = FlutterTypesCompanionSerializer(_u, _parser);
     _layout = FlutterTypesLayoutSerializer(_parser, _u, _renderer);
   }
 
@@ -36,15 +36,15 @@ class FlutterTypesSerializer {
   bool shouldSkipEnum(GLEnumDefinition def) => flutterInternalEnums.contains(def.token);
 
   String getWidgetFileNameFor(GLTypeDefinition def) =>
-      '${def.token.toSnakeCase()}_widget.dart';
+      '${def.codeName.toSnakeCase()}_widget.dart';
 
   String getEnumLabelsFileNameFor(GLEnumDefinition def) =>
-      '${def.token.toSnakeCase()}_labels.dart';
+      '${def.codeName.toSnakeCase()}_labels.dart';
 
   // ── Enum labels file ───────────────────────────────────────────────────────
 
   String serializeEnumLabels(GLEnumDefinition def) {
-    final enumName = def.token;
+    final enumName = def.codeName;
     final values = def.values;
     final buffer = StringBuffer();
 
@@ -55,12 +55,12 @@ class FlutterTypesSerializer {
       className: '${enumName}Labels',
       statements: [
         'final Widget? unselected;',
-        ...values.map((v) => 'final Widget? ${v.token};'),
+        ...values.map((v) => 'final Widget? ${v.codeName};'),
         _u.createMethod(
           isConst: true,
           methodName: '${enumName}Labels',
           namedArguments: true,
-          arguments: ['this.unselected', ...values.map((v) => 'this.${v.token}')],
+          arguments: ['this.unselected', ...values.map((v) => 'this.${v.codeName}')],
         ),
         _u.createMethod(
           returnType: 'Widget?',
@@ -72,8 +72,8 @@ class FlutterTypesSerializer {
               expression: 'value',
               cases: values
                   .map((v) => DartCaseStatement(
-                        caseValue: '$enumName.${v.token}',
-                        statement: 'return ${v.token};',
+                        caseValue: '$enumName.${v.codeName}',
+                        statement: 'return ${v.codeName};',
                       ))
                   .toList(),
             ),
@@ -124,8 +124,8 @@ class FlutterTypesSerializer {
       ...entity.enumDataImports(importPrefix),
       ...entity.enumLabelImports(importPrefix),
       for (final f in [...nestedTypeFields, ...nestedTypeListFields]) ...{
-        "import '$importPrefix/types/${f.type.firstType.token.toSnakeCase()}.dart';",
-        "import '$importPrefix/widgets/types/${f.type.firstType.token.toSnakeCase()}_widget.dart';",
+        "import '$importPrefix/types/${(_parser.types[f.type.firstType.token]?.codeName ?? f.type.firstType.token).toSnakeCase()}.dart';",
+        "import '$importPrefix/widgets/types/${(_parser.types[f.type.firstType.token]?.codeName ?? f.type.firstType.token).toSnakeCase()}_widget.dart';",
       },
     };
     for (final imp in imports) { buffer.writeln(imp); }

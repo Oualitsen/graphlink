@@ -38,7 +38,7 @@ class FlutterInputsSerializer {
       gl_utils.shouldSkip(def, CodeGenerationMode.client);
 
   String getFormFileNameFor(GLInputDefinition def) =>
-      '${def.token.toSnakeCase()}_form.dart';
+      '${def.codeName.toSnakeCase()}_form.dart';
 
   // ── Shared files (delegated) ──────────────────────────────────────────────────
 
@@ -223,11 +223,11 @@ class FlutterInputsSerializer {
       "import '$importPrefix/widgets/inputs/required_indicator.dart';",
       "import '$importPrefix/widgets/inputs/form_strings.dart';",
       for (final f in inputFields) ...{
-        "import '$importPrefix/inputs/${f.type.firstType.token.toSnakeCase()}.dart';",
-        "import '$importPrefix/widgets/inputs/${f.type.firstType.token.toSnakeCase()}_form.dart';",
+        "import '$importPrefix/inputs/${(_parser.inputs[f.type.firstType.token]?.codeName ?? f.type.firstType.token).toSnakeCase()}.dart';",
+        "import '$importPrefix/widgets/inputs/${(_parser.inputs[f.type.firstType.token]?.codeName ?? f.type.firstType.token).toSnakeCase()}_form.dart';",
       },
       for (final f in inputListFields)
-        "import '$importPrefix/inputs/${f.type.inlineType.firstType.token.toSnakeCase()}.dart';",
+        "import '$importPrefix/inputs/${(_parser.inputs[f.type.inlineType.firstType.token]?.codeName ?? f.type.inlineType.firstType.token).toSnakeCase()}.dart';",
       if (hasSubInputs) "import '$importPrefix/widgets/inputs/input_step_options.dart';",
       if (hasSubInputs) "import '$importPrefix/widgets/inputs/stepper_strings.dart';",
     };

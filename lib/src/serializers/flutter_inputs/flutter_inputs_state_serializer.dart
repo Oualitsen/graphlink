@@ -38,16 +38,16 @@ class FlutterInputsStateSerializer {
     final listParams = <String>[];
     for (final f in listFields) {
       if (_types.isEnumListField(f)) {
-        listFieldDecls.add('final List<${_types.listItemTypeNonNull(f)}> ${f.name};');
-        listParams.add('this.${f.name} = ${_types.typedEmptyList(f)}');
+        listFieldDecls.add('final List<${_types.listItemTypeNonNull(f)}> ${f.codeName};');
+        listParams.add('this.${f.codeName} = ${_types.typedEmptyList(f)}');
       } else if (_types.isScalarListField(f)) {
-        listFieldDecls.add('final List<${_types.listItemTypeNonNull(f)}> ${f.name};');
-        listFieldDecls.add('final List<${_types.listItemTypeNonNull(f)}>? ${f.name}Options;');
-        listParams.add('this.${f.name} = ${_types.typedEmptyList(f)}');
-        listParams.add('this.${f.name}Options');
+        listFieldDecls.add('final List<${_types.listItemTypeNonNull(f)}> ${f.codeName};');
+        listFieldDecls.add('final List<${_types.listItemTypeNonNull(f)}>? ${f.codeName}Options;');
+        listParams.add('this.${f.codeName} = ${_types.typedEmptyList(f)}');
+        listParams.add('this.${f.codeName}Options');
       } else {
-        listFieldDecls.add('final ${_types.listDartType(f)} ${f.name};');
-        listParams.add(f.type.nullable ? 'this.${f.name}' : 'required this.${f.name}');
+        listFieldDecls.add('final ${_types.listDartType(f)} ${f.codeName};');
+        listParams.add(f.type.nullable ? 'this.${f.codeName}' : 'required this.${f.codeName}');
       }
     }
 
@@ -184,51 +184,51 @@ class FlutterInputsStateSerializer {
       'bool _asyncNotifying = false;',
       'final _errorsNotifier = ValueNotifier<Map<String, String>>({});',
       if (validatableFields.isNotEmpty) '// async validation state',
-      ...validatableFields.map((f) => 'bool _${f.name}Validating = false;'),
-      ...validatableFields.map((f) => 'String? _${f.name}AsyncError;'),
-      ...validatableFields.map((f) => 'Timer? _${f.name}AsyncTimer;'),
+      ...validatableFields.map((f) => 'bool _${f.codeName}Validating = false;'),
+      ...validatableFields.map((f) => 'String? _${f.codeName}AsyncError;'),
+      ...validatableFields.map((f) => 'Timer? _${f.codeName}AsyncTimer;'),
       if (hasSubInputs) 'int _currentStep = 0;',
       if (textFields.isNotEmpty) '// text controllers',
-      ...textFields.map((f) => 'late final TextEditingController _${f.name}Controller;'),
+      ...textFields.map((f) => 'late final TextEditingController _${f.codeName}Controller;'),
       if (passwordFields.isNotEmpty) '// password visibility state',
-      ...passwordFields.map((f) => 'bool _${f.name}Obscured = true;'),
+      ...passwordFields.map((f) => 'bool _${f.codeName}Obscured = true;'),
       if (enumFields.isNotEmpty) '// enum state',
-      ...enumFields.map((f) => '${f.type.firstType.token}? _${f.name};'),
+      ...enumFields.map((f) => '${_types.resolveTypeCodeName(f.type.firstType.token)}? _${f.codeName};'),
       if (boolFields.isNotEmpty) '// boolean state',
-      ...boolFields.map((f) => '${_types.boolStateType(f)} _${f.name}${_types.boolStateInit(f)};'),
+      ...boolFields.map((f) => '${_types.boolStateType(f)} _${f.codeName}${_types.boolStateInit(f)};'),
       if (listFields.isNotEmpty) '// list state',
       ...listFields.map((f) {
         if (_types.isEnumListField(f) || _types.isScalarListField(f)) {
-          return 'late List<${_types.listItemTypeNonNull(f)}> _${f.name};';
+          return 'late List<${_types.listItemTypeNonNull(f)}> _${f.codeName};';
         }
         return f.type.nullable
-            ? '${_types.listDartType(f)} _${f.name};'
-            : 'late ${_types.listDartType(f)} _${f.name};';
+            ? '${_types.listDartType(f)} _${f.codeName};'
+            : 'late ${_types.listDartType(f)} _${f.codeName};';
       }),
       if (dateEligibleFields.isNotEmpty) '// inline calendar open state',
-      ...dateEligibleFields.map((f) => 'bool _${f.name}CalendarOpen = false;'),
+      ...dateEligibleFields.map((f) => 'bool _${f.codeName}CalendarOpen = false;'),
       if (inputFields.isNotEmpty) '// nested input keys',
-      ...inputFields.map((f) => 'final _${f.name}Key = GlobalKey<${f.type.firstType.token}FormState>();'),
+      ...inputFields.map((f) => 'final _${f.codeName}Key = GlobalKey<${_types.resolveTypeCodeName(f.type.firstType.token)}FormState>();'),
       '// field keys — used by _scrollToFirstError to locate first invalid field',
       ...fields.where((f) => textFields.contains(f) || enumFields.contains(f) || boolFields.contains(f))
-          .map((f) => 'final _${f.name}FieldKey = GlobalKey<FormFieldState>();'),
+          .map((f) => 'final _${f.codeName}FieldKey = GlobalKey<FormFieldState>();'),
       '// field override keys',
       ...fields.where((f) => !_types.isInputField(f)).map((f) =>
-          'final _${f.name}OverrideKey = GlobalKey<InputFormState<${_types.valuesFieldType(f)}>>();'),
+          'final _${f.codeName}OverrideKey = GlobalKey<InputFormState<${_types.valuesFieldType(f)}>>();'),
     ];
 
     final initStatements = <String>[
       'super.initState();',
-      ...textFields.map((f) => '_${f.name}Controller = TextEditingController(text: ${_types.initialTextExpr(f)});'),
-      ...enumFields.map((f) => '_${f.name} = _form.initialValues?.${f.name};'),
-      ...boolFields.map((f) => '_${f.name} = ${_types.initialBoolExpr(f)};'),
+      ...textFields.map((f) => '_${f.codeName}Controller = TextEditingController(text: ${_types.initialTextExpr(f)});'),
+      ...enumFields.map((f) => '_${f.codeName} = _form.initialValues?.${f.codeName};'),
+      ...boolFields.map((f) => '_${f.codeName} = ${_types.initialBoolExpr(f)};'),
       ...listFields.map((f) {
         if (_types.isEnumListField(f) || _types.isScalarListField(f)) {
-          return '_${f.name} = List.of(_form.${f.name});';
+          return '_${f.codeName} = List.of(_form.${f.codeName});';
         }
         return f.type.nullable
-            ? '_${f.name} = _form.${f.name} != null ? List.of(_form.${f.name}!) : null;'
-            : '_${f.name} = List.of(_form.${f.name});';
+            ? '_${f.codeName} = _form.${f.codeName} != null ? List.of(_form.${f.codeName}!) : null;'
+            : '_${f.codeName} = List.of(_form.${f.codeName});';
       }),
     ];
 
@@ -238,27 +238,27 @@ class FlutterInputsStateSerializer {
       ...listFields.map((f) {
         if (_types.isEnumListField(f) || _types.isScalarListField(f)) {
           return _u.inlineIfStatement(
-            condition: '_form.${f.name} != oldForm.${f.name}',
-            statement: '_${f.name} = List.of(_form.${f.name});',
+            condition: '_form.${f.codeName} != oldForm.${f.codeName}',
+            statement: '_${f.codeName} = List.of(_form.${f.codeName});',
           );
         }
         return f.type.nullable
             ? _u.inlineIfStatement(
-                condition: '_form.${f.name} != oldForm.${f.name}',
-                statement: '_${f.name} = _form.${f.name} != null ? List.of(_form.${f.name}!) : null;',
+                condition: '_form.${f.codeName} != oldForm.${f.codeName}',
+                statement: '_${f.codeName} = _form.${f.codeName} != null ? List.of(_form.${f.codeName}!) : null;',
               )
             : _u.inlineIfStatement(
-                condition: '_form.${f.name} != oldForm.${f.name}',
-                statement: '_${f.name} = List.of(_form.${f.name});',
+                condition: '_form.${f.codeName} != oldForm.${f.codeName}',
+                statement: '_${f.codeName} = List.of(_form.${f.codeName});',
               );
       }),
     ];
 
     final disposeStatements = <String>[
       '_debounceTimer?.cancel();',
-      ...validatableFields.map((f) => '_${f.name}AsyncTimer?.cancel();'),
+      ...validatableFields.map((f) => '_${f.codeName}AsyncTimer?.cancel();'),
       '_errorsNotifier.dispose();',
-      ...textFields.map((f) => '_${f.name}Controller.dispose();'),
+      ...textFields.map((f) => '_${f.codeName}Controller.dispose();'),
       'super.dispose();',
     ];
 
@@ -286,7 +286,7 @@ class FlutterInputsStateSerializer {
         '@override\nbool get isSubmitting => _submitting;',
         validatableFields.isEmpty
             ? 'bool get _isAsyncValidating => false;'
-            : 'bool get _isAsyncValidating => ${validatableFields.map((f) => '_${f.name}Validating').join(' || ')};',
+            : 'bool get _isAsyncValidating => ${validatableFields.map((f) => '_${f.codeName}Validating').join(' || ')};',
         'ValueNotifier<Map<String, String>> get errorsNotifier => _errorsNotifier;',
         _u.createMethod(
           override: true,
@@ -297,9 +297,9 @@ class FlutterInputsStateSerializer {
           statements: [
             'setState(() => _submitting = value);',
             // propagate to sub-input forms so stepper child forms are also disabled
-            ...inputFields.map((f) => '_${f.name}Key.currentState?.setSubmitting(value);'),
+            ...inputFields.map((f) => '_${f.codeName}Key.currentState?.setSubmitting(value);'),
             // cancel any in-flight async validation when submitting
-            ...validatableFields.map((f) => '_${f.name}AsyncTimer?.cancel();'),
+            ...validatableFields.map((f) => '_${f.codeName}AsyncTimer?.cancel();'),
           ],
         ),
         _serializeBuildMethod(inputName, hasSubInputs),
@@ -371,23 +371,23 @@ class FlutterInputsStateSerializer {
     // Helper: wraps a reset statement so it only runs when fields is null (full reset)
     // or when the named field is explicitly listed.
     String ifField(GLField f, String stmt) => _u.ifStatement(
-          condition: "fields == null || fields.contains('${f.name}')",
+          condition: "fields == null || fields.contains('${f.codeName}')",
           ifBlockStatements: [stmt],
         );
 
     final setStateBody = _u.block([
-      ...textFields.map((f) => ifField(f, '_${f.name}Controller.text = ${_types.initialTextExpr(f)};')),
+      ...textFields.map((f) => ifField(f, '_${f.codeName}Controller.text = ${_types.initialTextExpr(f)};')),
       // password and calendar are tied to their field — reset together with it
-      ...passwordFields.map((f) => ifField(f, '_${f.name}Obscured = true;')),
-      ...dateEligibleFields.map((f) => ifField(f, '_${f.name}CalendarOpen = false;')),
-      ...enumFields.map((f) => ifField(f, '_${f.name} = _form.initialValues?.${f.name};')),
-      ...boolFields.map((f) => ifField(f, '_${f.name} = ${_types.initialBoolExpr(f)};')),
+      ...passwordFields.map((f) => ifField(f, '_${f.codeName}Obscured = true;')),
+      ...dateEligibleFields.map((f) => ifField(f, '_${f.codeName}CalendarOpen = false;')),
+      ...enumFields.map((f) => ifField(f, '_${f.codeName} = _form.initialValues?.${f.codeName};')),
+      ...boolFields.map((f) => ifField(f, '_${f.codeName} = ${_types.initialBoolExpr(f)};')),
       ...listFields.map((f) {
         final stmt = _types.isEnumListField(f) || _types.isScalarListField(f)
-            ? '_${f.name} = List.of(_form.${f.name});'
+            ? '_${f.codeName} = List.of(_form.${f.codeName});'
             : f.type.nullable
-                ? '_${f.name} = _form.${f.name} != null ? List.of(_form.${f.name}!) : null;'
-                : '_${f.name} = List.of(_form.${f.name});';
+                ? '_${f.codeName} = _form.${f.codeName} != null ? List.of(_form.${f.codeName}!) : null;'
+                : '_${f.codeName} = List.of(_form.${f.codeName});';
         return ifField(f, stmt);
       }),
       // stepper position — full reset only
@@ -402,19 +402,19 @@ class FlutterInputsStateSerializer {
     final postResetStatements = [
       '_debounceTimer?.cancel();',
       // Cancel any in-flight async validators and clear their shadow errors.
-      ...validatableForReset.map((f) => '_${f.name}AsyncTimer?.cancel();'),
-      ...validatableForReset.map((f) => '_${f.name}AsyncError = null;'),
-      ...validatableForReset.map((f) => '_${f.name}Validating = false;'),
+      ...validatableForReset.map((f) => '_${f.codeName}AsyncTimer?.cancel();'),
+      ...validatableForReset.map((f) => '_${f.codeName}AsyncError = null;'),
+      ...validatableForReset.map((f) => '_${f.codeName}Validating = false;'),
       _u.ifStatement(
         condition: 'fields == null',
         ifBlockStatements: [
           '_formKey.currentState?.reset();',
-          ...inputFields.map((f) => '_${f.name}Key.currentState?.reset();'),
+          ...inputFields.map((f) => '_${f.codeName}Key.currentState?.reset();'),
         ],
         elseBlockStatements: [
           ...inputFields.map((f) => _u.inlineIfStatement(
-                condition: "fields.contains('${f.name}')",
-                statement: '_${f.name}Key.currentState?.reset();',
+                condition: "fields.contains('${f.codeName}')",
+                statement: '_${f.codeName}Key.currentState?.reset();',
               )),
         ],
       ),
@@ -449,26 +449,26 @@ class FlutterInputsStateSerializer {
     final checks = <String>[];
 
     for (final f in textFields) {
-      checks.add("if (_${f.name}Controller.text != (${_types.initialTextExpr(f)})) return true;");
+      checks.add("if (_${f.codeName}Controller.text != (${_types.initialTextExpr(f)})) return true;");
     }
     for (final f in enumFields) {
-      checks.add("if (_${f.name} != _form.initialValues?.${f.name}) return true;");
+      checks.add("if (_${f.codeName} != _form.initialValues?.${f.codeName}) return true;");
     }
     for (final f in boolFields) {
-      checks.add("if (_${f.name} != (${_types.initialBoolExpr(f)})) return true;");
+      checks.add("if (_${f.codeName} != (${_types.initialBoolExpr(f)})) return true;");
     }
     for (final f in listFields) {
       if (_types.isEnumListField(f) || _types.isScalarListField(f)) {
         // Order-insensitive comparison — chips selections are unordered
         checks.add(
-          "if (_${f.name}.length != _form.${f.name}.length || !_${f.name}.toSet().containsAll(_form.${f.name})) return true;",
+          "if (_${f.codeName}.length != _form.${f.codeName}.length || !_${f.codeName}.toSet().containsAll(_form.${f.codeName})) return true;",
         );
       } else if (_types.isInputListField(f)) {
-        checks.add("if (_${f.name}OverrideKey.currentState?.isDirty ?? false) return true;");
+        checks.add("if (_${f.codeName}OverrideKey.currentState?.isDirty ?? false) return true;");
       }
     }
     for (final f in inputFields) {
-      checks.add("if (_${f.name}Key.currentState?.isDirty ?? false) return true;");
+      checks.add("if (_${f.codeName}Key.currentState?.isDirty ?? false) return true;");
     }
 
     final body = _u.block([...checks, 'return false;']);
@@ -498,7 +498,7 @@ class FlutterInputsStateSerializer {
 
     final addEntries = scrollableFields.map((f) {
       final defaultIdx = 1000 + fields.indexOf(f);
-      return "entries.add(MapEntry(ord.${f.name} ?? $defaultIdx, _${f.name}FieldKey));";
+      return "entries.add(MapEntry(ord.${f.codeName} ?? $defaultIdx, _${f.codeName}FieldKey));";
     }).toList();
 
     return _u.createMethod(
@@ -595,10 +595,10 @@ class FlutterInputsStateSerializer {
   ) {
     final allFormFields = [...textFields, ...enumFields, ...boolFields, ...inputFields];
     final visDecls = [...allFormFields, ...listFields].map((f) =>
-        'final _${f.name}Vis = vis.${f.name}?.call(_ctx) ?? FieldVisibility.enabled;').toList();
+        'final _${f.codeName}Vis = vis.${f.codeName}?.call(_ctx) ?? FieldVisibility.enabled;').toList();
 
     final nonInputAssignments = [...textFields, ...enumFields, ...boolFields].map((f) {
-      final name = f.name.token;
+      final name = f.codeName;
       final visibleExpr = _visibleReadExpr(f, textFields, enumFields, boolFields);
       final hiddenExpr = _hiddenReadExpr(f);
       return '$name: _${name}Vis == FieldVisibility.hidden '
@@ -609,13 +609,13 @@ class FlutterInputsStateSerializer {
     }).toList();
 
     final inputAssignments = inputFields.map((f) {
-      final name = f.name.token;
+      final name = f.codeName;
       final hiddenExpr = _hiddenReadExpr(f);
       return '$name: _${name}Vis != FieldVisibility.hidden ? _${name}Key.currentState!.read() : $hiddenExpr';
     }).toList();
 
     final listAssignments = listFields.map((f) {
-      final name = f.name.token;
+      final name = f.codeName;
       return '$name: _${name}Vis != FieldVisibility.hidden && _form.values?.$name != null '
           '? _${name}OverrideKey.currentState!.read() '
           ': _$name';
@@ -689,7 +689,7 @@ class FlutterInputsStateSerializer {
         // Use &= (non-short-circuit) so every sub-form is validated even if a previous one failed.
         // currentState is null when a sub-form is hidden/unmounted — ?? true treats it as valid.
         ...inputFields.map((f) =>
-            '_valid &= _${f.name.token}Key.currentState?.validate() ?? true;'),
+            '_valid &= _${f.codeName}Key.currentState?.validate() ?? true;'),
         '_updateErrorsNotifier();',
         'return _valid;',
       ],
@@ -708,12 +708,12 @@ class FlutterInputsStateSerializer {
     List<GLField> inputFields,
   ) {
     final visDecls = fields.map((f) =>
-        'final _${f.name}Vis = vis.${f.name}?.call(_ctx) ?? FieldVisibility.enabled;').toList();
+        'final _${f.codeName}Vis = vis.${f.codeName}?.call(_ctx) ?? FieldVisibility.enabled;').toList();
 
     final rowLines = _buildFieldLines(
       inputName,
       fields, textFields, enumFields, boolFields, listFields, inputFields,
-      (f, idx, w) => "entries.add(MapEntry(ord.${f.name} ?? $idx, $w))",
+      (f, idx, w) => "entries.add(MapEntry(ord.${f.codeName} ?? $idx, $w))",
     );
 
     return _u.createMethod(
@@ -738,7 +738,7 @@ class FlutterInputsStateSerializer {
 
   String _visibleReadExpr(GLField f, List<GLField> textFields, List<GLField> enumFields,
       List<GLField> boolFields) {
-    final name = f.name.token;
+    final name = f.codeName;
     final dartType = _types.dartScalarType(f);
     final nullable = f.type.nullable;
 
@@ -773,7 +773,7 @@ class FlutterInputsStateSerializer {
   }
 
   String _hiddenReadExpr(GLField f) {
-    final name = f.name.token;
+    final name = f.codeName;
     return f.type.nullable
         ? 'def.$name'
         : "def.$name ?? (throw InputReadException('$name: default required when hidden'))";
@@ -1026,7 +1026,7 @@ class FlutterInputsStateSerializer {
 
   String _buildContextMethod(String inputName, List<GLField> contextFields) {
     final args = contextFields.map((f) =>
-        '${f.name}: ${_types.formContextFieldInitExpr(f)}').toList();
+        '${f.codeName}: ${_types.formContextFieldInitExpr(f)}').toList();
     return _u.createMethod(
       returnType: '${inputName}FormContext',
       methodName: '_buildContext',
@@ -1041,8 +1041,8 @@ class FlutterInputsStateSerializer {
   // ── Nested input field row ────────────────────────────────────────────────────
 
   String _inputFieldRowMethod(GLField f) {
-    final name = f.name.token;
-    final childType = f.type.firstType.token;
+    final name = f.codeName;
+    final childType = _types.resolveTypeCodeName(f.type.firstType.token);
 
     final childForm = _u.callExpression('${childType}Form', [
       'key: _${name}Key',
@@ -1157,28 +1157,28 @@ class FlutterInputsStateSerializer {
       final i = entry.key;
       final f = entry.value;
       final humanLabel = _types.humanize(f.name.token);
-      final enabledExpr = '!_submitting && _${f.name}Vis == FieldVisibility.enabled';
+      final enabledExpr = '!_submitting && _${f.codeName}Vis == FieldVisibility.enabled';
       final fieldWidget = _fields.fieldWidgetExpr(f, textFields, enumFields, boolFields, listFields, enabledExpr);
       final defaultIdx = 1000 + i;
       final isRequired = !f.type.nullable;
-      final labelStmt = "final _rl = _requiredLabel(_form.labels?.${f.name} ?? const Text('$humanLabel'), $isRequired); final label = _form.labelPosition == ${inputName}LabelPosition.floatingLabel ? _rl : _labelWithInfo(_rl, _form.labels?.${f.name}Info);";
+      final labelStmt = "final _rl = _requiredLabel(_form.labels?.${f.codeName} ?? const Text('$humanLabel'), $isRequired); final label = _form.labelPosition == ${inputName}LabelPosition.floatingLabel ? _rl : _labelWithInfo(_rl, _form.labels?.${f.codeName}Info);";
 
       final String widgetExpr;
       if (inputFields.contains(f)) {
-        widgetExpr = '_${f.name}InputRow(label, $enabledExpr)';
+        widgetExpr = '_${f.codeName}InputRow(label, $enabledExpr)';
       } else if (textFields.contains(f)) {
-        widgetExpr = '_form.values?.${f.name}?.call(_${f.name}OverrideKey) ?? _${f.name}ScalarRow(label, $enabledExpr)';
+        widgetExpr = '_form.values?.${f.codeName}?.call(_${f.codeName}OverrideKey) ?? _${f.codeName}ScalarRow(label, $enabledExpr)';
       } else if (rowMethodFields.contains(f)) {
-        widgetExpr = '_form.values?.${f.name}?.call(_${f.name}OverrideKey) ?? _${f.name}Row(label, $enabledExpr)';
+        widgetExpr = '_form.values?.${f.codeName}?.call(_${f.codeName}OverrideKey) ?? _${f.codeName}Row(label, $enabledExpr)';
       } else if (directFields.contains(f)) {
-        widgetExpr = '_form.values?.${f.name}?.call(_${f.name}OverrideKey) ?? $fieldWidget';
+        widgetExpr = '_form.values?.${f.codeName}?.call(_${f.codeName}OverrideKey) ?? $fieldWidget';
       } else {
-        widgetExpr = '_field(label, _form.values?.${f.name}?.call(_${f.name}OverrideKey) ?? $fieldWidget)';
+        widgetExpr = '_field(label, _form.values?.${f.codeName}?.call(_${f.codeName}OverrideKey) ?? $fieldWidget)';
       }
 
       return _u.ifStatement(
-        condition: '_${f.name}Vis != FieldVisibility.hidden',
-        ifBlockStatements: [labelStmt, '${accumulate(f, defaultIdx, "_withFloatingInfo($widgetExpr, _form.labels?.${f.name}Info)")};'],
+        condition: '_${f.codeName}Vis != FieldVisibility.hidden',
+        ifBlockStatements: [labelStmt, '${accumulate(f, defaultIdx, "_withFloatingInfo($widgetExpr, _form.labels?.${f.codeName}Info)")};'],
       );
     }).toList();
   }
@@ -1209,11 +1209,11 @@ class FlutterInputsStateSerializer {
       }
 
       final f = b.field!;
-      final name = f.name.token;
-      final humanLabel = _types.humanize(name);
+      final name = f.codeName;
+      final humanLabel = _types.humanize(f.name.token);
 
       if (b.type == _StepType.subInput) {
-        final childType = f.type.firstType.token;
+        final childType = _types.resolveTypeCodeName(f.type.firstType.token);
         return _u.callExpression('Step', [
           'title: _form.stepConfig?.$name?.title ?? const Text(\'$humanLabel\')',
           'subtitle: _form.stepConfig?.$name?.subtitle',
@@ -1415,14 +1415,14 @@ class FlutterInputsStateSerializer {
         arguments: [],
         namedArguments: false,
         statements: validatableFields.map((f) {
-          final cap = '${f.name.token[0].toUpperCase()}${f.name.token.substring(1)}';
+          final cap = '${f.codeName[0].toUpperCase()}${f.codeName.substring(1)}';
           return '_schedule${cap}AsyncValidation();';
         }).toList(),
       );
 
   List<String> _asyncSchedulerMethods(List<GLField> validatableFields, List<GLField> textFields) =>
       validatableFields.map((f) {
-        final name = f.name.token;
+        final name = f.codeName;
         final cap = '${name[0].toUpperCase()}${name.substring(1)}';
         final valueExpr = textFields.contains(f) ? '_${name}Controller.text' : '_$name';
         return _u.createMethod(
@@ -1473,9 +1473,9 @@ class FlutterInputsStateSerializer {
     final addEntries = scrollableFields.map((f) {
       final defaultIdx = 1000 + allFields.indexOf(f);
       return _u.ifStatement(
-        condition: "_${f.name}FieldKey.currentState?.hasError == true",
+        condition: "_${f.codeName}FieldKey.currentState?.hasError == true",
         ifBlockStatements: [
-          "entries.add(MapEntry(ord.${f.name} ?? $defaultIdx, MapEntry('${f.name.token}', _${f.name}FieldKey.currentState!.errorText!)));",
+          "entries.add(MapEntry(ord.${f.codeName} ?? $defaultIdx, MapEntry('${f.codeName}', _${f.codeName}FieldKey.currentState!.errorText!)));",
         ],
       );
     }).toList();
@@ -1507,9 +1507,9 @@ class FlutterInputsStateSerializer {
         .toList();
 
     final cases = scrollableFields.map((f) => DartCaseStatement(
-      caseValue: "'${f.name.token}'",
+      caseValue: "'${f.codeName}'",
       statement: _u.block([
-        'final ctx = _${f.name}FieldKey.currentContext;',
+        'final ctx = _${f.codeName}FieldKey.currentContext;',
         'if (ctx != null) Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);',
       ]),
     )).toList();
@@ -1537,7 +1537,8 @@ class FlutterInputsStateSerializer {
         .toList();
 
     final labelCases = scrollableFields
-        .map((f) => "case '${f.name.token}': return '${_types.humanize(f.name.token)}';")
+        .map((f) => "case '${f.codeName}': return '${_types.humanize(f.name.token)}';")
+
         .join('\n      ');
 
     return '''
