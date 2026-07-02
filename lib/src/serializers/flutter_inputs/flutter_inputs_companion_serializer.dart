@@ -21,17 +21,17 @@ class FlutterInputsCompanionSerializer {
     return _u.createClass(
       className: '${inputName}DropdownLabels',
       statements: [
-        ...enumFields.map((f) => 'final ${f.type.firstType.token}Labels? ${f.name};'),
-        ...boolFields.map((f) => 'final BooleanLabels? ${f.name};'),
-        ...enumListFields.map((f) => 'final ${f.type.inlineType.firstType.token}Labels? ${f.name};'),
+        ...enumFields.map((f) => 'final ${_types.resolveTypeCodeName(f.type.firstType.token)}Labels? ${f.codeName};'),
+        ...boolFields.map((f) => 'final BooleanLabels? ${f.codeName};'),
+        ...enumListFields.map((f) => 'final ${_types.resolveTypeCodeName(f.type.inlineType.firstType.token)}Labels? ${f.codeName};'),
         _u.createMethod(
           isConst: true,
           methodName: '${inputName}DropdownLabels',
           namedArguments: true,
           arguments: [
-            ...enumFields.map((f) => 'this.${f.name}'),
-            ...boolFields.map((f) => 'this.${f.name}'),
-            ...enumListFields.map((f) => 'this.${f.name}'),
+            ...enumFields.map((f) => 'this.${f.codeName}'),
+            ...boolFields.map((f) => 'this.${f.codeName}'),
+            ...enumListFields.map((f) => 'this.${f.codeName}'),
           ],
         ),
       ],
@@ -42,12 +42,12 @@ class FlutterInputsCompanionSerializer {
     return _u.createClass(
       className: '${inputName}Labels',
       statements: [
-        ...fields.expand((f) => ['final Widget? ${f.name};', 'final String? ${f.name}Info;']),
+        ...fields.expand((f) => ['final Widget? ${f.codeName};', 'final String? ${f.codeName}Info;']),
         _u.createMethod(
           isConst: true,
           methodName: '${inputName}Labels',
           namedArguments: true,
-          arguments: fields.expand((f) => ['this.${f.name}', 'this.${f.name}Info']).toList(),
+          arguments: fields.expand((f) => ['this.${f.codeName}', 'this.${f.codeName}Info']).toList(),
         ),
       ],
     );
@@ -60,12 +60,12 @@ class FlutterInputsCompanionSerializer {
       className: '${inputName}Values',
       statements: [
         ...valueFields.map((f) =>
-            'final InputFormWidget<${_types.valuesFieldType(f)}> Function(Key)? ${f.name};'),
+            'final InputFormWidget<${_types.valuesFieldType(f)}> Function(Key)? ${f.codeName};'),
         _u.createMethod(
           isConst: true,
           methodName: '${inputName}Values',
           namedArguments: true,
-          arguments: valueFields.map((f) => 'this.${f.name}').toList(),
+          arguments: valueFields.map((f) => 'this.${f.codeName}').toList(),
         ),
       ],
     );
@@ -76,12 +76,12 @@ class FlutterInputsCompanionSerializer {
     return _u.createClass(
       className: '${inputName}Visibility',
       statements: [
-        ...fields.map((f) => 'final FieldVisibility Function($ctx)? ${f.name};'),
+        ...fields.map((f) => 'final FieldVisibility Function($ctx)? ${f.codeName};'),
         _u.createMethod(
           isConst: true,
           methodName: '${inputName}Visibility',
           namedArguments: true,
-          arguments: fields.map((f) => 'this.${f.name}').toList(),
+          arguments: fields.map((f) => 'this.${f.codeName}').toList(),
         ),
       ],
     );
@@ -91,14 +91,14 @@ class FlutterInputsCompanionSerializer {
     return _u.createClass(
       className: '${inputName}FormContext',
       statements: [
-        ...contextFields.map((f) => 'final ${_types.formContextFieldType(f)} ${f.name};'),
+        ...contextFields.map((f) => 'final ${_types.formContextFieldType(f)} ${f.codeName};'),
         _u.createMethod(
           isConst: true,
           methodName: '${inputName}FormContext',
           namedArguments: true,
           arguments: contextFields.map((f) {
             final type = _types.formContextFieldType(f);
-            return type.endsWith('?') ? 'this.${f.name}' : 'required this.${f.name}';
+            return type.endsWith('?') ? 'this.${f.codeName}' : 'required this.${f.codeName}';
           }).toList(),
         ),
       ],
@@ -109,12 +109,12 @@ class FlutterInputsCompanionSerializer {
     return _u.createClass(
       className: '${inputName}Defaults',
       statements: [
-        ...formFields.map((f) => 'final ${_types.defaultsFieldType(f)} ${f.name};'),
+        ...formFields.map((f) => 'final ${_types.defaultsFieldType(f)} ${f.codeName};'),
         _u.createMethod(
           isConst: true,
           methodName: '${inputName}Defaults',
           namedArguments: true,
-          arguments: formFields.map((f) => 'this.${f.name}').toList(),
+          arguments: formFields.map((f) => 'this.${f.codeName}').toList(),
         ),
       ],
     );
@@ -124,12 +124,12 @@ class FlutterInputsCompanionSerializer {
     return _u.createClass(
       className: '${inputName}Order',
       statements: [
-        ...fields.map((f) => 'final int? ${f.name};'),
+        ...fields.map((f) => 'final int? ${f.codeName};'),
         _u.createMethod(
           isConst: true,
           methodName: '${inputName}Order',
           namedArguments: true,
-          arguments: fields.map((f) => 'this.${f.name}').toList(),
+          arguments: fields.map((f) => 'this.${f.codeName}').toList(),
         ),
       ],
     );
@@ -139,17 +139,17 @@ class FlutterInputsCompanionSerializer {
     return _u.createClass(
       className: '${inputName}Widgets',
       statements: [
-        ...enumFields.map((f) => 'final SelectWidget? ${f.name};'),
-        ...enumFields.map((f) => 'final Widget? Function(${f.type.firstType.token})? ${f.name}Avatar;'),
-        ...boolFields.map((f) => 'final BoolFieldWidget? ${f.name};'),
-        ...boolFields.map((f) => 'final Widget? Function(bool)? ${f.name}Avatar;'),
+        ...enumFields.map((f) => 'final SelectWidget? ${f.codeName};'),
+        ...enumFields.map((f) => 'final Widget? Function(${_types.resolveTypeCodeName(f.type.firstType.token)})? ${f.codeName}Avatar;'),
+        ...boolFields.map((f) => 'final BoolFieldWidget? ${f.codeName};'),
+        ...boolFields.map((f) => 'final Widget? Function(bool)? ${f.codeName}Avatar;'),
         _u.createMethod(
           isConst: true,
           methodName: '${inputName}Widgets',
           namedArguments: true,
           arguments: [
-            ...enumFields.expand((f) => ['this.${f.name}', 'this.${f.name}Avatar']),
-            ...boolFields.expand((f) => ['this.${f.name}', 'this.${f.name}Avatar']),
+            ...enumFields.expand((f) => ['this.${f.codeName}', 'this.${f.codeName}Avatar']),
+            ...boolFields.expand((f) => ['this.${f.codeName}', 'this.${f.codeName}Avatar']),
           ],
         ),
       ],
@@ -162,12 +162,12 @@ class FlutterInputsCompanionSerializer {
     return _u.createClass(
       className: '${inputName}FieldIcons',
       statements: [
-        ...iconFields.map((f) => 'final Widget? ${f.name};'),
+        ...iconFields.map((f) => 'final Widget? ${f.codeName};'),
         _u.createMethod(
           isConst: true,
           methodName: '${inputName}FieldIcons',
           namedArguments: true,
-          arguments: iconFields.map((f) => 'this.${f.name}').toList(),
+          arguments: iconFields.map((f) => 'this.${f.codeName}').toList(),
         ),
       ],
     );
@@ -177,12 +177,12 @@ class FlutterInputsCompanionSerializer {
     return _u.createClass(
       className: '${inputName}TextConfig',
       statements: [
-        ...textFields.map((f) => 'final TextFieldOptions? ${f.name};'),
+        ...textFields.map((f) => 'final TextFieldOptions? ${f.codeName};'),
         _u.createMethod(
           isConst: true,
           methodName: '${inputName}TextConfig',
           namedArguments: true,
-          arguments: textFields.map((f) => 'this.${f.name}').toList(),
+          arguments: textFields.map((f) => 'this.${f.codeName}').toList(),
         ),
       ],
     );
@@ -192,14 +192,14 @@ class FlutterInputsCompanionSerializer {
     return _u.createClass(
       className: '${inputName}DateConfig',
       statements: [
-        ...dateEligibleFields.map((f) => 'final DateInputConfig? ${f.name};'),
+        ...dateEligibleFields.map((f) => 'final DateInputConfig? ${f.codeName};'),
         _u.createMethod(
           isConst: true,
           methodName: '${inputName}DateConfig',
           namedArguments: true,
           arguments: dateEligibleFields.map((f) {
             final h = _heuristicDateConfig(f);
-            return h != null ? 'this.${f.name} = $h' : 'this.${f.name}';
+            return h != null ? 'this.${f.codeName} = $h' : 'this.${f.codeName}';
           }).toList(),
         ),
       ],
@@ -211,12 +211,12 @@ class FlutterInputsCompanionSerializer {
     return _u.createClass(
       className: '${inputName}Validations',
       statements: [
-        ...formFields.map((f) => 'final ${_types.validatorType(f, enumFields, boolFields, inputName)} ${f.name};'),
+        ...formFields.map((f) => 'final ${_types.validatorType(f, enumFields, boolFields, inputName)} ${f.codeName};'),
         _u.createMethod(
           isConst: true,
           methodName: '${inputName}Validations',
           namedArguments: true,
-          arguments: formFields.map((f) => 'this.${f.name}').toList(),
+          arguments: formFields.map((f) => 'this.${f.codeName}').toList(),
         ),
       ],
     );
@@ -232,14 +232,14 @@ class FlutterInputsCompanionSerializer {
       className: '${inputName}StepConfig',
       statements: [
         if (hasScalarFields) 'final InputStepOptions? scalarFields;',
-        ...stepFields.map((f) => 'final InputStepOptions? ${f.name};'),
+        ...stepFields.map((f) => 'final InputStepOptions? ${f.codeName};'),
         _u.createMethod(
           isConst: true,
           methodName: '${inputName}StepConfig',
           namedArguments: true,
           arguments: [
             if (hasScalarFields) 'this.scalarFields',
-            ...stepFields.map((f) => 'this.${f.name}'),
+            ...stepFields.map((f) => 'this.${f.codeName}'),
           ],
         ),
       ],
@@ -250,12 +250,12 @@ class FlutterInputsCompanionSerializer {
     return _u.createClass(
       className: '${inputName}SelectConfig',
       statements: [
-        ...textFields.map((f) => 'final SelectFieldConfig<${_types.dartScalarType(f)}>? ${f.name};'),
+        ...textFields.map((f) => 'final SelectFieldConfig<${_types.dartScalarType(f)}>? ${f.codeName};'),
         _u.createMethod(
           isConst: true,
           methodName: '${inputName}SelectConfig',
           namedArguments: true,
-          arguments: textFields.map((f) => 'this.${f.name}').toList(),
+          arguments: textFields.map((f) => 'this.${f.codeName}').toList(),
         ),
       ],
     );
@@ -265,12 +265,12 @@ class FlutterInputsCompanionSerializer {
     return _u.createClass(
       className: '${inputName}FocusNodes',
       statements: [
-        ...textFields.map((f) => 'final FocusNode? ${f.name};'),
+        ...textFields.map((f) => 'final FocusNode? ${f.codeName};'),
         _u.createMethod(
           isConst: true,
           methodName: '${inputName}FocusNodes',
           namedArguments: true,
-          arguments: textFields.map((f) => 'this.${f.name}').toList(),
+          arguments: textFields.map((f) => 'this.${f.codeName}').toList(),
         ),
       ],
     );

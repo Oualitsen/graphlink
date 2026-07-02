@@ -159,7 +159,7 @@ class FlutterInputsDateSerializer {
   // ── Per-field scalar row method (select → date → plain text) ─────────────────
 
   String scalarRowMethod(GLField f) {
-    final name = f.name.token;
+    final name = f.codeName;
     final nullable = f.type.nullable;
     final dartType = _types.dartScalarType(f);
     final isDateEligible = dartType == 'int' || dartType == 'String';
