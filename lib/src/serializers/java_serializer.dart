@@ -113,8 +113,21 @@ class JavaSerializer extends GLSerializer {
   @override
   String serializeDefaultLiteral(GLType type, Object? value, {bool needsConst = false}) {
     if (value == null) return 'null';
-    if (value is int) return '$value';
-    if (value is double) return '$value';
+    if (value is int) {
+      // A GraphQL Float default without a decimal point (e.g. `min: Float = 0`)
+      // parses as a Dart int, but boxed Double/Float fields don't accept an
+      // Int literal in a field initializer (e.g. `private Double min = 0;`
+      // fails to compile) — emit a floating literal instead.
+      final javaType = getTypeNameFromGQExternal(type.token) ?? resolveCodeName(type.token);
+      if (javaType == 'Double' || javaType == 'Float') {
+        return _serializeFloatingLiteral(value.toDouble(), javaType);
+      }
+      return '$value';
+    }
+    if (value is double) {
+      final javaType = getTypeNameFromGQExternal(type.token) ?? resolveCodeName(type.token);
+      return _serializeFloatingLiteral(value, javaType);
+    }
     if (value is bool) return '$value';
     if (value is List) {
       final innerType = type.inlineType;
@@ -138,6 +151,20 @@ class JavaSerializer extends GLSerializer {
       return '"$content"';
     }
     return '"$value"';
+  }
+
+  // Dart's double.toString() can emit "NaN"/"Infinity"/"-Infinity", none of
+  // which are valid Java literals — those need the Double/Float constants
+  // instead. A Java float literal also needs an explicit `f` suffix, since a
+  // bare decimal literal defaults to double.
+  String _serializeFloatingLiteral(double value, String javaType) {
+    final isFloat = javaType == 'Float';
+    if (value.isNaN) return isFloat ? 'Float.NaN' : 'Double.NaN';
+    if (value.isInfinite) {
+      final sign = value.isNegative ? 'NEGATIVE' : 'POSITIVE';
+      return isFloat ? 'Float.${sign}_INFINITY' : 'Double.${sign}_INFINITY';
+    }
+    return isFloat ? '${value}f' : '$value';
   }
 
   void _initAnnotations() {
