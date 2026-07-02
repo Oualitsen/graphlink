@@ -281,7 +281,7 @@ class KotlinClientOperationSerializer {
           ? ' + (${base}?.toJson() ?: emptyMap())'
           : ' + ${base}.toJson()');
     }
-    return 'val ${svVariables} = mapOf(${pairs.join(', ')})${merges.join('')}';
+    return 'val ${svVariables} = mapOf<String, Any?>(${pairs.join(', ')})${merges.join('')}';
   }
 
   String _variablesExpr(GLQueryDefinition def) =>

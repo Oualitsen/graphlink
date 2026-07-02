@@ -1,6 +1,6 @@
 {
     "schemaPaths": [
-        "../anilist.graphql"
+        "../gitlab.graphql"
     ],
     "mode": "client",
     "unknownScalarType": "String",
