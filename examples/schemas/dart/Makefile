@@ -1,9 +1,13 @@
 .PHONY: clean pub generate analyze analyze-only
 
+PUB_STAMP := .dart_tool/package_config.json
+
 clean:
 	rm -rf lib/generated
 
-pub:
+pub: $(PUB_STAMP)
+
+$(PUB_STAMP): pubspec.yaml
 	fvm dart pub get
 
 generate: clean pub
