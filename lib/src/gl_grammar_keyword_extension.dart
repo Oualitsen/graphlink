@@ -90,12 +90,19 @@ extension GLGrammarKeywordExtension on GLParser {
   }
 
   /// Resolves a collision-free, keyword-safe [CodeNameMixin.codeName] for every
-  /// type/input/interface/union/enum whose (possibly already naming-convention-
-  /// normalized) code name collides with a reserved keyword, e.g. `input class`
-  /// → `class_`. Mirrors the container scope and collision handling of
-  /// [GLGrammarNormalizationExtension.sanitizeTypeNames] (interfaces created
-  /// from a union are excluded and re-synced to the union's final name
-  /// afterwards, since they must always agree).
+  /// type/input/interface/union/enum — declared or projected — whose (possibly
+  /// already naming-convention-normalized) code name collides with a reserved
+  /// keyword, e.g. `input class` → `class_`. Mirrors the container scope and
+  /// collision handling of [GLGrammarNormalizationExtension.sanitizeTypeNames]
+  /// (interfaces created from a union are excluded and re-synced to the
+  /// union's final name afterwards, since they must always agree).
+  ///
+  /// Projected types/interfaces are included because `@glTypeName(name: ...)`
+  /// lets a query/field selection pin an arbitrary literal name — see
+  /// `_generateName` in gl_grammar_projection_extension.dart, which documents
+  /// that pinned name as "honoured as-is and left untouched" — so a schema
+  /// that pins the name to a reserved word (e.g. `class`) would otherwise
+  /// generate an uncompilable declaration.
   void _assignTypeCodeNames() {
     if (parameterReservedWords.isEmpty) return;
 
@@ -105,6 +112,8 @@ extension GLGrammarKeywordExtension on GLParser {
       ...interfaces.values.where((i) => !i.fromUnion),
       ...unions.values,
       ...enums.values,
+      ...projectedTypes.values,
+      ...projectedInterfaces.values.where((i) => !i.fromUnion),
     ];
 
     final taken = <String>{
@@ -113,6 +122,8 @@ extension GLGrammarKeywordExtension on GLParser {
       ...interfaces.keys,
       ...unions.keys,
       ...enums.keys,
+      ...projectedTypes.keys,
+      ...projectedInterfaces.keys,
       ...allContainers.map((c) => c.codeName),
     };
 
@@ -134,7 +145,10 @@ extension GLGrammarKeywordExtension on GLParser {
 
     // Sync fromUnion interfaces to their union's final codeName so that the
     // abstract class declaration and the `implements` clauses agree.
-    for (final iface in interfaces.values.where((i) => i.fromUnion)) {
+    for (final iface in [
+      ...interfaces.values.where((i) => i.fromUnion),
+      ...projectedInterfaces.values.where((i) => i.fromUnion),
+    ]) {
       final union = unions[iface.token];
       if (union != null) iface.codeName = union.codeName;
     }
