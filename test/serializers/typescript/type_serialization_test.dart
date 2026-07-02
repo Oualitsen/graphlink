@@ -134,7 +134,7 @@ void main() {
       expect(result, contains('json["__typename"]'));
     });
 
-    test('implementing type does not include __typename', () {
+    test('implementing type includes __typename literal for discriminated union', () {
       final g = GLParser();
       g.parse('''
         interface Animal {
@@ -151,10 +151,10 @@ void main() {
       final serializer = TypeScriptSerializer(g, importPrefix: "");
       final result =
           serializer.serializeTypeDefinition(g.getTypeByName('Dog')!);
-      print(result);
       expect(result, contains('export interface Dog'));
+      expect(result, contains("readonly __typename: 'Dog';"));
       expect(result, contains('readonly breed: string;'));
-      expect(result, isNot(contains('__typename')));
+      expect(result, contains("__typename: 'Dog'"));
     });
 
     test('skips type marked @glSkipOnClient in client mode', () {
