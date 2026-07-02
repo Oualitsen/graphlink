@@ -12,8 +12,8 @@
         "Int": "Int",
         "Boolean": "Boolean",
         "Null": "null",
-        "PositiveInt": "int",
-        "Minute": "int"
+        "PositiveInt": "Int",
+        "Minute": "Int"
     },
     "outputDir": "client-app/src/main/kotlin/dev/graphlink/github/generated",
     "clientConfig": {

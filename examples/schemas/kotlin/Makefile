@@ -9,7 +9,7 @@ generate: clean
 	fvm dart run ../../../lib/src/main.dart -c config.json
 
 compile: generate
-	cd client-app && ./gradlew compileKotlin -q
+	cd client-app && ./gradlew compileKotlin
 
 compile-only:
-	cd client-app && ./gradlew compileKotlin -q
+	cd client-app && ./gradlew compileKotlin
