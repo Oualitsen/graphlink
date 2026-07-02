@@ -72,7 +72,7 @@ $kotlinClientAdapterGql
 
     final out = KotlinClientSerializer(g,
             KotlinSerializer(g,
-                importPrefix: 'com.example', generateJsonMethods: true))
+                importPrefix: 'com.example'))
             .getSubscriptionsClass()
             ?.toFileContent() ??
         '';

@@ -523,7 +523,7 @@ type Cat implements Animal {
 ''');
 
     var animal = g.projectedInterfaces['Animal']!;
-    var serializer = DartSerializer(g, importPrefix:  "myorg", generateJsonMethods: true);
+    var serializer = DartSerializer(g, importPrefix:  "myorg");
     var animalSerial = serializer.serializeTypeDefinition(animal);
     expect(animalSerial,
         stringContainsInOrder(["import 'myorg/types/cat.dart';"]));
@@ -936,7 +936,7 @@ type Query {
   
 ''');
 
-    var serializer = JavaSerializer(g, importPrefix: 'com.myorg', generateJsonMethods: true);
+    var serializer = JavaSerializer(g, importPrefix: 'com.myorg');
     var basicEntity = g.interfaces["BasicEntity"]!;
     var basicEntitySerial =
         serializer.serializeTypeDefinition(basicEntity, );

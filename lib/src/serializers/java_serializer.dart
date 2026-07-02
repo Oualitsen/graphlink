@@ -80,8 +80,6 @@ class JavaSerializer extends GLSerializer {
   final bool immutableTypeFields;
   final bool jspecify;
   final codeGenUtils = JavaCodeGenUtils();
-  @override
-  final bool generateJsonMethods;
 
   @override
   Map<String, String> get defaultTypeMap => const {
@@ -100,7 +98,6 @@ class JavaSerializer extends GLSerializer {
     super.grammar, {
     this.inputsAsRecords = false,
     this.typesAsRecords = false,
-    this.generateJsonMethods = false,
     this.typesCheckForNulls = true,
     this.inputsCheckForNulls = true,
     this.immutableInputFields = true,
@@ -174,9 +171,6 @@ class JavaSerializer extends GLSerializer {
   }
 
   String serializeToJsonForEnum(GLEnumDefinition def) {
-    if (!generateJsonMethods) {
-      return "";
-    }
     return codeGenUtils.createMethod(
       returnType: "public String",
       methodName: "toJson",
@@ -196,9 +190,6 @@ class JavaSerializer extends GLSerializer {
   }
 
   String serializeFromJsonForEnum(GLEnumDefinition def) {
-    if (!generateJsonMethods) {
-      return "";
-    }
     return codeGenUtils.createMethod(
       returnType: "public static ${def.codeName}",
       methodName: "fromJson",
@@ -384,10 +375,8 @@ class JavaSerializer extends GLSerializer {
         return !immutableInputFields;
       }).map(
           (e) => serializeSetter(e, def, checkForNulls: inputsCheckForNulls)),
-      if (generateJsonMethods) ...[
-        generateToJson(def.getSerializableFields(grammar.mode), def),
-        generateFromJson(def.getSerializableFields(mode), def.codeName, def)
-      ],
+      generateToJson(def.getSerializableFields(grammar.mode), def),
+      generateFromJson(def.getSerializableFields(mode), def.codeName, def),
       ...generateMappingMethods(def),
     ]);
     buffer.write(class_);
@@ -907,10 +896,8 @@ class JavaSerializer extends GLSerializer {
         }).toList(),
         interfaces: interfaceNames.toList(),
         statements: [
-          if (generateJsonMethods) ...[
-            generateToJson(fields, context),
-            generateFromJson(fields, recordName, context)
-          ],
+          generateToJson(fields, context),
+          generateFromJson(fields, recordName, context),
           ...extraStatements,
         ]);
   }
@@ -1071,11 +1058,9 @@ class JavaSerializer extends GLSerializer {
           }).map((e) =>
               serializeSetter(e, def, checkForNulls: typesCheckForNulls)),
           generateEqualsAndHashCode(def),
-          if (generateJsonMethods) ...[
-            generateFromJson(
-                def.getSerializableFields(grammar.mode), codeName, def),
-            generateToJson(def.getSerializableFields(grammar.mode), def)
-          ]
+          generateFromJson(
+              def.getSerializableFields(grammar.mode), codeName, def),
+          generateToJson(def.getSerializableFields(grammar.mode), def),
         ]));
     return buffer.toString();
   }
@@ -1173,7 +1158,7 @@ class JavaSerializer extends GLSerializer {
     if (decorators.isNotEmpty) {
       buffer.writeln(decorators.trim());
     }
-    bool generateJsonConverstionMethods = generateJsonMethods &&
+    bool generateJsonConverstionMethods =
         interface.getDirectiveByName(glInterfaceFieldAsProperties) == null;
     if (generateJsonConverstionMethods) {
       interface.addImport(JavaImports.map);
@@ -1195,7 +1180,7 @@ class JavaSerializer extends GLSerializer {
 
   String _serializeFromJsonForInterface(
       String token, Set<GLTypeDefinition> subTypes) {
-    if (subTypes.isEmpty || !generateJsonMethods) {
+    if (subTypes.isEmpty) {
       return "";
     }
     var buffer = StringBuffer(

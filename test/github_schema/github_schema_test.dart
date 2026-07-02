@@ -37,7 +37,7 @@ void main() {
       parser.parse(schema);
       serializer = DartClientSerializer(
         parser,
-        DartSerializer(parser, importPrefix: '', generateJsonMethods: true),
+        DartSerializer(parser, importPrefix: ''),
         generateAdapters: true,
       );
     });

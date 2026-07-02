@@ -29,7 +29,7 @@ DartClientSerializer _serializer(String schema,
     {DartHttpAdapter adapter = DartHttpAdapter.dio}) {
   final parser = GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true)
     ..parse(schema);
-  return DartClientSerializer(parser, DartSerializer(parser, importPrefix: "", generateJsonMethods: true),
+  return DartClientSerializer(parser, DartSerializer(parser, importPrefix: ""),
       generateAdapters: true, httpAdapter: adapter);
 }
 

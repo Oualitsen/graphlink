@@ -24,12 +24,11 @@ void main() {
       importPrefix: '',
       inputsAsRecords: true,
       typesAsRecords: true,
-      generateJsonMethods: false,
     );
     var input = g.inputs["PersonInput"]!;
     var inputSerial = javaSerial.serializeInputDefinition(input).trim();
     expect(inputSerial,
-        startsWith("public record PersonInput(String name, Integer age) {"));
+        contains("public record PersonInput(String name, Integer age) {"));
     expect(inputSerial, endsWith("}"));
   });
 
@@ -48,8 +47,7 @@ void main() {
     var javaSerial = JavaSerializer(g,
       importPrefix: '',
         inputsAsRecords: true,
-        typesAsRecords: true,
-        generateJsonMethods: false);
+        typesAsRecords: true);
 
     var type = g.getTypeByName("Person")!;
 
@@ -57,7 +55,7 @@ void main() {
     print(typeSerial);
     expect(
         typeSerial,
-        startsWith(
+        contains(
             "public record Person(String name, Integer age, Boolean married) {"));
     expect(typeSerial, endsWith("}"));
   });

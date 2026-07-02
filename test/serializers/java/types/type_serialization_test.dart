@@ -146,7 +146,7 @@ void main() {
 
     g.parse(text);
 
-    var javaSerialzer = JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
+    var javaSerialzer = JavaSerializer(g, importPrefix: "");
     var genderEnum = g.enums["Gender"]!;
     var enum_ = javaSerialzer.serializeEnumDefinition(genderEnum);
     expect(enum_.split("\n").map((e) => e.trim()).toList(),

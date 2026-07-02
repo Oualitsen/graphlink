@@ -73,7 +73,7 @@ void main() {
   group('Kotlin — operation variable defaults', () {
     test('generated method has correct param defaults', () {
       final g = _kotlinParser();
-      final s = KotlinSerializer(g, importPrefix: 'com.example', generateJsonMethods: true);
+      final s = KotlinSerializer(g, importPrefix: 'com.example');
       final out = KotlinClientSerializer(g, s).getQueriesClass()?.toFileContent() ?? '';
       print('=== Kotlin queries ===\n$out');
 

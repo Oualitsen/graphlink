@@ -15,14 +15,14 @@ const _directives = '''
 String _dart(String schema, String inputName, CodeGenerationMode mode) {
   final g = GLParser(mode: mode)
     ..parse('$_directives $schema');
-  return DartSerializer(g, importPrefix: "", generateJsonMethods: false)
+  return DartSerializer(g, importPrefix: "")
       .serializeInputDefinition(g.inputs[inputName]!);
 }
 
 String _java(String schema, String inputName, CodeGenerationMode mode) {
   final g = GLParser(mode: mode)
     ..parse('$_directives $schema');
-  return JavaSerializer(g, importPrefix: "", generateJsonMethods: false, typeMapOverrides: {"Int": "int"})
+  return JavaSerializer(g, importPrefix: "", typeMapOverrides: {"Int": "int"})
       .serializeInputDefinition(g.inputs[inputName]!);
 }
 

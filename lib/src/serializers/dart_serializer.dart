@@ -16,8 +16,6 @@ import 'package:graphlink/src/serializers/gl_serializer.dart';
 
 class DartSerializer extends GLSerializer {
   final codeGenUtils = DartCodeGenUtils();
-  @override
-  final bool generateJsonMethods;
 
   @override
   Map<String, String> get defaultTypeMap => const {
@@ -33,8 +31,7 @@ class DartSerializer extends GLSerializer {
   };
 
   DartSerializer(super.grammar,
-      {this.generateJsonMethods = true,
-      super.typeMapOverrides = const {}, required super.importPrefix}) {
+      {super.typeMapOverrides = const {}, required super.importPrefix}) {
     _initAnnotations();
   }
 
@@ -167,10 +164,8 @@ class DartSerializer extends GLSerializer {
           namedArguments: true,
           isConst: true,
           arguments: fields.map((e) => toConstructorDeclaration(e)).toList()),
-      if (generateJsonMethods) ...[
-        generateToJson(fields),
-        generateFromJson(fields, def.codeName)
-      ],
+      generateToJson(fields),
+      generateFromJson(fields, def.codeName),
       ...mappingMethods,
     ]);
 
@@ -363,9 +358,6 @@ class DartSerializer extends GLSerializer {
   }
 
   String generateFromJson(List<GLField> fields, String token) {
-    if (!generateJsonMethods) {
-      return "";
-    }
     var buffer = StringBuffer();
 
     buffer.writeln(
@@ -518,10 +510,8 @@ class DartSerializer extends GLSerializer {
             isConst: true,
             arguments: [serializeContructorArgs(fields)]),
         if (equalsHascodeCode.isNotEmpty) equalsHascodeCode,
-        if (generateJsonMethods) ...[
-          generateToJson(fields),
-          generateFromJson(fields, codeName)
-        ]
+        generateToJson(fields),
+        generateFromJson(fields, codeName),
       ],
     ));
     return buffer.toString();
@@ -638,11 +628,9 @@ class DartSerializer extends GLSerializer {
       buffer.writeln("${serializeGetterDeclaration(field)};".ident());
     }
 
-    if (generateJsonMethods) {
-      buffer.writeln(_serializeToJsonForInterface(codeName).ident());
-    }
+    buffer.writeln(_serializeToJsonForInterface(codeName).ident());
     final serialisableImplemenations = interface.getSerializableImplementations(mode);
-    if (generateJsonMethods && serialisableImplemenations.isNotEmpty) {
+    if (serialisableImplemenations.isNotEmpty) {
       buffer.writeln(
           _serializeFromJsonForInterface(codeName, serialisableImplemenations)
               .ident());

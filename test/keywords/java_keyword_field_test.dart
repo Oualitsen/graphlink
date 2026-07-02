@@ -20,7 +20,7 @@ void main() {
 
     final input = g.inputs["FilterInput"]!;
     final serializer =
-        JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
+        JavaSerializer(g, importPrefix: "");
     final out = serializer.doSerializeInputDefinition(input);
 
     // declared field uses the safe identifier.
@@ -48,7 +48,7 @@ void main() {
 
     final input = g.inputs["FilterInput"]!;
     final serializer =
-        JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
+        JavaSerializer(g, importPrefix: "");
     final out = serializer.doSerializeInputDefinition(input);
 
     expect(out, contains("String default_2;"));
@@ -70,7 +70,7 @@ void main() {
 
     final type = g.types["Expression"]!;
     final serializer =
-        JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
+        JavaSerializer(g, importPrefix: "");
     final out = serializer.doSerializeTypeDefinition(type);
 
     expect(out, contains("String default_;"));
@@ -98,7 +98,7 @@ void main() {
     // Record style emits the bare component name as the accessor (`default()`),
     // which must be sanitized.
     final serializer = JavaSerializer(g,
-        importPrefix: "", typesAsRecords: true, generateJsonMethods: true);
+        importPrefix: "", typesAsRecords: true);
     final out = serializer.doSerializeTypeDefinition(iface);
 
     expect(out, contains("default_()"));
@@ -117,7 +117,7 @@ void main() {
 
     final input = g.inputs["ProductInput"]!;
     final serializer =
-        JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
+        JavaSerializer(g, importPrefix: "");
     final out = serializer.doSerializeInputDefinition(input);
 
     // property: leading underscore moved to end.

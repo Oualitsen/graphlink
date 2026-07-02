@@ -145,7 +145,7 @@ void main() {
     final g = GLParser(identityFields: ["id"], mode: CodeGenerationMode.server);
     g.parse(_schema);
 
-    final serializer = JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
+    final serializer = JavaSerializer(g, importPrefix: "");
 
     final animal = g.interfaces["Animal"]!;
     final animalProjection = g.interfaces["GLAnimalProjection"]!;
@@ -167,7 +167,7 @@ void main() {
     final g = GLParser(identityFields: ["id"], mode: CodeGenerationMode.server);
     g.parse(_schema);
 
-    final serializer = KotlinSerializer(g, importPrefix: "com.example", generateJsonMethods: true);
+    final serializer = KotlinSerializer(g, importPrefix: "com.example");
 
     final animal = g.interfaces["Animal"]!;
     final animalProjection = g.interfaces["GLAnimalProjection"]!;

@@ -42,8 +42,7 @@ class KotlinSpringServerSerializer extends JvmSpringServerSerializerBase {
         KotlinSerializer(grammar,
             inputsAsDataClass: inputsAsDataClass,
             typesAsDataClass: typesAsDataClass,
-            importPrefix: packageName,
-            generateJsonMethods: true);
+            importPrefix: packageName);
     final ctrl = KotlinSpringControllerSerializer(
       grammar: grammar,
       serializer: serializer,

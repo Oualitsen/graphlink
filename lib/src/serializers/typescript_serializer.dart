@@ -35,13 +35,7 @@ class TypeScriptSerializer extends GLSerializer {
     this.optionalNullableInputFields = true,
     super.typeMapOverrides = const {},
     required super.importPrefix,
-    bool generateJsonMethods = true,
-  }) : _generateJsonMethods = generateJsonMethods;
-
-  final bool _generateJsonMethods;
-
-  @override
-  bool get generateJsonMethods => _generateJsonMethods;
+  });
 
   @override
   String serializeDefaultLiteral(GLType type, Object? value, {bool needsConst = false}) {
@@ -95,16 +89,14 @@ class TypeScriptSerializer extends GLSerializer {
     final buf = StringBuffer();
     buf.write('export enum ${def.codeName} ');
     buf.write(codeGenUtils.block(entries));
-    if (generateJsonMethods) {
-      buf.writeln();
-      buf.write(codeGenUtils.createNamespace(
-        namespaceName: def.codeName,
-        statements: [
-          _generateEnumToJson(def),
-          _generateEnumFromJson(def),
-        ],
-      ));
-    }
+    buf.writeln();
+    buf.write(codeGenUtils.createNamespace(
+      namespaceName: def.codeName,
+      statements: [
+        _generateEnumToJson(def),
+        _generateEnumFromJson(def),
+      ],
+    ));
     return buf.toString();
   }
 
@@ -199,16 +191,14 @@ class TypeScriptSerializer extends GLSerializer {
           .join(',\n');
       buffer.writeln('\nexport const default${def.codeName}: Partial<${def.codeName}> = {\n$entries,\n};');
     }
-    if (generateJsonMethods) {
-      buffer.writeln();
-      buffer.write(codeGenUtils.createNamespace(
-        namespaceName: def.codeName,
-        statements: [
-          _generateTypeToJson(def.codeName, fields),
-          _generateTypeFromJson(def.codeName, fields),
-        ],
-      ));
-    }
+    buffer.writeln();
+    buffer.write(codeGenUtils.createNamespace(
+      namespaceName: def.codeName,
+      statements: [
+        _generateTypeToJson(def.codeName, fields),
+        _generateTypeFromJson(def.codeName, fields),
+      ],
+    ));
     return buffer.toString();
   }
 
@@ -228,16 +218,14 @@ class TypeScriptSerializer extends GLSerializer {
     final members = def.getSerializableImplementations(mode).map((t) => t.codeName).join(' | ');
     final buf = StringBuffer();
     buf.write(codeGenUtils.createTypeAlias(name: def.codeName, value: members));
-    if (generateJsonMethods) {
-      buf.writeln();
-      buf.write(codeGenUtils.createNamespace(
-        namespaceName: def.codeName,
-        statements: [
-          _serializeUnionToJson(def),
-          _serializeUnionFromJson(def),
-        ],
-      ));
-    }
+    buf.writeln();
+    buf.write(codeGenUtils.createNamespace(
+      namespaceName: def.codeName,
+      statements: [
+        _serializeUnionToJson(def),
+        _serializeUnionFromJson(def),
+      ],
+    ));
     return buf.toString();
   }
 
@@ -254,21 +242,19 @@ class TypeScriptSerializer extends GLSerializer {
         ...fields.map((f) => serializeField(f, true, true)),
       ],
     ));
-    if (generateJsonMethods) {
-      buf.writeln();
-      buf.write(codeGenUtils.createNamespace(
-        namespaceName: def.codeName,
-        statements: [
-          _generateTypeToJson(def.codeName, fields, wireTypeName: wireTypeName),
-          _generateTypeFromJson(def.codeName, fields, wireTypeName: wireTypeName),
-        ],
-      ));
-    }
+    buf.writeln();
+    buf.write(codeGenUtils.createNamespace(
+      namespaceName: def.codeName,
+      statements: [
+        _generateTypeToJson(def.codeName, fields, wireTypeName: wireTypeName),
+        _generateTypeFromJson(def.codeName, fields, wireTypeName: wireTypeName),
+      ],
+    ));
     return buf.toString();
   }
 
   /// Overridden to add interface implementations as import deps for union types,
-  /// since the base only does this when generateJsonMethods is true.
+  /// filtering out server projection interfaces (the base always includes them).
   @override
   String serializeImports(GLToken token) {
     if (token is GLInterfaceDefinition && !token.isServerProjection && token.getSerializableImplementations(mode).isNotEmpty) {

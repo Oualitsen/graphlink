@@ -22,7 +22,7 @@ void main() {
 
     final def = g.enums["FilterMode"]!;
     final serializer =
-        KotlinSerializer(g, importPrefix: "", generateJsonMethods: true);
+        KotlinSerializer(g, importPrefix: "");
     final out = serializer.serializeEnumDefinition(def);
 
     // enum constant: `object` keyword -> `object_`.
@@ -47,7 +47,7 @@ void main() {
 
     final def = g.enums["Action"]!;
     final serializer =
-        KotlinSerializer(g, importPrefix: "", generateJsonMethods: true);
+        KotlinSerializer(g, importPrefix: "");
     final out = serializer.serializeEnumDefinition(def);
 
     // enum constant: `return` keyword -> `return_`.
@@ -71,7 +71,7 @@ void main() {
 
     final def = g.enums["FilterMode"]!;
     final serializer =
-        KotlinSerializer(g, importPrefix: "", generateJsonMethods: true);
+        KotlinSerializer(g, importPrefix: "");
     final out = serializer.serializeEnumDefinition(def);
 
     expect(out, contains("object_2"));
@@ -92,7 +92,7 @@ void main() {
 
     final def = g.enums["Status"]!;
     final serializer =
-        KotlinSerializer(g, importPrefix: "", generateJsonMethods: true);
+        KotlinSerializer(g, importPrefix: "");
     final out = serializer.serializeEnumDefinition(def);
 
     // enum constant: leading underscore moved to end.

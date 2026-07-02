@@ -51,27 +51,8 @@ void main() {
     expect(userOut, contains('override val address: Address'));
     expect(userOut, contains('override val orders: List<Order>'));
 
-    // generateJsonMethods: false (server default) — GLUserProjection must not
-    // declare an abstract toJson() that `data class User` would fail to implement.
-    expect(userProjectionOut, isNot(contains('toJson')));
-    expect(userOut, isNot(contains('toJson')));
-  });
-
-  test("Kotlin (generateJsonMethods: true): GL<Type>Projection.toJson() is implemented by <Type>", () {
-    final g = GLParser(identityFields: ["id"], mode: CodeGenerationMode.server);
-    g.parse(_schema);
-
-    final serializer = KotlinSerializer(g, importPrefix: "com.example", generateJsonMethods: true);
-
-    final userProjection = g.interfaces["GLUserProjection"]!;
-    final user = g.types["User"]!;
-
-    final userProjectionOut = serializer.serializeTypeDefinition(userProjection);
-    final userOut = serializer.serializeTypeDefinition(user);
-
-    print(userProjectionOut);
-    print(userOut);
-
+    // toJson/fromJson are mandatory — GLUserProjection declares an abstract
+    // toJson() that `data class User` overrides.
     expect(userProjectionOut, contains('fun toJson(): Map<String, Any?>'));
     expect(userOut, contains('override fun toJson(): Map<String, Any?>'));
   });
