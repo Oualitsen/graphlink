@@ -183,7 +183,7 @@ class DartSerializer extends GLSerializer {
       ),
       ...plan.defaultParams.map(
         (f) =>
-            'required ${serializeType(f.targetField.type, false)} default${f.targetField.name.token.firstUp}',
+            'required ${serializeType(f.targetField.type, false)} default${f.targetField.codeName.firstUp}',
       ),
     ];
 
@@ -195,7 +195,7 @@ class DartSerializer extends GLSerializer {
       }),
       ...plan.defaultParams.map(
         (f) =>
-            '${f.targetField.codeName}: ${f.sourceField!.codeName} ?? default${f.targetField.name.token.firstUp}',
+            '${f.targetField.codeName}: ${f.sourceField!.codeName} ?? default${f.targetField.codeName.firstUp}',
       ),
       ...plan.requiredParams.map(
         (f) => '${f.targetField.codeName}: ${f.targetField.codeName}',
@@ -223,11 +223,11 @@ class DartSerializer extends GLSerializer {
     });
 
     final nullableListDefaultParams = plan.nullableListDefaults.map((f) =>
-        '${serializeType(f.sourceField!.type, false)} default${f.sourceField!.name.token.firstUp} = const []');
+        '${serializeType(f.sourceField!.type, false)} default${f.sourceField!.codeName.firstUp} = const []');
     final nullableListAssignments = plan.nullableListDefaults.map((f) {
       final variable = '$targetVar.${f.targetField.codeName}';
       final expr = _callFromMapping(variable, f.sourceField!.type.firstType.token, f.targetField.type, 0);
-      return '${f.sourceField!.codeName}: $expr ?? default${f.sourceField!.name.token.firstUp}';
+      return '${f.sourceField!.codeName}: $expr ?? default${f.sourceField!.codeName.firstUp}';
     });
 
     final promotedParams = plan.promoted.map(

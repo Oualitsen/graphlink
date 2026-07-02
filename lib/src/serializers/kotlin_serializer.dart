@@ -511,7 +511,7 @@ class KotlinSerializer extends GLSerializer {
         (f) => '${f.targetField.codeName}: ${serializeType(f.targetField.type, false)}',
       ),
       ...plan.defaultParams.map(
-        (f) => 'default${f.targetField.name.token.firstUp}: ${serializeType(f.targetField.type, false)}',
+        (f) => 'default${f.targetField.codeName.firstUp}: ${serializeType(f.targetField.type, false)}',
       ),
     ];
 
@@ -532,7 +532,7 @@ class KotlinSerializer extends GLSerializer {
       } else if (defaultByTarget.containsKey(key)) {
         final f = defaultByTarget[key]!;
         final getter = f.sourceField!.codeName;
-        args.add('$name = if ($getter != null) $getter else default${f.targetField.name.token.firstUp}');
+        args.add('$name = if ($getter != null) $getter else default${f.targetField.codeName.firstUp}');
       } else if (requiredByTarget.containsKey(key)) {
         args.add('$name = $name');
       }
@@ -554,7 +554,7 @@ class KotlinSerializer extends GLSerializer {
       (f) => '${f.codeName}: ${serializeType(f.type, false)}',
     );
     final nullableListDefaultParams = plan.nullableListDefaults.map(
-      (f) => 'default${f.sourceField!.name.token.firstUp}: ${serializeType(f.sourceField!.type, false)}',
+      (f) => 'default${f.sourceField!.codeName.firstUp}: ${serializeType(f.sourceField!.type, false)}',
     );
 
     final autoBySource = {for (final f in plan.autoMapped) f.sourceField!.name.token: f};
@@ -575,7 +575,7 @@ class KotlinSerializer extends GLSerializer {
         final f = nullableListBySource[key]!;
         final sourceExpr = '$targetVar.${f.targetField.codeName}';
         final expr = _fromMappingExpr(sourceExpr, f.sourceField!.type.firstType.token, f.targetField.type, 0, def);
-        args.add('$name = $expr ?: default${f.sourceField!.name.token.firstUp}');
+        args.add('$name = $expr ?: default${f.sourceField!.codeName.firstUp}');
       } else if (promotedNames.contains(key) || inputOnlyNames.contains(key)) {
         args.add('$name = $name');
       }

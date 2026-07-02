@@ -512,7 +512,7 @@ class JavaSerializer extends GLSerializer {
         (f) => '${serializeType(f.targetField.type, false)} ${f.targetField.codeName}',
       ),
       ...plan.defaultParams.map(
-        (f) => '${serializeType(f.targetField.type, false)} default${f.targetField.name.token.firstUp}',
+        (f) => '${serializeType(f.targetField.type, false)} default${f.targetField.codeName.firstUp}',
       ),
     ];
 
@@ -540,7 +540,7 @@ class JavaSerializer extends GLSerializer {
         } else if (defaultByTarget.containsKey(name)) {
           final f = defaultByTarget[name]!;
           final getter = _getterFieldName(f.sourceField!, true);
-          constructorArgs.add('$getter != null ? $getter : default${f.targetField.name.token.firstUp}');
+          constructorArgs.add('$getter != null ? $getter : default${f.targetField.codeName.firstUp}');
         } else if (requiredByTarget.containsKey(name)) {
           constructorArgs.add(tf.codeName);
         }
@@ -570,7 +570,7 @@ class JavaSerializer extends GLSerializer {
       }),
       ...plan.defaultParams.map((f) {
         final getter = _getterFieldName(f.sourceField!, true);
-        return '.${f.targetField.codeName}($getter != null ? $getter : default${f.targetField.name.token.firstUp})';
+        return '.${f.targetField.codeName}($getter != null ? $getter : default${f.targetField.codeName.firstUp})';
       }),
       ...plan.requiredParams.map(
         (f) => '.${f.targetField.codeName}(${f.targetField.codeName})',
@@ -595,7 +595,7 @@ class JavaSerializer extends GLSerializer {
     final targetVar = targetType.firstLow;
 
     final nullableListDefaultParams = plan.nullableListDefaults.map((f) =>
-        '${serializeType(f.sourceField!.type, false)} default${f.sourceField!.name.token.firstUp}');
+        '${serializeType(f.sourceField!.type, false)} default${f.sourceField!.codeName.firstUp}');
 
     final promotedParams = plan.promoted.map(
       (f) => '${serializeType(f.sourceField!.type, false)} ${f.sourceField!.codeName}',
@@ -628,7 +628,7 @@ class JavaSerializer extends GLSerializer {
         final f = nullableListBySource[fieldName]!;
         final sourceExpr = '${targetVar}.${_getterFieldName(f.targetField, false)}';
         final expr = _fromMappingExpr(sourceExpr, f.sourceField!.type.firstType.token, f.targetField.type, 0, def);
-        constructorArgs.add('$expr != null ? $expr : default${f.sourceField!.name.token.firstUp}');
+        constructorArgs.add('$expr != null ? $expr : default${f.sourceField!.codeName.firstUp}');
       } else if (promotedNames.contains(fieldName) || inputOnlyNames.contains(fieldName)) {
         constructorArgs.add(field.codeName);
       }

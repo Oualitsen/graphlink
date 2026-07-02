@@ -31,20 +31,44 @@ extension GLGrammarNormalizationExtension on GLParser {
     if (convention == null) return;
 
     // ── Type / input / union / enum definition names ───────────────────────
-    for (final t in types.values) {
-      _applyTypeNaming(t, convention);
-    }
-    for (final i in inputs.values) {
-      _applyTypeNaming(i, convention);
-    }
-    for (final iface in interfaces.values) {
-      _applyTypeNaming(iface, convention);
-    }
-    for (final u in unions.values) {
-      _applyTypeNaming(u, convention);
-    }
-    for (final e in enums.values) {
-      _applyTypeNaming(e, convention);
+    // Deduped across every container sharing the generated-identifier
+    // namespace, mirroring sanitizeTypeNames below: two distinct declared
+    // names (e.g. `type foo` and `type Foo`) can normalize to the same code
+    // name under a configured convention, and the second must not silently
+    // overwrite the first. Interfaces synthesized from a union (fromUnion)
+    // are excluded — their codeName is unconditionally re-synced to the
+    // union's final name later (sanitizeTypeNames / assignCodeNames), so
+    // whatever this pass computes for them is discarded regardless.
+    final typeContainers = <CodeNameMixin>[
+      ...types.values,
+      ...inputs.values,
+      ...interfaces.values.where((i) => !i.fromUnion),
+      ...unions.values,
+      ...enums.values,
+    ];
+    final takenTypeNames = <String>{
+      ...types.keys,
+      ...inputs.keys,
+      ...interfaces.keys,
+      ...unions.keys,
+      ...enums.keys,
+    };
+    for (final container in typeContainers) {
+      final current = container.codeName;
+      var candidate = convention.typeName(container.wireName);
+      if (candidate == current) continue;
+
+      if (takenTypeNames.contains(candidate)) {
+        var counter = 2;
+        while (takenTypeNames.contains('${candidate}_$counter')) {
+          counter++;
+        }
+        candidate = '${candidate}_$counter';
+      }
+
+      takenTypeNames.remove(current);
+      container.codeName = candidate;
+      takenTypeNames.add(candidate);
     }
 
     // ── Field identifiers ──────────────────────────────────────────────────
@@ -151,14 +175,6 @@ extension GLGrammarNormalizationExtension on GLParser {
       final union = unions[iface.token];
       if (union != null) iface.codeName = union.codeName;
     }
-  }
-
-  /// Normalizes a container's definition name (type / input / union / enum)
-  /// using [convention].typeName.  No collision handling is needed here:
-  /// [sanitizeTypeNames] resolves any leading-underscore conflicts afterwards.
-  void _applyTypeNaming(CodeNameMixin container, NamingConvention convention) {
-    final normalized = convention.typeName(container.wireName);
-    if (normalized != container.wireName) container.codeName = normalized;
   }
 
   /// Normalizes argument code names using [convention].field (arguments follow
