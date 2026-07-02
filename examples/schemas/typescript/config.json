@@ -1,6 +1,6 @@
 {
     "schemaPaths": [
-        "../artsy.graphql"
+        "../twitch.graphql"
     ],
     "mode": "client",
     "unknownScalarType": "string",

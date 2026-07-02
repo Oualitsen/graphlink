@@ -1,6 +1,6 @@
 {
     "schemaPaths": [
-        "../artsy.graphql"
+        "../github.graphql"
     ],
     "mode": "client",
     "unknownScalarType": "String",

@@ -1,6 +1,7 @@
 import 'package:graphlink/src/capture_errors_utils.dart';
 import 'package:graphlink/src/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
+import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/client_serializers/typescript/typescript_client_vars.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
@@ -519,8 +520,13 @@ class TypeScriptClientOperationSerializer {
       } else if (arg.defaultValue != null) {
         final lit =
             _serializer.serializeDefaultLiteral(arg.type, arg.defaultValue!.value);
-        final jsonExpr = _serializer.callToJson('args.$codeRef', arg.type);
-        buffer.writeln("  '$wireKey': $jsonExpr ?? $lit,");
+        // The TS param is optional (`?:`) because of the default value, even
+        // when the GraphQL type itself is non-null — so `args.$codeRef` can be
+        // `undefined` at runtime. Force the toJson call to null-guard too.
+        final jsonType =
+            arg.type.nullable ? arg.type : GLType.makeNullable(arg.type);
+        final jsonExpr = _serializer.callToJson('args.$codeRef', jsonType);
+        buffer.writeln("  '$wireKey': ($jsonExpr) ?? $lit,");
       } else {
         final jsonExpr = _serializer.callToJson('args.$codeRef', arg.type);
         buffer.writeln("  '$wireKey': $jsonExpr,");

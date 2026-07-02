@@ -409,7 +409,7 @@ class TypeScriptSerializer extends GLSerializer {
     final switchStmt = codeGenUtils.switchStatement(
       expression: 'obj.__typename',
       cases: cases,
-      defaultStatements: ['throw new Error(`Unknown ${def.codeName}: \${obj.__typename}`);'],
+      defaultStatements: ['throw new Error(`Unknown ${def.codeName}: \${(obj as any).__typename}`);'],
     );
     final func = codeGenUtils.createMethod(
       methodName: 'toJson',
