@@ -20,7 +20,7 @@ abstract class GLBarrelFileHandler {
   String fileNameFor(GLToken def);
 
   Future<File> generate() {
-    final lines = <String>[];
+    final lines = <String>{};
 
     parser.enums.forEach((_, def) {
       lines.add(exportLine('enums', fileNameFor(def)));
