@@ -11,6 +11,14 @@ import 'package:graphlink/src/model/gl_queries.dart';
 /// Runs as the last step of [validateSemantics] so that projected types and
 /// projected interfaces — created during validation — are covered too.
 extension GLGrammarKeywordExtension on GLParser {
+  /// Runs the leading-underscore / reserved-word sanitization for operation
+  /// names only. Called before [createProjectedTypes] so that
+  /// [GLQueryDefinition.getGeneratedTypeDefinition] sees the final codeName
+  /// when it builds and caches the `<stem>Response` type name.
+  void assignQueryCodeNamesEarly() {
+    _assignQueryCodeNames(queries.values);
+  }
+
   /// One pass over every container of identifiers. No-op when [reservedWords]
   /// is empty (e.g. TypeScript, which accepts reserved words as properties).
   void assignCodeNames() {
@@ -43,16 +51,18 @@ extension GLGrammarKeywordExtension on GLParser {
       for (final c in controllers.values) {
         c.assignCodeNames(reservedWords);
       }
-      // Operation method names: a query/mutation/subscription may be named after
-      // a reserved keyword (`return`); the generated client method must be safe
-      // while the wire/operation name keeps the original token.
-      _assignQueryCodeNames(queries.values);
     }
 
     // Parameter/binding-position identifiers (resolver + operation arguments).
     // For most languages this set equals [reservedWords]; TypeScript supplies a
     // non-empty set here even though its field set is empty, because reserved
     // words are illegal as parameter names / destructuring targets.
+    // Operation method names always run: a leading-underscore operation
+    // (e.g. `_entities`) must become `entities_` regardless of whether any
+    // reserved words are configured, because `_entities` is a private
+    // identifier in every target language.
+    _assignQueryCodeNames(queries.values);
+
     if (parameterReservedWords.isNotEmpty) {
       for (final t in types.values) {
         _assignFieldArgumentCodeNames(t.fields);
@@ -78,7 +88,7 @@ extension GLGrammarKeywordExtension on GLParser {
   void _assignQueryCodeNames(Iterable<GLQueryDefinition> defs) {
     final taken = defs.map((d) => d.token).toSet();
     for (final def in defs) {
-      final bare = def.token;
+      final bare = def.codeName;
 
       var codeName = bare.startsWith('_') ? '${bare.substring(1)}_' : bare;
       if (codeName == bare && !reservedWords.contains(bare)) continue;

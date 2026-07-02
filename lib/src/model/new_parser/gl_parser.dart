@@ -376,6 +376,11 @@ class GLParser {
       checkUploadDirectivePlacement();
       checkUploadScalarUsage();
       checkUploadListDepth();
+      // Normalize and keyword-sanitize operation names before createProjectedTypes
+      // so getGeneratedTypeDefinition() sees the final codeName when it builds and
+      // caches the <stem>Response / <stem>FullResponse type names.
+      normalizeQueryNames();
+      assignQueryCodeNamesEarly();
       createProjectedTypes();
       cleanProjectedInterfacesImplementations();
       fixProjectedInterfaceConflicts();
