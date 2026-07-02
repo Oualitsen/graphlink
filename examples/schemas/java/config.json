@@ -1,6 +1,6 @@
 {
     "schemaPaths": [
-        "../artsy.graphql"
+        "../microsoft_graph.graphql"
     ],
     "mode": "client",
     "unknownScalarType": "String",
