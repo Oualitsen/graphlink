@@ -916,12 +916,22 @@ class JavaSerializer extends GLSerializer {
   }
 
   String serializeGetterDeclaration(GLField field,
-      {bool skipModifier = false, bool asProperty = false, bool forceNullable = false}) {
+      {bool skipModifier = false, bool asProperty = false, bool forceNullable = false, GLInterfaceDefinition? owner}) {
     var returnType = serializeType(field.type, forceNullable);
     final type = field.type;
     if (type is GLListType) {
-      returnType =
-          JavaCodeGenUtils.listOf(grammar, serializeType(type.inlineType, false));
+      final inner = serializeType(type.inlineType, false);
+      // Java generics are invariant: List<Alpha> is not a subtype of
+      // List<Node> even when Alpha implements Node. A covariant override
+      // only type-checks if the interface declares `List<? extends Node>`.
+      // Only emit the wildcard when some implementer actually narrows this
+      // field — otherwise keep the plain `List<Node>` return type, which is
+      // the ergonomic default for callers.
+      final needsWildcard =
+          owner != null && _isFieldNarrowedInImplementers(owner, field);
+      returnType = needsWildcard
+          ? 'List<? extends $inner>'
+          : JavaCodeGenUtils.listOf(grammar, inner);
     }
     var result = returnType;
     if (asProperty) {
@@ -1098,7 +1108,24 @@ class JavaSerializer extends GLSerializer {
     return buffer.toString();
   }
 
-  String _serializeInterfaceField(GLField f, bool getters,
+  /// Whether some serializable implementer of [owner] narrows [field]
+  /// (a list field) to a different element type than [owner] declares —
+  /// e.g. `interface Base { nodeList: [Node!]! }` with
+  /// `type Dog implements Base { nodeList: [Alpha!]! }`. Java generics are
+  /// invariant, so such an override only compiles if the interface getter
+  /// returns `List<? extends Node>` instead of `List<Node>`.
+  bool _isFieldNarrowedInImplementers(GLInterfaceDefinition owner, GLField field) {
+    if (!field.type.isList) return false;
+    final declaredToken = field.type.inlineType.firstType.token;
+    for (final impl in owner.getSerializableImplementations(mode)) {
+      final implField = impl.getFieldByName(field.name.token);
+      if (implField == null || !implField.type.isList) continue;
+      if (implField.type.inlineType.firstType.token != declaredToken) return true;
+    }
+    return false;
+  }
+
+  String _serializeInterfaceField(GLField f, bool getters, GLInterfaceDefinition owner,
       {bool forceClassGetters = false}) {
     var buffer = StringBuffer();
     var fieldDecorators = serializeDecorators(f.getDirectives(), joiner: "\n");
@@ -1109,10 +1136,13 @@ class JavaSerializer extends GLSerializer {
     if (getters) {
       if (typesAsRecords && !forceClassGetters) {
         buffer.write(
-            serializeGetterDeclaration(f, skipModifier: true, asProperty: true, forceNullable: fieldForceNullable)
+            serializeGetterDeclaration(f,
+                    skipModifier: true, asProperty: true, forceNullable: fieldForceNullable, owner: owner)
                 .ident());
       } else {
-        buffer.write(serializeGetterDeclaration(f, skipModifier: true, forceNullable: fieldForceNullable).ident());
+        buffer.write(
+            serializeGetterDeclaration(f, skipModifier: true, forceNullable: fieldForceNullable, owner: owner)
+                .ident());
       }
     } else {
       buffer.write(serializeMethod(f, forceNullable: fieldForceNullable).ident());
@@ -1140,7 +1170,7 @@ class JavaSerializer extends GLSerializer {
         interfaceName: codeName,
         interfaceNames: interfaces.map((e) => resolveCodeName(e.tokenInfo.token)).toList(),
         statements: [
-          ...fields.map((f) => _serializeInterfaceField(f, getters, forceClassGetters: forceClassGetters)),
+          ...fields.map((f) => _serializeInterfaceField(f, getters, interface, forceClassGetters: forceClassGetters)),
           if (generateJsonConverstionMethods && interface.getSerializableImplementations(mode).isNotEmpty) ...[
             "",
             "Map<String, Object> toJson();",
