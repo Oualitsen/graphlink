@@ -297,11 +297,22 @@ class KotlinSerializer extends GLSerializer {
     return false;
   }
 
+  bool _fieldImplementsSuperInterface(GLField f, GLInterfaceDefinition def) {
+    for (final iname in def.interfaces) {
+      final iface = grammar.interfaces[iname.tokenInfo.token];
+      if (iface == null) continue;
+      if (iface.fields.any((fi) => fi.name.token == f.name.token)) return true;
+    }
+    return false;
+  }
+
   String serializeInterface(GLInterfaceDefinition def) {
     final fields = def.getSerializableFields(grammar.mode);
     final fieldDecls = fields.map((f) {
       final forceNullable = f.hasInculeOrSkipDiretives;
-      return 'val ${f.codeName}: ${serializeType(f.type, forceNullable)}';
+      final type = serializeType(f.type, forceNullable);
+      final prefix = _fieldImplementsSuperInterface(f, def) ? 'override val' : 'val';
+      return '$prefix ${f.codeName}: $type';
     }).toList();
 
     final companionMethods = <String>[];
