@@ -37,9 +37,9 @@ void main() {
       );
       g.parse(_schema);
 
-      expect(g.queries.containsKey(GLOperationKey('getProduct', GLQueryType.query)), isTrue);
-      expect(g.queries.containsKey(GLOperationKey('listOrders', GLQueryType.query)), isFalse);
-      expect(g.queries.containsKey(GLOperationKey('ping', GLQueryType.query)), isFalse);
+      expect(g.queries.containsKey(const GLOperationKey('getProduct', GLQueryType.query)), isTrue);
+      expect(g.queries.containsKey(const GLOperationKey('listOrders', GLQueryType.query)), isFalse);
+      expect(g.queries.containsKey(const GLOperationKey('ping', GLQueryType.query)), isFalse);
     });
 
     test('generates only the listed mutations', () {
@@ -53,8 +53,8 @@ void main() {
       );
       g.parse(_schema);
 
-      expect(g.queries.containsKey(GLOperationKey('createOrder', GLQueryType.mutation)), isTrue);
-      expect(g.queries.containsKey(GLOperationKey('deleteOrder', GLQueryType.mutation)), isFalse);
+      expect(g.queries.containsKey(const GLOperationKey('createOrder', GLQueryType.mutation)), isTrue);
+      expect(g.queries.containsKey(const GLOperationKey('deleteOrder', GLQueryType.mutation)), isFalse);
     });
 
     test('generates only the listed subscriptions', () {
@@ -68,8 +68,8 @@ void main() {
       );
       g.parse(_schema);
 
-      expect(g.queries.containsKey(GLOperationKey('onOrderCreated', GLQueryType.subscription)), isTrue);
-      expect(g.queries.containsKey(GLOperationKey('onPing', GLQueryType.subscription)), isFalse);
+      expect(g.queries.containsKey(const GLOperationKey('onOrderCreated', GLQueryType.subscription)), isTrue);
+      expect(g.queries.containsKey(const GLOperationKey('onPing', GLQueryType.subscription)), isFalse);
     });
 
     test('mixes queries, mutations, and subscriptions independently', () {
@@ -83,13 +83,13 @@ void main() {
       );
       g.parse(_schema);
 
-      expect(g.queries.containsKey(GLOperationKey('getProduct', GLQueryType.query)), isTrue);
-      expect(g.queries.containsKey(GLOperationKey('listOrders', GLQueryType.query)), isTrue);
-      expect(g.queries.containsKey(GLOperationKey('ping', GLQueryType.query)), isFalse);
-      expect(g.queries.containsKey(GLOperationKey('deleteOrder', GLQueryType.mutation)), isTrue);
-      expect(g.queries.containsKey(GLOperationKey('createOrder', GLQueryType.mutation)), isFalse);
-      expect(g.queries.containsKey(GLOperationKey('onPing', GLQueryType.subscription)), isTrue);
-      expect(g.queries.containsKey(GLOperationKey('onOrderCreated', GLQueryType.subscription)), isFalse);
+      expect(g.queries.containsKey(const GLOperationKey('getProduct', GLQueryType.query)), isTrue);
+      expect(g.queries.containsKey(const GLOperationKey('listOrders', GLQueryType.query)), isTrue);
+      expect(g.queries.containsKey(const GLOperationKey('ping', GLQueryType.query)), isFalse);
+      expect(g.queries.containsKey(const GLOperationKey('deleteOrder', GLQueryType.mutation)), isTrue);
+      expect(g.queries.containsKey(const GLOperationKey('createOrder', GLQueryType.mutation)), isFalse);
+      expect(g.queries.containsKey(const GLOperationKey('onPing', GLQueryType.subscription)), isTrue);
+      expect(g.queries.containsKey(const GLOperationKey('onOrderCreated', GLQueryType.subscription)), isFalse);
     });
 
     test('throws ParseException for unknown query name', () {
@@ -143,8 +143,8 @@ void main() {
         },
       );
       g.parse(_schema);
-      expect(g.queries.containsKey(GLOperationKey('ping', GLQueryType.query)), isTrue);
-      expect(g.queries.containsKey(GLOperationKey('getProduct', GLQueryType.query)), isFalse);
+      expect(g.queries.containsKey(const GLOperationKey('ping', GLQueryType.query)), isTrue);
+      expect(g.queries.containsKey(const GLOperationKey('getProduct', GLQueryType.query)), isFalse);
     });
   });
 }

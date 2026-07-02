@@ -8,7 +8,7 @@ import 'package:graphlink_client_integration_tests/generated/inputs/address_inpu
 import 'fixtures.dart';
 import 'mock_adapter.dart';
 
-final _minimalInput = CreateUserInput(
+const _minimalInput = CreateUserInput(
   name: 'Alice Smith',
   email: 'alice@test.com',
   status: UserStatus.active,
@@ -180,7 +180,7 @@ void main() {
     test('returns a User with correct id', () async {
       final res = await client.mutations.updateUser(
         id: 'user-1',
-        input: UpdateUserInput(name: 'Alice Smith'),
+        input: const UpdateUserInput(name: 'Alice Smith'),
       );
       expect(res.updateUser.id, equals('user-1'));
     });
@@ -188,7 +188,7 @@ void main() {
     test('returns a User with correct name', () async {
       final res = await client.mutations.updateUser(
         id: 'user-1',
-        input: UpdateUserInput(name: 'Alice Smith'),
+        input: const UpdateUserInput(name: 'Alice Smith'),
       );
       expect(res.updateUser.name, equals('Alice Smith'));
     });
@@ -196,7 +196,7 @@ void main() {
     test('status is deserialized as enum', () async {
       final res = await client.mutations.updateUser(
         id: 'user-1',
-        input: UpdateUserInput(status: UserStatus.active),
+        input: const UpdateUserInput(status: UserStatus.active),
       );
       expect(res.updateUser.status, equals(UserStatus.active));
     });
@@ -204,7 +204,7 @@ void main() {
     test('nested address is deserialized', () async {
       final res = await client.mutations.updateUser(
         id: 'user-1',
-        input: UpdateUserInput(name: 'Alice Smith'),
+        input: const UpdateUserInput(name: 'Alice Smith'),
       );
       expect(res.updateUser.address.street, equals('123 Main St'));
     });
@@ -216,7 +216,7 @@ void main() {
     test('id is passed as top-level variable', () async {
       await client.mutations.updateUser(
         id: 'user-42',
-        input: UpdateUserInput(name: 'Updated'),
+        input: const UpdateUserInput(name: 'Updated'),
       );
       expect(adapter.lastCall!.variables['id'], equals('user-42'));
     });
@@ -224,7 +224,7 @@ void main() {
     test('input variable is present alongside id', () async {
       await client.mutations.updateUser(
         id: 'user-1',
-        input: UpdateUserInput(name: 'Updated'),
+        input: const UpdateUserInput(name: 'Updated'),
       );
       expect(adapter.lastCall!.variables['input'], isNotNull);
     });
@@ -232,7 +232,7 @@ void main() {
     test('operation name is updateUser', () async {
       await client.mutations.updateUser(
         id: 'user-1',
-        input: UpdateUserInput(name: 'Updated'),
+        input: const UpdateUserInput(name: 'Updated'),
       );
       expect(adapter.lastCall!.operationName, equals('updateUser'));
     });

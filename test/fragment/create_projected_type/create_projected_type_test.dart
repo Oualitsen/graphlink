@@ -26,7 +26,7 @@ void main() async {
 
 ''');
 
-    var block = g.queries[GLOperationKey('getPerson', GLQueryType.query)]!.elements.first.block!;
+    var block = g.queries[const GLOperationKey('getPerson', GLQueryType.query)]!.elements.first.block!;
     var type = g.getType("Person".toToken());
     var newType = g.createProjectedType(
         type: type,

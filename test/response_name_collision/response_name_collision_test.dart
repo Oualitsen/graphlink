@@ -33,7 +33,7 @@ void main() {
 
     // `vulnerability` would default to `VulnerabilityResponse`, which clashes
     // with the declared type, so it falls back to `<Field><Operation>Response`.
-    final wrapper = g.queries[GLOperationKey('vulnerability', GLQueryType.query)]!.getGeneratedTypeDefinition();
+    final wrapper = g.queries[const GLOperationKey('vulnerability', GLQueryType.query)]!.getGeneratedTypeDefinition();
     expect(wrapper.token, 'VulnerabilityQueryResponse');
 
     // The user-declared type keeps its own name, untouched.

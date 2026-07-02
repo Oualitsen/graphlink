@@ -95,9 +95,7 @@ Future<void> killPort(int port) async {
 /// Kills any process on [port], starts the test-server JAR on that port,
 /// and waits until the port accepts TCP connections.
 Future<void> startServer(int port) async {
-  print("Killing process with port $port");
   await killPort(port);
-  print("starting spring server with port ${port}");
   final process = await Process.start('java', [
     '-jar',
     _jarPath(),
@@ -106,7 +104,6 @@ Future<void> startServer(int port) async {
   ]);
   unawaited(process.stdout.drain());
   unawaited(process.stderr.drain());
-  print("waiting for port ${port}");
   await _waitForPort(port);
 }
 

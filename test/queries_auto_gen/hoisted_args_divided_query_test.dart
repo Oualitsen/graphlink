@@ -32,7 +32,7 @@ type Thing {
     );
     g.parse(schema);
 
-    final def = g.queries[GLOperationKey('getThing', GLQueryType.query)]!;
+    final def = g.queries[const GLOperationKey('getThing', GLQueryType.query)]!;
 
     // Grouping happened: the operation keeps the declared $id and a single
     // synthetic object arg; the lone hoisted arg lives on the input.

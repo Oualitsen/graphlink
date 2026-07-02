@@ -1,6 +1,7 @@
 /// Integration tests: naming convention → serializer output.
 /// Each test uses a static NamingConvention instance (the same one generators
 /// will receive after grammar_factory is wired) and verifies the emitted code.
+library;
 import 'package:graphlink/src/naming_convention.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/reserved_words.dart';

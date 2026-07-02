@@ -18,7 +18,7 @@ void main() async {
 
     expect(productInput.token, contains("MyProductInput"));
     //renamed responses
-    expect(g.queries[GLOperationKey("getAllProducts", GLQueryType.query)]!.getGeneratedTypeDefinition().token,
+    expect(g.queries[const GLOperationKey("getAllProducts", GLQueryType.query)]!.getGeneratedTypeDefinition().token,
         equals("MyProductResp"));
   });
 }

@@ -20,7 +20,7 @@ void main() async {
     g.parse(text);
 
     expect(g.queries.keys.map((k) => k.fieldName), contains("getProduct"));
-    var getProduct = g.queries[GLOperationKey("getProduct", GLQueryType.query)]!;
+    var getProduct = g.queries[const GLOperationKey("getProduct", GLQueryType.query)]!;
 
     expect(getProduct.tokenInfo.token, equals("getProduct"));
 

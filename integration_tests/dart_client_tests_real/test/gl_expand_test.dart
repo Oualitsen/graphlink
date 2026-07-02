@@ -1,7 +1,5 @@
 import 'package:graphlink_client_integration_tests/generated/graphlink.dart';
-import 'package:graphlink_client_integration_tests/generated/types/car.dart';
 import 'package:test/test.dart';
-import 'package:graphlink_client_integration_tests/generated/client/graph_link_client.dart';
 import 'real_server_adapter.dart';
 
 // Cycle: VehicleDriver → Vehicle (Car|Bike) → VehicleOwner → VehicleDriver

@@ -15,7 +15,7 @@ void main() {
     type Query { noop: String }
   ''';
 
-  String _out({required bool records}) {
+  String out0({required bool records}) {
     final g = GLParser(
       reservedWords: javaReservedWords,
       mode: CodeGenerationMode.server,
@@ -28,14 +28,14 @@ void main() {
   }
 
   test("builder-style mapping uses the sanitized identifier", () {
-    final out = _out(records: false);
+    final out = out0(records: false);
     // builder setter for the keyword field is `.default_(...)`, never `.default(`.
     expect(out, contains(".default_("));
     expect(out, isNot(contains(".default(")));
   });
 
   test("record-style mapping uses the sanitized accessor", () {
-    final out = _out(records: true);
+    final out = out0(records: true);
     // record accessor for the keyword field is `default_()`.
     expect(out, contains("default_()"));
     expect(out, contains("address.default_()"));
