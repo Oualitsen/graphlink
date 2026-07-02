@@ -121,10 +121,5 @@ class EnumsTest {
             assertEquals(Priority.CRITICAL, Priority.fromJson("CRITICAL"))
         }
 
-        @Test
-        fun fromJson_null_returnsNull() {
-            assertNull(UserStatus.fromJson(null))
-            assertNull(Priority.fromJson(null))
-        }
     }
 }

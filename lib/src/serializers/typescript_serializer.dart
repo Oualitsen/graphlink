@@ -230,7 +230,13 @@ class TypeScriptSerializer extends GLSerializer {
     buf.write(codeGenUtils.createTypeAlias(name: def.codeName, value: members));
     if (generateJsonMethods) {
       buf.writeln();
-      buf.write(_serializeUnionFromJson(def));
+      buf.write(codeGenUtils.createNamespace(
+        namespaceName: def.codeName,
+        statements: [
+          _serializeUnionToJson(def),
+          _serializeUnionFromJson(def),
+        ],
+      ));
     }
     return buf.toString();
   }
@@ -238,18 +244,23 @@ class TypeScriptSerializer extends GLSerializer {
   /// GraphQL `type` → `export interface Foo { readonly field: Type; }`
   String _serializeType(GLTypeDefinition def) {
     final fields = def.getSerializableFields(grammar.mode);
+    final hasRealInterface = def.interfaces.any((i) => !i.isServerProjection);
+    final wireTypeName = hasRealInterface ? def.token : null;
     final buf = StringBuffer();
     buf.write(codeGenUtils.createInterface(
       interfaceName: def.codeName,
-      fields: fields.map((f) => serializeField(f, true, true)).toList(),
+      fields: [
+        if (hasRealInterface) "readonly __typename: '${def.token}';",
+        ...fields.map((f) => serializeField(f, true, true)),
+      ],
     ));
     if (generateJsonMethods) {
       buf.writeln();
       buf.write(codeGenUtils.createNamespace(
         namespaceName: def.codeName,
         statements: [
-          _generateTypeToJson(def.codeName, fields),
-          _generateTypeFromJson(def.codeName, fields),
+          _generateTypeToJson(def.codeName, fields, wireTypeName: wireTypeName),
+          _generateTypeFromJson(def.codeName, fields, wireTypeName: wireTypeName),
         ],
       ));
     }
@@ -361,28 +372,50 @@ class TypeScriptSerializer extends GLSerializer {
     return 'export function $func';
   }
 
-  String _generateTypeToJson(String typeName, List<GLField> fields) {
-    final entriesBlock = codeGenUtils.block(
-      fields.map(_fieldToJsonExpr).map((e) => '$e,').toList(),
-    );
+  String _generateTypeToJson(String typeName, List<GLField> fields, {String? wireTypeName}) {
+    final entries = [
+      if (wireTypeName != null) '"__typename": "$wireTypeName"',
+      ...fields.map(_fieldToJsonExpr),
+    ].map((e) => '$e,').toList();
     final func = codeGenUtils.createMethod(
       methodName: 'toJson',
       arguments: ['obj: $typeName'],
       returnType: 'Record<string, unknown>',
-      statements: ['return $entriesBlock;'],
+      statements: ['return ${codeGenUtils.block(entries)};'],
     );
     return 'export function $func';
   }
 
-  String _generateTypeFromJson(String typeName, List<GLField> fields) {
-    final entriesBlock = codeGenUtils.block(
-      fields.map(_fieldFromJsonExpr).map((e) => '$e,').toList(),
-    );
+  String _generateTypeFromJson(String typeName, List<GLField> fields, {String? wireTypeName}) {
+    final entries = [
+      if (wireTypeName != null) "__typename: '$wireTypeName'",
+      ...fields.map(_fieldFromJsonExpr),
+    ].map((e) => '$e,').toList();
     final func = codeGenUtils.createMethod(
       methodName: 'fromJson',
       arguments: ['json: Record<string, unknown>'],
       returnType: typeName,
-      statements: ['return $entriesBlock;'],
+      statements: ['return ${codeGenUtils.block(entries)};'],
+    );
+    return 'export function $func';
+  }
+
+  String _serializeUnionToJson(GLInterfaceDefinition def) {
+    final impls = def.getSerializableImplementations(mode).toList();
+    final cases = impls.map((t) => TypeScriptCaseStatement(
+      caseValue: '"${t.token}"',
+      statement: 'return ${t.codeName}.toJson(obj as ${t.codeName});',
+    )).toList();
+    final switchStmt = codeGenUtils.switchStatement(
+      expression: 'obj.__typename',
+      cases: cases,
+      defaultStatements: ['throw new Error(`Unknown ${def.codeName}: \${obj.__typename}`);'],
+    );
+    final func = codeGenUtils.createMethod(
+      methodName: 'toJson',
+      arguments: ['obj: ${def.codeName}'],
+      returnType: 'Record<string, unknown>',
+      statements: [switchStmt],
     );
     return 'export function $func';
   }
@@ -404,10 +437,7 @@ class TypeScriptSerializer extends GLSerializer {
       returnType: def.codeName,
       statements: [switchStmt],
     );
-    return codeGenUtils.createNamespace(
-      namespaceName: def.codeName,
-      statements: ['export function $func'],
-    );
+    return 'export function $func';
   }
 
   String _fieldToJsonExpr(GLField field) {
