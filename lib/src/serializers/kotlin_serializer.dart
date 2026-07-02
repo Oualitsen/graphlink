@@ -322,10 +322,15 @@ class KotlinSerializer extends GLSerializer {
     }
 
     final isInternal = def.hasDirective(glInternal);
+    final toJsonOverridesSuperInterface = def.interfaces.any((iname) {
+      final iface = grammar.interfaces[iname.tokenInfo.token];
+      return iface != null && !iface.hasDirective(glInternal);
+    });
+    final toJsonPrefix = toJsonOverridesSuperInterface ? 'override fun' : 'fun';
 
     final body = <String>[
       ...fieldDecls.map((d) => d),
-      if (!isInternal) 'fun toJson(): $_mapType',
+      if (!isInternal) '$toJsonPrefix toJson(): $_mapType',
       if (companionMethods.isNotEmpty) ...[
         '',
         codeGenUtils.companionObject(companionMethods),
