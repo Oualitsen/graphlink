@@ -196,7 +196,8 @@ class GLQueryDefinition extends GLToken with GLDirectivesMixin {
   }
 
   /// The `<Field>`-style stem the generated wrapper names are built from.
-  String get defaultGeneratedNameStem => tokenInfo.token.firstUp;
+  String get defaultGeneratedNameStem =>
+      codeName.replaceAll(RegExp(r'_+$'), '').firstUp;
 
   String _getGeneratedTypeName() {
     return getNameValueFromDirectives(getDirectives()) ??
