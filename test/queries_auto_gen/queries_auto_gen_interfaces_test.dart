@@ -74,7 +74,7 @@ void main() async {
     expect(serializedInterface, isNot(contains('Tiger')));
 
     // Java
-    var javaSerializer = JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
+    var javaSerializer = JavaSerializer(g, importPrefix: "");
     final javaInterface = javaSerializer.serializeTypeDefinition(animal);
     expect(javaInterface, isNot(contains('Tiger')));
     // typescript

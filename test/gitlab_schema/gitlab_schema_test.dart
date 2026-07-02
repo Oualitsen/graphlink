@@ -40,7 +40,7 @@ void main() {
       print('Parse took: ${sw.elapsedMilliseconds}ms');
       serializer = DartClientSerializer(
         parser,
-        DartSerializer(parser, importPrefix: '', generateJsonMethods: true),
+        DartSerializer(parser, importPrefix: ''),
         generateAdapters: true,
       );
     });

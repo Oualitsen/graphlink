@@ -401,3 +401,102 @@
 
 - Fixed barrel file to include generated client files (Dart and TypeScript)
 
+## 5.0.0
+
+### Breaking changes
+
+- **Server generation is strict by default (`@glStrict` behavior, always on)** — every server-generated type and interface now enforces real schema nullability on its fields (getters/constructors/setters), instead of the previous always-nullable server model. Every type and interface also gains a generated `GL<Type>Projection` interface (all fields nullable) to represent partially-fetched data.
+
+  **Migration:** if you relied on server-generated types being fully nullable, annotate them with the new `@glServerLenient` directive to restore the old per-type behavior. For a resolver that only fetches part of a type based on the GraphQL selection set, annotate the operation/relation field with `@glReturnsProjection` so it returns `GL<Type>Projection` instead of the strict concrete type.
+
+- **Generated identifiers are always normalized to the target language's casing convention** — field names, argument names, enum values, and type/input/interface/union/enum names are now unconditionally rewritten to canonical casing (e.g. lowerCamelCase fields for Dart/Java/Kotlin/TypeScript, SCREAMING_SNAKE enum values for Java/Kotlin, PascalCase enum values for TypeScript, PascalCase type names everywhere). This is not opt-in.
+
+  **Migration:** if your schema's GraphQL names aren't already in canonical casing (e.g. `snake_case` fields, lowercase type names), regenerating will rename the corresponding generated fields/classes/methods. Review the diff after upgrading and update any application code that references generated identifiers directly.
+
+- **Generated server controllers now return `Map`/`List<Map>` instead of typed objects** — Java Spring, Kotlin Spring, and Express/Apollo controllers serialize responses via `toJson()` at the controller boundary; service interfaces are unchanged. Any code depending on the old typed controller return type needs to be updated after regenerating.
+
+- **Java Spring controllers bind input arguments as `Map<String, Object>`** — controller methods no longer receive Spring-bound typed input objects directly; they receive a raw map and convert it via the input's generated `fromJson`. This keeps keyword-renamed and normalized input fields correct on the wire, but any custom Jackson/Spring binding configuration relying on the previous direct-typed binding will need to be revisited.
+
+- **Kotlin generated enum `fromJson` no longer returns null for unknown values** — signature changed from `fun fromJson(value: String?): T?` to `fun fromJson(value: String): T`; an unrecognized wire value now throws `IllegalArgumentException` instead of returning null.
+
+- **Field-level arguments are no longer silently dropped** — arguments on nested (non-root) fields (e.g. `lastArticles(limit: Int!)`) are now detected wherever the field is selected (explicit query, fragment, or auto-generated all-fields projection) and turned into operation variables / method parameters. Regenerated client methods for existing operations that select such fields gain new parameters. To keep generated method signatures from exploding on schemas with many field-level arguments, these propagated arguments are automatically grouped into a single synthesized `<Operation>FieldArgs` input object rather than appended as a flat parameter list — see `autoGenerateQueriesArgumentLimit` below for schemas where even that isn't enough.
+
+- **Cyclic types are always forced nullable, not just under `@glExpand`** — fields participating in a dependency cycle between types are now unconditionally nullable in generated types (default-on SCC-based cycle detection), rather than only when explicitly bounded by `@glExpand(depth: …)`. Code that force-unwraps such fields (`!` in Dart/Kotlin, non-null assumptions in Java/TS) may need updating after regeneration.
+
+- **Auto-generated query variable names changed** — auto-generated operation variable names are now `$<fieldName><ArgName>` instead of bare `$<argName>`, to avoid collisions across fields and fragments (with further type-suffix disambiguation when the same field+arg name resolves to different types across the schema). This changes the wire-level `.graphql` query strings emitted for auto-generated operations; regenerated output will differ even though behavior is equivalent.
+
+- **`toJson`/`fromJson` generation is now mandatory** — every language serializer (Dart, Java, Kotlin, TypeScript) previously accepted a `generateJsonMethods` flag that could suppress serialization methods on types, inputs, and interfaces. That flag has been removed: `toJson`/`fromJson` are now always generated, on both client and server, since identifier normalization and reserved-keyword renaming mean a field's generated identifier can differ from its wire name — code that reads/writes generated objects without going through `toJson`/`fromJson` can no longer assume the two match.
+
+### New features
+
+- **Kotlin Spring Boot server generation** — new `serverConfig.kotlinSpring` block generates Kotlin data-class types/inputs/enums, services, controllers, and repositories, mirroring the existing Java Spring server target. `typeAsDataClass`/`inputAsDataClass` control data-class vs. open-class generation; `blockingServices` (default `true`) wraps service calls in `withContext(Dispatchers.IO)`, or set to `false` for a coroutine-native service layer.
+
+- **Reactive Java client generation** — new `asyncStyle` option in `clientConfig.java`: `blocking` (default, unchanged), `reactor`, `rxjava3`, or `mutiny`. Reactive styles wrap query/mutation results in the library's deferred-single type (`Mono`/`Single`/`Uni`) and subscriptions in the deferred-many type (`Flux`/`Observable`/`Multi`). `reactiveHttpClient` selects the default adapter's transport: `jdk` (`HttpClient.sendAsync`, works with every reactive style, no extra dependency) or `webclient` (Spring WebClient, Reactor only). File upload support was also added for the Java client in this pass.
+
+- **`unknownScalarType` config option** — fallback target-language type for any custom GraphQL scalar not covered by `typeMappings` or `@glExternal`. Without it, an unmapped `scalar UserId` is emitted verbatim as `UserId`; set it to e.g. `"String"` (Dart), `"string"` (TypeScript), or `"Object"` (Java) to map all such scalars uniformly.
+
+  ```json
+  "typeMappings": { "ID": "String" },
+  "unknownScalarType": "String"
+  ```
+
+- **Reserved-keyword-safe generated identifiers** — a GraphQL field, argument, enum value, or input field named after a target-language keyword (e.g. `default`, `return`, `object`) now gets a sanitized generated identifier (`default_`, with numeric suffixing on further collisions) while the wire/GraphQL name is preserved; applied consistently across fields, arguments, enum values, resolver parameters, `@glMapsTo` mappings, and Spring controller/service signatures for Dart, Java, Kotlin, and TypeScript. Fields whose GraphQL name starts with a leading underscore also get a safe generated name where the target language disallows or discourages it.
+
+- **`@glExpand` cyclic-projection nullability, decoupled from opt-in usage** — see the corresponding entry under Breaking changes; SCC-based cycle detection now runs by default instead of only inside explicit `@glExpand(depth: …)` annotations.
+
+- **Bodyless type/interface/input definitions** — a type/interface/input can now be declared with no body (`type Query { }`) as long as a later `extend` block supplies its fields, with a validation error if it's never extended. Useful for schemas split across multiple files where the root type is declared in one file and extended in others.
+
+- **Client-side default values** — GraphQL `= value` defaults on input fields and query/mutation arguments are now emitted as real defaults/params in generated Dart, Java, Kotlin, and TypeScript code (previously parsed but silently dropped). Dart constructors become `const` where possible. The generated `.graphqls` schema output now also preserves the `= value`.
+
+- **`@deprecated` directive support in generated code** — fields and enum values marked `@deprecated(reason: "...")` now emit the target language's native deprecation annotation (`@Deprecated` in Dart/Java/Kotlin, `@deprecated` JSDoc in TypeScript) with the reason carried through.
+
+- **`autoGenerateQueriesFor` config option** — restrict auto-generated queries/mutations/subscriptions to an explicit allow-list per operation type, instead of auto-generating one for every root field:
+
+  ```json
+  "clientConfig": {
+    "dart": {
+      "autoGenerateQueriesFor": {
+        "queries": ["getUser", "listOrders"],
+        "mutations": ["createOrder"]
+      }
+    }
+  }
+  ```
+
+- **`maxFragmentBodySize` config option** (default `8192`) — auto-generated `_all_fields` fragments whose serialized body exceeds this size (and any auto-generated operations depending on them) are skipped with a warning instead of emitting an oversized fragment; hand-written operations are unaffected. Set to `null` to disable the cap. Targets very large schemas (e.g. Shopify, GitHub, GitLab) where fragment bodies can reach tens of kilobytes.
+
+- **`autoGenerateQueriesArgumentLimit` config option** (default `200`) — caps the number of propagated field arguments an auto-generated operation may accumulate before it's skipped with a warning; works alongside the automatic `<Operation>FieldArgs` grouping (see Breaking changes) as a last-resort safety valve for schemas with pathological argument counts.
+
+- **TypeScript `toJson`/`fromJson` generation** — TypeScript types, inputs, enums, and interfaces now get generated `toJson`/`fromJson` functions bridging wire names and normalized code names (mirroring the existing Dart/Java/Kotlin behavior), and the TypeScript client decodes responses through generated `fromJson` instead of raw type casts. TypeScript interfaces implementing a union also emit a `readonly __typename: 'TypeName'` discriminant field plus a union-level `toJson()` that switches on `__typename`, completing proper discriminated-union (de)serialization.
+
+- **Only-used fragments are emitted** — generated clients now include only the fragments actually referenced (directly or transitively) by at least one query, mutation, or subscription, shrinking generated fragment maps on large schemas.
+
+- **Slimmer generated client code for non-cached queries** — operations with no `@glCache`-tagged fields now go through a simplified, smaller code path instead of the full partial-caching machinery, reducing generated client size; shared resolver helpers were also factored out across Dart/Java/Kotlin/TypeScript client serializers to cut duplicated boilerplate.
+
+- **Multi-arch Docker release images** — the published `glink` Docker image is now built and released for multiple architectures.
+
+### Fixes & improvements
+
+- Fixed several field-level-argument propagation and cache-scoping bugs: dropped field args in partial/divided-query variable declarations, and incorrect per-query-element variable scoping.
+- Fixed the default WebSocket subprotocol negotiation on the Dart/Java/Kotlin adapters and the TypeScript server/client (now consistently `graphql-transport-ws`); the TS adapter also reconnects on socket error, not just close.
+- Fixed a parser crash on description strings attached to a directive/field argument.
+- GraphQL spec-compliance fixes in the lexer/parser: optional leading `|`/`&` in directive-location, union-member, and `implements` lists; `extend` without a `{ }` body; `"""` inside block strings no longer prematurely terminates the string.
+- Fixed a stack overflow in cyclic-fragment expansion for long non-cyclic dependency chains, and an out-of-memory issue in the large-schema fragment pipeline.
+- Fixed `fromJson` dispatch when an interface extends another interface — sub-interfaces are no longer emitted as bogus concrete `case` branches.
+- Fixed exponential-time field-argument-variable propagation over shared fragment graphs via memoization (large measured speedup on synthetic large-schema benchmarks); added a fast path for exhaustive projection registration on interfaces/unions.
+- Fixed auto-generated response wrapper type names (`<Field>Response`) colliding with a user-declared type of the same name — falls back deterministically to `<Field><Operation>` and then a numeric suffix only on collision.
+- Fixed a collision between a query and a mutation sharing the same field name.
+- Fixed union "common fields" validation incorrectly accepting/rejecting fields with mismatched types across union members.
+- Fixed Java interface list fields to use covariant wildcards (`List<? extends T>`) only where a server implementor actually narrows the element type, and only in server mode — client-generated list fields stay unwildcarded for ergonomic caller-side types.
+- Fixed multiline and otherwise special-character `@deprecated(reason: "...")` strings producing invalid generated syntax.
+- Fixed a null-default leak when merging field arguments.
+- Fixed a duplicate TypeScript enum value emitted for deprecated enum members.
+- Fixed a TypeScript self-import in generated import dependency resolution.
+- Fixed unescaped quotes in generated Java query strings.
+- Fixed an unqualified enum member reference in generated Dart/Kotlin `fromJson`.
+- Fixed several identifier-normalization/keyword-safe-naming ordering bugs affecting auto-generated query codenames, and `hasQueries`/type-emission bookkeeping around fragments skipped by `maxFragmentBodySize`.
+- Fixed Kotlin/Java `toJson`/`fromJson` for enums to always use explicit wire-name mapping instead of `.name`/`valueOf`, since normalization can make code names diverge from wire names even without a keyword collision.
+- Fixed a TypeScript default-argument bug where a non-null-typed argument with a default value could be `undefined` at runtime and bypass the default via unguarded nullish coalescing.
+- Fixed the generated Dart barrel file emitting duplicate export lines.
+- Fixed a missing space between `implements ...` and the opening brace in generated Java interfaces.
+

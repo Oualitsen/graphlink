@@ -28,7 +28,7 @@ void main() {
     g.parse(_preamble + text);
 
     final serializer =
-        KotlinSerializer(g, importPrefix: 'com.example', generateJsonMethods: true);
+        KotlinSerializer(g, importPrefix: 'com.example');
     final out = KotlinClientSerializer(g, serializer)
             .getQueriesClass()
             ?.toFileContent() ??
@@ -52,7 +52,7 @@ void main() {
     g.parse(_preamble + text);
 
     final serializer =
-        KotlinSerializer(g, importPrefix: 'com.example', generateJsonMethods: true);
+        KotlinSerializer(g, importPrefix: 'com.example');
     final out = KotlinClientSerializer(g, serializer)
             .getQueriesClass()
             ?.toFileContent() ??

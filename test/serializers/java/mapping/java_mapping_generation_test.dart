@@ -18,7 +18,7 @@ const _directives = '''
 String _class(String schema, String inputName) {
   final g = GLParser(mode: CodeGenerationMode.server)
     ..parse('$_directives $schema');
-  return JavaSerializer(g, importPrefix: "", generateJsonMethods: false, typeMapOverrides: {"Boolean": "boolean"})
+  return JavaSerializer(g, importPrefix: "", typeMapOverrides: {"Boolean": "boolean"})
       .serializeInputDefinition(g.inputs[inputName]!);
 }
 
@@ -28,7 +28,6 @@ String _record(String schema, String inputName) {
     ..parse('$_directives $schema');
   return JavaSerializer(g,
           importPrefix: '',
-          generateJsonMethods: false,
           inputsAsRecords: true,
           typesAsRecords: true)
       .serializeInputDefinition(g.inputs[inputName]!);
@@ -541,7 +540,10 @@ void _case9Tests() {
           expect(out, contains('public CartItem toCartItem(List<ItemTag> tags)'));
         });
         test('toCartItem does not auto-map tags via stream', () {
-          expect(out, isNot(contains('stream().map')));
+          final method = out.substring(
+              out.indexOf('public CartItem toCartItem'),
+              out.indexOf('public static CartItemInput fromCartItem'));
+          expect(method, isNot(contains('stream().map')));
         });
         test('fromCartItem takes tags as required param', () {
           expect(out, contains('fromCartItem(CartItem cartItem, List<ItemTagInput> tags)'));

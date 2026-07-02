@@ -19,7 +19,6 @@ import 'package:graphlink/src/gl_grammar_maps_to_extension.dart';
 abstract class GLSerializer {
   final GLParser grammar;
   late final CodeGenerationMode mode;
-  bool get generateJsonMethods;
   final String importPrefix;
 
   /// Language-specific scalar defaults (e.g. Boolean→bool for Dart).
@@ -188,7 +187,7 @@ abstract class GLSerializer {
 
   String serializeImports(GLToken token) {
     var deps = token.getImportDependecies(grammar).where((d) => d != token).toSet();
-    if (token is GLInterfaceDefinition && generateJsonMethods) {
+    if (token is GLInterfaceDefinition) {
       deps = {...deps, ...token.getSerializableImplementations(mode)};
     }
     var imports = token.getImports(grammar);

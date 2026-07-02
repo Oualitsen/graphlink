@@ -22,7 +22,7 @@ void main() {
 
     final def = g.enums["FilterMode"]!;
     final serializer =
-        JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
+        JavaSerializer(g, importPrefix: "");
     final out = serializer.serializeEnumDefinition(def);
     print(out);
 
@@ -47,7 +47,7 @@ void main() {
 
     final def = g.enums["FilterMode"]!;
     final serializer =
-        JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
+        JavaSerializer(g, importPrefix: "");
     final out = serializer.serializeEnumDefinition(def);
 
     expect(out, contains("default_2"));
@@ -68,7 +68,7 @@ void main() {
 
     final def = g.enums["Action"]!;
     final serializer =
-        JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
+        JavaSerializer(g, importPrefix: "");
     final out = serializer.serializeEnumDefinition(def);
 
     // enum constant: `return` keyword -> `return_`.
@@ -92,7 +92,7 @@ void main() {
 
     final def = g.enums["Status"]!;
     final serializer =
-        JavaSerializer(g, importPrefix: "", generateJsonMethods: true);
+        JavaSerializer(g, importPrefix: "");
     final out = serializer.serializeEnumDefinition(def);
 
     // enum constant: leading underscore moved to end.

@@ -37,7 +37,7 @@ JavaClientSerializer _serializer(String schema, {JavaJsonCodec codec = JavaJsonC
   ].join();
   final parser = GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true)
     ..parse(fullSchema);
-  final javaSerializer = JavaSerializer(parser, importPrefix: "", generateJsonMethods: true);
+  final javaSerializer = JavaSerializer(parser, importPrefix: "");
   return JavaClientSerializer(parser, javaSerializer, jsonCodec: codec);
 }
 

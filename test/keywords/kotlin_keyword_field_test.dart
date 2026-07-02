@@ -20,7 +20,7 @@ void main() {
 
     final input = g.inputs["FilterInput"]!;
     final serializer =
-        KotlinSerializer(g, importPrefix: "", generateJsonMethods: true);
+        KotlinSerializer(g, importPrefix: "");
     final out = serializer.doSerializeInputDefinition(input);
 
     // declared property uses the safe identifier.
@@ -49,7 +49,7 @@ void main() {
 
     final input = g.inputs["FilterInput"]!;
     final serializer =
-        KotlinSerializer(g, importPrefix: "", generateJsonMethods: true);
+        KotlinSerializer(g, importPrefix: "");
     final out = serializer.doSerializeInputDefinition(input);
 
     expect(out, contains('"object" to object_2'));
@@ -69,7 +69,7 @@ void main() {
 
     final type = g.types["Expression"]!;
     final serializer =
-        KotlinSerializer(g, importPrefix: "", generateJsonMethods: true);
+        KotlinSerializer(g, importPrefix: "");
     final out = serializer.doSerializeTypeDefinition(type);
     print(out);
     expect(out, contains("object_"));
@@ -97,7 +97,7 @@ void main() {
 
     final iface = g.interfaces["ExpressionInterface"]!;
     final serializer =
-        KotlinSerializer(g, importPrefix: "", generateJsonMethods: true);
+        KotlinSerializer(g, importPrefix: "");
     final out = serializer.doSerializeTypeDefinition(iface);
 
     expect(out, contains("val object_:"));
@@ -117,7 +117,7 @@ void main() {
 
     final input = g.inputs["ProductInput"]!;
     final serializer =
-        KotlinSerializer(g, importPrefix: "", generateJsonMethods: true);
+        KotlinSerializer(g, importPrefix: "");
     final out = serializer.doSerializeInputDefinition(input);
 
     // property: leading underscore moved to end.
