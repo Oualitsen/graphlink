@@ -1,6 +1,6 @@
 GENERATED_DIR = client-app/src/main/kotlin/dev/graphlink/github/generated
 
-.PHONY: clean generate compile compile-only
+.PHONY: clean generate compile compile-only kill-daemon
 
 clean:
 	rm -rf $(GENERATED_DIR)
@@ -13,3 +13,8 @@ compile: generate
 
 compile-only:
 	cd client-app && ./gradlew compileKotlin
+
+kill-daemon:
+	cd client-app && ./gradlew --stop
+	pkill -f KotlinCompileDaemon || true
+	rm -f "$(HOME)/Library/Application Support/kotlin/daemon/"*.tmp
