@@ -474,7 +474,9 @@ class JavaSerializer extends GLSerializer {
 
   String generateFromJson(List<GLField> fields, String token, GLToken context) {
     var buffer = StringBuffer();
+    context.addImport(JavaImports.suppressWarnings);
 
+    buffer.writeln('@SuppressWarnings("unchecked")');
     buffer.writeln(
       codeGenUtils.createMethod(
           returnType: "public static ${token}",
