@@ -3,6 +3,7 @@ import { GraphLinkClient } from '../lib/generated/client/graph-link-client.js';
 import { UserStatus } from '../lib/generated/enums/user-status.js';
 import type { UserResult } from '../lib/generated/types/user-result.js';
 import type { PostResult } from '../lib/generated/types/post-result.js';
+import { SearchResult } from '../lib/generated/interfaces/search-result.js';
 import { MockAdapter, MockWsAdapter } from './mock-adapter.ts';
 import { kUserAliceJson, kPostJson } from './fixtures.ts';
 
@@ -164,5 +165,37 @@ describe('runSearch — __typename dispatch', () => {
     const res = await client.queries.runSearch({ term: 'test' });
     const postResult = res.search[1] as PostResult;
     expect(postResult.title).toBe('Hello World');
+  });
+});
+
+// ── SearchResult.toJson — union toJson round-trips through __typename ─────────
+
+describe('SearchResult.toJson — union dispatch via __typename', () => {
+  it('toJson on a UserResult round-trips to JSON with __typename', async () => {
+    adapter.registerData('search', kSearchPayload);
+    const res = await client.queries.search({ term: 'test' });
+    const userResult = res.search[0] as UserResult;
+    const json = SearchResult.toJson(userResult);
+    expect(json['__typename']).toBe('UserResult');
+    expect(json['id']).toBe('ur-1');
+    expect(json['name']).toBe('Alice');
+    expect(json['email']).toBe('alice@test.com');
+  });
+
+  it('toJson on a PostResult round-trips to JSON with __typename', async () => {
+    adapter.registerData('search', kSearchPayload);
+    const res = await client.queries.search({ term: 'test' });
+    const postResult = res.search[1] as PostResult;
+    const json = SearchResult.toJson(postResult);
+    expect(json['__typename']).toBe('PostResult');
+    expect(json['id']).toBe('pr-1');
+    expect(json['title']).toBe('Hello World');
+  });
+
+  it('fromJson then toJson is a round-trip', () => {
+    const raw = { __typename: 'UserResult', id: 'ur-1', name: 'Alice', email: 'alice@test.com' };
+    const obj = SearchResult.fromJson(raw);
+    const back = SearchResult.toJson(obj);
+    expect(back).toEqual(raw);
   });
 });
