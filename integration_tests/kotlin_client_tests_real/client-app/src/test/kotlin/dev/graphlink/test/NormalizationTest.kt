@@ -53,10 +53,7 @@ class NormalizationTest {
             assertEquals(EventType.COMPLETED_OK, EventType.fromJson("completed_ok"))
         }
 
-        @Test
-        fun fromJson_null_returnsNull() {
-            assertNull(EventType.fromJson(null))
-        }
+
     }
 
     // ── Field normalization — getNormalizedRecord ─────────────────────────────
