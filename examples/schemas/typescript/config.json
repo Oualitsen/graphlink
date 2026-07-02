@@ -1,6 +1,6 @@
 {
     "schemaPaths": [
-        "../microsoft_graph.graphql"
+        "../saleor.graphql"
     ],
     "mode": "client",
     "unknownScalarType": "string",
@@ -11,7 +11,9 @@
         "Float": "number",
         "Int": "number",
         "Boolean": "boolean",
-        "Null": "null"
+        "Null": "null",
+        "PositiveInt": "int",
+        "Minute": "int"
     },
     "outputDir": "client-app/src/generated",
     "clientConfig": {

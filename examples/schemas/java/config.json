@@ -1,6 +1,6 @@
 {
     "schemaPaths": [
-        "../microsoft_graph.graphql"
+        "../saleor.graphql"
     ],
     "mode": "client",
     "unknownScalarType": "String",
@@ -11,7 +11,9 @@
         "Float": "Double",
         "Int": "Integer",
         "Boolean": "Boolean",
-        "Null": "null"
+        "Null": "null",
+        "PositiveInt": "int",
+        "Minute": "int"
     },
     "outputDir": "client-app/src/main/java/dev/graphlink/github/generated",
     "clientConfig": {

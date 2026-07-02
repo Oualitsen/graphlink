@@ -15,7 +15,13 @@ abstract class GLClientSerializer {
 
   GLParser get _parser => serializer.grammar;
 
-  GLClientSerializer(this.serializer, this.gqlSerializer);
+  late final Set<String> oversizedFragmentNames;
+
+  GLClientSerializer(this.serializer, this.gqlSerializer) {
+    // Compute eagerly so the parser cache is populated before generateClient()
+    // checks hasQueryType / hasQueries / hasMutations / hasSubscriptions.
+    oversizedFragmentNames = _computeOversizedFragmentNames();
+  }
 
   // ── Schema-level decision helpers ──────────────────────────────────────────
 
@@ -65,8 +71,6 @@ abstract class GLClientSerializer {
   String renderMutationMethod(GLQueryDefinition def);
   String renderUploadMutationMethod(GLQueryDefinition def);
   String renderSubscriptionMethod(GLQueryDefinition def);
-
-  late final Set<String> oversizedFragmentNames = _computeOversizedFragmentNames();
 
   Set<String> _computeOversizedFragmentNames() {
     final limit = _parser.maxFragmentBodySize;

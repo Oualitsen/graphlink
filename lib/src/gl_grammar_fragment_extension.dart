@@ -129,13 +129,6 @@ extension GLGrammarFragmentExtension on GLParser {
   /// Populated by [GLClientSerializer] on first use and cached here.
   Set<String> get oversizedFragmentNames => oversizedFragmentNamesCache ?? const {};
 
-  /// Whether any operation of [type] will actually emit a client method —
-  /// i.e. at least one query of that type references no oversized fragment.
-  bool hasEffectiveQueryType(GLQueryType type, Set<String> oversized) {
-    return queries.values.any((q) =>
-        q.type == type &&
-        !q.fragments(this).any((f) => oversized.contains(f.tokenInfo.token)));
-  }
 
   void fillTypedFragments() {
     fragments.forEach((key, fragment) {
