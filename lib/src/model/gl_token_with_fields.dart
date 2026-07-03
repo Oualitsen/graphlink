@@ -194,6 +194,17 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
     return _buildSerializableFields(mode, skipGenerated: skipGenerated);
   }
 
+  void invalidateSerializableCacheFields(CodeGenerationMode mode) {
+    switch(mode) {
+      case CodeGenerationMode.client:
+        _cachedSerializableClient = null;
+        break;
+      case CodeGenerationMode.server:
+        _cachedSerializableServer = null;
+        break;
+    }
+  }
+
   List<GLField> _buildSerializableFields(CodeGenerationMode mode,
       {bool skipGenerated = false}) {
     return _fieldMap.values

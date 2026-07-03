@@ -82,6 +82,7 @@ class JavaSpringServerSerializer extends JvmSpringServerSerializerBase {
       f.addDirective(
           GLDirectiveValue(glSkipOnServer.toToken(), [], [], generated: true));
     });
+    interface.invalidateSerializableCacheFields(grammar.mode);
     interface.addImport(SpringImports.repository);
 
     var gqRepo = interface.getDirectiveByName(glRepository)!;
