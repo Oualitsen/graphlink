@@ -850,15 +850,25 @@ class JavaSerializer extends GLSerializer {
       context.addImport(JavaImports.objects);
     }
     final forceNullable = isTypeField && (field.hasInculeOrSkipDiretives);
-    // An override's public signature must match the interface's declared
-    // shape, not this type's own (possibly narrowed) nullability — e.g. a
-    // non-null `Boolean!` implementing a nullable `Boolean` must still return
-    // boxed `Boolean` and keep the `get`-prefixed accessor name, otherwise the
-    // generated getter neither compiles (incompatible return type) nor
-    // satisfies the interface (wrong method name for a primitive `boolean`).
+    var returnType = serializeType(field.type, forceNullable);
+    // Java's override rules require a primitive return type to match the
+    // superinterface's exactly — a non-null `Boolean!` narrowing a nullable
+    // `Boolean` produces a primitive `boolean` getter that neither compiles
+    // against nor satisfies a `Boolean`-returning interface method (and would
+    // wrongly rename to `isAlive`). Reference-type narrowing (including list
+    // element types, e.g. `[Lion!]!` narrowing `[Animal!]!`) is legal Java
+    // covariance and must NOT be rewritten here — for lists that covariance is
+    // made to type-check by widening the *interface's own* declaration to
+    // `List<? extends X>` (see _wildcardListReturnType), not by changing the
+    // implementer's getter.
     final interfaceField =
         isOverride && context is GLTypeDefinition ? context.getInterfaceField(field) : null;
-    var returnType = serializeType(interfaceField?.type ?? field.type, forceNullable);
+    if (interfaceField != null && !interfaceField.type.isList) {
+      final interfaceType = serializeType(interfaceField.type, forceNullable);
+      if (_javaPrimitives.contains(returnType) && !_javaPrimitives.contains(interfaceType)) {
+        returnType = interfaceType;
+      }
+    }
     var jspecifyAnnotation = _isPrimitiveType(field.type) ? null : getJSpecifyAnnoation(field);
     var result = codeGenUtils.createMethod(
         returnType: "public ${returnType}",

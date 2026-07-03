@@ -18,6 +18,7 @@ void main() {
 
     expect(cat, contains('@override\n   final String id;'));
     expect(cat, isNot(contains('@override\n   final String? name;')));
+    expect(cat, contains("import '/interfaces/base.dart';"));
   });
 
   test('Java: implementing type emits @Override on interface-declared getter', () {
@@ -28,6 +29,7 @@ void main() {
 
     expect(cat, contains('@Override\n   public String getId()'));
     expect(cat, isNot(contains('@Override\n   public String getName()')));
+    expect(cat, contains('import .interfaces.Base;'));
   });
 
   test('Kotlin: implementing type emits override on interface-declared property', () {
@@ -38,6 +40,7 @@ void main() {
 
     expect(cat, contains('override val id: String'));
     expect(cat, isNot(contains('override val name: String')));
+    expect(cat, contains('import .interfaces.Base'));
   });
 
   test('Java: overriding getter matches interface nullability when a non-null '
@@ -62,5 +65,28 @@ type Cat implements Base { alive: Boolean! }
     expect(cat, contains('private boolean alive;'));
     expect(cat, contains('@Override\n   public Boolean getAlive()'));
     expect(cat, isNot(contains('isAlive')));
+    expect(cat, contains('import .interfaces.Base;'));
+  });
+
+  test('Java: print output when a covariant list field narrows the interface element type', () {
+    const listSchema = '''
+interface Animal { id: ID! }
+interface Enclosure { animals: [Animal!]! }
+
+type Lion implements Animal { id: ID! }
+type Zoo implements Enclosure { animals: [Lion!]! }
+''';
+    final g = GLParser()..parse(listSchema);
+    final ser = JavaSerializer(g, importPrefix: '');
+
+    final zoo = ser.serializeTypeDefinition(g.types['Zoo']!);
+
+    expect(zoo, contains('@Override\n   public List<Lion> getAnimals()'));
+    expect(zoo, contains('import .types.Lion;'));
+    expect(zoo, contains('import .interfaces.Enclosure;'));
+    expect(zoo, contains('import java.util.List;'));
+    // Zoo returns its own narrowed element type, so it never needs to import
+    // the interface's declared element type (Animal) directly.
+    expect(zoo, isNot(contains('import .interfaces.Animal;')));
   });
 }
