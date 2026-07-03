@@ -17,8 +17,6 @@
         "spring": {
             "basePackage": "dev.graphlink.demo.generated",
             "generateControllers": true,
-            "generateInputs": true,
-            "generateTypes": true,
             "generateRepositories": false,
             "inputAsRecord": false,
             "typeAsRecord": false,

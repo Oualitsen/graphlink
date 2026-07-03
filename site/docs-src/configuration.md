@@ -460,8 +460,6 @@ Used when `mode` is `"server"`.
         "spring": {
           "basePackage": "com.example.generated",
           "generateControllers": true,
-          "generateInputs": true,
-          "generateTypes": true,
           "generateRepositories": false,
           "immutableInputFields": true,
           "immutableTypeFields": false,
@@ -484,8 +482,6 @@ Used when `mode` is `"server"`.
       spring:
         basePackage: com.example.generated
         generateControllers: true
-        generateInputs: true
-        generateTypes: true
         generateRepositories: false
         immutableInputFields: true
         immutableTypeFields: false
@@ -502,8 +498,6 @@ Used when `mode` is `"server"`.
 |---|---|---|---|
 | `basePackage` | `string` | — | **Required.** Java package name for all generated classes (e.g. `"com.example.generated"`). |
 | `generateControllers` | `boolean` | `true` | Generates `@Controller` classes with `@QueryMapping`, `@MutationMapping`, `@SubscriptionMapping`, and `@Argument` on parameters. |
-| `generateInputs` | `boolean` | `true` | Generates input data classes from `input` type definitions. |
-| `generateTypes` | `boolean` | `true` | Generates type data classes from `type` definitions. |
 | `generateRepositories` | `boolean` | `false` | Generates JPA `Repository` interfaces for types annotated with `@glRepository`. |
 | `immutableInputFields` | `boolean` | `true` | Input class fields are `private final`. Recommended. |
 | `immutableTypeFields` | `boolean` | `false` | Type class fields are `private final`. Set to `false` for Spring Boot — Spring's runtime sets fields via setters or reflection. |
@@ -535,8 +529,6 @@ Used when `mode` is `"server"` and you want a Kotlin Spring server instead of Ja
           "inputAsDataClass": true,
           "blockingServices": true,
           "generateControllers": true,
-          "generateInputs": true,
-          "generateTypes": true,
           "generateRepositories": false,
           "immutableInputFields": true,
           "immutableTypeFields": false,
@@ -557,8 +549,6 @@ Used when `mode` is `"server"` and you want a Kotlin Spring server instead of Ja
         inputAsDataClass: true
         blockingServices: true
         generateControllers: true
-        generateInputs: true
-        generateTypes: true
         generateRepositories: false
         immutableInputFields: true
         immutableTypeFields: false
@@ -573,7 +563,7 @@ Used when `mode` is `"server"` and you want a Kotlin Spring server instead of Ja
 | `inputAsDataClass` | `boolean` | `false` | Emit input types as `data class`. When `false`, uses `open class`. |
 | `blockingServices` | `boolean` | `true` | Wraps each generated controller's service call in `withContext(Dispatchers.IO + SecurityCoroutineContext()) { ... }`. Set `false` for a coroutine-native, non-blocking service layer. |
 
-The remaining options (`generateControllers`, `generateInputs`, `generateTypes`, `generateRepositories`, `immutableInputFields`, `immutableTypeFields`, `generateSchema`, `schemaTargetPath`) behave the same as their `serverConfig.spring` equivalents above.
+The remaining options (`generateControllers`, `generateRepositories`, `immutableInputFields`, `immutableTypeFields`, `generateSchema`, `schemaTargetPath`) behave the same as their `serverConfig.spring` equivalents above.
 
 ---
 
