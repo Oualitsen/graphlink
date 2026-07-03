@@ -11,6 +11,33 @@ import 'package:graphlink/src/serializers/kotlin_spring_server_serializer.dart';
 import 'package:graphlink/src/serializers/typescript_serializer.dart';
 import 'package:graphlink/src/utils.dart';
 
+/// Writes one file per [defs] entry via [writeToFile], reducing the
+/// repeated for-each-and-write shape to a single call at each site. [data]
+/// and [fileName] are typically serializer method tear-offs (e.g.
+/// `serializer.serializeTypeDefinition`, `serializer.getFileNameFor`).
+void _writeDefinitions<T>({
+  required List<Future<File>> futures,
+  required Iterable<T> defs,
+  required String Function(T def) data,
+  required String Function(T def) fileName,
+  required String subdir,
+  required String destinationDir,
+  required String packageName,
+  bool appendStar = false,
+}) {
+  for (final def in defs) {
+    futures.add(writeToFile(
+      data: data(def),
+      fileName: fileName(def),
+      subdir: subdir,
+      imports: const [],
+      destinationDir: destinationDir,
+      packageName: packageName,
+      appendStar: appendStar,
+    ));
+  }
+}
+
 Future<Set<String>> generateServerClasses(
     GLParser grammar, GeneratorConfig config, DateTime started) async {
   final serverLang = config.serverConfig!.language;
@@ -44,86 +71,79 @@ Future<Set<String>> generateServerClasses(
       useSpringSecurity: springConfig.useSpringSecurity);
   final futures = <Future<File>>[];
 
-  grammar.getSerializableTypes().forEach((def) {
-    futures.add(writeToFile(
-      data: serializer.serializeTypeDefinition(def),
-      fileName: serializer.getFileNameFor(def),
-      subdir: 'types',
-      imports: [],
-      destinationDir: destinationDir,
-      packageName: packageName,
-      appendStar: true,
-    ));
-  });
-  grammar.getSerializableInterfaces().forEach((def) {
-    futures.add(writeToFile(
-      data: serializer.serializeTypeDefinition(def),
-      fileName: serializer.getFileNameFor(def),
-      subdir: 'interfaces',
-      imports: [],
-      destinationDir: destinationDir,
-      packageName: packageName,
-      appendStar: true,
-    ));
-  });
-  grammar.getSerializableEnums().forEach((def) {
-    futures.add(writeToFile(
-      data: serializer.serializeEnumDefinition(def),
-      fileName: serializer.getFileNameFor(def),
-      subdir: 'enums',
-      imports: [],
-      destinationDir: destinationDir,
-      packageName: packageName,
-      appendStar: true,
-    ));
-  });
-  grammar.getSerializableInputs().forEach((def) {
-    futures.add(writeToFile(
-      data: serializer.serializeInputDefinition(def),
-      fileName: serializer.getFileNameFor(def),
-      subdir: 'inputs',
-      imports: [],
-      destinationDir: destinationDir,
-      packageName: packageName,
-      appendStar: true,
-    ));
-  });
-  grammar.services.forEach((k, def) {
-    futures.add(writeToFile(
-      data: springSerializer.serializeService(def),
-      fileName: serializer.getFileNameFor(def),
-      subdir: 'services',
-      imports: [],
-      destinationDir: destinationDir,
-      packageName: packageName,
-      appendStar: true,
-    ));
-  });
+  _writeDefinitions(
+    futures: futures,
+    defs: grammar.getSerializableTypes(),
+    data: serializer.serializeTypeDefinition,
+    fileName: serializer.getFileNameFor,
+    subdir: 'types',
+    destinationDir: destinationDir,
+    packageName: packageName,
+    appendStar: true,
+  );
+  _writeDefinitions(
+    futures: futures,
+    defs: grammar.getSerializableInterfaces(),
+    data: serializer.serializeTypeDefinition,
+    fileName: serializer.getFileNameFor,
+    subdir: 'interfaces',
+    destinationDir: destinationDir,
+    packageName: packageName,
+    appendStar: true,
+  );
+  _writeDefinitions(
+    futures: futures,
+    defs: grammar.getSerializableEnums(),
+    data: serializer.serializeEnumDefinition,
+    fileName: serializer.getFileNameFor,
+    subdir: 'enums',
+    destinationDir: destinationDir,
+    packageName: packageName,
+    appendStar: true,
+  );
+  _writeDefinitions(
+    futures: futures,
+    defs: grammar.getSerializableInputs(),
+    data: serializer.serializeInputDefinition,
+    fileName: serializer.getFileNameFor,
+    subdir: 'inputs',
+    destinationDir: destinationDir,
+    packageName: packageName,
+    appendStar: true,
+  );
+  _writeDefinitions(
+    futures: futures,
+    defs: grammar.services.values,
+    data: springSerializer.serializeService,
+    fileName: serializer.getFileNameFor,
+    subdir: 'services',
+    destinationDir: destinationDir,
+    packageName: packageName,
+    appendStar: true,
+  );
   if (springConfig.generateControllers) {
-    grammar.controllers.forEach((k, def) {
-      futures.add(writeToFile(
-        data: springSerializer.serializeController(def),
-        fileName: serializer.getFileNameFor(def),
-        subdir: 'controllers',
-        imports: [],
-        destinationDir: destinationDir,
-        packageName: packageName,
-        appendStar: true,
-      ));
-    });
+    _writeDefinitions(
+      futures: futures,
+      defs: grammar.controllers.values,
+      data: springSerializer.serializeController,
+      fileName: serializer.getFileNameFor,
+      subdir: 'controllers',
+      destinationDir: destinationDir,
+      packageName: packageName,
+      appendStar: true,
+    );
   }
   if (springConfig.generateRepositories) {
-    grammar.repositories.forEach((k, def) {
-      futures.add(writeToFile(
-        data: springSerializer.serializeRepository(def),
-        fileName: '$k.java',
-        subdir: 'repositories',
-        imports: [],
-        destinationDir: destinationDir,
-        packageName: packageName,
-        appendStar: true,
-      ));
-    });
+    _writeDefinitions(
+      futures: futures,
+      defs: grammar.repositories.entries,
+      data: (e) => springSerializer.serializeRepository(e.value),
+      fileName: (e) => '${e.key}.java',
+      subdir: 'repositories',
+      destinationDir: destinationDir,
+      packageName: packageName,
+      appendStar: true,
+    );
   }
 
   final schema = springSerializer.serializeTypeDefs();
@@ -167,83 +187,72 @@ Future<Set<String>> _generateKotlinSpringClasses(GLParser grammar, GeneratorConf
     ));
   }
 
-  grammar.getSerializableTypes().forEach((def) {
-    futures.add(writeToFile(
-      data: serializer.serializeTypeDefinition(def),
-      fileName: serializer.getFileNameFor(def),
-      subdir: 'types',
-      imports: [],
-      destinationDir: destinationDir,
-      packageName: packageName,
-    ));
-  });
-  grammar.getSerializableInterfaces().forEach((def) {
-    futures.add(writeToFile(
-      data: serializer.serializeTypeDefinition(def),
-      fileName: serializer.getFileNameFor(def),
-      subdir: 'interfaces',
-      imports: [],
-      destinationDir: destinationDir,
-      packageName: packageName,
-    ));
-  });
-  grammar.getSerializableEnums().forEach((def) {
-    futures.add(writeToFile(
-      data: serializer.serializeEnumDefinition(def),
-      fileName: serializer.getFileNameFor(def),
-      subdir: 'enums',
-      imports: [],
-      destinationDir: destinationDir,
-      packageName: packageName,
-    ));
-  });
-
-  grammar.getSerializableInputs().forEach((def) {
-    futures.add(writeToFile(
-      data: serializer.serializeInputDefinition(def),
-      fileName: serializer.getFileNameFor(def),
-      subdir: 'inputs',
-      imports: [],
-      destinationDir: destinationDir,
-      packageName: packageName,
-    ));
-  });
-
-  grammar.services.forEach((k, def) {
-    futures.add(writeToFile(
-      data: springSerializer.serializeService(def),
-      fileName: serializer.getFileNameFor(def),
-      subdir: 'services',
-      imports: [],
-      destinationDir: destinationDir,
-      packageName: packageName,
-    ));
-  });
-
+  _writeDefinitions(
+    futures: futures,
+    defs: grammar.getSerializableTypes(),
+    data: serializer.serializeTypeDefinition,
+    fileName: serializer.getFileNameFor,
+    subdir: 'types',
+    destinationDir: destinationDir,
+    packageName: packageName,
+  );
+  _writeDefinitions(
+    futures: futures,
+    defs: grammar.getSerializableInterfaces(),
+    data: serializer.serializeTypeDefinition,
+    fileName: serializer.getFileNameFor,
+    subdir: 'interfaces',
+    destinationDir: destinationDir,
+    packageName: packageName,
+  );
+  _writeDefinitions(
+    futures: futures,
+    defs: grammar.getSerializableEnums(),
+    data: serializer.serializeEnumDefinition,
+    fileName: serializer.getFileNameFor,
+    subdir: 'enums',
+    destinationDir: destinationDir,
+    packageName: packageName,
+  );
+  _writeDefinitions(
+    futures: futures,
+    defs: grammar.getSerializableInputs(),
+    data: serializer.serializeInputDefinition,
+    fileName: serializer.getFileNameFor,
+    subdir: 'inputs',
+    destinationDir: destinationDir,
+    packageName: packageName,
+  );
+  _writeDefinitions(
+    futures: futures,
+    defs: grammar.services.values,
+    data: springSerializer.serializeService,
+    fileName: serializer.getFileNameFor,
+    subdir: 'services',
+    destinationDir: destinationDir,
+    packageName: packageName,
+  );
   if (springConfig.generateControllers) {
-    grammar.controllers.forEach((k, def) {
-      futures.add(writeToFile(
-        data: springSerializer.serializeController(def),
-        fileName: serializer.getFileNameFor(def),
-        subdir: 'controllers',
-        imports: [],
-        destinationDir: destinationDir,
-        packageName: packageName,
-      ));
-    });
+    _writeDefinitions(
+      futures: futures,
+      defs: grammar.controllers.values,
+      data: springSerializer.serializeController,
+      fileName: serializer.getFileNameFor,
+      subdir: 'controllers',
+      destinationDir: destinationDir,
+      packageName: packageName,
+    );
   }
-
   if (springConfig.generateRepositories) {
-    grammar.repositories.forEach((k, def) {
-      futures.add(writeToFile(
-        data: springSerializer.serializeRepository(def),
-        fileName: '$k.kt',
-        subdir: 'repositories',
-        imports: [],
-        destinationDir: destinationDir,
-        packageName: packageName,
-      ));
-    });
+    _writeDefinitions(
+      futures: futures,
+      defs: grammar.repositories.entries,
+      data: (e) => springSerializer.serializeRepository(e.value),
+      fileName: (e) => '${e.key}.kt',
+      subdir: 'repositories',
+      destinationDir: destinationDir,
+      packageName: packageName,
+    );
   }
 
   final schema = springSerializer.serializeTypeDefs();
