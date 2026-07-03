@@ -1,6 +1,6 @@
 ---
 title: Spring Boot Server — GraphLink Docs
-description: GraphLink generates Spring Boot GraphQL scaffolding from your schema — controllers, service interfaces, inputs, enums. MVC and reactive WebFlux modes, file uploads, Spring Security context propagation, and forward mappings.
+description: GraphLink generates Spring Boot GraphQL scaffolding from your schema — controllers, service interfaces, inputs, enums, for both Java and Kotlin. Strict-by-default server generation with GL<Type>Projection, MVC and reactive WebFlux modes, file uploads, Spring Security context propagation, and forward mappings.
 ---
 
 # Spring Boot Server
@@ -133,6 +133,48 @@ Set `"generateSchema": true` to write the processed schema file to disk alongsid
 
 `schemaTargetPath` must end in `.graphql` or `.graphqls`. The generated schema reflects all directive processing — internal directives like `@glSkipOnServer` are not emitted.
 
+## Strict server generation and projections
+
+Since v5.0.0, server generation is **strict by default**. Every generated type and interface enforces the schema's real nullability on its getters, constructors, and setters — a `title: String!` field is generated as non-null, not the always-nullable model used before v5.0.0.
+
+Because a resolver can still legitimately return a partially-fetched object (for example, a repository query that only selects the columns present in the GraphQL selection set), every type and interface also gets a generated `GL<Type>Projection` interface where **every field is nullable**:
+
+```java title="Generated GLVehicleProjection.java"
+public interface GLVehicleProjection {
+    String getId();
+    String getBrand();
+    String getModel();
+    Integer getYear();
+    // every field nullable — represents a partially-fetched Vehicle
+}
+```
+
+The strict `Vehicle` class implements `GLVehicleProjection` in addition to its own strict getters, so it can be used anywhere a projection is expected.
+
+**Opting a type back into the old lenient behavior** — annotate it with `@glServerLenient`. All of its own fields are generated as nullable again, but it still gets (and implements) `GL<Type>Projection`:
+
+```graphql
+type LegacyReport @glServerLenient {
+  id: ID!
+  total: Float!
+}
+```
+
+**Opting a resolver into partial fetches** — annotate the query/mutation/subscription field (or a `@glSkipOnServer` relation field) with `@glReturnsProjection`. The generated service method returns `GL<Type>Projection` instead of the strict concrete type, and `DataFetchingEnvironment` is auto-injected so the resolver can inspect the selection set:
+
+```graphql
+type Query {
+  searchVehicles(term: String!): [Vehicle!]! @glReturnsProjection
+}
+```
+
+```java title="Generated VehicleService.java"
+List<GLVehicleProjection> searchVehicles(String term, DataFetchingEnvironment env);
+```
+
+!!! danger "Migration from pre-5.0.0"
+    If your existing resolvers relied on server-generated types being fully nullable (e.g. constructing a partially-populated `Vehicle` with some fields left `null`), annotate those types with `@glServerLenient` before upgrading, or switch the relevant resolver fields to `@glReturnsProjection` and update the service implementation to return `GL<Type>Projection`.
+
 ## What gets generated
 
 For the example schema, the generator produces 9 files:
@@ -217,9 +259,14 @@ You implement this interface and annotate your implementation with `@Service`. Y
 
 ## Controllers
 
-The generated controller is the glue between Spring's GraphQL runtime and your service. It is fully annotated and delegates every call to the service interface. You never need to modify it:
+The generated controller is the glue between Spring's GraphQL runtime and your service. It is fully annotated and delegates every call to the service interface. You never need to modify it.
 
-```java title="generated/controllers/VehicleServiceController.java"
+!!! warning "v5.0.0: controllers return `Map` / `List<Map>`, not typed objects"
+    Since v5.0.0, generated Java Spring, Kotlin Spring, and Express/Apollo controllers serialize the service's result via the type's generated `toJson()` at the controller boundary, and return `Map<String, Object>` / `List<Map<String, Object>>` instead of the typed domain object. **Service interfaces are unaffected** — you still implement them with typed parameters and typed return values. Only the controller's own return type (and therefore anything that inspects a controller method's return type directly, e.g. custom AOP or tests that call the controller method in isolation) needs to account for the change after regenerating. Identifier normalization and reserved-keyword renaming mean a field's generated identifier can differ from its wire name, so serializing through `toJson()` at the boundary keeps the wire payload correct even when the Java/Kotlin field name doesn't match.
+
+    Java Spring controller methods also now bind input arguments as `Map<String, Object>` and convert them via the input's generated `fromJson()`, instead of receiving a Spring-bound typed input object directly — again to keep renamed/normalized fields correct on the wire. Any custom Jackson/Spring binding configuration relying on the previous direct-typed argument binding needs to be revisited.
+
+```java title="generated/controllers/VehicleServiceController.java — v5.0.0+"
 @Controller()
 public class VehicleServiceController {
    private final VehicleService vehicleService;
@@ -229,23 +276,23 @@ public class VehicleServiceController {
    }
 
    @QueryMapping()
-   public Vehicle getVehicle(@Argument() String id) {
-      return vehicleService.getVehicle(id);
+   public Map<String, Object> getVehicle(@Argument() String id) {
+      return vehicleService.getVehicle(id).toJson();
    }
 
    @QueryMapping()
-   public List<Vehicle> listVehicles() {
-      return vehicleService.listVehicles();
+   public List<Map<String, Object>> listVehicles() {
+      return vehicleService.listVehicles().stream().map(Vehicle::toJson).toList();
    }
 
    @MutationMapping()
-   public Vehicle addVehicle(@Argument() AddVehicleInput input) {
-      return vehicleService.addVehicle(input);
+   public Map<String, Object> addVehicle(@Argument() Map<String, Object> input) {
+      return vehicleService.addVehicle(AddVehicleInput.fromJson(input)).toJson();
    }
 
    @SubscriptionMapping()
-   public Flux<Vehicle> vehicleAdded() {
-      return vehicleService.vehicleAdded();
+   public Flux<Map<String, Object>> vehicleAdded() {
+      return vehicleService.vehicleAdded().map(Vehicle::toJson);
    }
 }
 ```
@@ -512,3 +559,56 @@ public Vehicle addVehicle(AddVehicleInput input) {
     // ...
 }
 ```
+
+## Kotlin Spring Boot server
+
+New in v5.0.0: set `"mode": "server"` and use a `"kotlinSpring"` section instead of `"spring"` under `serverConfig` to generate a Kotlin server target — data-class types/inputs/enums, services, controllers, and repositories, mirroring the Java Spring target above (including strict-by-default generation, `GL<Type>Projection`, and `Map`-boundary controller serialization).
+
+=== "JSON"
+
+    ```json title="glink.json — Kotlin Spring server"
+    {
+      "schemaPaths": ["schema/*.graphql"],
+      "mode": "server",
+      "outputDir": "src/main/kotlin/com/example/generated",
+      "serverConfig": {
+        "kotlinSpring": {
+          "basePackage": "com.example.generated",
+          "typeAsDataClass": true,
+          "inputAsDataClass": true,
+          "blockingServices": true,
+          "generateControllers": true,
+          "generateInputs": true,
+          "generateTypes": true,
+          "generateRepositories": false
+        }
+      }
+    }
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — Kotlin Spring server"
+    schemaPaths:
+      - schema/*.graphql
+    mode: server
+    outputDir: src/main/kotlin/com/example/generated
+    serverConfig:
+      kotlinSpring:
+        basePackage: com.example.generated
+        typeAsDataClass: true
+        inputAsDataClass: true
+        blockingServices: true
+        generateControllers: true
+        generateInputs: true
+        generateTypes: true
+        generateRepositories: false
+    ```
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `typeAsDataClass` | `boolean` | `false` | Emit output types as `data class`. When `false`, uses `open class`. |
+| `inputAsDataClass` | `boolean` | `false` | Emit input types as `data class`. When `false`, uses `open class`. |
+| `blockingServices` | `boolean` | `true` | When `true`, controller methods wrap each service call in `withContext(Dispatchers.IO + SecurityCoroutineContext()) { ... }`, offloading blocking (e.g. JPA/JDBC) work off the coroutine dispatcher and propagating `SecurityContextHolder` across the switch. Set to `false` when your service layer is coroutine-native/non-blocking — methods are then emitted with no wrapping. |
+
+The remaining options (`generateControllers`, `generateInputs`, `generateTypes`, `generateRepositories`, `immutableInputFields`, `immutableTypeFields`, `generateSchema`, `schemaTargetPath`, `injectDataFetching`) behave the same as their Java Spring equivalents documented above.

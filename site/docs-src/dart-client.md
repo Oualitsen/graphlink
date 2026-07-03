@@ -18,7 +18,7 @@ GraphLink generates adapter files alongside the client. Which HTTP adapter is ge
       "clientConfig": {
         "dart": {
           "packageName": "com.example.generated",
-          "httpAdapter": "dio"
+          "httpAdapter": "http"
         }
       }
     }
@@ -30,13 +30,13 @@ GraphLink generates adapter files alongside the client. Which HTTP adapter is ge
     clientConfig:
       dart:
         packageName: com.example.generated
-        httpAdapter: dio
+        httpAdapter: http
     ```
 
 **`httpAdapter`** — controls which HTTP adapter file is generated:
 
-- `"dio"` (default) — generates `graph_link_dio_adapter.dart` containing `GraphLinkDioAdapter`. Supports an optional `tokenProvider` for Bearer auth, custom Dio `interceptors`, and `BaseOptions`. Used automatically by `GraphLinkClient.withHttp`.
-- `"http"` — generates `graph_link_http_adapter.dart` containing `GraphLinkHttpAdapter`. Uses `package:http` with an optional async `headersProvider` for custom headers.
+- `"http"` (default) — generates `graph_link_http_adapter.dart` containing `GraphLinkHttpAdapter`. Uses `package:http` with an optional async `headersProvider` for custom headers.
+- `"dio"` — generates `graph_link_dio_adapter.dart` containing `GraphLinkDioAdapter`. Supports an optional `tokenProvider` for Bearer auth, custom Dio `interceptors`, and `BaseOptions`. Used automatically by `GraphLinkClient.withHttp`.
 - `"none"` — no HTTP adapter file is generated. Supply your own `Future<String> Function(String)`.
 
 === "Dio adapter"
@@ -186,6 +186,9 @@ class GetVehicleResponse {
 }
 ```
 
+!!! info "toJson/fromJson generation is mandatory (v5.0.0+)"
+    Every generated type, input, enum, and interface always gets `toJson`/`fromJson` — there is no config flag to suppress it. This matters because [identifier normalization](configuration.md#identifier-normalization) can make a field's generated Dart name diverge from its wire name (e.g. a keyword-colliding or non-canonically-cased GraphQL field): code that reads or writes generated objects by field access is always in the normalized name, and only `toJson`/`fromJson` know how to bridge back to the wire format.
+
 ### List queries
 
 ```dart title="Fetching all vehicles"
@@ -308,6 +311,30 @@ type Query {
   getVehicle(id: ID!): Vehicle! @glCache(ttl: "2m", tags: ["vehicles"])
 }
 ```
+
+## Barrel file
+
+GraphLink emits a single barrel file, `graphlink.dart`, alongside the generated output. It re-exports every generated enum, input, type, and interface — plus the client files, so `withClientFiles` output is covered too — from one place:
+
+```dart title="generated/graphlink.dart"
+export 'enums/fuel_type.dart';
+export 'inputs/add_vehicle_input.dart';
+export 'types/vehicle.dart';
+export 'types/get_vehicle_response.dart';
+export 'client/graph_link_client.dart';
+// ... one export line per generated file
+```
+
+Import it once instead of reaching into individual files under `enums/`, `inputs/`, `types/`, and `client/`:
+
+```dart title="Using the barrel file"
+import 'package:my_app/generated/graphlink.dart';
+
+final client = GraphLinkClient.withHttp(url: 'http://localhost:8080/graphql');
+final res = await client.queries.getVehicle('42'); // Vehicle, AddVehicleInput, etc. all in scope
+```
+
+The barrel file is regenerated on every run alongside everything else — there's nothing to configure.
 
 ## Operation name in URL
 

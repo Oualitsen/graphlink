@@ -87,7 +87,29 @@ src/generated/
     get-vehicle-response.ts
     list-vehicles-response.ts
     add-vehicle-response.ts
+  graphlink.ts                  ← barrel file — re-exports everything above
 ```
+
+## Barrel file
+
+Alongside the per-file output, GraphLink emits a single barrel file, `graphlink.ts`, that re-exports every generated enum, input, type, and interface, plus the client files:
+
+```typescript title="generated/graphlink.ts"
+export * from './enums/fuel-type';
+export * from './inputs/add-vehicle-input';
+export * from './types/vehicle';
+export * from './responses/get-vehicle-response';
+export * from './client/graph-link-client';
+// ... one export line per generated file
+```
+
+Import from it instead of reaching into individual subdirectories:
+
+```typescript title="Using the barrel file"
+import { GraphLinkClient, Vehicle, AddVehicleInput } from './generated/graphlink';
+```
+
+It's regenerated on every run — nothing to configure.
 
 ## HTTP adapters
 
@@ -371,6 +393,32 @@ export interface Vehicle {
 ```
 
 Set to `false` if you need to mutate response objects after deserialization.
+
+## Serialization and union discriminants (v5.0.0+)
+
+`toJson`/`fromJson` generation is mandatory since v5.0.0 for types, inputs, enums, and interfaces — there is no config flag to suppress it. The generated client decodes every response through the generated `fromJson` functions instead of casting the raw parsed JSON, so a field's wire name (from the schema) and its generated identifier (after [identifier normalization](configuration.md#identifier-normalization)) always stay in sync.
+
+TypeScript interfaces that implement a union or interface type also gain a `readonly __typename: 'TypeName'` discriminant field, plus a union-level `toJson()` that switches on `__typename`:
+
+```typescript title="Generated union member and toJson dispatch"
+export interface Car extends SearchResult {
+  readonly __typename: 'Car';
+  readonly id: string;
+  readonly make: string;
+}
+
+export function searchResultToJson(value: SearchResult): Record<string, unknown> {
+  switch (value.__typename) {
+    case 'Car':
+      return carToJson(value as Car);
+    case 'Owner':
+      return ownerToJson(value as Owner);
+    // ...
+  }
+}
+```
+
+This completes proper discriminated-union (de)serialization on the TypeScript target — narrowing on `result.__typename` (or a `switch`) gives you the concrete member type with no manual casting.
 
 ## Error handling
 

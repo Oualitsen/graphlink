@@ -63,6 +63,157 @@ The call site is clean in every language. One schema. Zero boilerplate.
 
 ---
 
+## Before GraphLink, After GraphLink
+
+<!-- AUTHOR STORY: personal origin story goes here — replace/extend this intro paragraph -->
+
+Every GraphQL client library sells you the same promise: write a schema, get a client. What they don't show you is what "client" actually meant before code generation caught up to that promise — the hand-written DTO, the casts, the generics, kept in sync with the server by hand, in every language you ship.
+
+=== "Java"
+
+    <div class="ba-grid grid" markdown>
+
+    <div class="ba-card ba-without" markdown>
+
+    **Without GraphLink**
+
+    ```java
+    GraphQLResponse<Map<String, Object>> response =
+        client.query(new SimpleGraphQLRequest<>(
+            "query getVehicle($id: ID!) { getVehicle(id: $id) { id brand year } }",
+            Map.of("id", "42"),
+            new TypeReference<GraphQLResponse<Map<String, Object>>>() {}
+        ));
+    @SuppressWarnings("unchecked")
+    Map<String, Object> vehicleMap =
+        (Map<String, Object>) response.getData().get("getVehicle");
+    String brand = (String) vehicleMap.get("brand");
+    Integer year = ((Number) vehicleMap.get("year")).intValue();
+    ```
+
+    </div>
+
+    <div class="ba-card ba-with" markdown>
+
+    **With GraphLink**
+
+    ```java
+    Vehicle v = client.queries.getVehicle("42").getVehicle();
+    System.out.println(v.getBrand() + " " + v.getYear());
+    ```
+
+    </div>
+
+    </div>
+
+=== "Dart"
+
+    <div class="ba-grid grid" markdown>
+
+    <div class="ba-card ba-without" markdown>
+
+    **Without GraphLink**
+
+    ```dart
+    final response = await http.post(uri, body: jsonEncode({
+      'query': query,
+      'variables': {'id': id},
+    }));
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    final vehicle = json['data']['getVehicle'] as Map<String, dynamic>;
+    final brand = vehicle['brand'] as String;
+    final year = vehicle['year'] as int;
+    // Hope nobody renamed a field on the server last sprint.
+    ```
+
+    </div>
+
+    <div class="ba-card ba-with" markdown>
+
+    **With GraphLink**
+
+    ```dart
+    final res = await client.queries.getVehicle('42');
+    print('${res.getVehicle.brand} ${res.getVehicle.year}');
+    ```
+
+    </div>
+
+    </div>
+
+=== "Kotlin"
+
+    <div class="ba-grid grid" markdown>
+
+    <div class="ba-card ba-without" markdown>
+
+    **Without GraphLink**
+
+    ```kotlin
+    val response = httpClient.post(url) { setBody(payload) }
+    val json = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+    val vehicleJson = json["data"]!!.jsonObject["getVehicle"]!!.jsonObject
+    val vehicle = Vehicle(
+        id = vehicleJson["id"]!!.jsonPrimitive.content,
+        brand = vehicleJson["brand"]!!.jsonPrimitive.content,
+        year = vehicleJson["year"]!!.jsonPrimitive.int
+    )
+    // Hand-written data class, hand-written parsing, kept in sync by hand.
+    ```
+
+    </div>
+
+    <div class="ba-card ba-with" markdown>
+
+    **With GraphLink**
+
+    ```kotlin
+    val v = client.queries.getVehicle("42").getVehicle
+    println("${v.brand} ${v.year}")
+    ```
+
+    </div>
+
+    </div>
+
+=== "TypeScript"
+
+    <div class="ba-grid grid" markdown>
+
+    <div class="ba-card ba-without" markdown>
+
+    **Without GraphLink**
+
+    ```typescript
+    interface Vehicle { id: string; brand: string; year: number; } // hand-written, drifts from schema
+
+    const res = await fetch(url, { method: 'POST', body: JSON.stringify({ query, variables: { id } }) });
+    const json = await res.json();
+    const vehicle = json.data.getVehicle as Vehicle; // "as" — TS trusts you, the server doesn't have to
+    console.log(vehicle.brand, vehicle.year);
+    ```
+
+    </div>
+
+    <div class="ba-card ba-with" markdown>
+
+    **With GraphLink**
+
+    ```typescript
+    const res = await client.queries.getVehicle("42");
+    console.log(res.getVehicle.brand, res.getVehicle.year);
+    ```
+
+    </div>
+
+    </div>
+
+<div id="ba-payoff" class="ba-payoff"></div>
+
+It's not only the typed fetch. The same gap shows up in **subscriptions** (hand-rolled reconnect/backoff vs. an adapter that reconnects forever, out of the box) and in **caching** (a bespoke TTL/tag cache re-implemented per language vs. `@glCache(ttl: "2m", tags: ["vehicles"])` declared once in the schema). Multiply all of it by every query, every mutation, every language your stack touches, and the real cost of "no codegen" shows up: hundreds of hand-written DTOs and a schema that quietly drifts from the code that's supposed to implement it.
+
+---
+
 ## Why GraphLink?
 
 ### 1. Cache control lives in the schema
@@ -201,6 +352,15 @@ Download the single self-contained binary — no JVM, no package manager require
     # or
     dart pub add --dev graphlink
     ```
+
+=== "Docker"
+
+    ```bash
+    docker run --rm -v "$PWD":/workspace -w /workspace \
+      oualitsen/graphlink:latest -c glink.json
+    ```
+
+    Multi-arch (`amd64`/`arm64`) image: [`oualitsen/graphlink`](https://hub.docker.com/r/oualitsen/graphlink). No JVM, no local binary — good fit for CI.
 
 ---
 

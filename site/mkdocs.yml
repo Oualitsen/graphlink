@@ -27,6 +27,12 @@ plugins:
   - search
   - meta  # reads per-page meta: blocks in frontmatter for custom og:/twitter: tags
 
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/ba-payoff.js
+
 hooks:
   - hooks/generate_llms.py
 

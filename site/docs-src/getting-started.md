@@ -39,6 +39,27 @@ The GraphLink CLI is distributed as a single self-contained binary called `glink
     .\glink.exe --version
     ```
 
+=== "Docker"
+
+    A multi-arch (`linux/amd64` + `linux/arm64`) image is published to Docker Hub as
+    [`oualitsen/graphlink`](https://hub.docker.com/r/oualitsen/graphlink) — no local
+    binary, no PATH setup:
+
+    ```bash
+    # Mount your project directory and run glink against it
+    docker run --rm -v "$PWD":/workspace -w /workspace \
+      oualitsen/graphlink:latest -c glink.json
+
+    # Pin to a specific version instead of "latest"
+    docker run --rm -v "$PWD":/workspace -w /workspace \
+      oualitsen/graphlink:5.0.0 --version
+    ```
+
+    The container's entrypoint is `glink` itself — everything after the image name is
+    passed straight through as CLI arguments (`-c`, `-w`, `--version`, `--help`, ...).
+    Useful for CI pipelines that shouldn't depend on a language runtime just to run the
+    generator.
+
 === "Manual"
 
     ```
@@ -116,6 +137,9 @@ type Subscription {
   vehicleAdded: Vehicle!
 }
 ```
+
+!!! info "Splitting a type's body across files (v5.0.0+)"
+    A `type`, `interface`, or `input` can now be declared with no body at all (`type Query { }`) as long as a later `extend` block somewhere in `schemaPaths` supplies its fields. GraphLink raises a validation error if a bodyless definition is never extended. This is useful for schemas split across multiple files where the root type is declared in one file and extended per-feature in others.
 
 ## Step 3 — Configure the generator
 
