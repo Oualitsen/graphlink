@@ -266,7 +266,8 @@ class JavaSerializer extends GLSerializer {
   }
 
   @override
-  String doSerializeField(GLField def, bool immutable, bool isTypeField) {
+  String doSerializeField(GLField def, bool immutable, bool isTypeField,
+      {bool isOverride = false}) {
     final type = def.type;
     final name = def.codeName;
     final forceNullable = isTypeField && (def.hasInculeOrSkipDiretives);
@@ -844,12 +845,20 @@ class JavaSerializer extends GLSerializer {
   }
 
   String serializeGetter(GLField field, GLToken context,
-      {bool checkForNulls = false, bool isTypeField = false}) {
+      {bool checkForNulls = false, bool isTypeField = false, bool isOverride = false}) {
     if (checkForNulls) {
       context.addImport(JavaImports.objects);
     }
     final forceNullable = isTypeField && (field.hasInculeOrSkipDiretives);
-    var returnType = serializeType(field.type, forceNullable);
+    // An override's public signature must match the interface's declared
+    // shape, not this type's own (possibly narrowed) nullability — e.g. a
+    // non-null `Boolean!` implementing a nullable `Boolean` must still return
+    // boxed `Boolean` and keep the `get`-prefixed accessor name, otherwise the
+    // generated getter neither compiles (incompatible return type) nor
+    // satisfies the interface (wrong method name for a primitive `boolean`).
+    final interfaceField =
+        isOverride && context is GLTypeDefinition ? context.getInterfaceField(field) : null;
+    var returnType = serializeType(interfaceField?.type ?? field.type, forceNullable);
     var jspecifyAnnotation = _isPrimitiveType(field.type) ? null : getJSpecifyAnnoation(field);
     var result = codeGenUtils.createMethod(
         returnType: "public ${returnType}",
@@ -861,11 +870,13 @@ class JavaSerializer extends GLSerializer {
             'Objects.requireNonNull(${field.codeName});',
           'return ${field.codeName};'
         ]);
-        if(jspecifyAnnotation == null) {
-          return result;
-        }
         var buffer = StringBuffer();
-        buffer.writeln(jspecifyAnnotation);
+        if (isOverride) {
+          buffer.writeln("@Override");
+        }
+        if(jspecifyAnnotation != null) {
+          buffer.writeln(jspecifyAnnotation);
+        }
         buffer.write(result);
         return buffer.toString();
   }
@@ -1078,8 +1089,11 @@ class JavaSerializer extends GLSerializer {
           generateBuilder(
               codeName, def.getSerializableFields(grammar.mode), false),
           "",
-          ...def.getSerializableFields(grammar.mode).map((e) =>
-              serializeGetter(e, def, checkForNulls: typesCheckForNulls, isTypeField: true)),
+          ...def.getSerializableFields(grammar.mode).map((e) => serializeGetter(
+              e, def,
+              checkForNulls: typesCheckForNulls,
+              isTypeField: true,
+              isOverride: def.isOverride(e))),
           "",
           ...def.getSerializableFields(grammar.mode).where((field) {
             // @TODO check for mutable directive

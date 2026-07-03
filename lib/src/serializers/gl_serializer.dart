@@ -103,14 +103,16 @@ abstract class GLSerializer {
 
   String doSerializeEnumValue(GLEnumValue value);
 
-  String serializeField(GLField def, bool immutable, bool isTypeField) {
+  String serializeField(GLField def, bool immutable, bool isTypeField,
+      {bool isOverride = false}) {
     if (shouldSkipSerialization(directives: def.getDirectives(), mode: mode)) {
       return "";
     }
-    return '${serializeFieldDeprecation(def)}${doSerializeField(def, immutable, isTypeField)}';
+    return '${serializeFieldDeprecation(def)}${doSerializeField(def, immutable, isTypeField, isOverride: isOverride)}';
   }
 
-  String doSerializeField(GLField def, bool immutable, bool isTypeField);
+  String doSerializeField(GLField def, bool immutable, bool isTypeField,
+      {bool isOverride = false});
   String serializeType(GLType def, bool forceNullable);
 
   /// Returns the language-specific deprecation marker for [field] (e.g. an

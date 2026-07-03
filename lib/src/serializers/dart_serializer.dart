@@ -119,11 +119,15 @@ class DartSerializer extends GLSerializer {
   }
 
   @override
-  String doSerializeField(GLField def, bool immutable, bool isTypeField) {
+  String doSerializeField(GLField def, bool immutable, bool isTypeField,
+      {bool isOverride = false}) {
     final type = def.type;
     final name = def.codeName;
     final forceNullable = isTypeField && (def.hasInculeOrSkipDiretives);
     final builder = StringBuffer(serializeDecorators(def.getDirectives()));
+    if (isOverride) {
+      builder.writeln("@override");
+    }
     if (immutable) {
       builder.write("final ");
     } else {
@@ -503,7 +507,8 @@ class DartSerializer extends GLSerializer {
       className: codeName,
       baseClassNames: interfaceNames.toList(),
       statements: [
-        ...fields.map((e) => serializeField(e, true, true)),
+        ...fields.map((e) =>
+            serializeField(e, true, true, isOverride: def.isOverride(e))),
         codeGenUtils.createMethod(
             methodName: codeName,
             namedArguments: false,
