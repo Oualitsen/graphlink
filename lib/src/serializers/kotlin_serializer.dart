@@ -75,7 +75,8 @@ class KotlinSerializer extends GLSerializer {
   // ── Field serialization ─────────────────────────────────────────────────────
 
   @override
-  String doSerializeField(GLField def, bool immutable, bool isTypeField) {
+  String doSerializeField(GLField def, bool immutable, bool isTypeField,
+      {bool isOverride = false}) {
     final forceNullable = isTypeField && (def.hasInculeOrSkipDiretives);
     final type = serializeType(def.type, forceNullable);
     final keyword = _keyword(immutable);
@@ -272,7 +273,7 @@ class KotlinSerializer extends GLSerializer {
       final forceNullable = f.hasInculeOrSkipDiretives;
       final type = serializeType(f.type, forceNullable);
       final keyword = _keyword(typesAsDataClass);
-      final overrides = _fieldImplementsInterface(f, def);
+      final overrides = def.isOverride(f);
       final prefix = overrides ? 'override $keyword' : keyword;
       final deprecation = serializeFieldDeprecation(f);
       if (f.type.nullable || forceNullable) {
@@ -314,30 +315,12 @@ class KotlinSerializer extends GLSerializer {
         name: def.codeName, params: params, body: body.isEmpty ? null : body, interfaces: ifaces.isEmpty ? null : ifaces);
   }
 
-  bool _fieldImplementsInterface(GLField f, GLTypeDefinition def) {
-    for (final iname in def.interfaceNames) {
-      final iface = grammar.interfaces[iname.token];
-      if (iface == null) continue;
-      if (iface.fields.any((fi) => fi.name.token == f.name.token)) return true;
-    }
-    return false;
-  }
-
-  bool _fieldImplementsSuperInterface(GLField f, GLInterfaceDefinition def) {
-    for (final iname in def.interfaces) {
-      final iface = grammar.interfaces[iname.tokenInfo.token];
-      if (iface == null) continue;
-      if (iface.fields.any((fi) => fi.name.token == f.name.token)) return true;
-    }
-    return false;
-  }
-
   String serializeInterface(GLInterfaceDefinition def) {
     final fields = def.getSerializableFields(grammar.mode);
     final fieldDecls = fields.map((f) {
       final forceNullable = f.hasInculeOrSkipDiretives;
       final type = serializeType(f.type, forceNullable);
-      final prefix = _fieldImplementsSuperInterface(f, def) ? 'override val' : 'val';
+      final prefix = def.isOverride(f) ? 'override val' : 'val';
       return '$prefix ${f.codeName}: $type';
     }).toList();
 

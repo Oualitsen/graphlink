@@ -65,11 +65,13 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin, CodeNam
     _interfaces[iface.token] = iface;
     addInterfaceName(iface.tokenInfo);
     iface.addImplementation(this);
+    _isOverrideCache.clear();
   }
 
   void unlinkInterface(GLInterfaceDefinition iface) {
     _interfaces.remove(iface.token);
     _interfaceNames.remove(iface.token);
+    _isOverrideCache.clear();
   }
 
   void addOriginalToken(String token) {
@@ -92,6 +94,30 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin, CodeNam
 
   bool implements(String interfaceName) {
     return _interfaceNames[interfaceName] != null;
+  }
+
+  final Map<String, bool> _isOverrideCache = {};
+
+  /// True when [field] is also declared on one of this type's interfaces
+  /// (including synthesized `GL<Type>Projection` interfaces from
+  /// `@glStrict`), i.e. it is an override rather than a field unique to
+  /// this type.
+  bool isOverride(GLField field) {
+    return _isOverrideCache[field.name.token] ??=
+        _interfaces.values.any((iface) => iface.hasField(field.name.token));
+  }
+
+  /// Returns the declaration of [field] on the first of this type's
+  /// interfaces that declares it, or `null` if [field] is not an override.
+  /// Lets serializers match an overriding member's signature (nullability,
+  /// accessor naming, …) to the interface's declared shape rather than this
+  /// type's own (possibly narrowed) shape.
+  GLField? getInterfaceField(GLField field) {
+    for (final iface in _interfaces.values) {
+      final f = iface.getFieldByName(field.name.token);
+      if (f != null) return f;
+    }
+    return null;
   }
 
   String? _cachedHash;

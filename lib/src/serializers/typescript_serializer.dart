@@ -160,7 +160,8 @@ class TypeScriptSerializer extends GLSerializer {
   /// [immutable] == false → input context: `name?: Type | null;` (when nullable
   ///                        and [optionalNullableInputFields] is true)
   @override
-  String doSerializeField(GLField def, bool immutable, bool isTypeField) {
+  String doSerializeField(GLField def, bool immutable, bool isTypeField,
+      {bool isOverride = false}) {
     final type = def.type;
     final name = def.codeName;
     final forceNullable = isTypeField && (def.hasInculeOrSkipDiretives);
