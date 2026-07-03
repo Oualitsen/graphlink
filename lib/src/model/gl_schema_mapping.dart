@@ -30,7 +30,7 @@ class GLSchemaMapping {
   ///
   final bool forwarded;
 
-  String _key;
+  final String _key;
 
   GLSchemaMapping({
     required this.type,
