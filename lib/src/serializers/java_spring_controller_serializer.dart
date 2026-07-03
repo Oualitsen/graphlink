@@ -406,7 +406,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     final fieldType = mapping.field.type;
     final List<String> bodyStatements;
     if (mapping.isBatch) {
-      final parentTypeName = mapping.type.token;
+      final parentTypeName = getMapTo(mapping.type.tokenInfo);
       final typedVar = codeGenUtils.safeLocalVar('typed');
       final svcVar = codeGenUtils.safeLocalVar('svc');
       final typedListDecl =
@@ -629,7 +629,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
 
   /// Expression that reconstructs the typed parent from the map `value`.
   String _fromJsonParentExpr(GLSchemaMapping mapping, GLToken context) {
-    final parentTypeName = mapping.type.token;
+    final parentTypeName = getMapTo(mapping.type.tokenInfo);
     if (mapping.isBatch) {
       context.addImport(JavaImports.collectors);
       return 'value.stream().map($parentTypeName::fromJson).collect(Collectors.toList())';
