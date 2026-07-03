@@ -299,7 +299,7 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
 
     final List<String> statements;
     if (mapping.isBatch) {
-      final parentTypeName = mapping.type.token;
+      final parentTypeName = getMapTo(mapping.type.tokenInfo);
       final typedVar = codeGenUtils.safeLocalVar('typed');
       final svcVar = codeGenUtils.safeLocalVar('svc');
       final typedListDecl = 'val $typedVar = value.map { $parentTypeName.fromJson(it) }';
@@ -408,7 +408,7 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
   }
 
   String _fromJsonParentExpr(GLSchemaMapping mapping) {
-    final parentTypeName = mapping.type.token;
+    final parentTypeName = getMapTo(mapping.type.tokenInfo);
     if (mapping.isBatch) {
       return 'value.map { $parentTypeName.fromJson(it) }';
     }
