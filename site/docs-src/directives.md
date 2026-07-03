@@ -1,6 +1,6 @@
 ---
 title: Directives Reference — GraphLink Docs
-description: Complete reference for all GraphLink schema directives — @glCache, @glCacheInvalidate, @glCaptureErrors, @glMapsTo, @glMapField, @glSkipOnServer (with forward mappings), @glExternal, @glValidate, and more.
+description: Complete reference for all GraphLink schema directives — @glCache, @glCacheInvalidate, @glCaptureErrors, @glMapsTo, @glMapField, @glSkipOnServer (with forward mappings), @glExternal, @glValidate, @glServerLenient, @glReturnsProjection, @deprecated, and more.
 ---
 
 # Directives Reference
@@ -68,6 +68,12 @@ directive @glExpand(depth: Int) on OBJECT
 # ── Error capture ─────────────────────────────────────────────────────────────
 
 directive @glCaptureErrors on FIELD_DEFINITION
+
+# ── Strict server generation (v5.0.0+) ────────────────────────────────────────
+
+directive @glServerLenient on OBJECT | INTERFACE
+
+directive @glReturnsProjection on FIELD_DEFINITION
 ```
 
 ---
@@ -184,6 +190,54 @@ public class GetUserFullResponse {
 **Validation:** applying `@glCaptureErrors` to a subscription field is rejected at parse time with a `ParseException`.
 
 **Global config alternative:** instead of annotating each field, set `captureErrors: true` in `clientConfig.dart` / `clientConfig.java` / `clientConfig.typescript` to apply the behaviour to every query and mutation automatically.
+
+---
+
+## @glServerLenient
+
+**Target:** SERVER · **Placement:** `OBJECT`, `INTERFACE`
+
+Since v5.0.0, server generation is **strict by default**: every generated type and interface enforces the schema's real nullability (a non-null field stays non-null in the generated getters/constructors/setters). `@glServerLenient` opts a specific type or interface back out of that, restoring the pre-v5.0.0 behavior where all of its own fields are generated as nullable — useful for legacy resolvers that can't guarantee every field is populated on every path.
+
+No arguments.
+
+```graphql title="Example"
+# Every field on LegacyReport is generated as nullable, regardless of the schema's "!" markers
+type LegacyReport @glServerLenient {
+  id: ID!
+  title: String!
+  total: Float!
+}
+```
+
+`LegacyReport` still gets a generated `GLLegacyReportProjection` interface (all fields nullable) like every other type — `@glServerLenient` only affects the nullability of `LegacyReport` itself, not the projection.
+
+→ **[Full explanation of strict server generation and `GL<Type>Projection`](spring-server.md#strict-server-generation-and-projections)**
+
+---
+
+## @glReturnsProjection
+
+**Target:** SERVER · **Placement:** `FIELD_DEFINITION` on `Query`, `Mutation`, `Subscription` fields, or a `@glSkipOnServer` relation field
+
+Declares that a resolver may only partially populate its return type — for example, a resolver that reads the incoming GraphQL selection set and only fetches the requested columns. The generated service method returns `GL<Type>Projection` (every field nullable) instead of the strict concrete `<Type>`. `DataFetchingEnvironment` is auto-injected into that method so the resolver can inspect the selection set, regardless of the global `injectDataFetching` setting.
+
+No arguments.
+
+```graphql title="Example"
+type Query {
+  # Only fetches the columns present in the client's selection set
+  searchVehicles(term: String!): [Vehicle!]! @glReturnsProjection
+}
+```
+
+Generated service method:
+
+```java title="Generated VehicleService.java"
+List<GLVehicleProjection> searchVehicles(String term, DataFetchingEnvironment env);
+```
+
+→ **[Full explanation of strict server generation and `GL<Type>Projection`](spring-server.md#strict-server-generation-and-projections)**
 
 ---
 
@@ -517,6 +571,39 @@ Without `@glExpand`, the default depth is `1` — one level of inline expansion.
 
 !!! note "Multi-type cycles"
     `@glExpand` also handles indirect cycles — for example `Customer → Order → Product → Supplier → Customer`. Each type in the cycle should declare `@glExpand` if a non-default depth is needed. The cycle is detected automatically; `@glExpand` only controls how deep the inline expansion goes before truncating.
+
+!!! warning "Cyclic fields are always nullable (v5.0.0+)"
+    Since v5.0.0, GraphLink runs SCC-based cycle detection by default on the generated *types themselves*, not just on `_all_fields` fragment expansion. Any field participating in a dependency cycle between types (e.g. `Employee.manager: Employee!` in a self-referential type) is generated as nullable in Dart/Java/Kotlin/TypeScript, even though the schema marks it non-null. Code that force-unwraps such a field (`!` in Dart/Kotlin, an unguarded getter call in Java/TS) may need updating after regenerating. `@glExpand` still controls only how deep `_all_fields` fragments inline the cycle — it does not opt a field back into non-null.
+
+---
+
+## @deprecated
+
+**Target:** BOTH · **Placement:** `FIELD_DEFINITION`, `ENUM_VALUE` (standard GraphQL directive)
+
+The spec-standard `@deprecated(reason: "...")` directive is picked up by GraphLink and translated into the target language's native deprecation annotation, carrying the reason through.
+
+```graphql title="Example"
+type Vehicle {
+  id: ID!
+  brand: String!
+  # Deprecated field
+  fuelKind: FuelType @deprecated(reason: "Use `fuelType` instead")
+}
+
+enum FuelType {
+  GASOLINE
+  DIESEL
+  ELECTRIC
+  LEGACY_HYBRID @deprecated(reason: "Use HYBRID instead")
+}
+```
+
+| Target | Emitted annotation |
+|---|---|
+| Dart | `@Deprecated('Use \`fuelType\` instead')` |
+| Java / Kotlin | `@Deprecated` with the reason in a preceding Javadoc/KDoc `@deprecated` line |
+| TypeScript | `/** @deprecated Use \`fuelType\` instead */` JSDoc comment |
 
 ---
 

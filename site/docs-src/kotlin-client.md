@@ -1,6 +1,6 @@
 ---
 title: Kotlin Client — GraphLink Docs
-description: Use the generated GraphLink Kotlin client in Android, Spring Boot, or any JVM/KMP project. Coroutine-based queries, mutations, and subscriptions with kotlinx.serialization. Data classes, enums, and unions fully supported.
+description: Use the generated GraphLink Kotlin client in Android, Spring Boot, or any JVM/KMP project. Coroutine-based queries, mutations, and subscriptions with kotlinx.serialization. Data classes, enums (throwing fromJson as of v5.0.0), and unions fully supported.
 ---
 
 # Kotlin Client
@@ -139,12 +139,24 @@ enum class UserStatus {
     ACTIVE, INACTIVE, SUSPENDED;
 
     companion object {
-        fun fromJson(value: String?): UserStatus? = value?.let { valueOf(it) }
+        fun fromJson(value: String): UserStatus = when (value) {
+            "ACTIVE" -> ACTIVE
+            "INACTIVE" -> INACTIVE
+            "SUSPENDED" -> SUSPENDED
+            else -> throw IllegalArgumentException("Unknown UserStatus: $value")
+        }
     }
 
-    fun toJson(): String = name
+    fun toJson(): String = when (this) {
+        ACTIVE -> "ACTIVE"
+        INACTIVE -> "INACTIVE"
+        SUSPENDED -> "SUSPENDED"
+    }
 }
 ```
+
+!!! danger "Breaking change in v5.0.0"
+    `fromJson` used to be `fun fromJson(value: String?): T?`, returning `null` for an unrecognized wire value. As of v5.0.0 the signature is `fun fromJson(value: String): T` — an unrecognized value now throws `IllegalArgumentException` instead of silently returning `null`. `toJson`/`fromJson` also always use an explicit wire-name mapping now (rather than `.name`/`valueOf`), since [identifier normalization](configuration.md#identifier-normalization) can make the generated enum constant name diverge from the wire value even without a keyword collision. `toJson`/`fromJson` generation is mandatory on every generated type/input/enum/interface as of v5.0.0 — there is no config flag to suppress it.
 
 ## Queries
 
