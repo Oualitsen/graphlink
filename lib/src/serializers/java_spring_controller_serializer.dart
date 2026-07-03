@@ -45,7 +45,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
   String _mapifyType(GLType type, GLToken context) {
     if (type is GLListType) {
       context.addImport(importList);
-      return 'List<${_mapifyType(type.inlineType, context)}>';
+      return 'List<${convertPrimitiveToBoxed(_mapifyType(type.inlineType, context))}>';
     }
     if (grammar.isEnum(type.token)) return 'String';
     if (grammar.isProjectableType(type.token)) {
@@ -73,7 +73,8 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     final valueExpr = _wrapWithToJson(fieldType, valVar, context);
     final tmpVar = codeGenUtils.safeLocalVar('tmp');
     final iVar = codeGenUtils.safeLocalVar('i');
-    final mapifiedValueType = _mapifyType(fieldType, context);
+    final mapifiedValueType = convertPrimitiveToBoxed(_mapifyType(fieldType, context));
+    final valType = convertPrimitiveToBoxed(serializer.serializeType(fieldType, false));
     context.addImport(JavaImports.hashMap);
     context.addImport(JavaImports.map);
     return [
@@ -83,7 +84,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
         condition: '$iVar < value.size()',
         increment: '$iVar++',
         statements: [
-          'final var $valVar = $svcExpr.get($typedVar.get($iVar));',
+          'final $valType $valVar = $svcExpr.get($typedVar.get($iVar));',
           '$tmpVar.put(value.get($iVar), $valueExpr);',
         ],
       ),
@@ -223,7 +224,8 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
 
     if (type == GLQueryType.subscription) {
       final subscriptionReturnType = getServiceReturnType(method.type);
-      final mapifiedInner = _mapifyType(subscriptionReturnType, context);
+      final mapifiedInner =
+          convertPrimitiveToBoxed(_mapifyType(subscriptionReturnType, context));
       context.addImport(JavaImports.flux);
       returnType = 'Flux<$mapifiedInner>';
       final resultVar = codeGenUtils.safeLocalVar('result');
@@ -241,11 +243,13 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
       final monoReturnType = getServiceReturnType(method.type);
       if (monoReturnType is GLListType) {
         // Flux: each element is emitted individually
-        final mapifiedInner = _mapifyType(monoReturnType.inlineType, context);
+        final mapifiedInner = convertPrimitiveToBoxed(
+            _mapifyType(monoReturnType.inlineType, context));
         context.addImport(JavaImports.flux);
         returnType = 'Flux<$mapifiedInner>';
       } else {
-        final mapifiedType = _mapifyType(monoReturnType, context);
+        final mapifiedType =
+            convertPrimitiveToBoxed(_mapifyType(monoReturnType, context));
         context.addImport(JavaImports.mono);
         returnType = 'Mono<$mapifiedType>';
       }
@@ -431,9 +435,12 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
         ]);
         bodyStatements = [typedListDecl, 'return $svcCall.map($srcVar -> $lambdaBody);'];
       } else {
+        final svcValType =
+            convertPrimitiveToBoxed(serializer.serializeType(fieldType, false));
+        context.addImport(JavaImports.map);
         bodyStatements = _wrapInCompletableFuture([
           typedListDecl,
-          'final var $svcVar = $svcCall;',
+          'final Map<$parentTypeName, $svcValType> $svcVar = $svcCall;',
           ...outputStmts.sublist(0, outputStmts.length - 1),
           outputStmts.last,
         ], false, context);
