@@ -1,6 +1,6 @@
 ---
 title: Custom Queries & Mutations — GraphLink Docs
-description: Write your own GraphQL operation documents alongside the schema. Custom queries, mutations, aliases, fragments, multi-resolver queries, and specific field projections — all generate fully typed client methods.
+description: Write your own GraphQL operation documents alongside the schema. Custom queries, mutations, aliases, fragments, multi-resolver queries, specific field projections, and client-side default values — all generate fully typed client methods.
 ---
 
 # Custom Queries & Mutations
@@ -326,6 +326,54 @@ query fetchNode($id: ID!) {
   }
 }
 ```
+
+---
+
+## Client-side default values (v5.0.0+)
+
+GraphQL `= value` defaults on input fields and on query/mutation arguments are now emitted as real defaults in generated Dart, Java, Kotlin, and TypeScript code — previously they were parsed but silently dropped.
+
+```graphql title="Schema with default values"
+input PageInput {
+  size: Int = 20
+  offset: Int = 0
+}
+
+type Query {
+  listVehicles(page: PageInput = { size: 20, offset: 0 }, sortDesc: Boolean = false): [Vehicle!]!
+}
+```
+
+```dart title="Generated Dart — real defaults, const where possible"
+const PageInput({this.size = 20, this.offset = 0});
+
+Future<ListVehiclesResponse> listVehicles({
+  PageInput page = const PageInput(),
+  bool sortDesc = false,
+}) async { /* ... */ }
+```
+
+Callers can omit `page` and `sortDesc` entirely and get the schema's declared defaults. The generated `.graphqls` schema output also preserves the `= value` syntax when `generateSchema: true` is set.
+
+---
+
+## Auto-generated query variable names (v5.0.0+)
+
+Auto-generated operation variable names changed from bare `$<argName>` to `$<fieldName><ArgName>` (with a further type-suffix appended only if the same field+arg name resolves to different types across the schema). This avoids variable collisions across fields and fragments selected in the same auto-generated operation.
+
+```graphql title="Before v5.0.0"
+query getVehicle($id: ID!) {
+  getVehicle(id: $id) { ... _all_fields }
+}
+```
+
+```graphql title="v5.0.0+ — namespaced by field name"
+query getVehicle($getVehicleId: ID!) {
+  getVehicle(id: $getVehicleId) { ... _all_fields }
+}
+```
+
+This only affects **auto-generated** operations (`autoGenerateQueries` / `autoGenerateQueriesFor`) — the wire-level `.graphql` query string changes, but the generated client method's parameter name is unaffected and behavior is equivalent. Hand-written operations keep whatever variable names you wrote.
 
 ---
 

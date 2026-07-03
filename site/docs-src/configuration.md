@@ -1,6 +1,6 @@
 ---
 title: Configuration Reference — GraphLink Docs
-description: Complete reference for all GraphLink glink.json / glink.yaml options — schemaPaths, typeMappings, unknownScalarType, outputDir, clientConfig (Dart, Java, TypeScript, Kotlin), serverConfig (Spring Boot), and CLI flags.
+description: Complete reference for all GraphLink glink.json / glink.yaml options — schemaPaths, typeMappings, unknownScalarType, outputDir, clientConfig (Dart, Java reactive asyncStyle, TypeScript, Kotlin), serverConfig (Spring Boot, Kotlin Spring), identifier normalization, and CLI flags.
 ---
 
 # Configuration Reference
@@ -155,8 +155,8 @@ Used when `mode` is `"client"` and you want Dart/Flutter output.
 | `packageName` | `string` | — | **Required.** The Dart package name used for import paths in generated files (e.g. `"my_app"` produces `import 'package:my_app/...'`). |
 | `httpAdapter` | `"http"` \| `"dio"` \| `"none"` | `"http"` | Which HTTP adapter file to generate. `"http"` uses `package:http`. `"dio"` uses Dio (supports interceptors, custom `BaseOptions`). `"none"` skips adapter generation — supply your own `Future<String> Function(String)`. |
 | `generateAdapters` | `boolean` | `true` | When `false`, skips generating the HTTP and WebSocket adapter files. Use this if you maintain your own adapter implementations and don't want them overwritten. |
-| `generateAllFieldsFragments` | `boolean` | `false` | Generates a `_all_fields_TypeName` named fragment for every type in the schema. Required for `autoGenerateQueries` to work. |
-| `autoGenerateQueries` | `boolean` | `false` | Automatically builds query strings for every operation using `_all_fields` fragments. When `true`, you do not need to write any query strings by hand. |
+| `generateAllFieldsFragments` | `boolean` | `true` | Generates a `_all_fields_TypeName` named fragment for every type in the schema. Required for `autoGenerateQueries` to work. |
+| `autoGenerateQueries` | `boolean` | `true` | Automatically builds query strings for every operation using `_all_fields` fragments. When `true`, you do not need to write any query strings by hand. |
 | `autoGenerateQueriesDefaultAlias` | `string` \| `null` | `null` | Default alias prefix to use for auto-generated query fields when `autoGenerateQueries` is `true`. Useful when multiple operations select the same root field. |
 | `autoGenerateQueriesFor` | `object` \| `null` | `null` | Generates client methods only for the listed operations instead of every root field. Use instead of (or alongside) `autoGenerateQueries` when you only need a subset — e.g. on large schemas. Each key (`queries`, `mutations`, `subscriptions`) takes a list of root field names. Any listed name not found in the schema causes a build error. Requires `generateAllFieldsFragments: true`. See [Selective auto-generation](custom-queries.md#selective-auto-generation-autogeneratequeriesfor). |
 | `autoGenerateQueriesArgumentLimit` | `integer` \| `null` | `200` | Maximum number of propagated (nested-field) arguments allowed in the synthesized `fieldArgs` object of an auto-generated operation. When the limit is exceeded, GraphLink skips the operation and prints a `⚠` warning. Hand-written operations are never affected. Raise the value for unusually large schemas, or write a custom query with a narrower field selection instead. See [Argument limit](custom-queries.md#auto-generated-query-argument-limit). |
@@ -254,6 +254,9 @@ Used when `mode` is `"client"` and you want a Java client.
           "immutableTypeFields": true,
           "inputAsRecord": false,
           "typeAsRecord": false,
+          "jspecify": false,
+          "asyncStyle": "blocking",
+          "reactiveHttpClient": "jdk",
           "captureErrors": false
         }
       }
@@ -280,6 +283,9 @@ Used when `mode` is `"client"` and you want a Java client.
         immutableTypeFields: true
         inputAsRecord: false
         typeAsRecord: false
+        jspecify: false
+        asyncStyle: blocking
+        reactiveHttpClient: jdk
         captureErrors: false
     ```
 
@@ -288,8 +294,8 @@ Used when `mode` is `"client"` and you want a Java client.
 | `packageName` | `string` | — | **Required.** Java package name for generated files (e.g. `"com.example.generated"`). |
 | `wsAdapter` | `"java11"` \| `"okhttp"` \| `"none"` | `"java11"` | Which WebSocket adapter to generate. `"java11"` uses `java.net.http.WebSocket` (zero extra dependencies). `"okhttp"` uses OkHttp's WebSocket client. `"none"` skips WebSocket adapter generation. |
 | `jsonCodec` | `"jackson"` \| `"gson"` \| `"none"` | `"jackson"` | Which JSON codec helper to generate. `"jackson"` generates `JacksonGraphLinkJsonCodec`. `"gson"` generates `GsonGraphLinkJsonCodec`. `"none"` skips codec generation — supply your own lambdas. |
-| `generateAllFieldsFragments` | `boolean` | `false` | Generates `_all_fields_TypeName` fragments for every type. Required for `autoGenerateQueries` and `autoGenerateQueriesFor`. |
-| `autoGenerateQueries` | `boolean` | `false` | Automatically builds query strings for every operation. |
+| `generateAllFieldsFragments` | `boolean` | `true` | Generates `_all_fields_TypeName` fragments for every type. Required for `autoGenerateQueries` and `autoGenerateQueriesFor`. |
+| `autoGenerateQueries` | `boolean` | `true` | Automatically builds query strings for every operation. |
 | `autoGenerateQueriesFor` | `object` \| `null` | `null` | Generates client methods only for the listed operations. Keys: `queries`, `mutations`, `subscriptions` — each takes a list of root field names. Unknown names cause a build error. Requires `generateAllFieldsFragments: true`. See [Selective auto-generation](custom-queries.md#selective-auto-generation-autogeneratequeriesfor). |
 | `autoGenerateQueriesArgumentLimit` | `integer` \| `null` | `200` | Maximum number of propagated (nested-field) arguments allowed in the synthesized `fieldArgs` object of an auto-generated operation. When exceeded, GraphLink skips the operation and prints a `⚠` warning. Hand-written operations are never affected. See [Argument limit](custom-queries.md#auto-generated-query-argument-limit). |
 | `maxFragmentBodySize` | `integer` \| `null` | `8192` | Maximum number of characters allowed in the serialized body of a generated `_all_fields` fragment. Fragments whose body exceeds this limit are silently omitted, and any auto-generated queries that depend on them are also skipped. Set to `null` to disable the cap. |
@@ -300,6 +306,9 @@ Used when `mode` is `"client"` and you want a Java client.
 | `immutableTypeFields` | `boolean` | `true` | Response type fields are `private final` with only getters. Recommended for client-side. |
 | `inputAsRecord` | `boolean` | `false` | Generates input types as Java records instead of classes with builders. Records use component accessor syntax (`field()`) instead of getters (`getField()`). Requires Java 16+. |
 | `typeAsRecord` | `boolean` | `false` | Generates response types as Java records. Affects how `fromJson` and mapping methods access fields. Requires Java 16+. |
+| `jspecify` | `boolean` | `false` | Adds `@NonNull` / `@Nullable` from `org.jspecify.annotations` to all generated type, input, and interface fields. Imports are only emitted when enabled. |
+| `asyncStyle` | `"blocking"` \| `"reactor"` \| `"rxjava3"` \| `"mutiny"` | `"blocking"` | Wraps query/mutation results in the library's deferred-single type (`Mono`/`Single`/`Uni`) and subscriptions in the deferred-many type (`Flux`/`Observable`/`Multi`). `"blocking"` keeps the pre-v5.0.0 direct-return / listener-callback client. See [Reactive client](java-client.md#reactive-client-v500). |
+| `reactiveHttpClient` | `"jdk"` \| `"webclient"` | `"jdk"` | Transport used by the default adapter under a non-blocking `asyncStyle`. `"jdk"` uses `HttpClient.sendAsync` (works with every `asyncStyle`). `"webclient"` uses Spring `WebClient` (`asyncStyle: "reactor"` only). |
 | `captureErrors` | `boolean` | `false` | When `true`, applies `@glCaptureErrors` behaviour to every query and mutation. Each method returns a `{OperationName}FullResponse` holding nullable `data` and nullable `errors` instead of throwing on GraphQL errors. Equivalent to annotating every query and mutation field with `@glCaptureErrors` in the schema. |
 
 ---
@@ -357,8 +366,8 @@ Used when `mode` is `"client"` and you want TypeScript output.
 | `httpAdapter` | `"fetch"` \| `"axios"` \| `"none"` | `"fetch"` | Which HTTP adapter to generate. `"fetch"` uses the native Fetch API (works in Angular, React, Vue, Svelte, Node 18+). `"axios"` uses Axios. `"none"` skips adapter generation. |
 | `generateDefaultWsAdapter` | `boolean` | `true` | When `true`, generates `DefaultGraphLinkWebSocketAdapter` implementing the graphql-ws protocol with exponential-backoff reconnect. Set to `false` if you have no subscriptions or supply your own adapter. |
 | `observables` | `boolean` | `false` | When `true`, query and mutation methods return `Observable<T>` (RxJS) instead of `Promise<T>`. Subscription methods also return `Observable<T>`. Recommended for Angular projects. |
-| `generateAllFieldsFragments` | `boolean` | `false` | Generates `_all_fields_TypeName` fragments for every type. Required for `autoGenerateQueries` and `autoGenerateQueriesFor`. |
-| `autoGenerateQueries` | `boolean` | `false` | Automatically builds query strings for every operation using `_all_fields` fragments. |
+| `generateAllFieldsFragments` | `boolean` | `true` | Generates `_all_fields_TypeName` fragments for every type. Required for `autoGenerateQueries` and `autoGenerateQueriesFor`. |
+| `autoGenerateQueries` | `boolean` | `true` | Automatically builds query strings for every operation using `_all_fields` fragments. |
 | `autoGenerateQueriesFor` | `object` \| `null` | `null` | Generates client methods only for the listed operations. Keys: `queries`, `mutations`, `subscriptions` — each takes a list of root field names. Unknown names cause a build error. Requires `generateAllFieldsFragments: true`. See [Selective auto-generation](custom-queries.md#selective-auto-generation-autogeneratequeriesfor). |
 | `autoGenerateQueriesArgumentLimit` | `integer` \| `null` | `200` | Maximum number of propagated (nested-field) arguments allowed in the synthesized `fieldArgs` object of an auto-generated operation. When exceeded, GraphLink skips the operation and prints a `⚠` warning. Hand-written operations are never affected. See [Argument limit](custom-queries.md#auto-generated-query-argument-limit). |
 | `maxFragmentBodySize` | `integer` \| `null` | `8192` | Maximum number of characters allowed in the serialized body of a generated `_all_fields` fragment. Fragments whose body exceeds this limit are silently omitted, and any auto-generated queries that depend on them are also skipped. Set to `null` to disable the cap. |
@@ -505,6 +514,76 @@ Used when `mode` is `"server"`.
 | `injectDataFetching` | `boolean` | `false` | When `true`, generates data-fetching injection code in controllers for field-level resolution. |
 | `generateSchema` | `boolean` | `false` | When `true`, writes a copy of the processed schema to disk alongside the generated Java. Requires `schemaTargetPath`. |
 | `schemaTargetPath` | `string` \| `null` | `null` | Path where the schema file is written when `generateSchema` is `true`. Must end in `.graphql` or `.graphqls`. Example: `"src/main/resources/schema.graphqls"`. |
+
+!!! info "Strict by default"
+    Since v5.0.0, generated server types enforce real schema nullability by default and every type/interface gets a `GL<Type>Projection` companion interface. See [Strict server generation and projections](spring-server.md#strict-server-generation-and-projections), and the `@glServerLenient` / `@glReturnsProjection` directives in the [Directives reference](directives.md).
+
+---
+
+## `serverConfig.kotlinSpring`
+
+Used when `mode` is `"server"` and you want a Kotlin Spring server instead of Java. See [Kotlin Spring Boot server](spring-server.md#kotlin-spring-boot-server) for the full walkthrough.
+
+=== "JSON"
+
+    ```json title="glink.json — serverConfig.kotlinSpring"
+    {
+      "serverConfig": {
+        "kotlinSpring": {
+          "basePackage": "com.example.generated",
+          "typeAsDataClass": true,
+          "inputAsDataClass": true,
+          "blockingServices": true,
+          "generateControllers": true,
+          "generateInputs": true,
+          "generateTypes": true,
+          "generateRepositories": false,
+          "immutableInputFields": true,
+          "immutableTypeFields": false,
+          "generateSchema": false,
+          "schemaTargetPath": null
+        }
+      }
+    }
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — serverConfig.kotlinSpring"
+    serverConfig:
+      kotlinSpring:
+        basePackage: com.example.generated
+        typeAsDataClass: true
+        inputAsDataClass: true
+        blockingServices: true
+        generateControllers: true
+        generateInputs: true
+        generateTypes: true
+        generateRepositories: false
+        immutableInputFields: true
+        immutableTypeFields: false
+        generateSchema: false
+        schemaTargetPath: null
+    ```
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `basePackage` | `string` | — | **Required.** Kotlin package name for all generated files. |
+| `typeAsDataClass` | `boolean` | `false` | Emit output types as `data class`. When `false`, uses `open class`. |
+| `inputAsDataClass` | `boolean` | `false` | Emit input types as `data class`. When `false`, uses `open class`. |
+| `blockingServices` | `boolean` | `true` | Wraps each generated controller's service call in `withContext(Dispatchers.IO + SecurityCoroutineContext()) { ... }`. Set `false` for a coroutine-native, non-blocking service layer. |
+
+The remaining options (`generateControllers`, `generateInputs`, `generateTypes`, `generateRepositories`, `immutableInputFields`, `immutableTypeFields`, `generateSchema`, `schemaTargetPath`) behave the same as their `serverConfig.spring` equivalents above.
+
+---
+
+## Identifier normalization
+
+Since v5.0.0, every generated identifier — field names, argument names, enum values, and type/input/interface/union/enum names — is unconditionally rewritten to the target language's canonical casing convention (lowerCamelCase fields for Dart/Java/Kotlin/TypeScript, SCREAMING_SNAKE enum values for Java/Kotlin, PascalCase enum values for TypeScript, PascalCase type names everywhere). This is not opt-in and there is no config flag to disable it.
+
+A GraphQL name that collides with a target-language reserved keyword (e.g. an argument or field named `default`, `return`, `object`) is also automatically sanitized (`default_`, with numeric suffixing on further collisions), while the wire/GraphQL name is preserved. This applies consistently to fields, arguments, enum values, resolver parameters, `@glMapsTo` mappings, and Spring controller/service signatures.
+
+**Migration:** if your schema's GraphQL names aren't already in canonical casing (e.g. `snake_case` fields, lowercase type names), regenerating renames the corresponding generated fields/classes/methods. Review the diff after upgrading and update any application code that references generated identifiers directly. Because the generated identifier can now differ from the wire name, `toJson`/`fromJson` are mandatory on every serializer (Dart, Java, Kotlin, TypeScript) as of v5.0.0 — code that reads/writes generated objects without going through them can no longer assume the two names match.
 
 ---
 

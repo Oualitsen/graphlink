@@ -21,8 +21,10 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - **Kotlin client**: typed data classes, input classes, enums, and a coroutine-based GraphQL client
   using `kotlinx.serialization`. Supports queries, mutations, and subscriptions (OkHttp WebSocket
   with auto-reconnect). Works in Android, JVM server projects, and Kotlin Multiplatform.
-- **Spring Boot server**: controllers, service interfaces, repository stubs, and input classes
-  generated from the schema's type definitions and queries. Supports MVC and reactive (WebFlux) mode.
+- **Spring Boot server (Java or Kotlin)**: controllers, service interfaces, repository stubs, and
+  input classes generated from the schema's type definitions and queries. Supports MVC and reactive
+  (WebFlux) mode. Strict-by-default nullability with generated `GL<Type>Projection` companion
+  interfaces for partially-fetched data (`@glServerLenient` / `@glReturnsProjection` opt out/in).
 
 ## Key differentiators
 
@@ -74,12 +76,21 @@ client and server code. Developers define their API once in a `.graphql` schema 
   Enum constants and Spring `@Argument` bindings are pinned back to the wire name. Automatic,
   no configuration. TypeScript needs no sanitization for reserved words (legal as properties).
 
-## Supported targets (as of v4.8.0)
+- **Unconditional identifier normalization (v5.0.0+, breaking).** All generated identifiers are
+  unconditionally rewritten to canonical target-language casing (not opt-in). `toJson`/`fromJson`
+  generation is now mandatory on every serializer since generated names can diverge from wire names.
+- **Controllers return `Map`/`List<Map>` (v5.0.0+, breaking).** Java Spring, Kotlin Spring, and
+  Express/Apollo controllers serialize via `toJson()` at the boundary; service interfaces unchanged.
+  Java Spring controllers bind mutation inputs as `Map<String, Object>` via generated `fromJson()`.
+- **Reactive Java client (`asyncStyle`).** `clientConfig.java.asyncStyle` generates a client
+  returning `Mono`/`Single`/`Uni` (Reactor/RxJava3/Mutiny) instead of blocking calls.
+
+## Supported targets (as of v5.0.0)
 
 - Dart client (stable)
 - Flutter client (stable, including UI widget generation)
-- Java client (stable)
-- Spring Boot server (stable, MVC and reactive/WebFlux)
+- Java client (stable — optional reactive mode via `asyncStyle`)
+- Spring Boot server (stable, MVC and reactive/WebFlux — Java and Kotlin targets)
 - TypeScript client (stable — fetch/axios, RxJS observables, WebSocket subscriptions)
 - Kotlin client (stable — coroutines, kotlinx.serialization, OkHttp WebSocket)
 - Express / Node.js server (planned)

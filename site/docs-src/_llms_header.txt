@@ -22,9 +22,11 @@ client and server code. Developers define their API once in a `.graphql` schema 
   coroutine-based GraphQL client using `kotlinx.serialization`. Single-method `GraphLinkClientAdapter`
   interface (a Kotlin `fun interface`) is all you need for HTTP. Subscriptions via OkHttp WebSocket
   with auto-reconnect (or `"none"` to bring your own). Works in Android, JVM server projects, and KMP.
-- **Spring Boot server**: controllers, service interfaces, repository stubs, and input classes
-  generated from the schema's type definitions and queries. Supports MVC and reactive (WebFlux) mode.
-  Injectable HttpClient/OkHttpClient for both HTTP and WebSocket adapters (Java client).
+- **Spring Boot server (Java or Kotlin)**: controllers, service interfaces, repository stubs, and
+  input classes generated from the schema's type definitions and queries. Supports MVC and reactive
+  (WebFlux) mode. Java target: injectable HttpClient/OkHttpClient adapters, plus a reactive client
+  mode (`asyncStyle`: Reactor/RxJava3/Mutiny). Kotlin server target: data-class types, coroutine
+  services, optional `Dispatchers.IO` offloading for blocking service layers.
 
 ## Key differentiators
 
@@ -99,12 +101,36 @@ client and server code. Developers define their API once in a `.graphql` schema 
   words are legal as object properties and enum members). The whole mechanism is automatic with no
   configuration.
 
-## Supported targets (as of v4.8.0)
+- **Strict server generation with projections (v5.0.0+, breaking change).** Server-generated types
+  and interfaces (Java Spring and Kotlin Spring) now enforce the schema's real nullability by
+  default — a non-null field stays non-null on getters/constructors/setters, instead of the
+  previous always-nullable model. Every type/interface also gets a generated `GL<Type>Projection`
+  companion interface (all fields nullable) to represent partially-fetched data. `@glServerLenient`
+  opts a type back into the old all-nullable behavior; `@glReturnsProjection` opts a resolver field
+  into returning `GL<Type>Projection` (with `DataFetchingEnvironment` auto-injected). Migration:
+  annotate legacy types/resolvers before upgrading if they relied on always-nullable fields.
+- **Unconditional identifier normalization (v5.0.0+, breaking change).** Every generated
+  identifier — field names, argument names, enum values, type/input/interface/union/enum names —
+  is unconditionally rewritten to the target language's canonical casing (lowerCamelCase fields,
+  SCREAMING_SNAKE Java/Kotlin enum values, PascalCase TypeScript enum values, PascalCase type
+  names). Not opt-in. Because generated identifiers can now diverge from wire names,
+  `toJson`/`fromJson` generation became mandatory on every serializer (previously suppressible via
+  a `generateJsonMethods` flag, now removed).
+- **Controllers return `Map`/`List<Map>` (v5.0.0+, breaking change).** Java Spring, Kotlin Spring,
+  and Express/Apollo controllers now serialize responses via the type's `toJson()` at the
+  controller boundary and return `Map<String, Object>` / `List<Map<String, Object>>` instead of
+  typed objects — service interfaces are unaffected. Java Spring controllers also bind mutation
+  input arguments as `Map<String, Object>`, converting via the input's `fromJson()`.
+- **Kotlin enum `fromJson` now throws on unknown values (v5.0.0+, breaking change).** Signature
+  changed from `fun fromJson(value: String?): T?` to `fun fromJson(value: String): T` — an
+  unrecognized wire value throws `IllegalArgumentException` instead of returning `null`.
+
+## Supported targets (as of v5.0.0)
 
 - Dart client (stable)
 - Flutter client (stable)
-- Java client (stable)
-- Spring Boot server (stable, MVC and reactive/WebFlux)
+- Java client (stable — blocking by default; optional reactive mode via `asyncStyle`: Reactor, RxJava3, Mutiny)
+- Spring Boot server (stable, MVC and reactive/WebFlux — Java and Kotlin targets, strict-by-default nullability)
 - TypeScript client (stable — fetch/axios, RxJS observables, WebSocket subscriptions)
 - Kotlin client (stable — coroutines, kotlinx.serialization, OkHttp WebSocket)
 - Express / Node.js server (planned)
@@ -164,9 +190,9 @@ type Mutation {
 - Java client (generated adapters, injectable HttpClient, no-generics API, builder pattern, file upload): https://graphlink.dev/docs/java-client.html
 - TypeScript client (fetch/axios adapters, RxJS observables, WebSocket subscriptions, Angular/React/Vue examples): https://graphlink.dev/docs/typescript-client.html
 - Kotlin client (coroutine-based queries/mutations/subscriptions, data classes, kotlinx.serialization, OkHttp WebSocket): https://graphlink.dev/docs/kotlin-client.html
-- Spring Boot server (MVC + reactive/WebFlux, service interfaces, file upload, security context propagation): https://graphlink.dev/docs/spring-server.html
+- Spring Boot server (MVC + reactive/WebFlux, Java and Kotlin targets, strict-by-default generation with GL<Type>Projection, Map-boundary controllers, service interfaces, file upload, security context propagation): https://graphlink.dev/docs/spring-server.html
 - Caching (@glCache, @glCacheInvalidate, tag invalidation, staleIfOffline): https://graphlink.dev/docs/caching.html
-- Directives (@glMapsTo, @glMapField, @glCache, @glCacheInvalidate, @glSkipOnServer forward mappings, and more): https://graphlink.dev/docs/directives.html
+- Directives (@glMapsTo, @glMapField, @glCache, @glCacheInvalidate, @glSkipOnServer forward mappings, @glServerLenient, @glReturnsProjection, @deprecated, and more): https://graphlink.dev/docs/directives.html
 - "@glSkipOnServer & @glSkipOnClient" (two-layer server-side access control, schema stripping, @SchemaMapping, @BatchMapping, mapTo, forward mappings, ID/object field-pair pattern for N+1-safe loading): https://graphlink.dev/docs/skip-directives.html
 - Configuration (all config keys for Dart, Java, TypeScript, Kotlin, Spring; autoGenerateQueriesFor for selective operation generation; autoGenerateQueriesArgumentLimit for propagated-arg cap; maxFragmentBodySize to skip oversized _all_fields fragments and their dependent auto-queries; reactive; useSpringSecurity; typeMappings; unknownScalarType fallback for unmapped custom scalars; CLI flags; YAML config): https://graphlink.dev/docs/configuration.html
 
