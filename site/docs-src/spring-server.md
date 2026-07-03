@@ -30,8 +30,6 @@ Set `"mode": "server"` and provide a `"spring"` section under `serverConfig`. Th
         "spring": {
           "basePackage":          "com.example.generated",
           "generateControllers":  true,
-          "generateInputs":       true,
-          "generateTypes":        true,
           "generateRepositories": false,
           "immutableInputFields": true,
           "immutableTypeFields":  false
@@ -58,8 +56,6 @@ Set `"mode": "server"` and provide a `"spring"` section under `serverConfig`. Th
       spring:
         basePackage: com.example.generated
         generateControllers: true
-        generateInputs: true
-        generateTypes: true
         generateRepositories: false
         immutableInputFields: true
         immutableTypeFields: false
@@ -68,8 +64,6 @@ Set `"mode": "server"` and provide a `"spring"` section under `serverConfig`. Th
 | Option | Description |
 |---|---|
 | `generateControllers` | Generates `@Controller` classes with `@QueryMapping`, `@MutationMapping`, `@SubscriptionMapping`, and `@Argument` on parameters. |
-| `generateInputs` | Generates input classes from `input` type definitions. |
-| `generateTypes` | Generates entity/response classes from `type` definitions. |
 | `generateRepositories` | When `true`, generates JPA `Repository` interfaces for types annotated with `@glRepository`. |
 | `immutableInputFields` | Input class fields are `final`. Recommended: `true`. |
 | `immutableTypeFields` | Type class fields are `final`. Set to `false` for Spring Boot — Spring's GraphQL runtime sets fields via setters. |
@@ -578,8 +572,6 @@ New in v5.0.0: set `"mode": "server"` and use a `"kotlinSpring"` section instead
           "inputAsDataClass": true,
           "blockingServices": true,
           "generateControllers": true,
-          "generateInputs": true,
-          "generateTypes": true,
           "generateRepositories": false
         }
       }
@@ -600,8 +592,6 @@ New in v5.0.0: set `"mode": "server"` and use a `"kotlinSpring"` section instead
         inputAsDataClass: true
         blockingServices: true
         generateControllers: true
-        generateInputs: true
-        generateTypes: true
         generateRepositories: false
     ```
 
@@ -611,4 +601,4 @@ New in v5.0.0: set `"mode": "server"` and use a `"kotlinSpring"` section instead
 | `inputAsDataClass` | `boolean` | `false` | Emit input types as `data class`. When `false`, uses `open class`. |
 | `blockingServices` | `boolean` | `true` | When `true`, controller methods wrap each service call in `withContext(Dispatchers.IO + SecurityCoroutineContext()) { ... }`, offloading blocking (e.g. JPA/JDBC) work off the coroutine dispatcher and propagating `SecurityContextHolder` across the switch. Set to `false` when your service layer is coroutine-native/non-blocking — methods are then emitted with no wrapping. |
 
-The remaining options (`generateControllers`, `generateInputs`, `generateTypes`, `generateRepositories`, `immutableInputFields`, `immutableTypeFields`, `generateSchema`, `schemaTargetPath`, `injectDataFetching`) behave the same as their Java Spring equivalents documented above.
+The remaining options (`generateControllers`, `generateRepositories`, `immutableInputFields`, `immutableTypeFields`, `generateSchema`, `schemaTargetPath`, `injectDataFetching`) behave the same as their Java Spring equivalents documented above.

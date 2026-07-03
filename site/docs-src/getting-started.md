@@ -274,8 +274,6 @@ Create a config file in your project root. GraphLink accepts **JSON** (`.json`),
             "spring": {
               "basePackage": "com.example.generated",
               "generateControllers": true,
-              "generateInputs": true,
-              "generateTypes": true,
               "generateRepositories": false,
               "immutableInputFields": true,
               "immutableTypeFields": false
@@ -302,8 +300,6 @@ Create a config file in your project root. GraphLink accepts **JSON** (`.json`),
           spring:
             basePackage: com.example.generated
             generateControllers: true
-            generateInputs: true
-            generateTypes: true
             generateRepositories: false
             immutableInputFields: true
             immutableTypeFields: false

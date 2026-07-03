@@ -175,8 +175,6 @@ class ExpressApolloServerConfig extends ServerLanguageConfig {
 abstract class SpringServerConfigBase extends ServerLanguageConfig {
   final String basePackage;
   final bool generateControllers;
-  final bool generateInputs;
-  final bool generateTypes;
   final bool generateRepositories;
   final bool generateSchema;
   final String? schemaTargetPath;
@@ -187,8 +185,6 @@ abstract class SpringServerConfigBase extends ServerLanguageConfig {
   SpringServerConfigBase({
     required this.basePackage,
     required this.generateControllers,
-    required this.generateInputs,
-    required this.generateTypes,
     required this.generateRepositories,
     required this.generateSchema,
     required this.immutableInputFields,
@@ -214,8 +210,6 @@ class SpringServerConfig extends SpringServerConfigBase {
   SpringServerConfig({
     required super.basePackage,
     required super.generateControllers,
-    required super.generateInputs,
-    required super.generateTypes,
     required super.generateRepositories,
     required this.inputAsRecord,
     required this.typeAsRecord,
@@ -233,8 +227,6 @@ class SpringServerConfig extends SpringServerConfigBase {
     return SpringServerConfig(
       basePackage: json['basePackage'] as String,
       generateControllers: (json['generateControllers'] as bool?) ?? true,
-      generateInputs: (json['generateInputs'] as bool?) ?? true,
-      generateTypes: (json['generateTypes'] as bool?) ?? true,
       generateRepositories: (json['generateRepositories'] as bool?) ?? false,
       inputAsRecord: (json['inputAsRecord'] as bool?) ?? false,
       typeAsRecord: (json['typeAsRecord'] as bool?) ?? false,
@@ -265,8 +257,6 @@ class KotlinSpringServerConfig extends SpringServerConfigBase {
   KotlinSpringServerConfig({
     required super.basePackage,
     required super.generateControllers,
-    required super.generateInputs,
-    required super.generateTypes,
     required super.generateRepositories,
     required this.inputAsDataClass,
     required this.typeAsDataClass,
@@ -282,8 +272,6 @@ class KotlinSpringServerConfig extends SpringServerConfigBase {
     return KotlinSpringServerConfig(
       basePackage: json['basePackage'] as String,
       generateControllers: (json['generateControllers'] as bool?) ?? true,
-      generateInputs: (json['generateInputs'] as bool?) ?? true,
-      generateTypes: (json['generateTypes'] as bool?) ?? true,
       generateRepositories: (json['generateRepositories'] as bool?) ?? false,
       inputAsDataClass: (json['inputAsDataClass'] as bool?) ?? false,
       typeAsDataClass: (json['typeAsDataClass'] as bool?) ?? false,
