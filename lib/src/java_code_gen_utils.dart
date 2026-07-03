@@ -291,9 +291,11 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
     return boxed;
   }
 
-  /// Returns `List<...>`, wrapping/boxing the element type via [wildcardExtends].
-  static String listOf(GLParser grammar, String token) =>
-      "List<${wildcardExtends(grammar, token)}>";
+  /// Returns `List<...>`, wrapping/boxing the element type via [wildcardExtends]
+  /// (or just boxing, when [wildcard] is false — e.g. for mapified/JSON types
+  /// that have no covariant class hierarchy to protect).
+  static String listOf(GLParser grammar, String token, {bool wildcard = true}) =>
+      "List<${wildcard ? wildcardExtends(grammar, token) : convertPrimitiveToBoxed(token)}>";
 
   /// Wraps [token] in [flavor]'s deferred-single type (`Mono`/`Single`/`Uni`),
   /// or returns the bare boxed/wildcarded type when [flavor] is blocking.
@@ -309,8 +311,9 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
   /// Wraps [token] in [flavor]'s deferred-many type (`Flux`/`Observable`/
   /// `Multi`). Used only for subscriptions (genuine streams).
   static String manyOf(
-      GLParser grammar, String token, JavaReactiveFlavor flavor) {
-    final inner = wildcardExtends(grammar, token);
+      GLParser grammar, String token, JavaReactiveFlavor flavor,
+      {bool wildcard = true}) {
+    final inner = wildcard ? wildcardExtends(grammar, token) : convertPrimitiveToBoxed(token);
     return flavor.many == null ? inner : "${flavor.many}<$inner>";
   }
 
@@ -319,15 +322,18 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
       singleOf(grammar, token, JavaReactiveFlavor.reactor, wildcard: wildcard);
 
   /// Returns `Flux<...>`, wrapping/boxing the element type via [wildcardExtends].
-  static String fluxOf(GLParser grammar, String token) =>
-      manyOf(grammar, token, JavaReactiveFlavor.reactor);
+  static String fluxOf(GLParser grammar, String token, {bool wildcard = true}) =>
+      manyOf(grammar, token, JavaReactiveFlavor.reactor, wildcard: wildcard);
 
   /// Returns `Map<K, V>`, boxing the key type and wrapping/boxing the value
   /// type via [wildcardExtends]. The key is left invariant (no wildcard) —
   /// `Map<K, V>` is a valid covariant override of `Map<K, ? extends
   /// VProjection>` when `V <: VProjection`, same reasoning as [listOf].
-  static String mapOf(GLParser grammar, String keyToken, String valueToken) =>
-      "Map<${convertPrimitiveToBoxed(keyToken)}, ${wildcardExtends(grammar, valueToken)}>";
+  /// Pass [wildcard]: false to skip the `? extends` on the value too (e.g.
+  /// for mapified/JSON types, which have no covariant hierarchy).
+  static String mapOf(GLParser grammar, String keyToken, String valueToken,
+          {bool wildcard = true}) =>
+      "Map<${convertPrimitiveToBoxed(keyToken)}, ${wildcard ? wildcardExtends(grammar, valueToken) : convertPrimitiveToBoxed(valueToken)}>";
 
 }
 
