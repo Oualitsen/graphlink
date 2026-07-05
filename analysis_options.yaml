@@ -13,6 +13,9 @@ analyzer:
   exclude:
     - examples/**
 
+formatter: 
+  page_width: 150
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`

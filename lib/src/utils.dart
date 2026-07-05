@@ -102,8 +102,12 @@ const _primitiveToBoxed = {
   'void': 'Void'
 };
 
-String convertPrimitiveToBoxed(String type) {
+String _convertPrimitiveToBoxed(String type) {
   return _primitiveToBoxed[type] ?? type;
+}
+
+extension JavaExt on String {
+  String get toBoxedType => _convertPrimitiveToBoxed(this);
 }
 
 bool typeIsJavaPrimitive(String type) {

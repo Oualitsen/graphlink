@@ -17,6 +17,14 @@ class GLField with GLDirectivesMixin, CodeNameMixin {
   List<GLArgumentDefinition>? _cachedArguments;
   bool? _containsSkipOrIncludeDirective;
 
+  /// Set on a field returned by Spring controller return-type mappification
+  /// (e.g. an enum field retyped to `String`, or a projectable type retyped
+  /// to `Map<String, Object>`). Points back to the real (pre-mappification)
+  /// type so the controller body knows what `.toJson()` conversion, if any,
+  /// to apply to the value the service layer returns. Null for every field
+  /// that wasn't mappified.
+  GLType? originalType;
+
   @override
   String get wireName => name.token;
 
@@ -29,20 +37,37 @@ class GLField with GLDirectivesMixin, CodeNameMixin {
     required List<GLDirectiveValue> directives,
   }) {
     directives.forEach(addDirective);
-    arguments.forEach(_addArgument);
+    arguments.forEach(addArgument);
   }
 
-  void _addArgument(GLArgumentDefinition arg) {
+  void addArgument(GLArgumentDefinition arg) {
     _arguments[arg.token] = arg;
     _cachedArguments = null;
   }
+
+  void removeArgument(String token) {
+    _arguments.remove(token);
+    _cachedArguments = null;
+  }
+
 
   GLArgumentDefinition? getArgumentByName(String name) {
     return _arguments[name];
   }
 
-  List<GLArgumentDefinition> get arguments =>
-      _cachedArguments ??= _arguments.values.toList();
+  /// Arguments sorted by original declaration order. Insertion order into
+  /// `_arguments` already reflects that in the common case, but a
+  /// replaced/renamed argument (e.g. `fooAsMap` swapped in for `foo` during
+  /// Spring controller mappification) is re-inserted at the end — sorting by
+  /// [GLArgumentDefinition.effectiveDeclarationOrder] keeps such replacements
+  /// at their original position instead.
+  List<GLArgumentDefinition> get arguments {
+    if (_cachedArguments != null) return _cachedArguments!;
+    final sorted = _arguments.values.toList()
+      ..sort((a, b) =>
+          a.effectiveDeclarationOrder.compareTo(b.effectiveDeclarationOrder));
+    return _cachedArguments = sorted;
+  }
 
   @override
   bool operator ==(Object other) {
@@ -81,10 +106,10 @@ class GLField with GLDirectivesMixin, CodeNameMixin {
     return GLField(
       name: name,
       type: newType,
-      arguments: arguments,
+      arguments: [...arguments],
       initialValue: initialValue,
       documentation: documentation,
-      directives: getDirectives(),
+      directives: [...getDirectives()],
     );
   }
 
@@ -102,4 +127,5 @@ class GLField with GLDirectivesMixin, CodeNameMixin {
       }
     }
   }
+
 }

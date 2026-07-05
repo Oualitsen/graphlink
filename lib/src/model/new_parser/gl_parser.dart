@@ -13,6 +13,7 @@ import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_scalar_definition.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
+import 'package:graphlink/src/model/gl_collection_imports.dart';
 import 'package:graphlink/src/model/gl_schema_mapping.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/gl_type.dart';
@@ -31,6 +32,7 @@ import 'package:graphlink/src/gl_grammar_cache_extension.dart';
 import 'package:graphlink/src/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/gl_grammar_maps_to_extension.dart';
 import 'package:graphlink/src/gl_grammar_extension.dart';
+import 'package:graphlink/src/gl_grammar_mapped_to_type_extension.dart';
 import 'package:graphlink/src/gl_grammar_annotation_extension.dart';
 import 'package:graphlink/src/gl_grammar_service_extension.dart';
 import 'package:graphlink/src/gl_grammar_fragment_extension.dart';
@@ -260,6 +262,14 @@ class GLParser {
   /// so they don't collide; see `_argumentValuesForField`.
   final Lazy<Set<String>> ambiguousArgKeysCache = Lazy();
 
+  /// Target-language import strings for the `List`/`Map` collection types.
+  /// Resolved once from the generator config in `grammar_factory.dart`; `null`
+  /// entries mean the target language's collection type needs no import
+  /// (Kotlin, Dart, TypeScript). Mirrored onto [GLType.collectionImportsConfig]
+  /// in the constructor so every [GLListType]/[GLMapType] can compute its
+  /// imports lazily on read, without an eager tree-walk.
+  final GLCollectionImports collectionImports;
+
   /// Naming convention applied to field and enum-value identifiers before
   /// keyword-safe sanitization. `null` = identity (no casing transformation).
   final NamingConvention? naming;
@@ -298,11 +308,13 @@ class GLParser {
     this.captureErrors = false,
     this.autoQueryArgumentLimit = 200,
     this.maxFragmentBodySize = 8192,
+    this.collectionImports = GLCollectionImports.none,
   })  : _parameterReservedWords = parameterReservedWords,
         assert(
           (!autoGenerateQueries && autoGenerateQueriesFor == null) || generateAllFieldsFragments,
           'autoGenerateQueries and autoGenerateQueriesFor both require generateAllFieldsFragments: true',
         ) {
+    GLType.collectionImportsConfig = collectionImports;
     serializer = GLGraphqlSerializer(this);
   }
 
@@ -337,6 +349,9 @@ class GLParser {
     validateTypeReferences();
     validateSkipOnServerMapTo();
     validateTypeFieldSkipOnServerDirectives();
+    if (mode == CodeGenerationMode.server) {
+      populateMappedToTypes();
+    }
     convertUnionsToInterfaces();
     fillInterfaceImplementations();
     setDirectivesDefaultValues();

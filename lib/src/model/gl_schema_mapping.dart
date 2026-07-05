@@ -1,11 +1,16 @@
+import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_field.dart';
+import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/token_info.dart';
 import 'package:graphlink/src/extensions.dart';
 
 class GLSchemaMapping {
   final GLTypeDefinition type;
-  final GLField field;
+  GLField field;
+  final GLSchemaMapping? serviceMapping;
 
   ///
   /// when true, the generator should generate a @BatchMapping instead of @SchemaMapping (when false)
@@ -39,16 +44,30 @@ class GLSchemaMapping {
     this.forbid = false,
     this.identity = false,
     this.forwarded = false,
+    this.serviceMapping,
     String? key
-  }): _key = key ??  "${type.token.firstLow}${field.name.token.firstUp}";
+  }): _key = key ??  "${type.token.firstLow}${field.name.token.firstUp}" {
+    final glType = GLType(type.tokenInfo, false);
+    if(!forbid) {
+      field.addArgument(GLArgumentDefinition("value".toToken(), (batch ?? false) ? GLListType(glType, false) : glType, []));
+    }
+  }
 
   String get key => _key;
 
+  /// Replaces [field]'s type with [newType], keeping the field's name,
+  /// arguments, directives and nullability.
+  void replaceFieldType(String newType) {
+    field = field.ofType(field.type.ofNewName(TokenInfo.ofString(newType)));
+  }
+
   
+
   /// Returns a copy of this mapping with [type] renamed to [newTypeName] and
   /// [field]'s type renamed to [newFieldTypeName].
-  GLSchemaMapping ofNewTypes(String newTypeName, String newFieldTypeName, String key) {
+  GLSchemaMapping ofNewTypes(GLSchemaMapping serviceMapping, String newTypeName, String newFieldTypeName, String key) {
     return GLSchemaMapping(
+      serviceMapping: serviceMapping,
       type: GLTypeDefinition(
         name: type.tokenInfo.ofNewName(newTypeName),
         nameDeclared: type.nameDeclared,
@@ -67,5 +86,13 @@ class GLSchemaMapping {
       forwarded: forwarded,
       key: key,
     );
+  }
+
+  GLTypeDefinition getMappedToType(GLParser parser) {
+    final mappedToTypeName = type.getDirectiveByName(glSkipOnServer)?.getArgValueAsString(glMapTo);
+    if(mappedToTypeName == null) {
+      return type;
+    }
+    return parser.types[mappedToTypeName]!;
   }
 }

@@ -1,5 +1,6 @@
 import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_controller.dart';
 import 'package:graphlink/src/model/gl_service.dart';
@@ -31,7 +32,8 @@ extension GLGrammarServiceExtension on GLParser {
           nameDeclared: true,
           directives: [],
           fields: [],
-          interfaceNames: {});
+          interfaceNames: {},
+          parser: this);
       service.addField(field);
       service.setFieldType(field.name.token, type);
 
@@ -138,6 +140,27 @@ extension GLGrammarServiceExtension on GLParser {
     return null;
   }
 
+  /// The service-facing field for [mapping]: a synthetic [GLField] named
+  /// after [GLSchemaMapping.key], carrying the mapping's already-resolved
+  /// return type (batch mappings wrapped as `GLMapType(keyType, valueType)`)
+  /// and its `value` argument. Lets the service interface be serialized
+  /// through the standard field-based serializer path instead of a bespoke
+  /// per-mapping method builder.
+  GLField _mappingServiceField(GLSchemaMapping mapping) {
+    GLType returnType = mapping.field.type;
+    if (mapping.isBatch) {
+      final keyType = GLType(mapping.getMappedToType(this).tokenInfo, false);
+      returnType = GLMapType(keyType, mapping.field.type, false);
+    }
+    
+    return GLField(
+      name: mapping.key.toToken(),
+      type: returnType,
+      arguments: mapping.field.arguments.map((arg) => GLArgumentDefinition(arg.tokenInfo, arg.type, [])).toList(),
+      directives: [...mapping.field.getDirectives().where((e) => e.token == glReturnsProjection)],
+    );
+  }
+
   void generateSchemaMappings() {
     types.values.forEach(genSchemaMappings);
     // generate Services and controllers for mappings only
@@ -161,8 +184,12 @@ extension GLGrammarServiceExtension on GLParser {
                 nameDeclared: false,
                 fields: [],
                 directives: [],
-                interfaceNames: {});
+                interfaceNames: {},
+                parser: this);
         serviceMappings.forEach(service.addMapping);
+        for (var m in serviceMappings) {
+          service.addField(_mappingServiceField(m));
+        }
         services[serviceName] = service;
       }
 

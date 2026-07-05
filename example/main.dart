@@ -111,7 +111,7 @@ Future<void> demoListPostPreviews(GraphLinkClient client) async {
   print('\n── listPostPreviews (projection: no body field) ──');
 
   final res = await client.queries.listPostPreviews(
-    status: PostStatus.PUBLISHED,
+    status: PostStatus.published,
   );
 
   for (final post in res.listPosts) {
@@ -168,7 +168,7 @@ Future<(String, String)> demoMutations(GraphLinkClient client) async {
 
   // Create user
   final userRes = await client.mutations.createUser(
-    input: CreateUserInput(
+    input: const CreateUserInput(
       username: 'alice',
       email: 'alice@example.com',
       bio: 'GraphQL enthusiast',
@@ -179,7 +179,7 @@ Future<(String, String)> demoMutations(GraphLinkClient client) async {
 
   // Create post
   final postRes = await client.mutations.createPost(
-    input: CreatePostInput(
+    input: const CreatePostInput(
       title: 'Getting started with GraphLink',
       body: 'GraphLink generates a fully typed client from your GraphQL schema...',
       tags: ['graphql', 'dart', 'codegen'],

@@ -139,17 +139,27 @@ class TypeScriptSerializer extends GLSerializer {
   String serializeType(GLType def, bool forceNullable, [bool _ = false]) {
     final nullable = forceNullable || def.nullable;
 
-    if (def is GLListType) {
+    String expr;
+    if (def is GLMapType) {
+      expr = 'Map<${serializeType(def.keyType, false)}, ${serializeType(def.valueType, false)}>';
+    } else if (def is GLListType) {
       final elementTs = serializeType(def.inlineType, false);
       // Wrap element in parens when it already contains `|` (i.e. it is nullable)
-      final listExpr =
-          def.inlineType.nullable ? '($elementTs)[]' : '$elementTs[]';
-      return nullable ? '$listExpr | null' : listExpr;
+      expr = def.inlineType.nullable ? '($elementTs)[]' : '$elementTs[]';
+    } else {
+      final token = def.token;
+      expr = getTypeNameFromGQExternal(token) ?? resolveCodeName(token);
     }
 
-    final token = def.token;
-    final tsType = getTypeNameFromGQExternal(token) ?? resolveCodeName(token);
-    return nullable ? '$tsType | null' : tsType;
+    final wrapper = def.wrapper;
+    if (wrapper != null) {
+      if (def.wrapperImport != null) {
+        grammar.getTokenByKey(def.token)?.addImport(def.wrapperImport!);
+      }
+      expr = '$wrapper<$expr>';
+    }
+
+    return nullable ? '$expr | null' : expr;
   }
 
   // ── Fields ─────────────────────────────────────────────────────────────────
@@ -299,8 +309,6 @@ class TypeScriptSerializer extends GLSerializer {
 
   @override
   String serializeImport(String import) {
-    // _list is a Dart/Java sentinel for list imports — arrays are built-in in TS
-    if (import == importList) return '';
     return "import '$import';";
   }
 

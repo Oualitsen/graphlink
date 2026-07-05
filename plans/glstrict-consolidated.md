@@ -409,15 +409,10 @@ For server methods, the return-type emission is:
 
 ---
 
-## 10. The two small serializer changes to nail
+## 10. The one small serializer changes to nail
 
-1. **Java `List<? extends GLXProjection>` wildcard.** List rendering lives in
-   `java_serializer.dart` `serializeTypeReactive` (the `_listOf(...)` call, ~line 251). When
-   rendering a **projection-interface getter** whose element type is an object/interface type,
-   emit `List<? extends GLElementProjection>` instead of `List<GLElementProjection>`. Localized:
-   gate on "serializing a projection interface's list getter." Kotlin and TS need nothing
-   (covariant `List<out>` / covariant arrays).
-2. **Java record accessor naming — decided: match the entity kind (already supported).** When
+
+- **Java record accessor naming — decided: match the entity kind (already supported).** When
    `<Type>` is a `record`, `GL<Type>Projection` emits record-style accessors (`id()`, not `getId()`)
    so the record satisfies the interface without explicit getters; when `<Type>` is a POJO/class,
    the interface emits JavaBean getters (`getId()`). The serializer already chooses accessor style

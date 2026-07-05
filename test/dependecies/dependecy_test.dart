@@ -48,21 +48,7 @@ void main() async {
         contains("Vehicle"));
   });
 
-  test("imports list", () {
-    final GLParser g = GLParser(generateAllFieldsFragments: true);
-    g.parse('''
-  type Person {
-    id: String
-    vehicle: [Vehicle]
-  }
-  interface Vehicle {
-    make: String
-  }
-''');
-
-    var person = g.getType("Person".toToken());
-    expect(person.getImports(g), contains(importList));
-  });
+  
 
   test("type depends on enum", () {
     final GLParser g = GLParser(generateAllFieldsFragments: true);

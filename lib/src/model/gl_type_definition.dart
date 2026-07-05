@@ -36,6 +36,13 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin, CodeNam
   // interface) from a real GraphQL `interface`/`union` (TS: union alias).
   bool isServerProjection = false;
 
+  /// Resolved `@glSkipOnServer(mapTo: "X")` target (a type or interface — both
+  /// are `GLTypeDefinition`), or `null` if this type has no such mapping.
+  /// Populated once in server mode by `populateMappedToTypes()` right after
+  /// `validateSkipOnServerMapTo()` / `validateTypeFieldSkipOnServerDirectives()`
+  /// confirm the mapping is valid — never computed in client mode.
+  GLTypeDefinition? mappedToType;
+
 
   GLTypeDefinition({
     required TokenInfo name,

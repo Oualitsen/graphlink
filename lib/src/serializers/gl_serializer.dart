@@ -50,12 +50,14 @@ abstract class GLSerializer {
   /// (e.g. a built-in scalar), letting the type-map lookup in [serializeType]
   /// handle it as usual.
   String resolveCodeName(String wireToken) {
-    return grammar.types[wireToken]?.codeName ??
-        grammar.projectedTypes[wireToken]?.codeName ??
+    final typeOrInterface = grammar.types[wireToken] ?? grammar.interfaces[wireToken];
+    if (typeOrInterface != null) {
+      return typeOrInterface.mappedToType?.codeName ?? typeOrInterface.codeName;
+    }
+    return grammar.projectedTypes[wireToken]?.codeName ??
         grammar.inputs[wireToken]?.codeName ??
         grammar.enums[wireToken]?.codeName ??
         grammar.unions[wireToken]?.codeName ??
-        grammar.interfaces[wireToken]?.codeName ??
         wireToken;
   }
 

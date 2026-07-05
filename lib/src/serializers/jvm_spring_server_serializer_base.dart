@@ -116,7 +116,8 @@ abstract class JvmSpringServerSerializerBase extends ServerSerializer
           );
         }
         final batch = skipOnServer.getArgValue(glBatch) as bool?;
-        if (batch == true) {
+        // @TODO fix this, we must find a better way to handle the batch with arguments
+        if (batch == true && field.arguments.length >= 2) {
           throw ParseException(
             "Field '${field.name}' on type '${type.token}' has arguments and cannot use @BatchMapping — "
             "change to $glSkipOnServer(batch: false) to generate a @SchemaMapping instead",

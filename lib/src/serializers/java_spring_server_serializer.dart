@@ -19,21 +19,16 @@ class JavaSpringServerSerializer extends JvmSpringServerSerializerBase {
   final String? defaultRepositoryBase;
 
   JavaSpringServerSerializer._(
-    GLParser grammar,
-    JavaSpringControllerSerializer ctrl,
+    super.grammar,
+    JavaSpringControllerSerializer super.ctrl,
     this.serializer, {
-    required String packageName,
+    required super.packageName,
     this.defaultRepositoryBase,
-    bool generateSchema = false,
-    bool injectDataFetching = false,
-    bool reactive = false,
-    bool useSpringSecurity = false,
-  }) : super(grammar, ctrl,
-            packageName: packageName,
-            generateSchema: generateSchema,
-            injectDataFetching: injectDataFetching,
-            reactive: reactive,
-            useSpringSecurity: useSpringSecurity);
+    super.generateSchema,
+    super.injectDataFetching,
+    super.reactive,
+    super.useSpringSecurity,
+  });
 
   factory JavaSpringServerSerializer(
     GLParser grammar, {
@@ -109,20 +104,6 @@ class JavaSpringServerSerializer extends JvmSpringServerSerializerBase {
 
   @override
   String serializeServiceBody(GLService service) {
-    var mappings = service.serviceMapping;
-    var buffer = StringBuffer();
-    buffer.writeln(
-        codeGenUtils.createInterface(interfaceName: service.token, statements: [
-      '',
-      ...service.fields
-          .map((n) => ctrl.serializeMethodDeclaration(
-              n, service.getTypeByFieldName(n.name.token)!, service))
-          .map((e) => "${e};"),
-      '',
-      ...mappings
-          .map((m) => ctrl.serializeServiceMappingImplMethodHeader(m, service))
-          .map((e) => "${e};")
-    ]));
-    return buffer.toString();
+    return serializer.serializeInterface(service, getters: false, skipJsonConversionMethods: true);
   }
 }

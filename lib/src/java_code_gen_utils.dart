@@ -272,7 +272,7 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
   /// element type of `Mono<>`, `Flux<>` and `List<>` so a covariant
   /// implementor (e.g. `User` for `UserProjection`) remains a valid override.
   static String wildcardExtends(GLParser grammar, String token) {
-    final boxed = convertPrimitiveToBoxed(token);
+    final boxed = token.toBoxedType;
     // The `? extends` wildcard exists solely so a server implementor (e.g.
     // `User implements UserProjection`) can covariantly override a method
     // returning `List<? extends CarProjection>` — Java generics are invariant,
@@ -295,7 +295,7 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
   /// (or just boxing, when [wildcard] is false — e.g. for mapified/JSON types
   /// that have no covariant class hierarchy to protect).
   static String listOf(GLParser grammar, String token, {bool wildcard = true}) =>
-      "List<${wildcard ? wildcardExtends(grammar, token) : convertPrimitiveToBoxed(token)}>";
+      "List<${wildcard ? wildcardExtends(grammar, token) : token.toBoxedType}>";
 
   /// Wraps [token] in [flavor]'s deferred-single type (`Mono`/`Single`/`Uni`),
   /// or returns the bare boxed/wildcarded type when [flavor] is blocking.
@@ -304,7 +304,7 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
   static String singleOf(
       GLParser grammar, String token, JavaReactiveFlavor flavor,
       {bool wildcard = true}) {
-    final inner = wildcard ? wildcardExtends(grammar, token) : convertPrimitiveToBoxed(token);
+    final inner = wildcard ? wildcardExtends(grammar, token) : token.toBoxedType;
     return flavor.single == null ? inner : "${flavor.single}<$inner>";
   }
 
@@ -313,7 +313,7 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
   static String manyOf(
       GLParser grammar, String token, JavaReactiveFlavor flavor,
       {bool wildcard = true}) {
-    final inner = wildcard ? wildcardExtends(grammar, token) : convertPrimitiveToBoxed(token);
+    final inner = wildcard ? wildcardExtends(grammar, token) : token.toBoxedType;
     return flavor.many == null ? inner : "${flavor.many}<$inner>";
   }
 
@@ -333,7 +333,7 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
   /// for mapified/JSON types, which have no covariant hierarchy).
   static String mapOf(GLParser grammar, String keyToken, String valueToken,
           {bool wildcard = true}) =>
-      "Map<${convertPrimitiveToBoxed(keyToken)}, ${wildcard ? wildcardExtends(grammar, valueToken) : convertPrimitiveToBoxed(valueToken)}>";
+      "Map<${keyToken.toBoxedType}, ${wildcard ? wildcardExtends(grammar, valueToken) : valueToken.toBoxedType}>";
 
 }
 

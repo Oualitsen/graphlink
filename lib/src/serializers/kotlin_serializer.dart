@@ -8,7 +8,6 @@ import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_input_mapping.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_token.dart';
-import 'package:graphlink/src/model/gl_token_with_fields.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
@@ -62,14 +61,26 @@ class KotlinSerializer extends GLSerializer {
 
   @override
   String serializeType(GLType def, bool forceNullable) {
-    if (def is GLListType) {
+    String type;
+    if (def is GLMapType) {
+      // kotlin.collections.Map is part of Kotlin's implicit default imports
+      // (same as List/Set) — no addImport call needed, unlike Java's java.util.Map.
+      type = 'Map<${serializeType(def.keyType, false)}, ${serializeType(def.valueType, false)}>';
+    } else if (def is GLListType) {
       final inner = serializeType(def.inlineType, false);
-      final type = _listOf(inner);
-      return (def.nullable || forceNullable) ? '$type?' : type;
+      type = _listOf(inner);
+    } else {
+      final token = def.token;
+      type = getTypeNameFromGQExternal(token) ?? resolveCodeName(token);
     }
-    final token = def.token;
-    final mapped = getTypeNameFromGQExternal(token) ?? resolveCodeName(token);
-    return (def.nullable || forceNullable) ? '$mapped?' : mapped;
+    final wrapper = def.wrapper;
+    if (wrapper != null) {
+      if (def.wrapperImport != null) {
+        grammar.getTokenByKey(def.token)?.addImport(def.wrapperImport!);
+      }
+      type = '$wrapper<$type>';
+    }
+    return (def.nullable || forceNullable) ? '$type?' : type;
   }
 
   // ── Field serialization ─────────────────────────────────────────────────────
@@ -638,8 +649,6 @@ class KotlinSerializer extends GLSerializer {
 
   @override
   String serializeImport(String import) {
-    // importList (_list) is a marker for List<T> — built-in in Kotlin, no import needed
-    if (import == importList) return '';
     return 'import $import';
   }
 

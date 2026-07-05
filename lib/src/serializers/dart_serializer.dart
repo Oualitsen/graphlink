@@ -143,11 +143,22 @@ class DartSerializer extends GLSerializer {
     if (forceNullable || def.nullable) {
       postfix = "?";
     }
-    if (def is GLListType) {
-      return "List<${serializeType(def.inlineType, false)}>$postfix";
+    String dartTpe;
+    if (def is GLMapType) {
+      dartTpe = "Map<${serializeType(def.keyType, false)}, ${serializeType(def.valueType, false)}>";
+    } else if (def is GLListType) {
+      dartTpe = "List<${serializeType(def.inlineType, false)}>";
+    } else {
+      final token = def.token;
+      dartTpe = getTypeNameFromGQExternal(token) ?? resolveCodeName(token);
     }
-    final token = def.token;
-    var dartTpe = getTypeNameFromGQExternal(token) ?? resolveCodeName(token);
+    final wrapper = def.wrapper;
+    if (wrapper != null) {
+      if (def.wrapperImport != null) {
+        grammar.getTokenByKey(def.token)?.addImport(def.wrapperImport!);
+      }
+      dartTpe = "$wrapper<$dartTpe>";
+    }
     return "$dartTpe$postfix";
   }
 
@@ -673,9 +684,6 @@ class DartSerializer extends GLSerializer {
 
   @override
   String serializeImport(String import) {
-    if (import == importList) {
-      return "";
-    }
     return """import '$import';""";
   }
 
