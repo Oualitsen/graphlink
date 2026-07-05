@@ -129,22 +129,16 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
   void _mappifyControllers() {
     for (var ctrl in grammar.controllers.values) {
       for (var field in [...ctrl.fields]) {
-        if (field.type.isList) ctrl.addImport(JavaImports.list);
         final mapped = ctrl.mappifyForJvmController(field);
         ctrl.replaceField(mapped);
-        _addImportsIfNeeded(ctrl, mapped);
       }
       for (var mapping in ctrl.mappings) {
         mapping.field = ctrl.mappifyForJvmController(mapping.field);
-        _addImportsIfNeeded(ctrl, mapping.field);
       }
     }
   }
 
-  void _addImportsIfNeeded(GLController ctrl, GLField field) {
-    final needsMap = field.type is GLMapType || field.arguments.any((a) => a.type is GLMapType);
-    if (needsMap) ctrl.addImport(JavaImports.map);
-  }
+  
 
   /// Converts [expr] — a Java expression evaluating to the real domain value
   /// the service layer returned for [field] — into the shape the mappified
@@ -177,9 +171,6 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
   String _serializeControllerBody(GLController ctrl) {
     final controllerName = ctrl.token;
     final serviceInstanceName = ctrl.serviceName.firstLow;
-    if (!reactive) {
-      ctrl.addImport(JavaImports.completableFuture);
-    }
 
     var decorators = serializer.serializeDecorators(ctrl.getDirectives()).trim();
 
@@ -258,7 +249,6 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
         'return ${_mapReactiveResult(method, serviceCall, context)};',
       ];
     } else {
-      context.addImport(JavaImports.completableFuture);
       statements = [
         ...inputConversions,
         ..._wrapInCompletableFuture([
@@ -397,8 +387,6 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     final conversions = _buildArgumentConversions(mapping.field.arguments, context);
     final valueCodeName = _resolvedArgumentCodeName(mapping.field.arguments, 'value');
 
-    final wrapperImport = mapping.field.type.wrapperImport;
-    if (wrapperImport != null) context.addImport(wrapperImport);
 
     final String returnType;
     final List<String> statements;
@@ -437,9 +425,6 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     final getterCall =
         '$valueCodeName.${JavaSerializer.getterCall(mapping.field, isRecord: serializer.typesAsRecords, isBoolean: fieldType == 'boolean')}';
 
-    final wrapperImport = mapping.field.type.wrapperImport;
-    if (wrapperImport != null) context.addImport(wrapperImport);
-
     final resultExpr = _serviceResultToJson(mapping.field, getterCall, context);
     final statements = mapping.field.type.wrapper == 'Mono'
         ? [...conversions.declarations, 'return Mono.just($resultExpr);']
@@ -457,11 +442,9 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
 
   List<String> _buildBatchResultConversion(GLSchemaMapping mapping, String sourceMapExpr, GLToken context) {
     context.addImport(JavaImports.hashMap);
-    context.addImport(JavaImports.map);
     final serviceMapping = mapping.serviceMapping!;
     final mappedToType = serviceMapping.getMappedToType(grammar);
     final fieldTypeToken = grammar.getTokenByKey(serviceMapping.field.type.token);
-    context.addImportDependecy(mappedToType);
     if (fieldTypeToken != null && !grammar.scalars.containsKey(fieldTypeToken.token)) {
       context.addImportDependecy(fieldTypeToken);
     }
@@ -483,12 +466,6 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
 
   String _getMappingArgument(GLSchemaMapping mapping, GLToken context) {
     return mapping.field.arguments
-        .map((arg) {
-          if (arg.type.isList) {
-            context.addImport(JavaImports.list);
-          }
-          return arg;
-        })
         .map((arg) => serializer.serializeArgument(arg))
         .join(", ");
   }
@@ -499,8 +476,6 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     buffer.writeln(getAnnotationForMapping(mapping, context));
     buffer.write("public ");
 
-    final wrapperImport = mapping.field.type.wrapperImport;
-    if (wrapperImport != null) context.addImport(wrapperImport);
     final returnType = serializer.serializeType(mapping.field.type);
 
     buffer.write("${returnType.toBoxedType} ${mapping.key}(${_getMappingArgument(mapping, context)}");
@@ -532,26 +507,5 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
   String serializeArgs(Iterable<GLArgumentDefinition> args) {
     return args.map(serializeArg).join(", ");
   }
-
-  String resolveArgType(GLArgumentDefinition arg, GLToken context) {
-    final uploadNames = grammar.uploadScalarNames;
-    if (uploadNames.contains(arg.type.firstType.token)) {
-      if (reactive) {
-        context.addImport(SpringImports.filePart);
-        if (arg.type.isList) {
-          context.addImport(JavaImports.list);
-          return 'List<FilePart>';
-        }
-        return 'FilePart';
-      } else {
-        context.addImport(SpringImports.multipartFile);
-        if (arg.type.isList) {
-          context.addImport(JavaImports.list);
-          return 'List<MultipartFile>';
-        }
-        return 'MultipartFile';
-      }
-    }
-    return serializer.serializeType(arg.type);
-  }
+  
 }
