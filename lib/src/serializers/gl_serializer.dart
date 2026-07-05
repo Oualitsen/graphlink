@@ -115,7 +115,7 @@ abstract class GLSerializer {
 
   String doSerializeField(GLField def, bool immutable, bool isTypeField,
       {bool isOverride = false});
-  String serializeType(GLType def, bool forceNullable);
+  String serializeType(GLType def);
 
   /// Returns the language-specific deprecation marker for [field] (e.g. an
   /// annotation or JSDoc comment), or an empty string if the field is not

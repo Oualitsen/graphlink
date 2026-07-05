@@ -23,7 +23,7 @@ type Article {
     id: ID!
     title: String!
     type: ArticleType
-    authorId: ID! @glSkipOnClient
+    authorId: ID! 
     webSite: WebSite
     author: Author! @glSkipOnServer(batch: false) 
     authorList: [Author!] @glSkipOnServer(batch: false) 
@@ -45,7 +45,7 @@ input UpdateArticleInput {
 type Query {
     getAuthor(id: ID!): Author
     getArticle(id: ID!): Article!
-    listAuthors: [Author]
+    listAuthors: [Author!]!
     listArticles: [Article!]!
     getProjectedArticle: Article! @glReturnsProjection
 

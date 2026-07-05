@@ -717,13 +717,16 @@ class GLParser {
     final directives = _parseDirectiveValueList(fieldScope);
     return GLField(
       name: TokenInfo.ofLexer(name, _lexer),
-      type: type,
+      type: _hasIncludeOrSkip(directives) ? GLType.makeNullable(type) : type,
       arguments: args,
       initialValue: initialValue,
       documentation: doc,
       directives: directives,
     );
   }
+
+  bool _hasIncludeOrSkip(List<GLDirectiveValue> directives) =>
+      directives.any((d) => d.token == includeDirective || d.token == skipDirective);
 
   List<GLArgumentDefinition> _parseArgumentDefinitions() {
     if (!check(GLTokenType.openParen)) return [];

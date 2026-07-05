@@ -237,7 +237,6 @@ class JavaSerializer extends GLSerializer {
   String doSerializeField(GLField def, bool immutable, bool isTypeField, {bool isOverride = false}) {
     final type = def.type;
     final name = def.codeName;
-    final forceNullable = isTypeField && (def.hasInculeOrSkipDiretives);
     var buffer = StringBuffer();
     var decorators = serializeDecorators(def.getDirectives(), joiner: "\n");
     if (decorators.isNotEmpty) {
@@ -247,7 +246,7 @@ class JavaSerializer extends GLSerializer {
     if (immutable) {
       buffer.write("final ");
     }
-    buffer.write('${serializeType(type, forceNullable)} $name');
+    buffer.write('${serializeType(type)} $name');
     // Only emit field initializer for non-final fields — final fields
     // receive their default in the constructor body instead.
     if (!immutable && !isTypeField && def.initialValue != null) {
@@ -261,7 +260,7 @@ class JavaSerializer extends GLSerializer {
     var type = arg.type;
     var name = arg.tokenInfo;
     var decorators = serializeDecorators(arg.getDirectives(), joiner: " ");
-    var result = "${serializeType(type, false)} ${name}";
+    var result = "${serializeType(type)} ${name}";
     if (decorators.isNotEmpty) {
       return "$decorators$result";
     }
@@ -271,8 +270,6 @@ class JavaSerializer extends GLSerializer {
   String serializeArgumentField(GLField def, {bool withDecorators = false, String decoratorJoiner = "\n", bool isTypeField = false}) {
     final type = def.type;
     final name = def.codeName;
-    final hasInculeOrSkipDiretives = def.hasInculeOrSkipDiretives;
-    final forceNullable = isTypeField ? (hasInculeOrSkipDiretives) : hasInculeOrSkipDiretives;
     final buffer = StringBuffer();
     if (withDecorators) {
       var decorators = serializeDecorators(def.getDirectives(), joiner: decoratorJoiner);
@@ -281,28 +278,28 @@ class JavaSerializer extends GLSerializer {
         buffer.write(decoratorJoiner);
       }
     }
-    buffer.write(serializeType(type, forceNullable));
+    buffer.write(serializeType(type));
     buffer.write(" ");
     buffer.write(name);
     return buffer.toString();
   }
 
   bool _isPrimitiveType(GLType type) {
-    var serialized = serializeType(type, false);
+    var serialized = serializeType(type);
     return _javaPrimitives.contains(serialized);
   }
 
   @override
-  String serializeType(GLType def, bool forceNullable) {
+  String serializeType(GLType def) {
     final String type;
     if (def is GLMapType) {
-      type = _mapOf(serializeType(def.keyType, false).toBoxedType, serializeType(def.valueType, false).toBoxedType);
+      type = _mapOf(serializeType(def.keyType).toBoxedType, serializeType(def.valueType).toBoxedType);
     } else if (def is GLListType) {
-      type = JavaCodeGenUtils.listOf(grammar, serializeType(def.inlineType, false));
+      type = JavaCodeGenUtils.listOf(grammar, serializeType(def.inlineType));
     } else {
       final token = def.token;
       var baseType = getTypeNameFromGQExternal(token) ?? resolveCodeName(token);
-      if (typeIsJavaPrimitive(baseType) && (def.nullable || forceNullable)) {
+      if (typeIsJavaPrimitive(baseType) && def.nullable) {
         baseType = baseType.toBoxedType;
       }
       type = baseType;
@@ -348,7 +345,7 @@ class JavaSerializer extends GLSerializer {
     if (type.isList) {
       return _isNumber(type.inlineType);
     }
-    var serializedType = serializeType(type, false);
+    var serializedType = serializeType(type);
     return _javaNumbers.contains(serializedType);
   }
 
@@ -356,7 +353,7 @@ class JavaSerializer extends GLSerializer {
     if (type.isList) {
       return _numberValueMethod(type.inlineType);
     }
-    return _javaNumberMethods[serializeType(type, false)]!;
+    return _javaNumberMethods[serializeType(type)]!;
   }
 
   String getFromJsonCall(GLField field, String varName, int depth, GLToken context, [GLType? type]) {
@@ -385,7 +382,7 @@ class JavaSerializer extends GLSerializer {
       if (_isNumber(type)) {
         result = '((Number)${varName}${callMapDotGet}).${_numberValueMethod(type)}';
       } else {
-        result = '(${serializeType(type, false)})${varName}${callMapDotGet}';
+        result = '(${serializeType(type)})${varName}${callMapDotGet}';
       }
     } else if (grammar.isEnum(type.token)) {
       result = '${resolveCodeName(type.token)}.fromJson((String)${varName}${callMapDotGet})';
@@ -429,10 +426,10 @@ class JavaSerializer extends GLSerializer {
 
     final params = [
       ...plan.requiredParams.map(
-        (f) => '${serializeType(f.targetField.type, false)} ${f.targetField.codeName}',
+        (f) => '${serializeType(f.targetField.type)} ${f.targetField.codeName}',
       ),
       ...plan.defaultParams.map(
-        (f) => '${serializeType(f.targetField.type, false)} default${f.targetField.codeName.firstUp}',
+        (f) => '${serializeType(f.targetField.type)} default${f.targetField.codeName.firstUp}',
       ),
     ];
 
@@ -514,14 +511,14 @@ class JavaSerializer extends GLSerializer {
     final targetVar = targetType.firstLow;
 
     final nullableListDefaultParams =
-        plan.nullableListDefaults.map((f) => '${serializeType(f.sourceField!.type, false)} default${f.sourceField!.codeName.firstUp}');
+        plan.nullableListDefaults.map((f) => '${serializeType(f.sourceField!.type)} default${f.sourceField!.codeName.firstUp}');
 
     final promotedParams = plan.promoted.map(
-      (f) => '${serializeType(f.sourceField!.type, false)} ${f.sourceField!.codeName}',
+      (f) => '${serializeType(f.sourceField!.type)} ${f.sourceField!.codeName}',
     );
 
     final inputOnlyParams = plan.inputOnly.map(
-      (f) => '${serializeType(f.type, false)} ${f.codeName}',
+      (f) => '${serializeType(f.type)} ${f.codeName}',
     );
 
     if (plan.promoted.any((f) => f.sourceField!.type.isList) || plan.inputOnly.any((f) => f.type.isList) || plan.nullableListDefaults.isNotEmpty) {
@@ -735,8 +732,7 @@ class JavaSerializer extends GLSerializer {
     if (checkForNulls) {
       context.addImport(JavaImports.objects);
     }
-    final forceNullable = isTypeField && (field.hasInculeOrSkipDiretives);
-    var returnType = serializeType(field.type, forceNullable);
+    var returnType = serializeType(field.type);
     // Java's override rules require a primitive return type to match the
     // superinterface's exactly — a non-null `Boolean!` narrowing a nullable
     // `Boolean` produces a primitive `boolean` getter that neither compiles
@@ -749,7 +745,7 @@ class JavaSerializer extends GLSerializer {
     // implementer's getter.
     final interfaceField = isOverride && context is GLTypeDefinition ? context.getInterfaceField(field) : null;
     if (interfaceField != null && !interfaceField.type.isList) {
-      final interfaceType = serializeType(interfaceField.type, forceNullable);
+      final interfaceType = serializeType(interfaceField.type);
       if (_javaPrimitives.contains(returnType) && !_javaPrimitives.contains(interfaceType)) {
         returnType = interfaceType;
       }
@@ -791,11 +787,11 @@ class JavaSerializer extends GLSerializer {
     return null;
   }
 
-  String serializeMethod(GLField field, {String? modifier, bool forceNullable = false}) {
+  String serializeMethod(GLField field, {String? modifier}) {
     var buffer = StringBuffer();
     var decorators = serializeDecorators(field.getDirectives());
     var args = serializeListText(field.arguments.map(serializeArgument).toList(), withParenthesis: false, join: ", ");
-    var result = "${serializeType(field.type, forceNullable)} ${field.codeName}($args)";
+    var result = "${serializeType(field.type)} ${field.codeName}($args)";
     if (modifier != null) {
       result = "$modifier $result";
     }
@@ -840,12 +836,12 @@ class JavaSerializer extends GLSerializer {
       final inner = _wildcardListReturnType(type.inlineType);
       return 'List<? extends $inner>';
     }
-    return serializeType(type, false);
+    return serializeType(type);
   }
 
   String serializeGetterDeclaration(GLField field,
-      {bool skipModifier = false, bool asProperty = false, bool forceNullable = false, GLInterfaceDefinition? owner}) {
-    var returnType = serializeType(field.type, forceNullable);
+      {bool skipModifier = false, bool asProperty = false, GLInterfaceDefinition? owner}) {
+    var returnType = serializeType(field.type);
     final type = field.type;
     if (type is GLListType) {
       // Java generics are invariant: List<Alpha> is not a subtype of
@@ -855,7 +851,7 @@ class JavaSerializer extends GLSerializer {
       // field — otherwise keep the plain `List<Node>` return type, which is
       // the ergonomic default for callers.
       final needsWildcard = owner != null && _isFieldNarrowedInImplementers(owner, field);
-      returnType = needsWildcard ? _wildcardListReturnType(type) : JavaCodeGenUtils.listOf(grammar, serializeType(type.inlineType, false));
+      returnType = needsWildcard ? _wildcardListReturnType(type) : JavaCodeGenUtils.listOf(grammar, serializeType(type.inlineType));
     }
     var result = returnType;
     if (asProperty) {
@@ -878,7 +874,7 @@ class JavaSerializer extends GLSerializer {
 
   String _getterFieldName(GLField field, bool forInput) {
     final isRecord = forInput && inputsAsRecords || !forInput && typesAsRecords;
-    return JavaSerializer.getterCall(field, isRecord: isRecord, isBoolean: serializeType(field.type, !forInput) == "boolean");
+    return JavaSerializer.getterCall(field, isRecord: isRecord, isBoolean: serializeType(field.type) == "boolean");
   }
 
   String _accessorName(String name, bool setter, bool isBoolean) => JavaSerializer.accessorName(name, setter: setter, isBoolean: isBoolean);
@@ -1016,15 +1012,14 @@ class JavaSerializer extends GLSerializer {
     if (fieldDecorators.isNotEmpty) {
       buffer.writeln(fieldDecorators.trim().ident());
     }
-    final fieldForceNullable = f.hasInculeOrSkipDiretives;
     if (getters) {
       if (typesAsRecords && !forceClassGetters) {
-        buffer.write(serializeGetterDeclaration(f, skipModifier: true, asProperty: true, forceNullable: fieldForceNullable, owner: owner).ident());
+        buffer.write(serializeGetterDeclaration(f, skipModifier: true, asProperty: true, owner: owner).ident());
       } else {
-        buffer.write(serializeGetterDeclaration(f, skipModifier: true, forceNullable: fieldForceNullable, owner: owner).ident());
+        buffer.write(serializeGetterDeclaration(f, skipModifier: true, owner: owner).ident());
       }
     } else {
-      buffer.write(serializeMethod(f, forceNullable: fieldForceNullable).ident());
+      buffer.write(serializeMethod(f).ident());
     }
     buffer.write(";");
     return buffer.toString();
