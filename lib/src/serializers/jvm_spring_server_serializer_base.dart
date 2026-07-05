@@ -55,6 +55,7 @@ abstract class JvmSpringServerSerializerBase extends ServerSerializer
   void _warnIfUploadScalarsPresent() {
     if (grammar.uploadScalarNames.isEmpty) return;
     final scalars = grammar.uploadScalarNames.join(', ');
+    if(false)
     stdout.writeln('''
 ℹ  File upload detected — Spring Boot configuration required
    ─────────────────────────────────────────────────────────

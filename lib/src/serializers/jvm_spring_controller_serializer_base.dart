@@ -196,24 +196,12 @@ abstract class JvmSpringControllerSerializerBase {
     return mappedTo.token;
   }
 
-  // ── Args ───────────────────────────────────────────────────────────────────
 
-  String serializeArgs(
-    List<GLArgumentDefinition> args,
-    GLToken context,
-  ) {
-    return args.map((a) => serializeArg(a, context)).map((e) {
-      return e;
-    }).join(", ");
-  }
+  
 
-  String serializeArg(GLArgumentDefinition arg, GLToken context) {
-    return "${resolveArgType(arg, context)} ${arg.codeName}";
-  }
 
   // ── Abstract ───────────────────────────────────────────────────────────────
 
-  String resolveArgType(GLArgumentDefinition arg, GLToken context);
   String serializeController(GLController ctrl);
   String serializehandlerMethod(GLQueryType type, GLField method, String serviceInstanceName, GLToken context, {String? qualifier});
   String serializeMappingMethod(GLSchemaMapping mapping, String serviceInstanceName, GLToken context);

@@ -20,7 +20,12 @@ class GLType extends GLToken {
   /// Fully-qualified import required for [wrapper], if any.
   String? wrapperImport;
 
-  GLType(super.tokenInfo, this.nullable, {this.wrapper, this.wrapperImport});
+
+  /// needed when this type is not generated,
+  ///  the type is from a framework or external class that is not managed by graphlink
+  String? externalImport;
+
+  GLType(super.tokenInfo, this.nullable, {this.wrapper, this.wrapperImport, this.externalImport});
 
   @override
   bool operator ==(Object other) {

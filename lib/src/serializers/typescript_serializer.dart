@@ -151,9 +151,6 @@ class TypeScriptSerializer extends GLSerializer {
 
     final wrapper = def.wrapper;
     if (wrapper != null) {
-      if (def.wrapperImport != null) {
-        grammar.getTokenByKey(def.token)?.addImport(def.wrapperImport!);
-      }
       expr = '$wrapper<$expr>';
     }
 

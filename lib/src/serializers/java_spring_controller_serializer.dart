@@ -42,6 +42,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     super.annotateControllers();
     _wrapSubscriptionReturnTypes();
     _wrapControllerHandlerReturnTypes();
+    _wrapUploadArguments();
     _mappifyControllers();
   }
 
@@ -90,6 +91,34 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
           field.type.wrapperImport = JavaImports.flux;
         }
       }
+    }
+  }
+
+  /// Retypes every upload-scalar argument on service fields (and schema/batch
+  /// mapping methods) to the wire type the controller actually passes
+  /// through — `FilePart` in reactive mode, `MultipartFile` otherwise — same
+  /// logic as [resolveArgType], so the generated service interface declares
+  /// the same parameter type its controller handler calls it with.
+  void _wrapUploadArguments() {
+    for (var service in [...grammar.services.values, ...grammar.controllers.values]) {
+      for (var field in service.fields) {
+        _retypeUploadArguments(field);
+      }
+      for (var mapping in service.mappings) {
+        _retypeUploadArguments(mapping.field);
+      }
+    }
+  }
+
+  void _retypeUploadArguments(GLField field) {
+    final uploadNames = grammar.uploadScalarNames;
+    for (var arg in field.arguments) {
+      if (!uploadNames.contains(arg.type.firstType.token)) continue;
+      final baseToken = (reactive ? 'FilePart' : 'MultipartFile').toToken();
+      final String externalImport = reactive ? SpringImports.filePart : SpringImports.multipartFile;
+      final GLType newType = arg.type.ofNewName(baseToken)..externalImport = externalImport;
+      field
+          .addArgument(GLArgumentDefinition(arg.tokenInfo, newType, arg.getDirectives(), defaultValue: arg.defaultValue, isDeclared: arg.isDeclared));
     }
   }
 
@@ -364,7 +393,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
       buffer.writeln(annotation);
     }
     final type = serializer.serializeType(mapping.field.type);
-    
+
     final conversions = _buildArgumentConversions(mapping.field.arguments, context);
     final valueCodeName = _resolvedArgumentCodeName(mapping.field.arguments, 'value');
 
@@ -425,7 +454,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
 
     return buffer.toString();
   }
- 
+
   List<String> _buildBatchResultConversion(GLSchemaMapping mapping, String sourceMapExpr, GLToken context) {
     context.addImport(JavaImports.hashMap);
     context.addImport(JavaImports.map);
@@ -489,15 +518,21 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     } else {
       returnType = getServiceReturnType(method.type);
     }
-    var result =
-        "${serializer.serializeType(createListTypeOnSubscription(returnType, type))} ${method.codeName}(${serializeArgs(method.arguments, context)}";
+    var result = "${serializer.serializeType(createListTypeOnSubscription(returnType, type))} ${method.codeName}(${serializeArgs(method.arguments)}";
 
     return "${result})";
   }
 
   // ── Arg type resolution ────────────────────────────────────────────────────
 
-  @override
+  String serializeArg(GLArgumentDefinition arg) {
+    return serializer.serializeArgument(arg);
+  }
+
+  String serializeArgs(Iterable<GLArgumentDefinition> args) {
+    return args.map(serializeArg).join(", ");
+  }
+
   String resolveArgType(GLArgumentDefinition arg, GLToken context) {
     final uploadNames = grammar.uploadScalarNames;
     if (uploadNames.contains(arg.type.firstType.token)) {
