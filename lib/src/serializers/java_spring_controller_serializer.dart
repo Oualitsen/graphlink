@@ -328,7 +328,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     }
     if (mapping.forbid) {
       context.addImport(SpringImports.gqlGraphQLException);
-      return '${serializeControllerMethodHeader(mapping, context)} ${codeGenUtils.block([
+      return '${serializeControllerMethodHeader(mapping.field)} ${codeGenUtils.block([
             '''throw new GraphQLException("Access denied to field '${mapping.type.tokenInfo}.${mapping.field.name}'");'''
           ])}';
     }
@@ -361,7 +361,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
       statementList = _wrapInCompletableFuture(statementList, false, context);
     }
 
-    return '${serializeControllerMethodHeader(mapping, context)} ${codeGenUtils.block(statementList)}';
+    return '${serializeControllerMethodHeader(mapping.field)} ${codeGenUtils.block(statementList)}';
   }
 
   /// Returns the codeName of the argument matching [originalBareName] —
@@ -463,24 +463,11 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
       'for (Map.Entry<$keyType, $realValueType> entry : $sourceMapExpr.entrySet()) $loopBody',
     ];
   }
-
-  String _getMappingArgument(GLSchemaMapping mapping, GLToken context) {
-    return mapping.field.arguments
-        .map((arg) => serializer.serializeArgument(arg))
-        .join(", ");
-  }
+  
 
   @override
-  String serializeControllerMethodHeader(GLSchemaMapping mapping, GLToken context) {
-    var buffer = StringBuffer();
-    buffer.writeln(getAnnotationForMapping(mapping, context));
-    buffer.write("public ");
-
-    final returnType = serializer.serializeType(mapping.field.type);
-
-    buffer.write("${returnType.toBoxedType} ${mapping.key}(${_getMappingArgument(mapping, context)}");
-    buffer.write(')');
-    return buffer.toString();
+  String serializeControllerMethodHeader(GLField method) {
+    return serializer.serializeMethod(method, modifier: "public");
   }
 
   // ── Service declarations ───────────────────────────────────────────────────
