@@ -1,17 +1,34 @@
 directive @glValidate on FIELD_DEFINITION
 
+
+enum ArticleType {
+    NEWS
+    BLOG
+    REVIEW
+}
+
+type WebSite {
+    id: ID!
+    name: String!
+}
+
 type Author {
     id: ID!
     name: String!
-    articles: [Article!] @glSkipOnServer(batch: true)
-    latestArticles(limit: Int!): [Article!]! @glSkipOnServer(batch: false)
+    articles: [Article!] @glSkipOnServer(batch: true) @glReturnsProjection
+    latestArticles(limit: Int!): [Article!]! @glSkipOnServer(batch: false) 
 }
 
 type Article {
     id: ID!
     title: String!
-    authorId: ID!
-    author: Author! @glSkipOnServer(batch: false)
+    type: ArticleType
+    authorId: ID! @glSkipOnClient
+    webSite: WebSite
+    author: Author! @glSkipOnServer(batch: false) 
+    authorList: [Author!] @glSkipOnServer(batch: false) 
+    published: Boolean!
+
 }
 
 input CreateArticleInput {
@@ -28,18 +45,49 @@ input UpdateArticleInput {
 type Query {
     getAuthor(id: ID!): Author
     getArticle(id: ID!): Article!
-    listAuthors: [Author!]!
+    listAuthors: [Author]
     listArticles: [Article!]!
+    getProjectedArticle: Article! @glReturnsProjection
+
+    getArticleWithCount: ArticleWithCount
+    getArticleInfo: ArticleInfo @glReturnsProjection
+    getMessageReadList: [MessageRead]
+
+    getArticleTypes: [ArticleType!]!
 }
 
 type Mutation {
     createArticle(input: CreateArticleInput!): Article!
     updateArticle(input: UpdateArticleInput!): Article!
     deleteArticle(id: ID!): Boolean!
-    bulkCreate(matrix: [[[CreateArticleInput]!]]): Int! @glValidate
+    bulkCreate(matrix: [[CreateArticleInput!]]): Int! @glValidate
 }
 
 type Subscription {
     articleCreated: Article!
     articleUpdated(id: ID!): Article!
+    articleDeleted: ID!
+}
+
+type ArticleWithCount @glSkipOnServer(batch: false, mapTo:"Article") {
+    article: Article! 
+    count: Int!
+}
+
+type ArticleInfo @glSkipOnServer(batch: false, mapTo:"Article") {
+    id: ID!
+    title: String!
+    type: ArticleType
+    webSite: WebSite
+    published: Boolean!
+}
+
+type Message {
+    id: ID!
+    content: String!
+}
+
+type MessageRead @glSkipOnServer(batch: true, mapTo:"Message") {
+    message: Message!
+    read: Boolean!
 }

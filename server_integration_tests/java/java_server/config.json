@@ -2,6 +2,14 @@
   "schemaPaths": ["../../schema/schema.gql"],
   "mode": "server",
   "outputDir": "src/main/java/dev/graphlink/javaserver/generated",
+  "typeMappings": {
+        "ID": "String",
+        "String": "String",
+        "Float": "double",
+        "Int": "int",
+        "Boolean": "boolean",
+        "Null": "null"
+    },
   "serverConfig": {
     "spring": {
       "basePackage": "dev.graphlink.javaserver.generated",

@@ -11,7 +11,6 @@ import 'package:graphlink/src/naming_convention.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/utils.dart';
 
-const importList = "_list";
 
 abstract class GLTokenWithFields extends GLExtensibleToken {
   final Map<String, GLField> _fieldMap = {};
@@ -235,46 +234,41 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
   @override
   Set<GLToken> getImportDependecies(GLParser g) {
     var result = <String, GLToken>{};
+    super.getImportDependecies(g).forEach((dep) {
+      result[dep.token] = dep;
+    });
     var fields = getSerializableFields(g.mode);
     for (var f in fields) {
       var token = g.getTokenByKey(f.type.token);
-      if (filterDependecy(token, g)) {
-        result[token!.token] = token;
-      } else {
-        var mappedTo = _getMappedTo(token, g);
-        if (mappedTo != null) {
+      if(token is GLTypeDefinition) {
+        final mappedTo = token.mappedToType;
+        if(mappedTo != null) {
           result[mappedTo.token] = mappedTo;
         }
       }
+      if(token != null && !g.isScalar(token.token)) {
+        result[token.token] = token;
+      }
+      if (filterDependecy(token, g)) {
+        result[token!.token] = token;
+      } 
       for (var arg in f.arguments) {
-        var argToken = g.getTokenByKey(arg.type.token);
-        if (filterDependecy(argToken, g)) {
-          result[argToken!.token] = argToken;
+        var argTokenType = g.getTokenByKey(arg.type.token);
+        if (filterDependecy(argTokenType, g)) {
+          result[argTokenType!.token] = argTokenType;
         }
+        if(argTokenType != null && !g.isScalar(argTokenType.token)) {
+          result[argTokenType.token] = argTokenType;
+        }
+
       }
     }
     return Set.unmodifiable(result.values);
   }
 
-  GLToken? _getMappedTo(GLToken? token, GLParser g) {
-    if (token == null || token is! GLTypeDefinition) {
-      return null;
-    }
-    var mapTo =
-        token.getDirectiveByName(glSkipOnServer)?.getArgValueAsString(glMapTo);
-    if (mapTo == null) {
-      return null;
-    }
-    var result = g.types[mapTo];
-    if(result != null) {
-      return result;
-    }
-    var ifaceResult = g.interfaces[mapTo];
-    if(ifaceResult != null) {
-      return ifaceResult;
-    }
-    return null;
-  }
+  
+
+  
 
   void replaceField(GLField field) {
     _fieldMap[field.name.token] = field;
@@ -287,21 +281,17 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
     if (this is GLDirectivesMixin) {
       result.addAll(extractImports(this as GLDirectivesMixin, g.mode));
     }
-    for (var f in _fieldMap.values) {
-      var token = g.getTokenByKey(f.type.token);
-      result.addAll(extractImports(f, g.mode, skipOwnImports: false));
-      if (f.type.isList) {
-        result.add(importList);
-      }
+    for (var field in _fieldMap.values) {
+      var token = g.getTokenByKey(field.type.token);
+      result.addAll(extractImports(field, g.mode, skipOwnImports: false));
+      result.addAll(collectionImportsOf(field.type));
+
       if (token != null && token is GLDirectivesMixin) {
         result.addAll(extractImports(token as GLDirectivesMixin, g.mode,
             skipOwnImports: true));
 
         // handle arguments
-        for (var arg in f.arguments) {
-          if (arg.type.isList) {
-            result.add(importList);
-          }
+        for (var arg in field.arguments) {
           result.addAll(extractImports(arg as GLDirectivesMixin, g.mode,
               skipOwnImports: false));
           var argToken = g.getTokenByKey(arg.type.token);
@@ -311,8 +301,12 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
           }
         }
       }
+      for(var arg in field.arguments) {
+        result.addAll(arg.getAnnotations().map((e) => e.getArgValueAsString(glImport)).where((imp) => imp != null).map((e) => e!));
+        result.addAll(arg.getImports(g));
+      }
     }
-    result.addAll(staticImports);
+    result.addAll(super.getImports(g));
     return result;
   }
 

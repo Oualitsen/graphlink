@@ -121,14 +121,6 @@ class SecurityCoroutineContext(
 
   @override
   String serializeServiceBody(GLService service) {
-    var mappings = service.serviceMapping;
-    return codeGenUtils.kotlinInterface(
-      name: service.token,
-      body: [
-        ...service.fields.map((n) =>
-            ctrl.serializeMethodDeclaration(n, service.getTypeByFieldName(n.name.token)!, service)),
-        ...mappings.map((m) => ctrl.serializeServiceMappingImplMethodHeader(m, service)),
-      ],
-    );
+    throw UnimplementedError();
   }
 }
