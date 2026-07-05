@@ -3,6 +3,7 @@ import 'package:graphlink/src/model/token_info.dart';
 
 abstract class GLToken {
   final TokenInfo tokenInfo;
+  Set<GLToken>? _importDependecies;
   GLToken(this.tokenInfo);
   String get token => tokenInfo.token;
 
@@ -23,7 +24,12 @@ abstract class GLToken {
   }
 
   Set<GLToken> getImportDependecies(GLParser g) {
-    return const {};
+    return _importDependecies  ?? const {};
+  }
+
+  void addImportDependecy(GLToken token) {
+    _importDependecies ??= <GLToken>{};
+    _importDependecies!.add(token);
   }
 }
 

@@ -294,6 +294,24 @@ make deploy                        # compile + install to ~/bin
 - Generated files start with a `// GENERATED` header. Never edit them.
 - `plans/` contains Markdown design docs for past decisions. Read-only context.
 
+### Comments
+
+Write way fewer comments. Let the code speak for itself — clear names, small
+functions, and obvious structure beat prose.
+
+- Default to no comment. Only add one when it captures a non-obvious *why*
+  (a hidden constraint, an edge case being deliberately excluded, a workaround
+  for a specific bug) that isn't derivable from reading the code itself.
+- Never write a comment that restates what the next line already says
+  (`// loop over fields` above a `for (var f in fields)`).
+- No doc comments (`///`) on private helpers whose name and signature already
+  say what they do. Reserve `///` for public API where callers can't see the
+  implementation.
+- Don't narrate the change history, the task that prompted the code, or which
+  caller uses it — that belongs in the commit message, not the source.
+- Prefer expressing the "why" through a well-named variable/function over a
+  comment explaining a poorly-named one.
+
 ---
 
 ## What to avoid

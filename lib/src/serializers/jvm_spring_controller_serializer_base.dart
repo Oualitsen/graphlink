@@ -46,25 +46,42 @@ abstract class JvmSpringControllerSerializerBase {
         }
       }
     }
+    injectDataFetchingIntoArgs();
   }
 
-  GLDirectiveValue _createResolverDirective(
-      GLQueryType type, GLField method, GLService ctrl) {
+  void injectDataFetchingIntoArgs() {
+    for (var ctrl in [...grammar.controllers.values, ...grammar.services.values]) {
+      for (var field in ctrl.fields) {
+        _interDataFetchingEnv(ctrl, field);
+      }
+
+      for (var mapping in ctrl.mappings) {
+        _interDataFetchingEnv(ctrl, mapping.field);
+      }
+    }
+  }
+
+  void _interDataFetchingEnv(GLService service, GLField field) {
+    if (injectDataFetching || field.hasDirective(glReturnsProjection)) {
+      field.addArgument(GLArgumentDefinition('dataFetchingEnvironment'.toToken(), GLType('DataFetchingEnvironment'.toToken(), false), []));
+      service.addImport(SpringImports.gqlDataFetchingEnvironment);
+    }
+  }
+
+  GLDirectiveValue _createResolverDirective(GLQueryType type, GLField method, GLService ctrl) {
     // The keyword pass (which assigns codeName) runs after this annotation step,
     // so predict the sanitized method name with the same deterministic rule.
     // When the bare top-level mapping (`@QueryMapping`) would otherwise bind to
     // the renamed method, pin it to the original wire name (`name = "return"`).
     final wire = method.name.token;
-    final code = ctrl.resolveCodeName(wire, grammar.reservedWords);
-    final annotation = code == wire
-        ? _toMappingAnnotationValue(type)
-        : '${_toMappingAnnotationValue(type)}(name = "$wire")';
+    final annotation = '${_toMappingAnnotationValue(type)}';
     return GLDirectiveValue(
-        "_gqMapping".toToken(),
+        "_glMapping".toToken(),
         [],
         [
           GLArgumentValue(glAnnotation.toToken(), true),
           GLArgumentValue(glClass.toToken(), annotation),
+          GLArgumentValue("name".toToken(), wire),
           GLArgumentValue(glImport.toToken(), _toMappingAnnotationImport(type)),
           GLArgumentValue(glOnServer.toToken(), true),
         ],
@@ -73,7 +90,7 @@ abstract class JvmSpringControllerSerializerBase {
 
   GLDirectiveValue _createControllerDirective() {
     return GLDirectiveValue(
-        "_gqController".toToken(),
+        "_glController".toToken(),
         [],
         [
           GLArgumentValue(glAnnotation.toToken(), true),
@@ -86,15 +103,12 @@ abstract class JvmSpringControllerSerializerBase {
 
   GLDirectiveValue _createArgumentDirective(GLArgumentDefinition arg) {
     return GLDirectiveValue(
-        "_gqController".toToken(),
+        "_glController".toToken(),
         [],
         [
           GLArgumentValue(glAnnotation.toToken(), true),
           GLArgumentValue(glClass.toToken(), "@Argument"),
-          // Spring binds @Argument by parameter name; when the name was
-          // sanitized for a keyword, pin the binding to the original wire name.
-          if (arg.codeName != arg.bareName)
-            GLArgumentValue("name".toToken(), arg.bareName),
+          GLArgumentValue("name".toToken(), arg.bareName),
           GLArgumentValue(glImport.toToken(), SpringImports.gqlArgument),
           GLArgumentValue(glOnServer.toToken(), true),
         ],
@@ -175,22 +189,20 @@ abstract class JvmSpringControllerSerializerBase {
     if (mapTo == null) {
       return "Object";
     }
-    var mappedTo = grammar
-        .getType(dir.getArgumentByName(glMapTo)!.tokenInfo.ofNewName(mapTo));
+    var mappedTo = grammar.getType(dir.getArgumentByName(glMapTo)!.tokenInfo.ofNewName(mapTo));
     if (mappedTo.getDirectiveByName(glSkipOnServer) != null) {
-      throw ParseException(
-          "You cannot mapTo ${mappedTo.tokenInfo} because it is annotated with $glSkipOnServer",
-          info: mappedTo.tokenInfo);
+      throw ParseException("You cannot mapTo ${mappedTo.tokenInfo} because it is annotated with $glSkipOnServer", info: mappedTo.tokenInfo);
     }
     return mappedTo.token;
   }
 
   // ── Args ───────────────────────────────────────────────────────────────────
 
-  String serializeArgs(List<GLArgumentDefinition> args, GLToken context,
-      [String? prefix]) {
+  String serializeArgs(
+    List<GLArgumentDefinition> args,
+    GLToken context,
+  ) {
     return args.map((a) => serializeArg(a, context)).map((e) {
-      if (prefix != null) return "$prefix $e";
       return e;
     }).join(", ");
   }
@@ -203,18 +215,10 @@ abstract class JvmSpringControllerSerializerBase {
 
   String resolveArgType(GLArgumentDefinition arg, GLToken context);
   String serializeController(GLController ctrl);
-  String serializehandlerMethod(GLQueryType type, GLField method,
-      String serviceInstanceName, GLToken context,
-      {String? qualifier});
-  String serializeMappingMethod(
-      GLSchemaMapping mapping, String serviceInstanceName, GLToken context);
-  String serializeMethodDeclaration(GLField method, GLQueryType type,
-      GLToken context,
-      {String? argPrefix});
-  String serializeServiceMappingImplMethodHeader(
-      GLSchemaMapping mapping, GLToken context);
-  String serializeControllerMethodHeader(
-      GLSchemaMapping mapping, GLToken context);
+  String serializehandlerMethod(GLQueryType type, GLField method, String serviceInstanceName, GLToken context, {String? qualifier});
+  String serializeMappingMethod(GLSchemaMapping mapping, String serviceInstanceName, GLToken context);
+  String serializeMethodDeclaration(GLField method, GLQueryType type, GLToken context);
+  String serializeControllerMethodHeader(GLSchemaMapping mapping, GLToken context);
   String serializeIdentityMapping(GLSchemaMapping mapping, GLToken context);
   String serializeForwardedMapping(GLSchemaMapping mapping, GLToken context);
 }
