@@ -132,8 +132,8 @@ void main() {
     var idField = user.fields.where((f) => f.name.token == "id").first;
     var listExample =
         user.fields.where((f) => f.name.token == "listExample").first;
-    var id = javaSerialzer.serializeType(idField.type, false);
-    var list = javaSerialzer.serializeType(listExample.type, false);
+    var id = javaSerialzer.serializeType(idField.type);
+    var list = javaSerialzer.serializeType(listExample.type);
     expect(id, "String");
     expect(list, "List<String>");
   });

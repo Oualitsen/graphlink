@@ -320,7 +320,7 @@ class JavaClientOperationSerializer {
     final required = def.arguments.where((e) {
       if (e.type.nullable || e.defaultValue != null) return false;
       if (uploadNames.contains(e.type.firstType.token)) return false;
-      return !_javaPrimitives.contains(_ctx.serializer.serializeType(e.type, false));
+      return !_javaPrimitives.contains(_ctx.serializer.serializeType(e.type));
     }).toList();
     if (required.isEmpty) return [];
     container.imports.add(JavaImports.objects);
@@ -575,7 +575,7 @@ class JavaClientOperationSerializer {
     if (uploadNames.contains(arg.type.firstType.token)) {
       return arg.type.isList ? 'List<GLUpload>' : 'GLUpload';
     }
-    return _ctx.serializer.serializeType(arg.type, false);
+    return _ctx.serializer.serializeType(arg.type);
   }
 
   List<String> getArguments(GLQueryDefinition def) {

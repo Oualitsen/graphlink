@@ -60,14 +60,14 @@ class KotlinSerializer extends GLSerializer {
   // ── Type serialization ──────────────────────────────────────────────────────
 
   @override
-  String serializeType(GLType def, bool forceNullable) {
+  String serializeType(GLType def) {
     String type;
     if (def is GLMapType) {
       // kotlin.collections.Map is part of Kotlin's implicit default imports
       // (same as List/Set) — no addImport call needed, unlike Java's java.util.Map.
-      type = 'Map<${serializeType(def.keyType, false)}, ${serializeType(def.valueType, false)}>';
+      type = 'Map<${serializeType(def.keyType)}, ${serializeType(def.valueType)}>';
     } else if (def is GLListType) {
-      final inner = serializeType(def.inlineType, false);
+      final inner = serializeType(def.inlineType);
       type = _listOf(inner);
     } else {
       final token = def.token;
@@ -80,7 +80,7 @@ class KotlinSerializer extends GLSerializer {
       }
       type = '$wrapper<$type>';
     }
-    return (def.nullable || forceNullable) ? '$type?' : type;
+    return def.nullable ? '$type?' : type;
   }
 
   // ── Field serialization ─────────────────────────────────────────────────────
@@ -89,7 +89,7 @@ class KotlinSerializer extends GLSerializer {
   String doSerializeField(GLField def, bool immutable, bool isTypeField,
       {bool isOverride = false}) {
     final forceNullable = isTypeField && (def.hasInculeOrSkipDiretives);
-    final type = serializeType(def.type, forceNullable);
+    final type = serializeType(def.type);
     final keyword = _keyword(immutable);
     final nullable = def.type.nullable || forceNullable;
     final deprecation = serializeFieldDeprecation(def);
@@ -255,7 +255,7 @@ class KotlinSerializer extends GLSerializer {
   }
 
   String _inputParam(GLField f) {
-    final type = serializeType(f.type, false);
+    final type = serializeType(f.type);
     final keyword = _keyword(inputsAsDataClass);
     final deprecation = serializeFieldDeprecation(f);
     if (f.initialValue != null) {
@@ -282,7 +282,7 @@ class KotlinSerializer extends GLSerializer {
 
     final params = fields.map((f) {
       final forceNullable = f.hasInculeOrSkipDiretives;
-      final type = serializeType(f.type, forceNullable);
+      final type = serializeType(f.type);
       final keyword = _keyword(typesAsDataClass);
       final overrides = def.isOverride(f);
       final prefix = overrides ? 'override $keyword' : keyword;
@@ -329,8 +329,7 @@ class KotlinSerializer extends GLSerializer {
   String serializeInterface(GLInterfaceDefinition def) {
     final fields = def.getSerializableFields(grammar.mode);
     final fieldDecls = fields.map((f) {
-      final forceNullable = f.hasInculeOrSkipDiretives;
-      final type = serializeType(f.type, forceNullable);
+      final type = serializeType(f.type);
       final prefix = def.isOverride(f) ? 'override val' : 'val';
       return '$prefix ${f.codeName}: $type';
     }).toList();
@@ -502,10 +501,10 @@ class KotlinSerializer extends GLSerializer {
   String generateToMethod(GLInputDefinition def, String targetType, ToMappingPlan plan) {
     final params = [
       ...plan.requiredParams.map(
-        (f) => '${f.targetField.codeName}: ${serializeType(f.targetField.type, false)}',
+        (f) => '${f.targetField.codeName}: ${serializeType(f.targetField.type)}',
       ),
       ...plan.defaultParams.map(
-        (f) => 'default${f.targetField.codeName.firstUp}: ${serializeType(f.targetField.type, false)}',
+        (f) => 'default${f.targetField.codeName.firstUp}: ${serializeType(f.targetField.type)}',
       ),
     ];
 
@@ -542,13 +541,13 @@ class KotlinSerializer extends GLSerializer {
     final targetVar = targetType.firstLow;
 
     final promotedParams = plan.promoted.map(
-      (f) => '${f.sourceField!.codeName}: ${serializeType(f.sourceField!.type, false)}',
+      (f) => '${f.sourceField!.codeName}: ${serializeType(f.sourceField!.type)}',
     );
     final inputOnlyParams = plan.inputOnly.map(
-      (f) => '${f.codeName}: ${serializeType(f.type, false)}',
+      (f) => '${f.codeName}: ${serializeType(f.type)}',
     );
     final nullableListDefaultParams = plan.nullableListDefaults.map(
-      (f) => 'default${f.sourceField!.codeName.firstUp}: ${serializeType(f.sourceField!.type, false)}',
+      (f) => 'default${f.sourceField!.codeName.firstUp}: ${serializeType(f.sourceField!.type)}',
     );
 
     final autoBySource = {for (final f in plan.autoMapped) f.sourceField!.name.token: f};

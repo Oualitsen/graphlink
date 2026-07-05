@@ -72,11 +72,7 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
   String serializeMethodDeclaration(GLField method, GLQueryType type, GLToken context) {
     throw UnimplementedError();
   }
-
-  @override
-  String serializeServiceMappingImplMethodHeader(GLSchemaMapping mapping, GLToken context) {
-   throw UnimplementedError();
-  }
+ 
 
   // ── Args ────────────────────────────────────────────────────────────────────
 
