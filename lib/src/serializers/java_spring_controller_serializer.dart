@@ -138,8 +138,6 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     }
   }
 
-  
-
   /// Converts [expr] — a Java expression evaluating to the real domain value
   /// the service layer returned for [field] — into the shape the mappified
   /// controller signature promises: `.toJson()` for enum/projectable types,
@@ -233,9 +231,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     final String returnType;
     final List<String> statements;
 
-    final validationMethodCall = method.getDirectiveByName(glValidate) != null
-        ? '$serviceInstanceName.${GLService.getValidationMethodName(method.name.token)}(${conversions.serviceArgs.join(", ")})'
-        : null;
+    final validationMethodCall = getValidationMethodCall(method, serviceInstanceName, conversions.serviceArgs);
     final validationCall = validationMethodCall != null ? '$validationMethodCall;' : null;
     final baseReturnType = serializer.serializeType(method.type);
     final returnTypeIsVoid = baseReturnType == "void";
@@ -267,6 +263,16 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
         statements: statements));
 
     return buffer.toString();
+  }
+
+  String? getValidationMethodCall(GLField method, String serviceInstanceName, List<String> argsCalls) {
+    final String? validationMethodCall;
+    if (method.getDirectiveByName(glValidate) != null) {
+      validationMethodCall = '$serviceInstanceName.${GLService.getValidationMethodName(method.name.token)}(${argsCalls.join(", ")})';
+    } else {
+      validationMethodCall = null;
+    }
+    return validationMethodCall;
   }
 
   /// Builds the fromJson conversion expression for an input arg, recursing
@@ -387,7 +393,6 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     final conversions = _buildArgumentConversions(mapping.field.arguments, context);
     final valueCodeName = _resolvedArgumentCodeName(mapping.field.arguments, 'value');
 
-
     final String returnType;
     final List<String> statements;
     if (mapping.isBatch) {
@@ -463,7 +468,6 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
       'for (Map.Entry<$keyType, $realValueType> entry : $sourceMapExpr.entrySet()) $loopBody',
     ];
   }
-  
 
   @override
   String serializeControllerMethodHeader(GLField method) {
@@ -494,5 +498,4 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
   String serializeArgs(Iterable<GLArgumentDefinition> args) {
     return args.map(serializeArg).join(", ");
   }
-  
 }
