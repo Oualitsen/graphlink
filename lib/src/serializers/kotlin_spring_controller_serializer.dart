@@ -76,17 +76,6 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
 
   // ── Args ────────────────────────────────────────────────────────────────────
 
-  @override
-  String serializeArg(GLArgumentDefinition arg, GLToken context) {
-   throw UnimplementedError();
-  }
-
- 
-
-  @override
-  String resolveArgType(GLArgumentDefinition arg, GLToken context) {
-    throw UnimplementedError();
-  }
   
   @override
   String serializeMappingMethod(GLSchemaMapping mapping, String serviceInstanceName, GLToken context) {

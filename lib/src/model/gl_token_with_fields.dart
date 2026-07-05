@@ -11,7 +11,6 @@ import 'package:graphlink/src/naming_convention.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/utils.dart';
 
-
 abstract class GLTokenWithFields extends GLExtensibleToken {
   final Map<String, GLField> _fieldMap = {};
 
@@ -23,8 +22,7 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
   List<GLField>? _skipOnClientFields;
   List<GLField>? _skipOnServerFields;
 
-  GLTokenWithFields(super.tokenInfo, super.extension, List<GLField> allFields,
-      {super.documentation}) {
+  GLTokenWithFields(super.tokenInfo, super.extension, List<GLField> allFields, {super.documentation}) {
     allFields.forEach(addField);
   }
 
@@ -39,9 +37,7 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
 
   void addField(GLField field) {
     if (_fieldMap.containsKey(field.name.token)) {
-      throw ParseException(
-          "Duplicate field defition on type ${tokenInfo}, field: ${field.name}",
-          info: field.name);
+      throw ParseException("Duplicate field defition on type ${tokenInfo}, field: ${field.name}", info: field.name);
     }
     _fieldMap[field.name.token] = field;
     _invalidateFieldCaches();
@@ -83,9 +79,7 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
           directives: [],
         );
       } else {
-        throw ParseException(
-            "Could not find field '$fieldName' on type ${tokenInfo}",
-            info: tokenInfo);
+        throw ParseException("Could not find field '$fieldName' on type ${tokenInfo}", info: tokenInfo);
       }
     }
     return field;
@@ -156,7 +150,9 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
       var code = normalized;
       if (taken.contains(code)) {
         var counter = 2;
-        while (taken.contains('$code$counter')) counter++;
+        while (taken.contains('$code$counter')) {
+          counter++;
+        }
         code = '$code$counter';
       }
       field.codeName = code;
@@ -180,8 +176,7 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
   // Caches the two common cases (client/server, skipGenerated=false).
   // The rare skipGenerated=true path (used during Java annotation emission)
   // is not cached since it is never on the hot path.
-  List<GLField> getSerializableFields(CodeGenerationMode mode,
-      {bool skipGenerated = false}) {
+  List<GLField> getSerializableFields(CodeGenerationMode mode, {bool skipGenerated = false}) {
     if (!skipGenerated) {
       switch (mode) {
         case CodeGenerationMode.client:
@@ -194,7 +189,7 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
   }
 
   void invalidateSerializableCacheFields(CodeGenerationMode mode) {
-    switch(mode) {
+    switch (mode) {
       case CodeGenerationMode.client:
         _cachedSerializableClient = null;
         break;
@@ -204,30 +199,19 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
     }
   }
 
-  List<GLField> _buildSerializableFields(CodeGenerationMode mode,
-      {bool skipGenerated = false}) {
-    return _fieldMap.values
-        .where((f) => !shouldSkipSerialization(
-            directives: f.getDirectives(skipGenerated: skipGenerated),
-            mode: mode))
-        .toList();
+  List<GLField> _buildSerializableFields(CodeGenerationMode mode, {bool skipGenerated = false}) {
+    return _fieldMap.values.where((f) => !shouldSkipSerialization(directives: f.getDirectives(skipGenerated: skipGenerated), mode: mode)).toList();
   }
 
   List<GLField> getSkipOnServerFields() {
     return _skipOnServerFields ??= _fieldMap.values.where((field) {
-      return field
-          .getDirectives()
-          .where((d) => d.token == glSkipOnServer)
-          .isNotEmpty;
+      return field.getDirectives().where((d) => d.token == glSkipOnServer).isNotEmpty;
     }).toList();
   }
 
   List<GLField> getSkipOnClientFields() {
     return _skipOnClientFields ??= _fieldMap.values.where((field) {
-      return field
-          .getDirectives()
-          .where((d) => d.token == glSkipOnClient)
-          .isNotEmpty;
+      return field.getDirectives().where((d) => d.token == glSkipOnClient).isNotEmpty;
     }).toList();
   }
 
@@ -240,35 +224,30 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
     var fields = getSerializableFields(g.mode);
     for (var f in fields) {
       var token = g.getTokenByKey(f.type.token);
-      if(token is GLTypeDefinition) {
+      if (token is GLTypeDefinition) {
         final mappedTo = token.mappedToType;
-        if(mappedTo != null) {
+        if (mappedTo != null) {
           result[mappedTo.token] = mappedTo;
         }
       }
-      if(token != null && !g.isScalar(token.token)) {
+      if (token != null && !g.isScalar(token.token)) {
         result[token.token] = token;
       }
       if (filterDependecy(token, g)) {
         result[token!.token] = token;
-      } 
+      }
       for (var arg in f.arguments) {
         var argTokenType = g.getTokenByKey(arg.type.token);
         if (filterDependecy(argTokenType, g)) {
           result[argTokenType!.token] = argTokenType;
         }
-        if(argTokenType != null && !g.isScalar(argTokenType.token)) {
+        if (argTokenType != null && !g.isScalar(argTokenType.token)) {
           result[argTokenType.token] = argTokenType;
         }
-
       }
     }
     return Set.unmodifiable(result.values);
   }
-
-  
-
-  
 
   void replaceField(GLField field) {
     _fieldMap[field.name.token] = field;
@@ -287,21 +266,24 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
       result.addAll(collectionImportsOf(field.type));
 
       if (token != null && token is GLDirectivesMixin) {
-        result.addAll(extractImports(token as GLDirectivesMixin, g.mode,
-            skipOwnImports: true));
+        result.addAll(extractImports(token as GLDirectivesMixin, g.mode, skipOwnImports: true));
 
         // handle arguments
         for (var arg in field.arguments) {
-          result.addAll(extractImports(arg as GLDirectivesMixin, g.mode,
-              skipOwnImports: false));
+          result.addAll(
+            [
+              arg.type.externalImport,
+              arg.type.wrapperImport,
+            ].whereType(),
+          );
+          result.addAll(extractImports(arg as GLDirectivesMixin, g.mode, skipOwnImports: false));
           var argToken = g.getTokenByKey(arg.type.token);
           if (argToken != null && argToken is GLDirectivesMixin) {
-            result.addAll(extractImports(argToken as GLDirectivesMixin, g.mode,
-                skipOwnImports: true));
+            result.addAll(extractImports(argToken as GLDirectivesMixin, g.mode, skipOwnImports: true));
           }
         }
       }
-      for(var arg in field.arguments) {
+      for (var arg in field.arguments) {
         result.addAll(arg.getAnnotations().map((e) => e.getArgValueAsString(glImport)).where((imp) => imp != null).map((e) => e!));
         result.addAll(arg.getImports(g));
       }
@@ -310,9 +292,7 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
     return result;
   }
 
-  static Set<String> extractImports(
-      GLDirectivesMixin dir, CodeGenerationMode mode,
-      {bool skipOwnImports = false}) {
+  static Set<String> extractImports(GLDirectivesMixin dir, CodeGenerationMode mode, {bool skipOwnImports = false}) {
     var result = <String>{};
     // is it external ?
     var external = dir.getDirectiveByName(glExternal);
