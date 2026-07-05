@@ -377,7 +377,7 @@ class KotlinClientOperationSerializer {
     if (uploadNames.contains(arg.type.firstType.token)) {
       return arg.type.isList ? 'List<GLUpload>' : 'GLUpload';
     }
-    return _ctx.serializer.serializeType(arg.type, false);
+    return _ctx.serializer.serializeType(arg.type);
   }
 
   List<String> getArguments(GLQueryDefinition def) {

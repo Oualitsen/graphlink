@@ -25,10 +25,10 @@ void main() {
 
       final type = GLType('Dog'.toToken(), false, wrapper: _wrapper, wrapperImport: _wrapperImport);
 
-      expect(JavaSerializer(g, importPrefix: '').serializeType(type, false), 'Flux<Dog>');
-      expect(KotlinSerializer(g, importPrefix: '').serializeType(type, false), 'Flux<Dog>');
-      expect(TypeScriptSerializer(g, importPrefix: '').serializeType(type, false), 'Flux<Dog>');
-      expect(DartSerializer(g, importPrefix: '').serializeType(type, false), 'Flux<Dog>');
+      expect(JavaSerializer(g, importPrefix: '').serializeType(type), 'Flux<Dog>');
+      expect(KotlinSerializer(g, importPrefix: '').serializeType(type), 'Flux<Dog>');
+      expect(TypeScriptSerializer(g, importPrefix: '').serializeType(type), 'Flux<Dog>');
+      expect(DartSerializer(g, importPrefix: '').serializeType(type), 'Flux<Dog>');
     });
 
     test('wraps a List<Dog> in Java/Kotlin/TypeScript/Dart', () {
@@ -38,10 +38,10 @@ void main() {
       final type = GLListType(GLType('Dog'.toToken(), false), false,
           wrapper: _wrapper, wrapperImport: _wrapperImport);
 
-      expect(JavaSerializer(g, importPrefix: '').serializeType(type, false), 'Flux<List<Dog>>');
-      expect(KotlinSerializer(g, importPrefix: '').serializeType(type, false), 'Flux<List<Dog>>');
-      expect(TypeScriptSerializer(g, importPrefix: '').serializeType(type, false), 'Flux<Dog[]>');
-      expect(DartSerializer(g, importPrefix: '').serializeType(type, false), 'Flux<List<Dog>>');
+      expect(JavaSerializer(g, importPrefix: '').serializeType(type), 'Flux<List<Dog>>');
+      expect(KotlinSerializer(g, importPrefix: '').serializeType(type), 'Flux<List<Dog>>');
+      expect(TypeScriptSerializer(g, importPrefix: '').serializeType(type), 'Flux<Dog[]>');
+      expect(DartSerializer(g, importPrefix: '').serializeType(type), 'Flux<List<Dog>>');
     });
 
     test('wraps a Map<String, Dog> in Java/Kotlin/TypeScript/Dart', () {
@@ -56,10 +56,10 @@ void main() {
         wrapperImport: _wrapperImport,
       );
 
-      expect(JavaSerializer(g, importPrefix: '').serializeType(type, false), 'Flux<Map<String, Dog>>');
-      expect(KotlinSerializer(g, importPrefix: '').serializeType(type, false), 'Flux<Map<String, Dog>>');
-      expect(TypeScriptSerializer(g, importPrefix: '').serializeType(type, false), 'Flux<Map<string, Dog>>');
-      expect(DartSerializer(g, importPrefix: '').serializeType(type, false), 'Flux<Map<String, Dog>>');
+      expect(JavaSerializer(g, importPrefix: '').serializeType(type), 'Flux<Map<String, Dog>>');
+      expect(KotlinSerializer(g, importPrefix: '').serializeType(type), 'Flux<Map<String, Dog>>');
+      expect(TypeScriptSerializer(g, importPrefix: '').serializeType(type), 'Flux<Map<string, Dog>>');
+      expect(DartSerializer(g, importPrefix: '').serializeType(type), 'Flux<Map<String, Dog>>');
     });
 
     test('registers wrapperImport on the referenced type token (Java)', () {
@@ -67,7 +67,7 @@ void main() {
       g.parse(_schema);
 
       final type = GLType('Dog'.toToken(), false, wrapper: _wrapper, wrapperImport: _wrapperImport);
-      JavaSerializer(g, importPrefix: '').serializeType(type, false);
+      JavaSerializer(g, importPrefix: '').serializeType(type);
 
       final dogImports = g.getTypeByName('Dog')!.getImports(g);
       expect(dogImports, contains(_wrapperImport));

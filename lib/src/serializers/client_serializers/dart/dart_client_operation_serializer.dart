@@ -184,7 +184,7 @@ class DartClientOperationSerializer {
     if (uploadNames.contains(arg.type.firstType.token)) {
       return arg.type.isList ? 'List<GLUpload>' : 'GLUpload';
     }
-    return _serializer.serializeType(arg.type, false);
+    return _serializer.serializeType(arg.type);
   }
 
   String returnTypeByQueryType(GLQueryDefinition def) {

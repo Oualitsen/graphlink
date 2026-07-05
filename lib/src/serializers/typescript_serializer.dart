@@ -8,7 +8,6 @@ import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
-import 'package:graphlink/src/model/gl_token_with_fields.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
 import 'package:graphlink/src/typescript_code_gen_utils.dart';
 import 'package:graphlink/src/utils.dart';
@@ -136,8 +135,7 @@ class TypeScriptSerializer extends GLSerializer {
   ///   `[String]!`    → `(string | null)[]`
   ///   `[String]`     → `(string | null)[] | null`
   @override
-  String serializeType(GLType def, bool forceNullable, [bool _ = false]) {
-    final nullable = forceNullable || def.nullable;
+  String serializeType(GLType def, [bool _ = false]) {
 
     String expr;
     if (def is GLMapType) {
@@ -159,7 +157,7 @@ class TypeScriptSerializer extends GLSerializer {
       expr = '$wrapper<$expr>';
     }
 
-    return nullable ? '$expr | null' : expr;
+    return def.nullable ? '$expr | null' : expr;
   }
 
   // ── Fields ─────────────────────────────────────────────────────────────────

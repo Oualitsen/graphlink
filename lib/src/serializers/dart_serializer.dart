@@ -8,7 +8,6 @@ import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_token.dart';
-import 'package:graphlink/src/model/gl_token_with_fields.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/serializers/annotation_serializer.dart';
@@ -138,9 +137,9 @@ class DartSerializer extends GLSerializer {
   }
 
   @override
-  String serializeType(GLType def, bool forceNullable, [bool _ = false]) {
+  String serializeType(GLType def, [bool _ = false]) {
     String postfix = "";
-    if (forceNullable || def.nullable) {
+    if (def.nullable) {
       postfix = "?";
     }
     String dartTpe;

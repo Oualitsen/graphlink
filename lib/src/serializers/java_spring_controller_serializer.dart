@@ -187,7 +187,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     for (final arg in arguments) {
       final origArg = arg.originalArg;
       if (origArg == null) continue;
-      final declaration = serializer.serializeType(origArg.type, false);
+      final declaration = serializer.serializeType(origArg.type);
       final fromJsonCall = _inputFromJsonConversion(origArg.type, arg.codeName, context);
       final importSource = grammar.inputs[origArg.type.token] ?? grammar.types[origArg.type.token];
       if (importSource != null) {
@@ -217,7 +217,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
         ? '$serviceInstanceName.${GLService.getValidationMethodName(method.name.token)}(${conversions.serviceArgs.join(", ")})'
         : null;
     final validationCall = validationMethodCall != null ? '$validationMethodCall;' : null;
-    final baseReturnType = serializer.serializeType(method.type, false);
+    final baseReturnType = serializer.serializeType(method.type);
     final returnTypeIsVoid = baseReturnType == "void";
     returnType = baseReturnType;
     if (type == GLQueryType.subscription) {
@@ -363,7 +363,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     if (annotation.isNotEmpty) {
       buffer.writeln(annotation);
     }
-    final type = serializer.serializeType(mapping.field.type, false);
+    final type = serializer.serializeType(mapping.field.type);
     
     final conversions = _buildArgumentConversions(mapping.field.arguments, context);
     final valueCodeName = _resolvedArgumentCodeName(mapping.field.arguments, 'value');
@@ -401,7 +401,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     var buffer = StringBuffer();
     buffer.writeln(getAnnotationForMapping(mapping, context));
 
-    final fieldType = serializer.serializeType(mapping.field.type, false);
+    final fieldType = serializer.serializeType(mapping.field.type);
 
     final conversions = _buildArgumentConversions(mapping.field.arguments, context);
     final valueCodeName = _resolvedArgumentCodeName(mapping.field.arguments, 'value');
@@ -436,13 +436,13 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     if (fieldTypeToken != null && !grammar.scalars.containsKey(fieldTypeToken.token)) {
       context.addImportDependecy(fieldTypeToken);
     }
-    final keyType = serializer.serializeType(GLType(mappedToType.tokenInfo, false), false);
-    String realValueType = serializer.serializeType(serviceMapping.field.type, false).toBoxedType;
+    final keyType = serializer.serializeType(GLType(mappedToType.tokenInfo, false));
+    String realValueType = serializer.serializeType(serviceMapping.field.type).toBoxedType;
     if (serviceMapping.field.type.isList) {
       realValueType = "? extends $realValueType";
     }
     final mappedType = mapping.field.type;
-    final mappedValueType = serializer.serializeType(mappedType is GLMapType ? mappedType.valueType : mappedType, false).toBoxedType;
+    final mappedValueType = serializer.serializeType(mappedType is GLMapType ? mappedType.valueType : mappedType).toBoxedType;
     final valueConversion = _serviceResultToJson(mapping.field, "entry.getValue()", context);
 
     final loopBody = codeGenUtils.block(['result.put(entry.getKey(), $valueConversion);']);
@@ -472,7 +472,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
 
     final wrapperImport = mapping.field.type.wrapperImport;
     if (wrapperImport != null) context.addImport(wrapperImport);
-    final returnType = serializer.serializeType(mapping.field.type, false);
+    final returnType = serializer.serializeType(mapping.field.type);
 
     buffer.write("${returnType.toBoxedType} ${mapping.key}(${_getMappingArgument(mapping, context)}");
     buffer.write(')');
@@ -490,7 +490,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
       returnType = getServiceReturnType(method.type);
     }
     var result =
-        "${serializer.serializeType(createListTypeOnSubscription(returnType, type), false)} ${method.codeName}(${serializeArgs(method.arguments, context)}";
+        "${serializer.serializeType(createListTypeOnSubscription(returnType, type))} ${method.codeName}(${serializeArgs(method.arguments, context)}";
 
     return "${result})";
   }
@@ -517,6 +517,6 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
         return 'MultipartFile';
       }
     }
-    return serializer.serializeType(arg.type, false);
+    return serializer.serializeType(arg.type);
   }
 }
