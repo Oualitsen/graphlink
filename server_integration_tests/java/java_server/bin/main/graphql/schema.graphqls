@@ -9,7 +9,7 @@ schema {
    mutation: Mutation
    subscription: Subscription
 }
-
+scalar Upload @glUpload
 directive @glValidate on FIELD_DEFINITION
 input CreateArticleInput {
    title: String!
@@ -36,6 +36,7 @@ type Article implements GLArticleProjection {
    id: ID!
    title: String!
    type: ArticleType
+   authorId: ID!
    webSite: WebSite
    author(value: Article!): Author!
    authorList(value: Article!): [Author!]
@@ -44,7 +45,7 @@ type Article implements GLArticleProjection {
 type Query {
    getAuthor(id: ID!): Author
    getArticle(id: ID!): Article!
-   listAuthors: [Author]
+   listAuthors: [Author!]!
    listArticles: [Article!]!
    getProjectedArticle: Article! @glReturnsProjection
    getArticleWithCount: ArticleWithCount
@@ -57,6 +58,8 @@ type Mutation {
    updateArticle(input: UpdateArticleInput!): Article!
    deleteArticle(id: ID!): Boolean!
    bulkCreate(matrix: [[CreateArticleInput!]]): Int! @glValidate
+   uploadOneFile(userId: ID!, file: MultipartFile!): Boolean!
+   uploadFileList(userId: ID!, files: [MultipartFile!]!): Boolean!
 }
 type Subscription {
    articleCreated: Article!

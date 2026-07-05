@@ -153,9 +153,6 @@ class DartSerializer extends GLSerializer {
     }
     final wrapper = def.wrapper;
     if (wrapper != null) {
-      if (def.wrapperImport != null) {
-        grammar.getTokenByKey(def.token)?.addImport(def.wrapperImport!);
-      }
       dartTpe = "$wrapper<$dartTpe>";
     }
     return "$dartTpe$postfix";
