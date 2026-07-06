@@ -42,7 +42,7 @@ extension GLGrammarServiceExtension on GLParser {
         var validationField = GLField(
             name: field.name
                 .ofNewName(GLService.getValidationMethodName(field.name.token)),
-            type: field.type,
+            type: GLVoidType(),
             arguments: field.arguments,
             directives: [
               GLDirectiveValue.createDirectiveValue(
