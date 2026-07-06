@@ -1008,17 +1008,18 @@ class JavaSerializer extends GLSerializer {
 
   String _serializeInterfaceField(GLField f, bool getters, GLInterfaceDefinition owner, {bool forceClassGetters = false}) {
     var buffer = StringBuffer();
-    var fieldDecorators = serializeDecorators(f.getDirectives(), joiner: "\n");
-    if (fieldDecorators.isNotEmpty) {
-      buffer.writeln(fieldDecorators.trim().ident());
-    }
     if (getters) {
+      var fieldDecorators = serializeDecorators(f.getDirectives(), joiner: "\n");
+      if (fieldDecorators.isNotEmpty) {
+        buffer.writeln(fieldDecorators.trim().ident());
+      }
       if (typesAsRecords && !forceClassGetters) {
         buffer.write(serializeGetterDeclaration(f, skipModifier: true, asProperty: true, owner: owner).ident());
       } else {
         buffer.write(serializeGetterDeclaration(f, skipModifier: true, owner: owner).ident());
       }
     } else {
+      // serializeMethod already emits the field's decorators.
       buffer.write(serializeMethod(f).ident());
     }
     buffer.write(";");

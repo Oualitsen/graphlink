@@ -223,30 +223,38 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
     });
     var fields = getSerializableFields(g.mode);
     for (var f in fields) {
-      var token = g.getTokenByKey(f.type.token);
-      if (token is GLTypeDefinition) {
-        final mappedTo = token.mappedToType;
-        if (mappedTo != null) {
-          result[mappedTo.token] = mappedTo;
-        }
-      }
-      if (token != null && !g.isScalar(token.token)) {
-        result[token.token] = token;
-      }
-      if (filterDependecy(token, g)) {
-        result[token!.token] = token;
-      }
+      _collectTypeDependencies(f.type, g, result);
       for (var arg in f.arguments) {
-        var argTokenType = g.getTokenByKey(arg.type.token);
-        if (filterDependecy(argTokenType, g)) {
-          result[argTokenType!.token] = argTokenType;
-        }
-        if (argTokenType != null && !g.isScalar(argTokenType.token)) {
-          result[argTokenType.token] = argTokenType;
-        }
+        _collectTypeDependencies(arg.type, g, result);
       }
     }
     return Set.unmodifiable(result.values);
+  }
+
+  /// Walks [type] down to every leaf (recursing through `GLListType.type` and
+  /// both sides of `GLMapType`, at any nesting depth) and registers each
+  /// leaf's resolved token as an import dependency when [filterDependecy]
+  /// allows it.
+  void _collectTypeDependencies(GLType type, GLParser g, Map<String, GLToken> result) {
+    if (type is GLMapType) {
+      _collectTypeDependencies(type.keyType, g, result);
+      _collectTypeDependencies(type.valueType, g, result);
+      return;
+    }
+    if (type is GLListType) {
+      _collectTypeDependencies(type.type, g, result);
+      return;
+    }
+    var token = g.getTokenByKey(type.token);
+    if (token is GLTypeDefinition) {
+      final mappedTo = token.mappedToType;
+      if (mappedTo != null) {
+        result[mappedTo.token] = mappedTo;
+      }
+    }
+    if (filterDependecy(token, g)) {
+      result[token!.token] = token;
+    }
   }
 
   void replaceField(GLField field) {
@@ -294,13 +302,9 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
 
   static Set<String> extractImports(GLDirectivesMixin dir, CodeGenerationMode mode, {bool skipOwnImports = false}) {
     var result = <String>{};
-    // is it external ?
-    var external = dir.getDirectiveByName(glExternal);
-    if (external != null) {
-      var externalImport = external.getArgValueAsString(glImport);
-      if (externalImport != null) {
-        result.add(externalImport);
-      }
+    final externalImport = dir.externalImport;
+    if (externalImport != null) {
+      result.add(externalImport);
     }
     if (!skipOwnImports) {
       // does it have imports
@@ -309,9 +313,9 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
           .where((e) {
             switch (mode) {
               case CodeGenerationMode.client:
-                return e.getArgValue(glOnClient) == true;
+                return e.getArgValueAsBool(glOnClient);
               case CodeGenerationMode.server:
-                return e.getArgValue(glOnServer) == true;
+                return e.getArgValueAsBool(glOnServer);
             }
           })
           .map((d) => d.getArgValueAsString(glImport))
@@ -327,19 +331,12 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
   ///
 
   bool filterDependecy(GLToken? token, GLParser g) {
-    if (token == null) {
-      return false;
-    }
-    if (g.scalars.containsKey(token.token)) {
+    if (token == null || g.scalars.containsKey(token.token)) {
       return false;
     }
     if (token is GLDirectivesMixin) {
-      var dirMixin = token as GLDirectivesMixin;
-      var exteneral = dirMixin.getDirectiveByName(glExternal);
-      if (exteneral != null) {
-        return false;
-      }
-      return !shouldSkip(dirMixin, g.mode);
+      final dirMixin = token as GLDirectivesMixin;
+      return !dirMixin.isExternal && !shouldSkip(dirMixin, g.mode);
     }
     return true;
   }
