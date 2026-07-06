@@ -13,6 +13,7 @@ import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_token.dart';
+import 'package:graphlink/src/model/gl_token_with_fields.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/serializers/annotation_serializer.dart';
@@ -452,11 +453,11 @@ class JavaSerializer extends GLSerializer {
         final name = tf.name.token;
         if (autoByTarget.containsKey(name)) {
           final f = autoByTarget[name]!;
-          final getter = _getterFieldName(f.sourceField!, true);
+          final getter = _getterFieldName(def, f.sourceField!, true);
           constructorArgs.add(_toMappingExpr(getter, f.sourceField!.type, f.targetField.type, 0, def));
         } else if (defaultByTarget.containsKey(name)) {
           final f = defaultByTarget[name]!;
-          final getter = _getterFieldName(f.sourceField!, true);
+          final getter = _getterFieldName(def, f.sourceField!, true);
           constructorArgs.add('$getter != null ? $getter : default${f.targetField.codeName.firstUp}');
         } else if (requiredByTarget.containsKey(name)) {
           constructorArgs.add(tf.codeName);
@@ -481,12 +482,12 @@ class JavaSerializer extends GLSerializer {
     // Class-style target: builder chain.
     final builderCalls = [
       ...plan.autoMapped.map((f) {
-        final getter = _getterFieldName(f.sourceField!, true);
+        final getter = _getterFieldName(def, f.sourceField!, true);
         final expr = _toMappingExpr(getter, f.sourceField!.type, f.targetField.type, 0, def);
         return '.${f.targetField.codeName}($expr)';
       }),
       ...plan.defaultParams.map((f) {
-        final getter = _getterFieldName(f.sourceField!, true);
+        final getter = _getterFieldName(def, f.sourceField!, true);
         return '.${f.targetField.codeName}($getter != null ? $getter : default${f.targetField.codeName.firstUp})';
       }),
       ...plan.requiredParams.map(
@@ -509,6 +510,7 @@ class JavaSerializer extends GLSerializer {
   @override
   String generateFromMethod(GLInputDefinition def, String targetType, FromMappingPlan plan) {
     final targetVar = targetType.firstLow;
+    final targetDef = grammar.types[targetType]!;
 
     final nullableListDefaultParams =
         plan.nullableListDefaults.map((f) => '${serializeType(f.sourceField!.type)} default${f.sourceField!.codeName.firstUp}');
@@ -536,11 +538,11 @@ class JavaSerializer extends GLSerializer {
       final fieldName = field.name.token;
       if (autoBySource.containsKey(fieldName)) {
         final f = autoBySource[fieldName]!;
-        final sourceExpr = '${targetVar}.${_getterFieldName(f.targetField, false)}';
+        final sourceExpr = '${targetVar}.${_getterFieldName(targetDef, f.targetField, false)}';
         constructorArgs.add(_fromMappingExpr(sourceExpr, f.sourceField!.type.firstType.token, f.targetField.type, 0, def));
       } else if (nullableListBySource.containsKey(fieldName)) {
         final f = nullableListBySource[fieldName]!;
-        final sourceExpr = '${targetVar}.${_getterFieldName(f.targetField, false)}';
+        final sourceExpr = '${targetVar}.${_getterFieldName(targetDef, f.targetField, false)}';
         final expr = _fromMappingExpr(sourceExpr, f.sourceField!.type.firstType.token, f.targetField.type, 0, def);
         constructorArgs.add('$expr != null ? $expr : default${f.sourceField!.codeName.firstUp}');
       } else if (promotedNames.contains(fieldName) || inputOnlyNames.contains(fieldName)) {
@@ -728,7 +730,7 @@ class JavaSerializer extends GLSerializer {
     return buffer.toString();
   }
 
-  String serializeGetter(GLField field, GLToken context, {bool checkForNulls = false, bool isTypeField = false, bool isOverride = false}) {
+  String serializeGetter(GLField field, GLTokenWithFields context, {bool checkForNulls = false, bool isTypeField = false, bool isOverride = false}) {
     if (checkForNulls) {
       context.addImport(JavaImports.objects);
     }
@@ -753,7 +755,7 @@ class JavaSerializer extends GLSerializer {
     var jspecifyAnnotation = _isPrimitiveType(field.type) ? null : getJSpecifyAnnoation(field);
     var result = codeGenUtils.createMethod(
         returnType: "public ${returnType}",
-        methodName: _getterName(field.codeName, returnType == "boolean"),
+        methodName: getterName(context, field.name.token),
         statements: [
           if (checkForNulls && !field.type.nullable && !_isPrimitiveType(field.type)) 'Objects.requireNonNull(${field.codeName});',
           'return ${field.codeName};'
@@ -857,7 +859,10 @@ class JavaSerializer extends GLSerializer {
     if (asProperty) {
       result = "$result ${field.codeName}";
     } else {
-      result = "$result ${_getterName(field.codeName, returnType == "boolean")}";
+      final name = owner != null
+          ? getterName(owner, field.name.token)
+          : (returnType == "boolean" ? "is${field.codeName.firstUp}" : "get${field.codeName.firstUp}");
+      result = "$result $name";
     }
     result = "$result()";
     if (skipModifier) {
@@ -866,15 +871,28 @@ class JavaSerializer extends GLSerializer {
     return "public $result";
   }
 
+  String getterName(GLTokenWithFields owner, String fieldName) {
+    final field = owner.getFieldByName(fieldName);
+    if (field == null) {
+      throw ArgumentError("No field named '$fieldName' on ${owner.tokenInfo}");
+    }
+    // An implementer's override must keep the interface's accessor name even
+    // when it narrows nullability — narrowing `Boolean` to `Boolean!` would
+    // otherwise flip the accessor from `getX` to `isX` and break the override.
+    final interfaceField = owner is GLTypeDefinition ? owner.getInterfaceField(field) : null;
+    final isBoolean = serializeType(interfaceField?.type ?? field.type) == "boolean";
+    final prefix = isBoolean ? "is" : "get";
+    return "$prefix${field.codeName.firstUp}";
+  }
+
   String _setterName(String propertyName) {
     return _accessorName(propertyName, true, false);
   }
 
-  String _getterName(String propertyName, bool isBoolean) => JavaSerializer.accessorName(propertyName, isBoolean: isBoolean);
-
-  String _getterFieldName(GLField field, bool forInput) {
+  String _getterFieldName(GLTokenWithFields owner, GLField field, bool forInput) {
     final isRecord = forInput && inputsAsRecords || !forInput && typesAsRecords;
-    return JavaSerializer.getterCall(field, isRecord: isRecord, isBoolean: serializeType(field.type) == "boolean");
+    if (isRecord) return "${field.codeName}()";
+    return "${getterName(owner, field.name.token)}()";
   }
 
   String _accessorName(String name, bool setter, bool isBoolean) => JavaSerializer.accessorName(name, setter: setter, isBoolean: isBoolean);
