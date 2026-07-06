@@ -449,20 +449,8 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     ];
   }
 
-  // ── Service declarations ───────────────────────────────────────────────────
 
-  @override
-  String serializeMethodDeclaration(GLField method, GLQueryType type, GLToken context) {
-    GLType returnType;
-    if (method.getDirectiveByName(glValidate)?.generated == true) {
-      returnType = GLType('void'.toToken(), false);
-    } else {
-      returnType = getServiceReturnType(method.type);
-    }
-    var result = "${serializer.serializeType(createListTypeOnSubscription(returnType, type))} ${method.codeName}(${serializeArgs(method.arguments)}";
-
-    return "${result})";
-  }
+ 
 
   // ── Arg type resolution ────────────────────────────────────────────────────
 

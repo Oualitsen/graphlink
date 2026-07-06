@@ -27,6 +27,7 @@ class DartSerializer extends GLSerializer {
     "Long": "int",
     "gqlMapStrObj": "Map<String, dynamic>",
     "dynamicValue": "dynamic",
+    "void": "void",
   };
 
   DartSerializer(super.grammar,
@@ -138,6 +139,9 @@ class DartSerializer extends GLSerializer {
 
   @override
   String serializeType(GLType def, [bool _ = false]) {
+    if (def is GLVoidType) {
+      return 'void';
+    }
     String postfix = "";
     if (def.nullable) {
       postfix = "?";

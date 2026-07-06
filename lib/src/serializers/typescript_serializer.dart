@@ -26,6 +26,7 @@ class TypeScriptSerializer extends GLSerializer {
     'Boolean': 'boolean',
     'gqlMapStrObj': 'Record<string, unknown>',
     'dynamicValue': 'unknown',
+    'void': 'void',
   };
 
   TypeScriptSerializer(
@@ -137,6 +138,9 @@ class TypeScriptSerializer extends GLSerializer {
   @override
   String serializeType(GLType def, [bool _ = false]) {
 
+    if (def is GLVoidType) {
+      return 'void';
+    }
     String expr;
     if (def is GLMapType) {
       expr = 'Map<${serializeType(def.keyType, false)}, ${serializeType(def.valueType, false)}>';
