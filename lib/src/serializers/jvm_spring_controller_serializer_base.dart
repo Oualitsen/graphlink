@@ -47,6 +47,21 @@ abstract class JvmSpringControllerSerializerBase {
       }
     }
     injectDataFetchingIntoArgs();
+    _annotateMappingMethods();
+  }
+
+  /// Annotates every controller schema/batch-mapping method with
+  /// `@SchemaMapping` or `@BatchMapping`. Forwarded, forbidden and identity
+  /// mappings are always `@SchemaMapping` regardless of [GLSchemaMapping.batch]
+  /// — only a "real" mapping method (one that actually delegates to a batch
+  /// service call) can be `@BatchMapping`.
+  void _annotateMappingMethods() {
+    for (var ctrl in grammar.controllers.values) {
+      for (var mapping in ctrl.mappings) {
+        final isSchemaMapping = mapping.forwarded || mapping.forbid || mapping.identity || !mapping.isBatch;
+        mapping.field.addDirective(isSchemaMapping ? _createSchemaMappingDirective(mapping) : _createBatchMappingDirective(mapping));
+      }
+    }
   }
 
   void injectDataFetchingIntoArgs() {
@@ -115,7 +130,37 @@ abstract class JvmSpringControllerSerializerBase {
         generated: true);
   }
 
-  String getAnnotationForMapping(GLSchemaMapping mapping, GLToken context) {
+  GLDirectiveValue _createSchemaMappingDirective(GLSchemaMapping mapping) {
+    return GLDirectiveValue(
+        "_glSchemaMapping".toToken(),
+        [],
+        [
+          GLArgumentValue(glAnnotation.toToken(), true),
+          GLArgumentValue(glClass.toToken(), "@SchemaMapping"),
+          GLArgumentValue(glImport.toToken(), SpringImports.schemaMapping),
+          GLArgumentValue("typeName".toToken(), mapping.type.tokenInfo.token.quote()),
+          GLArgumentValue("field".toToken(), mapping.field.name.token.quote()),
+          GLArgumentValue(glOnServer.toToken(), true),
+        ],
+        generated: true);
+  }
+
+  GLDirectiveValue _createBatchMappingDirective(GLSchemaMapping mapping) {
+    return GLDirectiveValue(
+        "_glBatchMapping".toToken(),
+        [],
+        [
+          GLArgumentValue(glAnnotation.toToken(), true),
+          GLArgumentValue(glClass.toToken(), "@BatchMapping"),
+          GLArgumentValue(glImport.toToken(), SpringImports.batchMapping),
+          GLArgumentValue("typeName".toToken(), mapping.type.tokenInfo.token.quote()),
+          GLArgumentValue("field".toToken(), mapping.field.name.token.quote()),
+          GLArgumentValue(glOnServer.toToken(), true),
+        ],
+        generated: true);
+  }
+
+  String getAnnotationForMapping1(GLSchemaMapping mapping, GLToken context) {
     if (mapping.isBatch) {
       context.addImport(SpringImports.batchMapping);
       return '@BatchMapping(typeName="${mapping.type.tokenInfo}", field="${mapping.field.name}")';
@@ -196,17 +241,12 @@ abstract class JvmSpringControllerSerializerBase {
     return mappedTo.token;
   }
 
-
-  
-
-
   // ── Abstract ───────────────────────────────────────────────────────────────
 
   String serializeController(GLController ctrl);
-  String serializehandlerMethod(GLQueryType type, GLField method, String serviceInstanceName, GLToken context, {String? qualifier});
+  String serializeHandlerMethod(GLQueryType type, GLField method, String serviceInstanceName, GLToken context);
   String serializeMappingMethod(GLSchemaMapping mapping, String serviceInstanceName, GLToken context);
   String serializeMethodDeclaration(GLField method, GLQueryType type, GLToken context);
-  String serializeControllerMethodHeader(GLField method);
   String serializeIdentityMapping(GLSchemaMapping mapping, GLToken context);
   String serializeForwardedMapping(GLSchemaMapping mapping, GLToken context);
 }

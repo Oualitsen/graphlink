@@ -1,3 +1,4 @@
+import 'package:graphlink/src/model/gl_service.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_directives_mixin.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
@@ -8,8 +9,7 @@ import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 
 extension GLGrammarAnnotationExtension on GLParser {
-  void convertAnnotationsToDecorators(List<GLDirectivesMixin> mixins,
-      String Function(GLDirectiveValue value) serializer) {
+  void convertAnnotationsToDecorators(List<GLDirectivesMixin> mixins, String Function(GLDirectiveValue value) serializer) {
     for (var elm in mixins) {
       elm
           .getAnnotations(mode: mode)
@@ -21,6 +21,22 @@ extension GLGrammarAnnotationExtension on GLParser {
                 import: an.getArgValueAsString(glImport)),
           )
           .forEach(elm.addDirective);
+      if (elm is GLService) {
+        for (var m in elm.mappings) {
+          m.field
+              .getAnnotations(mode: mode)
+              .map(
+                (an) => GLDirectiveValue.createGqDecorators(
+                    decorators: [serializer(an)],
+                    applyOnClient: mode == CodeGenerationMode.client,
+                    applyOnServer: mode == CodeGenerationMode.server,
+                    import: an.getArgValueAsString(glImport)),
+              )
+              .forEach((e) {
+                m.field.addDirective(e);
+              });
+        }
+      }
     }
   }
 
@@ -55,10 +71,7 @@ extension GLGrammarAnnotationExtension on GLParser {
       ...repositoryFields,
     ]);
     var params = <GLDirectivesMixin>[];
-    result
-        .whereType<GLField>()
-        .where((f) => f.arguments.isNotEmpty)
-        .forEach((f) {
+    result.whereType<GLField>().where((f) => f.arguments.isNotEmpty).forEach((f) {
       params.addAll(f.arguments);
     });
     result.addAll(params);
@@ -76,8 +89,7 @@ extension GLGrammarAnnotationExtension on GLParser {
       final imports = <String>{};
       for (final field in fields) {
         if (isPrimitive(field.type)) continue;
-        final isNullable = field.type.nullable ||
-            (isTypeField && field.hasInculeOrSkipDiretives);
+        final isNullable = field.type.nullable || (isTypeField && field.hasInculeOrSkipDiretives);
         if (isNullable) {
           field.addDirective(GLDirectiveValue.createGqDecorators(
             decorators: [jspecifyNullable],
@@ -97,12 +109,8 @@ extension GLGrammarAnnotationExtension on GLParser {
       return imports.toList();
     }
 
-    final typeTargets = mode == CodeGenerationMode.server
-        ? typesWithNoResolvers
-        : projectedTypes.values.toList();
-    final interfaceTargets = mode == CodeGenerationMode.server
-        ? interfaces.values.toList()
-        : projectedInterfaces.values.toList();
+    final typeTargets = mode == CodeGenerationMode.server ? typesWithNoResolvers : projectedTypes.values.toList();
+    final interfaceTargets = mode == CodeGenerationMode.server ? interfaces.values.toList() : projectedInterfaces.values.toList();
 
     for (final def in typeTargets) {
       final imports = annotateAndGetImports(def.getSerializableFields(mode), isTypeField: true);
@@ -129,10 +137,7 @@ extension GLGrammarAnnotationExtension on GLParser {
   }
 
   void proparageAnnotationsOnFields() {
-    extensibleTokens.values
-        .expand((e) => e.data)
-        .whereType<GLTokenWithFields>()
-        .forEach(_propagateAnnotations);
+    extensibleTokens.values.expand((e) => e.data).whereType<GLTokenWithFields>().forEach(_propagateAnnotations);
   }
 
   void _propagateAnnotations(GLTokenWithFields tokenWithFields) {
@@ -141,12 +146,7 @@ extension GLGrammarAnnotationExtension on GLParser {
     }
     var mixin = tokenWithFields as GLDirectivesMixin;
 
-    var annotations = mixin
-        .getDirectives()
-        .where((d) =>
-            d.getArgValueAsBool(glAnnotation) &&
-            d.getArgValueAsBool(glApplyOnFields))
-        .toList();
+    var annotations = mixin.getDirectives().where((d) => d.getArgValueAsBool(glAnnotation) && d.getArgValueAsBool(glApplyOnFields)).toList();
     if (annotations.isEmpty) {
       return;
     }
