@@ -76,4 +76,8 @@ mixin GLDirectivesMixin {
   bool hasDirective(String name) {
     return _directives?.containsKey(name) ?? false;
   }
+
+  bool get isExternal => hasDirective(glExternal);
+
+  String? get externalImport => getDirectiveByName(glExternal)?.getArgValueAsString(glImport);
 }

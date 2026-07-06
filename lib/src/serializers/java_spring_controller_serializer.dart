@@ -434,7 +434,6 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
       context.addImportDependecy(fieldTypeToken);
     }
     final keyType = serializer.serializeType(GLType(mappedToType.tokenInfo, false));
-    print("serviceMapping.field.type.isList = ${serviceMapping.field.type.isList}");
     String realValueType = serializer.serializeType(serviceMapping.field.type).toBoxedType;
     if (serviceMapping.field.type.isList) {
       realValueType = "? extends $realValueType";
