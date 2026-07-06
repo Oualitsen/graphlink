@@ -1,4 +1,3 @@
-import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/java_code_gen_utils.dart';
@@ -51,11 +50,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     _mappifyControllers();
   }
 
-  /// Wraps every controller field's return type in the wrapper its Spring
-  /// handler method actually returns — `Flux<T>` for subscriptions, `Mono<T>`
-  /// for everything else in reactive mode, `CompletableFuture<T>` otherwise —
-  /// so [JavaSerializer.serializeType] emits it directly. Schema/batch mapping
-  /// methods are never subscriptions, so they only ever get Mono/CompletableFuture.
+  
   void _wrapControllerHandlerReturnTypes() {
     for (var ctrl in grammar.controllers.values) {
       for (var field in ctrl.fields) {
@@ -72,11 +67,6 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     }
   }
 
-  /// Reactive Spring GraphQL handlers use `Flux<T>` to represent multiple
-  /// values and `Mono<T>` for a single value — a list return type is *itself*
-  /// the multiplicity signal, so it collapses into `Flux<T>` rather than
-  /// nesting as `Flux<List<T>>`. Applies to both service interfaces and
-  /// controllers, since both declare/return the same wrapped shape.
   void _wrapReactiveReturnTypes() {
     for (var service in [...grammar.services.values, ...grammar.controllers.values]) {
       for (var field in [...service.fields]) {
@@ -85,8 +75,10 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
           service.replaceField(wrapped);
         }
       }
-      for (var mapping in service.mappings) {
-        mapping.field = _reactiveWrappedField(mapping.field, isSubscription: false);
+      if (service is GLController) {
+        for (var mapping in service.mappings) {
+          mapping.field = _reactiveWrappedField(mapping.field, isSubscription: false);
+        }
       }
     }
   }
@@ -217,8 +209,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
           "public",
           ctrl),
       '',
-      ...ctrl.fields
-          .map((field) => serializeHandlerMethod(ctrl.getTypeByFieldName(field.name.token)!, field, serviceInstanceName, ctrl)),
+      ...ctrl.fields.map((field) => serializeHandlerMethod(ctrl.getTypeByFieldName(field.name.token)!, field, serviceInstanceName, ctrl)),
       '',
       ...ctrl.mappings.map((m) => serializeMappingMethod(m, serviceInstanceName, ctrl)).map((e) => "${e}\n")
     ]));
@@ -405,7 +396,12 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     var buffer = StringBuffer();
     buffer.write(serializer.serializeMethod(mapping.field, modifier: "public"));
     buffer.write(" ");
-    final statements = _wrapInCompletableFuture(['${mapping.field.arguments.first.bareName}'], false, context);
+    final List<String> statements;
+    if (reactive) {
+      statements = ["return Mono.just(${mapping.field.arguments.first.bareName});"];
+    } else {
+      statements = _wrapInCompletableFuture(['${mapping.field.arguments.first.bareName}'], false, context);
+    }
     buffer.write(codeGenUtils.block(statements));
     return buffer.toString();
   }
@@ -438,6 +434,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
       context.addImportDependecy(fieldTypeToken);
     }
     final keyType = serializer.serializeType(GLType(mappedToType.tokenInfo, false));
+    print("serviceMapping.field.type.isList = ${serviceMapping.field.type.isList}");
     String realValueType = serializer.serializeType(serviceMapping.field.type).toBoxedType;
     if (serviceMapping.field.type.isList) {
       realValueType = "? extends $realValueType";
@@ -452,8 +449,6 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
       'for (Map.Entry<$keyType, $realValueType> entry : $sourceMapExpr.entrySet()) $loopBody',
     ];
   }
-
- 
 
   // ── Service declarations ───────────────────────────────────────────────────
 

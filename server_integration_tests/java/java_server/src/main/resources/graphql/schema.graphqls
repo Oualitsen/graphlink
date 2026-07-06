@@ -58,8 +58,8 @@ type Mutation {
    updateArticle(input: UpdateArticleInput!): Article!
    deleteArticle(id: ID!): Boolean!
    bulkCreate(matrix: [[CreateArticleInput!]]): Int! @glValidate
-   uploadOneFile(userId: ID!, file: MultipartFile!): Boolean!
-   uploadFileList(userId: ID!, files: [MultipartFile!]!): Boolean!
+   uploadOneFile(userId: ID!, file: FilePart!): Boolean!
+   uploadFileList(userId: ID!, files: [FilePart!]!): Boolean!
 }
 type Subscription {
    articleCreated: Article!

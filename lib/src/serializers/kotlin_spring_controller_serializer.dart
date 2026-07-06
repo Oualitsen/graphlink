@@ -1,5 +1,4 @@
 import 'package:graphlink/src/kotlin_code_gen_utils.dart';
-import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_controller.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
@@ -56,13 +55,7 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
   }
 
   
-
   
-
-  @override
-  String serializeControllerMethodHeader(GLField method) {
-    throw UnimplementedError();
-  }
 
   // ── Service declarations ───────────────────────────────────────────────────
 

@@ -13,7 +13,7 @@
   "serverConfig": {
     "spring": {
       "basePackage": "dev.graphlink.javaserver.generated",
-      "reactive": false,
+      "reactive": true,
       "generateSchema": true,
       "schemaTargetPath": "src/main/resources/graphql/schema.graphqls",
       "immutableInputFields": true,
