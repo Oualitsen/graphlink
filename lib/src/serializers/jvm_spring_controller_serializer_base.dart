@@ -246,7 +246,6 @@ abstract class JvmSpringControllerSerializerBase {
   String serializeController(GLController ctrl);
   String serializeHandlerMethod(GLQueryType type, GLField method, String serviceInstanceName, GLToken context);
   String serializeMappingMethod(GLSchemaMapping mapping, String serviceInstanceName, GLToken context);
-  String serializeMethodDeclaration(GLField method, GLQueryType type, GLToken context);
   String serializeIdentityMapping(GLSchemaMapping mapping, GLToken context);
   String serializeForwardedMapping(GLSchemaMapping mapping, GLToken context);
 }

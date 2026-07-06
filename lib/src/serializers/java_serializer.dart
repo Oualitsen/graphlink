@@ -79,6 +79,7 @@ class JavaSerializer extends GLSerializer {
         "Null": "null",
         "gqlMapStrObj": "Map<String, Object>",
         "dynamicValue": "Object",
+        "void": "void",
       };
 
   JavaSerializer(
@@ -293,7 +294,9 @@ class JavaSerializer extends GLSerializer {
   @override
   String serializeType(GLType def) {
     final String type;
-    if (def is GLMapType) {
+    if (def is GLVoidType) {
+      type = 'void';
+    } else if (def is GLMapType) {
       type = _mapOf(serializeType(def.keyType).toBoxedType, serializeType(def.valueType).toBoxedType);
     } else if (def is GLListType) {
       type = JavaCodeGenUtils.listOf(grammar, serializeType(def.inlineType));

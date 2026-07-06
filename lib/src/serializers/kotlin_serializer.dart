@@ -45,6 +45,7 @@ class KotlinSerializer extends GLSerializer {
         'Null': 'null',
         'gqlMapStrObj': 'Map<String, Any?>',
         'dynamicValue': 'Any',
+        'void': 'Unit',
       };
 
   KotlinSerializer(
@@ -61,6 +62,9 @@ class KotlinSerializer extends GLSerializer {
 
   @override
   String serializeType(GLType def) {
+    if (def is GLVoidType) {
+      return 'Unit';
+    }
     String type;
     if (def is GLMapType) {
       // kotlin.collections.Map is part of Kotlin's implicit default imports

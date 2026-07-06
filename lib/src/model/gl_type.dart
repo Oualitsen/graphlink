@@ -1,3 +1,4 @@
+import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_collection_imports.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/token_info.dart';
@@ -131,6 +132,21 @@ class GLMapType extends GLType {
     }
     return false;
   }
+}
+
+/// Synthetic return type for generated methods that produce no value (e.g.
+/// the generated `@glValidate` validation method). Never appears in a parsed
+/// `.graphql` schema — built directly by server codegen, so each language
+/// serializer must render it as its own no-value token (`void` for
+/// Java/Dart/TypeScript, `Unit` for Kotlin) instead of hardcoding a string.
+class GLVoidType extends GLType {
+  GLVoidType() : super('void'.toToken(), false);
+
+  @override
+  GLType ofNewName(TokenInfo name) => GLVoidType();
+
+  @override
+  GLType get copy => GLVoidType();
 }
 
 class GLListType extends GLType {
