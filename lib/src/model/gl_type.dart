@@ -100,8 +100,18 @@ Set<String> collectionImportsOf(GLType type) {
 class GLMapType extends GLType {
   final GLType keyType;
   final GLType valueType;
-  GLMapType(this.keyType, this.valueType, bool nullable, {String? wrapper, String? wrapperImport})
-      : super(valueType.tokenInfo, nullable, wrapper: wrapper, wrapperImport: wrapperImport);
+
+  /// Copies [keyType]/[valueType] rather than storing the passed-in instances
+  /// directly. Callers routinely build a `GLMapType` around a type that's
+  /// also owned elsewhere (e.g. a batch mapping's per-item field type, held
+  /// both as the map's value type and as its own field's type) — later
+  /// in-place mutation of one owner's `wrapper`/`wrapperImport` (e.g. the
+  /// reactive-wrapping pass) must never leak into the other. See
+  /// [GLType.copy].
+  GLMapType(GLType keyType, GLType valueType, bool nullable, {String? wrapper, String? wrapperImport})
+      : keyType = keyType.copy,
+        valueType = valueType.copy,
+        super(valueType.tokenInfo, nullable, wrapper: wrapper, wrapperImport: wrapperImport);
 
   @override
   GLType ofNewName(TokenInfo name) {
@@ -126,8 +136,15 @@ class GLMapType extends GLType {
 class GLListType extends GLType {
   ///this could be an instance of GQListType
   final GLType type;
-  GLListType(this.type, bool nullable, {String? wrapper, String? wrapperImport})
-      : super(type.tokenInfo, nullable, wrapper: wrapper, wrapperImport: wrapperImport);
+
+  /// Copies [type] rather than storing the passed-in instance directly, for
+  /// the same reason as [GLMapType]'s constructor: a caller may build a
+  /// `GLListType` around an element type that's also owned elsewhere, and
+  /// later in-place mutation of one owner's `wrapper`/`wrapperImport` must
+  /// never leak into the other. See [GLType.copy].
+  GLListType(GLType type, bool nullable, {String? wrapper, String? wrapperImport})
+      : type = type.copy,
+        super(type.tokenInfo, nullable, wrapper: wrapper, wrapperImport: wrapperImport);
 
   @override
   GLType get inlineType => type;
