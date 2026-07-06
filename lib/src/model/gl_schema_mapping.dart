@@ -49,7 +49,7 @@ class GLSchemaMapping {
   }): _key = key ??  "${type.token.firstLow}${field.name.token.firstUp}" {
     final glType = GLType(type.tokenInfo, false);
     if(!forbid) {
-      field.addArgument(GLArgumentDefinition("value".toToken(), (batch ?? false) ? GLListType(glType, false) : glType, []));
+      field.addArgument(GLArgumentDefinition("value".toToken(), (batch ?? false) ? GLListType(glType, false) : glType, [], skipOnGraphqlSerialization: true));
     }
   }
 
