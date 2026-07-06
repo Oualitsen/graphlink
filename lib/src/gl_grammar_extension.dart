@@ -77,7 +77,7 @@ extension GLGrammarExtension on GLParser {
   }
 
   List<GLTypeDefinition> getSerializableTypes() {
-    return typesWithNoResolvers.where(_filterByMode).toList();
+    return typesWithNoResolvers.where(filterByMode).toList();
   }
 
   List<GLTypeDefinition> get typesWithNoResolvers {
@@ -87,18 +87,18 @@ extension GLGrammarExtension on GLParser {
   }
 
   List<GLInputDefinition> getSerializableInputs() {
-    return inputs.values.where(_filterByMode).toList();
+    return inputs.values.where(filterByMode).toList();
   }
 
   List<GLEnumDefinition> getSerializableEnums() {
-    return enums.values.where(_filterByMode).toList();
+    return enums.values.where(filterByMode).toList();
   }
 
   List<GLInterfaceDefinition> getSerializableInterfaces() {
-    return interfaces.values.where(_filterByMode).toList();
+    return interfaces.values.where(filterByMode).toList();
   }
 
-  bool _filterByMode(GLDirectivesMixin mixin) {
+  bool filterByMode(GLDirectivesMixin mixin) {
     return filterByParserMode(mixin, mode);
   }
 

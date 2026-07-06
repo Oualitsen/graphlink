@@ -59,6 +59,28 @@ extension GLGrammarProjectionExtension on GLParser {
     });
   }
 
+  /// GraphQL requires a type/interface to explicitly declare every interface
+  /// transitively implemented by its own declared interfaces (spec
+  /// "IsValidImplementation"), not just the ones it names directly. Mirrors
+  /// [handleFragmentDepenecy]'s dependency-closure approach: walk each
+  /// type/interface's own `.interfaces` graph with a seen-set and add every
+  /// interface reachable, however deep. Must run after any step that adds new
+  /// `implements` edges (`updateInterfaceReferences`, `populateServerProjections`)
+  /// since it only closes over edges already present at call time.
+  void fillTransitiveInterfaceImplementations() {
+    var allTypes = [...interfaces.values, ...types.values];
+    for (var type in allTypes) {
+      var seen = <String>{type.token};
+      var queue = [...type.interfaces];
+      while (queue.isNotEmpty) {
+        var iface = queue.removeLast();
+        if (!seen.add(iface.token)) continue;
+        type.addInterface(iface);
+        queue.addAll(iface.interfaces);
+      }
+    }
+  }
+
   void _updateInterfaceCommonFields(List<GLInterfaceDefinition> definitions) {
     for (var i in definitions) {
       var commonFields = _getCommonInterfaceFields(i);

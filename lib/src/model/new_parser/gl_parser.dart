@@ -359,6 +359,7 @@ class GLParser {
     mergeTokens();
     validateNonEmptyFieldLists();
     updateInterfaceReferences();
+    fillTransitiveInterfaceImplementations();
     checkInterfaceInheritance();
     skipFieldOfSkipOnServerTypes();
     handleGLExternal();
@@ -414,9 +415,11 @@ class GLParser {
       handleRepositories(true);
       generateServicesAndControllers();
       generateSchemaMappings();
-      populateServerProjections();
       applyServerLenientNullability();
     }
+    populateServerProjections();
+    fillTransitiveInterfaceImplementations();
+
     // Last step: (1) apply naming-convention casing, (2) sanitize type names
     // (leading-underscore rule), then (3) keyword-safe.
     // All run after projected types/interfaces are built so every identifier

@@ -23,7 +23,6 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin, CodeNam
   final GLTypeDefinition? derivedFromType;
   final bool isResponseType;
 
-
   final Set<String> _originalTokens = <String>{};
 
   // @glStrict — memoized result of toProjectionInterface(), so the
@@ -42,7 +41,6 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin, CodeNam
   /// `validateSkipOnServerMapTo()` / `validateTypeFieldSkipOnServerDirectives()`
   /// confirm the mapping is valid — never computed in client mode.
   GLTypeDefinition? mappedToType;
-
 
   GLTypeDefinition({
     required TokenInfo name,
@@ -110,8 +108,7 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin, CodeNam
   /// `@glStrict`), i.e. it is an override rather than a field unique to
   /// this type.
   bool isOverride(GLField field) {
-    return _isOverrideCache[field.name.token] ??=
-        _interfaces.values.any((iface) => iface.hasField(field.name.token));
+    return _isOverrideCache[field.name.token] ??= _interfaces.values.any((iface) => iface.hasField(field.name.token));
   }
 
   /// Returns the declaration of [field] on the first of this type's
@@ -160,8 +157,7 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin, CodeNam
 
     fields.sort((a, b) => a.name.token.compareTo(b.name.token));
     _cachedHash = fields
-        .map((f) =>
-            "${f.name}:${serilaize.serializeType(f.type, forceNullable: f.hasInculeOrSkipDiretives || _isBackfilledCyclic(f, origin, g))}")
+        .map((f) => "${f.name}:${serilaize.serializeType(f.type, forceNullable: f.hasInculeOrSkipDiretives || _isBackfilledCyclic(f, origin, g))}")
         .join(",");
     return _cachedHash!;
   }
@@ -172,22 +168,18 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin, CodeNam
   bool _isBackfilledCyclic(GLField f, GLTypeDefinition? origin, GLParser g) {
     if (origin == null || g.mode != CodeGenerationMode.client) return false;
     if (fields.any((own) => own.name.token == f.name.token)) return false;
-    return g.typeRequiresProjection(f.type) &&
-        g.isFieldCyclic(origin.token, f.type.inlineType.token);
+    return g.typeRequiresProjection(f.type) && g.isFieldCyclic(origin.token, f.type.inlineType.token);
   }
 
   Set<String> getIdentityFields(GLParser g) {
     var directive = getDirectiveByName(glEqualsHashcode);
     if (directive != null) {
-      var directiveFields = (directive.getArguments().first.value as List)
-          .map((e) => e as String)
-          .map((e) => e.replaceAll('"', '').replaceAll("'", ""))
-          .toSet();
+      var directiveFields =
+          (directive.getArguments().first.value as List).map((e) => e as String).map((e) => e.replaceAll('"', '').replaceAll("'", "")).toSet();
       return directiveFields.where((e) => fieldNames.contains(e)).toSet();
     }
     return g.identityFields.where((e) => fieldNames.contains(e)).toSet();
   }
-
 
   @override
   String toString() {
@@ -234,9 +226,7 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin, CodeNam
     final cached = _projectionInterface;
     if (cached != null) return cached;
 
-    final projectedFields = getSerializableFields(CodeGenerationMode.server)
-        .map((f) => _toProjectionField(f, g))
-        .toList();
+    final projectedFields = getSerializableFields(CodeGenerationMode.server).map((f) => _toProjectionField(f, g)).toList();
     var skipOnServerDirective = getDirectiveByName(glSkipOnServer);
 
     final projection = GLInterfaceDefinition(
@@ -259,16 +249,19 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin, CodeNam
     return "GL${token}Projection";
   }
 
-
   GLField _toProjectionField(GLField f, GLParser g) {
     var skipOnServerDirective = f.getDirectiveByName(glSkipOnServer);
+    var skipOnClientDirective = f.getDirectiveByName(glSkipOnClient);
     return GLField(
       name: f.name,
       type: _toProjectionFieldType(f.type, g),
       arguments: f.arguments,
       initialValue: f.initialValue,
       documentation: f.documentation,
-      directives: skipOnServerDirective == null ? const []: [_toProjectionSkipOnServerDirective(skipOnServerDirective, g)],
+      directives: [
+        if (skipOnServerDirective != null) _toProjectionSkipOnServerDirective(skipOnServerDirective, g),
+        if (skipOnClientDirective != null) skipOnClientDirective,
+      ],
     );
   }
 
