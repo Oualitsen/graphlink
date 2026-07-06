@@ -11,12 +11,12 @@ extension GLGrammarStrictExtension on GLParser {
   ///
   void populateServerProjections() {
     var newInterfaces = <GLInterfaceDefinition>[];
-    for (final type in typesWithNoResolvers) {
+    for (final type in getSerializableTypes()) {
       final projection = type.toProjectionInterface(this);
       type.addInterface(projection);
       newInterfaces.add(projection);
     }
-    for (final iface in interfaces.values) {
+    for (final iface in interfaces.values.where(filterByMode)) {
       final projection = iface.toProjectionInterface(this);
       iface.addInterface(projection);
       newInterfaces.add(projection);
