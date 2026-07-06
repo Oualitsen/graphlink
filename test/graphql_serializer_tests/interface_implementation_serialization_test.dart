@@ -110,4 +110,44 @@ void main() {
       containsAllInOrder(["type ProductData {", "id: String", "name: String", "}"]),
     );
   });
+
+  test("serialize schema with a @glSkipOnServer(mapTo:) type", () async {
+    final g = GLParser(mode: CodeGenerationMode.server);
+    g.parse('''
+    
+    type Product  {
+      id: String
+      name: String
+    }
+
+    type ProductData @glSkipOnServer(mapTo: "Product12") {
+      product: Product!
+      banned: Boolean!
+    }
+
+    type Query {
+      getData: ProductData
+    }
+''');
+
+    final serializer = GLGraphqlSerializer(g);
+    var serial = serializer.generateSchema();
+    print(serial);
+
+    // The unresolved mapTo ("Product12" doesn't exist) still routes ProductData's
+    // fields through schema-mapping generation, which injects a synthetic `value`
+    // argument onto the field for the service/controller resolver signature. That
+    // argument is internal-only (skipOnGraphqlSerialization: true) and must never
+    // leak into the wire GraphQL SDL.
+    expect(serial, isNot(contains("value")));
+    expect(
+      serial.split("\n").map((str) => str.trim()),
+      containsAllInOrder([
+        "type ProductData {",
+        "product: Product!",
+        "banned: Boolean!",
+        "}"
+      ]),
+    );
+  });
 }

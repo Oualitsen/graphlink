@@ -49,8 +49,14 @@ class GLArgumentDefinition extends GLToken with GLDirectivesMixin, CodeNameMixin
   int get effectiveDeclarationOrder =>
       originalArg?.effectiveDeclarationOrder ?? declarationOrder;
 
+  ///
+  /// when true, the graphql serializer should skip it.
+  ///
+
+  final bool skipOnGraphqlSerialization;
+
   GLArgumentDefinition(super.tokenInfo, this.type, List<GLDirectiveValue> directives,
-      {this.defaultValue, this.isDeclared = true}) {
+      {this.defaultValue, this.isDeclared = true, this.skipOnGraphqlSerialization = false}) {
     directives.forEach(addDirective);
   }
 

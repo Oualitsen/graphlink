@@ -254,7 +254,7 @@ ${enumValue.value} ${serializeDirectiveValueList(enumValue.getDirectives(skipGen
   String serializeField(GLField field) {
     final defaultValue = field.initialValue != null ? ' = ${field.initialValue}' : '';
     return '''
-${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)}$defaultValue ${serializeDirectiveValueList(field.getDirectives(skipGenerated: true))}
+${field.name}${serializeArgs(field.arguments.where((e) => !e.skipOnGraphqlSerialization))}: ${serializeType(field.type)}$defaultValue ${serializeDirectiveValueList(field.getDirectives(skipGenerated: true))}
 '''
         .trim();
   }
@@ -270,7 +270,7 @@ ${field.name}${serializeArgs(field.arguments)}: ${serializeType(field.type)}$def
 
   String _getNullableText(bool nullable) => nullable ? "" : "!";
 
-  String serializeArgs(List<GLArgumentDefinition> arguments) {
+  String serializeArgs(Iterable<GLArgumentDefinition> arguments) {
     if (arguments.isEmpty) {
       return "";
     }
