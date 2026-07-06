@@ -1,3 +1,4 @@
+import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/java_code_gen_utils.dart';
@@ -41,7 +42,11 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
   void annotateControllers() {
     super.annotateControllers();
     _wrapSubscriptionReturnTypes();
-    _wrapControllerHandlerReturnTypes();
+    if (reactive) {
+      _wrapReactiveReturnTypes();
+    } else {
+      _wrapControllerHandlerReturnTypes();
+    }
     _wrapUploadArguments();
     _mappifyControllers();
   }
@@ -58,23 +63,49 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
           field.type.wrapper = 'Flux';
           field.type.wrapperImport = JavaImports.flux;
         } else {
-          _wrapAsyncReturnType(field);
+          _wrapCompletableFutureReturnType(field);
         }
       }
       for (var mapping in ctrl.mappings) {
-        _wrapAsyncReturnType(mapping.field);
+        _wrapCompletableFutureReturnType(mapping.field);
       }
     }
   }
 
-  void _wrapAsyncReturnType(GLField field) {
-    if (reactive) {
-      field.type.wrapper = 'Mono';
-      field.type.wrapperImport = JavaImports.mono;
-    } else {
-      field.type.wrapper = 'CompletableFuture';
-      field.type.wrapperImport = JavaImports.completableFuture;
+  /// Reactive Spring GraphQL handlers use `Flux<T>` to represent multiple
+  /// values and `Mono<T>` for a single value — a list return type is *itself*
+  /// the multiplicity signal, so it collapses into `Flux<T>` rather than
+  /// nesting as `Flux<List<T>>`. Applies to both service interfaces and
+  /// controllers, since both declare/return the same wrapped shape.
+  void _wrapReactiveReturnTypes() {
+    for (var service in [...grammar.services.values, ...grammar.controllers.values]) {
+      for (var field in [...service.fields]) {
+        final wrapped = _reactiveWrappedField(field, isSubscription: service.isSubscription(field));
+        if (!identical(wrapped, field)) {
+          service.replaceField(wrapped);
+        }
+      }
+      for (var mapping in service.mappings) {
+        mapping.field = _reactiveWrappedField(mapping.field, isSubscription: false);
+      }
     }
+  }
+
+  GLField _reactiveWrappedField(GLField field, {required bool isSubscription}) {
+    if (isSubscription || field.type.isList) {
+      final elementType = field.type.inlineType;
+      elementType.wrapper = 'Flux';
+      elementType.wrapperImport = JavaImports.flux;
+      return field.type.isList ? field.ofType(elementType) : field;
+    }
+    field.type.wrapper = 'Mono';
+    field.type.wrapperImport = JavaImports.mono;
+    return field;
+  }
+
+  void _wrapCompletableFutureReturnType(GLField field) {
+    field.type.wrapper = 'CompletableFuture';
+    field.type.wrapperImport = JavaImports.completableFuture;
   }
 
   /// Spring GraphQL subscription handlers must return a reactive
@@ -187,9 +218,9 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
           ctrl),
       '',
       ...ctrl.fields
-          .map((field) => serializehandlerMethod(ctrl.getTypeByFieldName(field.name.token)!, field, serviceInstanceName, ctrl, qualifier: "public")),
+          .map((field) => serializeHandlerMethod(ctrl.getTypeByFieldName(field.name.token)!, field, serviceInstanceName, ctrl)),
       '',
-      ...ctrl.mappings.map((m) => serializeMappingMethod(m, serviceInstanceName, ctrl))
+      ...ctrl.mappings.map((m) => serializeMappingMethod(m, serviceInstanceName, ctrl)).map((e) => "${e}\n")
     ]));
 
     return buffer.toString();
@@ -218,27 +249,15 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
   }
 
   @override
-  String serializehandlerMethod(GLQueryType type, GLField method, String serviceInstanceName, GLToken context, {String? qualifier}) {
-    final decorators = serializer.serializeDecorators(method.getDirectives()).trim();
-    var buffer = StringBuffer();
-    if (decorators.isNotEmpty) {
-      buffer.writeln(decorators);
-    }
-
+  String serializeHandlerMethod(GLQueryType type, GLField method, String serviceInstanceName, GLToken context) {
     final conversions = _buildArgumentConversions(method.arguments, context);
     final inputConversions = conversions.declarations;
     final serviceCall = '$serviceInstanceName.${method.codeName}(${conversions.serviceArgs.join(", ")})';
-    final String returnType;
     final List<String> statements;
 
-    final validationMethodCall = getValidationMethodCall(method, serviceInstanceName, conversions.serviceArgs);
-    final validationCall = validationMethodCall != null ? '$validationMethodCall;' : null;
-    final baseReturnType = serializer.serializeType(method.type);
-    final returnTypeIsVoid = baseReturnType == "void";
-    returnType = baseReturnType;
-    if (type == GLQueryType.subscription) {
-      // Subscription handlers pass the service's Flux straight through —
-      // never wrapped in a CompletableFuture.
+    final validationCall = getValidationCallStatement(method, serviceInstanceName, conversions.serviceArgs);
+    final returnTypeIsVoid = serializer.serializeType(method.type) == "void";
+    if (reactive || type == GLQueryType.subscription) {
       statements = [
         ...inputConversions,
         if (validationCall != null) validationCall,
@@ -254,14 +273,9 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
       ];
     }
 
-    final fullReturnType = qualifier != null ? "$qualifier $returnType" : returnType;
-
-    buffer.writeln(codeGenUtils.createMethod(
-        returnType: fullReturnType,
-        methodName: method.codeName,
-        arguments: method.arguments.map((e) => serializer.serializeArgument(e)).toList(),
-        statements: statements));
-
+    final header = serializer.serializeMethod(method, modifier: "public");
+    var buffer = StringBuffer();
+    buffer.writeln('$header ${codeGenUtils.block(statements)}');
     return buffer.toString();
   }
 
@@ -273,6 +287,11 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
       validationMethodCall = null;
     }
     return validationMethodCall;
+  }
+
+  String? getValidationCallStatement(GLField method, String serviceInstanceName, List<String> argsCalls) {
+    final validationMethodCall = getValidationMethodCall(method, serviceInstanceName, argsCalls);
+    return validationMethodCall != null ? '$validationMethodCall;' : null;
   }
 
   /// Builds the fromJson conversion expression for an input arg, recursing
@@ -329,12 +348,12 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     if (mapping.forwarded) {
       return serializeForwardedMapping(mapping, context);
     }
-    if (mapping.forbid && generateSchema) {
-      return "";
-    }
     if (mapping.forbid) {
+      if (generateSchema) {
+        return "";
+      }
       context.addImport(SpringImports.gqlGraphQLException);
-      return '${serializeControllerMethodHeader(mapping.field)} ${codeGenUtils.block([
+      return '${serializer.serializeMethod(mapping.field, modifier: "public")} ${codeGenUtils.block([
             '''throw new GraphQLException("Access denied to field '${mapping.type.tokenInfo}.${mapping.field.name}'");'''
           ])}';
     }
@@ -367,7 +386,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
       statementList = _wrapInCompletableFuture(statementList, false, context);
     }
 
-    return '${serializeControllerMethodHeader(mapping.field)} ${codeGenUtils.block(statementList)}';
+    return '${serializer.serializeMethod(mapping.field)} ${codeGenUtils.block(statementList)}';
   }
 
   /// Returns the codeName of the argument matching [originalBareName] —
@@ -384,47 +403,16 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
   @override
   String serializeIdentityMapping(GLSchemaMapping mapping, GLToken context) {
     var buffer = StringBuffer();
-    var annotation = getAnnotationForMapping(mapping, context);
-    if (annotation.isNotEmpty) {
-      buffer.writeln(annotation);
-    }
-    final type = serializer.serializeType(mapping.field.type);
-
-    final conversions = _buildArgumentConversions(mapping.field.arguments, context);
-    final valueCodeName = _resolvedArgumentCodeName(mapping.field.arguments, 'value');
-
-    final String returnType;
-    final List<String> statements;
-    if (mapping.isBatch) {
-      final baseType = JavaCodeGenUtils.listOf(grammar, type);
-      returnType = baseType.toBoxedType;
-      final perItem = _serviceResultToJson(mapping.field, "v", context);
-      final listExpr = perItem == "v" ? valueCodeName : JavaCodeGenUtils.streamMapCollect(receiver: valueCodeName, param: "v", body: perItem);
-      statements = _wrapInCompletableFuture([...conversions.declarations, listExpr], false, context);
-    } else {
-      returnType = type.toBoxedType;
-      statements =
-          _wrapInCompletableFuture([...conversions.declarations, _serviceResultToJson(mapping.field, valueCodeName, context)], false, context);
-    }
-
-    buffer.writeln(
-      codeGenUtils.createMethod(
-          returnType: 'public $returnType',
-          methodName: mapping.key,
-          arguments: [...mapping.field.arguments.map((arg) => serializer.serializeArgument(arg))],
-          statements: statements),
-    );
-
+    buffer.write(serializer.serializeMethod(mapping.field, modifier: "public"));
+    buffer.write(" ");
+    final statements = _wrapInCompletableFuture(['${mapping.field.arguments.first.bareName}'], false, context);
+    buffer.write(codeGenUtils.block(statements));
     return buffer.toString();
   }
 
   @override
   String serializeForwardedMapping(GLSchemaMapping mapping, GLToken context) {
-    var buffer = StringBuffer();
-    buffer.writeln(getAnnotationForMapping(mapping, context));
-
     final fieldType = serializer.serializeType(mapping.field.type);
-
     final conversions = _buildArgumentConversions(mapping.field.arguments, context);
     final valueCodeName = _resolvedArgumentCodeName(mapping.field.arguments, 'value');
     final getterCall =
@@ -435,13 +423,9 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
         ? [...conversions.declarations, 'return Mono.just($resultExpr);']
         : _wrapInCompletableFuture([...conversions.declarations, resultExpr], false, context);
 
-    buffer.writeln(codeGenUtils.createMethod(
-      returnType: 'public $fieldType',
-      methodName: mapping.key,
-      arguments: mapping.field.arguments.map((arg) => serializer.serializeArgument(arg)).toList(),
-      statements: statements,
-    ));
-
+    final header = serializer.serializeMethod(mapping.field, modifier: "public");
+    var buffer = StringBuffer();
+    buffer.writeln('$header ${codeGenUtils.block(statements)}');
     return buffer.toString();
   }
 
@@ -469,10 +453,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     ];
   }
 
-  @override
-  String serializeControllerMethodHeader(GLField method) {
-    return serializer.serializeMethod(method, modifier: "public");
-  }
+ 
 
   // ── Service declarations ───────────────────────────────────────────────────
 
