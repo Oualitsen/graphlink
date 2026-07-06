@@ -789,7 +789,7 @@ class JavaSerializer extends GLSerializer {
 
   String serializeMethod(GLField field, {String? modifier}) {
     var buffer = StringBuffer();
-    var decorators = serializeDecorators(field.getDirectives());
+    var decorators = serializeDecorators(field.getDirectives()).trim();
     var args = serializeListText(field.arguments.map(serializeArgument).toList(), withParenthesis: false, join: ", ");
     var result = "${serializeType(field.type)} ${field.codeName}($args)";
     if (modifier != null) {
@@ -798,8 +798,8 @@ class JavaSerializer extends GLSerializer {
     if (decorators.isNotEmpty) {
       buffer.writeln(decorators);
     }
-    buffer.writeln(result);
-    return result;
+    buffer.write(result);
+    return buffer.toString();
   }
 
   String serializeRecord(
