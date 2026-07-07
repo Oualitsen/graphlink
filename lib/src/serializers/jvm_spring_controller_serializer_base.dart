@@ -45,6 +45,14 @@ abstract class JvmSpringControllerSerializerBase {
           arg.addDirective(_createArgumentDirective(arg));
         }
       }
+      for (var mapping in ctrl.mappings) {
+        // The "value" argument is the parent-type source instance Spring binds
+        // by type, not a GraphQL field argument, so it never gets `@Argument`.
+        for (var arg in mapping.field.arguments) {
+          if (arg.skipOnGraphqlSerialization) continue;
+          arg.addDirective(_createArgumentDirective(arg));
+        }
+      }
     }
     injectDataFetchingIntoArgs();
     _annotateMappingMethods();

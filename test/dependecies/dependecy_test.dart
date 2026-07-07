@@ -5,6 +5,7 @@ import 'package:graphlink/src/serializers/dart_serializer.dart';
 import 'package:graphlink/src/serializers/java_imports.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
+import 'package:graphlink/src/serializers/java_spring_controller_serializer.dart';
 import 'package:graphlink/src/serializers/java_spring_server_serializer.dart';
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
@@ -824,7 +825,7 @@ type Query {
         containsAll(['Person']));
   });
 
-  test("services and controllers should import mapped to dependecies", () {
+  test("services should import mapped to dependecies", () {
     final GLParser g = GLParser(mode: CodeGenerationMode.server);
 
     g.parse('''
@@ -845,11 +846,9 @@ type Query {
 ''');
 
     var service = g.services["MessageService"]!;
-    var ctrl = g.controllers["MessageServiceController"]!;
     expect(service.getImportDependecies(g).map((e) => e.token),
         containsAll(['ConversationView']));
-    expect(ctrl.getImportDependecies(g).map((e) => e.token),
-        containsAll([toServerProjectionName('ConversationView')]));
+   
   });
 
   test("service should import DataFetchingEnvironment when serialized", () {

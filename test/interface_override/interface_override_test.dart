@@ -1,5 +1,8 @@
+import 'package:graphlink/src/model/gl_collection_imports.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
+import 'package:graphlink/src/serializers/java_imports.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:graphlink/src/serializers/kotlin_serializer.dart';
 import 'package:test/test.dart';
@@ -75,16 +78,26 @@ interface Enclosure { animals: [Animal!]! }
 
 type Lion implements Animal { id: ID! }
 type Zoo implements Enclosure { animals: [Lion!]! }
+
+type Query {
+  getZoo: Zoo!
+}
 ''';
-    final g = GLParser()..parse(listSchema);
+    final g = GLParser(collectionImports: const GLCollectionImports(listImport: JavaImports.list, mapImport: JavaImports.map))..parse(listSchema);
     final ser = JavaSerializer(g, importPrefix: '');
 
     final zoo = ser.serializeTypeDefinition(g.types['Zoo']!);
 
+    print(zoo);
+
     expect(zoo, contains('@Override\n   public List<Lion> getAnimals()'));
+
     expect(zoo, contains('import .types.Lion;'));
+
     expect(zoo, contains('import .interfaces.Enclosure;'));
+
     expect(zoo, contains('import java.util.List;'));
+
     // Zoo returns its own narrowed element type, so it never needs to import
     // the interface's declared element type (Animal) directly.
     expect(zoo, isNot(contains('import .interfaces.Animal;')));

@@ -35,6 +35,18 @@ extension GLGrammarAnnotationExtension on GLParser {
               .forEach((e) {
                 m.field.addDirective(e);
               });
+          for (var arg in m.field.arguments) {
+            arg
+                .getAnnotations(mode: mode)
+                .map(
+                  (an) => GLDirectiveValue.createGqDecorators(
+                      decorators: [serializer(an)],
+                      applyOnClient: mode == CodeGenerationMode.client,
+                      applyOnServer: mode == CodeGenerationMode.server,
+                      import: an.getArgValueAsString(glImport)),
+                )
+                .forEach(arg.addDirective);
+          }
         }
       }
     }

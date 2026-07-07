@@ -70,7 +70,7 @@ void main() {
       final ser = serializer(mappingSchema);
       final out =
           ser.grammar.services.values.map(ser.serializeService).join('\n');
-
+    print(out);
       // sanitized parameter on the mapping method.
       expect(out, contains('return_: number'));
       // never an illegal bare `return` parameter.
@@ -80,12 +80,14 @@ void main() {
     test("type mapping resolver destructures + calls with the safe identifier",
         () {
       final ser = serializer(mappingSchema);
+      
       final out = ser.serializeResolvers().join('\n');
-
+      print(out);
       // destructure renames the wire property; call uses the safe identifier.
-      expect(out, contains('{ return: return_ }'));
-      expect(out, contains('carRelated(parent, return_, context)'));
+      expect(out, contains('{ return: return_, value }'));
+      expect(out, contains('carRelated(parent, return_, value, context)'));
       // never a bare `return` binding/reference.
+
       expect(out, isNot(contains('{ return }')));
       expect(out, isNot(contains('parent, return,')));
     });
