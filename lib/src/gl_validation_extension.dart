@@ -99,7 +99,11 @@ extension GLValidationExtension on GLParser {
       final mapTo = skipOnServer.getArgValueAsString(glMapTo);
       if (mapTo == null) continue;
       final target = types[mapTo] ?? interfaces[mapTo];
-      if (target == null) continue; // caught by validateTypeReferences
+      if (target == null) {
+        throw ParseException(
+            "Cannot use '$glMapTo: \"$mapTo\"' on '${typeDef.token}': '$mapTo' is not a known type or interface",
+            info: skipOnServer.tokenInfo);
+      }
       if (target.getDirectiveByName(glSkipOnServer) != null) {
         throw ParseException(
             "Cannot use '$glMapTo: \"$mapTo\"' on '${typeDef.token}': '$mapTo' is also marked $glSkipOnServer",

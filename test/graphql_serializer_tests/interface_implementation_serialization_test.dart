@@ -120,7 +120,7 @@ void main() {
       name: String
     }
 
-    type ProductData @glSkipOnServer(mapTo: "Product12") {
+    type ProductData @glSkipOnServer(mapTo: "Product") {
       product: Product!
       banned: Boolean!
     }
@@ -134,11 +134,11 @@ void main() {
     var serial = serializer.generateSchema();
     print(serial);
 
-    // The unresolved mapTo ("Product12" doesn't exist) still routes ProductData's
-    // fields through schema-mapping generation, which injects a synthetic `value`
-    // argument onto the field for the service/controller resolver signature. That
-    // argument is internal-only (skipOnGraphqlSerialization: true) and must never
-    // leak into the wire GraphQL SDL.
+    // mapTo routes ProductData's fields through schema-mapping generation,
+    // which injects a synthetic `value` argument onto the field for the
+    // service/controller resolver signature. That argument is internal-only
+    // (skipOnGraphqlSerialization: true) and must never leak into the wire
+    // GraphQL SDL.
     expect(serial, isNot(contains("value")));
     expect(
       serial.split("\n").map((str) => str.trim()),
