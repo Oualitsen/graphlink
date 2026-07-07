@@ -37,7 +37,7 @@ void main() {
         'Flux<User> getUsers(String name, String middle);',
         'Mono<Integer> getUserCount();',
         'Flux<User> watchUser(String userId);',
-        'Flux<? extends List<Car>> watchCars(String userId);',
+        'Flux<List<Car>> watchCars(String userId);',
         '}',
       ]),
     );
@@ -63,7 +63,7 @@ void main() {
       containsAllInOrder([
         '@QueryMapping()',
         'public Mono<Map<String, Object>> getCar(@Argument() String id) {',
-        'return carService.validateGetCar(id).then(carService.getCar(id).map(__gl_result__ -> __gl_result__.toJson()));',
+        'return carService.validateGetCar(id).then(Mono.defer(() -> carService.getCar(id).map(__gl_result__ -> __gl_result__.toJson())));',
         '}',
       ]),
     );
@@ -109,8 +109,8 @@ void main() {
         'return userService.watchUser(userId).map(__gl_result__ -> __gl_result__.toJson());',
         '}',
         '@SubscriptionMapping()',
-        'public Flux<List<Map<String, Object>>> watchCars(@Argument() String userId) {',
-        'return userService.watchCars(userId).map(__gl_result__ -> __gl_result__.stream().map(__gl_e0__ -> __gl_e0__ == null ? null : __gl_e0__.toJson()).collect(Collectors.toList()));',
+        'public Flux<List<? extends Map<String, Object>>> watchCars(@Argument() String userId) {',
+        'return userService.watchCars(userId).map(__gl_result__ -> __gl_result__.stream().map(e0 -> e0 == null ? null : e0.toJson()).collect(Collectors.toList()));',
         '}',
         '}',
       ]),
