@@ -560,7 +560,7 @@ class TypeScriptClientOperationSerializer {
     if (uploadNames.contains(arg.type.firstType.token)) {
       return arg.type.isList ? 'GLUpload[]' : 'GLUpload';
     }
-    return _serializer.serializeType(arg.type, false);
+    return _serializer.serializeType(arg.type);
   }
 
   // ── Invalidation ──────────────────────────────────────────────────────────
