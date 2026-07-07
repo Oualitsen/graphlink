@@ -97,14 +97,14 @@ abstract class JvmSpringControllerSerializerBase {
     // When the bare top-level mapping (`@QueryMapping`) would otherwise bind to
     // the renamed method, pin it to the original wire name (`name = "return"`).
     final wire = method.name.token;
-    final annotation = '${_toMappingAnnotationValue(type)}';
+    final code = ctrl.resolveCodeName(wire, grammar.reservedWords);
     return GLDirectiveValue(
         "_glMapping".toToken(),
         [],
         [
           GLArgumentValue(glAnnotation.toToken(), true),
-          GLArgumentValue(glClass.toToken(), annotation),
-          GLArgumentValue("name".toToken(), wire),
+          GLArgumentValue(glClass.toToken(), _toMappingAnnotationValue(type)),
+          if (code != wire) GLArgumentValue("name".toToken(), wire),
           GLArgumentValue(glImport.toToken(), _toMappingAnnotationImport(type)),
           GLArgumentValue(glOnServer.toToken(), true),
         ],
@@ -131,7 +131,7 @@ abstract class JvmSpringControllerSerializerBase {
         [
           GLArgumentValue(glAnnotation.toToken(), true),
           GLArgumentValue(glClass.toToken(), "@Argument"),
-          GLArgumentValue("name".toToken(), arg.bareName),
+          if (arg.codeName != arg.bareName) GLArgumentValue("name".toToken(), arg.bareName),
           GLArgumentValue(glImport.toToken(), SpringImports.gqlArgument),
           GLArgumentValue(glOnServer.toToken(), true),
         ],

@@ -50,7 +50,6 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     _mappifyControllers();
   }
 
-  
   void _wrapControllerHandlerReturnTypes() {
     for (var ctrl in grammar.controllers.values) {
       for (var field in ctrl.fields) {
@@ -84,7 +83,12 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
   }
 
   GLField _reactiveWrappedField(GLField field, {required bool isSubscription}) {
-    if (isSubscription || field.type.isList) {
+    if (isSubscription) {
+      final elementType = field.type;
+      elementType.wrapper = 'Flux';
+      elementType.wrapperImport = JavaImports.flux;
+      return field.ofType(elementType);
+    } else if (field.type.isList) {
       final elementType = field.type.inlineType;
       elementType.wrapper = 'Flux';
       elementType.wrapperImport = JavaImports.flux;
@@ -172,13 +176,16 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     return serializer.callToJson(field, originalType, expr, 0, context);
   }
 
-  /// Wraps a Mono/Flux-returning [reactiveExpr] with `.map(v -> ...)` to apply
-  /// [_serviceResultToJson]'s conversion to its emitted value(s). Returns
-  /// [reactiveExpr] unchanged when no conversion is needed.
+  /// Wraps a Mono/Flux-returning [reactiveExpr] with `.map(__gl_result__ -> ...)`
+  /// to apply [_serviceResultToJson]'s conversion to its emitted value(s).
+  /// Returns [reactiveExpr] unchanged when no conversion is needed. The
+  /// lambda parameter is namespaced via [safeLocalVar] so it can't shadow a
+  /// real service/domain identifier also named "result".
   String _mapReactiveResult(GLField field, String reactiveExpr, GLToken context) {
-    final converted = _serviceResultToJson(field, "v", context);
-    if (converted == "v") return reactiveExpr;
-    return "$reactiveExpr.map(v -> $converted)";
+    final resultVar = codeGenUtils.safeLocalVar('result');
+    final converted = _serviceResultToJson(field, resultVar, context);
+    if (converted == resultVar) return reactiveExpr;
+    return "$reactiveExpr.map($resultVar -> $converted)";
   }
 
   // ── Controller ─────────────────────────────────────────────────────────────
@@ -248,7 +255,35 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
 
     final validationCall = getValidationCallStatement(method, serviceInstanceName, conversions.serviceArgs);
     final returnTypeIsVoid = serializer.serializeType(method.type) == "void";
-    if (reactive || type == GLQueryType.subscription) {
+
+    if (reactive) {
+      // The generated validation method always returns Mono<Void> (or
+      // Flux<Void> for a subscription) — its emitted value is irrelevant, we
+      // only need to run it before the real call. `.then()`/`.thenMany()`
+      // sequence on it without touching the value, chaining straight into the
+      // mapped result instead of firing the validation as a disconnected
+      // statement (which would never actually subscribe to it).
+      final mapped = _mapReactiveResult(method, serviceCall, context);
+      final validationMethodCall = getValidationMethodCall(method, serviceInstanceName, conversions.serviceArgs);
+      String result;
+      if (validationMethodCall != null) {
+        final isSubscriptionFlow = method.type.wrapper == 'Flux';
+        final deferType = isSubscriptionFlow ? 'Flux' : 'Mono';
+        final chainMethod = isSubscriptionFlow ? 'thenMany' : 'then';
+        // $mapped itself calls the service (building carService.getCar(id)'s
+        // Mono/Flux eagerly, as any Java expression argument must) — wrapping
+        // it in defer() postpones that call until subscription time, so it
+        // only actually happens once validation's Mono/Flux has completed,
+        // even if the service method isn't written lazily.
+        result = '$validationMethodCall.$chainMethod($deferType.defer(() -> $mapped))';
+      } else {
+        result = mapped;
+      }
+      statements = [
+        ...inputConversions,
+        'return $result;',
+      ];
+    } else if (type == GLQueryType.subscription) {
       statements = [
         ...inputConversions,
         if (validationCall != null) validationCall,
@@ -448,9 +483,6 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
       'for (Map.Entry<$keyType, $realValueType> entry : $sourceMapExpr.entrySet()) $loopBody',
     ];
   }
-
-
- 
 
   // ── Arg type resolution ────────────────────────────────────────────────────
 

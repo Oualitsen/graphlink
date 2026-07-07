@@ -1,0 +1,10 @@
+interface Animal { id: ID! }
+interface Enclosure { animals: [Animal!]! }
+
+type Lion implements Animal { id: ID! }
+type Zoo implements Enclosure { animals: [Lion!]! }
+
+type Query {
+  getZoo: Zoo! @glValidate
+  getZoos: [Zoo!]! @glValidate
+}
