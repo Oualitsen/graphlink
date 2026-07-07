@@ -18,7 +18,7 @@ import 'package:graphlink/src/serializers/java_imports.dart';
 abstract class JvmSpringControllerSerializerBase {
   final GLParser grammar;
   final bool reactive;
-  final bool injectDataFetching;
+  final bool injectContext;
   final bool useSpringSecurity;
   final bool generateSchema;
 
@@ -27,7 +27,7 @@ abstract class JvmSpringControllerSerializerBase {
   JvmSpringControllerSerializerBase({
     required this.grammar,
     required this.reactive,
-    required this.injectDataFetching,
+    required this.injectContext,
     required this.useSpringSecurity,
     required this.generateSchema,
   });
@@ -85,9 +85,13 @@ abstract class JvmSpringControllerSerializerBase {
   }
 
   void _interDataFetchingEnv(GLService service, GLField field) {
-    if (injectDataFetching || field.hasDirective(glReturnsProjection)) {
-      field.addArgument(GLArgumentDefinition('dataFetchingEnvironment'.toToken(), GLType('DataFetchingEnvironment'.toToken(), false), []));
-      service.addImport(SpringImports.gqlDataFetchingEnvironment);
+    if (injectContext || field.hasDirective(glReturnsProjection)) {
+      // GraphQLContext is the one non-trivial parameter Spring can bind on both
+      // @SchemaMapping and @BatchMapping; DataFetchingEnvironment is illegal on a
+      // @BatchMapping (batch loading is detached from any single field), so use
+      // GraphQLContext everywhere to keep the injected env consistent.
+      field.addArgument(GLArgumentDefinition('graphQLContext'.toToken(), GLType('GraphQLContext'.toToken(), false), []));
+      service.addImport(SpringImports.gqlGraphQLContext);
     }
   }
 

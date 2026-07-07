@@ -6,7 +6,7 @@ import dev.graphlink.javaserver.generated.enums.ArticleType;
 import dev.graphlink.javaserver.generated.interfaces.GlArticleProjection;
 import dev.graphlink.javaserver.generated.services.ArticleService;
 import dev.graphlink.javaserver.generated.types.Article;
-import graphql.schema.DataFetchingEnvironment;
+import graphql.GraphQLContext;
 
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -69,7 +69,7 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    public GlArticleProjection getProjectedArticle(DataFetchingEnvironment dataFetchingEnvironment) {
+    public GlArticleProjection getProjectedArticle(GraphQLContext graphQLContext) {
         // Article implements GlArticleProjection, so a concrete article is a
         // valid projection — the client selects whichever subset it wants.
         return Data.articles.stream().findFirst().orElse(null);
@@ -91,7 +91,7 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    public GlArticleProjection getArticleInfo(DataFetchingEnvironment dataFetchingEnvironment) {
+    public GlArticleProjection getArticleInfo(GraphQLContext graphQLContext) {
         return Data.articles.stream().findFirst().orElse(null);
     }
 }

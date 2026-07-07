@@ -23,7 +23,7 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
     required super.grammar,
     required this.serializer,
     required this.packageName,
-    required super.injectDataFetching,
+    required super.injectContext,
     required super.generateSchema,
     this.blockingServices = true,
   }) : super(
