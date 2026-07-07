@@ -10,35 +10,40 @@ void main() async {
   test("skip_include_nullability_test", () {
     final GLParser g = GLParser();
 
-    g.parse(File("test/types/genration/skip_include_nullability_test.graphql")
-        .readAsStringSync());
+    g.parse('''
 
-    GLQueryDefinition products = g.queries[const GLOperationKey("products", GLQueryType.query)]!;
-    var productTypeDef = products.getGeneratedTypeDefinition();
-    GLField getProduct = productTypeDef.fields
-        .where((field) => field.name.token == "getProduct")
-        .first;
+type Product {
+    name: String!
+    
+    description: String!
+}
 
-    var getProductType = g.projectedTypes[getProduct.type.token]!;
-    var nameField = getProductType.fields
-        .where((element) => element.name.token == "name")
-        .first;
-    expect(nameField.type.nullable, false);
-    var serilaizer = DartSerializer(g, importPrefix: "");
-    expect(serilaizer.serializeField(nameField, true, true), contains("String?"));
+type Query {
+    getProduct: Product!
+    getProductList: [Product!]!
+}
 
-    GLField getProductList = productTypeDef.fields
-        .where((field) => field.name.token == "getProductList")
-        .first;
+query products {
+    getProduct @glTypeName(name: "ProductNullName") {
+        name @skip(if: true) description
+    }
 
-    var getProductListType =
-        g.projectedTypes[getProductList.type.inlineType.token]!;
-    var descriptionField = getProductListType.fields
-        .where((element) => element.name.token == "description")
-        .first;
-    expect(descriptionField.type.nullable, false);
-    var serializer = DartSerializer(g, importPrefix: "");
-    expect(
-        serializer.serializeField(descriptionField, true, true), contains("String?"));
+    getProductList @glTypeName(name: "ProductNullDesc") {
+        name description @include(if: true)
+    }
+}
+
+''');
+
+    final nullName = g.projectedTypes['ProductNullName']!;
+    final nullDesc = g.projectedTypes['ProductNullDesc']!;
+
+    expect(nullName.getFieldByName('name')!.type.nullable, true);
+    expect(nullName.getFieldByName('description')!.type.nullable, false);
+
+    expect(nullDesc.getFieldByName('name')!.type.nullable, false);
+    expect(nullDesc.getFieldByName('description')!.type.nullable, true);
+
+    
   });
 }

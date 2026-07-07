@@ -5,6 +5,8 @@ import 'package:graphlink/src/serializers/code_generation_mode.dart';
 
 mixin GLDirectivesMixin {
   List<GLDirectiveValue>? _cachedDirectives;
+  bool? _containsSkipOrIncludeDirective;
+
 
   List<GLDirectiveValue> getDirectives({bool skipGenerated = false}) {
     final all = _cachedDirectives ??=
@@ -80,4 +82,8 @@ mixin GLDirectivesMixin {
   bool get isExternal => hasDirective(glExternal);
 
   String? get externalImport => getDirectiveByName(glExternal)?.getArgValueAsString(glImport);
+
+  //check for inclue or skip directives
+  bool get hasInculeOrSkipDiretives => _containsSkipOrIncludeDirective ??=
+      getDirectives().where((d) => [includeDirective, skipDirective].contains(d.token)).isNotEmpty;
 }

@@ -649,7 +649,7 @@ extension GLGrammarProjectionExtension on GLParser {
       var projection = projections[field.name.token];
       if (projection != null) {
         final forceNull = typeRequiresProjection(field.type) &&
-            isFieldCyclic(onTypeName, field.type.inlineType.token);
+            isFieldCyclic(onTypeName, field.type.inlineType.token) || projection.hasInculeOrSkipDiretives;
         result.add(_applyProjectionToField(
             field, projection, projection.getDirectives(), forceNull));
       }
@@ -971,10 +971,10 @@ extension GLGrammarProjectionExtension on GLParser {
         directives: projection.getDirectives(),
       );
     }
-
+    final targetType =  _createTypeFrom(field.type, field.type);
     return GLField(
       name: fieldName,
-      type: _createTypeFrom(field.type, field.type),
+      type: forceNullable && !targetType.nullable ? GLType.makeNullable(targetType): targetType,
       arguments: field.arguments,
       directives: projection.getDirectives(),
     );
