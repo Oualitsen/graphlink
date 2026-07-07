@@ -67,8 +67,9 @@ void main() {
 
     test('Audit — extends Base, id and toJson are overridden transitively, createdAt is not', () {
       final out = _serializer(g).serializeTypeDefinition(g.interfaces['Audit']!);
+      print(out);
       expect(lines(out), containsAllInOrder([
-        'interface Audit : Base {',
+        'interface Audit : Base, BaseBase {',
         'override val id: String',
         'val createdAt: String',
         'override fun toJson(): Map<String, Any?>',

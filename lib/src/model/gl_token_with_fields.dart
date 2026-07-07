@@ -275,20 +275,19 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
 
       if (token != null && token is GLDirectivesMixin) {
         result.addAll(extractImports(token as GLDirectivesMixin, g.mode, skipOwnImports: true));
+      }
 
-        // handle arguments
-        for (var arg in field.arguments) {
-          result.addAll(
-            [
-              arg.type.externalImport,
-              arg.type.wrapperImport,
-            ].whereType(),
-          );
-          result.addAll(extractImports(arg as GLDirectivesMixin, g.mode, skipOwnImports: false));
-          var argToken = g.getTokenByKey(arg.type.token);
-          if (argToken != null && argToken is GLDirectivesMixin) {
-            result.addAll(extractImports(argToken as GLDirectivesMixin, g.mode, skipOwnImports: true));
-          }
+      for (var arg in field.arguments) {
+        result.addAll(
+          [
+            arg.type.externalImport,
+            arg.type.wrapperImport,
+          ].whereType(),
+        );
+        result.addAll(extractImports(arg as GLDirectivesMixin, g.mode, skipOwnImports: false));
+        var argToken = g.getTokenByKey(arg.type.token);
+        if (argToken != null && argToken is GLDirectivesMixin) {
+          result.addAll(extractImports(argToken as GLDirectivesMixin, g.mode, skipOwnImports: true));
         }
       }
       for (var arg in field.arguments) {

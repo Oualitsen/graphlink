@@ -1,5 +1,5 @@
 {
-  "schemaPaths": ["schema.gql"],
+  "schemaPaths": ["../../schema/schema.gql"],
   "mode": "server",
   "outputDir": "src/main/java/dev/graphlink/javaserver/generated",
   "typeMappings": {
@@ -13,7 +13,7 @@
   "serverConfig": {
     "spring": {
       "basePackage": "dev.graphlink.javaserver.generated",
-      "reactive": true,
+      "reactive": false,
       "generateSchema": true,
       "schemaTargetPath": "src/main/resources/graphql/schema.graphqls",
       "immutableInputFields": true,
