@@ -191,7 +191,9 @@ extension GLGrammarNormalizationExtension on GLParser {
       var code = normalized;
       if (taken.contains(code)) {
         var counter = 2;
-        while (taken.contains('$code$counter')) counter++;
+        while (taken.contains('$code$counter')) {
+          counter++;
+        }
         code = '$code$counter';
       }
       arg.codeName = code;

@@ -46,7 +46,7 @@ class FlutterInputsFieldSerializer {
       ],
     ]);
 
-    final spinnerExpr = 'const SizedBox(width: 44, height: 44, child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2)))';
+    const spinnerExpr = 'const SizedBox(width: 44, height: 44, child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2)))';
     return _u.callExpression('TextFormField', [
       'key: _${name}FieldKey',
       'controller: _${name}Controller',
@@ -81,7 +81,7 @@ class FlutterInputsFieldSerializer {
           statement: 'return _form.strings.mustBeWholeNumber;',
         ),
     ]);
-    final spinnerExpr = 'const SizedBox(width: 44, height: 44, child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2)))';
+    const spinnerExpr = 'const SizedBox(width: 44, height: 44, child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2)))';
     return _u.callExpression('TextFormField', [
       'key: _${name}FieldKey',
       'controller: _${name}Controller',
@@ -101,7 +101,7 @@ class FlutterInputsFieldSerializer {
       if (!nullable) "if (v == null || v.isEmpty) return _form.strings.required;",
     ]);
 
-    final spinnerExpr = 'const SizedBox(width: 44, height: 44, child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2)))';
+    const spinnerExpr = 'const SizedBox(width: 44, height: 44, child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2)))';
     final obscureExpr = isPassword ? '_${name}Obscured' : '_form.textConfig?.$name?.obscureText ?? false';
     final suffixIconExpr = isPassword
         ? _u.callExpression('IconButton', [

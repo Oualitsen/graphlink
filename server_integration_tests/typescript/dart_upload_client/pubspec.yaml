@@ -13,5 +13,6 @@ dependencies:
   web_socket_channel: ^3.0.0
   dio: ^4.0.6
 
+  http_parser: any
 dev_dependencies:
   test: ^1.24.0
