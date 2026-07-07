@@ -869,7 +869,7 @@ type Query {
   
 ''');
 
-    var serializer = JavaSpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
+    var serializer = JavaSpringServerSerializer(g, injectContext: true, packageName: "myOrg");
 
     var service = g.services["PersonService"]!;
 
@@ -893,7 +893,7 @@ type Query {
   
 ''');
 
-    var serializer = JavaSpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
+    var serializer = JavaSpringServerSerializer(g, injectContext: true, packageName: "myOrg");
     var controller = g.controllers["PersonServiceController"]!;
     serializer.serializeController(controller);
     expect(controller.getImports(g),
@@ -944,7 +944,7 @@ type Query {
   
 ''');
 
-    var serializer = JavaSpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
+    var serializer = JavaSpringServerSerializer(g, injectContext: true, packageName: "myOrg");
     var controller = g.controllers["PersonServiceController"]!;
     var serial = serializer.serializeController(controller);
     print(serial);

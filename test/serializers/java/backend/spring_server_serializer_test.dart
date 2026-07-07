@@ -95,7 +95,7 @@ void main() {
 
     g.parse(text);
 
-    var serverSerialzer = JavaSpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
+    var serverSerialzer = JavaSpringServerSerializer(g, injectContext: true, packageName: "myOrg");
 
     var carService = g.services["CarService"]!;
 

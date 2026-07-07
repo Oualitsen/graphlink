@@ -36,7 +36,7 @@ class JavaSpringServerSerializer extends JvmSpringServerSerializerBase {
     String? defaultRepositoryBase,
     JavaSerializer? javaSerializer,
     bool generateSchema = false,
-    bool injectDataFetching = false,
+    bool injectContext = false,
     bool reactive = false,
     bool useSpringSecurity = false,
   }) {
@@ -49,7 +49,7 @@ class JavaSpringServerSerializer extends JvmSpringServerSerializerBase {
       grammar: grammar,
       serializer: serializer,
       reactive: reactive,
-      injectDataFetching: injectDataFetching,
+      injectContext: injectContext,
       useSpringSecurity: useSpringSecurity,
       generateSchema: generateSchema,
     );
@@ -57,7 +57,7 @@ class JavaSpringServerSerializer extends JvmSpringServerSerializerBase {
         packageName: packageName,
         defaultRepositoryBase: defaultRepositoryBase,
         generateSchema: generateSchema,
-        injectDataFetching: injectDataFetching,
+        injectDataFetching: injectContext,
         reactive: reactive,
         useSpringSecurity: useSpringSecurity);
   }

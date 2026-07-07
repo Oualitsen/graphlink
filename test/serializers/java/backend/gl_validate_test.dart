@@ -76,7 +76,7 @@ void main() {
     ''');
 
     var personService = g.services['PersonService']!;
-    var springSerializer = JavaSpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
+    var springSerializer = JavaSpringServerSerializer(g, injectContext: true, packageName: "myOrg");
     var serialzedService =
         springSerializer.serializeService(personService);
     expect(
@@ -138,7 +138,7 @@ void main() {
     ''');
 
     var personController = g.controllers['PersonServiceController']!;
-    var springSerializer = JavaSpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
+    var springSerializer = JavaSpringServerSerializer(g, injectContext: true, packageName: "myOrg");
     var serializedController =
         springSerializer.serializeController(personController);
         print(serializedController);
