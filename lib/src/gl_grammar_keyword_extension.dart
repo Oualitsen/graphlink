@@ -3,6 +3,7 @@ import 'package:graphlink/src/model/code_name_mixin.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
+import 'package:graphlink/src/model/gl_schema_mapping.dart';
 
 /// Assigns target-language safe identifiers ([GLField.codeName],
 /// [GLEnumValue.codeName], [GLArgumentDefinition.codeName]) to every GraphQL
@@ -59,6 +60,19 @@ extension GLGrammarKeywordExtension on GLParser {
       for (final c in controllers.values) {
         c.assignCodeNames(reservedWords);
       }
+      // Schema/batch-mapping methods: `mapping.field` is a copy made during
+      // `generateSchemaMappings()` (well before this pass runs), so — unlike
+      // top-level resolver fields — it is never shared with a container this
+      // loop already covers and needs its own sanitization here.
+      for (final c in controllers.values) {
+        _assignMappingCodeNames(c.mappings);
+      }
+      // Mapping-derived service interface methods (e.g. `carRelated`): the
+      // synthetic field built in `_mappingServiceField` is likewise never
+      // shared with any other container.
+      for (final s in services.values) {
+        s.assignCodeNames(reservedWords);
+      }
     }
 
     // Parameter/binding-position identifiers (resolver + operation arguments).
@@ -82,10 +96,42 @@ extension GLGrammarKeywordExtension on GLParser {
       // arguments of @SchemaMapping/@BatchMapping controller methods.
       for (final c in controllers.values) {
         _assignFieldArgumentCodeNames(c.fields);
+        _assignFieldArgumentCodeNames(c.mappings.map((m) => m.field));
+      }
+      for (final s in services.values) {
+        _assignFieldArgumentCodeNames(s.fields);
       }
       for (final q in queries.values) {
         _assignArgumentCodeNames(q.arguments);
       }
+    }
+  }
+
+  /// Resolves a collision-free, keyword-safe [GLField.codeName] for every
+  /// schema/batch-mapping method on [mappings]. Mirrors [_assignQueryCodeNames]
+  /// — collisions are resolved against the other mapping method names on the
+  /// same controller (`mapping.field` is never a top-level [GLQueryDefinition]
+  /// so it isn't covered by that pass).
+  void _assignMappingCodeNames(Iterable<GLSchemaMapping> mappings) {
+    final taken = mappings.map((m) => m.field.name.token).toSet();
+    for (final mapping in mappings) {
+      final field = mapping.field;
+      final bare = field.codeName;
+
+      var codeName = bare.startsWith('_') ? '${bare.substring(1)}_' : bare;
+      if (codeName == bare && !reservedWords.contains(bare)) continue;
+
+      if (reservedWords.contains(codeName)) {
+        codeName = '${codeName}_';
+      }
+      var candidate = codeName;
+      var counter = 2;
+      while (taken.contains(candidate)) {
+        candidate = '$codeName$counter';
+        counter++;
+      }
+      field.codeName = candidate;
+      taken.add(candidate);
     }
   }
 

@@ -26,6 +26,8 @@ void main() {
     final service = g.services["UserService"]!;
     final result = serializer.serializeService(service);
 
+    print(result);
+
     expect(
       result.split('\n').map((e) => e.trim()).toList(),
       containsAllInOrder([

@@ -34,6 +34,8 @@ void main() {
     final ctrls = controllers(g, ser);
     final svcs = services(g, ser);
 
+    print(ctrls);
+
     expect(ctrls, contains('@Argument(name = "default") String default_'));
     expect(ctrls, contains('carService.getCar(default_)'));
     expect(svcs, contains('Car getCar(String default_);'));
@@ -46,10 +48,10 @@ void main() {
     final ser = JavaSpringServerSerializer(g, packageName: 'com.example');
     final ctrls = controllers(g, ser);
     final svcs = services(g, ser);
-
+    print(svcs);
     expect(ctrls,
         contains('@Argument(name = "default") Integer default_'));
-    expect(ctrls, contains('carRelated(Car.fromJson(value), default_)'));
-    expect(svcs, contains('carRelated(Car value, Integer default_);'));
+    expect(ctrls, contains('carRelated(default_, value)'));
+    expect(svcs, contains('carRelated(Integer default_, Car value);'));
   });
 }

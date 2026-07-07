@@ -260,7 +260,7 @@ class JavaSerializer extends GLSerializer {
 
   String serializeArgument(GLArgumentDefinition arg) {
     var type = arg.type;
-    var name = arg.tokenInfo;
+    var name = arg.codeName;
     var decorators = serializeDecorators(arg.getDirectives(), joiner: " ");
     var result = "${serializeType(type)} ${name}";
     if (decorators.isNotEmpty) {
@@ -310,6 +310,11 @@ class JavaSerializer extends GLSerializer {
     }
     final wrapper = def.wrapper;
     if (wrapper == null) return type;
+    final wrapperImport = def.wrapperImport;
+    if (wrapperImport != null) {
+      (grammar.types[def.token] ?? grammar.interfaces[def.token])
+          ?.addImport(wrapperImport);
+    }
     return '$wrapper<${type.toBoxedType}>';
   }
 

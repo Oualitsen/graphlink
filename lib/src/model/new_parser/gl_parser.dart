@@ -416,9 +416,10 @@ class GLParser {
       generateServicesAndControllers();
       generateSchemaMappings();
       applyServerLenientNullability();
+      populateServerProjections();
     }
-    populateServerProjections();
-    fillTransitiveInterfaceImplementations();
+
+    
 
     // Last step: (1) apply naming-convention casing, (2) sanitize type names
     // (leading-underscore rule), then (3) keyword-safe.

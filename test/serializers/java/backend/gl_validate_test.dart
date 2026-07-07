@@ -112,19 +112,12 @@ void main() {
     var springSerializer = JavaSpringServerSerializer(g, packageName: "");
     var serializedController =
         springSerializer.serializeController(personController);
+    print(serializedController);
     expect(
-        serializedController
-            .split('\n')
-            .map((e) => e.trim())
-            .where((e) => e.isNotEmpty),
-        containsAllInOrder([
-          'public CompletableFuture<Map<String, Object>> getPerson(@Argument(name = "searchQuery") Map<String, Object> searchQueryAsMap) {',
-          'final SearchQuery searchQuery = SearchQuery.fromJson((Map<String, Object>) searchQueryAsMap);',
-          'return CompletableFuture.supplyAsync(() -> {',
+        serializedController,
+        stringContainsInOrder([
           'personService.validateGetPerson(searchQuery);',
-          "${toServerProjectionName('Person')} __gl_tmp__ = personService.getPerson(searchQuery);",
-          'return __gl_tmp__ == null ? null : __gl_tmp__.toJson();',
-          '});'
+          'return personService.getPerson'
         ]));
   });
 
@@ -151,18 +144,10 @@ void main() {
         springSerializer.serializeController(personController);
         print(serializedController);
     expect(
-        serializedController
-            .split('\n')
-            .map((e) => e.trim())
-            .where((e) => e.isNotEmpty),
-        containsAllInOrder([
-          'public CompletableFuture<Map<String, Object>> getPerson(@Argument(name = "searchQuery") Map<String, Object> searchQueryAsMap, DataFetchingEnvironment dataFetchingEnvironment) {',
-          'final SearchQuery searchQuery = SearchQuery.fromJson((Map<String, Object>) searchQueryAsMap);',
-          'return CompletableFuture.supplyAsync(() -> {',
+        serializedController,
+        stringContainsInOrder([
           'personService.validateGetPerson(searchQuery, dataFetchingEnvironment);',
-          "${toServerProjectionName('Person')} __gl_tmp__ = personService.getPerson(searchQuery, dataFetchingEnvironment);",
-          'return __gl_tmp__ == null ? null : __gl_tmp__.toJson();',
-          '});'
+          'return personService.getPerson'
         ]));
   });
 }

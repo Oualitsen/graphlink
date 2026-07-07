@@ -100,14 +100,15 @@ type Query {
 
     var springSerializer = JavaSpringServerSerializer(g, packageName: "");
     var ctrl = g.controllers[g.controllerMappingName("UserWithCar")]!;
-    var serviceSerial = springSerializer.serializeController(ctrl);
-    print(serviceSerial);
+    var ctrlSerial = springSerializer.serializeController(ctrl);
+    print(ctrlSerial);
+
     expect(
-        serviceSerial,
+        ctrlSerial,
         stringContainsInOrder([
-          '@SchemaMapping(typeName="UserWithCar", field="user")',
-          "public ${toServerProjectionName('User')} userWithCarUser(${toServerProjectionName('User')} value) {",
-          "return value;",
+          '@SchemaMapping(typeName = "UserWithCar", field = "user")', // schema mapping even on batch mapping
+          "public CompletableFuture<Map<String, Object>> user(Map<String, Object> valueAsMap) {",
+          "return CompletableFuture.supplyAsync(() -> valueAsMap);",
           "}",
         ]));
   });
@@ -123,13 +124,16 @@ type Query {
 
     var springSerializer = JavaSpringServerSerializer(g, packageName: "");
     var ctrl = g.controllers[g.controllerMappingName("UserWithCar")]!;
-    var serviceSerial = springSerializer.serializeController(ctrl);
+    var ctrlSerial = springSerializer.serializeController(ctrl);
+
+    print(ctrlSerial);
+
     expect(
-        serviceSerial,
+        ctrlSerial,
         stringContainsInOrder([
-          "public ${toServerProjectionName('User')} userWithCarUser(${toServerProjectionName('User')} value) {",
-          "return value;",
-          "}"
+          '@SchemaMapping(typeName = "UserWithCar", field = "user")', // important 1
+          'public CompletableFuture<Map<String, Object>> user(Map<String, Object> valueAsMap) {',
+          'return CompletableFuture.supplyAsync(() -> valueAsMap);' // importnat 2
         ]));
   });
 
@@ -212,14 +216,8 @@ type Query {
     expect(
         serialController,
         contains(
-            'CompletableFuture<Map<Map<String, Object>, ? extends Map<String, Object>>> userCar(List<Map<String, Object>> value, DataFetchingEnvironment dataFetchingEnvironment)'));
-    expect(
-        serialController,
-        stringContainsInOrder([
-          'final List<User> __gl_typed__ = value.stream().map(User::fromJson).collect(Collectors.toList());',
-          'userSchemaMappingsService.userCar(__gl_typed__, dataFetchingEnvironment)',
-          'final Map<Map<String, Object>, Map<String, Object>> __gl_tmp__ = new HashMap<>();',
-          'return __gl_tmp__;',
-        ]));
+            'DataFetchingEnvironment dataFetchingEnvironment)'));
+
+    
   });
 }

@@ -89,6 +89,7 @@ type Subscription {
 
     var serial = serializer.serializeTypeDefinition(
         g.interfaces['GraphLinkJsonEncoder']!);
+        print(serial);
     expect(
         serial.split("\n").map((e) => e.trim()).where((e) => e.isNotEmpty),
         containsAllInOrder([
