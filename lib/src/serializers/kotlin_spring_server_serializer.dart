@@ -15,17 +15,13 @@ class KotlinSpringServerSerializer extends JvmSpringServerSerializerBase {
   final KotlinCodeGenUtils codeGenUtils = KotlinCodeGenUtils();
 
   KotlinSpringServerSerializer._(
-    GLParser grammar,
-    KotlinSpringControllerSerializer ctrl,
+    super.grammar,
+    KotlinSpringControllerSerializer super.ctrl,
     this.serializer, {
-    required String packageName,
-    bool generateSchema = false,
-    bool injectDataFetching = false,
-  }) : super(grammar, ctrl,
-            packageName: packageName,
-            generateSchema: generateSchema,
-            injectDataFetching: injectDataFetching,
-            reactive: false,
+    required super.packageName,
+    super.generateSchema,
+    super.injectDataFetching,
+  }) : super(reactive: false,
             useSpringSecurity: false);
 
   factory KotlinSpringServerSerializer(

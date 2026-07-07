@@ -2,6 +2,7 @@
 /// named after one of these (GraphQL has no global reserved words), but the
 /// generated identifier must be sanitized so the output compiles. See
 /// [GLTokenWithFields.assignCodeNames].
+library;
 
 /// Dart reserved words and built-in identifiers that cannot be used as a plain
 /// field/parameter name.

@@ -41,7 +41,9 @@ class GLEnumDefinition extends GLExtensibleToken with GLDirectivesMixin, CodeNam
       var code = normalized;
       if (taken.contains(code)) {
         var counter = 2;
-        while (taken.contains('$code$counter')) counter++;
+        while (taken.contains('$code$counter')) {
+          counter++;
+        }
         code = '$code$counter';
       }
       value.codeName = code;

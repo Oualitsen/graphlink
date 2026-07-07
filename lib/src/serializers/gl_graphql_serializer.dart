@@ -1,5 +1,4 @@
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/gl_grammar_projection_extension.dart';
 import 'package:graphlink/src/model/gl_query_element.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';

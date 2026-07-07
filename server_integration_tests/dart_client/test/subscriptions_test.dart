@@ -17,7 +17,7 @@ void main() {
         await Future.delayed(const Duration(milliseconds: 300));
 
         final created = await client.mutations.createArticle(
-          input: CreateArticleInput(title: 'Subscribed Post', authorId: '1'),
+          input: const CreateArticleInput(title: 'Subscribed Post', authorId: '1'),
         );
 
         final event = await eventFuture;
@@ -32,7 +32,7 @@ void main() {
       final client = newClient();
       try {
         final created = await client.mutations.createArticle(
-          input: CreateArticleInput(title: 'Will Update', authorId: '2'),
+          input: const CreateArticleInput(title: 'Will Update', authorId: '2'),
         );
 
         final eventFuture = client.subscriptions
