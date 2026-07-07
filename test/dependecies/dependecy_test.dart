@@ -464,8 +464,12 @@ directive @glExternal(glClass: String!, glImport: String!) on  OBJECT|INPUT_OBJE
         generateAllFieldsFragments: true, mode: CodeGenerationMode.server);
     g.parse('''
 
- type Car @glSkipOnServer {
+ type Car @glSkipOnServer(mapTo: "CarData") {
   name: String
+ }
+
+ type CarData {
+  data: String
  }
 
  input PagingInfo {

@@ -1,3 +1,4 @@
+import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
@@ -24,10 +25,27 @@ class GLService extends GLInterfaceDefinition {
 
   @override
   void addField(GLField field) {
+    _checkReturnTypeIsGeneratable(field);
     if(this is GLController) {
       return super.addField(field);
     }
     super.addField(_applyReturnsProjection(field));
+  }
+
+  /// A field returning a type/interface that is itself `@glSkipOnServer` with
+  /// no (resolvable) `mapTo` has no server-side class to return — the type
+  /// is excluded from codegen entirely (see `getSerializableTypes()`), so
+  /// referencing it here would emit a dangling reference to a class that is
+  /// never generated.
+  void _checkReturnTypeIsGeneratable(GLField field) {
+    final type = parser.types[field.type.token] ?? parser.interfaces[field.type.token];
+    if (type == null) return;
+    if (type.getDirectiveByName(glSkipOnServer) != null && type.mappedToType == null) {
+      throw ParseException(
+          "Field '${field.name.token}' returns '${field.type.token}' which is marked "
+          "$glSkipOnServer with no (resolvable) $glMapTo — the server has no type to generate for it",
+          info: field.name);
+    }
   }
 
   /// Rewrites [field]'s type to its server projection name (e.g. `User` ->
@@ -58,6 +76,7 @@ class GLService extends GLInterfaceDefinition {
   }
 
   void addMapping(GLSchemaMapping mapping) {
+    _checkReturnTypeIsGeneratable(mapping.field);
     var m = _mappings[mapping.key];
     if (m == null || m.batch == null || (m.batch == false && m.batch == true)) {
       mapping.field = _applyReturnsProjection(mapping.field);
