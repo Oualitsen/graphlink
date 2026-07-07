@@ -6,37 +6,107 @@
 
 schema {
    query: Query
+   mutation: Mutation
+   subscription: Subscription
+}
+scalar Upload @glUpload
+directive @glValidate on FIELD_DEFINITION
+input CreateArticleInput {
+   title: String!
+   authorId: ID!
+   class: String
 }
 
-
-
-type Lion implements Animal & GLLionProjection {
+input UpdateArticleInput {
    id: ID!
+   title: String
 }
-type Zoo implements Enclosure & GLZooProjection {
-   animals: [Lion!]!
+
+type WebSite implements GLWebSiteProjection {
+   id: ID!
+   name: String!
+}
+type Author implements GLAuthorProjection {
+   id: ID!
+   name: String!
+   articles: [Article!]  @glReturnsProjection
+   latestArticles(limit: Int!): [Article!]!
+}
+type Article implements GLArticleProjection {
+   id: ID!
+   title: String!
+   type: ArticleType
+   authorId: ID!
+   webSite: WebSite
+   author: Author!
+   authorList: [Author!]
+   published: Boolean!
 }
 type Query {
-   getZoo: Zoo! @glValidate
-   getZoos: [Zoo!]! @glValidate
+   getAuthor(id: ID!): Author
+   getArticle(id: ID!): Article!
+   listAuthors: [Author!]!
+   listArticles: [Article!]!
+   getProjectedArticle: Article! @glReturnsProjection
+   getArticleWithCount: ArticleWithCount
+   getArticleInfo: ArticleInfo @glReturnsProjection
+   getMessageReadList: [MessageRead]
+   getArticleTypes: [ArticleType!]!
 }
-interface Animal implements GLAnimalProjection {
+type Mutation {
+   createArticle(input: CreateArticleInput!): Article!
+   updateArticle(input: UpdateArticleInput!): Article!
+   deleteArticle(id: ID!): Boolean!
+   bulkCreate(matrix: [[CreateArticleInput!]]): Int! @glValidate
+   uploadOneFile(userId: ID!, file: MultipartFile!): Boolean!
+   uploadFileList(userId: ID!, files: [MultipartFile!]!): Boolean!
+}
+type Subscription {
+   articleCreated: Article!
+   articleUpdated(id: ID!): Article!
+   articleDeleted: ID!
+}
+type ArticleWithCount {
+   article: Article!
+   count: Int!
+}
+type ArticleInfo {
    id: ID!
+   title: String!
+   type: ArticleType
+   webSite: WebSite
+   published: Boolean!
 }
-interface Enclosure implements GLEnclosureProjection {
-   animals: [Animal!]!
+type Message implements GLMessageProjection {
+   id: ID!
+   content: String!
 }
-interface GLLionProjection {
+type MessageRead {
+   message: Message!
+   read: Boolean!
+}
+interface GLWebSiteProjection {
    id: ID
+   name: String
 }
-interface GLZooProjection {
-   animals: [GLLionProjection!]
-}
-interface GLAnimalProjection {
+interface GLAuthorProjection {
    id: ID
+   name: String
 }
-interface GLEnclosureProjection {
-   animals: [GLAnimalProjection!]
+interface GLArticleProjection {
+   id: ID
+   title: String
+   type: ArticleType
+   authorId: ID
+   webSite: GLWebSiteProjection
+   published: Boolean
+}
+interface GLMessageProjection {
+   id: ID
+   content: String
+}
+enum ArticleType {
+	NEWS BLOG REVIEW
 }
 
 
