@@ -7,7 +7,6 @@ import 'package:graphlink/src/serializers/java_spring_server_serializer.dart';
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
-import '../../../test_utils.dart';
 
 void main() {
 
