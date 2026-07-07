@@ -1,5 +1,5 @@
 {
-  "schemaPaths": ["../../schema/base.gql", "../../schema/mapping.gql"],
+  "schemaPaths": ["../../schema/*.gql"],
   "mode": "server",
   "outputDir": "src/main/java/dev/graphlink/javaserver/generated",
   "serverConfig": {

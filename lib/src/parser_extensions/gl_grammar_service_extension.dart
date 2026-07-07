@@ -60,16 +60,25 @@ extension GLGrammarServiceExtension on GLParser {
         .getDirectiveByName(glServiceName)
         ?.getArgValueAsString(glServiceNameArg);
     if (serviceName == null) {
-      if (typeRequiresProjection(field.type)) {
-        serviceName = "${field.type.token.firstUp}$suffix";
-      } else {
-        serviceName = "${field.name.token.firstUp}$suffix";
-      }
+      final base = typeRequiresProjection(field.type)
+          ? field.type.token
+          : field.name.token;
+      serviceName = "${_sanitizeClassNameBase(base)}$suffix";
     }
     if (suffix.isNotEmpty && !serviceName.endsWith(suffix)) {
       serviceName += suffix;
     }
     return serviceName;
+  }
+
+  /// Sanitizes a synthetic service/controller class-name base derived from a
+  /// GraphQL field or type token. Unlike wire type names these names have no
+  /// JSON/wire coupling, so leading-underscore noise is dropped and the result
+  /// PascalCased into an idiomatic class identifier (`_status` -> `Status`, so
+  /// the service is `StatusService`, never `_statusService`).
+  String _sanitizeClassNameBase(String token) {
+    final stripped = token.replaceFirst(RegExp(r'^_+'), '');
+    return (stripped.isEmpty ? token : stripped).firstUp;
   }
 
   /// Returns true when [a] and [b] have the same structural type:

@@ -1,9 +1,13 @@
 package dev.graphlink.javaserver.impl;
 
+import dev.graphlink.javaserver.generated.interfaces.GlArticleProjection;
 import dev.graphlink.javaserver.generated.services.AuthorSchemaMappingsService;
 import dev.graphlink.javaserver.generated.types.Article;
 import dev.graphlink.javaserver.generated.types.Author;
+import graphql.schema.DataFetchingEnvironment;
+
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
@@ -15,10 +19,10 @@ import java.util.stream.Collectors;
 public class AuthorSchemaMappingsServiceImpl implements AuthorSchemaMappingsService {
 
     @Override
-    public Mono<? extends Map<Author, ? extends List<Article>>> authorArticles(List<Author> value) {
-        Map<Author, List<Article>> result = new HashMap<>();
+    public Mono<Map<Author, List<GlArticleProjection>>> authorArticles(List<Author> value, DataFetchingEnvironment dataFetchingEnvironment) {
+        Map<Author, List<GlArticleProjection>> result = new HashMap<>();
         for (Author author : value) {
-            List<Article> articles = Data.articles.stream()
+            List<GlArticleProjection> articles = Data.articles.stream()
                 .filter(a -> a.getAuthorId().equals(author.getId()))
                 .collect(Collectors.toList());
             result.put(author, articles);
@@ -27,12 +31,10 @@ public class AuthorSchemaMappingsServiceImpl implements AuthorSchemaMappingsServ
     }
 
     @Override
-    public Mono<? extends List<Article>> authorLatestArticles(Author value, Integer limit) {
-        return Mono.just(
-            Data.articles.stream()
-                .filter(a -> a.getAuthorId().equals(value.getId()))
-                .limit(limit)
-                .collect(Collectors.toList())
-        );
+    public Flux<Article> authorLatestArticles(Integer limit, Author value) {
+        return Flux.fromIterable(Data.articles.stream()
+            .filter(a -> a.getAuthorId().equals(value.getId()))
+            .limit(limit)
+            .collect(Collectors.toList()));
     }
 }

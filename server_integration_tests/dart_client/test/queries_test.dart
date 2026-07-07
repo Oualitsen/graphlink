@@ -43,13 +43,18 @@ void main() {
 
   group('getArticle', () {
     test('returns article by id', () async {
-      final res = await client.queries.getArticle(id: '1');
+      final res = await client.queries.getArticle(id: '1', 
+fieldArgs: const GetArticleFieldArgs(latestArticlesLimit: 2)      
+      );
       expect(res.getArticle.id, equals('1'));
       expect(res.getArticle.title, equals('GraphLink Basics'));
     });
 
     test('author is resolved via non-batch schema mapping', () async {
-      final res = await client.queries.getArticle(id: '1');
+      final res = await client.queries.getArticle(id: '1',
+fieldArgs: const GetArticleFieldArgs(latestArticlesLimit: 2)      
+      
+      );
       expect(res.getArticle.author?.id, equals('1'));
       expect(res.getArticle.author?.name, equals('Ramdane'));
     });
@@ -72,7 +77,10 @@ void main() {
     });
 
     test('listArticles returns all articles', () async {
-      final res = await client.queries.listArticles();
+      final res = await client.queries.listArticles(
+fieldArgs: const ListArticlesFieldArgs(latestArticlesLimit: 2)      
+
+      );
       expect(res.listArticles.map((a) => a.id), contains('1'));
     });
   });

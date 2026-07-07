@@ -1,0 +1,76 @@
+# Reserved-word & leading-underscore torture schema — drives
+# gl_grammar_keyword_extension.dart + gl_grammar_normalization_extension.dart.
+#
+# Every identifier here stays canonical on the wire; only the per-language
+# `codeName` is sanitized. Because the schema is shared, a single field exercises
+# BOTH targets at once:
+#   - both-reserved (class, return, new, default) → sanitized in Java AND Dart
+#   - Dart-only    (is, in, with)                 → sanitized in Dart, kept in Java
+#   - Java-only    (int, synchronized, native)    → sanitized in Java, kept in Dart
+
+enum Keyword {
+    new
+    default
+    class
+    int
+    synchronized
+}
+
+# Reserved word as a TYPE declaration name (→ class_ in both targets).
+type class {
+    id: ID!
+    value: String!
+}
+
+# Leading-underscore type declaration name (→ Secret_).
+type _Secret {
+    id: ID!
+    token: String!
+}
+
+type ReservedFields {
+    id: ID!
+    class: String!
+    return: Int!
+    new: Boolean!
+    default: String!
+    is: String!
+    in: String!
+    with: String!
+    int: Int!
+    synchronized: Boolean!
+    native: String!
+    kind: Keyword!
+    nested: class!
+    secret: _Secret!
+}
+
+# Two names that sanitize to the SAME identifier — forces collision suffixing
+# (`class` → class_, `class_` stays class_, so one becomes class_2).
+type Collide {
+    id: ID!
+    class: String!
+    class_: String!
+}
+
+# Reserved-word INPUT type + reserved-word input fields.
+input ReservedInput {
+    class: String!
+    return: Int
+    default: String
+    is: Boolean
+    synchronized: Int
+}
+
+extend type Query {
+    reserved: ReservedFields!
+    collide: Collide!
+    # Reserved operation name + reserved argument names.
+    switch(class: String!, return: Int): ReservedFields!
+    # Leading-underscore operation name (→ status_).
+    _status: String!
+}
+
+extend type Mutation {
+    echoReserved(input: ReservedInput!): ReservedFields!
+}

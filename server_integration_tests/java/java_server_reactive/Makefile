@@ -5,13 +5,13 @@ FIXTURES := $(abspath ../../fixtures.json)
 
 .PHONY: generate build start-server start-server-sync stop-server
 
-generate:
+generate: remove-generated
 	dart run ../../../lib/src/main.dart -c config.json
 
 build:
 	./gradlew build -x test
 
-start-server:
+start-server:`
 	-lsof -ti :$(PORT) | xargs kill -9 2>/dev/null || true
 	-lsof -ti :$(MANAGEMENT_PORT) | xargs kill -9 2>/dev/null || true
 	FIXTURES_PATH=$(FIXTURES) ./gradlew bootRun > /tmp/java-server.log 2>&1 & echo $$! > $(PID_FILE)
@@ -31,3 +31,7 @@ stop-server:
 	rm -f $(PID_FILE)
 
 ci: generate build
+
+
+remove-generated:
+	rm -rf src/main/java/dev/graphlink/javaserver/generated

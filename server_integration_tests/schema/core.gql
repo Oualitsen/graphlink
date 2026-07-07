@@ -1,9 +1,12 @@
-# Shared integration schema — core domain + root operations.
-# Consumed (merged with the sibling *.gql files) by every generated target:
-# the Dart client harness and each generated server. Keep this schema
-# cross-language: no language-specific directives (@glExternal, @glDecorators,
-# @glRepository) and no @glUpload (Spring cannot serve uploads + subscriptions
-# together — upload lives in ../typescript/schema/upload_schema.gql).
+# Core domain + base root operations. Defines the single `type Query`,
+# `type Mutation`, and `type Subscription`; every sibling *.gql file adds its
+# own root fields via `extend type Query/Mutation`.
+#
+# Consumed (merged with the sibling *.gql files) by the Dart client harness and
+# each generated server. Keep this schema cross-language: no language-specific
+# directives (@glExternal, @glDecorators, @glRepository) and no @glUpload (Spring
+# cannot serve uploads + subscriptions together — upload lives in
+# ../typescript/schema/upload_schema.gql).
 
 directive @glValidate on FIELD_DEFINITION
 

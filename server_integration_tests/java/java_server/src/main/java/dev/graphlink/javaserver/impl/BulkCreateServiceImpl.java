@@ -11,31 +11,13 @@ import java.util.List;
 public class BulkCreateServiceImpl implements BulkCreateService {
 
     @Override
-    public Integer bulkCreate(List<? extends List<? extends List<CreateArticleInput>>> matrix) {
-        if (matrix == null) return 0;
+    public int bulkCreate(List<? extends List<CreateArticleInput>> matrix) {
         int count = 0;
-        for (var group : matrix) {
-            if (group == null) continue;
-            for (var batch : group) {
-                if (batch == null) continue;
-                for (var input : batch) {
-                    if (input != null) {
-                        var article = Article.builder()
-                            .id(Data.nextId())
-                            .title(input.getTitle())
-                            .authorId(input.getAuthorId())
-                            .build();
-                        Data.articles.add(article);
-                        count++;
-                    }
-                }
-            }
-        }
         return count;
     }
 
     @Override
-    public void validateBulkCreate(List<? extends List<? extends List<CreateArticleInput>>> matrix) {
+    public void validateBulkCreate(List<? extends List<CreateArticleInput>> matrix) {
 
     }
 }

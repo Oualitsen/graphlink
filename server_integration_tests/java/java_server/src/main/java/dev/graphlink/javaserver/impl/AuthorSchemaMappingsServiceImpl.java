@@ -1,8 +1,11 @@
 package dev.graphlink.javaserver.impl;
 
+import dev.graphlink.javaserver.generated.interfaces.GlArticleProjection;
 import dev.graphlink.javaserver.generated.services.AuthorSchemaMappingsService;
 import dev.graphlink.javaserver.generated.types.Article;
 import dev.graphlink.javaserver.generated.types.Author;
+import graphql.schema.DataFetchingEnvironment;
+
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -14,11 +17,11 @@ import java.util.stream.Collectors;
 public class AuthorSchemaMappingsServiceImpl implements AuthorSchemaMappingsService {
 
     @Override
-    public Map<Author, ? extends List<Article>> authorArticles(List<Author> value) {
+     public Map<Author, List<GlArticleProjection>> authorArticles(List<Author> value, DataFetchingEnvironment dataFetchingEnvironment) {
         System.out.println("class = " + value.getFirst().getClass());
-        Map<Author, List<Article>> result = new HashMap<>();
+        Map<Author, List<GlArticleProjection>> result = new HashMap<>();
         for (Author author : value) {
-            List<Article> articles = Data.articles.stream()
+            List<GlArticleProjection> articles = Data.articles.stream()
                 .filter(a -> a.getAuthorId().equals(author.getId()))
                 .collect(Collectors.toList());
             result.put(author, articles);
@@ -27,7 +30,7 @@ public class AuthorSchemaMappingsServiceImpl implements AuthorSchemaMappingsServ
     }
 
     @Override
-    public List<Article> authorLatestArticles(Author value, Integer limit) {
+    public List<Article> authorLatestArticles(int limit, Author value) {
         return Data.articles.stream()
             .filter(a -> a.getAuthorId().equals(value.getId()))
             .limit(limit)

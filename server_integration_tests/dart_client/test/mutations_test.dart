@@ -10,6 +10,7 @@ void main() {
     test('returns the created article with given input', () async {
       final res = await client.mutations.createArticle(
         input: const CreateArticleInput(title: 'New Post', authorId: '2'),
+        fieldArgs: const CreateArticleFieldArgs(latestArticlesLimit: 2)
       );
       expect(res.createArticle.title, equals('New Post'));
       expect(res.createArticle.authorId, equals('2'));
@@ -21,9 +22,11 @@ void main() {
     test('updates the title and returns the article', () async {
       final created = await client.mutations.createArticle(
         input: const CreateArticleInput(title: 'Original Title', authorId: '1'),
+        fieldArgs: const CreateArticleFieldArgs(latestArticlesLimit: 2)
       );
       final res = await client.mutations.updateArticle(
         input: UpdateArticleInput(id: created.createArticle.id, title: 'Updated Title'),
+        fieldArgs: const UpdateArticleFieldArgs(latestArticlesLimit: 2)
       );
       expect(res.updateArticle.id, equals(created.createArticle.id));
       expect(res.updateArticle.title, equals('Updated Title'));
@@ -34,6 +37,8 @@ void main() {
     test('returns true when article exists', () async {
       final created = await client.mutations.createArticle(
         input: const CreateArticleInput(title: 'To Delete', authorId: '1'),
+        fieldArgs: const CreateArticleFieldArgs(latestArticlesLimit: 2)
+
       );
       final res = await client.mutations.deleteArticle(id: created.createArticle.id);
       expect(res.deleteArticle, isTrue);

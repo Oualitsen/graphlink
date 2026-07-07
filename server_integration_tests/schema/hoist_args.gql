@@ -1,0 +1,64 @@
+# Field-argument hoisting torture schema — drives
+# gl_grammar_hoist_args_extension.dart.
+#
+# Each parent below is fetched by an auto-generated root query whose all-fields
+# projection selects an @glSkipOnServer sub-field that carries arguments. Those
+# arguments are propagated onto the operation and grouped into a single
+# `<Op>FieldArgs` input object. The sub-field resolvers synthesize their result
+# straight from the arguments so the hoisted values are directly observable.
+
+type Product {
+    id: ID!
+    name: String!
+}
+
+# Many args, all required (no defaults) → CatalogFieldArgs is a NON-null
+# (required) parameter.
+type Catalog {
+    id: ID!
+    products(category: String!, limit: Int!, offset: Int): [Product!]!
+        @glSkipOnServer(batch: false)
+}
+
+# All args optional/defaulted → FeedFieldArgs is nullable and the whole
+# fieldArgs parameter can be omitted. Also exercises a default value flowing
+# into a hoisted input field (itemsLimit = 10).
+type Feed {
+    id: ID!
+    items(limit: Int = 10, sort: String): [Product!]!
+        @glSkipOnServer(batch: false)
+}
+
+# Nested hoisting: args from two different depths (Store.shelves.floor and
+# Shelf.products.limit) collapse into a single StoreFieldArgs.
+type Store {
+    id: ID!
+    shelves(floor: Int!): [Shelf!]! @glSkipOnServer(batch: false)
+}
+
+type Shelf {
+    id: ID!
+    products(limit: Int!): [Product!]! @glSkipOnServer(batch: false)
+}
+
+# A declared type whose name collides with the generated hoist-input name for
+# `catalog` → forces the hoist input to CatalogFieldArgs1.
+type CatalogFieldArgs {
+    id: ID!
+    label: String!
+}
+
+# The parent for the param-name collision case below.
+type SearchResult {
+    id: ID!
+    hits(limit: Int!): [Product!]! @glSkipOnServer(batch: false)
+}
+
+extend type Query {
+    catalog: Catalog!
+    feed: Feed!
+    store: Store!
+    # `search` already declares an argument literally named `fieldArgs`, so the
+    # synthetic hoist parameter must fall back to `fieldArgs1`.
+    search(fieldArgs: String!): SearchResult!
+}

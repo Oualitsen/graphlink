@@ -9,7 +9,9 @@ void main() {
       try {
         
         final eventFuture = client.subscriptions
-            .articleCreated()
+            .articleCreated(
+              fieldArgs: const ArticleCreatedFieldArgs(latestArticlesLimit: 2)
+            )
             .first
             .timeout(const Duration(seconds: 10));
 
@@ -18,6 +20,7 @@ void main() {
 
         final created = await client.mutations.createArticle(
           input: const CreateArticleInput(title: 'Subscribed Post', authorId: '1'),
+          fieldArgs: const CreateArticleFieldArgs(latestArticlesLimit: 2)
         );
 
         final event = await eventFuture;
@@ -33,10 +36,13 @@ void main() {
       try {
         final created = await client.mutations.createArticle(
           input: const CreateArticleInput(title: 'Will Update', authorId: '2'),
+          fieldArgs: const CreateArticleFieldArgs(latestArticlesLimit: 2)
         );
 
         final eventFuture = client.subscriptions
-            .articleUpdated(id: created.createArticle.id)
+            .articleUpdated(id: created.createArticle.id,
+            fieldArgs: const ArticleUpdatedFieldArgs(latestArticlesLimit: 2)
+            )
             .first
             .timeout(const Duration(seconds: 10));
 
@@ -44,6 +50,7 @@ void main() {
 
         final updated = await client.mutations.updateArticle(
           input: UpdateArticleInput(id: created.createArticle.id, title: 'Updated via subscription'),
+          fieldArgs: const UpdateArticleFieldArgs(latestArticlesLimit: 2)
         );
 
         final event = await eventFuture;
