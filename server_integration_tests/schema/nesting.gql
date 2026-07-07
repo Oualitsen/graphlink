@@ -1,0 +1,54 @@
+# List-nesting depth (1 / 2 / 3) × nullability × kind (type / interface / enum).
+# Exercises list-depth handling and per-level nullability in both the Dart client
+# and the Java server, for an object type (Box), an interface (Shape) with two
+# implementors, and an enum (Color). Every resolver is grouped onto a single
+# NestingService via @glServiceName so the variable under test is the return-type
+# shape, not the number of generated services.
+#
+# Across the nine resolvers each depth appears in both the fully-non-null
+# (`[X!]!` …) and the fully-nullable (`[X]` …) form.
+
+enum Color {
+    RED
+    GREEN
+    BLUE
+}
+
+type Box {
+    id: ID!
+    label: String!
+}
+
+interface Shape {
+    id: ID!
+    kind: String!
+}
+
+type Circle implements Shape {
+    id: ID!
+    kind: String!
+    radius: Int!
+}
+
+type Square implements Shape {
+    id: ID!
+    kind: String!
+    side: Int!
+}
+
+extend type Query {
+    # ── Enum (E) ─────────────────────────────────────────────────────────────
+    colors1: [Color!]! @glServiceName(name: "Nesting")
+    colors2: [[Color]] @glServiceName(name: "Nesting")
+    colors3: [[[Color!]!]!]! @glServiceName(name: "Nesting")
+
+    # ── Type (T) ─────────────────────────────────────────────────────────────
+    boxes1: [Box] @glServiceName(name: "Nesting")
+    boxes2: [[Box!]!]! @glServiceName(name: "Nesting")
+    boxes3: [[[Box]]] @glServiceName(name: "Nesting")
+
+    # ── Interface (I) ────────────────────────────────────────────────────────
+    shapes1: [Shape!]! @glServiceName(name: "Nesting")
+    shapes2: [[Shape]] @glServiceName(name: "Nesting")
+    shapes3: [[[Shape!]!]!]! @glServiceName(name: "Nesting")
+}

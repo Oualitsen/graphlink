@@ -4,17 +4,26 @@ import dev.graphlink.javaserver.generated.services.ArticleSchemaMappingsService;
 import dev.graphlink.javaserver.generated.types.Article;
 import dev.graphlink.javaserver.generated.types.Author;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.stream.Collectors;
 
 @Service
 public class ArticleSchemaMappingsServiceImpl implements ArticleSchemaMappingsService {
 
     @Override
     public Mono<Author> articleAuthor(Article value) {
-        var result =  Data.authors.stream()
+        return Mono.justOrEmpty(Data.authors.stream()
             .filter(a -> a.getId().equals(value.getAuthorId()))
             .findFirst()
-            .orElse(null);
-        return Mono.just(result);
+            .orElse(null));
+    }
+
+    @Override
+    public Flux<Author> articleAuthorList(Article value) {
+        return Flux.fromIterable(Data.authors.stream()
+            .filter(a -> a.getId().equals(value.getAuthorId()))
+            .collect(Collectors.toList()));
     }
 }

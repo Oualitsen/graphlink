@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 public class DeleteArticleServiceImpl implements DeleteArticleService {
 
     @Override
-    public Boolean deleteArticle(String id) {
+    public boolean deleteArticle(String id) {
         return Data.articles.removeIf(a -> a.getId().equals(id));
     }
 }
