@@ -2,6 +2,7 @@ package dev.graphlink.javaserver.impl;
 
 import dev.graphlink.javaserver.generated.inputs.CreateArticleInput;
 import dev.graphlink.javaserver.generated.inputs.UpdateArticleInput;
+import dev.graphlink.javaserver.generated.enums.ArticleType;
 import dev.graphlink.javaserver.generated.interfaces.GlArticleProjection;
 import dev.graphlink.javaserver.generated.services.ArticleService;
 import dev.graphlink.javaserver.generated.types.Article;
@@ -71,6 +72,26 @@ public class ArticleServiceImpl implements ArticleService {
     public GlArticleProjection getProjectedArticle(DataFetchingEnvironment dataFetchingEnvironment) {
         // Article implements GlArticleProjection, so a concrete article is a
         // valid projection — the client selects whichever subset it wants.
+        return Data.articles.stream().findFirst().orElse(null);
+    }
+
+    @Override
+    public List<ArticleType> getArticleTypes() {
+        return List.of(ArticleType.NEWS, ArticleType.BLOG, ArticleType.REVIEW);
+    }
+
+    @Override
+    public Flux<String> articleDeleted() {
+        return Flux.just("deleted-1", "deleted-2");
+    }
+
+    @Override
+    public Article getArticleWithCount() {
+        return Data.articles.stream().findFirst().orElse(null);
+    }
+
+    @Override
+    public GlArticleProjection getArticleInfo(DataFetchingEnvironment dataFetchingEnvironment) {
         return Data.articles.stream().findFirst().orElse(null);
     }
 }

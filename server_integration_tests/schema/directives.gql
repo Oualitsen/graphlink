@@ -1,0 +1,6 @@
+# GraphLink directive declarations that survive into the runtime schema.
+# graphql-java requires every used directive to be declared, so declare
+# @glReturnsProjection here (the generator keeps its usages in the emitted
+# schema resource).
+
+directive @glReturnsProjection on FIELD_DEFINITION

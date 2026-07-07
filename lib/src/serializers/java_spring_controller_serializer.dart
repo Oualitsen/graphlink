@@ -460,7 +460,13 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     return buffer.toString();
   }
 
-  List<String> _buildBatchResultConversion(GLSchemaMapping mapping, String sourceMapExpr, GLToken context) {
+  /// Emits the statements that turn a batch service call's
+  /// `Map<DomainParent, Value>` into the `Map<Map<String,Object>, Value>` that
+  /// Spring's `@BatchMapping` needs — one entry per source parent, keyed by the
+  /// exact wire instances Spring passed in (`valueAsMap`), not by the
+  /// reconstructed domain objects (which never equal the sources → all-null).
+  /// [serviceCallExpr] is the (single) call that yields the domain-keyed map.
+  List<String> _buildBatchResultConversion(GLSchemaMapping mapping, String serviceCallExpr, GLToken context) {
     context.addImport(JavaImports.hashMap);
     final serviceMapping = mapping.serviceMapping!;
     final mappedToType = serviceMapping.getMappedToType(grammar);
@@ -468,19 +474,29 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     if (fieldTypeToken != null && !grammar.scalars.containsKey(fieldTypeToken.token)) {
       context.addImportDependecy(fieldTypeToken);
     }
-    final keyType = serializer.serializeType(GLType(mappedToType.tokenInfo, false));
+    final domainKeyType = serializer.serializeType(GLType(mappedToType.tokenInfo, false));
     String realValueType = serializer.serializeType(serviceMapping.field.type).toBoxedType;
     if (serviceMapping.field.type.isList) {
       realValueType = "? extends $realValueType";
     }
-    final mappedType = mapping.field.type;
-    final mappedValueType = serializer.serializeType(mappedType is GLMapType ? mappedType.valueType : mappedType).toBoxedType;
-    final valueConversion = _serviceResultToJson(mapping.field, "entry.getValue()", context);
+    final mappedType = mapping.field.type as GLMapType;
+    final sourceKeyType = serializer.serializeType(mappedType.keyType);
+    final mappedValueType = serializer.serializeType(mappedType.valueType).toBoxedType;
 
-    final loopBody = codeGenUtils.block(['result.put(entry.getKey(), $valueConversion);']);
+    final sourceArg = mapping.field.arguments.firstWhere((a) => (a.originalArg ?? a).bareName == 'value');
+    final sourceListName = sourceArg.codeName;
+    final domainListName = (sourceArg.originalArg ?? sourceArg).codeName;
+
+    final serviceResultVar = codeGenUtils.safeLocalVar('serviceResult');
+    final indexVar = codeGenUtils.safeLocalVar('i');
+    final valueExpr = '$serviceResultVar.get($domainListName.get($indexVar))';
+    final valueConversion = _serviceResultToJson(mapping.field, valueExpr, context);
+
+    final loopBody = codeGenUtils.block(['result.put($sourceListName.get($indexVar), $valueConversion);']);
     return [
-      'Map<$keyType, $mappedValueType> result = new HashMap<>();',
-      'for (Map.Entry<$keyType, $realValueType> entry : $sourceMapExpr.entrySet()) $loopBody',
+      'Map<$domainKeyType, $realValueType> $serviceResultVar = $serviceCallExpr;',
+      'Map<$sourceKeyType, $mappedValueType> result = new HashMap<>();',
+      'for (int $indexVar = 0; $indexVar < $sourceListName.size(); $indexVar++) $loopBody',
     ];
   }
 

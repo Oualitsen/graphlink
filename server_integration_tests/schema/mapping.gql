@@ -27,7 +27,7 @@ type MessageRead @glSkipOnServer(batch: true, mapTo: "Message") {
 
 extend type Query {
     getProjectedArticle: Article! @glReturnsProjection
-    getArticleWithCount: ArticleWithCount
-    getArticleInfo: ArticleInfo @glReturnsProjection
-    getMessageReadList: [MessageRead]
+    getArticleWithCount: ArticleWithCount @glServiceName(name: "Article")
+    getArticleInfo: ArticleInfo @glReturnsProjection @glServiceName(name: "Article")
+    getMessageReadList: [MessageRead] @glServiceName(name: "Message")
 }

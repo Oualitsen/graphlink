@@ -10,6 +10,7 @@ schema {
    subscription: Subscription
 }
 
+directive @glReturnsProjection on FIELD_DEFINITION
 directive @glValidate on FIELD_DEFINITION
 input ReservedInput {
    class: String!
