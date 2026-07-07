@@ -15,7 +15,6 @@ class GLField with GLDirectivesMixin, CodeNameMixin {
   final Map<String, GLArgumentDefinition> _arguments = {};
 
   List<GLArgumentDefinition>? _cachedArguments;
-  bool? _containsSkipOrIncludeDirective;
 
   /// Set on a field returned by Spring controller return-type mappification
   /// (e.g. an enum field retyped to `String`, or a projectable type retyped
@@ -80,9 +79,7 @@ class GLField with GLDirectivesMixin, CodeNameMixin {
   @override
   int get hashCode => name.hashCode * type.hashCode;
 
-  //check for inclue or skip directives
-  bool get hasInculeOrSkipDiretives => _containsSkipOrIncludeDirective ??=
-      getDirectives().where((d) => [includeDirective, skipDirective].contains(d.token)).isNotEmpty;
+  
 
   /// Whether this field is marked @deprecated.
   bool get isDeprecated => getDirectiveByName(deprecatedDirective) != null;
