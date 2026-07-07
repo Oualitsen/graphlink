@@ -1,0 +1,33 @@
+# Schema-mapping features: @glSkipOnServer(mapTo:), @glReturnsProjection.
+# Also exercises multi-file merging via `extend type Query`, which pulls the
+# mapping-related root fields out of base.gql's Query into this file.
+
+type ArticleWithCount @glSkipOnServer(batch: false, mapTo: "Article") {
+    article: Article!
+    count: Int!
+}
+
+type ArticleInfo @glSkipOnServer(batch: false, mapTo: "Article") {
+    id: ID!
+    title: String!
+    type: ArticleType
+    webSite: WebSite
+    published: Boolean!
+}
+
+type Message {
+    id: ID!
+    content: String!
+}
+
+type MessageRead @glSkipOnServer(batch: true, mapTo: "Message") {
+    message: Message!
+    read: Boolean!
+}
+
+extend type Query {
+    getProjectedArticle: Article! @glReturnsProjection
+    getArticleWithCount: ArticleWithCount
+    getArticleInfo: ArticleInfo @glReturnsProjection
+    getMessageReadList: [MessageRead]
+}

@@ -12,7 +12,7 @@ import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/token_info.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
-import 'package:graphlink/src/gl_expand_grammar_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_expand_grammar_extension.dart';
 
 class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin, CodeNameMixin {
   @override

@@ -1,0 +1,69 @@
+# Shared integration schema — core domain + root operations.
+# Consumed (merged with the sibling *.gql files) by every generated target:
+# the Dart client harness and each generated server. Keep this schema
+# cross-language: no language-specific directives (@glExternal, @glDecorators,
+# @glRepository) and no @glUpload (Spring cannot serve uploads + subscriptions
+# together — upload lives in ../typescript/schema/upload_schema.gql).
+
+directive @glValidate on FIELD_DEFINITION
+
+enum ArticleType {
+    NEWS
+    BLOG
+    REVIEW
+}
+
+type WebSite {
+    id: ID!
+    name: String!
+}
+
+type Author {
+    id: ID!
+    name: String!
+    articles: [Article!] @glSkipOnServer(batch: true) @glReturnsProjection
+    latestArticles(limit: Int!): [Article!]! @glSkipOnServer(batch: false)
+}
+
+type Article {
+    id: ID!
+    title: String!
+    type: ArticleType
+    authorId: ID!
+    webSite: WebSite
+    author: Author! @glSkipOnServer(batch: false)
+    authorList: [Author!] @glSkipOnServer(batch: false)
+    published: Boolean!
+}
+
+input CreateArticleInput {
+    title: String!
+    authorId: ID!
+    class: String
+}
+
+input UpdateArticleInput {
+    id: ID!
+    title: String
+}
+
+type Query {
+    getAuthor(id: ID!): Author
+    getArticle(id: ID!): Article!
+    listAuthors: [Author!]!
+    listArticles: [Article!]!
+    getArticleTypes: [ArticleType!]!
+}
+
+type Mutation {
+    createArticle(input: CreateArticleInput!): Article!
+    updateArticle(input: UpdateArticleInput!): Article!
+    deleteArticle(id: ID!): Boolean!
+    bulkCreate(matrix: [[CreateArticleInput!]]): Int! @glValidate
+}
+
+type Subscription {
+    articleCreated: Article!
+    articleUpdated(id: ID!): Article!
+    articleDeleted: ID!
+}

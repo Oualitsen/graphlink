@@ -1,5 +1,5 @@
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/gl_grammar_maps_to_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_maps_to_extension.dart';
 import 'package:graphlink/src/kotlin_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';

@@ -11,7 +11,7 @@ import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/token_info.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
-import 'package:graphlink/src/gl_expand_grammar_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_expand_grammar_extension.dart';
 
 extension GLGrammarFragmentExtension on GLParser {
   void fillQueryElementArgumentTypes(
