@@ -123,7 +123,6 @@ class DartSerializer extends GLSerializer {
       {bool isOverride = false}) {
     final type = def.type;
     final name = def.codeName;
-    final forceNullable = isTypeField && (def.hasInculeOrSkipDiretives);
     final builder = StringBuffer(serializeDecorators(def.getDirectives()));
     if (isOverride) {
       builder.writeln("@override");
@@ -133,12 +132,12 @@ class DartSerializer extends GLSerializer {
     } else {
       builder.write(" ");
     }
-    builder.write("${serializeType(type, forceNullable)} $name;");
+    builder.write("${serializeType(type)} $name;");
     return builder.toString();
   }
 
   @override
-  String serializeType(GLType def, [bool _ = false]) {
+  String serializeType(GLType def) {
     if (def is GLVoidType) {
       return 'void';
     }
@@ -148,9 +147,9 @@ class DartSerializer extends GLSerializer {
     }
     String dartTpe;
     if (def is GLMapType) {
-      dartTpe = "Map<${serializeType(def.keyType, false)}, ${serializeType(def.valueType, false)}>";
+      dartTpe = "Map<${serializeType(def.keyType)}, ${serializeType(def.valueType)}>";
     } else if (def is GLListType) {
-      dartTpe = "List<${serializeType(def.inlineType, false)}>";
+      dartTpe = "List<${serializeType(def.inlineType)}>";
     } else {
       final token = def.token;
       dartTpe = getTypeNameFromGQExternal(token) ?? resolveCodeName(token);
@@ -194,11 +193,11 @@ class DartSerializer extends GLSerializer {
     final params = [
       ...plan.requiredParams.map(
         (f) =>
-            'required ${serializeType(f.targetField.type, false)} ${f.targetField.codeName}',
+            'required ${serializeType(f.targetField.type)} ${f.targetField.codeName}',
       ),
       ...plan.defaultParams.map(
         (f) =>
-            'required ${serializeType(f.targetField.type, false)} default${f.targetField.codeName.firstUp}',
+            'required ${serializeType(f.targetField.type)} default${f.targetField.codeName.firstUp}',
       ),
     ];
 
@@ -238,7 +237,7 @@ class DartSerializer extends GLSerializer {
     });
 
     final nullableListDefaultParams = plan.nullableListDefaults.map((f) =>
-        '${serializeType(f.sourceField!.type, false)} default${f.sourceField!.codeName.firstUp} = const []');
+        '${serializeType(f.sourceField!.type)} default${f.sourceField!.codeName.firstUp} = const []');
     final nullableListAssignments = plan.nullableListDefaults.map((f) {
       final variable = '$targetVar.${f.targetField.codeName}';
       final expr = _callFromMapping(variable, f.sourceField!.type.firstType.token, f.targetField.type, 0);
@@ -246,14 +245,14 @@ class DartSerializer extends GLSerializer {
     });
 
     final promotedParams = plan.promoted.map(
-      (f) => 'required ${serializeType(f.sourceField!.type, false)} ${f.sourceField!.codeName}',
+      (f) => 'required ${serializeType(f.sourceField!.type)} ${f.sourceField!.codeName}',
     );
     final promotedAssignments = plan.promoted.map(
       (f) => '${f.sourceField!.codeName}: ${f.sourceField!.codeName}',
     );
 
     final inputOnlyParams = plan.inputOnly.map(
-      (f) => '${f.type.nullable ? '' : 'required '}${serializeType(f.type, false)} ${f.codeName}',
+      (f) => '${f.type.nullable ? '' : 'required '}${serializeType(f.type)} ${f.codeName}',
     );
     final inputOnlyAssignments = plan.inputOnly.map(
       (f) => '${f.codeName}: ${f.codeName}',
@@ -427,7 +426,7 @@ class DartSerializer extends GLSerializer {
 
   String castDynamicToType(String variable, GLType type) {
     String dot = type.nullable ? "?." : ".";
-    String serializedType = serializeType(type, false);
+    String serializedType = serializeType(type);
     String numSuffix = type.nullable ? "?" : "";
 
     if (type.isList) {
@@ -657,8 +656,7 @@ class DartSerializer extends GLSerializer {
   }
 
   String serializeGetterDeclaration(GLField field) {
-    final forceNullable = field.hasInculeOrSkipDiretives;
-    return """${serializeType(field.type, forceNullable)} get ${field.codeName}""";
+    return """${serializeType(field.type)} get ${field.codeName}""";
   }
 
   @override

@@ -96,9 +96,9 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
           return '${arg.codeName}: ${_tsUploadType(arg.type)}';
         }
         _collectType(arg.type, importedTypes);
-        return '${arg.codeName}: ${tsSerializer.serializeType(arg.type, false)}';
+        return '${arg.codeName}: ${tsSerializer.serializeType(arg.type)}';
       }).toList();
-      final returnTs = tsSerializer.serializeType(field.type, false);
+      final returnTs = tsSerializer.serializeType(field.type);
       _collectType(field.type, importedTypes);
       final isSubscription = service.getTypeByFieldName(field.name.token) == GLQueryType.subscription;
       final needsInfo = (apolloConfig.useResolveInfo || field.hasDirective(glReturnsProjection)) && !isSubscription;
@@ -128,7 +128,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
   String _serviceMappingMethod(GLSchemaMapping mapping, Set<String> importedTypes) {
     final parentName = mapping.type.token;
     _addIfKnown(parentName, importedTypes);
-    final fieldTs = tsSerializer.serializeType(mapping.field.type, false);
+    final fieldTs = tsSerializer.serializeType(mapping.field.type);
     _collectType(mapping.field.type, importedTypes);
 
     if (mapping.isBatch) {
@@ -136,7 +136,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     }
     final argParams = mapping.field.arguments.map((arg) {
       _collectType(arg.type, importedTypes);
-      return '${arg.codeName}: ${tsSerializer.serializeType(arg.type, false)}';
+      return '${arg.codeName}: ${tsSerializer.serializeType(arg.type)}';
     });
     final nonBatchParams = [
       'item: ${parentName}',
@@ -158,7 +158,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       if (!fieldHasValidation(field)) continue;
       final argList = field.arguments.map((arg) {
         _collectType(arg.type, importedTypes);
-        return '${arg.codeName}: ${tsSerializer.serializeType(arg.type, false)}';
+        return '${arg.codeName}: ${tsSerializer.serializeType(arg.type)}';
       }).toList();
       final guardParams = [...argList, 'context: GraphLinkContext', if (apolloConfig.useResolveInfo) 'info: GraphQLResolveInfo'];
       methods.add('${validationMethodName(field.name.token)}(${guardParams.join(', ')}): Promise<void>;');
@@ -204,7 +204,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
 
   String _loaderFactory(GLSchemaMapping mapping, String serviceName) {
     final parentName = mapping.type.token;
-    final fieldTs = tsSerializer.serializeType(mapping.field.type, false);
+    final fieldTs = tsSerializer.serializeType(mapping.field.type);
     final factoryName = 'create${mapping.key.firstUp}Loader';
     final serviceVar = serviceName.firstLow;
 
