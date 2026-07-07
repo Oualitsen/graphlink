@@ -621,9 +621,14 @@ class JavaSerializer extends GLSerializer {
     context.addImport(JavaImports.hashMap);
     context.addImport(JavaImports.map);
 
+    final typeName = context is GLTypeDefinition && context.includeTypeName
+        ? (context.derivedFromType?.tokenInfo.token ?? context.tokenInfo.token)
+        : null;
+
     buffer.writeln(
       codeGenUtils.createMethod(returnType: "public ${_mapOf('String', 'Object')}", methodName: "toJson", statements: [
         "${_mapOf('String', 'Object')} map = new HashMap<>();",
+        if (typeName != null) 'map.put("__typename", "$typeName");',
         ...fields.map((field) => 'map.put("${field.name}", ${_fieldToJson(field, context)});'),
         'return map;'
       ]),
