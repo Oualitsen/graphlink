@@ -142,7 +142,12 @@ class GLController extends GLService {
 
   GLField _mappifyReturnType(GLField field) {
     final fieldType = field.type;
-    if (parser.isEnum(fieldType.firstType.token) || parser.isProjectableType(fieldType.firstType.token)) {
+    // A batch mapping's return type is a GLMapType whose key is the parent
+    // identity; `firstType` reports the value type, so a scalar-valued batch
+    // (e.g. `Map<Message, Boolean>`) would otherwise skip mappification and
+    // leave the key un-mappified. Trigger on a projectable key too.
+    final batchKeyProjectable = fieldType is GLMapType && parser.isProjectableType(fieldType.keyType.firstType.token);
+    if (parser.isEnum(fieldType.firstType.token) || parser.isProjectableType(fieldType.firstType.token) || batchKeyProjectable) {
       final mapped = field.ofType(_mappifyType(fieldType));
       // originalType is only ever consulted to build a *single-value*
       // toJson() conversion (e.g. `entry.getValue()`), so for a batch
@@ -174,10 +179,13 @@ class GLController extends GLService {
   /// level so mappification doesn't drop it.
   GLType _mappifyType(GLType type) {
     if (type is GLMapType) {
-      // The key (e.g. a batch mapping's parent identity) is never mappified —
-      // only the value shares the enum/projectable -> String/Map<String,Object>
-      // treatment.
-      return GLMapType(type.keyType, _mappifyType(type.valueType), type.nullable, wrapper: type.wrapper, wrapperImport: type.wrapperImport);
+      // A batch mapping's key is the parent identity, which reaches the
+      // controller as its wire form (Map<String,Object> for a projectable
+      // parent). Spring's @BatchMapping does map.get(source) against those
+      // wire instances, so the key must be mappified just like the value —
+      // otherwise the returned map is keyed by reconstructed domain objects
+      // that never equal the sources and every field resolves null.
+      return GLMapType(_mappifyType(type.keyType), _mappifyType(type.valueType), type.nullable, wrapper: type.wrapper, wrapperImport: type.wrapperImport);
     }
     if (type is GLListType) {
       return GLListType(_mappifyType(type.inlineType), type.nullable, wrapper: type.wrapper, wrapperImport: type.wrapperImport);
@@ -185,7 +193,11 @@ class GLController extends GLService {
     if (parser.isEnum(type.token)) {
       return type.ofNewName('String'.toToken());
     }
-    return _jsonMapType(type.nullable, wrapper: type.wrapper, wrapperImport: type.wrapperImport);
+    if (parser.isProjectableType(type.token)) {
+      return _jsonMapType(type.nullable, wrapper: type.wrapper, wrapperImport: type.wrapperImport);
+    }
+    // Scalar (e.g. a batch mapping's Boolean/Int value) — no wire remapping.
+    return type;
   }
 
   /// Recurses through [GLListType] nesting, unconditionally replacing the
