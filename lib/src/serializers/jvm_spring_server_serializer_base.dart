@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/exceptions/parse_exception.dart';
-import 'package:graphlink/src/gl_grammar_upload_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_controller.dart';
 import 'package:graphlink/src/model/gl_directive.dart';

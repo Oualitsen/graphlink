@@ -1,5 +1,5 @@
-import 'package:graphlink/src/gl_grammar_cache_extension.dart';
-import 'package:graphlink/src/gl_grammar_upload_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_cache_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_queries.dart';

@@ -1,4 +1,4 @@
-import 'package:graphlink/src/gl_grammar_upload_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_queries.dart';

@@ -13,7 +13,7 @@ import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/utils.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
-import 'package:graphlink/src/gl_grammar_maps_to_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_maps_to_extension.dart';
 
 abstract class GLSerializer {
   final GLParser grammar;

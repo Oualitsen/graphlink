@@ -1,5 +1,5 @@
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/gl_grammar_upload_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/java_code_gen_utils.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_argument.dart';

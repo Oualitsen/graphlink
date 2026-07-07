@@ -2,7 +2,7 @@ import 'package:test/test.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
-import 'package:graphlink/src/gl_expand_grammar_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_expand_grammar_extension.dart';
 
 // Simple self-reference: Employee points back to itself.
 const _selfCycle = '''

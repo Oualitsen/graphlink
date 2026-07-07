@@ -1,13 +1,13 @@
 import 'package:graphlink/src/cache_store_java.dart';
 import 'package:graphlink/src/config.dart';
-import 'package:graphlink/src/gl_grammar_upload_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/serializers/java_imports.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/java_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
-import 'package:graphlink/src/gl_grammar_cache_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_cache_extension.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/serializers/client_serializers/java/java_client_constants.dart';

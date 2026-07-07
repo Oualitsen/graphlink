@@ -1,7 +1,7 @@
 import 'package:graphlink/src/capture_errors_utils.dart';
 import 'package:graphlink/src/dart_code_gen_utils.dart';
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/gl_grammar_upload_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_fragment.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
