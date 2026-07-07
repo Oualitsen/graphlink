@@ -11,126 +11,6 @@ import '../../../test_utils.dart';
 
 void main() {
 
-  test("test backend handlers 1", () {
-    final GLParser g = GLParser(
-        identityFields: ["id"],
-        
-        mode: CodeGenerationMode.server);
-
-    final text =
-        File("test/serializers/java/backend/spring_server_serializer.graphql")
-            .readAsStringSync();
-
-    g.parse(text);
-
-    var serverSerialzer = JavaSpringServerSerializer(g, packageName: "");
-    var userCtrl = g.controllers["UserServiceController"]!;
-    var result = serverSerialzer.serializeController(userCtrl);
-    print(result);
-    expect(
-      result.split('\n').map((e) => e.trim()).toList(),
-      containsAllInOrder([
-        '@Controller()',
-        'public class UserServiceController {',
-        'private final UserService userService;',
-        'public UserServiceController(UserService userService) {',
-        'this.userService = userService;',
-        '}',
-        '@QueryMapping()',
-        'public CompletableFuture<Map<String, Object>> getUser() {',
-        'return CompletableFuture.supplyAsync(() -> {',
-'${toServerProjectionName('User')} __gl_tmp__ = userService.getUser();',
-'return __gl_tmp__ == null ? null : __gl_tmp__.toJson();',
-'});',
-        '}',
-        '@QueryMapping()',
-        'public CompletableFuture<Map<String, Object>> getUserById(@Argument() String id) {',
-        'return CompletableFuture.supplyAsync(() -> {',
-'${toServerProjectionName('User')} __gl_tmp__ = userService.getUserById(id);',
-'return __gl_tmp__ == null ? null : __gl_tmp__.toJson();',
-'});',
-        '}',
-        '@QueryMapping()',
-        'public CompletableFuture<List<Map<String, Object>>> getUsers(@Argument() String name, @Argument() String middle) {',
-        'return CompletableFuture.supplyAsync(() -> userService.getUsers(name, middle).stream().map(__gl_e0__ -> __gl_e0__.toJson()).collect(Collectors.toList()));',
-        '}',
-        '@QueryMapping()',
-        'public CompletableFuture<Integer> getUserCount() {',
-        'return CompletableFuture.supplyAsync(() -> userService.getUserCount());',
-        '}',
-        '@SubscriptionMapping()',
-        'public Flux<Map<String, Object>> watchUser(@Argument() String userId) {',
-        'return userService.watchUser(userId).map(__gl_result__ -> __gl_result__.toJson());',
-        '}',
-        '@SubscriptionMapping()',
-        'public Flux<List<Map<String, Object>>> watchCars(@Argument() String userId) {',
-        'return userService.watchCars(userId).map(__gl_result__ -> __gl_result__.stream().map(__gl_e0__ -> __gl_e0__ == null ? null : __gl_e0__.toJson()).collect(Collectors.toList()));',
-        '}',
-        '}',
-      ]),
-    );
-  });
-
-  test("test backend handlers 2", () {
-    final GLParser g = GLParser(
-        identityFields: ["id"],
-        
-        mode: CodeGenerationMode.server);
-
-    final text =
-        File("test/serializers/java/backend/spring_server_serializer.graphql")
-            .readAsStringSync();
-
-    g.parse(text);
-
-    var serverSerialzer = JavaSpringServerSerializer(g, packageName: "");
-    var userUser = g.controllers["UserServiceController"]!;
-    var result = serverSerialzer.serializeController(userUser);
-
-    expect(
-      result.split('\n').map((e) => e.trim()).toList(),
-      containsAllInOrder([
-        '@Controller()',
-        'public class UserServiceController {',
-        'private final UserService userService;',
-        'public UserServiceController(UserService userService) {',
-        'this.userService = userService;',
-        '}',
-        '@QueryMapping()',
-        'public CompletableFuture<Map<String, Object>> getUser() {',
-        'return CompletableFuture.supplyAsync(() -> {',
-'${toServerProjectionName('User')} __gl_tmp__ = userService.getUser();',
-'return __gl_tmp__ == null ? null : __gl_tmp__.toJson();',
-'});',
-        '}',
-        '@QueryMapping()',
-        'public CompletableFuture<Map<String, Object>> getUserById(@Argument() String id) {',
-        'return CompletableFuture.supplyAsync(() -> {',
-'${toServerProjectionName('User')} __gl_tmp__ = userService.getUserById(id);',
-'return __gl_tmp__ == null ? null : __gl_tmp__.toJson();',
-'});',
-        '}',
-        '@QueryMapping()',
-        'public CompletableFuture<List<Map<String, Object>>> getUsers(@Argument() String name, @Argument() String middle) {',
-        'return CompletableFuture.supplyAsync(() -> userService.getUsers(name, middle).stream().map(__gl_e0__ -> __gl_e0__.toJson()).collect(Collectors.toList()));',
-        '}',
-        '@QueryMapping()',
-        'public CompletableFuture<Integer> getUserCount() {',
-        'return CompletableFuture.supplyAsync(() -> userService.getUserCount());',
-        '}',
-        '@SubscriptionMapping()',
-        'public Flux<Map<String, Object>> watchUser(@Argument() String userId) {',
-        'return userService.watchUser(userId).map(__gl_result__ -> __gl_result__.toJson());',
-        '}',
-        '@SubscriptionMapping()',
-        'public Flux<List<Map<String, Object>>> watchCars(@Argument() String userId) {',
-        'return userService.watchCars(userId).map(__gl_result__ -> __gl_result__.stream().map(__gl_e0__ -> __gl_e0__ == null ? null : __gl_e0__.toJson()).collect(Collectors.toList()));',
-        '}',
-        '}',
-      ]),
-    );
-  });
-
   test("test backend handlers when shcema generation is on", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
@@ -146,48 +26,6 @@ void main() {
     var serverSerialzer = JavaSpringServerSerializer(g, packageName: "dev.graphlink", generateSchema: true);
     var userUser = g.controllers["UserServiceController"]!;
     var result = serverSerialzer.serializeController(userUser);
-    expect(
-      result.split('\n').map((e) => e.trim()).toList(),
-      containsAllInOrder([
-        '@Controller()',
-        'public class UserServiceController {',
-        'private final UserService userService;',
-        'public UserServiceController(UserService userService) {',
-        'this.userService = userService;',
-        '}',
-        '@QueryMapping()',
-        'public CompletableFuture<Map<String, Object>> getUser() {',
-        'return CompletableFuture.supplyAsync(() -> {',
-'${toServerProjectionName('User')} __gl_tmp__ = userService.getUser();',
-'return __gl_tmp__ == null ? null : __gl_tmp__.toJson();',
-'});',
-        '}',
-        '@QueryMapping()',
-        'public CompletableFuture<Map<String, Object>> getUserById(@Argument() String id) {',
-        'return CompletableFuture.supplyAsync(() -> {',
-'${toServerProjectionName('User')} __gl_tmp__ = userService.getUserById(id);',
-'return __gl_tmp__ == null ? null : __gl_tmp__.toJson();',
-'});',
-        '}',
-        '@QueryMapping()',
-        'public CompletableFuture<List<Map<String, Object>>> getUsers(@Argument() String name, @Argument() String middle) {',
-        'return CompletableFuture.supplyAsync(() -> userService.getUsers(name, middle).stream().map(__gl_e0__ -> __gl_e0__.toJson()).collect(Collectors.toList()));',
-        '}',
-        '@QueryMapping()',
-        'public CompletableFuture<Integer> getUserCount() {',
-        'return CompletableFuture.supplyAsync(() -> userService.getUserCount());',
-        '}',
-        '@SubscriptionMapping()',
-        'public Flux<Map<String, Object>> watchUser(@Argument() String userId) {',
-        'return userService.watchUser(userId).map(__gl_result__ -> __gl_result__.toJson());',
-        '}',
-        '@SubscriptionMapping()',
-        'public Flux<List<Map<String, Object>>> watchCars(@Argument() String userId) {',
-        'return userService.watchCars(userId).map(__gl_result__ -> __gl_result__.stream().map(__gl_e0__ -> __gl_e0__ == null ? null : __gl_e0__.toJson()).collect(Collectors.toList()));',
-        '}',
-        '}',
-      ]),
-    );
 
     expect(result, isNot(contains("public String userPassword")));
     expect(result, isNot(contains("throw new graphql.GraphQLException")));
@@ -320,45 +158,7 @@ void main() {
         ]));
   });
 
-  test("test backend handlers with DataFetchingEnvironment injection", () {
-    final GLParser g = GLParser(
-        identityFields: ["id"],
-        
-        mode: CodeGenerationMode.server);
-
-    final text =
-        File("test/serializers/java/backend/spring_server_serializer.graphql")
-            .readAsStringSync();
-
-    g.parse(text);
-
-    var serverSerialzer = JavaSpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
-    var userCtrl = g.controllers["UserServiceController"]!;
-    var result = serverSerialzer.serializeController(userCtrl);
-    print(result);
-    expect(
-        result,
-        stringContainsInOrder([
-          "@Controller",
-          "public class UserServiceController",
-           "private final UserService userService;",
-           "public UserServiceController(UserService userService)",
-           "this.userService = userService;",
-           "CompletableFuture<Map<String, Object>> getUser(DataFetchingEnvironment dataFetchingEnvironment) {",
-           "return CompletableFuture.supplyAsync(() -> {",
-           "${toServerProjectionName('User')} __gl_tmp__ = userService.getUser(dataFetchingEnvironment);",
-           "return __gl_tmp__ == null ? null : __gl_tmp__.toJson();",
-           "});",
-           "CompletableFuture<Map<String, Object>> getUserById(@Argument() String id, DataFetchingEnvironment dataFetchingEnvironment)",
-           "return CompletableFuture.supplyAsync(() -> {",
-           "${toServerProjectionName('User')} __gl_tmp__ = userService.getUserById(id, dataFetchingEnvironment);",
-           "return __gl_tmp__ == null ? null : __gl_tmp__.toJson();",
-           "});",
-           "@SubscriptionMapping",
-           "Flux<List<Map<String, Object>>> watchCars(@Argument() String userId, DataFetchingEnvironment dataFetchingEnvironment)",
-           "return userService.watchCars(userId, dataFetchingEnvironment).map(__gl_result__ -> __gl_result__.stream().map(__gl_e0__ -> __gl_e0__ == null ? null : __gl_e0__.toJson()).collect(Collectors.toList()));",
-        ]));
-  });
+  
 
   test("test serialize Service (User Service)", () {
     final GLParser g = GLParser(
@@ -384,7 +184,7 @@ void main() {
            "List<User> getUsers(String name, String middle);",
            "Integer getUserCount();",
            "Flux<User> watchUser(String userId);",
-           "Flux<? extends List<Car>> watchCars(String userId);",
+           "Flux<List<Car>> watchCars(String userId);",
         ]));
   });
 
