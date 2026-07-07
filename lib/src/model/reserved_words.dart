@@ -17,6 +17,13 @@ const Set<String> dartReservedWords = {
   'factory', 'function', 'get', 'implements', 'import', 'interface', 'late',
   'library', 'mixin', 'operator', 'part', 'required', 'set', 'static',
   'typedef',
+  // Lowercase dart:core type names. Not reserved words, but a field/parameter
+  // with one of these names shadows the type inside the enclosing class, so
+  // every `int`/`double`/… type annotation there fails to resolve (`final int
+  // int;`). They survive lowerCamelCase normalization unchanged, so they must
+  // be sanitized (`int` -> `int_`). Capitalized core types (String, List, Map)
+  // are lowercased by the naming convention and no longer collide.
+  'num', 'int', 'double', 'bool',
 };
 
 /// Java reserved words (and literals) that cannot be used as a field name,

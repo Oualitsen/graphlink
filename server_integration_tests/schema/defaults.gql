@@ -1,0 +1,55 @@
+# Initial / default values torture schema — drives _validateDefaultValue and
+# default propagation into the generated Dart input class, the Java input class,
+# and the emitted schema.graphqls.
+#
+# Every resolver simply reflects its effective input back, so a client that omits
+# a defaulted field/argument can assert the default was applied end-to-end.
+
+enum Priority {
+    LOW
+    MEDIUM
+    HIGH
+}
+
+# Input-field defaults of every kind: the four scalars, an enum, a non-empty
+# list, an empty list, and an explicit null on a nullable field.
+input ConfigInput {
+    pageSize: Int = 25
+    ratio: Float = 1.5
+    sort: String = "asc"
+    verbose: Boolean = false
+    priority: Priority = MEDIUM
+    tags: [String!] = ["default", "seed"]
+    empties: [String!] = []
+    note: String = null
+}
+
+type Config {
+    pageSize: Int!
+    ratio: Float!
+    sort: String!
+    verbose: Boolean!
+    priority: Priority!
+    tags: [String!]!
+    empties: [String!]!
+    note: String
+}
+
+# Nested object default: the argument default { min: 5 } overrides RangeInput's
+# own min default (0) while max falls back to the field default (100).
+input RangeInput {
+    min: Int = 0
+    max: Int = 100
+}
+
+type Range {
+    min: Int!
+    max: Int!
+}
+
+extend type Query {
+    resolveConfig(input: ConfigInput!): Config!
+    resolveRange(input: RangeInput = { min: 5 }): Range!
+    # Argument-level scalar defaults on a root field.
+    greet(name: String = "world", times: Int = 1): String!
+}

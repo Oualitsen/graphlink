@@ -2,12 +2,16 @@ package dev.graphlink.javaserver.impl;
 
 import dev.graphlink.javaserver.generated.inputs.CreateArticleInput;
 import dev.graphlink.javaserver.generated.inputs.UpdateArticleInput;
+import dev.graphlink.javaserver.generated.interfaces.GlArticleProjection;
 import dev.graphlink.javaserver.generated.services.ArticleService;
 import dev.graphlink.javaserver.generated.types.Article;
+import graphql.schema.DataFetchingEnvironment;
+
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
 import java.util.NoSuchElementException;
 
 @Service
@@ -15,12 +19,12 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     public Mono<Article> getArticle(String id) {
-        return Mono.justOrEmpty(Data.articles.stream().filter(a -> a.getId().equals(id)).findFirst());
+        return Mono.justOrEmpty(Data.articles.stream().filter(a -> a.getId().equals(id)).findFirst().orElse(null));
     }
 
     @Override
     public Flux<Article> listArticles() {
-        return Flux.fromIterable(Data.articles);
+        return Flux.fromIterable(new ArrayList<>(Data.articles));
     }
 
     @Override
@@ -61,5 +65,11 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     public Flux<Article> articleUpdated(String id) {
         return Data.articleUpdatedSink.asFlux().filter(a -> a.getId().equals(id));
+    }
+
+    @Override
+    public Mono<GlArticleProjection> getProjectedArticle(DataFetchingEnvironment dataFetchingEnvironment) {
+        GlArticleProjection projection = Data.articles.stream().findFirst().orElse(null);
+        return Mono.justOrEmpty(projection);
     }
 }

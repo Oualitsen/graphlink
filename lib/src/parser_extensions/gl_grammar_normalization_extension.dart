@@ -106,8 +106,15 @@ extension GLGrammarNormalizationExtension on GLParser {
       _applyArgumentNaming(q.arguments, convention);
     }
 
-    // Controller field arguments (server mode).
+    // Controller handler method names + their arguments (server mode).
+    // Field names must be normalized to match the service interface: the
+    // controller field is a copy of the service/root field, so if it skipped
+    // this pass its codeName would later diverge from the service's (e.g.
+    // `_status` -> keyword rule `status_` on the controller vs convention
+    // `status` on the service), and the controller would call a method the
+    // interface never declares.
     for (final c in controllers.values) {
+      c.applyFieldNaming(convention);
       _applyArgumentNamingToFields(c.fields, convention);
     }
   }
