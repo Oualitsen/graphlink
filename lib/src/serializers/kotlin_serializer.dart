@@ -89,10 +89,9 @@ class KotlinSerializer extends GLSerializer {
   @override
   String doSerializeField(GLField def, bool immutable, bool isTypeField,
       {bool isOverride = false}) {
-    final forceNullable = isTypeField && (def.hasInculeOrSkipDiretives);
     final type = serializeType(def.type);
     final keyword = _keyword(immutable);
-    final nullable = def.type.nullable || forceNullable;
+    final nullable = def.type.nullable;
     final deprecation = serializeFieldDeprecation(def);
     final line = nullable
         ? '$keyword ${def.codeName}: $type = null'
@@ -282,13 +281,12 @@ class KotlinSerializer extends GLSerializer {
     final fields = def.getSerializableFields(grammar.mode);
 
     final params = fields.map((f) {
-      final forceNullable = f.hasInculeOrSkipDiretives;
       final type = serializeType(f.type);
       final keyword = _keyword(typesAsDataClass);
       final overrides = def.isOverride(f);
       final prefix = overrides ? 'override $keyword' : keyword;
       final deprecation = serializeFieldDeprecation(f);
-      if (f.type.nullable || forceNullable) {
+      if (f.type.nullable) {
         return '${deprecation}$prefix ${f.codeName}: $type = null';
       }
       return '${deprecation}$prefix ${f.codeName}: $type';

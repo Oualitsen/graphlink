@@ -136,16 +136,16 @@ class TypeScriptSerializer extends GLSerializer {
   ///   `[String]!`    → `(string | null)[]`
   ///   `[String]`     → `(string | null)[] | null`
   @override
-  String serializeType(GLType def, [bool _ = false]) {
+  String serializeType(GLType def) {
 
     if (def is GLVoidType) {
       return 'void';
     }
     String expr;
     if (def is GLMapType) {
-      expr = 'Map<${serializeType(def.keyType, false)}, ${serializeType(def.valueType, false)}>';
+      expr = 'Map<${serializeType(def.keyType)}, ${serializeType(def.valueType)}>';
     } else if (def is GLListType) {
-      final elementTs = serializeType(def.inlineType, false);
+      final elementTs = serializeType(def.inlineType);
       // Wrap element in parens when it already contains `|` (i.e. it is nullable)
       expr = def.inlineType.nullable ? '($elementTs)[]' : '$elementTs[]';
     } else {
@@ -173,10 +173,9 @@ class TypeScriptSerializer extends GLSerializer {
       {bool isOverride = false}) {
     final type = def.type;
     final name = def.codeName;
-    final forceNullable = isTypeField && (def.hasInculeOrSkipDiretives);
-    final tsType = serializeType(type, forceNullable);
+    final tsType = serializeType(type);
 
-    if (!immutable && (def.type.nullable || forceNullable) && optionalNullableInputFields) {
+    if (!immutable && (def.type.nullable) && optionalNullableInputFields) {
       return '$name?: $tsType;';
     }
 
@@ -479,6 +478,6 @@ class TypeScriptSerializer extends GLSerializer {
       return type.nullable ? '$jsonExpr != null ? $call : null' : call;
     }
     // Scalar — pure type assertion, no runtime cost
-    return '$jsonExpr as ${serializeType(type, false)}';
+    return '$jsonExpr as ${serializeType(type)}';
   }
 }
