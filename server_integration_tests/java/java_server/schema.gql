@@ -1,10 +1,21 @@
-interface Animal { id: ID! }
-interface Enclosure { animals: [Animal!]! }
+type Animal {
+    name: String
+}
+type Owner {
+    name: String
+}
 
-type Lion implements Animal { id: ID! }
-type Zoo implements Enclosure { animals: [Lion!]! }
+type Wrapper {
+  id: ID!
+}
+
+
+type OwnerWithAnimal @glSkipOnServer(batch: false) {
+    owner: Owner!
+    animal: Animal
+}
+
 
 type Query {
-  getZoo: Zoo! @glValidate
-  getZoos: [Zoo!]! @glValidate
+    getOwnerWithAnimal: OwnerWithAnimal
 }
