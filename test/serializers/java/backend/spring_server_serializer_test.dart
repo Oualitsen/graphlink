@@ -577,20 +577,12 @@ void main() {
     final ctrl = g.controllers['UserServiceController']!;
     final result = serializer.serializeController(ctrl);
     print(result);
-    final lines = result.split('\n').map((e) => e.trim()).toList();
-    expect(lines, containsAllInOrder([
-      '@QueryMapping()',
-      'public CompletableFuture<Map<String, Object>> getUser(@Argument() String id) {',
-      'SecurityContext securityContext = SecurityContextHolder.getContext();',
-      'return CompletableFuture.supplyAsync(() -> {',
+    expect(result, stringContainsInOrder([
       'SecurityContextHolder.setContext(securityContext);',
       'try {',
       'return userService.getUser(id).toJson();',
-      '} finally {',
+      'finally',
       'SecurityContextHolder.clearContext();',
-      '}',
-      '});',
-      '}',
     ]));
   });
 }

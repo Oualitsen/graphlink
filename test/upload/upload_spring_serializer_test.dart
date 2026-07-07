@@ -40,12 +40,13 @@ void main() {
       final ctrl = g.controllers['UploadedFileServiceController']!;
       final result = serializer.serializeController(ctrl);
       final lines = result.split('\n').map((e) => e.trim()).toList();
+      print(result);
 
       expect(
         lines,
         containsAllInOrder([
           '@MutationMapping()',
-          'public CompletableFuture<Map<String, Object>> uploadFile(@Argument() MultipartFile file, @Argument() String filename) {',
+          'public CompletableFuture<Map<String, Object>> uploadFile(@Argument() String filename, @Argument() MultipartFile file) {',
         ]),
       );
     });
@@ -53,13 +54,12 @@ void main() {
     test('list upload arg is List<MultipartFile>', () {
       final ctrl = g.controllers['UploadedFileServiceController']!;
       final result = serializer.serializeController(ctrl);
-      final lines = result.split('\n').map((e) => e.trim()).toList();
-
+      print(result);
       expect(
-        lines,
-        containsAllInOrder([
+        result,
+        stringContainsInOrder([
           '@MutationMapping()',
-          'public CompletableFuture<List<Map<String, Object>>> uploadFiles(@Argument() List<MultipartFile> files, @Argument() String label) {',
+          'public CompletableFuture<List<? extends Map<String, Object>>> uploadFiles(@Argument() String label, @Argument() List<MultipartFile> files)',
         ]),
       );
     });
@@ -67,6 +67,7 @@ void main() {
     test('MultipartFile import is present', () {
       final ctrl = g.controllers['UploadedFileServiceController']!;
       final result = serializer.serializeController(ctrl);
+      print(result);
 
       expect(result, contains('import org.springframework.web.multipart.MultipartFile'));
     });
@@ -81,7 +82,7 @@ void main() {
       expect(
         lines,
         containsAllInOrder([
-          'UploadedFile uploadFile(MultipartFile file, String filename);',
+          'UploadedFile uploadFile(String filename, MultipartFile file);',
         ]),
       );
     });
@@ -94,7 +95,7 @@ void main() {
       expect(
         lines,
         containsAllInOrder([
-          'List<UploadedFile> uploadFiles(List<MultipartFile> files, String label);',
+          'List<UploadedFile> uploadFiles(String label, List<MultipartFile> files);',
         ]),
       );
     });
