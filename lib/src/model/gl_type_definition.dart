@@ -101,6 +101,8 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin, CodeNam
     return _interfaceNames[interfaceName] != null;
   }
 
+  bool get includeTypeName => _interfaceNames.isNotEmpty;
+
   final Map<String, bool> _isOverrideCache = {};
 
   /// True when [field] is also declared on one of this type's interfaces
