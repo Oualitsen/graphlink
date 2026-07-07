@@ -66,7 +66,7 @@ Future<Set<String>> generateServerClasses(
       packageName: packageName,
       javaSerializer: serializer,
       generateSchema: springConfig.generateSchema,
-      injectDataFetching: springConfig.injectDataFetching,
+      injectContext: springConfig.injectContext,
       reactive: springConfig.reactive,
       useSpringSecurity: springConfig.useSpringSecurity);
   final futures = <Future<File>>[];
@@ -171,7 +171,7 @@ Future<Set<String>> _generateKotlinSpringClasses(GLParser grammar, GeneratorConf
       inputsAsDataClass: springConfig.inputAsDataClass,
       typesAsDataClass: springConfig.typeAsDataClass,
       generateSchema: springConfig.generateSchema,
-      injectDataFetching: springConfig.injectDataFetching,
+      injectContext: springConfig.injectContext,
       blockingServices: springConfig.blockingServices);
   final serializer = springSerializer.serializer;
   final futures = <Future<File>>[];

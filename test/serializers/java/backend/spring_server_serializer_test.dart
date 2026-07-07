@@ -83,7 +83,7 @@ void main() {
         ]));
   });
 
-  test("test serialize Service with DataFetchingEnvironment", () {
+  test("test serialize Service with GraphQLContext", () {
     final GLParser g = GLParser(
         identityFields: ["id"],
         
@@ -95,7 +95,7 @@ void main() {
 
     g.parse(text);
 
-    var serverSerialzer = JavaSpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
+    var serverSerialzer = JavaSpringServerSerializer(g, injectContext: true, packageName: "myOrg");
 
     var carService = g.services["CarService"]!;
 
@@ -103,8 +103,8 @@ void main() {
     expect(
         serializedCarService,
         stringContainsInOrder([
-          "Car getCarById(String id, DataFetchingEnvironment dataFetchingEnvironment);",
-          "Integer getCarCount(String userId, DataFetchingEnvironment dataFetchingEnvironment);",
+          "Car getCarById(String id, GraphQLContext graphQLContext);",
+          "Integer getCarCount(String userId, GraphQLContext graphQLContext);",
         ]));
   });
 

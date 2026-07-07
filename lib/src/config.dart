@@ -180,7 +180,7 @@ abstract class SpringServerConfigBase extends ServerLanguageConfig {
   final String? schemaTargetPath;
   final bool immutableInputFields;
   final bool immutableTypeFields;
-  final bool injectDataFetching;
+  final bool injectContext;
 
   SpringServerConfigBase({
     required this.basePackage,
@@ -189,7 +189,7 @@ abstract class SpringServerConfigBase extends ServerLanguageConfig {
     required this.generateSchema,
     required this.immutableInputFields,
     required this.immutableTypeFields,
-    required this.injectDataFetching,
+    required this.injectContext,
     this.schemaTargetPath,
   }) : assert(
           !generateSchema ||
@@ -214,7 +214,7 @@ class SpringServerConfig extends SpringServerConfigBase {
     required this.inputAsRecord,
     required this.typeAsRecord,
     required super.generateSchema,
-    required super.injectDataFetching,
+    required super.injectContext,
     required this.reactive,
     required this.useSpringSecurity,
     required super.immutableInputFields,
@@ -235,7 +235,7 @@ class SpringServerConfig extends SpringServerConfigBase {
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? false,
       jspecify: (json['jspecify'] as bool?) ?? false,
       schemaTargetPath: json['schemaTargetPath'] as String?,
-      injectDataFetching: (json['injectDataFetching'] as bool?) ?? false,
+      injectContext: (json['injectContext'] as bool?) ?? false,
       reactive: (json['reactive'] as bool?) ?? false,
       useSpringSecurity: (json['useSpringSecurity'] as bool?) ?? false,
     );
@@ -262,7 +262,7 @@ class KotlinSpringServerConfig extends SpringServerConfigBase {
     required this.typeAsDataClass,
     required this.blockingServices,
     required super.generateSchema,
-    required super.injectDataFetching,
+    required super.injectContext,
     required super.immutableInputFields,
     required super.immutableTypeFields,
     super.schemaTargetPath,
@@ -280,7 +280,7 @@ class KotlinSpringServerConfig extends SpringServerConfigBase {
       immutableInputFields: (json['immutableInputFields'] as bool?) ?? true,
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? false,
       schemaTargetPath: json['schemaTargetPath'] as String?,
-      injectDataFetching: (json['injectDataFetching'] as bool?) ?? false,
+      injectContext: (json['injectContext'] as bool?) ?? false,
     );
   }
 }

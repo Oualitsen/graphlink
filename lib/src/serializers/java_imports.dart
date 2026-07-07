@@ -38,6 +38,7 @@ class SpringImports {
       "org.springframework.graphql.data.method.annotation.Argument";
   static const gqlDataFetchingEnvironment =
       "graphql.schema.DataFetchingEnvironment";
+  static const gqlGraphQLContext = "graphql.GraphQLContext";
   static const gqlGraphQLException = "graphql.GraphQLException";
   static const repository = "org.springframework.stereotype.Repository";
   static const jpaRepository =

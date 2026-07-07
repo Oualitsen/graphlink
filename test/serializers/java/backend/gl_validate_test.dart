@@ -76,7 +76,7 @@ void main() {
     ''');
 
     var personService = g.services['PersonService']!;
-    var springSerializer = JavaSpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
+    var springSerializer = JavaSpringServerSerializer(g, injectContext: true, packageName: "myOrg");
     var serialzedService =
         springSerializer.serializeService(personService);
     expect(
@@ -85,8 +85,8 @@ void main() {
             .map((e) => e.trim())
             .where((e) => e.isNotEmpty),
         containsAllInOrder([
-          'Person getPerson(SearchQuery searchQuery, DataFetchingEnvironment dataFetchingEnvironment);',
-          'void validateGetPerson(SearchQuery searchQuery, DataFetchingEnvironment dataFetchingEnvironment);'
+          'Person getPerson(SearchQuery searchQuery, GraphQLContext graphQLContext);',
+          'void validateGetPerson(SearchQuery searchQuery, GraphQLContext graphQLContext);'
         ]));
   });
 
@@ -138,14 +138,14 @@ void main() {
     ''');
 
     var personController = g.controllers['PersonServiceController']!;
-    var springSerializer = JavaSpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
+    var springSerializer = JavaSpringServerSerializer(g, injectContext: true, packageName: "myOrg");
     var serializedController =
         springSerializer.serializeController(personController);
         print(serializedController);
     expect(
         serializedController,
         stringContainsInOrder([
-          'personService.validateGetPerson(searchQuery, dataFetchingEnvironment);',
+          'personService.validateGetPerson(searchQuery, graphQLContext);',
           'return personService.getPerson'
         ]));
   });

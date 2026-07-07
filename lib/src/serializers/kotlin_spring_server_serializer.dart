@@ -31,7 +31,7 @@ class KotlinSpringServerSerializer extends JvmSpringServerSerializerBase {
     bool typesAsDataClass = false,
     KotlinSerializer? kotlinSerializer,
     bool generateSchema = false,
-    bool injectDataFetching = false,
+    bool injectContext = false,
     bool blockingServices = true,
   }) {
     final serializer = kotlinSerializer ??
@@ -43,14 +43,14 @@ class KotlinSpringServerSerializer extends JvmSpringServerSerializerBase {
       grammar: grammar,
       serializer: serializer,
       packageName: packageName,
-      injectDataFetching: injectDataFetching,
+      injectContext: injectContext,
       generateSchema: generateSchema,
       blockingServices: blockingServices,
     );
     return KotlinSpringServerSerializer._(grammar, ctrl, serializer,
         packageName: packageName,
         generateSchema: generateSchema,
-        injectDataFetching: injectDataFetching);
+        injectDataFetching: injectContext);
   }
 
   // ── Security ───────────────────────────────────────────────────────────────

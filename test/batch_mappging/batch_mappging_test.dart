@@ -207,7 +207,7 @@ type Query {
 ''';
 
     g.parse(text);
-    var serializer = JavaSpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
+    var serializer = JavaSpringServerSerializer(g, injectContext: true, packageName: "myOrg");
 
     var mappingController = g.controllers[g.controllerMappingName('User')]!;
     var serialController = serializer.serializeController(mappingController);
@@ -215,7 +215,7 @@ type Query {
     expect(
         serialController,
         contains(
-            'DataFetchingEnvironment dataFetchingEnvironment)'));
+            'GraphQLContext graphQLContext)'));
 
     
   });

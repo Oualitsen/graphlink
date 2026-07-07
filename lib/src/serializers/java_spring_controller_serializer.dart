@@ -32,7 +32,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     required super.grammar,
     required this.serializer,
     required super.reactive,
-    required super.injectDataFetching,
+    required super.injectContext,
     required super.useSpringSecurity,
     required super.generateSchema,
   });

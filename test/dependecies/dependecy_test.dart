@@ -853,7 +853,7 @@ type Query {
    
   });
 
-  test("service should import DataFetchingEnvironment when serialized", () {
+  test("service should import GraphQLContext when serialized", () {
     final GLParser g = GLParser(mode: CodeGenerationMode.server);
 
     g.parse('''
@@ -869,16 +869,16 @@ type Query {
   
 ''');
 
-    var serializer = JavaSpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
+    var serializer = JavaSpringServerSerializer(g, injectContext: true, packageName: "myOrg");
 
     var service = g.services["PersonService"]!;
 
     serializer.serializeService(service);
     expect(service.getImports(g),
-        contains(SpringImports.gqlDataFetchingEnvironment));
+        contains(SpringImports.gqlGraphQLContext));
   });
 
-  test("controller should import DataFetchingEnvironment when serialized", () {
+  test("controller should import GraphQLContext when serialized", () {
     final GLParser g = GLParser(mode: CodeGenerationMode.server);
 
     g.parse('''
@@ -893,11 +893,11 @@ type Query {
   
 ''');
 
-    var serializer = JavaSpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
+    var serializer = JavaSpringServerSerializer(g, injectContext: true, packageName: "myOrg");
     var controller = g.controllers["PersonServiceController"]!;
     serializer.serializeController(controller);
     expect(controller.getImports(g),
-        contains(SpringImports.gqlDataFetchingEnvironment));
+        contains(SpringImports.gqlGraphQLContext));
   });
 
   test(
@@ -944,7 +944,7 @@ type Query {
   
 ''');
 
-    var serializer = JavaSpringServerSerializer(g, injectDataFetching: true, packageName: "myOrg");
+    var serializer = JavaSpringServerSerializer(g, injectContext: true, packageName: "myOrg");
     var controller = g.controllers["PersonServiceController"]!;
     var serial = serializer.serializeController(controller);
     print(serial);
