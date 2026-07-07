@@ -14,7 +14,7 @@ import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/token_info.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/utils.dart';
-import 'package:graphlink/src/gl_expand_grammar_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_expand_grammar_extension.dart';
 
 /// Deterministic djb2 hash — same input always produces the same output.
 int _djb2(String s) {

@@ -1,7 +1,7 @@
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/gl_grammar_upload_extension.dart';
-import 'package:graphlink/src/gl_validation_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_validation_extension.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_service.dart';
