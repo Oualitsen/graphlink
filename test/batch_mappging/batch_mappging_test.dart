@@ -215,7 +215,7 @@ type Query {
     expect(
         serialController,
         contains(
-            'DataFetchingEnvironment dataFetchingEnvironment)'));
+            'GraphQLContext graphQLContext)'));
 
     
   });

@@ -85,8 +85,8 @@ void main() {
             .map((e) => e.trim())
             .where((e) => e.isNotEmpty),
         containsAllInOrder([
-          'Person getPerson(SearchQuery searchQuery, DataFetchingEnvironment dataFetchingEnvironment);',
-          'void validateGetPerson(SearchQuery searchQuery, DataFetchingEnvironment dataFetchingEnvironment);'
+          'Person getPerson(SearchQuery searchQuery, GraphQLContext graphQLContext);',
+          'void validateGetPerson(SearchQuery searchQuery, GraphQLContext graphQLContext);'
         ]));
   });
 
@@ -145,7 +145,7 @@ void main() {
     expect(
         serializedController,
         stringContainsInOrder([
-          'personService.validateGetPerson(searchQuery, dataFetchingEnvironment);',
+          'personService.validateGetPerson(searchQuery, graphQLContext);',
           'return personService.getPerson'
         ]));
   });

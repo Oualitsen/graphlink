@@ -853,7 +853,7 @@ type Query {
    
   });
 
-  test("service should import DataFetchingEnvironment when serialized", () {
+  test("service should import GraphQLContext when serialized", () {
     final GLParser g = GLParser(mode: CodeGenerationMode.server);
 
     g.parse('''
@@ -875,10 +875,10 @@ type Query {
 
     serializer.serializeService(service);
     expect(service.getImports(g),
-        contains(SpringImports.gqlDataFetchingEnvironment));
+        contains(SpringImports.gqlGraphQLContext));
   });
 
-  test("controller should import DataFetchingEnvironment when serialized", () {
+  test("controller should import GraphQLContext when serialized", () {
     final GLParser g = GLParser(mode: CodeGenerationMode.server);
 
     g.parse('''
@@ -897,7 +897,7 @@ type Query {
     var controller = g.controllers["PersonServiceController"]!;
     serializer.serializeController(controller);
     expect(controller.getImports(g),
-        contains(SpringImports.gqlDataFetchingEnvironment));
+        contains(SpringImports.gqlGraphQLContext));
   });
 
   test(
