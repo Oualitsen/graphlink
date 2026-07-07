@@ -391,7 +391,7 @@ class DartSerializer extends GLSerializer {
     return buffer.toString();
   }
 
-  String generateToJson(List<GLField> fields) {
+  String generateToJson(List<GLField> fields, {String? typeName}) {
     var buffer = StringBuffer();
 
     buffer.writeln(codeGenUtils.method(
@@ -399,6 +399,7 @@ class DartSerializer extends GLSerializer {
         methodName: 'toJson',
         statements: [
           "return {",
+          if (typeName != null) "'__typename': '$typeName',".ident(),
           ...fields
               .map((field) => fieldToJson(field).ident())
               .map((e) => "${e},"),
@@ -525,7 +526,10 @@ class DartSerializer extends GLSerializer {
             isConst: true,
             arguments: [serializeContructorArgs(fields)]),
         if (equalsHascodeCode.isNotEmpty) equalsHascodeCode,
-        generateToJson(fields),
+        generateToJson(fields,
+            typeName: def.includeTypeName
+                ? (def.derivedFromType?.tokenInfo.token ?? def.tokenInfo.token)
+                : null),
         generateFromJson(fields, codeName),
       ],
     ));
