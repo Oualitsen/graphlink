@@ -156,7 +156,7 @@ extension GLGrammarServiceExtension on GLParser {
     return GLField(
       name: mapping.key.toToken(),
       type: returnType,
-      arguments: mapping.field.arguments.map((arg) => GLArgumentDefinition(arg.tokenInfo, arg.type, [])).toList(),
+      arguments: mapping.field.arguments.map((arg) => GLArgumentDefinition(arg.tokenInfo, arg.type, [])..codeName = arg.codeName).toList(),
       directives: [...mapping.field.getDirectives().where((e) => e.token == glReturnsProjection)],
     );
   }

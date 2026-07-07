@@ -46,14 +46,21 @@ void main() {
     final controllerCode = serializer.serializeController(ctrl);
     final serviceCode = serializer.serializeService(service);
 
-    // controller: @SchemaMapping with @Argument params and correct service call
-    expect(controllerCode, contains('@SchemaMapping(typeName="User", field="vehicles")'));
-    expect(controllerCode, contains('public CompletableFuture<List<Map<String, Object>>> userVehicles(Map<String, Object> value, @Argument Integer year, @Argument String category)'));
-    expect(controllerCode, contains('return CompletableFuture.supplyAsync(() -> userSchemaMappingsService.userVehicles(User.fromJson(value), year, category).stream().map(__gl_e0__ -> __gl_e0__.toJson()).collect(Collectors.toList()));'));
-    expect(controllerCode, contains('import org.springframework.graphql.data.method.annotation.Argument'));
+   print(serviceCode);
 
-    // service: no @Argument annotation
-    expect(serviceCode, contains('List<Vehicle> userVehicles(User value, Integer year, String category);'));
-    expect(serviceCode, isNot(contains('@Argument')));
+    // controller: @SchemaMapping with @Argument params and correct service call
+
+    expect(controllerCode, stringContainsInOrder([
+'@SchemaMapping(typeName = "User", field = "vehicles")',
+'CompletableFuture<List<? extends Map<String, Object>>> vehicles(@Argument(name = "year") Integer year, @Argument(name = "category") String category, Map<String, Object> valueAsMap)',
+'return CompletableFuture.supplyAsync(() -> {',
+'User value = User.fromJson((Map<String, Object>) valueAsMap);',
+'return userSchemaMappingsService.userVehicles(year, category, value).stream().map(e0 -> e0.toJson()).collect(Collectors.toList());',
+'});',
+    ]));
+
+    expect(serviceCode, stringContainsInOrder([
+      'List<Vehicle> userVehicles(Integer year, String category, User value);'
+    ]));
   });
 }

@@ -110,7 +110,7 @@ class GLField with GLDirectivesMixin, CodeNameMixin {
       initialValue: initialValue,
       documentation: documentation,
       directives: [...getDirectives()],
-    );
+    )..codeName = codeName;
   }
 
   void checkMerge(GLField other) {
