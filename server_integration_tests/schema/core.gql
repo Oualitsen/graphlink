@@ -55,7 +55,7 @@ type Query {
     getArticle(id: ID!): Article!
     listAuthors: [Author!]!
     listArticles: [Article!]!
-    getArticleTypes: [ArticleType!]!
+    getArticleTypes: [ArticleType!]! @glServiceName(name: "Article")
 }
 
 type Mutation {
@@ -68,5 +68,5 @@ type Mutation {
 type Subscription {
     articleCreated: Article!
     articleUpdated(id: ID!): Article!
-    articleDeleted: ID!
+    articleDeleted: ID! @glServiceName(name: "Article")
 }
