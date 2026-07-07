@@ -166,7 +166,7 @@ void main() {
     expect(
         userController,
         stringContainsInOrder(
-            ["@LoggedIn()", '@QueryMapping(name = "getUser")', "public CompletableFuture<Map<String, Object>> getUser()"]));
+            ["@LoggedIn()", '@QueryMapping()', "public CompletableFuture<Map<String, Object>> getUser()"]));
   });
 
   test("annotations on interfaces", () {

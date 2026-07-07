@@ -359,7 +359,6 @@ class GLParser {
     mergeTokens();
     validateNonEmptyFieldLists();
     updateInterfaceReferences();
-    fillTransitiveInterfaceImplementations();
     checkInterfaceInheritance();
     skipFieldOfSkipOnServerTypes();
     handleGLExternal();
@@ -418,6 +417,7 @@ class GLParser {
       applyServerLenientNullability();
       populateServerProjections();
     }
+    fillTransitiveInterfaceImplementations();
 
     
 
