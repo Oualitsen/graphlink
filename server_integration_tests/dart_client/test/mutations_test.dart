@@ -49,4 +49,11 @@ void main() {
       expect(res.deleteArticle, isFalse);
     });
   });
+
+  group('ackPriority', () {
+    test('enum mutation argument deserializes; returns constant ack', () async {
+      final res = await client.mutations.ackPriority(level: Priority.high);
+      expect(res.ackPriority, equals('OK'));
+    });
+  });
 }

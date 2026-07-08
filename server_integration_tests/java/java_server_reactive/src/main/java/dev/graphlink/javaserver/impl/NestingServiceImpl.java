@@ -5,13 +5,16 @@ import dev.graphlink.javaserver.generated.services.NestingService;
 import dev.graphlink.javaserver.generated.types.Box;
 import dev.graphlink.javaserver.generated.types.Circle;
 import dev.graphlink.javaserver.generated.interfaces.Shape;
+import dev.graphlink.javaserver.generated.interfaces.Media;
+import dev.graphlink.javaserver.generated.types.Photo;
 import dev.graphlink.javaserver.generated.types.Square;
+import dev.graphlink.javaserver.generated.types.Video;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
 
-/** List-depth (1/2/3) × nullability × kind (type / interface / enum) resolvers. */
+/** List-depth (1/2/3) × nullability × kind (type / interface / union / enum) resolvers. */
 @Service
 public class NestingServiceImpl implements NestingService {
 
@@ -25,6 +28,14 @@ public class NestingServiceImpl implements NestingService {
 
     private Square square(String id) {
         return Square.builder().id(id).kind("square").side(2).build();
+    }
+
+    private Photo photo(String id) {
+        return Photo.builder().id(id).url("https://x/" + id + ".jpg").width(640).build();
+    }
+
+    private Video video(String id) {
+        return Video.builder().id(id).url("https://x/" + id + ".mp4").durationSec(30).build();
     }
 
     @Override
@@ -70,5 +81,20 @@ public class NestingServiceImpl implements NestingService {
     @Override
     public Flux<List<? extends List<? extends Shape>>> shapes3() {
         return Flux.<List<? extends List<? extends Shape>>>fromIterable(List.of(List.of(List.of(circle("c1"), square("s1")))));
+    }
+
+    @Override
+    public Flux<Media> media1() {
+        return Flux.<Media>fromIterable(List.of(photo("p1"), video("v1")));
+    }
+
+    @Override
+    public Flux<List<? extends Media>> media2() {
+        return Flux.<List<? extends Media>>fromIterable(List.of(List.of(photo("p1")), List.of(video("v1"))));
+    }
+
+    @Override
+    public Flux<List<? extends List<? extends Media>>> media3() {
+        return Flux.<List<? extends List<? extends Media>>>fromIterable(List.of(List.of(List.of(photo("p1"), video("v1")))));
     }
 }

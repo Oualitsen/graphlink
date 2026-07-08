@@ -1,8 +1,11 @@
 package dev.graphlink.javaserver.impl;
 
+import dev.graphlink.javaserver.generated.enums.Priority;
 import dev.graphlink.javaserver.generated.inputs.ConfigInput;
 import dev.graphlink.javaserver.generated.inputs.RangeInput;
+import dev.graphlink.javaserver.generated.services.AckPriorityService;
 import dev.graphlink.javaserver.generated.services.ConfigService;
+import dev.graphlink.javaserver.generated.services.EchoPriorityService;
 import dev.graphlink.javaserver.generated.services.GreetService;
 import dev.graphlink.javaserver.generated.services.RangeService;
 import dev.graphlink.javaserver.generated.types.Config;
@@ -16,7 +19,8 @@ import reactor.core.publisher.Mono;
  * schema default was applied end-to-end.
  */
 @Service
-public class DefaultsServiceImpl implements ConfigService, RangeService, GreetService {
+public class DefaultsServiceImpl
+        implements ConfigService, RangeService, GreetService, EchoPriorityService, AckPriorityService {
 
     @Override
     public Mono<Config> resolveConfig(ConfigInput input) {
@@ -40,5 +44,15 @@ public class DefaultsServiceImpl implements ConfigService, RangeService, GreetSe
     @Override
     public Mono<String> greet(String name, Integer times) {
         return Mono.just(("Hi " + name + "!").repeat(times));
+    }
+
+    @Override
+    public Mono<Priority> echoPriority(Priority level) {
+        return Mono.just(level);
+    }
+
+    @Override
+    public Mono<String> ackPriority(Priority level) {
+        return Mono.just("OK");
     }
 }

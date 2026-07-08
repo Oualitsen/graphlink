@@ -11,7 +11,7 @@ generate: remove-generated
 build:
 	./gradlew build -x test
 
-start-server:`
+start-server:
 	-lsof -ti :$(PORT) | xargs kill -9 2>/dev/null || true
 	-lsof -ti :$(MANAGEMENT_PORT) | xargs kill -9 2>/dev/null || true
 	FIXTURES_PATH=$(FIXTURES) ./gradlew bootRun > /tmp/java-server.log 2>&1 & echo $$! > $(PID_FILE)
