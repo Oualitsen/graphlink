@@ -473,16 +473,11 @@ extension GLGrammarFragmentExtension on GLParser {
   }
 
   String generateAllFieldFragment(GLType type) {
-    // check if type is an interface
-    if (interfaces.containsKey(type.token)) {
-      var iface = interfaces[type.token]!;
-      GLProjection projection = _createProjectionForInterface(iface);
-
-      var block = GLFragmentBlockDefinition([projection]);
-      var frag = GLInlineFragmentDefinition(iface.tokenInfo, block, []);
-      addFragmentDefinition(frag);
-      return frag.token;
-    }
+    // Interfaces and unions already have a proper named `_all_fields_<T>`
+    // fragment (built by createAllFieldsFragment, which wraps the per-member
+    // inline fragments in a real `fragment … on <T>` definition). Spreading
+    // that named fragment is valid GraphQL; emitting a bare inline fragment as
+    // a top-level document entry is not.
     final fragName = "${allFields}_${type.tokenInfo.token}";
     getFragment(fragName, type.tokenInfo);
     return fragName;
