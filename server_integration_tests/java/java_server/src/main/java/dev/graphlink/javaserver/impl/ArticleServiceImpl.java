@@ -31,10 +31,11 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     public Article createArticle(CreateArticleInput input) {
         var article = Article.builder()
-            .id(Data.nextId())
-            .title(input.getTitle())
-            .authorId(input.getAuthorId())
-            .build();
+                .id(Data.nextId())
+                .title(input.getTitle())
+                .authorId(input.getAuthorId())
+                .published(false)
+                .build();
         Data.articles.add(article);
         Data.articleCreatedSink.tryEmitNext(article);
         return article;

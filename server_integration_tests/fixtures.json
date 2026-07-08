@@ -4,9 +4,9 @@
     {"id": "2", "name": "Alice"}
   ],
   "articles": [
-    {"id": "1", "title": "GraphLink Basics", "authorId": "1"},
-    {"id": "2", "title": "Advanced GraphLink", "authorId": "1"},
-    {"id": "3", "title": "Alice's First Post", "authorId": "2"}
+    {"id": "1", "title": "GraphLink Basics", "type": "NEWS", "authorId": "1", "webSite": {"id": "1", "name": "graphlink.dev"}, "published": true},
+    {"id": "2", "title": "Advanced GraphLink", "type": "BLOG", "authorId": "1", "webSite": {"id": "2", "name": "blog.graphlink.dev"}, "published": false},
+    {"id": "3", "title": "Alice's First Post", "type": "REVIEW", "authorId": "2", "webSite": {"id": "3", "name": "reviews.graphlink.dev"}, "published": true}
   ],
   "nextId": 4
 }

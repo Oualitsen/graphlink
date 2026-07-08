@@ -22,19 +22,19 @@ public class Data {
             Map<String, Object> fixtures = new ObjectMapper().readValue(new File(fixturesPath), Map.class);
 
             @SuppressWarnings("unchecked")
-            List<Map<String, String>> authorsData = (List<Map<String, String>>) fixtures.get("authors");
+            List<Map<String, Object>> authorsData = (List<Map<String, Object>>) fixtures.get("authors");
             @SuppressWarnings("unchecked")
-            List<Map<String, String>> articlesData = (List<Map<String, String>>) fixtures.get("articles");
+            List<Map<String, Object>> articlesData = (List<Map<String, Object>>) fixtures.get("articles");
 
             authors = Collections.synchronizedList(new ArrayList<>(
-                authorsData.stream()
-                    .map(a -> Author.builder().id(a.get("id")).name(a.get("name")).build())
-                    .collect(Collectors.toList())
+                    authorsData.stream()
+                            .map(Author::fromJson)
+                            .collect(Collectors.toList())
             ));
             articles = Collections.synchronizedList(new ArrayList<>(
-                articlesData.stream()
-                    .map(a -> Article.builder().id(a.get("id")).title(a.get("title")).authorId(a.get("authorId")).build())
-                    .collect(Collectors.toList())
+                    articlesData.stream()
+                            .map(Article::fromJson)
+                            .collect(Collectors.toList())
             ));
             nextId = new AtomicInteger((Integer) fixtures.get("nextId"));
         } catch (Exception e) {
@@ -47,8 +47,8 @@ public class Data {
     }
 
     public static final Sinks.Many<Article> articleCreatedSink =
-        Sinks.many().multicast().directBestEffort();
+            Sinks.many().multicast().directBestEffort();
 
     public static final Sinks.Many<Article> articleUpdatedSink =
-        Sinks.many().multicast().directBestEffort();
+            Sinks.many().multicast().directBestEffort();
 }
