@@ -30,10 +30,12 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     public Mono<Article> createArticle(CreateArticleInput input) {
+        System.out.println("Creating article");
         var article = Article.builder()
             .id(Data.nextId())
             .title(input.getTitle())
             .authorId(input.getAuthorId())
+            .published(false)
             .build();
         Data.articles.add(article);
         Data.articleCreatedSink.tryEmitNext(article);
@@ -48,7 +50,10 @@ public class ArticleServiceImpl implements ArticleService {
                 var updated = Article.builder()
                     .id(a.getId())
                     .title(input.getTitle() != null ? input.getTitle() : a.getTitle())
+                    .type(a.getType())
                     .authorId(a.getAuthorId())
+                    .webSite(a.getWebSite())
+                    .published(a.getPublished())
                     .build();
                 Data.articles.set(i, updated);
                 Data.articleUpdatedSink.tryEmitNext(updated);

@@ -17,9 +17,9 @@ public class ArticleSchemaMappingsServiceImpl
     @Override
     public Mono<Author> articleAuthor(Article value) {
         return Mono.justOrEmpty(Data.authors.stream()
-            .filter(a -> a.getId().equals(value.getAuthorId()))
-            .findFirst()
-            .orElse(null));
+                .filter(a -> a.getId().equals(value.getAuthorId()))
+                .findFirst()
+                .orElse(null));
     }
 
     @Override
