@@ -38,4 +38,16 @@ void main() {
     final s3 = (await client.queries.shapes3()).shapes3;
     expect(s3.first.first.first.kind, isNotNull);
   });
+
+  test('union list depths 1 / 2 / 3', () async {
+    final m1 = (await client.queries.media1()).media1;
+    expect(m1, hasLength(2));
+    // __typename resolves each member to its concrete type, and the per-member
+    // inline fragment carries the distinct field.
+    expect(m1.whereType<Photo>().single.width, 640);
+    expect(m1.whereType<Video>().single.durationSec, 30);
+
+    final m3 = (await client.queries.media3()).media3;
+    expect(m3.first.first.first.url, isNotNull);
+  });
 }

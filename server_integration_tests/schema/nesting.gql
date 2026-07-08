@@ -1,11 +1,17 @@
-# List-nesting depth (1 / 2 / 3) × nullability × kind (type / interface / enum).
-# Exercises list-depth handling and per-level nullability in both the Dart client
-# and the Java server, for an object type (Box), an interface (Shape) with two
-# implementors, and an enum (Color). Every resolver is grouped onto a single
-# NestingService via @glServiceName so the variable under test is the return-type
-# shape, not the number of generated services.
+# List-nesting depth (1 / 2 / 3) × nullability × kind (type / interface / union /
+# enum). Exercises list-depth handling and per-level nullability in both the Dart
+# client and the Java server, for an object type (Box), an interface (Shape) with
+# two implementors, a union (Media) over two members, and an enum (Color). Every
+# resolver is grouped onto a single NestingService via @glServiceName so the
+# variable under test is the return-type shape, not the number of generated
+# services.
 #
-# Across the nine resolvers each depth appears in both the fully-non-null
+# The union exercises the UnionWiringEnvironment half of the generated
+# GraphLinkMapTypeResolverConfig (interfaces exercise the InterfaceWiringEnvironment
+# half); GraphLink converts the union to an interface internally, but the emitted
+# schema still declares a `union`, so the server resolves it via the union wiring.
+#
+# Across the twelve resolvers each depth appears in both the fully-non-null
 # (`[X!]!` …) and the fully-nullable (`[X]` …) form.
 
 enum Color {
@@ -36,6 +42,22 @@ type Square implements Shape {
     side: Int!
 }
 
+type Photo {
+    id: ID!
+    url: String!
+    width: Int!
+}
+
+type Video {
+    id: ID!
+    url: String!
+    durationSec: Int!
+}
+
+# Members share `id`/`url` (promoted onto the synthesized interface) but each
+# carries a distinct field, so the per-member inline fragments must be preserved.
+union Media = Photo | Video
+
 extend type Query {
     # ── Enum (E) ─────────────────────────────────────────────────────────────
     colors1: [Color!]! @glServiceName(name: "Nesting")
@@ -51,4 +73,9 @@ extend type Query {
     shapes1: [Shape!]! @glServiceName(name: "Nesting")
     shapes2: [[Shape]] @glServiceName(name: "Nesting")
     shapes3: [[[Shape!]!]!]! @glServiceName(name: "Nesting")
+
+    # ── Union (U) ────────────────────────────────────────────────────────────
+    media1: [Media!]! @glServiceName(name: "Nesting")
+    media2: [[Media]] @glServiceName(name: "Nesting")
+    media3: [[[Media!]!]!]! @glServiceName(name: "Nesting")
 }

@@ -10,6 +10,7 @@ schema {
    subscription: Subscription
 }
 
+directive @glReturnsProjection on FIELD_DEFINITION
 directive @glValidate on FIELD_DEFINITION
 input ReservedInput {
    class: String!
@@ -96,6 +97,9 @@ type Query {
    shapes1: [Shape!]!
    shapes2: [[Shape]]
    shapes3: [[[Shape!]!]!]!
+   media1: [Media!]!
+   media2: [[Media]]
+   media3: [[[Media!]!]!]!
    getAuthor(id: ID!): Author
    getArticle(id: ID!): Article!
    listAuthors: [Author!]!
@@ -104,6 +108,7 @@ type Query {
    resolveConfig(input: ConfigInput!): Config!
    resolveRange(input: RangeInput = {min: 5}): Range!
    greet(name: String = "world", times: Int = 1): String!
+   echoPriority(level: Priority = HIGH): Priority!
 }
 type class implements GLclassProjection {
    id: ID!
@@ -140,6 +145,7 @@ type Mutation {
    updateArticle(input: UpdateArticleInput!): Article!
    deleteArticle(id: ID!): Boolean!
    bulkCreate(matrix: [[CreateArticleInput!]]): Int! @glValidate
+   ackPriority(level: Priority!): String!
 }
 type ArticleWithCount {
    article: Article!
@@ -173,6 +179,16 @@ type Square implements Shape & GLSquareProjection & GLShapeProjection {
    id: ID!
    kind: String!
    side: Int!
+}
+type Photo implements GLPhotoProjection & GLMediaProjection {
+   id: ID!
+   url: String!
+   width: Int!
+}
+type Video implements GLVideoProjection & GLMediaProjection {
+   id: ID!
+   url: String!
+   durationSec: Int!
 }
 type WebSite implements GLWebSiteProjection {
    id: ID!
@@ -287,6 +303,16 @@ interface GLSquareProjection {
    kind: String
    side: Int
 }
+interface GLPhotoProjection {
+   id: ID
+   url: String
+   width: Int
+}
+interface GLVideoProjection {
+   id: ID
+   url: String
+   durationSec: Int
+}
 interface GLWebSiteProjection {
    id: ID
    name: String
@@ -321,6 +347,10 @@ interface GLShapeProjection {
    id: ID
    kind: String
 }
+interface GLMediaProjection {
+   id: ID
+   url: String
+}
 enum Keyword {
 	new default class int synchronized
 }
@@ -337,5 +367,5 @@ enum Priority {
 	LOW MEDIUM HIGH
 }
 
-
+union Media = Photo | Video
 

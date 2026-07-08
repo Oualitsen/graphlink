@@ -1,11 +1,12 @@
 package dev.graphlink.javaserver.impl;
 
+import dev.graphlink.javaserver.generated.enums.ArticleType;
 import dev.graphlink.javaserver.generated.inputs.CreateArticleInput;
 import dev.graphlink.javaserver.generated.inputs.UpdateArticleInput;
 import dev.graphlink.javaserver.generated.interfaces.GlArticleProjection;
 import dev.graphlink.javaserver.generated.services.ArticleService;
 import dev.graphlink.javaserver.generated.types.Article;
-import graphql.schema.DataFetchingEnvironment;
+import graphql.GraphQLContext;
 
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -68,8 +69,28 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    public Mono<GlArticleProjection> getProjectedArticle(DataFetchingEnvironment dataFetchingEnvironment) {
+    public Mono<GlArticleProjection> getProjectedArticle(GraphQLContext graphQLContext) {
         GlArticleProjection projection = Data.articles.stream().findFirst().orElse(null);
         return Mono.justOrEmpty(projection);
+    }
+
+    @Override
+    public Flux<String> articleDeleted() {
+        return Flux.just("deleted-1", "deleted-2");
+    }
+
+    @Override
+    public Flux<ArticleType> getArticleTypes() {
+        return Flux.just(ArticleType.NEWS, ArticleType.BLOG, ArticleType.REVIEW);
+    }
+
+    @Override
+    public Mono<Article> getArticleWithCount() {
+        return Mono.justOrEmpty(Data.articles.stream().findFirst().orElse(null));
+    }
+
+    @Override
+    public Mono<GlArticleProjection> getArticleInfo(GraphQLContext graphQLContext) {
+        return Mono.justOrEmpty(Data.articles.stream().findFirst().orElse(null));
     }
 }

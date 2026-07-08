@@ -42,4 +42,11 @@ void main() {
     expect((await client.queries.greet(name: 'Bob', times: 2)).greet,
         'Hi Bob!Hi Bob!');
   });
+
+  test('enum argument: passed value round-trips; omitted uses default HIGH',
+      () async {
+    expect((await client.queries.echoPriority(level: Priority.low)).echoPriority,
+        Priority.low);
+    expect((await client.queries.echoPriority()).echoPriority, Priority.high);
+  });
 }

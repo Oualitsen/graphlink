@@ -52,4 +52,15 @@ extend type Query {
     resolveRange(input: RangeInput = { min: 5 }): Range!
     # Argument-level scalar defaults on a root field.
     greet(name: String = "world", times: Int = 1): String!
+    # Enum passed as a root-field argument, reflected straight back. Covers both
+    # enum-argument deserialization (client sends a value) and enum-argument
+    # defaulting (client omits it → HIGH).
+    echoPriority(level: Priority = HIGH): Priority!
+}
+
+# Enum as a *mutation* argument (only scalars/enums/inputs are legal argument
+# types — interfaces/unions cannot be arguments in GraphQL). Returns a constant
+# ack so the test only asserts the enum arg deserialized server-side.
+extend type Mutation {
+    ackPriority(level: Priority!): String!
 }

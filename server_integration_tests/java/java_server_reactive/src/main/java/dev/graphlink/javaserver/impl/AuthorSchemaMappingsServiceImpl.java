@@ -4,7 +4,7 @@ import dev.graphlink.javaserver.generated.interfaces.GlArticleProjection;
 import dev.graphlink.javaserver.generated.services.AuthorSchemaMappingsService;
 import dev.graphlink.javaserver.generated.types.Article;
 import dev.graphlink.javaserver.generated.types.Author;
-import graphql.schema.DataFetchingEnvironment;
+import graphql.GraphQLContext;
 
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 public class AuthorSchemaMappingsServiceImpl implements AuthorSchemaMappingsService {
 
     @Override
-    public Mono<Map<Author, List<GlArticleProjection>>> authorArticles(List<Author> value, DataFetchingEnvironment dataFetchingEnvironment) {
+    public Mono<Map<Author, List<GlArticleProjection>>> authorArticles(List<Author> value, GraphQLContext graphQLContext) {
         Map<Author, List<GlArticleProjection>> result = new HashMap<>();
         for (Author author : value) {
             List<GlArticleProjection> articles = Data.articles.stream()
