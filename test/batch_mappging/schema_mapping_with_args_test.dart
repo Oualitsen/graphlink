@@ -52,7 +52,7 @@ void main() {
 
     expect(controllerCode, stringContainsInOrder([
 '@SchemaMapping(typeName = "User", field = "vehicles")',
-'CompletableFuture<List<? extends Map<String, Object>>> vehicles(@Argument() Integer year, @Argument() String category, Map<String, Object> valueAsMap)',
+'CompletableFuture<List<? extends Map<String, Object>>> vehicles(@Argument(name = "year") Integer year, @Argument(name = "category") String category, Map<String, Object> valueAsMap)',
 'return CompletableFuture.supplyAsync(() -> {',
 'User value = User.fromJson((Map<String, Object>) valueAsMap);',
 'return userSchemaMappingsService.userVehicles(year, category, value).stream().map(e0 -> e0.toJson()).collect(Collectors.toList());',
