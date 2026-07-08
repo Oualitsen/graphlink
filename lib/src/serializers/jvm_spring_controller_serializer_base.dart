@@ -135,7 +135,7 @@ abstract class JvmSpringControllerSerializerBase {
         [
           GLArgumentValue(glAnnotation.toToken(), true),
           GLArgumentValue(glClass.toToken(), "@Argument"),
-          if (arg.codeName != arg.bareName) GLArgumentValue("name".toToken(), arg.bareName),
+          GLArgumentValue("name".toToken(), arg.bareName),
           GLArgumentValue(glImport.toToken(), SpringImports.gqlArgument),
           GLArgumentValue(glOnServer.toToken(), true),
         ],

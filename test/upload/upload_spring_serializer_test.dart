@@ -46,7 +46,7 @@ void main() {
         lines,
         containsAllInOrder([
           '@MutationMapping()',
-          'public CompletableFuture<Map<String, Object>> uploadFile(@Argument() String filename, @Argument() MultipartFile file) {',
+          'public CompletableFuture<Map<String, Object>> uploadFile(@Argument(name = "filename") String filename, @Argument(name = "file") MultipartFile file) {',
         ]),
       );
     });
@@ -59,7 +59,7 @@ void main() {
         result,
         stringContainsInOrder([
           '@MutationMapping()',
-          'public CompletableFuture<List<? extends Map<String, Object>>> uploadFiles(@Argument() String label, @Argument() List<MultipartFile> files)',
+          'public CompletableFuture<List<? extends Map<String, Object>>> uploadFiles(@Argument(name = "label") String label, @Argument(name = "files") List<MultipartFile> files)',
         ]),
       );
     });

@@ -18,7 +18,6 @@ public class AuthorSchemaMappingsServiceImpl implements AuthorSchemaMappingsServ
 
     @Override
      public Map<Author, List<GlArticleProjection>> authorArticles(List<Author> value, GraphQLContext graphQLContext) {
-        System.out.println("class = " + value.getFirst().getClass());
         Map<Author, List<GlArticleProjection>> result = new HashMap<>();
         for (Author author : value) {
             List<GlArticleProjection> articles = Data.articles.stream()
