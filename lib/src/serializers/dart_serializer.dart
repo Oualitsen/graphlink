@@ -526,10 +526,7 @@ class DartSerializer extends GLSerializer {
             isConst: true,
             arguments: [serializeContructorArgs(fields)]),
         if (equalsHascodeCode.isNotEmpty) equalsHascodeCode,
-        generateToJson(fields,
-            typeName: def.includeTypeName
-                ? (def.derivedFromType?.tokenInfo.token ?? def.tokenInfo.token)
-                : null),
+        generateToJson(fields, typeName: def.jsonTypeName),
         generateFromJson(fields, codeName),
       ],
     ));
