@@ -8,6 +8,7 @@ import 'package:graphlink/src/serializers/express_apollo_server_serializer.dart'
 import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:graphlink/src/serializers/java_spring_server_serializer.dart';
 import 'package:graphlink/src/serializers/kotlin_spring_server_serializer.dart';
+import 'package:graphlink/src/serializers/spring_map_type_resolver_config.dart';
 import 'package:graphlink/src/serializers/typescript_serializer.dart';
 import 'package:graphlink/src/utils.dart';
 
@@ -144,6 +145,19 @@ Future<Set<String>> generateServerClasses(
       packageName: packageName,
       appendStar: true,
     );
+  }
+
+  final hasAbstractTypes =
+      grammar.getSerializableInterfaces().isNotEmpty || grammar.unions.isNotEmpty;
+  if (springConfig.generateControllers && hasAbstractTypes) {
+    futures.add(writeToFile(
+      data: springMapTypeResolverConfigSource,
+      fileName: springMapTypeResolverConfigFileName,
+      subdir: 'config',
+      imports: const [],
+      destinationDir: destinationDir,
+      packageName: packageName,
+    ));
   }
 
   final schema = springSerializer.serializeTypeDefs();

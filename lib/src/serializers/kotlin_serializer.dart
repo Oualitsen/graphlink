@@ -382,9 +382,7 @@ class KotlinSerializer extends GLSerializer {
   // ── toJson ──────────────────────────────────────────────────────────────────
 
   String _generateToJson(List<GLField> fields, GLToken context) {
-    final typeName = context is GLTypeDefinition && context.includeTypeName
-        ? (context.derivedFromType?.tokenInfo.token ?? context.tokenInfo.token)
-        : null;
+    final typeName = context is GLTypeDefinition ? context.jsonTypeName : null;
     final entries = [
       if (typeName != null) '"__typename" to "$typeName"',
       ...fields.map((f) => '"${f.name}" to ${_fieldToJsonExpr(f, f.type, f.codeName, 0)}'),

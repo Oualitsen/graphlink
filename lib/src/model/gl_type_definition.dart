@@ -103,6 +103,12 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin, CodeNam
 
   bool get includeTypeName => _interfaceNames.isNotEmpty;
 
+  /// The `__typename` wire value to embed in this type's `toJson`, or `null`
+  /// when the type implements no interface and so needs no discriminator.
+  /// Prefers the original (pre-projection) name via [derivedFromType].
+  String? get jsonTypeName =>
+      includeTypeName ? (derivedFromType?.tokenInfo.token ?? tokenInfo.token) : null;
+
   final Map<String, bool> _isOverrideCache = {};
 
   /// True when [field] is also declared on one of this type's interfaces
