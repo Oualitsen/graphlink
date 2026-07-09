@@ -1,6 +1,6 @@
 ---
 title: Spring Boot Server — GraphLink Docs
-description: GraphLink generates Spring Boot GraphQL scaffolding from your schema — controllers, service interfaces, inputs, enums, for both Java and Kotlin. Strict-by-default server generation with GL<Type>Projection, MVC and reactive WebFlux modes, file uploads, Spring Security context propagation, and forward mappings.
+description: GraphLink generates Spring Boot GraphQL scaffolding from your schema — controllers, service interfaces, inputs, enums, for both Java and Kotlin. Strict-by-default server generation with Map-boundary controllers, MVC and reactive WebFlux modes, file uploads, Spring Security context propagation, and forward mappings.
 ---
 
 # Spring Boot Server
@@ -127,25 +127,13 @@ Set `"generateSchema": true` to write the processed schema file to disk alongsid
 
 `schemaTargetPath` must end in `.graphql` or `.graphqls`. The generated schema reflects all directive processing — internal directives like `@glSkipOnServer` are not emitted.
 
-## Strict server generation and projections
+## Strict server generation
 
 Since v5.0.0, server generation is **strict by default**. Every generated type and interface enforces the schema's real nullability on its getters, constructors, and setters — a `title: String!` field is generated as non-null, not the always-nullable model used before v5.0.0.
 
-Because a resolver can still legitimately return a partially-fetched object (for example, a repository query that only selects the columns present in the GraphQL selection set), every type and interface also gets a generated `GL<Type>Projection` interface where **every field is nullable**:
+Generated controllers serialize their responses via `toJson()` to a `Map` at the controller boundary, so a resolver that can only return a partially-fetched object (for example, a repository query that selects just the columns present in the GraphQL selection set) doesn't need every non-null field populated.
 
-```java title="Generated GLVehicleProjection.java"
-public interface GLVehicleProjection {
-    String getId();
-    String getBrand();
-    String getModel();
-    Integer getYear();
-    // every field nullable — represents a partially-fetched Vehicle
-}
-```
-
-The strict `Vehicle` class implements `GLVehicleProjection` in addition to its own strict getters, so it can be used anywhere a projection is expected.
-
-**Opting a type back into the old lenient behavior** — annotate it with `@glServerLenient`. All of its own fields are generated as nullable again, but it still gets (and implements) `GL<Type>Projection`:
+**Opting a type into partial/lenient population** — annotate it with `@glServerLenient`. All of its own fields are generated as nullable, so a resolver can construct it with un-fetched fields left `null`:
 
 ```graphql
 type LegacyReport @glServerLenient {
@@ -154,20 +142,8 @@ type LegacyReport @glServerLenient {
 }
 ```
 
-**Opting a resolver into partial fetches** — annotate the query/mutation/subscription field (or a `@glSkipOnServer` relation field) with `@glReturnsProjection`. The generated service method returns `GL<Type>Projection` instead of the strict concrete type, and `DataFetchingEnvironment` is auto-injected so the resolver can inspect the selection set:
-
-```graphql
-type Query {
-  searchVehicles(term: String!): [Vehicle!]! @glReturnsProjection
-}
-```
-
-```java title="Generated VehicleService.java"
-List<GLVehicleProjection> searchVehicles(String term, DataFetchingEnvironment env);
-```
-
 !!! danger "Migration from pre-5.0.0"
-    If your existing resolvers relied on server-generated types being fully nullable (e.g. constructing a partially-populated `Vehicle` with some fields left `null`), annotate those types with `@glServerLenient` before upgrading, or switch the relevant resolver fields to `@glReturnsProjection` and update the service implementation to return `GL<Type>Projection`.
+    If your existing resolvers relied on server-generated types being fully nullable (e.g. constructing a partially-populated `Vehicle` with some fields left `null`), annotate those types with `@glServerLenient` before upgrading.
 
 ## What gets generated
 
@@ -556,7 +532,7 @@ public Vehicle addVehicle(AddVehicleInput input) {
 
 ## Kotlin Spring Boot server
 
-New in v5.0.0: set `"mode": "server"` and use a `"kotlinSpring"` section instead of `"spring"` under `serverConfig` to generate a Kotlin server target — data-class types/inputs/enums, services, controllers, and repositories, mirroring the Java Spring target above (including strict-by-default generation, `GL<Type>Projection`, and `Map`-boundary controller serialization).
+New in v5.0.0: set `"mode": "server"` and use a `"kotlinSpring"` section instead of `"spring"` under `serverConfig` to generate a Kotlin server target — data-class types/inputs/enums, services, controllers, and repositories, mirroring the Java Spring target above (including strict-by-default generation and `Map`-boundary controller serialization).
 
 === "JSON"
 

@@ -1,6 +1,6 @@
 ---
 title: Directives Reference — GraphLink Docs
-description: Complete reference for all GraphLink schema directives — @glCache, @glCacheInvalidate, @glCaptureErrors, @glMapsTo, @glMapField, @glSkipOnServer (with forward mappings), @glExternal, @glValidate, @glServerLenient, @glReturnsProjection, @deprecated, and more.
+description: Complete reference for all GraphLink schema directives — @glCache, @glCacheInvalidate, @glCaptureErrors, @glMapsTo, @glMapField, @glSkipOnServer (with forward mappings), @glExternal, @glValidate, @glServerLenient, @deprecated, and more.
 ---
 
 # Directives Reference
@@ -72,8 +72,6 @@ directive @glCaptureErrors on FIELD_DEFINITION
 # ── Strict server generation (v5.0.0+) ────────────────────────────────────────
 
 directive @glServerLenient on OBJECT | INTERFACE
-
-directive @glReturnsProjection on FIELD_DEFINITION
 ```
 
 ---
@@ -210,34 +208,9 @@ type LegacyReport @glServerLenient {
 }
 ```
 
-`LegacyReport` still gets a generated `GLLegacyReportProjection` interface (all fields nullable) like every other type — `@glServerLenient` only affects the nullability of `LegacyReport` itself, not the projection.
+Because generated controllers serialize responses via `toJson()` to a `Map`, a `@glServerLenient` resolver can return a partially-populated object with un-fetched fields left `null` — enough for selection-driven partial fetches.
 
-→ **[Full explanation of strict server generation and `GL<Type>Projection`](spring-server.md#strict-server-generation-and-projections)**
-
----
-
-## @glReturnsProjection
-
-**Target:** SERVER · **Placement:** `FIELD_DEFINITION` on `Query`, `Mutation`, `Subscription` fields, or a `@glSkipOnServer` relation field
-
-Declares that a resolver may only partially populate its return type — for example, a resolver that reads the incoming GraphQL selection set and only fetches the requested columns. The generated service method returns `GL<Type>Projection` (every field nullable) instead of the strict concrete `<Type>`. `DataFetchingEnvironment` is auto-injected into that method so the resolver can inspect the selection set, regardless of the global `injectDataFetching` setting.
-
-No arguments.
-
-```graphql title="Example"
-type Query {
-  # Only fetches the columns present in the client's selection set
-  searchVehicles(term: String!): [Vehicle!]! @glReturnsProjection
-}
-```
-
-Generated service method:
-
-```java title="Generated VehicleService.java"
-List<GLVehicleProjection> searchVehicles(String term, DataFetchingEnvironment env);
-```
-
-→ **[Full explanation of strict server generation and `GL<Type>Projection`](spring-server.md#strict-server-generation-and-projections)**
+→ **[Full explanation of strict server generation](spring-server.md#strict-server-generation)**
 
 ---
 

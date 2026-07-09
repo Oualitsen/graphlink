@@ -405,9 +405,9 @@
 
 ### Breaking changes
 
-- **Server generation is strict by default (`@glStrict` behavior, always on)** — every server-generated type and interface now enforces real schema nullability on its fields (getters/constructors/setters), instead of the previous always-nullable server model. Every type and interface also gains a generated `GL<Type>Projection` interface (all fields nullable) to represent partially-fetched data.
+- **Server generation is strict by default** — every server-generated type and interface now enforces real schema nullability on its fields (getters/constructors/setters), instead of the previous always-nullable server model.
 
-  **Migration:** if you relied on server-generated types being fully nullable, annotate them with the new `@glServerLenient` directive to restore the old per-type behavior. For a resolver that only fetches part of a type based on the GraphQL selection set, annotate the operation/relation field with `@glReturnsProjection` so it returns `GL<Type>Projection` instead of the strict concrete type.
+  **Migration:** if you relied on server-generated types being fully nullable, annotate them with the new `@glServerLenient` directive to restore the old per-type behavior. Combined with controllers now serializing responses via `toJson()` to `Map` (see below), a resolver can return a partially-populated `@glServerLenient` object with un-fetched fields left `null` — enough to satisfy selection-driven partial fetches without any dedicated projection type.
 
 - **Generated identifiers are always normalized to the target language's casing convention** — field names, argument names, enum values, and type/input/interface/union/enum names are now unconditionally rewritten to canonical casing (e.g. lowerCamelCase fields for Dart/Java/Kotlin/TypeScript, SCREAMING_SNAKE enum values for Java/Kotlin, PascalCase enum values for TypeScript, PascalCase type names everywhere). This is not opt-in.
 

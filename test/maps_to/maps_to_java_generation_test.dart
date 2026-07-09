@@ -173,10 +173,15 @@ void main() {
 
 
 const _mappedToBool = '''
-type MissionInfo @FieldNameConstants {
+type MissionInfo implements Base @FieldNameConstants  {
     hourlyRate: Float
     lookingForFullTime: Boolean!
     acceptsEveningShifts: Boolean!
+}
+
+interface Base {
+  lookingForFullTime: Boolean
+  acceptsEveningShifts: Boolean
 }
 
 input MissionInfoInput @glMapsTo(type: "MissionInfo") {

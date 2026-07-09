@@ -510,7 +510,7 @@ Used when `mode` is `"server"`.
 | `schemaTargetPath` | `string` \| `null` | `null` | Path where the schema file is written when `generateSchema` is `true`. Must end in `.graphql` or `.graphqls`. Example: `"src/main/resources/schema.graphqls"`. |
 
 !!! info "Strict by default"
-    Since v5.0.0, generated server types enforce real schema nullability by default and every type/interface gets a `GL<Type>Projection` companion interface. See [Strict server generation and projections](spring-server.md#strict-server-generation-and-projections), and the `@glServerLenient` / `@glReturnsProjection` directives in the [Directives reference](directives.md).
+    Since v5.0.0, generated server types enforce real schema nullability by default, and controllers serialize responses to a `Map` via `toJson()`. See [Strict server generation](spring-server.md#strict-server-generation), and the `@glServerLenient` directive in the [Directives reference](directives.md).
 
 ---
 
