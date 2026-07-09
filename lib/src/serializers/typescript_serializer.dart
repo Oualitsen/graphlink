@@ -215,7 +215,7 @@ class TypeScriptSerializer extends GLSerializer {
 
   @override
   String doSerializeTypeDefinition(GLTypeDefinition def) {
-    if (def is GLInterfaceDefinition && !def.isServerProjection) {
+    if (def is GLInterfaceDefinition) {
       return _serializeInterfaceAsUnion(def);
     }
     return _serializeType(def);
@@ -241,7 +241,7 @@ class TypeScriptSerializer extends GLSerializer {
   /// GraphQL `type` → `export interface Foo { readonly field: Type; }`
   String _serializeType(GLTypeDefinition def) {
     final fields = def.getSerializableFields(grammar.mode);
-    final hasRealInterface = def.interfaces.any((i) => !i.isServerProjection);
+    final hasRealInterface = def.interfaces.isNotEmpty;
     final wireTypeName = hasRealInterface ? def.token : null;
     final buf = StringBuffer();
     buf.write(codeGenUtils.createInterface(
@@ -266,7 +266,7 @@ class TypeScriptSerializer extends GLSerializer {
   /// filtering out server projection interfaces (the base always includes them).
   @override
   String serializeImports(GLToken token) {
-    if (token is GLInterfaceDefinition && !token.isServerProjection && token.getSerializableImplementations(mode).isNotEmpty) {
+    if (token is GLInterfaceDefinition && token.getSerializableImplementations(mode).isNotEmpty) {
       var deps = {...token.getImportDependecies(grammar).where((d) => d != token), ...token.getSerializableImplementations(mode)};
       final buffer = StringBuffer();
       for (final dep in deps) {

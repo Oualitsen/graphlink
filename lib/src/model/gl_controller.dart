@@ -5,7 +5,6 @@ import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_schema_mapping.dart';
 import 'package:graphlink/src/model/gl_token_with_fields.dart';
 import 'package:graphlink/src/model/gl_type.dart';
-import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_service.dart';
@@ -36,25 +35,14 @@ class GLController extends GLService {
     for (var f in service.fields) {
       var validationDirective = f.getDirectiveByName(glValidate);
       if (validationDirective == null || !validationDirective.generated) {
-        var typeToken = f.type.token;
-        GLField targetField;
-        if (parser.types.containsKey(typeToken) || parser.interfaces.containsKey(typeToken)) {
-          var type = parser.getTokenByKey(f.type.token)! as GLTypeDefinition;
-          targetField = GLField(
-            name: f.name,
-            type: f.type.ofNewName(type.serverProjectionName.toToken()),
-            arguments: [...f.arguments.map((arg) => GLArgumentDefinition(arg.tokenInfo, arg.type.copy, []))],
-            directives: [...f.getDirectives()],
-            initialValue: f.initialValue,
-            documentation: f.documentation,
-          );
-        } else {
-          targetField = GLField(
-              name: f.name,
-              type: f.type.copy,
-              arguments: [...f.arguments.map((arg) => GLArgumentDefinition(arg.tokenInfo, arg.type.copy, []))],
-              directives: [...f.getDirectives()]);
-        }
+        var targetField = GLField(
+          name: f.name,
+          type: f.type.copy,
+          arguments: [...f.arguments.map((arg) => GLArgumentDefinition(arg.tokenInfo, arg.type.copy, []))],
+          directives: [...f.getDirectives()],
+          initialValue: f.initialValue,
+          documentation: f.documentation,
+        );
         ctrl.addField(targetField);
         ctrl.setFieldType(f.name.token, service.getTypeByFieldName(f.name.token)!);
       }
@@ -66,9 +54,6 @@ class GLController extends GLService {
   void addMapping(GLSchemaMapping mapping) {
     String newTypeName = mapping.type.token;
     String newFieldTypeName = mapping.field.type.token;
-    if (parser.interfaces.containsKey(newFieldTypeName) || parser.types.containsKey(newFieldTypeName)) {
-      newFieldTypeName = GLTypeDefinition.getServerProjectionName(newFieldTypeName);
-    }
     final newMapping = mapping.ofNewTypes(mapping, newTypeName, newFieldTypeName, mapping.key);
     if (mapping.isBatch && !mapping.identity) {
       // A (non-identity) batch mapping's real return shape is `Map<Key,

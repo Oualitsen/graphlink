@@ -19,16 +19,11 @@ void main() {
     final serializer = GLGraphqlSerializer(g);
     print(serializer.generateSchema());
 
-    final base = g.getTypeByName("Base")!;
     final product = g.getTypeByName("Product")!;
-
-    // Base picks up the synthesized GLBaseProjection interface (server
-    // @glStrict mode).
-    expect(base.getInterfaceNames(), contains("GLBaseProjection"));
 
     // GraphQL requires Product to explicitly declare every interface Base
     // itself implements, not just Base directly.
-    expect(product.getInterfaceNames(), containsAll(["Base", "GLBaseProjection"]));
+    expect(product.getInterfaceNames(), contains("Base"));
   });
 
   test("serialize schema with interface implemented by a type and a skip-on-client field", () async {
@@ -49,29 +44,21 @@ void main() {
     print(serial);
 
     final product = g.getTypeByName("Product")!;
-    final projection = g.interfaces["GLProductProjection"]!;
 
     var productClientFieldNames = product
         .getSerializableFields(CodeGenerationMode.client)
         .map((f) => f.name.token)
         .toSet();
-    var projectionClientFieldNames = projection
-        .getSerializableFields(CodeGenerationMode.client)
-        .map((f) => f.name.token)
-        .toSet();
 
-    // purchaseCost carries @glSkipOnClient into its GLProductProjection clone,
-    // so generateSchema() (hardcoded to filter as client) strips it from both
-    // the concrete type and the projection interface.
+    // purchaseCost carries @glSkipOnClient, so generateSchema() (hardcoded to
+    // filter as client) strips it from the concrete type.
     expect(productClientFieldNames, isNot(contains("purchaseCost")));
-    expect(projectionClientFieldNames, isNot(contains("purchaseCost")));
     expect(serial, isNot(contains("purchaseCost")));
 
     expect(productClientFieldNames, containsAll(["id", "name"]));
-    expect(projectionClientFieldNames, containsAll(["id", "name"]));
 
     // The raw declaration still has the field — only the client-mode
-    // projection/serialization filters it out.
+    // serialization filters it out.
     expect(product.fieldNames, contains("purchaseCost"));
   });
 
@@ -98,12 +85,9 @@ void main() {
 
     final productData = g.getTypeByName("ProductData")!;
 
-    // ProductData is @glSkipOnServer, so populateServerProjections() (via
-    // getSerializableTypes()) must skip it entirely — no synthesized
-    // GLProductDataProjection interface, and no implements clause on the type.
-    expect(g.interfaces.containsKey("GLProductDataProjection"), isFalse);
+    // @glSkipOnServer types are excluded from server codegen and never gain
+    // an implements clause.
     expect(productData.getInterfaceNames(), isEmpty);
-    expect(serial, isNot(contains("GLProductDataProjection")));
 
     expect(
       serial.split("\n").map((str) => str.trim()),

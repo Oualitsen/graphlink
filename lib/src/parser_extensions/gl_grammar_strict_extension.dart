@@ -1,29 +1,8 @@
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
-import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 extension GLGrammarStrictExtension on GLParser {
-  ///
-  /// @glStrict — synthesizes `<Type>Projection` for every object type and
-  /// interface and stores it in [GLParser.serverProjections], keyed by the
-  /// projection's own name (`<Type>Projection`).
-  ///
-  void populateServerProjections() {
-    var newInterfaces = <GLInterfaceDefinition>[];
-    for (final type in getSerializableTypes()) {
-      final projection = type.toProjectionInterface(this);
-      type.addInterface(projection);
-      newInterfaces.add(projection);
-    }
-    for (final iface in interfaces.values.where(filterByMode)) {
-      final projection = iface.toProjectionInterface(this);
-      iface.addInterface(projection);
-      newInterfaces.add(projection);
-    }
-    newInterfaces.forEach(addInterfaceDefinition);
-  }
-
   ///
   /// @glServerLenient — for every object type or interface marked
   /// @glServerLenient, rewrites all of its own fields to be fully nullable

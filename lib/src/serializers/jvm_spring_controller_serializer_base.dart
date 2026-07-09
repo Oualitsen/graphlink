@@ -112,7 +112,7 @@ abstract class JvmSpringControllerSerializerBase {
   }
 
   void _interDataFetchingEnv(GLService service, GLField field) {
-    if (injectContext || field.hasDirective(glReturnsProjection)) {
+    if (injectContext) {
       // GraphQLContext is the one non-trivial parameter Spring can bind on both
       // @SchemaMapping and @BatchMapping; DataFetchingEnvironment is illegal on a
       // @BatchMapping (batch loading is detached from any single field), so use
