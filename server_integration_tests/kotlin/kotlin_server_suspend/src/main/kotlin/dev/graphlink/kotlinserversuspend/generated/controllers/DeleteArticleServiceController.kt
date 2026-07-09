@@ -17,12 +17,10 @@ class DeleteArticleServiceController(
     private val deleteArticleService: DeleteArticleService,
 ) {
    @MutationMapping()
-   suspend fun deleteArticle(@Argument() id: String): Boolean {
+   suspend fun deleteArticle(@Argument(name = "id") id: String): Boolean {
       return deleteArticleService.deleteArticle(id)
    }
 
-
 }
-
 
 

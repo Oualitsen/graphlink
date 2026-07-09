@@ -325,17 +325,30 @@ class KotlinSerializer extends GLSerializer {
         name: def.codeName, params: params, body: body.isEmpty ? null : body, interfaces: ifaces.isEmpty ? null : ifaces);
   }
 
-  String serializeInterface(GLInterfaceDefinition def) {
+  String serializeInterface(GLInterfaceDefinition def,
+      {bool skipJsonConversionMethods = false,
+      bool fieldsAsFunctions = false,
+      bool suspendFunctions = false}) {
     final fields = def.getSerializableFields(grammar.mode);
     final fieldDecls = fields.map((f) {
       final type = serializeType(f.type);
+      if (fieldsAsFunctions) {
+        // Subscription methods return a cold `Flow<T>` and are never `suspend`.
+        final isFlow = f.type.wrapper == 'Flow';
+        final override = def.isOverride(f) ? 'override ' : '';
+        final suspend = suspendFunctions && !isFlow ? 'suspend ' : '';
+        final args = f.arguments
+            .map((a) => '${a.codeName}: ${serializeType(a.type)}')
+            .join(', ');
+        return '$override${suspend}fun ${f.codeName}($args): $type';
+      }
       final prefix = def.isOverride(f) ? 'override val' : 'val';
       return '$prefix ${f.codeName}: $type';
     }).toList();
 
     final companionMethods = <String>[];
     final subTypes = def.getSerializableImplementations(mode);
-    if (subTypes.isNotEmpty) {
+    if (!skipJsonConversionMethods && subTypes.isNotEmpty) {
       companionMethods.add(_serializeFromJsonForInterface(def.codeName, subTypes));
     }
 
@@ -348,7 +361,8 @@ class KotlinSerializer extends GLSerializer {
 
     final body = <String>[
       ...fieldDecls.map((d) => d),
-      if (!isInternal) '$toJsonPrefix toJson(): $_mapType',
+      if (!skipJsonConversionMethods && !isInternal)
+        '$toJsonPrefix toJson(): $_mapType',
       if (companionMethods.isNotEmpty) ...[
         '',
         codeGenUtils.companionObject(companionMethods),
@@ -389,6 +403,13 @@ class KotlinSerializer extends GLSerializer {
     ].join(',\n        ');
     return 'fun toJson(): $_mapType = mapOf(\n        $entries,\n    )';
   }
+
+  /// Public entry point for building the domain→wire JSON conversion of a
+  /// value expression (enum/projectable → `.toJson()`, recursing through list
+  /// nesting; scalar → identity). Used by the Spring controller serializer to
+  /// convert a service-layer result into the `Map<String, Any?>` wire shape.
+  String callToJson(GLField field, GLType type, String variable, int depth) =>
+      _fieldToJsonExpr(field, type, variable, depth);
 
   String _fieldToJsonExpr(GLField field, GLType type, String variable, int depth) {
     if (type is GLListType) {

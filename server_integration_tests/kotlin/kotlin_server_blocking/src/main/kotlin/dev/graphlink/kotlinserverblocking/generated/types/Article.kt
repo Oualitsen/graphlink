@@ -6,25 +6,38 @@
 // ignore_for_file:  camel_case_types, unused_import, non_constant_identifier_names, constant_identifier_names, override_on_non_overriding_member, unused_element, annotate_overrides
 
 package dev.graphlink.kotlinserverblocking.generated.types;
-import dev.graphlink.kotlinserverblocking.generated.interfaces.GLArticleProjection
+import dev.graphlink.kotlinserverblocking.generated.enums.ArticleType
+import dev.graphlink.kotlinserverblocking.generated.types.WebSite
+import dev.graphlink.kotlinserverblocking.generated.interfaces.GlArticleProjection
 
 
 data class Article(
     override val id: String,
     override val title: String,
+    override val type: ArticleType? = null,
     override val authorId: String,
-) : GLArticleProjection {
+    override val webSite: WebSite? = null,
+    override val published: Boolean,
+) : GlArticleProjection {
    override fun toJson(): Map<String, Any?> = mapOf(
+           "__typename" to "Article",
            "id" to id,
            "title" to title,
+           "type" to type?.toJson(),
            "authorId" to authorId,
+           "webSite" to webSite?.toJson(),
+           "published" to published,
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): Article = Article(
           id = map["id"] as String,
           title = map["title"] as String,
+          type = (map["type"] as? String)?.let { ArticleType.fromJson(it) },
           authorId = map["authorId"] as String,
+          webSite = (map["webSite"] as? Map<*, *>)?.let { WebSite.fromJson(it as Map<String, Any?>) },
+          published = map["published"] as Boolean,
       )
    }
 }

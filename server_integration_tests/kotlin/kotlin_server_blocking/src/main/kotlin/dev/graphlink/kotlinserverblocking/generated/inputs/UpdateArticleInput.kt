@@ -18,6 +18,7 @@ data class UpdateArticleInput(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): UpdateArticleInput = UpdateArticleInput(
           id = map["id"] as String,
           title = map["title"] as? String,

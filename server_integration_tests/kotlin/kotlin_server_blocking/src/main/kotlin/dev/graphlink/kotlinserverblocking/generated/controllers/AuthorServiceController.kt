@@ -6,14 +6,12 @@
 // ignore_for_file:  camel_case_types, unused_import, non_constant_identifier_names, constant_identifier_names, override_on_non_overriding_member, unused_element, annotate_overrides
 
 package dev.graphlink.kotlinserverblocking.generated.controllers;
-import dev.graphlink.kotlinserverblocking.generated.interfaces.GLAuthorProjection
 import dev.graphlink.kotlinserverblocking.generated.services.AuthorService
 import org.springframework.stereotype.Controller
 import org.springframework.graphql.data.method.annotation.QueryMapping
 import org.springframework.graphql.data.method.annotation.Argument
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.springframework.security.core.context.SecurityContextHolder
+import kotlinx.coroutines.Dispatchers
 import dev.graphlink.kotlinserverblocking.generated.security.SecurityCoroutineContext
 
 
@@ -22,23 +20,19 @@ class AuthorServiceController(
     private val authorService: AuthorService,
 ) {
    @QueryMapping()
-   suspend fun getAuthor(@Argument() id: String): Map<String, Any?>? {
-      val securityContext = SecurityContextHolder.getContext()
-      return withContext(Dispatchers.IO + SecurityCoroutineContext(securityContext)) {
+   suspend fun getAuthor(@Argument(name = "id") id: String): Map<String, Any?>? {
+      return withContext(Dispatchers.IO + SecurityCoroutineContext()) {
          authorService.getAuthor(id)?.toJson()
       }
    }
 
    @QueryMapping()
    suspend fun listAuthors(): List<Map<String, Any?>> {
-      val securityContext = SecurityContextHolder.getContext()
-      return withContext(Dispatchers.IO + SecurityCoroutineContext(securityContext)) {
-         authorService.listAuthors().map { __gl_e0__ -> __gl_e0__.toJson() }
+      return withContext(Dispatchers.IO + SecurityCoroutineContext()) {
+         authorService.listAuthors().map { e0 -> e0.toJson() }
       }
    }
 
-
 }
-
 
 

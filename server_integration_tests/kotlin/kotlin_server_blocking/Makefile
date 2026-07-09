@@ -5,7 +5,7 @@ FIXTURES := $(abspath ../../fixtures.json)
 
 .PHONY: generate build start-server start-server-sync stop-server ci
 
-generate:
+generate: remove-generated
 	dart run ../../../lib/src/main.dart -c config.json
 
 build:
@@ -31,3 +31,6 @@ stop-server:
 	rm -f $(PID_FILE)
 
 ci: generate build
+
+remove-generated:
+	rm -rf src/main/kotlin/dev/graphlink/kotlinserverblocking/generated/

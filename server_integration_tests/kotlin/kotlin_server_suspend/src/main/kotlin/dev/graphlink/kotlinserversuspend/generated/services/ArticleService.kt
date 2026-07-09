@@ -6,19 +6,27 @@
 // ignore_for_file:  camel_case_types, unused_import, non_constant_identifier_names, constant_identifier_names, override_on_non_overriding_member, unused_element, annotate_overrides
 
 package dev.graphlink.kotlinserversuspend.generated.services;
+import dev.graphlink.kotlinserversuspend.generated.interfaces.GlArticleProjection
 import dev.graphlink.kotlinserversuspend.generated.types.Article
+import dev.graphlink.kotlinserversuspend.generated.enums.ArticleType
 import dev.graphlink.kotlinserversuspend.generated.inputs.CreateArticleInput
 import dev.graphlink.kotlinserversuspend.generated.inputs.UpdateArticleInput
 import kotlinx.coroutines.flow.Flow
+import graphql.GraphQLContext
 
 
 interface ArticleService {
+   suspend fun getProjectedArticle(graphQLContext: GraphQLContext): GlArticleProjection
+   suspend fun getArticleWithCount(): Article?
+   suspend fun getArticleInfo(graphQLContext: GraphQLContext): GlArticleProjection?
    suspend fun getArticle(id: String): Article
    suspend fun listArticles(): List<Article>
+   suspend fun getArticleTypes(): List<ArticleType>
    suspend fun createArticle(input: CreateArticleInput): Article
    suspend fun updateArticle(input: UpdateArticleInput): Article
    fun articleCreated(): Flow<Article>
    fun articleUpdated(id: String): Flow<Article>
+   fun articleDeleted(): Flow<String>
 }
 
 
