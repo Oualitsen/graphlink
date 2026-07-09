@@ -7,12 +7,10 @@
 
 package dev.graphlink.kotlinserverblocking.generated.controllers;
 import dev.graphlink.kotlinserverblocking.generated.types.Article
-import dev.graphlink.kotlinserverblocking.generated.interfaces.GLAuthorProjection
 import dev.graphlink.kotlinserverblocking.generated.services.ArticleSchemaMappingsService
 import org.springframework.stereotype.Controller
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.springframework.security.core.context.SecurityContextHolder
+import kotlinx.coroutines.Dispatchers
 import dev.graphlink.kotlinserverblocking.generated.security.SecurityCoroutineContext
 import org.springframework.graphql.data.method.annotation.SchemaMapping
 
@@ -21,15 +19,22 @@ import org.springframework.graphql.data.method.annotation.SchemaMapping
 class ArticleSchemaMappingsController(
     private val articleSchemaMappingsService: ArticleSchemaMappingsService,
 ) {
-
-   @SchemaMapping(typeName="Article", field="author")
-   suspend fun articleAuthor(value: Map<String, Any?>): Map<String, Any?> {
-      val securityContext = SecurityContextHolder.getContext()
-      return withContext(Dispatchers.IO + SecurityCoroutineContext(securityContext)) {
-         articleSchemaMappingsService.articleAuthor(Article.fromJson(value)).toJson()
+   @SchemaMapping(typeName = "Article", field = "author")
+   suspend fun author(valueAsMap: Map<String, Any?>): Map<String, Any?> {
+      val value: Article = Article.fromJson(valueAsMap as Map<String, Any?>)
+      return withContext(Dispatchers.IO + SecurityCoroutineContext()) {
+         articleSchemaMappingsService.articleAuthor(value).toJson()
       }
    }
-}
 
+   @SchemaMapping(typeName = "Article", field = "authorList")
+   suspend fun authorList(valueAsMap: Map<String, Any?>): List<Map<String, Any?>>? {
+      val value: Article = Article.fromJson(valueAsMap as Map<String, Any?>)
+      return withContext(Dispatchers.IO + SecurityCoroutineContext()) {
+         articleSchemaMappingsService.articleAuthorList(value)?.map { e0 -> e0.toJson() }
+      }
+   }
+
+}
 
 

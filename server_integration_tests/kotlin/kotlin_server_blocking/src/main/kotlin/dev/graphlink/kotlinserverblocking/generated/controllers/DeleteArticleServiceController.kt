@@ -10,9 +10,8 @@ import dev.graphlink.kotlinserverblocking.generated.services.DeleteArticleServic
 import org.springframework.stereotype.Controller
 import org.springframework.graphql.data.method.annotation.MutationMapping
 import org.springframework.graphql.data.method.annotation.Argument
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.springframework.security.core.context.SecurityContextHolder
+import kotlinx.coroutines.Dispatchers
 import dev.graphlink.kotlinserverblocking.generated.security.SecurityCoroutineContext
 
 
@@ -21,15 +20,12 @@ class DeleteArticleServiceController(
     private val deleteArticleService: DeleteArticleService,
 ) {
    @MutationMapping()
-   suspend fun deleteArticle(@Argument() id: String): Boolean {
-      val securityContext = SecurityContextHolder.getContext()
-      return withContext(Dispatchers.IO + SecurityCoroutineContext(securityContext)) {
+   suspend fun deleteArticle(@Argument(name = "id") id: String): Boolean {
+      return withContext(Dispatchers.IO + SecurityCoroutineContext()) {
          deleteArticleService.deleteArticle(id)
       }
    }
 
-
 }
-
 
 

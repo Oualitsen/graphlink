@@ -14,11 +14,17 @@ class KotlinSpringServerSerializer extends JvmSpringServerSerializerBase {
   @override
   final KotlinCodeGenUtils codeGenUtils = KotlinCodeGenUtils();
 
+  /// Whether the developer-implemented `*Service` methods are blocking. When
+  /// `false`, service methods are generated as `suspend fun` so implementations
+  /// can call other suspend functions directly.
+  final bool blockingServices;
+
   KotlinSpringServerSerializer._(
     super.grammar,
     KotlinSpringControllerSerializer super.ctrl,
     this.serializer, {
     required super.packageName,
+    required this.blockingServices,
     super.generateSchema,
     super.injectDataFetching,
   }) : super(reactive: false,
@@ -49,6 +55,7 @@ class KotlinSpringServerSerializer extends JvmSpringServerSerializerBase {
     );
     return KotlinSpringServerSerializer._(grammar, ctrl, serializer,
         packageName: packageName,
+        blockingServices: blockingServices,
         generateSchema: generateSchema,
         injectDataFetching: injectContext);
   }
@@ -117,6 +124,9 @@ class SecurityCoroutineContext(
 
   @override
   String serializeServiceBody(GLService service) {
-    throw UnimplementedError();
+    return serializer.serializeInterface(service,
+        skipJsonConversionMethods: true,
+        fieldsAsFunctions: true,
+        suspendFunctions: !blockingServices);
   }
 }

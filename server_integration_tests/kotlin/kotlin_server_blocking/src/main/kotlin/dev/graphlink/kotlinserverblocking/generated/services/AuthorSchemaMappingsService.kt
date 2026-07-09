@@ -7,12 +7,14 @@
 
 package dev.graphlink.kotlinserverblocking.generated.services;
 import dev.graphlink.kotlinserverblocking.generated.types.Author
+import dev.graphlink.kotlinserverblocking.generated.interfaces.GlArticleProjection
 import dev.graphlink.kotlinserverblocking.generated.types.Article
+import graphql.GraphQLContext
 
 
 interface AuthorSchemaMappingsService {
-   suspend fun authorArticles(value: List<Author>): Map<Author, List<Article>?>
-   suspend fun authorLatestArticles(value: Author, limit: Int): List<Article>
+   fun authorArticles(value: List<Author>, graphQLContext: GraphQLContext): Map<Author, List<GlArticleProjection>?>
+   fun authorLatestArticles(limit: Int, value: Author): List<Article>
 }
 
 

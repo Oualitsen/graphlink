@@ -7,7 +7,6 @@
 
 package dev.graphlink.kotlinserversuspend.generated.controllers;
 import dev.graphlink.kotlinserversuspend.generated.types.Article
-import dev.graphlink.kotlinserversuspend.generated.interfaces.GLAuthorProjection
 import dev.graphlink.kotlinserversuspend.generated.services.ArticleSchemaMappingsService
 import org.springframework.stereotype.Controller
 import org.springframework.graphql.data.method.annotation.SchemaMapping
@@ -17,12 +16,18 @@ import org.springframework.graphql.data.method.annotation.SchemaMapping
 class ArticleSchemaMappingsController(
     private val articleSchemaMappingsService: ArticleSchemaMappingsService,
 ) {
-
-   @SchemaMapping(typeName="Article", field="author")
-   suspend fun articleAuthor(value: Map<String, Any?>): Map<String, Any?> {
-      return articleSchemaMappingsService.articleAuthor(Article.fromJson(value)).toJson()
+   @SchemaMapping(typeName = "Article", field = "author")
+   suspend fun author(valueAsMap: Map<String, Any?>): Map<String, Any?> {
+      val value: Article = Article.fromJson(valueAsMap as Map<String, Any?>)
+      return articleSchemaMappingsService.articleAuthor(value).toJson()
    }
-}
 
+   @SchemaMapping(typeName = "Article", field = "authorList")
+   suspend fun authorList(valueAsMap: Map<String, Any?>): List<Map<String, Any?>>? {
+      val value: Article = Article.fromJson(valueAsMap as Map<String, Any?>)
+      return articleSchemaMappingsService.articleAuthorList(value)?.map { e0 -> e0.toJson() }
+   }
+
+}
 
 
