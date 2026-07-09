@@ -9,7 +9,7 @@ package dev.graphlink.kotlinserverblocking.generated.services;
 
 
 interface DeleteArticleService {
-   suspend fun deleteArticle(id: String): Boolean
+   fun deleteArticle(id: String): Boolean
 }
 
 

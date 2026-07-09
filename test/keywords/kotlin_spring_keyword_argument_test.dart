@@ -36,7 +36,7 @@ void main() {
 
     expect(ctrls, contains('@Argument(name = "object") object_: String'));
     expect(ctrls, contains('carService.getCar(object_)'));
-    expect(svcs, contains('suspend fun getCar(object_: String): Car'));
+    expect(svcs, contains('fun getCar(object_: String): Car'));
   });
 
   test("type-field (schema mapping) arg: param sanitized, @Argument pinned", () {
@@ -46,7 +46,7 @@ void main() {
     final svcs = services(g, ser);
 
     expect(ctrls, contains('@Argument(name = "object") object_: Int?'));
-    expect(ctrls, contains('carSchemaMappingsService.carRelated(Car.fromJson(value), object_)'));
-    expect(svcs, contains('carRelated(value: Car, object_: Int?)'));
+    expect(ctrls, contains('carSchemaMappingsService.carRelated(object_, value)'));
+    expect(svcs, contains('carRelated(object_: Int?, value: Car)'));
   });
 }

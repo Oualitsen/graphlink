@@ -6,7 +6,6 @@
 // ignore_for_file:  camel_case_types, unused_import, non_constant_identifier_names, constant_identifier_names, override_on_non_overriding_member, unused_element, annotate_overrides
 
 package dev.graphlink.kotlinserversuspend.generated.controllers;
-import dev.graphlink.kotlinserversuspend.generated.interfaces.GLArticleProjection
 import dev.graphlink.kotlinserversuspend.generated.inputs.CreateArticleInput
 import dev.graphlink.kotlinserversuspend.generated.inputs.UpdateArticleInput
 import dev.graphlink.kotlinserversuspend.generated.services.ArticleService
@@ -16,6 +15,7 @@ import org.springframework.graphql.data.method.annotation.Argument
 import org.springframework.graphql.data.method.annotation.MutationMapping
 import org.springframework.graphql.data.method.annotation.SubscriptionMapping
 import kotlinx.coroutines.flow.Flow
+import graphql.GraphQLContext
 import kotlinx.coroutines.flow.map
 
 
@@ -24,24 +24,44 @@ class ArticleServiceController(
     private val articleService: ArticleService,
 ) {
    @QueryMapping()
-   suspend fun getArticle(@Argument() id: String): Map<String, Any?> {
+   suspend fun getProjectedArticle(graphQLContext: GraphQLContext): Map<String, Any?> {
+      return articleService.getProjectedArticle(graphQLContext).toJson()
+   }
+
+   @QueryMapping()
+   suspend fun getArticleWithCount(): Map<String, Any?>? {
+      return articleService.getArticleWithCount()?.toJson()
+   }
+
+   @QueryMapping()
+   suspend fun getArticleInfo(graphQLContext: GraphQLContext): Map<String, Any?>? {
+      return articleService.getArticleInfo(graphQLContext)?.toJson()
+   }
+
+   @QueryMapping()
+   suspend fun getArticle(@Argument(name = "id") id: String): Map<String, Any?> {
       return articleService.getArticle(id).toJson()
    }
 
    @QueryMapping()
    suspend fun listArticles(): List<Map<String, Any?>> {
-      return articleService.listArticles().map { __gl_e0__ -> __gl_e0__.toJson() }
+      return articleService.listArticles().map { e0 -> e0.toJson() }
+   }
+
+   @QueryMapping()
+   suspend fun getArticleTypes(): List<String> {
+      return articleService.getArticleTypes().map { e0 -> e0.toJson() }
    }
 
    @MutationMapping()
-   suspend fun createArticle(@Argument(name = "input") inputAsMap: Map<String, Any>): Map<String, Any?> {
-      val input = CreateArticleInput.fromJson(inputAsMap as Map<String, Any>)
+   suspend fun createArticle(@Argument(name = "input") inputAsMap: Map<String, Any?>): Map<String, Any?> {
+      val input: CreateArticleInput = CreateArticleInput.fromJson(inputAsMap as Map<String, Any?>)
       return articleService.createArticle(input).toJson()
    }
 
    @MutationMapping()
-   suspend fun updateArticle(@Argument(name = "input") inputAsMap: Map<String, Any>): Map<String, Any?> {
-      val input = UpdateArticleInput.fromJson(inputAsMap as Map<String, Any>)
+   suspend fun updateArticle(@Argument(name = "input") inputAsMap: Map<String, Any?>): Map<String, Any?> {
+      val input: UpdateArticleInput = UpdateArticleInput.fromJson(inputAsMap as Map<String, Any?>)
       return articleService.updateArticle(input).toJson()
    }
 
@@ -51,12 +71,15 @@ class ArticleServiceController(
    }
 
    @SubscriptionMapping()
-   fun articleUpdated(@Argument() id: String): Flow<Map<String, Any?>> {
+   fun articleUpdated(@Argument(name = "id") id: String): Flow<Map<String, Any?>> {
       return articleService.articleUpdated(id).map { __gl_result__ -> __gl_result__.toJson() }
    }
 
+   @SubscriptionMapping()
+   fun articleDeleted(): Flow<String> {
+      return articleService.articleDeleted()
+   }
 
 }
-
 
 

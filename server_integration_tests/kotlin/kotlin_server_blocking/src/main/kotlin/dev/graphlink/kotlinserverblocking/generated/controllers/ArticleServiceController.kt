@@ -6,7 +6,6 @@
 // ignore_for_file:  camel_case_types, unused_import, non_constant_identifier_names, constant_identifier_names, override_on_non_overriding_member, unused_element, annotate_overrides
 
 package dev.graphlink.kotlinserverblocking.generated.controllers;
-import dev.graphlink.kotlinserverblocking.generated.interfaces.GLArticleProjection
 import dev.graphlink.kotlinserverblocking.generated.inputs.CreateArticleInput
 import dev.graphlink.kotlinserverblocking.generated.inputs.UpdateArticleInput
 import dev.graphlink.kotlinserverblocking.generated.services.ArticleService
@@ -15,11 +14,11 @@ import org.springframework.graphql.data.method.annotation.QueryMapping
 import org.springframework.graphql.data.method.annotation.Argument
 import org.springframework.graphql.data.method.annotation.MutationMapping
 import org.springframework.graphql.data.method.annotation.SubscriptionMapping
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import org.springframework.security.core.context.SecurityContextHolder
-import dev.graphlink.kotlinserverblocking.generated.security.SecurityCoroutineContext
 import kotlinx.coroutines.flow.Flow
+import graphql.GraphQLContext
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import dev.graphlink.kotlinserverblocking.generated.security.SecurityCoroutineContext
 import kotlinx.coroutines.flow.map
 
 
@@ -28,35 +27,59 @@ class ArticleServiceController(
     private val articleService: ArticleService,
 ) {
    @QueryMapping()
-   suspend fun getArticle(@Argument() id: String): Map<String, Any?> {
-      val securityContext = SecurityContextHolder.getContext()
-      return withContext(Dispatchers.IO + SecurityCoroutineContext(securityContext)) {
+   suspend fun getProjectedArticle(graphQLContext: GraphQLContext): Map<String, Any?> {
+      return withContext(Dispatchers.IO + SecurityCoroutineContext()) {
+         articleService.getProjectedArticle(graphQLContext).toJson()
+      }
+   }
+
+   @QueryMapping()
+   suspend fun getArticleWithCount(): Map<String, Any?>? {
+      return withContext(Dispatchers.IO + SecurityCoroutineContext()) {
+         articleService.getArticleWithCount()?.toJson()
+      }
+   }
+
+   @QueryMapping()
+   suspend fun getArticleInfo(graphQLContext: GraphQLContext): Map<String, Any?>? {
+      return withContext(Dispatchers.IO + SecurityCoroutineContext()) {
+         articleService.getArticleInfo(graphQLContext)?.toJson()
+      }
+   }
+
+   @QueryMapping()
+   suspend fun getArticle(@Argument(name = "id") id: String): Map<String, Any?> {
+      return withContext(Dispatchers.IO + SecurityCoroutineContext()) {
          articleService.getArticle(id).toJson()
       }
    }
 
    @QueryMapping()
    suspend fun listArticles(): List<Map<String, Any?>> {
-      val securityContext = SecurityContextHolder.getContext()
-      return withContext(Dispatchers.IO + SecurityCoroutineContext(securityContext)) {
-         articleService.listArticles().map { __gl_e0__ -> __gl_e0__.toJson() }
+      return withContext(Dispatchers.IO + SecurityCoroutineContext()) {
+         articleService.listArticles().map { e0 -> e0.toJson() }
+      }
+   }
+
+   @QueryMapping()
+   suspend fun getArticleTypes(): List<String> {
+      return withContext(Dispatchers.IO + SecurityCoroutineContext()) {
+         articleService.getArticleTypes().map { e0 -> e0.toJson() }
       }
    }
 
    @MutationMapping()
-   suspend fun createArticle(@Argument(name = "input") inputAsMap: Map<String, Any>): Map<String, Any?> {
-      val input = CreateArticleInput.fromJson(inputAsMap as Map<String, Any>)
-      val securityContext = SecurityContextHolder.getContext()
-      return withContext(Dispatchers.IO + SecurityCoroutineContext(securityContext)) {
+   suspend fun createArticle(@Argument(name = "input") inputAsMap: Map<String, Any?>): Map<String, Any?> {
+      val input: CreateArticleInput = CreateArticleInput.fromJson(inputAsMap as Map<String, Any?>)
+      return withContext(Dispatchers.IO + SecurityCoroutineContext()) {
          articleService.createArticle(input).toJson()
       }
    }
 
    @MutationMapping()
-   suspend fun updateArticle(@Argument(name = "input") inputAsMap: Map<String, Any>): Map<String, Any?> {
-      val input = UpdateArticleInput.fromJson(inputAsMap as Map<String, Any>)
-      val securityContext = SecurityContextHolder.getContext()
-      return withContext(Dispatchers.IO + SecurityCoroutineContext(securityContext)) {
+   suspend fun updateArticle(@Argument(name = "input") inputAsMap: Map<String, Any?>): Map<String, Any?> {
+      val input: UpdateArticleInput = UpdateArticleInput.fromJson(inputAsMap as Map<String, Any?>)
+      return withContext(Dispatchers.IO + SecurityCoroutineContext()) {
          articleService.updateArticle(input).toJson()
       }
    }
@@ -67,12 +90,15 @@ class ArticleServiceController(
    }
 
    @SubscriptionMapping()
-   fun articleUpdated(@Argument() id: String): Flow<Map<String, Any?>> {
+   fun articleUpdated(@Argument(name = "id") id: String): Flow<Map<String, Any?>> {
       return articleService.articleUpdated(id).map { __gl_result__ -> __gl_result__.toJson() }
    }
 
+   @SubscriptionMapping()
+   fun articleDeleted(): Flow<String> {
+      return articleService.articleDeleted()
+   }
 
 }
-
 
 

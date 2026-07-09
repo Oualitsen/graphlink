@@ -20,6 +20,7 @@ data class CreateArticleInput(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): CreateArticleInput = CreateArticleInput(
           title = map["title"] as String,
           authorId = map["authorId"] as String,

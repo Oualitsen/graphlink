@@ -6,19 +6,22 @@
 // ignore_for_file:  camel_case_types, unused_import, non_constant_identifier_names, constant_identifier_names, override_on_non_overriding_member, unused_element, annotate_overrides
 
 package dev.graphlink.kotlinserverblocking.generated.types;
-import dev.graphlink.kotlinserverblocking.generated.interfaces.GLAuthorProjection
+import dev.graphlink.kotlinserverblocking.generated.interfaces.GlAuthorProjection
+import org.springframework.graphql.data.method.annotation.Argument
 
 
 data class Author(
     override val id: String,
     override val name: String,
-) : GLAuthorProjection {
+) : GlAuthorProjection {
    override fun toJson(): Map<String, Any?> = mapOf(
+           "__typename" to "Author",
            "id" to id,
            "name" to name,
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): Author = Author(
           id = map["id"] as String,
           name = map["name"] as String,

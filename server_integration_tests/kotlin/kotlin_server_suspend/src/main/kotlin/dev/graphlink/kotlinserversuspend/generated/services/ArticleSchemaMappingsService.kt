@@ -6,12 +6,13 @@
 // ignore_for_file:  camel_case_types, unused_import, non_constant_identifier_names, constant_identifier_names, override_on_non_overriding_member, unused_element, annotate_overrides
 
 package dev.graphlink.kotlinserversuspend.generated.services;
-import dev.graphlink.kotlinserversuspend.generated.types.Article
 import dev.graphlink.kotlinserversuspend.generated.types.Author
+import dev.graphlink.kotlinserversuspend.generated.types.Article
 
 
 interface ArticleSchemaMappingsService {
    suspend fun articleAuthor(value: Article): Author
+   suspend fun articleAuthorList(value: Article): List<Author>?
 }
 
 

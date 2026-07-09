@@ -1,13 +1,10 @@
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/java_code_gen_utils.dart';
-import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_controller.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_schema_mapping.dart';
-import 'package:graphlink/src/model/gl_service.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
@@ -15,13 +12,6 @@ import 'package:graphlink/src/serializers/java_imports.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:graphlink/src/serializers/jvm_spring_controller_serializer_base.dart';
 import 'package:graphlink/src/utils.dart';
-
-class _ArgumentConversions {
-  final List<String> declarations;
-  final List<String> serviceArgs;
-
-  _ArgumentConversions(this.declarations, this.serviceArgs);
-}
 
 class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
   final JavaSerializer serializer;
@@ -38,16 +28,16 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
   });
 
   @override
-  void annotateControllers() {
-    super.annotateControllers();
+  GLType get jsonMapValueType => GLType('Object'.toToken(), false);
+
+  @override
+  void wrapReturnTypes() {
     _wrapSubscriptionReturnTypes();
     if (reactive) {
       _wrapReactiveReturnTypes();
     } else {
       _wrapControllerHandlerReturnTypes();
     }
-    _wrapUploadArguments();
-    _mappifyControllers();
   }
 
   void _wrapControllerHandlerReturnTypes() {
@@ -121,50 +111,6 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     }
   }
 
-  /// Retypes every upload-scalar argument on service fields (and schema/batch
-  /// mapping methods) to the wire type the controller actually passes
-  /// through — `FilePart` in reactive mode, `MultipartFile` otherwise — same
-  /// logic as [resolveArgType], so the generated service interface declares
-  /// the same parameter type its controller handler calls it with.
-  void _wrapUploadArguments() {
-    for (var service in [...grammar.services.values, ...grammar.controllers.values]) {
-      for (var field in service.fields) {
-        _retypeUploadArguments(field);
-      }
-      for (var mapping in service.mappings) {
-        _retypeUploadArguments(mapping.field);
-      }
-    }
-  }
-
-  void _retypeUploadArguments(GLField field) {
-    final uploadNames = grammar.uploadScalarNames;
-    for (var arg in field.arguments) {
-      if (!uploadNames.contains(arg.type.firstType.token)) continue;
-      final baseToken = (reactive ? 'FilePart' : 'MultipartFile').toToken();
-      final String externalImport = reactive ? SpringImports.filePart : SpringImports.multipartFile;
-      final GLType newType = arg.type.ofNewName(baseToken)..externalImport = externalImport;
-      field
-          .addArgument(GLArgumentDefinition(arg.tokenInfo, newType, arg.getDirectives(), defaultValue: arg.defaultValue, isDeclared: arg.isDeclared));
-    }
-  }
-
-  /// Applies GLController's JVM wire-encoding mappification (enum -> String,
-  /// projectable type -> Map<String, Object>, same for arguments) to every
-  /// controller field and schema/batch-mapping method, then adds the
-  /// java.util.List/Map imports the resulting types need.
-  void _mappifyControllers() {
-    for (var ctrl in grammar.controllers.values) {
-      for (var field in [...ctrl.fields]) {
-        final mapped = ctrl.mappifyForJvmController(field);
-        ctrl.replaceField(mapped);
-      }
-      for (var mapping in ctrl.mappings) {
-        mapping.field = ctrl.mappifyForJvmController(mapping.field);
-      }
-    }
-  }
-
   /// Converts [expr] — a Java expression evaluating to the real domain value
   /// the service layer returned for [field] — into the shape the mappified
   /// controller signature promises: `.toJson()` for enum/projectable types,
@@ -229,7 +175,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
   /// plus the resolved argument list to pass through to the service call —
   /// original (unmapped) args where available, mappified args otherwise.
   /// Shared between resolver methods and schema/batch-mapping methods.
-  _ArgumentConversions _buildArgumentConversions(List<GLArgumentDefinition> arguments, GLToken context) {
+  ArgumentConversions _buildArgumentConversions(List<GLArgumentDefinition> arguments, GLToken context) {
     final declarations = <String>[];
     for (final arg in arguments) {
       final origArg = arg.originalArg;
@@ -243,7 +189,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
       declarations.add('${declaration} ${origArg.codeName} = ${fromJsonCall};');
     }
     final serviceArgs = arguments.map((e) => e.originalArg ?? e).map((arg) => arg.codeName).toList();
-    return _ArgumentConversions(declarations, serviceArgs);
+    return ArgumentConversions(declarations, serviceArgs);
   }
 
   @override
@@ -303,21 +249,6 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     var buffer = StringBuffer();
     buffer.writeln('$header ${codeGenUtils.block(statements)}');
     return buffer.toString();
-  }
-
-  String? getValidationMethodCall(GLField method, String serviceInstanceName, List<String> argsCalls) {
-    final String? validationMethodCall;
-    if (method.getDirectiveByName(glValidate) != null) {
-      validationMethodCall = '$serviceInstanceName.${GLService.getValidationMethodName(method.name.token)}(${argsCalls.join(", ")})';
-    } else {
-      validationMethodCall = null;
-    }
-    return validationMethodCall;
-  }
-
-  String? getValidationCallStatement(GLField method, String serviceInstanceName, List<String> argsCalls) {
-    final validationMethodCall = getValidationMethodCall(method, serviceInstanceName, argsCalls);
-    return validationMethodCall != null ? '$validationMethodCall;' : null;
   }
 
   /// Builds the fromJson conversion expression for an input arg, recursing
@@ -415,17 +346,6 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     return '${serializer.serializeMethod(mapping.field)} ${codeGenUtils.block(statementList)}';
   }
 
-  /// Returns the codeName of the argument matching [originalBareName] —
-  /// looked up by its original (pre-mappification) bare name — after
-  /// resolving it back to its original (unmappified) form, e.g. the
-  /// reconstructed local variable a `fromJson` declaration binds it to (see
-  /// [_buildArgumentConversions]), not the raw `Map<String, Object>` wire
-  /// parameter.
-  String _resolvedArgumentCodeName(List<GLArgumentDefinition> arguments, String originalBareName) {
-    final arg = arguments.firstWhere((arg) => (arg.originalArg ?? arg).bareName == originalBareName);
-    return (arg.originalArg ?? arg).codeName;
-  }
-
   @override
   String serializeIdentityMapping(GLSchemaMapping mapping, GLToken context) {
     var buffer = StringBuffer();
@@ -445,7 +365,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
   String serializeForwardedMapping(GLSchemaMapping mapping, GLToken context) {
     final fieldType = serializer.serializeType(mapping.field.type);
     final conversions = _buildArgumentConversions(mapping.field.arguments, context);
-    final valueCodeName = _resolvedArgumentCodeName(mapping.field.arguments, 'value');
+    final valueCodeName = resolvedArgumentCodeName(mapping.field.arguments, 'value');
     final getterCall =
         '$valueCodeName.${JavaSerializer.getterCall(mapping.field, isRecord: serializer.typesAsRecords, isBoolean: fieldType == 'boolean')}';
 

@@ -7,9 +7,10 @@
 
 package dev.graphlink.kotlinserversuspend.generated.controllers;
 import dev.graphlink.kotlinserversuspend.generated.types.Author
-import dev.graphlink.kotlinserversuspend.generated.interfaces.GLArticleProjection
+import dev.graphlink.kotlinserversuspend.generated.interfaces.GlArticleProjection
 import dev.graphlink.kotlinserversuspend.generated.services.AuthorSchemaMappingsService
 import org.springframework.stereotype.Controller
+import graphql.GraphQLContext
 import org.springframework.graphql.data.method.annotation.BatchMapping
 import org.springframework.graphql.data.method.annotation.SchemaMapping
 import org.springframework.graphql.data.method.annotation.Argument
@@ -19,20 +20,23 @@ import org.springframework.graphql.data.method.annotation.Argument
 class AuthorSchemaMappingsController(
     private val authorSchemaMappingsService: AuthorSchemaMappingsService,
 ) {
+   @BatchMapping(typeName = "Author", field = "articles")
+   suspend fun articles(valueAsMap: List<Map<String, Any?>>, graphQLContext: GraphQLContext): Map<Map<String, Any?>, List<Map<String, Any?>>?> {
+      val value: List<Author> = (valueAsMap as List<*>).map { __gl_m0__ -> Author.fromJson(__gl_m0__ as Map<String, Any?>) }
+      val __gl_serviceResult__: Map<Author, List<GlArticleProjection>?> = authorSchemaMappingsService.authorArticles(value, graphQLContext)
+      val result = mutableMapOf<Map<String, Any?>, List<Map<String, Any?>>?>()
+      for (__gl_i__ in valueAsMap.indices) {
+         result[valueAsMap[__gl_i__]] = __gl_serviceResult__[value[__gl_i__]]?.map { e0 -> e0.toJson() }
+      }
+      return result
+   }
 
-   @BatchMapping(typeName="Author", field="articles")
-   suspend fun authorArticles(value: List<Map<String, Any?>>): Map<Map<String, Any?>, List<Map<String, Any?>>?> {
-      val __gl_typed__ = value.map { Author.fromJson(it) }
-      val __gl_svc__ = authorSchemaMappingsService.authorArticles(__gl_typed__)
-      val __gl_tmp__ = LinkedHashMap<Map<String, Any?>, List<Map<String, Any?>>?>()
-      for (__gl_i__ in value.indices) { val __gl_val__ = __gl_svc__[__gl_typed__[__gl_i__]]; __gl_tmp__[value[__gl_i__]] = __gl_val__?.map { __gl_e0__ -> __gl_e0__.toJson() } }
-      return __gl_tmp__
+   @SchemaMapping(typeName = "Author", field = "latestArticles")
+   suspend fun latestArticles(@Argument(name = "limit") limit: Int, valueAsMap: Map<String, Any?>): List<Map<String, Any?>> {
+      val value: Author = Author.fromJson(valueAsMap as Map<String, Any?>)
+      return authorSchemaMappingsService.authorLatestArticles(limit, value).map { e0 -> e0.toJson() }
    }
-   @SchemaMapping(typeName="Author", field="latestArticles")
-   suspend fun authorLatestArticles(value: Map<String, Any?>, @Argument limit: Int): List<Map<String, Any?>> {
-      return authorSchemaMappingsService.authorLatestArticles(Author.fromJson(value), limit).map { __gl_e0__ -> __gl_e0__.toJson() }
-   }
+
 }
-
 
 

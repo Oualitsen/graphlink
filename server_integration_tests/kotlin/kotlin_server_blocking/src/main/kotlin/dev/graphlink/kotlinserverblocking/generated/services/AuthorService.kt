@@ -10,8 +10,8 @@ import dev.graphlink.kotlinserverblocking.generated.types.Author
 
 
 interface AuthorService {
-   suspend fun getAuthor(id: String): Author?
-   suspend fun listAuthors(): List<Author>
+   fun getAuthor(id: String): Author?
+   fun listAuthors(): List<Author>
 }
 
 
