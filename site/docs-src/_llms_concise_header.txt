@@ -23,8 +23,8 @@ client and server code. Developers define their API once in a `.graphql` schema 
   with auto-reconnect). Works in Android, JVM server projects, and Kotlin Multiplatform.
 - **Spring Boot server (Java or Kotlin)**: controllers, service interfaces, repository stubs, and
   input classes generated from the schema's type definitions and queries. Supports MVC and reactive
-  (WebFlux) mode. Strict-by-default nullability with generated `GL<Type>Projection` companion
-  interfaces for partially-fetched data (`@glServerLenient` / `@glReturnsProjection` opt out/in).
+  (WebFlux) mode. Strict-by-default nullability; controllers serialize responses to a `Map` via
+  `toJson()`, and `@glServerLenient` opts a type into all-nullable fields for partial population.
 
 ## Key differentiators
 

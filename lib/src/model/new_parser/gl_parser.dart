@@ -415,7 +415,6 @@ class GLParser {
       generateServicesAndControllers();
       generateSchemaMappings();
       applyServerLenientNullability();
-      populateServerProjections();
     }
     fillTransitiveInterfaceImplementations();
 

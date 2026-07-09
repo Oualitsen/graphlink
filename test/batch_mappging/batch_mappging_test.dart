@@ -59,13 +59,13 @@ type Query {
 
     expect(carOwner.isBatch, false);
     expect(carOwner.type.token, "Car");
-    expect(carOwner.field.type.token, "GLOwnerProjection");
+    expect(carOwner.field.type.token, "Owner");
     expect(carOwner.field.name.token, "owner");
 
     var userCars = mappings.where((e) => e.key == "userCars").first;
     expect(userCars.isBatch, false);
     expect(userCars.type.token, "User");
-    expect(userCars.field.type.token, "GLCarProjection");
+    expect(userCars.field.type.token, "Car");
     expect(userCars.field.name.token, "cars");
 
     expect(mappings.where((e) => e.key == "carUserId").first.forbid, true);

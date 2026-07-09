@@ -3,8 +3,6 @@ import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
-import '../test_utils.dart';
-
 final GLParser g = GLParser();
 
 void main() {
@@ -285,7 +283,7 @@ void main() {
     expect(
       serial.split("\n").map((str) => str.trim()),
       containsAllInOrder([
-        "type User implements ${toServerProjectionName('User')} {",
+        "type User {",
         "id: String",
         "name: String",
         "lastName: String",
