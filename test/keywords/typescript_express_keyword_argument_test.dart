@@ -84,12 +84,14 @@ void main() {
       final out = ser.serializeResolvers().join('\n');
       print(out);
       // destructure renames the wire property; call uses the safe identifier.
-      expect(out, contains('{ return: return_, value }'));
+      expect(out, contains('{ return: return_ }'));
       // context is not injected by default (no @glInjectContext / flag off).
-      expect(out, contains('carRelated(parent, return_, value)'));
+      expect(out, contains('carRelated(return_, parent)'));
+
       // never a bare `return` binding/reference.
 
       expect(out, isNot(contains('{ return }')));
+
       expect(out, isNot(contains('parent, return,')));
     });
   });
