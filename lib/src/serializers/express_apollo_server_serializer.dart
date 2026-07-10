@@ -3,6 +3,7 @@ import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_validation_extension.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_service.dart';
 import 'package:graphlink/src/model/gl_schema_mapping.dart';
@@ -82,6 +83,27 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
 
   // ── services/XxxService.ts ────────────────────────────────────────────────
 
+  /// Whether [field]'s resolver/service method receives the request `context`
+  /// parameter — either globally (`injectContext`) or per-field via
+  /// `@glInjectContext`.
+  bool _injectsContext(GLField field) =>
+      apolloConfig.injectContext || field.hasDirective(glInjectContext);
+
+  /// Apollo resolver positional signature. `context` is the 3rd positional
+  /// arg, so when it isn't injected but `info` (4th) is, a `_ctx` placeholder
+  /// keeps `info` in position.
+  String _resolverSignature(String parentParam, String argsDestructure, bool ctx, bool info) {
+    final parts = [parentParam, argsDestructure];
+    if (ctx) {
+      parts.add('context');
+      if (info) parts.add('info');
+    } else if (info) {
+      parts.add('_ctx');
+      parts.add('info');
+    }
+    return '(${parts.join(', ')})';
+  }
+
   @override
   String serializeService(GLService service) {
     final importedTypes = <String>{};
@@ -102,7 +124,11 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       _collectType(field.type, importedTypes);
       final isSubscription = service.getTypeByFieldName(field.name.token) == GLQueryType.subscription;
       final needsInfo = apolloConfig.useResolveInfo && !isSubscription;
-      final params = [...argList, 'context: GraphLinkContext', if (needsInfo) 'info: GraphQLResolveInfo'];
+      final params = [
+        ...argList,
+        if (_injectsContext(field)) 'context: GraphLinkContext',
+        if (needsInfo) 'info: GraphQLResolveInfo',
+      ];
       final returnDecl = isSubscription ? 'AsyncIterable<$returnTs>' : 'Promise<$returnTs>';
       methods.add('${field.name}(${params.join(', ')}): $returnDecl;');
     }
@@ -112,10 +138,12 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     }
 
     final needsResolveInfoImport = apolloConfig.useResolveInfo;
+    final needsContextImport = service.fields.any(_injectsContext) ||
+        service.serviceMapping.any((m) => _injectsContext(m.field));
 
     final imp = _imports(importedTypes);
     final lines = [
-      "import { GraphLinkContext } from '../context.js';",
+      if (needsContextImport) "import { GraphLinkContext } from '../context.js';",
       if (needsResolveInfoImport) "import { GraphQLResolveInfo } from 'graphql';",
       if (hasUpload) "import type { FileUpload } from '../file-upload.js';",
       if (imp.isNotEmpty) imp,
@@ -139,7 +167,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     final nonBatchParams = [
       'item: ${parentName}',
       ...argParams,
-      'context: GraphLinkContext',
+      if (_injectsContext(mapping.field)) 'context: GraphLinkContext',
       if (apolloConfig.useResolveInfo) 'info: GraphQLResolveInfo',
     ];
     return '${mapping.key}(${nonBatchParams.join(', ')}): Promise<${fieldTs}>;';
@@ -158,7 +186,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
         _collectType(arg.type, importedTypes);
         return '${arg.codeName}: ${tsSerializer.serializeType(arg.type)}';
       }).toList();
-      final guardParams = [...argList, 'context: GraphLinkContext', if (apolloConfig.useResolveInfo) 'info: GraphQLResolveInfo'];
+      final guardParams = [...argList, if (_injectsContext(field)) 'context: GraphLinkContext', if (apolloConfig.useResolveInfo) 'info: GraphQLResolveInfo'];
       methods.add('${validationMethodName(field.name.token)}(${guardParams.join(', ')}): Promise<void>;');
     }
 
@@ -166,8 +194,9 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
 
     final imp = _imports(importedTypes);
     final resolveInfoImport = apolloConfig.useResolveInfo ? "import { GraphQLResolveInfo } from 'graphql';" : '';
+    final needsContextImport = service.fields.where(fieldHasValidation).any(_injectsContext);
     final lines = [
-      "import { GraphLinkContext } from '../context.js';",
+      if (needsContextImport) "import { GraphLinkContext } from '../context.js';",
       if (resolveInfoImport.isNotEmpty) resolveInfoImport,
       if (imp.isNotEmpty) imp,
     ];
@@ -330,6 +359,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
           argTypes: field.arguments.map((a) => a.type).toList(),
           returnType: field.type,
           needsInfo: apolloConfig.useResolveInfo,
+          contextInjected: _injectsContext(field),
         ));
       }
     }
@@ -357,7 +387,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
         }
       }
 
-      final callArgs = [...resolvedArgNames, 'context', if (e.needsInfo) 'info'].join(', ');
+      final callArgs = [...resolvedArgNames, if (e.contextInjected) 'context', if (e.needsInfo) 'info'].join(', ');
       final serviceCall = '$sVar.${e.fieldName}($callArgs)';
       final toJsonExpr = tsSerializer.callToJson('_r', e.returnType);
       final needsWrap = e.returnType is GLListType ||
@@ -371,9 +401,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       final validateCall = hasValidate
           ? 'await $gVar.${validationMethodName(e.fieldName)}($callArgs);'
           : null;
-      final resolverSignature = e.needsInfo
-          ? '(_, $argsDestructure, context, info)'
-          : '(_, $argsDestructure, context)';
+      final resolverSignature = _resolverSignature('_', argsDestructure, e.contextInjected, e.needsInfo);
 
       buf.writeln('      ${e.fieldName}: async $resolverSignature => {');
       for (final line in uploadAwaitLines) { buf.writeln('        $line'); }
@@ -397,6 +425,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
           argTypes: field.arguments.map((a) => a.type).toList(),
           returnType: field.type,
           needsInfo: false,
+          contextInjected: _injectsContext(field),
         ));
       }
     }
@@ -407,10 +436,11 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       final sVar = e.service.token.firstLow;
       final argsDestructure =
           _argsDestructure(e.argNames, e.argCodeNames, '__');
-      final callArgs = [...e.argCodeNames, 'context'].join(', ');
+      final callArgs = [...e.argCodeNames, if (e.contextInjected) 'context'].join(', ');
+      final subscribeSignature = _resolverSignature('_', argsDestructure, e.contextInjected, false);
       final toJsonExpr = tsSerializer.callToJson('payload', e.returnType);
       buf.writeln('      ${e.fieldName}: {');
-      buf.writeln('        subscribe: (_, $argsDestructure, context) => $sVar.${e.fieldName}($callArgs),');
+      buf.writeln('        subscribe: $subscribeSignature => $sVar.${e.fieldName}($callArgs),');
       buf.writeln('        resolve: (payload: any) => $toJsonExpr,');
       buf.writeln('      },');
     }
@@ -445,15 +475,14 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
               m.field.arguments.map((a) => a.codeName).toList();
           final argsDestructure = _argsDestructure(argNames, argCodeNames, '_');
           final needsInfo = apolloConfig.useResolveInfo;
+          final ctx = _injectsContext(m.field);
           final mappingCallArgs = [
             'parent',
             ...argCodeNames,
-            'context',
+            if (ctx) 'context',
             if (needsInfo) 'info',
           ].join(', ');
-          final mappingResolverArgs = needsInfo
-              ? '(parent, $argsDestructure, context, info)'
-              : '(parent, $argsDestructure, context)';
+          final mappingResolverArgs = _resolverSignature('parent', argsDestructure, ctx, needsInfo);
           final toJsonExpr = tsSerializer.callToJson('_r', m.field.type);
           buf.writeln('$mappingResolverArgs => $sVar.${m.key}($mappingCallArgs).then((_r) => $toJsonExpr),');
         }
@@ -678,6 +707,7 @@ class _RootEntry {
   final List<GLType> argTypes;
   final GLType returnType;
   final bool needsInfo;
+  final bool contextInjected;
   _RootEntry({
     required this.service,
     required this.fieldName,
@@ -686,6 +716,7 @@ class _RootEntry {
     required this.argTypes,
     required this.returnType,
     required this.needsInfo,
+    required this.contextInjected,
   });
 }
 
