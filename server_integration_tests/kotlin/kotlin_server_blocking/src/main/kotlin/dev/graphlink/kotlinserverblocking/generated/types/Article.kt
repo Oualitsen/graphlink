@@ -8,19 +8,17 @@
 package dev.graphlink.kotlinserverblocking.generated.types;
 import dev.graphlink.kotlinserverblocking.generated.enums.ArticleType
 import dev.graphlink.kotlinserverblocking.generated.types.WebSite
-import dev.graphlink.kotlinserverblocking.generated.interfaces.GlArticleProjection
 
 
 data class Article(
-    override val id: String,
-    override val title: String,
-    override val type: ArticleType? = null,
-    override val authorId: String,
-    override val webSite: WebSite? = null,
-    override val published: Boolean,
-) : GlArticleProjection {
-   override fun toJson(): Map<String, Any?> = mapOf(
-           "__typename" to "Article",
+    val id: String,
+    val title: String,
+    val type: ArticleType? = null,
+    val authorId: String,
+    val webSite: WebSite? = null,
+    val published: Boolean,
+) {
+   fun toJson(): Map<String, Any?> = mapOf(
            "id" to id,
            "title" to title,
            "type" to type?.toJson(),

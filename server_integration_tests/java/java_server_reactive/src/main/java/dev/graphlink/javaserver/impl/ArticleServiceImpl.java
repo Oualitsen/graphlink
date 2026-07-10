@@ -3,7 +3,7 @@ package dev.graphlink.javaserver.impl;
 import dev.graphlink.javaserver.generated.enums.ArticleType;
 import dev.graphlink.javaserver.generated.inputs.CreateArticleInput;
 import dev.graphlink.javaserver.generated.inputs.UpdateArticleInput;
-import dev.graphlink.javaserver.generated.interfaces.GlArticleProjection;
+import dev.graphlink.javaserver.generated.interfaces.Article;
 import dev.graphlink.javaserver.generated.services.ArticleService;
 import dev.graphlink.javaserver.generated.types.Article;
 import graphql.GraphQLContext;
@@ -74,8 +74,8 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    public Mono<GlArticleProjection> getProjectedArticle(GraphQLContext graphQLContext) {
-        GlArticleProjection projection = Data.articles.stream().findFirst().orElse(null);
+    public Mono<Article> getProjectedArticle(GraphQLContext graphQLContext) {
+        Article projection = Data.articles.stream().findFirst().orElse(null);
         return Mono.justOrEmpty(projection);
     }
 
@@ -95,7 +95,7 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    public Mono<GlArticleProjection> getArticleInfo(GraphQLContext graphQLContext) {
+    public Mono<Article> getArticleInfo(GraphQLContext graphQLContext) {
         return Mono.justOrEmpty(Data.articles.stream().findFirst().orElse(null));
     }
 }
