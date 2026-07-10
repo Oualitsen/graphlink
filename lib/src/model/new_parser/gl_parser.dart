@@ -412,9 +412,15 @@ class GLParser {
       propagateInvalidateCacheTags();
     } else {
       handleRepositories(true);
+      // Flip @glServerLenient fields to nullable BEFORE deriving services and
+      // schema mappings, so forwarding decisions (which compare projection
+      // field types against the mapTo type's fields, nullability included) see
+      // the lenient nullability. Otherwise a non-null projection field would be
+      // forwarded onto a source field that later becomes nullable, emitting a
+      // getter whose body can't satisfy the non-null return type.
+      applyServerLenientNullability();
       generateServicesAndControllers();
       generateSchemaMappings();
-      applyServerLenientNullability();
     }
     fillTransitiveInterfaceImplementations();
 
