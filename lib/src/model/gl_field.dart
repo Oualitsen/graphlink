@@ -27,6 +27,7 @@ class GLField with GLDirectivesMixin, CodeNameMixin {
   @override
   String get wireName => name.token;
 
+
   GLField({
     required this.name,
     required this.type,

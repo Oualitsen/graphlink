@@ -1,6 +1,5 @@
 package dev.graphlink.javaserver.impl;
 
-import dev.graphlink.javaserver.generated.interfaces.Article;
 import dev.graphlink.javaserver.generated.services.AuthorSchemaMappingsService;
 import dev.graphlink.javaserver.generated.types.Article;
 import dev.graphlink.javaserver.generated.types.Author;
@@ -19,7 +18,7 @@ import java.util.stream.Collectors;
 public class AuthorSchemaMappingsServiceImpl implements AuthorSchemaMappingsService {
 
     @Override
-    public Mono<Map<Author, List<Article>>> authorArticles(List<Author> value, GraphQLContext graphQLContext) {
+    public Mono<Map<Author, List<Article>>> authorArticles(List<Author> value) {
         Map<Author, List<Article>> result = new HashMap<>();
         for (Author author : value) {
             List<Article> articles = Data.articles.stream()

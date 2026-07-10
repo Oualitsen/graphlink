@@ -1,6 +1,5 @@
 package dev.graphlink.javaserver.impl;
 
-import dev.graphlink.javaserver.generated.interfaces.Article;
 import dev.graphlink.javaserver.generated.services.AuthorSchemaMappingsService;
 import dev.graphlink.javaserver.generated.types.Article;
 import dev.graphlink.javaserver.generated.types.Author;
