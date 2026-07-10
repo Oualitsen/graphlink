@@ -3,7 +3,7 @@ package dev.graphlink.kotlinserverblocking.impl
 import dev.graphlink.kotlinserverblocking.generated.enums.ArticleType
 import dev.graphlink.kotlinserverblocking.generated.inputs.CreateArticleInput
 import dev.graphlink.kotlinserverblocking.generated.inputs.UpdateArticleInput
-import dev.graphlink.kotlinserverblocking.generated.interfaces.GlArticleProjection
+import dev.graphlink.kotlinserverblocking.generated.interfaces.Artcile
 import dev.graphlink.kotlinserverblocking.generated.services.ArticleService
 import dev.graphlink.kotlinserverblocking.generated.types.Article
 import graphql.GraphQLContext
@@ -50,12 +50,12 @@ class ArticleServiceImpl : ArticleService {
 
     override fun articleDeleted(): Flow<String> = flowOf("deleted-1", "deleted-2")
 
-    // Article implements GlArticleProjection, so a concrete article is a valid
+    // Article implements Artcile, so a concrete article is a valid
     // projection — the client selects whichever subset it wants.
-    override fun getProjectedArticle(graphQLContext: GraphQLContext): GlArticleProjection =
+    override fun getProjectedArticle(graphQLContext: GraphQLContext): Artcile =
         Data.articles.first()
 
-    override fun getArticleInfo(graphQLContext: GraphQLContext): GlArticleProjection? =
+    override fun getArticleInfo(graphQLContext: GraphQLContext): Artcile? =
         Data.articles.firstOrNull()
 
     override fun getArticleWithCount(): Article? = Data.articles.firstOrNull()

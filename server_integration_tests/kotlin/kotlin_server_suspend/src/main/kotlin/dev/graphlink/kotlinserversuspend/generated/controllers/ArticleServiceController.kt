@@ -15,7 +15,6 @@ import org.springframework.graphql.data.method.annotation.Argument
 import org.springframework.graphql.data.method.annotation.MutationMapping
 import org.springframework.graphql.data.method.annotation.SubscriptionMapping
 import kotlinx.coroutines.flow.Flow
-import graphql.GraphQLContext
 import kotlinx.coroutines.flow.map
 
 
@@ -24,8 +23,8 @@ class ArticleServiceController(
     private val articleService: ArticleService,
 ) {
    @QueryMapping()
-   suspend fun getProjectedArticle(graphQLContext: GraphQLContext): Map<String, Any?> {
-      return articleService.getProjectedArticle(graphQLContext).toJson()
+   suspend fun getProjectedArticle(): Map<String, Any?> {
+      return articleService.getProjectedArticle().toJson()
    }
 
    @QueryMapping()
@@ -34,8 +33,8 @@ class ArticleServiceController(
    }
 
    @QueryMapping()
-   suspend fun getArticleInfo(graphQLContext: GraphQLContext): Map<String, Any?>? {
-      return articleService.getArticleInfo(graphQLContext)?.toJson()
+   suspend fun getArticleInfo(): Map<String, Any?>? {
+      return articleService.getArticleInfo()?.toJson()
    }
 
    @QueryMapping()

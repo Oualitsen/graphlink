@@ -3,7 +3,6 @@ package dev.graphlink.javaserver.impl;
 import dev.graphlink.javaserver.generated.inputs.CreateArticleInput;
 import dev.graphlink.javaserver.generated.inputs.UpdateArticleInput;
 import dev.graphlink.javaserver.generated.enums.ArticleType;
-import dev.graphlink.javaserver.generated.interfaces.GlArticleProjection;
 import dev.graphlink.javaserver.generated.services.ArticleService;
 import dev.graphlink.javaserver.generated.types.Article;
 import graphql.GraphQLContext;
@@ -70,8 +69,8 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    public GlArticleProjection getProjectedArticle(GraphQLContext graphQLContext) {
-        // Article implements GlArticleProjection, so a concrete article is a
+    public Article getProjectedArticle() {
+        // Article implements Article, so a concrete article is a
         // valid projection — the client selects whichever subset it wants.
         return Data.articles.stream().findFirst().orElse(null);
     }
@@ -92,7 +91,7 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    public GlArticleProjection getArticleInfo(GraphQLContext graphQLContext) {
+    public Article getArticleInfo() {
         return Data.articles.stream().findFirst().orElse(null);
     }
 }
