@@ -191,7 +191,7 @@ type Mutation {
 - Kotlin client (coroutine-based queries/mutations/subscriptions, data classes, kotlinx.serialization, OkHttp WebSocket): https://graphlink.dev/docs/kotlin-client.html
 - Spring Boot server (MVC + reactive/WebFlux, Java and Kotlin targets, strict-by-default generation, Map-boundary controllers, service interfaces, file upload, security context propagation): https://graphlink.dev/docs/spring-server.html
 - Caching (@glCache, @glCacheInvalidate, tag invalidation, staleIfOffline): https://graphlink.dev/docs/caching.html
-- Directives (@glMapsTo, @glMapField, @glCache, @glCacheInvalidate, @glSkipOnServer forward mappings, @glServerLenient, @deprecated, and more): https://graphlink.dev/docs/directives.html
+- Directives (@glMapsTo, @glMapField, @glCache, @glCacheInvalidate, @glSkipOnServer forward mappings, @glServerLenient, @glInjectContext, @deprecated, and more): https://graphlink.dev/docs/directives.html
 - "@glSkipOnServer & @glSkipOnClient" (two-layer server-side access control, schema stripping, @SchemaMapping, @BatchMapping, mapTo, forward mappings, ID/object field-pair pattern for N+1-safe loading): https://graphlink.dev/docs/skip-directives.html
 - Configuration (all config keys for Dart, Java, TypeScript, Kotlin, Spring; autoGenerateQueriesFor for selective operation generation; autoGenerateQueriesArgumentLimit for propagated-arg cap; maxFragmentBodySize to skip oversized _all_fields fragments and their dependent auto-queries; reactive; useSpringSecurity; typeMappings; unknownScalarType fallback for unmapped custom scalars; CLI flags; YAML config): https://graphlink.dev/docs/configuration.html
 

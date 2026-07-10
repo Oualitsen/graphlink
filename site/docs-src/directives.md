@@ -1,6 +1,6 @@
 ---
 title: Directives Reference — GraphLink Docs
-description: Complete reference for all GraphLink schema directives — @glCache, @glCacheInvalidate, @glCaptureErrors, @glMapsTo, @glMapField, @glSkipOnServer (with forward mappings), @glExternal, @glValidate, @glServerLenient, @deprecated, and more.
+description: Complete reference for all GraphLink schema directives — @glCache, @glCacheInvalidate, @glCaptureErrors, @glMapsTo, @glMapField, @glSkipOnServer (with forward mappings), @glExternal, @glValidate, @glServerLenient, @glInjectContext, @deprecated, and more.
 ---
 
 # Directives Reference
@@ -72,6 +72,8 @@ directive @glCaptureErrors on FIELD_DEFINITION
 # ── Strict server generation (v5.0.0+) ────────────────────────────────────────
 
 directive @glServerLenient on OBJECT | INTERFACE
+
+directive @glInjectContext on FIELD_DEFINITION
 ```
 
 ---
@@ -211,6 +213,36 @@ type LegacyReport @glServerLenient {
 Because generated controllers serialize responses via `toJson()` to a `Map`, a `@glServerLenient` resolver can return a partially-populated object with un-fetched fields left `null` — enough for selection-driven partial fetches.
 
 → **[Full explanation of strict server generation](spring-server.md#strict-server-generation)**
+
+---
+
+## @glInjectContext
+
+**Target:** SERVER · **Placement:** `FIELD_DEFINITION` on `Query`, `Mutation`, `Subscription` fields, or a `@glSkipOnServer` relation field
+
+Injects the request **context** into that one resolver/service method so it can read per-request state (authenticated user, tenant, headers, etc.). The generated method gains the target's context parameter — Spring `GraphQLContext graphQLContext`, Apollo `context: GraphLinkContext`. Without it, the method has no context parameter.
+
+No arguments. Equivalent to enabling the global `injectContext` config for just that field; the directive and the global flag are OR'd together.
+
+```graphql title="Example"
+type Query {
+  # Only this resolver receives the request context
+  me: User! @glInjectContext
+  publicStats: Stats!
+}
+```
+
+```java title="Generated UserService.java (Spring)"
+User me(GraphQLContext graphQLContext);
+Stats publicStats();
+```
+
+```typescript title="Generated UserService.ts (Apollo)"
+me(context: GraphLinkContext): Promise<User>;
+publicStats(): Promise<Stats>;
+```
+
+To inject context into **every** resolver instead, set `injectContext: true` in the server config (`serverConfig.spring`, `serverConfig.kotlinSpring`, or `serverConfig.expressApollo`).
 
 ---
 

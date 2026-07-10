@@ -431,6 +431,8 @@
 
 ### New features
 
+- **`@glInjectContext` directive** — per-field opt-in to inject the request context into a single resolver/service method (Spring `GraphQLContext`, Apollo `context: GraphLinkContext`), without turning it on globally. OR'd with the global `injectContext` config. For Apollo/Express, the `context` parameter is now injected **only** when `@glInjectContext` is present or `injectContext: true` is set (new `serverConfig.expressApollo.injectContext` option) — matching the Spring targets — instead of being passed to every resolver unconditionally.
+
 - **Kotlin Spring Boot server generation** — new `serverConfig.kotlinSpring` block generates Kotlin data-class types/inputs/enums, services, controllers, and repositories, mirroring the existing Java Spring server target. `typeAsDataClass`/`inputAsDataClass` control data-class vs. open-class generation; `blockingServices` (default `true`) wraps service calls in `withContext(Dispatchers.IO)`, or set to `false` for a coroutine-native service layer.
 
 - **Reactive Java client generation** — new `asyncStyle` option in `clientConfig.java`: `blocking` (default, unchanged), `reactor`, `rxjava3`, or `mutiny`. Reactive styles wrap query/mutation results in the library's deferred-single type (`Mono`/`Single`/`Uni`) and subscriptions in the deferred-many type (`Flux`/`Observable`/`Multi`). `reactiveHttpClient` selects the default adapter's transport: `jdk` (`HttpClient.sendAsync`, works with every reactive style, no extra dependency) or `webclient` (Spring WebClient, Reactor only). File upload support was also added for the Java client in this pass.
