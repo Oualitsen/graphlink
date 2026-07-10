@@ -363,7 +363,8 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
 
   @override
   String serializeForwardedMapping(GLSchemaMapping mapping, GLToken context) {
-    final fieldType = serializer.serializeType(mapping.field.type);
+
+    final fieldType = serializer.serializeType(_createUnwrapped(mapping.field.type));
     final conversions = _buildArgumentConversions(mapping.field.arguments, context);
     final valueCodeName = resolvedArgumentCodeName(mapping.field.arguments, 'value');
     final getterCall =
@@ -378,6 +379,13 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     var buffer = StringBuffer();
     buffer.writeln('$header ${codeGenUtils.block(statements)}');
     return buffer.toString();
+  }
+
+  GLType _createUnwrapped(GLType type) {
+    if(type.runtimeType != GLType) {
+      return type;
+    }
+    return GLType(type.tokenInfo, type.nullable);
   }
 
   /// Emits the statements that turn a batch service call's
