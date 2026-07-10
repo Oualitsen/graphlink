@@ -4,16 +4,21 @@
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
 
-import { GraphLinkContext } from '../context.js';
 import { Article } from '../types/article.js';
+import { ArticleType } from '../enums/article-type.js';
 import { CreateArticleInput } from '../inputs/create-article-input.js';
 import { UpdateArticleInput } from '../inputs/update-article-input.js';
 
 export interface ArticleService {
-  getArticle(id: string, context: GraphLinkContext): Promise<Article>;
-  listArticles(context: GraphLinkContext): Promise<Article[]>;
-  createArticle(input: CreateArticleInput, context: GraphLinkContext): Promise<Article>;
-  updateArticle(input: UpdateArticleInput, context: GraphLinkContext): Promise<Article>;
-  articleCreated(context: GraphLinkContext): AsyncIterable<Article>;
-  articleUpdated(id: string, context: GraphLinkContext): AsyncIterable<Article>;
+  getProjectedArticle(): Promise<Article>;
+  getArticleWithCount(): Promise<Article | null>;
+  getArticleInfo(): Promise<Article | null>;
+  getArticle(id: string): Promise<Article>;
+  listArticles(): Promise<Article[]>;
+  getArticleTypes(): Promise<ArticleType[]>;
+  createArticle(input: CreateArticleInput): Promise<Article>;
+  updateArticle(input: UpdateArticleInput): Promise<Article>;
+  articleCreated(): AsyncIterable<Article>;
+  articleUpdated(id: string): AsyncIterable<Article>;
+  articleDeleted(): AsyncIterable<string>;
 }

@@ -11,7 +11,16 @@ schema {
    subscription: Subscription
 }
 
+directive @glReturnsProjection on FIELD_DEFINITION
 directive @glValidate on FIELD_DEFINITION
+input ReservedInput {
+   class: String!
+   return: Int
+   default: String
+   is: Boolean
+   synchronized: Int
+}
+
 input CreateArticleInput {
    title: String!
    authorId: ID!
@@ -23,44 +32,224 @@ input UpdateArticleInput {
    title: String
 }
 
-type Author implements GLAuthorProjection {
+input ConfigInput {
+   pageSize: Int = 25
+   ratio: Float = 1.5
+   sort: String = "asc"
+   verbose: Boolean = false
+   priority: Priority = MEDIUM
+   tags: [String!] = ["default", "seed"]
+   empties: [String!] = []
+   note: String
+}
+
+input RangeInput {
+   min: Int = 0
+   max: Int = 100
+}
+
+type Product {
    id: ID!
    name: String!
-   articles: [Article!]
-   latestArticles(limit: Int!): [Article!]!
 }
-type Article implements GLArticleProjection {
+type Catalog {
    id: ID!
-   title: String!
-   authorId: ID!
-   author: Author!
+   products(category: String!, limit: Int!, offset: Int): [Product!]!
+}
+type Feed {
+   id: ID!
+   items(limit: Int = 10, sort: String): [Product!]!
+}
+type Store {
+   id: ID!
+   shelves(floor: Int!): [Shelf!]!
+}
+type Shelf {
+   id: ID!
+   products(limit: Int!): [Product!]!
+}
+type CatalogFieldArgs {
+   id: ID!
+   label: String!
+}
+type SearchResult {
+   id: ID!
+   hits(limit: Int!): [Product!]!
 }
 type Query {
+   catalog: Catalog!
+   feed: Feed!
+   store: Store!
+   search(fieldArgs: String!): SearchResult!
+   reserved: ReservedFields!
+   collide: Collide!
+   switch(class: String!, return: Int): ReservedFields!
+   _status: String!
+   getProjectedArticle: Article! @glReturnsProjection
+   getArticleWithCount: ArticleWithCount
+   getArticleInfo: ArticleInfo @glReturnsProjection
+   getMessageReadList: [MessageRead]
+   colors1: [Color!]!
+   colors2: [[Color]]
+   colors3: [[[Color!]!]!]!
+   boxes1: [Box]
+   boxes2: [[Box!]!]!
+   boxes3: [[[Box]]]
+   shapes1: [Shape!]!
+   shapes2: [[Shape]]
+   shapes3: [[[Shape!]!]!]!
+   media1: [Media!]!
+   media2: [[Media]]
+   media3: [[[Media!]!]!]!
    getAuthor(id: ID!): Author
    getArticle(id: ID!): Article!
    listAuthors: [Author!]!
    listArticles: [Article!]!
+   getArticleTypes: [ArticleType!]!
+   resolveConfig(input: ConfigInput!): Config!
+   resolveRange(input: RangeInput = {min: 5}): Range!
+   greet(name: String = "world", times: Int = 1): String!
+   echoPriority(level: Priority = HIGH): Priority!
+}
+type class {
+   id: ID!
+   value: String!
+}
+type _Secret {
+   id: ID!
+   token: String!
+}
+type ReservedFields {
+   id: ID!
+   class: String!
+   return: Int!
+   new: Boolean!
+   default: String!
+   is: String!
+   in: String!
+   with: String!
+   int: Int!
+   synchronized: Boolean!
+   native: String!
+   kind: Keyword!
+   nested: class!
+   secret: _Secret!
+}
+type Collide {
+   id: ID!
+   class: String!
+   class_: String!
 }
 type Mutation {
+   echoReserved(input: ReservedInput!): ReservedFields!
    createArticle(input: CreateArticleInput!): Article!
    updateArticle(input: UpdateArticleInput!): Article!
    deleteArticle(id: ID!): Boolean!
-   bulkCreate(matrix: [[[CreateArticleInput]!]]): Int! @glValidate
+   bulkCreate(matrix: [[CreateArticleInput!]]): Int! @glValidate
+   ackPriority(level: Priority!): String!
+}
+type ArticleWithCount {
+   article: Article!
+   count: Int!
+}
+type ArticleInfo {
+   id: ID!
+   title: String!
+   type: ArticleType
+   webSite: WebSite
+   published: Boolean!
+}
+type Message {
+   id: ID!
+   content: String!
+}
+type MessageRead {
+   message: Message!
+   read: Boolean!
+}
+type Box {
+   id: ID!
+   label: String!
+}
+type Circle implements Shape {
+   id: ID!
+   kind: String!
+   radius: Int!
+}
+type Square implements Shape {
+   id: ID!
+   kind: String!
+   side: Int!
+}
+type Photo {
+   id: ID!
+   url: String!
+   width: Int!
+}
+type Video {
+   id: ID!
+   url: String!
+   durationSec: Int!
+}
+type WebSite {
+   id: ID!
+   name: String!
+}
+type Author {
+   id: ID!
+   name: String!
+   articles: [Article!]  @glReturnsProjection
+   latestArticles(limit: Int!): [Article!]!
+}
+type Article {
+   id: ID!
+   title: String!
+   type: ArticleType
+   authorId: ID!
+   webSite: WebSite
+   author: Author!
+   authorList: [Author!]
+   published: Boolean!
 }
 type Subscription {
    articleCreated: Article!
    articleUpdated(id: ID!): Article!
+   articleDeleted: ID!
 }
-interface GLAuthorProjection {
-   id: ID
-   name: String
+type Config {
+   pageSize: Int!
+   ratio: Float!
+   sort: String!
+   verbose: Boolean!
+   priority: Priority!
+   tags: [String!]!
+   empties: [String!]!
+   note: String
 }
-interface GLArticleProjection {
-   id: ID
-   title: String
-   authorId: ID
+type Range {
+   min: Int!
+   max: Int!
+}
+interface Shape {
+   id: ID!
+   kind: String!
+}
+enum Keyword {
+	new default class int synchronized
 }
 
+enum Color {
+	RED GREEN BLUE
+}
 
+enum ArticleType {
+	NEWS BLOG REVIEW
+}
+
+enum Priority {
+	LOW MEDIUM HIGH
+}
+
+union Media = Photo | Video
 `;
 

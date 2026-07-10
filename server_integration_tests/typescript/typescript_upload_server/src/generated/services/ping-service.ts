@@ -4,8 +4,8 @@
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
 
-import { GraphLinkContext } from '../context.js';
+
 
 export interface PingService {
-  ping(context: GraphLinkContext): Promise<boolean>;
+  ping(): Promise<boolean>;
 }
