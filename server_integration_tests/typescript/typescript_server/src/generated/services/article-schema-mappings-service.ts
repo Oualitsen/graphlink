@@ -4,10 +4,10 @@
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
 
-import { GraphLinkContext } from '../context.js';
 import { Article } from '../types/article.js';
 import { Author } from '../types/author.js';
 
 export interface ArticleSchemaMappingsService {
-  articleAuthor(item: Article, context: GraphLinkContext): Promise<Author>;
+  articleAuthor(value: Article): Promise<Author>;
+  articleAuthorList(value: Article): Promise<Author[] | null>;
 }

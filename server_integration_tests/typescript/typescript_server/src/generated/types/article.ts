@@ -4,27 +4,37 @@
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
 
-import { GLArticleProjection } from '../interfaces/glarticle-projection.js';
+import { ArticleType } from '../enums/article-type.js';
+import { WebSite } from '../types/web-site.js';
 
 
 export interface Article {
    readonly id: string;
    readonly title: string;
+   readonly type: ArticleType | null;
    readonly authorId: string;
+   readonly webSite: WebSite | null;
+   readonly published: boolean;
 }
 export namespace Article {
    export function toJson(obj: Article): Record<string, unknown> {
       return {
          "id": obj.id,
          "title": obj.title,
+         "type": obj.type != null ? ArticleType.toJson(obj.type) : null,
          "authorId": obj.authorId,
+         "webSite": obj.webSite != null ? WebSite.toJson(obj.webSite) : null,
+         "published": obj.published,
       };
    }
    export function fromJson(json: Record<string, unknown>): Article {
       return {
          id: json["id"] as string,
          title: json["title"] as string,
+         type: json["type"] != null ? ArticleType.fromJson(json["type"] as string) : null,
          authorId: json["authorId"] as string,
+         webSite: json["webSite"] != null ? WebSite.fromJson(json["webSite"] as Record<string, unknown>) : null,
+         published: json["published"] as boolean,
       };
    }
 }

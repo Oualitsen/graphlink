@@ -3,9 +3,10 @@ import { articles } from './data.js';
 
 export class DeleteArticleServiceImpl implements DeleteArticleService {
   async deleteArticle(id: string): Promise<boolean> {
-    const index = articles.findIndex((a) => a.id === id);
-    if (index === -1) return false;
-    articles.splice(index, 1);
-    return true;
+    const before = articles.length;
+    for (let i = articles.length - 1; i >= 0; i--) {
+      if (articles[i].id === id) articles.splice(i, 1);
+    }
+    return articles.length < before;
   }
 }

@@ -20,18 +20,18 @@ export function buildResolvers(
   return {
     Upload: GraphQLUpload,
     Query: {
-      ping: async (_, __, context) => {
-        return pingService.ping(context);
+      ping: async (_, __) => {
+        return pingService.ping();
       },
     },
     Mutation: {
-      uploadOneFile: async (_, { userId, file }, context) => {
+      uploadOneFile: async (_, { userId, file }) => {
         const _file = await file;
-        return uploadOneFileService.uploadOneFile(userId, _file, context);
+        return uploadOneFileService.uploadOneFile(userId, _file);
       },
-      uploadFileList: async (_, { userId, files }, context) => {
+      uploadFileList: async (_, { userId, files }) => {
         const _files = await Promise.all(files);
-        return uploadFileListService.uploadFileList(userId, _files, context);
+        return uploadFileListService.uploadFileList(userId, _files);
       },
     },
   };

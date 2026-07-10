@@ -16,20 +16,62 @@ import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHt
 import { GraphLinkContext } from './context.js';
 import { typeDefs } from './typeDefs.js';
 import { buildResolvers } from './resolvers/build-resolvers.js';
-import { AuthorService } from './services/author-service.js';
+import { CatalogService } from './services/catalog-service.js';
+import { FeedService } from './services/feed-service.js';
+import { StoreService } from './services/store-service.js';
+import { SearchResultService } from './services/search-result-service.js';
+import { ReservedFieldsService } from './services/reserved-fields-service.js';
+import { CollideService } from './services/collide-service.js';
+import { StatusService } from './services/status-service.js';
 import { ArticleService } from './services/article-service.js';
+import { MessageService } from './services/message-service.js';
+import { NestingService } from './services/nesting-service.js';
+import { AuthorService } from './services/author-service.js';
+import { ConfigService } from './services/config-service.js';
+import { RangeService } from './services/range-service.js';
+import { GreetService } from './services/greet-service.js';
+import { EchoPriorityService } from './services/echo-priority-service.js';
 import { DeleteArticleService } from './services/delete-article-service.js';
 import { BulkCreateService } from './services/bulk-create-service.js';
 import { BulkCreateGuard } from './guards/bulk-create-guard.js';
+import { AckPriorityService } from './services/ack-priority-service.js';
+import { CatalogSchemaMappingsService } from './services/catalog-schema-mappings-service.js';
+import { FeedSchemaMappingsService } from './services/feed-schema-mappings-service.js';
+import { StoreSchemaMappingsService } from './services/store-schema-mappings-service.js';
+import { ShelfSchemaMappingsService } from './services/shelf-schema-mappings-service.js';
+import { SearchResultSchemaMappingsService } from './services/search-result-schema-mappings-service.js';
+import { ArticleWithCountSchemaMappingsService } from './services/article-with-count-schema-mappings-service.js';
+import { MessageReadSchemaMappingsService } from './services/message-read-schema-mappings-service.js';
 import { AuthorSchemaMappingsService } from './services/author-schema-mappings-service.js';
 import { ArticleSchemaMappingsService } from './services/article-schema-mappings-service.js';
 
 export interface GraphLinkServices {
-   authorService: AuthorService;
+   catalogService: CatalogService;
+   feedService: FeedService;
+   storeService: StoreService;
+   searchResultService: SearchResultService;
+   reservedFieldsService: ReservedFieldsService;
+   collideService: CollideService;
+   statusService: StatusService;
    articleService: ArticleService;
+   messageService: MessageService;
+   nestingService: NestingService;
+   authorService: AuthorService;
+   configService: ConfigService;
+   rangeService: RangeService;
+   greetService: GreetService;
+   echoPriorityService: EchoPriorityService;
    deleteArticleService: DeleteArticleService;
    bulkCreateService: BulkCreateService;
    bulkCreateGuard: BulkCreateGuard;
+   ackPriorityService: AckPriorityService;
+   catalogSchemaMappingsService: CatalogSchemaMappingsService;
+   feedSchemaMappingsService: FeedSchemaMappingsService;
+   storeSchemaMappingsService: StoreSchemaMappingsService;
+   shelfSchemaMappingsService: ShelfSchemaMappingsService;
+   searchResultSchemaMappingsService: SearchResultSchemaMappingsService;
+   articleWithCountSchemaMappingsService: ArticleWithCountSchemaMappingsService;
+   messageReadSchemaMappingsService: MessageReadSchemaMappingsService;
    authorSchemaMappingsService: AuthorSchemaMappingsService;
    articleSchemaMappingsService: ArticleSchemaMappingsService;
    contextFactory?: (req: Request, res: Response) => GraphLinkContext | Promise<GraphLinkContext>;
@@ -42,7 +84,7 @@ export async function createServer(services: GraphLinkServices): Promise<Server>
 
    const schema = makeExecutableSchema({
       typeDefs,
-      resolvers: buildResolvers(services.authorService, services.articleService, services.deleteArticleService, services.bulkCreateService, services.authorSchemaMappingsService, services.articleSchemaMappingsService, services.bulkCreateGuard),
+      resolvers: buildResolvers(services.catalogService, services.feedService, services.storeService, services.searchResultService, services.reservedFieldsService, services.collideService, services.statusService, services.articleService, services.messageService, services.nestingService, services.authorService, services.configService, services.rangeService, services.greetService, services.echoPriorityService, services.deleteArticleService, services.bulkCreateService, services.ackPriorityService, services.catalogSchemaMappingsService, services.feedSchemaMappingsService, services.storeSchemaMappingsService, services.shelfSchemaMappingsService, services.searchResultSchemaMappingsService, services.articleWithCountSchemaMappingsService, services.messageReadSchemaMappingsService, services.authorSchemaMappingsService, services.articleSchemaMappingsService, services.bulkCreateGuard),
    });
    const httpServer = createHttpServer(app);
    const wsServer = new WebSocketServer({

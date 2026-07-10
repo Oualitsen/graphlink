@@ -133,13 +133,8 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       methods.add('${field.name}(${params.join(', ')}): $returnDecl;');
     }
 
-    for (final mapping in service.serviceMapping) {
-      methods.add(_serviceMappingMethod(mapping, importedTypes));
-    }
-
     final needsResolveInfoImport = apolloConfig.useResolveInfo;
-    final needsContextImport = service.fields.any(_injectsContext) ||
-        service.serviceMapping.any((m) => _injectsContext(m.field));
+    final needsContextImport = service.fields.any(_injectsContext);
 
     final imp = _imports(importedTypes);
     final lines = [
@@ -149,28 +144,6 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       if (imp.isNotEmpty) imp,
     ];
     return '${lines.join('\n')}\n\n${_interface(service.token, methods)}';
-  }
-
-  String _serviceMappingMethod(GLSchemaMapping mapping, Set<String> importedTypes) {
-    final parentName = mapping.type.token;
-    _addIfKnown(parentName, importedTypes);
-    final fieldTs = tsSerializer.serializeType(mapping.field.type);
-    _collectType(mapping.field.type, importedTypes);
-
-    if (mapping.isBatch) {
-      return '${mapping.key}(items: ${parentName}[]): Promise<Map<${parentName}, ${fieldTs}>>;';
-    }
-    final argParams = mapping.field.arguments.map((arg) {
-      _collectType(arg.type, importedTypes);
-      return '${arg.codeName}: ${tsSerializer.serializeType(arg.type)}';
-    });
-    final nonBatchParams = [
-      'item: ${parentName}',
-      ...argParams,
-      if (_injectsContext(mapping.field)) 'context: GraphLinkContext',
-      if (apolloConfig.useResolveInfo) 'info: GraphQLResolveInfo',
-    ];
-    return '${mapping.key}(${nonBatchParams.join(', ')}): Promise<${fieldTs}>;';
   }
 
   // ── guards/XxxGuard.ts ────────────────────────────────────────────────────
@@ -230,7 +203,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
   }
 
   String _loaderFactory(GLSchemaMapping mapping, String serviceName) {
-    final parentName = mapping.type.token;
+    final parentName = tsSerializer.resolveCodeName(mapping.type.token);
     final fieldTs = tsSerializer.serializeType(mapping.field.type);
     final factoryName = 'create${mapping.key.firstUp}Loader';
     final serviceVar = serviceName.firstLow;
@@ -470,15 +443,20 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
           final toJsonExpr = tsSerializer.callToJson('_r', m.field.type);
           buf.writeln('(parent) => ${m.key}Loader.load(parent).then((_r) => $toJsonExpr),');
         } else {
-          final argNames = m.field.arguments.map((a) => a.token).toList();
-          final argCodeNames =
-              m.field.arguments.map((a) => a.codeName).toList();
+          // The synthetic `value` arg is the parent source instance, not a
+          // GraphQL field argument — it is never destructured off `args`, and
+          // the resolver passes `parent` in its call slot.
+          final realArgs = m.field.arguments
+              .where((a) => !a.skipOnGraphqlSerialization)
+              .toList();
+          final argNames = realArgs.map((a) => a.token).toList();
+          final argCodeNames = realArgs.map((a) => a.codeName).toList();
           final argsDestructure = _argsDestructure(argNames, argCodeNames, '_');
           final needsInfo = apolloConfig.useResolveInfo;
           final ctx = _injectsContext(m.field);
           final mappingCallArgs = [
-            'parent',
-            ...argCodeNames,
+            ...m.field.arguments
+                .map((a) => a.skipOnGraphqlSerialization ? 'parent' : a.codeName),
             if (ctx) 'context',
             if (needsInfo) 'info',
           ].join(', ');
@@ -656,20 +634,23 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     return buf.toString();
   }
 
+  /// Resolves each collected wire token to its definition and delegates to the
+  /// TypeScript serializer's import logic, which routes interfaces/unions to
+  /// `../interfaces/`, types to `../types/`, and follows `@glSkipOnServer(mapTo:)`
+  /// to the mapped target (e.g. `ArticleWithCount` → `Article`). Deduplicated so
+  /// several mapped-away types collapsing onto one target import once.
   String _imports(Set<String> typeNames) {
+    final seen = <String>{};
     final lines = <String>[];
     for (final name in typeNames) {
-      String subdir;
-      if (grammar.types.containsKey(name) || grammar.interfaces.containsKey(name)) {
-        subdir = 'types';
-      } else if (grammar.inputs.containsKey(name)) {
-        subdir = 'inputs';
-      } else if (grammar.enums.containsKey(name)) {
-        subdir = 'enums';
-      } else {
-        continue;
-      }
-      lines.add("import { $name } from '../$subdir/${name.toKebabCase()}.js';");
+      final token = grammar.types[name] ??
+          grammar.interfaces[name] ??
+          grammar.inputs[name] ??
+          grammar.enums[name];
+      if (token == null) continue;
+      final line = tsSerializer.serializeImportToken(token);
+      if (line.isEmpty || !seen.add(line)) continue;
+      lines.add(line);
     }
     return lines.join('\n');
   }
@@ -677,6 +658,9 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
   void _collectType(GLType type, Set<String> out) {
     if (type is GLListType) {
       _collectType(type.inlineType, out);
+    } else if (type is GLMapType) {
+      _collectType(type.keyType, out);
+      _collectType(type.valueType, out);
     } else {
       _addIfKnown(type.token, out);
     }

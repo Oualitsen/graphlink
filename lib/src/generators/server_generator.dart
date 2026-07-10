@@ -335,6 +335,13 @@ Future<Set<String>> _generateExpressApolloClasses(
       typescriptSource: true,
     ));
   });
+  grammar.getSerializableInterfaces().forEach((def) {
+    futures.add(saveSource(
+      data: tsSerializer.serializeTypeDefinition(def),
+      path: '$destinationDir/interfaces/${tsSerializer.getFileNameFor(def)}',
+      typescriptSource: true,
+    ));
+  });
 
   grammar.services.forEach((_, service) {
     futures.add(saveSource(
