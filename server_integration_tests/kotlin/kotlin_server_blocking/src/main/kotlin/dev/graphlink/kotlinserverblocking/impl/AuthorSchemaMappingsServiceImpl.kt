@@ -1,6 +1,6 @@
 package dev.graphlink.kotlinserverblocking.impl
 
-import dev.graphlink.kotlinserverblocking.generated.interfaces.GlArticleProjection
+import dev.graphlink.kotlinserverblocking.generated.interfaces.Artcile
 import dev.graphlink.kotlinserverblocking.generated.services.AuthorSchemaMappingsService
 import dev.graphlink.kotlinserverblocking.generated.types.Article
 import dev.graphlink.kotlinserverblocking.generated.types.Author
@@ -13,8 +13,8 @@ class AuthorSchemaMappingsServiceImpl : AuthorSchemaMappingsService {
     override fun authorArticles(
         value: List<Author>,
         graphQLContext: GraphQLContext,
-    ): Map<Author, List<GlArticleProjection>?> {
-        val result = mutableMapOf<Author, List<GlArticleProjection>?>()
+    ): Map<Author, List<Artcile>?> {
+        val result = mutableMapOf<Author, List<Artcile>?>()
         for (author in value) {
             result[author] = Data.articles.filter { it.authorId == author.id }
         }

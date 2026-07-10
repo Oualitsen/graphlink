@@ -6,19 +6,17 @@
 // ignore_for_file:  camel_case_types, unused_import, non_constant_identifier_names, constant_identifier_names, override_on_non_overriding_member, unused_element, annotate_overrides
 
 package dev.graphlink.kotlinserverblocking.generated.services;
-import dev.graphlink.kotlinserverblocking.generated.interfaces.GlArticleProjection
 import dev.graphlink.kotlinserverblocking.generated.types.Article
 import dev.graphlink.kotlinserverblocking.generated.enums.ArticleType
 import dev.graphlink.kotlinserverblocking.generated.inputs.CreateArticleInput
 import dev.graphlink.kotlinserverblocking.generated.inputs.UpdateArticleInput
 import kotlinx.coroutines.flow.Flow
-import graphql.GraphQLContext
 
 
 interface ArticleService {
-   fun getProjectedArticle(graphQLContext: GraphQLContext): GlArticleProjection
+   fun getProjectedArticle(): Article
    fun getArticleWithCount(): Article?
-   fun getArticleInfo(graphQLContext: GraphQLContext): GlArticleProjection?
+   fun getArticleInfo(): Article?
    fun getArticle(id: String): Article
    fun listArticles(): List<Article>
    fun getArticleTypes(): List<ArticleType>

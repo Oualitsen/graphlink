@@ -7,10 +7,9 @@
 
 package dev.graphlink.kotlinserverblocking.generated.controllers;
 import dev.graphlink.kotlinserverblocking.generated.types.Author
-import dev.graphlink.kotlinserverblocking.generated.interfaces.GlArticleProjection
+import dev.graphlink.kotlinserverblocking.generated.types.Article
 import dev.graphlink.kotlinserverblocking.generated.services.AuthorSchemaMappingsService
 import org.springframework.stereotype.Controller
-import graphql.GraphQLContext
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
 import dev.graphlink.kotlinserverblocking.generated.security.SecurityCoroutineContext
@@ -24,10 +23,10 @@ class AuthorSchemaMappingsController(
     private val authorSchemaMappingsService: AuthorSchemaMappingsService,
 ) {
    @BatchMapping(typeName = "Author", field = "articles")
-   suspend fun articles(valueAsMap: List<Map<String, Any?>>, graphQLContext: GraphQLContext): Map<Map<String, Any?>, List<Map<String, Any?>>?> {
+   suspend fun articles(valueAsMap: List<Map<String, Any?>>): Map<Map<String, Any?>, List<Map<String, Any?>>?> {
       val value: List<Author> = (valueAsMap as List<*>).map { __gl_m0__ -> Author.fromJson(__gl_m0__ as Map<String, Any?>) }
       return withContext(Dispatchers.IO + SecurityCoroutineContext()) {
-         val __gl_serviceResult__: Map<Author, List<GlArticleProjection>?> = authorSchemaMappingsService.authorArticles(value, graphQLContext)
+         val __gl_serviceResult__: Map<Author, List<Article>?> = authorSchemaMappingsService.authorArticles(value)
          val result = mutableMapOf<Map<String, Any?>, List<Map<String, Any?>>?>()
          for (__gl_i__ in valueAsMap.indices) {
             result[valueAsMap[__gl_i__]] = __gl_serviceResult__[value[__gl_i__]]?.map { e0 -> e0.toJson() }

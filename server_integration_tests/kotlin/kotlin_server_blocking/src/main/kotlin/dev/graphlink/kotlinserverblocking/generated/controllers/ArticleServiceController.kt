@@ -15,7 +15,6 @@ import org.springframework.graphql.data.method.annotation.Argument
 import org.springframework.graphql.data.method.annotation.MutationMapping
 import org.springframework.graphql.data.method.annotation.SubscriptionMapping
 import kotlinx.coroutines.flow.Flow
-import graphql.GraphQLContext
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
 import dev.graphlink.kotlinserverblocking.generated.security.SecurityCoroutineContext
@@ -27,9 +26,9 @@ class ArticleServiceController(
     private val articleService: ArticleService,
 ) {
    @QueryMapping()
-   suspend fun getProjectedArticle(graphQLContext: GraphQLContext): Map<String, Any?> {
+   suspend fun getProjectedArticle(): Map<String, Any?> {
       return withContext(Dispatchers.IO + SecurityCoroutineContext()) {
-         articleService.getProjectedArticle(graphQLContext).toJson()
+         articleService.getProjectedArticle().toJson()
       }
    }
 
@@ -41,9 +40,9 @@ class ArticleServiceController(
    }
 
    @QueryMapping()
-   suspend fun getArticleInfo(graphQLContext: GraphQLContext): Map<String, Any?>? {
+   suspend fun getArticleInfo(): Map<String, Any?>? {
       return withContext(Dispatchers.IO + SecurityCoroutineContext()) {
-         articleService.getArticleInfo(graphQLContext)?.toJson()
+         articleService.getArticleInfo()?.toJson()
       }
    }
 
