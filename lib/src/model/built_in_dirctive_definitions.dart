@@ -127,6 +127,16 @@ const glCaptureErrors = "@glCaptureErrors";
 /// nullability reverts to all-nullable.
 const glServerLenient = "@glServerLenient";
 
+///
+/// Per-field opt-in to inject the request context into a resolver method.
+/// On a query/mutation/subscription field (or a @glSkipOnServer relation
+/// field), the generated service/controller method receives the target's
+/// request-context parameter (Spring `GraphQLContext`, Apollo `context`).
+/// Equivalent to enabling the global `injectContext` config for just that
+/// field; the two are OR'd together.
+///
+const glInjectContext = "@glInjectContext";
+
 
 var jspecifyNullable = '@Nullable';
 var jspecifyNonNull = '@NonNull';

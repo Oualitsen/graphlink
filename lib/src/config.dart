@@ -152,11 +152,17 @@ class ExpressApolloServerConfig extends ServerLanguageConfig {
   final bool generateEntryPoint;
   final bool useResolveInfo;
 
+  /// When `true`, every resolver/service method receives the `context`
+  /// parameter. When `false`, only methods whose field carries
+  /// `@glInjectContext` do. Mirrors `SpringServerConfigBase.injectContext`.
+  final bool injectContext;
+
   ExpressApolloServerConfig({
     this.port = 4000,
     this.graphqlPath = '/graphql',
     this.generateEntryPoint = true,
     this.useResolveInfo = false,
+    this.injectContext = false,
   });
 
   factory ExpressApolloServerConfig.fromJson(Map<String, dynamic> json) {
@@ -165,6 +171,7 @@ class ExpressApolloServerConfig extends ServerLanguageConfig {
       graphqlPath: (json['graphqlPath'] as String?) ?? '/graphql',
       generateEntryPoint: (json['generateEntryPoint'] as bool?) ?? true,
       useResolveInfo: (json['useResolveInfo'] as bool?) ?? false,
+      injectContext: (json['injectContext'] as bool?) ?? false,
     );
   }
 }
