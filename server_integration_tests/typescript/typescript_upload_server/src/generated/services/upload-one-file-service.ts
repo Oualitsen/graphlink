@@ -4,9 +4,8 @@
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
 
-import { GraphLinkContext } from '../context.js';
 import type { FileUpload } from '../file-upload.js';
 
 export interface UploadOneFileService {
-  uploadOneFile(userId: string, file: FileUpload, context: GraphLinkContext): Promise<boolean>;
+  uploadOneFile(userId: string, file: FileUpload): Promise<boolean>;
 }

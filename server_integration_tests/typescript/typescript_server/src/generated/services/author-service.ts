@@ -4,10 +4,9 @@
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
 
-import { GraphLinkContext } from '../context.js';
 import { Author } from '../types/author.js';
 
 export interface AuthorService {
-  getAuthor(id: string, context: GraphLinkContext): Promise<Author | null>;
-  listAuthors(context: GraphLinkContext): Promise<Author[]>;
+  getAuthor(id: string): Promise<Author | null>;
+  listAuthors(): Promise<Author[]>;
 }
