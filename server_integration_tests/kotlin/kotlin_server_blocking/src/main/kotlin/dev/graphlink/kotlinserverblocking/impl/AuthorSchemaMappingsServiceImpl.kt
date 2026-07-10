@@ -1,20 +1,18 @@
 package dev.graphlink.kotlinserverblocking.impl
 
-import dev.graphlink.kotlinserverblocking.generated.interfaces.Artcile
+
 import dev.graphlink.kotlinserverblocking.generated.services.AuthorSchemaMappingsService
 import dev.graphlink.kotlinserverblocking.generated.types.Article
 import dev.graphlink.kotlinserverblocking.generated.types.Author
-import graphql.GraphQLContext
 import org.springframework.stereotype.Service
 
 @Service
 class AuthorSchemaMappingsServiceImpl : AuthorSchemaMappingsService {
 
     override fun authorArticles(
-        value: List<Author>,
-        graphQLContext: GraphQLContext,
-    ): Map<Author, List<Artcile>?> {
-        val result = mutableMapOf<Author, List<Artcile>?>()
+        value: List<Author>
+    ): Map<Author, List<Article>?> {
+        val result = mutableMapOf<Author, List<Article>?>()
         for (author in value) {
             result[author] = Data.articles.filter { it.authorId == author.id }
         }
