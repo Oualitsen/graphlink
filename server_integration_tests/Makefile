@@ -1,37 +1,191 @@
-.PHONY: install generate start-server stop-server test ci typescript kotlin java java-reactive setup-client
+TS_PORT              = 9997
+JAVA_PORT             = 9996
+KOTLIN_BLOCKING_PORT  = 9994
+KOTLIN_SUSPEND_PORT   = 9995
 
+CLIENTS = dart ts java kotlin
+
+.PHONY: setup-client setup-all-clients \
+        typescript-install typescript-generate typescript-start-server typescript-stop-server \
+        typescript-test-client typescript ci-typescript-client \
+        upload-install upload-generate upload-start-server upload-stop-server ci-upload \
+        java-generate java-build java-start-server java-stop-server java-test-client \
+        java ci-java-client \
+        java-reactive-generate java-reactive-build java-reactive-start-server java-reactive-stop-server \
+        java-reactive ci-java-reactive-client \
+        kotlin-generate kotlin-build \
+        kotlin-blocking-start-server kotlin-blocking-stop-server \
+        kotlin-suspend-start-server kotlin-suspend-stop-server \
+        kotlin-test-client kotlin ci-kotlin-blocking-client ci-kotlin-suspend-client \
+        ci install generate start-server stop-server test
+
+# CLIENT must be one of: dart ts java kotlin
 setup-client:
-	$(MAKE) -C dart_client install
-	$(MAKE) -C dart_client generate
+	$(MAKE) -C clients/$(CLIENT)_client install
+	$(MAKE) -C clients/$(CLIENT)_client generate
 
-install:
-	$(MAKE) -C dart_client install
-	$(MAKE) -C typescript install
+setup-all-clients:
+	for c in $(CLIENTS); do $(MAKE) setup-client CLIENT=$$c; done
 
-generate:
-	$(MAKE) -C dart_client generate
-	$(MAKE) -C typescript generate
+# ---- TypeScript server (servers/typescript_server) ----
 
-start-server:
-	$(MAKE) -C typescript start-server
+typescript-install:
+	$(MAKE) -C servers/typescript_server install
 
-stop-server:
-	$(MAKE) -C typescript stop-server
+typescript-generate:
+	$(MAKE) -C servers/typescript_server generate
 
-test:
-	$(MAKE) -C typescript test
+typescript-start-server:
+	$(MAKE) -C servers/typescript_server start-server
 
-ci: setup-client
-	$(MAKE) -C typescript ci
+typescript-stop-server:
+	$(MAKE) -C servers/typescript_server stop-server
 
-typescript: setup-client
-	$(MAKE) -C typescript ci
+typescript-test-client:
+	$(MAKE) -C clients/$(CLIENT)_client test PORT=$(TS_PORT)
 
-kotlin: setup-client
-	$(MAKE) -C kotlin ci
+typescript: typescript-install typescript-generate typescript-start-server setup-all-clients
+	status=0; \
+	for c in $(CLIENTS); do $(MAKE) typescript-test-client CLIENT=$$c || status=1; done; \
+	$(MAKE) typescript-stop-server; \
+	exit $$status
 
-java: setup-client
-	$(MAKE) -C java ci
+# Single client x the TypeScript server, for CI matrix use.
+ci-typescript-client: typescript-install typescript-generate typescript-start-server
+	$(MAKE) setup-client CLIENT=$(CLIENT)
+	$(MAKE) typescript-test-client CLIENT=$(CLIENT) || ($(MAKE) typescript-stop-server && exit 1)
+	$(MAKE) typescript-stop-server
 
-java-reactive: setup-client
-	$(MAKE) -C java ci-reactive
+# ---- Upload suite (servers/typescript_upload_server + clients/dart_upload_client) ----
+# Orthogonal to the client x server matrix above: exercises file uploads with a
+# single dedicated Dart harness, not all four clients.
+
+upload-install:
+	$(MAKE) -C servers/typescript_upload_server install
+	$(MAKE) -C clients/dart_upload_client install
+
+upload-generate:
+	$(MAKE) -C servers/typescript_upload_server generate
+	$(MAKE) -C clients/dart_upload_client generate
+
+upload-start-server:
+	$(MAKE) -C servers/typescript_upload_server start-server
+
+upload-stop-server:
+	$(MAKE) -C servers/typescript_upload_server stop-server
+
+ci-upload: upload-install upload-generate upload-start-server
+	$(MAKE) -C clients/dart_upload_client test || ($(MAKE) upload-stop-server && exit 1)
+	$(MAKE) upload-stop-server
+
+# ---- Java server, MVC (servers/java_server) ----
+
+java-generate:
+	$(MAKE) -C servers/java_server generate
+
+java-build:
+	$(MAKE) -C servers/java_server build
+
+java-start-server:
+	$(MAKE) -C servers/java_server start-server
+
+java-stop-server:
+	$(MAKE) -C servers/java_server stop-server
+
+java-test-client:
+	$(MAKE) -C clients/$(CLIENT)_client test PORT=$(JAVA_PORT)
+
+java: java-generate java-build java-start-server setup-all-clients
+	status=0; \
+	for c in $(CLIENTS); do $(MAKE) java-test-client CLIENT=$$c || status=1; done; \
+	$(MAKE) java-stop-server; \
+	exit $$status
+
+# Single client x the Java MVC server, for CI matrix use.
+ci-java-client: java-generate java-build java-start-server
+	$(MAKE) setup-client CLIENT=$(CLIENT)
+	$(MAKE) java-test-client CLIENT=$(CLIENT) || ($(MAKE) java-stop-server && exit 1)
+	$(MAKE) java-stop-server
+
+# ---- Java server, reactive (servers/java_server_reactive) ----
+
+java-reactive-generate:
+	$(MAKE) -C servers/java_server_reactive generate
+
+java-reactive-build:
+	$(MAKE) -C servers/java_server_reactive build
+
+java-reactive-start-server:
+	$(MAKE) -C servers/java_server_reactive start-server
+
+java-reactive-stop-server:
+	$(MAKE) -C servers/java_server_reactive stop-server
+
+java-reactive: java-reactive-generate java-reactive-build java-reactive-start-server setup-all-clients
+	status=0; \
+	for c in $(CLIENTS); do $(MAKE) java-test-client CLIENT=$$c || status=1; done; \
+	$(MAKE) java-reactive-stop-server; \
+	exit $$status
+
+# Single client x the Java reactive server, for CI matrix use.
+ci-java-reactive-client: java-reactive-generate java-reactive-build java-reactive-start-server
+	$(MAKE) setup-client CLIENT=$(CLIENT)
+	$(MAKE) java-test-client CLIENT=$(CLIENT) || ($(MAKE) java-reactive-stop-server && exit 1)
+	$(MAKE) java-reactive-stop-server
+
+# ---- Kotlin servers, blocking + suspend (servers/kotlin_server_blocking, servers/kotlin_server_suspend) ----
+
+kotlin-generate:
+	$(MAKE) -C servers/kotlin_server_blocking generate
+	$(MAKE) -C servers/kotlin_server_suspend generate
+
+kotlin-build:
+	$(MAKE) -C servers/kotlin_server_blocking build
+	$(MAKE) -C servers/kotlin_server_suspend build
+
+kotlin-blocking-start-server:
+	$(MAKE) -C servers/kotlin_server_blocking start-server
+
+kotlin-blocking-stop-server:
+	$(MAKE) -C servers/kotlin_server_blocking stop-server
+
+kotlin-suspend-start-server:
+	$(MAKE) -C servers/kotlin_server_suspend start-server
+
+kotlin-suspend-stop-server:
+	$(MAKE) -C servers/kotlin_server_suspend stop-server
+
+kotlin-test-client:
+	$(MAKE) -C clients/$(CLIENT)_client test PORT=$(PORT)
+
+kotlin: kotlin-generate kotlin-build kotlin-blocking-start-server kotlin-suspend-start-server setup-all-clients
+	status=0; \
+	for c in $(CLIENTS); do \
+		$(MAKE) kotlin-test-client CLIENT=$$c PORT=$(KOTLIN_BLOCKING_PORT) || status=1; \
+		$(MAKE) kotlin-test-client CLIENT=$$c PORT=$(KOTLIN_SUSPEND_PORT) || status=1; \
+	done; \
+	$(MAKE) kotlin-blocking-stop-server; \
+	$(MAKE) kotlin-suspend-stop-server; \
+	exit $$status
+
+# Single client x the Kotlin blocking server, for CI matrix use.
+ci-kotlin-blocking-client: kotlin-generate kotlin-build kotlin-blocking-start-server
+	$(MAKE) setup-client CLIENT=$(CLIENT)
+	$(MAKE) kotlin-test-client CLIENT=$(CLIENT) PORT=$(KOTLIN_BLOCKING_PORT) || ($(MAKE) kotlin-blocking-stop-server && exit 1)
+	$(MAKE) kotlin-blocking-stop-server
+
+# Single client x the Kotlin suspend server, for CI matrix use.
+ci-kotlin-suspend-client: kotlin-generate kotlin-build kotlin-suspend-start-server
+	$(MAKE) setup-client CLIENT=$(CLIENT)
+	$(MAKE) kotlin-test-client CLIENT=$(CLIENT) PORT=$(KOTLIN_SUSPEND_PORT) || ($(MAKE) kotlin-suspend-stop-server && exit 1)
+	$(MAKE) kotlin-suspend-stop-server
+
+# ---- Aggregate targets (local dev convenience: full matrix in one process) ----
+
+install: typescript-install
+generate: typescript-generate
+start-server: typescript-start-server
+stop-server: typescript-stop-server
+test: typescript-test-client
+
+ci: typescript ci-upload

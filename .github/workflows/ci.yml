@@ -67,7 +67,41 @@ jobs:
           java-version: '21'
       - run: make ci
 
-  integration-tests-typescript-server:
+  # Full client x server matrix: each generated server target driven by each
+  # generated client harness. 5 servers x 4 clients = 20 independent jobs, each
+  # its own pass/fail check.
+  integration-tests-server-matrix:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        server: [typescript, kotlin-blocking, kotlin-suspend, java, java-reactive]
+        client: [dart, ts, java, kotlin]
+    defaults:
+      run:
+        working-directory: server_integration_tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Run ${{ matrix.client }} client against ${{ matrix.server }} server
+        run: |
+          case "${{ matrix.server }}" in
+            typescript)       make ci-typescript-client CLIENT=${{ matrix.client }} ;;
+            kotlin-blocking)  make ci-kotlin-blocking-client CLIENT=${{ matrix.client }} ;;
+            kotlin-suspend)   make ci-kotlin-suspend-client CLIENT=${{ matrix.client }} ;;
+            java)             make ci-java-client CLIENT=${{ matrix.client }} ;;
+            java-reactive)    make ci-java-reactive-client CLIENT=${{ matrix.client }} ;;
+          esac
+
+  # Upload-feature suite: a dedicated dart-only harness, orthogonal to the client x server matrix above.
+  integration-tests-typescript-upload:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -78,49 +112,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: make ci
-
-  integration-tests-kotlin-server:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: server_integration_tests
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dart-lang/setup-dart@v1
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-      - run: make kotlin
-
-  integration-tests-java-server:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: server_integration_tests
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dart-lang/setup-dart@v1
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-      - run: make java
-
-  integration-tests-java-server-reactive:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: server_integration_tests
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dart-lang/setup-dart@v1
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-      - run: make java-reactive
+      - run: make ci-upload
 
   build-spring-servers:
     runs-on: ubuntu-latest
@@ -220,18 +212,5 @@ jobs:
         with:
           name: spring-server-jars
           path: integration_tests
-      - run: make ci
-
-  integration-tests-typescript-server-real:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: server_integration_tests
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dart-lang/setup-dart@v1
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
       - run: make ci
 
