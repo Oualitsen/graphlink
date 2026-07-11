@@ -1,6 +1,5 @@
 package dev.graphlink.kotlinserversuspend.impl
 
-import dev.graphlink.kotlinserversuspend.generated.interfaces.Article
 import dev.graphlink.kotlinserversuspend.generated.services.AuthorSchemaMappingsService
 import dev.graphlink.kotlinserversuspend.generated.types.Article
 import dev.graphlink.kotlinserversuspend.generated.types.Author
@@ -12,7 +11,6 @@ class AuthorSchemaMappingsServiceImpl : AuthorSchemaMappingsService {
 
     override suspend fun authorArticles(
         value: List<Author>,
-        graphQLContext: GraphQLContext,
     ): Map<Author, List<Article>?> {
         val result = mutableMapOf<Author, List<Article>?>()
         for (author in value) {
