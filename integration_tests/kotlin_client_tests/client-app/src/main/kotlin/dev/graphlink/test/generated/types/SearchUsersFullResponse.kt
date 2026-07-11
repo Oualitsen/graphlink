@@ -16,11 +16,13 @@ data class SearchUsersFullResponse(
     val data: SearchUsersResponse? = null,
 ) : GraphLinkFullResponse {
    fun toJson(): Map<String, Any?> = mapOf(
+           "__typename" to "SearchUsersFullResponse",
            "errors" to errors?.map { e0 -> e0.toJson() },
            "data" to data?.toJson(),
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): SearchUsersFullResponse = SearchUsersFullResponse(
           errors = (map["errors"] as? List<*>)?.map { e0 -> GraphLinkError.fromJson(e0 as Map<String, Any?>) },
           data = (map["data"] as? Map<*, *>)?.let { SearchUsersResponse.fromJson(it as Map<String, Any?>) },

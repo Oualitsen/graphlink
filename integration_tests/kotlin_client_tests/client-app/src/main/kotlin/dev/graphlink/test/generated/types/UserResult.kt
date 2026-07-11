@@ -15,12 +15,14 @@ data class UserResult(
     val email: String,
 ) : SearchResult {
    override fun toJson(): Map<String, Any?> = mapOf(
+           "__typename" to "UserResult",
            "id" to id,
            "name" to name,
            "email" to email,
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): UserResult = UserResult(
           id = map["id"] as String,
           name = map["name"] as String,

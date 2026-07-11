@@ -17,6 +17,7 @@ data class TransferPostResponse(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): TransferPostResponse = TransferPostResponse(
           transferPost = Post.fromJson(map["transferPost"] as Map<String, Any?>),
       )

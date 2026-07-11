@@ -7,7 +7,7 @@ install:
 	npm install
 
 generate:
-	dart run ../../../lib/src/main.dart -c config.json
+	dart run ../../generate.dart
 
 typecheck:
 	npx tsc --noEmit

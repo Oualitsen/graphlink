@@ -9,7 +9,7 @@ remove-generated:
 	rm -rf client-app/src/main/kotlin/dev/graphlink/server/generated
 
 generate: remove-generated
-	dart run ../../../lib/src/main.dart -c config.json
+	dart run ../../generate.dart
 
 test:
 	cd client-app && SERVER_PORT=$(PORT) ./gradlew test

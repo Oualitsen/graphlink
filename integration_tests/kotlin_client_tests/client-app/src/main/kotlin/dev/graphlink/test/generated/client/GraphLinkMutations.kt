@@ -43,28 +43,28 @@ open class GraphLinkMutations(
    suspend fun createUser(input: CreateUserInput): CreateUserResponse {
       val glQuery__ = "mutation createUser(\$input: CreateUserInput!){createUser(input: \$input){..._all_fields_User}}"
       val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
-      val glVariables__ = mapOf("input" to input.toJson())
+      val glVariables__ = mapOf<String, Any?>("input" to input.toJson())
       val glDecodedResponse__ = executeData(glQuery__, glFragmentNames__, "createUser", glVariables__, { CreateUserFullResponse.fromJson(it) })
       return glDecodedResponse__.data!!
    }
    suspend fun deleteUser(id: String): DeleteUserResponse {
       val glQuery__ = "mutation deleteUser(\$id: ID!){deleteUser(id: \$id)}"
       val glFragmentNames__ = emptySet<String>()
-      val glVariables__ = mapOf("id" to id)
+      val glVariables__ = mapOf<String, Any?>("id" to id)
       val glDecodedResponse__ = executeData(glQuery__, glFragmentNames__, "deleteUser", glVariables__, { DeleteUserFullResponse.fromJson(it) })
       return glDecodedResponse__.data!!
    }
    suspend fun updateUser(id: String, input: UpdateUserInput): UpdateUserResponse {
       val glQuery__ = "mutation updateUser(\$id: ID!,\$input: UpdateUserInput!){updateUser(id: \$id,input: \$input){..._all_fields_User}}"
       val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
-      val glVariables__ = mapOf("id" to id, "input" to input.toJson())
+      val glVariables__ = mapOf<String, Any?>("id" to id, "input" to input.toJson())
       val glDecodedResponse__ = executeData(glQuery__, glFragmentNames__, "updateUser", glVariables__, { UpdateUserFullResponse.fromJson(it) })
       return glDecodedResponse__.data!!
    }
    suspend fun createCachedUser(input: CreateUserInput): CreateCachedUserResponse {
       val glQuery__ = "mutation createCachedUser(\$input: CreateUserInput!){createCachedUser(input: \$input){..._all_fields_User}}"
       val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
-      val glVariables__ = mapOf("input" to input.toJson())
+      val glVariables__ = mapOf<String, Any?>("input" to input.toJson())
       val glDecodedResponse__ = executeData(glQuery__, glFragmentNames__, "createCachedUser", glVariables__, { CreateCachedUserFullResponse.fromJson(it) })
       invalidateByTags(listOf("users"))
       return glDecodedResponse__.data!!
@@ -72,7 +72,7 @@ open class GraphLinkMutations(
    suspend fun transferPost(postId: String, newAuthorId: String): TransferPostResponse {
       val glQuery__ = "mutation transferPost(\$postId: ID!,\$newAuthorId: ID!){transferPost(postId: \$postId,newAuthorId: \$newAuthorId){..._all_fields_Post}}"
       val glFragmentNames__ = setOf("_all_fields_Post")
-      val glVariables__ = mapOf("postId" to postId, "newAuthorId" to newAuthorId)
+      val glVariables__ = mapOf<String, Any?>("postId" to postId, "newAuthorId" to newAuthorId)
       val glDecodedResponse__ = executeData(glQuery__, glFragmentNames__, "transferPost", glVariables__, { TransferPostFullResponse.fromJson(it) })
       invalidateByTags(listOf("users", "posts"))
       return glDecodedResponse__.data!!
@@ -88,7 +88,7 @@ open class GraphLinkMutations(
    suspend fun createUserOrErrors(input: CreateUserInput): CreateUserOrErrorsFullResponse {
       val glQuery__ = "mutation createUserOrErrors(\$input: CreateUserInput!){createUserOrErrors(input: \$input){..._all_fields_User}}"
       val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
-      val glVariables__ = mapOf("input" to input.toJson())
+      val glVariables__ = mapOf<String, Any?>("input" to input.toJson())
       val glDecodedResponse__ = executeFull(glQuery__, glFragmentNames__, "createUserOrErrors", glVariables__, { CreateUserOrErrorsFullResponse.fromJson(it) })
       return glDecodedResponse__
    }

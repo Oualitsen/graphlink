@@ -17,6 +17,7 @@ data class UploadFileListResponse(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): UploadFileListResponse = UploadFileListResponse(
           uploadFileList = User.fromJson(map["uploadFileList"] as Map<String, Any?>),
       )

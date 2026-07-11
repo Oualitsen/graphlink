@@ -11,11 +11,22 @@ package dev.graphlink.test.generated.enums;
 enum class Priority {
    LOW, MEDIUM, HIGH, CRITICAL;
 
-   companion object {
-      fun fromJson(value: String?): Priority? = value?.let { valueOf(it) }
+   fun toJson(): String = when (this) {
+      LOW -> "LOW"
+      MEDIUM -> "MEDIUM"
+      HIGH -> "HIGH"
+      CRITICAL -> "CRITICAL"
    }
 
-   fun toJson(): String = name
+   companion object {
+      fun fromJson(value: String): Priority = when (value) {
+         "LOW" -> Priority.LOW
+         "MEDIUM" -> Priority.MEDIUM
+         "HIGH" -> Priority.HIGH
+         "CRITICAL" -> Priority.CRITICAL
+         else -> throw IllegalArgumentException("Invalid Priority: $value")
+      }
+   }
 }
 
 

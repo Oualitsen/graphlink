@@ -23,6 +23,7 @@ data class GraphLinkError(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): GraphLinkError = GraphLinkError(
           message = map["message"] as String,
           path = (map["path"] as? List<*>)?.map { e0 -> e0 as Any },

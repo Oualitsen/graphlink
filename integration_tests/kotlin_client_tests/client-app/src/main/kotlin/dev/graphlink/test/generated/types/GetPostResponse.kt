@@ -17,6 +17,7 @@ data class GetPostResponse(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): GetPostResponse = GetPostResponse(
           getPost = Post.fromJson(map["getPost"] as Map<String, Any?>),
       )

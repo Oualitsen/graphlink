@@ -7,7 +7,7 @@ install:
 	npm install
 
 generate:
-	dart run lib/generate.dart
+	dart run ../../generate.dart
 
 # --no-file-parallelism: articleCreated has no id filter, so parallel test files
 # racing createArticle mutations against the same subscription can deliver the

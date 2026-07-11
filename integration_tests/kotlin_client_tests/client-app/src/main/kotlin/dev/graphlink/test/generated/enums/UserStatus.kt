@@ -11,11 +11,20 @@ package dev.graphlink.test.generated.enums;
 enum class UserStatus {
    ACTIVE, INACTIVE, SUSPENDED;
 
-   companion object {
-      fun fromJson(value: String?): UserStatus? = value?.let { valueOf(it) }
+   fun toJson(): String = when (this) {
+      ACTIVE -> "ACTIVE"
+      INACTIVE -> "INACTIVE"
+      SUSPENDED -> "SUSPENDED"
    }
 
-   fun toJson(): String = name
+   companion object {
+      fun fromJson(value: String): UserStatus = when (value) {
+         "ACTIVE" -> UserStatus.ACTIVE
+         "INACTIVE" -> UserStatus.INACTIVE
+         "SUSPENDED" -> UserStatus.SUSPENDED
+         else -> throw IllegalArgumentException("Invalid UserStatus: $value")
+      }
+   }
 }
 
 

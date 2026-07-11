@@ -17,6 +17,7 @@ data class GetCachedUserResponse(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): GetCachedUserResponse = GetCachedUserResponse(
           getCachedUser = User.fromJson(map["getCachedUser"] as Map<String, Any?>),
       )

@@ -4,7 +4,7 @@ install:
 	dart pub get
 
 generate:
-	dart run lib/generate.dart
+	dart run ../../generate.dart
 
 test:
 	dart test -j 1

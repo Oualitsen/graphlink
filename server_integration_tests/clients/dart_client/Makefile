@@ -6,7 +6,7 @@ install:
 	dart pub get
 
 generate:
-	dart run lib/generate.dart
+	dart run ../../generate.dart
 
 test:
 	SERVER_PORT=$(PORT) dart test -j 1

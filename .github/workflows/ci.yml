@@ -15,18 +15,42 @@ jobs:
       - run: dart pub get
       - run: dart test
 
+  # Generate every integration_tests client exactly once, then hand the result
+  # to the client jobs below via artifact. Runs in parallel with every other
+  # top-level job (no `needs` on anything).
+  integration-tests-generate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: integration_tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - run: make clean-all generate-all
+      - uses: actions/upload-artifact@v4
+        with:
+          name: integration-tests-generated
+          retention-days: 1
+          path: integration_tests
+
   integration-tests-dart-client:
     runs-on: ubuntu-latest
+    needs: integration-tests-generate
     defaults:
       run:
         working-directory: integration_tests/dart_client_tests
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
-      - run: make ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: integration-tests-generated
+          path: integration_tests
+      - run: make ci-no-generate
 
   integration-tests-typescript-client:
     runs-on: ubuntu-latest
+    needs: integration-tests-generate
     defaults:
       run:
         working-directory: integration_tests/typescript_client_tests
@@ -36,11 +60,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: integration-tests-generated
+          path: integration_tests
       - run: make install
-      - run: make ci
+      - run: make ci-no-generate
 
   integration-tests-java-client:
     runs-on: ubuntu-latest
+    needs: integration-tests-generate
     defaults:
       run:
         working-directory: integration_tests/java_client_tests
@@ -51,10 +80,15 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - run: make ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: integration-tests-generated
+          path: integration_tests
+      - run: make ci-no-generate
 
   integration-tests-kotlin-client:
     runs-on: ubuntu-latest
+    needs: integration-tests-generate
     defaults:
       run:
         working-directory: integration_tests/kotlin_client_tests
@@ -65,13 +99,36 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - run: make ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: integration-tests-generated
+          path: integration_tests
+      - run: make ci-no-generate
+
+  # Generate every server_integration_tests client/server exactly once, then hand
+  # the result to the matrix + upload jobs below via artifact. Runs in parallel
+  # with every other top-level job (no `needs` on anything).
+  server-integration-tests-generate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server_integration_tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - run: make clean-all generate-all
+      - uses: actions/upload-artifact@v4
+        with:
+          name: server-integration-tests-generated
+          retention-days: 1
+          path: server_integration_tests
 
   # Full client x server matrix: each generated server target driven by each
   # generated client harness. 5 servers x 4 clients = 20 independent jobs, each
   # its own pass/fail check.
   integration-tests-server-matrix:
     runs-on: ubuntu-latest
+    needs: server-integration-tests-generate
     strategy:
       fail-fast: false
       matrix:
@@ -90,6 +147,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - uses: actions/download-artifact@v4
+        with:
+          name: server-integration-tests-generated
+          path: server_integration_tests
       - name: Run ${{ matrix.client }} client against ${{ matrix.server }} server
         run: |
           case "${{ matrix.server }}" in
@@ -103,6 +164,7 @@ jobs:
   # Upload-feature suite: a dedicated dart-only harness, orthogonal to the client x server matrix above.
   integration-tests-typescript-upload:
     runs-on: ubuntu-latest
+    needs: server-integration-tests-generate
     defaults:
       run:
         working-directory: server_integration_tests
@@ -112,6 +174,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: server-integration-tests-generated
+          path: server_integration_tests
       - run: make ci-upload
 
   build-spring-servers:
@@ -136,7 +202,7 @@ jobs:
 
   integration-tests-dart-real:
     runs-on: ubuntu-latest
-    needs: build-spring-servers
+    needs: [build-spring-servers, integration-tests-generate]
     defaults:
       run:
         working-directory: integration_tests/dart_client_tests_real
@@ -149,13 +215,17 @@ jobs:
           java-version: '21'
       - uses: actions/download-artifact@v4
         with:
+          name: integration-tests-generated
+          path: integration_tests
+      - uses: actions/download-artifact@v4
+        with:
           name: spring-server-jars
           path: integration_tests
-      - run: make ci
+      - run: make ci-no-generate
 
   integration-tests-typescript-real:
     runs-on: ubuntu-latest
-    needs: build-spring-servers
+    needs: [build-spring-servers, integration-tests-generate]
     defaults:
       run:
         working-directory: integration_tests/typescript_client_tests_real
@@ -171,14 +241,18 @@ jobs:
           node-version: '22'
       - uses: actions/download-artifact@v4
         with:
+          name: integration-tests-generated
+          path: integration_tests
+      - uses: actions/download-artifact@v4
+        with:
           name: spring-server-jars
           path: integration_tests
       - run: make install
-      - run: make ci
+      - run: make ci-no-generate
 
   integration-tests-java-real:
     runs-on: ubuntu-latest
-    needs: build-spring-servers
+    needs: [build-spring-servers, integration-tests-generate]
     defaults:
       run:
         working-directory: integration_tests/java_client_tests_real
@@ -191,13 +265,17 @@ jobs:
           java-version: '21'
       - uses: actions/download-artifact@v4
         with:
+          name: integration-tests-generated
+          path: integration_tests
+      - uses: actions/download-artifact@v4
+        with:
           name: spring-server-jars
           path: integration_tests
-      - run: make ci
+      - run: make ci-no-generate
 
   integration-tests-kotlin-real:
     runs-on: ubuntu-latest
-    needs: build-spring-servers
+    needs: [build-spring-servers, integration-tests-generate]
     defaults:
       run:
         working-directory: integration_tests/kotlin_client_tests_real
@@ -210,7 +288,11 @@ jobs:
           java-version: '21'
       - uses: actions/download-artifact@v4
         with:
+          name: integration-tests-generated
+          path: integration_tests
+      - uses: actions/download-artifact@v4
+        with:
           name: spring-server-jars
           path: integration_tests
-      - run: make ci
+      - run: make ci-no-generate
 

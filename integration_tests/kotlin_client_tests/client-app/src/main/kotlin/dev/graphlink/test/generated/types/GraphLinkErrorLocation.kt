@@ -18,6 +18,7 @@ data class GraphLinkErrorLocation(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): GraphLinkErrorLocation = GraphLinkErrorLocation(
           line = (map["line"] as Number).toInt(),
           column = (map["column"] as Number).toInt(),

@@ -6,7 +6,7 @@ FIXTURES := $(abspath ../../fixtures.json)
 .PHONY: generate build start-server start-server-sync stop-server ci
 
 generate: clear-generated-files
-	dart run ../../../lib/src/main.dart -c config.json
+	dart run ../../generate.dart
 
 build:
 	./gradlew build -x test
