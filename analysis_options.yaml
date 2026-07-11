@@ -12,6 +12,9 @@ include: package:flutter_lints/flutter.yaml
 analyzer:
   exclude:
     - examples/**
+    - example/**
+    - integration_tests/**
+    - server_integration_tests/**
 
 formatter: 
   page_width: 150
