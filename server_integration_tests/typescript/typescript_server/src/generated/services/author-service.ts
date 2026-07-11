@@ -4,9 +4,11 @@
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
 
+import { GraphLinkContext } from '../context.js';
+import { GraphQLResolveInfo } from 'graphql';
 import { Author } from '../types/author.js';
 
 export interface AuthorService {
-   getAuthor(id: string): Promise<Author | null>;
-   listAuthors(): Promise<Author[]>;
+   getAuthor(id: string, context: GraphLinkContext, info: GraphQLResolveInfo): Promise<Author | null>;
+   listAuthors(context: GraphLinkContext, info: GraphQLResolveInfo): Promise<Author[]>;
 }

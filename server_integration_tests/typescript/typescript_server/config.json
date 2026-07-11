@@ -15,7 +15,8 @@
       "port": 9997,
       "graphqlPath": "/graphql",
       "generateEntryPoint": true,
-      "useResolveInfo": false
+      "useResolveInfo": true,
+      "injectContext": true
     }
   }
 }

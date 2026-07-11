@@ -44,6 +44,8 @@ import { ArticleWithCountSchemaMappingsService } from './services/article-with-c
 import { MessageReadSchemaMappingsService } from './services/message-read-schema-mappings-service.js';
 import { AuthorSchemaMappingsService } from './services/author-schema-mappings-service.js';
 import { ArticleSchemaMappingsService } from './services/article-schema-mappings-service.js';
+import { createMessageReadReadLoader } from './loaders/message-read-schema-mappings-loaders.js';
+import { createAuthorArticlesLoader } from './loaders/author-schema-mappings-loaders.js';
 
 export interface GraphLinkServices {
    catalogService: CatalogService;
@@ -77,6 +79,13 @@ export interface GraphLinkServices {
    contextFactory?: (req: Request, res: Response) => GraphLinkContext | Promise<GraphLinkContext>;
 }
 
+function createLoaders(services: GraphLinkServices, context: GraphLinkContext) {
+   return {
+      messageReadRead: createMessageReadReadLoader(services.messageReadSchemaMappingsService, context),
+      authorArticles: createAuthorArticlesLoader(services.authorSchemaMappingsService, context),
+   };
+}
+
 export async function createServer(services: GraphLinkServices): Promise<Server> {
    const app = express();
    app.use(cors());
@@ -91,7 +100,11 @@ export async function createServer(services: GraphLinkServices): Promise<Server>
       server: httpServer,
       path: '/graphql',
    });
-   const cleanup = useServer({ schema }, wsServer as any);
+   const cleanup = useServer({ schema, context: () => {
+      const context = {} as GraphLinkContext;
+      context.loaders = createLoaders(services, context);
+      return context;
+   } }, wsServer as any);
 
    const server = new ApolloServer<GraphLinkContext>({
       schema,
@@ -111,7 +124,11 @@ export async function createServer(services: GraphLinkServices): Promise<Server>
 
    await server.start();
    app.use('/graphql', expressMiddleware(server, {
-      context: async ({ req, res }) => services.contextFactory ? services.contextFactory(req, res) : {} as GraphLinkContext,
+      context: async ({ req, res }) => {
+         const context: GraphLinkContext = services.contextFactory ? await services.contextFactory(req, res) : {} as GraphLinkContext;
+         context.loaders = createLoaders(services, context);
+         return context;
+      },
    }));
    return httpServer;
 }
