@@ -300,6 +300,26 @@ class TypeScriptCodeGenUtils implements CodeGenUtilsBase {
   /// Generates an `export const name = value;` statement.
   String exportConst(String name, String value) => "export const $name = $value;";
 
+  /// Generates a multi-line array literal, one element per line with trailing
+  /// commas (mirrors [block], but wraps in `[ ]` instead of `{ }`). Multi-line
+  /// elements are indented as a whole.
+  ///
+  /// ```typescript
+  /// [
+  ///   a,
+  ///   b,
+  /// ]
+  /// ```
+  String arrayLiteral(List<String> elements) {
+    var buffer = StringBuffer();
+    buffer.writeln("[");
+    for (final e in elements) {
+      buffer.writeln('$e,'.ident());
+    }
+    buffer.write("]");
+    return buffer.toString();
+  }
+
   /// Wraps [statements] in an immediately-invoked function expression:
   /// `(async () => { ...statements })();` (or non-async if `async: false`).
   String iife(List<String> statements, {bool async = true}) =>

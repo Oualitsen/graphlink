@@ -7,6 +7,6 @@
 import { Author } from '../types/author.js';
 
 export interface AuthorService {
-  getAuthor(id: string): Promise<Author | null>;
-  listAuthors(): Promise<Author[]>;
+   getAuthor(id: string): Promise<Author | null>;
+   listAuthors(): Promise<Author[]>;
 }

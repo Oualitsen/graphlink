@@ -96,23 +96,22 @@ export async function createServer(services: GraphLinkServices): Promise<Server>
    const server = new ApolloServer<GraphLinkContext>({
       schema,
       plugins: [
-        ApolloServerPluginDrainHttpServer({ httpServer }),
-        {
-          async serverWillStart() {
-            return {
-              async drainServer() {
-                await cleanup.dispose();
-              },
-            };
-          },
-        },
+         ApolloServerPluginDrainHttpServer({ httpServer }),
+         {
+            async serverWillStart() {
+               return {
+                  async drainServer() {
+                     await cleanup.dispose();
+                  },
+               };
+            },
+         },
       ],
    });
 
    await server.start();
    app.use('/graphql', expressMiddleware(server, {
-     context: async ({ req, res }) =>
-       services.contextFactory ? services.contextFactory(req, res) : {} as GraphLinkContext,
+      context: async ({ req, res }) => services.contextFactory ? services.contextFactory(req, res) : {} as GraphLinkContext,
    }));
    return httpServer;
 }

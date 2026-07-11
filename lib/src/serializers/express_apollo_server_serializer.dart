@@ -8,6 +8,7 @@ import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_service.dart';
 import 'package:graphlink/src/model/gl_schema_mapping.dart';
 import 'package:graphlink/src/model/gl_type.dart';
+import 'package:graphlink/src/serializers/express_apollo_server_constants.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 import 'package:graphlink/src/serializers/typescript_serializer.dart';
 import 'package:graphlink/src/typescript_code_gen_utils.dart';
@@ -22,39 +23,14 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
 
   // ── uploads ───────────────────────────────────────────────────────────────
 
-  String serializeFileUploadType() => [
-    'export interface FileUpload {',
-    '  filename: string;',
-    '  mimetype: string;',
-    '  encoding: string;',
-    '  createReadStream(): NodeJS.ReadableStream;',
-    '}',
-    '',
-  ].join('\n');
+  String serializeFileUploadType() => fileUploadType;
 
-  String serializeGraphqlUploadDeclarations() => [
-    "declare module 'graphql-upload/GraphQLUpload.mjs' {",
-    "  import { GraphQLScalarType } from 'graphql';",
-    '  const GraphQLUpload: GraphQLScalarType;',
-    '  export default GraphQLUpload;',
-    '}',
-    '',
-    "declare module 'graphql-upload/graphqlUploadExpress.mjs' {",
-    "  import { RequestHandler } from 'express';",
-    '  function graphqlUploadExpress(options?: {',
-    '    maxFileSize?: number;',
-    '    maxFiles?: number;',
-    '  }): RequestHandler;',
-    '  export default graphqlUploadExpress;',
-    '}',
-    '',
-  ].join('\n');
+  String serializeGraphqlUploadDeclarations() => graphqlUploadDeclarations;
 
   // ── context.ts ────────────────────────────────────────────────────────────
 
   @override
-  String serializeContext() =>
-      'export interface GraphLinkContext extends Record<string, unknown> {}\n';
+  String serializeContext() => graphLinkContextInterface;
 
   // ── impl/my-context.ts stub (written once) ────────────────────────────────
 
@@ -143,7 +119,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       if (hasUpload) "import type { FileUpload } from '../file-upload.js';",
       if (imp.isNotEmpty) imp,
     ];
-    return '${lines.join('\n')}\n\n${_interface(service.token, methods)}';
+    return '${lines.join('\n')}\n\n${_cg.createInterface(interfaceName: service.token, fields: methods)}';
   }
 
   // ── guards/XxxGuard.ts ────────────────────────────────────────────────────
@@ -173,7 +149,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       if (resolveInfoImport.isNotEmpty) resolveInfoImport,
       if (imp.isNotEmpty) imp,
     ];
-    return '${lines.join('\n')}\n\n${_interface(_guardName(service), methods)}';
+    return '${lines.join('\n')}\n\n${_cg.createInterface(interfaceName: _guardName(service), fields: methods)}';
   }
 
   // ── loaders/XxxLoaders.ts ─────────────────────────────────────────────────
@@ -208,13 +184,40 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     final factoryName = 'create${mapping.key.firstUp}Loader';
     final serviceVar = serviceName.firstLow;
 
-    return '''export function $factoryName($serviceVar: $serviceName) {
-  return new DataLoader<$parentName, $fieldTs>(async (items) => {
-    const map = await $serviceVar.${mapping.key}([...items]);
-    return items.map(v => map.get(v) ?? new Error(`$fieldTs not found for ${parentName.firstLow} \${(v as any).id}`));
-  });
-}
-''';
+    final String mapCallback;
+    if (mapping.field.type.nullable) {
+      // A nullable batch field legitimately resolves to null when the service
+      // has no entry for a parent.
+      mapCallback = 'v => map.get(v) ?? null';
+    } else {
+      // A non-nullable field requires a value per key. Returning an Error (not
+      // throwing) rejects only this key's promise, not the whole batch. Keep the
+      // client-facing message generic and log the full parent object server-side.
+      final callbackBody = _cg.block([
+        'const r = map.get(v);',
+        _cg.ifStatement(
+          condition: 'r == null',
+          ifBlockStatements: [
+            "console.error('${mapping.key}: no result for', v);",
+            "return new Error('${mapping.key} resolution failed');",
+          ],
+        ),
+        'return r;',
+      ]);
+      mapCallback = 'v => $callbackBody';
+    }
+    final loaderBody = _cg.block([
+      'const map = await $serviceVar.${mapping.key}([...items]);',
+      'return items.map($mapCallback);',
+    ]);
+    return '${_cg.createFunction(
+      functionName: factoryName,
+      arguments: ['$serviceVar: $serviceName'],
+      exported: true,
+      statements: [
+        'return new DataLoader<$parentName, $fieldTs>(async (items) => $loaderBody);',
+      ],
+    )}\n';
   }
 
   // ── resolvers/buildResolvers.ts ───────────────────────────────────────────
@@ -224,16 +227,6 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
 
   String _serializeResolvers() {
     final services = grammar.services.values.toList();
-    final buf = StringBuffer();
-
-    buf.writeln("import { IResolvers } from '@graphql-tools/utils';");
-    final needsResolveInfo = apolloConfig.useResolveInfo;
-    final graphqlImports = needsResolveInfo ? 'GraphQLError, GraphQLResolveInfo' : 'GraphQLError';
-    buf.writeln("import { $graphqlImports } from 'graphql';");
-    buf.writeln("import { GraphLinkContext } from '../context.js';");
-    if (hasUploads) {
-      buf.writeln("import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';");
-    }
 
     // collect types referenced via callToJson (projectable types + enums)
     final resolverTypes = <String>{};
@@ -246,58 +239,61 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       }
     }
     final resolverTypeImports = _imports(resolverTypes);
-    if (resolverTypeImports.isNotEmpty) buf.writeln(resolverTypeImports);
 
-    // service + guard imports (guard only if service has @glValidate fields)
-    for (final service in services) {
-      buf.writeln("import { ${service.token} } from '../services/${_kebabJs(service.token)}';");
-      if (_hasGuard(service)) {
-        final guard = _guardName(service);
-        buf.writeln("import { $guard } from '../guards/${_kebabJs(guard)}';");
-      }
-    }
+    final imports = <String>[
+      "import { IResolvers } from '@graphql-tools/utils';",
+      "import { ${apolloConfig.useResolveInfo ? 'GraphQLError, GraphQLResolveInfo' : 'GraphQLError'} } from 'graphql';",
+      "import { GraphLinkContext } from '../context.js';",
+      if (hasUploads) "import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';",
+      if (resolverTypeImports.isNotEmpty) resolverTypeImports,
+      // service + guard imports (guard only if service has @glValidate fields)
+      for (final service in services) ...[
+        "import { ${service.token} } from '../services/${_kebabJs(service.token)}';",
+        if (_hasGuard(service)) "import { ${_guardName(service)} } from '../guards/${_kebabJs(_guardName(service))}';",
+      ],
+      // loader imports
+      for (final service in services)
+        for (final m in service.mappings.where((m) => m.isBatch))
+          "import { create${m.key.firstUp}Loader } from '../loaders/${_loaderFileJs(service)}';",
+    ];
 
-    // loader imports
-    for (final service in services) {
-      final batchMappings = service.mappings.where((m) => m.isBatch).toList();
-      if (batchMappings.isEmpty) continue;
-      final loaderFile = _loaderFileJs(service);
-      for (final m in batchMappings) {
-        buf.writeln("import { create${m.key.firstUp}Loader } from '../loaders/$loaderFile';");
-      }
-    }
+    // buildResolvers params: required services first, guards last.
+    final params = <String>[
+      for (final service in services) '${service.token.firstLow}: ${service.token}',
+      for (final service in services)
+        if (_hasGuard(service)) '${_guardName(service).firstLow}: ${_guardName(service)}',
+    ];
 
-    buf.writeln();
-    buf.write('export function buildResolvers(\n');
-    // required service params first
-    for (final service in services) {
-      buf.writeln('  ${service.token.firstLow}: ${service.token},');
-    }
-    for (final service in services) {
-      if (_hasGuard(service)) {
-        final guard = _guardName(service);
-        buf.writeln('  ${guard.firstLow}: $guard,');
-      }
-    }
-    buf.writeln('): IResolvers {');
+    // DataLoader instances, created once per buildResolvers call.
+    final loaderConsts = <String>[
+      for (final service in services)
+        for (final m in service.mappings.where((m) => m.isBatch))
+          'const ${m.key}Loader = create${m.key.firstUp}Loader(${service.token.firstLow});',
+    ];
 
-    for (final service in services) {
-      for (final m in service.mappings.where((m) => m.isBatch)) {
-        buf.writeln('  const ${m.key}Loader = create${m.key.firstUp}Loader(${service.token.firstLow});');
-      }
-    }
+    final query = _serializeRootBlock(services, GLQueryType.query, 'Query');
+    final mutation = _serializeRootBlock(services, GLQueryType.mutation, 'Mutation');
+    final subscription = _serializeSubscriptionBlock(services);
+    final resolverMap = [
+      for (final name in grammar.uploadScalarNames) '$name: GraphQLUpload',
+      if (query != null) query,
+      if (mutation != null) mutation,
+      if (subscription != null) subscription,
+      ..._serializeTypeMappings(services),
+    ].map((e) => '$e,').toList();
 
-    buf.writeln('  return {');
-    for (final name in grammar.uploadScalarNames) {
-      buf.writeln('    $name: GraphQLUpload,');
-    }
-    _writeRootBlock(buf, services, GLQueryType.query, 'Query');
-    _writeRootBlock(buf, services, GLQueryType.mutation, 'Mutation');
-    _writeSubscriptionBlock(buf, services);
-    _writeTypeMappings(buf, services);
-    buf.writeln('  };');
-    buf.writeln('}');
-    return buf.toString();
+    final buildResolvers = _cg.createFunction(
+      functionName: 'buildResolvers',
+      arguments: params,
+      returnType: 'IResolvers',
+      exported: true,
+      statements: [
+        ...loaderConsts,
+        'return ${_cg.block(resolverMap)};',
+      ],
+    );
+
+    return '${imports.join('\n')}\n\n$buildResolvers\n';
   }
 
   bool _hasGuard(GLService service) => service.fields.any(fieldHasValidation);
@@ -318,7 +314,16 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     return '{ ${parts.join(', ')} }';
   }
 
-  void _writeRootBlock(StringBuffer buf, List<GLService> services, GLQueryType type, String block) {
+  /// Builds a resolver-map entry `fieldName: <value>,`. With [signature],
+  /// [bodyStatements] become an `async (…) => { … }` function body; without it,
+  /// they become an object literal (e.g. a subscription's `{ subscribe, resolve }`).
+  String _entry(String fieldName, List<String> bodyStatements, {String? signature}) {
+    final block = _cg.block(bodyStatements);
+    final value = signature != null ? 'async $signature => $block' : block;
+    return '$fieldName: $value,';
+  }
+
+  String? _serializeRootBlock(List<GLService> services, GLQueryType type, String blockName) {
     final entries = <_RootEntry>[];
     for (final service in services) {
       for (final field in service.fields) {
@@ -336,9 +341,9 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
         ));
       }
     }
-    if (entries.isEmpty) return;
+    if (entries.isEmpty) return null;
 
-    buf.writeln('    $block: {');
+    final fieldEntries = <String>[];
     for (final e in entries) {
       final sVar = e.service.token.firstLow;
       final gVar = _guardName(e.service).firstLow;
@@ -376,16 +381,16 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
           : null;
       final resolverSignature = _resolverSignature('_', argsDestructure, e.contextInjected, e.needsInfo);
 
-      buf.writeln('      ${e.fieldName}: async $resolverSignature => {');
-      for (final line in uploadAwaitLines) { buf.writeln('        $line'); }
-      if (validateCall != null) buf.writeln('        $validateCall');
-      buf.writeln('        return $returnExpr;');
-      buf.writeln('      },');
+      fieldEntries.add(_entry(e.fieldName, [
+        ...uploadAwaitLines,
+        if (validateCall != null) validateCall,
+        'return $returnExpr;',
+      ], signature: resolverSignature));
     }
-    buf.writeln('    },');
+    return '$blockName: ${_cg.block(fieldEntries)}';
   }
 
-  void _writeSubscriptionBlock(StringBuffer buf, List<GLService> services) {
+  String? _serializeSubscriptionBlock(List<GLService> services) {
     final entries = <_RootEntry>[];
     for (final service in services) {
       for (final field in service.fields) {
@@ -402,9 +407,9 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
         ));
       }
     }
-    if (entries.isEmpty) return;
+    if (entries.isEmpty) return null;
 
-    buf.writeln('    Subscription: {');
+    final fieldEntries = <String>[];
     for (final e in entries) {
       final sVar = e.service.token.firstLow;
       final argsDestructure =
@@ -412,15 +417,15 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       final callArgs = [...e.argCodeNames, if (e.contextInjected) 'context'].join(', ');
       final subscribeSignature = _resolverSignature('_', argsDestructure, e.contextInjected, false);
       final toJsonExpr = tsSerializer.callToJson('payload', e.returnType);
-      buf.writeln('      ${e.fieldName}: {');
-      buf.writeln('        subscribe: $subscribeSignature => $sVar.${e.fieldName}($callArgs),');
-      buf.writeln('        resolve: (payload: any) => $toJsonExpr,');
-      buf.writeln('      },');
+      fieldEntries.add(_entry(e.fieldName, [
+        'subscribe: $subscribeSignature => $sVar.${e.fieldName}($callArgs),',
+        'resolve: (payload: any) => $toJsonExpr,',
+      ]));
     }
-    buf.writeln('    },');
+    return 'Subscription: ${_cg.block(fieldEntries)}';
   }
 
-  void _writeTypeMappings(StringBuffer buf, List<GLService> services) {
+  List<String> _serializeTypeMappings(List<GLService> services) {
     final byType = <String, List<_MappingEntry>>{};
     for (final service in services) {
       for (final mapping in service.mappings) {
@@ -429,44 +434,48 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       }
     }
 
-    for (final typeName in byType.keys) {
-      buf.writeln('    $typeName: {');
-      for (final entry in byType[typeName]!) {
-        final m = entry.mapping;
-        final sVar = entry.service.token.firstLow;
-        buf.write('      ${m.field.name}: ');
-        if (m.forbid) {
-          buf.writeln("() => { throw new GraphQLError('Access denied', { extensions: { code: 'FORBIDDEN' } }); },");
-        } else if (m.identity || m.forwarded) {
-          buf.writeln('(parent) => parent.${m.field.name},');
-        } else if (m.isBatch) {
-          final toJsonExpr = tsSerializer.callToJson('_r', m.field.type);
-          buf.writeln('(parent) => ${m.key}Loader.load(parent).then((_r) => $toJsonExpr),');
-        } else {
-          // The synthetic `value` arg is the parent source instance, not a
-          // GraphQL field argument — it is never destructured off `args`, and
-          // the resolver passes `parent` in its call slot.
-          final realArgs = m.field.arguments
-              .where((a) => !a.skipOnGraphqlSerialization)
-              .toList();
-          final argNames = realArgs.map((a) => a.token).toList();
-          final argCodeNames = realArgs.map((a) => a.codeName).toList();
-          final argsDestructure = _argsDestructure(argNames, argCodeNames, '_');
-          final needsInfo = apolloConfig.useResolveInfo;
-          final ctx = _injectsContext(m.field);
-          final mappingCallArgs = [
-            ...m.field.arguments
-                .map((a) => a.skipOnGraphqlSerialization ? 'parent' : a.codeName),
-            if (ctx) 'context',
-            if (needsInfo) 'info',
-          ].join(', ');
-          final mappingResolverArgs = _resolverSignature('parent', argsDestructure, ctx, needsInfo);
-          final toJsonExpr = tsSerializer.callToJson('_r', m.field.type);
-          buf.writeln('$mappingResolverArgs => $sVar.${m.key}($mappingCallArgs).then((_r) => $toJsonExpr),');
-        }
-      }
-      buf.writeln('    },');
+    return [
+      for (final typeName in byType.keys)
+        '$typeName: ${_cg.block([
+          for (final entry in byType[typeName]!)
+            '${entry.mapping.field.name}: ${_mappingResolver(entry.mapping, entry.service.token.firstLow)},',
+        ])}',
+    ];
+  }
+
+  /// The resolver expression (no `fieldName:` key, no trailing comma) for a
+  /// single `@glMapsTo` / batch / identity / forbidden field mapping.
+  String _mappingResolver(GLSchemaMapping m, String sVar) {
+    if (m.forbid) {
+      return "() => { throw new GraphQLError('Access denied', { extensions: { code: 'FORBIDDEN' } }); }";
     }
+    if (m.identity || m.forwarded) {
+      return '(parent) => parent.${m.field.name}';
+    }
+    if (m.isBatch) {
+      final toJsonExpr = tsSerializer.callToJson('_r', m.field.type);
+      return '(parent) => ${m.key}Loader.load(parent).then((_r) => $toJsonExpr)';
+    }
+    // The synthetic `value` arg is the parent source instance, not a
+    // GraphQL field argument — it is never destructured off `args`, and
+    // the resolver passes `parent` in its call slot.
+    final realArgs = m.field.arguments
+        .where((a) => !a.skipOnGraphqlSerialization)
+        .toList();
+    final argNames = realArgs.map((a) => a.token).toList();
+    final argCodeNames = realArgs.map((a) => a.codeName).toList();
+    final argsDestructure = _argsDestructure(argNames, argCodeNames, '_');
+    final needsInfo = apolloConfig.useResolveInfo;
+    final ctx = _injectsContext(m.field);
+    final mappingCallArgs = [
+      ...m.field.arguments
+          .map((a) => a.skipOnGraphqlSerialization ? 'parent' : a.codeName),
+      if (ctx) 'context',
+      if (needsInfo) 'info',
+    ].join(', ');
+    final mappingResolverArgs = _resolverSignature('parent', argsDestructure, ctx, needsInfo);
+    final toJsonExpr = tsSerializer.callToJson('_r', m.field.type);
+    return '$mappingResolverArgs => $sVar.${m.key}($mappingCallArgs).then((_r) => $toJsonExpr)';
   }
 
   // ── index.ts ──────────────────────────────────────────────────────────────
@@ -527,12 +536,26 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
         .join(', ');
     final resolverArgs = [serviceArgs, if (guardArgs.isNotEmpty) guardArgs].join(', ');
 
-    final middlewareLine = hasUploads
-        ? "app.use('${apolloConfig.graphqlPath}', graphqlUploadExpress(), expressMiddleware(server, {"
-        : "app.use('${apolloConfig.graphqlPath}', expressMiddleware(server, {";
-
     final List<String> createServerBody;
     if (hasSubscriptions) {
+      final pluginsArray = _cg.arrayLiteral([
+        'ApolloServerPluginDrainHttpServer({ httpServer })',
+        _cg.block([
+          '${_cg.createMethod(
+            methodName: 'serverWillStart',
+            async: true,
+            statements: [
+              'return ${_cg.block([
+                '${_cg.createMethod(
+                  methodName: 'drainServer',
+                  async: true,
+                  statements: ['await cleanup.dispose();'],
+                )},',
+              ])};',
+            ],
+          )},',
+        ]),
+      ]);
       createServerBody = [
         'const app = express();',
         'app.use(cors());',
@@ -554,25 +577,11 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
           // graphql-upload sends multipart/form-data, which Apollo's CSRF prevention
           // blocks by default unless the client sends a preflight-style header.
           if (hasUploads) 'csrfPrevention: false,',
-          'plugins: [',
-          '  ApolloServerPluginDrainHttpServer({ httpServer }),',
-          '  {',
-          '    async serverWillStart() {',
-          '      return {',
-          '        async drainServer() {',
-          '          await cleanup.dispose();',
-          '        },',
-          '      };',
-          '    },',
-          '  },',
-          '],',
+          'plugins: $pluginsArray,',
         ])});',
         '',
         'await server.start();',
-        middlewareLine,
-        '  context: async ({ req, res }) =>',
-        '    services.contextFactory ? services.contextFactory(req, res) : {} as GraphLinkContext,',
-        '}));',
+        _registerMiddleware(),
         'return httpServer;',
       ];
     } else {
@@ -590,10 +599,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
         ])});',
         '',
         'await server.start();',
-        middlewareLine,
-        '  context: async ({ req, res }) =>',
-        '    services.contextFactory ? services.contextFactory(req, res) : {} as GraphLinkContext,',
-        '}));',
+        _registerMiddleware(),
         'return app;',
       ];
     }
@@ -612,6 +618,18 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
+  /// `app.use('/path', [graphqlUploadExpress(),] expressMiddleware(server, { context }))`.
+  String _registerMiddleware() {
+    final context = _cg.ternaryOp(
+      condition: 'services.contextFactory',
+      positiveStatement: 'services.contextFactory(req, res)',
+      negativeStatement: '{} as GraphLinkContext',
+    );
+    final options = _cg.block(['context: async ({ req, res }) => $context,']);
+    final uploadHandler = hasUploads ? 'graphqlUploadExpress(), ' : '';
+    return "app.use('${apolloConfig.graphqlPath}', ${uploadHandler}expressMiddleware(server, $options));";
+  }
+
   String _tsUploadType(GLType type) =>
       type is GLListType ? 'FileUpload[]' : 'FileUpload';
 
@@ -623,16 +641,6 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
 
   String _loaderFileJs(GLService service) =>
       '${service.token.replaceFirst('Service', '').toKebabCase()}-loaders.js';
-
-  String _interface(String name, List<String> methods) {
-    final buf = StringBuffer();
-    buf.writeln('export interface $name {');
-    for (final m in methods) {
-      buf.writeln('  $m');
-    }
-    buf.write('}');
-    return buf.toString();
-  }
 
   /// Resolves each collected wire token to its definition and delegates to the
   /// TypeScript serializer's import logic, which routes interfaces/unions to
