@@ -38,11 +38,12 @@ data class User(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): User = User(
           id = map["id"] as String,
           name = map["name"] as String,
           email = map["email"] as String,
-          status = UserStatus.valueOf(map["status"] as String),
+          status = UserStatus.fromJson(map["status"] as String)!!,
           priority = (map["priority"] as? String)?.let { Priority.fromJson(it) },
           address = Address.fromJson(map["address"] as Map<String, Any?>),
           billingAddress = (map["billingAddress"] as? Map<*, *>)?.let { Address.fromJson(it as Map<String, Any?>) },

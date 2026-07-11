@@ -16,11 +16,13 @@ data class GetAuditEntryFullResponse(
     val data: GetAuditEntryResponse? = null,
 ) : GraphLinkFullResponse {
    fun toJson(): Map<String, Any?> = mapOf(
+           "__typename" to "GetAuditEntryFullResponse",
            "errors" to errors?.map { e0 -> e0.toJson() },
            "data" to data?.toJson(),
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): GetAuditEntryFullResponse = GetAuditEntryFullResponse(
           errors = (map["errors"] as? List<*>)?.map { e0 -> GraphLinkError.fromJson(e0 as Map<String, Any?>) },
           data = (map["data"] as? Map<*, *>)?.let { GetAuditEntryResponse.fromJson(it as Map<String, Any?>) },

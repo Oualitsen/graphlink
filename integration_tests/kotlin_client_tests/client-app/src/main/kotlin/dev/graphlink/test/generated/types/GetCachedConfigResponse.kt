@@ -17,6 +17,7 @@ data class GetCachedConfigResponse(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): GetCachedConfigResponse = GetCachedConfigResponse(
           getCachedConfig = AllScalars.fromJson(map["getCachedConfig"] as Map<String, Any?>),
       )

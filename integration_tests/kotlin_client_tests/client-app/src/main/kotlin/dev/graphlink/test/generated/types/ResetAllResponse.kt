@@ -16,6 +16,7 @@ data class ResetAllResponse(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): ResetAllResponse = ResetAllResponse(
           resetAll = map["resetAll"] as Boolean,
       )

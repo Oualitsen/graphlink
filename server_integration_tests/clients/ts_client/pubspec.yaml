@@ -1,0 +1,11 @@
+name: graphlink_server_integration_tests_ts_client
+description: TypeScript client integration tests against the generated TypeScript Express+Apollo server.
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ">=2.19.0 <4.0.0"
+
+dependencies:
+  graphlink:
+    path: ../../../

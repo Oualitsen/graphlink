@@ -26,6 +26,7 @@ data class UpdateUserInput(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): UpdateUserInput = UpdateUserInput(
           name = map["name"] as? String,
           email = map["email"] as? String,

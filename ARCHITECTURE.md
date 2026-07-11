@@ -313,22 +313,28 @@ pipeline:
 | Directory | What's hand-written (trusted) | What's generated (under test) | Validates |
 |---|---|---|---|
 | `integration_tests/` | Spring Boot server (`spring_server/`, `spring_upload_server/`) | Clients for Dart/Java/TS/Kotlin (`*_client_tests*/`) | **Generated CLIENT** code against a real server |
-| `server_integration_tests/` | A generated client (driver/harness, currently Dart under `typescript/dart_client/`) | A **generated server target** (currently Apollo/Express under `typescript/typescript_server/`, `typescript_upload_server/`) | **Generated SERVER** code for that target against a real client |
+| `server_integration_tests/` | Generated client harnesses (`clients/`) | Generated server targets (`servers/`) | **Generated SERVER** code against every client |
 
 In `integration_tests/`, the `_real` suites (`dart_client_tests_real/`, etc.) run the
 generated client against the actual running Spring Boot JAR — this is where most
 cross-language parity bugs (fragment argument propagation, query variable scoping, etc.)
 have been caught.
 
-`server_integration_tests/` is organized **per generated server target** — `typescript/`
-currently covers the Apollo/Express server, with a generated Dart client used purely as
-a harness to drive requests. As more server targets are generated (e.g. a future
-generated Spring Boot output, Go, etc.), each gets its own sibling directory here
-following the same pattern: generated server under test + a generated client as harness.
+`server_integration_tests/` is a **client x server matrix**, not organized by language.
+`servers/` holds one subdirectory per generated server target (`typescript_server`,
+`typescript_upload_server`, `java_server`, `java_server_reactive`,
+`kotlin_server_blocking`, `kotlin_server_suspend`) — flat, no per-language grouping.
+`clients/` holds one subdirectory per generated client harness (`dart_client`,
+`ts_client`, `java_client`, `kotlin_client`, plus `dart_upload_client` for the
+upload-only suite). The top-level `Makefile` exposes one `ci-<server>-client` target per
+server, parameterized by `CLIENT=dart|ts|java|kotlin`, so any client can be pointed at
+any server — this is what the CI matrix (`integration-tests-server-matrix` in
+`.github/workflows/ci.yml`) iterates over.
 
 ```bash
-cd integration_tests && make all-real        # generated clients vs hand-written Spring server
-cd server_integration_tests && make ci        # generated server(s) vs generated client harness
+cd integration_tests && make all-real                              # generated clients vs hand-written Spring server
+cd server_integration_tests && make ci-java-client CLIENT=kotlin    # one client x one server
+cd server_integration_tests && make java                            # all 4 clients vs the Java MVC server
 ```
 
 ---

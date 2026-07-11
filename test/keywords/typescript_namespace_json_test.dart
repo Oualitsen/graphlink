@@ -83,7 +83,7 @@ void main() {
       expect(out, contains('role: Role.fromJson(json["role"] as string)'));
 
       // Enum nullable: null guard
-      expect(out, contains('obj.nullableRole != null ? Role.toJson(obj.nullableRole) : null'));
+      expect(out, contains('obj.nullableRole != null ? Role.toJson(obj.nullableRole) : obj.nullableRole'));
       expect(out, contains('json["nullableRole"] != null ? Role.fromJson(json["nullableRole"] as string) : null'));
 
       // Nested type non-nullable
@@ -91,7 +91,7 @@ void main() {
       expect(out, contains('address: Address.fromJson(json["address"] as Record<string, unknown>)'));
 
       // Nested type nullable
-      expect(out, contains('obj.nullableAddress != null ? Address.toJson(obj.nullableAddress) : null'));
+      expect(out, contains('obj.nullableAddress != null ? Address.toJson(obj.nullableAddress) : obj.nullableAddress'));
       expect(out, contains('json["nullableAddress"] != null ? Address.fromJson(json["nullableAddress"] as Record<string, unknown>) : null'));
 
       // List non-nullable
@@ -99,7 +99,7 @@ void main() {
       expect(out, contains('tags: (json["tags"] as unknown[]).map((e0) => e0 as string)'));
 
       // List nullable
-      expect(out, contains('obj.nullableTags != null ? obj.nullableTags.map((e0) => e0) : null'));
+      expect(out, contains('obj.nullableTags != null ? obj.nullableTags.map((e0) => e0) : obj.nullableTags'));
       expect(out, contains('json["nullableTags"] != null ? (json["nullableTags"] as unknown[]).map((e0) => e0 as string) : null'));
     });
 
@@ -176,7 +176,7 @@ void main() {
 
       // toJson: outer null guard → inner map → element null guard + Item.toJson
       expect(out, contains(
-        'obj.matrix != null ? obj.matrix.map((e0) => e0.map((e1) => e1 != null ? Item.toJson(e1) : null)) : null',
+        'obj.matrix != null ? obj.matrix.map((e0) => e0.map((e1) => e1 != null ? Item.toJson(e1) : e1)) : obj.matrix',
       ));
       // fromJson: outer null guard → cast outer → inner map → cast inner → element null guard + Item.fromJson
       expect(out, contains(

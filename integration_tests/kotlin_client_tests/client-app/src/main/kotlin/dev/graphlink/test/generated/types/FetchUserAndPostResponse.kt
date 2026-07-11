@@ -20,6 +20,7 @@ data class FetchUserAndPostResponse(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): FetchUserAndPostResponse = FetchUserAndPostResponse(
           user = User.fromJson(map["user"] as Map<String, Any?>),
           post = Post_AuthorIdTitle.fromJson(map["post"] as Map<String, Any?>),

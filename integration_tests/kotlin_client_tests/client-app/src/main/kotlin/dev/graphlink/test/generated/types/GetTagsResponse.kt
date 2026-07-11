@@ -17,6 +17,7 @@ data class GetTagsResponse(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): GetTagsResponse = GetTagsResponse(
           getTags = (map["getTags"] as List<*>).map { e0 -> Tag.fromJson(e0 as Map<String, Any?>) },
       )

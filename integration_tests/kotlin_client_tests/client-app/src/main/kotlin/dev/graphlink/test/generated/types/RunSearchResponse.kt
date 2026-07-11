@@ -17,6 +17,7 @@ data class RunSearchResponse(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): RunSearchResponse = RunSearchResponse(
           search = (map["search"] as List<*>).map { e0 -> SearchResult.fromJson(e0 as Map<String, Any?>) },
       )

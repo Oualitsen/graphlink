@@ -1,0 +1,24 @@
+{
+  "schemaPaths": ["../../schema/*.gql", "queries.gql"],
+  "mode": "client",
+  "typeMappings": {
+    "ID":      "String",
+    "String":  "String",
+    "Float":   "Double",
+    "Int":     "Int",
+    "Boolean": "Boolean",
+    "Null":    "null"
+  },
+  "outputDir": "client-app/src/main/kotlin/dev/graphlink/server/generated",
+  "clientConfig": {
+    "kotlin": {
+      "packageName":               "dev.graphlink.server.generated",
+      "wsAdapter":                 "okhttp",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries":       true,
+      "nullableFieldsRequired":    false,
+      "immutableTypeFields":       true,
+      "captureErrors":             false
+    }
+  }
+}

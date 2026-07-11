@@ -1,8 +1,8 @@
-.PHONY: generate install typecheck test clean ci
+.PHONY: generate install typecheck test clean ci ci-no-generate
 
 generate:
 	dart pub get
-	dart run lib/generate.dart
+	dart run ../generate.dart
 
 install:
 	npm install
@@ -17,3 +17,6 @@ clean:
 	rm -rf lib/generated
 
 ci: generate test
+
+# Assumes code has already been generated (e.g. by a prior `make generate-all` job).
+ci-no-generate: test

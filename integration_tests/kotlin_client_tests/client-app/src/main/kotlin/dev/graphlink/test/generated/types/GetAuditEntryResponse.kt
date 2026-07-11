@@ -17,6 +17,7 @@ data class GetAuditEntryResponse(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): GetAuditEntryResponse = GetAuditEntryResponse(
           getAuditEntry = AuditEntry.fromJson(map["getAuditEntry"] as Map<String, Any?>),
       )

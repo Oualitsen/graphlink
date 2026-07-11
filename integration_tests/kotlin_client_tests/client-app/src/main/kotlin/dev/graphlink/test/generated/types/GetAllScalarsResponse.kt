@@ -17,6 +17,7 @@ data class GetAllScalarsResponse(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): GetAllScalarsResponse = GetAllScalarsResponse(
           getAllScalars = AllScalars.fromJson(map["getAllScalars"] as Map<String, Any?>),
       )

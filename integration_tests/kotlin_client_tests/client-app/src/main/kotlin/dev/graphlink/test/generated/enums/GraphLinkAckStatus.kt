@@ -12,17 +12,17 @@ enum class GraphLinkAckStatus {
    NONE, PROGRESS, ACKNOLEDGED;
 
    fun toJson(): String = when (this) {
-       NONE -> "none"
-       PROGRESS -> "progress"
-       ACKNOLEDGED -> "acknoledged"
+      NONE -> "none"
+      PROGRESS -> "progress"
+      ACKNOLEDGED -> "acknoledged"
    }
 
    companion object {
-      fun fromJson(value: String?): GraphLinkAckStatus? = when (value) {
-          "none" -> NONE
-          "progress" -> PROGRESS
-          "acknoledged" -> ACKNOLEDGED
-          else -> null
+      fun fromJson(value: String): GraphLinkAckStatus = when (value) {
+         "none" -> GraphLinkAckStatus.NONE
+         "progress" -> GraphLinkAckStatus.PROGRESS
+         "acknoledged" -> GraphLinkAckStatus.ACKNOLEDGED
+         else -> throw IllegalArgumentException("Invalid GraphLinkAckStatus: $value")
       }
    }
 }

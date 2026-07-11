@@ -579,11 +579,11 @@ public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter {
   private final HttpClient httpClient;
 
   public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider) {
-    this(url, headersProvider, HttpClient.newHttpClient());
+    this(url, headersProvider, HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build());
   }
 
   public DefaultGraphLinkClientAdapter(String url) {
-    this(url, null, HttpClient.newHttpClient());
+    this(url, null, HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build());
   }
 
   public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider, HttpClient httpClient) {
@@ -762,11 +762,11 @@ public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter, Gr
   private final HttpClient httpClient;
 
   public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider) {
-    this(url, headersProvider, HttpClient.newHttpClient());
+    this(url, headersProvider, HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build());
   }
 
   public DefaultGraphLinkClientAdapter(String url) {
-    this(url, null, HttpClient.newHttpClient());
+    this(url, null, HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build());
   }
 
   public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider, HttpClient httpClient) {

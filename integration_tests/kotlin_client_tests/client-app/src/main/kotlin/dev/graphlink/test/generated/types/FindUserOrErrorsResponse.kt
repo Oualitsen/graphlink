@@ -17,6 +17,7 @@ data class FindUserOrErrorsResponse(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): FindUserOrErrorsResponse = FindUserOrErrorsResponse(
           findUserOrErrors = (map["findUserOrErrors"] as? Map<*, *>)?.let { User.fromJson(it as Map<String, Any?>) },
       )

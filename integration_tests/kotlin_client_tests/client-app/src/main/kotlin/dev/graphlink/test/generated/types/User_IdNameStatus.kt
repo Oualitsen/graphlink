@@ -21,10 +21,11 @@ data class User_IdNameStatus(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): User_IdNameStatus = User_IdNameStatus(
           id = map["id"] as String,
           name = map["name"] as String,
-          status = UserStatus.valueOf(map["status"] as String),
+          status = UserStatus.fromJson(map["status"] as String)!!,
       )
    }
 }

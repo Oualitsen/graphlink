@@ -17,6 +17,7 @@ data class GetUserOrErrorsResponse(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): GetUserOrErrorsResponse = GetUserOrErrorsResponse(
           getUserOrErrors = User.fromJson(map["getUserOrErrors"] as Map<String, Any?>),
       )

@@ -17,6 +17,7 @@ data class GetStaleUserResponse(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): GetStaleUserResponse = GetStaleUserResponse(
           getStaleUser = (map["getStaleUser"] as? Map<*, *>)?.let { User.fromJson(it as Map<String, Any?>) },
       )

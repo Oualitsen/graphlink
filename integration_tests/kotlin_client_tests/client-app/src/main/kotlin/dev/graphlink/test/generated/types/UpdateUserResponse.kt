@@ -17,6 +17,7 @@ data class UpdateUserResponse(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): UpdateUserResponse = UpdateUserResponse(
           updateUser = User.fromJson(map["updateUser"] as Map<String, Any?>),
       )

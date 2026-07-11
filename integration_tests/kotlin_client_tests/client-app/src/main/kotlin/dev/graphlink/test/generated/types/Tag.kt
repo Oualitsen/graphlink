@@ -20,6 +20,7 @@ data class Tag(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): Tag = Tag(
           id = map["id"] as String,
           label = map["label"] as String,

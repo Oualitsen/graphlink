@@ -171,6 +171,12 @@ void main() {
     test('has executeMultipart', () => expect(out, contains('executeMultipart')));
     test('has CountingBodyPublisher inner class', () => expect(out, contains('CountingBodyPublisher')));
     test('has buildMultipartBody helper', () => expect(out, contains('buildMultipartBody')));
+    // Regression: HttpClient.newHttpClient() defaults to HTTP/2, which sends an h2c
+    // cleartext preface that Node/Express (and other HTTP/1.1-only servers) reject
+    // with "405 Invalid HTTP method". Every request must pin HTTP/1.1.
+    test('pins HttpClient to HTTP/1.1', () => expect(out, isNot(contains('HttpClient.newHttpClient()'))));
+    test('pins HttpClient to HTTP/1.1 (constructor)',
+        () => expect(out, contains('HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build()')));
   });
 
   group('DefaultGraphLinkClientAdapter — no upload', () {
@@ -179,6 +185,16 @@ void main() {
 
     test('does not implement GraphLinkMultipartAdapter', () => expect(out, isNot(contains('GraphLinkMultipartAdapter'))));
     test('no executeMultipart', () => expect(out, isNot(contains('executeMultipart'))));
+  });
+
+  group('DefaultGraphLinkClientAdapter — java11 no upload', () {
+    late String out;
+    setUpAll(() => out = _serializer(_plainSchema).generateDefaultClientAdapterFile('java11', '').toFileContent());
+
+    // Regression: same HTTP/1.1 pin must apply to the plain (non-upload) java11 adapter.
+    test('pins HttpClient to HTTP/1.1', () => expect(out, isNot(contains('HttpClient.newHttpClient()'))));
+    test('pins HttpClient to HTTP/1.1 (constructor)',
+        () => expect(out, contains('HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build()')));
   });
 
   // ---------------------------------------------------------------------------

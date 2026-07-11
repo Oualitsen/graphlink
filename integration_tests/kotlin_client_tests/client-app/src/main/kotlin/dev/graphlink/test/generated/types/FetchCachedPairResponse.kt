@@ -20,6 +20,7 @@ data class FetchCachedPairResponse(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): FetchCachedPairResponse = FetchCachedPairResponse(
           user = User.fromJson(map["user"] as Map<String, Any?>),
           post = Post.fromJson(map["post"] as Map<String, Any?>),

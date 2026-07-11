@@ -22,6 +22,7 @@ data class GraphLinkSubscriptionPayload(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): GraphLinkSubscriptionPayload = GraphLinkSubscriptionPayload(
           query = map["query"] as? String,
           operationName = map["operationName"] as? String,

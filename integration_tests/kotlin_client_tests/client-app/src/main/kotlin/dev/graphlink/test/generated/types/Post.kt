@@ -27,6 +27,7 @@ data class Post(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): Post = Post(
           id = map["id"] as String,
           title = map["title"] as String,

@@ -16,11 +16,13 @@ data class FindUserOrErrorsFullResponse(
     val data: FindUserOrErrorsResponse? = null,
 ) : GraphLinkFullResponse {
    fun toJson(): Map<String, Any?> = mapOf(
+           "__typename" to "FindUserOrErrorsFullResponse",
            "errors" to errors?.map { e0 -> e0.toJson() },
            "data" to data?.toJson(),
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): FindUserOrErrorsFullResponse = FindUserOrErrorsFullResponse(
           errors = (map["errors"] as? List<*>)?.map { e0 -> GraphLinkError.fromJson(e0 as Map<String, Any?>) },
           data = (map["data"] as? Map<*, *>)?.let { FindUserOrErrorsResponse.fromJson(it as Map<String, Any?>) },

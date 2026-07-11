@@ -16,11 +16,13 @@ data class GetCachedConfigFullResponse(
     val data: GetCachedConfigResponse? = null,
 ) : GraphLinkFullResponse {
    fun toJson(): Map<String, Any?> = mapOf(
+           "__typename" to "GetCachedConfigFullResponse",
            "errors" to errors?.map { e0 -> e0.toJson() },
            "data" to data?.toJson(),
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): GetCachedConfigFullResponse = GetCachedConfigFullResponse(
           errors = (map["errors"] as? List<*>)?.map { e0 -> GraphLinkError.fromJson(e0 as Map<String, Any?>) },
           data = (map["data"] as? Map<*, *>)?.let { GetCachedConfigResponse.fromJson(it as Map<String, Any?>) },
