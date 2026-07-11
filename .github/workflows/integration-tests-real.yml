@@ -26,7 +26,7 @@ jobs:
 
   # Generate every integration_tests client exactly once, then hand the result
   # to the client jobs below via artifact. Runs in parallel with build-spring-servers.
-  integration-tests-generate:
+  generate:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -41,9 +41,9 @@ jobs:
           retention-days: 1
           path: integration_tests
 
-  integration-tests-dart-real:
+  dart-real:
     runs-on: ubuntu-latest
-    needs: [build-spring-servers, integration-tests-generate]
+    needs: [build-spring-servers, generate]
     defaults:
       run:
         working-directory: integration_tests/dart_client_tests_real
@@ -64,9 +64,9 @@ jobs:
           path: integration_tests
       - run: make ci-no-generate
 
-  integration-tests-typescript-real:
+  typescript-real:
     runs-on: ubuntu-latest
-    needs: [build-spring-servers, integration-tests-generate]
+    needs: [build-spring-servers, generate]
     defaults:
       run:
         working-directory: integration_tests/typescript_client_tests_real
@@ -91,9 +91,9 @@ jobs:
       - run: make install
       - run: make ci-no-generate
 
-  integration-tests-java-real:
+  java-real:
     runs-on: ubuntu-latest
-    needs: [build-spring-servers, integration-tests-generate]
+    needs: [build-spring-servers, generate]
     defaults:
       run:
         working-directory: integration_tests/java_client_tests_real
@@ -114,9 +114,9 @@ jobs:
           path: integration_tests
       - run: make ci-no-generate
 
-  integration-tests-kotlin-real:
+  kotlin-real:
     runs-on: ubuntu-latest
-    needs: [build-spring-servers, integration-tests-generate]
+    needs: [build-spring-servers, generate]
     defaults:
       run:
         working-directory: integration_tests/kotlin_client_tests_real
