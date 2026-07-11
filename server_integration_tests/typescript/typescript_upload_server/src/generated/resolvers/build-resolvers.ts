@@ -12,28 +12,24 @@ import { PingService } from '../services/ping-service.js';
 import { UploadOneFileService } from '../services/upload-one-file-service.js';
 import { UploadFileListService } from '../services/upload-file-list-service.js';
 
-export function buildResolvers(
-  pingService: PingService,
-  uploadOneFileService: UploadOneFileService,
-  uploadFileListService: UploadFileListService,
-): IResolvers {
-  return {
-    Upload: GraphQLUpload,
-    Query: {
-      ping: async (_, __) => {
-        return pingService.ping();
+export function buildResolvers(pingService: PingService, uploadOneFileService: UploadOneFileService, uploadFileListService: UploadFileListService): IResolvers {
+   return {
+      Upload: GraphQLUpload,
+      Query: {
+         ping: async (_, __) => {
+            return pingService.ping();
+         },
       },
-    },
-    Mutation: {
-      uploadOneFile: async (_, { userId, file }) => {
-        const _file = await file;
-        return uploadOneFileService.uploadOneFile(userId, _file);
+      Mutation: {
+         uploadOneFile: async (_, { userId, file }) => {
+            const _file = await file;
+            return uploadOneFileService.uploadOneFile(userId, _file);
+         },
+         uploadFileList: async (_, { userId, files }) => {
+            const _files = await Promise.all(files);
+            return uploadFileListService.uploadFileList(userId, _files);
+         },
       },
-      uploadFileList: async (_, { userId, files }) => {
-        const _files = await Promise.all(files);
-        return uploadFileListService.uploadFileList(userId, _files);
-      },
-    },
-  };
+   };
 }
 

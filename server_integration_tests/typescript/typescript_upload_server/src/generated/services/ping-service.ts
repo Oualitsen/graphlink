@@ -7,5 +7,5 @@
 
 
 export interface PingService {
-  ping(): Promise<boolean>;
+   ping(): Promise<boolean>;
 }

@@ -10,15 +10,15 @@ import { CreateArticleInput } from '../inputs/create-article-input.js';
 import { UpdateArticleInput } from '../inputs/update-article-input.js';
 
 export interface ArticleService {
-  getProjectedArticle(): Promise<Article>;
-  getArticleWithCount(): Promise<Article | null>;
-  getArticleInfo(): Promise<Article | null>;
-  getArticle(id: string): Promise<Article>;
-  listArticles(): Promise<Article[]>;
-  getArticleTypes(): Promise<ArticleType[]>;
-  createArticle(input: CreateArticleInput): Promise<Article>;
-  updateArticle(input: UpdateArticleInput): Promise<Article>;
-  articleCreated(): AsyncIterable<Article>;
-  articleUpdated(id: string): AsyncIterable<Article>;
-  articleDeleted(): AsyncIterable<string>;
+   getProjectedArticle(): Promise<Article>;
+   getArticleWithCount(): Promise<Article | null>;
+   getArticleInfo(): Promise<Article | null>;
+   getArticle(id: string): Promise<Article>;
+   listArticles(): Promise<Article[]>;
+   getArticleTypes(): Promise<ArticleType[]>;
+   createArticle(input: CreateArticleInput): Promise<Article>;
+   updateArticle(input: UpdateArticleInput): Promise<Article>;
+   articleCreated(): AsyncIterable<Article>;
+   articleUpdated(id: string): AsyncIterable<Article>;
+   articleDeleted(): AsyncIterable<string>;
 }

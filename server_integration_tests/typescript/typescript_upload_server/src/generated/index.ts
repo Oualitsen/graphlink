@@ -36,8 +36,7 @@ export async function createServer(services: GraphLinkServices): Promise<Express
 
    await server.start();
    app.use('/graphql', graphqlUploadExpress(), expressMiddleware(server, {
-     context: async ({ req, res }) =>
-       services.contextFactory ? services.contextFactory(req, res) : {} as GraphLinkContext,
+      context: async ({ req, res }) => services.contextFactory ? services.contextFactory(req, res) : {} as GraphLinkContext,
    }));
    return app;
 }

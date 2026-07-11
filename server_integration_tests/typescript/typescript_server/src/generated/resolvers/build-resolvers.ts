@@ -57,204 +57,175 @@ import { ArticleSchemaMappingsService } from '../services/article-schema-mapping
 import { createMessageReadReadLoader } from '../loaders/message-read-schema-mappings-loaders.js';
 import { createAuthorArticlesLoader } from '../loaders/author-schema-mappings-loaders.js';
 
-export function buildResolvers(
-  catalogService: CatalogService,
-  feedService: FeedService,
-  storeService: StoreService,
-  searchResultService: SearchResultService,
-  reservedFieldsService: ReservedFieldsService,
-  collideService: CollideService,
-  statusService: StatusService,
-  articleService: ArticleService,
-  messageService: MessageService,
-  nestingService: NestingService,
-  authorService: AuthorService,
-  configService: ConfigService,
-  rangeService: RangeService,
-  greetService: GreetService,
-  echoPriorityService: EchoPriorityService,
-  deleteArticleService: DeleteArticleService,
-  bulkCreateService: BulkCreateService,
-  ackPriorityService: AckPriorityService,
-  catalogSchemaMappingsService: CatalogSchemaMappingsService,
-  feedSchemaMappingsService: FeedSchemaMappingsService,
-  storeSchemaMappingsService: StoreSchemaMappingsService,
-  shelfSchemaMappingsService: ShelfSchemaMappingsService,
-  searchResultSchemaMappingsService: SearchResultSchemaMappingsService,
-  articleWithCountSchemaMappingsService: ArticleWithCountSchemaMappingsService,
-  messageReadSchemaMappingsService: MessageReadSchemaMappingsService,
-  authorSchemaMappingsService: AuthorSchemaMappingsService,
-  articleSchemaMappingsService: ArticleSchemaMappingsService,
-  bulkCreateGuard: BulkCreateGuard,
-): IResolvers {
-  const messageReadReadLoader = createMessageReadReadLoader(messageReadSchemaMappingsService);
-  const authorArticlesLoader = createAuthorArticlesLoader(authorSchemaMappingsService);
-  return {
-    Query: {
-      catalog: async (_, __) => {
-        return catalogService.catalog().then((_r) => Catalog.toJson(_r));
+export function buildResolvers(catalogService: CatalogService, feedService: FeedService, storeService: StoreService, searchResultService: SearchResultService, reservedFieldsService: ReservedFieldsService, collideService: CollideService, statusService: StatusService, articleService: ArticleService, messageService: MessageService, nestingService: NestingService, authorService: AuthorService, configService: ConfigService, rangeService: RangeService, greetService: GreetService, echoPriorityService: EchoPriorityService, deleteArticleService: DeleteArticleService, bulkCreateService: BulkCreateService, ackPriorityService: AckPriorityService, catalogSchemaMappingsService: CatalogSchemaMappingsService, feedSchemaMappingsService: FeedSchemaMappingsService, storeSchemaMappingsService: StoreSchemaMappingsService, shelfSchemaMappingsService: ShelfSchemaMappingsService, searchResultSchemaMappingsService: SearchResultSchemaMappingsService, articleWithCountSchemaMappingsService: ArticleWithCountSchemaMappingsService, messageReadSchemaMappingsService: MessageReadSchemaMappingsService, authorSchemaMappingsService: AuthorSchemaMappingsService, articleSchemaMappingsService: ArticleSchemaMappingsService, bulkCreateGuard: BulkCreateGuard): IResolvers {
+   const messageReadReadLoader = createMessageReadReadLoader(messageReadSchemaMappingsService);
+   const authorArticlesLoader = createAuthorArticlesLoader(authorSchemaMappingsService);
+   return {
+      Query: {
+         catalog: async (_, __) => {
+            return catalogService.catalog().then((_r) => Catalog.toJson(_r));
+         },
+         feed: async (_, __) => {
+            return feedService.feed().then((_r) => Feed.toJson(_r));
+         },
+         store: async (_, __) => {
+            return storeService.store().then((_r) => Store.toJson(_r));
+         },
+         search: async (_, { fieldArgs }) => {
+            return searchResultService.search(fieldArgs).then((_r) => SearchResult.toJson(_r));
+         },
+         reserved: async (_, __) => {
+            return reservedFieldsService.reserved().then((_r) => ReservedFields.toJson(_r));
+         },
+         switch: async (_, { class: class_, return: return_ }) => {
+            return reservedFieldsService.switch(class_, return_).then((_r) => ReservedFields.toJson(_r));
+         },
+         collide: async (_, __) => {
+            return collideService.collide().then((_r) => Collide.toJson(_r));
+         },
+         _status: async (_, __) => {
+            return statusService._status();
+         },
+         getProjectedArticle: async (_, __) => {
+            return articleService.getProjectedArticle().then((_r) => Article.toJson(_r));
+         },
+         getArticleWithCount: async (_, __) => {
+            return articleService.getArticleWithCount().then((_r) => _r != null ? Article.toJson(_r) : null);
+         },
+         getArticleInfo: async (_, __) => {
+            return articleService.getArticleInfo().then((_r) => _r != null ? Article.toJson(_r) : null);
+         },
+         getArticle: async (_, { id }) => {
+            return articleService.getArticle(id).then((_r) => Article.toJson(_r));
+         },
+         listArticles: async (_, __) => {
+            return articleService.listArticles().then((_r) => _r.map((e0) => Article.toJson(e0)));
+         },
+         getArticleTypes: async (_, __) => {
+            return articleService.getArticleTypes().then((_r) => _r.map((e0) => ArticleType.toJson(e0)));
+         },
+         getMessageReadList: async (_, __) => {
+            return messageService.getMessageReadList().then((_r) => _r != null ? _r.map((e0) => e0 != null ? Message.toJson(e0) : null) : null);
+         },
+         colors1: async (_, __) => {
+            return nestingService.colors1().then((_r) => _r.map((e0) => Color.toJson(e0)));
+         },
+         colors2: async (_, __) => {
+            return nestingService.colors2().then((_r) => _r != null ? _r.map((e0) => e0 != null ? e0.map((e1) => e1 != null ? Color.toJson(e1) : null) : null) : null);
+         },
+         colors3: async (_, __) => {
+            return nestingService.colors3().then((_r) => _r.map((e0) => e0.map((e1) => e1.map((e2) => Color.toJson(e2)))));
+         },
+         boxes1: async (_, __) => {
+            return nestingService.boxes1().then((_r) => _r != null ? _r.map((e0) => e0 != null ? Box.toJson(e0) : null) : null);
+         },
+         boxes2: async (_, __) => {
+            return nestingService.boxes2().then((_r) => _r.map((e0) => e0.map((e1) => Box.toJson(e1))));
+         },
+         boxes3: async (_, __) => {
+            return nestingService.boxes3().then((_r) => _r != null ? _r.map((e0) => e0 != null ? e0.map((e1) => e1 != null ? e1.map((e2) => e2 != null ? Box.toJson(e2) : null) : null) : null) : null);
+         },
+         shapes1: async (_, __) => {
+            return nestingService.shapes1().then((_r) => _r.map((e0) => Shape.toJson(e0)));
+         },
+         shapes2: async (_, __) => {
+            return nestingService.shapes2().then((_r) => _r != null ? _r.map((e0) => e0 != null ? e0.map((e1) => e1 != null ? Shape.toJson(e1) : null) : null) : null);
+         },
+         shapes3: async (_, __) => {
+            return nestingService.shapes3().then((_r) => _r.map((e0) => e0.map((e1) => e1.map((e2) => Shape.toJson(e2)))));
+         },
+         media1: async (_, __) => {
+            return nestingService.media1().then((_r) => _r.map((e0) => Media.toJson(e0)));
+         },
+         media2: async (_, __) => {
+            return nestingService.media2().then((_r) => _r != null ? _r.map((e0) => e0 != null ? e0.map((e1) => e1 != null ? Media.toJson(e1) : null) : null) : null);
+         },
+         media3: async (_, __) => {
+            return nestingService.media3().then((_r) => _r.map((e0) => e0.map((e1) => e1.map((e2) => Media.toJson(e2)))));
+         },
+         getAuthor: async (_, { id }) => {
+            return authorService.getAuthor(id).then((_r) => _r != null ? Author.toJson(_r) : null);
+         },
+         listAuthors: async (_, __) => {
+            return authorService.listAuthors().then((_r) => _r.map((e0) => Author.toJson(e0)));
+         },
+         resolveConfig: async (_, { input }) => {
+            return configService.resolveConfig(input).then((_r) => Config.toJson(_r));
+         },
+         resolveRange: async (_, { input }) => {
+            return rangeService.resolveRange(input).then((_r) => Range.toJson(_r));
+         },
+         greet: async (_, { name, times }) => {
+            return greetService.greet(name, times);
+         },
+         echoPriority: async (_, { level }) => {
+            return echoPriorityService.echoPriority(level).then((_r) => Priority.toJson(_r));
+         },
       },
-      feed: async (_, __) => {
-        return feedService.feed().then((_r) => Feed.toJson(_r));
+      Mutation: {
+         echoReserved: async (_, { input }) => {
+            return reservedFieldsService.echoReserved(input).then((_r) => ReservedFields.toJson(_r));
+         },
+         createArticle: async (_, { input }) => {
+            return articleService.createArticle(input).then((_r) => Article.toJson(_r));
+         },
+         updateArticle: async (_, { input }) => {
+            return articleService.updateArticle(input).then((_r) => Article.toJson(_r));
+         },
+         deleteArticle: async (_, { id }) => {
+            return deleteArticleService.deleteArticle(id);
+         },
+         bulkCreate: async (_, { matrix }) => {
+            await bulkCreateGuard.validateBulkCreate(matrix);
+            return bulkCreateService.bulkCreate(matrix);
+         },
+         ackPriority: async (_, { level }) => {
+            return ackPriorityService.ackPriority(level);
+         },
       },
-      store: async (_, __) => {
-        return storeService.store().then((_r) => Store.toJson(_r));
+      Subscription: {
+         articleCreated: {
+            subscribe: (_, __) => articleService.articleCreated(),
+            resolve: (payload: any) => Article.toJson(payload),
+         },
+         articleUpdated: {
+            subscribe: (_, { id }) => articleService.articleUpdated(id),
+            resolve: (payload: any) => Article.toJson(payload),
+         },
+         articleDeleted: {
+            subscribe: (_, __) => articleService.articleDeleted(),
+            resolve: (payload: any) => payload,
+         },
       },
-      search: async (_, { fieldArgs }) => {
-        return searchResultService.search(fieldArgs).then((_r) => SearchResult.toJson(_r));
+      Catalog: {
+         products: (parent, { category, limit, offset }) => catalogSchemaMappingsService.catalogProducts(category, limit, offset, parent).then((_r) => _r.map((e0) => Product.toJson(e0))),
       },
-      reserved: async (_, __) => {
-        return reservedFieldsService.reserved().then((_r) => ReservedFields.toJson(_r));
+      Feed: {
+         items: (parent, { limit, sort }) => feedSchemaMappingsService.feedItems(limit, sort, parent).then((_r) => _r.map((e0) => Product.toJson(e0))),
       },
-      switch: async (_, { class: class_, return: return_ }) => {
-        return reservedFieldsService.switch(class_, return_).then((_r) => ReservedFields.toJson(_r));
+      Store: {
+         shelves: (parent, { floor }) => storeSchemaMappingsService.storeShelves(floor, parent).then((_r) => _r.map((e0) => Shelf.toJson(e0))),
       },
-      collide: async (_, __) => {
-        return collideService.collide().then((_r) => Collide.toJson(_r));
+      Shelf: {
+         products: (parent, { limit }) => shelfSchemaMappingsService.shelfProducts(limit, parent).then((_r) => _r.map((e0) => Product.toJson(e0))),
       },
-      _status: async (_, __) => {
-        return statusService._status();
+      SearchResult: {
+         hits: (parent, { limit }) => searchResultSchemaMappingsService.searchResultHits(limit, parent).then((_r) => _r.map((e0) => Product.toJson(e0))),
       },
-      getProjectedArticle: async (_, __) => {
-        return articleService.getProjectedArticle().then((_r) => Article.toJson(_r));
+      ArticleWithCount: {
+         count: (parent, _) => articleWithCountSchemaMappingsService.articleWithCountCount(parent).then((_r) => _r),
       },
-      getArticleWithCount: async (_, __) => {
-        return articleService.getArticleWithCount().then((_r) => _r != null ? Article.toJson(_r) : null);
+      MessageRead: {
+         read: (parent) => messageReadReadLoader.load(parent).then((_r) => _r),
       },
-      getArticleInfo: async (_, __) => {
-        return articleService.getArticleInfo().then((_r) => _r != null ? Article.toJson(_r) : null);
+      Author: {
+         articles: (parent) => authorArticlesLoader.load(parent).then((_r) => _r != null ? _r.map((e0) => Article.toJson(e0)) : null),
+         latestArticles: (parent, { limit }) => authorSchemaMappingsService.authorLatestArticles(limit, parent).then((_r) => _r.map((e0) => Article.toJson(e0))),
       },
-      getArticle: async (_, { id }) => {
-        return articleService.getArticle(id).then((_r) => Article.toJson(_r));
+      Article: {
+         author: (parent, _) => articleSchemaMappingsService.articleAuthor(parent).then((_r) => Author.toJson(_r)),
+         authorList: (parent, _) => articleSchemaMappingsService.articleAuthorList(parent).then((_r) => _r != null ? _r.map((e0) => Author.toJson(e0)) : null),
       },
-      listArticles: async (_, __) => {
-        return articleService.listArticles().then((_r) => _r.map((e0) => Article.toJson(e0)));
-      },
-      getArticleTypes: async (_, __) => {
-        return articleService.getArticleTypes().then((_r) => _r.map((e0) => ArticleType.toJson(e0)));
-      },
-      getMessageReadList: async (_, __) => {
-        return messageService.getMessageReadList().then((_r) => _r != null ? _r.map((e0) => e0 != null ? Message.toJson(e0) : null) : null);
-      },
-      colors1: async (_, __) => {
-        return nestingService.colors1().then((_r) => _r.map((e0) => Color.toJson(e0)));
-      },
-      colors2: async (_, __) => {
-        return nestingService.colors2().then((_r) => _r != null ? _r.map((e0) => e0 != null ? e0.map((e1) => e1 != null ? Color.toJson(e1) : null) : null) : null);
-      },
-      colors3: async (_, __) => {
-        return nestingService.colors3().then((_r) => _r.map((e0) => e0.map((e1) => e1.map((e2) => Color.toJson(e2)))));
-      },
-      boxes1: async (_, __) => {
-        return nestingService.boxes1().then((_r) => _r != null ? _r.map((e0) => e0 != null ? Box.toJson(e0) : null) : null);
-      },
-      boxes2: async (_, __) => {
-        return nestingService.boxes2().then((_r) => _r.map((e0) => e0.map((e1) => Box.toJson(e1))));
-      },
-      boxes3: async (_, __) => {
-        return nestingService.boxes3().then((_r) => _r != null ? _r.map((e0) => e0 != null ? e0.map((e1) => e1 != null ? e1.map((e2) => e2 != null ? Box.toJson(e2) : null) : null) : null) : null);
-      },
-      shapes1: async (_, __) => {
-        return nestingService.shapes1().then((_r) => _r.map((e0) => Shape.toJson(e0)));
-      },
-      shapes2: async (_, __) => {
-        return nestingService.shapes2().then((_r) => _r != null ? _r.map((e0) => e0 != null ? e0.map((e1) => e1 != null ? Shape.toJson(e1) : null) : null) : null);
-      },
-      shapes3: async (_, __) => {
-        return nestingService.shapes3().then((_r) => _r.map((e0) => e0.map((e1) => e1.map((e2) => Shape.toJson(e2)))));
-      },
-      media1: async (_, __) => {
-        return nestingService.media1().then((_r) => _r.map((e0) => Media.toJson(e0)));
-      },
-      media2: async (_, __) => {
-        return nestingService.media2().then((_r) => _r != null ? _r.map((e0) => e0 != null ? e0.map((e1) => e1 != null ? Media.toJson(e1) : null) : null) : null);
-      },
-      media3: async (_, __) => {
-        return nestingService.media3().then((_r) => _r.map((e0) => e0.map((e1) => e1.map((e2) => Media.toJson(e2)))));
-      },
-      getAuthor: async (_, { id }) => {
-        return authorService.getAuthor(id).then((_r) => _r != null ? Author.toJson(_r) : null);
-      },
-      listAuthors: async (_, __) => {
-        return authorService.listAuthors().then((_r) => _r.map((e0) => Author.toJson(e0)));
-      },
-      resolveConfig: async (_, { input }) => {
-        return configService.resolveConfig(input).then((_r) => Config.toJson(_r));
-      },
-      resolveRange: async (_, { input }) => {
-        return rangeService.resolveRange(input).then((_r) => Range.toJson(_r));
-      },
-      greet: async (_, { name, times }) => {
-        return greetService.greet(name, times);
-      },
-      echoPriority: async (_, { level }) => {
-        return echoPriorityService.echoPriority(level).then((_r) => Priority.toJson(_r));
-      },
-    },
-    Mutation: {
-      echoReserved: async (_, { input }) => {
-        return reservedFieldsService.echoReserved(input).then((_r) => ReservedFields.toJson(_r));
-      },
-      createArticle: async (_, { input }) => {
-        return articleService.createArticle(input).then((_r) => Article.toJson(_r));
-      },
-      updateArticle: async (_, { input }) => {
-        return articleService.updateArticle(input).then((_r) => Article.toJson(_r));
-      },
-      deleteArticle: async (_, { id }) => {
-        return deleteArticleService.deleteArticle(id);
-      },
-      bulkCreate: async (_, { matrix }) => {
-        await bulkCreateGuard.validateBulkCreate(matrix);
-        return bulkCreateService.bulkCreate(matrix);
-      },
-      ackPriority: async (_, { level }) => {
-        return ackPriorityService.ackPriority(level);
-      },
-    },
-    Subscription: {
-      articleCreated: {
-        subscribe: (_, __) => articleService.articleCreated(),
-        resolve: (payload: any) => Article.toJson(payload),
-      },
-      articleUpdated: {
-        subscribe: (_, { id }) => articleService.articleUpdated(id),
-        resolve: (payload: any) => Article.toJson(payload),
-      },
-      articleDeleted: {
-        subscribe: (_, __) => articleService.articleDeleted(),
-        resolve: (payload: any) => payload,
-      },
-    },
-    Catalog: {
-      products: (parent, { category, limit, offset }) => catalogSchemaMappingsService.catalogProducts(category, limit, offset, parent).then((_r) => _r.map((e0) => Product.toJson(e0))),
-    },
-    Feed: {
-      items: (parent, { limit, sort }) => feedSchemaMappingsService.feedItems(limit, sort, parent).then((_r) => _r.map((e0) => Product.toJson(e0))),
-    },
-    Store: {
-      shelves: (parent, { floor }) => storeSchemaMappingsService.storeShelves(floor, parent).then((_r) => _r.map((e0) => Shelf.toJson(e0))),
-    },
-    Shelf: {
-      products: (parent, { limit }) => shelfSchemaMappingsService.shelfProducts(limit, parent).then((_r) => _r.map((e0) => Product.toJson(e0))),
-    },
-    SearchResult: {
-      hits: (parent, { limit }) => searchResultSchemaMappingsService.searchResultHits(limit, parent).then((_r) => _r.map((e0) => Product.toJson(e0))),
-    },
-    ArticleWithCount: {
-      count: (parent, _) => articleWithCountSchemaMappingsService.articleWithCountCount(parent).then((_r) => _r),
-    },
-    MessageRead: {
-      read: (parent) => messageReadReadLoader.load(parent).then((_r) => _r),
-    },
-    Author: {
-      articles: (parent) => authorArticlesLoader.load(parent).then((_r) => _r != null ? _r.map((e0) => Article.toJson(e0)) : null),
-      latestArticles: (parent, { limit }) => authorSchemaMappingsService.authorLatestArticles(limit, parent).then((_r) => _r.map((e0) => Article.toJson(e0))),
-    },
-    Article: {
-      author: (parent, _) => articleSchemaMappingsService.articleAuthor(parent).then((_r) => Author.toJson(_r)),
-      authorList: (parent, _) => articleSchemaMappingsService.articleAuthorList(parent).then((_r) => _r != null ? _r.map((e0) => Author.toJson(e0)) : null),
-    },
-  };
+   };
 }
 
