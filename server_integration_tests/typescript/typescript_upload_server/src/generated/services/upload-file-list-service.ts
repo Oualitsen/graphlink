@@ -7,5 +7,5 @@
 import type { FileUpload } from '../file-upload.js';
 
 export interface UploadFileListService {
-  uploadFileList(userId: string, files: FileUpload[]): Promise<boolean>;
+   uploadFileList(userId: string, files: FileUpload[]): Promise<boolean>;
 }

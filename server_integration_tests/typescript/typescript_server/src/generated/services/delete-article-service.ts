@@ -7,5 +7,5 @@
 
 
 export interface DeleteArticleService {
-  deleteArticle(id: string): Promise<boolean>;
+   deleteArticle(id: string): Promise<boolean>;
 }

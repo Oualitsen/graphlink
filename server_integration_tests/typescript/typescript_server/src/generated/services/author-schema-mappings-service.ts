@@ -8,6 +8,6 @@ import { Author } from '../types/author.js';
 import { Article } from '../types/article.js';
 
 export interface AuthorSchemaMappingsService {
-  authorArticles(value: Author[]): Promise<Map<Author, Article[] | null>>;
-  authorLatestArticles(limit: number, value: Author): Promise<Article[]>;
+   authorArticles(value: Author[]): Promise<Map<Author, Article[] | null>>;
+   authorLatestArticles(limit: number, value: Author): Promise<Article[]>;
 }
