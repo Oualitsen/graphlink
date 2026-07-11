@@ -4,21 +4,23 @@
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
 
+import { GraphLinkContext } from '../context.js';
+import { GraphQLResolveInfo } from 'graphql';
 import { Article } from '../types/article.js';
 import { ArticleType } from '../enums/article-type.js';
 import { CreateArticleInput } from '../inputs/create-article-input.js';
 import { UpdateArticleInput } from '../inputs/update-article-input.js';
 
 export interface ArticleService {
-   getProjectedArticle(): Promise<Article>;
-   getArticleWithCount(): Promise<Article | null>;
-   getArticleInfo(): Promise<Article | null>;
-   getArticle(id: string): Promise<Article>;
-   listArticles(): Promise<Article[]>;
-   getArticleTypes(): Promise<ArticleType[]>;
-   createArticle(input: CreateArticleInput): Promise<Article>;
-   updateArticle(input: UpdateArticleInput): Promise<Article>;
-   articleCreated(): AsyncIterable<Article>;
-   articleUpdated(id: string): AsyncIterable<Article>;
-   articleDeleted(): AsyncIterable<string>;
+   getProjectedArticle(context: GraphLinkContext, info: GraphQLResolveInfo): Promise<Article>;
+   getArticleWithCount(context: GraphLinkContext, info: GraphQLResolveInfo): Promise<Article | null>;
+   getArticleInfo(context: GraphLinkContext, info: GraphQLResolveInfo): Promise<Article | null>;
+   getArticle(id: string, context: GraphLinkContext, info: GraphQLResolveInfo): Promise<Article>;
+   listArticles(context: GraphLinkContext, info: GraphQLResolveInfo): Promise<Article[]>;
+   getArticleTypes(context: GraphLinkContext, info: GraphQLResolveInfo): Promise<ArticleType[]>;
+   createArticle(input: CreateArticleInput, context: GraphLinkContext, info: GraphQLResolveInfo): Promise<Article>;
+   updateArticle(input: UpdateArticleInput, context: GraphLinkContext, info: GraphQLResolveInfo): Promise<Article>;
+   articleCreated(context: GraphLinkContext): AsyncIterable<Article>;
+   articleUpdated(id: string, context: GraphLinkContext): AsyncIterable<Article>;
+   articleDeleted(context: GraphLinkContext): AsyncIterable<string>;
 }

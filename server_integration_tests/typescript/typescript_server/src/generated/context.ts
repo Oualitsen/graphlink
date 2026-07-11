@@ -4,5 +4,15 @@
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
 
+import DataLoader from 'dataloader';
+import { Message } from './types/message.js';
+import { Author } from './types/author.js';
+import { Article } from './types/article.js';
+
+export interface GraphLinkLoaders {
+   messageReadRead: DataLoader<Message, boolean>;
+   authorArticles: DataLoader<Author, Article[] | null>;
+}
+
 export interface GraphLinkContext extends Record<string, unknown> {}
 

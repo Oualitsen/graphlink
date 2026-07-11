@@ -4,8 +4,9 @@
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
 
-
+import { GraphLinkContext } from '../context.js';
+import { GraphQLResolveInfo } from 'graphql';
 
 export interface DeleteArticleService {
-   deleteArticle(id: string): Promise<boolean>;
+   deleteArticle(id: string, context: GraphLinkContext, info: GraphQLResolveInfo): Promise<boolean>;
 }

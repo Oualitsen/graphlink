@@ -4,10 +4,12 @@
 // Site: https://graphlink.dev
 // Pub.dev https://pub.dev/packages/graphlink
 
+import { GraphLinkContext } from '../context.js';
+import { GraphQLResolveInfo } from 'graphql';
 import { Article } from '../types/article.js';
 import { Author } from '../types/author.js';
 
 export interface ArticleSchemaMappingsService {
-   articleAuthor(value: Article): Promise<Author>;
-   articleAuthorList(value: Article): Promise<Author[] | null>;
+   articleAuthor(value: Article, context: GraphLinkContext, info: GraphQLResolveInfo): Promise<Author>;
+   articleAuthorList(value: Article, context: GraphLinkContext, info: GraphQLResolveInfo): Promise<Author[] | null>;
 }

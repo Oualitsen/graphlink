@@ -30,7 +30,39 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
   // ── context.ts ────────────────────────────────────────────────────────────
 
   @override
-  String serializeContext() => graphLinkContextInterface;
+  String serializeContext() {
+    final batch = _batchMappings();
+    if (batch.isEmpty) return graphLinkContextInterface;
+
+    final typeNames = <String>{};
+    for (final e in batch) {
+      _addIfKnown(e.mapping.type.token, typeNames);
+      _collectType(e.mapping.field.type, typeNames);
+    }
+    // context.ts sits one level above types/ etc., so rewrite the shared '../'
+    // import prefix to './'.
+    final typeImports = _imports(typeNames).replaceAll("from '../", "from './");
+
+    final loaderFields = [
+      for (final e in batch)
+        '${e.mapping.key}: DataLoader<${tsSerializer.resolveCodeName(e.mapping.type.token)}, ${tsSerializer.serializeType(e.mapping.field.type)}>;',
+    ];
+
+    final buf = StringBuffer();
+    buf.writeln("import DataLoader from 'dataloader';");
+    if (typeImports.isNotEmpty) buf.writeln(typeImports);
+    buf.writeln();
+    buf.writeln(_cg.createInterface(interfaceName: 'GraphLinkLoaders', fields: loaderFields));
+    buf.writeln();
+    buf.write(graphLinkContextInterface);
+    return buf.toString();
+  }
+
+  List<_MappingEntry> _batchMappings() => [
+        for (final service in grammar.services.values)
+          for (final m in service.mappings.where((m) => m.isBatch))
+            _MappingEntry(mapping: m, service: service),
+      ];
 
   // ── impl/my-context.ts stub (written once) ────────────────────────────────
 
@@ -86,6 +118,11 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     final methods = <String>[];
     var hasUpload = false;
 
+    // A batch mapping resolves many parents in one call, so it has no single
+    // GraphQLResolveInfo — exclude `info` from its signature (as subscriptions do).
+    final batchKeys =
+        service.mappings.where((m) => m.isBatch).map((m) => m.key).toSet();
+
     for (final field in service.fields) {
       if (field.getDirectiveByName(glValidate)?.generated == true) continue;
       final argList = field.arguments.map((arg) {
@@ -99,7 +136,8 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       final returnTs = tsSerializer.serializeType(field.type);
       _collectType(field.type, importedTypes);
       final isSubscription = service.getTypeByFieldName(field.name.token) == GLQueryType.subscription;
-      final needsInfo = apolloConfig.useResolveInfo && !isSubscription;
+      final isBatch = batchKeys.contains(field.name.token);
+      final needsInfo = apolloConfig.useResolveInfo && !isSubscription && !isBatch;
       final params = [
         ...argList,
         if (_injectsContext(field)) 'context: GraphLinkContext',
@@ -109,7 +147,11 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       methods.add('${field.name}(${params.join(', ')}): $returnDecl;');
     }
 
-    final needsResolveInfoImport = apolloConfig.useResolveInfo;
+    final needsResolveInfoImport = apolloConfig.useResolveInfo &&
+        service.fields.any((f) =>
+            f.getDirectiveByName(glValidate)?.generated != true &&
+            service.getTypeByFieldName(f.name.token) != GLQueryType.subscription &&
+            !batchKeys.contains(f.name.token));
     final needsContextImport = service.fields.any(_injectsContext);
 
     final imp = _imports(importedTypes);
@@ -167,6 +209,9 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     final serviceImport = _kebabJs(service.token);
     final buf = StringBuffer();
     buf.writeln("import DataLoader from 'dataloader';");
+    if (batchMappings.any((m) => _injectsContext(m.field))) {
+      buf.writeln("import { GraphLinkContext } from '../context.js';");
+    }
     buf.writeln("import { ${service.token} } from '../services/$serviceImport';");
     final imp = _imports(importedTypes);
     if (imp.isNotEmpty) buf.writeln(imp);
@@ -206,13 +251,15 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       ]);
       mapCallback = 'v => $callbackBody';
     }
+    final ctx = _injectsContext(mapping.field);
+    final serviceCallArgs = ctx ? '[...items], context' : '[...items]';
     final loaderBody = _cg.block([
-      'const map = await $serviceVar.${mapping.key}([...items]);',
+      'const map = await $serviceVar.${mapping.key}($serviceCallArgs);',
       'return items.map($mapCallback);',
     ]);
     return '${_cg.createFunction(
       functionName: factoryName,
-      arguments: ['$serviceVar: $serviceName'],
+      arguments: ['$serviceVar: $serviceName', if (ctx) 'context: GraphLinkContext'],
       exported: true,
       statements: [
         'return new DataLoader<$parentName, $fieldTs>(async (items) => $loaderBody);',
@@ -243,7 +290,9 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     final imports = <String>[
       "import { IResolvers } from '@graphql-tools/utils';",
       "import { ${apolloConfig.useResolveInfo ? 'GraphQLError, GraphQLResolveInfo' : 'GraphQLError'} } from 'graphql';",
-      "import { GraphLinkContext } from '../context.js';",
+      _hasBatchLoaders
+          ? "import { GraphLinkContext, GraphLinkLoaders } from '../context.js';"
+          : "import { GraphLinkContext } from '../context.js';",
       if (hasUploads) "import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';",
       if (resolverTypeImports.isNotEmpty) resolverTypeImports,
       // service + guard imports (guard only if service has @glValidate fields)
@@ -251,10 +300,6 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
         "import { ${service.token} } from '../services/${_kebabJs(service.token)}';",
         if (_hasGuard(service)) "import { ${_guardName(service)} } from '../guards/${_kebabJs(_guardName(service))}';",
       ],
-      // loader imports
-      for (final service in services)
-        for (final m in service.mappings.where((m) => m.isBatch))
-          "import { create${m.key.firstUp}Loader } from '../loaders/${_loaderFileJs(service)}';",
     ];
 
     // buildResolvers params: required services first, guards last.
@@ -262,13 +307,6 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       for (final service in services) '${service.token.firstLow}: ${service.token}',
       for (final service in services)
         if (_hasGuard(service)) '${_guardName(service).firstLow}: ${_guardName(service)}',
-    ];
-
-    // DataLoader instances, created once per buildResolvers call.
-    final loaderConsts = <String>[
-      for (final service in services)
-        for (final m in service.mappings.where((m) => m.isBatch))
-          'const ${m.key}Loader = create${m.key.firstUp}Loader(${service.token.firstLow});',
     ];
 
     final query = _serializeRootBlock(services, GLQueryType.query, 'Query');
@@ -288,7 +326,6 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       returnType: 'IResolvers',
       exported: true,
       statements: [
-        ...loaderConsts,
         'return ${_cg.block(resolverMap)};',
       ],
     );
@@ -297,6 +334,12 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
   }
 
   bool _hasGuard(GLService service) => service.fields.any(fieldHasValidation);
+
+  bool get _hasBatchLoaders =>
+      grammar.services.values.any((s) => s.mappings.any((m) => m.isBatch));
+
+  bool get _anyBatchInjectsContext =>
+      _batchMappings().any((e) => _injectsContext(e.mapping.field));
 
   /// Builds the resolver `args` destructuring pattern. Each entry is plain
   /// shorthand (`{ id }`) when the wire name is a legal identifier, or a rename
@@ -454,7 +497,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     }
     if (m.isBatch) {
       final toJsonExpr = tsSerializer.callToJson('_r', m.field.type);
-      return '(parent) => ${m.key}Loader.load(parent).then((_r) => $toJsonExpr)';
+      return '(parent, _, context: GraphLinkContext & { loaders: GraphLinkLoaders }) => context.loaders.${m.key}.load(parent).then((_r) => $toJsonExpr)';
     }
     // The synthetic `value` arg is the parent source instance, not a
     // GraphQL field argument — it is never destructured off `args`, and
@@ -510,6 +553,11 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
         buf.writeln("import { $guard } from './guards/${_kebabJs(guard)}';");
       }
     }
+    for (final service in services) {
+      for (final m in service.mappings.where((m) => m.isBatch)) {
+        buf.writeln("import { create${m.key.firstUp}Loader } from './loaders/${_loaderFileJs(service)}';");
+      }
+    }
     buf.writeln();
 
     // GraphLinkServices interface
@@ -527,6 +575,26 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       fields: serviceFields,
     ));
     buf.writeln();
+
+    // Per-request DataLoaders: created fresh for each request/subscription and
+    // attached to the context, so their caches are scoped to one operation and
+    // released when it ends (never shared across the whole process).
+    final loaderFields = <String>[
+      for (final service in services)
+        for (final m in service.mappings.where((m) => m.isBatch))
+          '${m.key}: create${m.key.firstUp}Loader(services.${service.token.firstLow}${_injectsContext(m.field) ? ', context' : ''}),',
+    ];
+    if (loaderFields.isNotEmpty) {
+      buf.writeln(_cg.createFunction(
+        functionName: 'createLoaders',
+        arguments: [
+          'services: GraphLinkServices',
+          if (_anyBatchInjectsContext) 'context: GraphLinkContext',
+        ],
+        statements: ['return ${_cg.block(loaderFields)};'],
+      ));
+      buf.writeln();
+    }
 
     // buildResolvers call: services first, guards last (mirrors param order)
     final serviceArgs = services.map((s) => 'services.${s.token.firstLow}').join(', ');
@@ -570,7 +638,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
           'server: httpServer,',
           "path: '${apolloConfig.graphqlPath}',",
         ])});',
-        'const cleanup = useServer({ schema }, wsServer as any);',
+        'const cleanup = useServer({ schema${_wsContextOption()} }, wsServer as any);',
         '',
         'const server = new ApolloServer<GraphLinkContext>(${_cg.block([
           'schema,',
@@ -618,14 +686,49 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
+  /// The `context` option for the WS (`useServer`) transport. Subscriptions have
+  /// no `contextFactory` (no req/res), so the WS context carries only per-request
+  /// loaders — built after the context object exists when they need to forward it.
+  String _wsContextOption() {
+    if (!_hasBatchLoaders) return '';
+    if (_anyBatchInjectsContext) {
+      final body = _cg.block([
+        'const context = {} as GraphLinkContext;',
+        'context.loaders = createLoaders(services, context);',
+        'return context;',
+      ]);
+      return ', context: () => $body';
+    }
+    return ', context: () => ({ loaders: createLoaders(services) })';
+  }
+
   /// `app.use('/path', [graphqlUploadExpress(),] expressMiddleware(server, { context }))`.
   String _registerMiddleware() {
-    final context = _cg.ternaryOp(
-      condition: 'services.contextFactory',
-      positiveStatement: 'services.contextFactory(req, res)',
-      negativeStatement: '{} as GraphLinkContext',
-    );
-    final options = _cg.block(['context: async ({ req, res }) => $context,']);
+    final String contextCallback;
+    if (_anyBatchInjectsContext) {
+      // Loaders forward the request context to their batch service methods, so
+      // the context object must exist before the loaders are built.
+      final body = _cg.block([
+        'const context: GraphLinkContext = services.contextFactory ? await services.contextFactory(req, res) : {} as GraphLinkContext;',
+        'context.loaders = createLoaders(services, context);',
+        'return context;',
+      ]);
+      contextCallback = 'context: async ({ req, res }) => $body,';
+    } else if (_hasBatchLoaders) {
+      final body = _cg.block([
+        'const base = services.contextFactory ? await services.contextFactory(req, res) : {} as GraphLinkContext;',
+        'return { ...base, loaders: createLoaders(services) };',
+      ]);
+      contextCallback = 'context: async ({ req, res }) => $body,';
+    } else {
+      final context = _cg.ternaryOp(
+        condition: 'services.contextFactory',
+        positiveStatement: 'services.contextFactory(req, res)',
+        negativeStatement: '{} as GraphLinkContext',
+      );
+      contextCallback = 'context: async ({ req, res }) => $context,';
+    }
+    final options = _cg.block([contextCallback]);
     final uploadHandler = hasUploads ? 'graphqlUploadExpress(), ' : '';
     return "app.use('${apolloConfig.graphqlPath}', ${uploadHandler}expressMiddleware(server, $options));";
   }

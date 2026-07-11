@@ -5,13 +5,14 @@
 // Pub.dev https://pub.dev/packages/graphlink
 
 import DataLoader from 'dataloader';
+import { GraphLinkContext } from '../context.js';
 import { AuthorSchemaMappingsService } from '../services/author-schema-mappings-service.js';
 import { Author } from '../types/author.js';
 import { Article } from '../types/article.js';
 
-export function createAuthorArticlesLoader(authorSchemaMappingsService: AuthorSchemaMappingsService) {
+export function createAuthorArticlesLoader(authorSchemaMappingsService: AuthorSchemaMappingsService, context: GraphLinkContext) {
    return new DataLoader<Author, Article[] | null>(async (items) => {
-      const map = await authorSchemaMappingsService.authorArticles([...items]);
+      const map = await authorSchemaMappingsService.authorArticles([...items], context);
       return items.map(v => map.get(v) ?? null);
    });
 }

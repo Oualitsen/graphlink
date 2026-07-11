@@ -5,8 +5,8 @@
 // Pub.dev https://pub.dev/packages/graphlink
 
 import { IResolvers } from '@graphql-tools/utils';
-import { GraphQLError } from 'graphql';
-import { GraphLinkContext } from '../context.js';
+import { GraphQLError, GraphQLResolveInfo } from 'graphql';
+import { GraphLinkContext, GraphLinkLoaders } from '../context.js';
 import { Catalog } from '../types/catalog.js';
 import { Feed } from '../types/feed.js';
 import { Store } from '../types/store.js';
@@ -54,177 +54,173 @@ import { ArticleWithCountSchemaMappingsService } from '../services/article-with-
 import { MessageReadSchemaMappingsService } from '../services/message-read-schema-mappings-service.js';
 import { AuthorSchemaMappingsService } from '../services/author-schema-mappings-service.js';
 import { ArticleSchemaMappingsService } from '../services/article-schema-mappings-service.js';
-import { createMessageReadReadLoader } from '../loaders/message-read-schema-mappings-loaders.js';
-import { createAuthorArticlesLoader } from '../loaders/author-schema-mappings-loaders.js';
 
 export function buildResolvers(catalogService: CatalogService, feedService: FeedService, storeService: StoreService, searchResultService: SearchResultService, reservedFieldsService: ReservedFieldsService, collideService: CollideService, statusService: StatusService, articleService: ArticleService, messageService: MessageService, nestingService: NestingService, authorService: AuthorService, configService: ConfigService, rangeService: RangeService, greetService: GreetService, echoPriorityService: EchoPriorityService, deleteArticleService: DeleteArticleService, bulkCreateService: BulkCreateService, ackPriorityService: AckPriorityService, catalogSchemaMappingsService: CatalogSchemaMappingsService, feedSchemaMappingsService: FeedSchemaMappingsService, storeSchemaMappingsService: StoreSchemaMappingsService, shelfSchemaMappingsService: ShelfSchemaMappingsService, searchResultSchemaMappingsService: SearchResultSchemaMappingsService, articleWithCountSchemaMappingsService: ArticleWithCountSchemaMappingsService, messageReadSchemaMappingsService: MessageReadSchemaMappingsService, authorSchemaMappingsService: AuthorSchemaMappingsService, articleSchemaMappingsService: ArticleSchemaMappingsService, bulkCreateGuard: BulkCreateGuard): IResolvers {
-   const messageReadReadLoader = createMessageReadReadLoader(messageReadSchemaMappingsService);
-   const authorArticlesLoader = createAuthorArticlesLoader(authorSchemaMappingsService);
    return {
       Query: {
-         catalog: async (_, __) => {
-            return catalogService.catalog().then((_r) => Catalog.toJson(_r));
+         catalog: async (_, __, context, info) => {
+            return catalogService.catalog(context, info).then((_r) => Catalog.toJson(_r));
          },
-         feed: async (_, __) => {
-            return feedService.feed().then((_r) => Feed.toJson(_r));
+         feed: async (_, __, context, info) => {
+            return feedService.feed(context, info).then((_r) => Feed.toJson(_r));
          },
-         store: async (_, __) => {
-            return storeService.store().then((_r) => Store.toJson(_r));
+         store: async (_, __, context, info) => {
+            return storeService.store(context, info).then((_r) => Store.toJson(_r));
          },
-         search: async (_, { fieldArgs }) => {
-            return searchResultService.search(fieldArgs).then((_r) => SearchResult.toJson(_r));
+         search: async (_, { fieldArgs }, context, info) => {
+            return searchResultService.search(fieldArgs, context, info).then((_r) => SearchResult.toJson(_r));
          },
-         reserved: async (_, __) => {
-            return reservedFieldsService.reserved().then((_r) => ReservedFields.toJson(_r));
+         reserved: async (_, __, context, info) => {
+            return reservedFieldsService.reserved(context, info).then((_r) => ReservedFields.toJson(_r));
          },
-         switch: async (_, { class: class_, return: return_ }) => {
-            return reservedFieldsService.switch(class_, return_).then((_r) => ReservedFields.toJson(_r));
+         switch: async (_, { class: class_, return: return_ }, context, info) => {
+            return reservedFieldsService.switch(class_, return_, context, info).then((_r) => ReservedFields.toJson(_r));
          },
-         collide: async (_, __) => {
-            return collideService.collide().then((_r) => Collide.toJson(_r));
+         collide: async (_, __, context, info) => {
+            return collideService.collide(context, info).then((_r) => Collide.toJson(_r));
          },
-         _status: async (_, __) => {
-            return statusService._status();
+         _status: async (_, __, context, info) => {
+            return statusService._status(context, info);
          },
-         getProjectedArticle: async (_, __) => {
-            return articleService.getProjectedArticle().then((_r) => Article.toJson(_r));
+         getProjectedArticle: async (_, __, context, info) => {
+            return articleService.getProjectedArticle(context, info).then((_r) => Article.toJson(_r));
          },
-         getArticleWithCount: async (_, __) => {
-            return articleService.getArticleWithCount().then((_r) => _r != null ? Article.toJson(_r) : null);
+         getArticleWithCount: async (_, __, context, info) => {
+            return articleService.getArticleWithCount(context, info).then((_r) => _r != null ? Article.toJson(_r) : null);
          },
-         getArticleInfo: async (_, __) => {
-            return articleService.getArticleInfo().then((_r) => _r != null ? Article.toJson(_r) : null);
+         getArticleInfo: async (_, __, context, info) => {
+            return articleService.getArticleInfo(context, info).then((_r) => _r != null ? Article.toJson(_r) : null);
          },
-         getArticle: async (_, { id }) => {
-            return articleService.getArticle(id).then((_r) => Article.toJson(_r));
+         getArticle: async (_, { id }, context, info) => {
+            return articleService.getArticle(id, context, info).then((_r) => Article.toJson(_r));
          },
-         listArticles: async (_, __) => {
-            return articleService.listArticles().then((_r) => _r.map((e0) => Article.toJson(e0)));
+         listArticles: async (_, __, context, info) => {
+            return articleService.listArticles(context, info).then((_r) => _r.map((e0) => Article.toJson(e0)));
          },
-         getArticleTypes: async (_, __) => {
-            return articleService.getArticleTypes().then((_r) => _r.map((e0) => ArticleType.toJson(e0)));
+         getArticleTypes: async (_, __, context, info) => {
+            return articleService.getArticleTypes(context, info).then((_r) => _r.map((e0) => ArticleType.toJson(e0)));
          },
-         getMessageReadList: async (_, __) => {
-            return messageService.getMessageReadList().then((_r) => _r != null ? _r.map((e0) => e0 != null ? Message.toJson(e0) : null) : null);
+         getMessageReadList: async (_, __, context, info) => {
+            return messageService.getMessageReadList(context, info).then((_r) => _r != null ? _r.map((e0) => e0 != null ? Message.toJson(e0) : null) : null);
          },
-         colors1: async (_, __) => {
-            return nestingService.colors1().then((_r) => _r.map((e0) => Color.toJson(e0)));
+         colors1: async (_, __, context, info) => {
+            return nestingService.colors1(context, info).then((_r) => _r.map((e0) => Color.toJson(e0)));
          },
-         colors2: async (_, __) => {
-            return nestingService.colors2().then((_r) => _r != null ? _r.map((e0) => e0 != null ? e0.map((e1) => e1 != null ? Color.toJson(e1) : null) : null) : null);
+         colors2: async (_, __, context, info) => {
+            return nestingService.colors2(context, info).then((_r) => _r != null ? _r.map((e0) => e0 != null ? e0.map((e1) => e1 != null ? Color.toJson(e1) : null) : null) : null);
          },
-         colors3: async (_, __) => {
-            return nestingService.colors3().then((_r) => _r.map((e0) => e0.map((e1) => e1.map((e2) => Color.toJson(e2)))));
+         colors3: async (_, __, context, info) => {
+            return nestingService.colors3(context, info).then((_r) => _r.map((e0) => e0.map((e1) => e1.map((e2) => Color.toJson(e2)))));
          },
-         boxes1: async (_, __) => {
-            return nestingService.boxes1().then((_r) => _r != null ? _r.map((e0) => e0 != null ? Box.toJson(e0) : null) : null);
+         boxes1: async (_, __, context, info) => {
+            return nestingService.boxes1(context, info).then((_r) => _r != null ? _r.map((e0) => e0 != null ? Box.toJson(e0) : null) : null);
          },
-         boxes2: async (_, __) => {
-            return nestingService.boxes2().then((_r) => _r.map((e0) => e0.map((e1) => Box.toJson(e1))));
+         boxes2: async (_, __, context, info) => {
+            return nestingService.boxes2(context, info).then((_r) => _r.map((e0) => e0.map((e1) => Box.toJson(e1))));
          },
-         boxes3: async (_, __) => {
-            return nestingService.boxes3().then((_r) => _r != null ? _r.map((e0) => e0 != null ? e0.map((e1) => e1 != null ? e1.map((e2) => e2 != null ? Box.toJson(e2) : null) : null) : null) : null);
+         boxes3: async (_, __, context, info) => {
+            return nestingService.boxes3(context, info).then((_r) => _r != null ? _r.map((e0) => e0 != null ? e0.map((e1) => e1 != null ? e1.map((e2) => e2 != null ? Box.toJson(e2) : null) : null) : null) : null);
          },
-         shapes1: async (_, __) => {
-            return nestingService.shapes1().then((_r) => _r.map((e0) => Shape.toJson(e0)));
+         shapes1: async (_, __, context, info) => {
+            return nestingService.shapes1(context, info).then((_r) => _r.map((e0) => Shape.toJson(e0)));
          },
-         shapes2: async (_, __) => {
-            return nestingService.shapes2().then((_r) => _r != null ? _r.map((e0) => e0 != null ? e0.map((e1) => e1 != null ? Shape.toJson(e1) : null) : null) : null);
+         shapes2: async (_, __, context, info) => {
+            return nestingService.shapes2(context, info).then((_r) => _r != null ? _r.map((e0) => e0 != null ? e0.map((e1) => e1 != null ? Shape.toJson(e1) : null) : null) : null);
          },
-         shapes3: async (_, __) => {
-            return nestingService.shapes3().then((_r) => _r.map((e0) => e0.map((e1) => e1.map((e2) => Shape.toJson(e2)))));
+         shapes3: async (_, __, context, info) => {
+            return nestingService.shapes3(context, info).then((_r) => _r.map((e0) => e0.map((e1) => e1.map((e2) => Shape.toJson(e2)))));
          },
-         media1: async (_, __) => {
-            return nestingService.media1().then((_r) => _r.map((e0) => Media.toJson(e0)));
+         media1: async (_, __, context, info) => {
+            return nestingService.media1(context, info).then((_r) => _r.map((e0) => Media.toJson(e0)));
          },
-         media2: async (_, __) => {
-            return nestingService.media2().then((_r) => _r != null ? _r.map((e0) => e0 != null ? e0.map((e1) => e1 != null ? Media.toJson(e1) : null) : null) : null);
+         media2: async (_, __, context, info) => {
+            return nestingService.media2(context, info).then((_r) => _r != null ? _r.map((e0) => e0 != null ? e0.map((e1) => e1 != null ? Media.toJson(e1) : null) : null) : null);
          },
-         media3: async (_, __) => {
-            return nestingService.media3().then((_r) => _r.map((e0) => e0.map((e1) => e1.map((e2) => Media.toJson(e2)))));
+         media3: async (_, __, context, info) => {
+            return nestingService.media3(context, info).then((_r) => _r.map((e0) => e0.map((e1) => e1.map((e2) => Media.toJson(e2)))));
          },
-         getAuthor: async (_, { id }) => {
-            return authorService.getAuthor(id).then((_r) => _r != null ? Author.toJson(_r) : null);
+         getAuthor: async (_, { id }, context, info) => {
+            return authorService.getAuthor(id, context, info).then((_r) => _r != null ? Author.toJson(_r) : null);
          },
-         listAuthors: async (_, __) => {
-            return authorService.listAuthors().then((_r) => _r.map((e0) => Author.toJson(e0)));
+         listAuthors: async (_, __, context, info) => {
+            return authorService.listAuthors(context, info).then((_r) => _r.map((e0) => Author.toJson(e0)));
          },
-         resolveConfig: async (_, { input }) => {
-            return configService.resolveConfig(input).then((_r) => Config.toJson(_r));
+         resolveConfig: async (_, { input }, context, info) => {
+            return configService.resolveConfig(input, context, info).then((_r) => Config.toJson(_r));
          },
-         resolveRange: async (_, { input }) => {
-            return rangeService.resolveRange(input).then((_r) => Range.toJson(_r));
+         resolveRange: async (_, { input }, context, info) => {
+            return rangeService.resolveRange(input, context, info).then((_r) => Range.toJson(_r));
          },
-         greet: async (_, { name, times }) => {
-            return greetService.greet(name, times);
+         greet: async (_, { name, times }, context, info) => {
+            return greetService.greet(name, times, context, info);
          },
-         echoPriority: async (_, { level }) => {
-            return echoPriorityService.echoPriority(level).then((_r) => Priority.toJson(_r));
+         echoPriority: async (_, { level }, context, info) => {
+            return echoPriorityService.echoPriority(level, context, info).then((_r) => Priority.toJson(_r));
          },
       },
       Mutation: {
-         echoReserved: async (_, { input }) => {
-            return reservedFieldsService.echoReserved(input).then((_r) => ReservedFields.toJson(_r));
+         echoReserved: async (_, { input }, context, info) => {
+            return reservedFieldsService.echoReserved(input, context, info).then((_r) => ReservedFields.toJson(_r));
          },
-         createArticle: async (_, { input }) => {
-            return articleService.createArticle(input).then((_r) => Article.toJson(_r));
+         createArticle: async (_, { input }, context, info) => {
+            return articleService.createArticle(input, context, info).then((_r) => Article.toJson(_r));
          },
-         updateArticle: async (_, { input }) => {
-            return articleService.updateArticle(input).then((_r) => Article.toJson(_r));
+         updateArticle: async (_, { input }, context, info) => {
+            return articleService.updateArticle(input, context, info).then((_r) => Article.toJson(_r));
          },
-         deleteArticle: async (_, { id }) => {
-            return deleteArticleService.deleteArticle(id);
+         deleteArticle: async (_, { id }, context, info) => {
+            return deleteArticleService.deleteArticle(id, context, info);
          },
-         bulkCreate: async (_, { matrix }) => {
-            await bulkCreateGuard.validateBulkCreate(matrix);
-            return bulkCreateService.bulkCreate(matrix);
+         bulkCreate: async (_, { matrix }, context, info) => {
+            await bulkCreateGuard.validateBulkCreate(matrix, context, info);
+            return bulkCreateService.bulkCreate(matrix, context, info);
          },
-         ackPriority: async (_, { level }) => {
-            return ackPriorityService.ackPriority(level);
+         ackPriority: async (_, { level }, context, info) => {
+            return ackPriorityService.ackPriority(level, context, info);
          },
       },
       Subscription: {
          articleCreated: {
-            subscribe: (_, __) => articleService.articleCreated(),
+            subscribe: (_, __, context) => articleService.articleCreated(context),
             resolve: (payload: any) => Article.toJson(payload),
          },
          articleUpdated: {
-            subscribe: (_, { id }) => articleService.articleUpdated(id),
+            subscribe: (_, { id }, context) => articleService.articleUpdated(id, context),
             resolve: (payload: any) => Article.toJson(payload),
          },
          articleDeleted: {
-            subscribe: (_, __) => articleService.articleDeleted(),
+            subscribe: (_, __, context) => articleService.articleDeleted(context),
             resolve: (payload: any) => payload,
          },
       },
       Catalog: {
-         products: (parent, { category, limit, offset }) => catalogSchemaMappingsService.catalogProducts(category, limit, offset, parent).then((_r) => _r.map((e0) => Product.toJson(e0))),
+         products: (parent, { category, limit, offset }, context, info) => catalogSchemaMappingsService.catalogProducts(category, limit, offset, parent, context, info).then((_r) => _r.map((e0) => Product.toJson(e0))),
       },
       Feed: {
-         items: (parent, { limit, sort }) => feedSchemaMappingsService.feedItems(limit, sort, parent).then((_r) => _r.map((e0) => Product.toJson(e0))),
+         items: (parent, { limit, sort }, context, info) => feedSchemaMappingsService.feedItems(limit, sort, parent, context, info).then((_r) => _r.map((e0) => Product.toJson(e0))),
       },
       Store: {
-         shelves: (parent, { floor }) => storeSchemaMappingsService.storeShelves(floor, parent).then((_r) => _r.map((e0) => Shelf.toJson(e0))),
+         shelves: (parent, { floor }, context, info) => storeSchemaMappingsService.storeShelves(floor, parent, context, info).then((_r) => _r.map((e0) => Shelf.toJson(e0))),
       },
       Shelf: {
-         products: (parent, { limit }) => shelfSchemaMappingsService.shelfProducts(limit, parent).then((_r) => _r.map((e0) => Product.toJson(e0))),
+         products: (parent, { limit }, context, info) => shelfSchemaMappingsService.shelfProducts(limit, parent, context, info).then((_r) => _r.map((e0) => Product.toJson(e0))),
       },
       SearchResult: {
-         hits: (parent, { limit }) => searchResultSchemaMappingsService.searchResultHits(limit, parent).then((_r) => _r.map((e0) => Product.toJson(e0))),
+         hits: (parent, { limit }, context, info) => searchResultSchemaMappingsService.searchResultHits(limit, parent, context, info).then((_r) => _r.map((e0) => Product.toJson(e0))),
       },
       ArticleWithCount: {
-         count: (parent, _) => articleWithCountSchemaMappingsService.articleWithCountCount(parent).then((_r) => _r),
+         count: (parent, _, context, info) => articleWithCountSchemaMappingsService.articleWithCountCount(parent, context, info).then((_r) => _r),
       },
       MessageRead: {
-         read: (parent) => messageReadReadLoader.load(parent).then((_r) => _r),
+         read: (parent, _, context: GraphLinkContext & { loaders: GraphLinkLoaders }) => context.loaders.messageReadRead.load(parent).then((_r) => _r),
       },
       Author: {
-         articles: (parent) => authorArticlesLoader.load(parent).then((_r) => _r != null ? _r.map((e0) => Article.toJson(e0)) : null),
-         latestArticles: (parent, { limit }) => authorSchemaMappingsService.authorLatestArticles(limit, parent).then((_r) => _r.map((e0) => Article.toJson(e0))),
+         articles: (parent, _, context: GraphLinkContext & { loaders: GraphLinkLoaders }) => context.loaders.authorArticles.load(parent).then((_r) => _r != null ? _r.map((e0) => Article.toJson(e0)) : null),
+         latestArticles: (parent, { limit }, context, info) => authorSchemaMappingsService.authorLatestArticles(limit, parent, context, info).then((_r) => _r.map((e0) => Article.toJson(e0))),
       },
       Article: {
-         author: (parent, _) => articleSchemaMappingsService.articleAuthor(parent).then((_r) => Author.toJson(_r)),
-         authorList: (parent, _) => articleSchemaMappingsService.articleAuthorList(parent).then((_r) => _r != null ? _r.map((e0) => Author.toJson(e0)) : null),
+         author: (parent, _, context, info) => articleSchemaMappingsService.articleAuthor(parent, context, info).then((_r) => Author.toJson(_r)),
+         authorList: (parent, _, context, info) => articleSchemaMappingsService.articleAuthorList(parent, context, info).then((_r) => _r != null ? _r.map((e0) => Author.toJson(e0)) : null),
       },
    };
 }
