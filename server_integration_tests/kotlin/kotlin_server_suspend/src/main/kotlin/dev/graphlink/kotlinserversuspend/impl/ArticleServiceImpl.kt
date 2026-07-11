@@ -3,7 +3,6 @@ package dev.graphlink.kotlinserversuspend.impl
 import dev.graphlink.kotlinserversuspend.generated.enums.ArticleType
 import dev.graphlink.kotlinserversuspend.generated.inputs.CreateArticleInput
 import dev.graphlink.kotlinserversuspend.generated.inputs.UpdateArticleInput
-import dev.graphlink.kotlinserversuspend.generated.interfaces.Article
 import dev.graphlink.kotlinserversuspend.generated.services.ArticleService
 import dev.graphlink.kotlinserversuspend.generated.types.Article
 import graphql.GraphQLContext
@@ -52,10 +51,10 @@ class ArticleServiceImpl : ArticleService {
 
     // Article implements Article, so a concrete article is a valid
     // projection — the client selects whichever subset it wants.
-    override suspend fun getProjectedArticle(graphQLContext: GraphQLContext): Article =
+    override suspend fun getProjectedArticle(): Article =
         Data.articles.first()
 
-    override suspend fun getArticleInfo(graphQLContext: GraphQLContext): Article? =
+    override suspend fun getArticleInfo(): Article? =
         Data.articles.firstOrNull()
 
     override suspend fun getArticleWithCount(): Article? = Data.articles.firstOrNull()
