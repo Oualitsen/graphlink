@@ -21,9 +21,9 @@ export namespace Article {
       return {
          "id": obj.id,
          "title": obj.title,
-         "type": obj.type != null ? ArticleType.toJson(obj.type) : null,
+         "type": obj.type != null ? ArticleType.toJson(obj.type) : obj.type,
          "authorId": obj.authorId,
-         "webSite": obj.webSite != null ? WebSite.toJson(obj.webSite) : null,
+         "webSite": obj.webSite != null ? WebSite.toJson(obj.webSite) : obj.webSite,
          "published": obj.published,
       };
    }

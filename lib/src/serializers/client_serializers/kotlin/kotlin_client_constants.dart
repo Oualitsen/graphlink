@@ -332,7 +332,7 @@ class DefaultGraphLinkWebSocketAdapter(
     private val httpClient: OkHttpClient = OkHttpClient(),
     private val maxReconnectAttempts: Int? = 10,
     private val maxReconnectDelayMs: Long = 30_000L,
-    private val protocols: List<String> = emptyList(),
+    private val protocols: List<String> = listOf("graphql-transport-ws"),
 ) : GraphLinkWebSocketAdapter {
 
     private val scheduler = Executors.newSingleThreadScheduledExecutor()

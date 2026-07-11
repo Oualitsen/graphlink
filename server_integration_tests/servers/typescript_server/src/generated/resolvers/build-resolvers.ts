@@ -86,10 +86,10 @@ export function buildResolvers(catalogService: CatalogService, feedService: Feed
             return articleService.getProjectedArticle(context, info).then((_r) => Article.toJson(_r));
          },
          getArticleWithCount: async (_, __, context, info) => {
-            return articleService.getArticleWithCount(context, info).then((_r) => _r != null ? Article.toJson(_r) : null);
+            return articleService.getArticleWithCount(context, info).then((_r) => _r != null ? Article.toJson(_r) : _r);
          },
          getArticleInfo: async (_, __, context, info) => {
-            return articleService.getArticleInfo(context, info).then((_r) => _r != null ? Article.toJson(_r) : null);
+            return articleService.getArticleInfo(context, info).then((_r) => _r != null ? Article.toJson(_r) : _r);
          },
          getArticle: async (_, { id }, context, info) => {
             return articleService.getArticle(id, context, info).then((_r) => Article.toJson(_r));
@@ -101,31 +101,31 @@ export function buildResolvers(catalogService: CatalogService, feedService: Feed
             return articleService.getArticleTypes(context, info).then((_r) => _r.map((e0) => ArticleType.toJson(e0)));
          },
          getMessageReadList: async (_, __, context, info) => {
-            return messageService.getMessageReadList(context, info).then((_r) => _r != null ? _r.map((e0) => e0 != null ? Message.toJson(e0) : null) : null);
+            return messageService.getMessageReadList(context, info).then((_r) => _r != null ? _r.map((e0) => e0 != null ? Message.toJson(e0) : e0) : _r);
          },
          colors1: async (_, __, context, info) => {
             return nestingService.colors1(context, info).then((_r) => _r.map((e0) => Color.toJson(e0)));
          },
          colors2: async (_, __, context, info) => {
-            return nestingService.colors2(context, info).then((_r) => _r != null ? _r.map((e0) => e0 != null ? e0.map((e1) => e1 != null ? Color.toJson(e1) : null) : null) : null);
+            return nestingService.colors2(context, info).then((_r) => _r != null ? _r.map((e0) => e0 != null ? e0.map((e1) => e1 != null ? Color.toJson(e1) : e1) : e0) : _r);
          },
          colors3: async (_, __, context, info) => {
             return nestingService.colors3(context, info).then((_r) => _r.map((e0) => e0.map((e1) => e1.map((e2) => Color.toJson(e2)))));
          },
          boxes1: async (_, __, context, info) => {
-            return nestingService.boxes1(context, info).then((_r) => _r != null ? _r.map((e0) => e0 != null ? Box.toJson(e0) : null) : null);
+            return nestingService.boxes1(context, info).then((_r) => _r != null ? _r.map((e0) => e0 != null ? Box.toJson(e0) : e0) : _r);
          },
          boxes2: async (_, __, context, info) => {
             return nestingService.boxes2(context, info).then((_r) => _r.map((e0) => e0.map((e1) => Box.toJson(e1))));
          },
          boxes3: async (_, __, context, info) => {
-            return nestingService.boxes3(context, info).then((_r) => _r != null ? _r.map((e0) => e0 != null ? e0.map((e1) => e1 != null ? e1.map((e2) => e2 != null ? Box.toJson(e2) : null) : null) : null) : null);
+            return nestingService.boxes3(context, info).then((_r) => _r != null ? _r.map((e0) => e0 != null ? e0.map((e1) => e1 != null ? e1.map((e2) => e2 != null ? Box.toJson(e2) : e2) : e1) : e0) : _r);
          },
          shapes1: async (_, __, context, info) => {
             return nestingService.shapes1(context, info).then((_r) => _r.map((e0) => Shape.toJson(e0)));
          },
          shapes2: async (_, __, context, info) => {
-            return nestingService.shapes2(context, info).then((_r) => _r != null ? _r.map((e0) => e0 != null ? e0.map((e1) => e1 != null ? Shape.toJson(e1) : null) : null) : null);
+            return nestingService.shapes2(context, info).then((_r) => _r != null ? _r.map((e0) => e0 != null ? e0.map((e1) => e1 != null ? Shape.toJson(e1) : e1) : e0) : _r);
          },
          shapes3: async (_, __, context, info) => {
             return nestingService.shapes3(context, info).then((_r) => _r.map((e0) => e0.map((e1) => e1.map((e2) => Shape.toJson(e2)))));
@@ -134,13 +134,13 @@ export function buildResolvers(catalogService: CatalogService, feedService: Feed
             return nestingService.media1(context, info).then((_r) => _r.map((e0) => Media.toJson(e0)));
          },
          media2: async (_, __, context, info) => {
-            return nestingService.media2(context, info).then((_r) => _r != null ? _r.map((e0) => e0 != null ? e0.map((e1) => e1 != null ? Media.toJson(e1) : null) : null) : null);
+            return nestingService.media2(context, info).then((_r) => _r != null ? _r.map((e0) => e0 != null ? e0.map((e1) => e1 != null ? Media.toJson(e1) : e1) : e0) : _r);
          },
          media3: async (_, __, context, info) => {
             return nestingService.media3(context, info).then((_r) => _r.map((e0) => e0.map((e1) => e1.map((e2) => Media.toJson(e2)))));
          },
          getAuthor: async (_, { id }, context, info) => {
-            return authorService.getAuthor(id, context, info).then((_r) => _r != null ? Author.toJson(_r) : null);
+            return authorService.getAuthor(id, context, info).then((_r) => _r != null ? Author.toJson(_r) : _r);
          },
          listAuthors: async (_, __, context, info) => {
             return authorService.listAuthors(context, info).then((_r) => _r.map((e0) => Author.toJson(e0)));
@@ -215,12 +215,12 @@ export function buildResolvers(catalogService: CatalogService, feedService: Feed
          read: (parent, _, context: GraphLinkContext & { loaders: GraphLinkLoaders }) => context.loaders.messageReadRead.load(parent).then((_r) => _r),
       },
       Author: {
-         articles: (parent, _, context: GraphLinkContext & { loaders: GraphLinkLoaders }) => context.loaders.authorArticles.load(parent).then((_r) => _r != null ? _r.map((e0) => Article.toJson(e0)) : null),
+         articles: (parent, _, context: GraphLinkContext & { loaders: GraphLinkLoaders }) => context.loaders.authorArticles.load(parent).then((_r) => _r != null ? _r.map((e0) => Article.toJson(e0)) : _r),
          latestArticles: (parent, { limit }, context, info) => authorSchemaMappingsService.authorLatestArticles(limit, parent, context, info).then((_r) => _r.map((e0) => Article.toJson(e0))),
       },
       Article: {
          author: (parent, _, context, info) => articleSchemaMappingsService.articleAuthor(parent, context, info).then((_r) => Author.toJson(_r)),
-         authorList: (parent, _, context, info) => articleSchemaMappingsService.articleAuthorList(parent, context, info).then((_r) => _r != null ? _r.map((e0) => Author.toJson(e0)) : null),
+         authorList: (parent, _, context, info) => articleSchemaMappingsService.articleAuthorList(parent, context, info).then((_r) => _r != null ? _r.map((e0) => Author.toJson(e0)) : _r),
       },
    };
 }
