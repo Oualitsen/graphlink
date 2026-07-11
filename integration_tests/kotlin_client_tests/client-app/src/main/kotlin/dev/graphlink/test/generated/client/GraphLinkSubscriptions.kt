@@ -42,7 +42,7 @@ open class GraphLinkSubscriptions(
       val glQuery__ = "subscription userCreateds(\$ids: [ID!]!){userCreateds(ids: \$ids){..._all_fields_User}}"
       val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
       val glFullQuery__ = assembleQuery(glQuery__, glFragmentNames__)
-      val glVariables__ = mapOf("ids" to ids.toList())
+      val glVariables__ = mapOf<String, Any?>("ids" to ids.toList())
       val glPayload__ = GraphLinkPayload(query = glFullQuery__, operationName = "userCreateds", variables = glVariables__)
       return handler.handle(glPayload__).map { UserCreatedsResponse.fromJson(it) }
    }
@@ -50,7 +50,7 @@ open class GraphLinkSubscriptions(
       val glQuery__ = "subscription userStatusChanged(\$userId: ID!){userStatusChanged(userId: \$userId){..._all_fields_User}}"
       val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
       val glFullQuery__ = assembleQuery(glQuery__, glFragmentNames__)
-      val glVariables__ = mapOf("userId" to userId)
+      val glVariables__ = mapOf<String, Any?>("userId" to userId)
       val glPayload__ = GraphLinkPayload(query = glFullQuery__, operationName = "userStatusChanged", variables = glVariables__)
       return handler.handle(glPayload__).map { UserStatusChangedResponse.fromJson(it) }
    }

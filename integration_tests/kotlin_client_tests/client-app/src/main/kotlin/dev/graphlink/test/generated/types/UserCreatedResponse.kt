@@ -17,6 +17,7 @@ data class UserCreatedResponse(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): UserCreatedResponse = UserCreatedResponse(
           userCreated = User.fromJson(map["userCreated"] as Map<String, Any?>),
       )

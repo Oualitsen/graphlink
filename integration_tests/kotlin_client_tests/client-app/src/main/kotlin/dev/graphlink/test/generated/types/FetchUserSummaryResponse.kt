@@ -17,6 +17,7 @@ data class FetchUserSummaryResponse(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): FetchUserSummaryResponse = FetchUserSummaryResponse(
           getUser = User_IdNameStatus.fromJson(map["getUser"] as Map<String, Any?>),
       )

@@ -16,12 +16,14 @@ data class GraphLinkSubscriptionMessage(
     val payload: GraphLinkSubscriptionPayload? = null,
 ) : GraphLinkSubscriptionErrorMessageBase {
    fun toJson(): Map<String, Any?> = mapOf(
+           "__typename" to "GraphLinkSubscriptionMessage",
            "id" to id,
            "type" to type,
            "payload" to payload?.toJson(),
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): GraphLinkSubscriptionMessage = GraphLinkSubscriptionMessage(
           id = map["id"] as? String,
           type = map["type"] as? String,

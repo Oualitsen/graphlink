@@ -33,10 +33,11 @@ data class CreateUserInput(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): CreateUserInput = CreateUserInput(
           name = map["name"] as String,
           email = map["email"] as String,
-          status = UserStatus.valueOf(map["status"] as String),
+          status = UserStatus.fromJson(map["status"] as String)!!,
           priority = (map["priority"] as? String)?.let { Priority.fromJson(it) },
           address = AddressInput.fromJson(map["address"] as Map<String, Any?>),
           billingAddress = (map["billingAddress"] as? Map<*, *>)?.let { AddressInput.fromJson(it as Map<String, Any?>) },

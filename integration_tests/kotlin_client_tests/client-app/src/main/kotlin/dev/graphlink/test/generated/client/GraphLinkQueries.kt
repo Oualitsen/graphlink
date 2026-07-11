@@ -62,25 +62,25 @@ open class GraphLinkQueries(
 
 
    suspend fun fetchUserAndPost(userId: String, postId: String): FetchUserAndPostResponse {
-      val glVariables__ = mapOf("userId" to userId, "postId" to postId)
+      val glVariables__ = mapOf<String, Any?>("userId" to userId, "postId" to postId)
       val glQuery__ = "query fetchUserAndPost(\$userId: ID!,\$postId: ID!){user:getUser(id: \$userId){..._all_fields_User} post:getPost(id: \$postId){id title author{..._all_fields_User}}}"
       val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
       return executeData(glQuery__, glFragmentNames__, "fetchUserAndPost", glVariables__, { FetchUserAndPostFullResponse.fromJson(it) }).data!!
    }
    suspend fun fetchUserSummary(id: String): FetchUserSummaryResponse {
-      val glVariables__ = mapOf("id" to id)
+      val glVariables__ = mapOf<String, Any?>("id" to id)
       val glQuery__ = "query fetchUserSummary(\$id: ID!){getUser(id: \$id){id name status}}"
       val glFragmentNames__ = emptySet<String>()
       return executeData(glQuery__, glFragmentNames__, "fetchUserSummary", glVariables__, { FetchUserSummaryFullResponse.fromJson(it) }).data!!
    }
    suspend fun runSearch(term: String): RunSearchResponse {
-      val glVariables__ = mapOf("term" to term)
+      val glVariables__ = mapOf<String, Any?>("term" to term)
       val glQuery__ = "query runSearch(\$term: String!){search(term: \$term){... on UserResult  {id name email __typename}  ... on PostResult  {id title __typename}}}"
       val glFragmentNames__ = emptySet<String>()
       return executeData(glQuery__, glFragmentNames__, "runSearch", glVariables__, { RunSearchFullResponse.fromJson(it) }).data!!
    }
    suspend fun fetchCachedPair(userId: String, postId: String): FetchCachedPairResponse {
-      val glVariables__ = mapOf("userId" to userId, "postId" to postId)
+      val glVariables__ = mapOf<String, Any?>("userId" to userId, "postId" to postId)
       val glPartialQueries__ = mutableListOf<GraphLinkPartialQuery>()
       run {
          val glPqVars__ = mutableMapOf<String, Any?>()
@@ -117,13 +117,13 @@ open class GraphLinkQueries(
       return executeCached(glPartialQueries__, "fetchCachedPair", "", { FetchCachedPairFullResponse.fromJson(it) }, false).data!!
    }
    suspend fun getUser(id: String): GetUserResponse {
-      val glVariables__ = mapOf("id" to id)
+      val glVariables__ = mapOf<String, Any?>("id" to id)
       val glQuery__ = "query getUser(\$id: ID!){getUser(id: \$id){..._all_fields_User}}"
       val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
       return executeData(glQuery__, glFragmentNames__, "getUser", glVariables__, { GetUserFullResponse.fromJson(it) }).data!!
    }
    suspend fun findUser(id: String): FindUserResponse {
-      val glVariables__ = mapOf("id" to id)
+      val glVariables__ = mapOf<String, Any?>("id" to id)
       val glQuery__ = "query findUser(\$id: ID!){findUser(id: \$id){..._all_fields_User}}"
       val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
       return executeData(glQuery__, glFragmentNames__, "findUser", glVariables__, { FindUserFullResponse.fromJson(it) }).data!!
@@ -135,25 +135,25 @@ open class GraphLinkQueries(
       return executeData(glQuery__, glFragmentNames__, "listUsers", emptyMap(), { ListUsersFullResponse.fromJson(it) }).data!!
    }
    suspend fun listUsersByStatus(status: UserStatus): ListUsersByStatusResponse {
-      val glVariables__ = mapOf("status" to status.toJson())
+      val glVariables__ = mapOf<String, Any?>("status" to status.toJson())
       val glQuery__ = "query listUsersByStatus(\$status: UserStatus!){listUsersByStatus(status: \$status){..._all_fields_User}}"
       val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
       return executeData(glQuery__, glFragmentNames__, "listUsersByStatus", glVariables__, { ListUsersByStatusFullResponse.fromJson(it) }).data!!
    }
    suspend fun searchUsers(name: String, limit: Int): SearchUsersResponse {
-      val glVariables__ = mapOf("name" to name, "limit" to limit)
+      val glVariables__ = mapOf<String, Any?>("name" to name, "limit" to limit)
       val glQuery__ = "query searchUsers(\$name: String!,\$limit: Int!){searchUsers(name: \$name,limit: \$limit){..._all_fields_User}}"
       val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
       return executeData(glQuery__, glFragmentNames__, "searchUsers", glVariables__, { SearchUsersFullResponse.fromJson(it) }).data!!
    }
    suspend fun getAllScalars(id: String): GetAllScalarsResponse {
-      val glVariables__ = mapOf("id" to id)
+      val glVariables__ = mapOf<String, Any?>("id" to id)
       val glQuery__ = "query getAllScalars(\$id: ID!){getAllScalars(id: \$id){..._all_fields_AllScalars}}"
       val glFragmentNames__ = setOf("_all_fields_AllScalars")
       return executeData(glQuery__, glFragmentNames__, "getAllScalars", glVariables__, { GetAllScalarsFullResponse.fromJson(it) }).data!!
    }
    suspend fun getPost(id: String): GetPostResponse {
-      val glVariables__ = mapOf("id" to id)
+      val glVariables__ = mapOf<String, Any?>("id" to id)
       val glQuery__ = "query getPost(\$id: ID!){getPost(id: \$id){..._all_fields_Post}}"
       val glFragmentNames__ = setOf("_all_fields_Post")
       return executeData(glQuery__, glFragmentNames__, "getPost", glVariables__, { GetPostFullResponse.fromJson(it) }).data!!
@@ -165,19 +165,19 @@ open class GraphLinkQueries(
       return executeData(glQuery__, glFragmentNames__, "getTags", emptyMap(), { GetTagsFullResponse.fromJson(it) }).data!!
    }
    suspend fun getAuditEntry(id: String): GetAuditEntryResponse {
-      val glVariables__ = mapOf("id" to id)
+      val glVariables__ = mapOf<String, Any?>("id" to id)
       val glQuery__ = "query getAuditEntry(\$id: ID!){getAuditEntry(id: \$id){..._all_fields_AuditEntry}}"
       val glFragmentNames__ = setOf("_all_fields_AuditEntry")
       return executeData(glQuery__, glFragmentNames__, "getAuditEntry", glVariables__, { GetAuditEntryFullResponse.fromJson(it) }).data!!
    }
    suspend fun search(term: String): SearchResponse {
-      val glVariables__ = mapOf("term" to term)
-      val glQuery__ = "query search(\$term: String!){search(term: \$term){...Inline_ed5c795e_1a17_6f1b_8d6d_611f326ed01e}}"
-      val glFragmentNames__ = setOf("Inline_ed5c795e_1a17_6f1b_8d6d_611f326ed01e", "_all_fields_UserResult", "_all_fields_PostResult")
+      val glVariables__ = mapOf<String, Any?>("term" to term)
+      val glQuery__ = "query search(\$term: String!){search(term: \$term){..._all_fields_SearchResult}}"
+      val glFragmentNames__ = setOf("_all_fields_SearchResult", "_all_fields_UserResult", "_all_fields_PostResult")
       return executeData(glQuery__, glFragmentNames__, "search", glVariables__, { SearchFullResponse.fromJson(it) }).data!!
    }
    suspend fun getCachedUser(id: String): GetCachedUserResponse {
-      val glVariables__ = mapOf("id" to id)
+      val glVariables__ = mapOf<String, Any?>("id" to id)
       val glPartialQueries__ = mutableListOf<GraphLinkPartialQuery>()
       run {
          val glPqVars__ = mutableMapOf<String, Any?>()
@@ -218,7 +218,7 @@ open class GraphLinkQueries(
       return executeCached(glPartialQueries__, "listCachedUsers", "", { ListCachedUsersFullResponse.fromJson(it) }, false).data!!
    }
    suspend fun getCachedPost(id: String): GetCachedPostResponse {
-      val glVariables__ = mapOf("id" to id)
+      val glVariables__ = mapOf<String, Any?>("id" to id)
       val glPartialQueries__ = mutableListOf<GraphLinkPartialQuery>()
       run {
          val glPqVars__ = mutableMapOf<String, Any?>()
@@ -259,7 +259,7 @@ open class GraphLinkQueries(
       return executeCached(glPartialQueries__, "getCachedConfig", "", { GetCachedConfigFullResponse.fromJson(it) }, false).data!!
    }
    suspend fun getStaleUser(id: String): GetStaleUserResponse {
-      val glVariables__ = mapOf("id" to id)
+      val glVariables__ = mapOf<String, Any?>("id" to id)
       val glPartialQueries__ = mutableListOf<GraphLinkPartialQuery>()
       run {
          val glPqVars__ = mutableMapOf<String, Any?>()
@@ -280,13 +280,13 @@ open class GraphLinkQueries(
       return executeCached(glPartialQueries__, "getStaleUser", "", { GetStaleUserFullResponse.fromJson(it) }, false).data!!
    }
    suspend fun getUserOrErrors(id: String): GetUserOrErrorsFullResponse {
-      val glVariables__ = mapOf("id" to id)
+      val glVariables__ = mapOf<String, Any?>("id" to id)
       val glQuery__ = "query getUserOrErrors(\$id: ID!){getUserOrErrors(id: \$id){..._all_fields_User}}"
       val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
       return executeFull(glQuery__, glFragmentNames__, "getUserOrErrors", glVariables__, { GetUserOrErrorsFullResponse.fromJson(it) })
    }
    suspend fun findUserOrErrors(id: String): FindUserOrErrorsFullResponse {
-      val glVariables__ = mapOf("id" to id)
+      val glVariables__ = mapOf<String, Any?>("id" to id)
       val glQuery__ = "query findUserOrErrors(\$id: ID!){findUserOrErrors(id: \$id){..._all_fields_User}}"
       val glFragmentNames__ = setOf("_all_fields_User", "_all_fields_Address", "_all_fields_Post")
       return executeFull(glQuery__, glFragmentNames__, "findUserOrErrors", glVariables__, { FindUserOrErrorsFullResponse.fromJson(it) })

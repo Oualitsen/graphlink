@@ -259,16 +259,21 @@ don't confuse them:
   for Dart/Java/TS/Kotlin (`*_client_tests*/`). The `_real` suites run the generated
   client against the real running Spring Boot JAR. This validates **generated client
   code** — most cross-language parity bugs have been caught here.
-- **`server_integration_tests/`** — organized **per generated server target**. Each
-  subdirectory pairs a GraphLink-**generated server** under test with a
-  GraphLink-generated client used purely as a harness to drive requests. Currently
-  `typescript/` covers the Apollo/Express server (with a generated Dart client as the
-  harness). Future generated server targets get their own sibling directory here. This
-  validates **generated server code**.
+- **`server_integration_tests/`** — a **client x server matrix**: every generated
+  server target (`servers/`) driven by every generated client harness (`clients/`).
+  `servers/` holds one subdirectory per generated server target (`typescript_server`,
+  `typescript_upload_server`, `java_server`, `java_server_reactive`,
+  `kotlin_server_blocking`, `kotlin_server_suspend`) — flat, not grouped by language.
+  `clients/` holds one subdirectory per generated client harness (`dart_client`,
+  `ts_client`, `java_client`, `kotlin_client`, plus `dart_upload_client` for the
+  upload-only suite). The top-level `Makefile` has one `ci-<server>-client` target per
+  server (parameterized by `CLIENT=dart|ts|java|kotlin`) so any client can be pointed at
+  any server. This validates **generated server code**.
 
 ```bash
-cd integration_tests && make all-real   # generated clients vs hand-written Spring server
-cd server_integration_tests && make ci  # generated server(s) vs generated client harness
+cd integration_tests && make all-real                              # generated clients vs hand-written Spring server
+cd server_integration_tests && make ci-java-client CLIENT=kotlin    # one client x one server
+cd server_integration_tests && make java                            # all 4 clients vs the Java MVC server
 ```
 
 ---

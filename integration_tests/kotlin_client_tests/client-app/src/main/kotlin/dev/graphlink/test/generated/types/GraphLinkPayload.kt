@@ -20,6 +20,7 @@ data class GraphLinkPayload(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): GraphLinkPayload = GraphLinkPayload(
           query = map["query"] as String,
           operationName = map["operationName"] as String,

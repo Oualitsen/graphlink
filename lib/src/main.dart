@@ -135,7 +135,7 @@ ${parser.usage}
   if (watch) {
     watchAndGenerate(config);
   } else {
-    handleGeneration(config);
+    await handleGeneration(config);
   }
 }
 
@@ -203,7 +203,7 @@ void watchAndGenerate(GeneratorConfig config) {
   });
 }
 
-void handleGeneration(GeneratorConfig config) async {
+Future<void> handleGeneration(GeneratorConfig config) async {
   resetWriteCount();
   final now = DateTime.now();
   final filePaths = <String>[];

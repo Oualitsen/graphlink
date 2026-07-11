@@ -453,11 +453,14 @@ class TypeScriptSerializer extends GLSerializer {
       final varEl = 'e$depth';
       final elementCall = _callToJson(varEl, type.inlineType, depth + 1);
       final mapExpr = '$varName.map(($varEl) => $elementCall)';
-      return type.nullable ? '$varName != null ? $mapExpr : null' : mapExpr;
+      // Fall back to `varName` itself (not a hardcoded `null`) so an omitted
+      // (undefined) field stays omitted — triggering the server-side default —
+      // while an explicit null is preserved and correctly overrides it.
+      return type.nullable ? '$varName != null ? $mapExpr : $varName' : mapExpr;
     }
     if (grammar.isEnum(type.token) || grammar.isProjectableType(type.token)) {
       final call = '${resolveCodeName(type.token)}.toJson($varName)';
-      return type.nullable ? '$varName != null ? $call : null' : call;
+      return type.nullable ? '$varName != null ? $call : $varName' : call;
     }
     return varName;
   }

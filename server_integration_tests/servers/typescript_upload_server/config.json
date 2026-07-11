@@ -1,0 +1,21 @@
+{
+  "schemaPaths": ["../../upload_schema/upload_schema.gql"],
+  "mode": "server",
+  "typeMappings": {
+    "ID":      "string",
+    "String":  "string",
+    "Float":   "number",
+    "Int":     "number",
+    "Boolean": "boolean",
+    "Null":    "null"
+  },
+  "outputDir": "src/generated",
+  "serverConfig": {
+    "expressApollo": {
+      "port": 9996,
+      "graphqlPath": "/graphql",
+      "generateEntryPoint": true,
+      "useResolveInfo": false
+    }
+  }
+}

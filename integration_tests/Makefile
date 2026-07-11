@@ -1,4 +1,17 @@
-.PHONY: dart typescript java kotlin dart-real typescript-real java-real kotlin-real server upload-server all all-real kill-servers kill-ports start-server start-upload-server start-main-server start-servers
+.PHONY: dart typescript java kotlin dart-real typescript-real java-real kotlin-real server upload-server all all-real kill-servers kill-ports start-server start-upload-server start-main-server start-servers generate-all clean-all
+
+# Delete every previously generated output dir across all client projects.
+# Prune node_modules/build/target/.gradle/.dart_tool so we only ever touch
+# glink's own output, never dependency or compiler build artifacts.
+clean-all:
+	find . \( -path '*/node_modules' -o -path '*/build' -o -path '*/target' \
+	          -o -path '*/.gradle' -o -path '*/.dart_tool' \) -prune \
+	          -o -type d -name generated -print -exec rm -rf {} +
+
+# Regenerate every client in a single `dart run` process — generate.dart
+# discovers every */config.json under integration_tests/ itself.
+generate-all:
+	dart run generate.dart
 
 dart:
 	$(MAKE) -C dart_client_tests ci

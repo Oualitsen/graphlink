@@ -16,6 +16,7 @@ data class DeleteUserResponse(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): DeleteUserResponse = DeleteUserResponse(
           deleteUser = map["deleteUser"] as Boolean,
       )

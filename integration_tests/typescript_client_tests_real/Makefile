@@ -1,11 +1,11 @@
-.PHONY: generate install typecheck test clean start-server stop-server start-upload-server stop-upload-server ci
+.PHONY: generate install typecheck test clean start-server stop-server start-upload-server stop-upload-server ci ci-no-generate
 
 SERVER_JAR = ../spring_server/build/libs/graphlink-test-server-0.0.1.jar
 UPLOAD_SERVER_JAR = ../spring_upload_server/build/libs/graphlink-upload-server-0.0.1.jar
 
 generate:
 	dart pub get
-	dart run lib/generate.dart
+	dart run ../generate.dart
 
 install:
 	npm install
@@ -42,6 +42,9 @@ stop-upload-server:
 	lsof -ti :9998 | xargs kill -9 2>/dev/null || true
 
 ci: start-server start-upload-server generate test stop-server stop-upload-server
+
+# Assumes code has already been generated (e.g. by a prior `make generate-all` job).
+ci-no-generate: start-server start-upload-server test stop-server stop-upload-server
 
 reconnect-test: generate start-server
 	RUN_RECONNECT_TESTS=1 npx vitest run test/subscription-reconnect.test.ts

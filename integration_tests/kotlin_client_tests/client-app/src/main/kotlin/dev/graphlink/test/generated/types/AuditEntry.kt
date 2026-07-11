@@ -20,6 +20,7 @@ data class AuditEntry(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): AuditEntry = AuditEntry(
           id = map["id"] as String,
           action = map["action"] as String,

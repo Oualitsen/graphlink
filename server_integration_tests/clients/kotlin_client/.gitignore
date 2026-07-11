@@ -1,0 +1,3 @@
+client-app/src/main/kotlin/dev/graphlink/server/generated/
+client-app/build/
+client-app/.gradle/

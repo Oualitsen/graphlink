@@ -1,11 +1,13 @@
 SERVER_JAR = ../spring_server/build/libs/graphlink-test-server-0.0.1.jar
 UPLOAD_SERVER_JAR = ../spring_upload_server/build/libs/graphlink-upload-server-0.0.1.jar
 
-.PHONY: generate test clean ci start-server stop-server start-upload-server stop-upload-server reconnect-test
+.PHONY: install generate test clean ci ci-no-generate start-server stop-server start-upload-server stop-upload-server reconnect-test
 
-generate:
+install:
 	dart pub get
-	dart run lib/generate.dart
+
+generate: install
+	dart run ../generate.dart
 
 start-server:
 	curl -s -X POST http://localhost:9990/actuator/shutdown || true
@@ -32,6 +34,9 @@ clean:
 	rm -rf lib/generated
 
 ci: start-server start-upload-server generate test stop-server stop-upload-server
+
+# Assumes code has already been generated (e.g. by a prior `make generate-all` job).
+ci-no-generate: start-server start-upload-server install test stop-server stop-upload-server
 
 reconnect-test: generate start-server start-upload-server
 	SERVER_JAR=$(shell pwd)/$(SERVER_JAR) dart test test/subscriptions_test.dart --name "reconnect"

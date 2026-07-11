@@ -14,11 +14,13 @@ data class PostResult(
     val title: String,
 ) : SearchResult {
    override fun toJson(): Map<String, Any?> = mapOf(
+           "__typename" to "PostResult",
            "id" to id,
            "title" to title,
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): PostResult = PostResult(
           id = map["id"] as String,
           title = map["title"] as String,

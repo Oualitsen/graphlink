@@ -22,6 +22,7 @@ data class AddressInput(
        )
 
    companion object {
+      @Suppress("UNCHECKED_CAST")
       fun fromJson(map: Map<String, Any?>): AddressInput = AddressInput(
           street = map["street"] as String,
           city = map["city"] as String,
