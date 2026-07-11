@@ -126,7 +126,7 @@ jobs:
   # Full client x server matrix: each generated server target driven by each
   # generated client harness. 5 servers x 4 clients = 20 independent jobs, each
   # its own pass/fail check.
-  integration-tests-server-matrix:
+  matrix:
     runs-on: ubuntu-latest
     needs: server-integration-tests-generate
     strategy:
