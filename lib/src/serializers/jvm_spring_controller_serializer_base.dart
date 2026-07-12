@@ -1,6 +1,7 @@
 import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_intercept_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
@@ -102,7 +103,7 @@ abstract class JvmSpringControllerSerializerBase {
   void injectDataFetchingIntoArgs() {
     for (var ctrl in [...grammar.controllers.values, ...grammar.services.values]) {
       for (var field in ctrl.fields) {
-        _interDataFetchingEnv(ctrl, field);
+        _interDataFetchingEnv(ctrl, field, ctrl.getTypeByFieldName(field.name.token));
       }
 
       for (var mapping in ctrl.mappings) {
@@ -111,13 +112,17 @@ abstract class JvmSpringControllerSerializerBase {
     }
   }
 
-  void _interDataFetchingEnv(GLService service, GLField field) {
-    if (injectContext || field.hasDirective(glInjectContext)) {
+  void _interDataFetchingEnv(GLService service, GLField field, [GLQueryType? type]) {
+    // An intercepted field/mapping always needs GraphQLContext locally to pass
+    // to runBefore, regardless of whether it opted into @glInjectContext/global
+    // injectContext.
+    if (injectContext || field.hasDirective(glInjectContext) || grammar.isIntercepted(field, type)) {
       // GraphQLContext is the one non-trivial parameter Spring can bind on both
       // @SchemaMapping and @BatchMapping; DataFetchingEnvironment is illegal on a
       // @BatchMapping (batch loading is detached from any single field), so use
       // GraphQLContext everywhere to keep the injected env consistent.
-      field.addArgument(GLArgumentDefinition('graphQLContext'.toToken(), GLType('GraphQLContext'.toToken(), false), []));
+      field.addArgument(GLArgumentDefinition('graphQLContext'.toToken(), GLType('GraphQLContext'.toToken(), false), [],
+          skipOnGraphqlSerialization: true));
       service.addImport(SpringImports.gqlGraphQLContext);
     }
   }
@@ -338,7 +343,8 @@ abstract class JvmSpringControllerSerializerBase {
     for (var arg in field.arguments) {
       if (grammar.isInput(arg.type.firstType.token) || grammar.types.containsKey(arg.type.firstType.token)) {
         final newArg = GLArgumentDefinition(
-            arg.tokenInfo.ofNewName("${arg.token}AsMap"), _mappifyToJsonMapType(arg.type), arg.getDirectives());
+            arg.tokenInfo.ofNewName("${arg.token}AsMap"), _mappifyToJsonMapType(arg.type), arg.getDirectives(),
+            skipOnGraphqlSerialization: arg.skipOnGraphqlSerialization);
         field.addArgument(newArg);
         field.removeArgument(arg.tokenInfo.token);
         newArg.originalArg = arg;

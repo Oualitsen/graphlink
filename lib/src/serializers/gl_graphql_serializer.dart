@@ -2,6 +2,7 @@ import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_query_element.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_intercept_extension.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
@@ -79,6 +80,12 @@ class GLGraphqlSerializer {
 
     buffer.writeln(directiveDefinitions);
 
+    // `@glIntercept` is built-in, not user-declared, so it's never in
+    // `directiveDefinitions` — emit it separately when actually used.
+    if (parser.usesInterceptor) {
+      buffer.writeln(serializeDirectiveDefinition(parser.directives[glIntercept]!));
+    }
+
     // inputs
     var inputSerial = filterSerialization(parser.inputs.values, clientMode)
         .map((e) => serializeInputDefinition(e, clientMode))
@@ -95,11 +102,13 @@ class GLGraphqlSerializer {
     var interfacesSerial =
         filterSerialization(parser.interfaces.values, clientMode)
             .where((i) => !i.fromUnion)
+            .where((i) => !i.skipOnGraphqlSerialization)
             .map((e) => serializeTypeDefinition(e, clientMode))
             .join("\n");
     buffer.writeln(interfacesSerial);
     // enums
     var enumsSerial = filterSerialization(parser.enums.values, clientMode)
+        .where((e) => !e.skipOnGraphqlSerialization)
         .map(serializeEnumDefinition)
         .join("\n");
     buffer.writeln(enumsSerial);

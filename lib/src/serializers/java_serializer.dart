@@ -821,6 +821,7 @@ class JavaSerializer extends GLSerializer {
     Set<String> interfaceNames,
     GLToken context, {
     List<String> extraStatements = const [],
+    bool skipJsonMethods = false,
   }) {
     return codeGenUtils.createRecord(
         recordName: recordName,
@@ -833,8 +834,8 @@ class JavaSerializer extends GLSerializer {
         }).toList(),
         interfaces: interfaceNames.toList(),
         statements: [
-          generateToJson(fields, context),
-          generateFromJson(fields, recordName, context),
+          if (!skipJsonMethods) generateToJson(fields, context),
+          if (!skipJsonMethods) generateFromJson(fields, recordName, context),
           ...extraStatements,
         ]);
   }
@@ -944,7 +945,10 @@ class JavaSerializer extends GLSerializer {
       // Internal interfaces always use JavaBean getter style regardless of typesAsRecords,
       // because their implementations are always classes (never records).
       final isInternal = def.getDirectiveByName(glInternal) != null;
-      return serializeInterface(def, getters: def.getDirectiveByName(glInterfaceFieldAsProperties) == null, forceClassGetters: isInternal);
+      return serializeInterface(def,
+          getters: def.getDirectiveByName(glInterfaceFieldAsProperties) == null && !def.fieldAsMethods,
+          forceClassGetters: isInternal,
+          skipJsonConversionMethods: shouldSkipJsonMethods(def));
     } else {
       return _doSerializeTypeDefinition(def);
     }
@@ -960,7 +964,8 @@ class JavaSerializer extends GLSerializer {
       buffer.writeln(decorators.trim());
     }
     if (typesAsRecords && def.getDirectiveByName(glInternal) == null) {
-      buffer.writeln(serializeRecord(codeName, def.fields, interfaceNames, def));
+      buffer.writeln(serializeRecord(codeName, def.fields, interfaceNames, def,
+          skipJsonMethods: shouldSkipJsonMethods(def)));
       return buffer.toString();
     }
     buffer.writeln(codeGenUtils.createClass(className: codeName, interfaceNames: interfaceNames.toList(), statements: [
@@ -981,8 +986,10 @@ class JavaSerializer extends GLSerializer {
         return !immutableTypeFields;
       }).map((e) => serializeSetter(e, def, checkForNulls: typesCheckForNulls)),
       generateEqualsAndHashCode(def),
-      generateFromJson(def.getSerializableFields(grammar.mode), codeName, def),
-      generateToJson(def.getSerializableFields(grammar.mode), def),
+      if (!shouldSkipJsonMethods(def)) ...[
+        generateFromJson(def.getSerializableFields(grammar.mode), codeName, def),
+        generateToJson(def.getSerializableFields(grammar.mode), def),
+      ],
     ]));
     return buffer.toString();
   }

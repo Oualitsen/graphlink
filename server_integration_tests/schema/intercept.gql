@@ -1,0 +1,52 @@
+# @glIntercept end-to-end proof: the hand-written interceptor impl appends
+# "(runBefore)" onto the request context when it runs; the hand-written
+# service impl reads that back and appends it onto `Greeting.message` — so a
+# client can assert `runBefore` actually fired just by inspecting the
+# response, no separate call-log endpoint needed.
+#
+# `greetIntercepted` is intercepted and takes a plain `String!` argument (the
+# thing we assert on); `greetPlain` is an unannotated sibling proving the
+# directive is opt-in, not blanket coverage.
+#
+# `Team.members` is a `@glSkipOnServer(batch: false)` mapping field carrying
+# `@glIntercept` directly — proves interception outside root operations. It
+# takes a `role: String!` argument and uses the throw-to-deny contract:
+# `runBefore` throws when `role != "auth"`, denying the whole field. (This
+# field can't use `batch: true` — Spring's `@BatchMapping` handler methods
+# cannot resolve a real `@Argument` parameter, only the batch key collection,
+# `GraphQLContext`, `@ContextValue`, etc.; `batch: false` generates a
+# `@SchemaMapping` instead, which supports `@Argument` normally.)
+#
+# `greetingReceived` is an intercepted subscription — `runBefore` fires once,
+# at subscribe time (before the resolver hands back its stream), and the
+# marker is captured then and baked into every emitted `Greeting.message`.
+
+type Greeting {
+    id: ID!
+    message: String!
+}
+
+type Team {
+    id: ID!
+    name: String!
+    members(role: String!): [Member!]! @glSkipOnServer(batch: false) @glIntercept(tag: "auth")
+}
+
+type Member {
+    id: ID!
+    name: String!
+}
+
+extend type Query {
+    greetIntercepted(name: String!): Greeting! @glIntercept(tag: "auth")
+    greetPlain(name: String!): Greeting!
+    listTeams: [Team!]!
+}
+
+extend type Mutation {
+    sendGreeting(name: String!): Greeting!
+}
+
+extend type Subscription {
+    greetingReceived: Greeting! @glIntercept(tag: "auth")
+}

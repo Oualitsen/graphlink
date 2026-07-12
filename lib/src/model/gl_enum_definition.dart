@@ -12,11 +12,14 @@ class GLEnumDefinition extends GLExtensibleToken with GLDirectivesMixin, CodeNam
   String get wireName => token;
   final Map<String, GLEnumValue> _values = {};
 
+  final bool skipOnGraphqlSerialization;
+
   GLEnumDefinition(
       {required TokenInfo token,
       required Iterable<GLEnumValue> values,
       required List<GLDirectiveValue> directives,
       required bool extension,
+      this.skipOnGraphqlSerialization = false,
       String? documentation})
       : super(token, extension, documentation: documentation) {
     values.forEach(addValue);

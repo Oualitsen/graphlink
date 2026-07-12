@@ -12,6 +12,7 @@ schema {
 
 directive @glReturnsProjection on FIELD_DEFINITION
 directive @glValidate on FIELD_DEFINITION
+directive @glIntercept(tag: String) on QUERY | MUTATION | SUBSCRIPTION | FIELD_DEFINITION | OBJECT
 input ReservedInput {
    class: String!
    return: Int
@@ -105,6 +106,9 @@ type Query {
    listAuthors: [Author!]!
    listArticles: [Article!]!
    getArticleTypes: [ArticleType!]!
+   greetIntercepted(name: String!): Greeting! @glIntercept(tag: "auth")
+   greetPlain(name: String!): Greeting!
+   listTeams: [Team!]!
    resolveConfig(input: ConfigInput!): Config!
    resolveRange(input: RangeInput = {min: 5}): Range!
    greet(name: String = "world", times: Int = 1): String!
@@ -145,6 +149,7 @@ type Mutation {
    updateArticle(input: UpdateArticleInput!): Article!
    deleteArticle(id: ID!): Boolean!
    bulkCreate(matrix: [[CreateArticleInput!]]): Int! @glValidate
+   sendGreeting(name: String!): Greeting!
    ackPriority(level: Priority!): String!
 }
 type ArticleWithCount {
@@ -214,6 +219,20 @@ type Subscription {
    articleCreated: Article!
    articleUpdated(id: ID!): Article!
    articleDeleted: ID!
+   greetingReceived: Greeting! @glIntercept(tag: "auth")
+}
+type Greeting {
+   id: ID!
+   message: String!
+}
+type Team {
+   id: ID!
+   name: String!
+   members(role: String!): [Member!]!  @glIntercept(tag: "auth")
+}
+type Member {
+   id: ID!
+   name: String!
 }
 type Config {
    pageSize: Int!

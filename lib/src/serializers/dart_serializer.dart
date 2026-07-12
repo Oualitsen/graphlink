@@ -526,8 +526,10 @@ class DartSerializer extends GLSerializer {
             isConst: true,
             arguments: [serializeContructorArgs(fields)]),
         if (equalsHascodeCode.isNotEmpty) equalsHascodeCode,
-        generateToJson(fields, typeName: def.jsonTypeName),
-        generateFromJson(fields, codeName),
+        if (!shouldSkipJsonMethods(def)) ...[
+          generateToJson(fields, typeName: def.jsonTypeName),
+          generateFromJson(fields, codeName),
+        ],
       ],
     ));
     return buffer.toString();
@@ -641,15 +643,20 @@ class DartSerializer extends GLSerializer {
       if (fieldDecorators.isNotEmpty) {
         buffer.writeln(fieldDecorators.trim().ident());
       }
-      buffer.writeln("${serializeGetterDeclaration(field)};".ident());
+      final declaration = interface.fieldAsMethods
+          ? serializeMethodDeclaration(field)
+          : serializeGetterDeclaration(field);
+      buffer.writeln("$declaration;".ident());
     }
 
-    buffer.writeln(_serializeToJsonForInterface(codeName).ident());
-    final serialisableImplemenations = interface.getSerializableImplementations(mode);
-    if (serialisableImplemenations.isNotEmpty) {
-      buffer.writeln(
-          _serializeFromJsonForInterface(codeName, serialisableImplemenations)
-              .ident());
+    if (!shouldSkipJsonMethods(interface)) {
+      buffer.writeln(_serializeToJsonForInterface(codeName).ident());
+      final serialisableImplemenations = interface.getSerializableImplementations(mode);
+      if (serialisableImplemenations.isNotEmpty) {
+        buffer.writeln(
+            _serializeFromJsonForInterface(codeName, serialisableImplemenations)
+                .ident());
+      }
     }
 
     buffer.writeln("}");
@@ -658,6 +665,13 @@ class DartSerializer extends GLSerializer {
 
   String serializeGetterDeclaration(GLField field) {
     return """${serializeType(field.type)} get ${field.codeName}""";
+  }
+
+  String serializeMethodDeclaration(GLField field) {
+    final args = field.arguments
+        .map((a) => "${serializeType(a.type)} ${a.codeName}")
+        .join(", ");
+    return "${serializeType(field.type)} ${field.codeName}($args)";
   }
 
   @override

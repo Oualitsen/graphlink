@@ -1011,7 +1011,10 @@ class JavaClientSerializer extends GLClientSerializer {
               'List<?> errors'
             ],
             statements: [
-              'return new $clientExceptionName(errors.stream().map(e -> GraphLinkError.fromJson((Map<String, Object>)e)).collect(Collectors.toList()));'
+              // Callers pass either raw error maps (a caught Throwable) or an
+              // already-decoded List<GraphLinkError> (a response's own
+              // `getErrors()`) — only re-parse elements that aren't already typed.
+              'return new $clientExceptionName(errors.stream().map(e -> e instanceof GraphLinkError ? (GraphLinkError) e : GraphLinkError.fromJson((Map<String, Object>)e)).collect(Collectors.toList()));'
             ]),
       ],
     );

@@ -1,8 +1,12 @@
+import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/kotlin_code_gen_utils.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_service.dart';
+import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_intercept_extension.dart';
 import 'package:graphlink/src/serializers/java_imports.dart';
 import 'package:graphlink/src/serializers/jvm_spring_server_serializer_base.dart';
 import 'package:graphlink/src/serializers/kotlin_serializer.dart';
@@ -90,6 +94,28 @@ class SecurityCoroutineContext(
     }
 }
 ''';
+  }
+
+  // ── interfaces/GraphLinkInterceptor.kt ──────────────────────────────────────
+
+  /// Appends the JVM-specific `context` param onto the shared `runBefore` IR,
+  /// then serializes normally.
+  String? serializeInterceptorInterface() {
+    if (!grammar.usesInterceptor) return null;
+    final interfaceDef = grammar.interfaces[glInterceptorInterfaceName]!;
+    _addInterceptorContextArg(interfaceDef);
+
+    final body = serializer.serializeInterface(interfaceDef,
+        skipJsonConversionMethods: true, fieldsAsFunctions: true, suspendFunctions: true);
+    return serializer.serializeWithImport(interfaceDef, body);
+  }
+
+  void _addInterceptorContextArg(GLInterfaceDefinition def) {
+    final runBefore = def.fields.firstWhere((f) => f.name.token == glInterceptorRunBeforeMethod);
+    if (runBefore.arguments.any((a) => a.token == 'context')) return;
+    runBefore.addArgument(
+        GLArgumentDefinition('context'.toToken(), GLType('GraphQLContext'.toToken(), false), []));
+    def.addImport(SpringImports.gqlGraphQLContext);
   }
 
   // ── Repository ─────────────────────────────────────────────────────────────
