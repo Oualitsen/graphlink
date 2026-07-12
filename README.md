@@ -188,7 +188,7 @@ Reconnection, error handling, and typed payloads are all generated.
 
 ## Multi-language support
 
-GraphLink also generates Java, Kotlin, TypeScript, and Spring Boot server code from the same schema. See the [full documentation on GitHub](https://github.com/Oualitsen/graphlink) for setup and examples.
+GraphLink also generates Java, Kotlin, and TypeScript clients, plus Spring Boot and Express/Apollo server code, from the same schema. See the [full documentation on GitHub](https://github.com/Oualitsen/graphlink) for setup and examples.
 
 ---
 
