@@ -41,7 +41,7 @@ GraphLink generates minimal, precise query strings. No full-schema dumps that br
 Annotate any query or mutation with `@glCaptureErrors` (or set `captureErrors: true` globally) and the generated method returns a `FullResponse` with `data` and `errors` side by side — no try/catch required. Works in Dart, Java, and TypeScript.
 
 **Single source of truth.**
-One `.graphql` file drives the Dart client, the Java client, and the Spring Boot controllers + service interfaces. Add a field once, regenerate, and both ends stay in sync.
+One `.graphql` file drives the Dart client, the Java client, and the Spring Boot or Express/Apollo server — controllers/resolvers plus service interfaces. Add a field once, regenerate, and every end stays in sync.
 
 ---
 
@@ -55,7 +55,7 @@ One `.graphql` file drives the Dart client, the Java client, and the Spring Boot
 | Spring Boot server | Stable |
 | TypeScript client | Stable |
 | Kotlin client | Stable |
-| Express / Node.js | Planned |
+| Express / Apollo (Node.js) | Stable |
 
 ---
 
@@ -243,6 +243,30 @@ public class VehicleServiceController {
 
 Just implement the service interface — the routing is done.
 
+### Express / Apollo (server mode)
+
+Set `"mode": "server"` with an `"expressApollo"` block under `serverConfig` and GraphLink generates resolvers, typed service interfaces, and a ready-to-run entry point:
+
+```typescript
+// Generated — implement this interface
+export interface VehicleService {
+  getVehicle(id: string): Promise<Vehicle>;
+  listVehicles(): Promise<Vehicle[]>;
+  addVehicle(input: AddVehicleInput): Promise<Vehicle>;
+  vehicleAdded(): AsyncIterable<Vehicle>; // subscriptions use async generators
+}
+
+// Generated — wires Express + Apollo Server + graphql-ws together
+import { createServer } from './generated/index.js';
+
+const httpServer = await createServer({
+  vehicleService: new VehicleServiceImpl(),
+});
+httpServer.listen(4000);
+```
+
+`@glSkipOnServer(batch: true)` fields generate per-request DataLoaders automatically — same N+1-avoidance guarantee as the Spring targets, idiomatic to Node.
+
 ---
 
 ## Built-in Caching
@@ -289,6 +313,7 @@ Full documentation at **[graphlink.dev](https://graphlink.dev/docs/index.html)**
 - [Java Client](https://graphlink.dev/docs/java-client.html)
 - [TypeScript Client](https://graphlink.dev/docs/typescript-client.html)
 - [Spring Boot Server](https://graphlink.dev/docs/spring-server.html)
+- [Express / Apollo Server](https://graphlink.dev/docs/express-apollo.html)
 - [Caching](https://graphlink.dev/docs/caching.html)
 - [Directives Reference](https://graphlink.dev/docs/directives.html)
 - [Configuration Reference](https://graphlink.dev/docs/configuration.html)

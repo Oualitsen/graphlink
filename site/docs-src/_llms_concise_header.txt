@@ -25,6 +25,9 @@ client and server code. Developers define their API once in a `.graphql` schema 
   input classes generated from the schema's type definitions and queries. Supports MVC and reactive
   (WebFlux) mode. Strict-by-default nullability; controllers serialize responses to a `Map` via
   `toJson()`, and `@glServerLenient` opts a type into all-nullable fields for partial population.
+- **Express / Apollo server (TypeScript)**: typed service interfaces, generated Apollo Server
+  resolvers, `graphql-ws` subscriptions, and an optional ready-to-run `createServer(services)` entry
+  point. DataLoader-backed batch mappings; same strict/`toJson()`-boundary model as Spring targets.
 
 ## Key differentiators
 
@@ -98,7 +101,7 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - Spring Boot server (stable, MVC and reactive/WebFlux — Java and Kotlin targets)
 - TypeScript client (stable — fetch/axios, RxJS observables, WebSocket subscriptions)
 - Kotlin client (stable — coroutines, kotlinx.serialization, OkHttp WebSocket)
-- Express / Node.js server (planned)
+- Express / Apollo server (stable — TypeScript, DataLoader batch mappings, graphql-ws subscriptions)
 - Go (planned, demand-based)
 
 ## Installation

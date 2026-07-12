@@ -401,7 +401,7 @@
 
 - Fixed barrel file to include generated client files (Dart and TypeScript)
 
-## 5.0.0
+## 5.0.0 - 2026-07-12
 
 ### Breaking changes
 
@@ -479,6 +479,8 @@
 
 - **Multi-arch Docker release images** — the published `glink` Docker image is now built and released for multiple architectures.
 
+- **`@glIntercept` directive** — generic pre-execution interceptor for server targets, giving Apollo/Express the same "authorization runs before the service method" guarantee Spring Boot gets from AOP. Annotate a field or an `extend type ... @glIntercept(tag: "...")` block; intercepted operations call a single generated `GlInterceptor.runBefore(tag, operation, args, context)` before dispatching to the service — throwing denies the call, returning normally proceeds. Object-level `@glIntercept` scopes only to the fields declared in that block, not the fully-merged type. Server-only: the same schema still builds cleanly in client mode, where the directive is silently ignored (no interceptor enum/interface/call site emitted). Supported on Express/Apollo (TypeScript), Java Spring, and Kotlin Spring.
+
 ### Fixes & improvements
 
 - Fixed several field-level-argument propagation and cache-scoping bugs: dropped field args in partial/divided-query variable declarations, and incorrect per-query-element variable scoping.
@@ -503,4 +505,8 @@
 - Fixed a TypeScript default-argument bug where a non-null-typed argument with a default value could be `undefined` at runtime and bypass the default via unguarded nullish coalescing.
 - Fixed the generated Dart barrel file emitting duplicate export lines.
 - Fixed a missing space between `implements ...` and the opening brace in generated Java interfaces.
+- Fixed Java/Kotlin Spring controllers emitting `getXxx()` for primitive `boolean` fields instead of the correct `isXxx()` getter.
+- Fixed TypeScript/Express server generator parity gaps against the Java/Kotlin targets and hardened the associated integration tests.
+- Fixed `@glServerLenient` being applied after schema mappings instead of before, which could leave mapped fields incorrectly non-nullable.
+- Fixed Express/Apollo generated resolvers to scope DataLoaders per-request instead of sharing them across requests, preventing stale/cross-request cache leaks.
 

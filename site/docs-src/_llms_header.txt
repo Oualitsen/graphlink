@@ -27,6 +27,11 @@ client and server code. Developers define their API once in a `.graphql` schema 
   (WebFlux) mode. Java target: injectable HttpClient/OkHttpClient adapters, plus a reactive client
   mode (`asyncStyle`: Reactor/RxJava3/Mutiny). Kotlin server target: data-class types, coroutine
   services, optional `Dispatchers.IO` offloading for blocking service layers.
+- **Express / Apollo server (TypeScript)**: typed service interfaces, generated Apollo Server
+  resolvers, WebSocket subscriptions via `graphql-ws`, and (optionally) a ready-to-run `createServer(services)`
+  entry point wiring Express + Apollo + the WebSocket server together. `@glSkipOnServer(batch: true)`
+  fields generate per-request DataLoaders instead of Spring's `@BatchMapping`. Same strict-nullability
+  and `toJson()`-boundary-serialization model as the Spring targets.
 
 ## Key differentiators
 
@@ -141,7 +146,7 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - Spring Boot server (stable, MVC and reactive/WebFlux — Java and Kotlin targets, strict-by-default nullability)
 - TypeScript client (stable — fetch/axios, RxJS observables, WebSocket subscriptions)
 - Kotlin client (stable — coroutines, kotlinx.serialization, OkHttp WebSocket)
-- Express / Node.js server (planned)
+- Express / Apollo server (stable — TypeScript, DataLoader batch mappings, graphql-ws subscriptions)
 - Go (planned, demand-based)
 
 ## Installation
@@ -199,6 +204,7 @@ type Mutation {
 - TypeScript client (fetch/axios adapters, RxJS observables, WebSocket subscriptions, Angular/React/Vue examples): https://graphlink.dev/docs/typescript-client.html
 - Kotlin client (coroutine-based queries/mutations/subscriptions, data classes, kotlinx.serialization, OkHttp WebSocket): https://graphlink.dev/docs/kotlin-client.html
 - Spring Boot server (MVC + reactive/WebFlux, Java and Kotlin targets, strict-by-default generation, Map-boundary controllers, service interfaces, file upload, security context propagation): https://graphlink.dev/docs/spring-server.html
+- Express / Apollo server (TypeScript service interfaces, generated resolvers, DataLoader batch mappings, graphql-ws subscriptions, createServer entry point, @glIntercept, @glValidate): https://graphlink.dev/docs/express-apollo.html
 - Caching (@glCache, @glCacheInvalidate, tag invalidation, staleIfOffline): https://graphlink.dev/docs/caching.html
 - Directives (@glMapsTo, @glMapField, @glCache, @glCacheInvalidate, @glSkipOnServer forward mappings, @glServerLenient, @glInjectContext, @glIntercept, @deprecated, and more): https://graphlink.dev/docs/directives.html
 - "@glSkipOnServer & @glSkipOnClient" (two-layer server-side access control, schema stripping, @SchemaMapping, @BatchMapping, mapTo, forward mappings, ID/object field-pair pattern for N+1-safe loading): https://graphlink.dev/docs/skip-directives.html

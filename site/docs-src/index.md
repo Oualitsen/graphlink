@@ -1,17 +1,70 @@
 ---
 title: GraphLink — GraphQL Code Generation for Dart, Java, TypeScript & Kotlin
-description: GraphLink compiles your .graphql schema into fully typed clients and server code for Dart, Flutter, Java, TypeScript, Kotlin, and Spring Boot. No runtime. No boilerplate. No schema drift.
+description: GraphLink compiles your .graphql schema into fully typed clients and server code for Dart, Flutter, Java, TypeScript, Kotlin, Spring Boot, and Express/Apollo. No runtime. No boilerplate. No schema drift.
 ---
 
 # GraphLink
 
-> Your `.graphql` schema compiles to a fully typed client and server — for Dart, Flutter, Java, TypeScript, Kotlin, and Spring Boot — in milliseconds.
+<div class="gl-hero" markdown>
+
+## You already wrote the schema.
+### Why are you writing the interface again? And the class?
+
+GraphLink is the only generator that treats your `.graphql` file as the *actual* source of truth — not documentation you also hand-copy into two more languages, every time it changes, forever.
+
+</div>
+
+> Your `.graphql` schema compiles to a fully typed client and server — for Dart, Flutter, Java, TypeScript, Kotlin, Spring Boot, and Express/Apollo — in milliseconds.
 
 [![pub.dev](https://img.shields.io/pub/v/graphlink?label=pub.dev)](https://pub.dev/packages/graphlink)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Oualitsen/graphlink/blob/main/LICENSE)
 [![GitHub Releases](https://img.shields.io/github/v/release/Oualitsen/graphlink)](https://github.com/Oualitsen/graphlink/releases/latest)
 
 **No runtime. No boilerplate. No schema drift.**
+
+---
+
+<div class="gl-pain-list" markdown>
+
+### What stops being your problem
+
+1. **Your database falling over from N+1 queries.** A clean-looking resolver fires 500 tiny queries for one list view — invisible in dev, discovered in production. Declare `@glSkipOnServer(batch: true)`{: .gl-good-inline } once; GraphLink generates the `DataLoader`{: .gl-good-inline } / `@BatchMapping`{: .gl-good-inline } for you.
+2. **Three hand-maintained copies of every type.** Schema, frontend interface, backend class — same shape, written by hand, three times, drifting apart within a sprint. One schema, six typed targets, regenerated in milliseconds.
+3. **Untyped response casting.** `TypeReference<GraphQLResponse<Map<String,Object>>>`{: .gl-bad-inline } and its friends. GraphLink returns fully-resolved typed objects on every target — no casting, no generics, no guessing at the shape.
+4. **Auth checks copy-pasted into every resolver** — and forgotten on the one you added last week. `@glIntercept`{: .gl-good-inline } runs one generated hook before any annotated field executes, so there's nothing to forget.
+5. **Cache logic that requires a PhD to operate.** Apollo Client: `typePolicies`{: .gl-bad-inline } per type, hand-written `merge`{: .gl-bad-inline } functions for pagination, and `cache.evict`{: .gl-bad-inline }/`cache.modify`{: .gl-bad-inline } calls keyed to the *exact* normalized field-and-args cache identifier — get one character wrong and stale data just sits there, silently, forever. We ran the numbers, peer-reviewed and everything:
+
+    **The Apollo way**{: .gl-cache-bad-label }
+
+    ```text { .gl-cache-bad }
+    cacheKey ≜ ROOT_QUERY.field( ∮ Σᵢ₌₀ⁿ argsᵢ · e^(iπ·keyArgs) dΩ )
+             ⊕ ∬∬ merge(existing, incoming, {args, isReference, readField, storeFieldName}) d(typePolicies)²
+             − ∂³(sanity) / ∂cache.modify ∂cache.evict ∂mergeFunction
+             + lim_{x→∞} StackOverflow(x)
+             ≈ NaN   (converges to "it depends", p < 0.05, campfire required)
+    ```
+
+    Checks out. Nobody on the team understands it. Apollo's a genuinely great library — this part just needs a PhD.
+
+    ---
+
+    **The GraphLink way**{: .gl-cache-good-label }
+
+    ```graphql { .gl-cache-good }
+    type Query {
+      # cached for 5 minutes, tagged "vehicles" — nothing to configure client-side
+      getVehicle(id: ID!): Vehicle! @glCache(ttl: "5m", tags: ["vehicles"])
+    }
+
+    type Mutation {
+      # on success, every "vehicles"-tagged cache entry is evicted automatically
+      addVehicle(input: AddVehicleInput!): Vehicle! @glCacheInvalidate(tags: ["vehicles"])
+    }
+    ```
+
+6. **Getting locked into a runtime.** Generated code has zero dependency on GraphLink. Stop using it tomorrow and everything still compiles.
+
+</div>
 
 ---
 
@@ -310,9 +363,9 @@ Every generated file compiles, ships, and runs with zero runtime dependency on G
 
 ## Supported targets
 
-**Stable:** Dart · Flutter · Java · Spring Boot · TypeScript · Kotlin
+**Stable:** Dart · Flutter · Java · Spring Boot · TypeScript · Kotlin · Express / Apollo
 
-**Planned:** Express / Node.js · Go
+**Planned:** Go
 
 ---
 
@@ -485,6 +538,24 @@ Pick your target and drop a `glink.yaml` next to your schema:
         basePackage: com.example.generated
     ```
 
+=== "Express / Apollo"
+
+    ```yaml
+    schemaPaths:
+      - schema/*.graphql
+    mode: server
+    typeMappings:
+      ID: string
+      Float: number
+      Int: number
+      Boolean: boolean
+    outputDir: src/generated
+    serverConfig:
+      expressApollo:
+        port: 4000
+        graphqlPath: /graphql
+    ```
+
 ### 3. Generate
 
 ```bash
@@ -551,6 +622,7 @@ glink -w    # watch mode — regenerate on every save
 - **[TypeScript Client](typescript-client.md)** — Typed client for Angular, React, Vue, and Node.
 - **[Kotlin Client](kotlin-client.md)** — Coroutine-based client with data classes and kotlinx.serialization.
 - **[Spring Boot](spring-server.md)** — Generated controllers, service interfaces, types, inputs.
+- **[Express / Apollo](express-apollo.md)** — Generated resolvers, service interfaces, DataLoader batch mappings.
 - **[Caching](caching.md)** — `@glCache` and `@glCacheInvalidate`. Tag-based invalidation.
 - **[Directives](directives.md)** — Complete reference for all GraphLink directives.
 - **[Configuration](configuration.md)** — Every `glink.json` / `glink.yaml` option explained.
