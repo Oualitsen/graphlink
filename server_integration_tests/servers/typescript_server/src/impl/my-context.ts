@@ -6,9 +6,9 @@
 
 declare module '../generated/context.js' {
   interface GraphLinkContext {
-    // add your typed context fields here, for example:
-    // userId?: string;
-    // roles?: string[];
+    // Set by InterceptorImpl.runBefore, read back by GreetingServiceImpl —
+    // proves the interceptor actually ran, purely through response data.
+    marker?: string;
   }
 }
 

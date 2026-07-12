@@ -147,6 +147,10 @@ abstract class GLSerializer {
 
   String doSerializeTypeDefinition(GLTypeDefinition def);
 
+  /// True when [def] must not get generated `toJson`/`fromJson` methods —
+  /// language serializers should check this before emitting either method.
+  bool shouldSkipJsonMethods(GLTypeDefinition def) => def.skipJsonMethods;
+
   String serializeDecorators(List<GLDirectiveValue> list,
       {String joiner = "\n"}) {
     var decorators = GLGrammarExtension.extractDecorators(

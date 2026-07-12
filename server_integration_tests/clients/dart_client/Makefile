@@ -1,11 +1,14 @@
 PORT ?= 9997
 
-.PHONY: install generate test ci
+.PHONY: install generate test ci remove-generated
 
 install:
 	dart pub get
 
-generate:
+remove-generated:
+	rm -rf lib/generated
+
+generate: remove-generated
 	dart run ../../generate.dart
 
 test:
