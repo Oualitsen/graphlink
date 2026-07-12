@@ -14,55 +14,117 @@ permissions:
   contents: write
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            artifact: glink-linux-x86_64
-          - os: ubuntu-24.04-arm
-            artifact: glink-linux-arm64
-          - os: windows-latest
-            artifact: glink-windows-x86_64.exe
-          - os: macos-13
-            artifact: glink-macos-x86_64
-          - os: macos-latest
-            artifact: glink-macos-arm64
-
-    runs-on: ${{ matrix.os }}
-
+  build-linux-x86_64:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
       - run: dart pub get
-
       - name: Compile binary
         shell: bash
         run: |
           REF="${{ github.event.inputs.tag || github.ref_name }}"
           VERSION="${REF#v}"
-          dart compile exe lib/src/main.dart -o ${{ matrix.artifact }} --define=version=$VERSION
-
-      - name: Compute checksum (Linux / macOS)
-        if: runner.os != 'Windows'
-        run: sha256sum ${{ matrix.artifact }} > ${{ matrix.artifact }}.sha256
-
-      - name: Compute checksum (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $hash = (Get-FileHash "${{ matrix.artifact }}" -Algorithm SHA256).Hash.ToLower()
-          Set-Content -Path "${{ matrix.artifact }}.sha256" -Value "$hash  ${{ matrix.artifact }}"
-
+          dart compile exe lib/src/main.dart -o glink-linux-x86_64 --define=version=$VERSION
+      - run: sha256sum glink-linux-x86_64 > glink-linux-x86_64.sha256
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact }}
+          name: glink-linux-x86_64
           path: |
-            ${{ matrix.artifact }}
-            ${{ matrix.artifact }}.sha256
+            glink-linux-x86_64
+            glink-linux-x86_64.sha256
+
+  build-linux-arm64:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - run: dart pub get
+      - name: Compile binary
+        shell: bash
+        run: |
+          REF="${{ github.event.inputs.tag || github.ref_name }}"
+          VERSION="${REF#v}"
+          dart compile exe lib/src/main.dart -o glink-linux-arm64 --define=version=$VERSION
+      - run: sha256sum glink-linux-arm64 > glink-linux-arm64.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: glink-linux-arm64
+          path: |
+            glink-linux-arm64
+            glink-linux-arm64.sha256
+
+  build-windows-x86_64:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - run: dart pub get
+      - name: Compile binary
+        shell: bash
+        run: |
+          REF="${{ github.event.inputs.tag || github.ref_name }}"
+          VERSION="${REF#v}"
+          dart compile exe lib/src/main.dart -o glink-windows-x86_64.exe --define=version=$VERSION
+      - name: Compute checksum
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash "glink-windows-x86_64.exe" -Algorithm SHA256).Hash.ToLower()
+          Set-Content -Path "glink-windows-x86_64.exe.sha256" -Value "$hash  glink-windows-x86_64.exe"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: glink-windows-x86_64.exe
+          path: |
+            glink-windows-x86_64.exe
+            glink-windows-x86_64.exe.sha256
+
+  build-macos-arm64:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - run: dart pub get
+      - name: Compile binary
+        shell: bash
+        run: |
+          REF="${{ github.event.inputs.tag || github.ref_name }}"
+          VERSION="${REF#v}"
+          dart compile exe lib/src/main.dart -o glink-macos-arm64 --define=version=$VERSION
+      - run: sha256sum glink-macos-arm64 > glink-macos-arm64.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: glink-macos-arm64
+          path: |
+            glink-macos-arm64
+            glink-macos-arm64.sha256
+
+  # macOS x86_64 (macos-13, Intel) is GitHub's most capacity-constrained
+  # hosted runner and can queue far longer than every other target. It is
+  # deliberately NOT a dependency of `release` below, so a slow or stuck
+  # queue here never blocks the rest of the release — see
+  # `release-macos-x86_64` for how its binary is attached once it's ready.
+  build-macos-x86_64:
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - run: dart pub get
+      - name: Compile binary
+        shell: bash
+        run: |
+          REF="${{ github.event.inputs.tag || github.ref_name }}"
+          VERSION="${REF#v}"
+          dart compile exe lib/src/main.dart -o glink-macos-x86_64 --define=version=$VERSION
+      - run: sha256sum glink-macos-x86_64 > glink-macos-x86_64.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: glink-macos-x86_64
+          path: |
+            glink-macos-x86_64
+            glink-macos-x86_64.sha256
 
   test-macos-x86_64:
-    needs: build
+    needs: build-macos-x86_64
     runs-on: macos-13
     steps:
       - uses: actions/download-artifact@v4
@@ -75,7 +137,7 @@ jobs:
           dist/glink-macos-x86_64 --help
 
   docker:
-    needs: build
+    needs: [build-linux-x86_64, build-linux-arm64]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -111,13 +173,16 @@ jobs:
             oualitsen/graphlink:${{ steps.version.outputs.tag }}
             oualitsen/graphlink:latest
 
+  # Publishes the release as soon as the four reliably-available targets are
+  # ready. Deliberately excludes macOS x86_64 (see build-macos-x86_64) so a
+  # slow Intel-Mac runner queue can never delay the release.
   release:
-    needs: [build, test-macos-x86_64]
+    needs: [build-linux-x86_64, build-linux-arm64, build-windows-x86_64, build-macos-arm64]
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/download-artifact@v4
         with:
+          pattern: glink-*
           path: dist
           merge-multiple: true
 
@@ -131,6 +196,24 @@ jobs:
             dist/glink-linux-x86_64
             dist/glink-linux-arm64
             dist/glink-windows-x86_64.exe
-            dist/glink-macos-x86_64
             dist/glink-macos-arm64
             dist/checksums.sha256
+
+  # Appends the macOS x86_64 binary to the already-published release once
+  # its build (and smoke test) finish, whenever that happens to be. If
+  # build-macos-x86_64 or test-macos-x86_64 never completes, the release
+  # from the `release` job above still stands with the other four binaries.
+  release-macos-x86_64:
+    needs: [release, test-macos-x86_64]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: glink-macos-x86_64
+          path: dist
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/glink-macos-x86_64
+            dist/glink-macos-x86_64.sha256
