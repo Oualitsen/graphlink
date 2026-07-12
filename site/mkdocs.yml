@@ -66,6 +66,7 @@ nav:
     - Kotlin: kotlin-client.md
   - Backend:
     - Spring Boot: spring-server.md
+    - Express / Apollo: express-apollo.md
   - Features:
     - Custom Queries & Mutations: custom-queries.md
     - Caching: caching.md
