@@ -8,6 +8,7 @@ import 'package:graphlink/src/model/gl_schema_mapping.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_intercept_extension.dart';
 import 'package:graphlink/src/serializers/java_imports.dart';
 import 'package:graphlink/src/serializers/jvm_spring_controller_serializer_base.dart';
 import 'package:graphlink/src/serializers/kotlin_imports.dart';
@@ -70,14 +71,29 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
     return serializer.serializeWithImport(ctrl, body);
   }
 
+  /// True when any of [ctrl]'s handlers or mappings carries `@glIntercept` —
+  /// gates whether this controller needs the interceptor bean injected.
+  bool _usesInterceptor(GLController ctrl) {
+    return ctrl.fields.any((f) => grammar.isIntercepted(f, ctrl.getTypeByFieldName(f.name.token))) ||
+        ctrl.mappings.any((m) => grammar.isIntercepted(m.field));
+  }
+
   String _serializeControllerBody(GLController ctrl) {
     final controllerName = ctrl.token;
     final serviceInstanceName = ctrl.serviceName.firstLow;
     final decorators = serializer.serializeDecorators(ctrl.getDirectives()).trim();
     final hasService = grammar.services.containsKey(ctrl.serviceName);
+    final usesInterceptor = _usesInterceptor(ctrl);
+    if (usesInterceptor) {
+      ctrl.addImportDependecy(grammar.interfaces[glInterceptorInterfaceName]!);
+      final tagEnum = grammar.enums[glInterceptorTagEnumName];
+      if (tagEnum != null) ctrl.addImportDependecy(tagEnum);
+    }
 
     final params = [
       if (hasService) 'private val $serviceInstanceName: ${ctrl.serviceName}',
+      if (usesInterceptor)
+        'private val interceptor: ${grammar.interfaces[glInterceptorInterfaceName]!.codeName}',
     ];
 
     final members = <String>[];
@@ -103,18 +119,21 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
     final conversions = _buildArgumentConversions(method.arguments, context);
     final serviceCall = '$serviceInstanceName.${method.codeName}(${conversions.serviceArgs.join(", ")})';
     final validationCall = getValidationCallStatement(method, serviceInstanceName, conversions.serviceArgs);
+    final runBefore = _runBeforeStatement(method, method.name.token, type);
 
     final List<String> statements;
     if (type == GLQueryType.subscription) {
       // Subscriptions return `Flow<T>` directly — no `suspend`, no
       // `withContext`; the domain→wire conversion is applied per element.
+      final flowResult = _mapFlowResult(method, serviceCall, context);
       statements = [
         ...conversions.declarations,
         if (validationCall != null) validationCall,
-        'return ${_mapFlowResult(method, serviceCall, context)}',
+        'return ${_wrapFlowWithRunBefore(flowResult, runBefore, context)}',
       ];
     } else {
       statements = [
+        if (runBefore != null) runBefore,
         ...conversions.declarations,
         ..._blockingReturn(method, serviceCall, validationCall, context),
       ];
@@ -122,6 +141,18 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
 
     final header = _methodHeader(method, suspend: type != GLQueryType.subscription);
     return '$header ${codeGenUtils.block(statements)}';
+  }
+
+  /// Defers building [flowExpr] until collection time via the `flow {}`
+  /// builder so `runBefore` completes before the service call runs — unlike
+  /// `.onStart {}`, which only delays the emission, not the eager service
+  /// call that builds [flowExpr]. Returns [flowExpr] unchanged if [runBefore]
+  /// is `null`.
+  String _wrapFlowWithRunBefore(String flowExpr, String? runBefore, GLToken context) {
+    if (runBefore == null) return flowExpr;
+    context.addImport(KotlinImports.flowBuilder);
+    context.addImport(KotlinImports.flowEmitAll);
+    return 'flow { $runBefore; emitAll($flowExpr) }';
   }
 
   /// Builds the terminal `return` statement(s) for a non-subscription handler
@@ -169,15 +200,20 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
 
     final conversions = _buildArgumentConversions(mapping.field.arguments, context);
     final serviceCall = '$serviceInstanceName.${mapping.key}(${conversions.serviceArgs.join(", ")})';
+    final runBefore = _runBeforeStatement(mapping.field, _mappingOperation(mapping));
 
     final List<String> statements;
     if (mapping.isBatch) {
+      // @BatchMapping has no per-parent call site, so interception happens
+      // once per batch call rather than once per parent.
       statements = [
+        if (runBefore != null) runBefore,
         ...conversions.declarations,
         ..._buildBatchReturn(mapping, serviceCall, context),
       ];
     } else {
       statements = [
+        if (runBefore != null) runBefore,
         ...conversions.declarations,
         ..._blockingReturn(mapping.field, serviceCall, null, context),
       ];
@@ -191,8 +227,12 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
   String serializeIdentityMapping(GLSchemaMapping mapping, GLToken context) {
     // The key/parent already is the resolved value — echo it straight back.
     final valueName = mapping.field.arguments.first.codeName;
+    final runBefore = _runBeforeStatement(mapping.field, _mappingOperation(mapping));
     final header = _methodHeader(mapping.field, suspend: true);
-    return '$header ${codeGenUtils.block(['return $valueName'])}';
+    return '$header ${codeGenUtils.block([
+          if (runBefore != null) runBefore,
+          'return $valueName',
+        ])}';
   }
 
   @override
@@ -202,14 +242,21 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
     // The parent is reconstructed as a data class; read the field as a property.
     final propertyAccess = '$valueCodeName.${mapping.field.codeName}';
     final resultExpr = _serviceResultToJson(mapping.field, propertyAccess);
+    final runBefore = _runBeforeStatement(mapping.field, _mappingOperation(mapping));
 
     final statements = [
+      if (runBefore != null) runBefore,
       ...conversions.declarations,
       'return $resultExpr',
     ];
     final header = _methodHeader(mapping.field, suspend: true);
     return '$header ${codeGenUtils.block(statements)}';
   }
+
+  /// `Type.field` — the operation label passed to `runBefore` for a mapping
+  /// method; there's no root query/mutation/subscription name to reuse here.
+  String _mappingOperation(GLSchemaMapping mapping) =>
+      '${mapping.type.token}.${mapping.field.name.token}';
 
   /// Turns a batch service call's `Map<DomainParent, DomainValue>` into the
   /// `Map<WireParent, WireValue>` Spring's `@BatchMapping` needs — one entry
@@ -256,6 +303,35 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
     _addWithContextImports(context);
     final lambda = codeGenUtils.block([...conversion, 'result']);
     return ['return withContext($_securityContext) $lambda'];
+  }
+
+  // ── @glIntercept ──────────────────────────────────────────────────────────────
+
+  /// `interceptor.runBefore(tag, "operation", listOf(rawArgs), graphQLContext)`
+  /// for an intercepted [field], or `null` if it isn't intercepted.
+  String? _runBeforeStatement(GLField field, String operation, [GLQueryType? type]) {
+    if (!grammar.isIntercepted(field, type)) return null;
+    final tagArg = _interceptorTagArg(field, type);
+    final rawArgs =
+        field.arguments.where((a) => !a.skipOnGraphqlSerialization).map((a) => a.codeName).join(', ');
+    final callArgs = [
+      if (tagArg != null) tagArg,
+      '"$operation"',
+      'listOf($rawArgs)',
+      'graphQLContext',
+    ].join(', ');
+    return 'interceptor.runBefore($callArgs)';
+  }
+
+  /// The resolved `GlInterceptorTag` member reference, `'null'` for a bare
+  /// `@glIntercept`, or `null` (omit the argument) when no enum was generated.
+  String? _interceptorTagArg(GLField field, GLQueryType? type) {
+    final tagEnum = grammar.enums[glInterceptorTagEnumName];
+    if (tagEnum == null) return null;
+    final tag = grammar.interceptTag(field, type);
+    if (tag == null) return 'null';
+    final member = tagEnum.values.firstWhere((v) => v.token == tag).codeName;
+    return '${tagEnum.codeName}.$member';
   }
 
   // ── Shared helpers ────────────────────────────────────────────────────────────

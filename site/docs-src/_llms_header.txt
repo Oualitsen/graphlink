@@ -44,6 +44,15 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - **Watch mode.** Run `glink -w` to watch schema files and regenerate automatically on every save.
 - **Single source of truth.** The schema drives both ends. No duplicate type definitions. No
   schema drift. Adding a field means editing one file.
+- **Generic pre-resolver interceptor (`@glIntercept`).** Annotate a root query/mutation/subscription
+  field, a `@glSkipOnServer` schema/batch mapping field, or an entire `type`/`extend type` block with
+  `@glIntercept(tag: "...")` to have the generated controller call a single `runBefore(tag, operation,
+  args, context)` hook before the resolver runs — throw to deny, return to proceed. One generated
+  `GraphLinkInterceptor` interface (plus a `GlInterceptorTag` enum collected from every `tag:` used in
+  the schema) per server project; implement it once as a bean/service. Works across Java Spring
+  (MVC and reactive), Kotlin Spring (blocking and suspend), and Express/Apollo. A batch-mapped field
+  that also declares a real argument must use `@glSkipOnServer(batch: false)` on JVM targets — Spring's
+  `@BatchMapping` handler methods cannot bind a real `@Argument` parameter.
 - **Two-layer server-side access control.** `@glSkipOnClient` enforces field access on the server
   at two levels. Level 1 (always active): a `@SchemaMapping` is generated that throws
   `GraphQLException("Access denied")` — no runtime access regardless of the client. Level 2
@@ -191,7 +200,7 @@ type Mutation {
 - Kotlin client (coroutine-based queries/mutations/subscriptions, data classes, kotlinx.serialization, OkHttp WebSocket): https://graphlink.dev/docs/kotlin-client.html
 - Spring Boot server (MVC + reactive/WebFlux, Java and Kotlin targets, strict-by-default generation, Map-boundary controllers, service interfaces, file upload, security context propagation): https://graphlink.dev/docs/spring-server.html
 - Caching (@glCache, @glCacheInvalidate, tag invalidation, staleIfOffline): https://graphlink.dev/docs/caching.html
-- Directives (@glMapsTo, @glMapField, @glCache, @glCacheInvalidate, @glSkipOnServer forward mappings, @glServerLenient, @glInjectContext, @deprecated, and more): https://graphlink.dev/docs/directives.html
+- Directives (@glMapsTo, @glMapField, @glCache, @glCacheInvalidate, @glSkipOnServer forward mappings, @glServerLenient, @glInjectContext, @glIntercept, @deprecated, and more): https://graphlink.dev/docs/directives.html
 - "@glSkipOnServer & @glSkipOnClient" (two-layer server-side access control, schema stripping, @SchemaMapping, @BatchMapping, mapTo, forward mappings, ID/object field-pair pattern for N+1-safe loading): https://graphlink.dev/docs/skip-directives.html
 - Configuration (all config keys for Dart, Java, TypeScript, Kotlin, Spring; autoGenerateQueriesFor for selective operation generation; autoGenerateQueriesArgumentLimit for propagated-arg cap; maxFragmentBodySize to skip oversized _all_fields fragments and their dependent auto-queries; reactive; useSpringSecurity; typeMappings; unknownScalarType fallback for unmapped custom scalars; CLI flags; YAML config): https://graphlink.dev/docs/configuration.html
 

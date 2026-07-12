@@ -9,7 +9,7 @@
     "start": "tsx src/start.ts"
   },
   "dependencies": {
-    "@apollo/server": "^4.11.0",
+    "@apollo/server": "^4.13.0",
     "@graphql-tools/schema": "^10.0.0",
     "@graphql-tools/utils": "^10.5.0",
     "cors": "^2.8.5",

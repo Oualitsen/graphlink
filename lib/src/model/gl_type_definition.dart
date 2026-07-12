@@ -21,6 +21,13 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin, CodeNam
   final GLTypeDefinition? derivedFromType;
   final bool isResponseType;
 
+  /// True for a synthetic type that must not get generated toJson/fromJson
+  /// (de)serialization methods — e.g. a developer-implemented interface type
+  /// rather than a data-carrying model.
+  final bool skipJsonMethods;
+
+  final bool skipOnGraphqlSerialization;
+
   final Set<String> _originalTokens = <String>{};
 
   /// Resolved `@glSkipOnServer(mapTo: "X")` target (a type or interface — both
@@ -39,6 +46,8 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin, CodeNam
     required this.derivedFromType,
     required bool extension,
     this.isResponseType = false,
+    this.skipJsonMethods = false,
+    this.skipOnGraphqlSerialization = false,
     String? documentation,
   }) : super(name, extension, fields, documentation: documentation) {
     directives.forEach(addDirective);

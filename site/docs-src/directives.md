@@ -1,6 +1,6 @@
 ---
 title: Directives Reference — GraphLink Docs
-description: Complete reference for all GraphLink schema directives — @glCache, @glCacheInvalidate, @glCaptureErrors, @glMapsTo, @glMapField, @glSkipOnServer (with forward mappings), @glExternal, @glValidate, @glServerLenient, @glInjectContext, @deprecated, and more.
+description: Complete reference for all GraphLink schema directives — @glCache, @glCacheInvalidate, @glCaptureErrors, @glMapsTo, @glMapField, @glSkipOnServer (with forward mappings), @glExternal, @glValidate, @glServerLenient, @glInjectContext, @glIntercept, @deprecated, and more.
 ---
 
 # Directives Reference
@@ -74,6 +74,8 @@ directive @glCaptureErrors on FIELD_DEFINITION
 directive @glServerLenient on OBJECT | INTERFACE
 
 directive @glInjectContext on FIELD_DEFINITION
+
+directive @glIntercept(tag: String) on QUERY | MUTATION | SUBSCRIPTION | FIELD_DEFINITION | OBJECT
 ```
 
 ---
@@ -243,6 +245,77 @@ publicStats(): Promise<Stats>;
 ```
 
 To inject context into **every** resolver instead, set `injectContext: true` in the server config (`serverConfig.spring`, `serverConfig.kotlinSpring`, or `serverConfig.expressApollo`).
+
+---
+
+## @glIntercept
+
+**Target:** SERVER · **Placement:** `QUERY`, `MUTATION`, `SUBSCRIPTION` root fields, `FIELD_DEFINITION` on a `@glSkipOnServer` schema/batch mapping field, or an `OBJECT`/`extend type` block (applies to every field declared in that block)
+
+A generic pre-resolver interceptor hook, resolver-agnostic — it doesn't know or care what the resolver does. GraphLink generates one `GraphLinkInterceptor` interface (and, if any `tag:` argument is used anywhere in the schema, a `GlInterceptorTag` enum) per server project. You provide exactly one implementation as a bean/service; the generated controller calls `runBefore(...)` before the resolver body runs on every field the directive covers. **Throw to deny, return to proceed** — there is no separate allow/deny return value.
+
+| Argument | Type | Required | Description |
+|---|---|---|---|
+| `tag` | `String` | No | An arbitrary label describing the check to run (e.g. `"auth"`, `"admin"`). Collected across the whole schema into a generated `GlInterceptorTag` enum, so `runBefore` can `switch`/`when` on it instead of comparing raw strings. Omit it for a bare `@glIntercept` with no tag. |
+
+```graphql title="Example"
+type Query {
+  me: User! @glIntercept(tag: "auth")
+  publicStats: Stats!
+}
+
+type Mutation {
+  deleteUser(id: ID!): Boolean! @glIntercept(tag: "admin")
+}
+
+type Subscription {
+  orderUpdates: Order! @glIntercept(tag: "auth")
+}
+
+# Applies @glIntercept(tag: "auth") to every field declared in this block
+extend type Query @glIntercept(tag: "auth") {
+  adminReport: Report!
+}
+```
+
+`runBefore` receives the resolver's own declared arguments (in schema declaration order, before any input-mapping/`fromJson` conversion), the request context, and — for a root field — the resolver's `GraphQLResolveInfo`/`DataFetchingEnvironment` when the target's `useResolveInfo`/`injectDataFetching` config is enabled:
+
+```typescript title="Generated GraphLinkInterceptor.ts (Express/Apollo)"
+export interface GraphLinkInterceptor {
+  runBefore(tag: GlInterceptorTag | null, operation: string, args: unknown[], context: GraphLinkContext | null, info: GraphQLResolveInfo | null): void;
+}
+```
+
+```java title="Generated GraphLinkInterceptor.java (Spring)"
+public interface GraphLinkInterceptor {
+    void runBefore(GlInterceptorTag tag, String operation, List<Object> args, GraphQLContext context);
+}
+```
+
+```kotlin title="Generated GraphLinkInterceptor.kt (Spring)"
+interface GraphLinkInterceptor {
+    suspend fun runBefore(tag: GlInterceptorTag?, operation: String, args: List<Any>, context: GraphQLContext): Unit
+}
+```
+
+`operation` is the root field's name (e.g. `"me"`) or, for a schema/batch mapping, `"{Type}.{field}"` (e.g. `"Team.members"`) — there is no root query/mutation/subscription name to reuse for a mapping. Provide your implementation as a Spring bean (`@Component`) or (Express/Apollo) as `interceptor` on the services object passed to the generated server bootstrap — a missing bean fails fast at startup/construction when the schema uses `@glIntercept` anywhere.
+
+```java title="Example runBefore implementation"
+@Component
+public class InterceptorImpl implements GraphLinkInterceptor {
+    @Override
+    public void runBefore(GlInterceptorTag tag, String operation, List<Object> args, GraphQLContext context) {
+        if (tag == GlInterceptorTag.AUTH && context.get("user") == null) {
+            throw new RuntimeException("Access denied");
+        }
+    }
+}
+```
+
+!!! warning "`@glIntercept` on a batch-mapped field with a real argument requires `batch: false`"
+    `@glIntercept` works on a `@glSkipOnServer` mapping field exactly like it does on a root field — but on the JVM targets (Java/Kotlin Spring), Spring GraphQL's `@BatchMapping` handler method can **only** resolve the batch key collection, `GraphQLContext`, `@ContextValue`, `BatchLoaderEnvironment`, or `Principal` as parameters — never a real declared `@Argument`. If the field takes an argument (e.g. `members(role: String!)`), it must use `@glSkipOnServer(batch: false)` (a `@SchemaMapping`, resolved per-parent instead of batched) so the argument can be bound normally. A zero-argument batch-mapped field is unaffected and can freely use `batch: true` with `@glIntercept`. TypeScript's DataLoader-based batching has no such restriction — arguments are threaded through a per-argument-value memoized loader automatically regardless of `batch: true`/`false`.
+
+For a subscription, `runBefore` fires once at subscribe time — before the resolver hands back its stream — not on every emitted event.
 
 ---
 

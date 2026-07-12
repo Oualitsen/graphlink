@@ -50,6 +50,11 @@ client and server code. Developers define their API once in a `.graphql` schema 
   after a network drop, server restart, or idle timeout — Dart, Java, TypeScript, and Kotlin.
   Most GraphQL clients generate the subscription method but leave reconnection to the user.
   GraphLink handles the full connection lifecycle, integration-tested across all targets.
+- **Generic pre-resolver interceptor (`@glIntercept`).** Annotate a root field, a `@glSkipOnServer`
+  mapping field, or a whole `type` block with `@glIntercept(tag: "...")` to run a single generated
+  `runBefore(tag, operation, args, context)` hook before the resolver — throw to deny, return to
+  proceed. One implementation covers every annotated field. Java Spring, Kotlin Spring, and
+  Express/Apollo.
 - **Inline error handling (`@glCaptureErrors`).** Annotate any query or mutation with
   `@glCaptureErrors` (or set `captureErrors: true` in config) to return a `FullResponse` with
   `data` and `errors` side by side instead of throwing. Dart, Java, TypeScript, and Kotlin.

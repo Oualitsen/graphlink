@@ -5,6 +5,10 @@ import 'package:graphlink/src/utils.dart';
 class GLInterfaceDefinition extends GLTypeDefinition {
   final bool fromUnion;
 
+  /// True when fields must be serialized as methods rather than properties
+  /// (e.g. `GraphLinkInterceptor`).
+  final bool fieldAsMethods;
+
   ///
   /// Used only when generating type for interfaces.
   /// This will be a super class of one or more base types.
@@ -18,8 +22,11 @@ class GLInterfaceDefinition extends GLTypeDefinition {
     required super.directives,
     required super.interfaceNames,
     this.fromUnion = false,
+    this.fieldAsMethods = false,
     super.derivedFromType,
     required super.extension,
+    super.skipJsonMethods,
+    super.skipOnGraphqlSerialization,
     super.documentation,
   });
 

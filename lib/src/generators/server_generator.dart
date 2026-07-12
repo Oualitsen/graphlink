@@ -4,6 +4,7 @@ import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/io_utils.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_intercept_extension.dart';
 import 'package:graphlink/src/serializers/express_apollo_server_serializer.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:graphlink/src/serializers/java_spring_server_serializer.dart';
@@ -85,7 +86,8 @@ Future<Set<String>> generateServerClasses(
   );
   _writeDefinitions(
     futures: futures,
-    defs: grammar.getSerializableInterfaces(),
+    // GraphLinkInterceptor is written separately below (JVM-specific content).
+    defs: grammar.getSerializableInterfaces().where((def) => def.token != glInterceptorInterfaceName),
     data: serializer.serializeTypeDefinition,
     fileName: serializer.getFileNameFor,
     subdir: 'interfaces',
@@ -93,6 +95,18 @@ Future<Set<String>> generateServerClasses(
     packageName: packageName,
     appendStar: true,
   );
+  final interceptorInterface = springSerializer.serializeInterceptorInterface();
+  if (interceptorInterface != null) {
+    futures.add(writeToFile(
+      data: interceptorInterface,
+      fileName: serializer.getFileNameFor(grammar.interfaces[glInterceptorInterfaceName]!),
+      subdir: 'interfaces',
+      imports: const [],
+      destinationDir: destinationDir,
+      packageName: packageName,
+      appendStar: true,
+    ));
+  }
   _writeDefinitions(
     futures: futures,
     defs: grammar.getSerializableEnums(),
@@ -213,13 +227,25 @@ Future<Set<String>> _generateKotlinSpringClasses(GLParser grammar, GeneratorConf
   );
   _writeDefinitions(
     futures: futures,
-    defs: grammar.getSerializableInterfaces(),
+    // GraphLinkInterceptor is written separately below (JVM-specific content).
+    defs: grammar.getSerializableInterfaces().where((def) => def.token != glInterceptorInterfaceName),
     data: serializer.serializeTypeDefinition,
     fileName: serializer.getFileNameFor,
     subdir: 'interfaces',
     destinationDir: destinationDir,
     packageName: packageName,
   );
+  final interceptorInterface = springSerializer.serializeInterceptorInterface();
+  if (interceptorInterface != null) {
+    futures.add(writeToFile(
+      data: interceptorInterface,
+      fileName: serializer.getFileNameFor(grammar.interfaces[glInterceptorInterfaceName]!),
+      subdir: 'interfaces',
+      imports: const [],
+      destinationDir: destinationDir,
+      packageName: packageName,
+    ));
+  }
   _writeDefinitions(
     futures: futures,
     defs: grammar.getSerializableEnums(),
@@ -336,12 +362,22 @@ Future<Set<String>> _generateExpressApolloClasses(
     ));
   });
   grammar.getSerializableInterfaces().forEach((def) {
+    // GraphLinkInterceptor is written separately below (target-specific content).
+    if (def.token == glInterceptorInterfaceName) return;
     futures.add(saveSource(
       data: tsSerializer.serializeTypeDefinition(def),
       path: '$destinationDir/interfaces/${tsSerializer.getFileNameFor(def)}',
       typescriptSource: true,
     ));
   });
+  final interceptorInterface = serverSerializer.serializeInterceptorInterface();
+  if (interceptorInterface != null) {
+    futures.add(saveSource(
+      data: interceptorInterface,
+      path: '$destinationDir/interfaces/${tsSerializer.getFileNameFor(grammar.interfaces[glInterceptorInterfaceName]!)}',
+      typescriptSource: true,
+    ));
+  }
 
   grammar.services.forEach((_, service) {
     futures.add(saveSource(

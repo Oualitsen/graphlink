@@ -8,6 +8,7 @@ import 'package:graphlink/src/model/gl_schema_mapping.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_intercept_extension.dart';
 import 'package:graphlink/src/serializers/java_imports.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
 import 'package:graphlink/src/serializers/jvm_spring_controller_serializer_base.dart';
@@ -134,6 +135,55 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     return "$reactiveExpr.map($resultVar -> $converted)";
   }
 
+  /// Chains zero or more `Void`-typed pre-stage calls (in order) before
+  /// [mainExpr], each via `.then(Mono.defer(...))`/`.thenMany(Flux.defer(...))`
+  /// so nothing downstream runs until the previous stage completes — a
+  /// throwing stage (e.g. denial) short-circuits the rest.
+  String _chainReactivePreStages(List<String> preStages, String mainExpr, {required bool isSubscriptionFlow}) {
+    if (preStages.isEmpty) return mainExpr;
+    final deferType = isSubscriptionFlow ? 'Flux' : 'Mono';
+    final chainMethod = isSubscriptionFlow ? 'thenMany' : 'then';
+    var result = mainExpr;
+    for (final stage in preStages.reversed) {
+      result = '$stage.$chainMethod($deferType.defer(() -> $result))';
+    }
+    return result;
+  }
+
+  // ── @glIntercept ──────────────────────────────────────────────────────────
+
+  /// `interceptor.runBefore(tag, "operation", Arrays.asList(rawArgs), graphQLContext)`
+  /// for an intercepted [field], or `null` if it isn't intercepted.
+  /// `Arrays.asList` (not `List.of`) since a raw arg can legitimately be `null`.
+  String? _runBeforeCall(GLField field, String operation, GLToken context, [GLQueryType? type]) {
+    if (!grammar.isIntercepted(field, type)) return null;
+    final tagArg = _interceptorTagArg(field, type);
+    final rawArgs = field.arguments.where((a) => !a.skipOnGraphqlSerialization).map((a) => a.codeName).join(', ');
+    context.addImport(JavaImports.arrays);
+    final callArgs = [
+      if (tagArg != null) tagArg,
+      '"$operation"',
+      'Arrays.asList($rawArgs)',
+      'graphQLContext',
+    ].join(', ');
+    return 'interceptor.runBefore($callArgs)';
+  }
+
+  /// The resolved `GlInterceptorTag` member reference, `'null'` for a bare
+  /// `@glIntercept`, or `null` (omit the argument) when no enum was generated.
+  String? _interceptorTagArg(GLField field, GLQueryType? type) {
+    final tagEnum = grammar.enums[glInterceptorTagEnumName];
+    if (tagEnum == null) return null;
+    final tag = grammar.interceptTag(field, type);
+    if (tag == null) return 'null';
+    final member = tagEnum.values.firstWhere((v) => v.token == tag).codeName;
+    return '${tagEnum.codeName}.$member';
+  }
+
+  /// `Type.field` — the operation label passed to `runBefore` for a mapping
+  /// method; there's no root query/mutation/subscription name to reuse here.
+  String _mappingOperation(GLSchemaMapping mapping) => '${mapping.type.token}.${mapping.field.name.token}';
+
   // ── Controller ─────────────────────────────────────────────────────────────
 
   @override
@@ -142,22 +192,44 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     return serializer.serializeWithImport(ctrl, body);
   }
 
+  /// True when any of [ctrl]'s handlers or mappings carries `@glIntercept` —
+  /// gates whether this controller needs the interceptor bean injected.
+  bool _usesInterceptor(GLController ctrl) {
+    return ctrl.fields.any((f) => grammar.isIntercepted(f, ctrl.getTypeByFieldName(f.name.token))) ||
+        ctrl.mappings.any((m) => grammar.isIntercepted(m.field));
+  }
+
   String _serializeControllerBody(GLController ctrl) {
     final controllerName = ctrl.token;
     final serviceInstanceName = ctrl.serviceName.firstLow;
 
     var decorators = serializer.serializeDecorators(ctrl.getDirectives()).trim();
 
+    final usesInterceptor = _usesInterceptor(ctrl);
+    final interceptorTypeName = grammar.interfaces[glInterceptorInterfaceName]?.codeName;
+    if (usesInterceptor) {
+      ctrl.addImportDependecy(grammar.interfaces[glInterceptorInterfaceName]!);
+      final tagEnum = grammar.enums[glInterceptorTagEnumName];
+      if (tagEnum != null) ctrl.addImportDependecy(tagEnum);
+    }
+
     var buffer = StringBuffer();
     buffer.writeln(decorators);
     buffer.writeln(codeGenUtils.createClass(className: controllerName, statements: [
       if (grammar.services.containsKey(ctrl.serviceName)) 'private final ${ctrl.serviceName} $serviceInstanceName;',
+      if (usesInterceptor) 'private final $interceptorTypeName interceptor;',
       '',
       serializer.generateContructor(
           controllerName,
           [
             if (grammar.services.containsKey(ctrl.serviceName))
-              GLField(name: serviceInstanceName.toToken(), type: GLType(ctrl.serviceName.toToken(), false), arguments: [], directives: [])
+              GLField(name: serviceInstanceName.toToken(), type: GLType(ctrl.serviceName.toToken(), false), arguments: [], directives: []),
+            if (usesInterceptor)
+              GLField(
+                  name: 'interceptor'.toToken(),
+                  type: GLType(grammar.interfaces[glInterceptorInterfaceName]!.tokenInfo, false),
+                  arguments: [],
+                  directives: []),
           ],
           "public",
           ctrl),
@@ -201,30 +273,16 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
 
     final validationCall = getValidationCallStatement(method, serviceInstanceName, conversions.serviceArgs);
     final returnTypeIsVoid = serializer.serializeType(method.type) == "void";
+    final runBefore = _runBeforeCall(method, method.name.token, context, type);
 
     if (reactive) {
-      // The generated validation method always returns Mono<Void> (or
-      // Flux<Void> for a subscription) — its emitted value is irrelevant, we
-      // only need to run it before the real call. `.then()`/`.thenMany()`
-      // sequence on it without touching the value, chaining straight into the
-      // mapped result instead of firing the validation as a disconnected
-      // statement (which would never actually subscribe to it).
+      // runBefore, then @glValidate — chained so each stage completes before
+      // the next runs, rather than firing as disconnected statements.
       final mapped = _mapReactiveResult(method, serviceCall, context);
       final validationMethodCall = getValidationMethodCall(method, serviceInstanceName, conversions.serviceArgs);
-      String result;
-      if (validationMethodCall != null) {
-        final isSubscriptionFlow = method.type.wrapper == 'Flux';
-        final deferType = isSubscriptionFlow ? 'Flux' : 'Mono';
-        final chainMethod = isSubscriptionFlow ? 'thenMany' : 'then';
-        // $mapped itself calls the service (building carService.getCar(id)'s
-        // Mono/Flux eagerly, as any Java expression argument must) — wrapping
-        // it in defer() postpones that call until subscription time, so it
-        // only actually happens once validation's Mono/Flux has completed,
-        // even if the service method isn't written lazily.
-        result = '$validationMethodCall.$chainMethod($deferType.defer(() -> $mapped))';
-      } else {
-        result = mapped;
-      }
+      final isSubscriptionFlow = method.type.wrapper == 'Flux';
+      final preStages = [if (runBefore != null) runBefore, if (validationMethodCall != null) validationMethodCall];
+      final result = _chainReactivePreStages(preStages, mapped, isSubscriptionFlow: isSubscriptionFlow);
       statements = [
         ...inputConversions,
         'return $result;',
@@ -232,6 +290,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     } else if (type == GLQueryType.subscription) {
       statements = [
         ...inputConversions,
+        if (runBefore != null) '$runBefore;',
         if (validationCall != null) validationCall,
         'return ${_mapReactiveResult(method, serviceCall, context)};',
       ];
@@ -239,6 +298,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
       statements = [
         ...inputConversions,
         ..._wrapInCompletableFuture([
+          if (runBefore != null) '$runBefore;',
           if (validationCall != null) validationCall,
           _serviceResultToJson(method, serviceCall, context),
         ], returnTypeIsVoid, context),
@@ -321,8 +381,14 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
 
     final conversions = _buildArgumentConversions(mapping.field.arguments, context);
     final serviceCall = '$serviceInstanceName.${mapping.key}(${conversions.serviceArgs.join(", ")})';
+    final runBefore = _runBeforeCall(mapping.field, _mappingOperation(mapping), context);
 
-    var statementList = <String>[...conversions.declarations];
+    // Non-reactive: a plain leading statement. Reactive: threaded through
+    // `_chainReactivePreStages` instead, per branch below.
+    var statementList = <String>[
+      if (runBefore != null && !reactive) '$runBefore;',
+      ...conversions.declarations,
+    ];
 
     if (mapping.isBatch) {
       if (reactive) {
@@ -330,14 +396,19 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
           ..._buildBatchResultConversion(mapping, "resultMap", context),
           'return result;',
         ]);
-        statementList.add('return $serviceCall.map(resultMap -> $lambdaBody);');
+        final mapped = '$serviceCall.map(resultMap -> $lambdaBody)';
+        final result = _chainReactivePreStages([if (runBefore != null) runBefore], mapped, isSubscriptionFlow: false);
+        statementList.add('return $result;');
       } else {
         statementList.addAll(_buildBatchResultConversion(mapping, serviceCall, context));
         statementList.add('result');
         statementList = _wrapInCompletableFuture(statementList, false, context);
       }
     } else if (reactive) {
-      statementList.add('return ${_mapReactiveResult(mapping.field, serviceCall, context)};');
+      final mapped = _mapReactiveResult(mapping.field, serviceCall, context);
+      final isFluxFlow = mapping.field.type.wrapper == 'Flux';
+      final result = _chainReactivePreStages([if (runBefore != null) runBefore], mapped, isSubscriptionFlow: isFluxFlow);
+      statementList.add('return $result;');
     } else {
       statementList.add(_serviceResultToJson(mapping.field, serviceCall, context));
       statementList = _wrapInCompletableFuture(statementList, false, context);
@@ -351,11 +422,19 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     var buffer = StringBuffer();
     buffer.write(serializer.serializeMethod(mapping.field, modifier: "public"));
     buffer.write(" ");
+    final runBefore = _runBeforeCall(mapping.field, _mappingOperation(mapping), context);
+    // The key/parent already is the resolved value — echo it straight back.
+    final valueName = mapping.field.arguments.first.bareName;
     final List<String> statements;
     if (reactive) {
-      statements = ["return Mono.just(${mapping.field.arguments.first.bareName});"];
+      final result = _chainReactivePreStages(
+          [if (runBefore != null) runBefore], 'Mono.just($valueName)', isSubscriptionFlow: false);
+      statements = ['return $result;'];
     } else {
-      statements = _wrapInCompletableFuture(['${mapping.field.arguments.first.bareName}'], false, context);
+      statements = _wrapInCompletableFuture([
+        if (runBefore != null) '$runBefore;',
+        valueName,
+      ], false, context);
     }
     buffer.write(codeGenUtils.block(statements));
     return buffer.toString();
@@ -371,9 +450,19 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
         '$valueCodeName.${JavaSerializer.getterCall(mapping.field, isRecord: serializer.typesAsRecords, isBoolean: fieldType == 'boolean')}';
 
     final resultExpr = _serviceResultToJson(mapping.field, getterCall, context);
-    final statements = mapping.field.type.wrapper == 'Mono'
-        ? [...conversions.declarations, 'return Mono.just($resultExpr);']
-        : _wrapInCompletableFuture([...conversions.declarations, resultExpr], false, context);
+    final runBefore = _runBeforeCall(mapping.field, _mappingOperation(mapping), context);
+    final List<String> statements;
+    if (mapping.field.type.wrapper == 'Mono') {
+      final result = _chainReactivePreStages(
+          [if (runBefore != null) runBefore], 'Mono.just($resultExpr)', isSubscriptionFlow: false);
+      statements = [...conversions.declarations, 'return $result;'];
+    } else {
+      statements = _wrapInCompletableFuture([
+        ...conversions.declarations,
+        if (runBefore != null) '$runBefore;',
+        resultExpr,
+      ], false, context);
+    }
 
     final header = serializer.serializeMethod(mapping.field, modifier: "public");
     var buffer = StringBuffer();

@@ -1,10 +1,13 @@
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/java_code_gen_utils.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_service.dart';
+import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_intercept_extension.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/java_imports.dart';
 import 'package:graphlink/src/serializers/java_serializer.dart';
@@ -60,6 +63,32 @@ class JavaSpringServerSerializer extends JvmSpringServerSerializerBase {
         injectDataFetching: injectContext,
         reactive: reactive,
         useSpringSecurity: useSpringSecurity);
+  }
+
+  // ── interfaces/GraphLinkInterceptor.java ────────────────────────────────────
+
+  /// Appends the JVM-specific `context` param (and a `Mono<Void>` wrapper in
+  /// reactive mode) onto the shared `runBefore` IR, then serializes normally.
+  String? serializeInterceptorInterface() {
+    if (!grammar.usesInterceptor) return null;
+    final def = grammar.interfaces[glInterceptorInterfaceName]!;
+    _prepareInterceptorInterface(def);
+
+    final body = serializer.serializeInterface(def, getters: false, skipJsonConversionMethods: true);
+    return serializer.serializeWithImport(def, body);
+  }
+
+  void _prepareInterceptorInterface(GLInterfaceDefinition def) {
+    final runBefore = def.fields.firstWhere((f) => f.name.token == glInterceptorRunBeforeMethod);
+    if (runBefore.arguments.any((a) => a.token == 'context')) return;
+    runBefore.addArgument(
+        GLArgumentDefinition('context'.toToken(), GLType('GraphQLContext'.toToken(), false), []));
+    def.addImport(SpringImports.gqlGraphQLContext);
+    if (reactive) {
+      runBefore.type.wrapper = 'Mono';
+      runBefore.type.wrapperImport = JavaImports.mono;
+      def.addImport(JavaImports.mono);
+    }
   }
 
   // ── Repository ─────────────────────────────────────────────────────────────

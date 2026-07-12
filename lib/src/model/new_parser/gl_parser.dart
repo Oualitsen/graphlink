@@ -38,6 +38,7 @@ import 'package:graphlink/src/parser_extensions/gl_grammar_service_extension.dar
 import 'package:graphlink/src/parser_extensions/gl_grammar_fragment_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_projection_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_hoist_args_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_intercept_extension.dart';
 import 'package:graphlink/src/model/skipped_auto_query.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_strict_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_expand_grammar_extension.dart';
@@ -181,6 +182,21 @@ class GLParser {
       {GLDirectiveScope.FIELD_DEFINITION},
       false,
     ),
+    glIntercept: GLDirectiveDefinition(
+      glIntercept.toToken(),
+      [
+        GLArgumentDefinition(
+            glInterceptTagArg.toToken(), GLType("String".toToken(), true), [])
+      ],
+      {
+        GLDirectiveScope.QUERY,
+        GLDirectiveScope.MUTATION,
+        GLDirectiveScope.SUBSCRIPTION,
+        GLDirectiveScope.FIELD_DEFINITION,
+        GLDirectiveScope.OBJECT,
+      },
+      false,
+    ),
   };
 
   final bool _validate = true;
@@ -246,6 +262,11 @@ class GLParser {
   /// Lives on the parser so all extension methods can access it without extra parameters.
   final LazyMap<String, GLFragmentBlockDefinition?> fragmentBlockCache =
       LazyMap();
+
+  /// `"<RootTypeName>.<fieldName>" -> @glIntercept` on the block that
+  /// declared that field, captured pre-`mergeTokens()` so block-level
+  /// directives don't leak across sibling `extend` blocks.
+  final Map<String, GLDirectiveValue?> interceptBlockDirectiveCache = {};
 
   /// Lazily computed caches for the cycle-detection passes in
   /// `gl_expand_grammar_extension.dart` (SCC ids, cyclic type names, and the
@@ -349,6 +370,11 @@ class GLParser {
     validateTypeReferences();
     validateSkipOnServerMapTo();
     validateTypeFieldSkipOnServerDirectives();
+    validateInterceptPlacement();
+    validateInterceptTagValues();
+    captureInterceptBlockScopes();
+    registerInterceptorTagEnum();
+    registerInterceptorInterface();
     if (mode == CodeGenerationMode.server) {
       populateMappedToTypes();
     }

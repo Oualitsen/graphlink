@@ -8,11 +8,14 @@ import { BulkCreateServiceImpl, BulkCreateGuardImpl } from './impl/bulk-create-s
 import { CollideServiceImpl } from './impl/collide-service.js';
 import { DefaultsServiceImpl } from './impl/defaults-service.js';
 import { DeleteArticleServiceImpl } from './impl/delete-article-service.js';
+import { GreetingServiceImpl } from './impl/greeting-service.js';
 import { HoistServiceImpl } from './impl/hoist-service.js';
+import { InterceptorImpl } from './impl/interceptor.js';
 import { MessageServiceImpl } from './impl/message-service.js';
 import { NestingServiceImpl } from './impl/nesting-service.js';
 import { ReservedFieldsServiceImpl } from './impl/reserved-fields-service.js';
 import { StatusServiceImpl } from './impl/status-service.js';
+import { TeamServiceImpl, TeamSchemaMappingsServiceImpl } from './impl/team-service.js';
 
 const PORT = 9997;
 
@@ -33,6 +36,10 @@ const httpServer = await createServer({
   statusService: new StatusServiceImpl(),
   nestingService: new NestingServiceImpl(),
   reservedFieldsService: new ReservedFieldsServiceImpl(),
+  greetingService: new GreetingServiceImpl(),
+  interceptor: new InterceptorImpl(),
+  teamService: new TeamServiceImpl(),
+  teamSchemaMappingsService: new TeamSchemaMappingsServiceImpl(),
 
   configService: defaults,
   rangeService: defaults,

@@ -530,6 +530,9 @@ public Vehicle addVehicle(AddVehicleInput input) {
 }
 ```
 
+!!! note "@glValidate vs @glIntercept"
+    `@glValidate` generates a dedicated `validateX(...)` method per mutation, typed to that mutation's own arguments — use it for mutation-specific input validation. `@glIntercept` generates one schema-wide `runBefore(tag, operation, args, context)` hook shared by every annotated field (queries, mutations, subscriptions, and schema/batch mappings alike) — use it for cross-cutting checks like auth. When both are present on the same field, `runBefore` fires first. → **[Full @glIntercept reference](directives.md#glintercept)**
+
 ## Kotlin Spring Boot server
 
 New in v5.0.0: set `"mode": "server"` and use a `"kotlinSpring"` section instead of `"spring"` under `serverConfig` to generate a Kotlin server target — data-class types/inputs/enums, services, controllers, and repositories, mirroring the Java Spring target above (including strict-by-default generation and `Map`-boundary controller serialization).

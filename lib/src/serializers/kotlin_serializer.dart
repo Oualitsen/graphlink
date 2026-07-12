@@ -272,7 +272,9 @@ class KotlinSerializer extends GLSerializer {
   @override
   String doSerializeTypeDefinition(GLTypeDefinition def) {
     if (def is GLInterfaceDefinition) {
-      return serializeInterface(def);
+      return serializeInterface(def,
+          skipJsonConversionMethods: shouldSkipJsonMethods(def),
+          fieldsAsFunctions: def.fieldAsMethods);
     }
     return _serializeClass(def);
   }
@@ -298,9 +300,11 @@ class KotlinSerializer extends GLSerializer {
     final implementsNonInternalInterface = def.interfaces
         .any((i) => !i.hasDirective(glInternal));
 
-    final toJsonPrefix = implementsNonInternalInterface ? 'override ' : '';
-    instanceMethods.add('${toJsonPrefix}${_generateToJson(fields, def)}');
-    companionMethods.add(_generateFromJson(fields, def.codeName, def));
+    if (!shouldSkipJsonMethods(def)) {
+      final toJsonPrefix = implementsNonInternalInterface ? 'override ' : '';
+      instanceMethods.add('${toJsonPrefix}${_generateToJson(fields, def)}');
+      companionMethods.add(_generateFromJson(fields, def.codeName, def));
+    }
 
     if (!typesAsDataClass) {
       instanceMethods.addAll(_generateEqualsHashCode(def.codeName, fields, def));

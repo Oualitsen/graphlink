@@ -216,9 +216,29 @@ class TypeScriptSerializer extends GLSerializer {
   @override
   String doSerializeTypeDefinition(GLTypeDefinition def) {
     if (def is GLInterfaceDefinition) {
+      if (def.fieldAsMethods) {
+        return _serializeInterfaceWithMethods(def);
+      }
       return _serializeInterfaceAsUnion(def);
     }
     return _serializeType(def);
+  }
+
+  /// A developer-implemented interface (e.g. `GraphLinkInterceptor`) whose fields are
+  /// method contracts, not data properties — `export interface Foo { bar(x: T): R; }`.
+  String _serializeInterfaceWithMethods(GLInterfaceDefinition def) {
+    final fields = def.getSerializableFields(grammar.mode);
+    final interfaceNames = def.interfaceNames.map((e) => resolveCodeName(e.token)).toList();
+    return codeGenUtils.createInterface(
+      interfaceName: def.codeName,
+      extendsNames: interfaceNames.isEmpty ? null : interfaceNames,
+      fields: fields.map((f) => "${_serializeMethodSignature(f)};").toList(),
+    );
+  }
+
+  String _serializeMethodSignature(GLField field) {
+    final args = field.arguments.map((a) => "${a.codeName}: ${serializeType(a.type)}").join(', ');
+    return "${field.codeName}($args): ${serializeType(field.type)}";
   }
 
   /// GraphQL `interface` / `union` → `export type Animal = Dog | Cat;`
@@ -231,8 +251,8 @@ class TypeScriptSerializer extends GLSerializer {
     buf.write(codeGenUtils.createNamespace(
       namespaceName: def.codeName,
       statements: [
-        _serializeUnionToJson(def),
-        _serializeUnionFromJson(def),
+        if (!shouldSkipJsonMethods(def)) _serializeUnionToJson(def),
+        if (!shouldSkipJsonMethods(def)) _serializeUnionFromJson(def),
       ],
     ));
     return buf.toString();
@@ -252,13 +272,15 @@ class TypeScriptSerializer extends GLSerializer {
       ],
     ));
     buf.writeln();
-    buf.write(codeGenUtils.createNamespace(
-      namespaceName: def.codeName,
-      statements: [
-        _generateTypeToJson(def.codeName, fields, wireTypeName: wireTypeName),
-        _generateTypeFromJson(def.codeName, fields, wireTypeName: wireTypeName),
-      ],
-    ));
+    if (!shouldSkipJsonMethods(def)) {
+      buf.write(codeGenUtils.createNamespace(
+        namespaceName: def.codeName,
+        statements: [
+          _generateTypeToJson(def.codeName, fields, wireTypeName: wireTypeName),
+          _generateTypeFromJson(def.codeName, fields, wireTypeName: wireTypeName),
+        ],
+      ));
+    }
     return buf.toString();
   }
 

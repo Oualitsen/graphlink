@@ -1,12 +1,15 @@
 PORT ?= 9997
 
-.PHONY: install generate test ci
+.PHONY: install generate test ci remove-generated
 
 install:
 	dart pub get
 	npm install
 
-generate:
+remove-generated:
+	rm -rf src/generated
+
+generate: remove-generated
 	dart run ../../generate.dart
 
 # --no-file-parallelism: articleCreated has no id filter, so parallel test files

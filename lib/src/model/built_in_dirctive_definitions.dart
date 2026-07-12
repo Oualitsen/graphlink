@@ -137,6 +137,9 @@ const glServerLenient = "@glServerLenient";
 ///
 const glInjectContext = "@glInjectContext";
 
+const glIntercept = "@glIntercept";
+const glInterceptTagArg = "tag";
+
 
 var jspecifyNullable = '@Nullable';
 var jspecifyNonNull = '@NonNull';

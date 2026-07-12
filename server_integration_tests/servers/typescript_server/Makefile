@@ -2,12 +2,15 @@ PORT = 9997
 PID_FILE = .server.pid
 FIXTURES := $(abspath ../../fixtures.json)
 
-.PHONY: install generate typecheck start-server start-server-sync stop-server ci
+.PHONY: install generate typecheck start-server start-server-sync stop-server ci remove-generated
 
 install:
 	npm install
 
-generate:
+remove-generated:
+	rm -rf src/generated
+
+generate: remove-generated
 	dart run ../../generate.dart
 
 typecheck:
