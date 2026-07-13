@@ -1,0 +1,28 @@
+{
+  "schemaPaths": ["../../schema/*.gql", "queries.gql"],
+  "mode": "client",
+  "typeMappings": {
+    "ID":      "String",
+    "String":  "String",
+    "Float":   "Double",
+    "Int":     "Integer",
+    "Boolean": "Boolean",
+    "Null":    "null"
+  },
+  "outputDir": "client-app/src/main/java/dev/graphlink/server/generated",
+  "clientConfig": {
+    "java": {
+      "packageName":               "dev.graphlink.server.generated",
+      "wsAdapter":                 "java11",
+      "jsonCodec":                 "jackson",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries":       true,
+      "nullableFieldsRequired":    false,
+      "immutableInputFields":      true,
+      "immutableTypeFields":       true,
+      "captureErrors":             false,
+      "asyncStyle":                "reactor",
+      "reactiveHttpClient":        "jdk"
+    }
+  }
+}

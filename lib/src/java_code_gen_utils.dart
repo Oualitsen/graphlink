@@ -1,7 +1,9 @@
 import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/model/token_info.dart';
 import 'package:graphlink/src/serializers/client_serializers/java/java_reactive_flavor.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/utils.dart';
@@ -297,33 +299,19 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
   static String listOf(GLParser grammar, String token, {bool wildcard = true}) =>
       "List<${wildcard ? wildcardExtends(grammar, token) : token.toBoxedType}>";
 
-  /// Wraps [token] in [flavor]'s deferred-single type (`Mono`/`Single`/`Uni`),
-  /// or returns the bare boxed/wildcarded type when [flavor] is blocking.
-  /// Used for query/mutation return types — async-ness is the outer wrapper,
-  /// list-ness stays part of the inner type.
-  static String singleOf(
-      GLParser grammar, String token, JavaReactiveFlavor flavor,
-      {bool wildcard = true}) {
-    final inner = wildcard ? wildcardExtends(grammar, token) : token.toBoxedType;
-    return flavor.single == null ? inner : "${flavor.single}<$inner>";
+  /// Builds a [GLType] wrapped in [flavor]'s deferred-single type
+  /// (`Mono`/`Single`/`Uni`), or deferred-many type (`Flux`/`Observable`/
+  /// `Multi`) when [many] is true — or left unwrapped when [flavor] is
+  /// blocking. The caller renders it via `serializer.serializeType(...)`,
+  /// which is the single place that knows how to emit `GLType.wrapper`
+  /// (mirrors the server-side reactive pattern of setting `field.type.wrapper`
+  /// directly on the model instead of string-building the wrapped type here).
+  static GLType wrapReactive(TokenInfo tokenInfo, JavaReactiveFlavor flavor,
+      {bool many = false}) {
+    final wrapper = many ? flavor.many : flavor.single;
+    final wrapperImport = many ? flavor.manyImport : flavor.singleImport;
+    return GLType(tokenInfo, false, wrapper: wrapper, wrapperImport: wrapperImport);
   }
-
-  /// Wraps [token] in [flavor]'s deferred-many type (`Flux`/`Observable`/
-  /// `Multi`). Used only for subscriptions (genuine streams).
-  static String manyOf(
-      GLParser grammar, String token, JavaReactiveFlavor flavor,
-      {bool wildcard = true}) {
-    final inner = wildcard ? wildcardExtends(grammar, token) : token.toBoxedType;
-    return flavor.many == null ? inner : "${flavor.many}<$inner>";
-  }
-
-  /// Returns `Mono<...>`, wrapping/boxing the element type via [wildcardExtends].
-  static String monoOf(GLParser grammar, String token, {bool wildcard = true}) =>
-      singleOf(grammar, token, JavaReactiveFlavor.reactor, wildcard: wildcard);
-
-  /// Returns `Flux<...>`, wrapping/boxing the element type via [wildcardExtends].
-  static String fluxOf(GLParser grammar, String token, {bool wildcard = true}) =>
-      manyOf(grammar, token, JavaReactiveFlavor.reactor, wildcard: wildcard);
 
   /// Returns `Map<K, V>`, boxing the key type and wrapping/boxing the value
   /// type via [wildcardExtends]. The key is left invariant (no wildcard) —
