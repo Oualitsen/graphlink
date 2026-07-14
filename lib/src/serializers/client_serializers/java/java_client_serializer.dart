@@ -308,9 +308,11 @@ class JavaClientSerializer extends GLClientSerializer {
   }
 
   /// Wraps [inner] in the flavor's deferred-single type, or returns it bare
-  /// for the blocking flavor.
-  String _wrapSingle(String inner) =>
-      flavor.isReactive ? '${flavor.single}<$inner>' : inner;
+  /// for the blocking flavor. Routes through the same [GLType.wrapper] +
+  /// `serializeType` mechanism used for schema types (mirrors
+  /// [GLVoidType]'s pattern of building a synthetic, non-schema [GLType]).
+  String _wrapSingle(String inner) => serializer
+      .serializeType(JavaCodeGenUtils.wrapReactive(inner.toToken(), flavor));
 
   String _adapterDeclaration(bool withStore) {
     return [
@@ -1179,7 +1181,7 @@ class JavaClientSerializer extends GLClientSerializer {
       '    public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider) {',
       '        this.url = url;',
       '        this.headersProvider = headersProvider;',
-      '        this.httpClient = HttpClient.newHttpClient();',
+      '        this.httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build();',
       '    }',
       '',
       '    @Override',

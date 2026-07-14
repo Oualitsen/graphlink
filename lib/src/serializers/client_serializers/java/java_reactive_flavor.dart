@@ -35,6 +35,13 @@ class JavaReactiveFlavor {
   List<String> get singleImports =>
       imports.isEmpty ? const [] : [imports.first];
 
+  /// The single-type import, or `null` for blocking. `imports` is always
+  /// ordered `[single, many]` for the non-blocking consts below.
+  String? get singleImport => imports.isEmpty ? null : imports.first;
+
+  /// The many-type import, or `null` for blocking/no many-type.
+  String? get manyImport => imports.length < 2 ? null : imports[1];
+
   /// Lifts an already-computed value expression into the deferred-single type.
   /// Blocking returns the expression unchanged.
   ///   Mono.just(expr) / Single.just(expr) / Uni.createFrom().item(expr)
