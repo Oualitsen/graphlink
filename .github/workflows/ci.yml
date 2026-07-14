@@ -124,7 +124,7 @@ jobs:
           path: server_integration_tests
 
   # Full client x server matrix: each generated server target driven by each
-  # generated client harness. 5 servers x 4 clients = 20 independent jobs, each
+  # generated client harness. 5 servers x 5 clients = 25 independent jobs, each
   # its own pass/fail check.
   matrix:
     runs-on: ubuntu-latest
@@ -133,7 +133,7 @@ jobs:
       fail-fast: false
       matrix:
         server: [typescript, kotlin-blocking, kotlin-suspend, java, java-reactive]
-        client: [dart, ts, java, kotlin]
+        client: [dart, ts, java, kotlin, java_reactive]
     defaults:
       run:
         working-directory: server_integration_tests

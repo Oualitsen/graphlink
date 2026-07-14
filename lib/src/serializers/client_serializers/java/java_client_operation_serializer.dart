@@ -594,15 +594,17 @@ class JavaClientOperationSerializer {
   String returnTypeByQueryType(GLQueryDefinition def) {
     if (def.type == GLQueryType.subscription) {
       if (_ctx.flavor.isReactive) {
-        return JavaCodeGenUtils.manyOf(
-            _ctx.grammar, def.getGeneratedTypeDefinition().token, _ctx.flavor);
+        return _ctx.serializer.serializeType(JavaCodeGenUtils.wrapReactive(
+            def.getGeneratedTypeDefinition().tokenInfo, _ctx.flavor,
+            many: true));
       }
       return "void";
     }
-    final token = def.isCaptureErrors(_ctx.grammar)
-        ? def.getFullResponseTypeDefinition(_ctx.grammar).token
-        : def.getGeneratedTypeDefinition().token;
-    return JavaCodeGenUtils.singleOf(_ctx.grammar, token, _ctx.flavor);
+    final t = def.isCaptureErrors(_ctx.grammar)
+        ? def.getFullResponseTypeDefinition(_ctx.grammar)
+        : def.getGeneratedTypeDefinition();
+    return _ctx.serializer
+        .serializeType(JavaCodeGenUtils.wrapReactive(t.tokenInfo, _ctx.flavor));
   }
 
   String serializeSubscriptions() {
