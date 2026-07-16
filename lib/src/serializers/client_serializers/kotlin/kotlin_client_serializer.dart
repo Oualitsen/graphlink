@@ -636,8 +636,6 @@ class KotlinClientSerializer extends GLClientSerializer {
   GLClassModel generateMultipartAdapterFile() =>
       const GLClassModel(body: kotlinGraphLinkMultipartAdapter);
 
-  GLClassModel generatePayloadFile() => const GLClassModel(body: kotlinGraphLinkPayload);
-
   GLClassModel generateClientAdapterFile() => GLClassModel(
         body: _grammar.operationNameAsParameter
             ? kotlinGraphLinkClientAdapterWithOperationName
