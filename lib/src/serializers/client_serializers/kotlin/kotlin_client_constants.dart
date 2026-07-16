@@ -60,14 +60,6 @@ interface GraphLinkMultipartAdapter {
 
 // ── Data classes ──────────────────────────────────────────────────────────────
 
-const kotlinGraphLinkPayload = '''
-data class GraphLinkPayload(
-    val query: String,
-    val operationName: String,
-    val variables: Map<String, Any?>,
-)
-''';
-
 const kotlinGraphLinkCacheEntry = '''
 data class GraphLinkCacheEntry(
     val data: String,

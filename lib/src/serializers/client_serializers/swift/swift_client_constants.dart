@@ -84,20 +84,6 @@ public actor InMemoryGraphLinkCacheStore: GraphLinkCacheStore {
 ''';
 
 // ── Cache metadata ────────────────────────────────────────────────────────────
-//
-// `GraphLinkPayload` and `GraphLinkError` are deliberately NOT defined here:
-// both are synthetic types already registered in the grammar (so schema
-// tooling and the generated `toJson`/`fromJson` for e.g. `GraphLinkError.path`/
-// `.extensions`/`.locations` come from the real GraphQL type shape, not a
-// hand-maintained guess), and SwiftClientGenerator's `allProjectedTypes` loop
-// already emits them into `Types/` via the standard SwiftSerializer path —
-// see swift_client_generator.dart. Hand-authoring them again here produced a
-// duplicate `struct GraphLinkPayload`/`GraphLinkError` declaration (caught by
-// `swift build`'s "multiple producers" error). Kotlin already avoids this:
-// `KotlinClientSerializer.generatePayloadFile()` exists but is never called
-// by kotlin_client_generator.dart (dead code — the synthetic-type pipeline
-// alone produces GraphLinkPayload.kt), and Kotlin never even has a
-// hand-written GraphLinkError constant to begin with.
 
 const swiftGraphLinkCacheEntry = '''
 public struct GraphLinkCacheEntry: Sendable {
