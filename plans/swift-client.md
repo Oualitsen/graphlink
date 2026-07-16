@@ -5,22 +5,45 @@
 GraphLink already generates fully-typed clients for Dart, Java, TypeScript, and Kotlin.
 This plan adds Swift as a fifth client target, aimed at iOS/macOS (SwiftUI) apps.
 
-Swift differs from the existing targets in ways that actually *simplify* generation:
-- `struct` + `Codable` give us free JSON encode/decode — no hand-written `toJson`/`fromJson`
-  needed for plain types and inputs (unlike Dart/Java/Kotlin's `Map<String, Any?>` approach).
+**Decision: `toJson`/`fromJson` over `[String: Any?]`, not `Codable`.** Every existing
+target (Dart/Java/Kotlin/TS) self-serializes through a hand-written `toJson()`/`fromJson()`
+pair over an untyped map — that contract is *why* those serializers exist in the first
+place, specifically to make interface/union polymorphism a solved, mechanical
+`__typename`-dispatch problem rather than a per-target special case. `Codable` was
+initially considered for Swift because it's free, but `Codable` has no native open
+polymorphism — decoding into a `protocol` requires either a sealed enum-of-associated-
+values wrapper (extra type most callers don't want) or a lot of manual `init(from:)`
+work per interface. Since GraphQL interfaces/unions are exactly the problem
+`toJson`/`fromJson` was already built to solve everywhere else, Swift uses the same
+pattern: `[String: Any?]` in, `[String: Any?]` out, decoded/encoded via Foundation's
+`JSONSerialization` (not `JSONDecoder`/`JSONEncoder`, which only operate on `Decodable`/
+`Encodable` typed targets and can't produce a raw dictionary). This makes `SwiftSerializer`
+structurally the same shape as `KotlinSerializer`/`JavaSerializer` — recursive
+`toJson`/`fromJson` expression builders — rather than a fundamentally different codec
+design, and it means the cache layer, `@glMapsTo`, and anything else built on the
+"every generated type is Map-serializable" contract work unchanged for Swift.
+
+Swift still differs from the existing targets in ways that simplify or change generation:
 - Native `async`/`await` and `AsyncThrowingStream` cover queries/mutations and
   subscriptions — no coroutine/Flow/RxJS equivalent to bolt on.
 - `URLSession` (Foundation) provides HTTP and WebSocket (`URLSessionWebSocketTask`) with
   zero external dependencies — matches the "zero runtime dependency" rule directly.
 - `actor` gives a safe, idiomatic cache store without manual locking.
+- Interfaces/unions decode into the **protocol type directly** via a static `__typename`-
+  dispatch factory (mirrors Kotlin's `when`-based `fromJson` almost exactly) — no wrapper
+  enum needed, unlike what an earlier draft of this plan proposed for `Codable`.
 
-The main new wrinkles vs. existing targets:
+The remaining new wrinkles vs. existing targets:
 - Swift doesn't auto-synthesize a `public` memberwise initializer — generated `struct`s
   need an explicit `public init(...)`.
-- GraphQL interfaces/unions need an enum-with-associated-values + custom `init(from:)`
-  for polymorphic decoding (Swift `Codable` has no built-in polymorphism).
+- `JSONSerialization` doesn't accept Swift `nil` boxed inside `Any` — `toJson()` must
+  substitute `NSNull()` for nullable fields that are absent, and `fromJson` must treat
+  `NSNull` and Swift `nil` as equivalent on read. One shared helper in the generated
+  runtime handles this once; per-type `toJson`/`fromJson` don't need to think about it.
 - Swift reserved words (`self`, `Self`, `Type`, `class`, `default`, `in`, …) colliding
-  with GraphQL field/enum-value names need `CodingKeys` / backtick escaping.
+  with GraphQL field/enum-value names need backtick escaping in generated Swift
+  identifiers (property names, `case` labels) — this is independent of the
+  serialization approach and applies either way.
 
 ---
 
@@ -90,21 +113,32 @@ enum Gender { male female }
 ```
 
 ```swift
-public enum Gender: String, Codable, Sendable {
+public enum Gender: String, Sendable {
     case male
     case female
+
+    public func toJson() -> String { rawValue }
+
+    public static func fromJson(_ value: String) -> Gender {
+        Gender(rawValue: value)!
+    }
 }
 ```
 
-`Codable` is synthesized automatically for `String`-backed enums whose case names match
-the raw GraphQL values. If a GraphQL enum value collides with a Swift keyword (`default`,
-`in`, …) or isn't a valid identifier (starts with a digit, etc.), emit an explicit
-`rawValue` per case:
+`String`-backed `RawRepresentable` gives `rawValue`/`init(rawValue:)` for free; `toJson`/
+`fromJson` are one-line wrappers around it, matching the shape of `toJson`/`fromJson` on
+every other generated type (uniform call convention for callers and for recursive
+field-level (de)serialization, even though an enum's "map" is just a `String`). If a
+GraphQL enum value collides with a Swift keyword (`default`, `in`, …) or isn't a valid
+identifier (starts with a digit, etc.), emit an explicit `rawValue` per case:
 
 ```swift
-public enum SortOrder: String, Codable, Sendable {
+public enum SortOrder: String, Sendable {
     case `default` = "default"
     case ascending = "ASC"
+
+    public func toJson() -> String { rawValue }
+    public static func fromJson(_ value: String) -> SortOrder { SortOrder(rawValue: value)! }
 }
 ```
 
@@ -121,7 +155,7 @@ input CreateUserInput {
 ```
 
 ```swift
-public struct CreateUserInput: Codable, Sendable {
+public struct CreateUserInput: Sendable {
     public let name: String
     public let email: String
     public let role: UserRole?
@@ -131,17 +165,35 @@ public struct CreateUserInput: Codable, Sendable {
         self.email = email
         self.role = role
     }
+
+    public func toJson() -> [String: Any?] {
+        ["name": name, "email": email, "role": role?.toJson()]
+    }
+
+    public static func fromJson(_ map: [String: Any?]) -> CreateUserInput {
+        CreateUserInput(
+            name: map["name"] as! String,
+            email: map["email"] as! String,
+            role: (map["role"] as? String).map { UserRole.fromJson($0) }
+        )
+    }
 }
 ```
 
-- `Codable` conformance is free — `Encodable` handles serialization for the request
-  payload directly via `JSONEncoder`.
+- `toJson`/`fromJson` mirror `KotlinSerializer`'s field-expression builders directly —
+  scalar fields pass through, enum/projectable fields recurse via `.toJson()`/`.fromJson()`,
+  optional fields use `?.`/`as?` the same way Kotlin uses `?.let{}`.
 - `immutableTypeFields = false` → `var` instead of `let` (still requires the explicit
   `init`, since memberwise inits are never `public`).
 - `nullableFieldsRequired = true` → drop the `= nil` default on nullable params.
 - Fields whose GraphQL name is a Swift reserved word (`self`, `Type`, `default`, …) are
-  declared with backticks (`` `default` ``) — no `CodingKeys` needed since the backtick
-  identifier *is* the property name and matches the JSON key.
+  declared with backticks (`` `default` ``) — the backtick identifier *is* the property
+  name, and the generated `toJson`/`fromJson` map key is the original GraphQL field name
+  (a string literal), so there is no key/identifier mismatch to reconcile the way
+  `CodingKeys` would have needed.
+- `fromJson` is a reasonable place to also apply the `NSNull`-vs-`nil` normalization noted
+  above, likely via a small shared helper (`GraphLinkJson.unwrap(map["role"])`) rather than
+  repeating the check per field.
 
 ---
 
@@ -156,7 +208,7 @@ type User {
 ```
 
 ```swift
-public struct User: Codable, Sendable, Identifiable {
+public struct User: Sendable, Identifiable {
     public let id: String
     public let name: String
     public let email: String?
@@ -166,20 +218,38 @@ public struct User: Codable, Sendable, Identifiable {
         self.name = name
         self.email = email
     }
+
+    public func toJson() -> [String: Any?] {
+        ["id": id, "name": name, "email": email]
+    }
+
+    public static func fromJson(_ map: [String: Any?]) -> User {
+        User(
+            id: map["id"] as! String,
+            name: map["name"] as! String,
+            email: map["email"] as? String
+        )
+    }
 }
 ```
 
 Types with an `id: ID!` field automatically conform to `Identifiable` — a small but
 high-value SwiftUI ergonomics win (`List(users) { ... }` works with no boilerplate).
+`Identifiable` needs no extra code beyond the `id` property already being generated.
+
+If the type implements a GraphQL `interface`, add `__typename` to the emitted map (see
+Interfaces/unions below) and conform to the protocol — same as Kotlin implementing the
+interface and overriding `toJson`.
 
 ---
 
-### GraphQL `interface` / `union` → `protocol` + enum wrapper
+### GraphQL `interface` / `union` → `protocol` + static dispatch factory
 
-Swift `Codable` has no native polymorphic decoding, so interfaces/unions generate two
-things: a `protocol` for shared-field access, and an `enum` with associated values for
-decoding/dispatch (mirrors the `when`/`switch` pattern in Kotlin/TS but as a value type
-rather than a sealed hierarchy).
+This is the payoff of choosing `toJson`/`fromJson` over `Codable`: interfaces/unions
+decode into the **protocol type directly**, via a static factory that switches on
+`__typename` — the same mechanical pattern `KotlinSerializer` already generates as a
+`when` expression (`lib/src/serializers/kotlin_serializer.dart` lines ~376-397), just
+Swift syntax. No wrapper enum, no custom `Decoder`/`Encoder` conformance.
 
 ```graphql
 interface Node { id: ID! }
@@ -190,45 +260,64 @@ type Admin implements Node { id: ID! level: Int! }
 ```swift
 public protocol Node: Sendable {
     var id: String { get }
+    func toJson() -> [String: Any?]
 }
 
-public enum NodeValue: Codable, Sendable {
-    case user(User)
-    case admin(Admin)
-
-    public var node: any Node {
-        switch self {
-        case .user(let v): return v
-        case .admin(let v): return v
-        }
-    }
-
-    private enum TypenameKey: String, CodingKey { case __typename }
-
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: TypenameKey.self)
-        switch try container.decode(String.self, forKey: .__typename) {
-        case "User": self = .user(try User(from: decoder))
-        case "Admin": self = .admin(try Admin(from: decoder))
+public enum NodeJson {
+    public static func fromJson(_ map: [String: Any?]) -> any Node {
+        switch map["__typename"] as? String {
+        case "User": return User.fromJson(map)
+        case "Admin": return Admin.fromJson(map)
         case let other:
-            throw DecodingError.dataCorruptedError(
-                forKey: .__typename, in: container,
-                debugDescription: "Unknown Node type: \(other)")
+            fatalError("Unknown Node type: \(other ?? "nil")")
         }
     }
+}
 
-    public func encode(to encoder: Encoder) throws {
-        switch self {
-        case .user(let v): try v.encode(to: encoder)
-        case .admin(let v): try v.encode(to: encoder)
-        }
+public struct User: Node {
+    public let id: String
+    public let name: String
+
+    public func toJson() -> [String: Any?] {
+        ["__typename": "User", "id": id, "name": name]
+    }
+
+    public static func fromJson(_ map: [String: Any?]) -> User {
+        User(id: map["id"] as! String, name: map["name"] as! String)
+    }
+}
+
+public struct Admin: Node {
+    public let id: String
+    public let level: Int
+
+    public func toJson() -> [String: Any?] {
+        ["__typename": "Admin", "id": id, "level": level]
+    }
+
+    public static func fromJson(_ map: [String: Any?]) -> Admin {
+        Admin(id: map["id"] as! String, level: map["level"] as! Int)
     }
 }
 ```
 
-`User` and `Admin` both declare `extension User: Node {}` / `extension Admin: Node {}`.
-Response types reference `NodeValue` directly; callers that just want the shared fields
-use `.node.id`.
+`User`/`Admin` conform to `Node` directly — no wrapper type. A field typed `Node` in the
+schema generates as `any Node` in Swift, decoded via `NodeJson.fromJson(map)`. Callers
+access shared fields straight off the protocol value (`node.id`), and can pattern-match
+to a concrete type with `as?` (`node as? User`) when they need type-specific fields —
+equivalent to Kotlin's `is User` smart-cast on the interface-typed value, and no worse
+ergonomics than the previously-proposed `case .user(let v)` unwrap.
+
+`enum` namespacing (`NodeJson`, not an extension on the protocol) is used for the static
+factory because Swift protocols cannot dispatch a "which concrete type is this JSON"
+decision — that information only exists in the untyped map, before any concrete type is
+known, so it can't live as a protocol requirement. Naming convention:
+`<InterfaceName>Json.fromJson(_:)`, generated once per interface/union.
+
+This removes the plan's previously flagged highest-risk item (no existing-target
+precedent for polymorphic decoding) — it's now the same `__typename`-switch pattern
+already proven in `KotlinSerializer`, `JavaSerializer`, `DartSerializer`, and the
+TypeScript serializer, just re-emitted in Swift syntax.
 
 ---
 
@@ -260,11 +349,12 @@ mirrors `KotlinSerializer._toMappingExpr` / `_fromMappingExpr`.
 ```swift
 public func getUser(id: String) async throws -> User {
     let operationName = "GetUser"
-    let variables: [String: any Sendable] = ["id": id]
+    let variables: [String: Any?] = ["id": id]
     // partial query / cache logic mirrors the Kotlin implementation
     let payload = buildPayload(query: remaining, operationName: operationName, variables: variables)
     let responseData = try await adapter(payload)
-    return try await parseAndCache(responseData, GetUserFullResponse.self, remaining).data.getUser
+    let fullResponse = try parseAndCache(responseData, GetUserFullResponse.fromJson, remaining)
+    return User.fromJson(fullResponse.data!["getUser"] as! [String: Any?])
 }
 ```
 
@@ -276,12 +366,12 @@ public func createUser(input: CreateUserInput) async throws -> User {
     let payload = GraphLinkPayload(
         query: Self.createUserQuery,
         operationName: operationName,
-        variables: ["input": input]
+        variables: ["input": input.toJson()]
     )
-    let data = try await adapter(try encoder.encode(payload))
-    let result = try decoder.decode(CreateUserFullResponse.self, from: data)
+    let responseData = try await adapter(try GraphLinkJson.encode(payload.toJson()))
+    let result = CreateUserFullResponse.fromJson(try GraphLinkJson.decode(responseData))
     if let errors = result.errors { throw GraphLinkException(errors: errors) }
-    return result.data!.createUser
+    return User.fromJson(result.data!["createUser"] as! [String: Any?])
 }
 ```
 
@@ -294,7 +384,7 @@ public func watchUser(id: String) -> AsyncThrowingStream<UserEvent, Error> {
         operationName: "WatchUser",
         variables: ["id": id]
     )
-    return wsAdapter.subscribe(payload: payload, decode: UserEvent.init(from:))
+    return wsAdapter.subscribe(payload: payload, decode: UserEvent.fromJson)
 }
 ```
 
@@ -350,36 +440,64 @@ an existing `lib/`/`src/`. (Could revisit if there's demand for a standalone SPM
 
 ## Codec design
 
-Unlike Dart/Java/Kotlin/TS, there is **no generated codec class** — `JSONEncoder` /
-`JSONDecoder` from Foundation are used directly:
+Like Dart/Java/Kotlin/TS, there **is** a generated codec — it's just built on
+`JSONSerialization` instead of `JSONDecoder`/`JSONEncoder`, since `Codable`'s decoder
+only knows how to populate `Decodable` typed targets and can't hand back a raw
+`[String: Any?]` the way `dart:convert.jsonDecode` or Jackson's `readValue(..., Map.class)`
+do. A small `GraphLinkJson` enum wraps the two Foundation calls generated code needs:
 
 ```swift
-public struct GetUserFullResponse: Decodable, Sendable {
-    public let data: GetUserData?
-    public let errors: [GraphLinkError]?
+public enum GraphLinkJson {
+    public static func decode(_ data: Data) throws -> [String: Any?] {
+        let obj = try JSONSerialization.jsonObject(with: data)
+        return (obj as? [String: Any?]) ?? [:]
+    }
 
-    public struct GetUserData: Decodable, Sendable {
-        public let getUser: User
+    public static func encode(_ map: [String: Any?]) throws -> Data {
+        try JSONSerialization.data(withJSONObject: normalize(map))
+    }
+
+    // JSONSerialization rejects Swift `nil` boxed in `Any` — substitute NSNull
+    // recursively so nullable fields serialize as JSON null instead of crashing.
+    static func normalize(_ value: Any?) -> Any {
+        switch value {
+        case nil: return NSNull()
+        case let dict as [String: Any?]: return dict.mapValues(normalize)
+        case let arr as [Any?]: return arr.map(normalize)
+        case let v?: return v
+        }
     }
 }
 ```
 
+The per-operation `*FullResponse` types (mirroring `GetVehicleResponse` etc.) are plain
+structs with hand-written `toJson`/`fromJson`, same as every other target — no `Decodable`
+conformance:
+
 ```swift
-let decoder = JSONDecoder()
-let result = try decoder.decode(GetUserFullResponse.self, from: responseData)
+public struct GetUserFullResponse {
+    public let data: [String: Any?]?
+    public let errors: [GraphLinkError]?
+
+    public static func fromJson(_ map: [String: Any?]) -> GetUserFullResponse {
+        GetUserFullResponse(
+            data: map["data"] as? [String: Any?],
+            errors: (map["errors"] as? [[String: Any?]])?.map(GraphLinkError.fromJson)
+        )
+    }
+}
 ```
 
-This is the biggest structural simplification vs. other targets: types/inputs need **no**
-`toJson`/`fromJson` methods at all (Codable handles it), so `SwiftSerializer` is
-significantly smaller than `KotlinSerializer`/`JavaSerializer`. The per-operation
-`*FullResponse` structs (mirroring `GetVehicleResponse` etc.) are still generated, but
-as plain `Decodable` structs with no custom logic.
+This makes `SwiftSerializer` structurally the same size/shape as `KotlinSerializer`/
+`JavaSerializer` — it is **not** the "smallest serializer, `Codable` does the work" design
+from the earlier draft of this plan. The trade is deliberate: consistency with the
+polymorphism-solving `toJson`/`fromJson` contract across all five targets beats the
+per-target size win `Codable` would have given Swift alone.
 
 Custom scalars that don't map to a built-in Swift type (e.g. `DateTime` → `Date`) get a
-`CodingKeys`-free custom `init(from:)`/`encode(to:)` only on the *field*, via
-`@CustomCodable`-style wrapper structs — deferred to a follow-up if a project needs it;
-default `typeMappings` should cover the common cases (`Date` via ISO8601 strategy set on
-the shared `JSONDecoder`/`JSONEncoder` instances in `GraphLinkClient`).
+conversion pair on the field, same as Kotlin/Java handle custom scalar `typeMappings` —
+`toJson` emits an ISO8601 string via `ISO8601DateFormatter`, `fromJson` parses it back.
+No `Codable` strategy hook needed since there's no `Codable` in this design.
 
 ---
 
@@ -420,17 +538,35 @@ the shared `JSONDecoder`/`JSONEncoder` instances in `GraphLinkClient`).
 
 ## Open questions / risks
 
-- **Polymorphic interfaces/unions** (`NodeValue` enum pattern above) is the riskiest new
-  piece — no precedent in existing targets, since Dart/Java/Kotlin/TS all decode into a
-  base class/interface with `__typename`-based factory functions rather than an
-  enum-of-associated-values. Worth a small spike before committing to the pattern.
-- **Linux/server-side Swift**: `URLSessionWebSocketTask` and `Codable` work on Linux via
-  swift-corelibs-foundation, but should be smoke-tested — if it doesn't, `wsAdapter: "none"`
-  becomes the only option for non-Apple platforms.
+- ~~Polymorphic interfaces/unions~~ **Resolved:** protocol + static `__typename`-dispatch
+  factory (`NodeJson.fromJson`), mirroring `KotlinSerializer`'s existing `when`-based
+  dispatch. No wrapper enum, no custom `Decoder`/`Encoder` conformance, no precedent gap —
+  this is now the same pattern already proven in four other targets.
+- **`[String: Any?]` casting safety.** `as!`/`as?` force- and optional-casts on dictionary
+  values are inherently less type-safe than `Codable`'s compiler-checked decoding — a
+  server response with an unexpected type for a field crashes (`as!`) or silently produces
+  a wrong value (`as?` misuse) rather than failing to compile. This is not a new risk
+  relative to Dart/Java/Kotlin/TS (they all have the identical exposure via their own
+  `Map`-based `fromJson`), but it's worth being explicit that Swift is not gaining
+  `Codable`'s safety net here — it was deliberately traded away for the interface-dispatch
+  win, matching every other target's existing trade-off.
+- **`NSNull`/nil normalization** must be applied consistently by every generated
+  `toJson`/`fromJson`, not just remembered ad hoc — likely enforced by having field-level
+  (de)serialization always route through the shared `GraphLinkJson.normalize`/an unwrap
+  helper rather than each serializer call site handling it independently. Worth nailing
+  down the exact helper API before generation starts, since it's used by every single
+  generated `toJson`/`fromJson` pair.
+- **Linux/server-side Swift**: `URLSessionWebSocketTask` works on Linux via
+  swift-corelibs-foundation; `JSONSerialization` is also part of swift-corelibs-foundation
+  and should be fine, but both should be smoke-tested — if `URLSessionWebSocketTask`
+  doesn't work, `wsAdapter: "none"` becomes the only option for non-Apple platforms.
 - **Swift 6 strict concurrency**: generated code should compile cleanly under
   `-strict-concurrency=complete`. `Sendable` conformance on all generated types is
   assumed throughout this plan — needs validation once real generation starts, especially
-  for the cache actor and WebSocket adapter.
+  for the cache actor, the WebSocket adapter, and `[String: Any?]` itself (`Any` is not
+  automatically `Sendable`; may need `@unchecked Sendable` on the JSON map typealias with
+  a documented justification, since the maps are only ever built from JSON-safe leaf
+  types).
 
 ---
 

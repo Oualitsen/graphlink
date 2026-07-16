@@ -47,4 +47,12 @@ class NamingConvention {
     field: (s) => s.toLowerCamelCase(),
     enumValue: (s) => s.toPascalCase(),
   );
+
+  /// Swift: lowerCamelCase for both fields and enum `case` names — Swift's
+  /// own convention for enum cases is lowerCamelCase (`case admin`), unlike
+  /// Kotlin/Java's SCREAMING_SNAKE or TypeScript's PascalCase.
+  static final NamingConvention swift = NamingConvention(
+    field: (s) => s.toLowerCamelCase(),
+    enumValue: (s) => s.toLowerCamelCase(),
+  );
 }

@@ -3,7 +3,7 @@ JAVA_PORT             = 9996
 KOTLIN_BLOCKING_PORT  = 9994
 KOTLIN_SUSPEND_PORT   = 9995
 
-CLIENTS = dart ts java kotlin java_reactive
+CLIENTS = dart ts java kotlin java_reactive swift
 
 .PHONY: setup-client setup-client-install setup-all-clients clean-all generate-all \
         typescript-install typescript-generate typescript-start-server typescript-stop-server \
