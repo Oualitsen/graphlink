@@ -303,15 +303,12 @@ class SwiftSerializer extends GLSerializer {
     final typeName = context is GLTypeDefinition ? context.jsonTypeName : null;
     final entries = [
       if (typeName != null) '"__typename": "$typeName"',
-      ...fields.map((f) {
-        final name = f.codeName;
-        return '"${f.name}": ${_fieldToJsonExpr(f.type, name, 0)}';
-      }),
-    ].join(',\n    ');
+      ...fields.map((f) => '"${f.name}": ${_fieldToJsonExpr(f.type, f.codeName, 0)}'),
+    ].join(',\n').ident();
     return codeGenUtils.method(
       returnType: '[String: Any?]',
       methodName: 'toJson',
-      statements: ['return [\n    $entries,\n]'],
+      statements: ['return [\n$entries,\n]'],
     );
   }
 
@@ -333,10 +330,10 @@ class SwiftSerializer extends GLSerializer {
   // ── fromJson ────────────────────────────────────────────────────────────────
 
   String _generateFromJson(List<GLField> fields, String token, GLToken context) {
-    final args = fields.map((f) {
-      final name = f.codeName;
-      return '    $name: ${_fromJsonExpr(f.type, 'map', 0, field: f)}';
-    }).join(',\n');
+    final args = fields
+        .map((f) => '${f.codeName}: ${_fromJsonExpr(f.type, 'map', 0, field: f)}')
+        .join(',\n')
+        .ident();
     return codeGenUtils.createMethod(
       returnType: token,
       methodName: 'fromJson',
@@ -426,7 +423,7 @@ class SwiftSerializer extends GLSerializer {
       }
     }
 
-    final argsStr = args.map((a) => '    $a').join(',\n');
+    final argsStr = args.join(',\n').ident();
     return 'public ${codeGenUtils.method(
       returnType: targetType,
       methodName: 'to${targetType.firstUp}',
@@ -490,7 +487,7 @@ class SwiftSerializer extends GLSerializer {
       ...inputOnlyParams,
     ];
 
-    final argsStr = args.map((a) => '    $a').join(',\n');
+    final argsStr = args.join(',\n').ident();
     return 'public static ${codeGenUtils.method(
       returnType: def.codeName,
       methodName: 'from${targetType.firstUp}',

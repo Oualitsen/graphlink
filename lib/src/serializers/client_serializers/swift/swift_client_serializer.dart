@@ -74,16 +74,14 @@ class SwiftClientSerializer extends GLClientSerializer {
         'self.subscriptions = GraphLinkSubscriptions(adapter: adapter, wsAdapter: wsAdapter, fragmentMap: fragmentMap, store: store)',
     ];
 
-    final body = '''
-public final class $swiftClientName {
-${fields.map((f) => '    $f').join('\n')}
-
-    public init(${ctorParams.join(', ')}) {
-${initBody.map((s) => '        $s').join('\n')}
-    }
-${withDefaultAdapters ? '\n${_convenienceFactories().ident()}\n' : ''}
-}
-''';
+    final initDecl = 'public init(${ctorParams.join(', ')}) ${codeGenUtils.block(initBody)}';
+    final classBody = [
+      ...fields,
+      '',
+      initDecl,
+      if (withDefaultAdapters) ...['', _convenienceFactories()],
+    ];
+    final body = 'public final class $swiftClientName ${codeGenUtils.block(classBody)}';
 
     return GLClassModel(imports: const ['Foundation'], body: body);
   }
@@ -96,14 +94,24 @@ ${withDefaultAdapters ? '\n${_convenienceFactories().ident()}\n' : ''}
     final hasSubs = grammar.hasSubscriptions;
     final hasUploads = grammar.hasUploadMutations;
 
-    return [
-      'public static func create(url: URL${hasSubs ? ', wsUrl: URL' : ''}, headersProvider: (@Sendable () -> [String: String])? = nil) -> $swiftClientName {',
-      '    let httpAdapter = DefaultGraphLinkURLSessionAdapter(url: url, headersProvider: headersProvider)',
-      if (hasSubs) '    let wsAdapter = DefaultGraphLinkWebSocketAdapter(url: wsUrl, headersProvider: headersProvider)',
-      if (hasUploads) '    let multipartAdapter = DefaultGraphLinkURLSessionMultipartAdapter(url: url, headersProvider: headersProvider)',
-      '    return $swiftClientName(adapter: httpAdapter.execute${hasSubs ? ', wsAdapter: wsAdapter' : ''}${hasUploads ? ', multipartAdapter: multipartAdapter.executeMultipart' : ''})',
-      '}',
-    ].join('\n');
+    final params = [
+      'url: URL',
+      if (hasSubs) 'wsUrl: URL',
+      'headersProvider: (@Sendable () -> [String: String])? = nil',
+    ];
+    final statements = [
+      'let httpAdapter = DefaultGraphLinkURLSessionAdapter(url: url, headersProvider: headersProvider)',
+      if (hasSubs) 'let wsAdapter = DefaultGraphLinkWebSocketAdapter(url: wsUrl, headersProvider: headersProvider)',
+      if (hasUploads) 'let multipartAdapter = DefaultGraphLinkURLSessionMultipartAdapter(url: url, headersProvider: headersProvider)',
+      'return $swiftClientName(adapter: httpAdapter.execute${hasSubs ? ', wsAdapter: wsAdapter' : ''}${hasUploads ? ', multipartAdapter: multipartAdapter.executeMultipart' : ''})',
+    ];
+
+    return 'public static ${codeGenUtils.method(
+      returnType: swiftClientName,
+      methodName: 'create',
+      arguments: params,
+      statements: statements,
+    )}';
   }
 
   // ── Resolver base ───────────────────────────────────────────────────────────
@@ -182,16 +190,15 @@ ${withDefaultAdapters ? '\n${_convenienceFactories().ident()}\n' : ''}
     final isOverride = !(type == GLQueryType.subscription || (type == GLQueryType.mutation && grammar.hasUploadMutations));
     final initKeyword = isOverride ? 'public override init' : 'public init';
 
-    final body = '''
-public final class $className: GraphLinkResolverBase, @unchecked Sendable {
-${extraFields.map((f) => '    $f').join('\n')}
-${extraFields.isEmpty ? '' : '\n'}    $initKeyword(${ctorParams.join(', ')}) {
-${ctorAssignments.map((s) => '        $s').join('\n')}
-    }
-
-${methods.map((m) => m.ident()).join('\n\n')}
-}
-''';
+    final initDecl = '$initKeyword(${ctorParams.join(', ')}) ${codeGenUtils.block(ctorAssignments)}';
+    final classBody = [
+      ...extraFields,
+      if (extraFields.isNotEmpty) '',
+      initDecl,
+      '',
+      methods.join('\n\n'),
+    ];
+    final body = 'public final class $className: GraphLinkResolverBase, @unchecked Sendable ${codeGenUtils.block(classBody)}';
 
     return GLClassModel(body: body);
   }

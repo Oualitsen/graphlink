@@ -180,7 +180,7 @@ void main() {
 
     test('toAddress() assigns all fields as labeled args', () {
       final lines = _lines(_case1, 'CreateAddressInput');
-      expect(lines, containsAll(['street: street,', 'city: city,', 'country: country,']));
+      expect(lines, containsAll(['street: street,', 'city: city,', 'country: country']));
     });
 
     test('fromAddress() is a static factory with an unlabeled Address param', () {
@@ -193,7 +193,7 @@ void main() {
       expect(lines, containsAll([
         'street: address.street,',
         'city: address.city,',
-        'country: address.country,',
+        'country: address.country',
       ]));
     });
   });
@@ -206,7 +206,7 @@ void main() {
 
     test('toPerson() uses alias mapping fname→firstName, lname→lastName', () {
       final lines = _lines(_case2, 'CreatePersonInput');
-      expect(lines, containsAll(['firstName: fname,', 'lastName: lname,', 'email: email,', 'id: id,']));
+      expect(lines, containsAll(['firstName: fname,', 'lastName: lname,', 'email: email', 'id: id,']));
     });
 
     test('fromPerson() takes an unlabeled person: Person first param', () {
@@ -219,7 +219,7 @@ void main() {
       expect(lines, containsAll([
         'fname: person.firstName,',
         'lname: person.lastName,',
-        'email: person.email,',
+        'email: person.email',
       ]));
     });
   });
@@ -232,7 +232,7 @@ void main() {
 
     test('toUser() uses ?? for nullable role field', () {
       final lines = _lines(_case3, 'CreateUserInput');
-      expect(lines, contains('role: role ?? defaultRole,'));
+      expect(lines, contains('role: role ?? defaultRole'));
     });
 
     test('fromUser() takes an unlabeled user: User — no extra params needed', () {
@@ -242,7 +242,7 @@ void main() {
 
     test('fromUser() maps username and role directly', () {
       final lines = _lines(_case3, 'CreateUserInput');
-      expect(lines, containsAll(['username: user.username,', 'role: user.role,']));
+      expect(lines, containsAll(['username: user.username,', 'role: user.role']));
     });
   });
 
@@ -272,7 +272,7 @@ void main() {
         'email: account.email,',
         'displayName: account.displayName,',
         'password: password,',
-        'confirmPassword: confirmPassword,',
+        'confirmPassword: confirmPassword',
       ]));
     });
   });

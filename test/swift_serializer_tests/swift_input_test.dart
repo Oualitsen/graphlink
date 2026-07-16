@@ -108,7 +108,7 @@ void main() {
     });
 
     test('nullable list of nullable elements chains through the optional cast before mapping', () {
-      expect(lines(out), contains('optRoles: (map["optRoles"] as? [Any?])?.map { e0 in (e0 as? String).map { Role.fromJson(\$0) } },'));
+      expect(lines(out), contains('optRoles: (map["optRoles"] as? [Any?])?.map { e0 in (e0 as? String).map { Role.fromJson(\$0) } }'));
     });
   });
 

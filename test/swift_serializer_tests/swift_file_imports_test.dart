@@ -1,5 +1,4 @@
 import 'package:graphlink/src/model/gl_class_model.dart';
-import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/swift_serializer.dart';
 import 'package:test/test.dart';
@@ -27,9 +26,17 @@ void main() {
   });
 
   group('serializeImport', () {
-    test('renders a plain `import X` line for a free-form import string', () {
+    test('renders a plain `import X` line for a generic free-form import string', () {
       final g = GLParser()..parse('type User { id: ID! }');
-      expect(_serializer(g).serializeImport('Foundation'), 'import Foundation');
+      expect(_serializer(g).serializeImport('Combine'), 'import Combine');
+    });
+
+    test('Foundation import adds a FoundationNetworking guard for Linux compatibility', () {
+      final g = GLParser()..parse('type User { id: ID! }');
+      expect(
+        _serializer(g).serializeImport('Foundation'),
+        'import Foundation\n#if canImport(FoundationNetworking)\nimport FoundationNetworking\n#endif',
+      );
     });
   });
 
@@ -51,17 +58,17 @@ void main() {
     });
 
     test('genuine free-form imports still render, deduplicated', () {
-      final model = GLClassModel(
-        imports: const ['Foundation', 'Foundation'],
+      const model = GLClassModel(
+        imports:  ['Foundation', 'Foundation'],
         body: 'public struct User {}',
       );
       final out = _serializer(g).serializeGlClass(model);
-      expect('import Foundation'.allMatches(out).length, 1);
+      expect('import Foundation\n'.allMatches(out).length, 1);
     });
 
     test('withImports: false returns only the trimmed body', () {
-      final model = GLClassModel(
-        imports: const ['Foundation'],
+      const model = GLClassModel(
+        imports:  ['Foundation'],
         body: '  public struct User {}  ',
       );
       final out = _serializer(g).serializeGlClass(model, withImports: false);

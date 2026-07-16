@@ -225,20 +225,32 @@ class SwiftClientOperationSerializer {
       _generateVariables(def),
       'let $svPayload = GraphLinkPayload(query: $svFullQuery, operationName: "${def.tokenInfo}", variables: ${_variablesExpr(def)})',
       'let stream = handler.handle($svPayload)',
-      'return AsyncThrowingStream { continuation in',
-      '    let task = Task {',
-      '        do {',
-      '            for try await msg in stream { continuation.yield($fromJsonTarget.fromJson(msg)) }',
-      '            continuation.finish()',
-      '        } catch {',
-      '            continuation.finish(throwing: error)',
-      '        }',
-      '    }',
-      '    continuation.onTermination = { _ in task.cancel() }',
-      '}',
+      _serializeSubscriptionStream(fromJsonTarget),
     ];
 
     return 'public func ${def.codeName}${codeGenUtils.parentheses(getArguments(def))} -> ${returnTypeByQueryType(def)} ${codeGenUtils.block(statements)}';
+  }
+
+  /// `AsyncThrowingStream { continuation in ... }` — bridges [handler]'s
+  /// `AsyncThrowingStream<Data, Error>` into a decoded-element stream. The
+  /// `continuation in` closure header isn't representable by
+  /// [SwiftCodeGenUtils.block] (which always emits a bare `{`), so this
+  /// composes [SwiftCodeGenUtils.tryCatchFinally]/[SwiftCodeGenUtils.block]
+  /// for the nested pieces and splices them under that one manual header.
+  String _serializeSubscriptionStream(String fromJsonTarget) {
+    final doCatch = codeGenUtils.tryCatchFinally(
+      tryStatements: [
+        'for try await msg in stream { continuation.yield($fromJsonTarget.fromJson(msg)) }',
+        'continuation.finish()',
+      ],
+      catchStatements: ['continuation.finish(throwing: error)'],
+    );
+    final streamBody = [
+      'let task = Task ${codeGenUtils.block([doCatch])}',
+      'continuation.onTermination = { _ in task.cancel() }',
+    ].join('\n').ident();
+
+    return 'return AsyncThrowingStream { continuation in\n$streamBody\n}';
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
