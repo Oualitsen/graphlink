@@ -1,4 +1,4 @@
-.PHONY: dart typescript java kotlin dart-real typescript-real java-real kotlin-real server upload-server all all-real kill-servers kill-ports start-server start-upload-server start-main-server start-servers generate-all clean-all
+.PHONY: dart typescript java kotlin swift dart-real typescript-real java-real kotlin-real swift-real server upload-server all all-real kill-servers kill-ports start-server start-upload-server start-main-server start-servers generate-all clean-all
 
 # Delete every previously generated output dir across all client projects.
 # Prune node_modules/build/target/.gradle/.dart_tool so we only ever touch
@@ -26,6 +26,9 @@ java:
 kotlin:
 	$(MAKE) -C kotlin_client_tests ci
 
+swift:
+	$(MAKE) -C swift_client_tests ci
+
 server:
 	$(MAKE) -C spring_server build
 
@@ -45,9 +48,12 @@ java-real:
 kotlin-real:
 	$(MAKE) -C kotlin_client_tests_real ci
 
-all: dart typescript java kotlin
+swift-real:
+	$(MAKE) -C swift_client_tests_real ci
 
-all-real: dart-real typescript-real java-real kotlin-real
+all: dart typescript java kotlin swift
+
+all-real: dart-real typescript-real java-real kotlin-real swift-real
 
 start-server:
 	curl -s -X POST http://localhost:9990/actuator/shutdown || true
