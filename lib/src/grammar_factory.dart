@@ -21,6 +21,7 @@ Set<String> _reservedWordsFor(GeneratorConfig config) {
   if (lang is KotlinClientConfig || lang is KotlinSpringServerConfig) {
     return kotlinReservedWords;
   }
+  if (lang is SwiftClientConfig) return swiftReservedWords;
   // TypeScript accesses fields as object properties; reserved words are legal
   // there, so fields need no sanitizing (parameters are handled separately,
   // see [_parameterReservedWordsFor]).
@@ -38,6 +39,7 @@ NamingConvention _namingConventionFor(GeneratorConfig config) {
   if (lang is DartClientConfig) return NamingConvention.dart;
   if (lang is JavaClientConfig || lang is SpringServerConfig) return NamingConvention.java;
   if (lang is KotlinClientConfig || lang is KotlinSpringServerConfig) return NamingConvention.kotlin;
+  if (lang is SwiftClientConfig) return NamingConvention.swift;
   // TypeScript / Express Apollo
   return NamingConvention.typescript;
 }

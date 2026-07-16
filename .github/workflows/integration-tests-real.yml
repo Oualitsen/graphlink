@@ -137,6 +137,30 @@ jobs:
           path: integration_tests
       - run: make ci-no-generate
 
+  # macos-latest, not ubuntu-latest — see ci.yml's swift-client job for why.
+  swift-real:
+    runs-on: macos-latest
+    needs: [build-spring-servers, generate]
+    defaults:
+      run:
+        working-directory: integration_tests/swift_client_tests_real
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/download-artifact@v4
+        with:
+          name: integration-tests-generated
+          path: integration_tests
+      - uses: actions/download-artifact@v4
+        with:
+          name: spring-server-jars
+          path: integration_tests
+      - run: make ci-no-generate
+
   integration-tests-typescript-server-real:
     runs-on: ubuntu-latest
     defaults:

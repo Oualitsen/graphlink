@@ -299,6 +299,33 @@ make deploy                        # compile + install to ~/bin
 - Generated files start with a `// GENERATED` header. Never edit them.
 - `plans/` contains Markdown design docs for past decisions. Read-only context.
 
+### Code-gen string building (`*CodeGenUtils`, e.g. `SwiftCodeGenUtils`)
+
+Every target language has a `<Lang>CodeGenUtils` class (`swift_code_gen_utils.dart`,
+similarly for Kotlin/Java) with block-builders (`block()`, `method()`/`createMethod()`,
+`structDecl()`, `protocolDecl()`, `ifStatement()`, `tryCatchFinally()`,
+`switchStatement()`, `forEachLoop()`, …). Serializers must build class/function/control-flow
+bodies through these, not through hand-formatted string templates.
+
+- **Never hand-indent with string concatenation.** Don't write `'    $x'` per line or
+  `.join(',\n    ')`. Build the joined string first, then indent it once with the
+  `ident()` extension (`extensions.dart`) — it walks every line of a multi-line string
+  and skips blank lines.
+- **Prefer the `*CodeGenUtils` builders over raw triple-quoted templates.** If a
+  `'''...'''` string is assembling a class, function, `if`, or `do`/`catch`, check for an
+  existing helper before writing it as text.
+- **Trailing commas: join, don't append-then-join.** For comma-separated multi-line
+  lists (args, struct fields), use `list.join(',\n')` — never
+  `list.map((e) => '$e,').join('\n')`, which leaves a trailing comma before the closing
+  bracket/paren (a hard parse error on Swift <6.1/Linux CI, confirmed by real regressions).
+- **When no helper fits a shape** (e.g. a closure header with a named parameter like
+  `{ continuation in ... }`, which `block()` can't express), compose the inner pieces
+  with the utils helpers anyway and splice them under a manual header/footer, still
+  applying `.ident()` — don't fall back to a fully manual multi-line string.
+- **`GLClassModel` is file-level only** (imports + body glue via `toFileContent()`). It
+  never renders a class/struct body itself — that's always the language's
+  `*CodeGenUtils`.
+
 ### Comments
 
 Write way fewer comments. Let the code speak for itself — clear names, small

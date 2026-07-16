@@ -11,6 +11,7 @@ import 'package:graphlink/src/generators/dart_client_generator.dart';
 import 'package:graphlink/src/generators/java_client_generator.dart';
 import 'package:graphlink/src/generators/kotlin_client_generator.dart';
 import 'package:graphlink/src/generators/server_generator.dart';
+import 'package:graphlink/src/generators/swift_client_generator.dart';
 import 'package:graphlink/src/generators/typescript_client_generator.dart';
 import 'package:graphlink/src/gl_grammar_io.dart' as grammar_io;
 import 'package:graphlink/src/grammar_factory.dart';
@@ -23,8 +24,9 @@ export 'package:graphlink/src/generators/dart_client_generator.dart' show genera
 export 'package:graphlink/src/generators/java_client_generator.dart' show generateJavaClientClasses;
 export 'package:graphlink/src/generators/kotlin_client_generator.dart' show generateKotlinClientClasses;
 export 'package:graphlink/src/generators/server_generator.dart' show generateServerClasses;
+export 'package:graphlink/src/generators/swift_client_generator.dart' show generateSwiftClientClasses;
 export 'package:graphlink/src/generators/typescript_client_generator.dart' show generateTypeScriptClientClasses;
-export 'package:graphlink/src/config.dart' show KotlinClientConfig, KotlinWsAdapter;
+export 'package:graphlink/src/config.dart' show KotlinClientConfig, KotlinWsAdapter, SwiftClientConfig, SwiftWsAdapter;
 export 'package:graphlink/src/grammar_factory.dart' show createGrammar, buildExtraGql;
 export 'package:graphlink/src/io_utils.dart' show writeToFile, cleanUpObsoleteFiles;
 
@@ -245,6 +247,8 @@ Future<void> handleGeneration(GeneratorConfig config) async {
         await generateTypeScriptClientClasses(grammar, config, now);
       } else if (lang is KotlinClientConfig) {
         await generateKotlinClientClasses(grammar, lang.packageName, config, now);
+      } else if (lang is SwiftClientConfig) {
+        await generateSwiftClientClasses(grammar, config, now);
       }
     }
     stdout.writeln('✅ $writeCount file(s) written.');

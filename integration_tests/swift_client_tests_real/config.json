@@ -1,0 +1,22 @@
+{
+  "schemaPaths": ["../schema_real/schema.gql"],
+  "mode": "client",
+  "typeMappings": {
+    "ID":      "String",
+    "String":  "String",
+    "Float":   "Double",
+    "Int":     "Int",
+    "Boolean": "Bool"
+  },
+  "outputDir": "Sources/GraphLinkGenerated",
+  "clientConfig": {
+    "swift": {
+      "moduleName":                 "GraphLinkGenerated",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries":        true,
+      "nullableFieldsRequired":     false,
+      "wsAdapter":                  "urlsession",
+      "captureErrors":              false
+    }
+  }
+}

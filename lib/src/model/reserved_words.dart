@@ -48,6 +48,23 @@ const Set<String> kotlinReservedWords = {
   'var', 'when', 'while',
 };
 
+/// Swift reserved words that collide with common GraphQL field/enum-value
+/// names and cannot be used as a plain identifier. Non-exhaustive by design
+/// — only words plausible as a GraphQL identifier are listed (Swift's full
+/// reserved-word list includes many symbols, like `#available`, that can
+/// never collide with a GraphQL name).
+const Set<String> swiftReservedWords = {
+  'self', 'Self', 'Type', 'class', 'struct', 'enum', 'protocol',
+  'extension', 'default', 'in', 'is', 'as', 'try', 'catch', 'throw',
+  'throws', 'rethrows', 'func', 'var', 'let', 'if', 'else', 'switch',
+  'case', 'for', 'while', 'repeat', 'do', 'return', 'break', 'continue',
+  'fallthrough', 'guard', 'defer', 'import', 'init', 'deinit', 'subscript',
+  'operator', 'typealias', 'associatedtype', 'public', 'private',
+  'internal', 'fileprivate', 'static', 'final', 'lazy', 'weak', 'unowned',
+  'mutating', 'nonmutating', 'convenience', 'required', 'override',
+  'true', 'false', 'nil', 'super', 'where', 'inout', 'any', 'some',
+};
+
 /// TypeScript intentionally has NO field reserved set: it accesses fields and
 /// JSON keys as object properties (`{ default: T }`, `args.default`), and
 /// reserved words are legal as property names / in member access. So neither

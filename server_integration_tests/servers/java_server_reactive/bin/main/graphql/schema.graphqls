@@ -12,6 +12,7 @@ schema {
 
 directive @glReturnsProjection on FIELD_DEFINITION
 directive @glValidate on FIELD_DEFINITION
+directive @glIntercept(tag: String) on QUERY | MUTATION | SUBSCRIPTION | FIELD_DEFINITION | OBJECT
 input ReservedInput {
    class: String!
    return: Int
@@ -47,31 +48,31 @@ input RangeInput {
    max: Int = 100
 }
 
-type Product implements GLProductProjection {
+type Product {
    id: ID!
    name: String!
 }
-type Catalog implements GLCatalogProjection {
+type Catalog {
    id: ID!
    products(category: String!, limit: Int!, offset: Int): [Product!]!
 }
-type Feed implements GLFeedProjection {
+type Feed {
    id: ID!
    items(limit: Int = 10, sort: String): [Product!]!
 }
-type Store implements GLStoreProjection {
+type Store {
    id: ID!
    shelves(floor: Int!): [Shelf!]!
 }
-type Shelf implements GLShelfProjection {
+type Shelf {
    id: ID!
    products(limit: Int!): [Product!]!
 }
-type CatalogFieldArgs implements GLCatalogFieldArgsProjection {
+type CatalogFieldArgs {
    id: ID!
    label: String!
 }
-type SearchResult implements GLSearchResultProjection {
+type SearchResult {
    id: ID!
    hits(limit: Int!): [Product!]!
 }
@@ -105,20 +106,23 @@ type Query {
    listAuthors: [Author!]!
    listArticles: [Article!]!
    getArticleTypes: [ArticleType!]!
+   greetIntercepted(name: String!): Greeting! @glIntercept(tag: "auth")
+   greetPlain(name: String!): Greeting!
+   listTeams: [Team!]!
    resolveConfig(input: ConfigInput!): Config!
    resolveRange(input: RangeInput = {min: 5}): Range!
    greet(name: String = "world", times: Int = 1): String!
    echoPriority(level: Priority = HIGH): Priority!
 }
-type class implements GLclassProjection {
+type class {
    id: ID!
    value: String!
 }
-type _Secret implements GL_SecretProjection {
+type _Secret {
    id: ID!
    token: String!
 }
-type ReservedFields implements GLReservedFieldsProjection {
+type ReservedFields {
    id: ID!
    class: String!
    return: Int!
@@ -134,7 +138,7 @@ type ReservedFields implements GLReservedFieldsProjection {
    nested: class!
    secret: _Secret!
 }
-type Collide implements GLCollideProjection {
+type Collide {
    id: ID!
    class: String!
    class_: String!
@@ -145,6 +149,7 @@ type Mutation {
    updateArticle(input: UpdateArticleInput!): Article!
    deleteArticle(id: ID!): Boolean!
    bulkCreate(matrix: [[CreateArticleInput!]]): Int! @glValidate
+   sendGreeting(name: String!): Greeting!
    ackPriority(level: Priority!): String!
 }
 type ArticleWithCount {
@@ -158,7 +163,7 @@ type ArticleInfo {
    webSite: WebSite
    published: Boolean!
 }
-type Message implements GLMessageProjection {
+type Message {
    id: ID!
    content: String!
 }
@@ -166,41 +171,41 @@ type MessageRead {
    message: Message!
    read: Boolean!
 }
-type Box implements GLBoxProjection {
+type Box {
    id: ID!
    label: String!
 }
-type Circle implements Shape & GLCircleProjection & GLShapeProjection {
+type Circle implements Shape {
    id: ID!
    kind: String!
    radius: Int!
 }
-type Square implements Shape & GLSquareProjection & GLShapeProjection {
+type Square implements Shape {
    id: ID!
    kind: String!
    side: Int!
 }
-type Photo implements GLPhotoProjection & GLMediaProjection {
+type Photo {
    id: ID!
    url: String!
    width: Int!
 }
-type Video implements GLVideoProjection & GLMediaProjection {
+type Video {
    id: ID!
    url: String!
    durationSec: Int!
 }
-type WebSite implements GLWebSiteProjection {
+type WebSite {
    id: ID!
    name: String!
 }
-type Author implements GLAuthorProjection {
+type Author {
    id: ID!
    name: String!
    articles: [Article!]  @glReturnsProjection
    latestArticles(limit: Int!): [Article!]!
 }
-type Article implements Article {
+type Article {
    id: ID!
    title: String!
    type: ArticleType
@@ -214,8 +219,22 @@ type Subscription {
    articleCreated: Article!
    articleUpdated(id: ID!): Article!
    articleDeleted: ID!
+   greetingReceived: Greeting! @glIntercept(tag: "auth")
 }
-type Config implements GLConfigProjection {
+type Greeting {
+   id: ID!
+   message: String!
+}
+type Team {
+   id: ID!
+   name: String!
+   members(role: String!): [Member!]!  @glIntercept(tag: "auth")
+}
+type Member {
+   id: ID!
+   name: String!
+}
+type Config {
    pageSize: Int!
    ratio: Float!
    sort: String!
@@ -225,131 +244,13 @@ type Config implements GLConfigProjection {
    empties: [String!]!
    note: String
 }
-type Range implements GLRangeProjection {
+type Range {
    min: Int!
    max: Int!
 }
-interface Shape implements GLShapeProjection {
+interface Shape {
    id: ID!
    kind: String!
-}
-interface GLProductProjection {
-   id: ID
-   name: String
-}
-interface GLCatalogProjection {
-   id: ID
-}
-interface GLFeedProjection {
-   id: ID
-}
-interface GLStoreProjection {
-   id: ID
-}
-interface GLShelfProjection {
-   id: ID
-}
-interface GLCatalogFieldArgsProjection {
-   id: ID
-   label: String
-}
-interface GLSearchResultProjection {
-   id: ID
-}
-interface GLclassProjection {
-   id: ID
-   value: String
-}
-interface GL_SecretProjection {
-   id: ID
-   token: String
-}
-interface GLReservedFieldsProjection {
-   id: ID
-   class: String
-   return: Int
-   new: Boolean
-   default: String
-   is: String
-   in: String
-   with: String
-   int: Int
-   synchronized: Boolean
-   native: String
-   kind: Keyword
-   nested: GLclassProjection
-   secret: GL_SecretProjection
-}
-interface GLCollideProjection {
-   id: ID
-   class: String
-   class_: String
-}
-interface GLMessageProjection {
-   id: ID
-   content: String
-}
-interface GLBoxProjection {
-   id: ID
-   label: String
-}
-interface GLCircleProjection {
-   id: ID
-   kind: String
-   radius: Int
-}
-interface GLSquareProjection {
-   id: ID
-   kind: String
-   side: Int
-}
-interface GLPhotoProjection {
-   id: ID
-   url: String
-   width: Int
-}
-interface GLVideoProjection {
-   id: ID
-   url: String
-   durationSec: Int
-}
-interface GLWebSiteProjection {
-   id: ID
-   name: String
-}
-interface GLAuthorProjection {
-   id: ID
-   name: String
-}
-interface Article {
-   id: ID
-   title: String
-   type: ArticleType
-   authorId: ID
-   webSite: GLWebSiteProjection
-   published: Boolean
-}
-interface GLConfigProjection {
-   pageSize: Int
-   ratio: Float
-   sort: String
-   verbose: Boolean
-   priority: Priority
-   tags: [String!]
-   empties: [String!]
-   note: String
-}
-interface GLRangeProjection {
-   min: Int
-   max: Int
-}
-interface GLShapeProjection {
-   id: ID
-   kind: String
-}
-interface GLMediaProjection {
-   id: ID
-   url: String
 }
 enum Keyword {
 	new default class int synchronized
