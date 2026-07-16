@@ -106,27 +106,29 @@ class JavaClientOperationSerializer {
         : 'Arrays.asList(${e.argumentDeclarations.map((a) => '"$a"').join(', ')})';
     final queryStr = e.query.escapeForJavaStringLiteral();
 
-    final buffer = StringBuffer();
-    buffer.writeln('{');
-    buffer.writeln('  Map<String, Object> pqVars = new HashMap<>();');
-    for (var v in e.variables) {
+    final pqVarAssignments = e.variables.map((v) {
       final argName = v.substring(1);
-      buffer.writeln('  pqVars.put("$argName", ${svVariables}.get("$argName"));');
-    }
-    buffer.writeln('  ${svPartialQueries}.add(new GraphLinkPartialQuery(');
-    buffer.writeln('    "$queryStr",');
-    buffer.writeln('    pqVars,');
-    buffer.writeln('    ${e.cacheTTL},');
-    buffer.writeln('    $tagsStr,');
-    buffer.writeln('    "${e.operationName}",');
-    buffer.writeln('    "${e.elementKey}",');
-    buffer.writeln('    $fragNamesStr,');
-    buffer.writeln('    $argDeclsStr,');
-    buffer.writeln('    ${e.staleIfOffline},');
-    buffer.writeln('    ${svEncoder}');
-    buffer.writeln('  ));');
-    buffer.write('}');
-    return buffer.toString();
+      return 'pqVars.put("$argName", ${svVariables}.get("$argName"));';
+    });
+
+    final constructorArgs = [
+      '"$queryStr"',
+      'pqVars',
+      '${e.cacheTTL}',
+      tagsStr,
+      '"${e.operationName}"',
+      '"${e.elementKey}"',
+      fragNamesStr,
+      argDeclsStr,
+      '${e.staleIfOffline}',
+      svEncoder,
+    ].join(',\n').ident();
+
+    return _ctx.codeGenUtils.block([
+      'Map<String, Object> pqVars = new HashMap<>();',
+      ...pqVarAssignments,
+      '${svPartialQueries}.add(new GraphLinkPartialQuery(\n$constructorArgs\n));',
+    ]);
   }
 
 
@@ -281,9 +283,10 @@ class JavaClientOperationSerializer {
       statements.addAll(responseHandling);
     } else {
       // executeMultipart returns the deferred-single; compose over it.
-      statements.add('return ${_ctx.flavor.mapOpen(call, svResponseText)}');
-      statements.addAll(responseHandling.map((s) => '  $s'));
-      statements.add('});');
+      statements.add(_reactiveOpenBlock(
+        header: 'return ${_ctx.flavor.mapOpen(call, svResponseText)}',
+        statements: responseHandling,
+      ));
     }
 
     return statements.join('\n');
@@ -401,6 +404,15 @@ class JavaClientOperationSerializer {
     ].join('\n');
   }
 
+  /// Splices [statements] under a reactive-lambda opener (e.g.
+  /// [JavaReactiveFlavor.mapOpen], which returns only `"src.map(param -> {"`
+  /// — an opening fragment `codeGenUtils.block` can't express since it always
+  /// emits a bare `{`) and a matching `});` closer.
+  String _reactiveOpenBlock({required String header, required List<String> statements}) {
+    final body = statements.join('\n').ident();
+    return '$header\n$body\n});';
+  }
+
   String _serializeMutationAdapterCall(GLQueryDefinition def) {
     final fullResponseToken = def.getFullResponseTypeDefinition(_ctx.grammar).token;
     final isCE = def.isCaptureErrors(_ctx.grammar);
@@ -412,23 +424,25 @@ class JavaClientOperationSerializer {
     // deferred-single, since there is no materialised response to act on first.
     if (_ctx.flavor.isReactive) {
       if (!isCE) {
-        return [
-          'return ${_ctx.flavor.mapOpen('executeData(${svQuery}, ${svFragmentNames}, "${def.tokenInfo.token}", $varsArg, $fullResponseToken::fromJson)', svDecodedResponse)}',
-          '  $invalidation',
-          '  return ${svDecodedResponse}.getData();',
-          '});',
-        ].join('\n');
+        return _reactiveOpenBlock(
+          header: 'return ${_ctx.flavor.mapOpen('executeData(${svQuery}, ${svFragmentNames}, "${def.tokenInfo.token}", $varsArg, $fullResponseToken::fromJson)', svDecodedResponse)}',
+          statements: [
+            invalidation,
+            'return ${svDecodedResponse}.getData();',
+          ],
+        );
       }
-      return [
-        'return ${_ctx.flavor.mapOpen('executeFull(${svQuery}, ${svFragmentNames}, "${def.tokenInfo.token}", $varsArg, $fullResponseToken::fromJson)', svDecodedResponse)}',
-        if (def.invalidateCacheTags.isNotEmpty) ...[
-          '  if (${svDecodedResponse}.getErrors() == null) {',
-          '    $invalidation',
-          '  }',
+      return _reactiveOpenBlock(
+        header: 'return ${_ctx.flavor.mapOpen('executeFull(${svQuery}, ${svFragmentNames}, "${def.tokenInfo.token}", $varsArg, $fullResponseToken::fromJson)', svDecodedResponse)}',
+        statements: [
+          if (def.invalidateCacheTags.isNotEmpty)
+            _ctx.codeGenUtils.ifStatement(
+              condition: '${svDecodedResponse}.getErrors() == null',
+              ifBlockStatements: [invalidation],
+            ),
+          'return ${svDecodedResponse};',
         ],
-        '  return ${svDecodedResponse};',
-        '});',
-      ].join('\n');
+      );
     }
 
     if (!isCE) {

@@ -335,21 +335,25 @@ class SwiftClientOperationSerializer {
     final varAssignments =
         e.variables.map((v) => '$svPqVars["${v.substring(1)}"] = $svVariables["${v.substring(1)}"]').toList();
 
-    return '''{ () -> GraphLinkPartialQuery in
-    var $svPqVars: [String: Any?] = [:]
-${varAssignments.map((s) => '    $s').join('\n')}
-    return GraphLinkPartialQuery(
-        query: "$queryStr",
-        variables: $svPqVars,
-        ttl: ${e.cacheTTL},
-        tags: $tagsStr,
-        operationName: "${e.operationName}",
-        elementKey: "${e.elementKey}",
-        fragmentNames: Set($fragNamesStr),
-        argumentDeclarations: $argDeclsStr,
-        staleIfOffline: ${e.staleIfOffline}
-    )
-}()''';
+    final partialQueryArgs = [
+      'query: "$queryStr"',
+      'variables: $svPqVars',
+      'ttl: ${e.cacheTTL}',
+      'tags: $tagsStr',
+      'operationName: "${e.operationName}"',
+      'elementKey: "${e.elementKey}"',
+      'fragmentNames: Set($fragNamesStr)',
+      'argumentDeclarations: $argDeclsStr',
+      'staleIfOffline: ${e.staleIfOffline}',
+    ].join(',\n').ident();
+
+    final closureBody = [
+      'var $svPqVars: [String: Any?] = [:]',
+      ...varAssignments,
+      'return GraphLinkPartialQuery(\n$partialQueryArgs\n)',
+    ].join('\n').ident();
+
+    return '{ () -> GraphLinkPartialQuery in\n$closureBody\n}()';
   }
 
   /// Returns a complete statement (with `try`/`await` already applied as

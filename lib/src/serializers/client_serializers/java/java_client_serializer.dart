@@ -314,6 +314,15 @@ class JavaClientSerializer extends GLClientSerializer {
   String _wrapSingle(String inner) => serializer
       .serializeType(JavaCodeGenUtils.wrapReactive(inner.toToken(), flavor));
 
+  /// Splices [statements] under a reactive-lambda opener (e.g.
+  /// [JavaReactiveFlavor.mapOpen]/`onErrorResumeOpen`, which return only
+  /// `"src.map(param -> {"` — an opening fragment `codeGenUtils.block` can't
+  /// express since it always emits a bare `{`) and a matching `});` closer.
+  String _reactiveOpenBlock({required String header, required List<String> statements}) {
+    final body = statements.join('\n').ident();
+    return '$header\n$body\n});';
+  }
+
   String _adapterDeclaration(bool withStore) {
     return [
       'GraphLinkClientAdapter adapter',
@@ -613,12 +622,16 @@ class JavaClientSerializer extends GLClientSerializer {
                   'return $svDecodedResponse;',
                 ]
               : [
-                  'return ${flavor.mapOpen('executeFull(query, fragmentNames, operationName, variables, fromJson)', svDecodedResponse)}',
-                  '  if ($svDecodedResponse.getErrors() != null && !$svDecodedResponse.getErrors().isEmpty()) {',
-                  '    throw ${clientExceptionName}.of($svDecodedResponse.getErrors());',
-                  '  }',
-                  '  return $svDecodedResponse;',
-                  '});',
+                  _reactiveOpenBlock(
+                    header: 'return ${flavor.mapOpen('executeFull(query, fragmentNames, operationName, variables, fromJson)', svDecodedResponse)}',
+                    statements: [
+                      codeGenUtils.ifStatement(
+                        condition: '$svDecodedResponse.getErrors() != null && !$svDecodedResponse.getErrors().isEmpty()',
+                        ifBlockStatements: ['throw ${clientExceptionName}.of($svDecodedResponse.getErrors());'],
+                      ),
+                      'return $svDecodedResponse;',
+                    ],
+                  ),
                 ],
         ),
         codeGenUtils.createMethod(
@@ -710,18 +723,20 @@ class JavaClientSerializer extends GLClientSerializer {
                 catchVariable: 'exception',
               )
             else
-              [
-                'return ${flavor.onErrorResumeOpen(flavor.mapTo('glCallAdapter($svPayload)', '$svResponseText -> parseToObjectAndCache($svResponseText, $svResponseMap, fromJson, $svRemaining, captureErrors)'), 'exception')}',
-                '  $svResponseMap.putAll($svStaleData);',
-                '  long remainingCount = $svPartialQueries.stream().filter(e -> !$svResponseMap.containsKey(e.elementKey)).count();',
-                '  if (remainingCount > 0) {',
-                '    return ${flavor.error('new RuntimeException(exception)')};',
-                '  }',
-                '  Map<String, Object> $svWrappedResponse = new HashMap<>();',
-                '  $svWrappedResponse.put("data", $svResponseMap);',
-                '  return ${flavor.wrapValue('fromJson.apply($svWrappedResponse)')};',
-                '});',
-              ].join('\n'),
+              _reactiveOpenBlock(
+                header: 'return ${flavor.onErrorResumeOpen(flavor.mapTo('glCallAdapter($svPayload)', '$svResponseText -> parseToObjectAndCache($svResponseText, $svResponseMap, fromJson, $svRemaining, captureErrors)'), 'exception')}',
+                statements: [
+                  '$svResponseMap.putAll($svStaleData);',
+                  'long remainingCount = $svPartialQueries.stream().filter(e -> !$svResponseMap.containsKey(e.elementKey)).count();',
+                  codeGenUtils.ifStatement(
+                    condition: 'remainingCount > 0',
+                    ifBlockStatements: ['return ${flavor.error('new RuntimeException(exception)')};'],
+                  ),
+                  'Map<String, Object> $svWrappedResponse = new HashMap<>();',
+                  '$svWrappedResponse.put("data", $svResponseMap);',
+                  'return ${flavor.wrapValue('fromJson.apply($svWrappedResponse)')};',
+                ],
+              ),
           ],
         ),
         _buildPayloadMethod(),
@@ -1062,15 +1077,16 @@ class JavaClientSerializer extends GLClientSerializer {
     // Reactive variant: executeMultipart returns the deferred-single carrying
     // the body (or failure), so no checked IOException.
     final ret = '${flavor.single}<String>';
-    final body = [
-      'public interface GraphLinkMultipartAdapter {',
-      '    $ret executeMultipart(String operations, String mapJson, Map<String, GLUpload> files, UploadProgressCallback onProgress);',
-      '',
-      '    default $ret executeMultipart(String operations, String mapJson, Map<String, GLUpload> files) {',
-      '        return executeMultipart(operations, mapJson, files, null);',
-      '    }',
-      '}',
-    ].join('\n');
+    final body = codeGenUtils.createInterface(
+      interfaceName: 'GraphLinkMultipartAdapter',
+      statements: [
+        '$ret executeMultipart(String operations, String mapJson, Map<String, GLUpload> files, UploadProgressCallback onProgress);',
+        '',
+        'default $ret executeMultipart(String operations, String mapJson, Map<String, GLUpload> files) ${codeGenUtils.block([
+              'return executeMultipart(operations, mapJson, files, null);',
+            ])}',
+      ],
+    );
     return GLClassModel(
       imports: [JavaImports.map, ...flavor.singleImports],
       body: body,
@@ -1091,12 +1107,10 @@ class JavaClientSerializer extends GLClientSerializer {
     final params = _grammar.operationNameAsParameter
         ? 'String payload, String operationName'
         : 'String payload';
-    final body = [
-      '@FunctionalInterface',
-      'public interface GraphLinkClientAdapter {',
-      '    $ret execute($params);',
-      '}',
-    ].join('\n');
+    final body = '@FunctionalInterface\n${codeGenUtils.createInterface(
+      interfaceName: 'GraphLinkClientAdapter',
+      statements: ['$ret execute($params);'],
+    )}';
     return GLClassModel(
       imports: [...flavor.singleImports],
       body: body,
@@ -1165,43 +1179,59 @@ class JavaClientSerializer extends GLClientSerializer {
     const future =
         'httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApply(HttpResponse::body)';
     final hasUploads = _grammar.hasUploadMutations;
-    final implementsClause = hasUploads
-        ? 'implements GraphLinkClientAdapter, GraphLinkMultipartAdapter'
-        : 'implements GraphLinkClientAdapter';
-    final body = [
-      'public class DefaultGraphLinkClientAdapter $implementsClause {',
-      '    private final String url;',
-      '    private final HttpClient httpClient;',
-      '    private final Supplier<Map<String, String>> headersProvider;',
-      '',
-      '    public DefaultGraphLinkClientAdapter(String url) {',
-      '        this(url, () -> null);',
-      '    }',
-      '',
-      '    public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider) {',
-      '        this.url = url;',
-      '        this.headersProvider = headersProvider;',
-      '        this.httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build();',
-      '    }',
-      '',
-      '    @Override',
-      '    public $ret execute($params) {',
-      '        HttpRequest.Builder builder = HttpRequest.newBuilder()',
-      '            .uri(URI.create(url))',
-      '            .header("Content-Type", "application/json")',
-      '            .POST(HttpRequest.BodyPublishers.ofString(payload));',
-      '        Map<String, String> headers = headersProvider.get();',
-      '        if (headers != null) {',
-      '            for (Map.Entry<String, String> entry : headers.entrySet()) {',
-      '                builder.header(entry.getKey(), entry.getValue());',
-      '            }',
-      '        }',
-      '        HttpRequest request = builder.build();',
-      '        return ${flavor.bridgeFuture(future)};',
-      '    }',
-      if (hasUploads) ..._reactiveMultipartMembers(ret),
-      '}',
-    ].join('\n');
+    final body = codeGenUtils.createClass(
+      className: 'DefaultGraphLinkClientAdapter',
+      interfaceNames: [
+        'GraphLinkClientAdapter',
+        if (hasUploads) 'GraphLinkMultipartAdapter',
+      ],
+      statements: [
+        'private final String url;',
+        'private final HttpClient httpClient;',
+        'private final Supplier<Map<String, String>> headersProvider;',
+        '',
+        codeGenUtils.createMethod(
+          returnType: 'public',
+          methodName: 'DefaultGraphLinkClientAdapter',
+          arguments: ['String url'],
+          statements: ['this(url, () -> null);'],
+        ),
+        '',
+        codeGenUtils.createMethod(
+          returnType: 'public',
+          methodName: 'DefaultGraphLinkClientAdapter',
+          arguments: ['String url', 'Supplier<Map<String, String>> headersProvider'],
+          statements: [
+            'this.url = url;',
+            'this.headersProvider = headersProvider;',
+            'this.httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build();',
+          ],
+        ),
+        '',
+        '@Override\n${codeGenUtils.createMethod(
+          returnType: 'public $ret',
+          methodName: 'execute',
+          arguments: [params],
+          statements: [
+            'HttpRequest.Builder builder = HttpRequest.newBuilder()\n    .uri(URI.create(url))\n    .header("Content-Type", "application/json")\n    .POST(HttpRequest.BodyPublishers.ofString(payload));',
+            'Map<String, String> headers = headersProvider.get();',
+            codeGenUtils.ifStatement(
+              condition: 'headers != null',
+              ifBlockStatements: [
+                codeGenUtils.forEachLoop(
+                  variable: 'entry',
+                  iterable: 'headers.entrySet()',
+                  statements: ['builder.header(entry.getKey(), entry.getValue());'],
+                ),
+              ],
+            ),
+            'HttpRequest request = builder.build();',
+            'return ${flavor.bridgeFuture(future)};',
+          ],
+        )}',
+        if (hasUploads) ..._reactiveMultipartMembers(ret),
+      ],
+    );
     return GLClassModel(
       imports: [
         'java.net.URI',
@@ -1233,43 +1263,63 @@ class JavaClientSerializer extends GLClientSerializer {
         ? 'String payload, String operationName'
         : 'String payload';
     final hasUploads = _grammar.hasUploadMutations;
-    final implementsClause = hasUploads
-        ? 'implements GraphLinkClientAdapter, GraphLinkMultipartAdapter'
-        : 'implements GraphLinkClientAdapter';
-    final body = [
-      'public class DefaultGraphLinkClientAdapter $implementsClause {',
-      '    private final String url;',
-      '    private final WebClient webClient;',
-      '    private final Supplier<Map<String, String>> headersProvider;',
-      '',
-      '    public DefaultGraphLinkClientAdapter(String url) {',
-      '        this(url, () -> null);',
-      '    }',
-      '',
-      '    public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider) {',
-      '        this(url, headersProvider, WebClient.create());',
-      '    }',
-      '',
-      '    public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider, WebClient webClient) {',
-      '        this.url = url;',
-      '        this.headersProvider = headersProvider;',
-      '        this.webClient = webClient;',
-      '    }',
-      '',
-      '    @Override',
-      '    public Mono<String> execute($params) {',
-      '        WebClient.RequestBodySpec request = webClient.post()',
-      '            .uri($opNameUri)',
-      '            .contentType(MediaType.APPLICATION_JSON);',
-      '        Map<String, String> headers = headersProvider.get();',
-      '        if (headers != null) {',
-      '            headers.forEach(request::header);',
-      '        }',
-      '        return request.bodyValue(payload).retrieve().bodyToMono(String.class);',
-      '    }',
-      if (hasUploads) ..._webClientMultipartMembers(),
-      '}',
-    ].join('\n');
+    final body = codeGenUtils.createClass(
+      className: 'DefaultGraphLinkClientAdapter',
+      interfaceNames: [
+        'GraphLinkClientAdapter',
+        if (hasUploads) 'GraphLinkMultipartAdapter',
+      ],
+      statements: [
+        'private final String url;',
+        'private final WebClient webClient;',
+        'private final Supplier<Map<String, String>> headersProvider;',
+        '',
+        codeGenUtils.createMethod(
+          returnType: 'public',
+          methodName: 'DefaultGraphLinkClientAdapter',
+          arguments: ['String url'],
+          statements: ['this(url, () -> null);'],
+        ),
+        '',
+        codeGenUtils.createMethod(
+          returnType: 'public',
+          methodName: 'DefaultGraphLinkClientAdapter',
+          arguments: ['String url', 'Supplier<Map<String, String>> headersProvider'],
+          statements: ['this(url, headersProvider, WebClient.create());'],
+        ),
+        '',
+        codeGenUtils.createMethod(
+          returnType: 'public',
+          methodName: 'DefaultGraphLinkClientAdapter',
+          arguments: [
+            'String url',
+            'Supplier<Map<String, String>> headersProvider',
+            'WebClient webClient',
+          ],
+          statements: [
+            'this.url = url;',
+            'this.headersProvider = headersProvider;',
+            'this.webClient = webClient;',
+          ],
+        ),
+        '',
+        '@Override\n${codeGenUtils.createMethod(
+          returnType: 'public Mono<String>',
+          methodName: 'execute',
+          arguments: [params],
+          statements: [
+            'WebClient.RequestBodySpec request = webClient.post()\n    .uri($opNameUri)\n    .contentType(MediaType.APPLICATION_JSON);',
+            'Map<String, String> headers = headersProvider.get();',
+            codeGenUtils.ifStatement(
+              condition: 'headers != null',
+              ifBlockStatements: ['headers.forEach(request::header);'],
+            ),
+            'return request.bodyValue(payload).retrieve().bodyToMono(String.class);',
+          ],
+        )}',
+        if (hasUploads) ..._webClientMultipartMembers(),
+      ],
+    );
     return GLClassModel(
       imports: [
         'org.springframework.web.reactive.function.client.WebClient',
@@ -1289,31 +1339,42 @@ class JavaClientSerializer extends GLClientSerializer {
 
   /// WebClient multipart `executeMultipart` body (GraphQL multipart spec).
   List<String> _webClientMultipartMembers() {
-    return [
-      '',
-      '    @Override',
-      '    public Mono<String> executeMultipart(String operations, String mapJson, Map<String, GLUpload> files, UploadProgressCallback onProgress) {',
-      '        MultipartBodyBuilder bodyBuilder = new MultipartBodyBuilder();',
-      '        bodyBuilder.part("operations", operations).contentType(MediaType.APPLICATION_JSON);',
-      '        bodyBuilder.part("map", mapJson).contentType(MediaType.APPLICATION_JSON);',
-      '        for (Map.Entry<String, GLUpload> entry : files.entrySet()) {',
-      '            GLUpload upload = entry.getValue();',
-      '            String filename = upload.getFilename() != null ? upload.getFilename() : entry.getKey();',
-      '            bodyBuilder.part(entry.getKey(), new InputStreamResource(upload.getStream()) {',
-      '                @Override public String getFilename() { return filename; }',
-      '                @Override public long contentLength() { return upload.getLength(); }',
-      '            }).filename(filename).contentType(MediaType.parseMediaType(upload.getMimeType()));',
-      '        }',
-      '        WebClient.RequestBodySpec request = webClient.post()',
-      '            .uri(url)',
-      '            .contentType(MediaType.MULTIPART_FORM_DATA);',
-      '        Map<String, String> headers = headersProvider.get();',
-      '        if (headers != null) {',
-      '            headers.forEach(request::header);',
-      '        }',
-      '        return request.body(BodyInserters.fromMultipartData(bodyBuilder.build())).retrieve().bodyToMono(String.class);',
-      '    }',
-    ];
+    final executeMultipartMethod = '@Override\n${codeGenUtils.createMethod(
+      returnType: 'public Mono<String>',
+      methodName: 'executeMultipart',
+      arguments: [
+        'String operations',
+        'String mapJson',
+        'Map<String, GLUpload> files',
+        'UploadProgressCallback onProgress',
+      ],
+      statements: [
+        'MultipartBodyBuilder bodyBuilder = new MultipartBodyBuilder();',
+        'bodyBuilder.part("operations", operations).contentType(MediaType.APPLICATION_JSON);',
+        'bodyBuilder.part("map", mapJson).contentType(MediaType.APPLICATION_JSON);',
+        codeGenUtils.forEachLoop(
+          variable: 'entry',
+          iterable: 'files.entrySet()',
+          statements: [
+            'GLUpload upload = entry.getValue();',
+            'String filename = upload.getFilename() != null ? upload.getFilename() : entry.getKey();',
+            'bodyBuilder.part(entry.getKey(), new InputStreamResource(upload.getStream()) ${codeGenUtils.block([
+                  '@Override public String getFilename() { return filename; }',
+                  '@Override public long contentLength() { return upload.getLength(); }',
+                ])}).filename(filename).contentType(MediaType.parseMediaType(upload.getMimeType()));',
+          ],
+        ),
+        'WebClient.RequestBodySpec request = webClient.post()\n    .uri(url)\n    .contentType(MediaType.MULTIPART_FORM_DATA);',
+        'Map<String, String> headers = headersProvider.get();',
+        codeGenUtils.ifStatement(
+          condition: 'headers != null',
+          ifBlockStatements: ['headers.forEach(request::header);'],
+        ),
+        'return request.body(BodyInserters.fromMultipartData(bodyBuilder.build())).retrieve().bodyToMono(String.class);',
+      ],
+    )}';
+
+    return ['', executeMultipartMethod];
   }
 
   /// The reactive `executeMultipart` (GraphQL multipart spec over JDK
@@ -1322,88 +1383,127 @@ class JavaClientSerializer extends GLClientSerializer {
   List<String> _reactiveMultipartMembers(String ret) {
     const mpFuture =
         'httpClient.sendAsync(mpRequest, HttpResponse.BodyHandlers.ofString()).thenApply(HttpResponse::body)';
+
+    final executeMultipartMethod = '@Override\n${codeGenUtils.createMethod(
+      returnType: 'public $ret',
+      methodName: 'executeMultipart',
+      arguments: [
+        'String operations',
+        'String mapJson',
+        'Map<String, GLUpload> files',
+        'UploadProgressCallback onProgress',
+      ],
+      statements: [
+        'String boundary = "----GraphLinkBoundary" + java.util.UUID.randomUUID().toString().replace("-", "");',
+        'final byte[] mpBody;',
+        'try ${codeGenUtils.block([
+              'mpBody = buildMultipartBody(boundary, operations, mapJson, files);',
+            ])} catch (java.io.IOException e) ${codeGenUtils.block([
+              'return ${flavor.error('new RuntimeException(e)')};',
+            ])}',
+        'HttpRequest.BodyPublisher basePublisher = HttpRequest.BodyPublishers.ofByteArray(mpBody);',
+        'HttpRequest.BodyPublisher publisher = onProgress != null\n    ? new CountingBodyPublisher(basePublisher, mpBody.length, onProgress)\n    : basePublisher;',
+        'HttpRequest.Builder mpBuilder = HttpRequest.newBuilder()\n    .uri(URI.create(url))\n    .header("Content-Type", "multipart/form-data; boundary=" + boundary)\n    .POST(publisher);',
+        'Map<String, String> mpHeaders = headersProvider.get();',
+        codeGenUtils.ifStatement(
+          condition: 'mpHeaders != null',
+          ifBlockStatements: [
+            codeGenUtils.forEachLoop(
+              variable: 'entry',
+              iterable: 'mpHeaders.entrySet()',
+              statements: ['mpBuilder.header(entry.getKey(), entry.getValue());'],
+            ),
+          ],
+        ),
+        'HttpRequest mpRequest = mpBuilder.build();',
+        'return ${flavor.bridgeFuture(mpFuture)};',
+      ],
+    )}';
+
+    final buildMultipartBodyMethod =
+        'private byte[] buildMultipartBody(String boundary, String operations, String mapJson, Map<String, GLUpload> files) throws java.io.IOException ${codeGenUtils.block([
+              'java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();',
+              'writePart(out, boundary, "operations", "application/json", operations.getBytes(java.nio.charset.StandardCharsets.UTF_8));',
+              'writePart(out, boundary, "map", "application/json", mapJson.getBytes(java.nio.charset.StandardCharsets.UTF_8));',
+              codeGenUtils.forEachLoop(
+                variable: 'entry',
+                iterable: 'files.entrySet()',
+                statements: [
+                  'GLUpload upload = entry.getValue();',
+                  'String filename = upload.getFilename() != null ? upload.getFilename() : entry.getKey();',
+                  'out.write(("--" + boundary + "\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
+                  'out.write(("Content-Disposition: form-data; name=\\"" + entry.getKey() + "\\"; filename=\\"" + filename + "\\"\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
+                  'out.write(("Content-Type: " + upload.getMimeType() + "\\r\\n\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
+                  'upload.getStream().transferTo(out);',
+                  'out.write("\\r\\n".getBytes(java.nio.charset.StandardCharsets.UTF_8));',
+                ],
+              ),
+              'out.write(("--" + boundary + "--\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
+              'return out.toByteArray();',
+            ])}';
+
+    final writePartMethod =
+        'private void writePart(java.io.ByteArrayOutputStream out, String boundary, String name, String contentType, byte[] data) throws java.io.IOException ${codeGenUtils.block([
+              'out.write(("--" + boundary + "\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
+              'out.write(("Content-Disposition: form-data; name=\\"" + name + "\\"\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
+              'out.write(("Content-Type: " + contentType + "\\r\\n\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
+              'out.write(data);',
+              'out.write("\\r\\n".getBytes(java.nio.charset.StandardCharsets.UTF_8));',
+            ])}';
+
+    final subscribeMethod = '@Override\n${codeGenUtils.createMethod(
+      returnType: 'public void',
+      methodName: 'subscribe',
+      arguments: ['java.util.concurrent.Flow.Subscriber<? super java.nio.ByteBuffer> subscriber'],
+      statements: [
+        'delegate.subscribe(new java.util.concurrent.Flow.Subscriber<>() ${codeGenUtils.block([
+              'long sent = 0;',
+              '@Override public void onSubscribe(java.util.concurrent.Flow.Subscription sub) { subscriber.onSubscribe(sub); }',
+              '@Override public void onNext(java.nio.ByteBuffer item) ${codeGenUtils.block([
+                    'sent += item.remaining();',
+                    'callback.onProgress(sent, total);',
+                    'subscriber.onNext(item);',
+                  ])}',
+              '@Override public void onError(Throwable t) { subscriber.onError(t); }',
+              '@Override public void onComplete() { subscriber.onComplete(); }',
+            ])});',
+      ],
+    )}';
+
+    final countingBodyPublisherClass =
+        'private static final class CountingBodyPublisher implements HttpRequest.BodyPublisher ${codeGenUtils.block([
+              'private final HttpRequest.BodyPublisher delegate;',
+              'private final long total;',
+              'private final UploadProgressCallback callback;',
+              '',
+              codeGenUtils.createMethod(
+                methodName: 'CountingBodyPublisher',
+                arguments: [
+                  'HttpRequest.BodyPublisher delegate',
+                  'long total',
+                  'UploadProgressCallback callback',
+                ],
+                statements: [
+                  'this.delegate = delegate;',
+                  'this.total = total;',
+                  'this.callback = callback;',
+                ],
+              ),
+              '',
+              '@Override public long contentLength() { return delegate.contentLength(); }',
+              '',
+              subscribeMethod,
+            ])}';
+
     return [
       '',
-      '    @Override',
-      '    public $ret executeMultipart(String operations, String mapJson, Map<String, GLUpload> files, UploadProgressCallback onProgress) {',
-      '        String boundary = "----GraphLinkBoundary" + java.util.UUID.randomUUID().toString().replace("-", "");',
-      '        final byte[] mpBody;',
-      '        try {',
-      '            mpBody = buildMultipartBody(boundary, operations, mapJson, files);',
-      '        } catch (java.io.IOException e) {',
-      '            return ${flavor.error('new RuntimeException(e)')};',
-      '        }',
-      '        HttpRequest.BodyPublisher basePublisher = HttpRequest.BodyPublishers.ofByteArray(mpBody);',
-      '        HttpRequest.BodyPublisher publisher = onProgress != null',
-      '            ? new CountingBodyPublisher(basePublisher, mpBody.length, onProgress)',
-      '            : basePublisher;',
-      '        HttpRequest.Builder mpBuilder = HttpRequest.newBuilder()',
-      '            .uri(URI.create(url))',
-      '            .header("Content-Type", "multipart/form-data; boundary=" + boundary)',
-      '            .POST(publisher);',
-      '        Map<String, String> mpHeaders = headersProvider.get();',
-      '        if (mpHeaders != null) {',
-      '            for (Map.Entry<String, String> entry : mpHeaders.entrySet()) {',
-      '                mpBuilder.header(entry.getKey(), entry.getValue());',
-      '            }',
-      '        }',
-      '        HttpRequest mpRequest = mpBuilder.build();',
-      '        return ${flavor.bridgeFuture(mpFuture)};',
-      '    }',
+      executeMultipartMethod,
       '',
-      '    private byte[] buildMultipartBody(String boundary, String operations, String mapJson, Map<String, GLUpload> files) throws java.io.IOException {',
-      '        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();',
-      '        writePart(out, boundary, "operations", "application/json", operations.getBytes(java.nio.charset.StandardCharsets.UTF_8));',
-      '        writePart(out, boundary, "map", "application/json", mapJson.getBytes(java.nio.charset.StandardCharsets.UTF_8));',
-      '        for (Map.Entry<String, GLUpload> entry : files.entrySet()) {',
-      '            GLUpload upload = entry.getValue();',
-      '            String filename = upload.getFilename() != null ? upload.getFilename() : entry.getKey();',
-      '            out.write(("--" + boundary + "\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
-      '            out.write(("Content-Disposition: form-data; name=\\"" + entry.getKey() + "\\"; filename=\\"" + filename + "\\"\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
-      '            out.write(("Content-Type: " + upload.getMimeType() + "\\r\\n\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
-      '            upload.getStream().transferTo(out);',
-      '            out.write("\\r\\n".getBytes(java.nio.charset.StandardCharsets.UTF_8));',
-      '        }',
-      '        out.write(("--" + boundary + "--\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
-      '        return out.toByteArray();',
-      '    }',
+      buildMultipartBodyMethod,
       '',
-      '    private void writePart(java.io.ByteArrayOutputStream out, String boundary, String name, String contentType, byte[] data) throws java.io.IOException {',
-      '        out.write(("--" + boundary + "\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
-      '        out.write(("Content-Disposition: form-data; name=\\"" + name + "\\"\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
-      '        out.write(("Content-Type: " + contentType + "\\r\\n\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
-      '        out.write(data);',
-      '        out.write("\\r\\n".getBytes(java.nio.charset.StandardCharsets.UTF_8));',
-      '    }',
+      writePartMethod,
       '',
-      '    private static final class CountingBodyPublisher implements HttpRequest.BodyPublisher {',
-      '        private final HttpRequest.BodyPublisher delegate;',
-      '        private final long total;',
-      '        private final UploadProgressCallback callback;',
-      '',
-      '        CountingBodyPublisher(HttpRequest.BodyPublisher delegate, long total, UploadProgressCallback callback) {',
-      '            this.delegate = delegate;',
-      '            this.total = total;',
-      '            this.callback = callback;',
-      '        }',
-      '',
-      '        @Override public long contentLength() { return delegate.contentLength(); }',
-      '',
-      '        @Override',
-      '        public void subscribe(java.util.concurrent.Flow.Subscriber<? super java.nio.ByteBuffer> subscriber) {',
-      '            delegate.subscribe(new java.util.concurrent.Flow.Subscriber<>() {',
-      '                long sent = 0;',
-      '                @Override public void onSubscribe(java.util.concurrent.Flow.Subscription sub) { subscriber.onSubscribe(sub); }',
-      '                @Override public void onNext(java.nio.ByteBuffer item) {',
-      '                    sent += item.remaining();',
-      '                    callback.onProgress(sent, total);',
-      '                    subscriber.onNext(item);',
-      '                }',
-      '                @Override public void onError(Throwable t) { subscriber.onError(t); }',
-      '                @Override public void onComplete() { subscriber.onComplete(); }',
-      '            });',
-      '        }',
-      '    }',
+      countingBodyPublisherClass,
     ];
   }
 
