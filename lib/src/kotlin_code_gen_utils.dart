@@ -158,6 +158,20 @@ class KotlinCodeGenUtils implements CodeGenUtilsBase {
     return buffer.toString();
   }
 
+  /// Emits a primary-constructor parameter list, one param per line:
+  /// ```
+  /// (
+  ///    param1,
+  ///    param2,
+  /// )
+  /// ```
+  /// or `()` when [params] is empty.
+  String _constructorParams(List<String> params) {
+    if (params.isEmpty) return '()';
+    final paramsStr = params.map((p) => '$p,').join('\n').ident();
+    return '(\n$paramsStr\n)';
+  }
+
   String dataClass({
     required String name,
     required List<String> params,
@@ -165,11 +179,7 @@ class KotlinCodeGenUtils implements CodeGenUtilsBase {
     List<String>? interfaces,
   }) {
     final buffer = StringBuffer();
-    buffer.write('data class $name(\n');
-    for (final p in params) {
-      buffer.write('    $p,\n');
-    }
-    buffer.write(')');
+    buffer.write('data class $name${_constructorParams(params)}');
     if (interfaces != null && interfaces.isNotEmpty) {
       buffer.write(' : ${interfaces.join(', ')}');
     }
@@ -190,11 +200,7 @@ class KotlinCodeGenUtils implements CodeGenUtilsBase {
     final buffer = StringBuffer();
     buffer.write('class $name');
     if (params != null && params.isNotEmpty) {
-      buffer.write('(\n');
-      for (final p in params) {
-        buffer.write('    $p,\n');
-      }
-      buffer.write(')');
+      buffer.write(_constructorParams(params));
     }
     if (interfaces != null && interfaces.isNotEmpty) {
       buffer.write(' : ${interfaces.join(', ')}');
@@ -213,11 +219,7 @@ class KotlinCodeGenUtils implements CodeGenUtilsBase {
     List<String>? interfaces,
   }) {
     final buffer = StringBuffer();
-    buffer.write('open class $name(\n');
-    for (final p in params) {
-      buffer.write('    $p,\n');
-    }
-    buffer.write(')');
+    buffer.write('open class $name${_constructorParams(params)}');
     if (interfaces != null && interfaces.isNotEmpty) {
       buffer.write(' : ${interfaces.join(', ')}');
     }
@@ -308,15 +310,7 @@ class KotlinCodeGenUtils implements CodeGenUtilsBase {
   ///     arg2,
   /// )
   /// ```
-  String constructorCall(String name, List<String> args) {
-    final buffer = StringBuffer();
-    buffer.writeln('$name(');
-    for (final arg in args) {
-      buffer.writeln('    $arg,');
-    }
-    buffer.write(')');
-    return buffer.toString();
-  }
+  String constructorCall(String name, List<String> args) => '$name${_constructorParams(args)}';
 
   /// Emits a `run { ... }` block, useful for scoping temporary variables.
   String runBlock(List<String> statements) {

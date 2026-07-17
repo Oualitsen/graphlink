@@ -120,16 +120,16 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
 
   String serializeContextStub(String generatedDir) {
     final dirName = generatedDir.split('/').last;
-    return [
-      "declare module '../$dirName/context.js' {",
-      '  interface GraphLinkContext {',
-      '    // add your typed context fields here, for example:',
-      '    // userId?: string;',
-      '    // roles?: string[];',
-      '  }',
-      '}',
-      '',
-    ].join('\n');
+    final contextInterface = _cg.createInterface(
+      interfaceName: 'GraphLinkContext',
+      fields: [
+        '// add your typed context fields here, for example:',
+        '// userId?: string;',
+        '// roles?: string[];',
+      ],
+      exported: false,
+    );
+    return "declare module '../$dirName/context.js' ${_cg.block([contextInterface])}\n";
   }
 
   // ── typeDefs.ts ───────────────────────────────────────────────────────────

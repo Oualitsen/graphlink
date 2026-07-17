@@ -1,4 +1,5 @@
 import 'package:graphlink/src/capture_errors_utils.dart';
+import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_type.dart';
@@ -137,20 +138,22 @@ class TypeScriptClientOperationSerializer {
     final cacheHitReturn = 'return ${_fromJson(cacheHitValue, returnTypeName)};';
     final cacheHitNext = 'subscriber.next(${_fromJson(cacheHitValue, returnTypeName)});';
 
+    final cacheEntryHandler = _cg.block([
+      'if (!entry) return;',
+      "if (entry.stale) $svStaleData[pq.elementKey] = JSON.parse(entry.data);",
+      "else $svResponseMap[pq.elementKey] = JSON.parse(entry.data);",
+    ]);
+    final cacheFuturesChain = [
+      '.filter(pq => pq.ttl > 0)',
+      '.map(pq => this._getFromCache(pq.cacheKey!, pq.tags, pq.staleIfOffline).then(entry => $cacheEntryHandler).catch(() => {}));',
+    ].join('\n').ident();
+
     final innerStatements = [
       _generateVariables(def),
-      'const $svPartialQueries = [',
-      ...dividedQueries.map((dq) => '  ${_serializePartialQuery(dq, hasFrags)},'),
-      '];',
+      'const $svPartialQueries = ${_cg.arrayLiteral(dividedQueries.map((dq) => _serializePartialQuery(dq, hasFrags)).toList())};',
       'const $svResponseMap: Record<string, unknown> = {};',
       'const $svStaleData: Record<string, unknown> = {};',
-      'const $svCacheFutures = $svPartialQueries',
-      '  .filter(pq => pq.ttl > 0)',
-      '  .map(pq => this._getFromCache(pq.cacheKey!, pq.tags, pq.staleIfOffline).then(entry => {',
-      '    if (!entry) return;',
-      '    if (entry.stale) $svStaleData[pq.elementKey] = JSON.parse(entry.data);',
-      '    else $svResponseMap[pq.elementKey] = JSON.parse(entry.data);',
-      '  }).catch(() => {}));',
+      'const $svCacheFutures = $svPartialQueries\n$cacheFuturesChain',
       'await Promise.all($svCacheFutures);',
       'const $svRemaining = $svPartialQueries.filter(pq => !(pq.elementKey in $svResponseMap));',
       _cg.ifStatement(
