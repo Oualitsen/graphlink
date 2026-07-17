@@ -131,21 +131,21 @@ class KotlinClientSerializer extends GLClientSerializer {
     if (!hasSubs) {
       return [
         '',
-        'companion object {',
-        '    fun create(url: String, encoder: GraphLinkJsonEncoder, decoder: GraphLinkJsonDecoder): $kotlinClientName ${callArgs('DefaultGraphLinkClientAdapter(url)', '')}',
-        '    fun create(url: String, headersProvider: () -> Map<String, String>, encoder: GraphLinkJsonEncoder, decoder: GraphLinkJsonDecoder): $kotlinClientName ${callArgs('DefaultGraphLinkClientAdapter(url, headersProvider)', '')}',
-        '    fun create(url: String): $kotlinClientName = create(url, $codec, $codec)',
-        '}',
+        codeGenUtils.companionObject([
+          'fun create(url: String, encoder: GraphLinkJsonEncoder, decoder: GraphLinkJsonDecoder): $kotlinClientName ${callArgs('DefaultGraphLinkClientAdapter(url)', '')}',
+          'fun create(url: String, headersProvider: () -> Map<String, String>, encoder: GraphLinkJsonEncoder, decoder: GraphLinkJsonDecoder): $kotlinClientName ${callArgs('DefaultGraphLinkClientAdapter(url, headersProvider)', '')}',
+          'fun create(url: String): $kotlinClientName = create(url, $codec, $codec)',
+        ]),
       ];
     }
 
     return [
       '',
-      'companion object {',
-      '    fun create(url: String, wsUrl: String, encoder: GraphLinkJsonEncoder, decoder: GraphLinkJsonDecoder): $kotlinClientName ${callArgs('DefaultGraphLinkClientAdapter(url)', 'DefaultGraphLinkWebSocketAdapter(wsUrl)')}',
-      '    fun create(url: String, wsUrl: String, headersProvider: () -> Map<String, String>, encoder: GraphLinkJsonEncoder, decoder: GraphLinkJsonDecoder): $kotlinClientName ${callArgs('DefaultGraphLinkClientAdapter(url, headersProvider)', 'DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider)')}',
-      '    fun create(url: String): $kotlinClientName { val ws = url.replaceFirst("http", "ws"); return create(url, ws, $codec, $codec) }',
-      '}',
+      codeGenUtils.companionObject([
+        'fun create(url: String, wsUrl: String, encoder: GraphLinkJsonEncoder, decoder: GraphLinkJsonDecoder): $kotlinClientName ${callArgs('DefaultGraphLinkClientAdapter(url)', 'DefaultGraphLinkWebSocketAdapter(wsUrl)')}',
+        'fun create(url: String, wsUrl: String, headersProvider: () -> Map<String, String>, encoder: GraphLinkJsonEncoder, decoder: GraphLinkJsonDecoder): $kotlinClientName ${callArgs('DefaultGraphLinkClientAdapter(url, headersProvider)', 'DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider)')}',
+        'fun create(url: String): $kotlinClientName { val ws = url.replaceFirst("http", "ws"); return create(url, ws, $codec, $codec) }',
+      ]),
     ];
   }
 

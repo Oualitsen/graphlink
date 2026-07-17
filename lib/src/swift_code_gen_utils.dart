@@ -201,12 +201,12 @@ class SwiftCodeGenUtils implements CodeGenUtilsBase {
     List<String>? assignments,
   }) {
     final buffer = StringBuffer();
-    buffer.write('public init(\n');
-    for (var i = 0; i < params.length; i++) {
-      final comma = i == params.length - 1 ? '' : ',';
-      buffer.write('    ${params[i]}$comma\n');
+    if (params.isEmpty) {
+      buffer.write('public init() ');
+    } else {
+      final paramsStr = params.join(',\n').ident();
+      buffer.write('public init(\n$paramsStr\n) ');
     }
-    buffer.write(') ');
     buffer.write(block(assignments ?? const []));
     return buffer.toString();
   }

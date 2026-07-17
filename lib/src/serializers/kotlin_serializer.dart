@@ -404,8 +404,8 @@ class KotlinSerializer extends GLSerializer {
     final entries = [
       if (typeName != null) '"__typename" to "$typeName"',
       ...fields.map((f) => '"${f.name}" to ${_fieldToJsonExpr(f, f.type, f.codeName, 0)}'),
-    ].join(',\n        ');
-    return 'fun toJson(): $_mapType = mapOf(\n        $entries,\n    )';
+    ];
+    return 'fun toJson(): $_mapType = ${codeGenUtils.constructorCall('mapOf', entries)}';
   }
 
   /// Public entry point for building the domain→wire JSON conversion of a
@@ -432,10 +432,10 @@ class KotlinSerializer extends GLSerializer {
   // ── fromJson ─────────────────────────────────────────────────────────────────
 
   String _generateFromJson(List<GLField> fields, String token, GLToken context) {
-    final assignments = fields.map((f) {
-      return '    ${f.codeName} = ${_fromJsonExpr(f, f.type, 'map', 0, context)},';
-    }).join('\n');
-    return '@Suppress("UNCHECKED_CAST")\nfun fromJson(map: $_mapType): $token = $token(\n$assignments\n)';
+    final assignments = fields
+        .map((f) => '${f.codeName} = ${_fromJsonExpr(f, f.type, 'map', 0, context)}')
+        .toList();
+    return '@Suppress("UNCHECKED_CAST")\nfun fromJson(map: $_mapType): $token = ${codeGenUtils.constructorCall(token, assignments)}';
   }
 
   String _fromJsonExpr(GLField field, GLType type, String mapVar, int depth, GLToken context) {
@@ -557,9 +557,8 @@ class KotlinSerializer extends GLSerializer {
       }
     }
 
-    final argsStr = args.map((a) => '    $a,').join('\n');
     final paramsStr = params.isEmpty ? '' : params.join(', ');
-    return 'fun to${targetType.firstUp}($paramsStr): $targetType = $targetType(\n$argsStr\n)';
+    return 'fun to${targetType.firstUp}($paramsStr): $targetType = ${codeGenUtils.constructorCall(targetType, args)}';
   }
 
   @override
@@ -607,8 +606,7 @@ class KotlinSerializer extends GLSerializer {
       ...inputOnlyParams,
     ].join(', ');
 
-    final argsStr = args.map((a) => '    $a,').join('\n');
-    return 'fun from${targetType.firstUp}($allParams): ${def.codeName} = ${def.codeName}(\n$argsStr\n)';
+    return 'fun from${targetType.firstUp}($allParams): ${def.codeName} = ${codeGenUtils.constructorCall(def.codeName, args)}';
   }
 
   String _toMappingExpr(String variable, GLType sourceType, GLType targetType, int index, GLToken context) {
