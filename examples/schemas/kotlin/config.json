@@ -1,6 +1,6 @@
 {
     "schemaPaths": [
-        "../anilist.graphql"
+        "../shopify_customer.graphql"
     ],
     "mode": "client",
     "unknownScalarType": "String",

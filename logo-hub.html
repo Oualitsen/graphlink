@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GraphLink Logo — Hub Refinements</title>
+<style>
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0d1117;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  .grid {
+    display: flex;
+    gap: 48px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 48px;
+    align-items: flex-end;
+  }
+  .variant {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+  .variant svg {
+    width: 200px;
+    height: 200px;
+  }
+  .variant.lg svg { width: 280px; height: 280px; }
+  .variant.sm svg { width: 80px; height: 80px; }
+  .variant span {
+    color: #8b949e;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+  }
+  .variant.pick span { color: #58a6ff; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="grid">
+
+  <!-- A: Clean 6-spoke -->
+  <div class="variant pick lg">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="32" cy="32" r="6" fill="#58a6ff"/>
+      <circle cx="32" cy="8" r="4" stroke="#58a6ff" stroke-width="2.5"/>
+      <circle cx="53" cy="20" r="4" stroke="#58a6ff" stroke-width="2.5"/>
+      <circle cx="53" cy="44" r="4" stroke="#58a6ff" stroke-width="2.5"/>
+      <circle cx="32" cy="56" r="4" stroke="#58a6ff" stroke-width="2.5"/>
+      <circle cx="11" cy="44" r="4" stroke="#58a6ff" stroke-width="2.5"/>
+      <circle cx="11" cy="20" r="4" stroke="#58a6ff" stroke-width="2.5"/>
+      <line x1="35.5" y1="27.5" x2="33.5" y2="11.5" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="38" y1="34" x2="49.5" y2="22" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="38" y1="30" x2="49.5" y2="42" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="35.5" y1="36.5" x2="33.5" y2="52.5" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="26" y1="30" x2="14.5" y2="42" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="26" y1="34" x2="14.5" y2="22" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    <span>A — 6-spoke</span>
+  </div>
+
+  <!-- B: Tight 4-spoke -->
+  <div class="variant">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="32" cy="32" r="5.5" fill="#58a6ff"/>
+      <circle cx="32" cy="9" r="4" stroke="#58a6ff" stroke-width="2.5"/>
+      <circle cx="55" cy="32" r="4" stroke="#58a6ff" stroke-width="2.5"/>
+      <circle cx="32" cy="55" r="4" stroke="#58a6ff" stroke-width="2.5"/>
+      <circle cx="9" cy="32" r="4" stroke="#58a6ff" stroke-width="2.5"/>
+      <line x1="32" y1="26.5" x2="32" y2="13" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="37.5" y1="32" x2="51" y2="32" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="32" y1="37.5" x2="32" y2="51" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="26.5" y1="32" x2="13" y2="32" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    <span>B — 4-spoke</span>
+  </div>
+
+  <!-- C: 8-spoke with weight contrast -->
+  <div class="variant">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="32" cy="32" r="5.5" fill="#58a6ff"/>
+      <!-- cardinal (thick) -->
+      <circle cx="32" cy="7" r="4" stroke="#58a6ff" stroke-width="2.5"/>
+      <circle cx="57" cy="32" r="4" stroke="#58a6ff" stroke-width="2.5"/>
+      <circle cx="32" cy="57" r="4" stroke="#58a6ff" stroke-width="2.5"/>
+      <circle cx="7" cy="32" r="4" stroke="#58a6ff" stroke-width="2.5"/>
+      <!-- diagonal (thin) -->
+      <circle cx="50" cy="14" r="2.5" stroke="#58a6ff" stroke-width="1.5" opacity="0.5"/>
+      <circle cx="50" cy="50" r="2.5" stroke="#58a6ff" stroke-width="1.5" opacity="0.5"/>
+      <circle cx="14" cy="50" r="2.5" stroke="#58a6ff" stroke-width="1.5" opacity="0.5"/>
+      <circle cx="14" cy="14" r="2.5" stroke="#58a6ff" stroke-width="1.5" opacity="0.5"/>
+      <!-- cardinal lines -->
+      <line x1="32" y1="26.5" x2="32" y2="11" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="37.5" y1="32" x2="53" y2="32" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="32" y1="37.5" x2="32" y2="53" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="26.5" y1="32" x2="11" y2="32" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+      <!-- diagonal lines -->
+      <line x1="36.5" y1="27.5" x2="48" y2="16" stroke="#58a6ff" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+      <line x1="36.5" y1="36.5" x2="48" y2="48" stroke="#58a6ff" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+      <line x1="27.5" y1="36.5" x2="16" y2="48" stroke="#58a6ff" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+      <line x1="27.5" y1="27.5" x2="16" y2="16" stroke="#58a6ff" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+    </svg>
+    <span>C — 8-spoke weighted</span>
+  </div>
+
+  <!-- D: Filled outer nodes -->
+  <div class="variant">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="32" cy="32" r="5.5" fill="#58a6ff"/>
+      <circle cx="32" cy="8" r="4" fill="#58a6ff" opacity="0.35"/>
+      <circle cx="54" cy="32" r="4" fill="#58a6ff" opacity="0.35"/>
+      <circle cx="32" cy="56" r="4" fill="#58a6ff" opacity="0.35"/>
+      <circle cx="10" cy="32" r="4" fill="#58a6ff" opacity="0.35"/>
+      <line x1="32" y1="26.5" x2="32" y2="12" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="37.5" y1="32" x2="50" y2="32" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="32" y1="37.5" x2="32" y2="52" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="26.5" y1="32" x2="14" y2="32" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    <span>D — filled outer</span>
+  </div>
+
+  <!-- A at small scale -->
+  <div class="variant sm">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="32" cy="32" r="6" fill="#58a6ff"/>
+      <circle cx="32" cy="8" r="4" stroke="#58a6ff" stroke-width="2.5"/>
+      <circle cx="53" cy="20" r="4" stroke="#58a6ff" stroke-width="2.5"/>
+      <circle cx="53" cy="44" r="4" stroke="#58a6ff" stroke-width="2.5"/>
+      <circle cx="32" cy="56" r="4" stroke="#58a6ff" stroke-width="2.5"/>
+      <circle cx="11" cy="44" r="4" stroke="#58a6ff" stroke-width="2.5"/>
+      <circle cx="11" cy="20" r="4" stroke="#58a6ff" stroke-width="2.5"/>
+      <line x1="35.5" y1="27.5" x2="33.5" y2="11.5" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="38" y1="34" x2="49.5" y2="22" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="38" y1="30" x2="49.5" y2="42" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="35.5" y1="36.5" x2="33.5" y2="52.5" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="26" y1="30" x2="14.5" y2="42" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="26" y1="34" x2="14.5" y2="22" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    <span>A at 32px</span>
+  </div>
+
+  <!-- A with wordmark mockup -->
+  <div class="variant" style="flex-basis: 100%; margin-top: 32px;">
+    <svg viewBox="0 0 300 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- hub mark -->
+      <circle cx="30" cy="30" r="5" fill="#58a6ff"/>
+      <circle cx="30" cy="10" r="3.2" stroke="#58a6ff" stroke-width="2"/>
+      <circle cx="47" cy="20" r="3.2" stroke="#58a6ff" stroke-width="2"/>
+      <circle cx="47" cy="40" r="3.2" stroke="#58a6ff" stroke-width="2"/>
+      <circle cx="30" cy="50" r="3.2" stroke="#58a6ff" stroke-width="2"/>
+      <circle cx="13" cy="40" r="3.2" stroke="#58a6ff" stroke-width="2"/>
+      <circle cx="13" cy="20" r="3.2" stroke="#58a6ff" stroke-width="2"/>
+      <line x1="32.8" y1="26.5" x2="31.5" y2="12.5" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <line x1="34.5" y1="31.5" x2="44" y2="22" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <line x1="34.5" y1="28.5" x2="44" y2="38" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <line x1="32.8" y1="33.5" x2="31.5" y2="47.5" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <line x1="25.5" y1="28.5" x2="16" y2="38" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <line x1="25.5" y1="31.5" x2="16" y2="22" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <!-- wordmark -->
+      <text x="72" y="40" fill="#e6edf3" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="700" letter-spacing="-0.5">GraphLink</text>
+    </svg>
+    <span>mark + wordmark</span>
+  </div>
+
+</div>
+</body>
+</html>

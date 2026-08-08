@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GraphLink Logo</title>
+<style>
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0d1117;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  .grid {
+    display: flex;
+    gap: 64px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 48px;
+  }
+  .variant {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+  .variant svg {
+    width: 160px;
+    height: 160px;
+  }
+  .variant span {
+    color: #8b949e;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+  }
+</style>
+</head>
+<body>
+<div class="grid">
+
+  <div class="variant">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Three interconnected nodes: a graph -->
+      <circle cx="14" cy="20" r="4.5" stroke="#58a6ff" stroke-width="2"/>
+      <circle cx="44" cy="20" r="4.5" stroke="#58a6ff" stroke-width="2"/>
+      <circle cx="29" cy="44" r="4.5" stroke="#58a6ff" stroke-width="2"/>
+      <line x1="18" y1="22" x2="40" y2="22" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <line x1="15.8" y1="23.8" x2="27" y2="40" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <line x1="42.2" y1="23.8" x2="31" y2="40" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <span>graph</span>
+  </div>
+
+  <div class="variant">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Hexagonal network -->
+      <polygon points="32,8 52,19 52,41 32,52 12,41 12,19" stroke="#58a6ff" stroke-width="2" stroke-linejoin="round"/>
+      <circle cx="32" cy="8" r="3.5" fill="#0d1117" stroke="#58a6ff" stroke-width="2"/>
+      <circle cx="52" cy="19" r="3.5" fill="#0d1117" stroke="#58a6ff" stroke-width="2"/>
+      <circle cx="52" cy="41" r="3.5" fill="#0d1117" stroke="#58a6ff" stroke-width="2"/>
+      <circle cx="32" cy="52" r="3.5" fill="#0d1117" stroke="#58a6ff" stroke-width="2"/>
+      <circle cx="12" cy="41" r="3.5" fill="#0d1117" stroke="#58a6ff" stroke-width="2"/>
+      <circle cx="12" cy="19" r="3.5" fill="#0d1117" stroke="#58a6ff" stroke-width="2"/>
+      <circle cx="32" cy="30" r="3.5" fill="#0d1117" stroke="#58a6ff" stroke-width="2"/>
+      <line x1="35" y1="10" x2="48.5" y2="18" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <line x1="33" y1="33" x2="33" y2="48.5" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <line x1="28.5" y1="32" x2="15.5" y2="39.5" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <span>mesh</span>
+  </div>
+
+  <div class="variant">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Diamond link -->
+      <polygon points="32,4 60,32 32,60 4,32" stroke="#58a6ff" stroke-width="2" stroke-linejoin="round"/>
+      <polygon points="32,16 48,32 32,48 16,32" stroke="#58a6ff" stroke-width="2" stroke-linejoin="round"/>
+      <circle cx="32" cy="4" r="2.5" fill="#58a6ff"/>
+      <circle cx="60" cy="32" r="2.5" fill="#58a6ff"/>
+      <circle cx="32" cy="60" r="2.5" fill="#58a6ff"/>
+      <circle cx="4" cy="32" r="2.5" fill="#58a6ff"/>
+      <circle cx="32" cy="16" r="2.5" fill="#58a6ff"/>
+      <circle cx="48" cy="32" r="2.5" fill="#58a6ff"/>
+      <circle cx="32" cy="48" r="2.5" fill="#58a6ff"/>
+      <circle cx="16" cy="32" r="2.5" fill="#58a6ff"/>
+    </svg>
+    <span>diamond</span>
+  </div>
+
+  <div class="variant">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Interlocking G L shapes made of nodes+edges -->
+      <circle cx="16" cy="10" r="3" fill="#58a6ff"/>
+      <circle cx="37" cy="10" r="3" fill="#58a6ff"/>
+      <circle cx="16" cy="32" r="3" fill="#58a6ff"/>
+      <circle cx="37" cy="32" r="3" fill="#58a6ff"/>
+      <circle cx="16" cy="54" r="3" fill="#58a6ff"/>
+      <circle cx="37" cy="54" r="3" fill="#58a6ff"/>
+      <!-- G top bar -->
+      <line x1="16" y1="10" x2="37" y2="10" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <!-- G left bar -->
+      <line x1="16" y1="10" x2="16" y2="54" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <!-- G bottom bar -->
+      <line x1="16" y1="54" x2="37" y2="54" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <!-- L right bar -->
+      <line x1="37" y1="10" x2="37" y2="54" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <!-- diagonal link from G to L -->
+      <line x1="19" y1="29" x2="34" y2="13" stroke="#58a6ff" stroke-width="2" stroke-linecap="round" stroke-dasharray="3 2"/>
+    </svg>
+    <span>GL typographic</span>
+  </div>
+
+  <div class="variant">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Abstract G made of graph edges -->
+      <path d="M20 12 h20 a8 8 0 0 1 0 16 h-12 a4 4 0 0 0 0 8 h16" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <circle cx="20" cy="12" r="2.5" fill="#58a6ff"/>
+      <circle cx="40" cy="12" r="2.5" fill="#58a6ff"/>
+      <circle cx="40" cy="28" r="2.5" fill="#58a6ff"/>
+      <circle cx="24" cy="36" r="2.5" fill="#58a6ff"/>
+      <circle cx="40" cy="44" r="2.5" fill="#58a6ff"/>
+      <circle cx="24" cy="28" r="2.5" fill="#58a6ff" opacity="0.35"/>
+    </svg>
+    <span>G-path</span>
+  </div>
+
+  <div class="variant">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Interlocking chain links -->
+      <rect x="10" y="22" width="24" height="20" rx="10" stroke="#58a6ff" stroke-width="2.5"/>
+      <rect x="30" y="22" width="24" height="20" rx="10" stroke="#58a6ff" stroke-width="2.5"/>
+      <circle cx="22" cy="32" r="2" fill="#58a6ff"/>
+      <circle cx="42" cy="32" r="2" fill="#58a6ff"/>
+    </svg>
+    <span>links</span>
+  </div>
+
+  <div class="variant">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Hub and spoke -->
+      <circle cx="32" cy="32" r="5" fill="#58a6ff"/>
+      <circle cx="32" cy="10" r="3.5" stroke="#58a6ff" stroke-width="2"/>
+      <circle cx="54" cy="32" r="3.5" stroke="#58a6ff" stroke-width="2"/>
+      <circle cx="32" cy="54" r="3.5" stroke="#58a6ff" stroke-width="2"/>
+      <circle cx="10" cy="32" r="3.5" stroke="#58a6ff" stroke-width="2"/>
+      <line x1="32" y1="27" x2="32" y2="13.5" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <line x1="37" y1="32" x2="50.5" y2="32" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <line x1="32" y1="37" x2="32" y2="50.5" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <line x1="27" y1="32" x2="13.5" y2="32" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <!-- diagonal spokes -->
+      <line x1="36.5" y1="27.5" x2="50" y2="14" stroke="#58a6ff" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+      <line x1="36.5" y1="36.5" x2="50" y2="50" stroke="#58a6ff" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+      <line x1="27.5" y1="36.5" x2="14" y2="50" stroke="#58a6ff" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+      <line x1="27.5" y1="27.5" x2="14" y2="14" stroke="#58a6ff" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+    </svg>
+    <span>hub</span>
+  </div>
+
+  <div class="variant">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Directed acyclic graph / tree -->
+      <circle cx="32" cy="8" r="3.5" fill="#58a6ff"/>
+      <circle cx="16" cy="28" r="3.5" stroke="#58a6ff" stroke-width="2"/>
+      <circle cx="48" cy="28" r="3.5" stroke="#58a6ff" stroke-width="2"/>
+      <circle cx="8" cy="48" r="3.5" stroke="#58a6ff" stroke-width="2"/>
+      <circle cx="24" cy="48" r="3.5" stroke="#58a6ff" stroke-width="2"/>
+      <circle cx="56" cy="48" r="3.5" stroke="#58a6ff" stroke-width="2"/>
+      <line x1="30" y1="11" x2="17.5" y2="25" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <line x1="34" y1="11" x2="46.5" y2="25" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <line x1="14.5" y1="31" x2="9.5" y2="45" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <line x1="17.5" y1="31" x2="22.5" y2="45" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <line x1="46.5" y1="31" x2="54.5" y2="45" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <span>tree</span>
+  </div>
+
+  <div class="variant">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Concentric pulse rings -->
+      <circle cx="32" cy="32" r="4.5" fill="#58a6ff"/>
+      <circle cx="32" cy="32" r="12" stroke="#58a6ff" stroke-width="2"/>
+      <circle cx="32" cy="32" r="22" stroke="#58a6ff" stroke-width="1.5" opacity="0.6"/>
+      <circle cx="32" cy="32" r="30" stroke="#58a6ff" stroke-width="1" opacity="0.3"/>
+      <!-- nodes on rings -->
+      <circle cx="44" cy="32" r="2" fill="#58a6ff"/>
+      <circle cx="32" cy="20" r="2" fill="#58a6ff"/>
+      <circle cx="20" cy="32" r="2" fill="#58a6ff"/>
+      <circle cx="32" cy="54" r="2" fill="#58a6ff"/>
+      <line x1="32" y1="27.5" x2="32" y2="22" stroke="#58a6ff" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="36.5" y1="32" x2="42" y2="32" stroke="#58a6ff" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <span>pulse</span>
+  </div>
+
+  <div class="variant">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Braided strands -->
+      <path d="M8 16 Q20 32 8 48" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <path d="M32 16 Q20 32 32 48" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <path d="M56 16 Q44 32 56 48" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <circle cx="8" cy="16" r="3" fill="#58a6ff"/>
+      <circle cx="32" cy="16" r="3" fill="#58a6ff"/>
+      <circle cx="56" cy="16" r="3" fill="#58a6ff"/>
+      <circle cx="8" cy="48" r="3" fill="#58a6ff"/>
+      <circle cx="32" cy="48" r="3" fill="#58a6ff"/>
+      <circle cx="56" cy="48" r="3" fill="#58a6ff"/>
+    </svg>
+    <span>braid</span>
+  </div>
+
+  <div class="variant">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Isometric cube of nodes -->
+      <polygon points="32,6 54,18 54,42 32,54 10,42 10,18" stroke="#58a6ff" stroke-width="2" stroke-linejoin="round"/>
+      <line x1="32" y1="30" x2="32" y2="54" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <line x1="32" y1="30" x2="54" y2="18" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <line x1="32" y1="30" x2="10" y2="18" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="32" cy="6" r="3" fill="#58a6ff"/>
+      <circle cx="54" cy="18" r="3" fill="#58a6ff"/>
+      <circle cx="54" cy="42" r="3" fill="#58a6ff"/>
+      <circle cx="32" cy="54" r="3" fill="#58a6ff"/>
+      <circle cx="10" cy="42" r="3" fill="#58a6ff"/>
+      <circle cx="10" cy="18" r="3" fill="#58a6ff"/>
+      <circle cx="32" cy="30" r="3" fill="#58a6ff"/>
+    </svg>
+    <span>cube</span>
+  </div>
+
+  <div class="variant">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Layered chevrons -->
+      <polyline points="12,24 32,12 52,24" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <polyline points="12,36 32,24 52,36" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <polyline points="12,48 32,36 52,48" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <circle cx="32" cy="12" r="2.5" fill="#58a6ff"/>
+      <circle cx="12" cy="24" r="2.5" fill="#58a6ff"/>
+      <circle cx="52" cy="24" r="2.5" fill="#58a6ff"/>
+      <circle cx="12" cy="48" r="2.5" fill="#58a6ff"/>
+      <circle cx="52" cy="48" r="2.5" fill="#58a6ff"/>
+    </svg>
+    <span>chevron</span>
+  </div>
+
+  <div class="variant">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Orbiting nodes -->
+      <ellipse cx="32" cy="32" rx="28" ry="12" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="4 3" transform="rotate(-30 32 32)"/>
+      <ellipse cx="32" cy="32" rx="28" ry="12" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="4 3" transform="rotate(30 32 32)"/>
+      <ellipse cx="32" cy="32" rx="28" ry="12" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="4 3" transform="rotate(90 32 32)"/>
+      <circle cx="32" cy="32" r="4" fill="#58a6ff"/>
+      <circle cx="56" cy="18" r="2.5" fill="#58a6ff"/>
+      <circle cx="8" cy="46" r="2.5" fill="#58a6ff"/>
+      <circle cx="20" cy="10" r="2.5" fill="#58a6ff"/>
+    </svg>
+    <span>orbit</span>
+  </div>
+
+  <div class="variant">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Geometric abstract G -->
+      <path d="M46 10 H22 V32 A14 14 0 0 0 36 46 H46" stroke="#58a6ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <circle cx="22" cy="10" r="3" fill="#58a6ff"/>
+      <circle cx="46" cy="10" r="3" fill="#58a6ff"/>
+      <circle cx="22" cy="32" r="3" fill="#58a6ff"/>
+      <circle cx="46" cy="46" r="3" fill="#58a6ff"/>
+    </svg>
+    <span>G-geo</span>
+  </div>
+
+  <div class="variant">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Stacked bars with vertical drops (data pipeline) -->
+      <rect x="8" y="10" width="48" height="8" rx="2" stroke="#58a6ff" stroke-width="2"/>
+      <rect x="16" y="28" width="40" height="8" rx="2" stroke="#58a6ff" stroke-width="2"/>
+      <rect x="24" y="46" width="32" height="8" rx="2" stroke="#58a6ff" stroke-width="2"/>
+      <line x1="20" y1="18" x2="24" y2="28" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <line x1="48" y1="18" x2="44" y2="28" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <line x1="32" y1="36" x2="36" y2="46" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="32" cy="10" r="2" fill="#58a6ff"/>
+      <circle cx="48" cy="28" r="2" fill="#58a6ff"/>
+      <circle cx="40" cy="46" r="2" fill="#58a6ff"/>
+    </svg>
+    <span>pipeline</span>
+  </div>
+
+  <div class="variant">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Two intersecting triangles (bowtie/graph) -->
+      <polygon points="32,6 54,32 32,58" stroke="#58a6ff" stroke-width="2" stroke-linejoin="round" fill="none"/>
+      <polygon points="32,6 10,32 32,58" stroke="#58a6ff" stroke-width="2" stroke-linejoin="round" fill="none"/>
+      <circle cx="32" cy="6" r="3" fill="#58a6ff"/>
+      <circle cx="54" cy="32" r="3" fill="#58a6ff"/>
+      <circle cx="32" cy="58" r="3" fill="#58a6ff"/>
+      <circle cx="10" cy="32" r="3" fill="#58a6ff"/>
+      <circle cx="32" cy="32" r="3" fill="#58a6ff" opacity="0.4"/>
+    </svg>
+    <span>bowtie</span>
+  </div>
+
+  <div class="variant">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Minimal mark: GL as a single continuous folded line -->
+      <path d="M14 12 h20 v28 h-20 v-28" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <path d="M34 12 v40" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <circle cx="14" cy="12" r="2.5" fill="#58a6ff"/>
+      <circle cx="34" cy="12" r="2.5" fill="#58a6ff"/>
+      <circle cx="14" cy="40" r="2.5" fill="#58a6ff"/>
+      <circle cx="34" cy="52" r="2.5" fill="#58a6ff"/>
+    </svg>
+    <span>GL-fold</span>
+  </div>
+
+</div>
+</body>
+</html>
