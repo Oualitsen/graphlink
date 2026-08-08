@@ -154,6 +154,47 @@ This page provides ready-to-use instruction files for common setups.
 
 ---
 
+## Swift client project
+
+=== "AGENTS.md / CLAUDE.md"
+
+    ```markdown
+    ## Code generation — GraphLink
+
+    This project uses [GraphLink](https://graphlink.dev) (`glink`) to generate
+    Swift client code from a GraphQL schema.
+
+    - **Schema**: `schema/*.graphql` (or wherever your .graphql files are)
+    - **Config**: `glink.json` (or `glink.yaml`) at the project root
+    - **Generated files**: `Sources/GraphLinkGenerated/` — DO NOT edit these manually
+
+    To regenerate after any schema change:
+    ```bash
+    glink -c glink.json
+    # or with watch mode:
+    glink -c glink.json -w
+    ```
+
+    ### Rules
+    - To add a field, type, query, or mutation: edit the `.graphql` schema file, then run `glink`.
+    - Never edit files inside `Sources/GraphLinkGenerated/` — they will be overwritten on next run.
+    - `GraphLinkClient` is the entry point. Queries are on `client.queries`, mutations on
+      `client.mutations`, subscriptions on `client.subscriptions`.
+    - All query, mutation, and subscription methods are `async throws` — call them from an `async` context.
+    - Subscription methods return an `AsyncThrowingStream<T, Error>` — iterate with `for try await`.
+    - Generated types and inputs are `Sendable` structs with a memberwise `init` — construct them
+      directly, no builder needed.
+    - Nullable input fields default to `nil` in `init` — only pass the fields you need.
+    - Enums and types are in `Enums/` and `Types/` with `toJson()` / `fromJson()` — use them directly,
+      do not re-serialize.
+
+    ### Caching
+    Cache behaviour is declared in the schema via `@glCache` and `@glCacheInvalidate` directives.
+    Do not implement caching in application code — add or modify the directive in the schema instead.
+    ```
+
+---
+
 ## Spring Boot server project
 
 === "AGENTS.md / CLAUDE.md"

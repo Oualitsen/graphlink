@@ -1,6 +1,6 @@
 ---
-title: GraphLink — GraphQL Code Generation for Dart, Java, TypeScript & Kotlin
-description: GraphLink compiles your .graphql schema into fully typed clients and server code for Dart, Flutter, Java, TypeScript, Kotlin, Spring Boot, and Express/Apollo. No runtime. No boilerplate. No schema drift.
+title: GraphLink — GraphQL Code Generation for Dart, Java, TypeScript, Kotlin & Swift
+description: GraphLink compiles your .graphql schema into fully typed clients and server code for Dart, Flutter, Java, TypeScript, Kotlin, Swift, Spring Boot, and Express/Apollo. No runtime. No boilerplate. No schema drift.
 ---
 
 # GraphLink
@@ -14,7 +14,7 @@ GraphLink is the only generator that treats your `.graphql` file as the *actual*
 
 </div>
 
-> Your `.graphql` schema compiles to a fully typed client and server — for Dart, Flutter, Java, TypeScript, Kotlin, Spring Boot, and Express/Apollo — in milliseconds.
+> Your `.graphql` schema compiles to a fully typed client and server — for Dart, Flutter, Java, TypeScript, Kotlin, Swift, Spring Boot, and Express/Apollo — in milliseconds.
 
 [![pub.dev](https://img.shields.io/pub/v/graphlink?label=pub.dev)](https://pub.dev/packages/graphlink)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Oualitsen/graphlink/blob/main/LICENSE)
@@ -341,7 +341,7 @@ You implement the business logic. GraphLink handles the plumbing.
 
 ### 4. Generated code you own completely
 
-The output is ordinary Dart, Java, TypeScript, or Kotlin — no runtime dependency on GraphLink whatsoever. Stop using it tomorrow and everything keeps compiling. Commit the output to your repo, vendor it, ship it. It's just code.
+The output is ordinary Dart, Java, TypeScript, Kotlin, or Swift — no runtime dependency on GraphLink whatsoever. Stop using it tomorrow and everything keeps compiling. Commit the output to your repo, vendor it, ship it. It's just code.
 
 ---
 
@@ -363,7 +363,7 @@ Every generated file compiles, ships, and runs with zero runtime dependency on G
 
 ## Supported targets
 
-**Stable:** Dart · Flutter · Java · Spring Boot · TypeScript · Kotlin · Express / Apollo
+**Stable:** Dart · Flutter · Java · Spring Boot · TypeScript · Kotlin · Swift · Express / Apollo
 
 **Planned:** Go
 
@@ -572,8 +572,8 @@ glink -w    # watch mode — regenerate on every save
 ??? "Does the generated code have a runtime dependency on GraphLink?"
 
     None. If you stop using GraphLink tomorrow, every generated file continues to compile
-    and work exactly as before. The output is ordinary Dart, Java, TypeScript, or Kotlin —
-    you own it completely.
+    and work exactly as before. The output is ordinary Dart, Java, TypeScript, Kotlin, or
+    Swift — you own it completely.
 
 ??? "What happens when I add a field to the schema?"
 
@@ -621,6 +621,7 @@ glink -w    # watch mode — regenerate on every save
 - **[Java Client](java-client.md)** — No generics. No casting. Builder pattern on all inputs.
 - **[TypeScript Client](typescript-client.md)** — Typed client for Angular, React, Vue, and Node.
 - **[Kotlin Client](kotlin-client.md)** — Coroutine-based client with data classes and kotlinx.serialization.
+- **[Swift Client](swift-client.md)** — async/await client with Sendable structs, no third-party dependency.
 - **[Spring Boot](spring-server.md)** — Generated controllers, service interfaces, types, inputs.
 - **[Express / Apollo](express-apollo.md)** — Generated resolvers, service interfaces, DataLoader batch mappings.
 - **[Caching](caching.md)** — `@glCache` and `@glCacheInvalidate`. Tag-based invalidation.

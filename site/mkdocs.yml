@@ -1,6 +1,6 @@
 site_name: GraphLink Docs
 site_url: https://graphlink.dev
-site_description: GraphQL code generation for Dart, Flutter, Java, TypeScript, and Spring Boot.
+site_description: GraphQL code generation for Dart, Flutter, Java, TypeScript, Kotlin, Swift, and Spring Boot.
 site_author: GraphLink
 repo_url: https://github.com/Oualitsen/graphlink
 repo_name: Oualitsen/graphlink
@@ -64,6 +64,7 @@ nav:
     - Java: java-client.md
     - TypeScript: typescript-client.md
     - Kotlin: kotlin-client.md
+    - Swift: swift-client.md
   - Backend:
     - Spring Boot: spring-server.md
     - Express / Apollo: express-apollo.md

@@ -682,6 +682,7 @@ enum FuelType {
 | Dart | `@Deprecated('Use \`fuelType\` instead')` |
 | Java / Kotlin | `@Deprecated` with the reason in a preceding Javadoc/KDoc `@deprecated` line |
 | TypeScript | `/** @deprecated Use \`fuelType\` instead */` JSDoc comment |
+| Swift | `@available(*, deprecated, message: "Use \`fuelType\` instead")` |
 
 ---
 
