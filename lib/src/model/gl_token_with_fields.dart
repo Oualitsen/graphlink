@@ -47,7 +47,7 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
     if (_fieldMap.containsKey(field.name.token)) {
       var current = _fieldMap[field.name.token]!;
       current.checkMerge(field);
-      field.getDirectives().forEach(current.addDirective);
+      field.getDirectives().forEach(current.addDirectiveIfAbsent);
     } else {
       addField(field);
     }
