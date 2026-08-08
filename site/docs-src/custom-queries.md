@@ -331,7 +331,7 @@ query fetchNode($id: ID!) {
 
 ## Client-side default values (v5.0.0+)
 
-GraphQL `= value` defaults on input fields and on query/mutation arguments are now emitted as real defaults in generated Dart, Java, Kotlin, and TypeScript code — previously they were parsed but silently dropped.
+GraphQL `= value` defaults on input fields and on query/mutation arguments are now emitted as real defaults in generated Dart, Java, Kotlin, and TypeScript code — previously they were parsed but silently dropped. Swift (added in v5.1.0) supports the same behavior.
 
 ```graphql title="Schema with default values"
 input PageInput {

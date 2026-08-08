@@ -510,3 +510,28 @@
 - Fixed `@glServerLenient` being applied after schema mappings instead of before, which could leave mapped fields incorrectly non-nullable.
 - Fixed Express/Apollo generated resolvers to scope DataLoaders per-request instead of sharing them across requests, preventing stale/cross-request cache leaks.
 
+## 5.1.0 - 2026-08-08
+
+### New features
+
+- **Swift client code generation** — new `clientConfig.swift` block in `config.json` generates a fully typed Swift client (types, inputs, enums, interfaces/unions as `struct`/`protocol`, plus the operation-independent and per-operation runtime) with zero third-party dependencies:
+  - `async`/`await` throughout; queries, mutations, and uploads are `async throws`, subscriptions return an `AsyncThrowingStream`
+  - Default WebSocket adapter (`wsAdapter: "urlsession"`, or `"none"` to emit only the adapter typealias) built on `URLSessionWebSocketTask` — no dependency, works on Apple platforms and Linux (swift-corelibs-foundation)
+  - Default multipart upload adapter (`DefaultGraphLinkURLSessionMultipartAdapter`) and a `GLUpload` type for file upload mutations
+  - `actor`-based `InMemoryGraphLinkCacheStore` implementing `GraphLinkCacheStore` for `@glCache`/`@glCacheInvalidate` support, mirroring the Kotlin client's cache shape
+  - `@glCaptureErrors` support (`captureErrors` config option or per-field directive)
+  - `toJson`/`fromJson` generated on every type, input, enum, and interface, matching the mandatory-serialization behavior introduced for the other targets in v5.0.0
+  - `immutableTypeFields` (default `true`), `autoGenerateQueriesFor`, `maxFragmentBodySize`, and `autoGenerateQueriesArgumentLimit` all supported, same as the Kotlin/TypeScript/Java client configs
+  - New `integration_tests/swift_client_tests/` and `swift_client_tests_real/` suites covering caching, cycles, enums, error capture, inputs, lists, nullability, query strings, scalars, subscriptions, and uploads
+
+### Fixes
+
+- Fixed a crash when merging structurally-identical projected interfaces derived from different original interfaces (e.g. two queries each selecting the exact same field subset off a base interface and one of its sub-interfaces) — the merge re-added a directive already present on the shared field and threw "Directive already exists" instead of treating it as a no-op.
+
+### Internal
+
+- Java, Kotlin, TypeScript, and Express/Apollo client/server serializers reworked to build their generated code through the shared `*CodeGenUtils` block builders instead of hand-formatted string templates, for consistency with the new Swift serializer.
+- Removed dead payload-handling code duplicated between the Kotlin and Swift client constants.
+- Refactored the Java client's reactive type wrapper (`JavaReactiveFlavor`) and added a `java_reactive_client` suite to the server integration test matrix.
+- Release workflow now builds each platform artifact (Linux x86_64/arm64, Windows, macOS x86_64/arm64) as an independent job instead of one shared matrix.
+
