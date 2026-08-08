@@ -1,6 +1,6 @@
 {
     "schemaPaths": [
-        "../twitch.graphql"
+        "../shopify_customer.graphql"
     ],
     "mode": "client",
     "unknownScalarType": "string",
