@@ -1,6 +1,6 @@
 ---
 title: Configuration Reference — GraphLink Docs
-description: Complete reference for all GraphLink glink.json / glink.yaml options — schemaPaths, typeMappings, unknownScalarType, outputDir, clientConfig (Dart, Java reactive asyncStyle, TypeScript, Kotlin), serverConfig (Spring Boot, Kotlin Spring), identifier normalization, and CLI flags.
+description: Complete reference for all GraphLink glink.json / glink.yaml options — schemaPaths, typeMappings, unknownScalarType, outputDir, clientConfig (Dart, Java reactive asyncStyle, TypeScript, Kotlin, Swift), serverConfig (Spring Boot, Kotlin Spring), identifier normalization, and CLI flags.
 ---
 
 # Configuration Reference
@@ -444,6 +444,69 @@ Used when `mode` is `"client"` and you want Kotlin output.
 | `operationNameAsParameter` | `boolean` | `false` | When `true`, appends the operation name as a `?operationName=` query parameter in the HTTP request URL. |
 | `captureErrors` | `boolean` | `false` | When `true`, applies `@glCaptureErrors` to every query and mutation. Each method returns a `{OperationName}FullResponse` with `data` and `errors` instead of throwing. |
 | `wsAdapter` | `"okhttp"` \| `"none"` | `"okhttp"` | WebSocket adapter to generate. `"okhttp"` emits `DefaultGraphLinkWebSocketAdapter` using OkHttp; `"none"` emits only the `GraphLinkWebSocketAdapter` interface. |
+| `defaultAlias` | `string?` | `null` | Default alias applied to all generated query fields globally. |
+
+---
+
+## `clientConfig.swift`
+
+Used when `mode` is `"client"` and you want Swift output. See the [Swift Client](swift-client.md) page for a full walkthrough.
+
+=== "JSON"
+
+    ```json title="glink.json — clientConfig.swift"
+    {
+      "clientConfig": {
+        "swift": {
+          "moduleName": "GraphLinkGenerated",
+          "generateAllFieldsFragments": true,
+          "autoGenerateQueries": true,
+          "autoGenerateQueriesFor": null,
+          "autoGenerateQueriesArgumentLimit": 200,
+          "maxFragmentBodySize": 8192,
+          "nullableFieldsRequired": false,
+          "immutableTypeFields": true,
+          "operationNameAsParameter": false,
+          "captureErrors": false,
+          "wsAdapter": "urlsession",
+          "defaultAlias": null
+        }
+      }
+    }
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — clientConfig.swift"
+    clientConfig:
+      swift:
+        moduleName: GraphLinkGenerated
+        generateAllFieldsFragments: true
+        autoGenerateQueries: true
+        autoGenerateQueriesFor: null
+        autoGenerateQueriesArgumentLimit: 200
+        maxFragmentBodySize: 8192
+        nullableFieldsRequired: false
+        immutableTypeFields: true
+        operationNameAsParameter: false
+        captureErrors: false
+        wsAdapter: urlsession
+        defaultAlias: null
+    ```
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `moduleName` | `string` | — | **Required.** Used in doc comments / generated `Package.swift` (if emitted) — generated files have no module declaration of their own. |
+| `generateAllFieldsFragments` | `boolean` | `true` | Generates `_all_fields_TypeName` fragments for every type. Required for `autoGenerateQueries` and `autoGenerateQueriesFor`. |
+| `autoGenerateQueries` | `boolean` | `true` | Automatically builds query strings for every operation using `_all_fields` fragments. |
+| `autoGenerateQueriesFor` | `object` \| `null` | `null` | Generates client methods only for the listed operations. Keys: `queries`, `mutations`, `subscriptions` — each takes a list of root field names. Unknown names cause a build error. Requires `generateAllFieldsFragments: true`. See [Selective auto-generation](custom-queries.md#selective-auto-generation-autogeneratequeriesfor). |
+| `autoGenerateQueriesArgumentLimit` | `integer` \| `null` | `200` | Maximum number of propagated (nested-field) arguments allowed in the synthesized `fieldArgs` object of an auto-generated operation. When exceeded, GraphLink skips the operation and prints a `⚠` warning. Hand-written operations are never affected. See [Argument limit](custom-queries.md#auto-generated-query-argument-limit). |
+| `maxFragmentBodySize` | `integer` \| `null` | `8192` | Maximum number of characters allowed in the serialized body of a generated `_all_fields` fragment. Fragments whose body exceeds this limit are silently omitted, and any auto-generated queries that depend on them are also skipped. Set to `null` to disable the cap. |
+| `nullableFieldsRequired` | `boolean` | `false` | When `true`, nullable initializer parameters have no default — callers must pass them explicitly. |
+| `immutableTypeFields` | `boolean` | `true` | Generate `let` (immutable) fields instead of `var`. |
+| `operationNameAsParameter` | `boolean` | `false` | When `true`, appends the operation name as a `?operationName=` query parameter in the HTTP request URL. |
+| `captureErrors` | `boolean` | `false` | When `true`, applies `@glCaptureErrors` to every query and mutation. Each method returns a `{OperationName}FullResponse` with optional `data` and optional `errors` instead of throwing. |
+| `wsAdapter` | `"urlsession"` \| `"none"` | `"urlsession"` | WebSocket adapter to generate. `"urlsession"` emits `DefaultGraphLinkURLSessionWebSocketAdapter` built on `URLSessionWebSocketTask` (Foundation, no extra dependency); `"none"` emits only the `GraphLinkClientAdapter`/WebSocket typealiases. There is no HTTP-adapter enum for Swift — `URLSession` is part of Foundation on every Apple platform plus Linux, so there's nothing to choose between. |
 | `defaultAlias` | `string?` | `null` | Default alias applied to all generated query fields globally. |
 
 ---

@@ -1,6 +1,6 @@
 # GraphLink
 
-> GraphQL code generation tool for Dart, Flutter, Java, TypeScript, Kotlin, and Spring Boot. Open source. MIT License.
+> GraphQL code generation tool for Dart, Flutter, Java, TypeScript, Kotlin, Swift, and Spring Boot. Open source. MIT License.
 
 GraphLink is a command-line tool (`glink`) that reads a GraphQL schema and generates fully type-safe
 client and server code. Developers define their API once in a `.graphql` schema file and run
@@ -21,6 +21,9 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - **Kotlin client**: typed data classes, input classes, enums, and a coroutine-based GraphQL client
   using `kotlinx.serialization`. Supports queries, mutations, and subscriptions (OkHttp WebSocket
   with auto-reconnect). Works in Android, JVM server projects, and Kotlin Multiplatform.
+- **Swift client**: typed `Sendable` structs, enums, and an async/await GraphQL client with no
+  third-party dependency — `URLSession`/`URLSessionWebSocketTask` (Foundation) for HTTP,
+  subscriptions (with auto-reconnect), and multipart uploads. Works on Apple platforms and Linux.
 - **Spring Boot server (Java or Kotlin)**: controllers, service interfaces, repository stubs, and
   input classes generated from the schema's type definitions and queries. Supports MVC and reactive
   (WebFlux) mode. Strict-by-default nullability; controllers serialize responses to a `Map` via
@@ -50,7 +53,7 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - **Single source of truth.** The schema drives both ends. No duplicate type definitions. No
   schema drift. Adding a field means editing one file.
 - **WebSocket auto-reconnect by default.** Every generated WebSocket adapter reconnects automatically
-  after a network drop, server restart, or idle timeout — Dart, Java, TypeScript, and Kotlin.
+  after a network drop, server restart, or idle timeout — Dart, Java, TypeScript, Kotlin, and Swift.
   Most GraphQL clients generate the subscription method but leave reconnection to the user.
   GraphLink handles the full connection lifecycle, integration-tested across all targets.
 - **Generic pre-resolver interceptor (`@glIntercept`).** Annotate a root field, a `@glSkipOnServer`
@@ -60,11 +63,11 @@ client and server code. Developers define their API once in a `.graphql` schema 
   Express/Apollo.
 - **Inline error handling (`@glCaptureErrors`).** Annotate any query or mutation with
   `@glCaptureErrors` (or set `captureErrors: true` in config) to return a `FullResponse` with
-  `data` and `errors` side by side instead of throwing. Dart, Java, TypeScript, and Kotlin.
+  `data` and `errors` side by side instead of throwing. Dart, Java, TypeScript, Kotlin, and Swift.
 - **Selective auto-generation (`autoGenerateQueriesFor`).** On large schemas, `autoGenerateQueries: true`
   generates a client method for every root field. `autoGenerateQueriesFor` lets you list exactly which
   queries, mutations, and subscriptions to auto-generate. Unknown names cause a build error at generation
-  time. Supported in all four client targets.
+  time. Supported in all five client targets.
 - **Propagated-arg grouping and limit.** Nested field arguments collected during auto-generation are
   grouped into a single `fieldArgs` object parameter so method signatures stay manageable.
   `autoGenerateQueriesArgumentLimit` (default 200) skips any auto-generated operation whose `fieldArgs`
@@ -73,7 +76,7 @@ client and server code. Developers define their API once in a `.graphql` schema 
   a very large schema (e.g. Shopify), individual `_all_fields` fragment bodies can reach 60 KB+, bloating
   the compiled binary and every network request. `maxFragmentBodySize` (default 8192 chars) silently
   skips any fragment whose serialized body exceeds the cap, along with any auto-generated queries that
-  depend on it. Set to `null` to disable. Applies to all four client targets.
+  depend on it. Set to `null` to disable. Applies to all five client targets.
 - **Barrel file generation.** Dart and TypeScript generators emit a barrel/index file that
   re-exports all generated types, inputs, and enums from a single import.
 - **Keyword-safe identifiers.** A GraphQL field, input field, argument, or enum value named after a
@@ -93,7 +96,7 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - **Reactive Java client (`asyncStyle`).** `clientConfig.java.asyncStyle` generates a client
   returning `Mono`/`Single`/`Uni` (Reactor/RxJava3/Mutiny) instead of blocking calls.
 
-## Supported targets (as of v5.0.0)
+## Supported targets (as of v5.1.0)
 
 - Dart client (stable)
 - Flutter client (stable, including UI widget generation)
@@ -101,6 +104,7 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - Spring Boot server (stable, MVC and reactive/WebFlux — Java and Kotlin targets)
 - TypeScript client (stable — fetch/axios, RxJS observables, WebSocket subscriptions)
 - Kotlin client (stable — coroutines, kotlinx.serialization, OkHttp WebSocket)
+- Swift client (stable — async/await, Sendable structs, URLSession, no third-party dependency)
 - Express / Apollo server (stable — TypeScript, DataLoader batch mappings, graphql-ws subscriptions)
 - Go (planned, demand-based)
 
