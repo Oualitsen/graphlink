@@ -234,7 +234,7 @@ class FlutterInputsStateSerializer {
 
     final didUpdateStatements = <String>[
       'super.didUpdateWidget(oldWidget);',
-      'final oldForm = oldWidget as ${formName};',
+      if (listFields.isNotEmpty) 'final oldForm = oldWidget as ${formName};',
       ...listFields.map((f) {
         if (_types.isEnumListField(f) || _types.isScalarListField(f)) {
           return _u.inlineIfStatement(
@@ -595,13 +595,13 @@ class FlutterInputsStateSerializer {
   ) {
     final allFormFields = [...textFields, ...enumFields, ...boolFields, ...inputFields];
     final visDecls = [...allFormFields, ...listFields].map((f) =>
-        'final _${f.codeName}Vis = vis.${f.codeName}?.call(_ctx) ?? FieldVisibility.enabled;').toList();
+        'final ${f.codeName}Vis = vis.${f.codeName}?.call(ctx) ?? FieldVisibility.enabled;').toList();
 
     final nonInputAssignments = [...textFields, ...enumFields, ...boolFields].map((f) {
       final name = f.codeName;
       final visibleExpr = _visibleReadExpr(f, textFields, enumFields, boolFields);
       final hiddenExpr = _hiddenReadExpr(f);
-      return '$name: _${name}Vis == FieldVisibility.hidden '
+      return '$name: ${name}Vis == FieldVisibility.hidden '
           '? $hiddenExpr '
           ': _form.values?.$name != null '
               '? _${name}OverrideKey.currentState!.read() '
@@ -611,14 +611,17 @@ class FlutterInputsStateSerializer {
     final inputAssignments = inputFields.map((f) {
       final name = f.codeName;
       final hiddenExpr = _hiddenReadExpr(f);
-      return '$name: _${name}Vis != FieldVisibility.hidden ? _${name}Key.currentState!.read() : $hiddenExpr';
+      return '$name: ${name}Vis != FieldVisibility.hidden ? _${name}Key.currentState!.read() : $hiddenExpr';
     }).toList();
 
     final listAssignments = listFields.map((f) {
       final name = f.codeName;
-      return '$name: _${name}Vis != FieldVisibility.hidden && _form.values?.$name != null '
-          '? _${name}OverrideKey.currentState!.read() '
-          ': _$name';
+      final hiddenExpr = _hiddenReadExpr(f);
+      return '$name: ${name}Vis == FieldVisibility.hidden '
+          '? $hiddenExpr '
+          ': _form.values?.$name != null '
+              '? _${name}OverrideKey.currentState!.read() '
+              ': _$name';
     }).toList();
 
     return _u.createMethod(
@@ -629,7 +632,7 @@ class FlutterInputsStateSerializer {
       statements: [
         'final vis = _form.visibility ?? const ${inputName}Visibility();',
         'final def = _form.hiddenDefaults ?? const ${inputName}Defaults();',
-        'final _ctx = _buildContext();',
+        'final ctx = _buildContext();',
         ...visDecls,
         'return ${_u.callExpression(inputName, [...nonInputAssignments, ...inputAssignments, ...listAssignments])};',
       ],
@@ -685,13 +688,13 @@ class FlutterInputsStateSerializer {
       namedArguments: false,
       statements: [
         'if (_isAsyncValidating) return false;',
-        'var _valid = _formKey.currentState?.validate() ?? false;',
+        'var valid = _formKey.currentState?.validate() ?? false;',
         // Use &= (non-short-circuit) so every sub-form is validated even if a previous one failed.
         // currentState is null when a sub-form is hidden/unmounted — ?? true treats it as valid.
         ...inputFields.map((f) =>
-            '_valid &= _${f.codeName}Key.currentState?.validate() ?? true;'),
+            'valid &= _${f.codeName}Key.currentState?.validate() ?? true;'),
         '_updateErrorsNotifier();',
-        'return _valid;',
+        'return valid;',
       ],
     );
   }
@@ -708,7 +711,7 @@ class FlutterInputsStateSerializer {
     List<GLField> inputFields,
   ) {
     final visDecls = fields.map((f) =>
-        'final _${f.codeName}Vis = vis.${f.codeName}?.call(_ctx) ?? FieldVisibility.enabled;').toList();
+        'final ${f.codeName}Vis = vis.${f.codeName}?.call(ctx) ?? FieldVisibility.enabled;').toList();
 
     final rowLines = _buildFieldLines(
       inputName,
@@ -724,7 +727,7 @@ class FlutterInputsStateSerializer {
       statements: [
         'final vis = _form.visibility ?? const ${inputName}Visibility();',
         'final ord = _form.order ?? const ${inputName}Order();',
-        'final _ctx = _buildContext();',
+        'final ctx = _buildContext();',
         'final entries = <MapEntry<int, Widget>>[];',
         ...visDecls,
         ...rowLines,
@@ -993,8 +996,8 @@ class FlutterInputsStateSerializer {
         arguments: ['Widget label', 'TextFieldOptions? opts', 'Widget? suffixIcon', '[Widget? prefixIcon]'],
         statements: [
           'var d = _decoration(label);',
-          'final _pi = prefixIcon ?? opts?.prefixIcon;',
-          _u.inlineIfStatement(condition: '_pi != null', statement: 'd = d.copyWith(prefixIcon: _pi);'),
+          'final pi = prefixIcon ?? opts?.prefixIcon;',
+          _u.inlineIfStatement(condition: 'pi != null', statement: 'd = d.copyWith(prefixIcon: pi);'),
           _u.inlineIfStatement(condition: 'opts?.suffixIcon != null', statement: 'd = d.copyWith(suffixIcon: opts!.suffixIcon);'),
           _u.inlineIfStatement(condition: 'suffixIcon != null', statement: 'd = d.copyWith(suffixIcon: suffixIcon);'),
           'return opts?.decoration?.call(d) ?? d;',
@@ -1064,14 +1067,14 @@ class FlutterInputsStateSerializer {
       namedArguments: false,
       arguments: ['Widget label', 'bool enabled'],
       statements: [
-        'final _child = ${_u.callExpression('Column', [
+        'final child = ${_u.callExpression('Column', [
           'crossAxisAlignment: CrossAxisAlignment.start',
           _u.listArg('children', [
             'DefaultTextStyle(style: Theme.of(context).textTheme.labelLarge ?? const TextStyle(fontWeight: FontWeight.bold), child: Padding(padding: const EdgeInsets.only(bottom: 8), child: label))',
             childForm,
           ]),
         ])};',
-        'return enabled ? _child : IgnorePointer(ignoring: true, child: Opacity(opacity: 0.38, child: _child));',
+        'return enabled ? child : IgnorePointer(ignoring: true, child: Opacity(opacity: 0.38, child: child));',
       ],
     );
   }
@@ -1157,11 +1160,11 @@ class FlutterInputsStateSerializer {
       final i = entry.key;
       final f = entry.value;
       final humanLabel = _types.humanize(f.name.token);
-      final enabledExpr = '!_submitting && _${f.codeName}Vis == FieldVisibility.enabled';
+      final enabledExpr = '!_submitting && ${f.codeName}Vis == FieldVisibility.enabled';
       final fieldWidget = _fields.fieldWidgetExpr(f, textFields, enumFields, boolFields, listFields, enabledExpr);
       final defaultIdx = 1000 + i;
       final isRequired = !f.type.nullable;
-      final labelStmt = "final _rl = _requiredLabel(_form.labels?.${f.codeName} ?? const Text('$humanLabel'), $isRequired); final label = _form.labelPosition == ${inputName}LabelPosition.floatingLabel ? _rl : _labelWithInfo(_rl, _form.labels?.${f.codeName}Info);";
+      final labelStmt = "final rl = _requiredLabel(_form.labels?.${f.codeName} ?? const Text('$humanLabel'), $isRequired); final label = _form.labelPosition == ${inputName}LabelPosition.floatingLabel ? rl : _labelWithInfo(rl, _form.labels?.${f.codeName}Info);";
 
       final String widgetExpr;
       if (inputFields.contains(f)) {
@@ -1177,7 +1180,7 @@ class FlutterInputsStateSerializer {
       }
 
       return _u.ifStatement(
-        condition: '_${f.codeName}Vis != FieldVisibility.hidden',
+        condition: '${f.codeName}Vis != FieldVisibility.hidden',
         ifBlockStatements: [labelStmt, '${accumulate(f, defaultIdx, "_withFloatingInfo($widgetExpr, _form.labels?.${f.codeName}Info)")};'],
       );
     }).toList();
@@ -1438,10 +1441,10 @@ class FlutterInputsStateSerializer {
               '_asyncNotifying = true;',
               'setState(() { _${name}Validating = true; _${name}AsyncError = null; });',
               '_asyncNotifying = false;',
-              'final _r = await _form.validations!.$name!($valueExpr, _buildContext());',
+              'final r = await _form.validations!.$name!($valueExpr, _buildContext());',
               'if (!mounted) return;',
               '_asyncNotifying = true;',
-              'setState(() { _${name}Validating = false; _${name}AsyncError = _r; });',
+              'setState(() { _${name}Validating = false; _${name}AsyncError = r; });',
               '_asyncNotifying = false;',
               '_${name}FieldKey.currentState?.validate();',
               '_updateErrorsNotifier();',
