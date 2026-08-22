@@ -568,7 +568,7 @@ class FlutterInputsFieldSerializer {
     return _u.callExpression('FormField<bool>', [
       'key: _${name}FieldKey',
       'initialValue: _$name',
-      'validator: (v) { final _ctx = _buildContext(); if ((_form.visibility?.$name?.call(_ctx) ?? FieldVisibility.enabled) != FieldVisibility.enabled) return null; return _${name}AsyncError; }',
+      'validator: (v) { final ctx = _buildContext(); if ((_form.visibility?.$name?.call(ctx) ?? FieldVisibility.enabled) != FieldVisibility.enabled) return null; return _${name}AsyncError; }',
       'builder: (field) => ${_u.callExpression('_switchBoolField', [
         'label',
         'field.value ?? false',
@@ -585,7 +585,7 @@ class FlutterInputsFieldSerializer {
     return _u.callExpression('FormField<$fieldType>', [
       'key: _${name}FieldKey',
       'initialValue: _$name',
-      'validator: (v) { final _ctx = _buildContext(); if ((_form.visibility?.$name?.call(_ctx) ?? FieldVisibility.enabled) != FieldVisibility.enabled) return null; return _${name}AsyncError; }',
+      'validator: (v) { final ctx = _buildContext(); if ((_form.visibility?.$name?.call(ctx) ?? FieldVisibility.enabled) != FieldVisibility.enabled) return null; return _${name}AsyncError; }',
       'builder: (field) => ${_u.callExpression('_checkboxBoolField', [
         'label',
         'field.value',
@@ -618,8 +618,8 @@ class FlutterInputsFieldSerializer {
 
   /// Builds the validator statement list: disabled-guard, custom sync checks, async error echo.
   List<String> _validatorStatements(String name, List<String> checks) => [
-    'final _ctx = _buildContext();',
-    'if ((_form.visibility?.$name?.call(_ctx) ?? FieldVisibility.enabled) != FieldVisibility.enabled) return null;',
+    'final ctx = _buildContext();',
+    'if ((_form.visibility?.$name?.call(ctx) ?? FieldVisibility.enabled) != FieldVisibility.enabled) return null;',
     ...checks,
     'return _${name}AsyncError;',
   ];

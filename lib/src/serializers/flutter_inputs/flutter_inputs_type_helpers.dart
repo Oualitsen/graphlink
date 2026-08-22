@@ -82,7 +82,15 @@ class FlutterInputsTypeHelpers {
 
   String typedEmptyList(GLField f) => 'const <${listItemTypeNonNull(f)}>[]';
 
-  String defaultsFieldType(GLField f) => '${dartScalarType(f)}?';
+  String defaultsFieldType(GLField f) {
+    if (isListField(f)) {
+      final item = (isEnumListField(f) || isScalarListField(f))
+          ? listItemTypeNonNull(f)
+          : resolveTypeCodeName(f.type.inlineType.firstType.token);
+      return 'List<$item>?';
+    }
+    return '${dartScalarType(f)}?';
+  }
 
   String validatorType(GLField f, List<GLField> enumFields, List<GLField> boolFields, String inputName) {
     final ctx = '${inputName}FormContext';
