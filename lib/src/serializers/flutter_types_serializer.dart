@@ -9,7 +9,9 @@ import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/gl_ui_entity.dart' show GlTypeEntity;
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
+import 'package:graphlink/src/utils.dart' as gl_utils;
 import 'flutter_types/flutter_types_companion_serializer.dart';
 import 'flutter_types/flutter_types_constants.dart';
 import 'flutter_types/flutter_types_layout_serializer.dart';
@@ -35,7 +37,9 @@ class FlutterTypesSerializer {
   }
 
   bool shouldSkip(GLTypeDefinition def) =>
-      flutterInternalTypes.contains(def.token) || _config.typesToSkip.contains(def.token);
+      flutterInternalTypes.contains(def.token) ||
+      _config.typesToSkip.contains(def.token) ||
+      gl_utils.shouldSkip(def, CodeGenerationMode.client);
 
   bool shouldSkipEnum(GLEnumDefinition def) => flutterInternalEnums.contains(def.token);
 
