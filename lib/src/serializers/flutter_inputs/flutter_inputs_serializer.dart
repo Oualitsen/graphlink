@@ -194,7 +194,7 @@ class FlutterInputsSerializer {
     final dateEligibleFields = [...intFields, ...stringDateFields];
     final inputFields = fields.where(_types.isInputField).toList();
     final inputListFields = listFields.where(_types.isInputListField).toList();
-    final formFields = [...textFields, ...enumFields, ...boolFields, ...inputFields];
+    final formFields = [...textFields, ...enumFields, ...boolFields, ...inputFields, ...listFields];
     final enumListFields = listFields.where(_types.isEnumListField).toList();
     final hasSubInputs = inputFields.isNotEmpty || inputListFields.isNotEmpty;
     final hasScalarFields = fields.any((f) => !_types.isInputField(f) && !_types.isInputListField(f));

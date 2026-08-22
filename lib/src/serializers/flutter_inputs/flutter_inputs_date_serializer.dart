@@ -167,8 +167,8 @@ class FlutterInputsDateSerializer {
 
     // --- Select widget expressions ---
     final selectValidators = [
-      'final _ctx = _buildContext();',
-      'if ((_form.visibility?.$name?.call(_ctx) ?? FieldVisibility.enabled) != FieldVisibility.enabled) return null;',
+      'final ctx = _buildContext();',
+      'if ((_form.visibility?.$name?.call(ctx) ?? FieldVisibility.enabled) != FieldVisibility.enabled) return null;',
       if (!nullable) "if (v == null || v.isEmpty) return _form.strings.required;",
       'return _${name}AsyncError;',
     ];
@@ -190,8 +190,8 @@ class FlutterInputsDateSerializer {
           'const SizedBox(height: 4)',
           _u.callExpression('Wrap', [
             'spacing: 8',
-            'children: _selectCfg.options.map((e) => ${_u.callExpression('ChoiceChip', [
-              'label: _selectCfg.labelBuilder?.call(e) ?? Text(e.toString())',
+            'children: selectCfg.options.map((e) => ${_u.callExpression('ChoiceChip', [
+              'label: selectCfg.labelBuilder?.call(e) ?? Text(e.toString())',
               'selected: _${name}Controller.text == e.toString()',
               'side: field.hasError ? BorderSide(color: Theme.of(context).colorScheme.error) : null',
               'onSelected: enabled ? (on) { final v = on ? e.toString() : \'\'; setState(() => _${name}Controller.text = v); field.didChange(v); } : null',
@@ -216,9 +216,9 @@ class FlutterInputsDateSerializer {
             'child: ${_u.callExpression('Container', [
               'decoration: $errorBorderDecoration',
               'child: ${_u.callExpression('Column', [
-                'children: _selectCfg.options.map((e) => ${_u.callExpression('RadioListTile<String>', [
+                'children: selectCfg.options.map((e) => ${_u.callExpression('RadioListTile<String>', [
                   'contentPadding: EdgeInsets.zero',
-                  'title: _selectCfg.labelBuilder?.call(e) ?? Text(e.toString())',
+                  'title: selectCfg.labelBuilder?.call(e) ?? Text(e.toString())',
                   'value: e.toString()',
                   'groupValue: _${name}Controller.text.isEmpty ? null : _${name}Controller.text',
                   'onChanged: enabled ? (v) { setState(() => _${name}Controller.text = v ?? \'\'); field.didChange(v ?? \'\'); } : null',
@@ -237,14 +237,14 @@ class FlutterInputsDateSerializer {
       'value: _${name}Controller.text.isEmpty ? null : _${name}Controller.text',
       _u.listArg('items', [
         "DropdownMenuItem<String?>(value: null, child: Text(_form.strings.chooseAnOption, style: TextStyle(fontStyle: FontStyle.italic, color: Theme.of(context).hintColor)))",
-        '..._selectCfg.options.map((e) => DropdownMenuItem<String?>(value: e.toString(), child: _selectCfg.labelBuilder?.call(e) ?? Text(e.toString())))',
+        '...selectCfg.options.map((e) => DropdownMenuItem<String?>(value: e.toString(), child: selectCfg.labelBuilder?.call(e) ?? Text(e.toString())))',
       ]),
       'onChanged: enabled ? (v) => setState(() => _${name}Controller.text = v ?? \'\') : null',
       'validator: ${_u.functionLiteral(['v'], selectValidators)}',
     ]);
 
     final selectBlock = _u.switchStatement(
-      expression: '_selectCfg.widget',
+      expression: 'selectCfg.widget',
       cases: [
         DartCaseStatement(caseValue: 'SelectWidget.chips', statement: selectChipsCase),
         DartCaseStatement(caseValue: 'SelectWidget.radio', statement: selectRadioCase),
@@ -254,8 +254,8 @@ class FlutterInputsDateSerializer {
 
     // --- Body: select → date (int/String only) → plain ---
     final statements = <String>[
-      'final _selectCfg = _form.selectConfig?.$name;',
-      _u.ifStatement(condition: '_selectCfg != null', ifBlockStatements: [selectBlock]),
+      'final selectCfg = _form.selectConfig?.$name;',
+      _u.ifStatement(condition: 'selectCfg != null', ifBlockStatements: [selectBlock]),
     ];
 
     if (!isDateEligible) {
@@ -274,8 +274,8 @@ class FlutterInputsDateSerializer {
     final regularExpr = isInt ? _fields.intRegularExpr(f, 'enabled') : _fields.stringRegularExpr(f, 'enabled');
 
     final dateValidators = <String>[
-      'final _ctx = _buildContext();',
-      'if ((_form.visibility?.$name?.call(_ctx) ?? FieldVisibility.enabled) != FieldVisibility.enabled) return null;',
+      'final ctx = _buildContext();',
+      'if ((_form.visibility?.$name?.call(ctx) ?? FieldVisibility.enabled) != FieldVisibility.enabled) return null;',
       if (!nullable)
         _u.inlineIfStatement(condition: 'v == null || v.isEmpty', statement: 'return _form.strings.required;'),
       if (nullable)
@@ -306,16 +306,16 @@ class FlutterInputsDateSerializer {
     ]);
 
     // errorText is already declared above for the select branch (identical content)
-    const parsedDateDecl = 'DateTime? _parsedDate;';
+    const parsedDateDecl = 'DateTime? parsedDate;';
     final parsedDateInit = _u.tryCatchFinally(
       tryStatements: [
-        '_parsedDate = _${name}Controller.text.isEmpty ? null : DateFormat(_form.dateConfig!.$name!.pattern).parse(_${name}Controller.text);',
+        'parsedDate = _${name}Controller.text.isEmpty ? null : DateFormat(_form.dateConfig!.$name!.pattern).parse(_${name}Controller.text);',
       ],
       catchVariable: '_',
-      catchStatements: ['_parsedDate = null;'],
+      catchStatements: ['parsedDate = null;'],
     );
     final initialDateLocal =
-        'final _initialDate = _clampDate(_parsedDate ?? _form.dateConfig!.$name!.initialDate ?? DateTime.now(), _form.dateConfig!.$name!.firstDate ?? DateTime(${_config.defaultDateFirstYear}), _form.dateConfig!.$name!.lastDate ?? DateTime(${_config.defaultDateLastYear}));';
+        'final initialDate = _clampDate(parsedDate ?? _form.dateConfig!.$name!.initialDate ?? DateTime.now(), _form.dateConfig!.$name!.firstDate ?? DateTime(${_config.defaultDateFirstYear}), _form.dateConfig!.$name!.lastDate ?? DateTime(${_config.defaultDateLastYear}));';
 
     final onCupertinoDateTimeChanged =
         '(dt) => setState(() { '
@@ -327,7 +327,7 @@ class FlutterInputsDateSerializer {
       'height: 220',
       'child: ${_u.callExpression('CupertinoDatePicker', [
         'mode: _form.dateConfig!.$name!.type == DateType.dateTime ? CupertinoDatePickerMode.dateAndTime : CupertinoDatePickerMode.date',
-        'initialDateTime: _initialDate',
+        'initialDateTime: initialDate',
         'minimumDate: _form.dateConfig!.$name!.firstDate ?? DateTime(${_config.defaultDateFirstYear})',
         'maximumDate: _form.dateConfig!.$name!.lastDate ?? DateTime(${_config.defaultDateLastYear})',
         'onDateTimeChanged: $onCupertinoDateTimeChanged',
@@ -349,7 +349,7 @@ class FlutterInputsDateSerializer {
         '}';
 
     final materialCalendar = _u.callExpression('CalendarDatePicker', [
-      'initialDate: _initialDate',
+      'initialDate: initialDate',
       'firstDate: _form.dateConfig!.$name!.firstDate ?? DateTime(${_config.defaultDateFirstYear})',
       'lastDate: _form.dateConfig!.$name!.lastDate ?? DateTime(${_config.defaultDateLastYear})',
       'onDateChanged: $onMaterialDateChanged',
