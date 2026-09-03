@@ -93,6 +93,10 @@ class GLEnumDefinition extends GLExtensibleToken with GLDirectivesMixin, CodeNam
     _values[value.token] = value;
   }
 
+  void removeValue(String token) {
+    _values.remove(token);
+  }
+
   @override
   void merge<T extends GLExtensibleToken>(T other) {
     if (other is GLEnumDefinition) {
