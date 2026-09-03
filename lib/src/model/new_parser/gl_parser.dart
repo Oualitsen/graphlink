@@ -389,6 +389,7 @@ class GLParser {
     skipFieldOfSkipOnServerTypes();
     handleGLExternal();
     if (mode == CodeGenerationMode.client) {
+      stripSkipOnClientMembers();
       handleRepositories(false);
       checkGLExpandDirectives();
       if (generateAllFieldsFragments) {

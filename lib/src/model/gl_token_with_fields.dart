@@ -262,6 +262,12 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
     _invalidateFieldCaches();
   }
 
+  void removeField(String name) {
+    if (_fieldMap.remove(name) != null) {
+      _invalidateFieldCaches();
+    }
+  }
+
   @override
   Set<String> getImports(GLParser g) {
     var result = <String>{};

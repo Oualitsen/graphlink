@@ -102,6 +102,36 @@ extension GLGrammarExtension on GLParser {
     return filterByParserMode(mixin, mode);
   }
 
+  /// Removes every `@glSkipOnClient` field/enum-value from the schema so the
+  /// client pipeline (fragments, projections, query validation, serializers)
+  /// never sees them — mirrors [skipFieldOfSkipOnServerTypes] but for the
+  /// client side, and lets serializers stay dumb (no per-field directive
+  /// checks).
+  ///
+  /// Whole types/interfaces/inputs/enums are intentionally left alone:
+  /// - interface implementation lists are wired up earlier in
+  ///   [validateSemantics], and removing an implementor after the fact would
+  ///   leave dangling references in those lists.
+  /// - `@glExternal` types get a *generated* `@glSkipOnClient` (see
+  ///   [handleGLExternal]) precisely so they stay resolvable by name while
+  ///   being hidden from codegen output — other fields still look them up via
+  ///   [getTokenByKey] to resolve their import path. Removing the whole
+  ///   definition breaks that lookup.
+  void stripSkipOnClientMembers() {
+    for (final def in [...types.values, ...interfaces.values, ...inputs.values]) {
+      for (final field in def.getSkipOnClientFields()) {
+        def.removeField(field.name.token);
+      }
+    }
+    for (final def in enums.values) {
+      for (final value in def.values
+          .where((v) => v.getDirectiveByName(glSkipOnClient) != null)
+          .toList()) {
+        def.removeValue(value.value.token);
+      }
+    }
+  }
+
   void skipFieldOfSkipOnServerTypes() {
     types.values
         .where((t) => t.getDirectiveByName(glSkipOnServer) != null)
