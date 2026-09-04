@@ -106,15 +106,11 @@ void main() {
       expect(result, contains('tags: (string | null)[];'));
     });
 
-    test('skips the whole input marked @glSkipOnClient in client mode', () {
+    test('removes whole input marked @glSkipOnClient in client mode', () {
       final g = GLParser(mode: CodeGenerationMode.client);
       g.parse('input InternalInput @glSkipOnClient { id: ID! }');
 
-      final serializer = TypeScriptSerializer(g, importPrefix: "");
-      final result = serializer.serializeInputDefinition(
-          g.inputs['InternalInput']!);
-
-      expect(result, isEmpty);
+      expect(g.inputs.containsKey('InternalInput'), isFalse);
     });
   });
 }
