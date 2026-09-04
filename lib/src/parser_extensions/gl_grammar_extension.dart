@@ -1,4 +1,5 @@
 import 'package:graphlink/src/constants.dart';
+import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_directives_mixin.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
@@ -102,22 +103,82 @@ extension GLGrammarExtension on GLParser {
     return filterByParserMode(mixin, mode);
   }
 
-  /// Removes every `@glSkipOnClient` field/enum-value from the schema so the
-  /// client pipeline (fragments, projections, query validation, serializers)
-  /// never sees them — mirrors [skipFieldOfSkipOnServerTypes] but for the
-  /// client side, and lets serializers stay dumb (no per-field directive
+  /// True for a def whose `@glSkipOnClient` was declared by the schema author
+  /// — as opposed to one synthesized by [handleGLExternal] for a `@glExternal`
+  /// def, which must stay resolvable by name (via [getTokenByKey]) so other
+  /// fields can still derive its import path even though it never generates
+  /// its own class. `@glExternal` defs are therefore never removed here.
+  bool _isUserSkipOnClient(GLDirectivesMixin def) =>
+      def.getDirectiveByName(glSkipOnClient) != null &&
+      def.getDirectiveByName(glExternal) == null;
+
+  /// Every field/argument that isn't itself skipped must not reference a
+  /// whole type/interface/input/enum that is — otherwise a serializer would
+  /// have to special-case a directive it can no longer see once
+  /// [stripSkipOnClientMembers] removes the definition. Mirrors
+  /// [GLValidationExtension._validateSkippedInputNotReferenced], which does
+  /// the equivalent check for `@glSkipOnServer`.
+  void _validateSkipOnClientNotReferenced() {
+    final skipped = <String>{
+      for (final def in <GLDirectivesMixin>[
+        ...types.values,
+        ...interfaces.values,
+        ...inputs.values,
+        ...enums.values,
+      ])
+        if (_isUserSkipOnClient(def)) (def as GLToken).token,
+    };
+    if (skipped.isEmpty) return;
+
+    for (final def in [...types.values, ...interfaces.values]) {
+      if (skipped.contains(def.token)) continue;
+      for (final field in def.fields) {
+        if (field.getDirectiveByName(glSkipOnClient) != null) continue;
+        final fieldType = field.type.inlineType.token;
+        if (skipped.contains(fieldType)) {
+          throw ParseException(
+            "Field '${def.token}.${field.name.token}' references '$fieldType' which is marked "
+            "$glSkipOnClient — add $glSkipOnClient to this field as well",
+            info: field.name,
+          );
+        }
+        for (final arg in field.arguments) {
+          final argType = arg.type.inlineType.token;
+          if (skipped.contains(argType)) {
+            throw ParseException(
+              "Argument '${arg.token}' of '${def.token}.${field.name.token}' references '$argType' "
+              "which is marked $glSkipOnClient — add $glSkipOnClient to field '${field.name.token}' as well",
+              info: arg.tokenInfo,
+            );
+          }
+        }
+      }
+    }
+
+    for (final input in inputs.values) {
+      if (skipped.contains(input.token)) continue;
+      for (final field in input.fields) {
+        final fieldType = field.type.inlineType.token;
+        if (skipped.contains(fieldType)) {
+          throw ParseException(
+            "Input field '${input.token}.${field.name.token}' references '$fieldType' which is marked "
+            "$glSkipOnClient — mark input '${input.token}' with $glSkipOnClient as well",
+            info: field.name,
+          );
+        }
+      }
+    }
+  }
+
+  /// Removes every `@glSkipOnClient` field/enum-value and whole
+  /// type/interface/input/enum definition from the schema so the client
+  /// pipeline (fragments, projections, query validation, serializers) never
+  /// sees them — mirrors [skipFieldOfSkipOnServerTypes] but for the client
+  /// side, and lets serializers stay dumb (no per-definition directive
   /// checks).
-  ///
-  /// Whole types/interfaces/inputs/enums are intentionally left alone:
-  /// - interface implementation lists are wired up earlier in
-  ///   [validateSemantics], and removing an implementor after the fact would
-  ///   leave dangling references in those lists.
-  /// - `@glExternal` types get a *generated* `@glSkipOnClient` (see
-  ///   [handleGLExternal]) precisely so they stay resolvable by name while
-  ///   being hidden from codegen output — other fields still look them up via
-  ///   [getTokenByKey] to resolve their import path. Removing the whole
-  ///   definition breaks that lookup.
   void stripSkipOnClientMembers() {
+    _validateSkipOnClientNotReferenced();
+
     for (final def in [...types.values, ...interfaces.values, ...inputs.values]) {
       for (final field in def.getSkipOnClientFields()) {
         def.removeField(field.name.token);
@@ -129,6 +190,26 @@ extension GLGrammarExtension on GLParser {
           .toList()) {
         def.removeValue(value.value.token);
       }
+    }
+
+    enums.removeWhere((_, def) => _isUserSkipOnClient(def));
+    inputs.removeWhere((_, def) => _isUserSkipOnClient(def));
+
+    final skippedInterfaces =
+        interfaces.values.where(_isUserSkipOnClient).toList();
+    for (final iface in skippedInterfaces) {
+      for (final impl in [...iface.implementations]) {
+        impl.unlinkInterface(iface);
+      }
+      interfaces.remove(iface.token);
+    }
+
+    final skippedTypes = types.values.where(_isUserSkipOnClient).toList();
+    for (final type in skippedTypes) {
+      for (final iface in [...type.interfaces]) {
+        iface.removeImplementation(type.token);
+      }
+      types.remove(type.token);
     }
   }
 

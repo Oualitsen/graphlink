@@ -43,17 +43,11 @@ void main() {
       expect(result, isNot(contains('INTERNAL')));
     });
 
-    test('skips the whole enum marked @glSkipOnClient in client mode', () {
+    test('removes whole enum marked @glSkipOnClient in client mode', () {
       final g = GLParser(mode: CodeGenerationMode.client);
       g.parse('enum InternalStatus @glSkipOnClient { PENDING DONE }');
 
-      final serializer = TypeScriptSerializer(g, importPrefix: "");
-      final result = serializer.serializeEnumDefinition(
-          g.enums['InternalStatus']!);
-
-      print('(empty: "$result")');
-
-      expect(result, isEmpty);
+      expect(g.enums.containsKey('InternalStatus'), isFalse);
     });
 
     test('file name is kebab-case .ts', () {
