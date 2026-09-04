@@ -157,15 +157,11 @@ void main() {
       expect(result, contains("__typename: 'Dog'"));
     });
 
-    test('skips type marked @glSkipOnClient in client mode', () {
+    test('removes whole type marked @glSkipOnClient in client mode', () {
       final g = GLParser(mode: CodeGenerationMode.client);
       g.parse('type InternalType @glSkipOnClient { id: ID! }');
 
-      final serializer = TypeScriptSerializer(g, importPrefix: "");
-      final result = serializer.serializeTypeDefinition(
-          g.getTypeByName('InternalType')!);
-      print(result);
-      expect(result, isEmpty);
+      expect(g.getTypeByName('InternalType'), isNull);
     });
 
     test('type referencing an enum imports it', () {
