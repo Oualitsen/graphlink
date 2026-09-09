@@ -535,3 +535,11 @@
 - Refactored the Java client's reactive type wrapper (`JavaReactiveFlavor`) and added a `java_reactive_client` suite to the server integration test matrix.
 - Release workflow now builds each platform artifact (Linux x86_64/arm64, Windows, macOS x86_64/arm64) as an independent job instead of one shared matrix.
 
+## 5.1.1 - 2026-09-09
+
+### Fixes
+
+- Fixed `@glSkipOnClient` on a whole type/interface/input/enum not being stripped from the client pipeline — only individually-marked fields/enum values were being removed before. Whole skipped definitions (and their interface implementation links) are now removed as well, and a field/argument/input that still references a skipped definition now raises a clear parse error instead of leaking it into generated client code.
+- Fixed the Flutter `noUi` types serializer not honoring `@glSkipOnClient` on a whole type, so a client-skipped type could still be emitted as a Flutter UI type.
+- Fixed generated Flutter input `List` fields with hidden defaults being typed/serialized incorrectly instead of `List<T>?`.
+
