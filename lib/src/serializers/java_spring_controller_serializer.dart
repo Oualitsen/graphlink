@@ -320,7 +320,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
       final varName = codeGenUtils.safeLocalVar('m$depth');
       final inner = _inputFromJsonConversion(type.inlineType, varName, context, depth + 1);
       final body = JavaCodeGenUtils.nullSafeExpr(varName, inner, type.inlineType.nullable);
-      return JavaCodeGenUtils.streamMapCollect(receiver: sourceExpr, param: varName, body: body);
+      return JavaCodeGenUtils.streamMapCollect(receiver: sourceExpr, param: varName, body: body, nullable: type.nullable);
     }
     final typeDef = grammar.types[type.token] ?? grammar.interfaces[type.token];
     final typeToken = typeDef?.mappedToType?.token ?? typeDef?.token ?? type.token;
