@@ -543,3 +543,9 @@
 - Fixed the Flutter `noUi` types serializer not honoring `@glSkipOnClient` on a whole type, so a client-skipped type could still be emitted as a Flutter UI type.
 - Fixed generated Flutter input `List` fields with hidden defaults being typed/serialized incorrectly instead of `List<T>?`.
 
+## 5.1.2 - 2026-09-14
+
+### Fixes
+
+- Fixed Java Spring controllers throwing `NullPointerException` when a nullable list-of-input argument (e.g. `items: [ItemInput!]`) is omitted by the client — the generated `fromJson` conversion now null-guards the list before calling `.stream()`, matching the null-safety already present for scalar/single-input nullable arguments (and already correct in the Kotlin/TypeScript server targets).
+
