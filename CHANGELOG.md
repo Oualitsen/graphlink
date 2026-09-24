@@ -561,20 +561,14 @@
 
 - **Flutter: `designLibrary` option for the standalone Material/Cupertino packages** — new `designLibrary` option in the `flutter` config block: `flutter` (default) keeps `package:flutter/material.dart` and `package:flutter/cupertino.dart`; `standalone` makes generated files import `package:material_ui/material_ui.dart` and `package:cupertino_ui/cupertino_ui.dart` (Flutter 3.47+; add both packages to your `pubspec.yaml`). It must match the library your app uses, since generated types such as `TextFieldOptions` expose Material types.
 
-### Improvements
-
-- Generated Flutter `boolean_labels.dart` now imports `package:flutter/widgets.dart` instead of Material, and `date_input_config.dart` no longer emits an unused Material import. Regenerating changes these two files even with the default config.
-
-### Internal
-
-- New `FlutterApi` (`serializers/flutter_api.dart`) centralizes the Flutter SDK-version feature gates and the Material/Cupertino import paths; the four radio sites (enum, nullable bool, non-null bool, select) now share one `FlutterInputsRadioBinding` instead of four hand-written `RadioListTile` blocks.
-
-## Unreleased
-
-### New features
-
 - **Flutter: clear (X) button on generated text fields** — new `flutter.defaultClearButton` option (default `false`) and a per-field `TextFieldOptions.clearButton` (`bool?`, set through the form's `TextConfig`; `null` falls back to the default). The button appears on `String`, `int`, `double` and dialog-mode date text fields while the field is enabled and non-empty, and clearing a required field lets normal validation block submission. It is replaced by the spinner during async validation, never shown on password fields, and sits next to a date field's calendar button or a custom `suffixIcon`. Tooltip text comes from the new `FormStrings.clear` (default `"Clear"`).
 
 ### Improvements
 
+- Generated Flutter `boolean_labels.dart` now imports `package:flutter/widgets.dart` instead of Material, and `date_input_config.dart` no longer emits an unused Material import. Regenerating changes these two files even with the default config.
 - Generated dialog-mode date fields now honor the field's `TextConfig` entry for `prefixIcon` and `decoration` (previously ignored); `FieldIcons` and the calendar button keep precedence.
+- Generated `GraphLinkQueries` / `GraphLinkMutations` constructors with nothing to initialize now end in `;` instead of an empty `{}` block (`GraphLinkSubscriptions` keeps its block). `createConstructor` treats an empty statement list like no statements.
+
+### Internal
+
+- New `FlutterApi` (`serializers/flutter_api.dart`) centralizes the Flutter SDK-version feature gates and the Material/Cupertino import paths; the four radio sites (enum, nullable bool, non-null bool, select) now share one `FlutterInputsRadioBinding` instead of four hand-written `RadioListTile` blocks.
