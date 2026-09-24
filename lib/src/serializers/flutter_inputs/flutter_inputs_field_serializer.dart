@@ -1,14 +1,26 @@
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/dart_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_field.dart';
+import 'package:graphlink/src/serializers/flutter_api.dart';
+import 'flutter_inputs_radio_binding.dart';
 import 'flutter_inputs_type_helpers.dart';
 
 class FlutterInputsFieldSerializer {
   final DartCodeGenUtils _u;
   final FlutterConfig _config;
   final FlutterInputsTypeHelpers _types;
+  final FlutterApi _api;
 
-  FlutterInputsFieldSerializer(this._u, this._config, this._types);
+  FlutterInputsFieldSerializer(this._u, this._config, this._types, this._api);
+
+  FlutterInputsRadioBinding radioBinding({
+    required String type,
+    required String groupValue,
+    required String onChanged,
+    required String enabled,
+  }) =>
+      FlutterInputsRadioBinding(_u, _api,
+          type: type, groupValue: groupValue, onChanged: onChanged, enabled: enabled);
 
   // ── Field widget dispatch ─────────────────────────────────────────────────────
 
@@ -142,7 +154,7 @@ class FlutterInputsFieldSerializer {
     return _u.callExpression('DropdownButtonFormField<$enumType?>', [
       'key: _${name}FieldKey',
       'decoration: _decoration(label).copyWith(enabled: $enabledExpr, prefixIcon: _form.fieldIcons?.$name)',
-      'value: _$name',
+      dropdownValueArg('_$name'),
       _u.listArg('items', [
         "DropdownMenuItem<$enumType?>(value: null, child: _form.dropdownLabels?.$name?.unselected ?? Text(_form.strings.chooseAnOption, style: TextStyle(fontStyle: FontStyle.italic, color: Theme.of(context).hintColor)))",
         '...$enumType.values.map((e) => DropdownMenuItem<$enumType?>(value: e, child: _form.dropdownLabels?.$name?.call(e) ?? Text(e.name)))',
@@ -161,6 +173,12 @@ class FlutterInputsFieldSerializer {
       if (!nullable) "if (v == null) return _form.strings.required;",
     ]);
     final errorText = errorTextWidget();
+    final radio = radioBinding(
+      type: '$enumType?',
+      groupValue: 'field.value',
+      onChanged: '(v) { setState(() => _$name = v); field.didChange(v); }',
+      enabled: 'enabled',
+    );
 
     final chipsCase = 'return ${_u.callExpression('FormField<$enumType?>', [
       'key: _${name}FieldKey',
@@ -204,16 +222,14 @@ class FlutterInputsFieldSerializer {
                 'border: Border.all(color: Theme.of(context).colorScheme.error)',
                 'borderRadius: BorderRadius.circular(4)',
               ])} : null',
-              'child: ${_u.callExpression('Column', [
-                'children: $enumType.values.map((e) => ${_u.callExpression('RadioListTile<$enumType?>', [
+              'child: ${radio.group(_u.callExpression('Column', [
+                'children: $enumType.values.map((e) => ${radio.tile([
                   'key: ValueKey(e)',
                   'contentPadding: EdgeInsets.zero',
                   'title: _form.dropdownLabels?.$name?.call(e) ?? Text(e.name)',
                   'value: e',
-                  'groupValue: field.value',
-                  'onChanged: enabled ? (v) { setState(() => _$name = v); field.didChange(v); } : null',
                 ])}).toList()',
-              ])}',
+              ]))}',
             ])}',
           ]),
           errorText,
@@ -273,6 +289,12 @@ class FlutterInputsFieldSerializer {
     final validators = _validatorStatements(name, []);
 
     if (fieldType == 'bool?') {
+      final radio = radioBinding(
+        type: 'bool?',
+        groupValue: 'field.value',
+        onChanged: '(v) { setState(() => _$name = v); field.didChange(v); }',
+        enabled: 'enabled',
+      );
       final chipsCase = 'return ${_u.callExpression('FormField<bool?>', [
         'key: _${name}FieldKey',
         'initialValue: _$name',
@@ -322,26 +344,22 @@ class FlutterInputsFieldSerializer {
               'label: $errorContainerSemantics',
               'child: ${_u.callExpression('Container', [
                 'decoration: $errorBorderDecoration',
-                'child: ${_u.callExpression('Column', [
+                'child: ${radio.group(_u.callExpression('Column', [
                   _u.listArg('children', [
-                    _u.callExpression('RadioListTile<bool?>', [
+                    radio.tile([
                       'key: const ValueKey(true)',
                       'contentPadding: EdgeInsets.zero',
                       'title: tl',
                       'value: true',
-                      'groupValue: field.value',
-                      'onChanged: enabled ? (v) { setState(() => _$name = v); field.didChange(v); } : null',
                     ]),
-                    _u.callExpression('RadioListTile<bool?>', [
+                    radio.tile([
                       'key: const ValueKey(false)',
                       'contentPadding: EdgeInsets.zero',
                       'title: fl',
                       'value: false',
-                      'groupValue: field.value',
-                      'onChanged: enabled ? (v) { setState(() => _$name = v); field.didChange(v); } : null',
                     ]),
                   ]),
-                ])}',
+                ]))}',
               ])}',
             ]),
             errorText,
@@ -368,6 +386,12 @@ class FlutterInputsFieldSerializer {
         ],
       );
     } else {
+      final radio = radioBinding(
+        type: 'bool',
+        groupValue: 'field.value',
+        onChanged: '(v) { setState(() => _$name = v!); field.didChange(v); }',
+        enabled: 'enabled',
+      );
       final chipsCase = 'return ${_u.callExpression('FormField<bool>', [
         'key: _${name}FieldKey',
         'initialValue: _$name',
@@ -417,26 +441,22 @@ class FlutterInputsFieldSerializer {
               'label: $errorContainerSemantics',
               'child: ${_u.callExpression('Container', [
                 'decoration: $errorBorderDecoration',
-                'child: ${_u.callExpression('Column', [
+                'child: ${radio.group(_u.callExpression('Column', [
                   _u.listArg('children', [
-                    _u.callExpression('RadioListTile<bool>', [
+                    radio.tile([
                       'key: const ValueKey(true)',
                       'contentPadding: EdgeInsets.zero',
                       'title: tl',
                       'value: true',
-                      'groupValue: field.value',
-                      'onChanged: enabled ? (v) { setState(() => _$name = v!); field.didChange(v); } : null',
                     ]),
-                    _u.callExpression('RadioListTile<bool>', [
+                    radio.tile([
                       'key: const ValueKey(false)',
                       'contentPadding: EdgeInsets.zero',
                       'title: fl',
                       'value: false',
-                      'groupValue: field.value',
-                      'onChanged: enabled ? (v) { setState(() => _$name = v!); field.didChange(v); } : null',
                     ]),
                   ]),
-                ])}',
+                ]))}',
               ])}',
             ]),
             errorText,
@@ -605,7 +625,7 @@ class FlutterInputsFieldSerializer {
     return _u.callExpression('DropdownButtonFormField<bool?>', [
       'key: _${name}FieldKey',
       'decoration: _decoration(label).copyWith(enabled: $enabledExpr)',
-      'value: _$name',
+      dropdownValueArg('_$name'),
       _u.listArg('items', [
         "DropdownMenuItem<bool?>(value: null, child: _form.dropdownLabels?.$name?.unselected ?? Text(_form.strings.chooseAnOption, style: TextStyle(fontStyle: FontStyle.italic, color: Theme.of(context).hintColor)))",
         "DropdownMenuItem<bool?>(value: true, child: _form.dropdownLabels?.$name?.trueLabel ?? Text(_form.strings.yes))",
@@ -623,6 +643,8 @@ class FlutterInputsFieldSerializer {
     ...checks,
     'return _${name}AsyncError;',
   ];
+
+  String dropdownValueArg(String expr) => '${_api.dropdownValueParam}: $expr';
 
   String errorTextWidget() => _u.inlineIfStatement(
         condition: 'field.errorText != null',

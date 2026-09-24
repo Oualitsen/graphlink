@@ -9,6 +9,7 @@ import 'package:graphlink/src/model/gl_ui_entity.dart' show GlInputEntity;
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
+import 'package:graphlink/src/serializers/flutter_api.dart';
 import 'package:graphlink/src/utils.dart' as gl_utils;
 import 'flutter_inputs_companion_serializer.dart';
 import 'flutter_inputs_date_serializer.dart';
@@ -24,10 +25,11 @@ class FlutterInputsSerializer {
   final String importPrefix;
 
   late final _u = DartCodeGenUtils();
+  late final _api = FlutterApi(_config);
   late final _types = FlutterInputsTypeHelpers(_parser, _dartSerializer, _config);
-  late final _shared = FlutterInputsSharedSerializer(_config);
+  late final _shared = FlutterInputsSharedSerializer(_config, _api);
   late final _companions = FlutterInputsCompanionSerializer(_u, _types);
-  late final _fields = FlutterInputsFieldSerializer(_u, _config, _types);
+  late final _fields = FlutterInputsFieldSerializer(_u, _config, _types, _api);
   late final _date = FlutterInputsDateSerializer(_u, _config, _types, _fields);
   late final _state = FlutterInputsStateSerializer(_u, _config, _types, _fields, _date);
 
@@ -220,7 +222,7 @@ class FlutterInputsSerializer {
 
     final imports = <String>{
       'dart:async',
-      'package:flutter/material.dart',
+      _api.materialImport,
       '$importPrefix/widgets/inputs/input_form_widget.dart',
       '$importPrefix/widgets/inputs/input_read_exception.dart',
       for (final f in fields)
@@ -234,7 +236,7 @@ class FlutterInputsSerializer {
       if (textFields.isNotEmpty) '$importPrefix/widgets/inputs/text_field_options.dart',
       if (textFields.isNotEmpty) '$importPrefix/widgets/inputs/select_field_config.dart',
       if (dateEligibleFields.isNotEmpty) ...{
-        'package:flutter/cupertino.dart',
+        _api.cupertinoImport,
         'package:intl/intl.dart',
         '$importPrefix/widgets/inputs/date_input_config.dart',
         '$importPrefix/widgets/inputs/date_input_formatter.dart',
