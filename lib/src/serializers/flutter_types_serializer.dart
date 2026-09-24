@@ -11,6 +11,7 @@ import 'package:graphlink/src/model/gl_ui_entity.dart' show GlTypeEntity;
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/dart_serializer.dart';
+import 'package:graphlink/src/serializers/flutter_api.dart';
 import 'package:graphlink/src/utils.dart' as gl_utils;
 import 'flutter_types/flutter_types_companion_serializer.dart';
 import 'flutter_types/flutter_types_constants.dart';
@@ -22,6 +23,7 @@ class FlutterTypesSerializer {
   final FlutterConfig _config;
   final String importPrefix;
 
+  late final FlutterApi _api = FlutterApi(_config);
   late final DartCodeGenUtils _u;
   late final DartSerializer _dartSerializer;
   late final FlutterTypesValueRenderer _renderer;
@@ -87,7 +89,7 @@ class FlutterTypesSerializer {
     );
 
     return _dartSerializer.serializeGlClass(GLClassModel(
-      imports: ['package:flutter/material.dart'],
+      imports: [_api.materialImport],
       importDepencies: [def],
       body: body,
     ));
@@ -138,7 +140,7 @@ class FlutterTypesSerializer {
     final importDeps = <GLToken>[def, ...enumTokens, ...nestedTypeTokens];
 
     final imports = <String>{
-      'package:flutter/material.dart',
+      _api.materialImport,
       'package:flutter/semantics.dart',
       '$importPrefix/widgets/inputs/form_strings.dart',
       for (final f in fields)

@@ -325,6 +325,8 @@ enum TypeLayout { labeledRow, listTile, listTileReversed, expandable }
 enum DateFieldMode { dialog, inline }
 enum FlutterLabelStyle { bold, muted }
 
+enum FlutterDesignLibrary { flutter, standalone }
+
 class FlutterConfig {
   final List<String> typesToSkip;
   final List<String> inputsToSkip;
@@ -347,6 +349,8 @@ class FlutterConfig {
   final int defaultDateFirstYear;
   final int defaultDateLastYear;
   final DateFieldMode defaultDateMode;
+  final String? sdkVersion;
+  final FlutterDesignLibrary designLibrary;
 
   const FlutterConfig({
     this.typesToSkip = const [],
@@ -370,12 +374,18 @@ class FlutterConfig {
     this.defaultDateFirstYear = 1900,
     this.defaultDateLastYear = 2100,
     this.defaultDateMode = DateFieldMode.dialog,
+    this.sdkVersion,
+    this.designLibrary = FlutterDesignLibrary.flutter,
   });
 
   factory FlutterConfig.fromJson(Map<String, dynamic> json) {
     final nullableBoolStr = json['nullableBooleanWidget'] as String? ?? 'checkbox';
     if (nullableBoolStr == 'switch') {
       throw ArgumentError('nullableBooleanWidget cannot be "switch": Switch cannot represent null. Use "checkbox" or "tristate".');
+    }
+    final sdkVersion = json['sdkVersion']?.toString();
+    if (sdkVersion != null && !RegExp(r'^\d+\.\d+(\.\d+)?$').hasMatch(sdkVersion)) {
+      throw ArgumentError('sdkVersion must look like "3.35" or "3.35.0", got "$sdkVersion".');
     }
     return FlutterConfig(
       typesToSkip: List<String>.from(json['typesToSkip'] ?? []),
@@ -431,6 +441,11 @@ class FlutterConfig {
       defaultDateMode: DateFieldMode.values.firstWhere(
         (e) => e.name == (json['defaultDateMode'] as String? ?? 'dialog'),
         orElse: () => DateFieldMode.dialog,
+      ),
+      sdkVersion: sdkVersion,
+      designLibrary: FlutterDesignLibrary.values.firstWhere(
+        (e) => e.name == (json['designLibrary'] as String? ?? 'flutter'),
+        orElse: () => FlutterDesignLibrary.flutter,
       ),
     );
   }

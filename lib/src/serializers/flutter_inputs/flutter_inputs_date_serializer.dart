@@ -202,6 +202,13 @@ class FlutterInputsDateSerializer {
       ])}',
     ])};';
 
+    final selectRadio = _fields.radioBinding(
+      type: 'String',
+      groupValue: '_${name}Controller.text.isEmpty ? null : _${name}Controller.text',
+      onChanged: '(v) { setState(() => _${name}Controller.text = v ?? \'\'); field.didChange(v ?? \'\'); }',
+      enabled: 'enabled',
+    );
+
     final selectRadioCase = 'return ${_u.callExpression('FormField<String>', [
       'key: _${name}FieldKey',
       'initialValue: _${name}Controller.text',
@@ -215,15 +222,13 @@ class FlutterInputsDateSerializer {
             "label: field.hasError ? field.errorText ?? '' : null",
             'child: ${_u.callExpression('Container', [
               'decoration: $errorBorderDecoration',
-              'child: ${_u.callExpression('Column', [
-                'children: selectCfg.options.map((e) => ${_u.callExpression('RadioListTile<String>', [
+              'child: ${selectRadio.group(_u.callExpression('Column', [
+                'children: selectCfg.options.map((e) => ${selectRadio.tile([
                   'contentPadding: EdgeInsets.zero',
                   'title: selectCfg.labelBuilder?.call(e) ?? Text(e.toString())',
                   'value: e.toString()',
-                  'groupValue: _${name}Controller.text.isEmpty ? null : _${name}Controller.text',
-                  'onChanged: enabled ? (v) { setState(() => _${name}Controller.text = v ?? \'\'); field.didChange(v ?? \'\'); } : null',
                 ])}).toList()',
-              ])}',
+              ]))}',
             ])}',
           ]),
           errorText,
@@ -234,7 +239,7 @@ class FlutterInputsDateSerializer {
     final selectDropdownExpr = _u.callExpression('DropdownButtonFormField<String?>', [
       'key: _${name}FieldKey',
       'decoration: _decoration(label).copyWith(enabled: enabled, prefixIcon: _form.fieldIcons?.$name)',
-      'value: _${name}Controller.text.isEmpty ? null : _${name}Controller.text',
+      _fields.dropdownValueArg('_${name}Controller.text.isEmpty ? null : _${name}Controller.text'),
       _u.listArg('items', [
         "DropdownMenuItem<String?>(value: null, child: Text(_form.strings.chooseAnOption, style: TextStyle(fontStyle: FontStyle.italic, color: Theme.of(context).hintColor)))",
         '...selectCfg.options.map((e) => DropdownMenuItem<String?>(value: e.toString(), child: selectCfg.labelBuilder?.call(e) ?? Text(e.toString())))',

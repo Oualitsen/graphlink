@@ -549,3 +549,22 @@
 
 - Fixed Java Spring controllers throwing `NullPointerException` when a nullable list-of-input argument (e.g. `items: [ItemInput!]`) is omitted by the client — the generated `fromJson` conversion now null-guards the list before calling `.stream()`, matching the null-safety already present for scalar/single-input nullable arguments (and already correct in the Kotlin/TypeScript server targets).
 
+## 5.2.0 - 2026-09-24
+
+### New features
+
+- **Flutter: non-deprecated widget APIs via `flutter.sdkVersion`** — new `sdkVersion` option in the `flutter` config block (e.g. `"3.47.5"`) selects which Flutter APIs the generated widgets use. From `3.35` on, generated input forms emit `RadioGroup<T>` around their radio tiles instead of the deprecated `RadioListTile.groupValue` / `onChanged` (per-tile disabling moves to `enabled:`), and `DropdownButtonFormField(initialValue:)` instead of the deprecated `value:`. This removes the deprecation warnings generated forms produced on recent Flutter SDKs. When unset, the pre-3.35 API is generated, so existing projects see no change. Quote the value in YAML (`sdkVersion: "3.10"`): an unquoted `3.10` is read as the number `3.1`. A malformed value fails generation with a clear error.
+
+  ```json
+  "flutter": { "generateInputs": true, "sdkVersion": "3.47.5" }
+  ```
+
+- **Flutter: `designLibrary` option for the standalone Material/Cupertino packages** — new `designLibrary` option in the `flutter` config block: `flutter` (default) keeps `package:flutter/material.dart` and `package:flutter/cupertino.dart`; `standalone` makes generated files import `package:material_ui/material_ui.dart` and `package:cupertino_ui/cupertino_ui.dart` (Flutter 3.47+; add both packages to your `pubspec.yaml`). It must match the library your app uses, since generated types such as `TextFieldOptions` expose Material types.
+
+### Improvements
+
+- Generated Flutter `boolean_labels.dart` now imports `package:flutter/widgets.dart` instead of Material, and `date_input_config.dart` no longer emits an unused Material import. Regenerating changes these two files even with the default config.
+
+### Internal
+
+- New `FlutterApi` (`serializers/flutter_api.dart`) centralizes the Flutter SDK-version feature gates and the Material/Cupertino import paths; the four radio sites (enum, nullable bool, non-null bool, select) now share one `FlutterInputsRadioBinding` instead of four hand-written `RadioListTile` blocks.
