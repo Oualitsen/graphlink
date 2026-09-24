@@ -172,7 +172,7 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
       buffer.write(" : super");
       buffer.write(parentheses(superArguments));
     }
-    if (statements != null) {
+    if (statements != null && statements.isNotEmpty) {
       buffer.write(" ");
       buffer.write(block(statements));
     } else {
