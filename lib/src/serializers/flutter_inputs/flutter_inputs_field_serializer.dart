@@ -71,7 +71,7 @@ class FlutterInputsFieldSerializer {
       'enableSuggestions: _form.textConfig?.$name?.enableSuggestions ?? ${_types.smartEnableSuggestions(f)}',
       'maxLength: _form.textConfig?.$name?.maxLength',
       'maxLines: _form.textConfig?.$name?.maxLines ?? 1',
-      'decoration: _textDecoration(label, _form.textConfig?.$name, _${name}Validating ? $spinnerExpr : null, _form.fieldIcons?.$name)',
+      'decoration: _textDecoration(label, _form.textConfig?.$name, _${name}Validating ? $spinnerExpr : null, _form.fieldIcons?.$name, ${clearControllerArg(name, enabledExpr)})',
       'onChanged: (_) => _onFieldChanged()',
       'validator: ${_u.functionLiteral(['v'], validators)}',
     ]);
@@ -99,7 +99,7 @@ class FlutterInputsFieldSerializer {
       'controller: _${name}Controller',
       'enabled: $enabledExpr',
       'keyboardType: TextInputType.number',
-      'decoration: _textDecoration(label, _form.textConfig?.$name, _${name}Validating ? $spinnerExpr : null, _form.fieldIcons?.$name)',
+      'decoration: _textDecoration(label, _form.textConfig?.$name, _${name}Validating ? $spinnerExpr : null, _form.fieldIcons?.$name, ${clearControllerArg(name, enabledExpr)})',
       'onChanged: (_) => _onFieldChanged()',
       'validator: ${_u.functionLiteral(['v'], validators)}',
     ]);
@@ -135,7 +135,7 @@ class FlutterInputsFieldSerializer {
       'enableSuggestions: _form.textConfig?.$name?.enableSuggestions ?? ${_types.smartEnableSuggestions(f)}',
       'maxLength: _form.textConfig?.$name?.maxLength',
       'maxLines: _form.textConfig?.$name?.maxLines ?? 1',
-      'decoration: _textDecoration(label, _form.textConfig?.$name, $suffixIconExpr, _form.fieldIcons?.$name)',
+      'decoration: _textDecoration(label, _form.textConfig?.$name, $suffixIconExpr, _form.fieldIcons?.$name${isPassword ? '' : ', ${clearControllerArg(name, enabledExpr)}'})',
       'onChanged: (_) => _onFieldChanged()',
       'validator: ${_u.functionLiteral(['v'], validators)}',
     ]);
@@ -643,6 +643,9 @@ class FlutterInputsFieldSerializer {
     ...checks,
     'return _${name}AsyncError;',
   ];
+
+  String clearControllerArg(String name, String enabledExpr) =>
+      '($enabledExpr && !_${name}Validating) ? _${name}Controller : null';
 
   String dropdownValueArg(String expr) => '${_api.dropdownValueParam}: $expr';
 

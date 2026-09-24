@@ -343,6 +343,7 @@ class FlutterInputsStateSerializer {
         if (_types.needsCheckboxBoolHelper(boolFields)) _checkboxBoolFieldHelper(inputName),
         if (_needsDecorationHelper(textFields, enumFields, boolFields)) _decorationHelper(inputName),
         if (textFields.isNotEmpty) _textDecorationHelper(inputName),
+        if (textFields.isNotEmpty) _clearButtonHelper(),
         if (dateEligibleFields.isNotEmpty) _date.clampDateHelper(),
         if (dateEligibleFields.isNotEmpty) _date.isCupertinoHelper(),
         if (dateEligibleFields.isNotEmpty) _date.pickDateHelper(),
@@ -993,14 +994,36 @@ class FlutterInputsStateSerializer {
         returnType: 'InputDecoration',
         methodName: '_textDecoration',
         namedArguments: false,
-        arguments: ['Widget label', 'TextFieldOptions? opts', 'Widget? suffixIcon', '[Widget? prefixIcon]'],
+        arguments: ['Widget label', 'TextFieldOptions? opts', 'Widget? suffixIcon', '[Widget? prefixIcon, TextEditingController? clearController]'],
         statements: [
           'var d = _decoration(label);',
           'final pi = prefixIcon ?? opts?.prefixIcon;',
           _u.inlineIfStatement(condition: 'pi != null', statement: 'd = d.copyWith(prefixIcon: pi);'),
-          _u.inlineIfStatement(condition: 'opts?.suffixIcon != null', statement: 'd = d.copyWith(suffixIcon: opts!.suffixIcon);'),
-          _u.inlineIfStatement(condition: 'suffixIcon != null', statement: 'd = d.copyWith(suffixIcon: suffixIcon);'),
+          'final si = suffixIcon ?? opts?.suffixIcon;',
+          'final clear = clearController != null && (opts?.clearButton ?? ${_config.defaultClearButton}) ? _clearButton(clearController) : null;',
+          'final suffix = clear == null ? si : si == null ? clear : ${_u.callExpression('Row', [
+            'mainAxisSize: MainAxisSize.min',
+            _u.listArg('children', ['clear', 'si']),
+          ])};',
+          _u.inlineIfStatement(condition: 'suffix != null', statement: 'd = d.copyWith(suffixIcon: suffix);'),
           'return opts?.decoration?.call(d) ?? d;',
+        ],
+      );
+
+  String _clearButtonHelper() => _u.createMethod(
+        returnType: 'Widget',
+        methodName: '_clearButton',
+        namedArguments: false,
+        arguments: ['TextEditingController controller'],
+        statements: [
+          'return ${_u.callExpression('ValueListenableBuilder<TextEditingValue>', [
+            'valueListenable: controller',
+            'builder: (_, value, __) => value.text.isEmpty ? const SizedBox.shrink() : ${_u.callExpression('IconButton', [
+              'tooltip: _form.strings.clear',
+              'icon: const Icon(Icons.clear)',
+              'onPressed: () { controller.clear(); _onFieldChanged(); }',
+            ])}',
+          ])};',
         ],
       );
 

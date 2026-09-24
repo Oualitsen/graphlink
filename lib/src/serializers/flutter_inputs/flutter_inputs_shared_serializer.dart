@@ -53,6 +53,7 @@ class TextFieldOptions {
   final bool autocorrect;
   final bool enableSuggestions;
   final bool obscureText;
+  final bool? clearButton;
   final int? maxLength;
   final int? maxLines;
   final Widget? prefixIcon;
@@ -66,6 +67,7 @@ class TextFieldOptions {
     this.autocorrect = true,
     this.enableSuggestions = true,
     this.obscureText = false,
+    this.clearButton,
     this.maxLength,
     this.maxLines = 1,
     this.prefixIcon,
@@ -90,6 +92,7 @@ class FormStrings {
   final String pickDateAndTime;
   final String cancel;
   final String done;
+  final String clear;
   final String requiredText;
   final String optionalText;
 
@@ -107,6 +110,7 @@ class FormStrings {
     this.pickDateAndTime = 'Pick date & time',
     this.cancel = 'Cancel',
     this.done = 'Done',
+    this.clear = 'Clear',
     this.requiredText = 'required',
     this.optionalText = 'optional',
   });
