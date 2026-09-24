@@ -42,6 +42,10 @@ clientConfig.dart
   flutter.generateInputs          bool     Generate Flutter UI input widgets       [false]
   flutter.typesToSkip             list     Type names to exclude from UI gen       []
   flutter.defaultGap              number   Default spacing between field rows      [16]
+  flutter.defaultClearButton      bool     Show a clear (X) button on text fields  [false]
+  flutter.sdkVersion              string   Flutter version to target (quote it);
+                                           3.35+ avoids deprecated Radio/Dropdown APIs
+  flutter.designLibrary           string   flutter | standalone (material_ui)      [flutter]
   immutableInputFields            bool     Generate input fields as final          [true]
   immutableTypeFields             bool     Generate type fields as final           [true]
 
