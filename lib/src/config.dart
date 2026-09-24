@@ -349,6 +349,7 @@ class FlutterConfig {
   final int defaultDateFirstYear;
   final int defaultDateLastYear;
   final DateFieldMode defaultDateMode;
+  final bool defaultClearButton;
   final String? sdkVersion;
   final FlutterDesignLibrary designLibrary;
 
@@ -374,6 +375,7 @@ class FlutterConfig {
     this.defaultDateFirstYear = 1900,
     this.defaultDateLastYear = 2100,
     this.defaultDateMode = DateFieldMode.dialog,
+    this.defaultClearButton = false,
     this.sdkVersion,
     this.designLibrary = FlutterDesignLibrary.flutter,
   });
@@ -442,6 +444,7 @@ class FlutterConfig {
         (e) => e.name == (json['defaultDateMode'] as String? ?? 'dialog'),
         orElse: () => DateFieldMode.dialog,
       ),
+      defaultClearButton: (json['defaultClearButton'] as bool?) ?? false,
       sdkVersion: sdkVersion,
       designLibrary: FlutterDesignLibrary.values.firstWhere(
         (e) => e.name == (json['designLibrary'] as String? ?? 'flutter'),

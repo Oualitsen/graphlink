@@ -302,11 +302,11 @@ class FlutterInputsDateSerializer {
       'inputFormatters: _form.dateConfig!.$name!.allowKeyboardInput ? [DateInputFormatter(_form.dateConfig!.$name!.pattern)] : const []',
       'onTap: _form.dateConfig!.$name!.allowKeyboardInput ? null : () => _pickDate(_${name}Controller, _form.dateConfig!.$name!)',
       'onChanged: (_) => _onFieldChanged()',
-      'decoration: _textDecoration(label, null, ${_u.callExpression('IconButton', [
+      'decoration: _textDecoration(label, _form.textConfig?.$name, ${_u.callExpression('IconButton', [
         "tooltip: _form.dateConfig!.$name!.type == DateType.dateTime ? _form.strings.pickDateAndTime : _form.strings.pickDate",
         'icon: const Icon(Icons.calendar_today_outlined)',
         'onPressed: enabled ? () => _pickDate(_${name}Controller, _form.dateConfig!.$name!) : null',
-      ])}, _form.fieldIcons?.$name)',
+      ])}, _form.fieldIcons?.$name, ${_fields.clearControllerArg(name, 'enabled')})',
       'validator: ${_u.functionLiteral(['v'], dateValidators)}',
     ]);
 
