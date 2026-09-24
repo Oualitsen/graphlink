@@ -1,8 +1,10 @@
 import 'package:graphlink/src/config.dart';
+import 'package:graphlink/src/serializers/flutter_api.dart';
 
 class FlutterInputsSharedSerializer {
   final FlutterConfig _config;
-  const FlutterInputsSharedSerializer(this._config);
+  final FlutterApi _api;
+  const FlutterInputsSharedSerializer(this._config, this._api);
 
   String serializeSharedInputFormWidget() => '''
 import 'package:flutter/material.dart';
@@ -42,7 +44,7 @@ enum RequiredIndicator { none, asterisk, requiredText, optionalText }
 ''';
 
   String serializeSharedTextFieldOptions() => '''
-import 'package:flutter/material.dart';
+import '${_api.materialImport}';
 
 class TextFieldOptions {
   final TextInputType keyboardType;
@@ -128,8 +130,6 @@ class StepperStrings {
     final mode = _config.defaultDateMode.name;
     final pattern = _config.defaultDatePattern;
     return '''
-import 'package:flutter/material.dart';
-
 enum DateType { date, dateTime }
 
 enum DateInputMode { dialog, inline }
@@ -257,7 +257,7 @@ class SelectFieldConfig<T> {
 ''';
 
   String serializeSharedBooleanLabels() => '''
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 class BooleanLabels {
   final Widget unselected;

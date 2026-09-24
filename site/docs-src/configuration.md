@@ -100,7 +100,9 @@ Used when `mode` is `"client"` and you want Dart/Flutter output.
             "defaultDatePattern": "yyyy-MM-dd",
             "defaultDateFirstYear": 1900,
             "defaultDateLastYear": 2100,
-            "defaultDateMode": "dialog"
+            "defaultDateMode": "dialog",
+            "sdkVersion": "3.47.5",
+            "designLibrary": "flutter"
           }
         }
       }
@@ -148,6 +150,8 @@ Used when `mode` is `"client"` and you want Dart/Flutter output.
           defaultDateFirstYear: 1900
           defaultDateLastYear: 2100
           defaultDateMode: dialog
+          sdkVersion: "3.47.5"
+          designLibrary: flutter
     ```
 
 | Option | Type | Default | Description |
@@ -226,6 +230,8 @@ These values are baked into the generated `DateInputConfig` class defaults and i
 | `defaultDateFirstYear` | `number` | `1900` | Fallback `firstDate` year used by all generated date pickers when no `firstDate` is provided in `DateInputConfig`. |
 | `defaultDateLastYear` | `number` | `2100` | Fallback `lastDate` year used by all generated date pickers when no `lastDate` is provided in `DateInputConfig`. |
 | `defaultDateMode` | `"dialog"` \| `"inline"` | `"dialog"` | Default `DateInputMode` in the generated `DateInputConfig` class. |
+| `sdkVersion` | `string` | _(unset)_ | Flutter version the generated widgets target, e.g. `"3.47.5"`. From `3.35` on, generated forms use `RadioGroup` instead of the deprecated `RadioListTile.groupValue`/`onChanged`, and `DropdownButtonFormField(initialValue:)` instead of `value:`. When unset, the pre-3.35 API is generated, which works on any SDK but reports deprecation warnings on newer ones. **Quote the value** in YAML: an unquoted `3.10` is read as the number `3.1`. |
+| `designLibrary` | `"flutter"` \| `"standalone"` | `"flutter"` | Which Material/Cupertino library generated files import. `"flutter"` uses `package:flutter/material.dart` and `cupertino.dart`; `"standalone"` uses `package:material_ui/material_ui.dart` and `package:cupertino_ui/cupertino_ui.dart` (Flutter 3.47+, add both packages to your `pubspec.yaml`). It must match the library your app uses, because generated types such as `TextFieldOptions` expose Material types. |
 
 ---
 

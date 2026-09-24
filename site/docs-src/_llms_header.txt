@@ -104,7 +104,9 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - **Barrel file generation.** Dart and TypeScript generators emit a single barrel/index file that
   re-exports all generated enums, inputs, types, and interfaces. One import covers the entire layer.
 - **Flutter UI widget generation.** The `flutter` config block generates display widgets for output
-  types and form widgets for input types, with extensive layout and style options.
+  types and form widgets for input types, with extensive layout and style options. `flutter.sdkVersion`
+  (e.g. "3.47.5", quoted) selects non-deprecated Flutter APIs from 3.35 on; `flutter.designLibrary`
+  (`flutter` | `standalone`) selects `package:flutter/material.dart` or `package:material_ui`.
 - **Keyword-safe identifiers.** A GraphQL field, input field, argument, or enum value may legally be
   named after a reserved word in the target language (`default`, `class`, `object`, `val`, ...).
   GraphLink keeps two names per identifier: the wire name (the original GraphQL token, used in the
