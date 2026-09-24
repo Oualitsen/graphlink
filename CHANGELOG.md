@@ -568,3 +568,13 @@
 ### Internal
 
 - New `FlutterApi` (`serializers/flutter_api.dart`) centralizes the Flutter SDK-version feature gates and the Material/Cupertino import paths; the four radio sites (enum, nullable bool, non-null bool, select) now share one `FlutterInputsRadioBinding` instead of four hand-written `RadioListTile` blocks.
+
+## Unreleased
+
+### New features
+
+- **Flutter: clear (X) button on generated text fields** — new `flutter.defaultClearButton` option (default `false`) and a per-field `TextFieldOptions.clearButton` (`bool?`, set through the form's `TextConfig`; `null` falls back to the default). The button appears on `String`, `int`, `double` and dialog-mode date text fields while the field is enabled and non-empty, and clearing a required field lets normal validation block submission. It is replaced by the spinner during async validation, never shown on password fields, and sits next to a date field's calendar button or a custom `suffixIcon`. Tooltip text comes from the new `FormStrings.clear` (default `"Clear"`).
+
+### Improvements
+
+- Generated dialog-mode date fields now honor the field's `TextConfig` entry for `prefixIcon` and `decoration` (previously ignored); `FieldIcons` and the calendar button keep precedence.
