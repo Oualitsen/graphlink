@@ -103,6 +103,7 @@ class FlutterInputsTypeHelpers {
 
   /// The T in InputFormWidget<T> for a given field — matches the schema data type.
   String valuesFieldType(GLField f) {
+    if (isInputField(f)) return resolveTypeCodeName(f.type.firstType.token);
     if (isListField(f)) return listDartType(f);
     if (isEnumField(f)) {
       final base = resolveTypeCodeName(f.type.firstType.token);

@@ -208,7 +208,7 @@ class FlutterInputsStateSerializer {
       if (dateEligibleFields.isNotEmpty) '// inline calendar open state',
       ...dateEligibleFields.map((f) => 'bool _${f.codeName}CalendarOpen = false;'),
       if (inputFields.isNotEmpty) '// nested input keys',
-      ...inputFields.map((f) => 'final _${f.codeName}Key = GlobalKey<${_types.resolveTypeCodeName(f.type.firstType.token)}FormState>();'),
+      ...inputFields.map((f) => 'final _${f.codeName}Key = GlobalKey<InputFormState<${_types.resolveTypeCodeName(f.type.firstType.token)}>>();'),
       '// field keys — used by _scrollToFirstError to locate first invalid field',
       ...fields.where((f) => textFields.contains(f) || enumFields.contains(f) || boolFields.contains(f))
           .map((f) => 'final _${f.codeName}FieldKey = GlobalKey<FormFieldState>();'),
@@ -1070,7 +1070,7 @@ class FlutterInputsStateSerializer {
     final name = f.codeName;
     final childType = _types.resolveTypeCodeName(f.type.firstType.token);
 
-    final childForm = _u.callExpression('${childType}Form', [
+    final defaultChildForm = _u.callExpression('${childType}Form', [
       'key: _${name}Key',
       'initialValues: _form.initialValues?.$name',
       'strings: _form.strings',
@@ -1083,6 +1083,10 @@ class FlutterInputsStateSerializer {
       // bubble sub-form field changes up to the parent's onChange / onContextChange
       'onContextChange: (_) => _onFieldChanged()',
     ]);
+    // A Values override replaces the generated child form entirely, but reuses the
+    // same GlobalKey<InputFormState<Child>> so read/validate/reset/isDirty/
+    // setSubmitting keep working transparently against whichever widget is built.
+    final childForm = '_form.values?.$name?.call(_${name}Key) ?? $defaultChildForm';
 
     return _u.createMethod(
       returnType: 'Widget',
@@ -1240,23 +1244,24 @@ class FlutterInputsStateSerializer {
 
       if (b.type == _StepType.subInput) {
         final childType = _types.resolveTypeCodeName(f.type.firstType.token);
+        final defaultChildForm = _u.callExpression('${childType}Form', [
+          'key: _${name}Key',
+          'strings: _form.strings',
+          'initialValues: _form.initialValues?.$name',
+          'requiredIndicator: _form.requiredIndicator',
+          'requiredLabel: _form.requiredLabel',
+          'optionalLabel: _form.optionalLabel',
+          'labelPosition: ${childType}LabelPosition.values.byName(_form.labelPosition.name)',
+          'labelWidth: _form.labelWidth',
+          'gap: _form.gap',
+          'onContextChange: (_) => _onFieldChanged()',
+        ]);
         return _u.callExpression('Step', [
           'title: _form.stepConfig?.$name?.title ?? const Text(\'$humanLabel\')',
           'subtitle: _form.stepConfig?.$name?.subtitle',
           'isActive: _currentStep >= $idx',
           'state: $stateExpr',
-          'content: ${_u.callExpression('${childType}Form', [
-            'key: _${name}Key',
-            'strings: _form.strings',
-            'initialValues: _form.initialValues?.$name',
-            'requiredIndicator: _form.requiredIndicator',
-            'requiredLabel: _form.requiredLabel',
-            'optionalLabel: _form.optionalLabel',
-            'labelPosition: ${childType}LabelPosition.values.byName(_form.labelPosition.name)',
-            'labelWidth: _form.labelWidth',
-            'gap: _form.gap',
-            'onContextChange: (_) => _onFieldChanged()',
-          ])}',
+          'content: _form.values?.$name?.call(_${name}Key) ?? $defaultChildForm',
         ]);
       }
 

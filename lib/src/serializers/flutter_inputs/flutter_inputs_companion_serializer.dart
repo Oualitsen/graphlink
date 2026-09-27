@@ -54,18 +54,16 @@ class FlutterInputsCompanionSerializer {
   }
 
   String serializeValuesClass(String inputName, List<GLField> fields) {
-    // Input fields are excluded — they're handled by their own nested key pattern.
-    final valueFields = fields.where((f) => !_types.isInputField(f)).toList();
     return _u.createClass(
       className: '${inputName}Values',
       statements: [
-        ...valueFields.map((f) =>
+        ...fields.map((f) =>
             'final InputFormWidget<${_types.valuesFieldType(f)}> Function(Key)? ${f.codeName};'),
         _u.createMethod(
           isConst: true,
           methodName: '${inputName}Values',
           namedArguments: true,
-          arguments: valueFields.map((f) => 'this.${f.codeName}').toList(),
+          arguments: fields.map((f) => 'this.${f.codeName}').toList(),
         ),
       ],
     );
