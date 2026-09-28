@@ -1197,9 +1197,9 @@ class FlutterInputsStateSerializer {
       if (inputFields.contains(f)) {
         widgetExpr = '_${f.codeName}InputRow(label, $enabledExpr)';
       } else if (textFields.contains(f)) {
-        widgetExpr = '_form.values?.${f.codeName}?.call(_${f.codeName}OverrideKey) ?? _${f.codeName}ScalarRow(label, $enabledExpr)';
+        widgetExpr = '_form.values?.${f.codeName}?.call(_${f.codeName}OverrideKey, label) ?? _${f.codeName}ScalarRow(label, $enabledExpr)';
       } else if (rowMethodFields.contains(f)) {
-        widgetExpr = '_form.values?.${f.codeName}?.call(_${f.codeName}OverrideKey) ?? _${f.codeName}Row(label, $enabledExpr)';
+        widgetExpr = '_form.values?.${f.codeName}?.call(_${f.codeName}OverrideKey, label) ?? _${f.codeName}Row(label, $enabledExpr)';
       } else if (directFields.contains(f)) {
         widgetExpr = '_form.values?.${f.codeName}?.call(_${f.codeName}OverrideKey) ?? $fieldWidget';
       } else {

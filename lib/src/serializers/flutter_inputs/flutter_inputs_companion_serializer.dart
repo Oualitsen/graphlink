@@ -54,11 +54,18 @@ class FlutterInputsCompanionSerializer {
   }
 
   String serializeValuesClass(String inputName, List<GLField> fields) {
+    // Text/enum/bool fields render inline with a label (asterisk + info tooltip)
+    // that the override must place itself, so those get it as a parameter. List
+    // and nested-input fields render standalone (own header/step title), so they
+    // don't.
+    bool needsLabel(GLField f) => !_types.isListField(f) && !_types.isInputField(f);
     return _u.createClass(
       className: '${inputName}Values',
       statements: [
-        ...fields.map((f) =>
-            'final InputFormWidget<${_types.valuesFieldType(f)}> Function(Key)? ${f.codeName};'),
+        ...fields.map((f) {
+          final params = needsLabel(f) ? 'Key, Widget label' : 'Key';
+          return 'final InputFormWidget<${_types.valuesFieldType(f)}> Function($params)? ${f.codeName};';
+        }),
         _u.createMethod(
           isConst: true,
           methodName: '${inputName}Values',
