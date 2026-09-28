@@ -572,3 +572,23 @@
 ### Internal
 
 - New `FlutterApi` (`serializers/flutter_api.dart`) centralizes the Flutter SDK-version feature gates and the Material/Cupertino import paths; the four radio sites (enum, nullable bool, non-null bool, select) now share one `FlutterInputsRadioBinding` instead of four hand-written `RadioListTile` blocks.
+
+## 5.3.0 - 2026-09-28
+
+### Breaking changes
+
+- **Flutter input forms: `${Input}Values` overrides for text, enum and bool fields now receive the field label** — the builder signature changed from `InputFormWidget<T> Function(Key)?` to `InputFormWidget<T> Function(Key, Widget label)?`. Previously an override replaced the whole generated row, so the required indicator (`*`) and the info tooltip were silently lost. `label` is the same combined widget the default row uses (required indicator plus info icon); place it wherever you want, or ignore it. List and nested-input fields keep the `Function(Key)` signature.
+
+  **Migration:** update your override callbacks.
+
+  ```dart
+  // Before
+  values: PersonValues(name: (key) => MyNameField(key: key))
+
+  // After
+  values: PersonValues(name: (key, label) => MyNameField(key: key, label: label))
+  ```
+
+### New features
+
+- **Flutter: replace a whole nested-input form (stepper step) via `${Input}Values`** — nested input fields can now be overridden with any `InputFormWidget<Child> Function(Key)`, in both the stepper layout and the `column`/`twoColumn` layouts. The custom widget's `InputFormState<Child>` is driven by the parent form exactly like a generated child form (`read`, `validate`, `reset`, `isDirty`, `setSubmitting`). Step titles/subtitles still come from `${Input}StepConfig`.
