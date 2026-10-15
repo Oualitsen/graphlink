@@ -674,6 +674,7 @@ clientConfig:
 glink                   # auto-discover config (see below)
 glink -c glink.json     # explicit config path
 glink -w                # watch mode — regenerate on schema change
+glink -w --debounce 1000  # watch mode, wait 1s after the last change
 glink --version         # print version and exit
 glink --help            # print usage
 ```
@@ -681,6 +682,7 @@ glink --help            # print usage
 | Flag | Description |
 |---|---|
 | `-c <path>` | Path to the config file. Accepts `.json`, `.yaml`, or `.yml`. If omitted, `glink` searches for `glink.json`, `glink.yaml`, or `glink.yml` starting from the current directory and walking up to the filesystem root. |
-| `-w` | Watch mode. GraphLink monitors the files matched by `schemaPaths` and regenerates on every save. |
+| `-w` | Watch mode. GraphLink monitors the files matched by `schemaPaths` and regenerates after changes settle (see `--debounce`). |
+| `--debounce <ms>` | Watch mode only. Milliseconds to wait after the last detected schema change before regenerating, so a burst of saves triggers a single run. Default `500`. Must be a non-negative integer. |
 | `--version` | Prints the GraphLink version and exits. |
 | `--help` | Prints usage information and exits. |

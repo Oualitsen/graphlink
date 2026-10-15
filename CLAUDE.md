@@ -289,6 +289,29 @@ make deploy                        # compile + install to ~/bin
 
 ---
 
+## Creating a PR
+
+Use `~/bin/pr.sh <branch-name>` — the branch name doubles as the commit message and
+PR title, so keep it short and descriptive (`feature/...`, `fix/...`, `chore/release-X.Y.Z`).
+
+```bash
+~/bin/pr.sh fix/watch-debounce
+```
+
+The script does everything in one go, from the current branch:
+
+1. `git checkout -b <branch-name>` — **do not create the branch beforehand**, the script fails if it exists
+2. `git add .` — stages everything, including untracked files; check `git status` first
+3. commit (message = branch name), `git push -u origin`
+4. `gh pr create` then `gh pr merge --squash --admin --delete-branch` — **merges
+   immediately and bypasses CI**
+5. checks out the base branch again and pulls
+
+Because it merges on the spot, never run it without the user explicitly asking. Before
+running it for a release, bump `pubspec.yaml` and add the `CHANGELOG.md` entry first.
+
+---
+
 ## Conventions
 
 - Extension files (`gl_grammar_*_extension.dart`) use Dart `extension` on `GlSchema`.

@@ -58,6 +58,11 @@ Future<void> main(List<String> arguments) async {
       help: 'Watch schema files for changes',
       negatable: false,
     )
+    ..addOption(
+      'debounce',
+      help: 'Milliseconds to wait after the last schema change before regenerating (with --watch)',
+      defaultsTo: '500',
+    )
     ..addFlag(
       'version',
       abbr: 'v',
@@ -74,6 +79,11 @@ Future<void> main(List<String> arguments) async {
   final args = parser.parse(arguments);
 
   final watch = args['watch'] as bool;
+  final debounceMs = int.tryParse(args['debounce'] as String);
+  if (debounceMs == null || debounceMs < 0) {
+    stderr.writeln('❌ --debounce must be a non-negative integer (milliseconds)');
+    exit(1);
+  }
 
   if (args['version'] as bool) {
     stdout.writeln('glink v$appVersion');
@@ -135,7 +145,7 @@ ${parser.usage}
   }
 
   if (watch) {
-    watchAndGenerate(config);
+    watchAndGenerate(config, debounce: Duration(milliseconds: debounceMs));
   } else {
     await handleGeneration(config);
   }
@@ -155,7 +165,7 @@ String? _findDefaultConfig() {
   }
 }
 
-void watchAndGenerate(GeneratorConfig config) {
+void watchAndGenerate(GeneratorConfig config, {required Duration debounce}) {
   final lastModifiedMap = <String, DateTime>{};
 
   List<File> resolveWatchedFiles() {
@@ -176,36 +186,59 @@ void watchAndGenerate(GeneratorConfig config) {
     }
   }
 
-  handleGeneration(config);
+  var running = false;
+  var rerunQueued = false;
+  Timer? debounceTimer;
+
+  Future<void> regenerate() async {
+    if (running) {
+      rerunQueued = true;
+      return;
+    }
+    running = true;
+    try {
+      await handleGeneration(config, watching: true);
+    } finally {
+      running = false;
+    }
+    if (rerunQueued) {
+      rerunQueued = false;
+      debounceTimer?.cancel();
+      debounceTimer = Timer(debounce, regenerate);
+    }
+  }
+
+  void scheduleRegeneration() {
+    debounceTimer?.cancel();
+    debounceTimer = Timer(debounce, regenerate);
+  }
+
+  regenerate();
 
   Timer.periodic(const Duration(seconds: 1), (timer) {
-    final currentFiles = resolveWatchedFiles();
+    var changed = false;
 
-    for (final file in currentFiles) {
+    for (final file in resolveWatchedFiles()) {
       try {
-        final newModified = file.lastModifiedSync();
-        final prevModified = lastModifiedMap[file.path];
-        if (prevModified == null || newModified.isAfter(prevModified)) {
+        final modified = file.lastModifiedSync();
+        final previous = lastModifiedMap[file.path];
+        if (previous == null) {
+          stdout.writeln('🆕 New matching file detected: ${file.path}');
+        } else if (modified.isAfter(previous)) {
           stdout.writeln('🔄 Detected change in: ${file.path}');
-          lastModifiedMap[file.path] = newModified;
-          handleGeneration(config);
-          break;
+        } else {
+          continue;
         }
+        lastModifiedMap[file.path] = modified;
+        changed = true;
       } catch (_) {}
     }
 
-    for (final file in currentFiles) {
-      if (!lastModifiedMap.containsKey(file.path)) {
-        stdout.writeln('🆕 New matching file detected: ${file.path}');
-        lastModifiedMap[file.path] = file.lastModifiedSync();
-        handleGeneration(config);
-        break;
-      }
-    }
+    if (changed) scheduleRegeneration();
   });
 }
 
-Future<void> handleGeneration(GeneratorConfig config) async {
+Future<void> handleGeneration(GeneratorConfig config, {bool watching = false}) async {
   resetWriteCount();
   final now = DateTime.now();
   final filePaths = <String>[];
@@ -213,6 +246,7 @@ Future<void> handleGeneration(GeneratorConfig config) async {
     final files = Glob(pattern).listSync().whereType<File>().toList();
     if (files.isEmpty) {
       stderr.writeln('❌ No schema files matched "$pattern"');
+      if (watching) return;
       exit(1);
     }
     filePaths.addAll(files.map((f) => f.path));
