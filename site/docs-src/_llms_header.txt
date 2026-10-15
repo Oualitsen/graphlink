@@ -172,6 +172,7 @@ Platforms: Linux (x86_64), macOS (ARM64), Windows (x86_64)
 glink                   # auto-discover glink.json / glink.yaml / glink.yml
 glink -c glink.json     # explicit config path (JSON, YAML, or YML)
 glink -w                # watch mode — regenerate on schema change
+glink -w --debounce 1000  # watch mode, wait 1000 ms after the last change (default 500)
 glink -v                # print version
 glink -h                # show help
 ```

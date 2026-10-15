@@ -592,3 +592,19 @@
 ### New features
 
 - **Flutter: replace a whole nested-input form (stepper step) via `${Input}Values`** — nested input fields can now be overridden with any `InputFormWidget<Child> Function(Key)`, in both the stepper layout and the `column`/`twoColumn` layouts. The custom widget's `InputFormState<Child>` is driven by the parent form exactly like a generated child form (`read`, `validate`, `reset`, `isDirty`, `setSubmitting`). Step titles/subtitles still come from `${Input}StepConfig`.
+
+## 5.4.0 - 2026-10-15
+
+### New features
+
+- **`--debounce <ms>` CLI flag for watch mode** — `glink -w` now waits until schema changes have settled for `--debounce` milliseconds (default `500`) before regenerating, so a burst of saves, or replacing a whole directory of `.gql` files (`rm -rf` + `cp -r`), triggers a single run instead of one per detected change. Must be a non-negative integer.
+
+### Fixes & improvements
+
+- Fixed watch mode exiting when a `schemaPaths` glob momentarily matches nothing (e.g. while files are being replaced). It now reports the error and keeps watching, regenerating once the files reappear. Outside watch mode the behavior is unchanged (exit code 1).
+- Watch mode no longer starts a new generation while one is still running; changes that arrive mid-run are collapsed into a single follow-up run. All files changed in one poll are now picked up together.
+- Fixed generated files not being recreated in watch mode when they were deleted from disk after a previous generation in the same process: the incremental-write cache now also checks that the file still exists.
+
+### Documentation
+
+- `--debounce` documented in the CLI flags reference, the getting-started watch-mode section, `--help`, and the LLM context headers.
