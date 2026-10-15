@@ -50,6 +50,7 @@ make release  # build → Docker image → push → kubectl rolling restart
 The hook `hooks/generate_llms.py` runs automatically during `mkdocs build` and writes:
 - `dist/llms.txt` — concise overview from `_llms_concise_header.txt` + frontmatter links from each page
 - `dist/llms-full.txt` — full context from `_llms_header.txt` + complete markdown of every page
+- `dist/llms/<page>.txt` — raw markdown of each page (the links in `llms.txt` point here)
 - `dist/sitemap.xml`
 
 **To update LLM context:** edit `docs-src/_llms_header.txt` and/or `docs-src/_llms_concise_header.txt`, then run `make build`.

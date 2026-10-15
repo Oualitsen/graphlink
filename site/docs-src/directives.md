@@ -1,6 +1,6 @@
 ---
-title: Directives Reference — GraphLink Docs
-description: Complete reference for all GraphLink schema directives — @glCache, @glCacheInvalidate, @glCaptureErrors, @glMapsTo, @glMapField, @glSkipOnServer (with forward mappings), @glExternal, @glValidate, @glServerLenient, @glInjectContext, @glIntercept, @deprecated, and more.
+title: "GraphLink Directives Reference"
+description: "Reference for every GraphLink directive: @glCache, @glCacheInvalidate, @glCaptureErrors, @glMapsTo, @glSkipOnServer, @glIntercept, @glValidate and more."
 ---
 
 # Directives Reference
@@ -333,7 +333,7 @@ Excludes a type or field from server generation and generates `@SchemaMapping` o
 
 **Target:** BOTH · **Placement:** `OBJECT`, `INPUT_OBJECT`, `SCALAR`, `FIELD_DEFINITION`
 
-Enforces server-side access control at two levels. **Always**: generates a `@SchemaMapping` that throws `GraphQLException("Access denied")` — no client can read the field at runtime. **With `generateSchema: true`**: also strips the field from the schema Spring Boot serves, making it invisible in GraphiQL and rejected at validation before execution. Also excludes the type or field from all client-side code generation (Dart, Java, TypeScript).
+Enforces server-side access control at two levels. **Always**: generates a `@SchemaMapping` that throws `GraphQLException("Access denied")` — no client can read the field at runtime. **With `generateSchema: true`**: also strips the field from the schema Spring Boot serves, making it invisible in GraphiQL and rejected at validation before execution. Also excludes the type or field from all client-side code generation (Dart, Java, TypeScript, Kotlin, Swift).
 
 → **[Full reference including the server-side security guarantee](skip-directives.md)**
 

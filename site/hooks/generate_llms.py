@@ -3,10 +3,12 @@ MkDocs build hook — regenerates llms.txt, llms-full.txt, and sitemap.xml from 
 
 llms.txt      : concise overview + auto-generated page links (from frontmatter description)
 llms-full.txt : static header + full markdown content of every page
-sitemap.xml   : landing page + all doc pages with today's date as lastmod
+llms/<page>.txt : raw markdown of each page, served at /llms/<page>.txt
+sitemap.xml   : every doc page (docs are served from the site root) with its last git-commit date as lastmod
 """
 import os
 import re
+import subprocess
 from datetime import date
 
 
@@ -20,10 +22,29 @@ def _parse_frontmatter(text):
             for line in block.splitlines():
                 m = re.match(r'^(\w+):\s*(.+)', line)
                 if m:
-                    meta[m.group(1)] = m.group(2).strip()
+                    meta[m.group(1)] = m.group(2).strip().strip('"')
             body = text[end + 4:].lstrip('\n')
             return meta, body
     return meta, text
+
+
+def _clean_for_llm(body):
+    """Drop HTML comments and attr_list suffixes (`{: .cls }`) — noise for LLM consumers."""
+    body = re.sub(r'<!--.*?-->\n?', '', body, flags=re.S)
+    body = re.sub(r'\{:\s*[^}]*\}', '', body)
+    return body
+
+
+def _last_modified(path):
+    try:
+        out = subprocess.run(['git', 'log', '-1', '--format=%cs', '--', path],
+                             capture_output=True, text=True, check=True,
+                             cwd=os.path.dirname(os.path.abspath(path))).stdout.strip()
+        if out:
+            return out
+    except Exception:
+        pass
+    return date.today().isoformat()
 
 
 def _flatten_nav(nav):
@@ -64,7 +85,7 @@ def on_post_build(config):
         if not os.path.exists(filepath):
             continue
         _, body = _parse_frontmatter(_read(filepath))
-        full_parts.append(body.strip())
+        full_parts.append(_clean_for_llm(body).strip())
         full_parts.append('\n\n---\n\n')
 
     full_output = ''.join(full_parts)
@@ -82,16 +103,16 @@ def on_post_build(config):
             continue
         meta, _ = _parse_frontmatter(_read(filepath))
         slug = path.replace('.md', '')
-        llms_url = f"{site_url}/docs/llms/{slug}.txt"
+        llms_url = f"{site_url}/llms/{slug}.txt"
         desc = meta.get('description', '')
         title = meta.get('title', slug)
         # strip site suffix from title for brevity
         title = re.sub(r'\s*—\s*GraphLink\s*(Docs)?', '', title).strip()
-        links.append(f"- {title} ({desc}): {llms_url}")
+        links.append(f"- [{title}]({llms_url}): {desc}")
 
     concise_output = header_concise + '\n\n## Documentation pages\n\n' + '\n'.join(links) + '\n\n## Links\n\n' \
         '- Website: https://graphlink.dev/\n' \
-        '- Docs: https://graphlink.dev/docs/index.html\n' \
+        '- Docs: https://graphlink.dev/\n' \
         '- GitHub: https://github.com/Oualitsen/graphlink\n' \
         '- pub.dev: https://pub.dev/packages/graphlink\n' \
         '- Issues: https://github.com/Oualitsen/graphlink/issues\n' \
@@ -100,24 +121,24 @@ def on_post_build(config):
     with open(os.path.join(out_dir, 'llms.txt'), 'w') as f:
         f.write(concise_output)
 
-    # --- sitemap.xml ---
-    today = date.today().isoformat()
-    site_url = site_url  # already stripped of trailing slash
+    # --- llms/<page>.txt ---
+    llms_dir = os.path.join(out_dir, 'llms')
+    os.makedirs(llms_dir, exist_ok=True)
+    per_page = sorted(f for f in os.listdir(docs_dir) if f.endswith('.md') and not f.startswith('_'))
+    for fname in per_page:
+        with open(os.path.join(llms_dir, fname[:-3] + '.txt'), 'w') as f:
+            f.write(_read(os.path.join(docs_dir, fname)))
 
-    sitemap_entries = [
-        f'  <url>\n    <loc>{site_url}/</loc>\n    <lastmod>{today}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>1.0</priority>\n  </url>',
-        f'  <url>\n    <loc>{site_url}/docs/index.html</loc>\n    <lastmod>{today}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.9</priority>\n  </url>',
-    ]
+    # --- sitemap.xml --- (URLs match each page's <link rel="canonical">)
+    sitemap_entries = []
     for path in pages:
-        if path == 'index.md':
-            continue  # already added above
         filepath = os.path.join(docs_dir, path)
         if not os.path.exists(filepath):
             continue
-        html_path = path.replace('.md', '.html')
-        url = f"{site_url}/docs/{html_path}"
+        url = f"{site_url}/{path.replace('.md', '.html')}"
+        priority = '1.0' if path == 'index.md' else '0.8'
         sitemap_entries.append(
-            f'  <url>\n    <loc>{url}</loc>\n    <lastmod>{today}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>'
+            f'  <url>\n    <loc>{url}</loc>\n    <lastmod>{_last_modified(filepath)}</lastmod>\n    <priority>{priority}</priority>\n  </url>'
         )
 
     sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
@@ -129,4 +150,5 @@ def on_post_build(config):
 
     print(f"  [llms hook] llms-full.txt — {len(pages)} pages, {len(full_output):,} chars")
     print(f"  [llms hook] llms.txt      — {len(links)} page links")
-    print(f"  [llms hook] sitemap.xml   — {len(sitemap_entries)} URLs, lastmod {today}")
+    print(f"  [llms hook] llms/*.txt    — {len(per_page)} per-page files")
+    print(f"  [llms hook] sitemap.xml   — {len(sitemap_entries)} URLs")

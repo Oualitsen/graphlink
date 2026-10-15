@@ -1,6 +1,6 @@
 ---
-title: Express / Apollo Server — GraphLink Docs
-description: GraphLink generates an Express + Apollo Server GraphQL scaffold from your schema — typed service interfaces, resolvers, DataLoader-backed batch mappings, a ready-to-run entry point, and Map-boundary responses. Stable since v5.0.0.
+title: "Express & Apollo GraphQL Server Generator"
+description: "Generate an Express + Apollo Server GraphQL scaffold in TypeScript: service interfaces, resolvers, DataLoader batching and graphql-ws subscriptions."
 ---
 
 # Express / Apollo Server

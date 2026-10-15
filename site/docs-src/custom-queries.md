@@ -1,6 +1,6 @@
 ---
-title: Custom Queries & Mutations — GraphLink Docs
-description: Write your own GraphQL operation documents alongside the schema. Custom queries, mutations, aliases, fragments, multi-resolver queries, specific field projections, and client-side default values — all generate fully typed client methods.
+title: "Custom GraphQL Queries & Mutations"
+description: "Write GraphQL queries and mutations next to your schema and get typed client methods: aliases, fragments, multi-resolver queries, projections, defaults."
 ---
 
 # Custom Queries & Mutations

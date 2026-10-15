@@ -1,10 +1,15 @@
 name: graphlink
-description: |
-  GraphLink is a powerful code generation tool that generates type-safe client and server code from GraphQL schemas for Dart, Java, Spring Boot and more.
+description: "GraphQL code generator: typed Dart, Flutter, Java, TypeScript, Kotlin and Swift clients plus Spring Boot and Express servers from one schema."
 version: 5.4.0
 homepage: https://graphlink.dev
 repository: https://github.com/Oualitsen/graphlink
-documentation: https://graphlink.dev/docs/index.html
+documentation: https://graphlink.dev/
+topics:
+  - graphql
+  - code-generation
+  - codegen
+  - flutter
+  - dart
 
 environment:
   sdk: ">=2.19.0 <4.0.0"

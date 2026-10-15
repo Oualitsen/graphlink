@@ -1,6 +1,6 @@
 ---
-title: Java Client — GraphLink Docs
-description: Use the generated GraphLink Java client for type-safe GraphQL queries. No generics, injectable HttpClient/OkHttpClient, builder pattern inputs, file uploads, and an optional reactive mode (Reactor/RxJava3/Mutiny) — new GraphLinkClient(url) is all you need.
+title: "Java GraphQL Client Generator (No Generics)"
+description: "Generated Java GraphQL client with no generics or casting: builder inputs, injectable HttpClient/OkHttp, optional Reactor, RxJava3 and Mutiny modes."
 ---
 
 # Java Client

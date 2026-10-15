@@ -1,6 +1,6 @@
 ---
-title: Configuration Reference — GraphLink Docs
-description: Complete reference for all GraphLink glink.json / glink.yaml options — schemaPaths, typeMappings, unknownScalarType, outputDir, clientConfig (Dart, Java reactive asyncStyle, TypeScript, Kotlin, Swift), serverConfig (Spring Boot, Kotlin Spring), identifier normalization, and CLI flags.
+title: "glink.json Configuration Reference"
+description: "Every glink.json / glink.yaml option: schemaPaths, typeMappings, outputDir, clientConfig for Dart, Java, TypeScript, Kotlin, Swift, serverConfig and CLI flags."
 ---
 
 # Configuration Reference

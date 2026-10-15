@@ -1,6 +1,6 @@
 ---
-title: Using GraphLink with AI Agents
-description: Ready-to-copy agent instruction files for Claude Code, Gemini CLI, and other AI coding assistants in GraphLink projects.
+title: "GraphLink for AI Coding Agents"
+description: "Ready-to-copy AGENTS.md / CLAUDE.md instructions so Claude Code, Gemini CLI, Copilot and Cursor use GraphLink correctly in your project."
 ---
 
 # Using GraphLink with AI Agents
@@ -110,7 +110,8 @@ This page provides ready-to-use instruction files for common setups.
     - Never edit files inside `src/generated/`.
     - Import `GraphLinkClient` from `src/generated/client/graph-link-client`.
     - All queries and mutations are typed methods — no manual type assertions needed.
-    - Subscriptions are available as callback-based methods on `client.subscriptions`.
+    - Subscriptions are on `client.subscriptions`: callback-based (`onData`/`onError`/`onComplete`)
+      by default, or `Observable<T>` when `observables: true` is set in the TypeScript config.
     ```
 
 ---
@@ -220,6 +221,38 @@ This page provides ready-to-use instruction files for common setups.
     - Implement the generated service interfaces (e.g. `VehicleService`) — do not modify the controllers.
     - Subscription resolvers must return `reactor.core.publisher.Flux<T>`.
     - Generated repositories are stubs — fill in the persistence logic, but do not change the interface signature.
+    ```
+
+---
+
+## Express / Apollo server project
+
+=== "AGENTS.md / CLAUDE.md"
+
+    ```markdown
+    ## Code generation — GraphLink
+
+    This project uses [GraphLink](https://graphlink.dev) (`glink`) to generate
+    an Express + Apollo Server scaffold (TypeScript) from a GraphQL schema.
+
+    - **Schema**: `schema/*.graphql`
+    - **Config**: `glink.json` at the project root (`mode: server`, `serverConfig.expressApollo`)
+    - **Generated files**: `src/generated/` — DO NOT edit these manually
+    - **Your code**: `src/impl/` (service implementations) and `src/start.ts`
+
+    To regenerate after any schema change:
+    ```bash
+    glink -c glink.json
+    ```
+
+    ### Rules
+    - To add a field, type, query, or mutation: edit the `.graphql` schema file, then run `glink`.
+    - Never edit files inside `src/generated/` — resolvers, types, inputs, and `index.ts` are all generated.
+    - Implement the generated service interfaces (e.g. `ArticleService`) in `src/impl/` — do not modify the resolvers.
+    - Queries and mutations return `Promise<T>`; subscriptions return `AsyncIterable<T>`.
+    - Start the server with the generated `createServer({ ...services })`; per-request context goes through `contextFactory`.
+    - Batch-mapped fields (`@glSkipOnServer(batch: true)`) use generated DataLoaders — do not hand-roll N+1 lookups.
+    - If the schema uses `@glIntercept`, pass an `interceptor` implementation in the services object.
     ```
 
 ---

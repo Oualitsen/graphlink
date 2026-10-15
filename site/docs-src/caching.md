@@ -1,6 +1,6 @@
 ---
-title: Caching — GraphLink Docs
-description: GraphLink's built-in caching — @glCache and @glCacheInvalidate directives, TTL, tag-based invalidation, partial query caching, staleIfOffline, and custom cache stores.
+title: "GraphQL Client Caching Directives"
+description: "GraphQL client caching declared in the schema: @glCache and @glCacheInvalidate, TTL, tag invalidation, partial query caching, staleIfOffline, custom stores."
 ---
 
 # Built-In Caching
@@ -172,15 +172,15 @@ Examples of custom implementations you might write:
 - **Encrypted store** — encrypt sensitive data at rest on device
 - **Size-limited LRU** — evict least-recently-used entries when a size cap is reached
 
-Pass the custom store as the last argument to the client constructor:
+Pass the custom store to the client constructor (the `store:` named parameter in Dart, the last argument in Java):
 
 === "Dart"
 
     ```dart
     final client = GraphLinkClient(
-      graphLinkAdapter,
-      SimpleWebSocketAdapter('ws://localhost:8080/graphql'),
-      MyCustomCacheStore(), // implements GraphLinkCacheStore
+      adapter: myHttpAdapterFn,
+      wsAdapter: DefaultGraphLinkWebSocketAdapter(url: 'ws://localhost:8080/graphql'),
+      store: MyCustomCacheStore(), // implements GraphLinkCacheStore
     );
     ```
 
