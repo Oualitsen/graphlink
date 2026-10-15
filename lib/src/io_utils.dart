@@ -57,12 +57,12 @@ Future<File> saveSource({
           : "$fileHeadComment$dartIgnoreForFile\n";
   final content = '$header\n$data\n';
   final hash = content.hashCode;
-  if (_outputHashCache[path] == hash) {
-    return Future.value(File(path));
+  var file = File(path);
+  if (_outputHashCache[path] == hash && file.existsSync()) {
+    return Future.value(file);
   }
   _outputHashCache[path] = hash;
   _writeCount++;
-  var file = File(path);
   if (!file.existsSync()) {
     file.createSync(recursive: true);
   }

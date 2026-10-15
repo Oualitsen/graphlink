@@ -419,6 +419,12 @@ glink -w
 # [14:32:01] Regenerating... done (21 files, 312ms)
 ```
 
+Regeneration waits until changes have settled for 500 ms, so a burst of saves triggers a single run. Tune it with `--debounce <ms>`:
+
+```bash title="Terminal"
+glink -w --debounce 1000
+```
+
 This integrates naturally with Flutter's hot reload workflow — schema change, save, and your Dart types are updated before you switch back to the emulator.
 
 ## Next steps

@@ -10,6 +10,9 @@ $parserUsage
 If -c is omitted, glink searches for glink.json, glink.yaml, or glink.yml
 starting from the current directory and walking up to the filesystem root.
 
+With -w, regeneration waits until schema changes have settled for --debounce
+milliseconds (default 500), so a burst of saves triggers a single run.
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  config reference  (JSON, YAML, and YML are all accepted)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
