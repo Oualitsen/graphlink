@@ -1,6 +1,6 @@
 ---
-title: GraphLink — GraphQL Code Generation for Dart, Java, TypeScript, Kotlin & Swift
-description: GraphLink compiles your .graphql schema into fully typed clients and server code for Dart, Flutter, Java, TypeScript, Kotlin, Swift, Spring Boot, and Express/Apollo. No runtime. No boilerplate. No schema drift.
+title: "GraphLink — GraphQL Code Generator for Dart, Java, TS, Kotlin & Swift"
+description: "GraphLink generates typed GraphQL clients and servers from one .graphql schema for Dart, Flutter, Java, TypeScript, Kotlin, Swift, Spring Boot and Express."
 ---
 
 # GraphLink
@@ -87,7 +87,7 @@ Add a field to the schema — run `glink` — it appears in every client, every 
 === "Dart / Flutter"
 
     ```dart
-    final res = await client.queries.getVehicle("v-1");
+    final res = await client.queries.getVehicle(id: "v-1");
     print("${res.getVehicle.brand} ${res.getVehicle.model}");
     ```
 
@@ -186,7 +186,7 @@ Every GraphQL client library sells you the same promise: write a schema, get a c
     **With GraphLink**
 
     ```dart
-    final res = await client.queries.getVehicle('42');
+    final res = await client.queries.getVehicle(id: '42');
     print('${res.getVehicle.brand} ${res.getVehicle.year}');
     ```
 

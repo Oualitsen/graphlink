@@ -1,6 +1,6 @@
 ---
-title: Spring Boot Server — GraphLink Docs
-description: GraphLink generates Spring Boot GraphQL scaffolding from your schema — controllers, service interfaces, inputs, enums, for both Java and Kotlin. Strict-by-default server generation with Map-boundary controllers, MVC and reactive WebFlux modes, file uploads, Spring Security context propagation, and forward mappings.
+title: "Spring Boot GraphQL Server Generator"
+description: "Generate a Spring Boot GraphQL server (Java or Kotlin) from your schema: controllers, service interfaces, MVC or WebFlux, uploads and strict nullability."
 ---
 
 # Spring Boot Server
@@ -441,18 +441,23 @@ This option has no effect in reactive mode — Spring Security provides dedicate
 
 ## Forward mappings
 
-When a type is annotated with `@glSkipOnServer(mapTo: "SomeServerType")`, GraphLink automatically forwards fields that exist verbatim on the server type — fields with the same name and compatible type — without generating a service method or `@SchemaMapping` for them. Only fields absent from the server type still get full delegation.
+When a type is annotated with `@glSkipOnServer(mapTo: "SomeSchemaType")`, `mapTo` names another **type or interface declared in your schema** (not a Java class name). GraphLink resolves the skipped type to that type's generated class and automatically forwards fields that exist verbatim on it — same name and compatible type — without generating a service method or `@SchemaMapping` for them. Only fields absent from the target type still get full delegation.
 
 ```graphql title="Forward mapping example"
-# Map our schema Pageable to Spring Data's Pageable — don't generate a class
-type Pageable @glSkipOnServer(mapTo: "org.springframework.data.domain.Pageable") {
-  pageNumber: Int   # exists verbatim on Spring's Pageable → auto-forwarded
-  pageSize: Int     # exists verbatim on Spring's Pageable → auto-forwarded
-  offset: Long      # exists verbatim on Spring's Pageable → auto-forwarded
+type Vehicle {
+  id: ID!
+  brand: String!
+}
+
+# Client-facing view model — resolved on the server as a regular Vehicle, no VehicleCard class generated
+type VehicleCard @glSkipOnServer(mapTo: "Vehicle") {
+  id: ID!               # exists verbatim on Vehicle → auto-forwarded
+  brand: String!        # exists verbatim on Vehicle → auto-forwarded
+  displayLabel: String! # not on Vehicle → @SchemaMapping + service method
 }
 ```
 
-Fields that match are resolved directly by Spring without any service delegation. This removes the boilerplate of manually writing `@SchemaMapping` methods for fields that already exist on the mapped type.
+The `mapTo` target must exist in the schema and must not itself be marked `@glSkipOnServer`; otherwise generation fails with a validation error. Fields that match are resolved directly by Spring without any service delegation, which removes the boilerplate of writing `@SchemaMapping` methods for fields that already exist on the mapped type.
 
 ## File uploads
 

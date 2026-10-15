@@ -1,6 +1,6 @@
 ---
-title: Philosophy — GraphLink Docs
-description: The GraphLink philosophy — pure code generation, no runtime abstractions, schema as single source of truth, keyword-safe identifiers, and only the fields the server actually needs.
+title: "Philosophy: Pure GraphQL Code Generation"
+description: "Why GraphLink is pure code generation: no runtime, the schema as single source of truth, keyword-safe identifiers, and only the fields the server needs."
 ---
 
 # The GraphLink Philosophy
@@ -9,9 +9,9 @@ Pure code generation. No runtime abstractions. Only what the server needs.
 
 ## What pure code generation means
 
-GraphLink is a code generator, not a runtime library. When you run `glink`, it reads your schema and writes ordinary Dart or Java source files. Those files have zero dependency on GraphLink itself — no base classes to extend, no interfaces to implement, no runtime to ship.
+GraphLink is a code generator, not a runtime library. When you run `glink`, it reads your schema and writes ordinary Dart, Java, TypeScript, Kotlin, or Swift source files. Those files have zero dependency on GraphLink itself — no base classes to extend, no interfaces to implement, no runtime to ship.
 
-Every generated class is plain Dart or plain Java. A generated `Vehicle` class in Dart is just a Dart class with fields, a constructor, `fromJson`, and `toJson`. A generated `Vehicle.java` is just a POJO with a builder. You could hand-write these classes yourself; GraphLink simply writes them faster and keeps them in sync with your schema.
+Every generated class is plain code in the target language. A generated `Vehicle` class in Dart is just a Dart class with fields, a constructor, `fromJson`, and `toJson`. A generated `Vehicle.java` is just a POJO with a builder. A generated Kotlin `Vehicle` is a `data class`, and a generated Swift `Vehicle` is a `Sendable` struct. You could hand-write these classes yourself; GraphLink simply writes them faster and keeps them in sync with your schema.
 
 **Delete GraphLink from your project tomorrow and everything still compiles.** There is nothing to uninstall, no peer dependency to satisfy, no API surface that could be deprecated. The generated code is yours.
 
@@ -123,8 +123,11 @@ GraphLink generates the logic — the query strings, the serialization, the clie
 
 - In Dart: `Future<String> Function(String payload)`
 - In Java: a `@FunctionalInterface` that takes a JSON string and returns a JSON string
+- In TypeScript: `(payload: string) => Promise<string>`
+- In Kotlin: a `fun interface` with a single `suspend` method
+- In Swift: a `GraphLinkClientAdapter` closure typealias
 
-This means you can use `http`, `dio`, `OkHttp`, Spring's `WebClient`, a mock, or anything else. The generated client does not import any HTTP library. You swap the transport at construction time. This makes testing trivial — pass a function that returns a hardcoded JSON string and you have a complete mock client.
+This means you can use `http`, `dio`, `fetch`, `OkHttp`, `URLSession`, Spring's `WebClient`, a mock, or anything else. The generated client does not import any HTTP library. You swap the transport at construction time. This makes testing trivial — pass a function that returns a hardcoded JSON string and you have a complete mock client.
 
 ## How it compares
 

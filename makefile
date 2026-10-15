@@ -49,9 +49,8 @@ site-rollout:
 
 site-version:
 	@VERSION=$$(grep '^version:' pubspec.yaml | sed 's/version: //'); \
-	sed -i '' "s/?v=[0-9]*\.[0-9]*\.[0-9]*/?v=$$VERSION/g" site/index.html; \
-	sed -i '' "s/Open Source · MIT · v[0-9]*\.[0-9]*\.[0-9]*/Open Source · MIT · v$$VERSION/g" site/index.html; \
-	echo "✓ site/index.html updated to v$$VERSION"
+	sed -i '' "s/as of v[0-9]*\.[0-9]*\.[0-9]*/as of v$$VERSION/" site/docs-src/_llms_header.txt site/docs-src/_llms_concise_header.txt; \
+	echo "✓ site/docs-src llms headers updated to v$$VERSION"
 
 site-release: site-version site-build site-deploy site-rollout
 	@echo "✓ graphlink.dev deployed"

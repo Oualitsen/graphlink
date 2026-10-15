@@ -1,6 +1,6 @@
 ---
-title: "@glSkipOnServer & @glSkipOnClient — GraphLink Docs"
-description: "@glSkipOnServer and @glSkipOnClient — two-layer server-side access control, schema stripping, @SchemaMapping, @BatchMapping, mapTo, forward mappings, and the ID/object field-pair pattern for N+1-safe relationship loading."
+title: "@glSkipOnServer & @glSkipOnClient"
+description: "@glSkipOnServer and @glSkipOnClient: server-side access control, schema stripping, SchemaMapping, BatchMapping, mapTo and N+1-safe field pairs."
 ---
 
 # @glSkipOnServer & @glSkipOnClient
@@ -10,7 +10,7 @@ Two directives that give you fine-grained control over what GraphLink generates 
 | Directive | Target | Effect |
 |---|---|---|
 | `@glSkipOnServer` | Server (Spring Boot) | Excludes a type or field from server generation; generates `@SchemaMapping` / `@BatchMapping` to resolve it |
-| `@glSkipOnClient` | Client (Dart, Java, TypeScript) | Strips the type or field from the generated schema — **no client can query it** |
+| `@glSkipOnClient` | Client (Dart, Java, TypeScript, Kotlin, Swift) | Strips the type or field from the generated schema — **no client can query it** |
 
 Declaration (add to your schema or a dedicated `directives.graphql`):
 

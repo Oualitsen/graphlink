@@ -1,6 +1,6 @@
 ---
-title: Kotlin Client — GraphLink Docs
-description: Use the generated GraphLink Kotlin client in Android, Spring Boot, or any JVM/KMP project. Coroutine-based queries, mutations, and subscriptions with kotlinx.serialization. Data classes, enums (throwing fromJson as of v5.0.0), and unions fully supported.
+title: "Kotlin GraphQL Client Generator"
+description: "Generated Kotlin GraphQL client for Android, JVM and KMP: coroutines, kotlinx.serialization data classes, OkHttp WebSocket subscriptions and caching."
 ---
 
 # Kotlin Client
