@@ -1,6 +1,6 @@
 ---
-title: Swift Client — GraphLink Docs
-description: Use the generated GraphLink Swift client in iOS, macOS, or server-side Swift projects. async/await queries, mutations, and AsyncThrowingStream subscriptions, with Sendable structs and zero third-party dependencies.
+title: "Swift GraphQL Client Generator"
+description: "Generated Swift GraphQL client for iOS, macOS and Linux: async/await, Sendable structs, AsyncThrowingStream subscriptions, no third-party dependencies."
 ---
 
 # Swift Client

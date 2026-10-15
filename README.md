@@ -2,7 +2,7 @@
 
 # GraphLink
 
-> Write your GraphQL schema once. Get fully typed Dart/Flutter code — queries, mutations, subscriptions, UI input widgets — generated in milliseconds. No boilerplate. No drift.
+> GraphQL code generator. Write your schema once and get fully typed clients and servers for Dart/Flutter, Java, TypeScript, Kotlin, Swift, Spring Boot and Express/Apollo — queries, mutations, subscriptions, caching — generated in milliseconds. No boilerplate. No drift.
 
 [![pub.dev](https://img.shields.io/pub/v/graphlink?label=pub.dev)](https://pub.dev/packages/graphlink)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -188,7 +188,7 @@ Reconnection, error handling, and typed payloads are all generated.
 
 ## Multi-language support
 
-GraphLink also generates Java, Kotlin, and TypeScript clients, plus Spring Boot and Express/Apollo server code, from the same schema. See the [full documentation on GitHub](https://github.com/Oualitsen/graphlink) for setup and examples.
+GraphLink also generates Java, Kotlin, Swift, and TypeScript clients, plus Spring Boot and Express/Apollo server code, from the same schema. See the [full documentation at graphlink.dev](https://graphlink.dev/) for setup and examples.
 
 ---
 

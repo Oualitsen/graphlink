@@ -1,6 +1,6 @@
 ---
-title: Dart / Flutter Client — GraphLink Docs
-description: Use the generated GraphLink Dart client in Flutter or Dart apps. Generated Dio and http adapters, named-parameter constructors, typed queries, mutations, subscriptions, file uploads, and built-in caching.
+title: "Dart & Flutter GraphQL Client Generator"
+description: "Generated Dart and Flutter GraphQL client: typed queries, mutations, subscriptions, Dio/http adapters, file uploads and schema-driven caching."
 ---
 
 # Dart / Flutter Client
@@ -331,7 +331,7 @@ Import it once instead of reaching into individual files under `enums/`, `inputs
 import 'package:my_app/generated/graphlink.dart';
 
 final client = GraphLinkClient.withHttp(url: 'http://localhost:8080/graphql');
-final res = await client.queries.getVehicle('42'); // Vehicle, AddVehicleInput, etc. all in scope
+final res = await client.queries.getVehicle(id: '42'); // Vehicle, AddVehicleInput, etc. all in scope
 ```
 
 The barrel file is regenerated on every run alongside everything else — there's nothing to configure.

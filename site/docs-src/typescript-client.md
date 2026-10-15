@@ -1,6 +1,6 @@
 ---
-title: TypeScript Client — GraphLink Docs
-description: Use the generated GraphLink TypeScript client in Angular, React, Vue, Svelte, or Node. Fetch and Axios adapters, optional RxJS observables, typed queries, mutations, and subscriptions.
+title: "TypeScript GraphQL Client Generator"
+description: "Generated TypeScript GraphQL client for Angular, React, Vue, Svelte and Node: Fetch or Axios adapters, RxJS observables, typed queries and subscriptions."
 ---
 
 # TypeScript Client

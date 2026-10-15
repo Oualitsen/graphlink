@@ -1,20 +1,25 @@
 User-agent: *
 Allow: /
 
-# AI crawlers — explicitly welcome
+# AI / LLM crawlers and agents — explicitly welcome
 User-agent: GPTBot
-Allow: /
-
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
 User-agent: Claude-Web
-Allow: /
-
-User-agent: PerplexityBot
-Allow: /
-
 User-agent: anthropic-ai
-Allow: /
-
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Google-Extended
+User-agent: Applebot-Extended
 User-agent: cohere-ai
 Allow: /
+
+# LLM-friendly versions of the docs
+# /llms.txt        concise overview with links
+# /llms-full.txt   the complete documentation in one file
+# /llms/<page>.txt one markdown file per page
 
 Sitemap: https://graphlink.dev/sitemap.xml
