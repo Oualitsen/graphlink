@@ -116,7 +116,7 @@ void main() {
         serializedController,
         stringContainsInOrder([
           'personService.validateGetPerson(searchQuery);',
-          'return personService.getPerson'
+          'Person __gl_result__ = personService.getPerson'
         ]));
   });
 
@@ -146,7 +146,7 @@ void main() {
         serializedController,
         stringContainsInOrder([
           'personService.validateGetPerson(searchQuery, graphQLContext);',
-          'return personService.getPerson'
+          'Person __gl_result__ = personService.getPerson'
         ]));
   });
 }

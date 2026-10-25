@@ -52,7 +52,7 @@ Set `"mode": "client"` and add a `"typescript"` key under `clientConfig`:
       Float: number
       Int: number
       Boolean: boolean
-      Null: null
+      "Null": "null"
     outputDir: src/generated
     clientConfig:
       typescript:

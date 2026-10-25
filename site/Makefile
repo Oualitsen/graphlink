@@ -8,6 +8,10 @@ install:
 serve-docs:
 	mkdocs serve
 
+# Scaffold a blog post (draft): make new-post slug=graphql-caching-flutter title="GraphQL caching in Flutter" topic=Dart id=D-02
+new-post:
+	@python3 scripts/new_post.py "$(slug)" "$(title)" "$(topic)" "$(id)"
+
 # Build MkDocs docs (also regenerates llms.txt, llms-full.txt, sitemap.xml)
 build:
 	mkdocs build

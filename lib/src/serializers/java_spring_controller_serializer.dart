@@ -123,6 +123,26 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     return serializer.callToJson(field, originalType, expr, 0, context);
   }
 
+  /// Like [_serviceResultToJson], but when the conversion mentions [serviceCall]
+  /// more than once (null-guard + `.toJson()`), stores it in a local first so
+  /// the service is invoked a single time. The last element is the expression.
+  List<String> _singleCallResultToJson(GLField field, String serviceCall, GLToken context) {
+    final converted = _serviceResultToJson(field, serviceCall, context);
+    if (converted.split(serviceCall).length <= 2) return [converted];
+    final resultVar = codeGenUtils.safeLocalVar('result');
+    final resultType = field.originalType!.copy
+      ..wrapper = null
+      ..wrapperImport = null;
+    final importSource = grammar.getTokenByKey(resultType.inlineType.token);
+    if (importSource != null && !grammar.scalars.containsKey(importSource.token)) {
+      context.addImportDependecy(importSource);
+    }
+    return [
+      '${serializer.serializeType(resultType)} $resultVar = $serviceCall;',
+      _serviceResultToJson(field, resultVar, context),
+    ];
+  }
+
   /// Wraps a Mono/Flux-returning [reactiveExpr] with `.map(__gl_result__ -> ...)`
   /// to apply [_serviceResultToJson]'s conversion to its emitted value(s).
   /// Returns [reactiveExpr] unchanged when no conversion is needed. The
@@ -300,7 +320,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
         ..._wrapInCompletableFuture([
           if (runBefore != null) '$runBefore;',
           if (validationCall != null) validationCall,
-          _serviceResultToJson(method, serviceCall, context),
+          ..._singleCallResultToJson(method, serviceCall, context),
         ], returnTypeIsVoid, context),
       ];
     }
@@ -410,7 +430,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
       final result = _chainReactivePreStages([if (runBefore != null) runBefore], mapped, isSubscriptionFlow: isFluxFlow);
       statementList.add('return $result;');
     } else {
-      statementList.add(_serviceResultToJson(mapping.field, serviceCall, context));
+      statementList.addAll(_singleCallResultToJson(mapping.field, serviceCall, context));
       statementList = _wrapInCompletableFuture(statementList, false, context);
     }
 
