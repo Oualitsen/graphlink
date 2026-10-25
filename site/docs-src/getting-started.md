@@ -187,7 +187,7 @@ Create a config file in your project root. GraphLink accepts **JSON** (`.json`),
           Float: double
           Int: int
           Boolean: bool
-          Null: null
+          "Null": "null"
         outputDir: lib/generated
         clientConfig:
           dart:
@@ -241,7 +241,7 @@ Create a config file in your project root. GraphLink accepts **JSON** (`.json`),
           Float: Double
           Int: Integer
           Boolean: Boolean
-          Null: null
+          "Null": "null"
         outputDir: src/main/java/com/example/generated
         clientConfig:
           java:
@@ -294,7 +294,7 @@ Create a config file in your project root. GraphLink accepts **JSON** (`.json`),
           Float: Double
           Int: Integer
           Boolean: Boolean
-          Null: null
+          "Null": "null"
         outputDir: src/main/java/com/example/generated
         serverConfig:
           spring:

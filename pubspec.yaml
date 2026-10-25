@@ -1,6 +1,6 @@
 name: graphlink
 description: "GraphQL code generator: typed Dart, Flutter, Java, TypeScript, Kotlin and Swift clients plus Spring Boot and Express servers from one schema."
-version: 5.4.0
+version: 5.4.1
 homepage: https://graphlink.dev
 repository: https://github.com/Oualitsen/graphlink
 documentation: https://graphlink.dev/

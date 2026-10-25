@@ -3,6 +3,8 @@
 {% block htmltitle %}
   {% if page and page.file.src_path == "index.md" and page.meta and page.meta.title %}
   <title>{{ page.meta.title }}</title>
+  {% elif page and page.file.src_path.startswith("blog/posts/") %}
+  <title>{{ page.title }} - GraphLink Blog</title>
   {% else %}
   {{ super() }}
   {% endif %}
@@ -11,19 +13,26 @@
 {% block extrahead %}
   {{ super() }}
 
+  <script data-goatcounter="https://graphlink.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+
   {% set site_root = "https://graphlink.dev" %}
   {% set page_title = (page.meta.title if page and page.meta and page.meta.title else (page.title if page else config.site_name)) %}
   {% set page_desc = (page.meta.description if page and page.meta and page.meta.description else config.site_description) %}
   {% set page_url = (page.canonical_url if page and page.canonical_url else site_root + "/") %}
-  {% set page_slug = (page.file.src_path | replace(".md", "")) if page else "index" %}
+  {% set src = page.file.src_path if page else "index.md" %}
+  {% set is_post = src.startswith("blog/posts/") %}
+  {% set is_blog_listing = src.startswith("blog/") and not is_post %}
+  {% set page_slug = ("blog/" + (src | replace("blog/posts/", "") | replace(".md", ""))) if is_post else ((src | replace(".md", "")) if page else "index") %}
 
   {# llms.txt discovery + per-page markdown alternate #}
   <link rel="alternate" type="text/plain" title="GraphLink for LLMs" href="{{ site_root }}/llms.txt">
   <link rel="alternate" type="text/plain" title="GraphLink full documentation for LLMs" href="{{ site_root }}/llms-full.txt">
+  {% if not is_blog_listing %}
   <link rel="alternate" type="text/markdown" title="{{ page_title }} (markdown)" href="{{ site_root }}/llms/{{ page_slug }}.txt">
+  {% endif %}
 
   {# Open Graph + Twitter Card — every page #}
-  <meta property="og:type"         content="{{ 'website' if page_slug == 'index' else 'article' }}">
+  <meta property="og:type"         content="{{ 'article' if is_post else 'website' if (page_slug == 'index' or is_blog_listing) else 'article' }}">
   <meta property="og:url"          content="{{ page_url }}">
   <meta property="og:site_name"    content="GraphLink">
   <meta property="og:title"        content="{{ page_title }}">
@@ -126,7 +135,41 @@
     ]
   }
   </script>
-  {% elif page %}
+  {% elif page and is_post %}
+  {# JSON-LD structured data — blog posts #}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BlogPosting",
+        "headline": {{ page_title | tojson }},
+        "description": {{ page_desc | tojson }},
+        "url": {{ page_url | tojson }},
+        "mainEntityOfPage": {{ page_url | tojson }},
+        "inLanguage": "en",
+        {% if page.config and page.config.date and page.config.date.created %}
+        "datePublished": "{{ page.config.date.created.strftime('%Y-%m-%d') }}",
+        "dateModified": "{{ (page.config.date.updated if page.config.date.updated else page.config.date.created).strftime('%Y-%m-%d') }}",
+        {% endif %}
+        "image": "https://graphlink.dev/og-image.png",
+        "isPartOf": { "@id": "https://graphlink.dev/#website" },
+        "about": { "@id": "https://graphlink.dev/#app" },
+        "publisher": { "@type": "Organization", "name": "GraphLink", "url": "https://graphlink.dev/" },
+        "author": { "@type": "Person", "name": {{ (page.meta.author if page.meta.author else "GraphLink") | tojson }} }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "GraphLink", "item": "https://graphlink.dev/" },
+          { "@type": "ListItem", "position": 2, "name": "Blog", "item": "https://graphlink.dev/blog/index.html" },
+          { "@type": "ListItem", "position": 3, "name": {{ page_title | tojson }}, "item": {{ page_url | tojson }} }
+        ]
+      }
+    ]
+  }
+  </script>
+  {% elif page and not is_blog_listing %}
   {# JSON-LD structured data — documentation pages #}
   <script type="application/ld+json">
   {

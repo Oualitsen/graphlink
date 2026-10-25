@@ -51,7 +51,7 @@ Set `"mode": "server"` and provide an `"expressApollo"` section under `serverCon
       Float: number
       Int: number
       Boolean: boolean
-      Null: null
+      "Null": "null"
     outputDir: src/generated
     serverConfig:
       expressApollo:
