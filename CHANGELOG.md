@@ -608,3 +608,9 @@
 ### Documentation
 
 - `--debounce` documented in the CLI flags reference, the getting-started watch-mode section, `--help`, and the LLM context headers.
+
+## 5.4.1 - 2026-10-26
+
+### Fixes
+
+- Fixed Java Spring controllers calling the service method twice when the result is nullable (once for the null check, once for `.toJson()`). The result is now stored in a local variable and the type is imported in the controller.

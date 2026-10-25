@@ -34,6 +34,20 @@ site/
   robots.txt              # Copied into dist/ by Dockerfile
 ```
 
+## Blog
+
+Articles live in `docs-src/blog/posts/<slug>.md` (MkDocs Material blog plugin; URL `https://graphlink.dev/blog/<slug>.html`).
+
+```bash
+make new-post slug=graphql-caching-flutter title="GraphQL caching in Flutter" topic=Dart id=D-02
+```
+
+- Scaffolds a **draft** from `templates/post.md`. `draft: true` (or a future `date`) keeps it out of `make build`, `sitemap.xml`, `llms.txt` and `llms-full.txt`; remove the line to publish. `make serve-docs` still shows drafts.
+- Front matter: `date`, `slug` (set it explicitly — it is the URL), `categories` (one topic), `description` (≤155 chars), optional `author`, plus bookkeeping fields (`id`, `demo_repo_path`, `docs_page`).
+- Video: uncomment the `video-embed` block in the template and put the YouTube ID in it.
+- Published posts also get `llms/blog/<file>.txt`, a `BlogPosting` JSON-LD block, OG tags and a sitemap entry (all from `hooks/generate_llms.py` + `overrides/main.html`).
+- The site is static: a post with a future date goes live only on the next deploy after that date, not automatically.
+
 ## Build & deploy
 
 ```bash
@@ -61,6 +75,10 @@ The hook `hooks/generate_llms.py` runs automatically during `mkdocs build` and w
 2. If the page's summary or key features changed significantly, update its frontmatter `description:` — this feeds into `llms.txt` page links automatically.
 3. If a new directive, config option, or feature was added, update `_llms_header.txt` and `_llms_concise_header.txt` accordingly.
 4. Run `make build` to regenerate `dist/`.
+
+## Analytics
+
+GoatCounter (cookieless, no consent banner), site code `graphlink`, dashboard at `https://graphlink.goatcounter.com`. The script tag is in `overrides/main.html` (`extrahead`). It records referrers and `utm_*` query params; localhost is ignored by default.
 
 ## Versioning
 

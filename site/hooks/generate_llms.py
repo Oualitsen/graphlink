@@ -3,7 +3,7 @@ MkDocs build hook — regenerates llms.txt, llms-full.txt, and sitemap.xml from 
 
 llms.txt      : concise overview + auto-generated page links (from frontmatter description)
 llms-full.txt : static header + full markdown content of every page
-llms/<page>.txt : raw markdown of each page, served at /llms/<page>.txt
+llms/<page>.txt : raw markdown of each page, served at /llms/<page>.txt (blog posts at /llms/blog/<post>.txt)
 sitemap.xml   : every doc page (docs are served from the site root) with its last git-commit date as lastmod
 """
 import os
@@ -32,6 +32,7 @@ def _clean_for_llm(body):
     """Drop HTML comments and attr_list suffixes (`{: .cls }`) — noise for LLM consumers."""
     body = re.sub(r'<!--.*?-->\n?', '', body, flags=re.S)
     body = re.sub(r'\{:\s*[^}]*\}', '', body)
+    body = re.sub(r'<div class="video-embed">.*?</div>\n?', '', body, flags=re.S)
     return body
 
 
@@ -64,6 +65,37 @@ def _flatten_nav(nav):
     return result
 
 
+def _slugify(text):
+    try:
+        from markdown.extensions.toc import slugify
+        return slugify(text, '-')
+    except Exception:
+        return re.sub(r'[-\s]+', '-', re.sub(r'[^\w\s-]', '', text).strip().lower())
+
+
+def _blog_posts(docs_dir):
+    """Published posts under blog/posts: skips drafts and future-dated posts (mirrors the blog plugin)."""
+    posts_dir = os.path.join(docs_dir, 'blog', 'posts')
+    posts = []
+    if not os.path.isdir(posts_dir):
+        return posts
+    today = date.today().isoformat()
+    for fname in sorted(os.listdir(posts_dir)):
+        if not fname.endswith('.md'):
+            continue
+        path = os.path.join(posts_dir, fname)
+        meta, body = _parse_frontmatter(_read(path))
+        if meta.get('draft', '').lower() == 'true' or str(meta.get('date', ''))[:10] > today:
+            continue
+        h1 = re.search(r'^#\s+(.+)$', body, re.M)
+        title = meta.get('title') or (h1.group(1).strip() if h1 else fname[:-3])
+        slug = meta.get('slug') or _slugify(title)
+        posts.append(dict(stem=fname[:-3], path=path, meta=meta, body=body, title=title, slug=slug,
+                          date=str(meta.get('date', ''))[:10] or _last_modified(path)))
+    posts.sort(key=lambda p: p['date'], reverse=True)
+    return posts
+
+
 def _read(path):
     with open(path, 'r') as f:
         return f.read()
@@ -73,7 +105,7 @@ def on_post_build(config):
     docs_dir = config['docs_dir']
     out_dir = config['site_dir']   # dist/ — goes into the Docker image
     site_url = config.get('site_url', 'https://graphlink.dev').rstrip('/')
-    pages = [p for p in _flatten_nav(config.get('nav', [])) if p.endswith('.md') and not p.startswith('_')]
+    pages = [p for p in _flatten_nav(config.get('nav', [])) if p.endswith('.md') and not p.startswith(('_', 'blog/'))]
 
     # --- llms-full.txt ---
     header_full = _read(os.path.join(docs_dir, '_llms_header.txt')).rstrip('\n') \
@@ -86,6 +118,11 @@ def on_post_build(config):
             continue
         _, body = _parse_frontmatter(_read(filepath))
         full_parts.append(_clean_for_llm(body).strip())
+        full_parts.append('\n\n---\n\n')
+
+    posts = _blog_posts(docs_dir)
+    for post in posts:
+        full_parts.append(_clean_for_llm(post['body']).strip())
         full_parts.append('\n\n---\n\n')
 
     full_output = ''.join(full_parts)
@@ -110,7 +147,12 @@ def on_post_build(config):
         title = re.sub(r'\s*—\s*GraphLink\s*(Docs)?', '', title).strip()
         links.append(f"- [{title}]({llms_url}): {desc}")
 
-    concise_output = header_concise + '\n\n## Documentation pages\n\n' + '\n'.join(links) + '\n\n## Links\n\n' \
+    blog_section = ''
+    if posts:
+        blog_links = [f"- [{p['title']}]({site_url}/llms/blog/{p['stem']}.txt): {p['meta'].get('description', '')}" for p in posts]
+        blog_section = '\n\n## Blog\n\n' + '\n'.join(blog_links)
+
+    concise_output = header_concise + '\n\n## Documentation pages\n\n' + '\n'.join(links) + blog_section + '\n\n## Links\n\n' \
         '- Website: https://graphlink.dev/\n' \
         '- Docs: https://graphlink.dev/\n' \
         '- GitHub: https://github.com/Oualitsen/graphlink\n' \
@@ -129,6 +171,12 @@ def on_post_build(config):
         with open(os.path.join(llms_dir, fname[:-3] + '.txt'), 'w') as f:
             f.write(_read(os.path.join(docs_dir, fname)))
 
+    if posts:
+        os.makedirs(os.path.join(llms_dir, 'blog'), exist_ok=True)
+        for post in posts:
+            with open(os.path.join(llms_dir, 'blog', post['stem'] + '.txt'), 'w') as f:
+                f.write(_read(post['path']))
+
     # --- sitemap.xml --- (URLs match each page's <link rel="canonical">)
     sitemap_entries = []
     for path in pages:
@@ -141,6 +189,15 @@ def on_post_build(config):
             f'  <url>\n    <loc>{url}</loc>\n    <lastmod>{_last_modified(filepath)}</lastmod>\n    <priority>{priority}</priority>\n  </url>'
         )
 
+    if os.path.exists(os.path.join(docs_dir, 'blog', 'index.md')):
+        sitemap_entries.append(
+            f'  <url>\n    <loc>{site_url}/blog/index.html</loc>\n    <lastmod>{posts[0]["date"] if posts else _last_modified(os.path.join(docs_dir, "blog", "index.md"))}</lastmod>\n    <priority>0.7</priority>\n  </url>'
+        )
+    for post in posts:
+        sitemap_entries.append(
+            f'  <url>\n    <loc>{site_url}/blog/{post["slug"]}.html</loc>\n    <lastmod>{post["date"]}</lastmod>\n    <priority>0.8</priority>\n  </url>'
+        )
+
     sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
     sitemap += '\n'.join(sitemap_entries)
     sitemap += '\n</urlset>\n'
@@ -151,4 +208,5 @@ def on_post_build(config):
     print(f"  [llms hook] llms-full.txt — {len(pages)} pages, {len(full_output):,} chars")
     print(f"  [llms hook] llms.txt      — {len(links)} page links")
     print(f"  [llms hook] llms/*.txt    — {len(per_page)} per-page files")
+    print(f"  [llms hook] blog posts    — {len(posts)} published")
     print(f"  [llms hook] sitemap.xml   — {len(sitemap_entries)} URLs")

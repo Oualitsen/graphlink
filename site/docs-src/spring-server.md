@@ -50,7 +50,7 @@ Set `"mode": "server"` and provide a `"spring"` section under `serverConfig`. Th
       Float: Double
       Int: Integer
       Boolean: Boolean
-      Null: null
+      "Null": "null"
     outputDir: src/main/java/com/example/generated
     serverConfig:
       spring:
