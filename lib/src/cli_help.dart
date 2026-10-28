@@ -46,6 +46,8 @@ clientConfig.dart
   flutter.typesToSkip             list     Type names to exclude from UI gen       []
   flutter.defaultGap              number   Default spacing between field rows      [16]
   flutter.defaultClearButton      bool     Show a clear (X) button on text fields  [false]
+  flutter.persistDrafts           bool     Forms save/restore progress via a       [false]
+                                           developer-supplied FormDraftStore
   flutter.sdkVersion              string   Flutter version to target (quote it);
                                            3.35+ avoids deprecated Radio/Dropdown APIs
   flutter.designLibrary           string   flutter | standalone (material_ui)      [flutter]

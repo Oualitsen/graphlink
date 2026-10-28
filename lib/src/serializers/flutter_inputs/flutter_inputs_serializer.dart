@@ -13,6 +13,7 @@ import 'package:graphlink/src/serializers/flutter_api.dart';
 import 'package:graphlink/src/utils.dart' as gl_utils;
 import 'flutter_inputs_companion_serializer.dart';
 import 'flutter_inputs_date_serializer.dart';
+import 'flutter_inputs_draft_serializer.dart';
 import 'flutter_inputs_field_serializer.dart';
 import 'flutter_inputs_shared_serializer.dart';
 import 'flutter_inputs_state_serializer.dart';
@@ -31,7 +32,8 @@ class FlutterInputsSerializer {
   late final _companions = FlutterInputsCompanionSerializer(_u, _types);
   late final _fields = FlutterInputsFieldSerializer(_u, _config, _types, _api);
   late final _date = FlutterInputsDateSerializer(_u, _config, _types, _fields);
-  late final _state = FlutterInputsStateSerializer(_u, _config, _types, _fields, _date);
+  late final _drafts = FlutterInputsDraftSerializer(_u, _types);
+  late final _state = FlutterInputsStateSerializer(_u, _config, _types, _fields, _date, _drafts);
 
   FlutterInputsSerializer(this._parser, this._dartSerializer, this._config, this.importPrefix);
 
@@ -63,6 +65,7 @@ class FlutterInputsSerializer {
   String serializeSharedStepperStrings() => _shared.serializeSharedStepperStrings();
   String serializeSharedInputStepGroup() => _shared.serializeSharedInputStepGroup();
   String serializeSharedSelectFieldConfig() => _shared.serializeSharedSelectFieldConfig();
+  String serializeSharedFormDraftStore() => _shared.serializeSharedFormDraftStore();
 
   // ── Agent header ─────────────────────────────────────────────────────────────
 
@@ -130,6 +133,10 @@ class FlutterInputsSerializer {
     buf.writeln('//   setSubmitting(bool)     disables / re-enables all fields');
     buf.writeln('//   scrollToField(String)   programmatically scroll to a named field');
     buf.writeln('//   errorsNotifier          ValueNotifier<Map<String,String>>');
+    if (_config.persistDrafts) {
+      buf.writeln('//   draftStore / draftId    persist progress; form is disabled until the draft is restored');
+      buf.writeln('//   ${inputName}Form.draftKeyFor(id)   key to delete after a successful submit; reset() also clears it');
+    }
 
     // ── Companion classes ──────────────────────────────────────────────────────
     buf.writeln('//');
@@ -222,6 +229,7 @@ class FlutterInputsSerializer {
 
     final imports = <String>{
       'dart:async',
+      if (_config.persistDrafts) 'dart:convert',
       _api.materialImport,
       '$importPrefix/widgets/inputs/input_form_widget.dart',
       '$importPrefix/widgets/inputs/input_read_exception.dart',
@@ -244,6 +252,7 @@ class FlutterInputsSerializer {
       '$importPrefix/widgets/inputs/field_visibility.dart',
       '$importPrefix/widgets/inputs/required_indicator.dart',
       '$importPrefix/widgets/inputs/form_strings.dart',
+      if (_config.persistDrafts) '$importPrefix/widgets/inputs/form_draft_store.dart',
       for (final f in inputFields)
         '$importPrefix/widgets/inputs/${(_parser.inputs[f.type.firstType.token]?.codeName ?? f.type.firstType.token).toSnakeCase()}_form.dart',
       if (hasSubInputs) '$importPrefix/widgets/inputs/input_step_options.dart',

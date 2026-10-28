@@ -19,7 +19,15 @@ abstract class InputFormState<T> extends State<InputFormWidget<T>> {
   void reset({List<String>? fields}) {}
   bool get isDirty => false;
   bool get isSubmitting => false;
-  void setSubmitting(bool value) {}
+  void setSubmitting(bool value) {}${_config.persistDrafts ? '\n  void restore(T value) {}' : ''}
+}
+''';
+
+  String serializeSharedFormDraftStore() => '''
+abstract class FormDraftStore {
+  Future<String?> read(String key);
+  Future<void> write(String key, String value);
+  Future<void> delete(String key);
 }
 ''';
 

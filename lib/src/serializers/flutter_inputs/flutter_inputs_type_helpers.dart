@@ -173,6 +173,21 @@ class FlutterInputsTypeHelpers {
     return ' = false';
   }
 
+  // ── Draft persistence ─────────────────────────────────────────────────────────
+
+  static const _jsonScalarTypes = {'String', 'int', 'double', 'bool'};
+
+  bool isJsonScalarType(String dartType) => _jsonScalarTypes.contains(dartType);
+
+  int draftSchemaHash(List<GLField> fields) {
+    var hash = 0x811c9dc5;
+    final signature = fields.map((f) => '${f.name.token}:${valuesFieldType(f)}').join(';');
+    for (final unit in signature.codeUnits) {
+      hash = ((hash ^ unit) * 0x01000193) & 0xFFFFFFFF;
+    }
+    return hash;
+  }
+
   // ── Text field smart defaults ─────────────────────────────────────────────────
 
   bool isPasswordField(GLField f) {
