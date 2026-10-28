@@ -614,3 +614,21 @@
 ### Fixes
 
 - Fixed Java Spring controllers calling the service method twice when the result is nullable (once for the null check, once for `.toJson()`). The result is now stored in a local variable and the type is imported in the controller.
+
+## 5.5.0 - 2026-10-29
+
+### New features
+
+- **Flutter: draft persistence for generated input forms** — new `flutter.persistDrafts` option (default `false`). When enabled, every generated form gets optional `draftStore` and `draftId` parameters, so a user who fills in part of a form and leaves finds their progress when they come back. Storage is up to you: implement the generated `FormDraftStore` interface (`read` / `write` / `delete` by key, all async) over SharedPreferences, secure storage, a file, or your backend. GraphLink adds no dependency.
+  - Drafts are saved as JSON under `graphlink_generated_form_<InputName>` (suffixed with `:<draftId>` when given), a short debounce after each change, and flushed when the form is disposed, so leaving right after typing still saves. `<Input>Form.draftKeyFor(id)` returns the key.
+  - The form is disabled until its saved draft is restored, and `read()` throws while restoring. A missing, unreadable or failing store never leaves the form disabled.
+  - Password-like fields are never saved. A draft saved by a different version of the input (fields added, removed or retyped) is discarded.
+  - Nested input forms save their own drafts under the path-derived id `<parentId>.<field>`.
+  - A full `reset()` deletes the draft. After a successful submit, delete it yourself with `store.delete(MyInputForm.draftKeyFor(id))`.
+  - Fields replaced through `${Input}Values` are saved through their `read()` and restored through the new `InputFormState.restore(T value)`, a no-op by default that your widget can override. This hook is generated only when `persistDrafts` is on.
+
+  ```json
+  "flutter": { "generateInputs": true, "persistDrafts": true }
+  ```
+
+  With the option off, generated output is unchanged.

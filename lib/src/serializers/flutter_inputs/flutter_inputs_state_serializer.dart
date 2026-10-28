@@ -2,6 +2,7 @@ import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/dart_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'flutter_inputs_date_serializer.dart';
+import 'flutter_inputs_draft_serializer.dart';
 import 'flutter_inputs_field_serializer.dart';
 import 'flutter_inputs_type_helpers.dart';
 
@@ -20,8 +21,9 @@ class FlutterInputsStateSerializer {
   final FlutterInputsTypeHelpers _types;
   final FlutterInputsFieldSerializer _fields;
   final FlutterInputsDateSerializer _date;
+  final FlutterInputsDraftSerializer _drafts;
 
-  FlutterInputsStateSerializer(this._u, this._config, this._types, this._fields, this._date);
+  FlutterInputsStateSerializer(this._u, this._config, this._types, this._fields, this._date, this._drafts);
 
   // ── Widget class ──────────────────────────────────────────────────────────────
 
@@ -56,6 +58,7 @@ class FlutterInputsStateSerializer {
       extendsClassName: 'InputFormWidget<$inputName>',
       statements: [
         ...listFieldDecls,
+        if (_config.persistDrafts) ..._drafts.widgetDecls(inputName),
         'final $inputName? initialValues;',
         if (hasDropdownLabels) 'final ${inputName}DropdownLabels? dropdownLabels;',
         'final ${inputName}Labels? labels;',
@@ -104,6 +107,7 @@ class FlutterInputsStateSerializer {
             'super.key',
             'this.initialValues',
             ...listParams,
+            if (_config.persistDrafts) ...FlutterInputsDraftSerializer.widgetArgs,
             if (hasDropdownLabels) 'this.dropdownLabels',
             'this.labels',
             'this.values',
@@ -187,6 +191,7 @@ class FlutterInputsStateSerializer {
       ...validatableFields.map((f) => 'bool _${f.codeName}Validating = false;'),
       ...validatableFields.map((f) => 'String? _${f.codeName}AsyncError;'),
       ...validatableFields.map((f) => 'Timer? _${f.codeName}AsyncTimer;'),
+      if (_config.persistDrafts) ...FlutterInputsDraftSerializer.stateVarDecls,
       if (hasSubInputs) 'int _currentStep = 0;',
       if (textFields.isNotEmpty) '// text controllers',
       ...textFields.map((f) => 'late final TextEditingController _${f.codeName}Controller;'),
@@ -219,6 +224,7 @@ class FlutterInputsStateSerializer {
 
     final initStatements = <String>[
       'super.initState();',
+      if (_config.persistDrafts) _drafts.initStatement(),
       ...textFields.map((f) => '_${f.codeName}Controller = TextEditingController(text: ${_types.initialTextExpr(f)});'),
       ...enumFields.map((f) => '_${f.codeName} = _form.initialValues?.${f.codeName};'),
       ...boolFields.map((f) => '_${f.codeName} = ${_types.initialBoolExpr(f)};'),
@@ -256,6 +262,7 @@ class FlutterInputsStateSerializer {
 
     final disposeStatements = <String>[
       '_debounceTimer?.cancel();',
+      if (_config.persistDrafts) ...FlutterInputsDraftSerializer.disposeStatements,
       ...validatableFields.map((f) => '_${f.codeName}AsyncTimer?.cancel();'),
       '_errorsNotifier.dispose();',
       ...textFields.map((f) => '_${f.codeName}Controller.dispose();'),
@@ -351,6 +358,8 @@ class FlutterInputsStateSerializer {
         if (dateEligibleFields.isNotEmpty) _date.pickDateCupertinoHelper(),
         if (intFields.isNotEmpty) _date.parseDateHelper(),
         _intersperseHelper(),
+        if (_config.persistDrafts)
+          ..._drafts.stateMethods(inputName, fields, textFields, enumFields, boolFields, listFields),
       ],
     );
   }
@@ -411,8 +420,10 @@ class FlutterInputsStateSerializer {
         ifBlockStatements: [
           '_formKey.currentState?.reset();',
           ...inputFields.map((f) => '_${f.codeName}Key.currentState?.reset();'),
+          if (_config.persistDrafts) FlutterInputsDraftSerializer.clearDraftStatement,
         ],
         elseBlockStatements: [
+          if (_config.persistDrafts) '_scheduleDraftSave();',
           ...inputFields.map((f) => _u.inlineIfStatement(
                 condition: "fields.contains('${f.codeName}')",
                 statement: '_${f.codeName}Key.currentState?.reset();',
@@ -651,6 +662,11 @@ class FlutterInputsStateSerializer {
             condition: '_submitting',
             ifBlockStatements: ["throw InputReadException('Form is submitting');"],
           ),
+          if (_config.persistDrafts)
+            _u.ifStatement(
+              condition: '_restoring',
+              ifBlockStatements: ["throw InputReadException('Form is restoring');"],
+            ),
           _u.ifStatement(
             condition: '_isAsyncValidating',
             ifBlockStatements: ["throw InputReadException('Async validation in progress');"],
@@ -1082,6 +1098,7 @@ class FlutterInputsStateSerializer {
       'gap: _form.gap',
       // bubble sub-form field changes up to the parent's onChange / onContextChange
       'onContextChange: (_) => _onFieldChanged()',
+      if (_config.persistDrafts) ..._drafts.childArgs(name),
     ]);
     // A Values override replaces the generated child form entirely, but reuses the
     // same GlobalKey<InputFormState<Child>> so read/validate/reset/isDirty/
@@ -1115,6 +1132,7 @@ class FlutterInputsStateSerializer {
           _u.inlineIfStatement(condition: '!mounted', statement: 'return;'),
           '_notifyContextChange();',
           '_scheduleOnChange();',
+          if (_config.persistDrafts) '_scheduleDraftSave();',
           'if (!_asyncNotifying) _scheduleAllAsyncValidations();',
           '_updateErrorsNotifier();',
         ],
@@ -1187,7 +1205,7 @@ class FlutterInputsStateSerializer {
       final i = entry.key;
       final f = entry.value;
       final humanLabel = _types.humanize(f.name.token);
-      final enabledExpr = '!_submitting && ${f.codeName}Vis == FieldVisibility.enabled';
+      final enabledExpr = '!_submitting && ${_config.persistDrafts ? '!_restoring && ' : ''}${f.codeName}Vis == FieldVisibility.enabled';
       final fieldWidget = _fields.fieldWidgetExpr(f, textFields, enumFields, boolFields, listFields, enabledExpr);
       final defaultIdx = 1000 + i;
       final isRequired = !f.type.nullable;
@@ -1255,6 +1273,7 @@ class FlutterInputsStateSerializer {
           'labelWidth: _form.labelWidth',
           'gap: _form.gap',
           'onContextChange: (_) => _onFieldChanged()',
+          if (_config.persistDrafts) ..._drafts.childArgs(name),
         ]);
         return _u.callExpression('Step', [
           'title: _form.stepConfig?.$name?.title ?? const Text(\'$humanLabel\')',

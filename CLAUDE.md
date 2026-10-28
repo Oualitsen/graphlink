@@ -133,6 +133,8 @@ serializers/
     flutter_inputs_field_serializer.dart
     flutter_inputs_state_serializer.dart
     flutter_inputs_date_serializer.dart
+    flutter_inputs_draft_serializer.dart    # Draft persistence (persistDrafts): snapshot/restore/save
+    flutter_inputs_radio_binding.dart       # RadioListTile vs RadioGroup per SDK version
     flutter_inputs_shared_serializer.dart
     flutter_inputs_type_helpers.dart
 ```

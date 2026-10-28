@@ -194,6 +194,15 @@ Future<Set<String>> generateDartClientClasses(
       imports: [],
       destinationDir: destinationDir,
     ));
+    if (flutterConfig.persistDrafts) {
+      futures.add(writeToFile(
+        data: inputsSerializer.serializeSharedFormDraftStore(),
+        fileName: 'form_draft_store.dart',
+        subdir: 'widgets/inputs',
+        imports: [],
+        destinationDir: destinationDir,
+      ));
+    }
 
     parser.inputs.forEach((k, def) {
       final content = inputsSerializer.serializeInputForm(def);
