@@ -67,7 +67,7 @@ class DartClientOperationSerializer {
           'const $svFragmentNames = ${fragmentNames.isEmpty ? "<String>{};" : "<String>{${fragmentNames.join(", ")}};"}',
           generateVariables(def),
           if (isCaptureErrors)
-            "return executeFull($svQuery, $svFragmentNames, '${def.tokenInfo}', ${_variablesExpr(def)}, $fullResponseToken.fromJson);"
+            "return ${_cg.callExpression("executeFull", ["$svQuery", "$svFragmentNames", "'${def.tokenInfo}'", "${_variablesExpr(def)}", "$fullResponseToken.fromJson"])};"
           else
             "return (await executeData($svQuery, $svFragmentNames, '${def.tokenInfo}', ${_variablesExpr(def)}, $fullResponseToken.fromJson)).data!;",
         ]);
@@ -82,7 +82,7 @@ class DartClientOperationSerializer {
         .serializeDirectiveValueList(def.getDirectives(skipGenerated: true));
 
     final executeCachedCall =
-        "executeCached($svPartialQueries, '${def.tokenInfo}', '$directives', $fullResponseToken.fromJson, ${isCaptureErrors ? 'true' : 'false'})";
+        _cg.callExpression("executeCached", ["$svPartialQueries", "'${def.tokenInfo}'", "'$directives'", "$fullResponseToken.fromJson", "${isCaptureErrors ? 'true' : 'false'}"]);
 
     return _cg.createMethod(
         returnType: returnTypeByQueryType(def),
@@ -122,7 +122,7 @@ class DartClientOperationSerializer {
             _cg.constDecl(svFullQuery, 'assembleQuery($svQuery, $svFragmentNames)'),
           generateVariables(def),
           if (isSubscription)
-            _cg.constDecl(svPayload, "GraphLinkPayload(query: $svFullQuery, operationName: '${def.tokenInfo}', variables: ${_variablesExpr(def)})"),
+            _cg.constDecl(svPayload, _cg.callExpression("GraphLinkPayload", ["query: $svFullQuery", "operationName: '${def.tokenInfo}'", "variables: ${_variablesExpr(def)}"])),
           _serializeAdapterCall(def),
         ]);
   }
@@ -228,7 +228,7 @@ class DartClientOperationSerializer {
     final varsExpr = _variablesExpr(def);
     if (def.isCaptureErrors(_grammar)) {
       return [
-        _cg.constDecl(svResult, "await executeFull($svQuery, $svFragmentNames, '${def.tokenInfo}', $varsExpr, $fullResponseToken.fromJson)"),
+        _cg.constDecl(svResult, "await ${_cg.callExpression("executeFull", ["$svQuery", "$svFragmentNames", "'${def.tokenInfo}'", "$varsExpr", "$fullResponseToken.fromJson"])}"),
         _cg.ifStatement(
           condition: '$svResult.errors == null',
           ifBlockStatements: [_serializeInvalidationCall(def)],
@@ -237,7 +237,7 @@ class DartClientOperationSerializer {
       ].join('\n');
     }
     return [
-      _cg.constDecl(svResult, "await executeData($svQuery, $svFragmentNames, '${def.tokenInfo}', $varsExpr, $fullResponseToken.fromJson)"),
+      _cg.constDecl(svResult, "await ${_cg.callExpression("executeData", ["$svQuery", "$svFragmentNames", "'${def.tokenInfo}'", "$varsExpr", "$fullResponseToken.fromJson"])}"),
       _serializeInvalidationCall(def),
       'return $svResult.data!;',
     ].join('\n');

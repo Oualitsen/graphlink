@@ -66,12 +66,12 @@ class FlutterInputsDateSerializer {
           ),
           _u.constDecl('first', 'config.firstDate ?? DateTime(${_config.defaultDateFirstYear})'),
           _u.constDecl('last', 'config.lastDate ?? DateTime(${_config.defaultDateLastYear})'),
-          _u.constDecl('initial', '_clampDate(current ?? config.initialDate ?? DateTime.now(), first, last)'),
+          _u.constDecl('initial', _u.callExpression('_clampDate', ['current ?? config.initialDate ?? DateTime.now()', 'first', 'last'])),
           'DateTime? picked;',
           _u.ifStatement(
             condition: 'config.type == DateType.dateTime',
             ifBlockStatements: [
-              _u.constDecl('date', 'await showDatePicker(context: context, initialDate: initial, firstDate: first, lastDate: last)'),
+              _u.constDecl('date', 'await ${_u.callExpression('showDatePicker', ['context: context', 'initialDate: initial', 'firstDate: first', 'lastDate: last'])}'),
               _u.inlineIfStatement(condition: 'date == null || !mounted', statement: 'return;'),
               _u.constDecl('time', 'await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(initial))'),
               _u.inlineIfStatement(condition: 'time == null', statement: 'return;'),
@@ -330,7 +330,7 @@ class FlutterInputsDateSerializer {
       catchStatements: ['parsedDate = null;'],
     );
     final initialDateLocal =
-        _u.constDecl('initialDate', '_clampDate(parsedDate ?? _form.dateConfig!.$name!.initialDate ?? DateTime.now(), _form.dateConfig!.$name!.firstDate ?? DateTime(${_config.defaultDateFirstYear}), _form.dateConfig!.$name!.lastDate ?? DateTime(${_config.defaultDateLastYear}))');
+        _u.constDecl('initialDate', _u.callExpression('_clampDate', ['parsedDate ?? _form.dateConfig!.$name!.initialDate ?? DateTime.now()', '_form.dateConfig!.$name!.firstDate ?? DateTime(${_config.defaultDateFirstYear})', '_form.dateConfig!.$name!.lastDate ?? DateTime(${_config.defaultDateLastYear})']));
 
     final onCupertinoDateTimeChanged = '(dt) => setState(${_u.functionLiteral([], [
       '_${name}Controller.text = DateFormat(_form.dateConfig!.$name!.pattern).format(dt);',

@@ -98,10 +98,14 @@ class JavaClientSerializer extends GLClientSerializer {
         methodName: clientName,
         returnType: 'public',
         statements: [
-          if (_grammar.hasSubscriptions)
-            'this(adapter, ${_grammar.hasUploadMutations ? 'multipartAdapter, ' : ''}encoder, decoder, null, wsAdapter);'
-          else
-            'this(adapter, ${_grammar.hasUploadMutations ? 'multipartAdapter, ' : ''}encoder, decoder, null);',
+          '${codeGenUtils.callExpression('this', [
+            'adapter',
+            if (_grammar.hasUploadMutations) 'multipartAdapter',
+            'encoder',
+            'decoder',
+            'null',
+            if (_grammar.hasSubscriptions) 'wsAdapter',
+          ])};',
         ],
         arguments: [
           _adapterDeclaration(false),
@@ -176,7 +180,7 @@ class JavaClientSerializer extends GLClientSerializer {
               'DefaultGraphLinkClientAdapter adapter',
               ...encoderDecoderArgs
             ],
-            statements: ['this(adapter, adapter, encoder, decoder, null);'],
+            statements: ['${codeGenUtils.callExpression('this', ['adapter', 'adapter', 'encoder', 'decoder', 'null'])};'],
           ),
         codeGenUtils.createMethod(
           returnType: 'public',
@@ -184,10 +188,10 @@ class JavaClientSerializer extends GLClientSerializer {
           arguments: ['String url', ...encoderDecoderArgs],
           statements: _grammar.hasUploadMutations
               ? [
-                  'this(new DefaultGraphLinkClientAdapter(url), encoder, decoder);'
+                  '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url)', 'encoder', 'decoder'])};'
                 ]
               : [
-                  'this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, null);'
+                  '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url)', 'encoder', 'decoder', 'null'])};'
                 ],
         ),
         codeGenUtils.createMethod(
@@ -200,10 +204,10 @@ class JavaClientSerializer extends GLClientSerializer {
           ],
           statements: _grammar.hasUploadMutations
               ? [
-                  'this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder);'
+                  '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url, headersProvider)', 'encoder', 'decoder'])};'
                 ]
               : [
-                  'this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, null);'
+                  '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url, headersProvider)', 'encoder', 'decoder', 'null'])};'
                 ],
         ),
         if (defaultCodec != null)
@@ -211,7 +215,7 @@ class JavaClientSerializer extends GLClientSerializer {
             returnType: 'public',
             methodName: clientName,
             arguments: ['String url'],
-            statements: ['this(url, $defaultCodec, $defaultCodec);'],
+            statements: ['${codeGenUtils.callExpression('this', ['url', '$defaultCodec', '$defaultCodec'])};'],
           ),
       ];
     }
@@ -228,7 +232,7 @@ class JavaClientSerializer extends GLClientSerializer {
             'GraphLinkWebSocketAdapter wsAdapter'
           ],
           statements: [
-            'this(adapter, adapter, encoder, decoder, null, wsAdapter);'
+            '${codeGenUtils.callExpression('this', ['adapter', 'adapter', 'encoder', 'decoder', 'null', 'wsAdapter'])};'
           ],
         ),
       //Single URL, ws derived by replacing http→ws
@@ -238,10 +242,10 @@ class JavaClientSerializer extends GLClientSerializer {
         arguments: ['String url', ...encoderDecoderArgs],
         statements: _grammar.hasUploadMutations
             ? [
-                'this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws")));'
+                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url)', 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"))'])};'
               ]
             : [
-                'this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws")));'
+                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url)', 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"))'])};'
               ],
       ),
       codeGenUtils.createMethod(
@@ -254,10 +258,10 @@ class JavaClientSerializer extends GLClientSerializer {
         ],
         statements: _grammar.hasUploadMutations
             ? [
-                'this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"), headersProvider));'
+                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url, headersProvider)', 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"), headersProvider)'])};'
               ]
             : [
-                'this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"), headersProvider));'
+                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url, headersProvider)', 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"), headersProvider)'])};'
               ],
       ),
       // Option B — explicit wsUrl
@@ -267,10 +271,10 @@ class JavaClientSerializer extends GLClientSerializer {
         arguments: ['String url', 'String wsUrl', ...encoderDecoderArgs],
         statements: _grammar.hasUploadMutations
             ? [
-                'this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, new DefaultGraphLinkWebSocketAdapter(wsUrl));'
+                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url)', 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(wsUrl)'])};'
               ]
             : [
-                'this(new DefaultGraphLinkClientAdapter(url), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(wsUrl));'
+                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url)', 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(wsUrl)'])};'
               ],
       ),
       codeGenUtils.createMethod(
@@ -284,10 +288,10 @@ class JavaClientSerializer extends GLClientSerializer {
         ],
         statements: _grammar.hasUploadMutations
             ? [
-                'this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, new DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider));'
+                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url, headersProvider)', 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider)'])};'
               ]
             : [
-                'this(new DefaultGraphLinkClientAdapter(url, headersProvider), encoder, decoder, null, new DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider));'
+                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url, headersProvider)', 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider)'])};'
               ],
       ),
       if (defaultCodec != null) ...[
@@ -295,13 +299,13 @@ class JavaClientSerializer extends GLClientSerializer {
           returnType: 'public',
           methodName: clientName,
           arguments: ['String url'],
-          statements: ['this(url, $defaultCodec, $defaultCodec);'],
+          statements: ['${codeGenUtils.callExpression('this', ['url', '$defaultCodec', '$defaultCodec'])};'],
         ),
         codeGenUtils.createMethod(
           returnType: 'public',
           methodName: clientName,
           arguments: ['String url', 'String wsUrl'],
-          statements: ['this(url, wsUrl, $defaultCodec, $defaultCodec);'],
+          statements: ['${codeGenUtils.callExpression('this', ['url', 'wsUrl', '$defaultCodec', '$defaultCodec'])};'],
         ),
       ],
     ];
@@ -376,7 +380,7 @@ class JavaClientSerializer extends GLClientSerializer {
               methodName: classNameFromType(type),
               arguments: _declareConstructorArgs(type),
               statements: [
-                'super(adapter, fragmentMap, store, encoder, decoder);',
+                '${codeGenUtils.callExpression('super', ['adapter', 'fragmentMap', 'store', 'encoder', 'decoder'])};',
                 if (type == GLQueryType.mutation && _grammar.hasUploadMutations)
                   'this.$svMultipartAdapter = multipartAdapter;',
                 if (type == GLQueryType.subscription)
@@ -706,7 +710,7 @@ class JavaClientSerializer extends GLClientSerializer {
               codeGenUtils.tryCatchFinally(
                 tryStatements: [
                   'String $svResponseText = glCallAdapter($svPayload);',
-                  'return parseToObjectAndCache($svResponseText, $svResponseMap, fromJson, $svRemaining, captureErrors);',
+                  'return ${codeGenUtils.callExpression('parseToObjectAndCache', ['$svResponseText', '$svResponseMap', 'fromJson', '$svRemaining', 'captureErrors'])};',
                 ],
                 catchStatements: [
                   '$svResponseMap.putAll($svStaleData);',
@@ -1285,7 +1289,7 @@ class JavaClientSerializer extends GLClientSerializer {
           returnType: 'public',
           methodName: 'DefaultGraphLinkClientAdapter',
           arguments: ['String url', 'Supplier<Map<String, String>> headersProvider'],
-          statements: ['this(url, headersProvider, WebClient.create());'],
+          statements: ['${codeGenUtils.callExpression('this', ['url', 'headersProvider', 'WebClient.create()'])};'],
         ),
         '',
         codeGenUtils.createMethod(

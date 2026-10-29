@@ -332,7 +332,7 @@ class DartClientSerializer extends GLClientSerializer {
               ],
               statements: [
                 codeGenUtils.constDecl('fullQuery', 'assembleQuery(query, fragmentNames)'),
-                codeGenUtils.constDecl(svPayload, 'GraphLinkPayload(query: fullQuery, operationName: operationName, variables: variables)'),
+                codeGenUtils.constDecl(svPayload, codeGenUtils.callExpression('GraphLinkPayload', ['query: fullQuery', 'operationName: operationName', 'variables: variables'])),
                 codeGenUtils.constDecl(svResponse, 'await glCallAdapter($svPayload)'),
                 'return fromJson(jsonDecode($svResponse));',
               ]),
@@ -349,7 +349,7 @@ class DartClientSerializer extends GLClientSerializer {
                 'TFull Function(Map<String, dynamic> json) fromJson',
               ],
               statements: [
-                codeGenUtils.constDecl(svResult, 'await executeFull<TFull>(query, fragmentNames, operationName, variables, fromJson)'),
+                codeGenUtils.constDecl(svResult, 'await ${codeGenUtils.callExpression('executeFull<TFull>', ['query', 'fragmentNames', 'operationName', 'variables', 'fromJson'])}'),
                 codeGenUtils.ifStatement(
                     condition: '$svResult.errors != null',
                     ifBlockStatements: ['throw $svResult.errors!;']),
@@ -395,10 +395,10 @@ class DartClientSerializer extends GLClientSerializer {
                       "return fromJson({'data': $svResponseMap});"
                     ]),
                 codeGenUtils.constDecl(svRemainingQueries, "partialQueries.where((e) => !$svResponseMap.containsKey(e.elementKey)).toList()"),
-                codeGenUtils.constDecl(svPayload, "_buildPayload($svRemainingQueries, operationName, directives)"),
+                codeGenUtils.constDecl(svPayload, codeGenUtils.callExpression("_buildPayload", ["$svRemainingQueries", "operationName", "directives"])),
                 codeGenUtils.tryCatchFinally(tryStatements: [
                   codeGenUtils.constDecl(svResponseText, 'await glCallAdapter($svPayload)'),
-                  'return _parseToObjectAndCache($svResponseText, $svResponseMap, fromJson, $svRemaining, captureErrors);',
+                  'return ${codeGenUtils.callExpression('_parseToObjectAndCache', ['$svResponseText', '$svResponseMap', 'fromJson', '$svRemaining', 'captureErrors'])};',
                 ], catchStatements: [
                   "$svResponseMap.addAll($svStaleData);",
                   codeGenUtils.constDecl('remainingCount', 'partialQueries.where((e) => !$svResponseMap.containsKey(e.elementKey)).length'),
@@ -446,7 +446,7 @@ class DartClientSerializer extends GLClientSerializer {
                 'queryBuilder.write("}");',
                 codeGenUtils.constDecl('fragments', 'partQueries.expand((e) => e.fragmentNames).toSet().map((fragName) => $svFragMap[fragName]!).join()'),
                 'queryBuilder.write(fragments);',
-                'return GraphLinkPayload(query: queryBuilder.toString(), operationName: operationName, variables: variables);',
+                'return ${codeGenUtils.callExpression('GraphLinkPayload', ['query: queryBuilder.toString()', 'operationName: operationName', 'variables: variables'])};',
               ]),
           codeGenUtils.createMethod(
               methodName:

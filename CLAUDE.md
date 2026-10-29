@@ -15,7 +15,7 @@ subclasses are `DartCodeGenUtils`, `JavaCodeGenUtils`, `KotlinCodeGenUtils`,
 
 - If a builder exists for it (`ifStatement`, `inlineIfStatement`, `block`, `createMethod`,
   `createClass`, `tryCatchFinally`, `switchStatement`, `forEachLoop`, `forLoop`,
-  `ternaryOp`, `callExpression`, `functionLiteral`, `listArg`, …), you MUST use it. Never
+  `ternaryOp`, `callExpression`, `constDecl`, `functionLiteral`, `listArg`, …), you MUST use it. Never
   write the same construct as a hand-built string, e.g. `'if (x) { ... }'`,
   `'try { ... } catch (_) { ... }'` or a triple-quoted class/method.
 - Check the language's `*CodeGenUtils` for an existing method **before** writing any

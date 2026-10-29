@@ -479,8 +479,8 @@ class TypeScriptClientSerializer extends GLClientSerializer {
       'tagLocks: Map<string, GraphLinkLock>',
     ];
     final superCall = type == GLQueryType.subscription
-        ? 'super(store, tagLocks, fragMap);'
-        : 'super(store, tagLocks, fragMap, adapter);';
+        ? '${_cg.callExpression('super', ['store', 'tagLocks', 'fragMap'])};'
+        : '${_cg.callExpression('super', ['store', 'tagLocks', 'fragMap', 'adapter'])};';
     return _cg.createMethod(
       methodName: 'constructor',
       arguments: args,

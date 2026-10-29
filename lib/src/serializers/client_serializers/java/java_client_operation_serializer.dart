@@ -49,7 +49,7 @@ class JavaClientOperationSerializer {
 	          'String ${svQuery} = "${queryString.escapeForJavaStringLiteral()}";',
 	          'Set<String> ${svFragmentNames} = ${fragmentNames.isEmpty ? "Collections.emptySet();" : "new HashSet<>(Arrays.asList(${fragmentNames.join(", ")}));"}',
 	          if (isCE)
-	            'return executeFull(${svQuery}, ${svFragmentNames}, "${def.tokenInfo.token}", ${def.arguments.isEmpty ? "Collections.emptyMap()" : svVariables}, $parseType::fromJson);'
+	            'return ${_ctx.codeGenUtils.callExpression('executeFull', ['${svQuery}', '${svFragmentNames}', '"${def.tokenInfo.token}"', '${def.arguments.isEmpty ? "Collections.emptyMap()" : svVariables}', '$parseType::fromJson'])};'
 	          else
 	            'return executeData(${svQuery}, ${svFragmentNames}, "${def.tokenInfo.token}", ${def.arguments.isEmpty ? "Collections.emptyMap()" : svVariables}, $parseType::fromJson)${_getDataCall(def)};',
 	        ]);
@@ -276,8 +276,8 @@ class JavaClientOperationSerializer {
       ],
     ];
 
-    const call =
-        '$svMultipartAdapter.executeMultipart($svOperations, $svMapJson, $svFiles, onProgress)';
+    final call =
+        _ctx.codeGenUtils.callExpression('$svMultipartAdapter.executeMultipart', ['$svOperations', '$svMapJson', '$svFiles', 'onProgress']);
     if (!_ctx.flavor.isReactive) {
       statements.add('String ${svResponseText} = $call;');
       statements.addAll(responseHandling);

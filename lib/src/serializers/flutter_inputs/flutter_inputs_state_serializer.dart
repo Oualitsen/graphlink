@@ -534,7 +534,7 @@ class FlutterInputsStateSerializer {
             _u.ifStatement(
               condition: 'ctx != null && (e.value.currentState?.hasError ?? false)',
               ifBlockStatements: [
-                'Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);',
+                '${_u.callExpression('Scrollable.ensureVisible', ['ctx', 'duration: const Duration(milliseconds: 300)', 'curve: Curves.easeInOut'])};',
                 'return;',
               ],
             ),
@@ -1573,7 +1573,7 @@ class FlutterInputsStateSerializer {
         _u.constDecl('ctx', '_${f.codeName}FieldKey.currentContext'),
         _u.inlineIfStatement(
           condition: 'ctx != null',
-          statement: 'Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);',
+          statement: '${_u.callExpression('Scrollable.ensureVisible', ['ctx', 'duration: const Duration(milliseconds: 300)', 'curve: Curves.easeInOut'])};',
         ),
       ]),
     )).toList();
@@ -1604,7 +1604,7 @@ class FlutterInputsStateSerializer {
 
     final errorRow = _u.callExpression('Row', [
       _u.listArg('children', [
-        'Icon(Icons.error_outline, color: $errorColor, size: 16)',
+        _u.callExpression('Icon', ['Icons.error_outline', 'color: $errorColor', 'size: 16']),
         'const SizedBox(width: 8)',
         _u.callExpression('Expanded', [
           'child: ${_u.callExpression('Text', [

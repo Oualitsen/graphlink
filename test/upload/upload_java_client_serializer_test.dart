@@ -133,7 +133,7 @@ void main() {
     test('full constructor takes multipartAdapter', () => expect(out, contains('GraphLinkMultipartAdapter multipartAdapter')));
     test('mutations instantiation passes multipartAdapter', () => expect(out, contains('new GraphLinkMutations(adapter, multipartAdapter')));
     test('intermediate constructor takes DefaultGraphLinkClientAdapter', () => expect(out, contains('DefaultGraphLinkClientAdapter adapter')));
-    test('url+encoder constructor delegates to intermediate', () => expect(out, contains('this(new DefaultGraphLinkClientAdapter(url), encoder, decoder)')));
+    test('url+encoder constructor delegates to intermediate', () => expect(out.replaceAll(RegExp(r'\s+'), ' '), contains('this( new DefaultGraphLinkClientAdapter(url), encoder, decoder )')));
   });
 
   // ---------------------------------------------------------------------------

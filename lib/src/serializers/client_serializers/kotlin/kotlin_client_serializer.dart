@@ -125,10 +125,10 @@ class KotlinClientSerializer extends GLClientSerializer {
       if (hasUploads) {
         return [
           codeGenUtils.constDecl('a', '$adapterExpr'),
-          'return $kotlinClientName(a${hasSubs ? ', $wsExpr' : ''}, a, encoder, decoder)',
+          'return ${codeGenUtils.callExpression('$kotlinClientName', ['a${hasSubs ? ', $wsExpr' : ''}', 'a', 'encoder', 'decoder'])}',
         ];
       }
-      return ['return $kotlinClientName($adapterExpr${hasSubs ? ', $wsExpr' : ''}, encoder, decoder)'];
+      return ['return ${codeGenUtils.callExpression('$kotlinClientName', ['$adapterExpr${hasSubs ? ', $wsExpr' : ''}', 'encoder', 'decoder'])}'];
     }
 
     String factory(List<String> arguments, List<String> statements) => codeGenUtils.createMethod(
@@ -147,7 +147,7 @@ class KotlinClientSerializer extends GLClientSerializer {
         codeGenUtils.companionObject([
           factory(['url: String', ...codecArgs], callArgs('DefaultGraphLinkClientAdapter(url)', '')),
           factory(['url: String', headersArg, ...codecArgs], callArgs('DefaultGraphLinkClientAdapter(url, headersProvider)', '')),
-          factory(['url: String'], ['return create(url, $codec, $codec)']),
+          factory(['url: String'], ['return ${codeGenUtils.callExpression('create', ['url', '$codec', '$codec'])}']),
         ]),
       ];
     }
@@ -161,7 +161,7 @@ class KotlinClientSerializer extends GLClientSerializer {
             callArgs('DefaultGraphLinkClientAdapter(url, headersProvider)', 'DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider)')),
         factory(['url: String'], [
           codeGenUtils.constDecl('ws', 'url.replaceFirst("http", "ws")'),
-          'return create(url, ws, $codec, $codec)',
+          'return ${codeGenUtils.callExpression('create', ['url', 'ws', '$codec', '$codec'])}',
         ]),
       ]),
     ];
@@ -318,7 +318,7 @@ class KotlinClientSerializer extends GLClientSerializer {
       returnType: 'T',
       statements: [
         codeGenUtils.constDecl('fullQuery', 'assembleQuery(query, fragmentNames)'),
-        codeGenUtils.constDecl('payload', 'GraphLinkPayload(query = fullQuery, operationName = operationName, variables = variables)'),
+        codeGenUtils.constDecl('payload', codeGenUtils.callExpression('GraphLinkPayload', ['query = fullQuery', 'operationName = operationName', 'variables = variables'])),
         codeGenUtils.constDecl('responseText', 'glCallAdapter(payload)'),
         'return fromJson(decoder.decode(responseText))',
       ],
@@ -331,7 +331,7 @@ class KotlinClientSerializer extends GLClientSerializer {
       arguments: _executeArguments,
       returnType: 'T',
       statements: [
-        codeGenUtils.constDecl('decoded', 'executeFull(query, fragmentNames, operationName, variables, fromJson)'),
+        codeGenUtils.constDecl('decoded', codeGenUtils.callExpression('executeFull', ['query', 'fragmentNames', 'operationName', 'variables', 'fromJson'])),
         codeGenUtils.constDecl('errors', 'decoded.errors'),
         codeGenUtils.ifStatement(
           condition: 'errors != null && errors.isNotEmpty()',
@@ -366,7 +366,7 @@ class KotlinClientSerializer extends GLClientSerializer {
               ifBlockStatements: [
                 codeGenUtils.tryCatchFinally(
                   tryStatements: [
-                    codeGenUtils.constDecl('entry', 'getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)'),
+                    codeGenUtils.constDecl('entry', codeGenUtils.callExpression('getFromCache', ['partQuery.cacheKey', 'partQuery.tags', 'partQuery.staleIfOffline'])),
                     codeGenUtils.ifStatement(
                       condition: 'entry != null',
                       ifBlockStatements: [
@@ -393,11 +393,11 @@ class KotlinClientSerializer extends GLClientSerializer {
             'return fromJson(wrappedResponse)',
           ],
         ),
-        codeGenUtils.constDecl('payload', 'buildPayload(remaining, operationName, directives)'),
+        codeGenUtils.constDecl('payload', codeGenUtils.callExpression('buildPayload', ['remaining', 'operationName', 'directives'])),
         codeGenUtils.tryCatchFinally(
           tryStatements: [
             codeGenUtils.constDecl('responseText', 'glCallAdapter(payload)'),
-            'return parseToObjectAndCache(responseText, responseMap, fromJson, remaining, captureErrors)',
+            'return ${codeGenUtils.callExpression('parseToObjectAndCache', ['responseText', 'responseMap', 'fromJson', 'remaining', 'captureErrors'])}',
           ],
           catchVariable: 'exception',
           catchStatements: [
@@ -612,7 +612,7 @@ class KotlinClientSerializer extends GLClientSerializer {
   }
 
   String _superCtorCall(GLQueryType type) =>
-      'GraphLinkResolverBase(adapter, fragmentMap, store, encoder, decoder)';
+      codeGenUtils.callExpression('GraphLinkResolverBase', ['adapter', 'fragmentMap', 'store', 'encoder', 'decoder']);
 
 
   String _buildPayloadMethod() {

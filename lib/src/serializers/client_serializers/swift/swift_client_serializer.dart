@@ -217,7 +217,7 @@ class SwiftClientSerializer extends GLClientSerializer {
     return [
       if (type == GLQueryType.mutation && grammar.hasUploadMutations) 'self.multipartAdapter = multipartAdapter',
       if (type == GLQueryType.subscription) 'self.handler = GraphLinkSubscriptionHandler(adapter: wsAdapter)',
-      'super.init(adapter: adapter, fragmentMap: fragmentMap, store: store)',
+      codeGenUtils.callExpression('super.init', ['adapter: adapter', 'fragmentMap: fragmentMap', 'store: store']),
     ];
   }
 

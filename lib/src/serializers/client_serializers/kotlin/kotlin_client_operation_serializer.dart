@@ -42,7 +42,7 @@ class KotlinClientOperationSerializer {
       _ctx.codeGenUtils.constDecl(svQuery, '"$queryString"'),
       _ctx.codeGenUtils.constDecl(svFragmentNames, '${fragmentNames.isEmpty ? "emptySet<String>()" : "setOf(${fragmentNames.join(", ")})"}'),
       if (isCE)
-        'return executeFull(${svQuery}, ${svFragmentNames}, "${def.tokenInfo}", ${_variablesExpr(def)}, { $parseType.fromJson(it) })'
+        'return ${_ctx.codeGenUtils.callExpression('executeFull', ['${svQuery}', '${svFragmentNames}', '"${def.tokenInfo}"', '${_variablesExpr(def)}', '{ $parseType.fromJson(it) }'])}'
       else
         'return executeData(${svQuery}, ${svFragmentNames}, "${def.tokenInfo}", ${_variablesExpr(def)}, { $parseType.fromJson(it) }).data!!',
     ];
@@ -103,11 +103,11 @@ class KotlinClientOperationSerializer {
       _generateVariables(def, container),
       // plain mutations build the payload inside executeData/executeFull
       if (!isCE) ...[
-        _ctx.codeGenUtils.constDecl(svDecodedResponse, 'executeData(${svQuery}, ${svFragmentNames}, "$wireName", ${_variablesExpr(def)}, { $fullResponseToken.fromJson(it) })'),
+        _ctx.codeGenUtils.constDecl(svDecodedResponse, _ctx.codeGenUtils.callExpression('executeData', ['${svQuery}', '${svFragmentNames}', '"$wireName"', '${_variablesExpr(def)}', '{ $fullResponseToken.fromJson(it) }'])),
         if (invalidation.isNotEmpty) invalidation,
         'return ${svDecodedResponse}.data!!',
       ] else ...[
-        _ctx.codeGenUtils.constDecl(svDecodedResponse, 'executeFull(${svQuery}, ${svFragmentNames}, "$wireName", ${_variablesExpr(def)}, { $fullResponseToken.fromJson(it) })'),
+        _ctx.codeGenUtils.constDecl(svDecodedResponse, _ctx.codeGenUtils.callExpression('executeFull', ['${svQuery}', '${svFragmentNames}', '"$wireName"', '${_variablesExpr(def)}', '{ $fullResponseToken.fromJson(it) }'])),
         if (def.invalidateCacheTags.isNotEmpty)
           _ctx.codeGenUtils.ifStatement(
             condition: '${svDecodedResponse}.errors == null',
@@ -207,10 +207,10 @@ class KotlinClientOperationSerializer {
     }
 
     body.addAll([
-      _ctx.codeGenUtils.constDecl(svOperationsMap, 'mapOf("query" to ${svFullQuery}, "operationName" to "$opWireName", "variables" to ${svVariables})'),
+      _ctx.codeGenUtils.constDecl(svOperationsMap, _ctx.codeGenUtils.callExpression('mapOf', ['"query" to ${svFullQuery}', '"operationName" to "$opWireName"', '"variables" to ${svVariables}'])),
       _ctx.codeGenUtils.constDecl(svOperations, '${svEncoder}.encode(${svOperationsMap})'),
       _ctx.codeGenUtils.constDecl(svMapJson, '${svEncoder}.encode(${svFileMap})'),
-      _ctx.codeGenUtils.constDecl(svResponseText, '${svMultipartAdapter}.executeMultipart(${svOperations}, ${svMapJson}, ${svFiles}, onProgress)'),
+      _ctx.codeGenUtils.constDecl(svResponseText, _ctx.codeGenUtils.callExpression('${svMultipartAdapter}.executeMultipart', ['${svOperations}', '${svMapJson}', '${svFiles}', 'onProgress'])),
       _ctx.codeGenUtils.constDecl(svDecodedResponse, '$fullResponseToken.fromJson(${svDecoder}.decode(${svResponseText}))'),
       ..._mutationReturnStatements(def, isCE),
     ]);
@@ -253,7 +253,7 @@ class KotlinClientOperationSerializer {
       _ctx.codeGenUtils.constDecl(svFragmentNames, '${fragmentNamesSub.isEmpty ? "emptySet<String>()" : "setOf(${fragmentNamesSub.join(", ")})"}'),
       _ctx.codeGenUtils.constDecl(svFullQuery, 'assembleQuery(${svQuery}, ${svFragmentNames})'),
       _generateVariables(def, container),
-      _ctx.codeGenUtils.constDecl(svPayload, 'GraphLinkPayload(query = ${svFullQuery}, operationName = "${def.tokenInfo}", variables = ${_variablesExpr(def)})'),
+      _ctx.codeGenUtils.constDecl(svPayload, _ctx.codeGenUtils.callExpression('GraphLinkPayload', ['query = ${svFullQuery}', 'operationName = "${def.tokenInfo}"', 'variables = ${_variablesExpr(def)}'])),
       'return ${KotlinCodeGenUtils.mapCall(receiver: 'handler.handle(${svPayload})', body: '$typeToken.fromJson(it)')}',
     ];
 

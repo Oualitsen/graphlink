@@ -48,7 +48,7 @@ class SwiftClientOperationSerializer {
       codeGenUtils.constDecl(svQuery, '"$queryString"'),
       codeGenUtils.constDecl(svFragmentNames, '${fragmentNames.isEmpty ? '[]' : '[${fragmentNames.join(', ')}]'}', type: 'Set<String>'),
       if (isCE)
-        'return try await executeFull(query: $svQuery, fragmentNames: $svFragmentNames, operationName: "${def.tokenInfo}", variables: ${_variablesExpr(def)}, fromJson: $parseType.fromJson)'
+        'return try await ${codeGenUtils.callExpression('executeFull', ['query: $svQuery', 'fragmentNames: $svFragmentNames', 'operationName: "${def.tokenInfo}"', 'variables: ${_variablesExpr(def)}', 'fromJson: $parseType.fromJson'])}'
       else
         'return try await executeData(query: $svQuery, fragmentNames: $svFragmentNames, operationName: "${def.tokenInfo}", variables: ${_variablesExpr(def)}, fromJson: $parseType.fromJson).data!',
     ];
@@ -90,11 +90,11 @@ class SwiftClientOperationSerializer {
       codeGenUtils.constDecl(svFragmentNames, '${fragmentNames.isEmpty ? '[]' : '[${fragmentNames.join(', ')}]'}', type: 'Set<String>'),
       _generateVariables(def),
       if (!isCE) ...[
-        codeGenUtils.constDecl(svDecodedResponse, 'try await executeData(query: $svQuery, fragmentNames: $svFragmentNames, operationName: "$wireName", variables: ${_variablesExpr(def)}, fromJson: $fullResponseToken.fromJson)'),
+        codeGenUtils.constDecl(svDecodedResponse, 'try await ${codeGenUtils.callExpression('executeData', ['query: $svQuery', 'fragmentNames: $svFragmentNames', 'operationName: "$wireName"', 'variables: ${_variablesExpr(def)}', 'fromJson: $fullResponseToken.fromJson'])}'),
         if (invalidation.isNotEmpty) invalidation,
         'return $svDecodedResponse.data!',
       ] else ...[
-        codeGenUtils.constDecl(svDecodedResponse, 'try await executeFull(query: $svQuery, fragmentNames: $svFragmentNames, operationName: "$wireName", variables: ${_variablesExpr(def)}, fromJson: $fullResponseToken.fromJson)'),
+        codeGenUtils.constDecl(svDecodedResponse, 'try await ${codeGenUtils.callExpression('executeFull', ['query: $svQuery', 'fragmentNames: $svFragmentNames', 'operationName: "$wireName"', 'variables: ${_variablesExpr(def)}', 'fromJson: $fullResponseToken.fromJson'])}'),
         if (def.invalidateCacheTags.isNotEmpty)
           codeGenUtils.ifStatement(
             condition: '$svDecodedResponse.errors == nil',
@@ -186,7 +186,7 @@ class SwiftClientOperationSerializer {
       codeGenUtils.constDecl(svOperationsMap, '["query": $svFullQuery, "operationName": "$opWireName", "variables": $svVariables]', type: '[String: Any?]'),
       codeGenUtils.constDecl(svOperations, 'try GraphLinkJson.encode($svOperationsMap)'),
       codeGenUtils.constDecl(svMapJson, 'try GraphLinkJson.encode($svFileMap)'),
-      codeGenUtils.constDecl(svResponseData, 'try await multipartAdapter($svOperations, $svMapJson, $svFiles, onProgress)'),
+      codeGenUtils.constDecl(svResponseData, 'try await ${codeGenUtils.callExpression('multipartAdapter', ['$svOperations', '$svMapJson', '$svFiles', 'onProgress'])}'),
       codeGenUtils.constDecl(svDecodedResponse, '$fullResponseToken.fromJson(try GraphLinkJson.decode($svResponseData))'),
       ..._mutationReturnStatements(def, isCE),
     ]);
@@ -223,7 +223,7 @@ class SwiftClientOperationSerializer {
       codeGenUtils.constDecl(svFragmentNames, '${fragmentNamesSub.isEmpty ? '[]' : '[${fragmentNamesSub.join(', ')}]'}', type: 'Set<String>'),
       codeGenUtils.constDecl(svFullQuery, 'assembleQuery($svQuery, fragmentNames: $svFragmentNames)'),
       _generateVariables(def),
-      codeGenUtils.constDecl(svPayload, 'GraphLinkPayload(query: $svFullQuery, operationName: "${def.tokenInfo}", variables: ${_variablesExpr(def)})'),
+      codeGenUtils.constDecl(svPayload, codeGenUtils.callExpression('GraphLinkPayload', ['query: $svFullQuery', 'operationName: "${def.tokenInfo}"', 'variables: ${_variablesExpr(def)}'])),
       codeGenUtils.constDecl('stream', 'handler.handle($svPayload)'),
       _serializeSubscriptionStream(fromJsonTarget),
     ];
