@@ -71,29 +71,40 @@ class KotlinSpringServerSerializer extends JvmSpringServerSerializerBase {
   /// thread-hops. Emitted when `blockingServices` is enabled, since controller
   /// methods then use `withContext(Dispatchers.IO + SecurityCoroutineContext())`.
   String serializeSecurityCoroutineContext() {
-    return '''import kotlin.coroutines.CoroutineContext
-import kotlinx.coroutines.ThreadContextElement
-import org.springframework.security.core.context.SecurityContext
-import org.springframework.security.core.context.SecurityContextHolder
-
-class SecurityCoroutineContext(
-    private val securityContext: SecurityContext = SecurityContextHolder.getContext(),
-) : ThreadContextElement<SecurityContext> {
-    companion object Key : CoroutineContext.Key<SecurityCoroutineContext>
-
-    override val key: CoroutineContext.Key<*> get() = Key
-
-    override fun updateThreadContext(context: CoroutineContext): SecurityContext {
-        val previous = SecurityContextHolder.getContext()
-        SecurityContextHolder.setContext(securityContext)
-        return previous
-    }
-
-    override fun restoreThreadContext(context: CoroutineContext, oldState: SecurityContext) {
-        SecurityContextHolder.setContext(oldState)
-    }
-}
-''';
+    final imports = [
+      'import kotlin.coroutines.CoroutineContext',
+      'import kotlinx.coroutines.ThreadContextElement',
+      'import org.springframework.security.core.context.SecurityContext',
+      'import org.springframework.security.core.context.SecurityContextHolder',
+    ];
+    final contextClass = codeGenUtils.kotlinClass(
+      name: 'SecurityCoroutineContext',
+      params: ['private val securityContext: SecurityContext = SecurityContextHolder.getContext()'],
+      interfaces: ['ThreadContextElement<SecurityContext>'],
+      body: [
+        'companion object Key : CoroutineContext.Key<SecurityCoroutineContext>',
+        '',
+        'override val key: CoroutineContext.Key<*> get() = Key',
+        '',
+        'override ${codeGenUtils.method(
+          returnType: 'SecurityContext',
+          methodName: 'updateThreadContext',
+          arguments: ['context: CoroutineContext'],
+          statements: [
+            'val previous = SecurityContextHolder.getContext()',
+            'SecurityContextHolder.setContext(securityContext)',
+            'return previous',
+          ],
+        )}',
+        '',
+        'override ${codeGenUtils.createMethod(
+          methodName: 'restoreThreadContext',
+          arguments: ['context: CoroutineContext', 'oldState: SecurityContext'],
+          statements: ['SecurityContextHolder.setContext(oldState)'],
+        )}',
+      ],
+    );
+    return '${imports.join('\n')}\n\n$contextClass\n';
   }
 
   // ── interfaces/GraphLinkInterceptor.kt ──────────────────────────────────────

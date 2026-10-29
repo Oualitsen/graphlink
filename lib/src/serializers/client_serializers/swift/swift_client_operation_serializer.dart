@@ -45,10 +45,10 @@ class SwiftClientOperationSerializer {
 
     final statements = <String>[
       _generateVariables(def),
-      'let $svQuery = "$queryString"',
-      'let $svFragmentNames: Set<String> = ${fragmentNames.isEmpty ? '[]' : '[${fragmentNames.join(', ')}]'}',
+      codeGenUtils.constDecl(svQuery, '"$queryString"'),
+      codeGenUtils.constDecl(svFragmentNames, '${fragmentNames.isEmpty ? '[]' : '[${fragmentNames.join(', ')}]'}', type: 'Set<String>'),
       if (isCE)
-        'return try await executeFull(query: $svQuery, fragmentNames: $svFragmentNames, operationName: "${def.tokenInfo}", variables: ${_variablesExpr(def)}, fromJson: $parseType.fromJson)'
+        'return try await ${codeGenUtils.callExpression('executeFull', ['query: $svQuery', 'fragmentNames: $svFragmentNames', 'operationName: "${def.tokenInfo}"', 'variables: ${_variablesExpr(def)}', 'fromJson: $parseType.fromJson'])}'
       else
         'return try await executeData(query: $svQuery, fragmentNames: $svFragmentNames, operationName: "${def.tokenInfo}", variables: ${_variablesExpr(def)}, fromJson: $parseType.fromJson).data!',
     ];
@@ -86,15 +86,15 @@ class SwiftClientOperationSerializer {
     final invalidation = _serializeInvalidationCall(def);
 
     final statements = <String>[
-      'let $svQuery = "$queryText"',
-      'let $svFragmentNames: Set<String> = ${fragmentNames.isEmpty ? '[]' : '[${fragmentNames.join(', ')}]'}',
+      codeGenUtils.constDecl(svQuery, '"$queryText"'),
+      codeGenUtils.constDecl(svFragmentNames, '${fragmentNames.isEmpty ? '[]' : '[${fragmentNames.join(', ')}]'}', type: 'Set<String>'),
       _generateVariables(def),
       if (!isCE) ...[
-        'let $svDecodedResponse = try await executeData(query: $svQuery, fragmentNames: $svFragmentNames, operationName: "$wireName", variables: ${_variablesExpr(def)}, fromJson: $fullResponseToken.fromJson)',
+        codeGenUtils.constDecl(svDecodedResponse, 'try await ${codeGenUtils.callExpression('executeData', ['query: $svQuery', 'fragmentNames: $svFragmentNames', 'operationName: "$wireName"', 'variables: ${_variablesExpr(def)}', 'fromJson: $fullResponseToken.fromJson'])}'),
         if (invalidation.isNotEmpty) invalidation,
         'return $svDecodedResponse.data!',
       ] else ...[
-        'let $svDecodedResponse = try await executeFull(query: $svQuery, fragmentNames: $svFragmentNames, operationName: "$wireName", variables: ${_variablesExpr(def)}, fromJson: $fullResponseToken.fromJson)',
+        codeGenUtils.constDecl(svDecodedResponse, 'try await ${codeGenUtils.callExpression('executeFull', ['query: $svQuery', 'fragmentNames: $svFragmentNames', 'operationName: "$wireName"', 'variables: ${_variablesExpr(def)}', 'fromJson: $fullResponseToken.fromJson'])}'),
         if (def.invalidateCacheTags.isNotEmpty)
           codeGenUtils.ifStatement(
             condition: '$svDecodedResponse.errors == nil',
@@ -112,7 +112,7 @@ class SwiftClientOperationSerializer {
     if (!isCE) {
       return [
         codeGenUtils.ifStatement(
-          condition: 'let errors = $svDecodedResponse.errors, !errors.isEmpty',
+          condition: codeGenUtils.constDecl('errors', '$svDecodedResponse.errors, !errors.isEmpty'),
           ifBlockStatements: ['throw $_clientException(errors: errors)'],
         ),
         if (invalidation.isNotEmpty) invalidation,
@@ -142,9 +142,9 @@ class SwiftClientOperationSerializer {
     final fragmentNamesUp = def.fragments(grammar).map((f) => '"${f.tokenInfo.token}"').toSet();
 
     final body = <String>[
-      'let $svQuery = "$queryTextUp"',
-      'let $svFragmentNames: Set<String> = ${fragmentNamesUp.isEmpty ? '[]' : '[${fragmentNamesUp.join(', ')}]'}',
-      'let $svFullQuery = assembleQuery($svQuery, fragmentNames: $svFragmentNames)',
+      codeGenUtils.constDecl(svQuery, '"$queryTextUp"'),
+      codeGenUtils.constDecl(svFragmentNames, '${fragmentNamesUp.isEmpty ? '[]' : '[${fragmentNamesUp.join(', ')}]'}', type: 'Set<String>'),
+      codeGenUtils.constDecl(svFullQuery, 'assembleQuery($svQuery, fragmentNames: $svFragmentNames)'),
       _generateVariablesForUpload(def),
       'var $svFiles: [String: GLUpload] = [:]',
       'var $svFileMap: [String: Any?] = [:]',
@@ -183,11 +183,11 @@ class SwiftClientOperationSerializer {
     }
 
     body.addAll([
-      'let $svOperationsMap: [String: Any?] = ["query": $svFullQuery, "operationName": "$opWireName", "variables": $svVariables]',
-      'let $svOperations = try GraphLinkJson.encode($svOperationsMap)',
-      'let $svMapJson = try GraphLinkJson.encode($svFileMap)',
-      'let $svResponseData = try await multipartAdapter($svOperations, $svMapJson, $svFiles, onProgress)',
-      'let $svDecodedResponse = $fullResponseToken.fromJson(try GraphLinkJson.decode($svResponseData))',
+      codeGenUtils.constDecl(svOperationsMap, '["query": $svFullQuery, "operationName": "$opWireName", "variables": $svVariables]', type: '[String: Any?]'),
+      codeGenUtils.constDecl(svOperations, 'try GraphLinkJson.encode($svOperationsMap)'),
+      codeGenUtils.constDecl(svMapJson, 'try GraphLinkJson.encode($svFileMap)'),
+      codeGenUtils.constDecl(svResponseData, 'try await ${codeGenUtils.callExpression('multipartAdapter', ['$svOperations', '$svMapJson', '$svFiles', 'onProgress'])}'),
+      codeGenUtils.constDecl(svDecodedResponse, '$fullResponseToken.fromJson(try GraphLinkJson.decode($svResponseData))'),
       ..._mutationReturnStatements(def, isCE),
     ]);
 
@@ -219,12 +219,12 @@ class SwiftClientOperationSerializer {
     final fragmentNamesSub = def.fragments(grammar).map((f) => '"${f.tokenInfo.token}"').toSet();
 
     final statements = <String>[
-      'let $svQuery = "$queryTextSub"',
-      'let $svFragmentNames: Set<String> = ${fragmentNamesSub.isEmpty ? '[]' : '[${fragmentNamesSub.join(', ')}]'}',
-      'let $svFullQuery = assembleQuery($svQuery, fragmentNames: $svFragmentNames)',
+      codeGenUtils.constDecl(svQuery, '"$queryTextSub"'),
+      codeGenUtils.constDecl(svFragmentNames, '${fragmentNamesSub.isEmpty ? '[]' : '[${fragmentNamesSub.join(', ')}]'}', type: 'Set<String>'),
+      codeGenUtils.constDecl(svFullQuery, 'assembleQuery($svQuery, fragmentNames: $svFragmentNames)'),
       _generateVariables(def),
-      'let $svPayload = GraphLinkPayload(query: $svFullQuery, operationName: "${def.tokenInfo}", variables: ${_variablesExpr(def)})',
-      'let stream = handler.handle($svPayload)',
+      codeGenUtils.constDecl(svPayload, codeGenUtils.callExpression('GraphLinkPayload', ['query: $svFullQuery', 'operationName: "${def.tokenInfo}"', 'variables: ${_variablesExpr(def)}'])),
+      codeGenUtils.constDecl('stream', 'handler.handle($svPayload)'),
       _serializeSubscriptionStream(fromJsonTarget),
     ];
 
@@ -246,7 +246,7 @@ class SwiftClientOperationSerializer {
       catchStatements: ['continuation.finish(throwing: error)'],
     );
     final streamBody = [
-      'let task = Task ${codeGenUtils.block([doCatch])}',
+      codeGenUtils.constDecl('task', 'Task ${codeGenUtils.block([doCatch])}'),
       'continuation.onTermination = { _ in task.cancel() }',
     ].join('\n').ident();
 
@@ -275,7 +275,7 @@ class SwiftClientOperationSerializer {
     }
     final dict = pairs.isEmpty ? '[:]' : '[${pairs.join(', ')}]';
     if (mergeStatements.isEmpty) {
-      return 'let $svVariables: [String: Any?] = $dict';
+      return codeGenUtils.constDecl(svVariables, '$dict', type: '[String: Any?]');
     }
     return ['var $svVariables: [String: Any?] = $dict', ...mergeStatements].join('\n');
   }

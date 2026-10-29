@@ -39,10 +39,10 @@ class KotlinClientOperationSerializer {
 
     final statements = <String>[
       _generateVariables(def, container),
-      'val ${svQuery} = "$queryString"',
-      'val ${svFragmentNames} = ${fragmentNames.isEmpty ? "emptySet<String>()" : "setOf(${fragmentNames.join(", ")})"}',
+      _ctx.codeGenUtils.constDecl(svQuery, '"$queryString"'),
+      _ctx.codeGenUtils.constDecl(svFragmentNames, '${fragmentNames.isEmpty ? "emptySet<String>()" : "setOf(${fragmentNames.join(", ")})"}'),
       if (isCE)
-        'return executeFull(${svQuery}, ${svFragmentNames}, "${def.tokenInfo}", ${_variablesExpr(def)}, { $parseType.fromJson(it) })'
+        'return ${_ctx.codeGenUtils.callExpression('executeFull', ['${svQuery}', '${svFragmentNames}', '"${def.tokenInfo}"', '${_variablesExpr(def)}', '{ $parseType.fromJson(it) }'])}'
       else
         'return executeData(${svQuery}, ${svFragmentNames}, "${def.tokenInfo}", ${_variablesExpr(def)}, { $parseType.fromJson(it) }).data!!',
     ];
@@ -64,7 +64,7 @@ class KotlinClientOperationSerializer {
 
     final statements = <String>[
       _generateVariables(def, container),
-      'val ${svPartialQueries} = mutableListOf<GraphLinkPartialQuery>()',
+      _ctx.codeGenUtils.constDecl(svPartialQueries, 'mutableListOf<GraphLinkPartialQuery>()'),
       ...dividedQueries.map(_serializePartialQueryKotlin),
       'return executeCached(${svPartialQueries}, "${def.tokenInfo}", "$directives", { $parseType.fromJson(it) }, ${isCE ? 'true' : 'false'})${_dataCall(isCE)}',
     ];
@@ -98,16 +98,16 @@ class KotlinClientOperationSerializer {
 
     final invalidation = _serializeInvalidationCall(def);
     final statements = [
-      'val ${svQuery} = "${queryText}"',
-      'val ${svFragmentNames} = ${fragmentNames.isEmpty ? "emptySet<String>()" : "setOf(${fragmentNames.join(", ")})"}',
+      _ctx.codeGenUtils.constDecl(svQuery, '"${queryText}"'),
+      _ctx.codeGenUtils.constDecl(svFragmentNames, '${fragmentNames.isEmpty ? "emptySet<String>()" : "setOf(${fragmentNames.join(", ")})"}'),
       _generateVariables(def, container),
       // plain mutations build the payload inside executeData/executeFull
       if (!isCE) ...[
-        'val ${svDecodedResponse} = executeData(${svQuery}, ${svFragmentNames}, "$wireName", ${_variablesExpr(def)}, { $fullResponseToken.fromJson(it) })',
+        _ctx.codeGenUtils.constDecl(svDecodedResponse, _ctx.codeGenUtils.callExpression('executeData', ['${svQuery}', '${svFragmentNames}', '"$wireName"', '${_variablesExpr(def)}', '{ $fullResponseToken.fromJson(it) }'])),
         if (invalidation.isNotEmpty) invalidation,
         'return ${svDecodedResponse}.data!!',
       ] else ...[
-        'val ${svDecodedResponse} = executeFull(${svQuery}, ${svFragmentNames}, "$wireName", ${_variablesExpr(def)}, { $fullResponseToken.fromJson(it) })',
+        _ctx.codeGenUtils.constDecl(svDecodedResponse, _ctx.codeGenUtils.callExpression('executeFull', ['${svQuery}', '${svFragmentNames}', '"$wireName"', '${_variablesExpr(def)}', '{ $fullResponseToken.fromJson(it) }'])),
         if (def.invalidateCacheTags.isNotEmpty)
           _ctx.codeGenUtils.ifStatement(
             condition: '${svDecodedResponse}.errors == null',
@@ -164,12 +164,12 @@ class KotlinClientOperationSerializer {
         .toSet();
 
     final body = [
-      'val ${svQuery} = "${queryTextUp}"',
-      'val ${svFragmentNames} = ${fragmentNamesUp.isEmpty ? "emptySet<String>()" : "setOf(${fragmentNamesUp.join(", ")})"}',
-      'val ${svFullQuery} = assembleQuery(${svQuery}, ${svFragmentNames})',
+      _ctx.codeGenUtils.constDecl(svQuery, '"${queryTextUp}"'),
+      _ctx.codeGenUtils.constDecl(svFragmentNames, '${fragmentNamesUp.isEmpty ? "emptySet<String>()" : "setOf(${fragmentNamesUp.join(", ")})"}'),
+      _ctx.codeGenUtils.constDecl(svFullQuery, 'assembleQuery(${svQuery}, ${svFragmentNames})'),
       _generateVariablesForUpload(def, container),
-      'val ${svFiles} = linkedMapOf<String, GLUpload>()',
-      'val ${svFileMap} = mutableMapOf<String, Any?>()',
+      _ctx.codeGenUtils.constDecl(svFiles, 'linkedMapOf<String, GLUpload>()'),
+      _ctx.codeGenUtils.constDecl(svFileMap, 'mutableMapOf<String, Any?>()'),
       if (hasListArg) 'var _slot = 0',
     ];
 
@@ -207,11 +207,11 @@ class KotlinClientOperationSerializer {
     }
 
     body.addAll([
-      'val ${svOperationsMap} = mapOf("query" to ${svFullQuery}, "operationName" to "$opWireName", "variables" to ${svVariables})',
-      'val ${svOperations} = ${svEncoder}.encode(${svOperationsMap})',
-      'val ${svMapJson} = ${svEncoder}.encode(${svFileMap})',
-      'val ${svResponseText} = ${svMultipartAdapter}.executeMultipart(${svOperations}, ${svMapJson}, ${svFiles}, onProgress)',
-      'val ${svDecodedResponse} = $fullResponseToken.fromJson(${svDecoder}.decode(${svResponseText}))',
+      _ctx.codeGenUtils.constDecl(svOperationsMap, _ctx.codeGenUtils.callExpression('mapOf', ['"query" to ${svFullQuery}', '"operationName" to "$opWireName"', '"variables" to ${svVariables}'])),
+      _ctx.codeGenUtils.constDecl(svOperations, '${svEncoder}.encode(${svOperationsMap})'),
+      _ctx.codeGenUtils.constDecl(svMapJson, '${svEncoder}.encode(${svFileMap})'),
+      _ctx.codeGenUtils.constDecl(svResponseText, _ctx.codeGenUtils.callExpression('${svMultipartAdapter}.executeMultipart', ['${svOperations}', '${svMapJson}', '${svFiles}', 'onProgress'])),
+      _ctx.codeGenUtils.constDecl(svDecodedResponse, '$fullResponseToken.fromJson(${svDecoder}.decode(${svResponseText}))'),
       ..._mutationReturnStatements(def, isCE),
     ]);
 
@@ -219,15 +219,21 @@ class KotlinClientOperationSerializer {
     final argNamesNoProgress = def.arguments.map((e) => e.codeName).join(', ');
     final argsWithProgress = [...argsNoProgress, 'onProgress: UploadProgressCallback?'];
 
-    final noProgressBody = _ctx.codeGenUtils.block([
-      'return $methodName($argNamesNoProgress, null)',
-    ]);
-    final fullBody = _ctx.codeGenUtils.block(body);
     final returnType = returnTypeByQueryType(def);
 
     return [
-      'suspend fun $methodName${_ctx.codeGenUtils.parentheses(argsNoProgress)}: $returnType $noProgressBody',
-      'suspend fun $methodName${_ctx.codeGenUtils.parentheses(argsWithProgress)}: $returnType $fullBody',
+      _ctx.codeGenUtils.suspendFun(
+        name: methodName,
+        arguments: argsNoProgress,
+        returnType: returnType,
+        statements: ['return $methodName($argNamesNoProgress, null)'],
+      ),
+      _ctx.codeGenUtils.suspendFun(
+        name: methodName,
+        arguments: argsWithProgress,
+        returnType: returnType,
+        statements: body,
+      ),
     ].join('\n\n');
   }
 
@@ -243,11 +249,11 @@ class KotlinClientOperationSerializer {
         .toSet();
 
     final statements = [
-      'val ${svQuery} = "${queryTextSub}"',
-      'val ${svFragmentNames} = ${fragmentNamesSub.isEmpty ? "emptySet<String>()" : "setOf(${fragmentNamesSub.join(", ")})"}',
-      'val ${svFullQuery} = assembleQuery(${svQuery}, ${svFragmentNames})',
+      _ctx.codeGenUtils.constDecl(svQuery, '"${queryTextSub}"'),
+      _ctx.codeGenUtils.constDecl(svFragmentNames, '${fragmentNamesSub.isEmpty ? "emptySet<String>()" : "setOf(${fragmentNamesSub.join(", ")})"}'),
+      _ctx.codeGenUtils.constDecl(svFullQuery, 'assembleQuery(${svQuery}, ${svFragmentNames})'),
       _generateVariables(def, container),
-      'val ${svPayload} = GraphLinkPayload(query = ${svFullQuery}, operationName = "${def.tokenInfo}", variables = ${_variablesExpr(def)})',
+      _ctx.codeGenUtils.constDecl(svPayload, _ctx.codeGenUtils.callExpression('GraphLinkPayload', ['query = ${svFullQuery}', 'operationName = "${def.tokenInfo}"', 'variables = ${_variablesExpr(def)}'])),
       'return ${KotlinCodeGenUtils.mapCall(receiver: 'handler.handle(${svPayload})', body: '$typeToken.fromJson(it)')}',
     ];
 
@@ -281,7 +287,7 @@ class KotlinClientOperationSerializer {
           ? ' + (${base}?.toJson() ?: emptyMap())'
           : ' + ${base}.toJson()');
     }
-    return 'val ${svVariables} = mapOf<String, Any?>(${pairs.join(', ')})${merges.join('')}';
+    return _ctx.codeGenUtils.constDecl(svVariables, 'mapOf<String, Any?>(${pairs.join(', ')})${merges.join('')}');
   }
 
   String _variablesExpr(GLQueryDefinition def) =>
@@ -295,7 +301,7 @@ class KotlinClientOperationSerializer {
       }
       return '"${e.dartArgumentName}" to ${_serializeArgumentValue(def, e.token, container)}';
     }).join(', ');
-    return 'val ${svVariables} = mutableMapOf<String, Any?>($entries)';
+    return _ctx.codeGenUtils.constDecl(svVariables, 'mutableMapOf<String, Any?>($entries)');
   }
 
   String _serializeArgumentValue(GLQueryDefinition def, String argName, GLImportContainer container) {
@@ -355,7 +361,7 @@ class KotlinClientOperationSerializer {
     ])})';
 
     return _ctx.codeGenUtils.runBlock([
-      'val ${svPqVars} = mutableMapOf<String, Any?>()',
+      _ctx.codeGenUtils.constDecl(svPqVars, 'mutableMapOf<String, Any?>()'),
       ...varAssignments,
       addCall,
     ]);

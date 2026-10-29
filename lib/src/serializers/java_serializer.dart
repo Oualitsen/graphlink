@@ -198,7 +198,7 @@ class JavaSerializer extends GLSerializer {
       methodName: "fromJson",
       arguments: ["String value"],
       statements: [
-        "if (value == null) return null;",
+        codeGenUtils.ifStatement(condition: "value == null", ifBlockStatements: ["return null;"]),
         codeGenUtils.switchStatement(
           expression: "value",
           cases: [...def.values.map((v) => JavaCaseStatement(caseValue: '"${v.value.token}"', statement: 'return ${v.codeName};'))],
@@ -673,35 +673,28 @@ class JavaSerializer extends GLSerializer {
       }
     }
 
-    final buffer = StringBuffer();
-    if (modifier != null) {
-      buffer.write("$modifier ");
-    }
-    buffer.writeln(
-        "$name(${serializeListText(fields.map((e) => serializeArgumentField(e, isTypeField: isTypeField)).toList(), join: ", ", withParenthesis: false)}) {");
-    if (nullCheck.isNotEmpty) {
-      buffer.writeln(nullCheck.ident());
-    }
     if (fields.isNotEmpty) {
       // Add Arrays import if any field has a list-type default value.
       final hasListDefault = fields.any((e) => !isTypeField && e.initialValue != null && e.type.isList);
       if (hasListDefault) {
         context.addImport(JavaImports.arrays);
       }
-      buffer.writeln(serializeListText(
-              fields.map((e) {
-                if (!isTypeField && e.initialValue != null) {
-                  final lit = serializeDefaultLiteral(e.type, e.initialValue);
-                  return "this.${e.codeName} = ${e.codeName} != null ? ${e.codeName} : $lit;";
-                }
-                return "this.${e.codeName} = ${e.codeName};";
-              }).toList(),
-              join: "\n",
-              withParenthesis: false)
-          .ident());
     }
-    buffer.writeln("}");
-    return buffer.toString();
+    return codeGenUtils.createMethod(
+      returnType: modifier,
+      methodName: name,
+      arguments: fields.map((e) => serializeArgumentField(e, isTypeField: isTypeField)).toList(),
+      statements: [
+        if (nullCheck.isNotEmpty) nullCheck,
+        ...fields.map((e) {
+          if (!isTypeField && e.initialValue != null) {
+            final lit = serializeDefaultLiteral(e.type, e.initialValue);
+            return "this.${e.codeName} = ${e.codeName} != null ? ${e.codeName} : $lit;";
+          }
+          return "this.${e.codeName} = ${e.codeName};";
+        }),
+      ],
+    );
   }
 
   String generateBuilder(String name, List<GLField> fields, bool forInput) {
@@ -1092,22 +1085,27 @@ class JavaSerializer extends GLSerializer {
     if (subTypes.isEmpty) {
       return "";
     }
-    var buffer = StringBuffer("static ${token} fromJson(${_mapOf("String", "Object")} json) {");
-    buffer.writeln();
-
-    buffer.writeln('String typename = (String)json.get("__typename");'.ident());
-    buffer.writeln("switch(typename) {".ident());
-    for (var st in subTypes) {
-      String typeNameValue = st.derivedFromType?.tokenInfo.token ?? st.tokenInfo.token;
-      String currentCodeName = st.codeName;
-      buffer.writeln('case "${typeNameValue}": return ${currentCodeName}.fromJson(json);'.ident(2));
-    }
-    buffer.writeln(
-        'default: throw new RuntimeException(String.format("Invalid type %s. %s does not implement $token or not defined", typename, typename));'
-            .ident(2));
-    buffer.writeln("}".ident());
-    buffer.writeln("}");
-    return buffer.toString();
+    return codeGenUtils.createMethod(
+      returnType: "static $token",
+      methodName: "fromJson",
+      arguments: ["${_mapOf("String", "Object")} json"],
+      statements: [
+        'String typename = (String)json.get("__typename");',
+        codeGenUtils.switchStatement(
+          expression: "typename",
+          cases: [
+            for (var st in subTypes)
+              JavaCaseStatement(
+                caseValue: '"${st.derivedFromType?.tokenInfo.token ?? st.tokenInfo.token}"',
+                statement: "return ${st.codeName}.fromJson(json);",
+              ),
+          ],
+          defaultStatements: [
+            'throw new RuntimeException(String.format("Invalid type %s. %s does not implement $token or not defined", typename, typename));',
+          ],
+        ),
+      ],
+    );
   }
 
   @override
