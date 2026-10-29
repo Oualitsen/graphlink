@@ -383,8 +383,8 @@ class FlutterInputsFieldSerializer {
         namedArguments: false,
         arguments: ['Widget label', 'bool enabled'],
         statements: [
-          "final tl = _form.dropdownLabels?.$name?.trueLabel ?? Text(_form.strings.yes);",
-          "final fl = _form.dropdownLabels?.$name?.falseLabel ?? Text(_form.strings.no);",
+          _u.constDecl("tl", "_form.dropdownLabels?.$name?.trueLabel ?? Text(_form.strings.yes)"),
+          _u.constDecl("fl", "_form.dropdownLabels?.$name?.falseLabel ?? Text(_form.strings.no)"),
           _u.switchStatement(
             expression: '_form.widgets?.$name',
             cases: [
@@ -490,8 +490,8 @@ class FlutterInputsFieldSerializer {
         namedArguments: false,
         arguments: ['Widget label', 'bool enabled'],
         statements: [
-          "final tl = _form.dropdownLabels?.$name?.trueLabel ?? Text(_form.strings.yes);",
-          "final fl = _form.dropdownLabels?.$name?.falseLabel ?? Text(_form.strings.no);",
+          _u.constDecl("tl", "_form.dropdownLabels?.$name?.trueLabel ?? Text(_form.strings.yes)"),
+          _u.constDecl("fl", "_form.dropdownLabels?.$name?.falseLabel ?? Text(_form.strings.no)"),
           _u.switchStatement(
             expression: '_form.widgets?.$name',
             cases: [
@@ -666,7 +666,7 @@ class FlutterInputsFieldSerializer {
 
   /// Builds the validator statement list: disabled-guard, custom sync checks, async error echo.
   List<String> _validatorStatements(String name, List<String> checks) => [
-    'final ctx = _buildContext();',
+    _u.constDecl('ctx', '_buildContext()'),
     visibilityGuard(name),
     ...checks,
     'return _${name}AsyncError;',

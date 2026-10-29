@@ -64,16 +64,16 @@ class FlutterInputsDateSerializer {
             catchVariable: '_',
             catchStatements: ['current = null;'],
           ),
-          'final first = config.firstDate ?? DateTime(${_config.defaultDateFirstYear});',
-          'final last = config.lastDate ?? DateTime(${_config.defaultDateLastYear});',
-          'final initial = _clampDate(current ?? config.initialDate ?? DateTime.now(), first, last);',
+          _u.constDecl('first', 'config.firstDate ?? DateTime(${_config.defaultDateFirstYear})'),
+          _u.constDecl('last', 'config.lastDate ?? DateTime(${_config.defaultDateLastYear})'),
+          _u.constDecl('initial', '_clampDate(current ?? config.initialDate ?? DateTime.now(), first, last)'),
           'DateTime? picked;',
           _u.ifStatement(
             condition: 'config.type == DateType.dateTime',
             ifBlockStatements: [
-              'final date = await showDatePicker(context: context, initialDate: initial, firstDate: first, lastDate: last);',
+              _u.constDecl('date', 'await showDatePicker(context: context, initialDate: initial, firstDate: first, lastDate: last)'),
               _u.inlineIfStatement(condition: 'date == null || !mounted', statement: 'return;'),
-              'final time = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(initial));',
+              _u.constDecl('time', 'await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(initial))'),
               _u.inlineIfStatement(condition: 'time == null', statement: 'return;'),
               'picked = DateTime(date.year, date.month, date.day, time.hour, time.minute);',
             ],
@@ -100,10 +100,10 @@ class FlutterInputsDateSerializer {
             catchVariable: '_',
             catchStatements: ['current = null;'],
           ),
-          'final first = config.firstDate ?? DateTime(${_config.defaultDateFirstYear});',
-          'final last = config.lastDate ?? DateTime(${_config.defaultDateLastYear});',
+          _u.constDecl('first', 'config.firstDate ?? DateTime(${_config.defaultDateFirstYear})'),
+          _u.constDecl('last', 'config.lastDate ?? DateTime(${_config.defaultDateLastYear})'),
           'DateTime picked = _clampDate(current ?? config.initialDate ?? DateTime.now(), first, last);',
-          'final result = await ${_u.callExpression('showCupertinoModalPopup<DateTime?>', [
+          _u.constDecl('result', 'await ${_u.callExpression('showCupertinoModalPopup<DateTime?>', [
             'context: context',
             'builder: (ctx) => ${_u.callExpression('Container', [
               'height: 320',
@@ -135,7 +135,7 @@ class FlutterInputsDateSerializer {
                 ]),
               ])}',
             ])}',
-          ])};',
+          ])}'),
           _u.inlineIfStatement(condition: 'result == null || !mounted', statement: 'return;'),
           'setState(() => controller.text = DateFormat(config.pattern).format(result));',
         ],
@@ -167,7 +167,7 @@ class FlutterInputsDateSerializer {
 
     // --- Select widget expressions ---
     final selectValidators = [
-      'final ctx = _buildContext();',
+      _u.constDecl('ctx', '_buildContext()'),
       _fields.visibilityGuard(name),
       if (!nullable) _fields.requiredGuard('v == null || v.isEmpty'),
       'return _${name}AsyncError;',
@@ -270,7 +270,7 @@ class FlutterInputsDateSerializer {
 
     // --- Body: select → date (int/String only) → plain ---
     final statements = <String>[
-      'final selectCfg = _form.selectConfig?.$name;',
+      _u.constDecl('selectCfg', '_form.selectConfig?.$name'),
       _u.ifStatement(condition: 'selectCfg != null', ifBlockStatements: [selectBlock]),
     ];
 
@@ -290,7 +290,7 @@ class FlutterInputsDateSerializer {
     final regularExpr = isInt ? _fields.intRegularExpr(f, 'enabled') : _fields.stringRegularExpr(f, 'enabled');
 
     final dateValidators = <String>[
-      'final ctx = _buildContext();',
+      _u.constDecl('ctx', '_buildContext()'),
       _fields.visibilityGuard(name),
       if (!nullable) _fields.requiredGuard('v == null || v.isEmpty'),
       if (nullable)
@@ -330,7 +330,7 @@ class FlutterInputsDateSerializer {
       catchStatements: ['parsedDate = null;'],
     );
     final initialDateLocal =
-        'final initialDate = _clampDate(parsedDate ?? _form.dateConfig!.$name!.initialDate ?? DateTime.now(), _form.dateConfig!.$name!.firstDate ?? DateTime(${_config.defaultDateFirstYear}), _form.dateConfig!.$name!.lastDate ?? DateTime(${_config.defaultDateLastYear}));';
+        _u.constDecl('initialDate', '_clampDate(parsedDate ?? _form.dateConfig!.$name!.initialDate ?? DateTime.now(), _form.dateConfig!.$name!.firstDate ?? DateTime(${_config.defaultDateFirstYear}), _form.dateConfig!.$name!.lastDate ?? DateTime(${_config.defaultDateLastYear}))');
 
     final onCupertinoDateTimeChanged = '(dt) => setState(${_u.functionLiteral([], [
       '_${name}Controller.text = DateFormat(_form.dateConfig!.$name!.pattern).format(dt);',
@@ -405,7 +405,7 @@ class FlutterInputsDateSerializer {
     ]);
 
     statements.addAll([
-      'final config = _form.dateConfig?.$name;',
+      _u.constDecl('config', '_form.dateConfig?.$name'),
       _u.ifStatement(
         condition: 'config == null',
         ifBlockStatements: ['return _field(label, $regularExpr);'],

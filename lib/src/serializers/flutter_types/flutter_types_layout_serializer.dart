@@ -20,9 +20,9 @@ class FlutterTypesLayoutSerializer {
       namedArguments: false,
       arguments: [],
       statements: [
-        'final vis = showOnly?.toVisibility() ?? visibility ?? const ${typeName}Visibility();',
-        'final ord = order ?? const ${typeName}Order();',
-        'final entries = <MapEntry<int, Widget>>[];',
+        _u.constDecl('vis', 'showOnly?.toVisibility() ?? visibility ?? const ${typeName}Visibility()'),
+        _u.constDecl('ord', 'order ?? const ${typeName}Order()'),
+        _u.constDecl('entries', '<MapEntry<int, Widget>>[]'),
         ...fields.asMap().entries.map((e) {
           final f = e.value;
           final defaultVal = _renderer.defaultValueExpression(f, varName);
@@ -46,9 +46,9 @@ class FlutterTypesLayoutSerializer {
       namedArguments: false,
       arguments: [],
       statements: [
-        'final vis = showOnly?.toVisibility() ?? visibility ?? const ${typeName}Visibility();',
-        'final ord = order ?? const ${typeName}Order();',
-        'final entries = <MapEntry<int, Widget>>[];',
+        _u.constDecl('vis', 'showOnly?.toVisibility() ?? visibility ?? const ${typeName}Visibility()'),
+        _u.constDecl('ord', 'order ?? const ${typeName}Order()'),
+        _u.constDecl('entries', '<MapEntry<int, Widget>>[]'),
         ...fields.asMap().entries.map((e) {
           final f = e.value;
           final label = _renderer.humanize(f.name.token);
@@ -73,9 +73,9 @@ class FlutterTypesLayoutSerializer {
       namedArguments: false,
       arguments: [],
       statements: [
-        'final vis = showOnly?.toVisibility() ?? visibility ?? const ${typeName}Visibility();',
-        'final ord = order ?? const ${typeName}Order();',
-        'final entries = <MapEntry<int, DataCell>>[];',
+        _u.constDecl('vis', 'showOnly?.toVisibility() ?? visibility ?? const ${typeName}Visibility()'),
+        _u.constDecl('ord', 'order ?? const ${typeName}Order()'),
+        _u.constDecl('entries', '<MapEntry<int, DataCell>>[]'),
         ...fields.asMap().entries.map((e) {
           final f = e.value;
           final defaultVal = _renderer.defaultValueExpression(f, varName);
@@ -99,9 +99,9 @@ class FlutterTypesLayoutSerializer {
       namedArguments: false,
       arguments: [],
       statements: [
-        'final vis = showOnly?.toVisibility() ?? visibility ?? const ${typeName}Visibility();',
-        'final ord = order ?? const ${typeName}Order();',
-        'final entries = <MapEntry<int, DataColumn>>[];',
+        _u.constDecl('vis', 'showOnly?.toVisibility() ?? visibility ?? const ${typeName}Visibility()'),
+        _u.constDecl('ord', 'order ?? const ${typeName}Order()'),
+        _u.constDecl('entries', '<MapEntry<int, DataColumn>>[]'),
         ...fields.asMap().entries.map((e) {
           final f = e.value;
           final label = _renderer.humanize(f.name.token);
@@ -128,9 +128,9 @@ class FlutterTypesLayoutSerializer {
       namedArguments: false,
       arguments: ['BuildContext context'],
       statements: [
-        'final vis = showOnly?.toVisibility() ?? visibility ?? const ${typeName}Visibility();',
-        'final ord = order ?? const ${typeName}Order();',
-        'final entries = <MapEntry<int, TableRow>>[];',
+        _u.constDecl('vis', 'showOnly?.toVisibility() ?? visibility ?? const ${typeName}Visibility()'),
+        _u.constDecl('ord', 'order ?? const ${typeName}Order()'),
+        _u.constDecl('entries', '<MapEntry<int, TableRow>>[]'),
         ...fields.asMap().entries.map((e) {
           final f = e.value;
           final label = _renderer.humanize(f.name.token);
@@ -166,9 +166,9 @@ class FlutterTypesLayoutSerializer {
       namedArguments: false,
       arguments: ['BuildContext context'],
       statements: [
-        'final vis = showOnly?.toVisibility() ?? visibility ?? const ${typeName}Visibility();',
-        'final ord = order ?? const ${typeName}Order();',
-        'final entries = <MapEntry<int, Widget>>[];',
+        _u.constDecl('vis', 'showOnly?.toVisibility() ?? visibility ?? const ${typeName}Visibility()'),
+        _u.constDecl('ord', 'order ?? const ${typeName}Order()'),
+        _u.constDecl('entries', '<MapEntry<int, Widget>>[]'),
         ...fields.asMap().entries.map((e) {
           final f = e.value;
           final label = _renderer.humanize(f.name.token);
@@ -196,9 +196,9 @@ class FlutterTypesLayoutSerializer {
       namedArguments: false,
       arguments: ['BuildContext context'],
       statements: [
-        'final vis = showOnly?.toVisibility() ?? visibility ?? const ${typeName}Visibility();',
-        'final ord = order ?? const ${typeName}Order();',
-        'final entries = <MapEntry<int, Widget>>[];',
+        _u.constDecl('vis', 'showOnly?.toVisibility() ?? visibility ?? const ${typeName}Visibility()'),
+        _u.constDecl('ord', 'order ?? const ${typeName}Order()'),
+        _u.constDecl('entries', '<MapEntry<int, Widget>>[]'),
         ...fields.asMap().entries.map((e) {
           final f = e.value;
           final label = _renderer.humanize(f.name.token);
@@ -245,9 +245,9 @@ class FlutterTypesLayoutSerializer {
     }
 
     final statements = <String>[
-      'final vis = showOnly?.toVisibility() ?? visibility ?? const ${typeName}Visibility();',
-      'final ord = order ?? const ${typeName}Order();',
-      'final accordions = <MapEntry<int, Widget>>[];',
+      _u.constDecl('vis', 'showOnly?.toVisibility() ?? visibility ?? const ${typeName}Visibility()'),
+      _u.constDecl('ord', 'order ?? const ${typeName}Order()'),
+      _u.constDecl('accordions', '<MapEntry<int, Widget>>[]'),
     ];
 
     if (scalarFields.isNotEmpty) {
@@ -277,7 +277,7 @@ class FlutterTypesLayoutSerializer {
   List<String> _buildScalarGroup(
       String typeName, String varName, List<MapEntry<int, GLField>> scalarFields) {
     // labeledRow / expandable → two-column Table
-    final tableStmts = <String>['final scalarRows = <MapEntry<int, TableRow>>[];'];
+    final tableStmts = <String>[_u.constDecl('scalarRows', '<MapEntry<int, TableRow>>[]')];
     for (final e in scalarFields) {
       final idx = e.key;
       final f = e.value;
@@ -308,7 +308,7 @@ class FlutterTypesLayoutSerializer {
     ])};');
 
     // listTile → Column of ListTile
-    final tileStmts = <String>['final scalarTiles = <MapEntry<int, Widget>>[];'];
+    final tileStmts = <String>[_u.constDecl('scalarTiles', '<MapEntry<int, Widget>>[]')];
     for (final e in scalarFields) {
       final idx = e.key;
       final f = e.value;
@@ -328,7 +328,7 @@ class FlutterTypesLayoutSerializer {
     tileStmts.add('scalarContent = ${_u.callExpression('Column', ['children: _spaced(scalarTiles.map((e) => e.value).toList())'])};');
 
     // listTileReversed → Column with value on top, label below
-    final reversedStmts = <String>['final scalarReversed = <MapEntry<int, Widget>>[];'];
+    final reversedStmts = <String>[_u.constDecl('scalarReversed', '<MapEntry<int, Widget>>[]')];
     for (final e in scalarFields) {
       final idx = e.key;
       final f = e.value;
@@ -426,7 +426,7 @@ class FlutterTypesLayoutSerializer {
       namedArguments: false,
       arguments: ['List<Widget> items'],
       statements: [
-        'final result = <Widget>[];',
+        _u.constDecl('result', '<Widget>[]'),
         _u.forLoop(
           init: 'var i = 0',
           condition: 'i < items.length',

@@ -300,9 +300,9 @@ class TypeScriptClientSerializer extends GLClientSerializer {
             'variables: Record<string, unknown>',
           ],
           statements: [
-            'const fullQuery = this.assembleQuery(query, fragmentNames);',
-            'const payload: GraphLinkPayload = { query: fullQuery, operationName, variables };',
-            'const response = await this._glCallAdapter(payload);',
+            _cg.constDecl('fullQuery', 'this.assembleQuery(query, fragmentNames)'),
+            _cg.constDecl('payload', '{ query: fullQuery, operationName, variables }', type: 'GraphLinkPayload'),
+            _cg.constDecl('response', 'await this._glCallAdapter(payload)'),
             'return JSON.parse(response) as T;',
           ],
         ),
@@ -316,11 +316,11 @@ class TypeScriptClientSerializer extends GLClientSerializer {
           ],
           returnType: 'GraphLinkCacheEntry | null',
           statements: [
-            'const result = await this.$svStore.get(key);',
+            _cg.constDecl('result', 'await this.$svStore.get(key)'),
             _cg.ifStatement(
               condition: 'result !== null',
               ifBlockStatements: [
-                'const entry = GraphLinkCacheEntry.fromJson(JSON.parse(result));',
+                _cg.constDecl('entry', 'GraphLinkCacheEntry.fromJson(JSON.parse(result))'),
                 _cg.ifStatement(
                   condition: 'entry.isExpired',
                   ifBlockStatements: [
@@ -350,13 +350,13 @@ class TypeScriptClientSerializer extends GLClientSerializer {
           statements: [
             _cg.forEachLoop(variable: 'tag', iterable: 'tags', statements: [
               r'const tagKey = `${__GL_TAG_KEY_PREFIX__}${tag}`;',
-              'const lock = this.$svTagLocks.get(tag)!;',
+              _cg.constDecl('lock', 'this.$svTagLocks.get(tag)!'),
               'await lock.synchronized(async () => {',
               '  const data = await this.$svStore.get(tagKey);',
               _cg.ifStatement(
                 condition: 'data !== null',
                 ifBlockStatements: [
-                  'const entry = GraphLinkTagEntry.decode(data);',
+                  _cg.constDecl('entry', 'GraphLinkTagEntry.decode(data)'),
                   _cg.forEachLoop(
                     variable: 'k',
                     iterable: 'entry.keys',
@@ -377,7 +377,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
           statements: [
             _cg.forEachLoop(variable: 'tag', iterable: 'tags', statements: [
               r'const tagKey = `${__GL_TAG_KEY_PREFIX__}${tag}`;',
-              'const lock = this.$svTagLocks.get(tag)!;',
+              _cg.constDecl('lock', 'this.$svTagLocks.get(tag)!'),
               'await lock.synchronized(async () => {',
               '  const data = await this.$svStore.get(tagKey);',
               '  const entry = data !== null ? GraphLinkTagEntry.decode(data) : new GraphLinkTagEntry(new Set());',
@@ -395,7 +395,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
           statements: [
             _cg.forEachLoop(variable: 'tag', iterable: 'tags', statements: [
               r'const tagKey = `${__GL_TAG_KEY_PREFIX__}${tag}`;',
-              'const lock = this.$svTagLocks.get(tag) ?? (() => { const l = new GraphLinkLock(); this.$svTagLocks.set(tag, l); return l; })();',
+              _cg.constDecl('lock', 'this.$svTagLocks.get(tag) ?? (() => { const l = new GraphLinkLock(); this.$svTagLocks.set(tag, l); return l; })()'),
               'await lock.synchronized(async () => {',
               '  const data = await this.$svStore.get(tagKey);',
               _cg.ifStatement(
@@ -426,7 +426,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
               variable: 'name',
               iterable: 'fragmentNames',
               statements: [
-                'const frag = this.$svFragMap[name];',
+                _cg.constDecl('frag', 'this.$svFragMap[name]'),
                 _cg.ifStatement(
                   condition: 'frag',
                   ifBlockStatements: ["result += '\\n' + frag;"],
@@ -506,14 +506,14 @@ class TypeScriptClientSerializer extends GLClientSerializer {
         'directives: string',
       ],
       statements: [
-        'const variables: Record<string, unknown> = {};',
+        _cg.constDecl('variables', '{}', type: 'Record<string, unknown>'),
         _cg.forEachLoop(
           variable: 'pq',
           iterable: 'partQueries',
           statements: ['Object.assign(variables, pq.variables);'],
         ),
         'let query = `query \${operationName}`;',
-        'const args = new Set(partQueries.flatMap(pq => pq.argumentDeclarations));',
+        _cg.constDecl('args', 'new Set(partQueries.flatMap(pq => pq.argumentDeclarations))'),
         _cg.ifStatement(
           condition: 'args.size > 0',
           ifBlockStatements: ["query += `(\${Array.from(args).join(', ')})`;"],
@@ -526,7 +526,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
           statements: ["query += pq.query + ' ';"],
         ),
         "query += '}';",
-        'const fragNames = new Set(partQueries.flatMap(pq => Array.from(pq.fragmentNames)));',
+        _cg.constDecl('fragNames', 'new Set(partQueries.flatMap(pq => Array.from(pq.fragmentNames)))'),
         "query += Array.from(fragNames).map(n => this.$svFragMap[n]!).join('');",
         'return { query, operationName, variables };',
       ],
@@ -544,8 +544,8 @@ class TypeScriptClientSerializer extends GLClientSerializer {
         'captureErrors = false',
       ],
       statements: [
-        'const result = JSON.parse(data);',
-        "const dataMap: Record<string, unknown> = (result['data'] as Record<string, unknown>) ?? {};",
+        _cg.constDecl('result', 'JSON.parse(data)'),
+        _cg.constDecl("dataMap", "(result['data'] as Record<string, unknown>) ?? {}", type: "Record<string, unknown>"),
         _cg.forEachLoop(
           variable: 'q',
           iterable: 'remainingQueries',
@@ -553,7 +553,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
             _cg.ifStatement(
               condition: 'q.ttl > 0 && dataMap[q.elementKey] != null',
               ifBlockStatements: [
-                'const entry = new GraphLinkCacheEntry(JSON.stringify(dataMap[q.elementKey]), Date.now() + q.ttl * 1000);',
+                _cg.constDecl('entry', 'new GraphLinkCacheEntry(JSON.stringify(dataMap[q.elementKey]), Date.now() + q.ttl * 1000)'),
                 'void this.$svStore.set(q.cacheKey!, JSON.stringify(entry.toJson()));',
                 _cg.ifStatement(
                   condition: 'q.tags.length > 0',
@@ -564,12 +564,12 @@ class TypeScriptClientSerializer extends GLClientSerializer {
           ],
         ),
         'Object.assign(dataMap, cachedResponse);',
-        "const fullResponse: Record<string, unknown> = { 'data': result['data'] != null ? dataMap : null, 'errors': result['errors'] ?? null };",
+        _cg.constDecl("fullResponse", "{ 'data': result['data'] != null ? dataMap : null, 'errors': result['errors'] ?? null }", type: "Record<string, unknown>"),
         _cg.ifStatement(
           condition: 'captureErrors',
           ifBlockStatements: ['return fullResponse;'],
         ),
-        "const errors = result['errors'] as unknown[] | null | undefined;",
+        _cg.constDecl("errors", "result['errors'] as unknown[] | null | undefined"),
         _cg.ifStatement(
           condition: 'errors != null && errors.length > 0',
           ifBlockStatements: ["throw errors as GraphLinkError[];"],

@@ -190,9 +190,9 @@ class FlutterInputsSharedSerializer {
               namedArguments: false,
               arguments: ['TextEditingValue oldValue', 'TextEditingValue newValue'],
               statements: [
-                "final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');",
+                _u.constDecl("digits", "newValue.text.replaceAll(RegExp(r'[^0-9]'), '')"),
                 'var digitIdx = 0;',
-                'final buffer = StringBuffer();',
+                _u.constDecl('buffer', 'StringBuffer()'),
                 _u.forEachLoop(
                   variable: 'char',
                   iterable: "pattern.split('')",
@@ -207,7 +207,7 @@ class FlutterInputsSharedSerializer {
                     ),
                   ],
                 ),
-                'final text = buffer.toString();',
+                _u.constDecl('text', 'buffer.toString()'),
                 'return ${_u.callExpression('newValue.copyWith', [
                   'text: text',
                   'selection: TextSelection.collapsed(offset: text.length)',

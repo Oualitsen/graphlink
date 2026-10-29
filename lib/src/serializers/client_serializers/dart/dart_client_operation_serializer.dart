@@ -91,7 +91,7 @@ class DartClientOperationSerializer {
         async: true,
         statements: [
           generateVariables(def),
-          'final $svPartialQueries = ${dividedQueries.map((e) => _serializePartialQuery(e)).toList()};',
+          _cg.constDecl(svPartialQueries, '${dividedQueries.map((e) => _serializePartialQuery(e)).toList()}'),
           if (isCaptureErrors)
             "return $executeCachedCall;"
           else
@@ -119,10 +119,10 @@ class DartClientOperationSerializer {
           // assembleQuery/payload are only needed for the subscription and upload
           // paths; plain mutations build the payload inside executeData/executeFull.
           if (isSubscription || isUpload)
-            'final $svFullQuery = assembleQuery($svQuery, $svFragmentNames);',
+            _cg.constDecl(svFullQuery, 'assembleQuery($svQuery, $svFragmentNames)'),
           generateVariables(def),
           if (isSubscription)
-            "final $svPayload = GraphLinkPayload(query: $svFullQuery, operationName: '${def.tokenInfo}', variables: ${_variablesExpr(def)});",
+            _cg.constDecl(svPayload, "GraphLinkPayload(query: $svFullQuery, operationName: '${def.tokenInfo}', variables: ${_variablesExpr(def)})"),
           _serializeAdapterCall(def),
         ]);
   }
@@ -145,7 +145,7 @@ class DartClientOperationSerializer {
       final base = arg.codeName;
       entries.add(arg.type.nullable ? "...?$base?.toJson()," : "...$base.toJson(),");
     }
-    return 'final $svVariables = <String, dynamic>${_cg.block(entries)};';
+    return _cg.constDecl(svVariables, '<String, dynamic>${_cg.block(entries)}');
   }
 
   String _variablesExpr(GLQueryDefinition def) =>
@@ -228,7 +228,7 @@ class DartClientOperationSerializer {
     final varsExpr = _variablesExpr(def);
     if (def.isCaptureErrors(_grammar)) {
       return [
-        "final $svResult = await executeFull($svQuery, $svFragmentNames, '${def.tokenInfo}', $varsExpr, $fullResponseToken.fromJson);",
+        _cg.constDecl(svResult, "await executeFull($svQuery, $svFragmentNames, '${def.tokenInfo}', $varsExpr, $fullResponseToken.fromJson)"),
         _cg.ifStatement(
           condition: '$svResult.errors == null',
           ifBlockStatements: [_serializeInvalidationCall(def)],
@@ -237,7 +237,7 @@ class DartClientOperationSerializer {
       ].join('\n');
     }
     return [
-      "final $svResult = await executeData($svQuery, $svFragmentNames, '${def.tokenInfo}', $varsExpr, $fullResponseToken.fromJson);",
+      _cg.constDecl(svResult, "await executeData($svQuery, $svFragmentNames, '${def.tokenInfo}', $varsExpr, $fullResponseToken.fromJson)"),
       _serializeInvalidationCall(def),
       'return $svResult.data!;',
     ].join('\n');
@@ -250,8 +250,8 @@ class DartClientOperationSerializer {
         .toList();
 
     final statements = <String>[
-      'final $svMultipartMap = <String, Object>{};',
-      'final $svFileParts = <String, Object>{};',
+      _cg.constDecl(svMultipartMap, '<String, Object>{}'),
+      _cg.constDecl(svFileParts, '<String, Object>{}'),
       'int $svSlot = 0;',
     ];
 
@@ -281,13 +281,13 @@ class DartClientOperationSerializer {
     final isCaptureErrors = def.isCaptureErrors(_grammar);
 
     statements.addAll([
-      'final $svParts = <String, Object>${_cg.block([
+      _cg.constDecl(svParts, '<String, Object>${_cg.block([
         "'operations': jsonEncode({'query': $svFullQuery, 'variables': $svVariables}),",
         "'map': jsonEncode($svMultipartMap),",
         '...$svFileParts,',
-      ])};',
-      'final $svResponse = await $svUploadAdapter!($svParts, onProgress);',
-      'final $svResult = $fullResponseToken.fromJson(jsonDecode($svResponse));',
+      ])}'),
+      _cg.constDecl(svResponse, 'await $svUploadAdapter!($svParts, onProgress)'),
+      _cg.constDecl(svResult, '$fullResponseToken.fromJson(jsonDecode($svResponse))'),
       if (isCaptureErrors) ...[
         _cg.ifStatement(
           condition: '$svResult.errors == null',

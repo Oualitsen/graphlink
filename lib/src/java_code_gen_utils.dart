@@ -185,6 +185,9 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
   }
 
   @override
+  String constDecl(String name, String value, {String? type}) => 'final ${type ?? 'var'} $name = $value;';
+
+  @override
   String callExpression(String name, List<String> args) {
     if (args.isEmpty) return '$name()';
     return '$name(\n${args.join(',\n').ident()}\n)';

@@ -180,13 +180,13 @@ class FlutterInputsStateSerializer {
     final validatableFields = [...textFields, ...enumFields, ...boolFields];
 
     final stateVarDecls = <String>[
-      'final _formKey = GlobalKey<FormState>();',
+      _u.constDecl('_formKey', 'GlobalKey<FormState>()'),
       '${formName} get _form => widget as ${formName};',
       'Timer? _debounceTimer;',
       'bool _isResetting = false;',
       'bool _submitting = false;',
       'bool _asyncNotifying = false;',
-      'final _errorsNotifier = ValueNotifier<Map<String, String>>({});',
+      _u.constDecl('_errorsNotifier', 'ValueNotifier<Map<String, String>>({})'),
       if (validatableFields.isNotEmpty) '// async validation state',
       ...validatableFields.map((f) => 'bool _${f.codeName}Validating = false;'),
       ...validatableFields.map((f) => 'String? _${f.codeName}AsyncError;'),
@@ -213,13 +213,13 @@ class FlutterInputsStateSerializer {
       if (dateEligibleFields.isNotEmpty) '// inline calendar open state',
       ...dateEligibleFields.map((f) => 'bool _${f.codeName}CalendarOpen = false;'),
       if (inputFields.isNotEmpty) '// nested input keys',
-      ...inputFields.map((f) => 'final _${f.codeName}Key = GlobalKey<InputFormState<${_types.resolveTypeCodeName(f.type.firstType.token)}>>();'),
+      ...inputFields.map((f) => _u.constDecl('_${f.codeName}Key', 'GlobalKey<InputFormState<${_types.resolveTypeCodeName(f.type.firstType.token)}>>()')),
       '// field keys — used by _scrollToFirstError to locate first invalid field',
       ...fields.where((f) => textFields.contains(f) || enumFields.contains(f) || boolFields.contains(f))
-          .map((f) => 'final _${f.codeName}FieldKey = GlobalKey<FormFieldState>();'),
+          .map((f) => _u.constDecl('_${f.codeName}FieldKey', 'GlobalKey<FormFieldState>()')),
       '// field override keys',
       ...fields.where((f) => !_types.isInputField(f)).map((f) =>
-          'final _${f.codeName}OverrideKey = GlobalKey<InputFormState<${_types.valuesFieldType(f)}>>();'),
+          _u.constDecl('_${f.codeName}OverrideKey', 'GlobalKey<InputFormState<${_types.valuesFieldType(f)}>>()')),
     ];
 
     final initStatements = <String>[
@@ -240,7 +240,7 @@ class FlutterInputsStateSerializer {
 
     final didUpdateStatements = <String>[
       'super.didUpdateWidget(oldWidget);',
-      if (listFields.isNotEmpty) 'final oldForm = oldWidget as ${formName};',
+      if (listFields.isNotEmpty) _u.constDecl('oldForm', 'oldWidget as ${formName}'),
       ...listFields.map((f) {
         if (_types.isEnumListField(f) || _types.isScalarListField(f)) {
           return _u.inlineIfStatement(
@@ -522,15 +522,15 @@ class FlutterInputsStateSerializer {
       arguments: [],
       namedArguments: false,
       statements: [
-        'final ord = _form.order ?? const ${inputName}Order();',
-        'final entries = <MapEntry<int, GlobalKey<FormFieldState>>>[];',
+        _u.constDecl('ord', '_form.order ?? const ${inputName}Order()'),
+        _u.constDecl('entries', '<MapEntry<int, GlobalKey<FormFieldState>>>[]'),
         ...addEntries,
         'entries.sort((a, b) => a.key.compareTo(b.key));',
         _u.forEachLoop(
           variable: 'e',
           iterable: 'entries',
           statements: [
-            'final ctx = e.value.currentContext;',
+            _u.constDecl('ctx', 'e.value.currentContext'),
             _u.ifStatement(
               condition: 'ctx != null && (e.value.currentState?.hasError ?? false)',
               ifBlockStatements: [
@@ -592,7 +592,7 @@ class FlutterInputsStateSerializer {
             ])};',
           ],
         ),
-        'final rows = _visibleRows();',
+        _u.constDecl('rows', '_visibleRows()'),
         _u.ifStatement(
           condition: '_form.layout == ${inputName}Layout.column',
           ifBlockStatements: [columnReturn],
@@ -612,7 +612,7 @@ class FlutterInputsStateSerializer {
   ) {
     final allFormFields = [...textFields, ...enumFields, ...boolFields, ...inputFields];
     final visDecls = [...allFormFields, ...listFields].map((f) =>
-        'final ${f.codeName}Vis = vis.${f.codeName}?.call(ctx) ?? FieldVisibility.enabled;').toList();
+        _u.constDecl('${f.codeName}Vis', 'vis.${f.codeName}?.call(ctx) ?? FieldVisibility.enabled')).toList();
 
     final nonInputAssignments = [...textFields, ...enumFields, ...boolFields].map((f) {
       final name = f.codeName;
@@ -647,9 +647,9 @@ class FlutterInputsStateSerializer {
       arguments: [],
       namedArguments: false,
       statements: [
-        'final vis = _form.visibility ?? const ${inputName}Visibility();',
-        'final def = _form.hiddenDefaults ?? const ${inputName}Defaults();',
-        'final ctx = _buildContext();',
+        _u.constDecl('vis', '_form.visibility ?? const ${inputName}Visibility()'),
+        _u.constDecl('def', '_form.hiddenDefaults ?? const ${inputName}Defaults()'),
+        _u.constDecl('ctx', '_buildContext()'),
         ...visDecls,
         'return ${_u.callExpression(inputName, [...nonInputAssignments, ...inputAssignments, ...listAssignments])};',
       ],
@@ -733,7 +733,7 @@ class FlutterInputsStateSerializer {
     List<GLField> inputFields,
   ) {
     final visDecls = fields.map((f) =>
-        'final ${f.codeName}Vis = vis.${f.codeName}?.call(ctx) ?? FieldVisibility.enabled;').toList();
+        _u.constDecl('${f.codeName}Vis', 'vis.${f.codeName}?.call(ctx) ?? FieldVisibility.enabled')).toList();
 
     final rowLines = _buildFieldLines(
       inputName,
@@ -747,10 +747,10 @@ class FlutterInputsStateSerializer {
       arguments: [],
       namedArguments: false,
       statements: [
-        'final vis = _form.visibility ?? const ${inputName}Visibility();',
-        'final ord = _form.order ?? const ${inputName}Order();',
-        'final ctx = _buildContext();',
-        'final entries = <MapEntry<int, Widget>>[];',
+        _u.constDecl('vis', '_form.visibility ?? const ${inputName}Visibility()'),
+        _u.constDecl('ord', '_form.order ?? const ${inputName}Order()'),
+        _u.constDecl('ctx', '_buildContext()'),
+        _u.constDecl('entries', '<MapEntry<int, Widget>>[]'),
         ...visDecls,
         ...rowLines,
         'entries.sort((a, b) => a.key.compareTo(b.key));',
@@ -1024,14 +1024,14 @@ class FlutterInputsStateSerializer {
         arguments: ['Widget label', 'TextFieldOptions? opts', 'Widget? suffixIcon', '[Widget? prefixIcon, TextEditingController? clearController]'],
         statements: [
           'var d = _decoration(label);',
-          'final pi = prefixIcon ?? opts?.prefixIcon;',
+          _u.constDecl('pi', 'prefixIcon ?? opts?.prefixIcon'),
           _u.inlineIfStatement(condition: 'pi != null', statement: 'd = d.copyWith(prefixIcon: pi);'),
-          'final si = suffixIcon ?? opts?.suffixIcon;',
-          'final clear = clearController != null && (opts?.clearButton ?? ${_config.defaultClearButton}) ? _clearButton(clearController) : null;',
-          'final suffix = clear == null ? si : si == null ? clear : ${_u.callExpression('Row', [
+          _u.constDecl('si', 'suffixIcon ?? opts?.suffixIcon'),
+          _u.constDecl('clear', 'clearController != null && (opts?.clearButton ?? ${_config.defaultClearButton}) ? _clearButton(clearController) : null'),
+          _u.constDecl('suffix', 'clear == null ? si : si == null ? clear : ${_u.callExpression('Row', [
             'mainAxisSize: MainAxisSize.min',
             _u.listArg('children', ['clear', 'si']),
-          ])};',
+          ])}'),
           _u.inlineIfStatement(condition: 'suffix != null', statement: 'd = d.copyWith(suffixIcon: suffix);'),
           'return opts?.decoration?.call(d) ?? d;',
         ],
@@ -1061,7 +1061,7 @@ class FlutterInputsStateSerializer {
         arguments: ['List<Widget> widgets', 'double gap'],
         statements: [
           _u.inlineIfStatement(condition: 'widgets.isEmpty', statement: 'return [];'),
-          'final result = <Widget>[];',
+          _u.constDecl('result', '<Widget>[]'),
           _u.forLoop(
             init: 'var i = 0',
             condition: 'i < widgets.length',
@@ -1122,13 +1122,13 @@ class FlutterInputsStateSerializer {
       namedArguments: false,
       arguments: ['Widget label', 'bool enabled'],
       statements: [
-        'final child = ${_u.callExpression('Column', [
+        _u.constDecl('child', _u.callExpression('Column', [
           'crossAxisAlignment: CrossAxisAlignment.start',
           _u.listArg('children', [
             'DefaultTextStyle(style: Theme.of(context).textTheme.labelLarge ?? const TextStyle(fontWeight: FontWeight.bold), child: Padding(padding: const EdgeInsets.only(bottom: 8), child: label))',
             childForm,
           ]),
-        ])};',
+        ])),
         'return enabled ? child : IgnorePointer(ignoring: true, child: Opacity(opacity: 0.38, child: child));',
       ],
     );
@@ -1220,7 +1220,7 @@ class FlutterInputsStateSerializer {
       final fieldWidget = _fields.fieldWidgetExpr(f, textFields, enumFields, boolFields, listFields, enabledExpr);
       final defaultIdx = 1000 + i;
       final isRequired = !f.type.nullable;
-      final labelStmt = "final rl = _requiredLabel(_form.labels?.${f.codeName} ?? const Text('$humanLabel'), $isRequired); final label = _form.labelPosition == ${inputName}LabelPosition.floatingLabel ? rl : _labelWithInfo(rl, _form.labels?.${f.codeName}Info);";
+      final labelStmt = _u.constDecl("rl", "_requiredLabel(_form.labels?.${f.codeName} ?? const Text('$humanLabel'), $isRequired); final label = _form.labelPosition == ${inputName}LabelPosition.floatingLabel ? rl : _labelWithInfo(rl, _form.labels?.${f.codeName}Info)");
 
       final String widgetExpr;
       if (inputFields.contains(f)) {
@@ -1434,8 +1434,8 @@ class FlutterInputsStateSerializer {
         namedArguments: false,
         arguments: ['BuildContext context', 'ControlsDetails details'],
         statements: [
-          'final isFirst = details.stepIndex == 0;',
-          'final isLast = details.stepIndex == ${totalSteps - 1};',
+          _u.constDecl('isFirst', 'details.stepIndex == 0'),
+          _u.constDecl('isLast', 'details.stepIndex == ${totalSteps - 1}'),
           'return ${_u.callExpression('Row', [
             'mainAxisAlignment: _form.stepControlsAlignment',
             _u.listArg('children', [
@@ -1547,8 +1547,8 @@ class FlutterInputsStateSerializer {
       arguments: [],
       namedArguments: false,
       statements: [
-        'final ord = _form.order ?? const ${inputName}Order();',
-        'final entries = <MapEntry<int, MapEntry<String, String>>>[];',
+        _u.constDecl('ord', '_form.order ?? const ${inputName}Order()'),
+        _u.constDecl('entries', '<MapEntry<int, MapEntry<String, String>>>[]'),
         ...addEntries,
         'entries.sort((a, b) => a.key.compareTo(b.key));',
         '_errorsNotifier.value = Map.fromEntries(entries.map((e) => e.value));',
@@ -1570,7 +1570,7 @@ class FlutterInputsStateSerializer {
     final cases = scrollableFields.map((f) => DartCaseStatement(
       caseValue: "'${f.codeName}'",
       statement: _u.block([
-        'final ctx = _${f.codeName}FieldKey.currentContext;',
+        _u.constDecl('ctx', '_${f.codeName}FieldKey.currentContext'),
         _u.inlineIfStatement(
           condition: 'ctx != null',
           statement: 'Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);',
@@ -1690,7 +1690,7 @@ class FlutterInputsStateSerializer {
           namedArguments: false,
           arguments: ['BuildContext context'],
           statements: [
-            'final state = widget.formKey.currentState;',
+            _u.constDecl('state', 'widget.formKey.currentState'),
             _u.inlineIfStatement(condition: 'state == null', statement: 'return const SizedBox.shrink();'),
             'return ${_u.callExpression('ListenableBuilder', [
               'listenable: state.errorsNotifier',

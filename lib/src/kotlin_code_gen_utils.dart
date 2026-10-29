@@ -96,6 +96,10 @@ class KotlinCodeGenUtils implements CodeGenUtilsBase {
   }
 
   @override
+  String constDecl(String name, String value, {String? type}) =>
+      'val $name${type == null ? '' : ': $type'} = $value';
+
+  @override
   String callExpression(String name, List<String> args) {
     if (args.isEmpty) return '$name()';
     return '$name(\n${args.join(',\n').ident()}\n)';

@@ -53,16 +53,18 @@ class TypeScriptClientOperationSerializer {
     return names.isEmpty ? '[] as string[]' : _cg.arrayLiteral(names);
   }
 
-  String _executeFull(GLQueryDefinition def, String fullResponseTypeName) =>
-      'const $svResult = await ${_cg.callExpression('this._executeFull<$fullResponseTypeName>', [
-        svQuery,
-        svFragmentNames,
-        "'${def.tokenInfo}'",
-        svVariables,
-      ])};';
+  String _executeFull(GLQueryDefinition def, String fullResponseTypeName) => _cg.constDecl(
+        svResult,
+        'await ${_cg.callExpression('this._executeFull<$fullResponseTypeName>', [
+          svQuery,
+          svFragmentNames,
+          "'${def.tokenInfo}'",
+          svVariables,
+        ])}',
+      );
 
   String _assembleQuery() =>
-      'const $svFullQuery = ${_cg.callExpression('this.assembleQuery', [svQuery, svFragmentNames])};';
+      _cg.constDecl(svFullQuery, _cg.callExpression('this.assembleQuery', [svQuery, svFragmentNames]));
 
   String get _cancelSubscription =>
       'return () => ${_cg.block(['void $svGen.return(undefined);'])};';
@@ -92,10 +94,10 @@ class TypeScriptClientOperationSerializer {
 
     final innerStatements = [
       _generateVariables(def),
-      "const $svQuery = '${queryText}';",
-      'const $svFragmentNames = ${_fragmentNamesExpr(def)};',
+      _cg.constDecl(svQuery, "'$queryText'"),
+      _cg.constDecl(svFragmentNames, _fragmentNamesExpr(def)),
       _executeFull(def, fullResponseTypeName),
-      "const gl_fullResponse__ = ${_fromJson(svResult, fullResponseTypeName)};",
+      _cg.constDecl('gl_fullResponse__', _fromJson(svResult, fullResponseTypeName)),
       if (!isCE)
         _cg.ifStatement(
           condition: 'gl_fullResponse__.errors',
@@ -174,12 +176,15 @@ class TypeScriptClientOperationSerializer {
 
     final innerStatements = [
       _generateVariables(def),
-      'const $svPartialQueries = ${_cg.arrayLiteral(dividedQueries.map((dq) => _serializePartialQuery(dq, hasFrags)).toList())};',
-      'const $svResponseMap: Record<string, unknown> = {};',
-      'const $svStaleData: Record<string, unknown> = {};',
-      'const $svCacheFutures = $svPartialQueries\n$cacheFuturesChain',
+      _cg.constDecl(
+        svPartialQueries,
+        _cg.arrayLiteral(dividedQueries.map((dq) => _serializePartialQuery(dq, hasFrags)).toList()),
+      ),
+      _cg.constDecl(svResponseMap, '{}', type: 'Record<string, unknown>'),
+      _cg.constDecl(svStaleData, '{}', type: 'Record<string, unknown>'),
+      _cg.constDecl(svCacheFutures, '$svPartialQueries\n$cacheFuturesChain'),
       'await Promise.all($svCacheFutures);',
-      'const $svRemaining = $svPartialQueries.filter(pq => !(pq.elementKey in $svResponseMap));',
+      _cg.constDecl(svRemaining, '$svPartialQueries.filter(pq => !(pq.elementKey in $svResponseMap))'),
       _cg.ifStatement(
         condition: '$svRemaining.length === 0',
         ifBlockStatements: [
@@ -187,15 +192,18 @@ class TypeScriptClientOperationSerializer {
           if (observables) ...['subscriber.complete();', 'return;'],
         ],
       ),
-      'const $svPayload = ${_cg.callExpression('this._buildPayload', [
-        svRemaining,
-        "'${def.tokenInfo}'",
-        directives.isEmpty ? "''" : "'$directives'",
-      ])};',
+      _cg.constDecl(
+        svPayload,
+        _cg.callExpression('this._buildPayload', [
+          svRemaining,
+          "'${def.tokenInfo}'",
+          directives.isEmpty ? "''" : "'$directives'",
+        ]),
+      ),
       _cg.tryCatchFinally(
         tryStatements: [
-          'const $svResponseText = await this._glCallAdapter($svPayload);',
-          'const $svResult = $parseAndCacheCall as unknown as $fullResponseTypeName;',
+          _cg.constDecl(svResponseText, 'await this._glCallAdapter($svPayload)'),
+          _cg.constDecl(svResult, '$parseAndCacheCall as unknown as $fullResponseTypeName'),
           if (observables) ...[
             isCE
                 ? "subscriber.next(${_fromJson(svResult, returnTypeName)});"
@@ -209,7 +217,7 @@ class TypeScriptClientOperationSerializer {
         catchVariable: 'e',
         catchStatements: [
           'Object.assign($svResponseMap, $svStaleData);',
-          'const $svRemainingCount = $svPartialQueries.filter(pq => !(pq.elementKey in $svResponseMap)).length;',
+          _cg.constDecl(svRemainingCount, '$svPartialQueries.filter(pq => !(pq.elementKey in $svResponseMap)).length'),
           _cg.ifStatement(
             condition: '$svRemainingCount > 0',
             ifBlockStatements: [
@@ -261,13 +269,13 @@ class TypeScriptClientOperationSerializer {
 
     final statements = <String>[
       _generateVariables(def),
-      "const $svQuery = '${queryText}';",
-      'const $svFragmentNames = ${_fragmentNamesExpr(def)};',
+      _cg.constDecl(svQuery, "'$queryText'"),
+      _cg.constDecl(svFragmentNames, _fragmentNamesExpr(def)),
     ];
 
     statements.addAll([
       _executeFull(def, fullResponseTypeName),
-      "const gl_fullResponse__ = ${_fromJson(svResult, fullResponseTypeName)};",
+      _cg.constDecl('gl_fullResponse__', _fromJson(svResult, fullResponseTypeName)),
       if (!isCaptureErrors)
         _cg.ifStatement(
           condition: 'gl_fullResponse__.errors',
@@ -329,14 +337,14 @@ class TypeScriptClientOperationSerializer {
 
     final statements = <String>[
       _generateVariables(def, nullifyUploads: true),
-      "const $svQuery = '${queryTextUp}';",
-      'const $svFragmentNames = ${_fragmentNamesExpr(def)};',
+      _cg.constDecl(svQuery, "'$queryTextUp'"),
+      _cg.constDecl(svFragmentNames, _fragmentNamesExpr(def)),
       _assembleQuery(),
     ];
 
     statements.addAll([
-      "const $svMap: Record<string, string[]> = {};",
-      "const $svParts: Record<string, unknown> = {};",
+      _cg.constDecl(svMap, '{}', type: 'Record<string, string[]>'),
+      _cg.constDecl(svParts, '{}', type: 'Record<string, unknown>'),
       "let $svSlot = 0;",
     ]);
 
@@ -366,18 +374,25 @@ class TypeScriptClientOperationSerializer {
     }
 
     final innerStatements = [
-      'const $svAllParts: Record<string, unknown> = ${_cg.block([
-        "'operations': JSON.stringify(${_cg.block([
-          'query: $svFullQuery,',
-          "operationName: '${def.tokenInfo}',",
-          'variables: $svVariables,',
-        ])}),",
-        "'map': JSON.stringify($svMap),",
-        '...$svParts,',
-      ])};',
-      'const $svResponse = await ${_cg.callExpression('this.$svMultipartAdapter!', [svAllParts, 'onProgress'])};',
-      "const $svResult = JSON.parse($svResponse);",
-      "const gl_fullResponse__ = ${_fromJson(svResult, fullResponseTypeName)};",
+      _cg.constDecl(
+        svAllParts,
+        _cg.block([
+          "'operations': JSON.stringify(${_cg.block([
+            'query: $svFullQuery,',
+            "operationName: '${def.tokenInfo}',",
+            'variables: $svVariables,',
+          ])}),",
+          "'map': JSON.stringify($svMap),",
+          '...$svParts,',
+        ]),
+        type: 'Record<string, unknown>',
+      ),
+      _cg.constDecl(
+        svResponse,
+        'await ${_cg.callExpression('this.$svMultipartAdapter!', [svAllParts, 'onProgress'])}',
+      ),
+      _cg.constDecl(svResult, 'JSON.parse($svResponse)'),
+      _cg.constDecl('gl_fullResponse__', _fromJson(svResult, fullResponseTypeName)),
       _cg.ifStatement(
         condition: 'gl_fullResponse__.errors',
         ifBlockStatements: ['throw gl_fullResponse__.errors;'],
@@ -421,15 +436,19 @@ class TypeScriptClientOperationSerializer {
 
     final statements = <String>[
       _generateVariables(def),
-      "const $svQuery = '${queryTextSub}';",
-      'const $svFragmentNames = ${_fragmentNamesExpr(def)};',
+      _cg.constDecl(svQuery, "'$queryTextSub'"),
+      _cg.constDecl(svFragmentNames, _fragmentNamesExpr(def)),
       _assembleQuery(),
-      'const $svPayload: GraphLinkPayload = ${_cg.block([
-        'query: $svFullQuery,',
-        "operationName: '${def.tokenInfo}',",
-        'variables: $svVariables,',
-      ])};',
-      'const $svGen = this.$svHandler.handle($svPayload);',
+      _cg.constDecl(
+        svPayload,
+        _cg.block([
+          'query: $svFullQuery,',
+          "operationName: '${def.tokenInfo}',",
+          'variables: $svVariables,',
+        ]),
+        type: 'GraphLinkPayload',
+      ),
+      _cg.constDecl(svGen, 'this.$svHandler.handle($svPayload)'),
     ];
 
     if (observables) {
@@ -540,7 +559,7 @@ class TypeScriptClientOperationSerializer {
         entries.add("'$wireKey': ${_serializer.callToJson('args.$codeRef', arg.type)},");
       }
     }
-    return 'const $svVariables: Record<string, unknown> = ${_cg.block(entries)};';
+    return _cg.constDecl(svVariables, _cg.block(entries), type: 'Record<string, unknown>');
   }
 
   // ── Method arguments ──────────────────────────────────────────────────────

@@ -63,6 +63,10 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
       'if ${parentheses([condition])} $statement';
 
   @override
+  String constDecl(String name, String value, {String? type}) =>
+      'final ${type == null ? '' : '$type '}$name = $value;';
+
+  @override
   String callExpression(String name, List<String> args) {
     if (args.isEmpty) return '$name()';
     final indented = args.map((a) => a.ident()).join(',\n');
