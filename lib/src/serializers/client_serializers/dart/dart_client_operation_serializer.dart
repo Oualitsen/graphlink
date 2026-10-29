@@ -131,14 +131,11 @@ class DartClientOperationSerializer {
 
   String generateVariables(GLQueryDefinition def) {
     if (def.arguments.isEmpty) return '';
-    final buffer = StringBuffer("final $svVariables = <String, dynamic>{");
-    buffer.writeln();
+    final entries = <String>[];
     for (final arg in def.arguments) {
       final input = arg.hoistArgsInput;
       if (input == null) {
-        buffer.writeln(
-            "'${arg.dartArgumentName}': ${_serializeArgumentValue(def, arg.token)},"
-                .ident());
+        entries.add("'${arg.dartArgumentName}': ${_serializeArgumentValue(def, arg.token)},");
         continue;
       }
       // Synthetic hoist arg: spread the <Op>FieldArgs object's own toJson(),
@@ -146,12 +143,9 @@ class DartClientOperationSerializer {
       // the (optional) object is null, leaving those vars absent (document
       // defaults apply); a required object is spread directly.
       final base = arg.codeName;
-      buffer.writeln(
-          (arg.type.nullable ? "...?$base?.toJson()," : "...$base.toJson(),")
-              .ident());
+      entries.add(arg.type.nullable ? "...?$base?.toJson()," : "...$base.toJson(),");
     }
-    buffer.writeln("};");
-    return buffer.toString();
+    return 'final $svVariables = <String, dynamic>${_cg.block(entries)};';
   }
 
   String _variablesExpr(GLQueryDefinition def) =>
@@ -200,40 +194,31 @@ class DartClientOperationSerializer {
   // ── Partial query serialization ────────────────────────────────────────────
 
   String _serializePartialQuery(DividedQuery e) {
-    final varBuffer = StringBuffer('{');
-    for (var v in e.variables) {
-      varBuffer.writeln();
-      final dartArgName = v.substring(1);
-      varBuffer.writeln("'${dartArgName}': $svVariables['${dartArgName}'],");
-    }
-    varBuffer.write("}");
-    return '''
-GraphLinkPartialQuery(
-  query: '${e.query}',
-  operationName: "${e.operationName}",
-  tags: ${e.tags.map((e) => e.quote()).toList()},
-  ttl: ${e.cacheTTL},
-  elementKey: '${e.elementKey}',
-  fragmentNames: ${e.fragmentNames.map((e) => '"${e}"').toSet()},
-  argumentDeclarations: ${e.argumentDeclarations.map((e) => '"${e.dolarEscape()}"').toList()},
-  variables: ${varBuffer},
-  staleIfOffline: ${e.staleIfOffline}
-)
-''';
+    final variables = _cg.block([
+      for (var v in e.variables) "'${v.substring(1)}': $svVariables['${v.substring(1)}'],",
+    ]);
+    return _cg.callExpression('GraphLinkPartialQuery', [
+      "query: '${e.query}'",
+      'operationName: "${e.operationName}"',
+      'tags: ${e.tags.map((e) => e.quote()).toList()}',
+      'ttl: ${e.cacheTTL}',
+      "elementKey: '${e.elementKey}'",
+      'fragmentNames: ${e.fragmentNames.map((e) => '"${e}"').toSet()}',
+      'argumentDeclarations: ${e.argumentDeclarations.map((e) => '"${e.dolarEscape()}"').toList()}',
+      'variables: $variables',
+      'staleIfOffline: ${e.staleIfOffline}',
+    ]);
   }
 
   // ── Adapter call ───────────────────────────────────────────────────────────
 
   String _serializeAdapterCall(GLQueryDefinition def) {
     if (def.type == GLQueryType.subscription) {
-      return """
-return $svHandler.handle($svPayload)
-.map((e) {
-  return ${def.getGeneratedTypeDefinition().tokenInfo.token}.fromJson(e);
-});
-    """
-          .trim()
-          .ident();
+      final mapper = _cg.functionLiteral(
+        ['e'],
+        ['return ${def.getGeneratedTypeDefinition().tokenInfo.token}.fromJson(e);'],
+      );
+      return 'return $svHandler.handle($svPayload)\n.map($mapper);'.ident();
     }
     if (_isUploadMutation(def)) {
       return _serializeMultipartAdapterCall(def);
@@ -242,19 +227,20 @@ return $svHandler.handle($svPayload)
         def.getFullResponseTypeDefinition(_grammar).tokenInfo;
     final varsExpr = _variablesExpr(def);
     if (def.isCaptureErrors(_grammar)) {
-      return """
-final $svResult = await executeFull($svQuery, $svFragmentNames, '${def.tokenInfo}', $varsExpr, $fullResponseToken.fromJson);
-if ($svResult.errors == null) {
-  ${_serializeInvalidationCall(def)}
-}
-return $svResult;
-""";
+      return [
+        "final $svResult = await executeFull($svQuery, $svFragmentNames, '${def.tokenInfo}', $varsExpr, $fullResponseToken.fromJson);",
+        _cg.ifStatement(
+          condition: '$svResult.errors == null',
+          ifBlockStatements: [_serializeInvalidationCall(def)],
+        ),
+        'return $svResult;',
+      ].join('\n');
     }
-    return """
-final $svResult = await executeData($svQuery, $svFragmentNames, '${def.tokenInfo}', $varsExpr, $fullResponseToken.fromJson);
-${_serializeInvalidationCall(def)}
-return $svResult.data!;
-""";
+    return [
+      "final $svResult = await executeData($svQuery, $svFragmentNames, '${def.tokenInfo}', $varsExpr, $fullResponseToken.fromJson);",
+      _serializeInvalidationCall(def),
+      'return $svResult.data!;',
+    ].join('\n');
   }
 
   String _serializeMultipartAdapterCall(GLQueryDefinition def) {
@@ -295,11 +281,11 @@ return $svResult.data!;
     final isCaptureErrors = def.isCaptureErrors(_grammar);
 
     statements.addAll([
-      "final $svParts = <String, Object>{"
-          "\n  'operations': jsonEncode({'query': $svFullQuery, 'variables': $svVariables}),"
-          "\n  'map': jsonEncode($svMultipartMap),"
-          "\n  ...$svFileParts,"
-          "\n};",
+      'final $svParts = <String, Object>${_cg.block([
+        "'operations': jsonEncode({'query': $svFullQuery, 'variables': $svVariables}),",
+        "'map': jsonEncode($svMultipartMap),",
+        '...$svFileParts,',
+      ])};',
       'final $svResponse = await $svUploadAdapter!($svParts, onProgress);',
       'final $svResult = $fullResponseToken.fromJson(jsonDecode($svResponse));',
       if (isCaptureErrors) ...[

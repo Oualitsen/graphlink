@@ -81,7 +81,7 @@ class FlutterInputsFieldSerializer {
     final name = f.codeName;
     final nullable = f.type.nullable;
     final validators = _validatorStatements(name, [
-      if (!nullable) "if (v == null || v.isEmpty) return _form.strings.required;",
+      if (!nullable) requiredGuard('v == null || v.isEmpty'),
       if (nullable)
         _u.inlineIfStatement(
           condition: 'v != null && v.isNotEmpty && int.tryParse(v) == null',
@@ -110,7 +110,7 @@ class FlutterInputsFieldSerializer {
     final nullable = f.type.nullable;
     final isPassword = _types.isPasswordField(f);
     final validators = _validatorStatements(name, [
-      if (!nullable) "if (v == null || v.isEmpty) return _form.strings.required;",
+      if (!nullable) requiredGuard('v == null || v.isEmpty'),
     ]);
 
     const spinnerExpr = 'const SizedBox(width: 44, height: 44, child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2)))';
@@ -148,7 +148,7 @@ class FlutterInputsFieldSerializer {
     final enumType = _types.resolveTypeCodeName(f.type.firstType.token);
     final nullable = f.type.nullable;
     final validators = _validatorStatements(name, [
-      if (!nullable) "if (v == null) return _form.strings.required;",
+      if (!nullable) requiredGuard('v == null'),
     ]);
 
     return _u.callExpression('DropdownButtonFormField<$enumType?>', [
@@ -170,13 +170,13 @@ class FlutterInputsFieldSerializer {
     final nullable = f.type.nullable;
     final dropdownExpr = enumDropdownExpr(f, 'enabled');
     final validators = _validatorStatements(name, [
-      if (!nullable) "if (v == null) return _form.strings.required;",
+      if (!nullable) requiredGuard('v == null'),
     ]);
     final errorText = errorTextWidget();
     final radio = radioBinding(
       type: '$enumType?',
       groupValue: 'field.value',
-      onChanged: '(v) { setState(() => _$name = v); field.didChange(v); }',
+      onChanged: _setAndNotify(name, 'v'),
       enabled: 'enabled',
     );
 
@@ -198,7 +198,11 @@ class FlutterInputsFieldSerializer {
               'label: _form.dropdownLabels?.$name?.call(e) ?? Text(e.name)',
               'selected: field.value == e',
               'side: field.hasError ? BorderSide(color: Theme.of(context).colorScheme.error) : null',
-              'onSelected: enabled ? (on) { final v = on ? e : null; setState(() => _$name = v); field.didChange(v); } : null',
+              'onSelected: ${_enabledOrNull('enabled', _u.functionLiteral(['on'], [
+                'final v = on ? e : null;',
+                'setState(() => _$name = v);',
+                'field.didChange(v);',
+              ]))}',
             ])}).toList()',
           ]),
           errorText,
@@ -292,7 +296,7 @@ class FlutterInputsFieldSerializer {
       final radio = radioBinding(
         type: 'bool?',
         groupValue: 'field.value',
-        onChanged: '(v) { setState(() => _$name = v); field.didChange(v); }',
+        onChanged: _setAndNotify(name, 'v'),
         enabled: 'enabled',
       );
       final chipsCase = 'return ${_u.callExpression('FormField<bool?>', [
@@ -314,7 +318,10 @@ class FlutterInputsFieldSerializer {
                   'label: tl',
                   'selected: field.value == true',
                   'side: field.hasError ? BorderSide(color: Theme.of(context).colorScheme.error) : null',
-                  'onSelected: enabled ? (on) { setState(() => _$name = on ? true : null); field.didChange(on ? true : null); } : null',
+                  'onSelected: ${_enabledOrNull('enabled', _u.functionLiteral(['on'], [
+                    'setState(() => _$name = on ? true : null);',
+                    'field.didChange(on ? true : null);',
+                  ]))}',
                 ]),
                 _u.callExpression('ChoiceChip', [
                   'key: const ValueKey(false)',
@@ -322,7 +329,10 @@ class FlutterInputsFieldSerializer {
                   'label: fl',
                   'selected: field.value == false',
                   'side: field.hasError ? BorderSide(color: Theme.of(context).colorScheme.error) : null',
-                  'onSelected: enabled ? (on) { setState(() => _$name = on ? false : null); field.didChange(on ? false : null); } : null',
+                  'onSelected: ${_enabledOrNull('enabled', _u.functionLiteral(['on'], [
+                    'setState(() => _$name = on ? false : null);',
+                    'field.didChange(on ? false : null);',
+                  ]))}',
                 ]),
               ]),
             ]),
@@ -389,7 +399,7 @@ class FlutterInputsFieldSerializer {
       final radio = radioBinding(
         type: 'bool',
         groupValue: 'field.value',
-        onChanged: '(v) { setState(() => _$name = v!); field.didChange(v); }',
+        onChanged: _setAndNotify(name, 'v!'),
         enabled: 'enabled',
       );
       final chipsCase = 'return ${_u.callExpression('FormField<bool>', [
@@ -411,7 +421,12 @@ class FlutterInputsFieldSerializer {
                   'label: tl',
                   'selected: field.value ?? false',
                   'side: field.hasError ? BorderSide(color: Theme.of(context).colorScheme.error) : null',
-                  'onSelected: enabled ? (on) { if (on) { setState(() => _$name = true); field.didChange(true); } } : null',
+                  'onSelected: ${_enabledOrNull('enabled', _u.functionLiteral(['on'], [
+                    _u.inlineIfStatement(
+                      condition: 'on',
+                      statement: _u.block(['setState(() => _$name = true);', 'field.didChange(true);']),
+                    ),
+                  ]))}',
                 ]),
                 _u.callExpression('ChoiceChip', [
                   'key: const ValueKey(false)',
@@ -419,7 +434,12 @@ class FlutterInputsFieldSerializer {
                   'label: fl',
                   'selected: !(field.value ?? false)',
                   'side: field.hasError ? BorderSide(color: Theme.of(context).colorScheme.error) : null',
-                  'onSelected: enabled ? (on) { if (on) { setState(() => _$name = false); field.didChange(false); } } : null',
+                  'onSelected: ${_enabledOrNull('enabled', _u.functionLiteral(['on'], [
+                    _u.inlineIfStatement(
+                      condition: 'on',
+                      statement: _u.block(['setState(() => _$name = false);', 'field.didChange(false);']),
+                    ),
+                  ]))}',
                 ]),
               ]),
             ]),
@@ -588,11 +608,11 @@ class FlutterInputsFieldSerializer {
     return _u.callExpression('FormField<bool>', [
       'key: _${name}FieldKey',
       'initialValue: _$name',
-      'validator: (v) { final ctx = _buildContext(); if ((_form.visibility?.$name?.call(ctx) ?? FieldVisibility.enabled) != FieldVisibility.enabled) return null; return _${name}AsyncError; }',
+      'validator: ${_u.functionLiteral(['v'], _validatorStatements(name, []))}',
       'builder: (field) => ${_u.callExpression('_switchBoolField', [
         'label',
         'field.value ?? false',
-        '$enabledExpr ? (v) { setState(() => _$name = v); field.didChange(v); } : null',
+        _enabledOrNull(enabledExpr, _setAndNotify(name, 'v')),
       ])}',
     ]);
   }
@@ -600,12 +620,20 @@ class FlutterInputsFieldSerializer {
   String _checkboxFormFieldExpr(String name, {required bool nullable, required String enabledExpr}) {
     final fieldType = nullable ? 'bool?' : 'bool';
     final onChanged = nullable
-        ? '$enabledExpr ? (v) { setState(() => _$name = v); field.didChange(v); } : null'
-        : '$enabledExpr ? (v) { if (v != null) { setState(() => _$name = v); field.didChange(v); } } : null';
+        ? _enabledOrNull(enabledExpr, _setAndNotify(name, 'v'))
+        : _enabledOrNull(
+            enabledExpr,
+            _u.functionLiteral(['v'], [
+              _u.ifStatement(
+                condition: 'v != null',
+                ifBlockStatements: ['setState(() => _$name = v);', 'field.didChange(v);'],
+              ),
+            ]),
+          );
     return _u.callExpression('FormField<$fieldType>', [
       'key: _${name}FieldKey',
       'initialValue: _$name',
-      'validator: (v) { final ctx = _buildContext(); if ((_form.visibility?.$name?.call(ctx) ?? FieldVisibility.enabled) != FieldVisibility.enabled) return null; return _${name}AsyncError; }',
+      'validator: ${_u.functionLiteral(['v'], _validatorStatements(name, []))}',
       'builder: (field) => ${_u.callExpression('_checkboxBoolField', [
         'label',
         'field.value',
@@ -619,7 +647,7 @@ class FlutterInputsFieldSerializer {
     final name = f.codeName;
     final nullable = f.type.nullable;
     final validators = _validatorStatements(name, [
-      if (!nullable) "if (v == null) return _form.strings.required;",
+      if (!nullable) requiredGuard('v == null'),
     ]);
 
     return _u.callExpression('DropdownButtonFormField<bool?>', [
@@ -639,10 +667,24 @@ class FlutterInputsFieldSerializer {
   /// Builds the validator statement list: disabled-guard, custom sync checks, async error echo.
   List<String> _validatorStatements(String name, List<String> checks) => [
     'final ctx = _buildContext();',
-    'if ((_form.visibility?.$name?.call(ctx) ?? FieldVisibility.enabled) != FieldVisibility.enabled) return null;',
+    visibilityGuard(name),
     ...checks,
     'return _${name}AsyncError;',
   ];
+
+  String visibilityGuard(String name) => _u.inlineIfStatement(
+        condition: '(_form.visibility?.$name?.call(ctx) ?? FieldVisibility.enabled) != FieldVisibility.enabled',
+        statement: 'return null;',
+      );
+
+  String requiredGuard(String condition) =>
+      _u.inlineIfStatement(condition: condition, statement: 'return _form.strings.required;');
+
+  String _setAndNotify(String name, String value, {String? notify}) =>
+      _u.functionLiteral(['v'], ['setState(() => _$name = $value);', 'field.didChange(${notify ?? 'v'});']);
+
+  String _enabledOrNull(String enabledExpr, String callback) =>
+      _u.ternaryOp(condition: enabledExpr, positiveStatement: callback, negativeStatement: 'null');
 
   String clearControllerArg(String name, String enabledExpr) =>
       '($enabledExpr && !_${name}Validating) ? _${name}Controller : null';

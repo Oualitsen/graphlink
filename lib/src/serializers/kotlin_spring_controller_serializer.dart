@@ -290,11 +290,14 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
     final valueAccess = mappedType.valueType.nullable ? rawAccess : '$rawAccess!!';
     final valueConversion = _serviceResultToJson(mapping.field, valueAccess);
 
-    final loopBody = codeGenUtils.block(['result[$sourceListName[$indexVar]] = $valueConversion']);
     final conversion = [
       'val $serviceResultVar: Map<$domainKeyType, $domainValueType> = $serviceCall',
       'val result = mutableMapOf<$wireKeyType, $wireValueType>()',
-      'for ($indexVar in $sourceListName.indices) $loopBody',
+      codeGenUtils.forEachLoop(
+        variable: indexVar,
+        iterable: '$sourceListName.indices',
+        statements: ['result[$sourceListName[$indexVar]] = $valueConversion'],
+      ),
     ];
 
     if (!blockingServices) {

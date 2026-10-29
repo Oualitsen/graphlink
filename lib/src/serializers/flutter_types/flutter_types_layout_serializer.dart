@@ -427,7 +427,15 @@ class FlutterTypesLayoutSerializer {
       arguments: ['List<Widget> items'],
       statements: [
         'final result = <Widget>[];',
-        'for (var i = 0; i < items.length; i++) { if (i > 0) result.add(SizedBox(height: gap)); result.add(items[i]); }',
+        _u.forLoop(
+          init: 'var i = 0',
+          condition: 'i < items.length',
+          increment: 'i++',
+          statements: [
+            _u.inlineIfStatement(condition: 'i > 0', statement: 'result.add(SizedBox(height: gap));'),
+            'result.add(items[i]);',
+          ],
+        ),
         'return result;',
       ],
     );
@@ -440,7 +448,7 @@ class FlutterTypesLayoutSerializer {
       namedArguments: false,
       arguments: ['BuildContext context', 'Widget label', 'String? info'],
       statements: [
-        'if (info == null) return label;',
+        _u.inlineIfStatement(condition: 'info == null', statement: 'return label;'),
         'return ${_u.callExpression('Row', [
           'mainAxisSize: MainAxisSize.min',
           _u.listArg('children', [

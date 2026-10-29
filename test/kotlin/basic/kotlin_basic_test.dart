@@ -172,7 +172,9 @@ void main() {
     test('has explicit equals', () {
       expect(lines(out), containsAllInOrder([
         'override fun equals(other: Any?): Boolean {',
-        'if (other !is CreateUserInput) return false',
+        'if (other !is CreateUserInput) {',
+        'return false',
+        '}',
         'return name == other.name && email == other.email && age == other.age',
       ]));
     });

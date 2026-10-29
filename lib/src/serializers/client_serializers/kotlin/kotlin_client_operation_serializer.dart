@@ -219,15 +219,21 @@ class KotlinClientOperationSerializer {
     final argNamesNoProgress = def.arguments.map((e) => e.codeName).join(', ');
     final argsWithProgress = [...argsNoProgress, 'onProgress: UploadProgressCallback?'];
 
-    final noProgressBody = _ctx.codeGenUtils.block([
-      'return $methodName($argNamesNoProgress, null)',
-    ]);
-    final fullBody = _ctx.codeGenUtils.block(body);
     final returnType = returnTypeByQueryType(def);
 
     return [
-      'suspend fun $methodName${_ctx.codeGenUtils.parentheses(argsNoProgress)}: $returnType $noProgressBody',
-      'suspend fun $methodName${_ctx.codeGenUtils.parentheses(argsWithProgress)}: $returnType $fullBody',
+      _ctx.codeGenUtils.suspendFun(
+        name: methodName,
+        arguments: argsNoProgress,
+        returnType: returnType,
+        statements: ['return $methodName($argNamesNoProgress, null)'],
+      ),
+      _ctx.codeGenUtils.suspendFun(
+        name: methodName,
+        arguments: argsWithProgress,
+        returnType: returnType,
+        statements: body,
+      ),
     ].join('\n\n');
   }
 

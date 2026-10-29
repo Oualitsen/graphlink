@@ -109,6 +109,12 @@ class SwiftCodeGenUtils implements CodeGenUtilsBase {
   /// emits the surrounding `do`/`catch` structure, matching how
   /// [KotlinCodeGenUtils] leaves exception-specific syntax to the caller.
   @override
+  String callExpression(String name, List<String> args) {
+    if (args.isEmpty) return '$name()';
+    return '$name(\n${args.join(',\n').ident()}\n)';
+  }
+
+  @override
   String tryCatchFinally({
     required List<String> tryStatements,
     String? catchVariable,

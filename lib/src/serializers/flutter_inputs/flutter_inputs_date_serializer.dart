@@ -168,8 +168,8 @@ class FlutterInputsDateSerializer {
     // --- Select widget expressions ---
     final selectValidators = [
       'final ctx = _buildContext();',
-      'if ((_form.visibility?.$name?.call(ctx) ?? FieldVisibility.enabled) != FieldVisibility.enabled) return null;',
-      if (!nullable) "if (v == null || v.isEmpty) return _form.strings.required;",
+      _fields.visibilityGuard(name),
+      if (!nullable) _fields.requiredGuard('v == null || v.isEmpty'),
       'return _${name}AsyncError;',
     ];
     final errorText = _fields.errorTextWidget();
@@ -194,7 +194,15 @@ class FlutterInputsDateSerializer {
               'label: selectCfg.labelBuilder?.call(e) ?? Text(e.toString())',
               'selected: _${name}Controller.text == e.toString()',
               'side: field.hasError ? BorderSide(color: Theme.of(context).colorScheme.error) : null',
-              'onSelected: enabled ? (on) { final v = on ? e.toString() : \'\'; setState(() => _${name}Controller.text = v); field.didChange(v); } : null',
+              'onSelected: ${_u.ternaryOp(
+                condition: 'enabled',
+                positiveStatement: _u.functionLiteral(['on'], [
+                  "final v = on ? e.toString() : '';",
+                  'setState(() => _${name}Controller.text = v);',
+                  'field.didChange(v);',
+                ]),
+                negativeStatement: 'null',
+              )}',
             ])}).toList()',
           ]),
           errorText,
@@ -205,7 +213,10 @@ class FlutterInputsDateSerializer {
     final selectRadio = _fields.radioBinding(
       type: 'String',
       groupValue: '_${name}Controller.text.isEmpty ? null : _${name}Controller.text',
-      onChanged: '(v) { setState(() => _${name}Controller.text = v ?? \'\'); field.didChange(v ?? \'\'); }',
+      onChanged: _u.functionLiteral(['v'], [
+        "setState(() => _${name}Controller.text = v ?? '');",
+        "field.didChange(v ?? '');",
+      ]),
       enabled: 'enabled',
     );
 
@@ -280,9 +291,8 @@ class FlutterInputsDateSerializer {
 
     final dateValidators = <String>[
       'final ctx = _buildContext();',
-      'if ((_form.visibility?.$name?.call(ctx) ?? FieldVisibility.enabled) != FieldVisibility.enabled) return null;',
-      if (!nullable)
-        _u.inlineIfStatement(condition: 'v == null || v.isEmpty', statement: 'return _form.strings.required;'),
+      _fields.visibilityGuard(name),
+      if (!nullable) _fields.requiredGuard('v == null || v.isEmpty'),
       if (nullable)
         _u.inlineIfStatement(condition: 'v == null || v.isEmpty', statement: 'return null;'),
       _u.tryCatchFinally(
@@ -322,11 +332,10 @@ class FlutterInputsDateSerializer {
     final initialDateLocal =
         'final initialDate = _clampDate(parsedDate ?? _form.dateConfig!.$name!.initialDate ?? DateTime.now(), _form.dateConfig!.$name!.firstDate ?? DateTime(${_config.defaultDateFirstYear}), _form.dateConfig!.$name!.lastDate ?? DateTime(${_config.defaultDateLastYear}));';
 
-    final onCupertinoDateTimeChanged =
-        '(dt) => setState(() { '
-        '_${name}Controller.text = DateFormat(_form.dateConfig!.$name!.pattern).format(dt); '
-        'field.didChange(_${name}Controller.text); '
-        '})';
+    final onCupertinoDateTimeChanged = '(dt) => setState(${_u.functionLiteral([], [
+      '_${name}Controller.text = DateFormat(_form.dateConfig!.$name!.pattern).format(dt);',
+      'field.didChange(_${name}Controller.text);',
+    ])})';
 
     final cupertinoCalendar = _u.callExpression('SizedBox', [
       'height: 220',
@@ -339,19 +348,24 @@ class FlutterInputsDateSerializer {
       ])}',
     ]);
 
-    final onMaterialDateChanged =
-        '(dt) async { '
-        'DateTime picked = dt; '
-        'if (_form.dateConfig!.$name!.type == DateType.dateTime && mounted) { '
-        'final time = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(dt)); '
-        'if (time != null) picked = DateTime(dt.year, dt.month, dt.day, time.hour, time.minute); '
-        '} '
-        'setState(() { '
-        '_${name}CalendarOpen = false; '
-        '_${name}Controller.text = DateFormat(_form.dateConfig!.$name!.pattern).format(picked); '
-        'field.didChange(_${name}Controller.text); '
-        '}); '
-        '}';
+    final onMaterialDateChanged = '(dt) async ${_u.block([
+      'DateTime picked = dt;',
+      _u.ifStatement(
+        condition: '_form.dateConfig!.$name!.type == DateType.dateTime && mounted',
+        ifBlockStatements: [
+          'final time = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(dt));',
+          _u.inlineIfStatement(
+            condition: 'time != null',
+            statement: 'picked = DateTime(dt.year, dt.month, dt.day, time.hour, time.minute);',
+          ),
+        ],
+      ),
+      'setState(${_u.functionLiteral([], [
+        '_${name}CalendarOpen = false;',
+        '_${name}Controller.text = DateFormat(_form.dateConfig!.$name!.pattern).format(picked);',
+        'field.didChange(_${name}Controller.text);',
+      ])});',
+    ])}';
 
     final materialCalendar = _u.callExpression('CalendarDatePicker', [
       'initialDate: initialDate',

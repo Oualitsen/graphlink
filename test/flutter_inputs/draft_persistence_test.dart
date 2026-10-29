@@ -72,7 +72,7 @@ void main() {
     });
 
     test('base state gets a restore hook', () {
-      expect(out.sharedInputFormWidget, contains('void restore(T value) {}'));
+      expect(out.sharedInputFormWidget, contains('void restore(T value) {'));
     });
   });
 }

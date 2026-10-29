@@ -20,6 +20,10 @@ abstract class CodeGenUtilsBase {
 
   String createMethod({String? returnType, required String methodName, List<String>? arguments});
 
+  /// `name(arg1, arg2)` with one argument per line. [name] may carry a receiver and
+  /// type arguments (`this.run<T>`); an empty [args] emits `name()`.
+  String callExpression(String name, List<String> args);
+
   String tryCatchFinally({
     required List<String> tryStatements,
     String? catchVariable,

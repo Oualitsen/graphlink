@@ -461,31 +461,34 @@ class FlutterInputsStateSerializer {
     final checks = <String>[];
 
     for (final f in textFields) {
-      checks.add("if (_${f.codeName}Controller.text != (${_types.initialTextExpr(f)})) return true;");
+      checks.add(_returnTrueIf('_${f.codeName}Controller.text != (${_types.initialTextExpr(f)})'));
     }
     for (final f in enumFields) {
-      checks.add("if (_${f.codeName} != _form.initialValues?.${f.codeName}) return true;");
+      checks.add(_returnTrueIf('_${f.codeName} != _form.initialValues?.${f.codeName}'));
     }
     for (final f in boolFields) {
-      checks.add("if (_${f.codeName} != (${_types.initialBoolExpr(f)})) return true;");
+      checks.add(_returnTrueIf('_${f.codeName} != (${_types.initialBoolExpr(f)})'));
     }
     for (final f in listFields) {
       if (_types.isEnumListField(f) || _types.isScalarListField(f)) {
         // Order-insensitive comparison — chips selections are unordered
-        checks.add(
-          "if (_${f.codeName}.length != _form.${f.codeName}.length || !_${f.codeName}.toSet().containsAll(_form.${f.codeName})) return true;",
-        );
+        checks.add(_returnTrueIf(
+          '_${f.codeName}.length != _form.${f.codeName}.length || !_${f.codeName}.toSet().containsAll(_form.${f.codeName})',
+        ));
       } else if (_types.isInputListField(f)) {
-        checks.add("if (_${f.codeName}OverrideKey.currentState?.isDirty ?? false) return true;");
+        checks.add(_returnTrueIf('_${f.codeName}OverrideKey.currentState?.isDirty ?? false'));
       }
     }
     for (final f in inputFields) {
-      checks.add("if (_${f.codeName}Key.currentState?.isDirty ?? false) return true;");
+      checks.add(_returnTrueIf('_${f.codeName}Key.currentState?.isDirty ?? false'));
     }
 
     final body = _u.block([...checks, 'return false;']);
     return '@override\nbool get isDirty $body';
   }
+
+  String _returnTrueIf(String condition) =>
+      _u.inlineIfStatement(condition: condition, statement: 'return true;');
 
   String _serializeScrollToFirstErrorMethod(
     String inputName,
@@ -581,7 +584,9 @@ class FlutterInputsStateSerializer {
               'currentStep: _currentStep',
               'onStepContinue: _onStepContinue',
               'onStepCancel: _onStepCancel',
-              'onStepTapped: (i) { if (i <= _currentStep) setState(() => _currentStep = i); }',
+              'onStepTapped: ${_u.functionLiteral(['i'], [
+                _u.inlineIfStatement(condition: 'i <= _currentStep', statement: 'setState(() => _currentStep = i);'),
+              ])}',
               'controlsBuilder: _form.stepControlsBuilder ?? _buildStepControls',
               'steps: _buildSteps()',
             ])};',
@@ -704,7 +709,7 @@ class FlutterInputsStateSerializer {
       arguments: [],
       namedArguments: false,
       statements: [
-        'if (_isAsyncValidating) return false;',
+        _u.inlineIfStatement(condition: '_isAsyncValidating', statement: 'return false;'),
         'var valid = _formKey.currentState?.validate() ?? false;',
         // Use &= (non-short-circuit) so every sub-form is validated even if a previous one failed.
         // currentState is null when a sub-form is hidden/unmounted — ?? true treats it as valid.
@@ -855,8 +860,11 @@ class FlutterInputsStateSerializer {
         namedArguments: false,
         arguments: ['Widget label', 'String? info'],
         statements: [
-          'if (info == null) return label;',
-          'if (_form.labelPosition == ${inputName}LabelPosition.floatingLabel) return label;',
+          _u.inlineIfStatement(condition: 'info == null', statement: 'return label;'),
+          _u.inlineIfStatement(
+            condition: '_form.labelPosition == ${inputName}LabelPosition.floatingLabel',
+            statement: 'return label;',
+          ),
           'return ${_u.callExpression('Row', [
             'mainAxisSize: MainAxisSize.min',
             _u.listArg('children', [
@@ -878,7 +886,10 @@ class FlutterInputsStateSerializer {
         namedArguments: false,
         arguments: ['Widget field', 'String? info'],
         statements: [
-          'if (info == null || _form.labelPosition != ${inputName}LabelPosition.floatingLabel) return field;',
+          _u.inlineIfStatement(
+            condition: 'info == null || _form.labelPosition != ${inputName}LabelPosition.floatingLabel',
+            statement: 'return field;',
+          ),
           'return ${_u.callExpression('Row', [
             'crossAxisAlignment: CrossAxisAlignment.center',
             _u.listArg('children', [
@@ -1133,7 +1144,7 @@ class FlutterInputsStateSerializer {
           '_notifyContextChange();',
           '_scheduleOnChange();',
           if (_config.persistDrafts) '_scheduleDraftSave();',
-          'if (!_asyncNotifying) _scheduleAllAsyncValidations();',
+          _u.inlineIfStatement(condition: '!_asyncNotifying', statement: '_scheduleAllAsyncValidations();'),
           '_updateErrorsNotifier();',
         ],
       );
@@ -1482,14 +1493,14 @@ class FlutterInputsStateSerializer {
           namedArguments: false,
           statements: [
             '_${name}AsyncTimer?.cancel();',
-            'if (_form.validations?.$name == null) return;',
+            _u.inlineIfStatement(condition: '_form.validations?.$name == null', statement: 'return;'),
             '_${name}AsyncTimer = Timer(_form.debounceDuration, () async ${_u.block([
-              'if (!mounted) return;',
+              _u.inlineIfStatement(condition: '!mounted', statement: 'return;'),
               '_asyncNotifying = true;',
               'setState(() { _${name}Validating = true; _${name}AsyncError = null; });',
               '_asyncNotifying = false;',
               'final r = await _form.validations!.$name!($valueExpr, _buildContext());',
-              'if (!mounted) return;',
+              _u.inlineIfStatement(condition: '!mounted', statement: 'return;'),
               '_asyncNotifying = true;',
               'setState(() { _${name}Validating = false; _${name}AsyncError = r; });',
               '_asyncNotifying = false;',
@@ -1560,7 +1571,10 @@ class FlutterInputsStateSerializer {
       caseValue: "'${f.codeName}'",
       statement: _u.block([
         'final ctx = _${f.codeName}FieldKey.currentContext;',
-        'if (ctx != null) Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);',
+        _u.inlineIfStatement(
+          condition: 'ctx != null',
+          statement: 'Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);',
+        ),
       ]),
     )).toList();
 
@@ -1585,75 +1599,116 @@ class FlutterInputsStateSerializer {
     final scrollableFields = allFields
         .where((f) => textFields.contains(f) || enumFields.contains(f) || boolFields.contains(f))
         .toList();
+    final stateName = '_${inputName}ErrorSummaryState';
+    const errorColor = 'Theme.of(context).colorScheme.error';
 
-    final labelCases = scrollableFields
-        .map((f) => "case '${f.codeName}': return '${_types.humanize(f.name.token)}';")
+    final errorRow = _u.callExpression('Row', [
+      _u.listArg('children', [
+        'Icon(Icons.error_outline, color: $errorColor, size: 16)',
+        'const SizedBox(width: 8)',
+        _u.callExpression('Expanded', [
+          'child: ${_u.callExpression('Text', [
+            "'\${_label(e.key)}: \${e.value}'",
+            'style: TextStyle(color: $errorColor, fontSize: 13)',
+          ])}',
+        ]),
+      ]),
+    ]);
+    final errorTile = _u.callExpression('Semantics', [
+      'liveRegion: true',
+      'child: ${_u.callExpression('InkWell', [
+        'onTap: () => widget.formKey.currentState?.scrollToField(e.key)',
+        'child: ${_u.callExpression('Padding', [
+          'padding: const EdgeInsets.symmetric(vertical: 4)',
+          'child: $errorRow',
+        ])}',
+      ])}',
+    ]);
 
-        .join('\n      ');
-
-    return '''
-class ${inputName}ErrorSummary extends StatefulWidget {
-  final GlobalKey<${inputName}FormState> formKey;
-  const ${inputName}ErrorSummary({required this.formKey, super.key});
-
-  @override
-  State<${inputName}ErrorSummary> createState() => _${inputName}ErrorSummaryState();
-}
-
-class _${inputName}ErrorSummaryState extends State<${inputName}ErrorSummary> {
-  @override
-  void initState() {
-    super.initState();
-    // Trigger a rebuild once the form state is available.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) setState(() {});
-    });
-  }
-
-  String _label(String field) {
-    switch (field) {
-      $labelCases
-      default: return field;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final state = widget.formKey.currentState;
-    if (state == null) return const SizedBox.shrink();
-    return ListenableBuilder(
-      listenable: state.errorsNotifier,
-      builder: (context, _) {
-        final errors = state.errorsNotifier.value;
-        if (errors.isEmpty) return const SizedBox.shrink();
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: errors.entries.map((e) => Semantics(
-            liveRegion: true,
-            child: InkWell(
-              onTap: () => widget.formKey.currentState?.scrollToField(e.key),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  children: [
-                    Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error, size: 16),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        '\${_label(e.key)}: \${e.value}',
-                        style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 13),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          )).toList(),
-        );
-      },
+    final summaryClass = _u.createClass(
+      className: '${inputName}ErrorSummary',
+      extendsClassName: 'StatefulWidget',
+      statements: [
+        'final GlobalKey<${inputName}FormState> formKey;',
+        _u.createMethod(
+          isConst: true,
+          methodName: '${inputName}ErrorSummary',
+          arguments: ['required this.formKey', 'super.key'],
+        ),
+        _u.createMethod(
+          override: true,
+          returnType: 'State<${inputName}ErrorSummary>',
+          methodName: 'createState',
+          namedArguments: false,
+          arguments: [],
+          statements: ['return $stateName();'],
+        ),
+      ],
     );
-  }
-}''';
+
+    final stateClass = _u.createClass(
+      className: stateName,
+      extendsClassName: 'State<${inputName}ErrorSummary>',
+      statements: [
+        _u.createMethod(
+          override: true,
+          returnType: 'void',
+          methodName: 'initState',
+          namedArguments: false,
+          arguments: [],
+          statements: [
+            'super.initState();',
+            '// Trigger a rebuild once the form state is available.',
+            'WidgetsBinding.instance.addPostFrameCallback(${_u.functionLiteral(['_'], [
+              _u.inlineIfStatement(condition: 'mounted', statement: 'setState(${_u.functionLiteral([], [])});'),
+            ])});',
+          ],
+        ),
+        _u.createMethod(
+          returnType: 'String',
+          methodName: '_label',
+          namedArguments: false,
+          arguments: ['String field'],
+          statements: [
+            _u.switchStatement(
+              expression: 'field',
+              cases: [
+                for (final f in scrollableFields)
+                  DartCaseStatement(
+                    caseValue: "'${f.codeName}'",
+                    statement: "return '${_types.humanize(f.name.token)}';",
+                  ),
+              ],
+              defaultStatements: ['return field;'],
+            ),
+          ],
+        ),
+        _u.createMethod(
+          override: true,
+          returnType: 'Widget',
+          methodName: 'build',
+          namedArguments: false,
+          arguments: ['BuildContext context'],
+          statements: [
+            'final state = widget.formKey.currentState;',
+            _u.inlineIfStatement(condition: 'state == null', statement: 'return const SizedBox.shrink();'),
+            'return ${_u.callExpression('ListenableBuilder', [
+              'listenable: state.errorsNotifier',
+              'builder: ${_u.functionLiteral(['context', '_'], [
+                'final errors = state.errorsNotifier.value;',
+                _u.inlineIfStatement(condition: 'errors.isEmpty', statement: 'return const SizedBox.shrink();'),
+                'return ${_u.callExpression('Column', [
+                  'crossAxisAlignment: CrossAxisAlignment.start',
+                  'children: errors.entries.map((e) => $errorTile).toList()',
+                ])};',
+              ])}',
+            ])};',
+          ],
+        ),
+      ],
+    );
+
+    return '$summaryClass\n\n$stateClass';
   }
 
   // _field is used by: text fields, enum fields, tristate bool, date fields, and input list fields (catch-all).

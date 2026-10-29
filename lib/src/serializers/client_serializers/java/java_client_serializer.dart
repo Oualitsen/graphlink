@@ -1458,14 +1458,34 @@ class JavaClientSerializer extends GLClientSerializer {
       statements: [
         'delegate.subscribe(new java.util.concurrent.Flow.Subscriber<>() ${codeGenUtils.block([
               'long sent = 0;',
-              '@Override public void onSubscribe(java.util.concurrent.Flow.Subscription sub) { subscriber.onSubscribe(sub); }',
-              '@Override public void onNext(java.nio.ByteBuffer item) ${codeGenUtils.block([
-                    'sent += item.remaining();',
-                    'callback.onProgress(sent, total);',
-                    'subscriber.onNext(item);',
-                  ])}',
-              '@Override public void onError(Throwable t) { subscriber.onError(t); }',
-              '@Override public void onComplete() { subscriber.onComplete(); }',
+              codeGenUtils.createMethod(
+                returnType: '@Override public void',
+                methodName: 'onSubscribe',
+                arguments: ['java.util.concurrent.Flow.Subscription sub'],
+                statements: ['subscriber.onSubscribe(sub);'],
+              ),
+              codeGenUtils.createMethod(
+                returnType: '@Override public void',
+                methodName: 'onNext',
+                arguments: ['java.nio.ByteBuffer item'],
+                statements: [
+                  'sent += item.remaining();',
+                  'callback.onProgress(sent, total);',
+                  'subscriber.onNext(item);',
+                ],
+              ),
+              codeGenUtils.createMethod(
+                returnType: '@Override public void',
+                methodName: 'onError',
+                arguments: ['Throwable t'],
+                statements: ['subscriber.onError(t);'],
+              ),
+              codeGenUtils.createMethod(
+                returnType: '@Override public void',
+                methodName: 'onComplete',
+                arguments: [],
+                statements: ['subscriber.onComplete();'],
+              ),
             ])});',
       ],
     )}';
@@ -1490,7 +1510,12 @@ class JavaClientSerializer extends GLClientSerializer {
                 ],
               ),
               '',
-              '@Override public long contentLength() { return delegate.contentLength(); }',
+              codeGenUtils.createMethod(
+                returnType: '@Override public long',
+                methodName: 'contentLength',
+                arguments: [],
+                statements: ['return delegate.contentLength();'],
+              ),
               '',
               subscribeMethod,
             ])}';

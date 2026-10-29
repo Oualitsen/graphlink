@@ -494,7 +494,7 @@ class KotlinSerializer extends GLSerializer {
       methodName: 'equals',
       arguments: ['other: Any?'],
       statements: [
-        'if (other !is $token) return false',
+        codeGenUtils.ifStatement(condition: 'other !is $token', ifBlockStatements: ['return false']),
         'return $conditions',
       ],
     );
@@ -551,7 +551,11 @@ class KotlinSerializer extends GLSerializer {
       } else if (defaultByTarget.containsKey(key)) {
         final f = defaultByTarget[key]!;
         final getter = f.sourceField!.codeName;
-        args.add('$name = if ($getter != null) $getter else default${f.targetField.codeName.firstUp}');
+        args.add('$name = ${codeGenUtils.ternaryOp(
+          condition: '$getter != null',
+          positiveStatement: getter,
+          negativeStatement: 'default${f.targetField.codeName.firstUp}',
+        )}');
       } else if (requiredByTarget.containsKey(key)) {
         args.add('$name = $name');
       }
