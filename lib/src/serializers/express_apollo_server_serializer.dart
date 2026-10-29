@@ -293,7 +293,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       // throwing) rejects only this key's promise, not the whole batch. Keep the
       // client-facing message generic and log the full parent object server-side.
       final callbackBody = _cg.block([
-        'const r = map.get(v);',
+        _cg.constDecl('r', 'map.get(v)'),
         _cg.ifStatement(
           condition: 'r == null',
           ifBlockStatements: [
@@ -312,7 +312,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       if (ctx) 'context',
     ].join(', ');
     final loaderBody = _cg.block([
-      'const map = await $serviceVar.${mapping.key}($serviceCallArgs);',
+      _cg.constDecl('map', 'await $serviceVar.${mapping.key}($serviceCallArgs)'),
       'return items.map($mapCallback);',
     ]);
     final newLoaderExpr = 'new DataLoader<$parentName, $fieldTs>(async (items) => $loaderBody)';
@@ -528,8 +528,8 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
           final resolved = '_$local';
           resolvedArgNames[i] = resolved;
           uploadAwaitLines.add(e.argTypes[i] is GLListType
-              ? 'const $resolved = await Promise.all($local);'
-              : 'const $resolved = await $local;');
+              ? _cg.constDecl(resolved, 'await Promise.all($local)')
+              : _cg.constDecl(resolved, 'await $local'));
         }
       }
 
@@ -831,28 +831,28 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       ]);
       createServerBody = [
         if (interceptorGuard != null) interceptorGuard,
-        'const app = express();',
+        _cg.constDecl('app', 'express()'),
         'app.use(cors());',
         'app.use(express.json());',
         '',
-        'const schema = makeExecutableSchema(${_cg.block([
+        _cg.constDecl('schema', 'makeExecutableSchema(${_cg.block([
           'typeDefs,',
           'resolvers: buildResolvers($resolverArgs),',
-        ])});',
-        'const httpServer = createHttpServer(app);',
-        'const wsServer = new WebSocketServer(${_cg.block([
+        ])})'),
+        _cg.constDecl('httpServer', 'createHttpServer(app)'),
+        _cg.constDecl('wsServer', 'new WebSocketServer(${_cg.block([
           'server: httpServer,',
           "path: '${apolloConfig.graphqlPath}',",
-        ])});',
-        'const cleanup = useServer({ schema${_wsContextOption()} }, wsServer as any);',
+        ])})'),
+        _cg.constDecl('cleanup', 'useServer({ schema${_wsContextOption()} }, wsServer as any)'),
         '',
-        'const server = new ApolloServer<GraphLinkContext>(${_cg.block([
+        _cg.constDecl('server', 'new ApolloServer<GraphLinkContext>(${_cg.block([
           'schema,',
           // graphql-upload sends multipart/form-data, which Apollo's CSRF prevention
           // blocks by default unless the client sends a preflight-style header.
           if (hasUploads) 'csrfPrevention: false,',
           'plugins: $pluginsArray,',
-        ])});',
+        ])})'),
         '',
         'await server.start();',
         _registerMiddleware(),
@@ -861,17 +861,17 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     } else {
       createServerBody = [
         if (interceptorGuard != null) interceptorGuard,
-        'const app = express();',
+        _cg.constDecl('app', 'express()'),
         'app.use(cors());',
         'app.use(express.json());',
         '',
-        'const server = new ApolloServer<GraphLinkContext>(${_cg.block([
+        _cg.constDecl('server', 'new ApolloServer<GraphLinkContext>(${_cg.block([
           'typeDefs,',
           'resolvers: buildResolvers($resolverArgs),',
           // graphql-upload sends multipart/form-data, which Apollo's CSRF prevention
           // blocks by default unless the client sends a preflight-style header.
           if (hasUploads) 'csrfPrevention: false,',
-        ])});',
+        ])})'),
         '',
         'await server.start();',
         _registerMiddleware(),
@@ -900,7 +900,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     if (!_hasBatchLoaders) return '';
     if (_anyBatchInjectsContext) {
       final body = _cg.block([
-        'const context = {} as GraphLinkContext;',
+        _cg.constDecl('context', '{} as GraphLinkContext'),
         'context.loaders = createLoaders(services, context);',
         'return context;',
       ]);
@@ -916,14 +916,14 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       // Loaders forward the request context to their batch service methods, so
       // the context object must exist before the loaders are built.
       final body = _cg.block([
-        'const context: GraphLinkContext = services.contextFactory ? await services.contextFactory(req, res) : {} as GraphLinkContext;',
+        _cg.constDecl('context', 'services.contextFactory ? await services.contextFactory(req, res) : {} as GraphLinkContext', type: 'GraphLinkContext'),
         'context.loaders = createLoaders(services, context);',
         'return context;',
       ]);
       contextCallback = 'context: async ({ req, res }) => $body,';
     } else if (_hasBatchLoaders) {
       final body = _cg.block([
-        'const base = services.contextFactory ? await services.contextFactory(req, res) : {} as GraphLinkContext;',
+        _cg.constDecl('base', 'services.contextFactory ? await services.contextFactory(req, res) : {} as GraphLinkContext'),
         'return { ...base, loaders: createLoaders(services) };',
       ]);
       contextCallback = 'context: async ({ req, res }) => $body,';

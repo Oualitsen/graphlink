@@ -28,7 +28,7 @@ class FlutterInputsSerializer {
   late final _u = DartCodeGenUtils();
   late final _api = FlutterApi(_config);
   late final _types = FlutterInputsTypeHelpers(_parser, _dartSerializer, _config);
-  late final _shared = FlutterInputsSharedSerializer(_config, _api);
+  late final _shared = FlutterInputsSharedSerializer(_u, _config, _api);
   late final _companions = FlutterInputsCompanionSerializer(_u, _types);
   late final _fields = FlutterInputsFieldSerializer(_u, _config, _types, _api);
   late final _date = FlutterInputsDateSerializer(_u, _config, _types, _fields);
@@ -307,9 +307,15 @@ class FlutterInputsSerializer {
       buffer.writeln(_companions.serializeStepConfigClass(inputName, hasScalarFields, inputFields, inputListFields));
       buffer.writeln();
     }
-    buffer.writeln('enum ${inputName}Layout { column, twoColumn${hasSubInputs ? ', stepper' : ''} }');
+    buffer.writeln(_u.createEnum(
+      enumName: '${inputName}Layout',
+      enumValues: ['column', 'twoColumn', if (hasSubInputs) 'stepper'],
+    ));
     buffer.writeln();
-    buffer.writeln('enum ${inputName}LabelPosition { beside, above, floatingLabel }');
+    buffer.writeln(_u.createEnum(
+      enumName: '${inputName}LabelPosition',
+      enumValues: ['beside', 'above', 'floatingLabel'],
+    ));
     buffer.writeln();
     buffer.writeln(_state.serializeWidgetClass(inputName, listFields, formFields, enumFields, boolFields, textFields, dateEligibleFields, inputFields, inputListFields));
     buffer.writeln();

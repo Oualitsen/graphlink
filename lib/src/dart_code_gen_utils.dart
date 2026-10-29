@@ -62,6 +62,11 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
   String inlineIfStatement({required String condition, required String statement}) =>
       'if ${parentheses([condition])} $statement';
 
+  @override
+  String constDecl(String name, String value, {String? type}) =>
+      'final ${type == null ? '' : '$type '}$name = $value;';
+
+  @override
   String callExpression(String name, List<String> args) {
     if (args.isEmpty) return '$name()';
     final indented = args.map((a) => a.ident()).join(',\n');
@@ -214,21 +219,20 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
     var buffer = StringBuffer();
     buffer.write("abstract class ${className}");
     if (baseInterfaceNames != null && baseInterfaceNames.isNotEmpty) {
-      buffer.write(" ");
-      buffer.write(baseInterfaceNames.join(", "));
+      buffer.write(" extends ${baseInterfaceNames.join(", ")}");
     }
+    buffer.write(" ");
     buffer.write(block(statements));
     return buffer.toString();
   }
 
   String createEnum({required String enumName, required List<String> enumValues, List<String>? methods}) {
     var buffer = StringBuffer();
-    buffer.write("enum ${enumName}");
-    buffer.write(enumValues.join(", "));
-    buffer.writeln(";");
-    if (methods != null && methods.isNotEmpty) {
-      methods.forEach(buffer.writeln);
-    }
+    buffer.write("enum ${enumName} ");
+    buffer.write(block([
+      "${enumValues.join(", ")};",
+      if (methods != null) ...methods,
+    ]));
     return buffer.toString();
   }
 

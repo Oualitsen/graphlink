@@ -41,56 +41,44 @@ class DartSerializer extends GLSerializer {
 
   @override
   String doSerializeEnumDefinition(GLEnumDefinition def) {
-    var buffer = StringBuffer();
-    var decorators = serializeDecorators(def.getDirectives());
-    if (decorators.isNotEmpty) {
-      buffer.writeln(decorators);
-    }
-    buffer.writeln("enum ${def.codeName} {");
-    buffer.write(def.values
-        .map((e) => doSerializeEnumValue(e))
-        .toList()
-        .join(", ")
-        .ident());
-    buffer.writeln(";");
-    // toJson
-    buffer.writeln(codeGenUtils
-        .createMethod(
-            methodName: "toJson",
-            returnType: "String",
-            arguments: [],
-            namedArguments: false,
-            statements: [
-              codeGenUtils.switchStatement(expression: "this", cases: [
+    final decorators = serializeDecorators(def.getDirectives());
+    final source = codeGenUtils.createEnum(
+      enumName: def.codeName,
+      enumValues: def.values.map(doSerializeEnumValue).toList(),
+      methods: [
+        codeGenUtils.createMethod(
+          methodName: "toJson",
+          returnType: "String",
+          arguments: [],
+          namedArguments: false,
+          statements: [
+            codeGenUtils.switchStatement(
+              expression: "this",
+              cases: [
+                ...def.values.map((val) => DartCaseStatement(caseValue: val.codeName, statement: 'return "${val.token}";')),
+              ],
+            ),
+          ],
+        ),
+        codeGenUtils.createMethod(
+          methodName: "fromJson",
+          arguments: ['String value'],
+          namedArguments: false,
+          returnType: 'static ${def.codeName}',
+          statements: [
+            codeGenUtils.switchStatement(
+              expression: 'value',
+              cases: [
                 ...def.values.map((val) => DartCaseStatement(
-                    caseValue: val.codeName,
-                    statement: 'return "${val.token}";'))
-              ])
-            ])
-        .ident());
-
-    // end toJson
-    // fromJson
-    buffer.writeln(codeGenUtils
-        .createMethod(
-            methodName: "fromJson",
-            arguments: ['String value'],
-            namedArguments: false,
-            returnType: 'static ${def.codeName}',
-            statements: [
-              codeGenUtils.switchStatement(
-                  expression: 'value',
-                  cases: [
-                    ...def.values.map((val) => DartCaseStatement(
-                        caseValue: '"${val.token}"',
-                        statement: 'return ${def.codeName}.${val.codeName};'))
-                  ],
-                  defaultStatements:
-                      ['throw ArgumentError("Invalid ${def.codeName}: \$value");'])
-            ])
-        .ident());
-    buffer.writeln("}");
-    return buffer.toString();
+                    caseValue: '"${val.token}"', statement: 'return ${def.codeName}.${val.codeName};')),
+              ],
+              defaultStatements: ['throw ArgumentError("Invalid ${def.codeName}: \$value");'],
+            ),
+          ],
+        ),
+      ],
+    );
+    return decorators.isEmpty ? "$source\n" : "$decorators\n$source\n";
   }
 
   @override
@@ -626,41 +614,28 @@ class DartSerializer extends GLSerializer {
 
   String serializeInterface(GLInterfaceDefinition interface) {
     final codeName = interface.codeName;
-    final interfaces = interface.interfaces;
     final fields = interface.getSerializableFields(grammar.mode);
-    var buffer = StringBuffer();
-    var decorators = serializeDecorators(interface.getDirectives());
-    if (decorators.isNotEmpty) {
-      buffer.writeln(decorators.trim());
-    }
-    buffer.write("abstract class $codeName ");
-    if (interfaces.isNotEmpty) {
-      buffer.write("extends ${interfaces.map((e) => resolveCodeName(e.tokenInfo.token)).join(", ")} ");
-    }
-    buffer.writeln("{");
-    for (var field in fields) {
-      var fieldDecorators = serializeDecorators(field.getDirectives());
-      if (fieldDecorators.isNotEmpty) {
-        buffer.writeln(fieldDecorators.trim().ident());
-      }
-      final declaration = interface.fieldAsMethods
-          ? serializeMethodDeclaration(field)
-          : serializeGetterDeclaration(field);
-      buffer.writeln("$declaration;".ident());
-    }
+    final decorators = serializeDecorators(interface.getDirectives());
+    final serialisableImplemenations = interface.getSerializableImplementations(mode);
+    final source = codeGenUtils.createInterface(
+      className: codeName,
+      baseInterfaceNames: interface.interfaces.map((e) => resolveCodeName(e.tokenInfo.token)).toList(),
+      statements: [
+        for (var field in fields) _serializeInterfaceMember(interface, field),
+        if (!shouldSkipJsonMethods(interface)) ...[
+          _serializeToJsonForInterface(codeName),
+          if (serialisableImplemenations.isNotEmpty) _serializeFromJsonForInterface(codeName, serialisableImplemenations),
+        ],
+      ],
+    );
+    return decorators.isEmpty ? "$source\n" : "${decorators.trim()}\n$source\n";
+  }
 
-    if (!shouldSkipJsonMethods(interface)) {
-      buffer.writeln(_serializeToJsonForInterface(codeName).ident());
-      final serialisableImplemenations = interface.getSerializableImplementations(mode);
-      if (serialisableImplemenations.isNotEmpty) {
-        buffer.writeln(
-            _serializeFromJsonForInterface(codeName, serialisableImplemenations)
-                .ident());
-      }
-    }
-
-    buffer.writeln("}");
-    return buffer.toString();
+  String _serializeInterfaceMember(GLInterfaceDefinition interface, GLField field) {
+    final decorators = serializeDecorators(field.getDirectives());
+    final declaration =
+        interface.fieldAsMethods ? serializeMethodDeclaration(field) : serializeGetterDeclaration(field);
+    return decorators.isEmpty ? "$declaration;" : "${decorators.trim()}\n$declaration;";
   }
 
   String serializeGetterDeclaration(GLField field) {

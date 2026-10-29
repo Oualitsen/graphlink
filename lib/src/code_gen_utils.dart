@@ -20,6 +20,14 @@ abstract class CodeGenUtilsBase {
 
   String createMethod({String? returnType, required String methodName, List<String>? arguments});
 
+  /// An immutable local binding: `const` (TypeScript), `final` (Dart, Java), `val` (Kotlin),
+  /// `let` (Swift). [type] is optional where the language infers it (`var` in Java).
+  String constDecl(String name, String value, {String? type});
+
+  /// `name(arg1, arg2)` with one argument per line. [name] may carry a receiver and
+  /// type arguments (`this.run<T>`); an empty [args] emits `name()`.
+  String callExpression(String name, List<String> args);
+
   String tryCatchFinally({
     required List<String> tryStatements,
     String? catchVariable,

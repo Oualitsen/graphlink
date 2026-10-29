@@ -290,11 +290,14 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
     final valueAccess = mappedType.valueType.nullable ? rawAccess : '$rawAccess!!';
     final valueConversion = _serviceResultToJson(mapping.field, valueAccess);
 
-    final loopBody = codeGenUtils.block(['result[$sourceListName[$indexVar]] = $valueConversion']);
     final conversion = [
-      'val $serviceResultVar: Map<$domainKeyType, $domainValueType> = $serviceCall',
-      'val result = mutableMapOf<$wireKeyType, $wireValueType>()',
-      'for ($indexVar in $sourceListName.indices) $loopBody',
+      codeGenUtils.constDecl(serviceResultVar, '$serviceCall', type: 'Map<$domainKeyType, $domainValueType>'),
+      codeGenUtils.constDecl('result', 'mutableMapOf<$wireKeyType, $wireValueType>()'),
+      codeGenUtils.forEachLoop(
+        variable: indexVar,
+        iterable: '$sourceListName.indices',
+        statements: ['result[$sourceListName[$indexVar]] = $valueConversion'],
+      ),
     ];
 
     if (!blockingServices) {
@@ -351,7 +354,7 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
       if (importSource != null) {
         context.addImportDependecy(importSource);
       }
-      declarations.add('val ${origArg.codeName}: $declaredType = $fromJsonCall');
+      declarations.add(codeGenUtils.constDecl(origArg.codeName, '$fromJsonCall', type: '$declaredType'));
     }
     final serviceArgs = arguments.map((e) => e.originalArg ?? e).map((arg) => arg.codeName).toList();
     return ArgumentConversions(declarations, serviceArgs);

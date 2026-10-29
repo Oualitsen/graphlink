@@ -179,7 +179,7 @@ class FlutterInputsDraftSerializer {
       );
 
   String _snapshotMethod(List<_DraftField> entries) {
-    final statements = <String>['final m = <String, Object?>{};'];
+    final statements = <String>[_u.constDecl('m', '<String, Object?>{}')];
     for (final e in entries) {
       final stateLine = "m['${e.name}'] = ${e.stateEncode};";
       final overrideEncode = e.overrideEncode;
@@ -195,7 +195,7 @@ class FlutterInputsDraftSerializer {
         ifBlockStatements: [
           _u.tryCatchFinally(
             tryStatements: [
-              'final v = _${e.name}OverrideKey.currentState!.read();',
+              _u.constDecl('v', '_${e.name}OverrideKey.currentState!.read()'),
               "m['${e.name}'] = $overrideEncode;",
             ],
             catchVariable: '_',
@@ -224,7 +224,7 @@ class FlutterInputsDraftSerializer {
         : _u.ifStatement(
             condition: '_form.values?.${e.name} != null',
             ifBlockStatements: [
-              'final v = ${e.guard} ? ${e.value} : null;',
+              _u.constDecl('v', '${e.guard} ? ${e.value} : null'),
               _u.inlineIfStatement(
                 condition: 'v != null',
                 statement: '_${e.name}OverrideKey.currentState?.restore(v);',
@@ -232,7 +232,7 @@ class FlutterInputsDraftSerializer {
             ],
             elseBlockStatements: [e.stateAssign],
           );
-    return _u.block(["final raw = draft['${e.name}'];", branches]);
+    return _u.block([_u.constDecl("raw", "draft['${e.name}']"), branches]);
   }
 
   String _restoreMethod(List<_DraftField> entries) => _u.createMethod(
@@ -243,15 +243,15 @@ class FlutterInputsDraftSerializer {
         namedArguments: false,
         statements: [
           _u.inlineIfStatement(condition: '!mounted', statement: 'return;'),
-          'final store = _form.draftStore!;',
+          _u.constDecl('store', '_form.draftStore!'),
           'Map<String, dynamic>? loaded;',
           _u.tryCatchFinally(
             tryStatements: [
-              'final stored = await store.read(_draftKey);',
+              _u.constDecl('stored', 'await store.read(_draftKey)'),
               _u.ifStatement(
                 condition: 'stored != null',
                 ifBlockStatements: [
-                  'final decoded = jsonDecode(stored);',
+                  _u.constDecl('decoded', 'jsonDecode(stored)'),
                   _u.ifStatement(
                     condition:
                         "decoded is Map<String, dynamic> && decoded['v'] == _draftSchemaHash && decoded['f'] is Map<String, dynamic>",
@@ -265,7 +265,7 @@ class FlutterInputsDraftSerializer {
             catchStatements: ['loaded = null;'],
           ),
           _u.inlineIfStatement(condition: '!mounted', statement: 'return;'),
-          'final draft = loaded;',
+          _u.constDecl('draft', 'loaded'),
           _u.ifStatement(
             condition: 'draft == null',
             ifBlockStatements: [
@@ -300,7 +300,7 @@ class FlutterInputsDraftSerializer {
         arguments: [],
         namedArguments: false,
         statements: [
-          'final pending = _pendingDraft;',
+          _u.constDecl('pending', '_pendingDraft'),
           _u.inlineIfStatement(condition: 'pending == null', statement: 'return;'),
           '_pendingDraft = null;',
           _u.tryCatchFinally(

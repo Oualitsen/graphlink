@@ -529,11 +529,15 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     final valueExpr = '$serviceResultVar.get($domainListName.get($indexVar))';
     final valueConversion = _serviceResultToJson(mapping.field, valueExpr, context);
 
-    final loopBody = codeGenUtils.block(['result.put($sourceListName.get($indexVar), $valueConversion);']);
     return [
       'Map<$domainKeyType, $realValueType> $serviceResultVar = $serviceCallExpr;',
       'Map<$sourceKeyType, $mappedValueType> result = new HashMap<>();',
-      'for (int $indexVar = 0; $indexVar < $sourceListName.size(); $indexVar++) $loopBody',
+      codeGenUtils.forLoop(
+        init: 'int $indexVar = 0',
+        condition: '$indexVar < $sourceListName.size()',
+        increment: '$indexVar++',
+        statements: ['result.put($sourceListName.get($indexVar), $valueConversion);'],
+      ),
     ];
   }
 

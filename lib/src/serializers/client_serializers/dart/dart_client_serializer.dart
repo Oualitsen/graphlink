@@ -291,12 +291,12 @@ class DartClientSerializer extends GLClientSerializer {
               ],
               returnType: "String",
               statements: [
-                'final buffer = StringBuffer(query);',
+                codeGenUtils.constDecl('buffer', 'StringBuffer(query)'),
                 codeGenUtils.forEachLoop(
                     variable: 'name',
                     iterable: 'fragmentNames',
                     statements: [
-                      'final frag = $svFragMap[name];',
+                      codeGenUtils.constDecl('frag', '$svFragMap[name]'),
                       codeGenUtils.ifStatement(
                           condition: 'frag != null',
                           ifBlockStatements: [
@@ -331,9 +331,9 @@ class DartClientSerializer extends GLClientSerializer {
                 'TFull Function(Map<String, dynamic> json) fromJson',
               ],
               statements: [
-                'final fullQuery = assembleQuery(query, fragmentNames);',
-                'final $svPayload = GraphLinkPayload(query: fullQuery, operationName: operationName, variables: variables);',
-                'final $svResponse = await glCallAdapter($svPayload);',
+                codeGenUtils.constDecl('fullQuery', 'assembleQuery(query, fragmentNames)'),
+                codeGenUtils.constDecl(svPayload, codeGenUtils.callExpression('GraphLinkPayload', ['query: fullQuery', 'operationName: operationName', 'variables: variables'])),
+                codeGenUtils.constDecl(svResponse, 'await glCallAdapter($svPayload)'),
                 'return fromJson(jsonDecode($svResponse));',
               ]),
           codeGenUtils.createMethod(
@@ -349,8 +349,10 @@ class DartClientSerializer extends GLClientSerializer {
                 'TFull Function(Map<String, dynamic> json) fromJson',
               ],
               statements: [
-                'final $svResult = await executeFull<TFull>(query, fragmentNames, operationName, variables, fromJson);',
-                'if ($svResult.errors != null) throw $svResult.errors!;',
+                codeGenUtils.constDecl(svResult, 'await ${codeGenUtils.callExpression('executeFull<TFull>', ['query', 'fragmentNames', 'operationName', 'variables', 'fromJson'])}'),
+                codeGenUtils.ifStatement(
+                    condition: '$svResult.errors != null',
+                    ifBlockStatements: ['throw $svResult.errors!;']),
                 'return $svResult;',
               ]),
           codeGenUtils.createMethod(
@@ -366,9 +368,9 @@ class DartClientSerializer extends GLClientSerializer {
                 'bool captureErrors',
               ],
               statements: [
-                'final $svResponseMap = <String, dynamic>{};',
-                'final $svStaleData = <String, dynamic>{};',
-                'final $svCacheFetchFutures = <Future>[];',
+                codeGenUtils.constDecl(svResponseMap, '<String, dynamic>{}'),
+                codeGenUtils.constDecl(svStaleData, '<String, dynamic>{}'),
+                codeGenUtils.constDecl(svCacheFetchFutures, '<Future>[]'),
                 codeGenUtils.forEachLoop(
                     variable: "partQuery",
                     iterable: "partialQueries.where((e) => e.ttl > 0)",
@@ -392,14 +394,14 @@ class DartClientSerializer extends GLClientSerializer {
                     ifBlockStatements: [
                       "return fromJson({'data': $svResponseMap});"
                     ]),
-                "final $svRemainingQueries = partialQueries.where((e) => !$svResponseMap.containsKey(e.elementKey)).toList();",
-                "final $svPayload = _buildPayload($svRemainingQueries, operationName, directives);",
+                codeGenUtils.constDecl(svRemainingQueries, "partialQueries.where((e) => !$svResponseMap.containsKey(e.elementKey)).toList()"),
+                codeGenUtils.constDecl(svPayload, codeGenUtils.callExpression("_buildPayload", ["$svRemainingQueries", "operationName", "directives"])),
                 codeGenUtils.tryCatchFinally(tryStatements: [
-                  'final $svResponseText = await glCallAdapter($svPayload);',
-                  'return _parseToObjectAndCache($svResponseText, $svResponseMap, fromJson, $svRemaining, captureErrors);',
+                  codeGenUtils.constDecl(svResponseText, 'await glCallAdapter($svPayload)'),
+                  'return ${codeGenUtils.callExpression('_parseToObjectAndCache', ['$svResponseText', '$svResponseMap', 'fromJson', '$svRemaining', 'captureErrors'])};',
                 ], catchStatements: [
                   "$svResponseMap.addAll($svStaleData);",
-                  'final remainingCount = partialQueries.where((e) => !$svResponseMap.containsKey(e.elementKey)).length;',
+                  codeGenUtils.constDecl('remainingCount', 'partialQueries.where((e) => !$svResponseMap.containsKey(e.elementKey)).length'),
                   codeGenUtils.ifStatement(
                       condition: 'remainingCount > 0',
                       ifBlockStatements: ["rethrow;"]),
@@ -416,13 +418,13 @@ class DartClientSerializer extends GLClientSerializer {
                 "String directives"
               ],
               statements: [
-                "final Map<String, dynamic> variables = {};",
+                codeGenUtils.constDecl("variables", "{}", type: "Map<String, dynamic>"),
                 codeGenUtils.forEachLoop(
                     variable: "partQuery",
                     iterable: "partQueries",
                     statements: ["variables.addAll(partQuery.variables);"]),
-                'final queryBuilder = StringBuffer("query \${operationName}");',
-                'final args = partQueries.expand((e) => e.argumentDeclarations).toSet();',
+                codeGenUtils.constDecl('queryBuilder', 'StringBuffer("query \${operationName}")'),
+                codeGenUtils.constDecl('args', 'partQueries.expand((e) => e.argumentDeclarations).toSet()'),
                 codeGenUtils.ifStatement(
                     condition: 'args.isNotEmpty',
                     ifBlockStatements: [
@@ -442,9 +444,9 @@ class DartClientSerializer extends GLClientSerializer {
                       'queryBuilder.write(" ");',
                     ]),
                 'queryBuilder.write("}");',
-                'final fragments = partQueries.expand((e) => e.fragmentNames).toSet().map((fragName) => $svFragMap[fragName]!).join();',
+                codeGenUtils.constDecl('fragments', 'partQueries.expand((e) => e.fragmentNames).toSet().map((fragName) => $svFragMap[fragName]!).join()'),
                 'queryBuilder.write(fragments);',
-                'return GraphLinkPayload(query: queryBuilder.toString(), operationName: operationName, variables: variables);',
+                'return ${codeGenUtils.callExpression('GraphLinkPayload', ['query: queryBuilder.toString()', 'operationName: operationName', 'variables: variables'])};',
               ]),
           codeGenUtils.createMethod(
               methodName:
@@ -459,9 +461,9 @@ class DartClientSerializer extends GLClientSerializer {
               returnType: 'T',
               namedArguments: false,
               statements: [
-                'final result = jsonDecode(data) as Map<String, dynamic>;',
-                'final rawData = result["data"];',
-                'final dataMap = rawData as Map<String, dynamic>? ?? <String, dynamic>{};',
+                codeGenUtils.constDecl('result', 'jsonDecode(data) as Map<String, dynamic>'),
+                codeGenUtils.constDecl('rawData', 'result["data"]'),
+                codeGenUtils.constDecl('dataMap', 'rawData as Map<String, dynamic>? ?? <String, dynamic>{}'),
                 codeGenUtils.forEachLoop(
                     variable: 'q',
                     iterable: 'remainingQueries',
@@ -469,7 +471,7 @@ class DartClientSerializer extends GLClientSerializer {
                       codeGenUtils.ifStatement(
                           condition: 'q.ttl > 0 && dataMap[q.elementKey] != null',
                           ifBlockStatements: [
-                            'final entry = GraphLinkCacheEntry(jsonEncode(dataMap[q.elementKey]), DateTime.now().millisecondsSinceEpoch + q.ttl * 1000);',
+                            codeGenUtils.constDecl('entry', 'GraphLinkCacheEntry(jsonEncode(dataMap[q.elementKey]), DateTime.now().millisecondsSinceEpoch + q.ttl * 1000)'),
                             '$svStore.set(q.cacheKey!, jsonEncode(entry.toJson()));',
                             codeGenUtils.ifStatement(
                                 condition: 'q.tags.isNotEmpty',
@@ -479,17 +481,17 @@ class DartClientSerializer extends GLClientSerializer {
                           ])
                     ]),
                 'dataMap.addAll(cachedResponse);',
-                "final fullResponse = <String, dynamic>{'data': rawData != null ? dataMap : null};",
+                codeGenUtils.constDecl("fullResponse", "<String, dynamic>{'data': rawData != null ? dataMap : null}"),
                 codeGenUtils.ifStatement(
                     condition: 'result["errors"] != null',
                     ifBlockStatements: [
                       'fullResponse["errors"] = result["errors"];',
                     ]),
-                'final parsed = parser.call(fullResponse);',
+                codeGenUtils.constDecl('parsed', 'parser.call(fullResponse)'),
                 codeGenUtils.ifStatement(
                     condition: 'captureErrors',
                     ifBlockStatements: ['return parsed;']),
-                'final errors = result["errors"] as List?;',
+                codeGenUtils.constDecl('errors', 'result["errors"] as List?'),
                 codeGenUtils.ifStatement(
                     condition: 'errors != null && errors.isNotEmpty',
                     ifBlockStatements: ['throw parsed.errors!;']),
@@ -538,15 +540,15 @@ class DartClientSerializer extends GLClientSerializer {
                     variable: 'tag',
                     iterable: 'tags',
                     statements: [
-                      'final tagKey = "\${tagKeyPrefix}\${tag}";',
-                      'final lock = $svTagLocks[tag]!;',
+                      codeGenUtils.constDecl('tagKey', '"\${tagKeyPrefix}\${tag}"'),
+                      codeGenUtils.constDecl('lock', '$svTagLocks[tag]!'),
                       'await lock.synchronized(() async',
                       codeGenUtils.block([
-                        'final data = await $svStore.get(tagKey);',
+                        codeGenUtils.constDecl('data', 'await $svStore.get(tagKey)'),
                         codeGenUtils.ifStatement(
                             condition: "data != null",
                             ifBlockStatements: [
-                              'final entry = GraphLinkTagEntry.decode(data);',
+                              codeGenUtils.constDecl('entry', 'GraphLinkTagEntry.decode(data)'),
                               codeGenUtils.forEachLoop(
                                   variable: 'key',
                                   iterable: 'entry.keys',
@@ -568,12 +570,12 @@ class DartClientSerializer extends GLClientSerializer {
                     variable: 'tag',
                     iterable: 'tags',
                     statements: [
-                      'final tagKey = "\${tagKeyPrefix}\${tag}";',
-                      'final lock = $svTagLocks[tag]!;',
+                      codeGenUtils.constDecl('tagKey', '"\${tagKeyPrefix}\${tag}"'),
+                      codeGenUtils.constDecl('lock', '$svTagLocks[tag]!'),
                       'await lock.synchronized(() async',
                       codeGenUtils.block([
-                        'final data = await $svStore.get(tagKey);',
-                        'final entry = data != null ? GraphLinkTagEntry.decode(data) : GraphLinkTagEntry({});',
+                        codeGenUtils.constDecl('data', 'await $svStore.get(tagKey)'),
+                        codeGenUtils.constDecl('entry', 'data != null ? GraphLinkTagEntry.decode(data) : GraphLinkTagEntry({})'),
                         'entry.add(key);',
                         'await $svStore.set(tagKey, entry.encode());'
                       ]),
@@ -591,15 +593,15 @@ class DartClientSerializer extends GLClientSerializer {
                     variable: 'tag',
                     iterable: 'tags',
                     statements: [
-                      'final tagKey = "\${tagKeyPrefix}\${tag}";',
-                      'final lock = $svTagLocks.putIfAbsent(tag, () => GraphLinkLock());',
+                      codeGenUtils.constDecl('tagKey', '"\${tagKeyPrefix}\${tag}"'),
+                      codeGenUtils.constDecl('lock', '$svTagLocks.putIfAbsent(tag, () => GraphLinkLock())'),
                       'await lock.synchronized(() async',
                       codeGenUtils.block([
-                        'final data = await $svStore.get(tagKey);',
+                        codeGenUtils.constDecl('data', 'await $svStore.get(tagKey)'),
                         codeGenUtils.ifStatement(
                             condition: "data != null",
                             ifBlockStatements: [
-                              'final entry = GraphLinkTagEntry.decode(data);',
+                              codeGenUtils.constDecl('entry', 'GraphLinkTagEntry.decode(data)'),
                               'entry.remove(key);',
                               codeGenUtils.ifStatement(
                                   condition: 'entry.keys.isEmpty',
@@ -639,8 +641,8 @@ class DartClientSerializer extends GLClientSerializer {
 
   String _buildGraphLinkClientClass() {
     return codeGenUtils.createClass(className: 'GraphLinkClient', statements: [
-      'final $svFragMap = <String, String>{};',
-      'final $svTagLocks = <String, GraphLinkLock>{};',
+      codeGenUtils.constDecl(svFragMap, '<String, String>{}'),
+      codeGenUtils.constDecl(svTagLocks, '<String, GraphLinkLock>{}'),
       if (_parser.hasQueries)
         'late final ${classNameFromType(GLQueryType.query)} queries;',
       if (_parser.hasMutations)
@@ -666,7 +668,7 @@ class DartClientSerializer extends GLClientSerializer {
               .map((value) =>
                   "$svFragMap['${value.tokenInfo}'] = '${gqlSerializer.serializeFragmentDefinitionBase(value)}';"),
           'this.store = store ?? $_inMemorycacheStoreClassName();',
-          'final tags = ${_parser.getAllCacheTags().map((e) => e.quote()).toList()};',
+          codeGenUtils.constDecl('tags', '${_parser.getAllCacheTags().map((e) => e.quote()).toList()}'),
           codeGenUtils.forEachLoop(
               variable: 'tag',
               iterable: 'tags',
@@ -736,60 +738,70 @@ class DartClientSerializer extends GLClientSerializer {
   }
 
   String _withHttpConstructor() {
-    final wsParams = _parser.hasSubscriptions
-        ? 'required String wsUrl,\n  Future<Map<String, String>?> Function()? wsHeadersProvider,'
-        : '';
-    final wsArg = _parser.hasSubscriptions
-        ? 'wsAdapter: DefaultGraphLinkWebSocketAdapter(url: wsUrl, headersProvider: wsHeadersProvider),'
-        : '';
+    final hasSubscriptions = _parser.hasSubscriptions;
     final adapterClass = _useDio ? 'GraphLinkDioAdapter' : 'GraphLinkHttpAdapter';
     const adapterArgs = 'url: url, headersProvider: headersProvider';
+    final wsArgs = hasSubscriptions
+        ? ['wsAdapter: DefaultGraphLinkWebSocketAdapter(url: wsUrl, headersProvider: wsHeadersProvider)']
+        : <String>[];
+    final constructorArgs = [
+      'required String url',
+      if (hasSubscriptions) ...[
+        'required String wsUrl',
+        'Future<Map<String, String>?> Function()? wsHeadersProvider',
+      ],
+      'Future<Map<String, String>?> Function()? headersProvider',
+      '$_cacheStoreClassName? store',
+    ];
 
     if (_parser.hasUploadMutations) {
-      return '''
-factory GraphLinkClient.withHttp({
-  required String url,
-  $wsParams
-  Future<Map<String, String>?> Function()? headersProvider,
-  $_cacheStoreClassName? store,
-}) {
-  final _a = $adapterClass($adapterArgs);
-  return GraphLinkClient(
-    adapter: _a.call,
-    uploadConverter: defaultUploadConverter,
-    uploadAdapter: _a.multipartCall,
-    $wsArg
-    store: store,
-  );
-}''';
+      return codeGenUtils.createMethod(
+        returnType: 'factory',
+        methodName: 'GraphLinkClient.withHttp',
+        arguments: constructorArgs,
+        statements: [
+          codeGenUtils.constDecl('_a', '$adapterClass($adapterArgs)'),
+          'return ${codeGenUtils.callExpression('GraphLinkClient', [
+            'adapter: _a.call',
+            'uploadConverter: defaultUploadConverter',
+            'uploadAdapter: _a.multipartCall',
+            ...wsArgs,
+            'store: store',
+          ])};',
+        ],
+      );
     }
 
-    return '''
-GraphLinkClient.withHttp({
-  required String url,
-  $wsParams
-  Future<Map<String, String>?> Function()? headersProvider,
-  $_cacheStoreClassName? store,
-}) : this(
-  adapter: $adapterClass($adapterArgs).call,
-  $wsArg
-  store: store,
-);''';
+    return codeGenUtils.createMethod(
+      methodName: 'GraphLinkClient.withHttp',
+      arguments: constructorArgs,
+      initializers: [
+        codeGenUtils.callExpression('this', [
+          'adapter: $adapterClass($adapterArgs).call',
+          ...wsArgs,
+          'store: store',
+        ]),
+      ],
+    );
   }
 
   String _fromUrlConstructor() {
-    final adapterDecl = _adapterDeclaration();
-    return '''
-GraphLinkClient.fromUrl({
-  required $adapterDecl,
-  required String wsUrl,
-  Future<Map<String, String>?> Function()? wsHeadersProvider,
-  $_cacheStoreClassName? store,
-}) : this(
-  adapter: adapter,
-  wsAdapter: DefaultGraphLinkWebSocketAdapter(url: wsUrl, headersProvider: wsHeadersProvider),
-  store: store,
-);''';
+    return codeGenUtils.createMethod(
+      methodName: 'GraphLinkClient.fromUrl',
+      arguments: [
+        'required ${_adapterDeclaration()}',
+        'required String wsUrl',
+        'Future<Map<String, String>?> Function()? wsHeadersProvider',
+        '$_cacheStoreClassName? store',
+      ],
+      initializers: [
+        codeGenUtils.callExpression('this', [
+          'adapter: adapter',
+          'wsAdapter: DefaultGraphLinkWebSocketAdapter(url: wsUrl, headersProvider: wsHeadersProvider)',
+          'store: store',
+        ]),
+      ],
+    );
   }
 
   // ── Subscription infrastructure file generators ───────────────────────────
@@ -840,6 +852,10 @@ GraphLinkClient.fromUrl({
 
   String get fileExtension => '.dart';
 
+  String get _operationNameArg => _parser.operationNameAsParameter ? ', String operationName' : '';
+
+  String get _postUrlExpr => _parser.operationNameAsParameter ? "'\$url?operationName=\$operationName'" : 'url';
+
   GLClassModel generateHttpAdapterFile() {
     if (_parser.hasUploadMutations) {
       stdout.writeln(
@@ -848,57 +864,6 @@ GraphLinkClient.fromUrl({
         '   For large files, consider switching to the Dio adapter (httpAdapter: "dio").',
       );
     }
-    final extraParam =
-        _parser.operationNameAsParameter ? ', String operationName' : '';
-    final multipartMethod = _parser.hasUploadMutations
-        ? '''
-
-  Future<String> multipartCall(Map<String, Object> parts, UploadProgressCallback? onProgress) async {
-    final request = http.MultipartRequest('POST', Uri.parse(url));
-    final extraHeaders = await headersProvider?.call() ?? {};
-    request.headers.addAll(extraHeaders);
-    for (final entry in parts.entries) {
-      if (entry.value is GLUpload) {
-        final u = entry.value as GLUpload;
-        request.files.add(http.MultipartFile(
-          entry.key, u.stream, u.length ?? 0,
-          filename: u.filename,
-          contentType: MediaType.parse(u.mimeType),
-        ));
-      } else {
-        request.fields[entry.key] = entry.value as String;
-      }
-    }
-
-    if (onProgress == null) {
-      final streamed = await request.send();
-      return (await http.Response.fromStream(streamed)).body;
-    }
-
-    final bodyBytes = await request.finalize().toBytes();
-    final total = bodyBytes.length;
-    int sent = 0;
-
-    const chunkSize = 8192;
-    final counted = Stream.fromIterable([
-      for (var i = 0; i < bodyBytes.length; i += chunkSize)
-        bodyBytes.sublist(i, (i + chunkSize).clamp(0, bodyBytes.length)),
-    ]).map((chunk) {
-      sent += chunk.length;
-      onProgress(sent, total);
-      return chunk;
-    });
-
-    final raw = http.StreamedRequest('POST', Uri.parse(url));
-    raw.headers.addAll(extraHeaders);
-    raw.headers['content-type'] = request.headers['content-type']!;
-    raw.contentLength = total;
-    counted.listen(raw.sink.add, onDone: raw.sink.close);
-
-    final streamed = await raw.send();
-    return (await http.Response.fromStream(streamed)).body;
-  }'''
-        : '';
     return GLClassModel(
       imports: [
         "import 'dart:async';",
@@ -906,61 +871,97 @@ GraphLinkClient.fromUrl({
         "import 'package:http_parser/http_parser.dart';",
         if (_parser.hasUploadMutations) "import 'graph_link_uploads.dart';",
       ],
-      body: """
-class GraphLinkHttpAdapter {
-  final String url;
-  final Future<Map<String, String>?> Function()? headersProvider;
-
-  GraphLinkHttpAdapter({
-    required this.url,
-    this.headersProvider,
-  });
-
-  Future<String> call(String payload$extraParam) async {
-    final extraHeaders = await headersProvider?.call();
-    final requestHeaders = {
-      'Content-Type': 'application/json',
-      if (extraHeaders != null) ...extraHeaders,
-    };
-    final response = await http.post(
-      Uri.parse(${_parser.operationNameAsParameter ? "'\$url?operationName=\$operationName'" : 'url'}),
-      body: payload,
-      headers: requestHeaders,
+      body: codeGenUtils.createClass(
+        className: 'GraphLinkHttpAdapter',
+        statements: [
+          'final String url;',
+          'final Future<Map<String, String>?> Function()? headersProvider;',
+          codeGenUtils.createMethod(
+            methodName: 'GraphLinkHttpAdapter',
+            arguments: ['required this.url', 'this.headersProvider'],
+          ),
+          codeGenUtils.createMethod(
+            returnType: 'Future<String>',
+            methodName: 'call',
+            async: true,
+            namedArguments: false,
+            arguments: ['String payload$_operationNameArg'],
+            statements: [
+              codeGenUtils.constDecl('extraHeaders', 'await headersProvider?.call()'),
+              codeGenUtils.constDecl("requestHeaders", codeGenUtils.block([
+                "'Content-Type': 'application/json',",
+                'if (extraHeaders != null) ...extraHeaders,',
+              ])),
+              codeGenUtils.constDecl('response', 'await ${codeGenUtils.callExpression('http.post', [
+                'Uri.parse($_postUrlExpr)',
+                'body: payload',
+                'headers: requestHeaders',
+              ])}'),
+              'return response.body;',
+            ],
+          ),
+          if (_parser.hasUploadMutations) _httpMultipartMethod(),
+        ],
+      ),
     );
-    return response.body;
-  }$multipartMethod
-}
-""",
+  }
+
+  String _httpMultipartMethod() {
+    final addPart = codeGenUtils.ifStatement(
+      condition: 'entry.value is GLUpload',
+      ifBlockStatements: [
+        codeGenUtils.constDecl('u', 'entry.value as GLUpload'),
+        'request.files.add(${codeGenUtils.callExpression('http.MultipartFile', [
+          'entry.key, u.stream, u.length ?? 0',
+          'filename: u.filename',
+          'contentType: MediaType.parse(u.mimeType)',
+        ])});',
+      ],
+      elseBlockStatements: ['request.fields[entry.key] = entry.value as String;'],
+    );
+    final countedStream = 'final counted = Stream.fromIterable([\n'
+        '  for (var i = 0; i < bodyBytes.length; i += chunkSize)\n'
+        '    bodyBytes.sublist(i, (i + chunkSize).clamp(0, bodyBytes.length)),\n'
+        ']).map(${codeGenUtils.functionLiteral(['chunk'], [
+      'sent += chunk.length;',
+      'onProgress(sent, total);',
+      'return chunk;',
+    ])});';
+    return codeGenUtils.createMethod(
+      returnType: 'Future<String>',
+      methodName: 'multipartCall',
+      async: true,
+      namedArguments: false,
+      arguments: ['Map<String, Object> parts', 'UploadProgressCallback? onProgress'],
+      statements: [
+        codeGenUtils.constDecl("request", "http.MultipartRequest('POST', Uri.parse(url))"),
+        codeGenUtils.constDecl('extraHeaders', 'await headersProvider?.call() ?? {}'),
+        'request.headers.addAll(extraHeaders);',
+        codeGenUtils.forEachLoop(variable: 'entry', iterable: 'parts.entries', statements: [addPart]),
+        codeGenUtils.ifStatement(
+          condition: 'onProgress == null',
+          ifBlockStatements: [
+            codeGenUtils.constDecl('streamed', 'await request.send()'),
+            'return (await http.Response.fromStream(streamed)).body;',
+          ],
+        ),
+        codeGenUtils.constDecl('bodyBytes', 'await request.finalize().toBytes()'),
+        codeGenUtils.constDecl('total', 'bodyBytes.length'),
+        'int sent = 0;',
+        'const chunkSize = 8192;',
+        countedStream,
+        codeGenUtils.constDecl("raw", "http.StreamedRequest('POST', Uri.parse(url))"),
+        'raw.headers.addAll(extraHeaders);',
+        "raw.headers['content-type'] = request.headers['content-type']!;",
+        'raw.contentLength = total;',
+        'counted.listen(raw.sink.add, onDone: raw.sink.close);',
+        codeGenUtils.constDecl('streamed', 'await raw.send()'),
+        'return (await http.Response.fromStream(streamed)).body;',
+      ],
     );
   }
 
   GLClassModel generateDioAdapterFile() {
-    final extraParam =
-        _parser.operationNameAsParameter ? ', String operationName' : '';
-    final multipartMethod = _parser.hasUploadMutations
-        ? '''
-
-  Future<String> multipartCall(Map<String, Object> parts, UploadProgressCallback? onProgress) async {
-    final converted = <String, dynamic>{};
-    for (final entry in parts.entries) {
-      if (entry.value is GLUpload) {
-        final u = entry.value as GLUpload;
-        converted[entry.key] = MultipartFile(
-          u.stream, u.length ?? 0,
-          filename: u.filename,
-          contentType: u.mimeType.isNotEmpty ? MediaType.parse(u.mimeType) : null,
-        );
-      } else {
-        converted[entry.key] = entry.value;
-      }
-    }
-    final formData = FormData.fromMap(converted);
-    final response = await dio.post<dynamic>(url, data: formData,
-        onSendProgress: onProgress != null ? (sent, total) => onProgress(sent, total) : null);
-    final data = response.data;
-    return data is String ? data : jsonEncode(data);
-  }'''
-        : '';
     return GLClassModel(
       imports: [
         "import 'dart:async';",
@@ -969,48 +970,121 @@ class GraphLinkHttpAdapter {
         if (_parser.hasUploadMutations) "import 'package:http_parser/http_parser.dart';",
         if (_parser.hasUploadMutations) "import 'graph_link_uploads.dart';",
       ],
-      body: """
-class GraphLinkDioAdapter {
-  final String url;
-  final Dio dio;
-
-  GraphLinkDioAdapter({
-    required this.url,
-    Dio? dio,
-    Future<Map<String, String>?> Function()? headersProvider,
-    List<Interceptor> interceptors = const [],
-    BaseOptions? options,
-  }) : dio = dio ?? Dio(options ?? BaseOptions(contentType: 'application/json')) {
-    if (dio == null) {
-      if (headersProvider != null) {
-        this.dio.interceptors.add(_HeadersInterceptor(headersProvider));
-      }
-      this.dio.interceptors.addAll(interceptors);
-    }
+      body: [
+        _dioAdapterClass(),
+        _dioHeadersInterceptorClass(),
+      ].join('\n\n'),
+    );
   }
 
-  Future<String> call(String payload$extraParam) async {
-    final response = await dio.post<dynamic>(${_parser.operationNameAsParameter ? "'\$url?operationName=\$operationName'" : 'url'}, data: payload);
-    final data = response.data;
-    return data is String ? data : jsonEncode(data);
-  }$multipartMethod
-}
-
-class _HeadersInterceptor extends Interceptor {
-  final Future<Map<String, String>?> Function() _headersProvider;
-
-  _HeadersInterceptor(this._headersProvider);
-
-  @override
-  Future<void> onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
-    final headers = await _headersProvider();
-    if (headers != null) {
-      options.headers.addAll(headers);
-    }
-    handler.next(options);
+  String _dioAdapterClass() {
+    return codeGenUtils.createClass(
+      className: 'GraphLinkDioAdapter',
+      statements: [
+        'final String url;',
+        'final Dio dio;',
+        codeGenUtils.createMethod(
+          methodName: 'GraphLinkDioAdapter',
+          arguments: [
+            'required this.url',
+            'Dio? dio',
+            'Future<Map<String, String>?> Function()? headersProvider',
+            'List<Interceptor> interceptors = const []',
+            'BaseOptions? options',
+          ],
+          initializers: ["dio = dio ?? Dio(options ?? BaseOptions(contentType: 'application/json'))"],
+          statements: [
+            codeGenUtils.ifStatement(
+              condition: 'dio == null',
+              ifBlockStatements: [
+                codeGenUtils.ifStatement(
+                  condition: 'headersProvider != null',
+                  ifBlockStatements: ['this.dio.interceptors.add(_HeadersInterceptor(headersProvider));'],
+                ),
+                'this.dio.interceptors.addAll(interceptors);',
+              ],
+            ),
+          ],
+        ),
+        codeGenUtils.createMethod(
+          returnType: 'Future<String>',
+          methodName: 'call',
+          async: true,
+          namedArguments: false,
+          arguments: ['String payload$_operationNameArg'],
+          statements: [
+            codeGenUtils.constDecl('response', 'await dio.post<dynamic>($_postUrlExpr, data: payload)'),
+            codeGenUtils.constDecl('data', 'response.data'),
+            'return data is String ? data : jsonEncode(data);',
+          ],
+        ),
+        if (_parser.hasUploadMutations) _dioMultipartMethod(),
+      ],
+    );
   }
-}
-""",
+
+  String _dioMultipartMethod() {
+    final convertPart = codeGenUtils.ifStatement(
+      condition: 'entry.value is GLUpload',
+      ifBlockStatements: [
+        codeGenUtils.constDecl('u', 'entry.value as GLUpload'),
+        'converted[entry.key] = ${codeGenUtils.callExpression('MultipartFile', [
+          'u.stream, u.length ?? 0',
+          'filename: u.filename',
+          'contentType: u.mimeType.isNotEmpty ? MediaType.parse(u.mimeType) : null',
+        ])};',
+      ],
+      elseBlockStatements: ['converted[entry.key] = entry.value;'],
+    );
+    return codeGenUtils.createMethod(
+      returnType: 'Future<String>',
+      methodName: 'multipartCall',
+      async: true,
+      namedArguments: false,
+      arguments: ['Map<String, Object> parts', 'UploadProgressCallback? onProgress'],
+      statements: [
+        codeGenUtils.constDecl('converted', '<String, dynamic>{}'),
+        codeGenUtils.forEachLoop(variable: 'entry', iterable: 'parts.entries', statements: [convertPart]),
+        codeGenUtils.constDecl('formData', 'FormData.fromMap(converted)'),
+        codeGenUtils.constDecl('response', 'await ${codeGenUtils.callExpression('dio.post<dynamic>', [
+          'url',
+          'data: formData',
+          'onSendProgress: onProgress != null ? (sent, total) => onProgress(sent, total) : null',
+        ])}'),
+        codeGenUtils.constDecl('data', 'response.data'),
+        'return data is String ? data : jsonEncode(data);',
+      ],
+    );
+  }
+
+  String _dioHeadersInterceptorClass() {
+    return codeGenUtils.createClass(
+      className: '_HeadersInterceptor',
+      extendsClassName: 'Interceptor',
+      statements: [
+        'final Future<Map<String, String>?> Function() _headersProvider;',
+        codeGenUtils.createMethod(
+          methodName: '_HeadersInterceptor',
+          namedArguments: false,
+          arguments: ['this._headersProvider'],
+        ),
+        codeGenUtils.createMethod(
+          override: true,
+          returnType: 'Future<void>',
+          methodName: 'onRequest',
+          async: true,
+          namedArguments: false,
+          arguments: ['RequestOptions options', 'RequestInterceptorHandler handler'],
+          statements: [
+            codeGenUtils.constDecl('headers', 'await _headersProvider()'),
+            codeGenUtils.ifStatement(
+              condition: 'headers != null',
+              ifBlockStatements: ['options.headers.addAll(headers);'],
+            ),
+            'handler.next(options);',
+          ],
+        ),
+      ],
     );
   }
 

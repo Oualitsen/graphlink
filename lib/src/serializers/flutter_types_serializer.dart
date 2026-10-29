@@ -168,7 +168,10 @@ class FlutterTypesSerializer {
     }
     bodyBuffer.writeln(_companions.serializeOrderClass(typeName, fields));
     bodyBuffer.writeln();
-    bodyBuffer.writeln('enum ${typeName}Layout { labeledRow, listTile, listTileReversed, expandable }');
+    bodyBuffer.writeln(_u.createEnum(
+      enumName: '${typeName}Layout',
+      enumValues: ['labeledRow', 'listTile', 'listTileReversed', 'expandable'],
+    ));
     bodyBuffer.writeln();
     bodyBuffer.write(_serializeWidgetClass(typeName, varName, fields, enumFields));
 

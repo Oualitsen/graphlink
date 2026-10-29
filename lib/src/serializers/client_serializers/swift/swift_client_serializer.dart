@@ -100,9 +100,9 @@ class SwiftClientSerializer extends GLClientSerializer {
       'headersProvider: (@Sendable () -> [String: String])? = nil',
     ];
     final statements = [
-      'let httpAdapter = DefaultGraphLinkURLSessionAdapter(url: url, headersProvider: headersProvider)',
-      if (hasSubs) 'let wsAdapter = DefaultGraphLinkWebSocketAdapter(url: wsUrl, headersProvider: headersProvider)',
-      if (hasUploads) 'let multipartAdapter = DefaultGraphLinkURLSessionMultipartAdapter(url: url, headersProvider: headersProvider)',
+      codeGenUtils.constDecl('httpAdapter', 'DefaultGraphLinkURLSessionAdapter(url: url, headersProvider: headersProvider)'),
+      if (hasSubs) codeGenUtils.constDecl('wsAdapter', 'DefaultGraphLinkWebSocketAdapter(url: wsUrl, headersProvider: headersProvider)'),
+      if (hasUploads) codeGenUtils.constDecl('multipartAdapter', 'DefaultGraphLinkURLSessionMultipartAdapter(url: url, headersProvider: headersProvider)'),
       'return $swiftClientName(adapter: httpAdapter.execute${hasSubs ? ', wsAdapter: wsAdapter' : ''}${hasUploads ? ', multipartAdapter: multipartAdapter.executeMultipart' : ''})',
     ];
 
@@ -217,7 +217,7 @@ class SwiftClientSerializer extends GLClientSerializer {
     return [
       if (type == GLQueryType.mutation && grammar.hasUploadMutations) 'self.multipartAdapter = multipartAdapter',
       if (type == GLQueryType.subscription) 'self.handler = GraphLinkSubscriptionHandler(adapter: wsAdapter)',
-      'super.init(adapter: adapter, fragmentMap: fragmentMap, store: store)',
+      codeGenUtils.callExpression('super.init', ['adapter: adapter', 'fragmentMap: fragmentMap', 'store: store']),
     ];
   }
 

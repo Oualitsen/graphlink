@@ -6,6 +6,28 @@ Generated files have **zero runtime dependency** on GraphLink.
 
 ---
 
+## Rule you must NEVER break: generate code through `CodeGenUtils`
+
+When generating code, **always use `CodeGenUtilsBase` (`lib/src/code_gen_utils.dart`) and
+its subclasses** whenever a method exists for the construct you are emitting. The
+subclasses are `DartCodeGenUtils`, `JavaCodeGenUtils`, `KotlinCodeGenUtils`,
+`SwiftCodeGenUtils` and `TypeScriptCodeGenUtils` (`lib/src/<lang>_code_gen_utils.dart`).
+
+- If a builder exists for it (`ifStatement`, `inlineIfStatement`, `block`, `createMethod`,
+  `createClass`, `tryCatchFinally`, `switchStatement`, `forEachLoop`, `forLoop`,
+  `ternaryOp`, `callExpression`, `constDecl`, `functionLiteral`, `listArg`, …), you MUST use it. Never
+  write the same construct as a hand-built string, e.g. `'if (x) { ... }'`,
+  `'try { ... } catch (_) { ... }'` or a triple-quoted class/method.
+- Check the language's `*CodeGenUtils` for an existing method **before** writing any
+  generated control-flow, method, or class text.
+- Check this every time you add or change generated code, including small one-line `if`
+  guards and edits to existing serializers. "It was already a string" is not a reason to
+  add another one.
+- Only when no method exists for the shape may you compose the pieces by hand, as
+  described under "Code-gen string building" below.
+
+---
+
 ## Repository layout
 
 ```
@@ -326,8 +348,8 @@ running it for a release, bump `pubspec.yaml` and add the `CHANGELOG.md` entry f
 
 ### Code-gen string building (`*CodeGenUtils`, e.g. `SwiftCodeGenUtils`)
 
-Every target language has a `<Lang>CodeGenUtils` class (`swift_code_gen_utils.dart`,
-similarly for Kotlin/Java) with block-builders (`block()`, `method()`/`createMethod()`,
+Every target language has a `<Lang>CodeGenUtils` class implementing `CodeGenUtilsBase`
+(`swift_code_gen_utils.dart`, similarly for Dart/Kotlin/Java/TypeScript) with block-builders (`block()`, `method()`/`createMethod()`,
 `structDecl()`, `protocolDecl()`, `ifStatement()`, `tryCatchFinally()`,
 `switchStatement()`, `forEachLoop()`, …). Serializers must build class/function/control-flow
 bodies through these, not through hand-formatted string templates.

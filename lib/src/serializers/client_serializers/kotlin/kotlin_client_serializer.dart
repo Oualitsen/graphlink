@@ -121,20 +121,33 @@ class KotlinClientSerializer extends GLClientSerializer {
     // When uploads are present, DefaultGraphLinkClientAdapter implements both
     // GraphLinkClientAdapter and GraphLinkMultipartAdapter, so we reuse one
     // instance via a local val.
-    String callArgs(String adapterExpr, String wsExpr) {
+    List<String> callArgs(String adapterExpr, String wsExpr) {
       if (hasUploads) {
-        return '{ val a = $adapterExpr; return $kotlinClientName(a${hasSubs ? ', $wsExpr' : ''}, a, encoder, decoder) }';
+        return [
+          codeGenUtils.constDecl('a', '$adapterExpr'),
+          'return ${codeGenUtils.callExpression('$kotlinClientName', ['a${hasSubs ? ', $wsExpr' : ''}', 'a', 'encoder', 'decoder'])}',
+        ];
       }
-      return '= $kotlinClientName($adapterExpr${hasSubs ? ', $wsExpr' : ''}, encoder, decoder)';
+      return ['return ${codeGenUtils.callExpression('$kotlinClientName', ['$adapterExpr${hasSubs ? ', $wsExpr' : ''}', 'encoder', 'decoder'])}'];
     }
+
+    String factory(List<String> arguments, List<String> statements) => codeGenUtils.createMethod(
+          methodName: 'create',
+          returnType: kotlinClientName,
+          arguments: arguments,
+          statements: statements,
+        );
+
+    const codecArgs = ['encoder: GraphLinkJsonEncoder', 'decoder: GraphLinkJsonDecoder'];
+    const headersArg = 'headersProvider: () -> Map<String, String>';
 
     if (!hasSubs) {
       return [
         '',
         codeGenUtils.companionObject([
-          'fun create(url: String, encoder: GraphLinkJsonEncoder, decoder: GraphLinkJsonDecoder): $kotlinClientName ${callArgs('DefaultGraphLinkClientAdapter(url)', '')}',
-          'fun create(url: String, headersProvider: () -> Map<String, String>, encoder: GraphLinkJsonEncoder, decoder: GraphLinkJsonDecoder): $kotlinClientName ${callArgs('DefaultGraphLinkClientAdapter(url, headersProvider)', '')}',
-          'fun create(url: String): $kotlinClientName = create(url, $codec, $codec)',
+          factory(['url: String', ...codecArgs], callArgs('DefaultGraphLinkClientAdapter(url)', '')),
+          factory(['url: String', headersArg, ...codecArgs], callArgs('DefaultGraphLinkClientAdapter(url, headersProvider)', '')),
+          factory(['url: String'], ['return ${codeGenUtils.callExpression('create', ['url', '$codec', '$codec'])}']),
         ]),
       ];
     }
@@ -142,9 +155,14 @@ class KotlinClientSerializer extends GLClientSerializer {
     return [
       '',
       codeGenUtils.companionObject([
-        'fun create(url: String, wsUrl: String, encoder: GraphLinkJsonEncoder, decoder: GraphLinkJsonDecoder): $kotlinClientName ${callArgs('DefaultGraphLinkClientAdapter(url)', 'DefaultGraphLinkWebSocketAdapter(wsUrl)')}',
-        'fun create(url: String, wsUrl: String, headersProvider: () -> Map<String, String>, encoder: GraphLinkJsonEncoder, decoder: GraphLinkJsonDecoder): $kotlinClientName ${callArgs('DefaultGraphLinkClientAdapter(url, headersProvider)', 'DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider)')}',
-        'fun create(url: String): $kotlinClientName { val ws = url.replaceFirst("http", "ws"); return create(url, ws, $codec, $codec) }',
+        factory(['url: String', 'wsUrl: String', ...codecArgs],
+            callArgs('DefaultGraphLinkClientAdapter(url)', 'DefaultGraphLinkWebSocketAdapter(wsUrl)')),
+        factory(['url: String', 'wsUrl: String', headersArg, ...codecArgs],
+            callArgs('DefaultGraphLinkClientAdapter(url, headersProvider)', 'DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider)')),
+        factory(['url: String'], [
+          codeGenUtils.constDecl('ws', 'url.replaceFirst("http", "ws")'),
+          'return ${codeGenUtils.callExpression('create', ['url', 'ws', '$codec', '$codec'])}',
+        ]),
       ]),
     ];
   }
@@ -218,7 +236,7 @@ class KotlinClientSerializer extends GLClientSerializer {
   String _glCallAdapterMethod(bool withOpName) {
     final statements = withOpName
         ? [
-            'val operationName = payload.operationName',
+            codeGenUtils.constDecl('operationName', 'payload.operationName'),
             'return adapter.execute(encoder.encode(payload.toJson()), operationName)',
           ]
         : ['return adapter.execute(encoder.encode(payload.toJson()))'];
@@ -231,106 +249,170 @@ class KotlinClientSerializer extends GLClientSerializer {
   }
 
   String _parseToObjectAndCacheMethod() {
-    return '''suspend fun <T : GraphLinkFullResponse> parseToObjectAndCache(
-    data: String,
-    cachedResponse: MutableMap<String, Any?>,
-    parser: (Map<String, Any?>) -> T,
-    remainingQueries: List<GraphLinkPartialQuery>,
-    captureErrors: Boolean,
-): T {
-    val result = decoder.decode(data)
-    val rawData = result["data"] as? Map<String, Any?>
-    val dataMap = rawData?.toMutableMap() ?: mutableMapOf()
-    for (q in remainingQueries) {
-        if (q.ttl > 0 && dataMap[q.elementKey] != null) {
-            val cacheWrap = mapOf("__gl_v__" to dataMap[q.elementKey])
-            val entry = GraphLinkCacheEntry(encoder.encode(cacheWrap), System.currentTimeMillis() + q.ttl * 1000L)
-            store.set(q.cacheKey, encoder.encode(entry.toJson()))
-            if (q.tags.isNotEmpty()) addKeyToTags(q.cacheKey, q.tags)
-        }
-    }
-    dataMap.putAll(cachedResponse)
-    val fullResponse = mutableMapOf<String, Any?>("data" to if (rawData != null) dataMap else null)
-    if (result.containsKey("errors")) fullResponse["errors"] = result["errors"]
-    val parsed = parser(fullResponse)
-    if (captureErrors) return parsed
-    val errors = result["errors"] as? List<*>
-    if (errors != null && errors.isNotEmpty()) throw $kotlinClientException(parsed.errors ?: emptyList())
-    return parsed
-}''';
+    return codeGenUtils.suspendFun(
+      name: '<T : GraphLinkFullResponse> parseToObjectAndCache',
+      arguments: [
+        'data: String',
+        'cachedResponse: MutableMap<String, Any?>',
+        'parser: (Map<String, Any?>) -> T',
+        'remainingQueries: List<GraphLinkPartialQuery>',
+        'captureErrors: Boolean',
+      ],
+      returnType: 'T',
+      statements: [
+        codeGenUtils.constDecl('result', 'decoder.decode(data)'),
+        codeGenUtils.constDecl('rawData', 'result["data"] as? Map<String, Any?>'),
+        codeGenUtils.constDecl('dataMap', 'rawData?.toMutableMap() ?: mutableMapOf()'),
+        codeGenUtils.forEachLoop(
+          variable: 'q',
+          iterable: 'remainingQueries',
+          statements: [
+            codeGenUtils.ifStatement(
+              condition: 'q.ttl > 0 && dataMap[q.elementKey] != null',
+              ifBlockStatements: [
+                codeGenUtils.constDecl('cacheWrap', 'mapOf("__gl_v__" to dataMap[q.elementKey])'),
+                codeGenUtils.constDecl('entry', 'GraphLinkCacheEntry(encoder.encode(cacheWrap), System.currentTimeMillis() + q.ttl * 1000L)'),
+                'store.set(q.cacheKey, encoder.encode(entry.toJson()))',
+                codeGenUtils.ifStatement(
+                  condition: 'q.tags.isNotEmpty()',
+                  ifBlockStatements: ['addKeyToTags(q.cacheKey, q.tags)'],
+                ),
+              ],
+            ),
+          ],
+        ),
+        'dataMap.putAll(cachedResponse)',
+        codeGenUtils.constDecl('fullResponse', 'mutableMapOf<String, Any?>("data" to ${codeGenUtils.ternaryOp(
+          condition: 'rawData != null',
+          positiveStatement: 'dataMap',
+          negativeStatement: 'null',
+        )})'),
+        codeGenUtils.ifStatement(
+          condition: 'result.containsKey("errors")',
+          ifBlockStatements: ['fullResponse["errors"] = result["errors"]'],
+        ),
+        codeGenUtils.constDecl('parsed', 'parser(fullResponse)'),
+        codeGenUtils.ifStatement(condition: 'captureErrors', ifBlockStatements: ['return parsed']),
+        codeGenUtils.constDecl('errors', 'result["errors"] as? List<*>'),
+        codeGenUtils.ifStatement(
+          condition: 'errors != null && errors.isNotEmpty()',
+          ifBlockStatements: ['throw $kotlinClientException(parsed.errors ?: emptyList())'],
+        ),
+        'return parsed',
+      ],
+    );
   }
 
+  List<String> get _executeArguments => [
+        'query: String',
+        'fragmentNames: Set<String>',
+        'operationName: String',
+        'variables: Map<String, Any?>',
+        'fromJson: (Map<String, Any?>) -> T',
+      ];
+
   String _executeFullMethod() {
-    return '''suspend fun <T : GraphLinkFullResponse> executeFull(
-    query: String,
-    fragmentNames: Set<String>,
-    operationName: String,
-    variables: Map<String, Any?>,
-    fromJson: (Map<String, Any?>) -> T,
-): T {
-    val fullQuery = assembleQuery(query, fragmentNames)
-    val payload = GraphLinkPayload(query = fullQuery, operationName = operationName, variables = variables)
-    val responseText = glCallAdapter(payload)
-    return fromJson(decoder.decode(responseText))
-}''';
+    return codeGenUtils.suspendFun(
+      name: '<T : GraphLinkFullResponse> executeFull',
+      arguments: _executeArguments,
+      returnType: 'T',
+      statements: [
+        codeGenUtils.constDecl('fullQuery', 'assembleQuery(query, fragmentNames)'),
+        codeGenUtils.constDecl('payload', codeGenUtils.callExpression('GraphLinkPayload', ['query = fullQuery', 'operationName = operationName', 'variables = variables'])),
+        codeGenUtils.constDecl('responseText', 'glCallAdapter(payload)'),
+        'return fromJson(decoder.decode(responseText))',
+      ],
+    );
   }
 
   String _executeDataMethod() {
-    return '''suspend fun <T : GraphLinkFullResponse> executeData(
-    query: String,
-    fragmentNames: Set<String>,
-    operationName: String,
-    variables: Map<String, Any?>,
-    fromJson: (Map<String, Any?>) -> T,
-): T {
-    val decoded = executeFull(query, fragmentNames, operationName, variables, fromJson)
-    val errors = decoded.errors
-    if (errors != null && errors.isNotEmpty()) throw $kotlinClientException(errors)
-    return decoded
-}''';
+    return codeGenUtils.suspendFun(
+      name: '<T : GraphLinkFullResponse> executeData',
+      arguments: _executeArguments,
+      returnType: 'T',
+      statements: [
+        codeGenUtils.constDecl('decoded', codeGenUtils.callExpression('executeFull', ['query', 'fragmentNames', 'operationName', 'variables', 'fromJson'])),
+        codeGenUtils.constDecl('errors', 'decoded.errors'),
+        codeGenUtils.ifStatement(
+          condition: 'errors != null && errors.isNotEmpty()',
+          ifBlockStatements: ['throw $kotlinClientException(errors)'],
+        ),
+        'return decoded',
+      ],
+    );
   }
 
   String _executeCachedMethod() {
-    return '''suspend fun <T : GraphLinkFullResponse> executeCached(
-    partialQueries: List<GraphLinkPartialQuery>,
-    operationName: String,
-    directives: String,
-    fromJson: (Map<String, Any?>) -> T,
-    captureErrors: Boolean,
-): T {
-    val responseMap = mutableMapOf<String, Any?>()
-    val staleData = mutableMapOf<String, Any?>()
-    for (partQuery in partialQueries) {
-        if (partQuery.ttl > 0) {
-            try {
-                val entry = getFromCache(partQuery.cacheKey, partQuery.tags, partQuery.staleIfOffline)
-                if (entry != null) {
-                    if (entry.stale) {
-                        staleData[partQuery.elementKey] = decoder.decode(entry.data)["__gl_v__"]
-                    } else {
-                        responseMap[partQuery.elementKey] = decoder.decode(entry.data)["__gl_v__"]
-                    }
-                }
-            } catch (ignored: Exception) {}
-        }
-    }
-    val remaining = partialQueries.filter { !responseMap.containsKey(it.elementKey) }.toMutableList()
-    if (remaining.isEmpty()) {
-        val wrappedResponse = mapOf("data" to responseMap)
-        return fromJson(wrappedResponse)
-    }
-    val payload = buildPayload(remaining, operationName, directives)
-    try {
-        val responseText = glCallAdapter(payload)
-        return parseToObjectAndCache(responseText, responseMap, fromJson, remaining, captureErrors)
-    } catch (exception: Exception) {
-        responseMap.putAll(staleData)
-        val remainingCount = partialQueries.count { !responseMap.containsKey(it.elementKey) }
-        if (remainingCount > 0) throw RuntimeException(exception)
-        val wrappedResponse = mapOf("data" to responseMap)
-        return fromJson(wrappedResponse)
-    }
-}''';
+    const cacheValue = 'decoder.decode(entry.data)["__gl_v__"]';
+    return codeGenUtils.suspendFun(
+      name: '<T : GraphLinkFullResponse> executeCached',
+      arguments: [
+        'partialQueries: List<GraphLinkPartialQuery>',
+        'operationName: String',
+        'directives: String',
+        'fromJson: (Map<String, Any?>) -> T',
+        'captureErrors: Boolean',
+      ],
+      returnType: 'T',
+      statements: [
+        codeGenUtils.constDecl('responseMap', 'mutableMapOf<String, Any?>()'),
+        codeGenUtils.constDecl('staleData', 'mutableMapOf<String, Any?>()'),
+        codeGenUtils.forEachLoop(
+          variable: 'partQuery',
+          iterable: 'partialQueries',
+          statements: [
+            codeGenUtils.ifStatement(
+              condition: 'partQuery.ttl > 0',
+              ifBlockStatements: [
+                codeGenUtils.tryCatchFinally(
+                  tryStatements: [
+                    codeGenUtils.constDecl('entry', codeGenUtils.callExpression('getFromCache', ['partQuery.cacheKey', 'partQuery.tags', 'partQuery.staleIfOffline'])),
+                    codeGenUtils.ifStatement(
+                      condition: 'entry != null',
+                      ifBlockStatements: [
+                        codeGenUtils.ifStatement(
+                          condition: 'entry.stale',
+                          ifBlockStatements: ['staleData[partQuery.elementKey] = $cacheValue'],
+                          elseBlockStatements: ['responseMap[partQuery.elementKey] = $cacheValue'],
+                        ),
+                      ],
+                    ),
+                  ],
+                  catchVariable: 'ignored',
+                  catchStatements: [],
+                ),
+              ],
+            ),
+          ],
+        ),
+        codeGenUtils.constDecl('remaining', 'partialQueries.filter { !responseMap.containsKey(it.elementKey) }.toMutableList()'),
+        codeGenUtils.ifStatement(
+          condition: 'remaining.isEmpty()',
+          ifBlockStatements: [
+            codeGenUtils.constDecl('wrappedResponse', 'mapOf("data" to responseMap)'),
+            'return fromJson(wrappedResponse)',
+          ],
+        ),
+        codeGenUtils.constDecl('payload', codeGenUtils.callExpression('buildPayload', ['remaining', 'operationName', 'directives'])),
+        codeGenUtils.tryCatchFinally(
+          tryStatements: [
+            codeGenUtils.constDecl('responseText', 'glCallAdapter(payload)'),
+            'return ${codeGenUtils.callExpression('parseToObjectAndCache', ['responseText', 'responseMap', 'fromJson', 'remaining', 'captureErrors'])}',
+          ],
+          catchVariable: 'exception',
+          catchStatements: [
+            'responseMap.putAll(staleData)',
+            codeGenUtils.constDecl('remainingCount', 'partialQueries.count { !responseMap.containsKey(it.elementKey) }'),
+            codeGenUtils.ifStatement(
+              condition: 'remainingCount > 0',
+              ifBlockStatements: ['throw RuntimeException(exception)'],
+            ),
+            codeGenUtils.constDecl('wrappedResponse', 'mapOf("data" to responseMap)'),
+            'return fromJson(wrappedResponse)',
+          ],
+        ),
+      ],
+    );
   }
 
   String _getFromCacheMethod() {
@@ -339,8 +421,8 @@ class KotlinClientSerializer extends GLClientSerializer {
       returnType: 'GraphLinkCacheEntry?',
       arguments: ['key: String', 'tags: List<String>', 'staleIfOffline: Boolean'],
       statements: [
-        'val result = store.get(key) ?: return null',
-        'val entry = GraphLinkCacheEntry.fromJson(decoder.decode(result))',
+        codeGenUtils.constDecl('result', 'store.get(key) ?: return null'),
+        codeGenUtils.constDecl('entry', 'GraphLinkCacheEntry.fromJson(decoder.decode(result))'),
         codeGenUtils.ifStatement(
           condition: 'entry.isExpired()',
           ifBlockStatements: [
@@ -371,16 +453,16 @@ class KotlinClientSerializer extends GLClientSerializer {
           variable: 'tag',
           iterable: 'tags',
           statements: [
-            'val tKey = tagKey(tag)',
-            'val lock = tagLocks[tag] ?: continue',
+            codeGenUtils.constDecl('tKey', 'tagKey(tag)'),
+            codeGenUtils.constDecl('lock', 'tagLocks[tag] ?: continue'),
             'lock.lock()',
             codeGenUtils.tryCatchFinally(
               tryStatements: [
-                'val data = store.get(tKey)',
+                codeGenUtils.constDecl('data', 'store.get(tKey)'),
                 codeGenUtils.ifStatement(
                   condition: 'data != null',
                   ifBlockStatements: [
-                    'val entry = GraphLinkTagEntry.fromJson(decoder.decode(data))',
+                    codeGenUtils.constDecl('entry', 'GraphLinkTagEntry.fromJson(decoder.decode(data))'),
                     codeGenUtils.forEachLoop(
                       variable: 'k',
                       iterable: 'entry.keys',
@@ -408,13 +490,17 @@ class KotlinClientSerializer extends GLClientSerializer {
           variable: 'tag',
           iterable: 'tags',
           statements: [
-            'val tKey = tagKey(tag)',
-            'val lock = tagLocks.getOrPut(tag) { java.util.concurrent.locks.ReentrantLock() }',
+            codeGenUtils.constDecl('tKey', 'tagKey(tag)'),
+            codeGenUtils.constDecl('lock', 'tagLocks.getOrPut(tag) { java.util.concurrent.locks.ReentrantLock() }'),
             'lock.lock()',
             codeGenUtils.tryCatchFinally(
               tryStatements: [
-                'val data = store.get(tKey)',
-                'val entry = if (data != null) GraphLinkTagEntry.fromJson(decoder.decode(data)) else GraphLinkTagEntry()',
+                codeGenUtils.constDecl('data', 'store.get(tKey)'),
+                codeGenUtils.constDecl('entry', codeGenUtils.ternaryOp(
+                  condition: 'data != null',
+                  positiveStatement: 'GraphLinkTagEntry.fromJson(decoder.decode(data))',
+                  negativeStatement: 'GraphLinkTagEntry()',
+                )),
                 'entry.add(key)',
                 'store.set(tKey, encoder.encode(entry.toJson()))',
               ],
@@ -436,13 +522,13 @@ class KotlinClientSerializer extends GLClientSerializer {
           variable: 'tag',
           iterable: 'tags',
           statements: [
-            'val tKey = tagKey(tag)',
-            'val lock = tagLocks.getOrPut(tag) { java.util.concurrent.locks.ReentrantLock() }',
+            codeGenUtils.constDecl('tKey', 'tagKey(tag)'),
+            codeGenUtils.constDecl('lock', 'tagLocks.getOrPut(tag) { java.util.concurrent.locks.ReentrantLock() }'),
             'lock.lock()',
             codeGenUtils.tryCatchFinally(
               tryStatements: [
-                'val data = store.get(tKey) ?: continue',
-                'val entry = GraphLinkTagEntry.fromJson(decoder.decode(data))',
+                codeGenUtils.constDecl('data', 'store.get(tKey) ?: continue'),
+                codeGenUtils.constDecl('entry', 'GraphLinkTagEntry.fromJson(decoder.decode(data))'),
                 'entry.remove(key)',
                 codeGenUtils.ifStatement(
                   condition: 'entry.keys.isEmpty()',
@@ -526,7 +612,7 @@ class KotlinClientSerializer extends GLClientSerializer {
   }
 
   String _superCtorCall(GLQueryType type) =>
-      'GraphLinkResolverBase(adapter, fragmentMap, store, encoder, decoder)';
+      codeGenUtils.callExpression('GraphLinkResolverBase', ['adapter', 'fragmentMap', 'store', 'encoder', 'decoder']);
 
 
   String _buildPayloadMethod() {
@@ -539,19 +625,19 @@ class KotlinClientSerializer extends GLClientSerializer {
         'directives: String',
       ],
       statements: [
-        'val variables = mutableMapOf<String, Any?>()',
+        codeGenUtils.constDecl('variables', 'mutableMapOf<String, Any?>()'),
         codeGenUtils.forEachLoop(
           variable: 'q',
           iterable: 'partQueries',
           statements: ['variables.putAll(q.variables)'],
         ),
-        'val args = mutableSetOf<String>()',
+        codeGenUtils.constDecl('args', 'mutableSetOf<String>()'),
         codeGenUtils.forEachLoop(
           variable: 'q',
           iterable: 'partQueries',
           statements: ['args.addAll(q.argumentDeclarations)'],
         ),
-        'val queryBuilder = StringBuilder("query \$operationName")',
+        codeGenUtils.constDecl('queryBuilder', 'StringBuilder("query \$operationName")'),
         codeGenUtils.ifStatement(
           condition: 'args.isNotEmpty()',
           ifBlockStatements: [
@@ -571,13 +657,13 @@ class KotlinClientSerializer extends GLClientSerializer {
           statements: ['queryBuilder.append(q.query)', 'queryBuilder.append(" ")'],
         ),
         'queryBuilder.append("}")',
-        'val fragmentNames = mutableSetOf<String>()',
+        codeGenUtils.constDecl('fragmentNames', 'mutableSetOf<String>()'),
         codeGenUtils.forEachLoop(
           variable: 'q',
           iterable: 'partQueries',
           statements: ['fragmentNames.addAll(q.fragmentNames)'],
         ),
-        'val fragmentsBuilder = StringBuilder()',
+        codeGenUtils.constDecl('fragmentsBuilder', 'StringBuilder()'),
         codeGenUtils.forEachLoop(
           variable: 'fragName',
           iterable: 'fragmentNames',
@@ -602,12 +688,12 @@ class KotlinClientSerializer extends GLClientSerializer {
         'fragmentNames: Set<String>',
       ],
       statements: [
-        'val buffer = StringBuilder(query)',
+        codeGenUtils.constDecl('buffer', 'StringBuilder(query)'),
         codeGenUtils.forEachLoop(
           variable: 'name',
           iterable: 'fragmentNames',
           statements: [
-            'val frag = fragmentMap[name]',
+            codeGenUtils.constDecl('frag', 'fragmentMap[name]'),
             codeGenUtils.ifStatement(
               condition: 'frag != null',
               ifBlockStatements: [
