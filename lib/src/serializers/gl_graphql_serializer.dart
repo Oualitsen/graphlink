@@ -290,7 +290,7 @@ ${field.name}${serializeArgs(field.arguments.where((e) => !e.skipOnGraphqlSerial
     var token = _escapeDolar(value.token);
     String val = "${value.value}";
     if (escapeDolar) {
-      val = val.replaceFirst("\$", "\\\$");
+      val = val.replaceAll("\$", "\\\$");
     }
     return '${token}: ${val}';
   }

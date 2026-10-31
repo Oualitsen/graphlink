@@ -16,15 +16,35 @@ import 'package:graphlink/src/parser_extensions/gl_expand_grammar_extension.dart
 extension GLGrammarFragmentExtension on GLParser {
   void fillQueryElementArgumentTypes(
       GLQueryElement element, GLQueryDefinition query) {
+    final field = _rootField(element, query);
     for (var arg in element.arguments) {
-      var list = query.arguments.where((a) => a.token == arg.value).toList();
-      if (list.isEmpty) {
+      if (arg.isVariableReference) {
+        var list = query.arguments.where((a) => a.token == arg.value).toList();
+        if (list.isEmpty) {
+          throw ParseException(
+              "Could not find argument ${arg.value} on query ${query.tokenInfo}",
+              info: arg.tokenInfo);
+        }
+        arg.type = list.first.type;
+        continue;
+      }
+      if (field == null) continue;
+      final matches = field.arguments.where((a) => a.token == arg.token).toList();
+      if (matches.isEmpty) {
         throw ParseException(
-            "Could not find argument ${arg.value} on query ${query.tokenInfo}",
+            "Unknown argument '${arg.token}' on field '${field.name.token}'",
             info: arg.tokenInfo);
       }
-      arg.type = list.first.type;
+      final declared = matches.first;
+      arg.type = declared.type;
+      validateConstValue(declared.type, arg.value, arg.tokenInfo,
+          context: "argument '${arg.token}' of '${field.name.token}'");
     }
+  }
+
+  GLField? _rootField(GLQueryElement element, GLQueryDefinition query) {
+    final rootTypeName = schema.getByQueryType(query.type);
+    return getType(element.tokenInfo.ofNewName(rootTypeName)).getFieldByName(element.token);
   }
 
   void fillQueryElementsReturnType() {

@@ -357,6 +357,36 @@ Callers can omit `page` and `sortDesc` entirely and get the schema's declared de
 
 ---
 
+## Literal arguments
+
+An argument does not have to be a variable. When the value is known when you write the query, put it inline:
+
+```graphql title="A fixed lookup"
+query findUser0 {
+  findById(id: "0") { id username email }
+}
+```
+
+The generated method takes no `id` parameter and the literal is sent as written. Literals and variables mix freely:
+
+```graphql
+query activeUsers($limit: Int!) {
+  list(status: ACTIVE, limit: $limit) { id }
+}
+```
+
+GraphLink checks every literal against the argument's declared type when it reads the schema, so a mistake fails at generation time instead of at the server:
+
+- an argument the field does not declare (`findById(idd: "0")`)
+- the wrong kind of value (`limit: "5"` for an `Int`, `id: true` for an `ID`)
+- a value the enum does not declare (`status: BOGUS`); enum values are written without quotes
+- an input object with an unknown field, or without a required one
+- `null` for a non-null argument
+
+Values for custom scalars are not checked, since GraphLink cannot know their shape. The same rules apply to the `= value` defaults above.
+
+---
+
 ## Auto-generated query variable names (v5.0.0+)
 
 Auto-generated operation variable names changed from bare `$<argName>` to `$<fieldName><ArgName>` (with a further type-suffix appended only if the same field+arg name resolves to different types across the schema). This avoids variable collisions across fields and fragments selected in the same auto-generated operation.

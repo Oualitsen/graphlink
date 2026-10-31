@@ -120,7 +120,7 @@ class GLQueryDefinition extends GLToken with GLDirectivesMixin {
     var list = element.arguments;
 
     for (var arg in list) {
-      if ("${arg.value}".startsWith("\$")) {
+      if (arg.isVariableReference) {
         var check = checkValue("${arg.value}");
         if (!check) {
           throw ParseException("Argument ${arg.value} was not declared",

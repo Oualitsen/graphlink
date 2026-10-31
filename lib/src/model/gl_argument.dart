@@ -92,6 +92,11 @@ class GLArgumentValue extends GLToken {
   late final GLType type;
   GLArgumentValue(super.tokenInfo, this.value);
 
+  bool get isVariableReference {
+    final v = value;
+    return v is String && v.startsWith(r'$');
+  }
+
   @override
   String toString() {
     return 'GraphqlArgumentValue{value: $value name: $tokenInfo}';
