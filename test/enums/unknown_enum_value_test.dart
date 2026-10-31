@@ -41,4 +41,9 @@ void main() {
     ).enums['Gender']!;
     expect(gender.unknownValue!.codeName, '${unknownEnumValueName}3');
   });
+
+  test('generator-internal enums never get a fallback', () {
+    final g = parse(tolerant: true);
+    expect(g.enums['GraphLinkAckStatus']!.unknownValue, isNull);
+  });
 }

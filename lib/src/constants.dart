@@ -177,7 +177,7 @@ type GraphLinkSubscriptionMessage implements GraphLinkSubscriptionErrorMessageBa
   payload: GraphLinkSubscriptionPayload
 }
 
-enum GraphLinkAckStatus {none progress acknoledged }
+enum GraphLinkAckStatus ${glInternal} {none progress acknoledged }
 
 ''';
 

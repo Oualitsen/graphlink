@@ -463,7 +463,7 @@ class GLParser {
     sanitizeTypeNames();
     assignCodeNames();
     if (tolerantEnums) {
-      for (final e in enums.values) {
+      for (final e in enums.values.where((e) => !e.hasDirective(glInternal))) {
         e.addUnknownValue();
       }
     }
