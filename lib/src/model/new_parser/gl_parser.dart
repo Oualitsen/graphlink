@@ -227,6 +227,7 @@ class GLParser {
   bool schemaInitialized = false;
   final bool generateAllFieldsFragments;
   final bool nullableFieldsRequired;
+  final bool tolerantEnums;
   final bool autoGenerateQueries;
   final Map<GLQueryType, List<String>>? autoGenerateQueriesFor;
   final String? defaultAlias;
@@ -317,6 +318,7 @@ class GLParser {
     Set<String>? parameterReservedWords,
     this.generateAllFieldsFragments = false,
     this.nullableFieldsRequired = false,
+    this.tolerantEnums = false,
     this.autoGenerateQueries = false,
     this.autoGenerateQueriesFor,
     this.operationNameAsParameter = false,
@@ -460,6 +462,11 @@ class GLParser {
     normalizeIdentifiers();
     sanitizeTypeNames();
     assignCodeNames();
+    if (tolerantEnums) {
+      for (final e in enums.values.where((e) => !e.hasDirective(glInternal))) {
+        e.addUnknownValue();
+      }
+    }
   }
 
   void addSchemaMapping(GLSchemaMapping mapping) {

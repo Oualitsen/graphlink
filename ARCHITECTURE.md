@@ -312,10 +312,10 @@ pipeline:
 
 | Directory | What's hand-written (trusted) | What's generated (under test) | Validates |
 |---|---|---|---|
-| `integration_tests/` | Spring Boot server (`spring_server/`, `spring_upload_server/`) | Clients for Dart/Java/TS/Kotlin (`*_client_tests*/`) | **Generated CLIENT** code against a real server |
+| `integration_tests/` | Spring Boot server (`real/spring_server/`, `real/spring_upload_server/`) | Clients for Dart/Java/TS/Kotlin/Swift (`mock/*_client_tests/`, `real/*_client_tests_real/`) | **Generated CLIENT** code against a real server |
 | `server_integration_tests/` | Generated client harnesses (`clients/`) | Generated server targets (`servers/`) | **Generated SERVER** code against every client |
 
-In `integration_tests/`, the `_real` suites (`dart_client_tests_real/`, etc.) run the
+In `integration_tests/`, the `real/` suites (`real/dart_client_tests_real/`, etc.) run the
 generated client against the actual running Spring Boot JAR — this is where most
 cross-language parity bugs (fragment argument propagation, query variable scoping, etc.)
 have been caught.

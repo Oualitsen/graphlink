@@ -62,6 +62,7 @@ abstract class ClientLanguageConfig {
   bool get operationNameAsParameter => false;
   bool get immutableTypeFields => true;
   bool get captureErrors => false;
+  bool get strictEnums => false;
   String? get defaultAlias => null;
   AutoGenerateQueriesFor? get autoGenerateQueriesFor => null;
 
@@ -464,6 +465,7 @@ class DartClientConfig extends ClientLanguageConfig {
   @override final bool operationNameAsParameter;
   @override final bool immutableTypeFields;
   @override final bool captureErrors;
+  @override final bool strictEnums;
   @override final String? defaultAlias;
   @override final int? autoGenerateQueriesArgumentLimit;
   @override final int? maxFragmentBodySize;
@@ -484,6 +486,7 @@ class DartClientConfig extends ClientLanguageConfig {
     this.autoGenerateQueriesDefaultAlias,
     required this.operationNameAsParameter,
     this.captureErrors = false,
+    this.strictEnums = false,
     this.defaultAlias,
     this.packageName,
     this.appLocalizationsImport,
@@ -505,6 +508,7 @@ class DartClientConfig extends ClientLanguageConfig {
       autoGenerateQueriesDefaultAlias: json['autoGenerateQueriesDefaultAlias'] as String?,
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
       captureErrors: (json['captureErrors'] as bool?) ?? false,
+      strictEnums: (json['strictEnums'] as bool?) ?? false,
       defaultAlias: json['defaultAlias'] as String?,
       packageName: json['packageName'] as String?,
       appLocalizationsImport: json['appLocalizationsImport'] as String?,
@@ -534,6 +538,7 @@ class JavaClientConfig extends ClientLanguageConfig {
   @override final bool operationNameAsParameter;
   @override final bool immutableTypeFields;
   @override final bool captureErrors;
+  @override final bool strictEnums;
   @override final String? defaultAlias;
   @override final int? autoGenerateQueriesArgumentLimit;
   @override final int? maxFragmentBodySize;
@@ -556,6 +561,7 @@ class JavaClientConfig extends ClientLanguageConfig {
     this.autoGenerateQueries = true,
     this.operationNameAsParameter = false,
     this.captureErrors = false,
+    this.strictEnums = false,
     this.immutableInputFields = true,
     this.immutableTypeFields = true,
     this.inputAsRecord = false,
@@ -579,6 +585,7 @@ class JavaClientConfig extends ClientLanguageConfig {
       autoGenerateQueries: (json['autoGenerateQueries'] as bool?) ?? true,
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
       captureErrors: (json['captureErrors'] as bool?) ?? false,
+      strictEnums: (json['strictEnums'] as bool?) ?? false,
       immutableInputFields: (json['immutableInputFields'] as bool?) ?? true,
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
       inputAsRecord: (json['inputAsRecord'] as bool?) ?? false,
@@ -616,6 +623,7 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
   @override final bool operationNameAsParameter;
   @override final bool immutableTypeFields;
   @override final bool captureErrors;
+  @override final bool strictEnums;
   @override final String? defaultAlias;
   @override final int? autoGenerateQueriesArgumentLimit;
   @override final int? maxFragmentBodySize;
@@ -632,6 +640,7 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
     this.operationNameAsParameter = false,
     this.immutableTypeFields = true,
     this.captureErrors = false,
+    this.strictEnums = false,
     this.optionalNullableInputFields = true,
     this.generateDefaultWsAdapter = true,
     this.observables = false,
@@ -649,6 +658,7 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
       captureErrors: (json['captureErrors'] as bool?) ?? false,
+      strictEnums: (json['strictEnums'] as bool?) ?? false,
       optionalNullableInputFields: (json['optionalNullableInputFields'] as bool?) ?? true,
       generateDefaultWsAdapter: (json['generateDefaultWsAdapter'] as bool?) ?? true,
       observables: (json['observables'] as bool?) ?? false,
@@ -673,6 +683,7 @@ class KotlinClientConfig extends ClientLanguageConfig {
   @override final bool operationNameAsParameter;
   @override final bool immutableTypeFields;
   @override final bool captureErrors;
+  @override final bool strictEnums;
   @override final String? defaultAlias;
   @override final int? autoGenerateQueriesArgumentLimit;
 
@@ -690,6 +701,7 @@ class KotlinClientConfig extends ClientLanguageConfig {
     this.autoGenerateQueries = true,
     this.operationNameAsParameter = false,
     this.captureErrors = false,
+    this.strictEnums = false,
     this.immutableTypeFields = true,
     this.inputAsDataClass = true,
     this.typeAsDataClass = true,
@@ -708,6 +720,7 @@ class KotlinClientConfig extends ClientLanguageConfig {
       autoGenerateQueries: (json['autoGenerateQueries'] as bool?) ?? true,
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
       captureErrors: (json['captureErrors'] as bool?) ?? false,
+      strictEnums: (json['strictEnums'] as bool?) ?? false,
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
       inputAsDataClass: (json['inputAsDataClass'] as bool?) ?? true,
       typeAsDataClass: (json['typeAsDataClass'] as bool?) ?? true,
@@ -732,6 +745,7 @@ class SwiftClientConfig extends ClientLanguageConfig {
   @override final bool operationNameAsParameter;
   @override final bool immutableTypeFields;
   @override final bool captureErrors;
+  @override final bool strictEnums;
   @override final String? defaultAlias;
   @override final int? autoGenerateQueriesArgumentLimit;
   @override final int? maxFragmentBodySize;
@@ -749,6 +763,7 @@ class SwiftClientConfig extends ClientLanguageConfig {
     this.autoGenerateQueries = true,
     this.operationNameAsParameter = false,
     this.captureErrors = false,
+    this.strictEnums = false,
     this.immutableTypeFields = true,
     this.wsAdapter = SwiftWsAdapter.urlsession,
     this.defaultAlias,
@@ -765,6 +780,7 @@ class SwiftClientConfig extends ClientLanguageConfig {
       autoGenerateQueries: (json['autoGenerateQueries'] as bool?) ?? true,
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
       captureErrors: (json['captureErrors'] as bool?) ?? false,
+      strictEnums: (json['strictEnums'] as bool?) ?? false,
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
       defaultAlias: json['defaultAlias'] as String?,
       wsAdapter: SwiftWsAdapter.values.firstWhere(
