@@ -96,7 +96,8 @@ class SwiftSerializer extends GLSerializer {
 
   @override
   String doSerializeEnumDefinition(GLEnumDefinition def) {
-    final cases = def.values.map(doSerializeEnumValue).toList();
+    final cases = def.allValues.map(doSerializeEnumValue).toList();
+    final unknown = def.unknownValue;
 
     final toJson = 'public ${codeGenUtils.method(
       returnType: 'String',
@@ -107,7 +108,11 @@ class SwiftSerializer extends GLSerializer {
       returnType: def.codeName,
       methodName: 'fromJson',
       arguments: ['_ value: String'],
-      statements: ['return ${def.codeName}(rawValue: value)!'],
+      statements: [
+        unknown != null
+            ? 'return ${def.codeName}(rawValue: value) ?? .${unknown.codeName}'
+            : 'return ${def.codeName}(rawValue: value)!',
+      ],
     )}';
 
     return codeGenUtils.enumDecl(

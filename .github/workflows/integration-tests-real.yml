@@ -14,15 +14,15 @@ jobs:
           java-version: '21'
       - name: Build servers
         run: |
-          cd integration_tests/spring_server && ./gradlew build -x test
+          cd integration_tests/real/spring_server && ./gradlew build -x test
           cd ../spring_upload_server && ./gradlew build -x test
       - uses: actions/upload-artifact@v4
         with:
           name: spring-server-jars
           retention-days: 1
           path: |
-            integration_tests/spring_server/build/libs/*.jar
-            integration_tests/spring_upload_server/build/libs/*.jar
+            integration_tests/real/spring_server/build/libs/*.jar
+            integration_tests/real/spring_upload_server/build/libs/*.jar
 
   # Generate every integration_tests client exactly once, then hand the result
   # to the client jobs below via artifact. Runs in parallel with build-spring-servers.
@@ -46,7 +46,7 @@ jobs:
     needs: [build-spring-servers, generate]
     defaults:
       run:
-        working-directory: integration_tests/dart_client_tests_real
+        working-directory: integration_tests/real/dart_client_tests_real
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
@@ -61,7 +61,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: spring-server-jars
-          path: integration_tests
+          path: integration_tests/real
       - run: make ci-no-generate
 
   typescript-real:
@@ -69,7 +69,7 @@ jobs:
     needs: [build-spring-servers, generate]
     defaults:
       run:
-        working-directory: integration_tests/typescript_client_tests_real
+        working-directory: integration_tests/real/typescript_client_tests_real
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
@@ -87,7 +87,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: spring-server-jars
-          path: integration_tests
+          path: integration_tests/real
       - run: make install
       - run: make ci-no-generate
 
@@ -96,7 +96,7 @@ jobs:
     needs: [build-spring-servers, generate]
     defaults:
       run:
-        working-directory: integration_tests/java_client_tests_real
+        working-directory: integration_tests/real/java_client_tests_real
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
@@ -111,7 +111,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: spring-server-jars
-          path: integration_tests
+          path: integration_tests/real
       - run: make ci-no-generate
 
   kotlin-real:
@@ -119,7 +119,7 @@ jobs:
     needs: [build-spring-servers, generate]
     defaults:
       run:
-        working-directory: integration_tests/kotlin_client_tests_real
+        working-directory: integration_tests/real/kotlin_client_tests_real
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
@@ -134,7 +134,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: spring-server-jars
-          path: integration_tests
+          path: integration_tests/real
       - run: make ci-no-generate
 
   # macos-latest, not ubuntu-latest — see ci.yml's swift-client job for why.
@@ -143,7 +143,7 @@ jobs:
     needs: [build-spring-servers, generate]
     defaults:
       run:
-        working-directory: integration_tests/swift_client_tests_real
+        working-directory: integration_tests/real/swift_client_tests_real
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
@@ -158,7 +158,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: spring-server-jars
-          path: integration_tests
+          path: integration_tests/real
       - run: make ci-no-generate
 
   integration-tests-typescript-server-real:

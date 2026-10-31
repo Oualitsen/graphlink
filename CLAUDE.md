@@ -278,11 +278,12 @@ stop and ask the user to run the tests manually instead.
 Two top-level directories outside `test/`, testing opposite ends of the pipeline —
 don't confuse them:
 
-- **`integration_tests/`** — a hand-written, trusted Spring Boot server
-  (`spring_server/`, `spring_upload_server/`) paired with GraphLink-**generated clients**
-  for Dart/Java/TS/Kotlin (`*_client_tests*/`). The `_real` suites run the generated
-  client against the real running Spring Boot JAR. This validates **generated client
-  code** — most cross-language parity bugs have been caught here.
+- **`integration_tests/`** — GraphLink-**generated clients** for Dart/Java/TS/Kotlin/Swift,
+  split in two groups. `mock/` (`*_client_tests/`, schema in `schema_mock/`) runs them
+  against canned-response adapters, no server. `real/` (`*_client_tests_real/`, schema in
+  `schema_real/`) runs them against a hand-written, trusted Spring Boot server
+  (`real/spring_server/`, `real/spring_upload_server/`) JAR. This validates **generated
+  client code** — most cross-language parity bugs have been caught here.
 - **`server_integration_tests/`** — a **client x server matrix**: every generated
   server target (`servers/`) driven by every generated client harness (`clients/`).
   `servers/` holds one subdirectory per generated server target (`typescript_server`,

@@ -13,15 +13,9 @@ Future<void> main(List<String> args) async {
     return;
   }
 
-  final dirs = Directory.current
-      .listSync()
-      .whereType<Directory>()
-      .map((d) => d.absolute.path)
-      .toList()
-    ..sort();
+  final dirs = _configDirs(Directory.current, depth: 2)..sort();
 
   for (final dirPath in dirs) {
-    if (!File('$dirPath/config.json').existsSync()) continue;
     print('==> $dirPath');
     // Each dir runs in its own isolate: graphlink's generator caches
     // (lastGeneratedFiles, output hash cache) are top-level state that would
@@ -31,4 +25,19 @@ Future<void> main(List<String> args) async {
       await graphlink.main(['--config', 'config.json']);
     });
   }
+}
+
+// Finds every directory holding a config.json, looking at most [depth] levels
+// below [root] (so running from integration_tests/ covers mock/* and real/*,
+// and running from mock/ or real/ covers just that group).
+List<String> _configDirs(Directory root, {required int depth}) {
+  final found = <String>[];
+  for (final dir in root.listSync().whereType<Directory>()) {
+    if (File('${dir.path}/config.json').existsSync()) {
+      found.add(dir.absolute.path);
+    } else if (depth > 1) {
+      found.addAll(_configDirs(dir, depth: depth - 1));
+    }
+  }
+  return found;
 }

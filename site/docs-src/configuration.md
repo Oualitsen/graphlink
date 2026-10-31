@@ -171,6 +171,7 @@ Used when `mode` is `"client"` and you want Dart/Flutter output.
 | `immutableInputFields` | `boolean` | `true` | Input class fields are `final`. Recommended. |
 | `immutableTypeFields` | `boolean` | `true` | Response type class fields are `final`. Recommended for client-side code. |
 | `captureErrors` | `boolean` | `false` | When `true`, applies `@glCaptureErrors` behaviour to every query and mutation. Each method returns a `{OperationName}FullResponse` holding nullable `data` and nullable `errors` instead of throwing on GraphQL errors. Equivalent to annotating every query and mutation field with `@glCaptureErrors` in the schema. |
+| `strictEnums` | `boolean` | `false` | When `false`, every generated enum gets an extra `unknownValue__` member, and a value the schema did not declare (for example one added to the server after this client shipped) decodes to it instead of throwing. Encoding it back to the server throws. Set to `true` to throw on unknown values instead. |
 | `appLocalizationsImport` | `string` \| `null` | `null` | Import path for an `AppLocalizations` class injected into generated Flutter UI widgets. Only relevant when `flutter` is configured. |
 | `flutter` | `object` | — | Enables Flutter widget generation and sets project-wide UI defaults. Omit the key entirely to disable Flutter generation. See [`clientConfig.dart.flutter`](#clientconfigdartflutter) for the full sub-key reference. |
 
@@ -318,6 +319,7 @@ Used when `mode` is `"client"` and you want a Java client.
 | `asyncStyle` | `"blocking"` \| `"reactor"` \| `"rxjava3"` \| `"mutiny"` | `"blocking"` | Wraps query/mutation results in the library's deferred-single type (`Mono`/`Single`/`Uni`) and subscriptions in the deferred-many type (`Flux`/`Observable`/`Multi`). `"blocking"` keeps the pre-v5.0.0 direct-return / listener-callback client. See [Reactive client](java-client.md#reactive-client-v500). |
 | `reactiveHttpClient` | `"jdk"` \| `"webclient"` | `"jdk"` | Transport used by the default adapter under a non-blocking `asyncStyle`. `"jdk"` uses `HttpClient.sendAsync` (works with every `asyncStyle`). `"webclient"` uses Spring `WebClient` (`asyncStyle: "reactor"` only). |
 | `captureErrors` | `boolean` | `false` | When `true`, applies `@glCaptureErrors` behaviour to every query and mutation. Each method returns a `{OperationName}FullResponse` holding nullable `data` and nullable `errors` instead of throwing on GraphQL errors. Equivalent to annotating every query and mutation field with `@glCaptureErrors` in the schema. |
+| `strictEnums` | `boolean` | `false` | When `false`, every generated enum gets an extra `unknownValue__` member, and a value the schema did not declare (for example one added to the server after this client shipped) decodes to it instead of throwing. Encoding it back to the server throws. Set to `true` to throw on unknown values instead. |
 
 ---
 
@@ -384,6 +386,7 @@ Used when `mode` is `"client"` and you want TypeScript output.
 | `optionalNullableInputFields` | `boolean` | `true` | When `true`, nullable fields in generated input interfaces use `field?: T \| null` (TypeScript optional property). When `false`, they use `field: T \| null` (required but nullable). |
 | `immutableTypeFields` | `boolean` | `true` | When `true`, generated type interfaces use `readonly` on all fields. |
 | `captureErrors` | `boolean` | `false` | When `true`, applies `@glCaptureErrors` behaviour to every query and mutation. Each method returns a `{OperationName}FullResponse` holding optional `data` and optional `errors` instead of throwing on GraphQL errors. Equivalent to annotating every query and mutation field with `@glCaptureErrors` in the schema. |
+| `strictEnums` | `boolean` | `false` | When `false`, every generated enum gets an extra `unknownValue__` member, and a value the schema did not declare (for example one added to the server after this client shipped) decodes to it instead of throwing. Encoding it back to the server throws. Set to `true` to throw on unknown values instead. |
 
 ---
 
@@ -451,6 +454,7 @@ Used when `mode` is `"client"` and you want Kotlin output.
 | `immutableTypeFields` | `boolean` | `true` | Generate `val` (immutable) fields instead of `var`. |
 | `operationNameAsParameter` | `boolean` | `false` | When `true`, appends the operation name as a `?operationName=` query parameter in the HTTP request URL. |
 | `captureErrors` | `boolean` | `false` | When `true`, applies `@glCaptureErrors` to every query and mutation. Each method returns a `{OperationName}FullResponse` with `data` and `errors` instead of throwing. |
+| `strictEnums` | `boolean` | `false` | When `false`, every generated enum gets an extra `unknownValue__` member, and a value the schema did not declare (for example one added to the server after this client shipped) decodes to it instead of throwing. Encoding it back to the server throws. Set to `true` to throw on unknown values instead. |
 | `wsAdapter` | `"okhttp"` \| `"none"` | `"okhttp"` | WebSocket adapter to generate. `"okhttp"` emits `DefaultGraphLinkWebSocketAdapter` using OkHttp; `"none"` emits only the `GraphLinkWebSocketAdapter` interface. |
 | `defaultAlias` | `string?` | `null` | Default alias applied to all generated query fields globally. |
 
@@ -514,6 +518,7 @@ Used when `mode` is `"client"` and you want Swift output. See the [Swift Client]
 | `immutableTypeFields` | `boolean` | `true` | Generate `let` (immutable) fields instead of `var`. |
 | `operationNameAsParameter` | `boolean` | `false` | When `true`, appends the operation name as a `?operationName=` query parameter in the HTTP request URL. |
 | `captureErrors` | `boolean` | `false` | When `true`, applies `@glCaptureErrors` to every query and mutation. Each method returns a `{OperationName}FullResponse` with optional `data` and optional `errors` instead of throwing. |
+| `strictEnums` | `boolean` | `false` | When `false`, every generated enum gets an extra `unknownValue__` member, and a value the schema did not declare (for example one added to the server after this client shipped) decodes to it instead of throwing. Encoding it back to the server sends the literal string `unknownValue__` (Swift `toJson()` cannot throw). Set to `true` to throw on unknown values instead. |
 | `wsAdapter` | `"urlsession"` \| `"none"` | `"urlsession"` | WebSocket adapter to generate. `"urlsession"` emits `DefaultGraphLinkURLSessionWebSocketAdapter` built on `URLSessionWebSocketTask` (Foundation, no extra dependency); `"none"` emits only the `GraphLinkClientAdapter`/WebSocket typealiases. There is no HTTP-adapter enum for Swift — `URLSession` is part of Foundation on every Apple platform plus Linux, so there's nothing to choose between. |
 | `defaultAlias` | `string?` | `null` | Default alias applied to all generated query fields globally. |
 
