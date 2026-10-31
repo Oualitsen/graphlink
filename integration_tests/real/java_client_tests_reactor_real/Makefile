@@ -10,6 +10,7 @@ clean:
 
 generate: clean
 	dart pub get
+	dart run ../generate_reactor_tests.dart
 	dart run ../../generate.dart
 
 start-server:
