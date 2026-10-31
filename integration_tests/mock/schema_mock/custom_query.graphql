@@ -1,0 +1,19 @@
+query findFirstUser {
+  findUser(id: "user-1") { id name email status }
+}
+
+query listActiveUsers {
+  listUsersByStatus(status: ACTIVE) { id name status }
+}
+
+query searchAlice {
+  searchUsers(name: "Alice", limit: 5) { id name }
+}
+
+query searchWithFixedLimit($name: String!) {
+  searchUsers(name: $name, limit: 10) { id name }
+}
+
+query searchPrice {
+  searchUsers(name: "cost $5 or $6", limit: 1) { id name }
+}

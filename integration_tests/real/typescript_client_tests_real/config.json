@@ -1,5 +1,5 @@
 {
-  "schemaPaths": ["../schema_real/schema.gql"],
+  "schemaPaths": ["../schema_real/schema.gql", "../schema_real/custom_query.graphql"],
   "mode": "client",
   "typeMappings": {
     "ID":      "string",

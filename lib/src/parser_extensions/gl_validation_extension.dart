@@ -707,14 +707,14 @@ extension GLValidationExtension on GLParser {
     for (final input in inputs.values) {
       for (final field in input.fields) {
         if (field.initialValue != null) {
-          _validateDefaultValue(field.type, field.initialValue, field.name);
+          validateConstValue(field.type, field.initialValue, field.name);
         }
       }
     }
     for (final query in queries.values) {
       for (final arg in query.arguments) {
         if (arg.defaultValue != null) {
-          _validateDefaultValue(arg.type, arg.defaultValue!.value, arg.tokenInfo);
+          validateConstValue(arg.type, arg.defaultValue!.value, arg.tokenInfo);
         }
       }
     }
@@ -722,42 +722,100 @@ extension GLValidationExtension on GLParser {
       for (final field in typeDef.fields) {
         for (final arg in field.arguments) {
           if (arg.defaultValue != null) {
-            _validateDefaultValue(arg.type, arg.defaultValue!.value, arg.tokenInfo);
+            validateConstValue(arg.type, arg.defaultValue!.value, arg.tokenInfo);
           }
         }
       }
     }
   }
 
-  void _validateDefaultValue(GLType type, Object? value, TokenInfo info) {
+  static const _builtInScalars = {'String', 'ID', 'Int', 'Long', 'Float', 'Boolean'};
+
+  void validateConstValue(GLType type, Object? value, TokenInfo info,
+      {String context = 'default value'}) {
     if (value == null) {
       if (!type.nullable) {
         throw ParseException(
-            "Default value null is not valid for non-null type '${type.token}'",
+            "${_capitalized(context)} null is not valid for non-null type '${type.token}'",
             info: info);
       }
       return;
     }
-    if (value is List) {
-      if (type is GLListType) {
-        for (final item in value) {
-          _validateDefaultValue(type.inlineType, item, info);
-        }
+    if (type is GLListType) {
+      final items = value is List ? value : [value];
+      for (final item in items) {
+        validateConstValue(type.inlineType, item, info, context: context);
       }
       return;
     }
-    if (value is Map) {
-      final inputDef = inputs[type.token];
-      if (inputDef == null) return;
-      for (final entry in value.entries) {
-        final field = inputDef.getFieldByName(entry.key);
-        if (field == null) {
-          throw ParseException(
-              "Unknown field '${entry.key}' in default value for input type '${type.token}'",
-              info: info);
-        }
-        _validateDefaultValue(field.type, entry.value, field.name);
+    final token = type.token;
+    if (_builtInScalars.contains(token)) {
+      if (!_isValidBuiltInScalar(token, value)) _throwInvalid(context, value, "type '$token'", info);
+      return;
+    }
+    final enumDef = enums[token];
+    if (enumDef != null) {
+      _validateEnumValue(enumDef, value, context, info);
+      return;
+    }
+    final inputDef = inputs[token];
+    if (inputDef != null) {
+      if (value is! Map) _throwInvalid(context, value, "input type '$token'", info);
+      _validateInputObject(inputDef, value, context, info);
+    }
+  }
+
+  bool _isValidBuiltInScalar(String scalar, Object value) {
+    final isQuoted = value is String && value.length >= 2 && value.startsWith('"') && value.endsWith('"');
+    switch (scalar) {
+      case 'String':
+        return isQuoted;
+      case 'ID':
+        return isQuoted || value is int;
+      case 'Int':
+      case 'Long':
+        return value is int;
+      case 'Float':
+        return value is num;
+      case 'Boolean':
+        return value is bool;
+      default:
+        return true;
+    }
+  }
+
+  void _validateEnumValue(GLEnumDefinition def, Object value, String context, TokenInfo info) {
+    final isBareName = value is String && !value.startsWith('"');
+    if (!isBareName) {
+      _throwInvalid(context, value, "enum type '${def.token}' (enum values are written without quotes)", info);
+    }
+    if (!def.values.any((v) => v.value.token == value)) {
+      throw ParseException("${_capitalized(context)} $value is not a value of enum '${def.token}'", info: info);
+    }
+  }
+
+  void _validateInputObject(GLInputDefinition def, Map value, String context, TokenInfo info) {
+    for (final entry in value.entries) {
+      final field = def.getFieldByName(entry.key);
+      if (field == null) {
+        throw ParseException(
+            "Unknown field '${entry.key}' in $context for input type '${def.token}'",
+            info: info);
+      }
+      validateConstValue(field.type, entry.value, field.name, context: context);
+    }
+    for (final field in def.fields) {
+      if (!field.type.nullable && field.initialValue == null && !value.containsKey(field.name.token)) {
+        throw ParseException(
+            "Missing required field '${field.name.token}' in $context for input type '${def.token}'",
+            info: info);
       }
     }
+  }
+
+  String _capitalized(String text) => text[0].toUpperCase() + text.substring(1);
+
+  Never _throwInvalid(String context, Object value, String expected, TokenInfo info) {
+    throw ParseException("${_capitalized(context)} $value is not valid for $expected", info: info);
   }
 }
