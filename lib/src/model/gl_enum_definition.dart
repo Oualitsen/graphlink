@@ -7,6 +7,8 @@ import 'package:graphlink/src/model/token_info.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/naming_convention.dart';
 
+const unknownEnumValueName = 'unknownValue__';
+
 class GLEnumDefinition extends GLExtensibleToken with GLDirectivesMixin, CodeNameMixin {
   @override
   String get wireName => token;
@@ -28,6 +30,28 @@ class GLEnumDefinition extends GLExtensibleToken with GLDirectivesMixin, CodeNam
   }
 
   List<GLEnumValue> get values => _values.values.toList();
+
+  GLEnumValue? _unknownValue;
+
+  /// Fallback member for wire values this enum does not declare. Kept out of
+  /// [values] so only serializers that opt in ever see it.
+  GLEnumValue? get unknownValue => _unknownValue;
+
+  List<GLEnumValue> get allValues => [...values, if (_unknownValue != null) _unknownValue!];
+
+  /// Must run after code names are final so the sentinel cannot collide with them.
+  void addUnknownValue() {
+    if (_unknownValue != null) return;
+    final taken = {for (final v in _values.values) v.codeName};
+    var name = unknownEnumValueName;
+    var counter = 2;
+    while (taken.contains(name) || _values.containsKey(name)) {
+      name = '$unknownEnumValueName$counter';
+      counter++;
+    }
+    _unknownValue = GLEnumValue(
+        value: TokenInfo.ofString(name), documentation: null, directives: []);
+  }
 
   /// Applies [convention] to every enum value, normalizing identifier casing.
   ///

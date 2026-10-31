@@ -42,9 +42,10 @@ class DartSerializer extends GLSerializer {
   @override
   String doSerializeEnumDefinition(GLEnumDefinition def) {
     final decorators = serializeDecorators(def.getDirectives());
+    final unknown = def.unknownValue;
     final source = codeGenUtils.createEnum(
       enumName: def.codeName,
-      enumValues: def.values.map(doSerializeEnumValue).toList(),
+      enumValues: def.allValues.map(doSerializeEnumValue).toList(),
       methods: [
         codeGenUtils.createMethod(
           methodName: "toJson",
@@ -56,6 +57,10 @@ class DartSerializer extends GLSerializer {
               expression: "this",
               cases: [
                 ...def.values.map((val) => DartCaseStatement(caseValue: val.codeName, statement: 'return "${val.token}";')),
+                if (unknown != null)
+                  DartCaseStatement(
+                      caseValue: unknown.codeName,
+                      statement: 'throw StateError("${def.codeName}.${unknown.codeName} cannot be serialized");'),
               ],
             ),
           ],
@@ -72,7 +77,11 @@ class DartSerializer extends GLSerializer {
                 ...def.values.map((val) => DartCaseStatement(
                     caseValue: '"${val.token}"', statement: 'return ${def.codeName}.${val.codeName};')),
               ],
-              defaultStatements: ['throw ArgumentError("Invalid ${def.codeName}: \$value");'],
+              defaultStatements: [
+                unknown != null
+                    ? 'return ${def.codeName}.${unknown.codeName};'
+                    : 'throw ArgumentError("Invalid ${def.codeName}: \$value");',
+              ],
             ),
           ],
         ),

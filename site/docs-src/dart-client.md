@@ -393,6 +393,38 @@ By default, nullable schema fields generate optional constructor parameters (`th
 
 With the default `false`, a nullable field like `ownerId: ID` generates `this.ownerId` (optional). With `true`, it generates `required this.ownerId` — you must always pass it explicitly, even as `null`.
 
+## Unknown enum values
+
+A server can add an enum value after your app has shipped (`enum Gender { male female }` becomes `{ male female unspecified }`). A strict client would throw while decoding the response, failing the whole query. By default, GraphLink adds a fallback member `unknownValue__` to every generated enum, and `fromJson` returns it for any value the schema did not declare:
+
+```dart
+final status = UserStatus.fromJson('BANNED'); // UserStatus.unknownValue__
+```
+
+The fallback is for reading only: `toJson()` on it throws, so it is never sent back to the server. Handle it in your own `switch` statements.
+
+To get the old behaviour, where an undeclared value throws `ArgumentError`, set `"strictEnums": true`:
+
+=== "JSON"
+
+    ```json title="glink.json"
+    {
+      "clientConfig": {
+        "dart": { "strictEnums": true }
+      }
+    }
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml"
+    clientConfig:
+      dart:
+        strictEnums: true
+    ```
+
+Server mode is always strict: an undeclared enum value in a request is an invalid input.
+
 ## File uploads
 
 When your schema uses the built-in `Upload` scalar, GraphLink generates a `GLUpload` type and produces multipart-aware upload logic in the HTTP adapter:

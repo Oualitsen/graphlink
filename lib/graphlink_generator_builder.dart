@@ -21,6 +21,7 @@ const _knownOptions = {
   'operationNameAsParameter',
   'nullableFieldsRequired',
   'captureErrors',
+  'strictEnums',
   'immutableInputFields',
   'immutableTypeFields',
   'flutter',
@@ -75,6 +76,7 @@ const _knownOptions = {
 /// | `operationNameAsParameter` | `bool` | `false` |
 /// | `nullableFieldsRequired` | `bool` | `false` |
 /// | `captureErrors` | `bool` | `false` |
+/// | `strictEnums` | `bool` | `false` |
 /// | `immutableInputFields` | `bool` | `true` |
 /// | `immutableTypeFields` | `bool` | `true` |
 /// | `flutter` | `map` | `null` |
@@ -167,6 +169,7 @@ class GraphlinkGeneratorBuilder implements Builder {
       operationNameAsParameter: b('operationNameAsParameter', false),
       nullableFieldsRequired: b('nullableFieldsRequired', false),
       captureErrors: b('captureErrors', false),
+      strictEnums: b('strictEnums', false),
       immutableInputFields: b('immutableInputFields', true),
       immutableTypeFields: b('immutableTypeFields', true),
       flutter: options.config['flutter'] is Map

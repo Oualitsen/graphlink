@@ -103,15 +103,23 @@ class KotlinSerializer extends GLSerializer {
 
   @override
   String doSerializeEnumDefinition(GLEnumDefinition def) {
-    final values = def.values.map(doSerializeEnumValue).toList();
+    final values = def.allValues.map(doSerializeEnumValue).toList();
+    final unknown = def.unknownValue;
     final body = <String>[];
 
     final whenToJson = codeGenUtils.switchStatement(
       expression: 'this',
-      cases: def.values.map((v) => KotlinWhenBranch(
-        caseValue: v.codeName,
-        statement: '"${v.value.token}"',
-      )).toList(),
+      cases: [
+        ...def.values.map((v) => KotlinWhenBranch(
+          caseValue: v.codeName,
+          statement: '"${v.value.token}"',
+        )),
+        if (unknown != null)
+          KotlinWhenBranch(
+            caseValue: unknown.codeName,
+            statement: 'throw IllegalArgumentException("${def.codeName}.${unknown.codeName} cannot be serialized")',
+          ),
+      ],
     );
     final whenFromJson = codeGenUtils.switchStatement(
       expression: 'value',
@@ -122,7 +130,9 @@ class KotlinSerializer extends GLSerializer {
         )),
         KotlinWhenBranch(
           caseValue: 'else',
-          statement: 'throw IllegalArgumentException("Invalid ${def.codeName}: \$value")',
+          statement: unknown != null
+              ? '${def.codeName}.${unknown.codeName}'
+              : 'throw IllegalArgumentException("Invalid ${def.codeName}: \$value")',
         ),
       ],
     );

@@ -86,6 +86,10 @@ class TypeScriptSerializer extends GLSerializer {
         entries.add('$codeName = \'$wireName\',');
       }
     }
+    final unknown = def.unknownValue;
+    if (unknown != null) {
+      entries.add('${unknown.codeName} = \'${unknown.value.token}\',');
+    }
     final buf = StringBuffer();
     buf.write('export enum ${def.codeName} ');
     buf.write(codeGenUtils.block(entries));
@@ -358,16 +362,25 @@ class TypeScriptSerializer extends GLSerializer {
   // ── JSON serialization helpers ─────────────────────────────────────────────
 
   String _generateEnumToJson(GLEnumDefinition def) {
+    final unknown = def.unknownValue;
     final func = codeGenUtils.createMethod(
       methodName: 'toJson',
       arguments: ['value: ${def.codeName}'],
       returnType: 'string',
-      statements: ['return value;'],
+      statements: [
+        if (unknown != null)
+          codeGenUtils.ifStatement(
+            condition: 'value === ${def.codeName}.${unknown.codeName}',
+            ifBlockStatements: ['throw new Error(`${def.codeName}.${unknown.codeName} cannot be serialized`);'],
+          ),
+        'return value;',
+      ],
     );
     return 'export function $func';
   }
 
   String _generateEnumFromJson(GLEnumDefinition def) {
+    final unknown = def.unknownValue;
     final visibleValues = def.values.where((val) => serialzeEnumValue(val).isNotEmpty).toList();
     final cases = visibleValues.map((val) => TypeScriptCaseStatement(
       caseValue: '"${val.value.token}"',
@@ -376,7 +389,11 @@ class TypeScriptSerializer extends GLSerializer {
     final switchStmt = codeGenUtils.switchStatement(
       expression: 'value',
       cases: cases,
-      defaultStatements: ['throw new Error(`Invalid ${def.codeName}: \${value}`);'],
+      defaultStatements: [
+        unknown != null
+            ? 'return ${def.codeName}.${unknown.codeName};'
+            : 'throw new Error(`Invalid ${def.codeName}: \${value}`);',
+      ],
     );
     final func = codeGenUtils.createMethod(
       methodName: 'fromJson',

@@ -33,6 +33,8 @@ Top-level
 clientConfig.dart
   packageName                     string   Dart package name used in imports
   generateAllFieldsFragments      bool     Generate _all_fields fragments          [false]
+  strictEnums                     bool     Throw on unknown enum values instead of
+                                           falling back to unknownValue__          [false]
   nullableFieldsRequired          bool     Nullable fields required in ctors       [false]
   autoGenerateQueries             bool     Auto-generate queries from schema        [false]
   autoGenerateQueriesDefaultAlias string   Default alias for auto-generated queries
@@ -57,6 +59,8 @@ clientConfig.dart
 clientConfig.java
   packageName                     string   Java package name (required)
   generateAllFieldsFragments      bool     Generate _all_fields fragments          [false]
+  strictEnums                     bool     Throw on unknown enum values instead of
+                                           falling back to unknownValue__          [false]
   nullableFieldsRequired          bool     Nullable fields required                [false]
   autoGenerateQueries             bool     Auto-generate queries from schema        [false]
   autoGenerateQueriesArgumentLimit integer Max hoisted args per auto-query         [200]
@@ -72,6 +76,8 @@ clientConfig.java
 clientConfig.kotlin
   packageName                     string   Kotlin package name (required)
   generateAllFieldsFragments      bool     Generate _all_fields fragments          [true]
+  strictEnums                     bool     Throw on unknown enum values instead of
+                                           falling back to unknownValue__          [false]
   nullableFieldsRequired          bool     Nullable fields required in ctors       [false]
   autoGenerateQueries             bool     Auto-generate queries from schema        [true]
   autoGenerateQueriesArgumentLimit integer Max hoisted args per auto-query         [200]
@@ -86,6 +92,8 @@ clientConfig.kotlin
 
 clientConfig.typescript
   generateAllFieldsFragments      bool     Generate _all_fields fragments          [false]
+  strictEnums                     bool     Throw on unknown enum values instead of
+                                           falling back to unknownValue__          [false]
   autoGenerateQueries             bool     Auto-generate queries from schema        [false]
   autoGenerateQueriesDefaultAlias string   Default alias for auto-generated queries
   autoGenerateQueriesArgumentLimit integer Max hoisted args per auto-query         [200]

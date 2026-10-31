@@ -94,6 +94,7 @@ GLParser createGrammar(GeneratorConfig config) {
     collectionImports: _collectionImportsFor(config),
     generateAllFieldsFragments: lang.generateAllFieldsFragments,
     nullableFieldsRequired: lang.nullableFieldsRequired,
+    tolerantEnums: !lang.strictEnums,
     autoGenerateQueries: lang.autoGenerateQueries,
     autoGenerateQueriesFor: lang.autoGenerateQueriesFor == null ? null : {
       GLQueryType.query: lang.autoGenerateQueriesFor!.queries,

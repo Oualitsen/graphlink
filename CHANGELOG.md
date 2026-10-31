@@ -632,3 +632,10 @@
   ```
 
   With the option off, generated output is unchanged.
+
+## Unreleased
+
+### New features
+
+- **Client enums tolerate unknown values** — new `strictEnums` option (default `false`) on every client language. Adding a value to a server enum used to make already-shipped clients throw while decoding the response. Now each generated client enum gets an `unknownValue__` member and `fromJson` returns it for any value the schema did not declare. Encoding it back throws (Dart, Java, Kotlin, TypeScript); Swift's `toJson()` is non-throwing everywhere, so the fallback encodes as the literal string `unknownValue__` and is sent; the server then rejects it as an invalid enum value. An enum that already declares `unknownValue__` gets the fallback `unknownValue__2` (then `3`, …), and generator-internal enums never get one. Server mode is unchanged and always strict.
+  - **Behaviour change:** client enums gain one member, so exhaustive `switch`/`when` over a generated enum needs a branch for it. Set `"strictEnums": true` to keep the previous output.

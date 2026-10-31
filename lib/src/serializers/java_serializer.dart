@@ -172,7 +172,7 @@ class JavaSerializer extends GLSerializer {
     var fromJson = serializeFromJsonForEnum(def);
     var enum_ = codeGenUtils.createEnum(
         enumName: def.codeName,
-        enumValues: def.values.map((e) => doSerializeEnumValue(e)).toList(),
+        enumValues: def.allValues.map((e) => doSerializeEnumValue(e)).toList(),
         methods: [if (fromJson.isNotEmpty) fromJson, if (toJson.isNotEmpty) toJson]);
     buffer.writeln(enum_);
     return buffer.toString();
@@ -193,6 +193,7 @@ class JavaSerializer extends GLSerializer {
   }
 
   String serializeFromJsonForEnum(GLEnumDefinition def) {
+    final unknown = def.unknownValue;
     return codeGenUtils.createMethod(
       returnType: "public static ${def.codeName}",
       methodName: "fromJson",
@@ -202,7 +203,11 @@ class JavaSerializer extends GLSerializer {
         codeGenUtils.switchStatement(
           expression: "value",
           cases: [...def.values.map((v) => JavaCaseStatement(caseValue: '"${v.value.token}"', statement: 'return ${v.codeName};'))],
-          defaultStatements: ['throw new IllegalArgumentException("Invalid ${def.codeName}: " + value);'],
+          defaultStatements: [
+            unknown != null
+                ? 'return ${unknown.codeName};'
+                : 'throw new IllegalArgumentException("Invalid ${def.codeName}: " + value);',
+          ],
         )
       ],
     );
