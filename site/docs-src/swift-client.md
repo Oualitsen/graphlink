@@ -158,20 +158,36 @@ public enum UserStatus: String, Sendable {
     case active = "ACTIVE"
     case inactive = "INACTIVE"
     case suspended = "SUSPENDED"
+    case unknownValue__ = "unknownValue__"
 
     public func toJson() -> String {
         return rawValue
     }
 
     public static func fromJson(_ value: String) -> UserStatus {
-        return UserStatus(rawValue: value)!
+        return UserStatus(rawValue: value) ?? .unknownValue__
     }
 }
 ```
 
-An unrecognized wire value force-unwraps to a crash, matching the throwing behavior of the
-Kotlin/Java/TypeScript enum `fromJson` — treat an unknown enum value from the server as a
-programmer/contract error, not a value to silently swallow.
+### Unknown enum values
+
+A server can add an enum value after your app has shipped. By default, `unknownValue__` is
+added to every generated enum and `fromJson` returns it for any value the schema did not
+declare, so one new value does not fail the whole response. Handle it in your own `switch`
+statements.
+
+!!! warning "Sending the fallback back to the server"
+    In Dart, Java, Kotlin and TypeScript, encoding `unknownValue__` throws, so it can never
+    be sent. Swift cannot do this: `toJson()` is non-throwing across all generated code, and
+    making it `throws` would force a `try` at every call site. In Swift, `toJson()` returns
+    the literal string `"unknownValue__"`, so if you pass the fallback as a query argument
+    or input field it **is sent**, and the server rejects it with a GraphQL validation
+    error. The failure happens on the server instead of before the request leaves the
+    client. Do not pass `unknownValue__` as an argument.
+
+Set `"strictEnums": true` to remove the fallback. `fromJson` then force-unwraps, so an
+unrecognized wire value crashes — treat that as a contract error.
 
 ## Queries
 
@@ -398,6 +414,7 @@ Pass an `UploadProgressCallback` to the generated method to observe upload progr
 | `immutableTypeFields` | `boolean` | `true` | Generate `let` fields (immutable) instead of `var`. |
 | `operationNameAsParameter` | `boolean` | `false` | Append the operation name as a `?operationName=` query parameter in the request URL. |
 | `captureErrors` | `boolean` | `false` | Return `FullResponse` (data + errors) for all operations instead of throwing. |
+| `strictEnums` | `boolean` | `false` | When `false`, enums get an `unknownValue__` case and undeclared wire values decode to it. When `true`, they crash on decode instead. See [Unknown enum values](#unknown-enum-values). |
 | `wsAdapter` | `"urlsession"` \| `"none"` | `"urlsession"` | WebSocket adapter to generate. `"urlsession"` emits `DefaultGraphLinkURLSessionWebSocketAdapter`; `"none"` emits only the adapter typealias. |
 | `defaultAlias` | `string?` | `null` | Default alias prefix for auto-generated query fields. |
 | `autoGenerateQueriesFor` | `object?` | `null` | Restrict auto-generated operations to an explicit allow-list per operation type. |
