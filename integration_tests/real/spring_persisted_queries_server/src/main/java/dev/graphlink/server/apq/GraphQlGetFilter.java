@@ -29,15 +29,23 @@ public class GraphQlGetFilter extends OncePerRequestFilter {
     private static final String JSON = "application/json";
 
     private final ObjectMapper mapper = new ObjectMapper();
+    private final PersistedQueryStore store;
+
+    public GraphQlGetFilter(PersistedQueryStore store) {
+        this.store = store;
+    }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !"GET".equals(request.getMethod()) || !"/graphql".equals(request.getRequestURI());
+        return !"GET".equals(request.getMethod())
+                || !"/graphql".equals(request.getRequestURI())
+                || "websocket".equalsIgnoreCase(request.getHeader("Upgrade"));
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
+        store.countGet();
         String query = request.getParameter("query");
         if (query != null && query.stripLeading().startsWith("mutation")) {
             response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Mutations are not allowed over GET");
