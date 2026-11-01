@@ -49,6 +49,13 @@ void _expectAgreesWithReference(Map<String, String> actual) {
 
 const _slow = Timeout(Duration(minutes: 4));
 
+bool _onPath(String tool) {
+  final result = Process.runSync(Platform.isWindows ? 'where' : 'which', [tool]);
+  return result.exitCode == 0;
+}
+
+String? _missing(String tool) => _onPath(tool) ? null : '$tool is not installed';
+
 void main() {
   test('dart', () async {
     const source = "import 'dart:convert';\nimport 'dart:io';\n$dartSha256\n"
@@ -91,7 +98,7 @@ class Main {
 
 ''' + javaSha256;
     _expectAgreesWithReference(await _run('Main.java', source, 'java', (f) => [f]));
-  }, timeout: _slow);
+  }, timeout: _slow, skip: _missing('java'));
 
   test('kotlin', () async {
     const source = kotlinSha256 + r'''
@@ -102,7 +109,7 @@ generateSequence(::readLine).forEach { line ->
 }
 ''';
     _expectAgreesWithReference(await _run('main.kts', source, 'kotlinc', (f) => ['-script', f]));
-  }, timeout: _slow);
+  }, timeout: _slow, skip: _missing('kotlinc'));
 
   test('typescript', () async {
     const source = r'''
@@ -117,7 +124,7 @@ for (const line of readFileSync(0, 'utf8').split('\n').slice(0, -1)) {
 }
 ''';
     _expectAgreesWithReference(await _run('main.ts', source, 'node', (f) => [f]));
-  }, timeout: _slow);
+  }, timeout: _slow, skip: _missing('node'));
 
   test('swift', () async {
     const source = swiftSha256 + r'''
@@ -134,5 +141,5 @@ while let line = readLine(strippingNewline: true) {
 }
 ''';
     _expectAgreesWithReference(await _run('main.swift', source, 'swift', (f) => [f]));
-  }, timeout: _slow);
+  }, timeout: _slow, skip: _missing('swift'));
 }

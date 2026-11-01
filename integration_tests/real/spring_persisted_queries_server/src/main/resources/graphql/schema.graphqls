@@ -1,0 +1,264 @@
+enum EventType {
+  pending
+  in_progress
+  completed_ok
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum Role {
+  ADMIN
+  USER
+  GUEST
+}
+
+type AllScalars {
+  id:            ID!
+  strVal:        String!
+  intVal:        Int!
+  floatVal:      Float!
+  boolVal:       Boolean!
+  nullableStr:   String
+  nullableInt:   Int
+  nullableFloat: Float
+  nullableBool:  Boolean
+  nullableId:    ID
+}
+
+type Address {
+  street:  String!
+  city:    String!
+  country: String!
+  zip:     String
+}
+
+type User {
+  id:             ID!
+  name:           String!
+  email:          String!
+  status:         UserStatus!
+  priority:       Priority
+  address:        Address!
+  billingAddress: Address
+  tags:           [String!]!
+  scores:         [Int!]
+  posts:          [Post!]
+}
+
+type Post {
+  id:        ID!
+  title:     String!
+  body:      String!
+  author:    User!
+  coAuthor:  User
+  viewCount: Int!
+}
+
+type Tag {
+  id:    ID!
+  label: String!
+  color: String
+}
+
+type AuditEntry {
+  id:           ID!
+  action:       String!
+  performedBy:  String!
+  internalNote: String!
+}
+
+interface SearchResult {
+  id: ID!
+}
+
+type UserResult implements SearchResult {
+  id:    ID!
+  name:  String!
+  email: String!
+}
+
+type PostResult implements SearchResult {
+  id:    ID!
+  title: String!
+}
+
+type DefaultsEcho {
+  name:      String!
+  role:      Role!
+  age:       Int!
+  isActive:  Boolean!
+  score:     Float!
+  nickname:  String!
+  tags:      [String]!
+}
+
+type NestedDefaultsEcho {
+  name:     String!
+  address:  Address
+  contacts: [Address]
+  matrix:   [[Address]]
+}
+
+type Driver {
+  id: ID!
+  lastUsedMillage(odometerKm: Int!): Int!
+  lastUsedFuel(liters: Int!): Int!
+}
+
+# ── Identifier normalization coverage ────────────────────────────────────────
+type NormalizedFields {
+  id:         ID!
+  FirstName:  String!
+  last_name:  String!
+  USER_AGE:   Int!
+  event_type: EventType!
+}
+
+input NormalizedInput {
+  FirstName:  String!
+  last_name:  String!
+  event_type: EventType!
+}
+
+# ── Keyword-collision coverage ────────────────────────────────────────────────
+# `class` is reserved in Dart, Java, Kotlin, and TypeScript (parameter position).
+# Exercised as a type field, an input field, a top-level query argument, and a
+# query operation name. The wire name stays `class`; only generated identifiers
+# are sanitized.
+type ClassResult {
+  id:    ID!
+  class: String!
+}
+
+input ClassInput {
+  class: String!
+}
+
+input AddressInput {
+  street:  String!
+  city:    String!
+  country: String!
+  zip:     String
+}
+
+input CreateUserInput {
+  name:           String!
+  email:          String!
+  status:         UserStatus!
+  priority:       Priority
+  address:        AddressInput!
+  billingAddress: AddressInput
+  tags:           [String!]
+  initialScore:   Int
+}
+
+input UpdateUserInput {
+  name:     String
+  email:    String
+  status:   UserStatus
+  priority: Priority
+  tags:     [String!]
+}
+
+input CreateWithDefaultsInput {
+  name:     String!
+  role:     Role
+  age:      Int
+  isActive: Boolean
+  score:    Float
+  nickname: String
+  tags:     [String]
+}
+
+input NestedDefaultsInput {
+  name:     String!
+  address:  AddressInput
+  contacts: [AddressInput]
+  matrix:   [[AddressInput]]
+}
+
+interface Vehicle {
+  id: ID!
+  owner: VehicleOwner!
+}
+
+type Car implements Vehicle {
+  id: ID!
+  model: String!
+  owner: VehicleOwner!
+}
+
+type Bike implements Vehicle {
+  id: ID!
+  brand: String!
+  owner: VehicleOwner!
+}
+
+type VehicleOwner {
+  id: ID!
+  name: String!
+  driver: VehicleDriver!
+}
+
+type VehicleDriver {
+  id: ID!
+  name: String!
+  vehicle: Vehicle
+}
+
+type Query {
+  getUser(id: ID!): User!
+  findUser(id: ID!): User
+  listUsers: [User!]!
+  listUsersByStatus(status: UserStatus!): [User!]!
+  searchUsers(name: String!, limit: Int!): [User!]!
+  getAllScalars(id: ID!): AllScalars!
+  getPost(id: ID!): Post!
+  getTags: [Tag!]!
+  getAuditEntry(id: ID!): AuditEntry!
+  search(term: String!): [SearchResult!]!
+  getCachedUser(id: ID!): User!
+  listCachedUsers: [User!]!
+  getCachedPost(id: ID!): Post!
+  getCachedConfig: AllScalars!
+  getStaleUser(id: ID!): User
+  getUserOrErrors(id: ID!): User!
+  findUserOrErrors(id: ID!): User
+  listUsersWithDefaults(limit: Int, role: Role): [User]!
+  getDriver(id: ID!): Driver!
+  getVehicleDriver(id: ID!): VehicleDriver!
+  class(class: ID!): ClassResult!
+  getNormalizedRecord(id: ID!): NormalizedFields!
+}
+
+type Mutation {
+  createUser(input: CreateUserInput!): User!
+  deleteUser(id: ID!): Boolean!
+  updateUser(id: ID!, input: UpdateUserInput!): User!
+  createCachedUser(input: CreateUserInput!): User!
+  transferPost(postId: ID!, newAuthorId: ID!): Post!
+  resetAll: Boolean!
+  createUserOrErrors(input: CreateUserInput!): User!
+  createWithDefaults(input: CreateWithDefaultsInput!): DefaultsEcho!
+  createWithNestedDefaults(input: NestedDefaultsInput!): NestedDefaultsEcho!
+  makeClass(input: ClassInput!): ClassResult!
+  createNormalizedRecord(input: NormalizedInput!): NormalizedFields!
+}
+
+type Subscription {
+  userCreated: User!
+  userCreateds(ids: [ID!]!): [User!]
+  userStatusChanged(userId: ID!): User!
+  counterTick: Int!
+}
