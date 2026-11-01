@@ -28,6 +28,7 @@ class ApqServer {
   final List<String> methods = [];
 
   bool supported = true;
+  String notFoundMessage = 'PersistedQueryNotFound';
   bool getSupported = true;
   Object? failWith;
   Object? getFailWith;
@@ -66,7 +67,7 @@ class ApqServer {
       final hash = persisted['sha256Hash'] as String;
       final query = body['query'] as String?;
       if (query == null) {
-        if (!_registered.contains(hash)) return _error('PersistedQueryNotFound', 'PERSISTED_QUERY_NOT_FOUND');
+        if (!_registered.contains(hash)) return _error(notFoundMessage, 'PERSISTED_QUERY_NOT_FOUND');
       } else {
         if (GraphLinkSha256.hex(query) != hash) return _error('provided sha does not match query', 'INTERNAL_SERVER_ERROR');
         _registered.add(hash);

@@ -91,16 +91,23 @@ abstract class ClientLanguageConfig {
   }
 }
 
-PersistedQueriesMode persistedQueriesModeFromJson(Map<String, dynamic> json) {
+const _persistedQueriesLanguages = {'dart', 'typescript'};
+
+PersistedQueriesMode persistedQueriesModeFromJson(Map<String, dynamic> json, {String language = 'dart'}) {
   final value = json['persistedQueries'];
   if (value == null || value == false) return PersistedQueriesMode.off;
-  if (value == 'apq') return PersistedQueriesMode.apq;
+  if (value == 'apq') {
+    if (!_persistedQueriesLanguages.contains(language)) {
+      throw ArgumentError('persistedQueries is not supported for $language yet.');
+    }
+    return PersistedQueriesMode.apq;
+  }
   throw ArgumentError('persistedQueries must be false or "apq", got $value.');
 }
 
-bool persistedQueriesUseGetFromJson(Map<String, dynamic> json) {
+bool persistedQueriesUseGetFromJson(Map<String, dynamic> json, {String language = 'dart'}) {
   final useGet = (json['persistedQueriesUseGet'] as bool?) ?? false;
-  if (useGet && persistedQueriesModeFromJson(json) == PersistedQueriesMode.off) {
+  if (useGet && persistedQueriesModeFromJson(json, language: language) == PersistedQueriesMode.off) {
     throw ArgumentError('persistedQueriesUseGet requires persistedQueries to be "apq".');
   }
   return useGet;
@@ -532,8 +539,8 @@ class DartClientConfig extends ClientLanguageConfig {
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
       captureErrors: (json['captureErrors'] as bool?) ?? false,
       strictEnums: (json['strictEnums'] as bool?) ?? false,
-      persistedQueries: persistedQueriesModeFromJson(json),
-      persistedQueriesUseGet: persistedQueriesUseGetFromJson(json),
+      persistedQueries: persistedQueriesModeFromJson(json, language: 'dart'),
+      persistedQueriesUseGet: persistedQueriesUseGetFromJson(json, language: 'dart'),
       defaultAlias: json['defaultAlias'] as String?,
       packageName: json['packageName'] as String?,
       appLocalizationsImport: json['appLocalizationsImport'] as String?,
@@ -615,8 +622,8 @@ class JavaClientConfig extends ClientLanguageConfig {
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
       captureErrors: (json['captureErrors'] as bool?) ?? false,
       strictEnums: (json['strictEnums'] as bool?) ?? false,
-      persistedQueries: persistedQueriesModeFromJson(json),
-      persistedQueriesUseGet: persistedQueriesUseGetFromJson(json),
+      persistedQueries: persistedQueriesModeFromJson(json, language: 'java'),
+      persistedQueriesUseGet: persistedQueriesUseGetFromJson(json, language: 'java'),
       immutableInputFields: (json['immutableInputFields'] as bool?) ?? true,
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
       inputAsRecord: (json['inputAsRecord'] as bool?) ?? false,
@@ -694,8 +701,8 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
       captureErrors: (json['captureErrors'] as bool?) ?? false,
       strictEnums: (json['strictEnums'] as bool?) ?? false,
-      persistedQueries: persistedQueriesModeFromJson(json),
-      persistedQueriesUseGet: persistedQueriesUseGetFromJson(json),
+      persistedQueries: persistedQueriesModeFromJson(json, language: 'typescript'),
+      persistedQueriesUseGet: persistedQueriesUseGetFromJson(json, language: 'typescript'),
       optionalNullableInputFields: (json['optionalNullableInputFields'] as bool?) ?? true,
       generateDefaultWsAdapter: (json['generateDefaultWsAdapter'] as bool?) ?? true,
       observables: (json['observables'] as bool?) ?? false,
@@ -762,8 +769,8 @@ class KotlinClientConfig extends ClientLanguageConfig {
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
       captureErrors: (json['captureErrors'] as bool?) ?? false,
       strictEnums: (json['strictEnums'] as bool?) ?? false,
-      persistedQueries: persistedQueriesModeFromJson(json),
-      persistedQueriesUseGet: persistedQueriesUseGetFromJson(json),
+      persistedQueries: persistedQueriesModeFromJson(json, language: 'kotlin'),
+      persistedQueriesUseGet: persistedQueriesUseGetFromJson(json, language: 'kotlin'),
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
       inputAsDataClass: (json['inputAsDataClass'] as bool?) ?? true,
       typeAsDataClass: (json['typeAsDataClass'] as bool?) ?? true,
@@ -828,8 +835,8 @@ class SwiftClientConfig extends ClientLanguageConfig {
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
       captureErrors: (json['captureErrors'] as bool?) ?? false,
       strictEnums: (json['strictEnums'] as bool?) ?? false,
-      persistedQueries: persistedQueriesModeFromJson(json),
-      persistedQueriesUseGet: persistedQueriesUseGetFromJson(json),
+      persistedQueries: persistedQueriesModeFromJson(json, language: 'swift'),
+      persistedQueriesUseGet: persistedQueriesUseGetFromJson(json, language: 'swift'),
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
       defaultAlias: json['defaultAlias'] as String?,
       wsAdapter: SwiftWsAdapter.values.firstWhere(

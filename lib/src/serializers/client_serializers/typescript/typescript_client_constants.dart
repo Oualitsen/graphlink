@@ -1,3 +1,5 @@
+import 'package:graphlink/src/persisted_queries.dart';
+
 // TypeScript template strings emitted verbatim into the generated client file.
 
 const tsUploadsFile = r'''
@@ -712,3 +714,115 @@ export class GraphLinkSha256 {
   }
 }
 ''';
+
+const tsPersistedQueries = '''
+export class GraphLinkPersistedQueries {
+  static readonly minQueryLength = ${persistedQueryMinLength};
+  static readonly notFound = 'PersistedQueryNotFound';
+  static readonly notSupported = 'PersistedQueryNotSupported';
+
+  static extensions(hash: string): Record<string, unknown> {
+    return { persistedQuery: { version: 1, sha256Hash: hash } };
+  }
+
+  static failure(response: string): string | null {
+    if (!response.includes('PersistedQuery') && !response.includes('PERSISTED_QUERY')) return null;
+    const decoded = JSON.parse(response) as { errors?: unknown };
+    if (!Array.isArray(decoded.errors)) return null;
+    for (const error of decoded.errors as Array<Record<string, unknown>>) {
+      const details = error.extensions as Record<string, unknown> | undefined;
+      const code = details?.code;
+      if (error.message === GraphLinkPersistedQueries.notFound || code === 'PERSISTED_QUERY_NOT_FOUND') {
+        return GraphLinkPersistedQueries.notFound;
+      }
+      if (error.message === GraphLinkPersistedQueries.notSupported || code === 'PERSISTED_QUERY_NOT_SUPPORTED') {
+        return GraphLinkPersistedQueries.notSupported;
+      }
+    }
+    return null;
+  }
+}
+''';
+
+const tsPersistedQueriesGet = '''
+export class GraphLinkGetNotSupported extends Error {
+  constructor(message?: string) {
+    super(message === undefined ? 'GraphLinkGetNotSupported' : 'GraphLinkGetNotSupported: ' + message);
+    this.name = 'GraphLinkGetNotSupported';
+  }
+}
+
+export class GraphLinkGetRequest {
+  static queryString(payload: string): string {
+    const body = JSON.parse(payload) as Record<string, unknown>;
+    const variables = body.variables as Record<string, unknown> | undefined;
+    const parts: string[] = [];
+    if (body.operationName != null) parts.push('operationName=' + encodeURIComponent(body.operationName as string));
+    if (variables != null && Object.keys(variables).length > 0) {
+      parts.push('variables=' + encodeURIComponent(JSON.stringify(variables)));
+    }
+    parts.push('extensions=' + encodeURIComponent(JSON.stringify(body.extensions)));
+    return parts.join('&');
+  }
+}
+''';
+
+String tsFetchGetAdapter(bool withParam) {
+  final extraParam = withParam ? ', _operationName: string' : '';
+  return r"""
+export function createFetchGetAdapter(
+  url: string,
+  options?: _FetchAdapterOptions,
+): GraphLinkAdapter {
+  return async (payload: string""" + extraParam + r"""): Promise<string> => {
+    const fn = (options?.fetchFn ?? (globalThis as Record<string, unknown>)['fetch']) as _FetchFn;
+    const extraHeaders = options?.headers ? await options.headers() : {};
+    const response = await fn(url + '?' + GraphLinkGetRequest.queryString(payload), {
+      method: 'GET',
+      headers: { ...extraHeaders },
+    });
+    if (response.status === 405) {
+      throw new GraphLinkGetNotSupported('GET is not allowed');
+    }
+    if (!response.ok) {
+      throw new Error(`GraphLink: HTTP ${response.status} ${response.statusText}`);
+    }
+    return response.text();
+  };
+}
+""";
+}
+
+String tsAxiosGetAdapter(bool withParam) {
+  final extraParam = withParam ? ', _operationName: string' : '';
+  return r"""
+interface _AxiosGetLike {
+  get(
+    url: string,
+    config?: { headers?: Record<string, string>; responseType?: string },
+  ): Promise<{ data: unknown }>;
+}
+
+export function createAxiosGetAdapter(
+  url: string,
+  axiosInstance: _AxiosGetLike,
+  options?: _AxiosAdapterOptions,
+): GraphLinkAdapter {
+  return async (payload: string""" + extraParam + r"""): Promise<string> => {
+    const extraHeaders = options?.headers ? await options.headers() : {};
+    try {
+      const response = await axiosInstance.get(url + '?' + GraphLinkGetRequest.queryString(payload), {
+        headers: { ...extraHeaders },
+        responseType: 'text',
+      });
+      return response.data as string;
+    } catch (e) {
+      if ((e as { response?: { status?: number } }).response?.status === 405) {
+        throw new GraphLinkGetNotSupported('GET is not allowed');
+      }
+      throw e;
+    }
+  };
+}
+""";
+}

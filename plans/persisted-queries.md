@@ -216,7 +216,10 @@ queries, and short ones to prove no hash is sent.
    `GraphLinkGetRequest.queryParameters`), `GraphLinkGetNotSupported` on a 405. **Done.** The http adapter is tested against a local
    `HttpServer`; the Dio adapter is covered by generator tests only.
 4. Dart real-server tests against the Spring test server.
-5. Java, Kotlin, TypeScript, Swift: `glHash` emission and the same flow, one language at a time.
+5. Remaining languages, one at a time, order TypeScript, Kotlin, Swift, then Java and Java reactive. Until a language lands, its
+   generator rejects `persistedQueries: "apq"` (`_persistedQueriesLanguages` in `config.dart`).
+   - TypeScript: **Done** (`typescript_persisted_queries_tests`; `getAdapter` is a positional argument right after `adapter`;
+     `createFetchGetAdapter` / `createAxiosGetAdapter`; fetch adapter tested against a local Node server, axios by generator tests only).
 6. Docs: new `persisted-queries.md` page, config reference, `--help`, llms sources; document bounded server caches.
 7. Changelog entry as a new feature (minor version).
 

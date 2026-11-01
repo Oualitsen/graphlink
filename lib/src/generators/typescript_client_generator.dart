@@ -94,6 +94,10 @@ Future<Set<String>> generateTypeScriptClientClasses(
   addClient('graph-link-lock$ext', cs.generateLockFile());
   addClient('graph-link-partial-query$ext', cs.generatePartialQueryFile());
   addClient('graph-link-resolver-base$ext', cs.generateResolverBaseFile());
+  if (parser.persistedQueries) {
+    addClient('graph-link-sha256$ext', cs.generateSha256File());
+    addClient('graph-link-persisted-queries$ext', cs.generatePersistedQueriesFile());
+  }
 
   // WebSocket infrastructure (only when subscriptions exist)
   if (parser.hasSubscriptions) {
