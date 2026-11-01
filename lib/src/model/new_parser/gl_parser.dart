@@ -228,6 +228,8 @@ class GLParser {
   final bool generateAllFieldsFragments;
   final bool nullableFieldsRequired;
   final bool tolerantEnums;
+  final bool persistedQueries;
+  final bool persistedQueriesUseGet;
   final bool autoGenerateQueries;
   final Map<GLQueryType, List<String>>? autoGenerateQueriesFor;
   final String? defaultAlias;
@@ -319,6 +321,8 @@ class GLParser {
     this.generateAllFieldsFragments = false,
     this.nullableFieldsRequired = false,
     this.tolerantEnums = false,
+    this.persistedQueries = false,
+    this.persistedQueriesUseGet = false,
     this.autoGenerateQueries = false,
     this.autoGenerateQueriesFor,
     this.operationNameAsParameter = false,

@@ -153,6 +153,28 @@ class DartClientSerializer extends GLClientSerializer {
         body: inMemoryGraphLinkCacheStore,
       );
 
+  /// Returns the standalone [GraphLinkSha256] file, only needed by persisted queries.
+  GLClassModel generateSha256File() {
+    if (!_parser.persistedQueries) {
+      throw StateError('The SHA-256 runtime is only generated when persistedQueries is enabled.');
+    }
+    return const GLClassModel(
+      imports: ["import 'dart:convert';"],
+      body: dartSha256,
+    );
+  }
+
+  /// Returns the standalone [GraphLinkPersistedQueries] file, only needed by persisted queries.
+  GLClassModel generatePersistedQueriesFile() {
+    if (!_parser.persistedQueries) {
+      throw StateError('The persisted-queries runtime is only generated when persistedQueries is enabled.');
+    }
+    return GLClassModel(
+      imports: const ["import 'dart:convert';"],
+      body: _parser.persistedQueriesUseGet ? '$dartPersistedQueries\n$dartPersistedQueriesGet' : dartPersistedQueries,
+    );
+  }
+
   /// Returns the resolver base file: tag prefix constant + [GraphLinkResolverBase].
   GLClassModel generateResolverBaseFile() {
     final payloadImport = serializer.serializeImportToken(
@@ -167,6 +189,10 @@ class DartClientSerializer extends GLClientSerializer {
         "import 'graph_link_tag_entry.dart';",
         "import 'graph_link_cache_store.dart';",
         "import 'graph_link_partial_query.dart';",
+        if (_parser.persistedQueries) ...[
+          "import 'graph_link_sha256.dart';",
+          "import 'graph_link_persisted_queries.dart';",
+        ],
         serializer.serializeImportToken(
             _parser.getTokenByKey('GraphLinkFullResponse')!),
       ],
@@ -260,6 +286,89 @@ class DartClientSerializer extends GLClientSerializer {
 
   // ── Generated class builders ───────────────────────────────────────────────
 
+  String _buildGlSendMethod() {
+    final call = _parser.operationNameAsParameter
+        ? "$svAdapter(json.encode(body), body['operationName'] as String)"
+        : '$svAdapter(json.encode(body))';
+    return codeGenUtils.createMethod(
+        returnType: 'Future<String>',
+        methodName: 'glSend__',
+        async: true,
+        namedArguments: false,
+        arguments: ['Map<String, dynamic> body'],
+        statements: ['return await $call;']);
+  }
+
+  String _buildGlSendHashOnlyMethod() {
+    final call = _parser.operationNameAsParameter
+        ? "glGetAdapter__(json.encode(body), body['operationName'] as String)"
+        : 'glGetAdapter__(json.encode(body))';
+    return codeGenUtils.createMethod(
+        returnType: 'Future<String>',
+        methodName: 'glSendHashOnly__',
+        async: true,
+        namedArguments: false,
+        arguments: ['GraphLinkPayload payload', 'Map<String, dynamic> body'],
+        statements: [
+          codeGenUtils.ifStatement(
+              condition: "glGetUnsupported__ || payload.query.startsWith('mutation')",
+              ifBlockStatements: ['return await glSend__(body);']),
+          codeGenUtils.tryCatchFinally(
+              tryStatements: ['return await $call;'],
+              catchVariable: 'e',
+              catchStatements: [
+                codeGenUtils.ifStatement(
+                    condition: 'e is! GraphLinkGetNotSupported', ifBlockStatements: ['rethrow;']),
+                'glGetUnsupported__ = true;',
+                'return await glSend__(body);',
+              ]),
+        ]);
+  }
+
+  List<String> _persistedCallAdapterStatements() {
+    return [
+      codeGenUtils.ifStatement(
+          condition:
+              'glPersistedUnsupported__ || payload.query.length <= GraphLinkPersistedQueries.minQueryLength',
+          ifBlockStatements: ['return await glSend__(payload.toJson());']),
+      codeGenUtils.constDecl(
+          'glExtensions__', 'GraphLinkPersistedQueries.extensions(glHash(payload.query))'),
+      codeGenUtils.constDecl(
+          'glHashOnly__',
+          "{'operationName': payload.operationName, 'variables': payload.variables, 'extensions': glExtensions__}"),
+      codeGenUtils.constDecl(
+          'glResponse__',
+          _parser.persistedQueriesUseGet
+              ? 'await glSendHashOnly__(payload, glHashOnly__)'
+              : 'await glSend__(glHashOnly__)'),
+      codeGenUtils.constDecl('glFailure__', 'GraphLinkPersistedQueries.failure(glResponse__)'),
+      codeGenUtils.ifStatement(condition: 'glFailure__ == null', ifBlockStatements: ['return glResponse__;']),
+      codeGenUtils.constDecl('glBody__', 'payload.toJson()'),
+      codeGenUtils.ifStatement(
+          condition: 'glFailure__ == GraphLinkPersistedQueries.notSupported',
+          ifBlockStatements: ['glPersistedUnsupported__ = true;'],
+          elseBlockStatements: ["glBody__['extensions'] = glExtensions__;"]),
+      'return await glSend__(glBody__);',
+    ];
+  }
+
+  String _buildGlHashMethod() {
+    return codeGenUtils.createMethod(
+        returnType: 'String',
+        methodName: 'glHash',
+        namedArguments: false,
+        arguments: ['String query'],
+        statements: [
+          codeGenUtils.constDecl('cached', '_glHashes[query]'),
+          codeGenUtils.ifStatement(
+              condition: 'cached != null',
+              ifBlockStatements: ['return cached;']),
+          codeGenUtils.constDecl('hash', 'GraphLinkSha256.hex(query)'),
+          '_glHashes[query] = hash;',
+          'return hash;',
+        ]);
+  }
+
   String _buildResolverBaseClass() {
     return codeGenUtils.createClass(
         className: _resolverBaseClassName,
@@ -268,6 +377,17 @@ class DartClientSerializer extends GLClientSerializer {
           'late final Map<String, GraphLinkLock> $svTagLocks;',
                     'late final Map<String, String> $svFragMap;',
           declareHttpAdapter(),
+          if (_parser.persistedQueries) ...[
+            'final Map<String, String> _glHashes = {};',
+            'bool glPersistedUnsupported__ = false;',
+            _buildGlHashMethod(),
+            _buildGlSendMethod(),
+          ],
+          if (_parser.persistedQueriesUseGet) ...[
+            'final ${delcareHttpAdapterFunction()} glGetAdapter__;',
+            'bool glGetUnsupported__ = false;',
+            _buildGlSendHashOnlyMethod(),
+          ],
           codeGenUtils.createMethod(
               methodName: _resolverBaseClassName,
               namedArguments: false,
@@ -275,6 +395,7 @@ class DartClientSerializer extends GLClientSerializer {
                 '$_cacheStoreClassName store',
                 'Map<String, GraphLinkLock> locks',
                 'this.$svAdapter',
+                if (_parser.persistedQueriesUseGet) 'this.glGetAdapter__',
                 'Map<String, String> fragmentMap',
               ],
               statements: [
@@ -312,12 +433,14 @@ class DartClientSerializer extends GLClientSerializer {
               async: true,
               namedArguments: false,
               arguments: ['GraphLinkPayload payload'],
-              statements: [
-                if (_parser.operationNameAsParameter)
-                  'return await $svAdapter(json.encode(payload.toJson()), payload.operationName);'
-                else
-                  'return await $svAdapter(json.encode(payload.toJson()));'
-              ]),
+              statements: _parser.persistedQueries
+                  ? _persistedCallAdapterStatements()
+                  : [
+                      if (_parser.operationNameAsParameter)
+                        'return await $svAdapter(json.encode(payload.toJson()), payload.operationName);'
+                      else
+                        'return await $svAdapter(json.encode(payload.toJson()));'
+                    ]),
           codeGenUtils.createMethod(
               returnType: 'Future<TFull>',
               methodName: 'executeFull<TFull extends GraphLinkFullResponse>',
@@ -630,7 +753,13 @@ class DartClientSerializer extends GLClientSerializer {
           codeGenUtils.createConstructor(
               className: classNameFromType(type),
               arguments: _declareConstructorArgs(type),
-              superArguments: ['store', svTagLocks, 'httpAdapter', 'fragmentMap'],
+              superArguments: [
+                'store',
+                svTagLocks,
+                'httpAdapter',
+                if (_parser.persistedQueriesUseGet) 'getAdapter',
+                'fragmentMap',
+              ],
               statements: [
                 if (type == GLQueryType.subscription)
                   '$svHandler = GraphLinkSubscriptionHandler(adapter);',
@@ -654,6 +783,7 @@ class DartClientSerializer extends GLClientSerializer {
         methodName: 'GraphLinkClient',
         arguments: [
           'required ${_adapterDeclaration()}',
+          if (_parser.persistedQueriesUseGet) 'required ${_getAdapterDeclaration()}',
           if (_parser.hasUploadMutations) ...[
             'GLUploadConverter uploadConverter = defaultUploadConverter',
             'GLMultipartAdapter? uploadAdapter',
@@ -674,13 +804,13 @@ class DartClientSerializer extends GLClientSerializer {
               iterable: 'tags',
               statements: ['$svTagLocks[tag] = GraphLinkLock();']),
           if (_parser.hasQueries)
-            "queries = ${classNameFromType(GLQueryType.query)}(adapter, $svFragMap, this.store, $svTagLocks);",
+            "queries = ${classNameFromType(GLQueryType.query)}(adapter, $_getArg$svFragMap, this.store, $svTagLocks);",
           if (_parser.hasMutations)
             _parser.hasUploadMutations
-                ? "mutations = ${classNameFromType(GLQueryType.mutation)}(adapter, uploadConverter, uploadAdapter, $svFragMap, this.store, $svTagLocks);"
-                : "mutations = ${classNameFromType(GLQueryType.mutation)}(adapter, $svFragMap, this.store, $svTagLocks);",
+                ? "mutations = ${classNameFromType(GLQueryType.mutation)}(adapter, ${_getArg}uploadConverter, uploadAdapter, $svFragMap, this.store, $svTagLocks);"
+                : "mutations = ${classNameFromType(GLQueryType.mutation)}(adapter, $_getArg$svFragMap, this.store, $svTagLocks);",
           if (_parser.hasSubscriptions)
-            "subscriptions = ${classNameFromType(GLQueryType.subscription)}(adapter, wsAdapter, $svFragMap, this.store, $svTagLocks);",
+            "subscriptions = ${classNameFromType(GLQueryType.subscription)}(adapter, $_getArg${'wsAdapter'}, $svFragMap, this.store, $svTagLocks);",
         ],
       ),
       if (_parser.hasSubscriptions &&
@@ -697,6 +827,7 @@ class DartClientSerializer extends GLClientSerializer {
   List<String> _declareConstructorArgs(GLQueryType type) {
     return [
       '${delcareHttpAdapterFunction()} httpAdapter',
+      if (_parser.persistedQueriesUseGet) '${delcareHttpAdapterFunction()} getAdapter',
       if (type == GLQueryType.subscription) 'GraphLinkWebSocketAdapter adapter',
       if (type == GLQueryType.mutation && _parser.hasUploadMutations) ...[
         'this.$svUploadConverter',
@@ -730,6 +861,15 @@ class DartClientSerializer extends GLClientSerializer {
     return 'Future<String> Function(String payload${_parser.operationNameAsParameter ? ', String $_operationNameParam' : ''})';
   }
 
+  String get _getArg => _parser.persistedQueriesUseGet ? 'getAdapter, ' : '';
+
+  String _getAdapterDeclaration() {
+    if (_parser.operationNameAsParameter) {
+      return 'Future<String> Function(String payload, String $_operationNameParam) getAdapter';
+    }
+    return 'Future<String> Function(String payload) getAdapter';
+  }
+
   String _adapterDeclaration() {
     if (_parser.operationNameAsParameter) {
       return 'Future<String> Function(String payload, String $_operationNameParam) adapter';
@@ -754,7 +894,7 @@ class DartClientSerializer extends GLClientSerializer {
       '$_cacheStoreClassName? store',
     ];
 
-    if (_parser.hasUploadMutations) {
+    if (_parser.hasUploadMutations || _parser.persistedQueriesUseGet) {
       return codeGenUtils.createMethod(
         returnType: 'factory',
         methodName: 'GraphLinkClient.withHttp',
@@ -763,8 +903,11 @@ class DartClientSerializer extends GLClientSerializer {
           codeGenUtils.constDecl('_a', '$adapterClass($adapterArgs)'),
           'return ${codeGenUtils.callExpression('GraphLinkClient', [
             'adapter: _a.call',
-            'uploadConverter: defaultUploadConverter',
-            'uploadAdapter: _a.multipartCall',
+            if (_parser.persistedQueriesUseGet) 'getAdapter: _a.getCall',
+            if (_parser.hasUploadMutations) ...[
+              'uploadConverter: defaultUploadConverter',
+              'uploadAdapter: _a.multipartCall',
+            ],
             ...wsArgs,
             'store: store',
           ])};',
@@ -790,6 +933,7 @@ class DartClientSerializer extends GLClientSerializer {
       methodName: 'GraphLinkClient.fromUrl',
       arguments: [
         'required ${_adapterDeclaration()}',
+        if (_parser.persistedQueriesUseGet) 'required ${_getAdapterDeclaration()}',
         'required String wsUrl',
         'Future<Map<String, String>?> Function()? wsHeadersProvider',
         '$_cacheStoreClassName? store',
@@ -797,6 +941,7 @@ class DartClientSerializer extends GLClientSerializer {
       initializers: [
         codeGenUtils.callExpression('this', [
           'adapter: adapter',
+          if (_parser.persistedQueriesUseGet) 'getAdapter: getAdapter',
           'wsAdapter: DefaultGraphLinkWebSocketAdapter(url: wsUrl, headersProvider: wsHeadersProvider)',
           'store: store',
         ]),
@@ -870,6 +1015,7 @@ class DartClientSerializer extends GLClientSerializer {
         "import 'package:http/http.dart' as http;",
         "import 'package:http_parser/http_parser.dart';",
         if (_parser.hasUploadMutations) "import 'graph_link_uploads.dart';",
+        if (_parser.persistedQueriesUseGet) "import 'graph_link_persisted_queries.dart';",
       ],
       body: codeGenUtils.createClass(
         className: 'GraphLinkHttpAdapter',
@@ -900,9 +1046,32 @@ class DartClientSerializer extends GLClientSerializer {
               'return response.body;',
             ],
           ),
+          if (_parser.persistedQueriesUseGet) _httpGetMethod(),
           if (_parser.hasUploadMutations) _httpMultipartMethod(),
         ],
       ),
+    );
+  }
+
+  String _httpGetMethod() {
+    return codeGenUtils.createMethod(
+      returnType: 'Future<String>',
+      methodName: 'getCall',
+      async: true,
+      namedArguments: false,
+      arguments: ['String payload$_operationNameArg'],
+      statements: [
+        codeGenUtils.constDecl('uri', 'Uri.parse(url)'),
+        codeGenUtils.constDecl('response', 'await ${codeGenUtils.callExpression('http.get', [
+          'uri.replace(queryParameters: {...uri.queryParameters, ...GraphLinkGetRequest.queryParameters(payload)})',
+          'headers: await headersProvider?.call()',
+        ])}'),
+        codeGenUtils.ifStatement(
+          condition: 'response.statusCode == 405',
+          ifBlockStatements: ["throw const GraphLinkGetNotSupported('GET is not allowed');"],
+        ),
+        'return response.body;',
+      ],
     );
   }
 
@@ -969,6 +1138,7 @@ class DartClientSerializer extends GLClientSerializer {
         "import 'package:dio/dio.dart';",
         if (_parser.hasUploadMutations) "import 'package:http_parser/http_parser.dart';",
         if (_parser.hasUploadMutations) "import 'graph_link_uploads.dart';",
+        if (_parser.persistedQueriesUseGet) "import 'graph_link_persisted_queries.dart';",
       ],
       body: [
         _dioAdapterClass(),
@@ -1018,7 +1188,36 @@ class DartClientSerializer extends GLClientSerializer {
             'return data is String ? data : jsonEncode(data);',
           ],
         ),
+        if (_parser.persistedQueriesUseGet) _dioGetMethod(),
         if (_parser.hasUploadMutations) _dioMultipartMethod(),
+      ],
+    );
+  }
+
+  String _dioGetMethod() {
+    return codeGenUtils.createMethod(
+      returnType: 'Future<String>',
+      methodName: 'getCall',
+      async: true,
+      namedArguments: false,
+      arguments: ['String payload$_operationNameArg'],
+      statements: [
+        codeGenUtils.tryCatchFinally(
+          tryStatements: [
+            codeGenUtils.constDecl('response',
+                'await dio.get<dynamic>(url, queryParameters: GraphLinkGetRequest.queryParameters(payload))'),
+            codeGenUtils.constDecl('data', 'response.data'),
+            'return data is String ? data : jsonEncode(data);',
+          ],
+          catchVariable: 'e',
+          catchStatements: [
+            codeGenUtils.ifStatement(
+              condition: 'e is DioException && e.response?.statusCode == 405',
+              ifBlockStatements: ["throw const GraphLinkGetNotSupported('GET is not allowed');"],
+            ),
+            'rethrow;',
+          ],
+        ),
       ],
     );
   }

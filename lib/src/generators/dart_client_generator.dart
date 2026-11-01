@@ -260,6 +260,22 @@ Future<Set<String>> generateDartClientClasses(
     ));
   }
 
+  if (parser.persistedQueries) {
+    for (final entry in {
+      'graph_link_sha256.dart': clientSerializer.generateSha256File(),
+      'graph_link_persisted_queries.dart': clientSerializer.generatePersistedQueriesFile(),
+    }.entries) {
+      clientFiles.add(entry.key);
+      futures.add(writeToFile(
+        data: serializer.serializeGlClass(entry.value),
+        fileName: entry.key,
+        subdir: 'client',
+        imports: [],
+        destinationDir: destinationDir,
+      ));
+    }
+  }
+
   // GraphLinkResolverBase
   const resolverBaseFileName = 'graph_link_resolver_base.dart';
   clientFiles.add(resolverBaseFileName);

@@ -4,6 +4,8 @@ enum DartHttpAdapter { http, dio, none }
 
 enum TypeScriptHttpAdapter { fetch, axios, none }
 
+enum PersistedQueriesMode { off, apq }
+
 enum JavaWsAdapter { java11, okhttp, none }
 
 /// Async style for the generated Java client. `blocking` keeps the existing
@@ -63,6 +65,8 @@ abstract class ClientLanguageConfig {
   bool get immutableTypeFields => true;
   bool get captureErrors => false;
   bool get strictEnums => false;
+  PersistedQueriesMode get persistedQueries => PersistedQueriesMode.off;
+  bool get persistedQueriesUseGet => false;
   String? get defaultAlias => null;
   AutoGenerateQueriesFor? get autoGenerateQueriesFor => null;
 
@@ -85,6 +89,21 @@ abstract class ClientLanguageConfig {
     if (json['swift'] != null) return SwiftClientConfig.fromJson(json['swift'] as Map<String, dynamic>);
     throw ArgumentError('clientConfig must specify one of: dart, java, typescript, kotlin, swift');
   }
+}
+
+PersistedQueriesMode persistedQueriesModeFromJson(Map<String, dynamic> json) {
+  final value = json['persistedQueries'];
+  if (value == null || value == false) return PersistedQueriesMode.off;
+  if (value == 'apq') return PersistedQueriesMode.apq;
+  throw ArgumentError('persistedQueries must be false or "apq", got $value.');
+}
+
+bool persistedQueriesUseGetFromJson(Map<String, dynamic> json) {
+  final useGet = (json['persistedQueriesUseGet'] as bool?) ?? false;
+  if (useGet && persistedQueriesModeFromJson(json) == PersistedQueriesMode.off) {
+    throw ArgumentError('persistedQueriesUseGet requires persistedQueries to be "apq".');
+  }
+  return useGet;
 }
 
 abstract class ServerLanguageConfig {
@@ -466,6 +485,8 @@ class DartClientConfig extends ClientLanguageConfig {
   @override final bool immutableTypeFields;
   @override final bool captureErrors;
   @override final bool strictEnums;
+  @override final PersistedQueriesMode persistedQueries;
+  @override final bool persistedQueriesUseGet;
   @override final String? defaultAlias;
   @override final int? autoGenerateQueriesArgumentLimit;
   @override final int? maxFragmentBodySize;
@@ -487,6 +508,8 @@ class DartClientConfig extends ClientLanguageConfig {
     required this.operationNameAsParameter,
     this.captureErrors = false,
     this.strictEnums = false,
+    this.persistedQueries = PersistedQueriesMode.off,
+    this.persistedQueriesUseGet = false,
     this.defaultAlias,
     this.packageName,
     this.appLocalizationsImport,
@@ -509,6 +532,8 @@ class DartClientConfig extends ClientLanguageConfig {
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
       captureErrors: (json['captureErrors'] as bool?) ?? false,
       strictEnums: (json['strictEnums'] as bool?) ?? false,
+      persistedQueries: persistedQueriesModeFromJson(json),
+      persistedQueriesUseGet: persistedQueriesUseGetFromJson(json),
       defaultAlias: json['defaultAlias'] as String?,
       packageName: json['packageName'] as String?,
       appLocalizationsImport: json['appLocalizationsImport'] as String?,
@@ -539,6 +564,8 @@ class JavaClientConfig extends ClientLanguageConfig {
   @override final bool immutableTypeFields;
   @override final bool captureErrors;
   @override final bool strictEnums;
+  @override final PersistedQueriesMode persistedQueries;
+  @override final bool persistedQueriesUseGet;
   @override final String? defaultAlias;
   @override final int? autoGenerateQueriesArgumentLimit;
   @override final int? maxFragmentBodySize;
@@ -562,6 +589,8 @@ class JavaClientConfig extends ClientLanguageConfig {
     this.operationNameAsParameter = false,
     this.captureErrors = false,
     this.strictEnums = false,
+    this.persistedQueries = PersistedQueriesMode.off,
+    this.persistedQueriesUseGet = false,
     this.immutableInputFields = true,
     this.immutableTypeFields = true,
     this.inputAsRecord = false,
@@ -586,6 +615,8 @@ class JavaClientConfig extends ClientLanguageConfig {
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
       captureErrors: (json['captureErrors'] as bool?) ?? false,
       strictEnums: (json['strictEnums'] as bool?) ?? false,
+      persistedQueries: persistedQueriesModeFromJson(json),
+      persistedQueriesUseGet: persistedQueriesUseGetFromJson(json),
       immutableInputFields: (json['immutableInputFields'] as bool?) ?? true,
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
       inputAsRecord: (json['inputAsRecord'] as bool?) ?? false,
@@ -624,6 +655,8 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
   @override final bool immutableTypeFields;
   @override final bool captureErrors;
   @override final bool strictEnums;
+  @override final PersistedQueriesMode persistedQueries;
+  @override final bool persistedQueriesUseGet;
   @override final String? defaultAlias;
   @override final int? autoGenerateQueriesArgumentLimit;
   @override final int? maxFragmentBodySize;
@@ -641,6 +674,8 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
     this.immutableTypeFields = true,
     this.captureErrors = false,
     this.strictEnums = false,
+    this.persistedQueries = PersistedQueriesMode.off,
+    this.persistedQueriesUseGet = false,
     this.optionalNullableInputFields = true,
     this.generateDefaultWsAdapter = true,
     this.observables = false,
@@ -659,6 +694,8 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
       captureErrors: (json['captureErrors'] as bool?) ?? false,
       strictEnums: (json['strictEnums'] as bool?) ?? false,
+      persistedQueries: persistedQueriesModeFromJson(json),
+      persistedQueriesUseGet: persistedQueriesUseGetFromJson(json),
       optionalNullableInputFields: (json['optionalNullableInputFields'] as bool?) ?? true,
       generateDefaultWsAdapter: (json['generateDefaultWsAdapter'] as bool?) ?? true,
       observables: (json['observables'] as bool?) ?? false,
@@ -684,6 +721,8 @@ class KotlinClientConfig extends ClientLanguageConfig {
   @override final bool immutableTypeFields;
   @override final bool captureErrors;
   @override final bool strictEnums;
+  @override final PersistedQueriesMode persistedQueries;
+  @override final bool persistedQueriesUseGet;
   @override final String? defaultAlias;
   @override final int? autoGenerateQueriesArgumentLimit;
 
@@ -702,6 +741,8 @@ class KotlinClientConfig extends ClientLanguageConfig {
     this.operationNameAsParameter = false,
     this.captureErrors = false,
     this.strictEnums = false,
+    this.persistedQueries = PersistedQueriesMode.off,
+    this.persistedQueriesUseGet = false,
     this.immutableTypeFields = true,
     this.inputAsDataClass = true,
     this.typeAsDataClass = true,
@@ -721,6 +762,8 @@ class KotlinClientConfig extends ClientLanguageConfig {
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
       captureErrors: (json['captureErrors'] as bool?) ?? false,
       strictEnums: (json['strictEnums'] as bool?) ?? false,
+      persistedQueries: persistedQueriesModeFromJson(json),
+      persistedQueriesUseGet: persistedQueriesUseGetFromJson(json),
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
       inputAsDataClass: (json['inputAsDataClass'] as bool?) ?? true,
       typeAsDataClass: (json['typeAsDataClass'] as bool?) ?? true,
@@ -746,6 +789,8 @@ class SwiftClientConfig extends ClientLanguageConfig {
   @override final bool immutableTypeFields;
   @override final bool captureErrors;
   @override final bool strictEnums;
+  @override final PersistedQueriesMode persistedQueries;
+  @override final bool persistedQueriesUseGet;
   @override final String? defaultAlias;
   @override final int? autoGenerateQueriesArgumentLimit;
   @override final int? maxFragmentBodySize;
@@ -764,6 +809,8 @@ class SwiftClientConfig extends ClientLanguageConfig {
     this.operationNameAsParameter = false,
     this.captureErrors = false,
     this.strictEnums = false,
+    this.persistedQueries = PersistedQueriesMode.off,
+    this.persistedQueriesUseGet = false,
     this.immutableTypeFields = true,
     this.wsAdapter = SwiftWsAdapter.urlsession,
     this.defaultAlias,
@@ -781,6 +828,8 @@ class SwiftClientConfig extends ClientLanguageConfig {
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
       captureErrors: (json['captureErrors'] as bool?) ?? false,
       strictEnums: (json['strictEnums'] as bool?) ?? false,
+      persistedQueries: persistedQueriesModeFromJson(json),
+      persistedQueriesUseGet: persistedQueriesUseGetFromJson(json),
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
       defaultAlias: json['defaultAlias'] as String?,
       wsAdapter: SwiftWsAdapter.values.firstWhere(

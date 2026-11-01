@@ -324,9 +324,14 @@ class DartCaseStatement extends CaseStatement {
     var buffer = StringBuffer();
     buffer.writeln(caseValue == 'default' ? 'default:' : 'case ${caseValue}:');
     buffer.writeln(statement.ident());
-    if (generateBreak && !statement.trim().startsWith("return ")) {
+    if (generateBreak && !_endsExecution(statement)) {
       buffer.writeln("break;");
     }
     return buffer.toString();
+  }
+
+  static bool _endsExecution(String statement) {
+    final trimmed = statement.trim();
+    return trimmed.startsWith('return ') || trimmed.startsWith('throw ');
   }
 }
