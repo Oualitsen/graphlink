@@ -8,6 +8,7 @@ import 'package:glob/list_local_fs.dart';
 import 'package:graphlink/src/cli_help.dart';
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/generators/dart_client_generator.dart';
+import 'package:graphlink/src/generators/go_client_generator.dart';
 import 'package:graphlink/src/generators/java_client_generator.dart';
 import 'package:graphlink/src/generators/kotlin_client_generator.dart';
 import 'package:graphlink/src/generators/python_client_generator.dart';
@@ -22,6 +23,7 @@ import 'package:graphlink/src/utils.dart';
 import 'package:yaml/yaml.dart';
 
 export 'package:graphlink/src/generators/dart_client_generator.dart' show generateDartClientClasses;
+export 'package:graphlink/src/generators/go_client_generator.dart' show generateGoClientClasses;
 export 'package:graphlink/src/generators/java_client_generator.dart' show generateJavaClientClasses;
 export 'package:graphlink/src/generators/kotlin_client_generator.dart' show generateKotlinClientClasses;
 export 'package:graphlink/src/generators/python_client_generator.dart' show generatePythonClientClasses;
@@ -287,6 +289,8 @@ Future<void> handleGeneration(GeneratorConfig config, {bool watching = false}) a
         await generateSwiftClientClasses(grammar, config, now);
       } else if (lang is PythonClientConfig) {
         await generatePythonClientClasses(grammar, config, now);
+      } else if (lang is GoClientConfig) {
+        await generateGoClientClasses(grammar, config, now);
       }
     }
     stdout.writeln('✅ $writeCount file(s) written.');

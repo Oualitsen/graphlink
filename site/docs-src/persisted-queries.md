@@ -7,7 +7,7 @@ description: "Automatic Persisted Queries in every generated client: send a SHA-
 
 Send a hash of the query instead of its text. Generated clients speak the Apollo **Automatic Persisted Queries** protocol, so they work with Apollo Server and any server that implements it, with no build step and no manifest.
 
-It is available for Dart, Java (blocking, Reactor, RxJava3, Mutiny), Kotlin, TypeScript, Swift and Python, and is off by default.
+It is available for Dart, Java (blocking, Reactor, RxJava3, Mutiny), Kotlin, TypeScript, Swift, Python and Go, and is off by default.
 
 ## Enable it
 
@@ -27,7 +27,7 @@ It is available for Dart, Java (blocking, Reactor, RxJava3, Mutiny), Kotlin, Typ
 | `persistedQueries` | `false` \| `"apq"` | `false` | `"apq"` hashes long operations and retries on a miss. Any other value is a generation error. With `false` the generated output is unchanged. |
 | `persistedQueriesUseGet` | `boolean` | `false` | Send hash-only **queries** with HTTP GET so CDNs and browsers can cache them. Requires `persistedQueries: "apq"`; setting it alone is an error. |
 
-Both options exist under `clientConfig.dart`, `java`, `typescript`, `kotlin`, `swift` and `python`.
+Both options exist under `clientConfig.dart`, `java`, `typescript`, `kotlin`, `swift`, `python` and `go`.
 
 ## How it works
 
@@ -82,6 +82,7 @@ With `persistedQueriesUseGet` the client also needs a **GET adapter** with the s
 | Java | `DefaultGraphLinkGetAdapter` for the JDK and OkHttp transports; the convenience constructor wires it | `getAdapter` argument, right after `adapter` |
 | Swift | `DefaultGraphLinkURLSessionGetAdapter` | `getAdapter:` argument, right after `adapter:` |
 | Python | `GraphLinkHttpxAdapter.get_call` (wired by `GraphLinkClient.with_http`) | `get_adapter=` keyword argument |
+| Go | `GraphLinkHttpAdapter.GetCall` (wired by `NewGraphLinkClientWithHttp`) | `GetAdapter` field of `GraphLinkClientOptions` |
 
 If your adapter cannot do GET, throw `GraphLinkGetNotSupported` from it. If you use the convenience constructors (`withHttp` and friends) both adapters are wired for you.
 

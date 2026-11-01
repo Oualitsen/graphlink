@@ -3,7 +3,7 @@ JAVA_PORT             = 9996
 KOTLIN_BLOCKING_PORT  = 9994
 KOTLIN_SUSPEND_PORT   = 9995
 
-CLIENTS = dart ts java kotlin java_reactive swift python
+CLIENTS = dart ts java kotlin java_reactive swift python go
 
 .PHONY: setup-client setup-client-install setup-all-clients clean-all generate-all \
         typescript-install typescript-generate typescript-start-server typescript-stop-server \
@@ -19,7 +19,7 @@ CLIENTS = dart ts java kotlin java_reactive swift python
         kotlin-test-client kotlin ci-kotlin-blocking-client ci-kotlin-suspend-client \
         ci install generate start-server stop-server test
 
-# CLIENT must be one of: dart ts java kotlin java_reactive swift python
+# CLIENT must be one of: dart ts java kotlin java_reactive swift python go
 setup-client:
 	$(MAKE) -C clients/$(CLIENT)_client install
 	$(MAKE) -C clients/$(CLIENT)_client generate

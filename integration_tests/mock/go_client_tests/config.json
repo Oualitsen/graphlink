@@ -1,0 +1,15 @@
+{
+  "schemaPaths": ["../schema_mock/schema.gql", "../schema_mock/custom_query.graphql"],
+  "mode": "client",
+  "outputDir": "generated",
+  "clientConfig": {
+    "go": {
+      "packageName": "generated",
+      "httpAdapter": "none",
+      "wsAdapter": "none",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "captureErrors": false
+    }
+  }
+}

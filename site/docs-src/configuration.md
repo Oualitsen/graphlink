@@ -594,6 +594,66 @@ Used when `mode` is `"client"` and you want Python output. See the [Python Clien
 
 ---
 
+## `clientConfig.go`
+
+Used when `mode` is `"client"` and you want Go output. See the [Go Client](go-client.md) page for a full walkthrough.
+
+=== "JSON"
+
+    ```json title="glink.json — clientConfig.go"
+    {
+      "clientConfig": {
+        "go": {
+          "packageName": "graphql",
+          "generateAllFieldsFragments": true,
+          "autoGenerateQueries": true,
+          "operationNameAsParameter": false,
+          "captureErrors": false,
+          "httpAdapter": "nethttp",
+          "wsAdapter": "coder",
+          "defaultAlias": null
+        }
+      }
+    }
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — clientConfig.go"
+    clientConfig:
+      go:
+        packageName: graphql
+        generateAllFieldsFragments: true
+        autoGenerateQueries: true
+        operationNameAsParameter: false
+        captureErrors: false
+        httpAdapter: nethttp
+        wsAdapter: coder
+        defaultAlias: null
+    ```
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `packageName` | `string` | `"graphlink"` | Go package name written at the top of every generated file. Everything is generated into this one package. |
+| `generateAllFieldsFragments` | `boolean` | `true` | Generates `_all_fields_TypeName` fragments for every type. Required for `autoGenerateQueries` and `autoGenerateQueriesFor`. |
+| `autoGenerateQueries` | `boolean` | `true` | Automatically builds query strings for every operation using `_all_fields` fragments. |
+| `autoGenerateQueriesFor` | `object` \| `null` | `null` | Generates client methods only for the listed operations. Keys: `queries`, `mutations`, `subscriptions` — each takes a list of root field names. Unknown names cause a build error. Requires `generateAllFieldsFragments: true`. |
+| `autoGenerateQueriesArgumentLimit` | `integer` \| `null` | `200` | Maximum number of propagated (nested-field) arguments allowed in the synthesized `FieldArgs` struct of an auto-generated operation. When exceeded, GraphLink skips the operation and prints a `⚠` warning. |
+| `maxFragmentBodySize` | `integer` \| `null` | `8192` | Maximum number of characters allowed in the serialized body of a generated `_all_fields` fragment. Larger fragments are omitted, and auto-generated queries that depend on them are skipped. |
+| `operationNameAsParameter` | `boolean` | `false` | When `true`, adapters receive the operation name as a third argument and the default `net/http` adapter appends it as `?operationName=`. |
+| `captureErrors` | `boolean` | `false` | When `true`, applies `@glCaptureErrors` to every query and mutation. Each method returns a `{OperationName}FullResponse` with `Data` and `Errors` instead of returning a `*GraphLinkException`. |
+| `strictEnums` | `boolean` | `false` | When `false`, every generated enum gets an extra `UnknownValue__` constant and a value the schema did not declare decodes to it instead of failing. Encoding it back is an error. Set to `true` to fail on unknown values. |
+| `persistedQueries` | `false` \| `"apq"` | `false` | `"apq"` sends a SHA-256 hash instead of long queries and retries once with the text on `PersistedQueryNotFound`. See [Persisted Queries](persisted-queries.md). |
+| `persistedQueriesUseGet` | `boolean` | `false` | Send hash-only queries over GET. Requires `persistedQueries: "apq"`. Mutations always use POST. |
+| `httpAdapter` | `"nethttp"` \| `"none"` | `"nethttp"` | HTTP adapter to generate. `"nethttp"` emits `GraphLinkHttpAdapter` and `NewGraphLinkClientWithHttp(...)`; `"none"` emits only the client, so you pass your own `Adapter`. |
+| `wsAdapter` | `"coder"` \| `"none"` | `"coder"` | WebSocket adapter to generate. `"coder"` emits `DefaultGraphLinkWebSocketAdapter` built on `github.com/coder/websocket`; `"none"` leaves you to implement `GraphLinkWebSocketAdapter` and keeps the package free of third-party imports. |
+| `defaultAlias` | `string?` | `null` | Default alias applied to all generated query fields globally. |
+
+`nullableFieldsRequired` and `immutableTypeFields` are accepted for compatibility but have no effect: Go has no
+optional-by-default fields and no immutable structs.
+
+---
+
 ## `serverConfig.spring`
 
 Used when `mode` is `"server"`.

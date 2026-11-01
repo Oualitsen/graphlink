@@ -1,6 +1,6 @@
 # GraphLink
 
-> GraphQL code generation tool for Dart, Flutter, Java, TypeScript, Kotlin, Swift, Python, and Spring Boot. Open source. MIT License.
+> GraphQL code generation tool for Dart, Flutter, Java, TypeScript, Kotlin, Swift, Python, Go, and Spring Boot. Open source. MIT License.
 
 GraphLink is a command-line tool (`glink`) that reads a GraphQL schema and generates fully type-safe
 client and server code. Developers define their API once in a `.graphql` schema file and run
@@ -34,6 +34,13 @@ client and server code. Developers define their API once in a `.graphql` schema 
   injectable `async` adapter. Default `httpx` HTTP adapter and `websockets` subscription adapter
   (auto-reconnect), `AsyncIterator` subscription results, `@glCache` with tag invalidation, file
   uploads, `@glCaptureErrors` and persisted queries (APQ, optional GET). Requires pydantic >= 2.10.
+- **Go client**: plain structs and string enums with `json` tags in one generated package (nullable
+  scalars and objects are pointers, interfaces and unions are Go interfaces decoded from
+  `__typename`), and a `context`-aware client whose methods return `(value, error)` with an injectable
+  adapter function. Default `net/http` HTTP adapter and `coder/websocket` subscription adapter
+  (auto-reconnect, `wsAdapter: "none"` keeps the package dependency-free), channel-based subscription
+  results, `@glCache` with tag invalidation, file uploads, `@glCaptureErrors` and persisted queries
+  (APQ, optional GET). Requires Go 1.22+.
 - **Spring Boot server (Java or Kotlin)**: controllers, service interfaces, repository stubs, and
   input classes generated from the schema's type definitions and queries. Supports MVC and reactive
   (WebFlux) mode. Java target: injectable HttpClient/OkHttpClient adapters, plus a reactive client
@@ -165,7 +172,6 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - Kotlin client (stable — coroutines, kotlinx.serialization, OkHttp WebSocket)
 - Swift client (stable — async/await, Sendable structs, URLSession/URLSessionWebSocketTask, no third-party dependency)
 - Express / Apollo server (stable — TypeScript, DataLoader batch mappings, graphql-ws subscriptions)
-- Go (planned, demand-based)
 
 ## Installation
 
