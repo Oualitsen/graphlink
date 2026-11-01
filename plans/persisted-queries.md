@@ -216,8 +216,7 @@ queries, and short ones to prove no hash is sent.
    `GraphLinkGetRequest.queryParameters`), `GraphLinkGetNotSupported` on a 405. **Done.** The http adapter is tested against a local
    `HttpServer`; the Dio adapter is covered by generator tests only.
 4. Dart real-server tests against the Spring test server.
-5. Remaining languages, one at a time, order TypeScript, Kotlin, Swift, then Java and Java reactive. Until a language lands, its
-   generator rejects `persistedQueries: "apq"` (`_persistedQueriesLanguages` in `config.dart`).
+5. Remaining languages, one at a time, order TypeScript, Kotlin, Swift, then Java and Java reactive. **All done.**
    - TypeScript: **Done** (`typescript_persisted_queries_tests`; `getAdapter` is a positional argument right after `adapter`;
      `createFetchGetAdapter` / `createAxiosGetAdapter`; fetch adapter tested against a local Node server, axios by generator tests only).
    - Kotlin: **Done** (`kotlin_persisted_queries_tests`; `getAdapter` right after `adapter`; `DefaultGraphLinkGetAdapter` on OkHttp,
@@ -229,8 +228,14 @@ queries, and short ones to prove no hash is sent.
    - Java (blocking): **Done** (`java_persisted_queries_tests`, Maven + Jackson; `getAdapter` right after `adapter`; the hash memo is a
      `ConcurrentHashMap`, the flags are `volatile`; `GraphLinkGetNotSupported` and `GraphLinkGetRequest` are public classes in their
      own files, because a Java file can hold one public class; `DefaultGraphLinkGetAdapter` exists for the JDK and OkHttp
-     transports, the JDK one is tested against a local `HttpServer`, the OkHttp one by generator tests only). Reactive styles
-     (`reactor`, `rxjava3`, `mutiny`) are still rejected at config time.
+     transports, the JDK one is tested against a local `HttpServer`, the OkHttp one by generator tests only). 
+   - Java reactive styles: `reactor`, `rxjava3` and `mutiny` are **done**. The flow is the blocking one chained onto the deferred single: `glSendHashOnly(...)` then
+`flatMap` (`chain` on Mutiny) into the retry, and the GET refusal handled with the flavor's error-recovery combinator. A JDK
+`sendAsync` failure arrives wrapped in a `CompletionException` on some libraries, so the GET fallback unwraps it before testing for
+`GraphLinkGetNotSupported`. One set of tests (`java_reactive_persisted_queries_shared`) runs against three projects that differ only in
+their `Reactive` helper and dependencies; Reactor runs on the WebClient transport and RxJava3 and Mutiny on the JDK one, so both
+transports are executed. Side finding: the WebClient adapter imported `MultipartBodyBuilder` from the wrong package, so it had never
+compiled for a schema with uploads (fixed, with a test).
 6. Docs: new `persisted-queries.md` page, config reference, `--help`, llms sources; document bounded server caches.
 7. Changelog entry as a new feature (minor version).
 

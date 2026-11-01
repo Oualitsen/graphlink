@@ -359,7 +359,7 @@ class JavaClientSerializer extends GLClientSerializer {
 
   String _glSendMethod() {
     return codeGenUtils.createMethod(
-      returnType: 'private String',
+      returnType: 'private ${_wrapSingle('String')}',
       methodName: 'glSend',
       arguments: ['Object body${_opNameParam}'],
       statements: ['return $svAdapter.execute($svEncoder.encode(body)$_opNameArg);'],
@@ -367,49 +367,55 @@ class JavaClientSerializer extends GLClientSerializer {
   }
 
   String _glSendHashOnlyMethod() {
+    final send = 'glSend(body$_opNameArg)';
+    final getCall = '$svGetAdapter.execute($svEncoder.encode(body)$_opNameArg)';
+    final guard = codeGenUtils.ifStatement(
+      condition: '$svGetAdapter == null || $svGetUnsupported || payload.getQuery().startsWith("mutation")',
+      ifBlockStatements: ['return $send;'],
+    );
+    final fallback = flavor.isReactive
+        ? _reactiveOpenBlock(
+            header: 'return ${flavor.onErrorResumeOpen(getCall, 'e')}',
+            statements: [
+              'Throwable cause = e instanceof CompletionException && e.getCause() != null ? e.getCause() : e;',
+              codeGenUtils.ifStatement(
+                condition: '!(cause instanceof GraphLinkGetNotSupported)',
+                ifBlockStatements: ['return ${flavor.error('e')};'],
+              ),
+              '$svGetUnsupported = true;',
+              'return $send;',
+            ],
+          )
+        : codeGenUtils.tryCatchFinally(
+            tryStatements: ['return $getCall;'],
+            catchVariable: 'e',
+            catchStatements: [
+              codeGenUtils.ifStatement(
+                condition: '!(e instanceof GraphLinkGetNotSupported)',
+                ifBlockStatements: ['throw e;'],
+              ),
+              '$svGetUnsupported = true;',
+              'return $send;',
+            ],
+          );
     return codeGenUtils.createMethod(
-      returnType: 'private String',
+      returnType: 'private ${_wrapSingle('String')}',
       methodName: 'glSendHashOnly',
       arguments: ['GraphLinkPayload payload', 'Map<String, Object> body${_opNameParam}'],
-      statements: [
-        codeGenUtils.ifStatement(
-          condition: '$svGetAdapter == null || $svGetUnsupported || payload.getQuery().startsWith("mutation")',
-          ifBlockStatements: ['return glSend(body$_opNameArg);'],
-        ),
-        codeGenUtils.tryCatchFinally(
-          tryStatements: ['return $svGetAdapter.execute($svEncoder.encode(body)$_opNameArg);'],
-          catchVariable: 'e',
-          catchStatements: [
-            codeGenUtils.ifStatement(
-              condition: '!(e instanceof GraphLinkGetNotSupported)',
-              ifBlockStatements: ['throw e;'],
-            ),
-            '$svGetUnsupported = true;',
-            'return glSend(body$_opNameArg);',
-          ],
-        ),
-      ],
+      statements: [guard, fallback],
     );
   }
 
   List<String> _persistedCallAdapterStatements() {
-    return [
-      if (_grammar.operationNameAsParameter) 'String operationName = payload.getOperationName();',
-      codeGenUtils.ifStatement(
-        condition:
-            '$svPersistedUnsupported || payload.getQuery().length() <= GraphLinkPersistedQueries.MIN_QUERY_LENGTH',
-        ifBlockStatements: ['return glSend(payload$_opNameArg);'],
-      ),
-      'Map<String, Object> extensions = GraphLinkPersistedQueries.extensions(glHash(payload.getQuery()));',
-      'Map<String, Object> hashOnly = new HashMap<>();',
-      'hashOnly.put("operationName", payload.getOperationName());',
-      'hashOnly.put("variables", payload.getVariables());',
-      'hashOnly.put("extensions", extensions);',
-      _grammar.persistedQueriesUseGet
-          ? 'String response = glSendHashOnly(payload, hashOnly$_opNameArg);'
-          : 'String response = glSend(hashOnly$_opNameArg);',
+    final hashOnlyCall = _grammar.persistedQueriesUseGet
+        ? 'glSendHashOnly(payload, hashOnly$_opNameArg)'
+        : 'glSend(hashOnly$_opNameArg)';
+    final retry = <String>[
       'String failure = GraphLinkPersistedQueries.failure(response, $svDecoder);',
-      codeGenUtils.ifStatement(condition: 'failure == null', ifBlockStatements: ['return response;']),
+      codeGenUtils.ifStatement(
+        condition: 'failure == null',
+        ifBlockStatements: ['return ${flavor.wrapValue('response')};'],
+      ),
       codeGenUtils.ifStatement(
         condition: 'GraphLinkPersistedQueries.NOT_SUPPORTED.equals(failure)',
         ifBlockStatements: [
@@ -423,6 +429,28 @@ class JavaClientSerializer extends GLClientSerializer {
       'body.put("variables", payload.getVariables());',
       'body.put("extensions", extensions);',
       'return glSend(body$_opNameArg);',
+    ];
+    return [
+      if (_grammar.operationNameAsParameter) 'String operationName = payload.getOperationName();',
+      codeGenUtils.ifStatement(
+        condition:
+            '$svPersistedUnsupported || payload.getQuery().length() <= GraphLinkPersistedQueries.MIN_QUERY_LENGTH',
+        ifBlockStatements: ['return glSend(payload$_opNameArg);'],
+      ),
+      'Map<String, Object> extensions = GraphLinkPersistedQueries.extensions(glHash(payload.getQuery()));',
+      'Map<String, Object> hashOnly = new HashMap<>();',
+      'hashOnly.put("operationName", payload.getOperationName());',
+      'hashOnly.put("variables", payload.getVariables());',
+      'hashOnly.put("extensions", extensions);',
+      if (flavor.isReactive)
+        _reactiveOpenBlock(
+          header: 'return ${flavor.flatMapOpen(hashOnlyCall, 'response')}',
+          statements: retry,
+        )
+      else ...[
+        'String response = $hashOnlyCall;',
+        ...retry,
+      ],
     ];
   }
 
@@ -1046,6 +1074,7 @@ class JavaClientSerializer extends GLClientSerializer {
         JavaImports.reentrantLock,
         JavaImports.function,
         if (_grammar.persistedQueries) JavaImports.concurrentHashMap,
+        if (_grammar.persistedQueriesUseGet && flavor.isReactive) 'java.util.concurrent.CompletionException',
         ...flavor.imports,
       ],
       importDepencies: [
@@ -1463,6 +1492,188 @@ class JavaClientSerializer extends GLClientSerializer {
     );
   }
 
+  /// Reactive `DefaultGraphLinkGetAdapter` over the JDK `HttpClient.sendAsync`
+  /// bridge, the same transport as [generateReactiveDefaultClientAdapterFile].
+  GLClassModel generateReactiveDefaultGetAdapterFile() {
+    _requireGet();
+    final params = _grammar.operationNameAsParameter
+        ? 'String payload, String operationName'
+        : 'String payload';
+    final send =
+        'httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApply(response -> {\n'
+        '${[
+      codeGenUtils.ifStatement(
+        condition: 'response.statusCode() == 405',
+        ifBlockStatements: ['throw new GraphLinkGetNotSupported("GET is not allowed");'],
+      ),
+      'return response.body();',
+    ].join('\n').ident()}\n})';
+    final body = codeGenUtils.createClass(
+      className: 'DefaultGraphLinkGetAdapter',
+      interfaceNames: ['GraphLinkClientAdapter'],
+      statements: [
+        'private final String url;',
+        'private final Supplier<Map<String, String>> headersProvider;',
+        'private final GraphLinkJsonEncoder encoder;',
+        'private final GraphLinkJsonDecoder decoder;',
+        'private final HttpClient httpClient;',
+        '',
+        codeGenUtils.createMethod(
+          returnType: 'public',
+          methodName: 'DefaultGraphLinkGetAdapter',
+          arguments: ['String url', 'GraphLinkJsonEncoder encoder', 'GraphLinkJsonDecoder decoder'],
+          statements: ['this(url, () -> null, encoder, decoder);'],
+        ),
+        '',
+        codeGenUtils.createMethod(
+          returnType: 'public',
+          methodName: 'DefaultGraphLinkGetAdapter',
+          arguments: [
+            'String url',
+            'Supplier<Map<String, String>> headersProvider',
+            'GraphLinkJsonEncoder encoder',
+            'GraphLinkJsonDecoder decoder',
+          ],
+          statements: [
+            'this.url = url;',
+            'this.headersProvider = headersProvider;',
+            'this.encoder = encoder;',
+            'this.decoder = decoder;',
+            'this.httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build();',
+          ],
+        ),
+        '',
+        '@Override\n${codeGenUtils.createMethod(
+          returnType: 'public ${_wrapSingle('String')}',
+          methodName: 'execute',
+          arguments: [params],
+          statements: [
+            'String separator = url.contains("?") ? "&" : "?";',
+            'HttpRequest.Builder builder = HttpRequest.newBuilder()\n    .uri(URI.create(url + separator + GraphLinkGetRequest.queryString(payload, decoder, encoder)))\n    .GET();',
+            'Map<String, String> headers = headersProvider.get();',
+            codeGenUtils.ifStatement(
+              condition: 'headers != null',
+              ifBlockStatements: [
+                codeGenUtils.forEachLoop(
+                  variable: 'entry',
+                  iterable: 'headers.entrySet()',
+                  statements: ['builder.header(entry.getKey(), entry.getValue());'],
+                ),
+              ],
+            ),
+            'HttpRequest request = builder.build();',
+            'return ${flavor.bridgeFuture(send)};',
+          ],
+        )}',
+      ],
+    );
+    return GLClassModel(
+      imports: [
+        'java.net.URI',
+        'java.net.http.HttpClient',
+        'java.net.http.HttpRequest',
+        'java.net.http.HttpResponse',
+        JavaImports.map,
+        JavaImports.supplier,
+        ...flavor.singleImports,
+      ],
+      importDepencies: [
+        _grammar.getTokenByKey('GraphLinkClientAdapter')!,
+        _grammar.getTokenByKey('GraphLinkJsonEncoder')!,
+        _grammar.getTokenByKey('GraphLinkJsonDecoder')!,
+      ],
+      body: body,
+    );
+  }
+
+  /// WebClient flavor of [generateReactiveDefaultGetAdapterFile] (Reactor only).
+  GLClassModel generateWebClientDefaultGetAdapterFile() {
+    _requireGet();
+    final params = _grammar.operationNameAsParameter
+        ? 'String payload, String operationName'
+        : 'String payload';
+    final body = codeGenUtils.createClass(
+      className: 'DefaultGraphLinkGetAdapter',
+      interfaceNames: ['GraphLinkClientAdapter'],
+      statements: [
+        'private final String url;',
+        'private final WebClient webClient;',
+        'private final Supplier<Map<String, String>> headersProvider;',
+        'private final GraphLinkJsonEncoder encoder;',
+        'private final GraphLinkJsonDecoder decoder;',
+        '',
+        codeGenUtils.createMethod(
+          returnType: 'public',
+          methodName: 'DefaultGraphLinkGetAdapter',
+          arguments: ['String url', 'GraphLinkJsonEncoder encoder', 'GraphLinkJsonDecoder decoder'],
+          statements: ['this(url, () -> null, encoder, decoder);'],
+        ),
+        '',
+        codeGenUtils.createMethod(
+          returnType: 'public',
+          methodName: 'DefaultGraphLinkGetAdapter',
+          arguments: [
+            'String url',
+            'Supplier<Map<String, String>> headersProvider',
+            'GraphLinkJsonEncoder encoder',
+            'GraphLinkJsonDecoder decoder',
+          ],
+          statements: ['this(url, headersProvider, encoder, decoder, WebClient.create());'],
+        ),
+        '',
+        codeGenUtils.createMethod(
+          returnType: 'public',
+          methodName: 'DefaultGraphLinkGetAdapter',
+          arguments: [
+            'String url',
+            'Supplier<Map<String, String>> headersProvider',
+            'GraphLinkJsonEncoder encoder',
+            'GraphLinkJsonDecoder decoder',
+            'WebClient webClient',
+          ],
+          statements: [
+            'this.url = url;',
+            'this.headersProvider = headersProvider;',
+            'this.encoder = encoder;',
+            'this.decoder = decoder;',
+            'this.webClient = webClient;',
+          ],
+        ),
+        '',
+        '@Override\n${codeGenUtils.createMethod(
+          returnType: 'public Mono<String>',
+          methodName: 'execute',
+          arguments: [params],
+          statements: [
+            'String separator = url.contains("?") ? "&" : "?";',
+            'WebClient.RequestHeadersSpec<?> request = webClient.get()\n    .uri(URI.create(url + separator + GraphLinkGetRequest.queryString(payload, decoder, encoder)));',
+            'Map<String, String> headers = headersProvider.get();',
+            codeGenUtils.ifStatement(
+              condition: 'headers != null',
+              ifBlockStatements: ['request = request.headers(h -> headers.forEach(h::add));'],
+            ),
+            'return request.retrieve()\n    .onStatus(status -> status.value() == 405, response -> Mono.error(new GraphLinkGetNotSupported("GET is not allowed")))\n    .bodyToMono(String.class);',
+          ],
+        )}',
+      ],
+    );
+    return GLClassModel(
+      imports: [
+        'org.springframework.web.reactive.function.client.WebClient',
+        'java.net.URI',
+        JavaImports.map,
+        JavaImports.supplier,
+        'reactor.core.publisher.Mono',
+      ],
+      importDepencies: [
+        _grammar.getTokenByKey('GraphLinkClientAdapter')!,
+        _grammar.getTokenByKey('GraphLinkJsonEncoder')!,
+        _grammar.getTokenByKey('GraphLinkJsonDecoder')!,
+      ],
+      body: body,
+    );
+  }
+
   /// Native Spring WebClient reactive adapter (Reactor only). `execute` and
   /// `executeMultipart` return `Mono<String>` directly — no bridge. Multipart
   /// uses `MultipartBodyBuilder` + `BodyInserters.fromMultipartData`; byte
@@ -1539,7 +1750,7 @@ class JavaClientSerializer extends GLClientSerializer {
         'org.springframework.http.MediaType',
         if (hasUploads)
           'org.springframework.web.reactive.function.BodyInserters',
-        if (hasUploads) 'org.springframework.util.MultipartBodyBuilder',
+        if (hasUploads) 'org.springframework.http.client.MultipartBodyBuilder',
         if (hasUploads) 'org.springframework.core.io.InputStreamResource',
         JavaImports.map,
         JavaImports.supplier,
