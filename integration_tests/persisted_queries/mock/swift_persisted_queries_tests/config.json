@@ -1,0 +1,28 @@
+{
+  "schemaPaths": [
+    "../../../mock/schema_mock/schema.gql",
+    "../../../mock/schema_mock/custom_query.graphql",
+    "../../schema/persisted_queries.graphql"
+  ],
+  "mode": "client",
+  "typeMappings": {
+    "ID": "String",
+    "String": "String",
+    "Float": "Double",
+    "Int": "Int",
+    "Boolean": "Bool"
+  },
+  "outputDir": "Sources/GraphLinkGenerated",
+  "clientConfig": {
+    "swift": {
+      "moduleName": "GraphLinkGenerated",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "nullableFieldsRequired": false,
+      "wsAdapter": "urlsession",
+      "captureErrors": false,
+      "persistedQueries": "apq",
+      "persistedQueriesUseGet": true
+    }
+  }
+}

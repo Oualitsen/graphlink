@@ -1,0 +1,31 @@
+{
+  "schemaPaths": [
+    "../../../mock/schema_mock/schema.gql",
+    "../../../mock/schema_mock/custom_query.graphql",
+    "../../schema/persisted_queries.graphql"
+  ],
+  "mode": "client",
+  "typeMappings": {
+    "ID": "String",
+    "String": "String",
+    "Float": "double",
+    "Int": "int",
+    "Boolean": "bool",
+    "Null": "null"
+  },
+  "outputDir": "lib/generated",
+  "clientConfig": {
+    "dart": {
+      "packageName": "graphlink_persisted_queries_tests",
+      "httpAdapter": "http",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "nullableFieldsRequired": false,
+      "immutableInputFields": true,
+      "immutableTypeFields": true,
+      "captureErrors": false,
+      "persistedQueries": "apq",
+      "persistedQueriesUseGet": true
+    }
+  }
+}

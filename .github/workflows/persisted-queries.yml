@@ -1,0 +1,295 @@
+name: Persisted Queries
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: integration_tests/persisted_queries
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - run: make clean-all generate-all
+      - uses: actions/upload-artifact@v4
+        with:
+          name: persisted-queries-generated
+          retention-days: 1
+          path: integration_tests/persisted_queries
+
+  build-server:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: cd integration_tests/persisted_queries/real/spring_persisted_queries_server && ./gradlew build -x test
+      - uses: actions/upload-artifact@v4
+        with:
+          name: persisted-queries-server-jar
+          retention-days: 1
+          path: integration_tests/persisted_queries/real/spring_persisted_queries_server/build/libs/*.jar
+
+  dart-persisted-queries:
+    runs-on: ubuntu-latest
+    needs: generate
+    defaults:
+      run:
+        working-directory: integration_tests/persisted_queries/mock/dart_persisted_queries_tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/download-artifact@v4
+        with:
+          name: persisted-queries-generated
+          path: integration_tests/persisted_queries
+      - run: make ci-no-generate
+
+  typescript-persisted-queries:
+    runs-on: ubuntu-latest
+    needs: generate
+    defaults:
+      run:
+        working-directory: integration_tests/persisted_queries/mock/typescript_persisted_queries_tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: persisted-queries-generated
+          path: integration_tests/persisted_queries
+      - run: make install
+      - run: make ci-no-generate
+
+  java-persisted-queries:
+    runs-on: ubuntu-latest
+    needs: generate
+    defaults:
+      run:
+        working-directory: integration_tests/persisted_queries/mock/java_persisted_queries_tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/download-artifact@v4
+        with:
+          name: persisted-queries-generated
+          path: integration_tests/persisted_queries
+      - run: make ci-no-generate
+
+  dart-persisted-queries-real:
+    runs-on: ubuntu-latest
+    needs: [build-server, generate]
+    defaults:
+      run:
+        working-directory: integration_tests/persisted_queries/real/dart_persisted_queries_tests_real
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/download-artifact@v4
+        with:
+          name: persisted-queries-generated
+          path: integration_tests/persisted_queries
+      - uses: actions/download-artifact@v4
+        with:
+          name: persisted-queries-server-jar
+          path: integration_tests/persisted_queries/real/spring_persisted_queries_server/build/libs
+      - run: make ci-no-generate
+
+  typescript-persisted-queries-real:
+    runs-on: ubuntu-latest
+    needs: [build-server, generate]
+    defaults:
+      run:
+        working-directory: integration_tests/persisted_queries/real/typescript_persisted_queries_tests_real
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: persisted-queries-generated
+          path: integration_tests/persisted_queries
+      - uses: actions/download-artifact@v4
+        with:
+          name: persisted-queries-server-jar
+          path: integration_tests/persisted_queries/real/spring_persisted_queries_server/build/libs
+      - run: make install
+      - run: make ci-no-generate
+
+  java-persisted-queries-real:
+    runs-on: ubuntu-latest
+    needs: [build-server, generate]
+    defaults:
+      run:
+        working-directory: integration_tests/persisted_queries/real/java_persisted_queries_tests_real
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/download-artifact@v4
+        with:
+          name: persisted-queries-generated
+          path: integration_tests/persisted_queries
+      - uses: actions/download-artifact@v4
+        with:
+          name: persisted-queries-server-jar
+          path: integration_tests/persisted_queries/real/spring_persisted_queries_server/build/libs
+      - run: make ci-no-generate
+
+  java-reactive-persisted-queries-real:
+    runs-on: ubuntu-latest
+    needs: [build-server, generate]
+    strategy:
+      fail-fast: false
+      matrix:
+        flavor: [reactor, rxjava3, mutiny]
+    defaults:
+      run:
+        working-directory: integration_tests/persisted_queries/real/java_${{ matrix.flavor }}_persisted_queries_tests_real
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/download-artifact@v4
+        with:
+          name: persisted-queries-generated
+          path: integration_tests/persisted_queries
+      - uses: actions/download-artifact@v4
+        with:
+          name: persisted-queries-server-jar
+          path: integration_tests/persisted_queries/real/spring_persisted_queries_server/build/libs
+      - run: make ci-no-generate
+
+  kotlin-persisted-queries-real:
+    runs-on: ubuntu-latest
+    needs: [build-server, generate]
+    defaults:
+      run:
+        working-directory: integration_tests/persisted_queries/real/kotlin_persisted_queries_tests_real
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/download-artifact@v4
+        with:
+          name: persisted-queries-generated
+          path: integration_tests/persisted_queries
+      - uses: actions/download-artifact@v4
+        with:
+          name: persisted-queries-server-jar
+          path: integration_tests/persisted_queries/real/spring_persisted_queries_server/build/libs
+      - run: make ci-no-generate
+
+  # macos-latest, not ubuntu-latest: swift-corelibs-foundation on Linux lacks FoundationNetworking APIs the generated Swift client needs.
+  swift-persisted-queries-real:
+    runs-on: macos-latest
+    needs: [build-server, generate]
+    defaults:
+      run:
+        working-directory: integration_tests/persisted_queries/real/swift_persisted_queries_tests_real
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/download-artifact@v4
+        with:
+          name: persisted-queries-generated
+          path: integration_tests/persisted_queries
+      - uses: actions/download-artifact@v4
+        with:
+          name: persisted-queries-server-jar
+          path: integration_tests/persisted_queries/real/spring_persisted_queries_server/build/libs
+      - run: make ci-no-generate
+
+  java-reactive-persisted-queries:
+    runs-on: ubuntu-latest
+    needs: generate
+    strategy:
+      fail-fast: false
+      matrix:
+        flavor: [reactor, rxjava3, mutiny]
+    defaults:
+      run:
+        working-directory: integration_tests/persisted_queries/mock/java_${{ matrix.flavor }}_persisted_queries_tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/download-artifact@v4
+        with:
+          name: persisted-queries-generated
+          path: integration_tests/persisted_queries
+      - run: make ci-no-generate
+
+  kotlin-persisted-queries:
+    runs-on: ubuntu-latest
+    needs: generate
+    defaults:
+      run:
+        working-directory: integration_tests/persisted_queries/mock/kotlin_persisted_queries_tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/download-artifact@v4
+        with:
+          name: persisted-queries-generated
+          path: integration_tests/persisted_queries
+      - run: make ci-no-generate
+
+  swift-persisted-queries:
+    runs-on: macos-latest
+    needs: generate
+    defaults:
+      run:
+        working-directory: integration_tests/persisted_queries/mock/swift_persisted_queries_tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/download-artifact@v4
+        with:
+          name: persisted-queries-generated
+          path: integration_tests/persisted_queries
+      - run: make ci-no-generate
