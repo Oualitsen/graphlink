@@ -12,6 +12,7 @@ clean-all:
 # discovers every */config.json under integration_tests/ itself.
 generate-all:
 	dart run generate.dart
+	dart run real/generate_reactor_tests.dart
 
 dart:
 	$(MAKE) -C mock/dart_client_tests ci
@@ -56,7 +57,7 @@ swift-real:
 
 all: dart dart-apq typescript java kotlin swift
 
-all-real: dart-real typescript-real java-real kotlin-real swift-real
+all-real: dart-real typescript-real java-real java-reactor-real kotlin-real swift-real
 
 start-server:
 	curl -s -X POST http://localhost:9990/actuator/shutdown || true

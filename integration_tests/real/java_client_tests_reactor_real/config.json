@@ -1,6 +1,7 @@
 {
   "schemaPaths": [
-    "schema/schema.gql"
+    "../schema_real/schema.gql",
+    "../schema_real/custom_query.graphql"
   ],
   "mode": "client",
   "typeMappings": {
