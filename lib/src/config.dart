@@ -91,7 +91,7 @@ abstract class ClientLanguageConfig {
   }
 }
 
-const _persistedQueriesLanguages = {'dart', 'typescript', 'kotlin', 'swift'};
+const _persistedQueriesLanguages = {'dart', 'typescript', 'kotlin', 'swift', 'java'};
 
 PersistedQueriesMode persistedQueriesModeFromJson(Map<String, dynamic> json, {String language = 'dart'}) {
   final value = json['persistedQueries'];
@@ -614,6 +614,8 @@ class JavaClientConfig extends ClientLanguageConfig {
   });
 
   factory JavaClientConfig.fromJson(Map<String, dynamic> json) {
+    final style = json['asyncStyle'] as String?;
+    final persistedQueriesLanguage = style == null || style == JavaAsyncStyle.blocking.name ? 'java' : 'java asyncStyle "$style"';
     return JavaClientConfig(
       packageName: json['packageName'] as String,
       generateAllFieldsFragments: (json['generateAllFieldsFragments'] as bool?) ?? true,
@@ -622,8 +624,8 @@ class JavaClientConfig extends ClientLanguageConfig {
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
       captureErrors: (json['captureErrors'] as bool?) ?? false,
       strictEnums: (json['strictEnums'] as bool?) ?? false,
-      persistedQueries: persistedQueriesModeFromJson(json, language: 'java'),
-      persistedQueriesUseGet: persistedQueriesUseGetFromJson(json, language: 'java'),
+      persistedQueries: persistedQueriesModeFromJson(json, language: persistedQueriesLanguage),
+      persistedQueriesUseGet: persistedQueriesUseGetFromJson(json, language: persistedQueriesLanguage),
       immutableInputFields: (json['immutableInputFields'] as bool?) ?? true,
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
       inputAsRecord: (json['inputAsRecord'] as bool?) ?? false,

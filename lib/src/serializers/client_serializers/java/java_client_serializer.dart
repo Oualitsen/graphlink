@@ -100,6 +100,7 @@ class JavaClientSerializer extends GLClientSerializer {
         statements: [
           '${codeGenUtils.callExpression('this', [
             'adapter',
+            if (_grammar.persistedQueriesUseGet) 'getAdapter',
             if (_grammar.hasUploadMutations) 'multipartAdapter',
             'encoder',
             'decoder',
@@ -129,9 +130,9 @@ class JavaClientSerializer extends GLClientSerializer {
           "Objects.requireNonNull(decoder);",
           if (_grammar.hasSubscriptions) "Objects.requireNonNull(wsAdapter);",
           if (_grammar.hasQueries)
-            "queries = new ${classNameFromType(GLQueryType.query)}(adapter, $svFragmentMap, encoder, decoder, store);",
+            "queries = new ${classNameFromType(GLQueryType.query)}(adapter, ${_getArg}$svFragmentMap, encoder, decoder, store);",
           if (_grammar.hasMutations)
-            "mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, ${_grammar.hasUploadMutations ? 'multipartAdapter, ' : ''}$svFragmentMap, encoder, decoder, store);",
+            "mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, ${_getArg}${_grammar.hasUploadMutations ? 'multipartAdapter, ' : ''}$svFragmentMap, encoder, decoder, store);",
           if (_grammar.hasSubscriptions)
             "subscriptions = new ${classNameFromType(GLQueryType.subscription)}(adapter, wsAdapter, $svFragmentMap, encoder, decoder, store);",
           ..._grammar.usedFragments
@@ -154,6 +155,12 @@ class JavaClientSerializer extends GLClientSerializer {
       body: bodyBuf.toString(),
     );
   }
+
+  String get _getArg => _grammar.persistedQueriesUseGet ? 'getAdapter, ' : '';
+
+  List<String> _getAdapterExpr(String urlArgs) => [
+        if (_grammar.persistedQueriesUseGet) 'new DefaultGraphLinkGetAdapter($urlArgs, encoder, decoder)',
+      ];
 
   List<String> _convenienceConstructors() {
     final encoderDecoderArgs = [
@@ -178,9 +185,10 @@ class JavaClientSerializer extends GLClientSerializer {
             methodName: clientName,
             arguments: [
               'DefaultGraphLinkClientAdapter adapter',
+              if (_grammar.persistedQueriesUseGet) 'GraphLinkClientAdapter getAdapter',
               ...encoderDecoderArgs
             ],
-            statements: ['${codeGenUtils.callExpression('this', ['adapter', 'adapter', 'encoder', 'decoder', 'null'])};'],
+            statements: ['${codeGenUtils.callExpression('this', ['adapter', if (_grammar.persistedQueriesUseGet) 'getAdapter', 'adapter', 'encoder', 'decoder', 'null'])};'],
           ),
         codeGenUtils.createMethod(
           returnType: 'public',
@@ -188,10 +196,10 @@ class JavaClientSerializer extends GLClientSerializer {
           arguments: ['String url', ...encoderDecoderArgs],
           statements: _grammar.hasUploadMutations
               ? [
-                  '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url)', 'encoder', 'decoder'])};'
+                  '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url)', ..._getAdapterExpr('url'), 'encoder', 'decoder'])};'
                 ]
               : [
-                  '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url)', 'encoder', 'decoder', 'null'])};'
+                  '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url)', ..._getAdapterExpr('url'), 'encoder', 'decoder', 'null'])};'
                 ],
         ),
         codeGenUtils.createMethod(
@@ -204,10 +212,10 @@ class JavaClientSerializer extends GLClientSerializer {
           ],
           statements: _grammar.hasUploadMutations
               ? [
-                  '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url, headersProvider)', 'encoder', 'decoder'])};'
+                  '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url, headersProvider)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder'])};'
                 ]
               : [
-                  '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url, headersProvider)', 'encoder', 'decoder', 'null'])};'
+                  '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url, headersProvider)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder', 'null'])};'
                 ],
         ),
         if (defaultCodec != null)
@@ -228,11 +236,12 @@ class JavaClientSerializer extends GLClientSerializer {
           methodName: clientName,
           arguments: [
             'DefaultGraphLinkClientAdapter adapter',
+            if (_grammar.persistedQueriesUseGet) 'GraphLinkClientAdapter getAdapter',
             ...encoderDecoderArgs,
             'GraphLinkWebSocketAdapter wsAdapter'
           ],
           statements: [
-            '${codeGenUtils.callExpression('this', ['adapter', 'adapter', 'encoder', 'decoder', 'null', 'wsAdapter'])};'
+            '${codeGenUtils.callExpression('this', ['adapter', if (_grammar.persistedQueriesUseGet) 'getAdapter', 'adapter', 'encoder', 'decoder', 'null', 'wsAdapter'])};'
           ],
         ),
       //Single URL, ws derived by replacing http→ws
@@ -242,10 +251,10 @@ class JavaClientSerializer extends GLClientSerializer {
         arguments: ['String url', ...encoderDecoderArgs],
         statements: _grammar.hasUploadMutations
             ? [
-                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url)', 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"))'])};'
+                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url)', ..._getAdapterExpr('url'), 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"))'])};'
               ]
             : [
-                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url)', 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"))'])};'
+                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url)', ..._getAdapterExpr('url'), 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"))'])};'
               ],
       ),
       codeGenUtils.createMethod(
@@ -258,10 +267,10 @@ class JavaClientSerializer extends GLClientSerializer {
         ],
         statements: _grammar.hasUploadMutations
             ? [
-                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url, headersProvider)', 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"), headersProvider)'])};'
+                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url, headersProvider)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"), headersProvider)'])};'
               ]
             : [
-                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url, headersProvider)', 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"), headersProvider)'])};'
+                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url, headersProvider)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"), headersProvider)'])};'
               ],
       ),
       // Option B — explicit wsUrl
@@ -271,10 +280,10 @@ class JavaClientSerializer extends GLClientSerializer {
         arguments: ['String url', 'String wsUrl', ...encoderDecoderArgs],
         statements: _grammar.hasUploadMutations
             ? [
-                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url)', 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(wsUrl)'])};'
+                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url)', ..._getAdapterExpr('url'), 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(wsUrl)'])};'
               ]
             : [
-                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url)', 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(wsUrl)'])};'
+                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url)', ..._getAdapterExpr('url'), 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(wsUrl)'])};'
               ],
       ),
       codeGenUtils.createMethod(
@@ -288,10 +297,10 @@ class JavaClientSerializer extends GLClientSerializer {
         ],
         statements: _grammar.hasUploadMutations
             ? [
-                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url, headersProvider)', 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider)'])};'
+                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url, headersProvider)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider)'])};'
               ]
             : [
-                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url, headersProvider)', 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider)'])};'
+                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url, headersProvider)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider)'])};'
               ],
       ),
       if (defaultCodec != null) ...[
@@ -327,9 +336,100 @@ class JavaClientSerializer extends GLClientSerializer {
     return '$header\n$body\n});';
   }
 
+  String _glHashMethod() {
+    return codeGenUtils.createMethod(
+      returnType: 'public String',
+      methodName: 'glHash',
+      arguments: ['String query'],
+      statements: [
+        'String cached = $svHashes.get(query);',
+        codeGenUtils.ifStatement(
+          condition: 'cached != null',
+          ifBlockStatements: ['return cached;'],
+        ),
+        'String hash = GraphLinkSha256.hex(query);',
+        '$svHashes.put(query, hash);',
+        'return hash;',
+      ],
+    );
+  }
+
+  String get _opNameParam => _grammar.operationNameAsParameter ? ', String operationName' : '';
+  String get _opNameArg => _grammar.operationNameAsParameter ? ', operationName' : '';
+
+  String _glSendMethod() {
+    return codeGenUtils.createMethod(
+      returnType: 'private String',
+      methodName: 'glSend',
+      arguments: ['Object body${_opNameParam}'],
+      statements: ['return $svAdapter.execute($svEncoder.encode(body)$_opNameArg);'],
+    );
+  }
+
+  String _glSendHashOnlyMethod() {
+    return codeGenUtils.createMethod(
+      returnType: 'private String',
+      methodName: 'glSendHashOnly',
+      arguments: ['GraphLinkPayload payload', 'Map<String, Object> body${_opNameParam}'],
+      statements: [
+        codeGenUtils.ifStatement(
+          condition: '$svGetAdapter == null || $svGetUnsupported || payload.getQuery().startsWith("mutation")',
+          ifBlockStatements: ['return glSend(body$_opNameArg);'],
+        ),
+        codeGenUtils.tryCatchFinally(
+          tryStatements: ['return $svGetAdapter.execute($svEncoder.encode(body)$_opNameArg);'],
+          catchVariable: 'e',
+          catchStatements: [
+            codeGenUtils.ifStatement(
+              condition: '!(e instanceof GraphLinkGetNotSupported)',
+              ifBlockStatements: ['throw e;'],
+            ),
+            '$svGetUnsupported = true;',
+            'return glSend(body$_opNameArg);',
+          ],
+        ),
+      ],
+    );
+  }
+
+  List<String> _persistedCallAdapterStatements() {
+    return [
+      if (_grammar.operationNameAsParameter) 'String operationName = payload.getOperationName();',
+      codeGenUtils.ifStatement(
+        condition:
+            '$svPersistedUnsupported || payload.getQuery().length() <= GraphLinkPersistedQueries.MIN_QUERY_LENGTH',
+        ifBlockStatements: ['return glSend(payload$_opNameArg);'],
+      ),
+      'Map<String, Object> extensions = GraphLinkPersistedQueries.extensions(glHash(payload.getQuery()));',
+      'Map<String, Object> hashOnly = new HashMap<>();',
+      'hashOnly.put("operationName", payload.getOperationName());',
+      'hashOnly.put("variables", payload.getVariables());',
+      'hashOnly.put("extensions", extensions);',
+      _grammar.persistedQueriesUseGet
+          ? 'String response = glSendHashOnly(payload, hashOnly$_opNameArg);'
+          : 'String response = glSend(hashOnly$_opNameArg);',
+      'String failure = GraphLinkPersistedQueries.failure(response, $svDecoder);',
+      codeGenUtils.ifStatement(condition: 'failure == null', ifBlockStatements: ['return response;']),
+      codeGenUtils.ifStatement(
+        condition: 'GraphLinkPersistedQueries.NOT_SUPPORTED.equals(failure)',
+        ifBlockStatements: [
+          '$svPersistedUnsupported = true;',
+          'return glSend(payload$_opNameArg);',
+        ],
+      ),
+      'Map<String, Object> body = new HashMap<>();',
+      'body.put("query", payload.getQuery());',
+      'body.put("operationName", payload.getOperationName());',
+      'body.put("variables", payload.getVariables());',
+      'body.put("extensions", extensions);',
+      'return glSend(body$_opNameArg);',
+    ];
+  }
+
   String _adapterDeclaration(bool withStore) {
     return [
       'GraphLinkClientAdapter adapter',
+      if (_grammar.persistedQueriesUseGet) 'GraphLinkClientAdapter getAdapter',
       if (_grammar.hasUploadMutations)
         'GraphLinkMultipartAdapter multipartAdapter',
       'GraphLinkJsonEncoder encoder',
@@ -380,7 +480,14 @@ class JavaClientSerializer extends GLClientSerializer {
               methodName: classNameFromType(type),
               arguments: _declareConstructorArgs(type),
               statements: [
-                '${codeGenUtils.callExpression('super', ['adapter', 'fragmentMap', 'store', 'encoder', 'decoder'])};',
+                '${codeGenUtils.callExpression('super', [
+                  'adapter',
+                  if (type != GLQueryType.subscription && _grammar.persistedQueriesUseGet) 'getAdapter',
+                  'fragmentMap',
+                  'store',
+                  'encoder',
+                  'decoder',
+                ])};',
                 if (type == GLQueryType.mutation && _grammar.hasUploadMutations)
                   'this.$svMultipartAdapter = multipartAdapter;',
                 if (type == GLQueryType.subscription)
@@ -405,6 +512,8 @@ class JavaClientSerializer extends GLClientSerializer {
   List<String> _declareConstructorArgs(GLQueryType type) {
     return [
       'GraphLinkClientAdapter adapter',
+      if (type != GLQueryType.subscription && _grammar.persistedQueriesUseGet)
+        'GraphLinkClientAdapter getAdapter',
       if (type == GLQueryType.subscription)
         'GraphLinkWebSocketAdapter wsAdapter',
       if (type == GLQueryType.mutation && _grammar.hasUploadMutations)
@@ -509,17 +618,38 @@ class JavaClientSerializer extends GLClientSerializer {
         'protected final GraphLinkJsonDecoder $svDecoder;',
         'private final Map<String, ReentrantLock> $svTagLocks = new HashMap<>();',
         'private final GraphLinkClientAdapter $svAdapter;',
+        if (_grammar.persistedQueries) ...[
+          'private final Map<String, String> $svHashes = new ConcurrentHashMap<>();',
+          'private volatile boolean $svPersistedUnsupported = false;',
+        ],
+        if (_grammar.persistedQueriesUseGet) ...[
+          'private final GraphLinkClientAdapter $svGetAdapter;',
+          'private volatile boolean $svGetUnsupported = false;',
+          codeGenUtils.createMethod(
+            methodName: 'GraphLinkResolverBase',
+            arguments: [
+              'GraphLinkClientAdapter adapter',
+              'Map<String, String> fragmentMap',
+              'GraphLinkCacheStore store',
+              'GraphLinkJsonEncoder encoder',
+              'GraphLinkJsonDecoder decoder',
+            ],
+            statements: ['this(adapter, null, fragmentMap, store, encoder, decoder);'],
+          ),
+        ],
         codeGenUtils.createMethod(
           methodName: 'GraphLinkResolverBase',
           arguments: [
             'GraphLinkClientAdapter adapter',
+            if (_grammar.persistedQueriesUseGet) 'GraphLinkClientAdapter getAdapter',
             'Map<String, String> fragmentMap',
             'GraphLinkCacheStore store',
             'GraphLinkJsonEncoder encoder',
             'GraphLinkJsonDecoder decoder',
           ],
           statements: [
-            'this.$svAdapter = adapter;'
+            'this.$svAdapter = adapter;',
+            if (_grammar.persistedQueriesUseGet) 'this.$svGetAdapter = getAdapter;',
             'this.${svFragmentMap} = fragmentMap;',
             'this.$svStore = store;',
             'this.$svEncoder = encoder;',
@@ -750,17 +880,23 @@ class JavaClientSerializer extends GLClientSerializer {
           arguments: ['String tag'],
           statements: ['return "__tag__" + tag;'],
         ),
+        if (_grammar.persistedQueries) ...[
+          _glHashMethod(),
+          _glSendMethod(),
+          if (_grammar.persistedQueriesUseGet) _glSendHashOnlyMethod(),
+        ],
         codeGenUtils.createMethod(methodName: 'glCallAdapter', returnType: 'protected ${_wrapSingle('String')}', arguments: [
           'GraphLinkPayload payload',
-        ], statements: [
-            if(_grammar.operationNameAsParameter)
-              ...[
-                'String operationName = payload.getOperationName();',
-                'return $svAdapter.execute($svEncoder.encode(payload), operationName);']
-            else
-              'return $svAdapter.execute($svEncoder.encode(payload));'
-
-        ]),
+        ], statements: _grammar.persistedQueries
+            ? _persistedCallAdapterStatements()
+            : [
+                if (_grammar.operationNameAsParameter)
+                  ...[
+                    'String operationName = payload.getOperationName();',
+                    'return $svAdapter.execute($svEncoder.encode(payload), operationName);']
+                else
+                  'return $svAdapter.execute($svEncoder.encode(payload));'
+              ]),
         codeGenUtils.createMethod(
           returnType: 'GraphLinkCacheEntry',
           methodName: 'getFromCache',
@@ -909,6 +1045,7 @@ class JavaClientSerializer extends GLClientSerializer {
         JavaImports.hashSet,
         JavaImports.reentrantLock,
         JavaImports.function,
+        if (_grammar.persistedQueries) JavaImports.concurrentHashMap,
         ...flavor.imports,
       ],
       importDepencies: [
@@ -1098,6 +1235,78 @@ class JavaClientSerializer extends GLClientSerializer {
   }
 
 
+
+  GLClassModel generateSha256File() {
+    if (!_grammar.persistedQueries) {
+      throw StateError('The SHA-256 runtime is only generated when persistedQueries is enabled.');
+    }
+    return const GLClassModel(
+      imports: ['java.nio.charset.StandardCharsets', 'java.security.MessageDigest', 'java.security.NoSuchAlgorithmException'],
+      body: javaSha256,
+    );
+  }
+
+  GLClassModel generatePersistedQueriesFile() {
+    if (!_grammar.persistedQueries) {
+      throw StateError('The persisted-queries runtime is only generated when persistedQueries is enabled.');
+    }
+    return GLClassModel(
+      imports: [JavaImports.map, JavaImports.hashMap, JavaImports.list],
+      importDepencies: [_grammar.getTokenByKey('GraphLinkJsonDecoder')!],
+      body: javaPersistedQueries,
+    );
+  }
+
+  GLClassModel generateGetNotSupportedFile() {
+    _requireGet();
+    return const GLClassModel(body: javaGetNotSupported);
+  }
+
+  GLClassModel generateGetRequestFile() {
+    _requireGet();
+    return GLClassModel(
+      imports: [
+        JavaImports.map,
+        JavaImports.list,
+        JavaImports.arrayList,
+        'java.net.URLEncoder',
+        'java.nio.charset.StandardCharsets',
+      ],
+      importDepencies: [
+        _grammar.getTokenByKey('GraphLinkJsonDecoder')!,
+        _grammar.getTokenByKey('GraphLinkJsonEncoder')!,
+      ],
+      body: javaGetRequest,
+    );
+  }
+
+  void _requireGet() {
+    if (!_grammar.persistedQueriesUseGet) {
+      throw StateError('The GET runtime is only generated when persistedQueriesUseGet is enabled.');
+    }
+  }
+
+  GLClassModel generateDefaultGetAdapterFile(String flavor) {
+    _requireGet();
+    final okhttp = flavor == 'okhttp';
+    return GLClassModel(
+      imports: [
+        ...(okhttp
+            ? ['okhttp3.OkHttpClient', 'okhttp3.Request', 'okhttp3.Response']
+            : ['java.net.URI', 'java.net.http.HttpClient', 'java.net.http.HttpRequest', 'java.net.http.HttpResponse']),
+        JavaImports.map,
+        JavaImports.supplier,
+      ],
+      importDepencies: [
+        _grammar.getTokenByKey('GraphLinkClientAdapter')!,
+        _grammar.getTokenByKey('GraphLinkJsonEncoder')!,
+        _grammar.getTokenByKey('GraphLinkJsonDecoder')!,
+      ],
+      body: okhttp
+          ? defaultGetAdapterOkHttp(_grammar.operationNameAsParameter)
+          : defaultGetAdapterJava11(_grammar.operationNameAsParameter),
+    );
+  }
 
   GLClassModel generateWebSocketAdapterFile() =>
       const GLClassModel(body: javaWebSocketAdapter);
