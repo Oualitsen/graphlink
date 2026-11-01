@@ -99,6 +99,11 @@ class TypeScriptClientSerializer extends GLClientSerializer {
       buffer.writeln(tsSubscriptionHandler);
       if (generateDefaultWsAdapter) buffer.writeln(tsDefaultWsAdapter);
     }
+    if (_parser.persistedQueries) {
+      buffer.writeln(tsSha256);
+      buffer.writeln(tsPersistedQueries);
+      if (_parser.persistedQueriesUseGet) buffer.writeln(tsPersistedQueriesGet);
+    }
     buffer.writeln(_resolverBase());
     for (final type in GLQueryType.values) {
       final cls = _buildClass(type);
@@ -163,6 +168,22 @@ class TypeScriptClientSerializer extends GLClientSerializer {
         body: tsDefaultWsAdapter,
       );
 
+  GLClassModel generateSha256File() {
+    if (!_parser.persistedQueries) {
+      throw StateError('The SHA-256 runtime is only generated when persistedQueries is enabled.');
+    }
+    return const GLClassModel(body: tsSha256);
+  }
+
+  GLClassModel generatePersistedQueriesFile() {
+    if (!_parser.persistedQueries) {
+      throw StateError('The persisted-queries runtime is only generated when persistedQueries is enabled.');
+    }
+    return GLClassModel(
+      body: _parser.persistedQueriesUseGet ? '$tsPersistedQueries\n$tsPersistedQueriesGet' : tsPersistedQueries,
+    );
+  }
+
   GLClassModel generateResolverBaseFile() {
     final payloadToken = _parser.getTypeByName('GraphLinkPayload');
     final payloadImport = payloadToken != null
@@ -176,6 +197,13 @@ class TypeScriptClientSerializer extends GLClientSerializer {
         "import { GraphLinkCacheEntry } from './graph-link-cache-entry.js';",
         "import { GraphLinkTagEntry, __GL_TAG_KEY_PREFIX__ } from './graph-link-tag-entry.js';",
         "import { GraphLinkLock } from './graph-link-lock.js';",
+        if (_parser.persistedQueries) ...[
+          "import { GraphLinkSha256 } from './graph-link-sha256.js';",
+          if (_parser.persistedQueriesUseGet)
+            "import { GraphLinkPersistedQueries, GraphLinkGetNotSupported } from './graph-link-persisted-queries.js';"
+          else
+            "import { GraphLinkPersistedQueries } from './graph-link-persisted-queries.js';",
+        ],
       ],
       body: _resolverBase(),
     );
@@ -267,27 +295,49 @@ class TypeScriptClientSerializer extends GLClientSerializer {
         'protected readonly $svTagLocks: Map<string, GraphLinkLock>;',
         'protected readonly $svFragMap: Record<string, string>;',
         'protected readonly $svAdapter?: $_adapterType;',
+        if (_parser.persistedQueries) ...[
+          'protected readonly $svHashes: Map<string, string> = new Map();',
+          'protected $svPersistedUnsupported = false;',
+        ],
+        if (_parser.persistedQueriesUseGet) ...[
+          'protected readonly $svGetAdapter?: $_adapterType;',
+          'protected $svGetUnsupported = false;',
+        ],
         _cg.createMethod(
           methodName: 'constructor',
-          arguments: ['store: $_cacheStoreType', 'tagLocks: Map<string, GraphLinkLock>', 'fragMap: Record<string, string>', 'adapter?: $_adapterType'],
+          arguments: [
+            'store: $_cacheStoreType',
+            'tagLocks: Map<string, GraphLinkLock>',
+            'fragMap: Record<string, string>',
+            'adapter?: $_adapterType',
+            if (_parser.persistedQueriesUseGet) 'getAdapter?: $_adapterType',
+          ],
           statements: [
             'this.$svStore = store;',
             'this.$svTagLocks = tagLocks;',
             'this.$svFragMap = fragMap;',
             'this.$svAdapter = adapter;',
+            if (_parser.persistedQueriesUseGet) 'this.$svGetAdapter = getAdapter;',
           ],
         ),
+        if (_parser.persistedQueries) ...[
+          _glHashMethod(),
+          _glSendMethod(),
+          if (_parser.persistedQueriesUseGet) _glSendHashOnlyMethod(),
+        ],
         _cg.createMethod(
           methodName: '_glCallAdapter',
           async: true,
           returnType: 'string',
           arguments: ['payload: GraphLinkPayload'],
-          statements: [
-            if (_parser.operationNameAsParameter)
-              'return await this.$svAdapter!(JSON.stringify(payload), payload.operationName);'
-            else
-              'return await this.$svAdapter!(JSON.stringify(payload));'
-          ],
+          statements: _parser.persistedQueries
+              ? _persistedCallAdapterStatements()
+              : [
+                  if (_parser.operationNameAsParameter)
+                    'return await this.$svAdapter!(JSON.stringify(payload), payload.operationName);'
+                  else
+                    'return await this.$svAdapter!(JSON.stringify(payload));'
+                ],
         ),
         _cg.createMethod(
           methodName: '_executeFull<T>',
@@ -440,6 +490,95 @@ class TypeScriptClientSerializer extends GLClientSerializer {
     );
   }
 
+  String _glHashMethod() {
+    return _cg.createMethod(
+      methodName: 'glHash',
+      returnType: 'string',
+      arguments: ['query: string'],
+      statements: [
+        _cg.constDecl('cached', 'this.$svHashes.get(query)'),
+        _cg.ifStatement(
+          condition: 'cached !== undefined',
+          ifBlockStatements: ['return cached;'],
+        ),
+        _cg.constDecl('hash', 'GraphLinkSha256.hex(query)'),
+        'this.$svHashes.set(query, hash);',
+        'return hash;',
+      ],
+    );
+  }
+
+  String _glSendMethod() {
+    final call = _parser.operationNameAsParameter
+        ? 'this.$svAdapter!(JSON.stringify(body), body.operationName as string)'
+        : 'this.$svAdapter!(JSON.stringify(body))';
+    return _cg.createMethod(
+      methodName: '_glSend',
+      async: true,
+      returnType: 'string',
+      arguments: ['body: Record<string, unknown>'],
+      statements: ['return await $call;'],
+    );
+  }
+
+  String _glSendHashOnlyMethod() {
+    final call = _parser.operationNameAsParameter
+        ? 'this.$svGetAdapter!(JSON.stringify(body), body.operationName as string)'
+        : 'this.$svGetAdapter!(JSON.stringify(body))';
+    return _cg.createMethod(
+      methodName: '_glSendHashOnly',
+      async: true,
+      returnType: 'string',
+      arguments: ['payload: GraphLinkPayload', 'body: Record<string, unknown>'],
+      statements: [
+        _cg.ifStatement(
+          condition: "this.$svGetUnsupported || payload.query.startsWith('mutation')",
+          ifBlockStatements: ['return await this._glSend(body);'],
+        ),
+        _cg.tryCatchFinally(
+          tryStatements: ['return await $call;'],
+          catchVariable: 'e',
+          catchStatements: [
+            _cg.ifStatement(
+              condition: '!(e instanceof GraphLinkGetNotSupported)',
+              ifBlockStatements: ['throw e;'],
+            ),
+            'this.$svGetUnsupported = true;',
+            'return await this._glSend(body);',
+          ],
+        ),
+      ],
+    );
+  }
+
+  List<String> _persistedCallAdapterStatements() {
+    return [
+      _cg.ifStatement(
+        condition:
+            'this.$svPersistedUnsupported || payload.query.length <= GraphLinkPersistedQueries.minQueryLength',
+        ifBlockStatements: ['return await this._glSend({ ...payload });'],
+      ),
+      _cg.constDecl('extensions', 'GraphLinkPersistedQueries.extensions(this.glHash(payload.query))'),
+      _cg.constDecl('hashOnly',
+          '{ operationName: payload.operationName, variables: payload.variables, extensions }'),
+      _cg.constDecl(
+        'response',
+        _parser.persistedQueriesUseGet
+            ? 'await this._glSendHashOnly(payload, hashOnly)'
+            : 'await this._glSend(hashOnly)',
+      ),
+      _cg.constDecl('failure', 'GraphLinkPersistedQueries.failure(response)'),
+      _cg.ifStatement(condition: 'failure === null', ifBlockStatements: ['return response;']),
+      _cg.constDecl('body', '{ ...payload }', type: 'Record<string, unknown>'),
+      _cg.ifStatement(
+        condition: 'failure === GraphLinkPersistedQueries.notSupported',
+        ifBlockStatements: ['this.$svPersistedUnsupported = true;'],
+        elseBlockStatements: ['body.extensions = extensions;'],
+      ),
+      'return await this._glSend(body);',
+    ];
+  }
+
   // ── Operation class builder ───────────────────────────────────────────────
 
   String? _buildClass(GLQueryType type) {
@@ -472,6 +611,8 @@ class TypeScriptClientSerializer extends GLClientSerializer {
         'adapter: GraphLinkWsAdapter'
       else
         'adapter: $_adapterType',
+      if (type != GLQueryType.subscription && _parser.persistedQueriesUseGet)
+        'getAdapter: $_adapterType',
       if (type == GLQueryType.mutation && _parser.hasUploadMutations)
         'multipartAdapter: GLMultipartAdapter | undefined',
       'fragMap: Record<string, string>',
@@ -480,7 +621,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
     ];
     final superCall = type == GLQueryType.subscription
         ? '${_cg.callExpression('super', ['store', 'tagLocks', 'fragMap'])};'
-        : '${_cg.callExpression('super', ['store', 'tagLocks', 'fragMap', 'adapter'])};';
+        : '${_cg.callExpression('super', ['store', 'tagLocks', 'fragMap', 'adapter', if (_parser.persistedQueriesUseGet) 'getAdapter'])};';
     return _cg.createMethod(
       methodName: 'constructor',
       arguments: args,
@@ -618,6 +759,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
   }) {
     final args = [
       'adapter: $_adapterType',
+      if (_parser.persistedQueriesUseGet) 'getAdapter: $_adapterType',
       if (hasSubs) 'wsAdapter: GraphLinkWsAdapter',
       if (hasMutations && _parser.hasUploadMutations)
         'multipartAdapter?: GLMultipartAdapter',
@@ -642,11 +784,11 @@ class TypeScriptClientSerializer extends GLClientSerializer {
           statements: ['this.$svTagLocks.set(tag, new GraphLinkLock());'],
         ),
         if (hasQueries)
-          'this.queries = new ${classNameFromType(GLQueryType.query)}(adapter, this.$svFragMap, this.store, this.$svTagLocks);',
+          'this.queries = new ${classNameFromType(GLQueryType.query)}(adapter,${_parser.persistedQueriesUseGet ? ' getAdapter,' : ''} this.$svFragMap, this.store, this.$svTagLocks);',
         if (hasMutations)
           _parser.hasUploadMutations
-            ? 'this.mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, multipartAdapter, this.$svFragMap, this.store, this.$svTagLocks);'
-            : 'this.mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, this.$svFragMap, this.store, this.$svTagLocks);',
+            ? 'this.mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter,${_parser.persistedQueriesUseGet ? ' getAdapter,' : ''} multipartAdapter, this.$svFragMap, this.store, this.$svTagLocks);'
+            : 'this.mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter,${_parser.persistedQueriesUseGet ? ' getAdapter,' : ''} this.$svFragMap, this.store, this.$svTagLocks);',
         if (hasSubs)
           'this.subscriptions = new ${classNameFromType(GLQueryType.subscription)}(wsAdapter, this.$svFragMap, this.store, this.$svTagLocks);',
       ],
@@ -667,13 +809,20 @@ class TypeScriptClientSerializer extends GLClientSerializer {
         "import type { GLUpload, GLMultipartAdapter, UploadProgressCallback } from './graph-link-uploads.js';",
       );
     }
+    if (_parser.persistedQueriesUseGet) {
+      buffer.writeln(
+        "import { GraphLinkGetNotSupported, GraphLinkGetRequest } from './graph-link-persisted-queries.js';",
+      );
+    }
     buffer.writeln();
     if (httpAdapter == TypeScriptHttpAdapter.fetch) {
       buffer.writeln(tsFetchAdapter(_parser.operationNameAsParameter));
+      if (_parser.persistedQueriesUseGet) buffer.writeln(tsFetchGetAdapter(_parser.operationNameAsParameter));
       if (hasUploads) buffer.writeln(tsMultipartFetchAdapter);
     }
     if (httpAdapter == TypeScriptHttpAdapter.axios) {
       buffer.writeln(tsAxiosAdapter(_parser.operationNameAsParameter));
+      if (_parser.persistedQueriesUseGet) buffer.writeln(tsAxiosGetAdapter(_parser.operationNameAsParameter));
     }
     return GLClassModel(body: buffer.toString());
   }

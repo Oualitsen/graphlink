@@ -26,3 +26,7 @@ const svParts            = 'gl_parts__';
 const svSlot             = 'gl_slot__';
 const svAllParts         = 'gl_allParts__';
 const svGen              = 'gl_gen__';
+const svGetAdapter       = 'gl_getAdapter__';
+const svHashes           = 'gl_hashes__';
+const svPersistedUnsupported = 'gl_persistedUnsupported__';
+const svGetUnsupported   = 'gl_getUnsupported__';
