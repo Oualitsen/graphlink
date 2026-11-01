@@ -1,4 +1,4 @@
-.PHONY: dart dart-apq typescript typescript-apq java kotlin kotlin-apq swift swift-apq dart-real typescript-real java-real kotlin-real swift-real server upload-server all all-real kill-servers kill-ports start-server start-upload-server start-main-server start-servers generate-all clean-all
+.PHONY: dart dart-apq typescript typescript-apq java java-apq kotlin kotlin-apq swift swift-apq dart-real typescript-real java-real kotlin-real swift-real server upload-server all all-real kill-servers kill-ports start-server start-upload-server start-main-server start-servers generate-all clean-all
 
 # Delete every previously generated output dir across all client projects.
 # Prune node_modules/build/target/.gradle/.dart_tool so we only ever touch
@@ -30,6 +30,9 @@ typescript-apq:
 
 java:
 	$(MAKE) -C mock/java_client_tests ci
+
+java-apq:
+	$(MAKE) -C mock/java_persisted_queries_tests ci
 
 kotlin:
 	$(MAKE) -C mock/kotlin_client_tests ci
@@ -65,7 +68,7 @@ kotlin-real:
 swift-real:
 	$(MAKE) -C real/swift_client_tests_real ci
 
-all: dart dart-apq typescript typescript-apq java kotlin kotlin-apq swift swift-apq
+all: dart dart-apq typescript typescript-apq java java-apq kotlin kotlin-apq swift swift-apq
 
 all-real: dart-real typescript-real java-real java-reactor-real kotlin-real swift-real
 

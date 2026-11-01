@@ -17,7 +17,7 @@ ClientLanguageConfig _parse(String language, Map<String, dynamic> options) =>
 Matcher _rejectsWith(String fragment) => throwsA(
     isA<ArgumentError>().having((e) => e.message.toString(), 'message', contains(fragment)));
 
-const _implemented = {'dart', 'typescript', 'kotlin', 'swift'};
+const _implemented = {'dart', 'typescript', 'kotlin', 'swift', 'java'};
 
 void main() {
   for (final language in _required.keys.where((l) => !_implemented.contains(l))) {
@@ -28,6 +28,20 @@ void main() {
       );
     });
   }
+
+  for (final style in ['reactor', 'rxjava3', 'mutiny']) {
+    test('java with asyncStyle $style rejects apq until it is implemented', () {
+      expect(
+        () => _parse('java', {'persistedQueries': 'apq', 'asyncStyle': style}),
+        _rejectsWith('not supported for java asyncStyle "$style" yet'),
+      );
+    });
+  }
+
+  test('java accepts apq with the blocking style', () {
+    expect(_parse('java', {'persistedQueries': 'apq', 'asyncStyle': 'blocking'}).persistedQueries,
+        PersistedQueriesMode.apq);
+  });
 
   for (final language in _implemented) {
     group(language, () {

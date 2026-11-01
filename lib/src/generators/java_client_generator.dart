@@ -169,6 +169,47 @@ Future<Set<String>> generateJavaClientClasses(
     ));
   }
 
+  if (parser.persistedQueries) {
+    for (final entry in {
+      'GraphLinkSha256.java': clientSerializer.generateSha256File(),
+      'GraphLinkPersistedQueries.java': clientSerializer.generatePersistedQueriesFile(),
+    }.entries) {
+      futures.add(writeToFile(
+        data: serializer.serializeGlClass(entry.value),
+        fileName: entry.key,
+        subdir: 'client',
+        imports: [],
+        destinationDir: destinationDir,
+        packageName: packageName,
+      ));
+    }
+    if (parser.persistedQueriesUseGet) {
+      for (final entry in {
+        'GraphLinkGetNotSupported.java': clientSerializer.generateGetNotSupportedFile(),
+        'GraphLinkGetRequest.java': clientSerializer.generateGetRequestFile(),
+      }.entries) {
+        futures.add(writeToFile(
+          data: serializer.serializeGlClass(entry.value),
+          fileName: entry.key,
+          subdir: 'client',
+          imports: [],
+          destinationDir: destinationDir,
+          packageName: packageName,
+        ));
+      }
+    }
+    if (parser.persistedQueriesUseGet && wsAdapter != JavaWsAdapter.none) {
+      futures.add(writeToFile(
+        data: serializer.serializeGlClass(clientSerializer.generateDefaultGetAdapterFile(wsAdapter.name)),
+        fileName: 'DefaultGraphLinkGetAdapter.java',
+        subdir: 'client',
+        imports: [],
+        destinationDir: destinationDir,
+        packageName: packageName,
+      ));
+    }
+  }
+
   if (wsAdapter != JavaWsAdapter.none) {
     futures.add(writeToFile(
       data: serializer.serializeGlClass(
