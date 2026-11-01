@@ -284,6 +284,10 @@ don't confuse them:
   `schema_real/`) runs them against a hand-written, trusted Spring Boot server
   (`real/spring_server/`, `real/spring_upload_server/`) JAR. This validates **generated
   client code** — most cross-language parity bugs have been caught here.
+  `real/java_client_tests_reactor_real` shares `schema_real/` and derives most of its tests from
+  `java_client_tests_real` (`.block()` appended) via `real/generate_reactor_tests.dart` into a
+  git-ignored `src/test/generated/`; only the reactive-specific tests (adapters, subscriptions,
+  default values) are hand-written there. Edit the blocking test, not the derived copy.
 - **`server_integration_tests/`** — a **client x server matrix**: every generated
   server target (`servers/`) driven by every generated client harness (`clients/`).
   `servers/` holds one subdirectory per generated server target (`typescript_server`,
