@@ -22,6 +22,8 @@ const _knownOptions = {
   'nullableFieldsRequired',
   'captureErrors',
   'strictEnums',
+  'persistedQueries',
+  'persistedQueriesUseGet',
   'immutableInputFields',
   'immutableTypeFields',
   'flutter',
@@ -77,6 +79,8 @@ const _knownOptions = {
 /// | `nullableFieldsRequired` | `bool` | `false` |
 /// | `captureErrors` | `bool` | `false` |
 /// | `strictEnums` | `bool` | `false` |
+/// | `persistedQueries` | `false` \| `"apq"` | `false` |
+/// | `persistedQueriesUseGet` | `bool` | `false` |
 /// | `immutableInputFields` | `bool` | `true` |
 /// | `immutableTypeFields` | `bool` | `true` |
 /// | `flutter` | `map` | `null` |
@@ -170,6 +174,8 @@ class GraphlinkGeneratorBuilder implements Builder {
       nullableFieldsRequired: b('nullableFieldsRequired', false),
       captureErrors: b('captureErrors', false),
       strictEnums: b('strictEnums', false),
+      persistedQueries: persistedQueriesModeFromJson(options.config),
+      persistedQueriesUseGet: persistedQueriesUseGetFromJson(options.config),
       immutableInputFields: b('immutableInputFields', true),
       immutableTypeFields: b('immutableTypeFields', true),
       flutter: options.config['flutter'] is Map
