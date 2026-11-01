@@ -1,0 +1,11 @@
+query persistedLongQuery($id: ID!) {
+  getUser(id: $id) { id name email status priority address { street city country zip } billingAddress { street city country zip } tags scores }
+}
+
+query persistedShortQuery {
+  listUsers { id }
+}
+
+mutation persistedLongMutation($input: CreateUserInput!) {
+  createUser(input: $input) { id name email status priority address { street city country zip } tags scores }
+}

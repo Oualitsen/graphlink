@@ -933,3 +933,22 @@ public class GsonGraphLinkJsonCodec implements GraphLinkJsonEncoder, GraphLinkJs
   }
 }
 ''';
+
+const javaSha256 = r'''
+public final class GraphLinkSha256 {
+    private GraphLinkSha256() {}
+
+    public static String hex(String input) {
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256").digest(input.getBytes(StandardCharsets.UTF_8));
+            StringBuilder result = new StringBuilder(digest.length * 2);
+            for (byte b : digest) {
+                result.append(Character.forDigit((b >> 4) & 0xF, 16)).append(Character.forDigit(b & 0xF, 16));
+            }
+            return result.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+}
+''';
