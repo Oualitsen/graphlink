@@ -99,7 +99,7 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - **Reactive Java client (`asyncStyle`).** `clientConfig.java.asyncStyle` generates a client
   returning `Mono`/`Single`/`Uni` (Reactor/RxJava3/Mutiny) instead of blocking calls.
 
-## Supported targets (as of v5.4.0)
+## Supported targets (as of v5.6.0)
 
 - Dart client (stable)
 - Flutter client (stable, including UI widget generation)
