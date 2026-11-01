@@ -26,6 +26,11 @@ extension StringExt on String {
     return split('\n').map((line) => line.isEmpty ? line : '$indentStr$line').join('\n');
   }
 
+  String identGo([int num = 1]) {
+    final indentStr = '\t' * num;
+    return split('\n').map((line) => line.isEmpty ? line : '$indentStr$line').join('\n');
+  }
+
   String ident([int num = 1]) {
     String ident = " " * 3;
     final indentStr = ident * num;

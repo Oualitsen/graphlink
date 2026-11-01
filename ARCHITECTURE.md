@@ -8,7 +8,7 @@
 ## What this tool does
 
 `glink` reads `.graphql` schema files and emits fully-typed client/server code
-for Dart/Flutter, Java, Kotlin, Swift, Python, TypeScript, and Spring Boot.
+for Dart/Flutter, Java, Kotlin, Swift, Python, Go, TypeScript, and Spring Boot.
 Generated files have **zero runtime dependency** on GraphLink.
 
 ---
@@ -144,6 +144,7 @@ Under `lib/src/generators/`. Each generator:
 | `kotlin_client_generator.dart` | Kotlin client |
 | `typescript_client_generator.dart` | TypeScript client |
 | `python_client_generator.dart` | Python client (pydantic models + asyncio client) |
+| `go_client_generator.dart` | Go client (one flat package: structs, `context`-aware client) |
 | `server_generator.dart` | Spring Boot or Express server (dispatches on config) |
 | `barrel_file_handler.dart` | Barrel/index file generation (abstract base) |
 
@@ -172,6 +173,7 @@ Each serializer **only builds strings** — no schema queries.
 | `kotlin_serializer.dart` | `KotlinSerializer` | ID→String, Float→Double, Int→Int, Boolean→Boolean |
 | `typescript_serializer.dart` | `TypeScriptSerializer` | ID→string, Int/Float→number, Boolean→boolean |
 | `python_serializer.dart` | `PythonSerializer` | ID→str, Float→float, Int→int, Boolean→bool |
+| `go_serializer.dart` | `GoSerializer` | ID→string, Float→float64, Int→int, Long→int64, Boolean→bool |
 
 ### Client operation serializers
 
@@ -224,6 +226,7 @@ GeneratorConfig
 ├── KotlinClientConfig    (.kt)
 ├── TypeScriptClientConfig (.ts)
 ├── PythonClientConfig    (.python)
+├── GoClientConfig        (.go)
 ├── SpringServerConfig    (Spring Boot)
 ├── ExpressApolloServerConfig (Express)
 └── FlutterConfig         (Flutter widgets + forms)

@@ -35,6 +35,10 @@ enum PythonHttpAdapter { httpx, none }
 
 enum PythonWsAdapter { websockets, none }
 
+enum GoHttpAdapter { nethttp, none }
+
+enum GoWsAdapter { coder, none }
+
 // ── AutoGenerateQueriesFor ────────────────────────────────────────────────────
 
 class AutoGenerateQueriesFor {
@@ -92,7 +96,8 @@ abstract class ClientLanguageConfig {
     if (json['kotlin'] != null) return KotlinClientConfig.fromJson(json['kotlin'] as Map<String, dynamic>);
     if (json['swift'] != null) return SwiftClientConfig.fromJson(json['swift'] as Map<String, dynamic>);
     if (json['python'] != null) return PythonClientConfig.fromJson(json['python'] as Map<String, dynamic>);
-    throw ArgumentError('clientConfig must specify one of: dart, java, typescript, kotlin, swift, python');
+    if (json['go'] != null) return GoClientConfig.fromJson(json['go'] as Map<String, dynamic>);
+    throw ArgumentError('clientConfig must specify one of: dart, java, typescript, kotlin, swift, python, go');
   }
 }
 
@@ -905,6 +910,74 @@ class PythonClientConfig extends ClientLanguageConfig {
       wsAdapter: PythonWsAdapter.values.firstWhere(
         (e) => e.name == json['wsAdapter'],
         orElse: () => PythonWsAdapter.websockets,
+      ),
+      autoGenerateQueriesFor: json['autoGenerateQueriesFor'] != null
+          ? AutoGenerateQueriesFor.fromJson(json['autoGenerateQueriesFor'] as Map<String, dynamic>)
+          : null,
+      autoGenerateQueriesArgumentLimit: json['autoGenerateQueriesArgumentLimit'] as int? ?? 200,
+      maxFragmentBodySize: json['maxFragmentBodySize'] as int? ?? 8192,
+    );
+  }
+}
+
+class GoClientConfig extends ClientLanguageConfig {
+  @override final bool generateAllFieldsFragments;
+  @override final bool nullableFieldsRequired;
+  @override final bool autoGenerateQueries;
+  @override final bool operationNameAsParameter;
+  @override final bool immutableTypeFields;
+  @override final bool captureErrors;
+  @override final bool strictEnums;
+  @override final PersistedQueriesMode persistedQueries;
+  @override final bool persistedQueriesUseGet;
+  @override final String? defaultAlias;
+  @override final int? autoGenerateQueriesArgumentLimit;
+  @override final int? maxFragmentBodySize;
+  @override final AutoGenerateQueriesFor? autoGenerateQueriesFor;
+
+  final String packageName;
+  final GoHttpAdapter httpAdapter;
+  final GoWsAdapter wsAdapter;
+
+  GoClientConfig({
+    this.packageName = 'graphlink',
+    this.generateAllFieldsFragments = true,
+    this.nullableFieldsRequired = false,
+    this.autoGenerateQueries = true,
+    this.operationNameAsParameter = false,
+    this.captureErrors = false,
+    this.strictEnums = false,
+    this.persistedQueries = PersistedQueriesMode.off,
+    this.persistedQueriesUseGet = false,
+    this.immutableTypeFields = true,
+    this.httpAdapter = GoHttpAdapter.nethttp,
+    this.wsAdapter = GoWsAdapter.coder,
+    this.defaultAlias,
+    this.autoGenerateQueriesFor,
+    this.autoGenerateQueriesArgumentLimit = 200,
+    this.maxFragmentBodySize = 8192,
+  });
+
+  factory GoClientConfig.fromJson(Map<String, dynamic> json) {
+    return GoClientConfig(
+      packageName: (json['packageName'] as String?) ?? 'graphlink',
+      generateAllFieldsFragments: (json['generateAllFieldsFragments'] as bool?) ?? true,
+      nullableFieldsRequired: (json['nullableFieldsRequired'] as bool?) ?? false,
+      autoGenerateQueries: (json['autoGenerateQueries'] as bool?) ?? true,
+      operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
+      captureErrors: (json['captureErrors'] as bool?) ?? false,
+      strictEnums: (json['strictEnums'] as bool?) ?? false,
+      persistedQueries: persistedQueriesModeFromJson(json),
+      persistedQueriesUseGet: persistedQueriesUseGetFromJson(json),
+      immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
+      defaultAlias: json['defaultAlias'] as String?,
+      httpAdapter: GoHttpAdapter.values.firstWhere(
+        (e) => e.name == json['httpAdapter'],
+        orElse: () => GoHttpAdapter.nethttp,
+      ),
+      wsAdapter: GoWsAdapter.values.firstWhere(
+        (e) => e.name == json['wsAdapter'],
+        orElse: () => GoWsAdapter.coder,
       ),
       autoGenerateQueriesFor: json['autoGenerateQueriesFor'] != null
           ? AutoGenerateQueriesFor.fromJson(json['autoGenerateQueriesFor'] as Map<String, dynamic>)

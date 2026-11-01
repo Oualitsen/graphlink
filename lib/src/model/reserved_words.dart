@@ -77,6 +77,22 @@ const Set<String> pythonReservedWords = {
   'to_json', 'from_json', 'model_config', 'model_fields', 'model_dump', 'model_validate',
 };
 
+/// Go fields are PascalCase so keywords can never collide; the set only guards
+/// the method names the generator itself puts on every struct.
+const Set<String> goReservedWords = {
+  'MarshalJSON', 'UnmarshalJSON', 'Equals',
+};
+
+/// Identifiers a Go parameter or local must not take: keywords, predeclared
+/// names the generated bodies rely on, and the runtime's own locals.
+const Set<String> goParameterReservedWords = {
+  'break', 'default', 'func', 'interface', 'select', 'case', 'defer', 'go', 'map',
+  'struct', 'chan', 'else', 'goto', 'package', 'switch', 'const', 'fallthrough',
+  'if', 'range', 'type', 'continue', 'for', 'import', 'return', 'var',
+  'ctx', 'err', 'opts', 'nil', 'true', 'false', 'string', 'int', 'bool', 'error', 'any',
+  'len', 'make', 'new', 'append', 'copy', 'json', 'fmt', 'context', 'http', 'time', 'sync',
+};
+
 /// TypeScript intentionally has NO field reserved set: it accesses fields and
 /// JSON keys as object properties (`{ default: T }`, `args.default`), and
 /// reserved words are legal as property names / in member access. So neither

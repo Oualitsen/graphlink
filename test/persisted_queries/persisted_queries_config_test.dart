@@ -8,6 +8,7 @@ const _required = {
   'kotlin': {'packageName': 'a.b'},
   'swift': {'moduleName': 'M'},
   'python': <String, dynamic>{},
+  'go': <String, dynamic>{},
 };
 
 ClientLanguageConfig _parse(String language, Map<String, dynamic> options) =>

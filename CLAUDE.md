@@ -11,7 +11,7 @@ Generated files have **zero runtime dependency** on GraphLink.
 When generating code, **always use `CodeGenUtilsBase` (`lib/src/code_gen_utils.dart`) and
 its subclasses** whenever a method exists for the construct you are emitting. The
 subclasses are `DartCodeGenUtils`, `JavaCodeGenUtils`, `KotlinCodeGenUtils`,
-`SwiftCodeGenUtils`, `PythonCodeGenUtils` and `TypeScriptCodeGenUtils` (`lib/src/<lang>_code_gen_utils.dart`).
+`SwiftCodeGenUtils`, `PythonCodeGenUtils`, `GoCodeGenUtils` and `TypeScriptCodeGenUtils` (`lib/src/<lang>_code_gen_utils.dart`).
 
 - If a builder exists for it (`ifStatement`, `inlineIfStatement`, `block`, `createMethod`,
   `createClass`, `tryCatchFinally`, `switchStatement`, `forEachLoop`, `forLoop`,
@@ -114,6 +114,7 @@ mapped inputs, etc.) so generators never duplicate derivation logic.
 | `generators/java_client_generator.dart` | Java client output |
 | `generators/typescript_client_generator.dart` | TypeScript client output |
 | `generators/python_client_generator.dart` | Python client output (a package with `__init__.py` barrel) |
+| `generators/go_client_generator.dart` | Go client output (one flat package, no barrel) |
 | `generators/server_generator.dart` | Spring Boot / Express server output |
 | `generators/barrel_file_handler.dart` | Barrel/index file generation |
 
@@ -141,6 +142,7 @@ serializers/
   java_imports.dart                # Java import resolution
   typescript_serializer.dart       # TypeScript types, inputs, enums
   python_serializer.dart           # Python (pydantic v2) types, inputs, enums
+  go_serializer.dart               # Go (structs + json tags) types, inputs, enums
   flutter_types_serializer.dart    # Flutter widget types
   client_serializers/
     dart_client_serializer.dart    # Dart client methods (queries/mutations/subs)
@@ -281,7 +283,7 @@ stop and ask the user to run the tests manually instead.
 Two top-level directories outside `test/`, testing opposite ends of the pipeline —
 don't confuse them:
 
-- **`integration_tests/`** — GraphLink-**generated clients** for Dart/Java/TS/Kotlin/Swift/Python,
+- **`integration_tests/`** — GraphLink-**generated clients** for Dart/Java/TS/Kotlin/Swift/Python/Go,
   split in two groups. `mock/` (`*_client_tests/`, schema in `schema_mock/`) runs them
   against canned-response adapters, no server. `real/` (`*_client_tests_real/`, schema in
   `schema_real/`) runs them against a hand-written, trusted Spring Boot server

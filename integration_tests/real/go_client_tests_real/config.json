@@ -1,0 +1,13 @@
+{
+  "schemaPaths": ["../schema_real/schema.gql", "../schema_real/custom_query.graphql"],
+  "mode": "client",
+  "outputDir": "generated",
+  "clientConfig": {
+    "go": {
+      "packageName": "generated",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "captureErrors": false
+    }
+  }
+}

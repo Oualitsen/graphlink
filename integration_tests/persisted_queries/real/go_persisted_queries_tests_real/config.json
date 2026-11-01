@@ -1,0 +1,18 @@
+{
+  "schemaPaths": [
+    "../../../real/schema_real/schema.gql",
+    "../../schema/persisted_queries.graphql"
+  ],
+  "mode": "client",
+  "outputDir": "generated",
+  "clientConfig": {
+    "go": {
+      "packageName": "generated",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "captureErrors": false,
+      "persistedQueries": "apq",
+      "persistedQueriesUseGet": true
+    }
+  }
+}

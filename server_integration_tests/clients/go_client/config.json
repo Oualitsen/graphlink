@@ -1,0 +1,12 @@
+{
+  "schemaPaths": ["../../schema/*.gql", "queries.gql"],
+  "mode": "client",
+  "outputDir": "generated",
+  "clientConfig": {
+    "go": {
+      "packageName": "generated",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true
+    }
+  }
+}

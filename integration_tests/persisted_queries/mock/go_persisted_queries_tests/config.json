@@ -1,0 +1,20 @@
+{
+  "schemaPaths": [
+    "../../../mock/schema_mock/schema.gql",
+    "../../../mock/schema_mock/custom_query.graphql",
+    "../../schema/persisted_queries.graphql"
+  ],
+  "mode": "client",
+  "outputDir": "generated",
+  "clientConfig": {
+    "go": {
+      "packageName": "generated",
+      "wsAdapter": "none",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "captureErrors": false,
+      "persistedQueries": "apq",
+      "persistedQueriesUseGet": true
+    }
+  }
+}

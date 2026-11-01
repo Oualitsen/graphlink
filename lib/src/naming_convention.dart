@@ -69,4 +69,12 @@ class NamingConvention {
     enumValue: (s) => s.toScreamingSnakeCase(),
     generatedTypeStem: (s) => s.toPascalCase(),
   );
+
+  /// Go: every field, operation and enum member is exported (PascalCase);
+  /// encoding/json needs exported fields and the wire name travels in the struct tag.
+  static final NamingConvention go = NamingConvention(
+    field: (s) => s.toPascalCase(),
+    enumValue: (s) => s.toPascalCase(),
+    generatedTypeStem: (s) => s.toPascalCase(),
+  );
 }
