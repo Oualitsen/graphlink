@@ -130,8 +130,14 @@ class JavaReactiveFlavor {
     }
   }
 
-  /// `src.flatMap(fn)` — identical across all reactive libraries.
-  String flatMap(String src, String fn) => '$src.flatMap($fn)';
+  /// `src.flatMap(fn)` for Reactor/RxJava; Mutiny names it `chain`.
+  String flatMap(String src, String fn) => '$src.${flatMapName}($fn)';
+
+  String get flatMapName => single == 'Uni' ? 'chain' : 'flatMap';
+
+  /// Opens a multi-line `flatMap` with a lambda block: `src.flatMap(param -> {`.
+  /// The caller emits the body and closes with `})`.
+  String flatMapOpen(String src, String param) => '$src.${flatMapName}($param -> {';
 
   /// Error-recovery combinator. Reactor/RxJava expose `onErrorResume*`; Mutiny
   /// diverges with `onFailure().recoverWithUni`.
