@@ -1,3 +1,5 @@
+import 'package:graphlink/src/persisted_queries.dart';
+
 const subscriptionListenerName = 'GraphLinkSubscriptionListener';
 const subscriptionListenerRef = subscriptionListenerName;
 const clientName = 'GraphLinkClient';
@@ -950,5 +952,182 @@ public final class GraphLinkSha256 {
             throw new IllegalStateException(e);
         }
     }
+}
+''';
+
+const javaPersistedQueries = """
+public final class GraphLinkPersistedQueries {
+    private GraphLinkPersistedQueries() {}
+
+    public static final int MIN_QUERY_LENGTH = ${persistedQueryMinLength};
+    public static final String NOT_FOUND = "PersistedQueryNotFound";
+    public static final String NOT_SUPPORTED = "PersistedQueryNotSupported";
+
+    public static Map<String, Object> extensions(String hash) {
+        Map<String, Object> persistedQuery = new HashMap<>();
+        persistedQuery.put("version", 1);
+        persistedQuery.put("sha256Hash", hash);
+        Map<String, Object> extensions = new HashMap<>();
+        extensions.put("persistedQuery", persistedQuery);
+        return extensions;
+    }
+
+    public static String failure(String response, GraphLinkJsonDecoder decoder) {
+        if (!response.contains("PersistedQuery") && !response.contains("PERSISTED_QUERY")) {
+            return null;
+        }
+        Object errors = decoder.decode(response).get("errors");
+        if (!(errors instanceof List)) {
+            return null;
+        }
+        for (Object item : (List<?>) errors) {
+            if (!(item instanceof Map)) {
+                continue;
+            }
+            Map<?, ?> error = (Map<?, ?>) item;
+            Object details = error.get("extensions");
+            Object code = details instanceof Map ? ((Map<?, ?>) details).get("code") : null;
+            if (NOT_FOUND.equals(error.get("message")) || "PERSISTED_QUERY_NOT_FOUND".equals(code)) {
+                return NOT_FOUND;
+            }
+            if (NOT_SUPPORTED.equals(error.get("message")) || "PERSISTED_QUERY_NOT_SUPPORTED".equals(code)) {
+                return NOT_SUPPORTED;
+            }
+        }
+        return null;
+    }
+}
+""";
+
+const javaGetNotSupported = '''
+public class GraphLinkGetNotSupported extends RuntimeException {
+    public GraphLinkGetNotSupported(String message) {
+        super(message);
+    }
+}
+''';
+
+const javaGetRequest = '''
+public final class GraphLinkGetRequest {
+    private GraphLinkGetRequest() {}
+
+    public static String queryString(String payload, GraphLinkJsonDecoder decoder, GraphLinkJsonEncoder encoder) {
+        Map<String, Object> body = decoder.decode(payload);
+        List<String> parts = new ArrayList<>();
+        Object operationName = body.get("operationName");
+        if (operationName != null) {
+            parts.add("operationName=" + escape(operationName.toString()));
+        }
+        Object variables = body.get("variables");
+        if (variables instanceof Map && !((Map<?, ?>) variables).isEmpty()) {
+            parts.add("variables=" + escape(encoder.encode(variables)));
+        }
+        parts.add("extensions=" + escape(encoder.encode(body.get("extensions"))));
+        return String.join("&", parts);
+    }
+
+    private static String escape(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
+    }
+}
+''';
+
+String defaultGetAdapterJava11(bool withParam) => '''
+public class DefaultGraphLinkGetAdapter implements GraphLinkClientAdapter {
+
+  private final String url;
+  private final Supplier<Map<String, String>> headersProvider;
+  private final GraphLinkJsonEncoder encoder;
+  private final GraphLinkJsonDecoder decoder;
+  private final HttpClient httpClient;
+
+  public DefaultGraphLinkGetAdapter(String url, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder) {
+    this(url, null, encoder, decoder);
+  }
+
+  public DefaultGraphLinkGetAdapter(String url, Supplier<Map<String, String>> headersProvider, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder) {
+    this(url, headersProvider, encoder, decoder, HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build());
+  }
+
+  public DefaultGraphLinkGetAdapter(String url, Supplier<Map<String, String>> headersProvider, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder, HttpClient httpClient) {
+    this.url = url;
+    this.headersProvider = headersProvider;
+    this.encoder = encoder;
+    this.decoder = decoder;
+    this.httpClient = httpClient;
+  }
+
+  @Override
+  public String execute(String payload${withParam ? ', String operationName' : ''}) {
+    HttpResponse<String> response;
+    try {
+      String separator = url.contains("?") ? "&" : "?";
+      HttpRequest.Builder builder = HttpRequest.newBuilder()
+          .uri(URI.create(url + separator + GraphLinkGetRequest.queryString(payload, decoder, encoder)))
+          .GET();
+      if (headersProvider != null) {
+        Map<String, String> headers = headersProvider.get();
+        if (headers != null) headers.forEach(builder::header);
+      }
+      response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    if (response.statusCode() == 405) {
+      throw new GraphLinkGetNotSupported("GET is not allowed");
+    }
+    return response.body();
+  }
+}
+''';
+
+String defaultGetAdapterOkHttp(bool withParam) => '''
+public class DefaultGraphLinkGetAdapter implements GraphLinkClientAdapter {
+
+  private final String url;
+  private final Supplier<Map<String, String>> headersProvider;
+  private final GraphLinkJsonEncoder encoder;
+  private final GraphLinkJsonDecoder decoder;
+  private final OkHttpClient httpClient;
+
+  public DefaultGraphLinkGetAdapter(String url, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder) {
+    this(url, null, encoder, decoder);
+  }
+
+  public DefaultGraphLinkGetAdapter(String url, Supplier<Map<String, String>> headersProvider, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder) {
+    this(url, headersProvider, encoder, decoder, new OkHttpClient());
+  }
+
+  public DefaultGraphLinkGetAdapter(String url, Supplier<Map<String, String>> headersProvider, GraphLinkJsonEncoder encoder, GraphLinkJsonDecoder decoder, OkHttpClient httpClient) {
+    this.url = url;
+    this.headersProvider = headersProvider;
+    this.encoder = encoder;
+    this.decoder = decoder;
+    this.httpClient = httpClient;
+  }
+
+  @Override
+  public String execute(String payload${withParam ? ', String operationName' : ''}) {
+    try {
+      String separator = url.contains("?") ? "&" : "?";
+      Request.Builder builder = new Request.Builder()
+          .url(url + separator + GraphLinkGetRequest.queryString(payload, decoder, encoder))
+          .get();
+      if (headersProvider != null) {
+        Map<String, String> headers = headersProvider.get();
+        if (headers != null) headers.forEach(builder::header);
+      }
+      try (Response response = httpClient.newCall(builder.build()).execute()) {
+        if (response.code() == 405) {
+          throw new GraphLinkGetNotSupported("GET is not allowed");
+        }
+        return response.body().string();
+      }
+    } catch (GraphLinkGetNotSupported e) {
+      throw e;
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
 }
 ''';

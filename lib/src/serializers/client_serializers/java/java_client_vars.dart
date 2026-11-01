@@ -30,3 +30,7 @@ const svMapJson          = 'glMapJson__';
 const svWrappedResponse  = 'glWrappedResponse__';
 const svRawData          = 'glRawData__';
 const svCacheWrap        = 'glCacheWrap__';
+const svHashes               = 'glHashes__';
+const svPersistedUnsupported = 'glPersistedUnsupported__';
+const svGetAdapter           = 'glGetAdapter__';
+const svGetUnsupported       = 'glGetUnsupported__';

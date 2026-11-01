@@ -226,6 +226,11 @@ queries, and short ones to prove no hash is sent.
    - Swift: **Done** (`swift_persisted_queries_tests`; `getAdapter` closure right after `adapter`; hashes and the two refusal flags live
      in a lock-guarded `GraphLinkPersistedQueryState`; `DefaultGraphLinkURLSessionGetAdapter` is tested through a stub `URLProtocol`,
      including `+` escaping in variables).
+   - Java (blocking): **Done** (`java_persisted_queries_tests`, Maven + Jackson; `getAdapter` right after `adapter`; the hash memo is a
+     `ConcurrentHashMap`, the flags are `volatile`; `GraphLinkGetNotSupported` and `GraphLinkGetRequest` are public classes in their
+     own files, because a Java file can hold one public class; `DefaultGraphLinkGetAdapter` exists for the JDK and OkHttp
+     transports, the JDK one is tested against a local `HttpServer`, the OkHttp one by generator tests only). Reactive styles
+     (`reactor`, `rxjava3`, `mutiny`) are still rejected at config time.
 6. Docs: new `persisted-queries.md` page, config reference, `--help`, llms sources; document bounded server caches.
 7. Changelog entry as a new feature (minor version).
 
