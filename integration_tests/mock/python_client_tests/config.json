@@ -1,0 +1,16 @@
+{
+  "schemaPaths": ["../schema_mock/schema.gql", "../schema_mock/custom_query.graphql"],
+  "mode": "client",
+  "outputDir": "generated",
+  "clientConfig": {
+    "python": {
+      "httpAdapter": "none",
+      "wsAdapter": "none",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "nullableFieldsRequired": false,
+      "immutableTypeFields": true,
+      "captureErrors": false
+    }
+  }
+}

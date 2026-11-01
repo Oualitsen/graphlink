@@ -18,10 +18,16 @@ class NamingConvention {
   /// to be overridden.
   final String Function(String) typeName;
 
+  /// Derives the `<stem>Response` / `<stem>FullResponse` name stem from an
+  /// operation's code name. Null keeps the default (first letter upper-cased),
+  /// which is only right when operation names are already camelCase.
+  final String Function(String)? generatedTypeStem;
+
   NamingConvention({
     required this.field,
     required this.enumValue,
     String Function(String)? typeName,
+    this.generatedTypeStem,
   }) : typeName = typeName ?? ((s) => s.toPascalCase());
 
   /// Dart/Flutter: lowerCamelCase for both fields and enum values.
@@ -54,5 +60,13 @@ class NamingConvention {
   static final NamingConvention swift = NamingConvention(
     field: (s) => s.toLowerCamelCase(),
     enumValue: (s) => s.toLowerCamelCase(),
+  );
+
+  /// Python: snake_case fields (the wire name is kept as the pydantic alias),
+  /// SCREAMING_SNAKE enum members.
+  static final NamingConvention python = NamingConvention(
+    field: (s) => s.toSnakeCaseWords(),
+    enumValue: (s) => s.toScreamingSnakeCase(),
+    generatedTypeStem: (s) => s.toPascalCase(),
   );
 }

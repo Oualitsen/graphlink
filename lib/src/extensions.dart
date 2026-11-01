@@ -19,6 +19,13 @@ extension StringExt on String {
     return "$firstLetter$theRest";
   }
 
+  /// Four-space indentation (PEP 8), for Python output where the [ident] width of
+  /// three would be valid but unidiomatic.
+  String identPy([int num = 1]) {
+    final indentStr = ' ' * (4 * num);
+    return split('\n').map((line) => line.isEmpty ? line : '$indentStr$line').join('\n');
+  }
+
   String ident([int num = 1]) {
     String ident = " " * 3;
     final indentStr = ident * num;
@@ -118,6 +125,14 @@ extension StringExt on String {
     final words = _splitIntoWords();
     if (words.isEmpty) return this;
     return words.join('_').toUpperCase();
+  }
+
+  /// Any case → snake_case via the same word splitter as the other converters
+  /// (HTMLParser → html_parser), so acronyms don't produce `h_t_m_l`.
+  String toSnakeCaseWords() {
+    final words = _splitIntoWords();
+    if (words.isEmpty) return this;
+    return words.join('_');
   }
 
   String toSnakeCase() {

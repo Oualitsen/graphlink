@@ -23,6 +23,8 @@ extension GLGrammarNormalizationExtension on GLParser {
     for (final q in queries.values) {
       final normalized = convention.field(q.token);
       if (normalized != q.token) q.codeName = normalized;
+      final stem = convention.generatedTypeStem;
+      if (stem != null) q.overrideGeneratedNameStem(stem(normalized.replaceAll(RegExp(r'_+$'), '')));
     }
   }
 

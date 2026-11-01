@@ -93,3 +93,6 @@ server_integration_tests/**/.server.pid
 **/.gradle/
 **/target/
 **/build/
+
+# Python virtualenvs
+**/.venv/

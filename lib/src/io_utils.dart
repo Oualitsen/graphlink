@@ -49,8 +49,9 @@ Future<File> saveSource({
   required String path,
   bool graphqlSource = false,
   bool typescriptSource = false,
+  bool hashCommentSource = false,
 }) {
-  final header = graphqlSource
+  final header = graphqlSource || hashCommentSource
       ? graphqlHeadComment
       : typescriptSource
           ? fileHeadComment

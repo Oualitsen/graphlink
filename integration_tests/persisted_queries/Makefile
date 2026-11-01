@@ -1,6 +1,6 @@
 .PHONY: mock real all server generate-all clean-all \
 	dart typescript java java-reactive kotlin swift \
-	dart-real typescript-real java-real java-reactive-real kotlin-real swift-real
+	dart-real typescript-real java-real java-reactive-real kotlin-real swift-real python-real
 
 clean-all:
 	find . \( -path '*/node_modules' -o -path '*/build' -o -path '*/target' \
@@ -31,6 +31,9 @@ kotlin:
 swift:
 	$(MAKE) -C mock/swift_persisted_queries_tests ci
 
+python:
+	$(MAKE) -C mock/python_persisted_queries_tests ci
+
 server:
 	$(MAKE) -C real/spring_persisted_queries_server build
 
@@ -55,8 +58,11 @@ kotlin-real:
 swift-real:
 	$(MAKE) -C real/swift_persisted_queries_tests_real ci
 
-mock: dart typescript java java-reactive kotlin swift
+python-real:
+	$(MAKE) -C real/python_persisted_queries_tests_real ci
 
-real: dart-real typescript-real java-real java-reactive-real kotlin-real swift-real
+mock: dart typescript java java-reactive kotlin swift python
+
+real: dart-real typescript-real java-real java-reactive-real kotlin-real swift-real python-real
 
 all: mock real

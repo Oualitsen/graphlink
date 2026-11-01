@@ -31,6 +31,10 @@ enum SwiftWsAdapter { urlsession, none }
 
 enum JavaJsonCodec { jackson, gson, none }
 
+enum PythonHttpAdapter { httpx, none }
+
+enum PythonWsAdapter { websockets, none }
+
 // ── AutoGenerateQueriesFor ────────────────────────────────────────────────────
 
 class AutoGenerateQueriesFor {
@@ -87,7 +91,8 @@ abstract class ClientLanguageConfig {
     if (json['typescript'] != null) return TypeScriptClientConfig.fromJson(json['typescript'] as Map<String, dynamic>);
     if (json['kotlin'] != null) return KotlinClientConfig.fromJson(json['kotlin'] as Map<String, dynamic>);
     if (json['swift'] != null) return SwiftClientConfig.fromJson(json['swift'] as Map<String, dynamic>);
-    throw ArgumentError('clientConfig must specify one of: dart, java, typescript, kotlin, swift');
+    if (json['python'] != null) return PythonClientConfig.fromJson(json['python'] as Map<String, dynamic>);
+    throw ArgumentError('clientConfig must specify one of: dart, java, typescript, kotlin, swift, python');
   }
 }
 
@@ -835,6 +840,71 @@ class SwiftClientConfig extends ClientLanguageConfig {
       wsAdapter: SwiftWsAdapter.values.firstWhere(
         (e) => e.name == json['wsAdapter'],
         orElse: () => SwiftWsAdapter.urlsession,
+      ),
+      autoGenerateQueriesFor: json['autoGenerateQueriesFor'] != null
+          ? AutoGenerateQueriesFor.fromJson(json['autoGenerateQueriesFor'] as Map<String, dynamic>)
+          : null,
+      autoGenerateQueriesArgumentLimit: json['autoGenerateQueriesArgumentLimit'] as int? ?? 200,
+      maxFragmentBodySize: json['maxFragmentBodySize'] as int? ?? 8192,
+    );
+  }
+}
+
+class PythonClientConfig extends ClientLanguageConfig {
+  @override final bool generateAllFieldsFragments;
+  @override final bool nullableFieldsRequired;
+  @override final bool autoGenerateQueries;
+  @override final bool operationNameAsParameter;
+  @override final bool immutableTypeFields;
+  @override final bool captureErrors;
+  @override final bool strictEnums;
+  @override final PersistedQueriesMode persistedQueries;
+  @override final bool persistedQueriesUseGet;
+  @override final String? defaultAlias;
+  @override final int? autoGenerateQueriesArgumentLimit;
+  @override final int? maxFragmentBodySize;
+  @override final AutoGenerateQueriesFor? autoGenerateQueriesFor;
+
+  final PythonHttpAdapter httpAdapter;
+  final PythonWsAdapter wsAdapter;
+
+  PythonClientConfig({
+    this.generateAllFieldsFragments = true,
+    this.nullableFieldsRequired = false,
+    this.autoGenerateQueries = true,
+    this.operationNameAsParameter = false,
+    this.captureErrors = false,
+    this.strictEnums = false,
+    this.persistedQueries = PersistedQueriesMode.off,
+    this.persistedQueriesUseGet = false,
+    this.immutableTypeFields = true,
+    this.httpAdapter = PythonHttpAdapter.httpx,
+    this.wsAdapter = PythonWsAdapter.websockets,
+    this.defaultAlias,
+    this.autoGenerateQueriesFor,
+    this.autoGenerateQueriesArgumentLimit = 200,
+    this.maxFragmentBodySize = 8192,
+  });
+
+  factory PythonClientConfig.fromJson(Map<String, dynamic> json) {
+    return PythonClientConfig(
+      generateAllFieldsFragments: (json['generateAllFieldsFragments'] as bool?) ?? true,
+      nullableFieldsRequired: (json['nullableFieldsRequired'] as bool?) ?? false,
+      autoGenerateQueries: (json['autoGenerateQueries'] as bool?) ?? true,
+      operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
+      captureErrors: (json['captureErrors'] as bool?) ?? false,
+      strictEnums: (json['strictEnums'] as bool?) ?? false,
+      persistedQueries: persistedQueriesModeFromJson(json),
+      persistedQueriesUseGet: persistedQueriesUseGetFromJson(json),
+      immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
+      defaultAlias: json['defaultAlias'] as String?,
+      httpAdapter: PythonHttpAdapter.values.firstWhere(
+        (e) => e.name == json['httpAdapter'],
+        orElse: () => PythonHttpAdapter.httpx,
+      ),
+      wsAdapter: PythonWsAdapter.values.firstWhere(
+        (e) => e.name == json['wsAdapter'],
+        orElse: () => PythonWsAdapter.websockets,
       ),
       autoGenerateQueriesFor: json['autoGenerateQueriesFor'] != null
           ? AutoGenerateQueriesFor.fromJson(json['autoGenerateQueriesFor'] as Map<String, dynamic>)

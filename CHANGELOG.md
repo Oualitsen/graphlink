@@ -659,3 +659,8 @@
 - Java: the Spring WebClient multipart adapter imported `MultipartBodyBuilder` from the wrong package, so generated Java reactive clients with file uploads did not compile.
 - Java reactive (Mutiny): `flatMap` now generates `chain`, as Mutiny's API requires.
 
+## Unreleased
+
+### New features
+
+- **Python client** — new `clientConfig.python` target. Types, inputs, interfaces/unions and enums are pydantic v2 models (snake_case fields keeping the wire name as alias, `to_json` / `from_json`, `__typename` dispatch for interfaces and unions, tolerant enums). The client is `asyncio`-based: queries and mutations are `async` methods with keyword-only arguments, subscriptions are `AsyncIterator`s, and the transport is an injectable `async` adapter. Includes `@glCache` with tag invalidation and `staleIfOffline`, file uploads, `@glCaptureErrors`, and persisted queries (APQ, optional GET) with the same wire behaviour as the other clients. Default `httpx` HTTP adapter and `websockets` subscription adapter with auto-reconnect (`httpAdapter` / `wsAdapter`: `"none"` to bring your own). Requires pydantic >= 2.10.
