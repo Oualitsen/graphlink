@@ -72,9 +72,9 @@ class KotlinClientSerializer extends GLClientSerializer {
 
     final initBody = <String>[
       if (_grammar.hasQueries)
-        'queries = ${_classNameFor(GLQueryType.query)}(adapter, fragmentMap, encoder, decoder, store)',
+        'queries = ${_classNameFor(GLQueryType.query)}(adapter, ${_getAdapterArg}fragmentMap, encoder, decoder, store)',
       if (_grammar.hasMutations)
-        'mutations = ${_classNameFor(GLQueryType.mutation)}(adapter, ${_grammar.hasUploadMutations ? 'multipartAdapter, ' : ''}fragmentMap, encoder, decoder, store)',
+        'mutations = ${_classNameFor(GLQueryType.mutation)}(adapter, $_getAdapterArg${_grammar.hasUploadMutations ? 'multipartAdapter, ' : ''}fragmentMap, encoder, decoder, store)',
       if (_grammar.hasSubscriptions)
         'subscriptions = ${_classNameFor(GLQueryType.subscription)}(adapter, wsAdapter, fragmentMap, encoder, decoder, store)',
       ..._grammar.usedFragments
@@ -85,6 +85,7 @@ class KotlinClientSerializer extends GLClientSerializer {
 
     final primaryCtorArgs = [
       'private val adapter: GraphLinkClientAdapter',
+      if (_grammar.persistedQueriesUseGet) 'private val getAdapter: GraphLinkClientAdapter',
       if (_grammar.hasSubscriptions) 'private val wsAdapter: GraphLinkWebSocketAdapter',
       if (_grammar.hasUploadMutations) 'private val multipartAdapter: GraphLinkMultipartAdapter',
       'private val encoder: GraphLinkJsonEncoder',
@@ -121,14 +122,15 @@ class KotlinClientSerializer extends GLClientSerializer {
     // When uploads are present, DefaultGraphLinkClientAdapter implements both
     // GraphLinkClientAdapter and GraphLinkMultipartAdapter, so we reuse one
     // instance via a local val.
-    List<String> callArgs(String adapterExpr, String wsExpr) {
+    List<String> callArgs(String adapterExpr, String wsExpr, {String getArgs = ''}) {
+      final getExpr = _grammar.persistedQueriesUseGet ? ', DefaultGraphLinkGetAdapter(url$getArgs)' : '';
       if (hasUploads) {
         return [
           codeGenUtils.constDecl('a', '$adapterExpr'),
-          'return ${codeGenUtils.callExpression('$kotlinClientName', ['a${hasSubs ? ', $wsExpr' : ''}', 'a', 'encoder', 'decoder'])}',
+          'return ${codeGenUtils.callExpression('$kotlinClientName', ['a$getExpr${hasSubs ? ', $wsExpr' : ''}', 'a', 'encoder', 'decoder'])}',
         ];
       }
-      return ['return ${codeGenUtils.callExpression('$kotlinClientName', ['$adapterExpr${hasSubs ? ', $wsExpr' : ''}', 'encoder', 'decoder'])}'];
+      return ['return ${codeGenUtils.callExpression('$kotlinClientName', ['$adapterExpr$getExpr${hasSubs ? ', $wsExpr' : ''}', 'encoder', 'decoder'])}'];
     }
 
     String factory(List<String> arguments, List<String> statements) => codeGenUtils.createMethod(
@@ -146,7 +148,7 @@ class KotlinClientSerializer extends GLClientSerializer {
         '',
         codeGenUtils.companionObject([
           factory(['url: String', ...codecArgs], callArgs('DefaultGraphLinkClientAdapter(url)', '')),
-          factory(['url: String', headersArg, ...codecArgs], callArgs('DefaultGraphLinkClientAdapter(url, headersProvider)', '')),
+          factory(['url: String', headersArg, ...codecArgs], callArgs('DefaultGraphLinkClientAdapter(url, headersProvider)', '', getArgs: ', headersProvider')),
           factory(['url: String'], ['return ${codeGenUtils.callExpression('create', ['url', '$codec', '$codec'])}']),
         ]),
       ];
@@ -158,7 +160,7 @@ class KotlinClientSerializer extends GLClientSerializer {
         factory(['url: String', 'wsUrl: String', ...codecArgs],
             callArgs('DefaultGraphLinkClientAdapter(url)', 'DefaultGraphLinkWebSocketAdapter(wsUrl)')),
         factory(['url: String', 'wsUrl: String', headersArg, ...codecArgs],
-            callArgs('DefaultGraphLinkClientAdapter(url, headersProvider)', 'DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider)')),
+            callArgs('DefaultGraphLinkClientAdapter(url, headersProvider)', 'DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider)', getArgs: ', headersProvider')),
         factory(['url: String'], [
           codeGenUtils.constDecl('ws', 'url.replaceFirst("http", "ws")'),
           'return ${codeGenUtils.callExpression('create', ['url', 'ws', '$codec', '$codec'])}',
@@ -181,8 +183,20 @@ class KotlinClientSerializer extends GLClientSerializer {
         'protected val store: GraphLinkCacheStore',
         'protected val encoder: GraphLinkJsonEncoder',
         'protected val decoder: GraphLinkJsonDecoder',
+        if (_grammar.persistedQueriesUseGet) 'private val getAdapter: GraphLinkClientAdapter? = null',
       ],
       body: [
+        if (_grammar.persistedQueries) ...[
+          'private val hashes = java.util.concurrent.ConcurrentHashMap<String, String>()',
+          '@Volatile private var persistedUnsupported = false',
+          if (_grammar.persistedQueriesUseGet) '@Volatile private var getUnsupported = false',
+          '',
+          _glHashMethod(),
+          '',
+          _glSendMethod(withOpName),
+          '',
+          if (_grammar.persistedQueriesUseGet) ...[_glSendHashOnlyMethod(withOpName), ''],
+        ],
         'private val tagLocks = java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.locks.ReentrantLock>()',
         '',
         'init ${codeGenUtils.block([
@@ -234,6 +248,14 @@ class KotlinClientSerializer extends GLClientSerializer {
   }
 
   String _glCallAdapterMethod(bool withOpName) {
+    if (_grammar.persistedQueries) {
+      return codeGenUtils.suspendFun(
+        name: 'glCallAdapter',
+        arguments: ['payload: GraphLinkPayload'],
+        returnType: 'String',
+        statements: _persistedCallAdapterStatements(),
+      );
+    }
     final statements = withOpName
         ? [
             codeGenUtils.constDecl('operationName', 'payload.operationName'),
@@ -246,6 +268,94 @@ class KotlinClientSerializer extends GLClientSerializer {
       returnType: 'String',
       statements: statements,
     );
+  }
+
+  String get _getAdapterArg => _grammar.persistedQueriesUseGet ? 'getAdapter, ' : '';
+
+  String _glHashMethod() {
+    return codeGenUtils.createMethod(
+      methodName: 'glHash',
+      returnType: 'String',
+      arguments: ['query: String'],
+      statements: [
+        codeGenUtils.constDecl('cached', 'hashes[query]'),
+        codeGenUtils.ifStatement(
+          condition: 'cached != null',
+          ifBlockStatements: ['return cached'],
+        ),
+        codeGenUtils.constDecl('hash', 'GraphLinkSha256.hex(query)'),
+        'hashes[query] = hash',
+        'return hash',
+      ],
+    );
+  }
+
+  String _glSendMethod(bool withOpName) {
+    return 'private ${codeGenUtils.suspendFun(
+      name: 'glSend',
+      arguments: ['body: Map<String, Any?>'],
+      returnType: 'String',
+      statements: [
+        if (withOpName) 'return adapter.execute(encoder.encode(body), body["operationName"] as String)'
+        else 'return adapter.execute(encoder.encode(body))',
+      ],
+    )}';
+  }
+
+  String _glSendHashOnlyMethod(bool withOpName) {
+    final call = withOpName
+        ? 'target.execute(encoder.encode(body), body["operationName"] as String)'
+        : 'target.execute(encoder.encode(body))';
+    return 'private ${codeGenUtils.suspendFun(
+      name: 'glSendHashOnly',
+      arguments: ['payload: GraphLinkPayload', 'body: Map<String, Any?>'],
+      returnType: 'String',
+      statements: [
+        codeGenUtils.constDecl('target', 'getAdapter'),
+        codeGenUtils.ifStatement(
+          condition: 'target == null || getUnsupported || payload.query.startsWith("mutation")',
+          ifBlockStatements: ['return glSend(body)'],
+        ),
+        codeGenUtils.tryCatchFinally(
+          tryStatements: ['return $call'],
+          catchVariable: 'e',
+          catchStatements: [
+            codeGenUtils.ifStatement(
+              condition: 'e !is GraphLinkGetNotSupported',
+              ifBlockStatements: ['throw e'],
+            ),
+            'getUnsupported = true',
+            'return glSend(body)',
+          ],
+        ),
+      ],
+    )}';
+  }
+
+  List<String> _persistedCallAdapterStatements() {
+    return [
+      codeGenUtils.ifStatement(
+        condition:
+            'persistedUnsupported || payload.query.length <= GraphLinkPersistedQueries.MIN_QUERY_LENGTH',
+        ifBlockStatements: ['return glSend(payload.toJson())'],
+      ),
+      codeGenUtils.constDecl('extensions', 'GraphLinkPersistedQueries.extensions(glHash(payload.query))'),
+      codeGenUtils.constDecl('hashOnly',
+          'mapOf("operationName" to payload.operationName, "variables" to payload.variables, "extensions" to extensions)'),
+      codeGenUtils.constDecl(
+        'response',
+        _grammar.persistedQueriesUseGet ? 'glSendHashOnly(payload, hashOnly)' : 'glSend(hashOnly)',
+      ),
+      codeGenUtils.constDecl('failure', 'GraphLinkPersistedQueries.failure(response, decoder)'),
+      codeGenUtils.ifStatement(condition: 'failure == null', ifBlockStatements: ['return response']),
+      codeGenUtils.constDecl('body', 'payload.toJson().toMutableMap()'),
+      codeGenUtils.ifStatement(
+        condition: 'failure == GraphLinkPersistedQueries.NOT_SUPPORTED',
+        ifBlockStatements: ['persistedUnsupported = true'],
+        elseBlockStatements: ['body["extensions"] = extensions'],
+      ),
+      'return glSend(body)',
+    ];
   }
 
   String _parseToObjectAndCacheMethod() {
@@ -601,6 +711,8 @@ class KotlinClientSerializer extends GLClientSerializer {
   List<String> _ctorParams(GLQueryType type) {
     return [
       'adapter: GraphLinkClientAdapter',
+      if (type != GLQueryType.subscription && _grammar.persistedQueriesUseGet)
+        'getAdapter: GraphLinkClientAdapter',
       if (type == GLQueryType.subscription) 'wsAdapter: GraphLinkWebSocketAdapter',
       if (type == GLQueryType.mutation && _grammar.hasUploadMutations)
         'private val multipartAdapter: GraphLinkMultipartAdapter',
@@ -612,7 +724,14 @@ class KotlinClientSerializer extends GLClientSerializer {
   }
 
   String _superCtorCall(GLQueryType type) =>
-      codeGenUtils.callExpression('GraphLinkResolverBase', ['adapter', 'fragmentMap', 'store', 'encoder', 'decoder']);
+      codeGenUtils.callExpression('GraphLinkResolverBase', [
+        'adapter',
+        'fragmentMap',
+        'store',
+        'encoder',
+        'decoder',
+        if (type != GLQueryType.subscription && _grammar.persistedQueriesUseGet) 'getAdapter',
+      ]);
 
 
   String _buildPayloadMethod() {
@@ -760,6 +879,38 @@ class KotlinClientSerializer extends GLClientSerializer {
             ? kotlinDefaultGraphLinkClientAdapterWithUpload(_grammar.operationNameAsParameter)
             : kotlinDefaultGraphLinkClientAdapter(_grammar.operationNameAsParameter),
       );
+
+  GLClassModel generateSha256File() {
+    if (!_grammar.persistedQueries) {
+      throw StateError('The SHA-256 runtime is only generated when persistedQueries is enabled.');
+    }
+    return const GLClassModel(body: kotlinSha256);
+  }
+
+  GLClassModel generatePersistedQueriesFile() {
+    if (!_grammar.persistedQueries) {
+      throw StateError('The persisted-queries runtime is only generated when persistedQueries is enabled.');
+    }
+    return GLClassModel(
+      importDepencies: [
+        _grammar.getTokenByKey('GraphLinkJsonDecoder')!,
+        if (_grammar.persistedQueriesUseGet) _grammar.getTokenByKey('GraphLinkJsonEncoder')!,
+      ],
+      body: _grammar.persistedQueriesUseGet
+          ? '$kotlinPersistedQueries\n$kotlinPersistedQueriesGet'
+          : kotlinPersistedQueries,
+    );
+  }
+
+  GLClassModel generateDefaultGetAdapterFile() {
+    if (!_grammar.persistedQueriesUseGet) {
+      throw StateError('The GET adapter is only generated when persistedQueriesUseGet is enabled.');
+    }
+    return GLClassModel(
+      importDepencies: [_grammar.getTokenByKey('GraphLinkClientAdapter')!],
+      body: kotlinDefaultGraphLinkGetAdapter(_grammar.operationNameAsParameter),
+    );
+  }
 
   GLClassModel generateWebSocketAdapterFile() =>
       const GLClassModel(body: kotlinGraphLinkWebSocketAdapter);

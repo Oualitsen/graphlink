@@ -194,6 +194,32 @@ Future<Set<String>> generateKotlinClientClasses(
     ));
   }
 
+  if (parser.persistedQueries) {
+    for (final entry in {
+      'GraphLinkSha256.kt': clientSerializer.generateSha256File(),
+      'GraphLinkPersistedQueries.kt': clientSerializer.generatePersistedQueriesFile(),
+    }.entries) {
+      futures.add(writeToFile(
+        data: serializer.serializeGlClass(entry.value),
+        fileName: entry.key,
+        subdir: 'client',
+        imports: [],
+        destinationDir: destinationDir,
+        packageName: packageName,
+      ));
+    }
+    if (parser.persistedQueriesUseGet && kotlinConfig.wsAdapter != KotlinWsAdapter.none) {
+      futures.add(writeToFile(
+        data: serializer.serializeGlClass(clientSerializer.generateDefaultGetAdapterFile()),
+        fileName: 'DefaultGraphLinkGetAdapter.kt',
+        subdir: 'client',
+        imports: [],
+        destinationDir: destinationDir,
+        packageName: packageName,
+      ));
+    }
+  }
+
   // ── Upload files ───────────────────────────────────────────────────────────
 
   if (parser.hasUploadMutations) {
