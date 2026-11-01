@@ -201,7 +201,7 @@ packages:
   graphlink:
     dependency: "direct main"
     description:
-      path: "../../.."
+      path: "../../../.."
       relative: true
     source: path
     version: "5.5.0"

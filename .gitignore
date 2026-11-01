@@ -83,3 +83,13 @@ server_integration_tests/**/.gradle/
 server_integration_tests/**/build/
 server_integration_tests/**/.server.pid
 
+
+# Build output and tool caches (any depth)
+**/.build/
+*.pcm
+**/__pycache__/
+**/DerivedData/
+**/Pods/
+**/.gradle/
+**/target/
+**/build/
