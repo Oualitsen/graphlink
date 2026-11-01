@@ -95,6 +95,14 @@ Future<Set<String>> generateSwiftClientClasses(
     'GraphLinkClient.swift': clientSerializer.generateClient(),
   };
 
+  if (parser.persistedQueries) {
+    clientFiles['GraphLinkSha256.swift'] = clientSerializer.generateSha256File();
+    clientFiles['GraphLinkPersistedQueries.swift'] = clientSerializer.generatePersistedQueriesFile();
+    if (parser.persistedQueriesUseGet) {
+      clientFiles['DefaultGraphLinkURLSessionGetAdapter.swift'] = clientSerializer.generateDefaultGetAdapterFile();
+    }
+  }
+
   // ── Operation classes (queries / mutations / subscriptions) ────────────────
 
   for (final type in GLQueryType.values) {

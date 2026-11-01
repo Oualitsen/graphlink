@@ -180,6 +180,21 @@ jobs:
           path: integration_tests
       - run: make ci-no-generate
 
+  swift-persisted-queries:
+    runs-on: macos-latest
+    needs: generate
+    defaults:
+      run:
+        working-directory: integration_tests/mock/swift_persisted_queries_tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/download-artifact@v4
+        with:
+          name: integration-tests-generated
+          path: integration_tests
+      - run: make ci-no-generate
+
   # Generate every server_integration_tests client/server exactly once, then hand
   # the result to the matrix + upload jobs below via artifact. Runs in parallel
   # with every other top-level job (no `needs` on anything).
