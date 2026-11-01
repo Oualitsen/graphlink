@@ -91,7 +91,7 @@ abstract class ClientLanguageConfig {
   }
 }
 
-const _persistedQueriesLanguages = {'dart', 'typescript', 'kotlin'};
+const _persistedQueriesLanguages = {'dart', 'typescript', 'kotlin', 'swift'};
 
 PersistedQueriesMode persistedQueriesModeFromJson(Map<String, dynamic> json, {String language = 'dart'}) {
   final value = json['persistedQueries'];
