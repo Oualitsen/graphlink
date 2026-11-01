@@ -9,7 +9,7 @@ import 'package:graphlink/src/model/reserved_words.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/serializers/client_serializers/go/go_client_vars.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
-import 'package:graphlink/src/serializers/go_serializer.dart';
+import 'package:graphlink/src/serializers/go/go_serializer.dart';
 
 const _zero = 'glZero__';
 

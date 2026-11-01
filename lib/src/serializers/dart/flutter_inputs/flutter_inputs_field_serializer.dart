@@ -1,7 +1,7 @@
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/dart_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_field.dart';
-import 'package:graphlink/src/serializers/flutter_api.dart';
+import 'package:graphlink/src/serializers/dart/flutter_api.dart';
 import 'flutter_inputs_radio_binding.dart';
 import 'flutter_inputs_type_helpers.dart';
 

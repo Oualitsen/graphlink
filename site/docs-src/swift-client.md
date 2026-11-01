@@ -403,6 +403,15 @@ try await client.mutations.uploadAvatar(userId: "1", file: upload)
 
 Pass an `UploadProgressCallback` to the generated method to observe upload progress.
 
+## Known limitations
+
+- **Encoding `unknownValue__` does not throw.** Dart, Java, Kotlin, TypeScript, Python and Go all refuse to encode the
+  fallback enum member, so it can never reach the server. Swift's `toJson()` is non-throwing across all generated code,
+  so it returns the literal string `"unknownValue__"` and the server rejects the request with a GraphQL validation
+  error. See [Unknown enum values](#unknown-enum-values).
+- **`strictEnums: true` crashes on an unrecognized wire value.** `fromJson` force-unwraps, so a value the schema does
+  not declare terminates the process instead of throwing a catchable error.
+
 ## Configuration reference
 
 | Option | Type | Default | Description |

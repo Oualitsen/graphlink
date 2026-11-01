@@ -6,7 +6,7 @@ import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/reserved_words.dart';
 import 'package:graphlink/src/naming_convention.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
-import 'package:graphlink/src/serializers/java_imports.dart';
+import 'package:graphlink/src/serializers/java/java_imports.dart';
 
 /// Reserved-word set for the target language. Only languages whose serializer
 /// reads [GLField.codeName] should return a non-empty set. T

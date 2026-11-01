@@ -8,7 +8,7 @@ import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/serializers/client_serializers/swift/swift_client_serializer.dart';
-import 'package:graphlink/src/serializers/swift_serializer.dart';
+import 'package:graphlink/src/serializers/swift/swift_serializer.dart';
 import 'package:graphlink/src/utils.dart';
 
 /// Writes the Swift client: generated types/enums/inputs/interfaces plus the

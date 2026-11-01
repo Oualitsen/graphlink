@@ -9,8 +9,8 @@ import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_intercept_extension.dart';
-import 'package:graphlink/src/serializers/java_imports.dart';
-import 'package:graphlink/src/serializers/java_serializer.dart';
+import 'package:graphlink/src/serializers/java/java_imports.dart';
+import 'package:graphlink/src/serializers/java/java_serializer.dart';
 import 'package:graphlink/src/serializers/jvm_spring_controller_serializer_base.dart';
 import 'package:graphlink/src/utils.dart';
 

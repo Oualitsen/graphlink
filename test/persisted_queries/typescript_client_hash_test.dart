@@ -1,7 +1,7 @@
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/client_serializers/typescript/typescript_client_serializer.dart';
-import 'package:graphlink/src/serializers/typescript_serializer.dart';
+import 'package:graphlink/src/serializers/typescript/typescript_serializer.dart';
 import 'package:test/test.dart';
 
 const _schema = '''

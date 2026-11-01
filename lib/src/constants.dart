@@ -1,5 +1,5 @@
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
-import 'package:graphlink/src/serializers/java_imports.dart';
+import 'package:graphlink/src/serializers/java/java_imports.dart';
 
 const glApplyOnServer = "applyOnServer";
 const glApplyOnClient = "applyOnClient";

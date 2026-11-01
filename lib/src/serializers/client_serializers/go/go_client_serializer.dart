@@ -12,7 +12,7 @@ import 'package:graphlink/src/serializers/client_serializers/go/go_client_operat
 import 'package:graphlink/src/serializers/client_serializers/go/go_client_vars.dart';
 import 'package:graphlink/src/serializers/gl_client_serializer.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
-import 'package:graphlink/src/serializers/go_serializer.dart';
+import 'package:graphlink/src/serializers/go/go_serializer.dart';
 
 class GoClientSerializer extends GLClientSerializer {
   final GLParser _parser;

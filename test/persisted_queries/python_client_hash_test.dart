@@ -2,7 +2,7 @@ import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/reserved_words.dart';
 import 'package:graphlink/src/naming_convention.dart';
 import 'package:graphlink/src/serializers/client_serializers/python/python_client_serializer.dart';
-import 'package:graphlink/src/serializers/python_serializer.dart';
+import 'package:graphlink/src/serializers/python/python_serializer.dart';
 import 'package:test/test.dart';
 
 const _schema = '''

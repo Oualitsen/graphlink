@@ -9,7 +9,7 @@ import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/client_serializers/kotlin/kotlin_client_serializer.dart';
-import 'package:graphlink/src/serializers/kotlin_serializer.dart';
+import 'package:graphlink/src/serializers/kotlin/kotlin_serializer.dart';
 import 'package:graphlink/src/utils.dart';
 
 Future<Set<String>> generateKotlinClientClasses(

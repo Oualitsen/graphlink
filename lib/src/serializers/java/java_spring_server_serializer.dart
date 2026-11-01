@@ -9,9 +9,9 @@ import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_intercept_extension.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
-import 'package:graphlink/src/serializers/java_imports.dart';
-import 'package:graphlink/src/serializers/java_serializer.dart';
-import 'package:graphlink/src/serializers/java_spring_controller_serializer.dart';
+import 'package:graphlink/src/serializers/java/java_imports.dart';
+import 'package:graphlink/src/serializers/java/java_serializer.dart';
+import 'package:graphlink/src/serializers/java/java_spring_controller_serializer.dart';
 import 'package:graphlink/src/serializers/jvm_spring_server_serializer_base.dart';
 
 class JavaSpringServerSerializer extends JvmSpringServerSerializerBase {

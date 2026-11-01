@@ -1,7 +1,7 @@
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
-import 'package:graphlink/src/serializers/dart_serializer.dart';
+import 'package:graphlink/src/serializers/dart/dart_serializer.dart';
 
 class FlutterInputsTypeHelpers {
   final GLParser _parser;

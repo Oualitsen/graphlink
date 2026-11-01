@@ -10,7 +10,7 @@ import 'package:graphlink/src/serializers/client_serializers/python/python_clien
 import 'package:graphlink/src/serializers/client_serializers/python/python_client_vars.dart';
 import 'package:graphlink/src/serializers/gl_client_serializer.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
-import 'package:graphlink/src/serializers/python_serializer.dart';
+import 'package:graphlink/src/serializers/python/python_serializer.dart';
 
 const _resolverBaseClassName = 'GraphLinkResolverBase';
 const _cacheStoreClassName = 'GraphLinkCacheStore';

@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:graphlink/src/serializers/dart_serializer.dart';
+import 'package:graphlink/src/serializers/dart/dart_serializer.dart';
 import 'package:test/test.dart';
 import 'package:logger/logger.dart';
 import 'package:graphlink/src/exceptions/parse_exception.dart';

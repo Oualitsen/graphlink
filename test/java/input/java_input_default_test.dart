@@ -1,5 +1,5 @@
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
-import 'package:graphlink/src/serializers/java_serializer.dart';
+import 'package:graphlink/src/serializers/java/java_serializer.dart';
 import 'package:test/test.dart';
 
 JavaSerializer _serializer(GLParser g, {bool immutableInputFields = true}) => JavaSerializer(
