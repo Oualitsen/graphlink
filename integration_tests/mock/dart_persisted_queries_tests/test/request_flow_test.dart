@@ -67,6 +67,19 @@ void main() {
     });
   });
 
+  group('a server that reports a missing hash only by its code', () {
+    test('still gets the retry with the query', () async {
+      server.notFoundMessage = 'Unknown query';
+      server.respondTo('persistedLongQuery', {'getUser': kUserAliceJson});
+
+      final res = await client.queries.persistedLongQuery(id: 'user-1');
+
+      expect(res.getUser.name, 'Alice Smith');
+      expect(server.requests, hasLength(2));
+      expect(server.requests[1].containsKey('query'), isTrue);
+    });
+  });
+
   group('a short query', () {
     test('is sent in full, with no hash', () async {
       server.respondTo('persistedShortQuery', {'listUsers': []});

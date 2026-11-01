@@ -17,8 +17,19 @@ ClientLanguageConfig _parse(String language, Map<String, dynamic> options) =>
 Matcher _rejectsWith(String fragment) => throwsA(
     isA<ArgumentError>().having((e) => e.message.toString(), 'message', contains(fragment)));
 
+const _implemented = {'dart', 'typescript'};
+
 void main() {
-  for (final language in _required.keys) {
+  for (final language in _required.keys.where((l) => !_implemented.contains(l))) {
+    test('$language rejects apq until it is implemented', () {
+      expect(
+        () => _parse(language, {'persistedQueries': 'apq'}),
+        _rejectsWith('not supported for $language yet'),
+      );
+    });
+  }
+
+  for (final language in _implemented) {
     group(language, () {
       test('persisted queries are off by default', () {
         final config = _parse(language, {});

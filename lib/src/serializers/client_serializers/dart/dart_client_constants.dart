@@ -530,7 +530,7 @@ class GraphLinkPersistedQueries {
       };
 
   static String? failure(String response) {
-    if (!response.contains('PersistedQuery')) return null;
+    if (!response.contains('PersistedQuery') && !response.contains('PERSISTED_QUERY')) return null;
     final decoded = jsonDecode(response);
     final errors = decoded is Map ? decoded['errors'] : null;
     if (errors is! List) return null;
