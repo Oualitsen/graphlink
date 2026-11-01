@@ -301,7 +301,7 @@ don't confuse them:
   `typescript_upload_server`, `java_server`, `java_server_reactive`,
   `kotlin_server_blocking`, `kotlin_server_suspend`) — flat, not grouped by language.
   `clients/` holds one subdirectory per generated client harness (`dart_client`,
-  `ts_client`, `java_client`, `kotlin_client`, plus `dart_upload_client` for the
+  `ts_client`, `java_client`, `kotlin_client`, `python_client`, plus `dart_upload_client` for the
   upload-only suite). The top-level `Makefile` has one `ci-<server>-client` target per
   server (parameterized by `CLIENT=dart|ts|java|kotlin`) so any client can be pointed at
   any server. This validates **generated server code**.
