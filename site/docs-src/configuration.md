@@ -534,6 +534,66 @@ Used when `mode` is `"client"` and you want Swift output. See the [Swift Client]
 
 ---
 
+## `clientConfig.python`
+
+Used when `mode` is `"client"` and you want Python output. See the [Python Client](python-client.md) page for a full walkthrough.
+
+=== "JSON"
+
+    ```json title="glink.json — clientConfig.python"
+    {
+      "clientConfig": {
+        "python": {
+          "generateAllFieldsFragments": true,
+          "autoGenerateQueries": true,
+          "nullableFieldsRequired": false,
+          "immutableTypeFields": true,
+          "operationNameAsParameter": false,
+          "captureErrors": false,
+          "httpAdapter": "httpx",
+          "wsAdapter": "websockets",
+          "defaultAlias": null
+        }
+      }
+    }
+    ```
+
+=== "YAML"
+
+    ```yaml title="glink.yaml — clientConfig.python"
+    clientConfig:
+      python:
+        generateAllFieldsFragments: true
+        autoGenerateQueries: true
+        nullableFieldsRequired: false
+        immutableTypeFields: true
+        operationNameAsParameter: false
+        captureErrors: false
+        httpAdapter: httpx
+        wsAdapter: websockets
+        defaultAlias: null
+    ```
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `generateAllFieldsFragments` | `boolean` | `true` | Generates `_all_fields_TypeName` fragments for every type. Required for `autoGenerateQueries` and `autoGenerateQueriesFor`. |
+| `autoGenerateQueries` | `boolean` | `true` | Automatically builds query strings for every operation using `_all_fields` fragments. |
+| `autoGenerateQueriesFor` | `object` \| `null` | `null` | Generates client methods only for the listed operations. Keys: `queries`, `mutations`, `subscriptions` — each takes a list of root field names. Unknown names cause a build error. Requires `generateAllFieldsFragments: true`. |
+| `autoGenerateQueriesArgumentLimit` | `integer` \| `null` | `200` | Maximum number of propagated (nested-field) arguments allowed in the synthesized `field_args` object of an auto-generated operation. When exceeded, GraphLink skips the operation and prints a `⚠` warning. |
+| `maxFragmentBodySize` | `integer` \| `null` | `8192` | Maximum number of characters allowed in the serialized body of a generated `_all_fields` fragment. Larger fragments are omitted, and auto-generated queries that depend on them are skipped. |
+| `nullableFieldsRequired` | `boolean` | `false` | When `true`, nullable fields have no `None` default — callers must pass them explicitly. |
+| `immutableTypeFields` | `boolean` | `true` | Generate frozen pydantic models (`ConfigDict(frozen=True)`). Set to `false` for mutable models. |
+| `operationNameAsParameter` | `boolean` | `false` | When `true`, adapters receive the operation name as a second argument and the default httpx adapter appends it as `?operationName=`. |
+| `captureErrors` | `boolean` | `false` | When `true`, applies `@glCaptureErrors` to every query and mutation. Each method returns a `{OperationName}FullResponse` with optional `data` and optional `errors` instead of raising `GraphLinkException`. |
+| `strictEnums` | `boolean` | `false` | When `false`, every generated enum gets an extra `unknownValue__` member and a value the schema did not declare decodes to it instead of raising. Encoding it back raises `ValueError`. Set to `true` to raise on unknown values. |
+| `persistedQueries` | `false` \| `"apq"` | `false` | `"apq"` sends a SHA-256 hash instead of long queries and retries once with the text on `PersistedQueryNotFound`. See [Persisted Queries](persisted-queries.md). |
+| `persistedQueriesUseGet` | `boolean` | `false` | Send hash-only queries over GET. Requires `persistedQueries: "apq"`. Mutations always use POST. |
+| `httpAdapter` | `"httpx"` \| `"none"` | `"httpx"` | HTTP adapter to generate. `"httpx"` emits `GraphLinkHttpxAdapter` and `GraphLinkClient.with_http(...)`; `"none"` emits only the client, so you pass your own `adapter`. |
+| `wsAdapter` | `"websockets"` \| `"none"` | `"websockets"` | WebSocket adapter to generate. `"websockets"` emits `DefaultGraphLinkWebSocketAdapter` built on the `websockets` library; `"none"` leaves you to implement `GraphLinkWebSocketAdapter`. |
+| `defaultAlias` | `string?` | `null` | Default alias applied to all generated query fields globally. |
+
+---
+
 ## `serverConfig.spring`
 
 Used when `mode` is `"server"`.

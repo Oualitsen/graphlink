@@ -65,6 +65,18 @@ const Set<String> swiftReservedWords = {
   'true', 'false', 'nil', 'super', 'where', 'inout', 'any', 'some',
 };
 
+/// Python hard keywords plus the soft builtins a generated model field or
+/// parameter could shadow (`id` is intentionally absent: shadowing a builtin as
+/// an attribute name is harmless and `id` is by far the most common field).
+const Set<String> pythonReservedWords = {
+  'False', 'None', 'True', 'and', 'as', 'assert', 'async', 'await', 'break',
+  'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally',
+  'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'nonlocal',
+  'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield',
+  'self', 'cls', 'json', 'dict', 'copy', 'schema', 'validate', 'construct',
+  'to_json', 'from_json', 'model_config', 'model_fields', 'model_dump', 'model_validate',
+};
+
 /// TypeScript intentionally has NO field reserved set: it accesses fields and
 /// JSON keys as object properties (`{ default: T }`, `args.default`), and
 /// reserved words are legal as property names / in member access. So neither

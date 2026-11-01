@@ -1,0 +1,21 @@
+{
+  "schemaPaths": [
+    "../../../real/schema_real/schema.gql",
+    "../../schema/persisted_queries.graphql"
+  ],
+  "mode": "client",
+  "outputDir": "generated",
+  "clientConfig": {
+    "python": {
+      "httpAdapter": "httpx",
+      "wsAdapter": "websockets",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "nullableFieldsRequired": false,
+      "immutableTypeFields": true,
+      "captureErrors": false,
+      "persistedQueries": "apq",
+      "persistedQueriesUseGet": true
+    }
+  }
+}

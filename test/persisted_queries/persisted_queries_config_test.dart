@@ -7,6 +7,7 @@ const _required = {
   'typescript': <String, dynamic>{},
   'kotlin': {'packageName': 'a.b'},
   'swift': {'moduleName': 'M'},
+  'python': <String, dynamic>{},
 };
 
 ClientLanguageConfig _parse(String language, Map<String, dynamic> options) =>

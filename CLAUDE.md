@@ -11,7 +11,7 @@ Generated files have **zero runtime dependency** on GraphLink.
 When generating code, **always use `CodeGenUtilsBase` (`lib/src/code_gen_utils.dart`) and
 its subclasses** whenever a method exists for the construct you are emitting. The
 subclasses are `DartCodeGenUtils`, `JavaCodeGenUtils`, `KotlinCodeGenUtils`,
-`SwiftCodeGenUtils` and `TypeScriptCodeGenUtils` (`lib/src/<lang>_code_gen_utils.dart`).
+`SwiftCodeGenUtils`, `PythonCodeGenUtils` and `TypeScriptCodeGenUtils` (`lib/src/<lang>_code_gen_utils.dart`).
 
 - If a builder exists for it (`ifStatement`, `inlineIfStatement`, `block`, `createMethod`,
   `createClass`, `tryCatchFinally`, `switchStatement`, `forEachLoop`, `forLoop`,
@@ -113,6 +113,7 @@ mapped inputs, etc.) so generators never duplicate derivation logic.
 | `generators/dart_client_generator.dart` | Dart/Flutter client output |
 | `generators/java_client_generator.dart` | Java client output |
 | `generators/typescript_client_generator.dart` | TypeScript client output |
+| `generators/python_client_generator.dart` | Python client output (a package with `__init__.py` barrel) |
 | `generators/server_generator.dart` | Spring Boot / Express server output |
 | `generators/barrel_file_handler.dart` | Barrel/index file generation |
 
@@ -139,6 +140,7 @@ serializers/
   java_serializer.dart             # Java types, inputs, enums
   java_imports.dart                # Java import resolution
   typescript_serializer.dart       # TypeScript types, inputs, enums
+  python_serializer.dart           # Python (pydantic v2) types, inputs, enums
   flutter_types_serializer.dart    # Flutter widget types
   client_serializers/
     dart_client_serializer.dart    # Dart client methods (queries/mutations/subs)
@@ -149,6 +151,7 @@ serializers/
     java_client_constants.dart
     typescript_client_serializer.dart
     typescript_client_constants.dart
+    python/                        # python_client_serializer, _operation_serializer, _constants, _vars
   flutter_inputs/
     flutter_inputs_serializer.dart          # Flutter InputFormWidget generation
     flutter_inputs_companion_serializer.dart
@@ -278,7 +281,7 @@ stop and ask the user to run the tests manually instead.
 Two top-level directories outside `test/`, testing opposite ends of the pipeline —
 don't confuse them:
 
-- **`integration_tests/`** — GraphLink-**generated clients** for Dart/Java/TS/Kotlin/Swift,
+- **`integration_tests/`** — GraphLink-**generated clients** for Dart/Java/TS/Kotlin/Swift/Python,
   split in two groups. `mock/` (`*_client_tests/`, schema in `schema_mock/`) runs them
   against canned-response adapters, no server. `real/` (`*_client_tests_real/`, schema in
   `schema_real/`) runs them against a hand-written, trusted Spring Boot server

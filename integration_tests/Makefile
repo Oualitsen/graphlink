@@ -1,4 +1,4 @@
-.PHONY: persisted-queries dart typescript java kotlin swift dart-real typescript-real java-real kotlin-real swift-real server upload-server all all-real kill-servers kill-ports start-server start-upload-server start-main-server start-servers generate-all clean-all
+.PHONY: persisted-queries dart typescript java kotlin swift python dart-real typescript-real java-real kotlin-real swift-real python-real server upload-server all all-real kill-servers kill-ports start-server start-upload-server start-main-server start-servers generate-all clean-all
 
 # Delete every previously generated output dir across all client projects.
 # Prune node_modules/build/target/.gradle/.dart_tool so we only ever touch
@@ -30,6 +30,9 @@ kotlin:
 swift:
 	$(MAKE) -C mock/swift_client_tests ci
 
+python:
+	$(MAKE) -C mock/python_client_tests ci
+
 persisted-queries:
 	$(MAKE) -C persisted_queries all
 
@@ -55,9 +58,12 @@ kotlin-real:
 swift-real:
 	$(MAKE) -C real/swift_client_tests_real ci
 
-all: dart typescript java kotlin swift
+python-real:
+	$(MAKE) -C real/python_client_tests_real ci
 
-all-real: dart-real typescript-real java-real java-reactor-real kotlin-real swift-real
+all: dart typescript java kotlin swift python
+
+all-real: dart-real typescript-real java-real java-reactor-real kotlin-real swift-real python-real
 
 start-server:
 	curl -s -X POST http://localhost:9990/actuator/shutdown || true

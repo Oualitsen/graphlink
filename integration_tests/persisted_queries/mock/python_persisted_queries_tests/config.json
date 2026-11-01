@@ -1,0 +1,22 @@
+{
+  "schemaPaths": [
+    "../../../mock/schema_mock/schema.gql",
+    "../../../mock/schema_mock/custom_query.graphql",
+    "../../schema/persisted_queries.graphql"
+  ],
+  "mode": "client",
+  "outputDir": "generated",
+  "clientConfig": {
+    "python": {
+      "httpAdapter": "httpx",
+      "wsAdapter": "websockets",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "nullableFieldsRequired": false,
+      "immutableTypeFields": true,
+      "captureErrors": false,
+      "persistedQueries": "apq",
+      "persistedQueriesUseGet": true
+    }
+  }
+}

@@ -1,6 +1,6 @@
 # GraphLink
 
-> GraphQL code generation tool for Dart, Flutter, Java, TypeScript, Kotlin, Swift, and Spring Boot. Open source. MIT License.
+> GraphQL code generation tool for Dart, Flutter, Java, TypeScript, Kotlin, Swift, Python, and Spring Boot. Open source. MIT License.
 
 GraphLink is a command-line tool (`glink`) that reads a GraphQL schema and generates fully type-safe
 client and server code. Developers define their API once in a `.graphql` schema file and run
@@ -108,6 +108,7 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - TypeScript client (stable — fetch/axios, RxJS observables, WebSocket subscriptions)
 - Kotlin client (stable — coroutines, kotlinx.serialization, OkHttp WebSocket)
 - Swift client (stable — async/await, Sendable structs, URLSession, no third-party dependency)
+- Python client (pydantic v2 models, asyncio client, httpx and websockets adapters)
 - Express / Apollo server (stable — TypeScript, DataLoader batch mappings, graphql-ws subscriptions)
 - Go (planned, demand-based)
 

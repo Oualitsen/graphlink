@@ -22,6 +22,7 @@ Set<String> _reservedWordsFor(GeneratorConfig config) {
     return kotlinReservedWords;
   }
   if (lang is SwiftClientConfig) return swiftReservedWords;
+  if (lang is PythonClientConfig) return pythonReservedWords;
   // TypeScript accesses fields as object properties; reserved words are legal
   // there, so fields need no sanitizing (parameters are handled separately,
   // see [_parameterReservedWordsFor]).
@@ -40,6 +41,7 @@ NamingConvention _namingConventionFor(GeneratorConfig config) {
   if (lang is JavaClientConfig || lang is SpringServerConfig) return NamingConvention.java;
   if (lang is KotlinClientConfig || lang is KotlinSpringServerConfig) return NamingConvention.kotlin;
   if (lang is SwiftClientConfig) return NamingConvention.swift;
+  if (lang is PythonClientConfig) return NamingConvention.python;
   // TypeScript / Express Apollo
   return NamingConvention.typescript;
 }
