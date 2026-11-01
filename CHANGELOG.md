@@ -633,7 +633,7 @@
 
   With the option off, generated output is unchanged.
 
-## Unreleased
+## 5.6.0 - 2026-11-01
 
 ### New features
 

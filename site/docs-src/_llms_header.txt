@@ -150,7 +150,7 @@ client and server code. Developers define their API once in a `.graphql` schema 
   changed from `fun fromJson(value: String?): T?` to `fun fromJson(value: String): T` — an
   unrecognized wire value throws `IllegalArgumentException` instead of returning `null`.
 
-## Supported targets (as of v5.4.0)
+## Supported targets (as of v5.6.0)
 
 - Dart client (stable)
 - Flutter client (stable)
