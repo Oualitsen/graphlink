@@ -96,7 +96,7 @@ The server must implement APQ: look up the hash, run the stored query, and regis
 2. for a hash-only request, looks the hash up and replaces the execution input's query, or answers `PersistedQueryNotFound` (`extensions.code` = `PERSISTED_QUERY_NOT_FOUND`);
 3. for a request with text and hash, checks that SHA-256 of the text equals the hash, stores it, and continues.
 
-Spring GraphQL only accepts POST on `/graphql`. To use `persistedQueriesUseGet` you also need a filter that turns `GET /graphql?...` into the POST the handler understands, and you should reject mutations over GET with 405. A reference implementation lives in `integration_tests/real/spring_persisted_queries_server` in the GraphLink repository.
+Spring GraphQL only accepts POST on `/graphql`. To use `persistedQueriesUseGet` you also need a filter that turns `GET /graphql?...` into the POST the handler understands, and you should reject mutations over GET with 405. A reference implementation lives in `integration_tests/persisted_queries/real/spring_persisted_queries_server` in the GraphLink repository.
 
 !!! warning "Bound the server cache"
     Any anonymous client can register any query. An unbounded store is a memory-exhaustion risk, so use a size-limited (LRU) cache with a TTL, and consider registering only for authenticated or allow-listed callers. The test server in the repository uses an unbounded map and is not meant for production.

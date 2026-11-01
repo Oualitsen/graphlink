@@ -1,0 +1,28 @@
+{
+  "schemaPaths": [
+    "../../../real/schema_real/schema.gql",
+    "../../schema/persisted_queries.graphql"
+  ],
+  "mode": "client",
+  "typeMappings": {
+    "ID":      "String",
+    "String":  "String",
+    "Float":   "Double",
+    "Int":     "Int",
+    "Boolean": "Boolean"
+  },
+  "outputDir": "client-app/src/main/kotlin/dev/graphlink/test/generated",
+  "clientConfig": {
+    "kotlin": {
+      "packageName":                "dev.graphlink.test.generated",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries":        true,
+      "nullableFieldsRequired":     false,
+      "inputAsDataClass":           true,
+      "typeAsDataClass":            true,
+      "captureErrors":              false,
+      "persistedQueries":           "apq",
+      "persistedQueriesUseGet":     true
+    }
+  }
+}

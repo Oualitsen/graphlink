@@ -288,6 +288,10 @@ don't confuse them:
   `java_client_tests_real` (`.block()` appended) via `real/generate_reactor_tests.dart` into a
   git-ignored `src/test/generated/`; only the reactive-specific tests (adapters, subscriptions,
   default values) are hand-written there. Edit the blocking test, not the derived copy.
+- **`integration_tests/persisted_queries/`** — the persisted-queries (APQ) suites, kept apart from the
+  ones above: `mock/` (canned `ApqServer`), `real/` (against `spring_persisted_queries_server`, ports
+  9997/9992) and a shared `schema/`. Own `Makefile` (`make -C integration_tests persisted-queries`) and
+  own workflow `.github/workflows/persisted-queries.yml`.
 - **`server_integration_tests/`** — a **client x server matrix**: every generated
   server target (`servers/`) driven by every generated client harness (`clients/`).
   `servers/` holds one subdirectory per generated server target (`typescript_server`,
