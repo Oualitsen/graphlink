@@ -172,6 +172,8 @@ Used when `mode` is `"client"` and you want Dart/Flutter output.
 | `immutableTypeFields` | `boolean` | `true` | Response type class fields are `final`. Recommended for client-side code. |
 | `captureErrors` | `boolean` | `false` | When `true`, applies `@glCaptureErrors` behaviour to every query and mutation. Each method returns a `{OperationName}FullResponse` holding nullable `data` and nullable `errors` instead of throwing on GraphQL errors. Equivalent to annotating every query and mutation field with `@glCaptureErrors` in the schema. |
 | `strictEnums` | `boolean` | `false` | When `false`, every generated enum gets an extra `unknownValue__` member, and a value the schema did not declare (for example one added to the server after this client shipped) decodes to it instead of throwing. Encoding it back to the server throws. Set to `true` to throw on unknown values instead. |
+| `persistedQueries` | `false` \| `"apq"` | `false` | `"apq"` sends a SHA-256 hash instead of long queries and retries once with the text on `PersistedQueryNotFound`. See [Persisted Queries](persisted-queries.md). |
+| `persistedQueriesUseGet` | `boolean` | `false` | Send hash-only queries over GET. Requires `persistedQueries: "apq"`. Mutations always use POST. |
 | `appLocalizationsImport` | `string` \| `null` | `null` | Import path for an `AppLocalizations` class injected into generated Flutter UI widgets. Only relevant when `flutter` is configured. |
 | `flutter` | `object` | — | Enables Flutter widget generation and sets project-wide UI defaults. Omit the key entirely to disable Flutter generation. See [`clientConfig.dart.flutter`](#clientconfigdartflutter) for the full sub-key reference. |
 
@@ -320,6 +322,8 @@ Used when `mode` is `"client"` and you want a Java client.
 | `reactiveHttpClient` | `"jdk"` \| `"webclient"` | `"jdk"` | Transport used by the default adapter under a non-blocking `asyncStyle`. `"jdk"` uses `HttpClient.sendAsync` (works with every `asyncStyle`). `"webclient"` uses Spring `WebClient` (`asyncStyle: "reactor"` only). |
 | `captureErrors` | `boolean` | `false` | When `true`, applies `@glCaptureErrors` behaviour to every query and mutation. Each method returns a `{OperationName}FullResponse` holding nullable `data` and nullable `errors` instead of throwing on GraphQL errors. Equivalent to annotating every query and mutation field with `@glCaptureErrors` in the schema. |
 | `strictEnums` | `boolean` | `false` | When `false`, every generated enum gets an extra `unknownValue__` member, and a value the schema did not declare (for example one added to the server after this client shipped) decodes to it instead of throwing. Encoding it back to the server throws. Set to `true` to throw on unknown values instead. |
+| `persistedQueries` | `false` \| `"apq"` | `false` | `"apq"` sends a SHA-256 hash instead of long queries and retries once with the text on `PersistedQueryNotFound`. See [Persisted Queries](persisted-queries.md). |
+| `persistedQueriesUseGet` | `boolean` | `false` | Send hash-only queries over GET. Requires `persistedQueries: "apq"`. Mutations always use POST. |
 
 ---
 
@@ -387,6 +391,8 @@ Used when `mode` is `"client"` and you want TypeScript output.
 | `immutableTypeFields` | `boolean` | `true` | When `true`, generated type interfaces use `readonly` on all fields. |
 | `captureErrors` | `boolean` | `false` | When `true`, applies `@glCaptureErrors` behaviour to every query and mutation. Each method returns a `{OperationName}FullResponse` holding optional `data` and optional `errors` instead of throwing on GraphQL errors. Equivalent to annotating every query and mutation field with `@glCaptureErrors` in the schema. |
 | `strictEnums` | `boolean` | `false` | When `false`, every generated enum gets an extra `unknownValue__` member, and a value the schema did not declare (for example one added to the server after this client shipped) decodes to it instead of throwing. Encoding it back to the server throws. Set to `true` to throw on unknown values instead. |
+| `persistedQueries` | `false` \| `"apq"` | `false` | `"apq"` sends a SHA-256 hash instead of long queries and retries once with the text on `PersistedQueryNotFound`. See [Persisted Queries](persisted-queries.md). |
+| `persistedQueriesUseGet` | `boolean` | `false` | Send hash-only queries over GET. Requires `persistedQueries: "apq"`. Mutations always use POST. |
 
 ---
 
@@ -455,6 +461,8 @@ Used when `mode` is `"client"` and you want Kotlin output.
 | `operationNameAsParameter` | `boolean` | `false` | When `true`, appends the operation name as a `?operationName=` query parameter in the HTTP request URL. |
 | `captureErrors` | `boolean` | `false` | When `true`, applies `@glCaptureErrors` to every query and mutation. Each method returns a `{OperationName}FullResponse` with `data` and `errors` instead of throwing. |
 | `strictEnums` | `boolean` | `false` | When `false`, every generated enum gets an extra `unknownValue__` member, and a value the schema did not declare (for example one added to the server after this client shipped) decodes to it instead of throwing. Encoding it back to the server throws. Set to `true` to throw on unknown values instead. |
+| `persistedQueries` | `false` \| `"apq"` | `false` | `"apq"` sends a SHA-256 hash instead of long queries and retries once with the text on `PersistedQueryNotFound`. See [Persisted Queries](persisted-queries.md). |
+| `persistedQueriesUseGet` | `boolean` | `false` | Send hash-only queries over GET. Requires `persistedQueries: "apq"`. Mutations always use POST. |
 | `wsAdapter` | `"okhttp"` \| `"none"` | `"okhttp"` | WebSocket adapter to generate. `"okhttp"` emits `DefaultGraphLinkWebSocketAdapter` using OkHttp; `"none"` emits only the `GraphLinkWebSocketAdapter` interface. |
 | `defaultAlias` | `string?` | `null` | Default alias applied to all generated query fields globally. |
 
@@ -519,6 +527,8 @@ Used when `mode` is `"client"` and you want Swift output. See the [Swift Client]
 | `operationNameAsParameter` | `boolean` | `false` | When `true`, appends the operation name as a `?operationName=` query parameter in the HTTP request URL. |
 | `captureErrors` | `boolean` | `false` | When `true`, applies `@glCaptureErrors` to every query and mutation. Each method returns a `{OperationName}FullResponse` with optional `data` and optional `errors` instead of throwing. |
 | `strictEnums` | `boolean` | `false` | When `false`, every generated enum gets an extra `unknownValue__` member, and a value the schema did not declare (for example one added to the server after this client shipped) decodes to it instead of throwing. Encoding it back to the server sends the literal string `unknownValue__` and the server rejects it (Swift `toJson()` cannot throw; see [Swift enums](swift-client.md#unknown-enum-values)). Set to `true` to throw on unknown values instead. |
+| `persistedQueries` | `false` \| `"apq"` | `false` | `"apq"` sends a SHA-256 hash instead of long queries and retries once with the text on `PersistedQueryNotFound`. See [Persisted Queries](persisted-queries.md). |
+| `persistedQueriesUseGet` | `boolean` | `false` | Send hash-only queries over GET. Requires `persistedQueries: "apq"`. Mutations always use POST. |
 | `wsAdapter` | `"urlsession"` \| `"none"` | `"urlsession"` | WebSocket adapter to generate. `"urlsession"` emits `DefaultGraphLinkURLSessionWebSocketAdapter` built on `URLSessionWebSocketTask` (Foundation, no extra dependency); `"none"` emits only the `GraphLinkClientAdapter`/WebSocket typealiases. There is no HTTP-adapter enum for Swift — `URLSession` is part of Foundation on every Apple platform plus Linux, so there's nothing to choose between. |
 | `defaultAlias` | `string?` | `null` | Default alias applied to all generated query fields globally. |
 

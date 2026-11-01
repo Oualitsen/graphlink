@@ -1,4 +1,4 @@
-.PHONY: dart dart-apq typescript typescript-apq java java-apq java-reactive-apq kotlin kotlin-apq swift swift-apq dart-real typescript-real java-real kotlin-real swift-real server upload-server all all-real kill-servers kill-ports start-server start-upload-server start-main-server start-servers generate-all clean-all
+.PHONY: persisted-queries-server dart-apq-real typescript-apq-real java-apq-real java-reactive-apq-real kotlin-apq-real swift-apq-real all-apq-real dart dart-apq typescript typescript-apq java java-apq java-reactive-apq kotlin kotlin-apq swift swift-apq dart-real typescript-real java-real kotlin-real swift-real server upload-server all all-real kill-servers kill-ports start-server start-upload-server start-main-server start-servers generate-all clean-all
 
 # Delete every previously generated output dir across all client projects.
 # Prune node_modules/build/target/.gradle/.dart_tool so we only ever touch
@@ -54,6 +54,9 @@ swift-apq:
 server:
 	$(MAKE) -C real/spring_server build
 
+persisted-queries-server:
+	$(MAKE) -C real/spring_persisted_queries_server build
+
 upload-server:
 	$(MAKE) -C real/spring_upload_server build
 
@@ -72,6 +75,29 @@ kotlin-real:
 
 swift-real:
 	$(MAKE) -C real/swift_client_tests_real ci
+
+dart-apq-real:
+	$(MAKE) -C real/dart_persisted_queries_tests_real ci
+
+typescript-apq-real:
+	$(MAKE) -C real/typescript_persisted_queries_tests_real install
+	$(MAKE) -C real/typescript_persisted_queries_tests_real ci
+
+java-apq-real:
+	$(MAKE) -C real/java_persisted_queries_tests_real ci
+
+java-reactive-apq-real:
+	$(MAKE) -C real/java_reactor_persisted_queries_tests_real ci
+	$(MAKE) -C real/java_rxjava3_persisted_queries_tests_real ci
+	$(MAKE) -C real/java_mutiny_persisted_queries_tests_real ci
+
+kotlin-apq-real:
+	$(MAKE) -C real/kotlin_persisted_queries_tests_real ci
+
+swift-apq-real:
+	$(MAKE) -C real/swift_persisted_queries_tests_real ci
+
+all-apq-real: dart-apq-real typescript-apq-real java-apq-real java-reactive-apq-real kotlin-apq-real swift-apq-real
 
 all: dart dart-apq typescript typescript-apq java java-apq java-reactive-apq kotlin kotlin-apq swift swift-apq
 

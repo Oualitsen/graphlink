@@ -1,5 +1,5 @@
 server:
-  port: 9999
+  port: 9997
 
 spring:
   graphql:
@@ -9,7 +9,7 @@ spring:
 
 management:
   server:
-    port: 9990
+    port: 9992
   endpoint:
     shutdown:
       enabled: true

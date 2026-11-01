@@ -84,6 +84,7 @@ nav:
   - Features:
     - Custom Queries & Mutations: custom-queries.md
     - Caching: caching.md
+    - Persisted Queries: persisted-queries.md
   - Reference:
     - Directives: directives.md
     - "@glSkipOnServer & @glSkipOnClient": skip-directives.md

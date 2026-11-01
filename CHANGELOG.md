@@ -637,9 +637,25 @@
 
 ### New features
 
+- **Persisted queries (APQ)** — new `persistedQueries` option (`false` | `"apq"`, default `false`) on every client language (Dart, Java including Reactor / RxJava3 / Mutiny, Kotlin, TypeScript, Swift). Long operations are sent as a SHA-256 hash with no query text. On `PersistedQueryNotFound` the client retries once with the text and the same hash, which makes the server register the query. The wire format is the Apollo APQ protocol. See the new [Persisted Queries](https://graphlink.dev/persisted-queries.html) page.
+  - The hash is computed at runtime over the exact string that is sent (fragments and `@glCache` partial-query merges included), with a dependency-free SHA-256 generated into each client.
+  - Operations shorter than about 144 characters are sent normally, since the hash payload would be bigger. Queries and mutations both use it; subscriptions and uploads are unchanged.
+  - Retries are strict: only `PersistedQueryNotFound` triggers the full-query request, never timeouts or 5xx responses. `PersistedQueryNotSupported` makes the client send full queries for the rest of its life.
+  - New `persistedQueriesUseGet` option (requires `persistedQueries: "apq"`) sends hash-only queries over GET through a separate `getAdapter`. The registering retry and every mutation use POST. A server that refuses GET (405) makes the adapter throw the new `GraphLinkGetNotSupported`; the client re-sends by POST and remembers.
+  - **Behaviour change when enabled:** the POST adapter receives payloads without a `query` field for persisted operations. Adapters that forward the body as-is keep working. With `persistedQueriesUseGet`, the client constructors take a `getAdapter` right after `adapter` (the `withHttp`-style convenience constructors wire it for you).
+  - The server has to implement APQ. Apollo Server does; Spring for GraphQL needs a `WebGraphQlInterceptor` (and a GET filter for `persistedQueriesUseGet`). Bound the server-side cache.
+  - With the option off, generated output is unchanged.
+
 - **Client enums tolerate unknown values** — new `strictEnums` option (default `false`) on every client language. Adding a value to a server enum used to make already-shipped clients throw while decoding the response. Now each generated client enum gets an `unknownValue__` member and `fromJson` returns it for any value the schema did not declare. Encoding it back throws (Dart, Java, Kotlin, TypeScript); Swift's `toJson()` is non-throwing everywhere, so the fallback encodes as the literal string `unknownValue__` and is sent; the server then rejects it as an invalid enum value. An enum that already declares `unknownValue__` gets the fallback `unknownValue__2` (then `3`, …), and generator-internal enums never get one. Server mode is unchanged and always strict.
   - **Behaviour change:** client enums gain one member, so exhaustive `switch`/`when` over a generated enum needs a branch for it. Set `"strictEnums": true` to keep the previous output.
 
 - **Literal arguments in custom queries** — `query findUser0 { findById(id: "0") { id } }` used to fail with `Could not find argument "0"`, because every argument value was looked up as a declared variable. Only `$name` values are variable references now; anything else is a literal, sent as written and not turned into a method parameter. Literals and variables can be mixed.
   - Literals are checked against the field's declared argument type at generation time: undeclared argument names, wrong scalar kinds, undeclared enum values, unknown or missing input-object fields, and `null` for non-null types are all parse errors.
   - **Behaviour change:** the same checks now apply to `= value` defaults on input fields and arguments. Defaults like `Int = "x"` or `Status = BOGUS` were accepted before and are now rejected. Custom scalars are not checked.
+
+### Fixes
+
+- Dart: the generated enum `toJson` no longer has an unreachable `break;` after `throw`.
+- Java: the Spring WebClient multipart adapter imported `MultipartBodyBuilder` from the wrong package, so generated Java reactive clients with file uploads did not compile.
+- Java reactive (Mutiny): `flatMap` now generates `chain`, as Mutiny's API requires.
+

@@ -44,6 +44,9 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - **Built-in caching via schema directives.** Cache behavior is declared in the schema itself
   using `@glCache(ttl, tags)` and `@glCacheInvalidate(tags)`. Supports tag-based invalidation,
   partial query caching (per-field TTL), and offline fallback (`staleIfOffline`).
+- **Persisted queries (APQ).** Set `persistedQueries: "apq"` on any client and long operations are sent as a
+  SHA-256 hash, retried once with the text on `PersistedQueryNotFound` (Apollo-compatible). Optional
+  `persistedQueriesUseGet` sends hash-only queries over GET; mutations always use POST.
 - **Zero runtime dependency.** Generated code has no dependency on GraphLink at runtime. Stop
   using it any time — the generated files keep compiling and working.
 - **Only what the server needs.** Unlike ferry (which sends the entire schema), GraphLink generates

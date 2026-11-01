@@ -14,6 +14,7 @@ public class PersistedQueryStore {
     private final AtomicInteger hits = new AtomicInteger();
     private final AtomicInteger misses = new AtomicInteger();
     private final AtomicInteger registrations = new AtomicInteger();
+    private final AtomicInteger gets = new AtomicInteger();
     private volatile boolean supported = true;
 
     public Optional<String> find(String hash) {
@@ -24,6 +25,10 @@ public class PersistedQueryStore {
 
     public void register(String hash, String query) {
         if (queries.put(hash, query) == null) registrations.incrementAndGet();
+    }
+
+    public void countGet() {
+        gets.incrementAndGet();
     }
 
     public boolean isSupported() {
@@ -43,6 +48,7 @@ public class PersistedQueryStore {
         hits.set(0);
         misses.set(0);
         registrations.set(0);
+        gets.set(0);
         supported = true;
     }
 
@@ -52,6 +58,7 @@ public class PersistedQueryStore {
                 "stored", queries.size(),
                 "hits", hits.get(),
                 "misses", misses.get(),
-                "registrations", registrations.get());
+                "registrations", registrations.get(),
+                "gets", gets.get());
     }
 }
