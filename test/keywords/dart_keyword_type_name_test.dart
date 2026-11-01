@@ -1,4 +1,4 @@
-import 'package:graphlink/src/serializers/dart_serializer.dart';
+import 'package:graphlink/src/serializers/dart/dart_serializer.dart';
 import 'package:test/test.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/reserved_words.dart';

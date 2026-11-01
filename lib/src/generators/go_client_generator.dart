@@ -8,7 +8,7 @@ import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/serializers/client_serializers/go/go_client_serializer.dart';
-import 'package:graphlink/src/serializers/go_serializer.dart';
+import 'package:graphlink/src/serializers/go/go_serializer.dart';
 import 'package:graphlink/src/utils.dart';
 
 Future<Set<String>> generateGoClientClasses(GLParser parser, GeneratorConfig config, DateTime started) async {

@@ -181,3 +181,24 @@ progress is exact; for very large files provide your own `GLMultipartAdapter`.
 `persistedQueries: "apq"` (and optionally `persistedQueriesUseGet`) work as described in
 [Persisted Queries](persisted-queries.md). With GET enabled, `NewGraphLinkClientWithHttp` wires the GET adapter; when
 building the client yourself set `GetAdapter` in `GraphLinkClientOptions`.
+
+## Known limitations
+
+- **Non-null cycles do not compile.** Struct fields are plain values, so `type A { b: B! }` with `type B { a: A! }`
+  gives a struct of infinite size. Make one side of the cycle nullable (it becomes a pointer).
+- **Custom scalar packages.** `typeMappings` may name `time.Time`, `json.RawMessage`, `big.Int`, `url.URL` or
+  `uuid.UUID`, and GraphLink adds the import. Any other package must already be importable by that name from the
+  generated package.
+- **Interface getters with a different type.** `Get<Field>()` is generated for every interface field. If an
+  implementing type declares the field with a type that differs from the interface's in more than nullability, the
+  getter falls back to a plain return and the file may not compile.
+- **No `gofmt`.** Generated files are not formatted. Run `gofmt -w` on the output directory if you commit it.
+- **Interface and union values are decoded by value.** A decoded `Photo` is a `graphql.Photo`, never a
+  `*graphql.Photo`, so a type switch on the pointer type never matches.
+- **No default values on struct literals.** `ConfigInput{}` sends zero values. Use `NewConfigInput()` to get the
+  schema defaults.
+- **Unknown `__typename` fails the response.** Unlike enums, there is no fallback for an interface or union member
+  added to the server after the client was generated.
+- **Encoding `<Enum>UnknownValue__` is an error.** The fallback is for reading only; see [Enums](#enums).
+- **Large uploads are buffered by the default adapter.** Provide your own `GLMultipartAdapter` to stream them.
+- **Ignored options.** `nullableFieldsRequired` and `immutableTypeFields` have no effect.

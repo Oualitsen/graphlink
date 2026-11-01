@@ -4,8 +4,8 @@ import 'package:graphlink/src/io_utils.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
-import 'package:graphlink/src/serializers/dart_serializer.dart';
-import 'package:graphlink/src/serializers/typescript_serializer.dart';
+import 'package:graphlink/src/serializers/dart/dart_serializer.dart';
+import 'package:graphlink/src/serializers/typescript/typescript_serializer.dart';
 
 abstract class GLBarrelFileHandler {
   final GLParser parser;

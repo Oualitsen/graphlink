@@ -130,40 +130,51 @@ serializers/
   gl_serializer.dart               # Base serializer interface/utilities
   gl_client_serializer.dart        # Shared client serializer base
   gl_graphql_serializer.dart       # Query string generation (shared)
-  annotation_serializer.dart       # Annotation helpers
+  annotation_serializer.dart       # Annotation helpers (shared by Dart/Java/JVM)
   code_generation_mode.dart        # Enum: client vs server mode
   server_serializer.dart           # Abstract server serializer base
   server_serializer_utils.dart     # Shared server utilities
-  spring_server_serializer.dart    # Spring Boot controller + service interface
-  spring_controller_serializer.dart
-  express_apollo_server_serializer.dart  # Express/Node.js server (planned)
-  dart_serializer.dart             # Dart types, inputs, enums
-  java_serializer.dart             # Java types, inputs, enums
-  java_imports.dart                # Java import resolution
-  typescript_serializer.dart       # TypeScript types, inputs, enums
-  python_serializer.dart           # Python (pydantic v2) types, inputs, enums
-  go_serializer.dart               # Go (structs + json tags) types, inputs, enums
-  flutter_types_serializer.dart    # Flutter widget types
-  client_serializers/
-    dart_client_serializer.dart    # Dart client methods (queries/mutations/subs)
-    dart_client_constants.dart
-    java_client_serializer.dart    # Java client methods
-    java_client_operation_serializer.dart
-    java_client_context.dart
-    java_client_constants.dart
-    typescript_client_serializer.dart
-    typescript_client_constants.dart
-    python/                        # python_client_serializer, _operation_serializer, _constants, _vars
-  flutter_inputs/
-    flutter_inputs_serializer.dart          # Flutter InputFormWidget generation
-    flutter_inputs_companion_serializer.dart
-    flutter_inputs_field_serializer.dart
-    flutter_inputs_state_serializer.dart
-    flutter_inputs_date_serializer.dart
-    flutter_inputs_draft_serializer.dart    # Draft persistence (persistDrafts): snapshot/restore/save
-    flutter_inputs_radio_binding.dart       # RadioListTile vs RadioGroup per SDK version
-    flutter_inputs_shared_serializer.dart
-    flutter_inputs_type_helpers.dart
+  jvm_spring_server_serializer_base.dart      # Shared Java/Kotlin Spring server base
+  jvm_spring_controller_serializer_base.dart  # Shared Java/Kotlin Spring controller base
+  dart/
+    dart_serializer.dart           # Dart types, inputs, enums
+    flutter_api.dart               # Flutter SDK/design-library switches
+    flutter_types_serializer.dart  # Flutter widget types
+    flutter_types/                 # layout, value renderer, companion, constants
+    flutter_inputs/
+      flutter_inputs_serializer.dart          # Flutter InputFormWidget generation
+      flutter_inputs_companion_serializer.dart
+      flutter_inputs_field_serializer.dart
+      flutter_inputs_state_serializer.dart
+      flutter_inputs_date_serializer.dart
+      flutter_inputs_draft_serializer.dart    # Draft persistence (persistDrafts): snapshot/restore/save
+      flutter_inputs_radio_binding.dart       # RadioListTile vs RadioGroup per SDK version
+      flutter_inputs_shared_serializer.dart
+      flutter_inputs_type_helpers.dart
+  java/
+    java_serializer.dart           # Java types, inputs, enums
+    java_imports.dart              # Java import resolution
+    java_spring_server_serializer.dart      # Spring Boot service interface
+    java_spring_controller_serializer.dart  # Spring Boot controllers
+    spring_map_type_resolver_config.dart
+  kotlin/
+    kotlin_serializer.dart         # Kotlin types, inputs, enums
+    kotlin_imports.dart            # Kotlin import resolution
+    kotlin_spring_server_serializer.dart
+    kotlin_spring_controller_serializer.dart
+    kotlin_map_type_resolver_config.dart
+  typescript/
+    typescript_serializer.dart     # TypeScript types, inputs, enums
+    express_apollo_server_serializer.dart   # Express/Apollo server
+    express_apollo_server_constants.dart
+  swift/swift_serializer.dart      # Swift types, inputs, enums
+  python/python_serializer.dart    # Python (pydantic v2) types, inputs, enums
+  go/go_serializer.dart            # Go (structs + json tags) types, inputs, enums
+  client_serializers/              # one subdirectory per language
+    <lang>/<lang>_client_serializer.dart   # client methods (queries/mutations/subs)
+    <lang>/<lang>_client_constants.dart    # static runtime templates
+    <lang>/<lang>_client_vars.dart         # reserved generated identifiers
+    java/, kotlin/                 # also *_client_operation_serializer.dart, *_client_context.dart
 ```
 
 ---
@@ -187,8 +198,8 @@ serializers/
 ## Adding a new target language
 
 1. Create `generators/<lang>_client_generator.dart` (or `<lang>_server_generator.dart`).
-2. Create `serializers/client_serializers/<lang>_client_serializer.dart` for operation
-   methods, and `serializers/<lang>_serializer.dart` for types/inputs/enums.
+2. Create `serializers/client_serializers/<lang>/<lang>_client_serializer.dart` for operation
+   methods, and `serializers/<lang>/<lang>_serializer.dart` for types/inputs/enums.
 3. Add a new config section to `config.dart` (follow the pattern of `DartClientConfig`).
 4. Wire the new generator into `main.dart` dispatch logic.
 5. Add end-to-end examples under `examples/<lang>/`.

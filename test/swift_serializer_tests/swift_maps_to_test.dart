@@ -1,6 +1,6 @@
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
-import 'package:graphlink/src/serializers/swift_serializer.dart';
+import 'package:graphlink/src/serializers/swift/swift_serializer.dart';
 import 'package:test/test.dart';
 
 GLParser _parser() => GLParser(mode: CodeGenerationMode.server);

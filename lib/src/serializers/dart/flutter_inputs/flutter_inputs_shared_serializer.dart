@@ -1,6 +1,6 @@
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/dart_code_gen_utils.dart';
-import 'package:graphlink/src/serializers/flutter_api.dart';
+import 'package:graphlink/src/serializers/dart/flutter_api.dart';
 
 class _Field {
   final String type;

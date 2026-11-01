@@ -9,7 +9,7 @@ import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart
 import 'package:graphlink/src/python_code_gen_utils.dart';
 import 'package:graphlink/src/serializers/client_serializers/python/python_client_vars.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
-import 'package:graphlink/src/serializers/python_serializer.dart';
+import 'package:graphlink/src/serializers/python/python_serializer.dart';
 
 class PythonClientOperationSerializer {
   final GLParser _grammar;

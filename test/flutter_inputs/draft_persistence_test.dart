@@ -2,8 +2,8 @@ import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/reserved_words.dart';
 import 'package:graphlink/src/naming_convention.dart';
-import 'package:graphlink/src/serializers/dart_serializer.dart';
-import 'package:graphlink/src/serializers/flutter_inputs/flutter_inputs_serializer.dart';
+import 'package:graphlink/src/serializers/dart/dart_serializer.dart';
+import 'package:graphlink/src/serializers/dart/flutter_inputs/flutter_inputs_serializer.dart';
 import 'package:test/test.dart';
 
 const schema = '''

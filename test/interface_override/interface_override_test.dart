@@ -1,9 +1,9 @@
 import 'package:graphlink/src/model/gl_collection_imports.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
-import 'package:graphlink/src/serializers/dart_serializer.dart';
-import 'package:graphlink/src/serializers/java_imports.dart';
-import 'package:graphlink/src/serializers/java_serializer.dart';
-import 'package:graphlink/src/serializers/kotlin_serializer.dart';
+import 'package:graphlink/src/serializers/dart/dart_serializer.dart';
+import 'package:graphlink/src/serializers/java/java_imports.dart';
+import 'package:graphlink/src/serializers/java/java_serializer.dart';
+import 'package:graphlink/src/serializers/kotlin/kotlin_serializer.dart';
 import 'package:test/test.dart';
 
 const schema = '''

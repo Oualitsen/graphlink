@@ -8,9 +8,9 @@ import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/client_serializers/dart/dart_client_serializer.dart';
-import 'package:graphlink/src/serializers/dart_serializer.dart';
-import 'package:graphlink/src/serializers/flutter_inputs/flutter_inputs_serializer.dart';
-import 'package:graphlink/src/serializers/flutter_types_serializer.dart';
+import 'package:graphlink/src/serializers/dart/dart_serializer.dart';
+import 'package:graphlink/src/serializers/dart/flutter_inputs/flutter_inputs_serializer.dart';
+import 'package:graphlink/src/serializers/dart/flutter_types_serializer.dart';
 import 'package:graphlink/src/generators/barrel_file_handler.dart';
 import 'package:graphlink/src/utils.dart';
 

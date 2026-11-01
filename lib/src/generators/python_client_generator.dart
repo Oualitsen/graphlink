@@ -9,7 +9,7 @@ import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/serializers/client_serializers/python/python_client_serializer.dart';
-import 'package:graphlink/src/serializers/python_serializer.dart';
+import 'package:graphlink/src/serializers/python/python_serializer.dart';
 import 'package:graphlink/src/utils.dart';
 
 Future<Set<String>> generatePythonClientClasses(GLParser parser, GeneratorConfig config, DateTime started) async {

@@ -2,7 +2,7 @@ import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/client_serializers/kotlin/kotlin_client_serializer.dart';
-import 'package:graphlink/src/serializers/kotlin_serializer.dart';
+import 'package:graphlink/src/serializers/kotlin/kotlin_serializer.dart';
 import 'package:test/test.dart';
 
 const _schema = '''

@@ -5,13 +5,13 @@ import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/io_utils.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_intercept_extension.dart';
-import 'package:graphlink/src/serializers/express_apollo_server_serializer.dart';
-import 'package:graphlink/src/serializers/java_serializer.dart';
-import 'package:graphlink/src/serializers/java_spring_server_serializer.dart';
-import 'package:graphlink/src/serializers/kotlin_spring_server_serializer.dart';
-import 'package:graphlink/src/serializers/spring_map_type_resolver_config.dart';
-import 'package:graphlink/src/serializers/kotlin_map_type_resolver_config.dart';
-import 'package:graphlink/src/serializers/typescript_serializer.dart';
+import 'package:graphlink/src/serializers/typescript/express_apollo_server_serializer.dart';
+import 'package:graphlink/src/serializers/java/java_serializer.dart';
+import 'package:graphlink/src/serializers/java/java_spring_server_serializer.dart';
+import 'package:graphlink/src/serializers/kotlin/kotlin_spring_server_serializer.dart';
+import 'package:graphlink/src/serializers/java/spring_map_type_resolver_config.dart';
+import 'package:graphlink/src/serializers/kotlin/kotlin_map_type_resolver_config.dart';
+import 'package:graphlink/src/serializers/typescript/typescript_serializer.dart';
 import 'package:graphlink/src/utils.dart';
 
 /// Writes one file per [defs] entry via [writeToFile], reducing the

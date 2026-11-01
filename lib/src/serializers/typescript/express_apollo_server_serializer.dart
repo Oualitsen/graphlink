@@ -11,9 +11,9 @@ import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_service.dart';
 import 'package:graphlink/src/model/gl_schema_mapping.dart';
 import 'package:graphlink/src/model/gl_type.dart';
-import 'package:graphlink/src/serializers/express_apollo_server_constants.dart';
+import 'package:graphlink/src/serializers/typescript/express_apollo_server_constants.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
-import 'package:graphlink/src/serializers/typescript_serializer.dart';
+import 'package:graphlink/src/serializers/typescript/typescript_serializer.dart';
 import 'package:graphlink/src/typescript_code_gen_utils.dart';
 import 'package:graphlink/src/serializers/server_serializer.dart';
 

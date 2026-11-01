@@ -13,7 +13,7 @@ import 'package:graphlink/src/serializers/client_serializers/kotlin/kotlin_clien
 import 'package:graphlink/src/serializers/gl_client_serializer.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
-import 'package:graphlink/src/serializers/kotlin_imports.dart';
+import 'package:graphlink/src/serializers/kotlin/kotlin_imports.dart';
 
 class KotlinClientSerializer extends GLClientSerializer {
   final GLParser _grammar;

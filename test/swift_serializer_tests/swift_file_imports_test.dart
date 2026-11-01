@@ -1,6 +1,6 @@
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
-import 'package:graphlink/src/serializers/swift_serializer.dart';
+import 'package:graphlink/src/serializers/swift/swift_serializer.dart';
 import 'package:test/test.dart';
 
 SwiftSerializer _serializer(GLParser g) => SwiftSerializer(g, importPrefix: 'GraphLinkGenerated');

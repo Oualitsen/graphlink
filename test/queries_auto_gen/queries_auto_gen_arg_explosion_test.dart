@@ -3,7 +3,7 @@ import 'package:graphlink/src/dart_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/client_serializers/dart/dart_client_operation_serializer.dart';
-import 'package:graphlink/src/serializers/dart_serializer.dart';
+import 'package:graphlink/src/serializers/dart/dart_serializer.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 
 /// Probe: after the hoist pass, an auto-generated query's propagated

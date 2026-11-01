@@ -3,7 +3,7 @@ import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/exceptions/parse_exception.dart';
-import 'package:graphlink/src/serializers/dart_serializer.dart';
+import 'package:graphlink/src/serializers/dart/dart_serializer.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 
 const _schema = '''

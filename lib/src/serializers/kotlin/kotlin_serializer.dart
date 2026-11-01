@@ -13,7 +13,7 @@ import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
-import 'package:graphlink/src/serializers/kotlin_imports.dart';
+import 'package:graphlink/src/serializers/kotlin/kotlin_imports.dart';
 
 const _mapType = 'Map<String, Any?>';
 const _anyListType = 'List<*>';

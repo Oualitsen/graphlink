@@ -1,5 +1,5 @@
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
-import 'package:graphlink/src/serializers/kotlin_serializer.dart';
+import 'package:graphlink/src/serializers/kotlin/kotlin_serializer.dart';
 import 'package:test/test.dart';
 
 KotlinSerializer _serializer(GLParser g, {bool inputsAsDataClass = true, bool typesAsDataClass = true}) =>

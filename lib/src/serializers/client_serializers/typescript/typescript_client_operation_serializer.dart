@@ -6,7 +6,7 @@ import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/client_serializers/typescript/typescript_client_vars.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
-import 'package:graphlink/src/serializers/typescript_serializer.dart';
+import 'package:graphlink/src/serializers/typescript/typescript_serializer.dart';
 import 'package:graphlink/src/typescript_code_gen_utils.dart';
 
 class TypeScriptClientOperationSerializer {

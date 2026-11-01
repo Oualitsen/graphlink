@@ -152,7 +152,7 @@ Under `lib/src/generators/`. Each generator:
 
 ## Serializers
 
-Under `lib/src/serializers/`. All extend `GLSerializer` (`gl_serializer.dart`).
+Under `lib/src/serializers/`: shared bases at the top level, language-specific serializers in one subdirectory per language (`dart/`, `java/`, `kotlin/`, `typescript/`, `swift/`, `python/`, `go/`). All extend `GLSerializer` (`gl_serializer.dart`).
 Each serializer **only builds strings** — no schema queries.
 
 ### Base
@@ -168,12 +168,12 @@ Each serializer **only builds strings** — no schema queries.
 
 | File | Class | Default type map |
 |---|---|---|
-| `dart_serializer.dart` | `DartSerializer` | ID→String, Float→double, Int→int, Boolean→bool |
-| `java_serializer.dart` | `JavaSerializer` | ID→String, Float→Double, Int→Integer, Boolean→Boolean |
-| `kotlin_serializer.dart` | `KotlinSerializer` | ID→String, Float→Double, Int→Int, Boolean→Boolean |
-| `typescript_serializer.dart` | `TypeScriptSerializer` | ID→string, Int/Float→number, Boolean→boolean |
-| `python_serializer.dart` | `PythonSerializer` | ID→str, Float→float, Int→int, Boolean→bool |
-| `go_serializer.dart` | `GoSerializer` | ID→string, Float→float64, Int→int, Long→int64, Boolean→bool |
+| `dart/dart_serializer.dart` | `DartSerializer` | ID→String, Float→double, Int→int, Boolean→bool |
+| `java/java_serializer.dart` | `JavaSerializer` | ID→String, Float→Double, Int→Integer, Boolean→Boolean |
+| `kotlin/kotlin_serializer.dart` | `KotlinSerializer` | ID→String, Float→Double, Int→Int, Boolean→Boolean |
+| `typescript/typescript_serializer.dart` | `TypeScriptSerializer` | ID→string, Int/Float→number, Boolean→boolean |
+| `python/python_serializer.dart` | `PythonSerializer` | ID→str, Float→float, Int→int, Boolean→bool |
+| `go/go_serializer.dart` | `GoSerializer` | ID→string, Float→float64, Int→int, Long→int64, Boolean→bool |
 
 ### Client operation serializers
 
@@ -181,14 +181,14 @@ Under `serializers/client_serializers/`:
 
 | File | Class | Generates |
 |---|---|---|
-| `dart_client_serializer.dart` | `DartClientSerializer` | Dart adapter, queries, mutations, subscriptions |
-| `java_client_serializer.dart` | `JavaClientSerializer` | Java adapter, OkHttp, WebSocket |
-| `kotlin_client_serializer.dart` | `KotlinClientSerializer` | Kotlin coroutines adapter, OkHttp, WebSocket |
-| `typescript_client_serializer.dart` | `TypeScriptClientSerializer` | TypeScript fetch adapter, observables |
-| `java_client_operation_serializer.dart` | `JavaClientOperationSerializer` | Per-operation Java classes |
-| `kotlin_client_operation_serializer.dart` | `KotlinClientOperationSerializer` | Per-operation Kotlin classes |
-| `*_client_constants.dart` | — | Static GraphQL constant strings per language |
-| `*_client_context.dart` | — | Generation context tracker per language |
+| `dart/dart_client_serializer.dart` | `DartClientSerializer` | Dart adapter, queries, mutations, subscriptions |
+| `java/java_client_serializer.dart` | `JavaClientSerializer` | Java adapter, OkHttp, WebSocket |
+| `kotlin/kotlin_client_serializer.dart` | `KotlinClientSerializer` | Kotlin coroutines adapter, OkHttp, WebSocket |
+| `typescript/typescript_client_serializer.dart` | `TypeScriptClientSerializer` | TypeScript fetch adapter, observables |
+| `java/java_client_operation_serializer.dart` | `JavaClientOperationSerializer` | Per-operation Java classes |
+| `kotlin/kotlin_client_operation_serializer.dart` | `KotlinClientOperationSerializer` | Per-operation Kotlin classes |
+| `<lang>/<lang>_client_constants.dart` | — | Static GraphQL constant strings per language |
+| `java/`, `kotlin/` `<lang>_client_context.dart` | — | Generation context tracker per language |
 
 ### Server serializers
 
@@ -196,22 +196,23 @@ Under `serializers/client_serializers/`:
 |---|---|---|
 | `server_serializer.dart` | `ServerSerializer` | Abstract base for server generation |
 | `server_serializer_utils.dart` | — | Shared server utilities |
-| `spring_server_serializer.dart` | `SpringServerSerializer` | Spring Boot services + interfaces |
-| `spring_controller_serializer.dart` | `SpringControllerSerializer` | Spring REST controllers |
-| `express_apollo_server_serializer.dart` | `ExpressApolloServerSerializer` | Express/Apollo resolvers |
+| `jvm_spring_server_serializer_base.dart` / `jvm_spring_controller_serializer_base.dart` | `JvmSpringServerSerializerBase` / `JvmSpringControllerSerializerBase` | Shared Java/Kotlin Spring bases |
+| `java/java_spring_server_serializer.dart`, `kotlin/kotlin_spring_server_serializer.dart` | — | Spring Boot services + interfaces |
+| `java/java_spring_controller_serializer.dart`, `kotlin/kotlin_spring_controller_serializer.dart` | — | Spring controllers |
+| `typescript/express_apollo_server_serializer.dart` | `ExpressApolloServerSerializer` | Express/Apollo resolvers |
 
 ### Flutter serializers
 
-| Directory/File | Generates |
+| Directory/File (under `serializers/`) | Generates |
 |---|---|
-| `flutter_types_serializer.dart` | Flutter display widgets for types |
-| `flutter_types/flutter_types_layout_serializer.dart` | Layout widgets (rows, columns, expandable) |
-| `flutter_types/flutter_types_value_renderer.dart` | Value rendering per type |
-| `flutter_inputs/flutter_inputs_serializer.dart` | `InputFormWidget` entry point |
-| `flutter_inputs/flutter_inputs_field_serializer.dart` | Per-field input widgets |
-| `flutter_inputs/flutter_inputs_state_serializer.dart` | Form state management |
-| `flutter_inputs/flutter_inputs_companion_serializer.dart` | Companion/state classes |
-| `flutter_inputs/flutter_inputs_date_serializer.dart` | Date picker widgets |
+| `dart/flutter_types_serializer.dart` | Flutter display widgets for types |
+| `dart/flutter_types/flutter_types_layout_serializer.dart` | Layout widgets (rows, columns, expandable) |
+| `dart/flutter_types/flutter_types_value_renderer.dart` | Value rendering per type |
+| `dart/flutter_inputs/flutter_inputs_serializer.dart` | `InputFormWidget` entry point |
+| `dart/flutter_inputs/flutter_inputs_field_serializer.dart` | Per-field input widgets |
+| `dart/flutter_inputs/flutter_inputs_state_serializer.dart` | Form state management |
+| `dart/flutter_inputs/flutter_inputs_companion_serializer.dart` | Companion/state classes |
+| `dart/flutter_inputs/flutter_inputs_date_serializer.dart` | Date picker widgets |
 
 ---
 
@@ -265,9 +266,9 @@ Normally you don't need to touch these unless changing grammar.
 | `capture_errors_utils.dart` | `@glCaptureErrors` directive handling |
 | `cache_store_dart.dart` | Dart cache storage codegen |
 | `cache_store_java.dart` | Java cache storage codegen |
-| `annotation_serializer.dart` | Java annotation (`@`-prefix) emission |
-| `java_imports.dart` | Java import resolution |
-| `kotlin_imports.dart` | Kotlin import resolution |
+| `serializers/annotation_serializer.dart` | Java annotation (`@`-prefix) emission |
+| `serializers/java/java_imports.dart` | Java import resolution |
+| `serializers/kotlin/kotlin_imports.dart` | Kotlin import resolution |
 | `exceptions/parse_exception.dart` | `ParseException(message, TokenInfo)` |
 
 ---
@@ -283,8 +284,8 @@ Normally you don't need to touch these unless changing grammar.
 ## How to add a new target language
 
 1. `generators/<lang>_client_generator.dart` — orchestration
-2. `serializers/<lang>_serializer.dart` — types/inputs/enums
-3. `serializers/client_serializers/<lang>_client_serializer.dart` — operations
+2. `serializers/<lang>/<lang>_serializer.dart` — types/inputs/enums
+3. `serializers/client_serializers/<lang>/<lang>_client_serializer.dart` — operations
 4. `config.dart` — new config class + wire into `GeneratorConfig`
 5. `main.dart` — dispatch to new generator
 6. `examples/<lang>/` — end-to-end example

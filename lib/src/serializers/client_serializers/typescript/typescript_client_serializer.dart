@@ -11,7 +11,7 @@ import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/serializers/gl_client_serializer.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
-import 'package:graphlink/src/serializers/typescript_serializer.dart';
+import 'package:graphlink/src/serializers/typescript/typescript_serializer.dart';
 import 'package:graphlink/src/typescript_code_gen_utils.dart';
 
 const _adapterType = 'GraphLinkAdapter';

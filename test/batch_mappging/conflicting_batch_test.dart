@@ -1,7 +1,7 @@
 import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
-import 'package:graphlink/src/serializers/java_spring_server_serializer.dart';
+import 'package:graphlink/src/serializers/java/java_spring_server_serializer.dart';
 import 'package:test/test.dart';
 
 void main() {

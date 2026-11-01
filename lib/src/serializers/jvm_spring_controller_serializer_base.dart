@@ -15,7 +15,7 @@ import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/token_info.dart';
-import 'package:graphlink/src/serializers/java_imports.dart';
+import 'package:graphlink/src/serializers/java/java_imports.dart';
 
 /// The reconstructed `fromJson` local declarations for arguments that were
 /// mappified to the wire map type, plus the resolved argument list to pass
