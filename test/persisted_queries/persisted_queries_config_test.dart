@@ -17,33 +17,16 @@ ClientLanguageConfig _parse(String language, Map<String, dynamic> options) =>
 Matcher _rejectsWith(String fragment) => throwsA(
     isA<ArgumentError>().having((e) => e.message.toString(), 'message', contains(fragment)));
 
-const _implemented = {'dart', 'typescript', 'kotlin', 'swift', 'java'};
-
 void main() {
-  for (final language in _required.keys.where((l) => !_implemented.contains(l))) {
-    test('$language rejects apq until it is implemented', () {
-      expect(
-        () => _parse(language, {'persistedQueries': 'apq'}),
-        _rejectsWith('not supported for $language yet'),
-      );
+  for (final style in ['blocking', 'reactor', 'rxjava3', 'mutiny']) {
+    test('java accepts apq with the $style style', () {
+      final config = _parse('java', {'persistedQueries': 'apq', 'persistedQueriesUseGet': true, 'asyncStyle': style});
+      expect(config.persistedQueries, PersistedQueriesMode.apq);
+      expect(config.persistedQueriesUseGet, isTrue);
     });
   }
 
-  for (final style in ['reactor', 'rxjava3', 'mutiny']) {
-    test('java with asyncStyle $style rejects apq until it is implemented', () {
-      expect(
-        () => _parse('java', {'persistedQueries': 'apq', 'asyncStyle': style}),
-        _rejectsWith('not supported for java asyncStyle "$style" yet'),
-      );
-    });
-  }
-
-  test('java accepts apq with the blocking style', () {
-    expect(_parse('java', {'persistedQueries': 'apq', 'asyncStyle': 'blocking'}).persistedQueries,
-        PersistedQueriesMode.apq);
-  });
-
-  for (final language in _implemented) {
+  for (final language in _required.keys) {
     group(language, () {
       test('persisted queries are off by default', () {
         final config = _parse(language, {});

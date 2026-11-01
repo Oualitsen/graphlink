@@ -200,7 +200,9 @@ Future<Set<String>> generateJavaClientClasses(
     }
     if (parser.persistedQueriesUseGet && wsAdapter != JavaWsAdapter.none) {
       futures.add(writeToFile(
-        data: serializer.serializeGlClass(clientSerializer.generateDefaultGetAdapterFile(wsAdapter.name)),
+        data: serializer.serializeGlClass(
+            _reactiveDefaultGetAdapter(clientSerializer, javaConfig, flavor) ??
+                clientSerializer.generateDefaultGetAdapterFile(wsAdapter.name)),
         fileName: 'DefaultGraphLinkGetAdapter.java',
         subdir: 'client',
         imports: [],
@@ -295,5 +297,18 @@ GLClassModel? _reactiveDefaultAdapter(JavaClientSerializer clientSerializer,
             '(got "${javaConfig.asyncStyle.name}"). Use "jdk" for rxjava3/mutiny.');
       }
       return clientSerializer.generateWebClientDefaultClientAdapterFile();
+  }
+}
+
+/// GET counterpart of [_reactiveDefaultAdapter]: same transport selection, or
+/// `null` for the blocking flavor.
+GLClassModel? _reactiveDefaultGetAdapter(JavaClientSerializer clientSerializer,
+    JavaClientConfig javaConfig, JavaReactiveFlavor flavor) {
+  if (!flavor.isReactive) return null;
+  switch (javaConfig.reactiveHttpClient) {
+    case JavaReactiveHttpClient.jdk:
+      return clientSerializer.generateReactiveDefaultGetAdapterFile();
+    case JavaReactiveHttpClient.webclient:
+      return clientSerializer.generateWebClientDefaultGetAdapterFile();
   }
 }
