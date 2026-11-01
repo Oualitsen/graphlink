@@ -220,6 +220,9 @@ queries, and short ones to prove no hash is sent.
    generator rejects `persistedQueries: "apq"` (`_persistedQueriesLanguages` in `config.dart`).
    - TypeScript: **Done** (`typescript_persisted_queries_tests`; `getAdapter` is a positional argument right after `adapter`;
      `createFetchGetAdapter` / `createAxiosGetAdapter`; fetch adapter tested against a local Node server, axios by generator tests only).
+   - Kotlin: **Done** (`kotlin_persisted_queries_tests`; `getAdapter` right after `adapter`; `DefaultGraphLinkGetAdapter` on OkHttp,
+     tested against a local JDK `HttpServer`; the resolver base's hash memo is a `ConcurrentHashMap`, which the pure-core plan
+     will have to replace together with `tagLocks`).
 6. Docs: new `persisted-queries.md` page, config reference, `--help`, llms sources; document bounded server caches.
 7. Changelog entry as a new feature (minor version).
 
