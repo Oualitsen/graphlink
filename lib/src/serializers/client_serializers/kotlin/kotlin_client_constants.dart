@@ -1,3 +1,5 @@
+import 'package:graphlink/src/persisted_queries.dart';
+
 const kotlinClientException = 'GraphLinkException';
 const kotlinClientName = 'GraphLinkClient';
 
@@ -637,5 +639,89 @@ object GraphLinkSha256 {
         }
         return state.joinToString("") { it.toString(16).padStart(8, '0') }
     }
+}
+''';
+
+const kotlinPersistedQueries = """
+object GraphLinkPersistedQueries {
+    const val MIN_QUERY_LENGTH = ${persistedQueryMinLength}
+    const val NOT_FOUND = "PersistedQueryNotFound"
+    const val NOT_SUPPORTED = "PersistedQueryNotSupported"
+
+    fun extensions(hash: String): Map<String, Any?> =
+        mapOf("persistedQuery" to mapOf("version" to 1, "sha256Hash" to hash))
+
+    fun failure(response: String, decoder: GraphLinkJsonDecoder): String? {
+        if (!response.contains("PersistedQuery") && !response.contains("PERSISTED_QUERY")) {
+            return null
+        }
+        val errors = decoder.decode(response)["errors"] as? List<*> ?: return null
+        for (error in errors) {
+            val fields = error as? Map<*, *> ?: continue
+            val code = (fields["extensions"] as? Map<*, *>)?.get("code")
+            if (fields["message"] == NOT_FOUND || code == "PERSISTED_QUERY_NOT_FOUND") return NOT_FOUND
+            if (fields["message"] == NOT_SUPPORTED || code == "PERSISTED_QUERY_NOT_SUPPORTED") return NOT_SUPPORTED
+        }
+        return null
+    }
+}
+""";
+
+const kotlinPersistedQueriesGet = '''
+class GraphLinkGetNotSupported(message: String? = null) : Exception(message)
+
+object GraphLinkGetRequest {
+    fun queryParameters(
+        payload: String,
+        decoder: GraphLinkJsonDecoder,
+        encoder: GraphLinkJsonEncoder,
+    ): List<Pair<String, String>> {
+        val body = decoder.decode(payload)
+        val variables = body["variables"] as? Map<*, *>
+        val parameters = mutableListOf<Pair<String, String>>()
+        val operationName = body["operationName"]
+        if (operationName != null) {
+            parameters.add("operationName" to operationName.toString())
+        }
+        if (!variables.isNullOrEmpty()) {
+            @Suppress("UNCHECKED_CAST")
+            parameters.add("variables" to encoder.encode(variables as Map<String, Any?>))
+        }
+        @Suppress("UNCHECKED_CAST")
+        parameters.add("extensions" to encoder.encode(body["extensions"] as Map<String, Any?>))
+        return parameters
+    }
+}
+''';
+
+String kotlinDefaultGraphLinkGetAdapter(bool withOperationName) => '''
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
+
+class DefaultGraphLinkGetAdapter(
+    private val url: String,
+    private val headersProvider: (() -> Map<String, String>)? = null,
+    private val httpClient: OkHttpClient = OkHttpClient(),
+    private val codec: KotlinxSerializationGraphLinkJsonCodec = KotlinxSerializationGraphLinkJsonCodec(),
+) : GraphLinkClientAdapter {
+
+    override suspend fun execute(payload: String${withOperationName ? ', operationName: String' : ''}): String =
+        withContext(Dispatchers.IO) {
+            val target = url.toHttpUrl().newBuilder()
+            for ((name, value) in GraphLinkGetRequest.queryParameters(payload, codec, codec)) {
+                target.addQueryParameter(name, value)
+            }
+            val builder = Request.Builder().url(target.build()).get()
+            headersProvider?.invoke()?.forEach { (k, v) -> builder.header(k, v) }
+            httpClient.newCall(builder.build()).execute().use { response ->
+                if (response.code == 405) {
+                    throw GraphLinkGetNotSupported("GET is not allowed")
+                }
+                response.body!!.string()
+            }
+        }
 }
 ''';
