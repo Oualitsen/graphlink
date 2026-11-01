@@ -223,6 +223,9 @@ queries, and short ones to prove no hash is sent.
    - Kotlin: **Done** (`kotlin_persisted_queries_tests`; `getAdapter` right after `adapter`; `DefaultGraphLinkGetAdapter` on OkHttp,
      tested against a local JDK `HttpServer`; the resolver base's hash memo is a `ConcurrentHashMap`, which the pure-core plan
      will have to replace together with `tagLocks`).
+   - Swift: **Done** (`swift_persisted_queries_tests`; `getAdapter` closure right after `adapter`; hashes and the two refusal flags live
+     in a lock-guarded `GraphLinkPersistedQueryState`; `DefaultGraphLinkURLSessionGetAdapter` is tested through a stub `URLProtocol`,
+     including `+` escaping in variables).
 6. Docs: new `persisted-queries.md` page, config reference, `--help`, llms sources; document bounded server caches.
 7. Changelog entry as a new feature (minor version).
 

@@ -17,7 +17,7 @@ ClientLanguageConfig _parse(String language, Map<String, dynamic> options) =>
 Matcher _rejectsWith(String fragment) => throwsA(
     isA<ArgumentError>().having((e) => e.message.toString(), 'message', contains(fragment)));
 
-const _implemented = {'dart', 'typescript', 'kotlin'};
+const _implemented = {'dart', 'typescript', 'kotlin', 'swift'};
 
 void main() {
   for (final language in _required.keys.where((l) => !_implemented.contains(l))) {

@@ -1,3 +1,5 @@
+import 'package:graphlink/src/persisted_queries.dart';
+
 const swiftClientException = 'GraphLinkException';
 const swiftClientName = 'GraphLinkClient';
 
@@ -247,7 +249,7 @@ public struct GraphLinkException: Error, Sendable {
 // Interfaces/GraphLinkFullResponse.swift), so no hand-written duplicate is
 // needed here (same reasoning as swiftGraphLinkCacheEntry above).
 
-String swiftGraphLinkResolverBase(bool withOpName) => '''
+String swiftGraphLinkResolverBase(bool withOpName, {bool persistedQueries = false, bool useGet = false}) => '''
 actor GraphLinkTagLocks {
     private var chains: [String: Task<Void, Never>] = [:]
 
@@ -266,18 +268,15 @@ open class GraphLinkResolverBase: @unchecked Sendable {
     private let adapter: GraphLinkClientAdapter
     let fragmentMap: [String: String]
     let store: any GraphLinkCacheStore
-    private let tagLocks = GraphLinkTagLocks()
+    private let tagLocks = GraphLinkTagLocks()${useGet ? '\n    private let getAdapter: GraphLinkClientAdapter?' : ''}${persistedQueries ? '\n    private let persisted = GraphLinkPersistedQueryState()' : ''}
 
-    public init(adapter: @escaping GraphLinkClientAdapter, fragmentMap: [String: String], store: any GraphLinkCacheStore) {
-        self.adapter = adapter
+    public init(adapter: @escaping GraphLinkClientAdapter, ${useGet ? 'getAdapter: GraphLinkClientAdapter? = nil, ' : ''}fragmentMap: [String: String], store: any GraphLinkCacheStore) {
+        self.adapter = adapter${useGet ? '\n        self.getAdapter = getAdapter' : ''}
         self.fragmentMap = fragmentMap
         self.store = store
     }
 
-    func glCallAdapter(_ payload: GraphLinkPayload) async throws -> Data {
-        let body = try GraphLinkJson.encode(payload.toJson())
-        return try await adapter(body${withOpName ? ', payload.operationName' : ''})
-    }
+${persistedQueries ? swiftPersistedCallAdapter(withOpName, useGet) : swiftPlainCallAdapter(withOpName)}
 
     func parseToObjectAndCache<T: GraphLinkFullResponse>(
         data: Data,
@@ -1008,4 +1007,179 @@ public enum GraphLinkSha256 {
         return state.map { value in hexWord(value) }.joined()
     }
 }
+''';
+
+const swiftPersistedQueries = """
+public enum GraphLinkPersistedQueries {
+    public static let minQueryLength = ${persistedQueryMinLength}
+    public static let notFound = "PersistedQueryNotFound"
+    public static let notSupported = "PersistedQueryNotSupported"
+
+    public static func extensions(_ hash: String) -> [String: Any?] {
+        ["persistedQuery": ["version": 1, "sha256Hash": hash] as [String: Any?]]
+    }
+
+    public static func failure(_ response: Data) -> String? {
+        guard response.range(of: Data("PersistedQuery".utf8)) != nil
+                || response.range(of: Data("PERSISTED_QUERY".utf8)) != nil,
+              let decoded = try? GraphLinkJson.decode(response),
+              let errors = decoded["errors"] as? [Any] else { return nil }
+        for item in errors {
+            guard let error = item as? [String: Any] else { continue }
+            let message = error["message"] as? String
+            let code = (error["extensions"] as? [String: Any])?["code"] as? String
+            if message == notFound || code == "PERSISTED_QUERY_NOT_FOUND" { return notFound }
+            if message == notSupported || code == "PERSISTED_QUERY_NOT_SUPPORTED" { return notSupported }
+        }
+        return nil
+    }
+}
+
+final class GraphLinkPersistedQueryState: @unchecked Sendable {
+    private let lock = NSLock()
+    private var hashes: [String: String] = [:]
+    private var persistedUnsupported = false
+    private var getRefused = false
+
+    func hash(for query: String) -> String {
+        lock.withLock {
+            if let cached = hashes[query] { return cached }
+            let hash = GraphLinkSha256.hex(query)
+            hashes[query] = hash
+            return hash
+        }
+    }
+
+    var unsupported: Bool {
+        get { lock.withLock { persistedUnsupported } }
+        set { lock.withLock { persistedUnsupported = newValue } }
+    }
+
+    var getUnsupported: Bool {
+        get { lock.withLock { getRefused } }
+        set { lock.withLock { getRefused = newValue } }
+    }
+}
+""";
+
+const swiftPersistedQueriesGet = '''
+public struct GraphLinkGetNotSupported: Error {
+    public let message: String?
+
+    public init(message: String? = nil) {
+        self.message = message
+    }
+}
+
+public enum GraphLinkGetRequest {
+    private static let unreserved = CharacterSet(
+        charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
+    )
+
+    private static func escape(_ value: String) -> String {
+        value.addingPercentEncoding(withAllowedCharacters: unreserved) ?? value
+    }
+
+    private static func json(_ map: [String: Any?]) throws -> String {
+        String(decoding: try GraphLinkJson.encode(map), as: UTF8.self)
+    }
+
+    public static func queryString(_ payload: Data) throws -> String {
+        let body = try GraphLinkJson.decode(payload)
+        var parts: [String] = []
+        if let operationName = body["operationName"] as? String {
+            parts.append("operationName=" + escape(operationName))
+        }
+        if let variables = body["variables"] as? [String: Any?], !variables.isEmpty {
+            parts.append("variables=" + escape(try json(variables)))
+        }
+        let extensions = (body["extensions"] as? [String: Any?]) ?? [:]
+        parts.append("extensions=" + escape(try json(extensions)))
+        return parts.joined(separator: "&")
+    }
+}
+''';
+
+String swiftDefaultGraphLinkURLSessionGetAdapter(bool withOperationName) => '''
+public struct DefaultGraphLinkURLSessionGetAdapter: Sendable {
+    private let url: URL
+    private let headersProvider: (@Sendable () -> [String: String])?
+    private let session: URLSession
+
+    public init(
+        url: URL,
+        headersProvider: (@Sendable () -> [String: String])? = nil,
+        session: URLSession = .shared
+    ) {
+        self.url = url
+        self.headersProvider = headersProvider
+        self.session = session
+    }
+
+    public func execute(_ payload: Data${withOperationName ? ', _ operationName: String' : ''}) async throws -> Data {
+        var components = URLComponents(url: url, resolvingAgainstBaseURL: false)!
+        let query = try GraphLinkGetRequest.queryString(payload)
+        components.percentEncodedQuery = [components.percentEncodedQuery, query].compactMap { \$0 }.joined(separator: "&")
+        var request = URLRequest(url: components.url!)
+        request.httpMethod = "GET"
+        headersProvider?().forEach { request.setValue(\$1, forHTTPHeaderField: \$0) }
+        let (data, response) = try await session.data(for: request)
+        if (response as? HTTPURLResponse)?.statusCode == 405 {
+            throw GraphLinkGetNotSupported(message: "GET is not allowed")
+        }
+        return data
+    }
+}
+''';
+
+String swiftPlainCallAdapter(bool withOpName) => '''
+    func glCallAdapter(_ payload: GraphLinkPayload) async throws -> Data {
+        let body = try GraphLinkJson.encode(payload.toJson())
+        return try await adapter(body${withOpName ? ', payload.operationName' : ''})
+    }''';
+
+String swiftPersistedCallAdapter(bool withOpName, bool useGet) => '''
+    func glHash(_ query: String) -> String {
+        persisted.hash(for: query)
+    }
+
+    private func glSend(_ body: [String: Any?]) async throws -> Data {
+        let data = try GraphLinkJson.encode(body)
+        return try await adapter(data${withOpName ? ', (body["operationName"] as? String) ?? ""' : ''})
+    }
+${useGet ? swiftGlSendHashOnly(withOpName) : ''}
+    func glCallAdapter(_ payload: GraphLinkPayload) async throws -> Data {
+        if persisted.unsupported || payload.query.utf8.count <= GraphLinkPersistedQueries.minQueryLength {
+            return try await glSend(payload.toJson())
+        }
+        let extensions = GraphLinkPersistedQueries.extensions(glHash(payload.query))
+        let hashOnly: [String: Any?] = [
+            "operationName": payload.operationName,
+            "variables": payload.variables,
+            "extensions": extensions,
+        ]
+        let response = try await ${useGet ? 'glSendHashOnly(payload, hashOnly)' : 'glSend(hashOnly)'}
+        guard let failure = GraphLinkPersistedQueries.failure(response) else { return response }
+        var body = payload.toJson()
+        if failure == GraphLinkPersistedQueries.notSupported {
+            persisted.unsupported = true
+        } else {
+            body["extensions"] = extensions
+        }
+        return try await glSend(body)
+    }''';
+
+String swiftGlSendHashOnly(bool withOpName) => '''
+
+    private func glSendHashOnly(_ payload: GraphLinkPayload, _ body: [String: Any?]) async throws -> Data {
+        guard let getAdapter, !persisted.getUnsupported, !payload.query.hasPrefix("mutation") else {
+            return try await glSend(body)
+        }
+        do {
+            return try await getAdapter(try GraphLinkJson.encode(body)${withOpName ? ', (body["operationName"] as? String) ?? ""' : ''})
+        } catch is GraphLinkGetNotSupported {
+            persisted.getUnsupported = true
+            return try await glSend(body)
+        }
+    }
 ''';
