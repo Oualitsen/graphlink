@@ -823,5 +823,6 @@ glink --help            # print usage
 | `-c <path>` | Path to the config file. Accepts `.json`, `.yaml`, or `.yml`. If omitted, `glink` searches for `glink.json`, `glink.yaml`, or `glink.yml` starting from the current directory and walking up to the filesystem root. |
 | `-w` | Watch mode. GraphLink monitors the files matched by `schemaPaths` and regenerates after changes settle (see `--debounce`). |
 | `--debounce <ms>` | Watch mode only. Milliseconds to wait after the last detected schema change before regenerating, so a burst of saves triggers a single run. Default `500`. Must be a non-negative integer. |
+| `--print-directives` | Prints the declarations of every GraphLink directive for your IDE and exits. See [Directives](directives.md#declarations-for-your-ide). |
 | `--version` | Prints the GraphLink version and exits. |
 | `--help` | Prints usage information and exits. |

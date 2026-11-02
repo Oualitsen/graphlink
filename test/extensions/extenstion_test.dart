@@ -7,12 +7,13 @@ void main() {
   test("extend scalar test", () {
     final g = GLParser(generateAllFieldsFragments: true);
     g.parse('''
-    extend scalar void @glServiceName(name: "TestService")
+    directive @note on SCALAR
+    extend scalar void @note
     scalar void
   ''');
 
     var scalar = g.scalars['void']!;
-    expect(scalar.getDirectiveByName('@glServiceName'), isNotNull);
+    expect(scalar.getDirectiveByName('@note'), isNotNull);
   });
 
   test("extend enum test", () {
@@ -35,7 +36,7 @@ void main() {
   test("extend input test", () {
     final g = GLParser(generateAllFieldsFragments: true);
     g.parse('''
-  directive @gqHide on INPUT_FIELD_DEFINITION
+  directive @gqHide on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 
     extend input UserInput @glServiceName(name: "TestService"){
       password: String
@@ -62,7 +63,7 @@ void main() {
   test("extend type test", () {
     final g = GLParser(generateAllFieldsFragments: true);
     g.parse('''
-  directive @gqHide on INPUT_FIELD_DEFINITION
+  directive @gqHide on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 
     extend type User @glServiceName(name: "TestService"){
       password: String
@@ -89,7 +90,7 @@ void main() {
   test("extend interface test", () {
     final g = GLParser(generateAllFieldsFragments: true);
     g.parse('''
-  directive @gqHide on INPUT_FIELD_DEFINITION
+  directive @gqHide on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 
     extend interface User @glServiceName(name: "TestService"){
       password: String
@@ -116,6 +117,8 @@ void main() {
   test("extend union test", () {
     final g = GLParser(generateAllFieldsFragments: true);
     g.parse('''
+    directive @note(reason: String) on UNION
+
     type type1 {
       name: String
     }
@@ -131,14 +134,14 @@ void main() {
     extend union MyUnion = type3
 
     union MyUnion = type1 | type2
-    extend union MyUnion @deprecated(reason: "Use other")
+    extend union MyUnion @note(reason: "Use other")
     
   ''');
 
     var myUnion = g.unions['MyUnion']!;
     expect(myUnion.typeNames.map((e) => e.token),
         containsAll(['type1', 'type2', 'type3']));
-    expect(myUnion.getDirectiveByName("@deprecated"), isNotNull);
+    expect(myUnion.getDirectiveByName("@note"), isNotNull);
   });
 
   test("extend schema test", () {

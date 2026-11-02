@@ -10,6 +10,9 @@ $parserUsage
 If -c is omitted, glink searches for glink.json, glink.yaml, or glink.yml
 starting from the current directory and walking up to the filesystem root.
 
+`glink --print-directives > directives.graphql` writes the declarations of every GraphLink
+directive for your IDE. Keep that file out of schemaPaths.
+
 With -w, regeneration waits until schema changes have settled for --debounce
 milliseconds (default 500), so a burst of saves triggers a single run.
 

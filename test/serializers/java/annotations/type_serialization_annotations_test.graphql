@@ -32,7 +32,7 @@ directive @Json(
     glOnServer: Boolean = true
     glAnnotation: Boolean = true
     glClass: String = "@Json"
-) on FIELD_DEFINITION | OBJECT | INPUT_OBJECT | ENUM | ENUM_VALUE | INTERFACE 
+) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION | OBJECT | INPUT_OBJECT | ENUM | ENUM_VALUE | INTERFACE
 
 
 directive @LoggedIn(

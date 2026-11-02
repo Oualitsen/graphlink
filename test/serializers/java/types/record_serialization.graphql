@@ -9,7 +9,7 @@ directive @JsonProperty(
     glOnClient: Boolean = true
     glOnServer: Boolean = true
 
-) on OBJECT | INPUT_OBJECT | INTERFACE | FIELD_DEFINITION
+) on OBJECT | INPUT_OBJECT | INTERFACE | FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 
 directive @FieldNameConstants(
     glAnnotation: Boolean = true

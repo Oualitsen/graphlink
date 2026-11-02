@@ -97,6 +97,50 @@ void main() {
     });
   });
 
+  group('locations', () {
+    test('a built-in directive used where it is not allowed is an error listing the allowed locations', () {
+      rejects('type Query { p: Product } type Z @glUpload { a: String }', '@glUpload cannot be used on OBJECT (allowed: SCALAR)');
+      rejects('scalar S @glMapsTo(type: "Product")\ntype Query { p: Product }', '@glMapsTo cannot be used on SCALAR');
+      rejects('type Query { p: Product @glRestHeader(name: "x") }', '@glRestHeader cannot be used on FIELD_DEFINITION');
+    });
+
+    test('every location a directive is declared for is accepted', () {
+      accepts('''
+        scalar Upload @glUpload
+        input In @glMapsTo(type: "Product") { a: String @glMapField(to: "id") }
+        type Query { p: Product @glCache(ttl: 5) }
+      ''');
+    });
+
+    test('operation-level directives use the operation location', () {
+      accepts('''
+        type Query { p: Product }
+        type Mutation { m: Product }
+        query getP @glCache(ttl: 5) @glTypeName(name: "P") { p { id } }
+        mutation doM @glCacheInvalidate(all: true) { m { id } }
+      ''');
+    });
+
+    test('field-in-document directives use FIELD', () {
+      accepts('type Query { p: Product }\nquery q { p @glTypeName(name: "X") { id } }');
+    });
+
+    test('a user directive is checked against its own declaration', () {
+      const declaration = 'directive @auth on FIELD_DEFINITION\n';
+      accepts('${declaration}type Query { p: Product @auth }');
+      rejects('${declaration}type Query { p: Product } type Z @auth { a: String }', '@auth cannot be used on OBJECT (allowed: FIELD_DEFINITION)');
+    });
+
+    test('a redeclared built-in is checked against the built-in locations', () {
+      rejects('directive @glUpload on OBJECT\ntype Z @glUpload { a: String }\ntype Query { p: Product }', '@glUpload cannot be used on OBJECT');
+    });
+
+    test('@deprecated follows the spec locations', () {
+      accepts('type Query { p(a: Int @deprecated): Product @deprecated }\ninput In { a: Int @deprecated }\nenum E { A @deprecated }');
+      rejects('type Z @deprecated { a: String }\ntype Query { p: Product }', '@deprecated cannot be used on OBJECT');
+    });
+  });
+
   group('variables', () {
     test('a variable is accepted wherever a value is expected', () {
       accepts('''

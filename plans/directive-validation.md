@@ -1,6 +1,6 @@
 # Plan: Directive validation
 
-Status: **phases A, B and C implemented** (undeclared directives, argument names and required arguments, value kinds): `model/internal_directive_declarations.dart` (canonical SDL), `parser_extensions/gl_grammar_directive_validation_extension.dart`, tests in `test/directive_validation/`. **Phase D (locations) is not implemented.** `tool/scan_directives.dart` re-runs the validator over every schema source in the repo. This is a breaking change, announced in `CHANGELOG.md` under `Unreleased`.
+Status: **phases A, B, C and D implemented** (undeclared directives, argument names and required arguments, value kinds, locations): `model/internal_directive_declarations.dart` (canonical SDL), `parser_extensions/gl_grammar_directive_validation_extension.dart`, tests in `test/directive_validation/`. `tool/scan_directives.dart` re-runs the validator over every schema source in the repo and `tool/check_configs.dart` parses every glink config under the given roots without generating. This is a breaking change, announced in `CHANGELOG.md` under `Unreleased`.
 
 Known limits: the parser stores quoted strings and bare identifiers the same way, so an enum argument accepts both; `@glCache`/`@glCacheInvalidate` value kinds keep their existing, more specific messages; redeclaring a built-in directive only checks argument names.
 

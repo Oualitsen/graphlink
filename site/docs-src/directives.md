@@ -7,76 +7,74 @@ description: "Reference for every GraphLink directive: @glCache, @glCacheInvalid
 
 All GraphLink directives with arguments, placement, and examples.
 
-## Copy-paste declarations
+## Declarations for your IDE
 
-Add this block to your schema file (or a dedicated `directives.graphql`) so your IDE and schema validators recognise every GraphLink directive:
+GraphLink knows all of its directives, so a schema does not declare them. Your IDE and other GraphQL tooling do not, and will flag
+every `@glCache` as unknown. Generate the declarations and point your tooling at the file:
+
+```bash
+glink --print-directives > directives.graphql
+```
+
+Keep that file **out of** `schemaPaths`: it also declares the enums and scalars its directives use, and GraphLink would treat those
+as part of your schema. This is the output, for reference:
 
 ```graphql title="directives.graphql"
-# ── Caching ───────────────────────────────────────────────────────────────────
+# GraphLink directive declarations, for your IDE and GraphQL tooling.
+# Keep this file out of the schemaPaths of glink.json: GraphLink already knows these directives.
 
-directive @glCache(
-  ttl: String!
-  tags: [String!]
-  staleIfOffline: Boolean
-) on QUERY | MUTATION | FIELD | FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR | SCHEMA
+# Types used by the directives below
+enum GLRestMethod { GET POST PUT PATCH DELETE }
+enum GLRestEncoding { FLAT JSON SPREAD }
+enum GLRestResponseKind { JSON TEXT BINARY }
+scalar GLDuration
+scalar GLMap
 
-directive @glCacheInvalidate(
-  tags: [String!]
-  all: Boolean
-) on QUERY | MUTATION | FIELD | FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR | SCHEMA
+directive @oneOf on INPUT_OBJECT
 
-# ── Code generation control ───────────────────────────────────────────────────
+# Caching
+directive @glCache(ttl: GLDuration, tags: [String!], staleIfOffline: Boolean) on FIELD | FIELD_DEFINITION | QUERY | MUTATION | SUBSCRIPTION
+directive @glCacheInvalidate(all: Boolean, tags: [String!]) on FIELD | FIELD_DEFINITION | QUERY | MUTATION | SUBSCRIPTION
+directive @glNoCache on FIELD | FIELD_DEFINITION | QUERY | MUTATION | SUBSCRIPTION
 
-directive @glSkipOnServer(mapTo: String, batch: Boolean) on OBJECT | SCALAR | FIELD_DEFINITION
-
-directive @glSkipOnClient on OBJECT | INPUT_OBJECT | SCALAR | FIELD_DEFINITION
-
-directive @glExternal(glClass: String!, glImport: String) on SCALAR | OBJECT
-
-directive @glInternal on OBJECT
-
-directive @glTypeName(name: String!) on OBJECT | INPUT_OBJECT | ENUM
-
-# ── Server (Spring Boot) ──────────────────────────────────────────────────────
-
-directive @glDecorators(value: [String!]!) on OBJECT | INPUT_OBJECT | FIELD_DEFINITION
-
-directive @glServiceName(name: String!) on OBJECT | FIELD_DEFINITION
-
-directive @glValidate on FIELD_DEFINITION
-
-directive @glRepository(glType: String!, glIdType: String!) on OBJECT
-
-# ── Equality ──────────────────────────────────────────────────────────────────
-
-directive @glEqualsHashcode(fields: [String!]!) on OBJECT | INPUT_OBJECT
-
-# ── Input mapping ─────────────────────────────────────────────────────────────
-
-directive @glMapsTo(type: String!) on INPUT_OBJECT
-
-directive @glMapField(to: String!) on FIELD_DEFINITION
-
-# ── File upload ───────────────────────────────────────────────────────────────
-
-directive @glUpload on SCALAR
-
-# ── Cyclic expansion ──────────────────────────────────────────────────────────
-
+# Code generation control
+directive @glCaptureErrors on FIELD_DEFINITION | QUERY | MUTATION
+directive @glDecorators(value: [String!]!, applyOnClient: Boolean, applyOnServer: Boolean, glImport: String) repeatable on ENUM | ENUM_VALUE | FIELD_DEFINITION | INPUT_FIELD_DEFINITION | INPUT_OBJECT | INTERFACE | OBJECT | SCALAR | UNION | ARGUMENT_DEFINITION
+directive @glEqualsHashcode(fields: [String!]) on FIELD | OBJECT | INPUT_OBJECT | INTERFACE
 directive @glExpand(depth: Int) on OBJECT
-
-# ── Error capture ─────────────────────────────────────────────────────────────
-
-directive @glCaptureErrors on FIELD_DEFINITION
-
-# ── Strict server generation (v5.0.0+) ────────────────────────────────────────
-
-directive @glServerLenient on OBJECT | INTERFACE
-
+directive @glExternal(glClass: String, glImport: String) on INPUT_OBJECT | OBJECT | SCALAR | INTERFACE
 directive @glInjectContext on FIELD_DEFINITION
+directive @glIntercept(tag: String) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION | OBJECT
+directive @glMapField(to: String!) on INPUT_FIELD_DEFINITION
+directive @glMapsTo(type: String!) on INPUT_OBJECT
+directive @glRepository(glType: String, glIdType: String) on INTERFACE | OBJECT
+directive @glServerLenient on OBJECT
+directive @glServiceName(name: String!) on ENUM | FIELD_DEFINITION | INPUT_OBJECT | INTERFACE | OBJECT
+directive @glSkipOnClient on ENUM | ENUM_VALUE | FIELD_DEFINITION | INPUT_FIELD_DEFINITION | INPUT_OBJECT | INTERFACE | OBJECT | SCALAR | UNION
+directive @glSkipOnServer(batch: Boolean, mapTo: String) on ENUM | ENUM_VALUE | FIELD_DEFINITION | INPUT_FIELD_DEFINITION | INPUT_OBJECT | INTERFACE | OBJECT | SCALAR | UNION
+directive @glTypeName(name: String!) on FIELD | INLINE_FRAGMENT | FRAGMENT_DEFINITION | INPUT_OBJECT | QUERY | MUTATION | SUBSCRIPTION
+directive @glUpload on SCALAR
+directive @glValidate on FIELD_DEFINITION
+directive @glInternal on OBJECT | INTERFACE | ENUM | INPUT_OBJECT | SCALAR
+directive @glInterfaceFieldAsProperties on INTERFACE
 
-directive @glIntercept(tag: String) on QUERY | MUTATION | SUBSCRIPTION | FIELD_DEFINITION | OBJECT
+# REST operations
+directive @glRest(path: String, method: GLRestMethod, contentType: String, accept: String, response: GLRestResponseKind, responsePath: String) on FIELD_DEFINITION
+directive @glRestPrefix(path: String, method: GLRestMethod) repeatable on OBJECT
+directive @glRestPath(name: String) on ARGUMENT_DEFINITION
+directive @glRestParam(name: String, encoding: GLRestEncoding) on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION
+directive @glRestHeader(name: String) on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | INPUT_OBJECT
+directive @glRestBody on ARGUMENT_DEFINITION
+directive @glRestField(name: String, encoding: GLRestEncoding) on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION
+directive @glRestPart(name: String, encoding: GLRestEncoding) on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION
+directive @glRestDiscriminator(field: String!, values: GLMap) on INTERFACE | UNION
+directive @glDownload on SCALAR
+directive @glVoid on SCALAR
 ```
+
+GraphLink validates every directive in your schema: an undeclared directive, an unknown or missing argument, a value of the wrong kind
+or a directive used at a location it does not allow stops generation with the line and column. Your own directives need a
+`directive @name ... on ...` declaration in the schema; the ones above do not.
 
 ---
 
