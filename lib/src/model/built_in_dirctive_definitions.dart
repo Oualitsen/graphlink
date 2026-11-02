@@ -119,6 +119,30 @@ const glExpandDepth = "depth";
 /// The caller checks response.hasErrors instead of using try/catch.
 const glCaptureErrors = "@glCaptureErrors";
 
+/// REST operations — see rest-client-specs.md.
+const glRest = "@glRest";
+const glRestPrefix = "@glRestPrefix";
+const glRestPath = "@glRestPath";
+const glRestParam = "@glRestParam";
+const glRestHeader = "@glRestHeader";
+const glRestBody = "@glRestBody";
+const glRestField = "@glRestField";
+const glRestPart = "@glRestPart";
+const glRestDiscriminator = "@glRestDiscriminator";
+const glDownload = "@glDownload";
+const glVoid = "@glVoid";
+
+const glRestPathArg = "path";
+const glRestMethodArg = "method";
+const glRestContentTypeArg = "contentType";
+const glRestAcceptArg = "accept";
+const glRestResponseArg = "response";
+const glRestResponsePathArg = "responsePath";
+const glRestNameArg = "name";
+const glRestEncodingArg = "encoding";
+const glRestDiscriminatorFieldArg = "field";
+const glRestDiscriminatorValuesArg = "values";
+
 ///
 /// Per-type opt-out from the default strict (real schema nullability) server generation.
 /// A type marked @glServerLenient has its fields forced all-nullable on the server, exactly as

@@ -504,6 +504,7 @@ extension GLGrammarFragmentExtension on GLParser {
   }
 
   void _generateForField(GLField field, GLQueryType queryType) {
+    if (restOperations.containsKey(GLOperationKey(field.name.token, queryType))) return;
     GLFragmentBlockDefinition? block;
     if (typeRequiresProjection(field.type)) {
       final fieldTypeName = field.type.inlineType.token;

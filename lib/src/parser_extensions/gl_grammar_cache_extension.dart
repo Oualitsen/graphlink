@@ -1,4 +1,5 @@
 import 'package:graphlink/src/exceptions/parse_exception.dart';
+import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/model/gl_query_element.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
@@ -278,6 +279,12 @@ extension GLGrammarCacheExtension on GLParser {
     queries.values.where((q) => q.type == GLQueryType.query).forEach((query) {
       query.applyDefaultCache(defaultTTL);
     });
+    for (final op in restOperations.values) {
+      final field = op.field;
+      if (op.type == GLQueryType.query && op.method == RestMethod.get && !field.hasDirective(glCache) && !field.hasDirective(glNoCache)) {
+        field.addDirective(GLDirectiveValue.createDefaultCacheDirectiveValue(field.name, defaultTTL));
+      }
+    }
   }
 
   void propagateCacheTags() {
@@ -323,6 +330,11 @@ extension GLGrammarCacheExtension on GLParser {
         for (final name in cacheDirectives) {
           element.removeDirectiveByName(name);
         }
+      }
+    }
+    for (final op in restOperations.values) {
+      for (final name in cacheDirectives) {
+        op.field.removeDirectiveByName(name);
       }
     }
     directiveValues.removeWhere((d) => cacheDirectives.contains(d.token));
