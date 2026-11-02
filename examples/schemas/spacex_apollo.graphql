@@ -1,3 +1,5 @@
+directive @link(url: String!, as: String, import: [String]) repeatable on SCHEMA
+
 # @contact isn't being printed to the generated-schema.graphql file
 # See https://github.com/apollographql/federation/issues/1847
 directive @contact(

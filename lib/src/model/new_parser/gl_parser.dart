@@ -32,6 +32,7 @@ import 'package:logger/logger.dart';
 
 import 'package:graphlink/src/parser_extensions/gl_grammar_cache_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_directive_validation_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_rest_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_rest_validation_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_rest_discriminator_extension.dart';
@@ -378,6 +379,7 @@ class GLParser {
 
   void validateSemantics() {
     if (!_validate) return;
+    validateDirectives();
     validateInputReferences();
     validateDefaultValues();
     validateTypeReferences();

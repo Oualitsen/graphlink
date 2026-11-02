@@ -96,8 +96,11 @@ void main() {
       expect(p.tags, isNull);
     });
 
-    test('a missing non-null field is a decode error', () async {
-      await expectLater(client.queries.missingField(), throwsA(anything));
+    test('a missing non-null field is a decode error naming the type and field', () async {
+      await expectLater(
+        client.queries.missingField(),
+        throwsA(isA<FormatException>().having((e) => e.message, 'message', 'Product.name is missing or null in the response')),
+      );
     });
 
     test('nested types, enums and cyclic references decode', () async {
