@@ -10,7 +10,7 @@ types and the client are the same, so you can move an API from REST to GraphQL o
 and the call site does not change.
 
 !!! note
-    REST operations are generated for the **Dart**, **TypeScript** and **Kotlin** clients. Other client targets ignore them for now.
+    REST operations are generated for the **Dart**, **TypeScript**, **Kotlin**, **Python** and **Swift** and **Go** clients. Other client targets ignore them for now.
 
 ```graphql
 scalar Void @glVoid
@@ -166,9 +166,80 @@ client.mutations.avatar(id = "p1", file = GLUpload(stream, "image/png", length, 
 - `GLDownload` wraps an `InputStream`; close it or call `bytes()`.
 - JSON goes through your `GraphLinkJsonEncoder` / `GraphLinkJsonDecoder`, so they must handle nested maps and lists.
 
+## Python
+
+Methods are `async` with keyword-only arguments:
+
+```python
+client = GraphLinkClient.with_http(
+    url="https://api.example.com/graphql",
+    rest_base_url="https://api.example.com",
+    headers_provider=lambda: {"Authorization": f"Bearer {token}"},
+)
+product = await client.queries.product(id="p1")
+await client.mutations.avatar(id="p1", file=GLUpload.from_file("p1.png"), on_progress=lambda sent, total: None)
+```
+
+- The generated `GraphLinkRestHttpxAdapter` uses `httpx` and follows redirects (`restHttpAdapter: "none"` skips it and `with_http`
+  takes a `rest_adapter`). The adapter is any `async (RestRequest) -> RestResponse` callable. A schema with only REST operations
+  needs no GraphQL adapter: `GraphLinkClient(rest_adapter=...)`.
+- Errors: `RestError` (`status`, `headers`, `body`); an empty body for a non-null result is a `ValueError`, a missing non-null field
+  a pydantic `ValidationError` naming the model and field, an unknown discriminator a `ValidationError` naming the parent and value.
+- Uploads stream in 64 KB chunks: `GLUpload.from_file(path)` reads from disk as it sends and `GLUpload.from_stream(source, length=...)` takes any
+  (async) iterable of bytes. With a known length the request carries `Content-Length`; without one it is sent chunked and progress reports
+  `-1` as the total. Raw and multipart REST bodies both stream. GraphQL multipart uploads still need bytes or a file, which they read into memory.
+  A `GLDownload` exposes an async `stream` of chunks and `bytes()`.
+
+## Swift
+
+Methods are `async throws` with labelled, defaulted parameters:
+
+```swift
+let client = GraphLinkClient.create(
+    url: URL(string: "https://api.example.com/graphql")!,
+    restBaseUrl: URL(string: "https://api.example.com")!,
+    headersProvider: { ["Authorization": "Bearer \(token)"] }
+)
+let product = try await client.queries.product(id: "p1")
+try await client.mutations.avatar(id: "p1", file: GLUpload(data: data, mimeType: "image/png"), onProgress: { sent, total in })
+```
+
+- The generated `DefaultGraphLinkRestAdapter` uses `URLSession` (`restHttpAdapter: "none"` skips it and `create` takes a
+  `restAdapter: GLRestAdapter`). A schema with only REST operations needs no GraphQL adapter: `GraphLinkClient(restAdapter: ...)`.
+- Errors: `RestError` (`status`, `headers`, `body`); an empty body for a non-null result is a `RestDecodeError`. Decoding uses the
+  regular generated `fromJson`, so a response that breaks the schema (a missing non-null field, an unknown discriminator value) traps,
+  exactly as it does for GraphQL: declare a field nullable if the server may omit it.
+- `GLUpload` holds its `Data` in memory (known length, no chunked streaming); a `GLDownload` exposes an `AsyncThrowingStream<Data, Error>`.
+- Keys of nested objects in query strings, forms and multipart parts are written in alphabetical order, and floats print as `3.0`.
+
+## Go
+
+Methods take a `context.Context`, the required arguments, and an optional `...<Operation>Options` struct holding the optional
+arguments and the progress callbacks:
+
+```go
+client, _ := generated.NewGraphLinkClientWithHttp(generated.GraphLinkHttpOptions{
+    URL:         "https://api.example.com/graphql",
+    RestBaseURL: "https://api.example.com",
+    HeadersProvider: func(ctx context.Context) (map[string]string, error) {
+        return map[string]string{"Authorization": "Bearer " + token}, nil
+    },
+})
+product, err := client.Queries.Product(ctx, "p1")
+err = client.Mutations.Avatar(ctx, "p1", generated.GLUploadFromBytes(data, "p1.png", "image/png"),
+    generated.AvatarOptions{OnProgress: func(sent, total int64) {}})
+```
+
+- The generated `GraphLinkRestHttpAdapter` uses `net/http` (`restHttpAdapter: "none"` skips it and `GraphLinkHttpOptions` takes a
+  `RestAdapter`). A schema with only REST operations needs no GraphQL adapter.
+- Errors are returned, never panicked: `*RestError` (`Status`, `Headers`, `Body`) for non-2xx; an empty body for a non-null result is a
+  plain error, and a missing non-null field is an error from the type's `UnmarshalJSON` (`Type.field is missing or null in the response`).
+- A `GLUpload` is an `io.Reader`; `Length: -1` streams chunked. A `*GLDownload` wraps the response body: read it or call `Close()`.
+- Floats print as Go does (`3`, not `3.0`); `nil` results are returned as nil pointers or nil slices.
+
 ## Known limitations
 
-- Dart, TypeScript and Kotlin clients only.
+- Dart, TypeScript, Kotlin, Python, Swift and Go clients only.
 - An empty list and an absent list are indistinguishable on the wire.
 - Subscriptions are always GraphQL.
 - Void is not yet supported by the server generators.

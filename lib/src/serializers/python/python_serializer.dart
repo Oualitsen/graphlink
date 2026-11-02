@@ -247,6 +247,8 @@ class PythonSerializer extends GLSerializer {
     final skipJson = shouldSkipJsonMethods(interface);
     final name = interface.codeName;
     final resolver = '_${name.toSnakeCase()}_implementations';
+    final discriminatorResolver = '_${name.toSnakeCase()}_by_discriminator';
+    final discriminator = grammar.restDiscriminators[interface.token];
 
     final classSource = codeGenUtils.createClass(
       className: name,
@@ -263,20 +265,30 @@ class PythonSerializer extends GLSerializer {
             arguments: ['cls', 'data: Any', 'handler: Any'],
             returnType: 'Any',
             statements: [
-              codeGenUtils.ifStatement(
-                condition: 'cls is $name and isinstance(data, dict) and "__typename" in data',
-                ifBlockStatements: [
-                  codeGenUtils.constDecl('typename', 'data["__typename"]'),
-                  codeGenUtils.constDecl('target', '$resolver().get(typename)'),
-                  codeGenUtils.ifStatement(
-                    condition: 'target is None',
-                    ifBlockStatements: [
-                      'raise ValueError(f"Invalid type {typename}. {typename} does not implement $name or not defined")',
-                    ],
-                  ),
-                  'return target.model_validate(data)',
-                ],
-              ),
+              if (discriminator == null)
+                codeGenUtils.ifStatement(
+                  condition: 'cls is $name and isinstance(data, dict) and "__typename" in data',
+                  ifBlockStatements: _typenameDispatch(name, resolver),
+                )
+              else
+                codeGenUtils.ifStatement(
+                  condition: 'cls is $name and isinstance(data, dict)',
+                  ifBlockStatements: [
+                    codeGenUtils.ifStatement(
+                      condition: '"__typename" in data',
+                      ifBlockStatements: _typenameDispatch(name, resolver),
+                    ),
+                    codeGenUtils.constDecl('discriminator', 'data.get(${pythonStringLiteral(discriminator.field)})'),
+                    codeGenUtils.constDecl('target', '$discriminatorResolver().get(discriminator)'),
+                    codeGenUtils.ifStatement(
+                      condition: 'target is None',
+                      ifBlockStatements: [
+                        'raise ValueError(f"Cannot decode $name: unknown or missing \\"${discriminator.field}\\" value ({discriminator})")',
+                      ],
+                    ),
+                    'return target.model_validate(data)',
+                  ],
+                ),
               'return handler(data)',
             ],
           ),
@@ -292,7 +304,51 @@ class PythonSerializer extends GLSerializer {
         'return {${implementations.map((impl) => '"${impl.derivedFromType?.tokenInfo.token ?? impl.tokenInfo.token}": ${impl.codeName}').join(', ')}}',
       ],
     );
-    return '$classSource\n\n\n$resolverSource';
+    final discriminatorSource = discriminator == null
+        ? null
+        : codeGenUtils.createMethod(
+            methodName: discriminatorResolver,
+            returnType: 'Dict[Any, Any]',
+            statements: [
+              ...implementations.map((impl) => 'from ..${_subdirFor(impl)}.${moduleNameFor(impl)} import ${impl.codeName}'),
+              'return {${implementations.map((impl) {
+                final typeName = impl.derivedFromType?.tokenInfo.token ?? impl.tokenInfo.token;
+                return '${pythonStringLiteral(discriminator.valueByType[typeName] ?? typeName)}: ${impl.codeName}';
+              }).join(', ')}}',
+            ],
+          );
+    return [classSource, resolverSource, if (discriminatorSource != null) discriminatorSource].join('\n\n\n');
+  }
+
+  List<String> _typenameDispatch(String name, String resolver) => [
+        codeGenUtils.constDecl('typename', 'data["__typename"]'),
+        codeGenUtils.constDecl('target', '$resolver().get(typename)'),
+        codeGenUtils.ifStatement(
+          condition: 'target is None',
+          ifBlockStatements: [
+            'raise ValueError(f"Invalid type {typename}. {typename} does not implement $name or not defined")',
+          ],
+        ),
+        'return target.model_validate(data)',
+      ];
+
+  String callFromJsonValue(String expr, GLType type, [int depth = 0]) {
+    if (type is GLListType) {
+      final variable = 'e$depth';
+      final inner = callFromJsonValue(variable, type.inlineType, depth + 1);
+      if (inner == variable) return expr;
+      return codeGenUtils.nullSafe(
+        expr,
+        codeGenUtils.listComprehension(expression: inner, variable: variable, iterable: expr),
+        type.nullable,
+      );
+    }
+    final token = type.token;
+    if (grammar.isEnum(token) || grammar.isProjectableType(token)) {
+      return codeGenUtils.nullSafe(expr, '${resolveCodeName(token)}.from_json($expr)', type.nullable);
+    }
+    if (token == 'Float') return codeGenUtils.nullSafe(expr, 'float($expr)', type.nullable);
+    return expr;
   }
 
   // ── Default literals ───────────────────────────────────────────────────────

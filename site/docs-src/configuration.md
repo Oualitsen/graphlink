@@ -539,6 +539,9 @@ Used when `mode` is `"client"` and you want Swift output. See the [Swift Client]
 | `persistedQueries` | `false` \| `"apq"` | `false` | `"apq"` sends a SHA-256 hash instead of long queries and retries once with the text on `PersistedQueryNotFound`. See [Persisted Queries](persisted-queries.md). |
 | `persistedQueriesUseGet` | `boolean` | `false` | Send hash-only queries over GET. Requires `persistedQueries: "apq"`. Mutations always use POST. |
 | `wsAdapter` | `"urlsession"` \| `"none"` | `"urlsession"` | WebSocket adapter to generate. `"urlsession"` emits `DefaultGraphLinkURLSessionWebSocketAdapter` built on `URLSessionWebSocketTask` (Foundation, no extra dependency); `"none"` emits only the `GraphLinkClientAdapter`/WebSocket typealiases. There is no HTTP-adapter enum for Swift — `URLSession` is part of Foundation on every Apple platform plus Linux, so there's nothing to choose between. |
+| `restHttpAdapter` | `"urlsession"` \| `"none"` | same as `wsAdapter` | Whether to generate the URLSession adapter for [REST operations](rest-client.md). `"none"` makes `create` take a `restAdapter` instead of `restBaseUrl`. |
+| `queryListStyle` | `"REPEAT"` \| `"COMMA"` | `"REPEAT"` | How list values are written in REST query strings and forms. |
+| `formNesting` | `"DOT"` \| `"BRACKET"` | `"DOT"` | How nested objects are named in REST query strings, forms and multipart parts. |
 | `defaultAlias` | `string?` | `null` | Default alias applied to all generated query fields globally. |
 
 ---
@@ -599,6 +602,9 @@ Used when `mode` is `"client"` and you want Python output. See the [Python Clien
 | `persistedQueriesUseGet` | `boolean` | `false` | Send hash-only queries over GET. Requires `persistedQueries: "apq"`. Mutations always use POST. |
 | `httpAdapter` | `"httpx"` \| `"none"` | `"httpx"` | HTTP adapter to generate. `"httpx"` emits `GraphLinkHttpxAdapter` and `GraphLinkClient.with_http(...)`; `"none"` emits only the client, so you pass your own `adapter`. |
 | `wsAdapter` | `"websockets"` \| `"none"` | `"websockets"` | WebSocket adapter to generate. `"websockets"` emits `DefaultGraphLinkWebSocketAdapter` built on the `websockets` library; `"none"` leaves you to implement `GraphLinkWebSocketAdapter`. |
+| `restHttpAdapter` | `"httpx"` \| `"none"` | same as `httpAdapter` | Whether to generate the httpx adapter for [REST operations](rest-client.md). `"none"` makes `with_http` take a `rest_adapter` instead of `rest_base_url`. |
+| `queryListStyle` | `"REPEAT"` \| `"COMMA"` | `"REPEAT"` | How list values are written in REST query strings and forms. |
+| `formNesting` | `"DOT"` \| `"BRACKET"` | `"DOT"` | How nested objects are named in REST query strings, forms and multipart parts: `a.b` or `a[b]`. |
 | `defaultAlias` | `string?` | `null` | Default alias applied to all generated query fields globally. |
 
 ---
@@ -656,6 +662,9 @@ Used when `mode` is `"client"` and you want Go output. See the [Go Client](go-cl
 | `persistedQueriesUseGet` | `boolean` | `false` | Send hash-only queries over GET. Requires `persistedQueries: "apq"`. Mutations always use POST. |
 | `httpAdapter` | `"nethttp"` \| `"none"` | `"nethttp"` | HTTP adapter to generate. `"nethttp"` emits `GraphLinkHttpAdapter` and `NewGraphLinkClientWithHttp(...)`; `"none"` emits only the client, so you pass your own `Adapter`. |
 | `wsAdapter` | `"coder"` \| `"none"` | `"coder"` | WebSocket adapter to generate. `"coder"` emits `DefaultGraphLinkWebSocketAdapter` built on `github.com/coder/websocket`; `"none"` leaves you to implement `GraphLinkWebSocketAdapter` and keeps the package free of third-party imports. |
+| `restHttpAdapter` | `"nethttp"` \| `"none"` | same as `httpAdapter` | Whether to generate the `net/http` adapter for [REST operations](rest-client.md). `"none"` makes `GraphLinkHttpOptions` take a `RestAdapter` instead of `RestBaseURL`. |
+| `queryListStyle` | `"REPEAT"` \| `"COMMA"` | `"REPEAT"` | How list values are written in REST query strings and forms. |
+| `formNesting` | `"DOT"` \| `"BRACKET"` | `"DOT"` | How nested objects are named in REST query strings, forms and multipart parts. |
 | `defaultAlias` | `string?` | `null` | Default alias applied to all generated query fields globally. |
 
 `nullableFieldsRequired` and `immutableTypeFields` are accepted for compatibility but have no effect: Go has no

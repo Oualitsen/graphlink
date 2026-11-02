@@ -1,4 +1,6 @@
 import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/model/gl_rest_discriminator.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_rest_extension.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
 import 'package:graphlink/src/model/gl_field.dart';
@@ -274,7 +276,7 @@ class SwiftSerializer extends GLSerializer {
     final subTypes = def.getSerializableImplementations(mode);
     if (skipJson || subTypes.isEmpty) return protocol;
 
-    return '$protocol\n\n${_dispatchFactory(def.codeName, subTypes)}';
+    return '$protocol\n\n${_dispatchFactory(def.codeName, subTypes, wireToken: def.token)}';
   }
 
   /// `<Interface>Json.fromJson(_:)` — the static `__typename`-dispatch
@@ -283,16 +285,22 @@ class SwiftSerializer extends GLSerializer {
   /// concrete conforming type is known — not expressible as a protocol
   /// requirement). Mirrors `KotlinSerializer._serializeFromJsonForInterface`'s
   /// `when`-based dispatch.
-  String _dispatchFactory(String token, Set<GLTypeDefinition> subTypes) {
+  String _dispatchFactory(String token, Set<GLTypeDefinition> subTypes, {String? wireToken}) {
+    final discriminator = wireToken == null ? null : grammar.restDiscriminators[wireToken];
     final cases = subTypes.map((st) {
       final typeName = st.derivedFromType?.tokenInfo.token ?? st.tokenInfo.token;
       return SwiftCaseBranch(caseValue: '"$typeName"', statement: 'return ${st.codeName}.fromJson(map)');
     }).toList();
-    final dispatch = codeGenUtils.switchStatement(
+    final byTypename = codeGenUtils.switchStatement(
       expression: 'map["__typename"] as? String',
       cases: cases,
-      defaultStatements: ['fatalError("Unknown $token __typename: " + (map["__typename"] as? String ?? "nil"))'],
+      defaultStatements: [
+        discriminator == null
+            ? 'fatalError("Unknown $token __typename: " + (map["__typename"] as? String ?? "nil"))'
+            : 'break',
+      ],
     );
+    final dispatch = discriminator == null ? byTypename : _discriminated(token, subTypes, discriminator, byTypename);
     final fromJson = 'public static ${codeGenUtils.method(
       returnType: 'any $token',
       methodName: 'fromJson',
@@ -300,6 +308,27 @@ class SwiftSerializer extends GLSerializer {
       statements: [dispatch],
     )}';
     return codeGenUtils.enumNamespace(name: '${token}Json', body: [fromJson]);
+  }
+
+  String _discriminated(String token, Set<GLTypeDefinition> subTypes, GLRestDiscriminator discriminator, String byTypename) {
+    String typeName(GLTypeDefinition t) => t.derivedFromType?.tokenInfo.token ?? t.tokenInfo.token;
+    final byValue = codeGenUtils.switchStatement(
+      expression: 'discriminator',
+      cases: [
+        for (final t in subTypes)
+          SwiftCaseBranch(
+              caseValue: '"${discriminator.valueByType[typeName(t)] ?? typeName(t)}"',
+              statement: 'return ${t.codeName}.fromJson(map)'),
+      ],
+      defaultStatements: [
+        'fatalError("Cannot decode $token: unknown or missing \\"${discriminator.field}\\" value (\\(discriminator ?? "nil"))")',
+      ],
+    );
+    return [
+      byTypename,
+      'let discriminator = (map["${discriminator.field}"] ?? nil).map { String(describing: \$0) }',
+      byValue,
+    ].join('\n');
   }
 
   // ── toJson ──────────────────────────────────────────────────────────────────
@@ -347,9 +376,12 @@ class SwiftSerializer extends GLSerializer {
     );
   }
 
-  String _fromJsonExpr(GLType type, String mapVar, int depth, {required GLField field}) {
-    final key = depth == 0 ? '["${field.name}"]' : '';
-    final access = '$mapVar$key';
+  String fromJsonValueExpr(String valueExpr, GLType type) =>
+      _fromJsonExpr(type, valueExpr, 0, field: null, valueAccess: valueExpr);
+
+  String _fromJsonExpr(GLType type, String mapVar, int depth, {required GLField? field, String? valueAccess}) {
+    final key = depth == 0 ? '["${field?.name}"]' : '';
+    final access = valueAccess ?? '$mapVar$key';
 
     if (type is GLListType) {
       final inner = type.inlineType;

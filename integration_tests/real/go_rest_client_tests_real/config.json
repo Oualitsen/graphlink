@@ -1,0 +1,14 @@
+{
+  "schemaPaths": ["../schema_rest/rest.graphql"],
+  "mode": "client",
+  "outputDir": "generated",
+  "clientConfig": {
+    "go": {
+      "packageName": "generated",
+      "wsAdapter": "none",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "captureErrors": false
+    }
+  }
+}

@@ -23,6 +23,9 @@ Future<Set<String>> generateGoClientClasses(GLParser parser, GeneratorConfig con
     serializer,
     httpAdapter: goConfig.httpAdapter,
     wsAdapter: goConfig.wsAdapter,
+    restHttpAdapter: goConfig.effectiveRestHttpAdapter,
+    commaQueryLists: goConfig.queryListStyle == RestQueryListStyle.comma,
+    bracketFormNesting: goConfig.formNesting == RestFormNesting.bracket,
   );
   final destinationDir = config.outputDir;
   final files = <String, String>{};
@@ -61,10 +64,17 @@ Future<Set<String>> generateGoClientClasses(GLParser parser, GeneratorConfig con
   for (final type in GLQueryType.values) {
     addClient('graph_link_${_operationFileSuffix(type)}', clientSerializer.getClassForType(type));
   }
-  if (parser.hasUploadMutations) {
+  if (clientSerializer.usesUploadsRuntime) {
     addClient('graph_link_uploads', clientSerializer.generateUploadsFile());
   }
-  if (goConfig.httpAdapter == GoHttpAdapter.nethttp) {
+  if (clientSerializer.hasRest) {
+    addClient('graph_link_rest', clientSerializer.generateRestFile());
+    addClient('graph_link_rest_resolver', clientSerializer.generateRestResolverFile());
+    if (clientSerializer.generatesRestAdapter) {
+      addClient('graph_link_rest_http_adapter', clientSerializer.generateRestHttpAdapterFile());
+    }
+  }
+  if (clientSerializer.hasGraphQL && goConfig.httpAdapter == GoHttpAdapter.nethttp) {
     addClient('graph_link_http_adapter', clientSerializer.generateHttpAdapterFile());
   }
   if (parser.hasSubscriptions) {

@@ -189,6 +189,39 @@ jobs:
   # not worth chasing for a client whose actual target platform is
   # iOS/macOS anyway. Xcode ships its own Swift toolchain, so no
   # swift-actions/setup-swift step is needed here.
+  swift-rest-client:
+    runs-on: macos-latest
+    needs: generate
+    defaults:
+      run:
+        working-directory: integration_tests/mock/swift_rest_tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/download-artifact@v4
+        with:
+          name: integration-tests-generated
+          path: integration_tests
+      - run: make ci-no-generate
+
+  swift-rest-real:
+    runs-on: macos-latest
+    needs: generate
+    defaults:
+      run:
+        working-directory: integration_tests/real/swift_rest_client_tests_real
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: integration-tests-generated
+          path: integration_tests
+      - run: make ci-no-generate
+
   swift-client:
     runs-on: macos-latest
     needs: generate
@@ -548,6 +581,42 @@ jobs:
           path: integration_tests
       - run: make ci-no-generate
 
+  python-rest-client:
+    runs-on: ubuntu-latest
+    needs: generate
+    defaults:
+      run:
+        working-directory: integration_tests/mock/python_rest_tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: integration-tests-generated
+          path: integration_tests
+      - run: make ci-no-generate
+
+  python-rest-real:
+    runs-on: ubuntu-latest
+    needs: generate
+    defaults:
+      run:
+        working-directory: integration_tests/real/python_rest_client_tests_real
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: integration-tests-generated
+          path: integration_tests
+      - run: make ci-no-generate
+
   python-real:
     runs-on: ubuntu-latest
     needs: [build-spring-servers, generate]
@@ -572,6 +641,45 @@ jobs:
         with:
           name: spring-server-jars
           path: integration_tests/real
+      - run: make ci-no-generate
+
+  go-rest-client:
+    runs-on: ubuntu-latest
+    needs: generate
+    defaults:
+      run:
+        working-directory: integration_tests/mock/go_rest_tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: integration-tests-generated
+          path: integration_tests
+      - run: make ci-no-generate
+
+  go-rest-real:
+    runs-on: ubuntu-latest
+    needs: generate
+    defaults:
+      run:
+        working-directory: integration_tests/real/go_rest_client_tests_real
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: integration-tests-generated
+          path: integration_tests
       - run: make ci-no-generate
 
   go-client:

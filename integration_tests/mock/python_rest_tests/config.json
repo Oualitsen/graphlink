@@ -1,0 +1,15 @@
+{
+  "schemaPaths": ["schema.graphql"],
+  "mode": "client",
+  "outputDir": "generated",
+  "clientConfig": {
+    "python": {
+      "httpAdapter": "none",
+      "wsAdapter": "none",
+      "restHttpAdapter": "none",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "immutableTypeFields": true
+    }
+  }
+}

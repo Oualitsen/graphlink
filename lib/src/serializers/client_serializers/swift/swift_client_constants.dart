@@ -188,6 +188,10 @@ public struct GraphLinkPartialQuery: @unchecked Sendable {
     }
 
     public func cacheKey() throws -> String {
+        try GraphLinkPartialQuery.computeCacheKey(operationName, variables)
+    }
+
+    public static func computeCacheKey(_ operationName: String, _ variables: [String: Any?]) throws -> String {
         var sorted: [String: Any?] = [:]
         for key in variables.keys.sorted() {
             sorted[key] = variables[key]

@@ -194,6 +194,9 @@ Under `serializers/client_serializers/`:
 | `kotlin/kotlin_rest_operation_serializer.dart` | `KotlinRestOperationSerializer` | Kotlin methods for `GLRestOperation`s. Runtime in `kotlin_rest_constants.dart` |
 | `kotlin/kotlin_client_serializer.dart` | `KotlinClientSerializer` | Kotlin coroutines adapter, OkHttp, WebSocket |
 | `typescript/typescript_rest_operation_serializer.dart` | `TypeScriptRestOperationSerializer` | TypeScript methods for `GLRestOperation`s. Runtime in `typescript_rest_constants.dart` |
+| `go/go_rest_operation_serializer.dart` | `GoRestOperationSerializer` | Go methods for `GLRestOperation`s. Runtime in `go_rest_constants.dart` |
+| `swift/swift_rest_operation_serializer.dart` | `SwiftRestOperationSerializer` | Swift methods for `GLRestOperation`s. Runtime in `swift_rest_constants.dart` |
+| `python/python_rest_operation_serializer.dart` | `PythonRestOperationSerializer` | Python methods for `GLRestOperation`s. Runtime in `python_rest_constants.dart` |
 | `typescript/typescript_client_serializer.dart` | `TypeScriptClientSerializer` | TypeScript fetch adapter, observables |
 | `java/java_client_operation_serializer.dart` | `JavaClientOperationSerializer` | Per-operation Java classes |
 | `kotlin/kotlin_client_operation_serializer.dart` | `KotlinClientOperationSerializer` | Per-operation Kotlin classes |

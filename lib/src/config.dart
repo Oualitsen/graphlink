@@ -860,7 +860,12 @@ class SwiftClientConfig extends ClientLanguageConfig {
   /// generated files have no module declaration of their own.
   final String moduleName;
   final SwiftWsAdapter wsAdapter;
+  final SwiftWsAdapter? restHttpAdapter;
+  final RestQueryListStyle queryListStyle;
+  final RestFormNesting formNesting;
   @override final AutoGenerateQueriesFor? autoGenerateQueriesFor;
+
+  SwiftWsAdapter get effectiveRestHttpAdapter => restHttpAdapter ?? wsAdapter;
 
   SwiftClientConfig({
     required this.moduleName,
@@ -874,6 +879,9 @@ class SwiftClientConfig extends ClientLanguageConfig {
     this.persistedQueriesUseGet = false,
     this.immutableTypeFields = true,
     this.wsAdapter = SwiftWsAdapter.urlsession,
+    this.restHttpAdapter,
+    this.queryListStyle = RestQueryListStyle.repeat,
+    this.formNesting = RestFormNesting.dot,
     this.defaultAlias,
     this.autoGenerateQueriesFor,
     this.autoGenerateQueriesArgumentLimit = 200,
@@ -897,6 +905,11 @@ class SwiftClientConfig extends ClientLanguageConfig {
         (e) => e.name == json['wsAdapter'],
         orElse: () => SwiftWsAdapter.urlsession,
       ),
+      restHttpAdapter: json['restHttpAdapter'] == null
+          ? null
+          : _enumFromJson(SwiftWsAdapter.values, json['restHttpAdapter'], SwiftWsAdapter.urlsession),
+      queryListStyle: _enumFromJson(RestQueryListStyle.values, json['queryListStyle'], RestQueryListStyle.repeat),
+      formNesting: _enumFromJson(RestFormNesting.values, json['formNesting'], RestFormNesting.dot),
       autoGenerateQueriesFor: json['autoGenerateQueriesFor'] != null
           ? AutoGenerateQueriesFor.fromJson(json['autoGenerateQueriesFor'] as Map<String, dynamic>)
           : null,
@@ -923,6 +936,11 @@ class PythonClientConfig extends ClientLanguageConfig {
 
   final PythonHttpAdapter httpAdapter;
   final PythonWsAdapter wsAdapter;
+  final PythonHttpAdapter? restHttpAdapter;
+  final RestQueryListStyle queryListStyle;
+  final RestFormNesting formNesting;
+
+  PythonHttpAdapter get effectiveRestHttpAdapter => restHttpAdapter ?? httpAdapter;
 
   PythonClientConfig({
     this.generateAllFieldsFragments = true,
@@ -936,6 +954,9 @@ class PythonClientConfig extends ClientLanguageConfig {
     this.immutableTypeFields = true,
     this.httpAdapter = PythonHttpAdapter.httpx,
     this.wsAdapter = PythonWsAdapter.websockets,
+    this.restHttpAdapter,
+    this.queryListStyle = RestQueryListStyle.repeat,
+    this.formNesting = RestFormNesting.dot,
     this.defaultAlias,
     this.autoGenerateQueriesFor,
     this.autoGenerateQueriesArgumentLimit = 200,
@@ -962,6 +983,11 @@ class PythonClientConfig extends ClientLanguageConfig {
         (e) => e.name == json['wsAdapter'],
         orElse: () => PythonWsAdapter.websockets,
       ),
+      restHttpAdapter: json['restHttpAdapter'] == null
+          ? null
+          : _enumFromJson(PythonHttpAdapter.values, json['restHttpAdapter'], PythonHttpAdapter.httpx),
+      queryListStyle: _enumFromJson(RestQueryListStyle.values, json['queryListStyle'], RestQueryListStyle.repeat),
+      formNesting: _enumFromJson(RestFormNesting.values, json['formNesting'], RestFormNesting.dot),
       autoGenerateQueriesFor: json['autoGenerateQueriesFor'] != null
           ? AutoGenerateQueriesFor.fromJson(json['autoGenerateQueriesFor'] as Map<String, dynamic>)
           : null,
@@ -989,6 +1015,11 @@ class GoClientConfig extends ClientLanguageConfig {
   final String packageName;
   final GoHttpAdapter httpAdapter;
   final GoWsAdapter wsAdapter;
+  final GoHttpAdapter? restHttpAdapter;
+  final RestQueryListStyle queryListStyle;
+  final RestFormNesting formNesting;
+
+  GoHttpAdapter get effectiveRestHttpAdapter => restHttpAdapter ?? httpAdapter;
 
   GoClientConfig({
     this.packageName = 'graphlink',
@@ -1003,6 +1034,9 @@ class GoClientConfig extends ClientLanguageConfig {
     this.immutableTypeFields = true,
     this.httpAdapter = GoHttpAdapter.nethttp,
     this.wsAdapter = GoWsAdapter.coder,
+    this.restHttpAdapter,
+    this.queryListStyle = RestQueryListStyle.repeat,
+    this.formNesting = RestFormNesting.dot,
     this.defaultAlias,
     this.autoGenerateQueriesFor,
     this.autoGenerateQueriesArgumentLimit = 200,
@@ -1030,6 +1064,11 @@ class GoClientConfig extends ClientLanguageConfig {
         (e) => e.name == json['wsAdapter'],
         orElse: () => GoWsAdapter.coder,
       ),
+      restHttpAdapter: json['restHttpAdapter'] == null
+          ? null
+          : _enumFromJson(GoHttpAdapter.values, json['restHttpAdapter'], GoHttpAdapter.nethttp),
+      queryListStyle: _enumFromJson(RestQueryListStyle.values, json['queryListStyle'], RestQueryListStyle.repeat),
+      formNesting: _enumFromJson(RestFormNesting.values, json['formNesting'], RestFormNesting.dot),
       autoGenerateQueriesFor: json['autoGenerateQueriesFor'] != null
           ? AutoGenerateQueriesFor.fromJson(json['autoGenerateQueriesFor'] as Map<String, dynamic>)
           : null,

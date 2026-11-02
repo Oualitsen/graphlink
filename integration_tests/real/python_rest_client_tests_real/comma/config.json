@@ -1,0 +1,16 @@
+{
+  "schemaPaths": ["../../schema_rest/rest.graphql"],
+  "mode": "client",
+  "outputDir": "generated",
+  "clientConfig": {
+    "python": {
+      "httpAdapter": "httpx",
+      "wsAdapter": "none",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "queryListStyle": "COMMA",
+      "formNesting": "BRACKET",
+      "immutableTypeFields": true
+    }
+  }
+}

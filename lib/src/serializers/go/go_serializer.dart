@@ -6,9 +6,11 @@ import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_input_mapping.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
+import 'package:graphlink/src/model/gl_rest_discriminator.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_rest_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_validation_extension.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
 
@@ -41,6 +43,7 @@ const _importBySelector = {
   'mime': 'mime',
   'websocket': 'github.com/coder/websocket',
   'uuid': 'github.com/google/uuid',
+  'regexp': 'regexp',
 };
 
 class GoSerializer extends GLSerializer {
@@ -270,7 +273,10 @@ class GoSerializer extends GLSerializer {
       final typeName = def.jsonTypeName;
       if (typeName != null) blocks.add(_marshalWithTypename(name, typeName));
       final polymorphic = fields.where((f) => _isPolymorphic(f.type)).toList();
-      if (polymorphic.isNotEmpty) blocks.add(_unmarshalWithPolymorphicFields(name, polymorphic));
+      final checks = _requiredFieldChecks(def, fields);
+      if (polymorphic.isNotEmpty || checks.isNotEmpty) {
+        blocks.add(_unmarshalWithPolymorphicFields(name, polymorphic, checks));
+      }
     }
     final identity = def.getIdentityFields(grammar);
     if (identity.isNotEmpty) blocks.add(_equals(name, fields, identity));
@@ -332,6 +338,8 @@ class GoSerializer extends GLSerializer {
 
   // ── Polymorphic decoding ───────────────────────────────────────────────────
 
+  bool isPolymorphic(GLType type) => _isPolymorphic(type);
+
   bool _isPolymorphic(GLType type) {
     if (type is GLMapType) return false;
     final inner = type.inlineType;
@@ -349,9 +357,49 @@ class GoSerializer extends GLSerializer {
     return 'unmarshal${resolveCodeName(type.token)}';
   }
 
-  String _unmarshalWithPolymorphicFields(String name, List<GLField> polymorphic) {
+  List<String> _requiredFieldChecks(GLTypeDefinition def, List<GLField> fields) {
+    if (!grammar.restReachableTypeNames.contains(def.token)) return const [];
+    return [
+      for (final f in fields)
+        if (!f.type.nullable && f.initialValue == null)
+          codeGenUtils.ifStatement(
+            condition: 'glIsNull(glKeys__[${stringLiteral(f.name.token)}])',
+            ifBlockStatements: [
+              'return errors.New(${stringLiteral('${def.token}.${f.name.token} is missing or null in the response')})',
+            ],
+          ),
+    ];
+  }
+
+  String _unmarshalWithPolymorphicFields(String name, List<GLField> polymorphic, [List<String> checks = const []]) {
     final auxFields = polymorphic.map((f) => '${f.codeName} json.RawMessage `json:"${f.name.token}"`').join('\n');
+    if (polymorphic.isEmpty) {
+      return codeGenUtils.createMethod(
+        receiver: 'v *$name',
+        methodName: 'UnmarshalJSON',
+        arguments: ['data []byte'],
+        returnType: 'error',
+        statements: [
+          'var glKeys__ map[string]json.RawMessage',
+          codeGenUtils.ifStatement(
+            condition: 'err := json.Unmarshal(data, &glKeys__); err != nil',
+            ifBlockStatements: ['return err'],
+          ),
+          ...checks,
+          'type alias $name',
+          'return json.Unmarshal(data, (*alias)(v))',
+        ],
+      );
+    }
     final statements = <String>[
+      if (checks.isNotEmpty) ...[
+        'var glKeys__ map[string]json.RawMessage',
+        codeGenUtils.ifStatement(
+          condition: 'err := json.Unmarshal(data, &glKeys__); err != nil',
+          ifBlockStatements: ['return err'],
+        ),
+        ...checks,
+      ],
       'type alias $name',
       'aux := struct {\n${'*alias\n$auxFields'.identGo()}\n}{alias: (*alias)(v)}',
       codeGenUtils.ifStatement(
@@ -386,12 +434,13 @@ class GoSerializer extends GLSerializer {
     final blocks = <String>[codeGenUtils.interfaceDecl(name, members)];
     final implementations = interface.getSerializableImplementations(mode);
     if (!shouldSkipJsonMethods(interface) && implementations.isNotEmpty) {
-      blocks.add(_dispatchFunction(name, implementations));
+      blocks.add(_dispatchFunction(name, implementations, grammar.restDiscriminators[interface.token]));
     }
     return blocks.join('\n\n');
   }
 
-  String _dispatchFunction(String name, Set<GLTypeDefinition> implementations) {
+  String _dispatchFunction(String name, Set<GLTypeDefinition> implementations, [GLRestDiscriminator? discriminator]) {
+    if (discriminator != null) return _discriminatedDispatch(name, implementations, discriminator);
     final cases = implementations.map((impl) {
       final wire = impl.derivedFromType?.tokenInfo.token ?? impl.tokenInfo.token;
       return GoCaseBranch(
@@ -425,6 +474,49 @@ class GoSerializer extends GLSerializer {
           cases: cases,
           defaultStatements: [
             'return nil, fmt.Errorf("Invalid type %s. %s does not implement $name or not defined", probe.Typename, probe.Typename)',
+          ],
+        ),
+      ],
+    );
+  }
+
+  String _discriminatedDispatch(String name, Set<GLTypeDefinition> implementations, GLRestDiscriminator discriminator) {
+    String wire(GLTypeDefinition impl) => impl.derivedFromType?.tokenInfo.token ?? impl.tokenInfo.token;
+    String decodeInto(GLTypeDefinition impl) => [
+          'var v ${impl.codeName}',
+          codeGenUtils.ifStatement(
+            condition: 'err := json.Unmarshal(data, &v); err != nil',
+            ifBlockStatements: ['return nil, err'],
+          ),
+          'return v, nil',
+        ].join('\n');
+    return codeGenUtils.createMethod(
+      methodName: 'unmarshal$name',
+      arguments: ['data json.RawMessage'],
+      returnType: '($name, error)',
+      statements: [
+        codeGenUtils.ifStatement(condition: 'glIsNull(data)', ifBlockStatements: ['return nil, nil']),
+        'var probe map[string]json.RawMessage',
+        codeGenUtils.ifStatement(
+          condition: 'err := json.Unmarshal(data, &probe); err != nil',
+          ifBlockStatements: ['return nil, err'],
+        ),
+        codeGenUtils.switchStatement(
+          expression: 'glProbeString(probe["__typename"])',
+          cases: [for (final impl in implementations) GoCaseBranch(caseValue: stringLiteral(wire(impl)), statement: decodeInto(impl))],
+        ),
+        'discriminator := glProbeString(probe[${stringLiteral(discriminator.field)}])',
+        codeGenUtils.switchStatement(
+          expression: 'discriminator',
+          cases: [
+            for (final impl in implementations)
+              GoCaseBranch(
+                caseValue: stringLiteral(discriminator.valueByType[wire(impl)] ?? wire(impl)),
+                statement: decodeInto(impl),
+              ),
+          ],
+          defaultStatements: [
+            'return nil, fmt.Errorf(${stringLiteral('Cannot decode $name: unknown or missing "${discriminator.field}" value (%s)')}, discriminator)',
           ],
         ),
       ],

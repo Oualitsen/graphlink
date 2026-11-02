@@ -307,6 +307,13 @@ don't confuse them:
   default values) are hand-written there. Edit the blocking test, not the derived copy.
 - **REST operations** (`@glRest*`, Kotlin client): `mock/kotlin_rest_tests` and `real/kotlin_rest_client_tests_real` (OkHttp, port 9994,
   Gradle `--offline` works with a warm cache). Run with `make -C integration_tests kotlin-rest kotlin-rest-real`.
+- **REST operations** (`@glRest*`, Go client): `mock/go_rest_tests` and `real/go_rest_client_tests_real` (net/http, port 9981;
+  `comma/` output reruns the same tests on 9982). Run with `make -C integration_tests go-rest go-rest-real`.
+- **REST operations** (`@glRest*`, Swift client): `mock/swift_rest_tests` and `real/swift_rest_client_tests_real` (URLSession, port 9983;
+  `comma/` output reruns the same tests on 9984). Needs Xcode. Run with `make -C integration_tests swift-rest swift-rest-real`.
+- **REST operations** (`@glRest*`, Python client): `mock/python_rest_tests` and `real/python_rest_client_tests_real` (httpx, port 9985;
+  `REST_VARIANT=comma` reruns the same tests against `comma/` output on 9986). Run with
+  `make -C integration_tests python-rest python-rest-real`.
 - **REST operations** (`@glRest*`, TypeScript client): `mock/typescript_rest_tests` and `real/typescript_rest_client_tests_real`
   (fetch on port 9993; `REST_VARIANT=axios` reruns the same tests against `axios/` output on 9989). Run with
   `make -C integration_tests typescript-rest typescript-rest-real`.

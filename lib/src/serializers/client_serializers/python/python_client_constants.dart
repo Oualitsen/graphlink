@@ -224,27 +224,37 @@ class InMemoryGraphLinkCacheStore(GraphLinkCacheStore):
 const pythonUploads = r'''
 from __future__ import annotations
 
+import asyncio
 import mimetypes
 import os
-from typing import Any, Awaitable, Callable, Dict, Optional
+from typing import Any, AsyncIterable, AsyncIterator, Awaitable, Callable, Dict, Iterable, Optional, Union
 
 UploadProgressCallback = Callable[[int, int], None]
+
+UploadSource = Union[bytes, AsyncIterable[bytes], Iterable[bytes]]
+
+_CHUNK_SIZE = 64 * 1024
 
 
 class GLUpload:
     def __init__(
         self,
-        content: bytes,
+        content: UploadSource,
         filename: Optional[str] = None,
         mime_type: str = "application/octet-stream",
+        length: Optional[int] = None,
     ) -> None:
-        self.content = content
         self.filename = filename
         self.mime_type = mime_type
-
-    @property
-    def length(self) -> int:
-        return len(self.content)
+        self._path: Optional[str] = None
+        self._source: Optional[UploadSource] = None
+        self._bytes: Optional[bytes] = None
+        if isinstance(content, (bytes, bytearray)):
+            self._bytes = bytes(content)
+            self.length: Optional[int] = len(self._bytes)
+        else:
+            self._source = content
+            self.length = length
 
     @classmethod
     def from_bytes(
@@ -256,11 +266,51 @@ class GLUpload:
         return cls(content, filename, mime_type)
 
     @classmethod
+    def from_stream(
+        cls,
+        source: Union[AsyncIterable[bytes], Iterable[bytes]],
+        filename: Optional[str] = None,
+        mime_type: str = "application/octet-stream",
+        length: Optional[int] = None,
+    ) -> "GLUpload":
+        return cls(source, filename, mime_type, length)
+
+    @classmethod
     def from_file(cls, path: str, mime_type: Optional[str] = None) -> "GLUpload":
-        with open(path, "rb") as handle:
-            content = handle.read()
-        guessed = mime_type or mimetypes.guess_type(path)[0] or "application/octet-stream"
-        return cls(content, os.path.basename(path), guessed)
+        upload = cls(b"", os.path.basename(path), mime_type or mimetypes.guess_type(path)[0] or "application/octet-stream")
+        upload._bytes = None
+        upload._path = path
+        upload.length = os.path.getsize(path)
+        return upload
+
+    async def chunks(self, size: int = _CHUNK_SIZE) -> AsyncIterator[bytes]:
+        if self._bytes is not None:
+            for offset in range(0, len(self._bytes), size):
+                yield self._bytes[offset : offset + size]
+        elif self._path is not None:
+            with open(self._path, "rb") as handle:
+                while True:
+                    chunk = await asyncio.to_thread(handle.read, size)
+                    if not chunk:
+                        break
+                    yield chunk
+        elif hasattr(self._source, "__aiter__"):
+            async for chunk in self._source:  # type: ignore[union-attr]
+                yield chunk
+        else:
+            for chunk in self._source:  # type: ignore[union-attr]
+                yield chunk
+
+    @property
+    def content(self) -> bytes:
+        if self._bytes is not None:
+            return self._bytes
+        if self._path is not None:
+            with open(self._path, "rb") as handle:
+                return handle.read()
+        if hasattr(self._source, "__aiter__"):
+            raise TypeError("GraphQL multipart uploads need bytes or a file; an async stream can only be sent over REST")
+        return b"".join(self._source)  # type: ignore[arg-type]
 
 
 GLUploadConverter = Callable[[GLUpload], Any]

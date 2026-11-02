@@ -1,13 +1,17 @@
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
+import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/serializers/client_serializers/swift/swift_client_constants.dart';
 import 'package:graphlink/src/serializers/client_serializers/swift/swift_client_operation_serializer.dart';
+import 'package:graphlink/src/serializers/client_serializers/swift/swift_rest_constants.dart';
+import 'package:graphlink/src/serializers/client_serializers/swift/swift_rest_operation_serializer.dart';
 import 'package:graphlink/src/serializers/gl_client_serializer.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
+import 'package:graphlink/src/serializers/swift/swift_serializer.dart';
 import 'package:graphlink/src/swift_code_gen_utils.dart';
 
 /// Swift's `GraphLinkResolverBase`/`GraphLinkQueries`/`Mutations`/
@@ -23,12 +27,41 @@ class SwiftClientSerializer extends GLClientSerializer {
   final SwiftCodeGenUtils codeGenUtils = SwiftCodeGenUtils();
   final bool withDefaultAdapters;
 
-  late final SwiftClientOperationSerializer _opSer;
+  final bool restViaUrlSession;
 
-  SwiftClientSerializer(this.grammar, GLSerializer serializer, {this.withDefaultAdapters = true})
-      : super(serializer, GLGraphqlSerializer(grammar, false)) {
+  late final SwiftClientOperationSerializer _opSer;
+  late final SwiftRestOperationSerializer _restSer;
+
+  SwiftClientSerializer(
+    this.grammar,
+    GLSerializer serializer, {
+    this.withDefaultAdapters = true,
+    this.restViaUrlSession = true,
+    bool commaQueryLists = false,
+    bool bracketFormNesting = false,
+  }) : super(serializer, GLGraphqlSerializer(grammar, false)) {
     _opSer = SwiftClientOperationSerializer(grammar, gqlSerializer, serializer, codeGenUtils);
+    _restSer = SwiftRestOperationSerializer(
+      grammar,
+      codeGenUtils,
+      serializer as SwiftSerializer,
+      commaLists: commaQueryLists,
+      bracketNesting: bracketFormNesting,
+    );
   }
+
+  List<GLRestOperation> _restOperations(GLQueryType type) =>
+      grammar.restOperations.values.where((o) => o.type == type).toList();
+
+  bool _hasOperations(GLQueryType type) => grammar.hasQueryType(type) || _restOperations(type).isNotEmpty;
+
+  bool get hasRest => grammar.restOperations.isNotEmpty;
+
+  bool get hasGraphQL => GLQueryType.values.any(grammar.hasQueryType);
+
+  bool get generatesRestAdapter => hasRest && restViaUrlSession;
+
+  bool get usesUploadsRuntime => grammar.hasUploadMutations || hasRest;
 
   @override
   String renderQueryMethod(GLQueryDefinition def) => _opSer.queryToMethod(def);
@@ -48,16 +81,17 @@ class SwiftClientSerializer extends GLClientSerializer {
   GLClassModel generateClient() {
     final fields = <String>[
       'private let fragmentMap: [String: String]',
-      if (grammar.hasQueries) 'public let queries: GraphLinkQueries',
-      if (grammar.hasMutations) 'public let mutations: GraphLinkMutations',
+      if (_hasOperations(GLQueryType.query)) 'public let queries: GraphLinkQueries',
+      if (_hasOperations(GLQueryType.mutation)) 'public let mutations: GraphLinkMutations',
       if (grammar.hasSubscriptions) 'public let subscriptions: GraphLinkSubscriptions',
     ];
 
     final ctorParams = <String>[
-      'adapter: @escaping GraphLinkClientAdapter',
+      if (hasGraphQL) 'adapter: @escaping GraphLinkClientAdapter',
       if (grammar.persistedQueriesUseGet) 'getAdapter: @escaping GraphLinkClientAdapter',
       if (grammar.hasSubscriptions) 'wsAdapter: any GraphLinkWebSocketAdapter',
       if (grammar.hasUploadMutations) 'multipartAdapter: @escaping GraphLinkMultipartAdapter',
+      if (hasRest) 'restAdapter: @escaping GLRestAdapter',
       'store: any GraphLinkCacheStore = InMemoryGraphLinkCacheStore()',
     ];
 
@@ -65,27 +99,35 @@ class SwiftClientSerializer extends GLClientSerializer {
         .where((f) => !oversizedFragmentNames.contains(f.tokenInfo.token))
         .map((f) => '"${f.tokenInfo}": "${gqlSerializer.serializeFragmentDefinitionBase(f).escapeForSwiftStringLiteral()}"');
     final fragmentMapLiteral = fragEntries.isEmpty ? '[:]' : '[${fragEntries.join(', ')}]';
+    final adapterArg = hasGraphQL ? 'adapter' : 'glNoGraphQL__';
+
+    String restWiring(String variable, GLQueryType type) =>
+        _restOperations(type).isEmpty ? '' : '\n$variable.restAdapter = restAdapter';
 
     final initBody = <String>[
       'self.fragmentMap = $fragmentMapLiteral',
-      if (grammar.hasQueries) 'self.queries = GraphLinkQueries(adapter: adapter, ${grammar.persistedQueriesUseGet ? 'getAdapter: getAdapter, ' : ''}fragmentMap: fragmentMap, store: store)',
-      if (grammar.hasMutations)
-        'self.mutations = GraphLinkMutations(adapter: adapter${grammar.persistedQueriesUseGet ? ', getAdapter: getAdapter' : ''}${grammar.hasUploadMutations ? ', multipartAdapter: multipartAdapter' : ''}, fragmentMap: fragmentMap, store: store)',
+      if (_hasOperations(GLQueryType.query))
+        'let glQueries = GraphLinkQueries(adapter: $adapterArg, ${grammar.persistedQueriesUseGet ? 'getAdapter: getAdapter, ' : ''}fragmentMap: fragmentMap, store: store)${restWiring('glQueries', GLQueryType.query)}\nself.queries = glQueries',
+      if (_hasOperations(GLQueryType.mutation))
+        'let glMutations = GraphLinkMutations(adapter: $adapterArg${grammar.persistedQueriesUseGet ? ', getAdapter: getAdapter' : ''}${grammar.hasUploadMutations ? ', multipartAdapter: multipartAdapter' : ''}, fragmentMap: fragmentMap, store: store)${restWiring('glMutations', GLQueryType.mutation)}\nself.mutations = glMutations',
       if (grammar.hasSubscriptions)
         'self.subscriptions = GraphLinkSubscriptions(adapter: adapter, wsAdapter: wsAdapter, fragmentMap: fragmentMap, store: store)',
     ];
 
     final initDecl = 'public init(${ctorParams.join(', ')}) ${codeGenUtils.block(initBody)}';
+    final factory = _hasFactory ? _convenienceFactories() : null;
     final classBody = [
       ...fields,
       '',
       initDecl,
-      if (withDefaultAdapters) ...['', _convenienceFactories()],
+      if (factory != null) ...['', factory],
     ];
     final body = 'public final class $swiftClientName ${codeGenUtils.block(classBody)}';
 
     return GLClassModel(imports: const ['Foundation'], body: body);
   }
+
+  bool get _hasFactory => hasGraphQL ? withDefaultAdapters : generatesRestAdapter;
 
   /// Only called when [withDefaultAdapters] is true (i.e. the config's
   /// `wsAdapter` isn't `none`) — mirrors Kotlin's `hasDefaultAdapters` gate,
@@ -94,19 +136,31 @@ class SwiftClientSerializer extends GLClientSerializer {
   String _convenienceFactories() {
     final hasSubs = grammar.hasSubscriptions;
     final hasUploads = grammar.hasUploadMutations;
+    final graphql = hasGraphQL;
 
     final params = [
-      'url: URL',
-      if (hasSubs) 'wsUrl: URL',
+      if (graphql) 'url: URL',
+      if (graphql && hasSubs) 'wsUrl: URL',
+      if (hasRest && restViaUrlSession) 'restBaseUrl: URL',
+      if (hasRest && !restViaUrlSession) 'restAdapter: @escaping GLRestAdapter',
       'headersProvider: (@Sendable () -> [String: String])? = nil',
     ];
     final statements = [
-      codeGenUtils.constDecl('httpAdapter', 'DefaultGraphLinkURLSessionAdapter(url: url, headersProvider: headersProvider)'),
-      if (grammar.persistedQueriesUseGet)
+      if (graphql)
+        codeGenUtils.constDecl('httpAdapter', 'DefaultGraphLinkURLSessionAdapter(url: url, headersProvider: headersProvider)'),
+      if (graphql && grammar.persistedQueriesUseGet)
         codeGenUtils.constDecl('getAdapter', 'DefaultGraphLinkURLSessionGetAdapter(url: url, headersProvider: headersProvider)'),
-      if (hasSubs) codeGenUtils.constDecl('wsAdapter', 'DefaultGraphLinkWebSocketAdapter(url: wsUrl, headersProvider: headersProvider)'),
-      if (hasUploads) codeGenUtils.constDecl('multipartAdapter', 'DefaultGraphLinkURLSessionMultipartAdapter(url: url, headersProvider: headersProvider)'),
-      'return $swiftClientName(adapter: httpAdapter.execute${grammar.persistedQueriesUseGet ? ', getAdapter: getAdapter.execute' : ''}${hasSubs ? ', wsAdapter: wsAdapter' : ''}${hasUploads ? ', multipartAdapter: multipartAdapter.executeMultipart' : ''})',
+      if (graphql && hasSubs) codeGenUtils.constDecl('wsAdapter', 'DefaultGraphLinkWebSocketAdapter(url: wsUrl, headersProvider: headersProvider)'),
+      if (graphql && hasUploads) codeGenUtils.constDecl('multipartAdapter', 'DefaultGraphLinkURLSessionMultipartAdapter(url: url, headersProvider: headersProvider)'),
+      if (hasRest && restViaUrlSession)
+        codeGenUtils.constDecl('restHttpAdapter', 'DefaultGraphLinkRestAdapter(baseUrl: restBaseUrl.absoluteString, headersProvider: headersProvider)'),
+      'return $swiftClientName(${[
+        if (graphql) 'adapter: httpAdapter.execute',
+        if (graphql && grammar.persistedQueriesUseGet) 'getAdapter: getAdapter.execute',
+        if (graphql && hasSubs) 'wsAdapter: wsAdapter',
+        if (graphql && hasUploads) 'multipartAdapter: multipartAdapter.executeMultipart',
+        if (hasRest) restViaUrlSession ? 'restAdapter: restHttpAdapter.execute' : 'restAdapter: restAdapter',
+      ].join(', ')})',
     ];
 
     return 'public static ${codeGenUtils.method(
@@ -202,7 +256,8 @@ class SwiftClientSerializer extends GLClientSerializer {
   GLClassModel? getSubscriptionsClass() => _buildClassForType(GLQueryType.subscription);
 
   GLClassModel? _buildClassForType(GLQueryType type) {
-    final methods = buildOperationMethods(type);
+    final restOperations = _restOperations(type);
+    final methods = [...buildOperationMethods(type), ...restOperations.map(_restSer.operationToMethod)];
     if (methods.isEmpty) return null;
 
     final className = classNameFromType(type);
@@ -234,7 +289,8 @@ class SwiftClientSerializer extends GLClientSerializer {
       '',
       methods.join('\n\n'),
     ];
-    final body = 'public final class $className: GraphLinkResolverBase, @unchecked Sendable ${codeGenUtils.block(classBody)}';
+    final base = restOperations.isEmpty ? 'GraphLinkResolverBase' : 'GraphLinkRestResolver';
+    final body = 'public final class $className: $base, @unchecked Sendable ${codeGenUtils.block(classBody)}';
 
     return GLClassModel(body: body);
   }
@@ -268,6 +324,16 @@ class SwiftClientSerializer extends GLClientSerializer {
 
   @override
   GLClassModel generateUploadsFile() => const GLClassModel(imports: ['Foundation'], body: swiftGLUpload);
+
+  GLClassModel generateRestFile() => const GLClassModel(imports: ['Foundation'], body: swiftRestFile);
+
+  GLClassModel generateRestResolverFile() => GLClassModel(
+        imports: const ['Foundation'],
+        body: '$swiftRestResolver\n${swiftRestNoGraphQL(grammar.operationNameAsParameter)}',
+      );
+
+  GLClassModel generateRestAdapterFile() =>
+      const GLClassModel(imports: ['Foundation'], body: swiftRestUrlSessionAdapter);
 
   GLClassModel generateUploadProgressCallbackFile() => const GLClassModel(body: swiftUploadProgressCallback);
 

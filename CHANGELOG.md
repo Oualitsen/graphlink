@@ -671,6 +671,12 @@
 
 - **REST operations (Kotlin client)** — `@glRest*` operations are generated for the Kotlin client: `GraphLinkRest.kt` (runtime types, helpers), `GraphLinkRestResolver`, an OkHttp `DefaultGraphLinkRestAdapter` (`restHttpAdapter`, `queryListStyle`, `formNesting`), discriminated interface/union decoding and named missing-field errors. See [REST operations](rest-client.md#kotlin).
 
+- **REST operations (Python client)** — `@glRest*` operations are generated for the Python client: `graph_link_rest.py` (runtime types, helpers), `GraphLinkRestResolver`, an httpx `GraphLinkRestHttpxAdapter` (`restHttpAdapter`, `queryListStyle`, `formNesting`), discriminated interface/union decoding through the pydantic dispatch validator. See [REST operations](rest-client.md#python).
+
+- **REST operations (Swift client)** — `@glRest*` operations are generated for the Swift client: `GraphLinkRest.swift` (runtime types, helpers, `RestDecode`), `GraphLinkRestResolver`, a URLSession `DefaultGraphLinkRestAdapter` (`restHttpAdapter`, `queryListStyle`, `formNesting`), and discriminated interface/union dispatch through the regular `fromJson`. See [REST operations](rest-client.md#swift).
+
+- **REST operations (Go client)** — `@glRest*` operations are generated for the Go client: `graph_link_rest.go` (runtime types, ordered value collection), `GraphLinkRestResolver`, a `net/http` `GraphLinkRestHttpAdapter` (`restHttpAdapter`, `queryListStyle`, `formNesting`), per-operation `Options` structs, discriminated interface/union decoding and `UnmarshalJSON` required-field errors. See [REST operations](rest-client.md#go).
+
 - **`glink --print-directives`** writes the declarations of every GraphLink directive (generated from the same table the validator uses) so your IDE stops flagging them. The hand-written "copy-paste declarations" block in `directives.md` had wrong locations for several directives and is replaced by this output.
 
 ### Breaking changes

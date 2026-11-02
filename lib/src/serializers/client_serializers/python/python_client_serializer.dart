@@ -1,6 +1,8 @@
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
+import 'package:graphlink/src/model/gl_rest_operation.dart';
+import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_cache_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
@@ -8,6 +10,8 @@ import 'package:graphlink/src/python_code_gen_utils.dart';
 import 'package:graphlink/src/serializers/client_serializers/python/python_client_constants.dart';
 import 'package:graphlink/src/serializers/client_serializers/python/python_client_operation_serializer.dart';
 import 'package:graphlink/src/serializers/client_serializers/python/python_client_vars.dart';
+import 'package:graphlink/src/serializers/client_serializers/python/python_rest_constants.dart';
+import 'package:graphlink/src/serializers/client_serializers/python/python_rest_operation_serializer.dart';
 import 'package:graphlink/src/serializers/gl_client_serializer.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 import 'package:graphlink/src/serializers/python/python_serializer.dart';
@@ -19,18 +23,53 @@ class PythonClientSerializer extends GLClientSerializer {
   final GLParser _parser;
   final PythonHttpAdapter httpAdapter;
   final PythonWsAdapter wsAdapter;
+  final PythonHttpAdapter restHttpAdapter;
   final PythonCodeGenUtils codeGenUtils = PythonCodeGenUtils();
 
   late final PythonClientOperationSerializer _opSer;
+  late final PythonRestOperationSerializer _restSer;
 
   PythonClientSerializer(
     this._parser,
     PythonSerializer pythonSerializer, {
     this.httpAdapter = PythonHttpAdapter.httpx,
     this.wsAdapter = PythonWsAdapter.websockets,
+    this.restHttpAdapter = PythonHttpAdapter.httpx,
+    bool commaQueryLists = false,
+    bool bracketFormNesting = false,
   }) : super(pythonSerializer, GLGraphqlSerializer(_parser, false)) {
     _opSer = PythonClientOperationSerializer(_parser, codeGenUtils, gqlSerializer, pythonSerializer);
+    _restSer = PythonRestOperationSerializer(
+      _parser,
+      codeGenUtils,
+      pythonSerializer,
+      commaLists: commaQueryLists,
+      bracketNesting: bracketFormNesting,
+    );
   }
+
+  List<GLRestOperation> _restOperations(GLQueryType type) =>
+      _parser.restOperations.values.where((o) => o.type == type).toList();
+
+  bool get _hasRest => _parser.restOperations.isNotEmpty;
+
+  bool get hasRest => _hasRest;
+
+  bool get _hasGraphQL => GLQueryType.values.any(_parser.hasQueryType);
+
+  bool get hasGraphQL => _hasGraphQL;
+
+  bool get _graphqlViaHttp => _hasGraphQL && _hasHttpAdapter;
+
+  bool get _restViaHttp => _hasRest && restHttpAdapter == PythonHttpAdapter.httpx;
+
+  bool get generatesRestAdapter => _restViaHttp;
+
+  bool get generatesHttpxAdapter => _graphqlViaHttp;
+
+  bool _hasOperations(GLQueryType type) => _parser.hasQueryType(type) || _restOperations(type).isNotEmpty;
+
+  bool get usesUploadsRuntime => _parser.hasUploadMutations || _hasRest;
 
   PythonSerializer get _py => serializer as PythonSerializer;
 
@@ -75,6 +114,48 @@ class PythonClientSerializer extends GLClientSerializer {
   @override
   GLClassModel generateUploadsFile() => _static(pythonUploads);
 
+  GLClassModel generateRestFile() => _static(pythonRestFile);
+
+  GLClassModel generateRestResolverFile() => GLClassModel(
+        imports: [
+          'import json',
+          'import time',
+          'from typing import Any, Awaitable, Callable, Dict, List, Optional, TypeVar',
+          '',
+          'from .graph_link_cache_entry import GraphLinkCacheEntry',
+          'from .graph_link_partial_query import GraphLinkPartialQuery',
+          'from .graph_link_resolver_base import $_resolverBaseClassName',
+          'from .graph_link_rest import DownloadProgressCallback, GLDownload, GLRestAdapter, RestError, RestRequest, RestResponse, rest_navigate',
+        ],
+        body: ['T = TypeVar("T")', pythonRestResolver].join('\n\n\n'),
+      );
+
+  GLClassModel? generateRestHttpxAdapterFile() {
+    if (!_restViaHttp) return null;
+    return GLClassModel(
+      imports: [
+        'import inspect',
+        'from typing import Any, AsyncIterator, Callable, Dict, Optional',
+        '',
+        'import httpx',
+        '',
+        'from .graph_link_rest import (',
+        '    RestFormBody,',
+        '    RestJsonBody,',
+        '    RestMultipartBody,',
+        '    RestRawBody,',
+        '    RestRequest,',
+        '    RestResponse,',
+        '    rest_counted_stream,',
+        '    rest_form_body,',
+        '    rest_multipart_stream,',
+        '    rest_url,',
+        ')',
+      ],
+      body: pythonRestHttpxAdapter,
+    );
+  }
+
   GLClassModel generatePersistedQueriesFile() {
     if (!_parser.persistedQueries) {
       throw StateError('The persisted-queries runtime is only generated when persistedQueries is enabled.');
@@ -96,6 +177,34 @@ class PythonClientSerializer extends GLClientSerializer {
         if (_parser.persistedQueriesUseGet) 'from .graph_link_persisted_queries import GraphLinkGetNotSupported',
       ];
 
+  List<String> _restImportsFor(GLQueryType type) {
+    final operations = _restOperations(type);
+    if (operations.isEmpty) return const [];
+    final tokens = <GLToken>[];
+    for (final operation in operations) {
+      final names = [
+        operation.field.type.firstType.token,
+        ...operation.arguments.map((a) => a.argument.type.firstType.token),
+      ];
+      for (final name in names) {
+        if (_parser.isEnum(name) ||
+            _parser.isInput(name) ||
+            _parser.types.containsKey(name) ||
+            _parser.interfaces.containsKey(name)) {
+          final token = _parser.getTokenByKey(name);
+          if (token != null) tokens.add(token);
+        }
+      }
+    }
+    return [
+      'from .graph_link_rest_resolver import GraphLinkRestResolver',
+      'from .graph_link_rest import DownloadProgressCallback, GLDownload, GLRestAdapter, RestFormBody, RestJsonBody, RestMultipartBody, RestPart, RestRawBody, RestRequest, RestBody, rest_encode, rest_encode_json, rest_entries, rest_header, rest_headers, rest_parts, rest_spread_entries, rest_text',
+      if (!(type == GLQueryType.mutation && _parser.hasUploadMutations))
+        'from .graph_link_uploads import GLUpload, UploadProgressCallback',
+      ...tokens.map(serializer.serializeImportToken).where((e) => e.isNotEmpty).toSet(),
+    ];
+  }
+
   List<String> _importsForType(GLQueryType type) => [
         'from .graph_link_cache_store import $_cacheStoreClassName',
         'from .graph_link_lock import GraphLinkLock',
@@ -110,6 +219,7 @@ class PythonClientSerializer extends GLClientSerializer {
           'from .graph_link_websocket_adapter import GraphLinkWebSocketAdapter',
         ],
         ...schemaImportsFor(type),
+        ..._restImportsFor(type),
       ];
 
   // ── Resolver base ──────────────────────────────────────────────────────────
@@ -572,13 +682,14 @@ class PythonClientSerializer extends GLClientSerializer {
   // ── Operation classes ──────────────────────────────────────────────────────
 
   String? _buildOperationClass(GLQueryType type) {
-    final methods = buildOperationMethods(type);
+    final restOperations = _restOperations(type);
+    final methods = [...buildOperationMethods(type), ...restOperations.map(_restSer.operationToMethod)];
     if (methods.isEmpty) return null;
     final cg = codeGenUtils;
     final isUpload = type == GLQueryType.mutation && _parser.hasUploadMutations;
     return cg.createClass(
       className: classNameFromType(type),
-      baseClassNames: [_resolverBaseClassName],
+      baseClassNames: [restOperations.isEmpty ? _resolverBaseClassName : 'GraphLinkRestResolver'],
       statements: [
         cg.createMethod(
           methodName: '__init__',
@@ -586,6 +697,7 @@ class PythonClientSerializer extends GLClientSerializer {
             'self',
             'adapter: $_adapterType',
             '*',
+            if (restOperations.isNotEmpty) 'rest_adapter: GLRestAdapter',
             if (_parser.persistedQueriesUseGet) 'get_adapter: $_adapterType',
             if (type == GLQueryType.subscription) 'ws_adapter: GraphLinkWebSocketAdapter',
             if (isUpload) ...[
@@ -605,6 +717,7 @@ class PythonClientSerializer extends GLClientSerializer {
               if (_parser.persistedQueriesUseGet) 'get_adapter',
               'fragment_map',
             ]),
+            if (restOperations.isNotEmpty) 'self.rest_adapter = rest_adapter',
             if (type == GLQueryType.subscription) 'self.$svHandler = GraphLinkSubscriptionHandler(ws_adapter)',
             if (isUpload) ...[
               'self.$svUploadConverter = upload_converter',
@@ -623,7 +736,7 @@ class PythonClientSerializer extends GLClientSerializer {
     return GLClassModel(
       imports: [
         'import json',
-        'from typing import Any, AsyncIterator, Awaitable, Callable, Dict, List, Optional',
+        'from typing import Any, AsyncIterator, Awaitable, Callable, Dict, List, Optional, Tuple',
         '',
         ..._importsForType(type),
       ],
@@ -649,14 +762,19 @@ class PythonClientSerializer extends GLClientSerializer {
       'from .graph_link_cache_store import $_cacheStoreClassName',
       'from .graph_link_in_memory_cache_store import InMemoryGraphLinkCacheStore',
       'from .graph_link_lock import GraphLinkLock',
-      if (_parser.hasQueries) 'from .graph_link_queries import GraphLinkQueries',
-      if (_parser.hasMutations) 'from .graph_link_mutations import GraphLinkMutations',
-      if (_parser.hasSubscriptions) ...[
+      if (_hasOperations(GLQueryType.query)) 'from .graph_link_queries import GraphLinkQueries',
+      if (_hasOperations(GLQueryType.mutation)) 'from .graph_link_mutations import GraphLinkMutations',
+      if (_hasOperations(GLQueryType.subscription)) ...[
         'from .graph_link_subscriptions import GraphLinkSubscriptions',
         'from .graph_link_websocket_adapter import GraphLinkWebSocketAdapter',
       ],
-      if (_hasHttpAdapter) 'from .graph_link_httpx_adapter import GraphLinkHttpxAdapter',
-      if (_hasHttpAdapter && _parser.hasSubscriptions && _hasWsAdapter)
+      if (_hasRest) ...[
+        'from .graph_link_rest import GLRestAdapter',
+        if (!_hasGraphQL) 'from .graph_link_rest import gl_no_graphql__',
+      ],
+      if (_restViaHttp) 'from .graph_link_rest_httpx_adapter import GraphLinkRestHttpxAdapter',
+      if (_graphqlViaHttp) 'from .graph_link_httpx_adapter import GraphLinkHttpxAdapter',
+      if (_graphqlViaHttp && _parser.hasSubscriptions && _hasWsAdapter)
         'from .graph_link_default_websocket_adapter import DefaultGraphLinkWebSocketAdapter',
       if (_parser.hasMutations && _parser.hasUploadMutations) ...[
         'from .graph_link_uploads import GLUploadConverter, GLMultipartAdapter',
@@ -674,7 +792,8 @@ class PythonClientSerializer extends GLClientSerializer {
     final tags = _parser.getAllCacheTags().map(_py.pythonStringLiteral).toList();
 
     String opConstruction(GLQueryType type) => cg.callExpression(classNameFromType(type), [
-          'adapter',
+          _hasGraphQL ? 'adapter' : 'gl_no_graphql__',
+          if (_restOperations(type).isNotEmpty) 'rest_adapter=rest_adapter',
           if (useGet) 'get_adapter=get_adapter',
           if (type == GLQueryType.subscription) 'ws_adapter=ws_adapter',
           if (type == GLQueryType.mutation && hasUploads) ...[
@@ -692,7 +811,8 @@ class PythonClientSerializer extends GLClientSerializer {
         arguments: [
           'self',
           '*',
-          'adapter: $_adapterType',
+          if (_hasGraphQL) 'adapter: $_adapterType',
+          if (_hasRest) 'rest_adapter: GLRestAdapter',
           if (useGet) 'get_adapter: $_adapterType',
           if (hasUploads) ...[
             'upload_converter: GLUploadConverter = default_upload_converter',
@@ -708,12 +828,12 @@ class PythonClientSerializer extends GLClientSerializer {
               'self.$svFragMap[${_py.pythonStringLiteral(f.tokenInfo.token)}] = ${_py.pythonStringLiteral(gqlSerializer.serializeFragmentDefinitionBase(f))}'),
           'self.store: $_cacheStoreClassName = store if store is not None else InMemoryGraphLinkCacheStore()',
           'self.$svTagLocks: Dict[str, GraphLinkLock] = {tag: GraphLinkLock() for tag in [${tags.join(', ')}]}',
-          if (_parser.hasQueries) 'self.queries = ${opConstruction(GLQueryType.query)}',
-          if (_parser.hasMutations) 'self.mutations = ${opConstruction(GLQueryType.mutation)}',
-          if (_parser.hasSubscriptions) 'self.subscriptions = ${opConstruction(GLQueryType.subscription)}',
+          if (_hasOperations(GLQueryType.query)) 'self.queries = ${opConstruction(GLQueryType.query)}',
+          if (_hasOperations(GLQueryType.mutation)) 'self.mutations = ${opConstruction(GLQueryType.mutation)}',
+          if (_hasOperations(GLQueryType.subscription)) 'self.subscriptions = ${opConstruction(GLQueryType.subscription)}',
         ],
       ),
-      if (_hasHttpAdapter) ...['', _withHttpConstructor()],
+      if (_graphqlViaHttp || _restViaHttp) ...['', _withHttpConstructor()],
     ]);
   }
 
@@ -728,22 +848,29 @@ class PythonClientSerializer extends GLClientSerializer {
       arguments: [
         'cls',
         '*',
-        'url: str',
-        if (hasSubs && _hasWsAdapter) ...['ws_url: str', 'ws_headers_provider: $headersType = None'],
-        if (hasSubs && !_hasWsAdapter) 'ws_adapter: GraphLinkWebSocketAdapter',
+        if (_graphqlViaHttp) 'url: str',
+        if (_hasGraphQL && !_graphqlViaHttp) 'adapter: $_adapterType',
+        if (_restViaHttp) 'rest_base_url: str',
+        if (_hasRest && !_restViaHttp) 'rest_adapter: GLRestAdapter',
+        if (_graphqlViaHttp && hasSubs && _hasWsAdapter) ...['ws_url: str', 'ws_headers_provider: $headersType = None'],
+        if (hasSubs && !(_graphqlViaHttp && _hasWsAdapter)) 'ws_adapter: GraphLinkWebSocketAdapter',
         'headers_provider: $headersType = None',
         'store: Optional[$_cacheStoreClassName] = None',
       ],
       returnType: '"GraphLinkClient"',
       statements: [
-        cg.constDecl('http', 'GraphLinkHttpxAdapter(url=url, headers_provider=headers_provider)'),
+        if (_graphqlViaHttp) cg.constDecl('http', 'GraphLinkHttpxAdapter(url=url, headers_provider=headers_provider)'),
         'return ${cg.callExpression('cls', [
-          'adapter=http.call',
-          if (_parser.persistedQueriesUseGet) 'get_adapter=http.get_call',
-          if (hasUploads) ...['upload_converter=default_upload_converter', 'upload_adapter=http.multipart_call'],
-          if (hasSubs && _hasWsAdapter)
+          if (_hasGraphQL) _graphqlViaHttp ? 'adapter=http.call' : 'adapter=adapter',
+          if (_restViaHttp)
+            'rest_adapter=GraphLinkRestHttpxAdapter(base_url=rest_base_url, headers_provider=headers_provider)'
+          else if (_hasRest)
+            'rest_adapter=rest_adapter',
+          if (_graphqlViaHttp && _parser.persistedQueriesUseGet) 'get_adapter=http.get_call',
+          if (_graphqlViaHttp && hasUploads) ...['upload_converter=default_upload_converter', 'upload_adapter=http.multipart_call'],
+          if (hasSubs && _graphqlViaHttp && _hasWsAdapter)
             'ws_adapter=DefaultGraphLinkWebSocketAdapter(url=ws_url, headers_provider=ws_headers_provider)',
-          if (hasSubs && !_hasWsAdapter) 'ws_adapter=ws_adapter',
+          if (hasSubs && !(_graphqlViaHttp && _hasWsAdapter)) 'ws_adapter=ws_adapter',
           'store=store',
         ])}',
       ],
@@ -845,7 +972,7 @@ class PythonClientSerializer extends GLClientSerializer {
                 'files',
                 '{k: (v.filename, v.content, v.mime_type) for k, v in parts.items() if isinstance(v, GLUpload)}',
               ),
-              cg.constDecl('total', 'sum(v.length for v in parts.values() if isinstance(v, GLUpload))'),
+              cg.constDecl('total', 'sum(len(v.content) for v in parts.values() if isinstance(v, GLUpload))'),
               cg.ifStatement(condition: 'on_progress is not None', ifBlockStatements: ['on_progress(0, total)']),
               cg.constDecl(
                 'response',
