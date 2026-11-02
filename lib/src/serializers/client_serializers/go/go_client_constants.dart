@@ -836,6 +836,72 @@ func GLUploadFromFile(path, mimeType string) (GLUpload, error) {
 	}
 	return GLUpload{Reader: file, Length: info.Size(), Filename: filepath.Base(path), MimeType: mimeType}, nil
 }
+
+type glMultipartPart struct {
+	Name     string
+	Value    string
+	File     *GLUpload
+	MimeType string
+}
+
+// glMultipartStream streams the parts without buffering files. length is -1
+// when any file length is unknown, which makes net/http use chunked encoding.
+func glMultipartStream(parts []glMultipartPart) (contentType string, body io.Reader, length int64, closeAll func()) {
+	boundary := fmt.Sprintf("----graphlink%016x%x", rand.Int63(), time.Now().UnixNano())
+	quote := strings.NewReplacer(`"`, "%22", "\r", "%0D", "\n", "%0A")
+	readers := make([]io.Reader, 0, len(parts)*3+1)
+	var closers []io.Closer
+	for _, part := range parts {
+		disposition := fmt.Sprintf(`form-data; name="%s"`, quote.Replace(part.Name))
+		mimeType := part.MimeType
+		if part.File != nil {
+			if part.File.Filename != "" {
+				disposition += fmt.Sprintf(`; filename="%s"`, quote.Replace(part.File.Filename))
+			}
+			mimeType = part.File.MimeType
+		}
+		head := fmt.Sprintf("--%s\r\nContent-Disposition: %s\r\n", boundary, disposition)
+		if mimeType != "" {
+			head += fmt.Sprintf("Content-Type: %s\r\n", mimeType)
+		}
+		head += "\r\n"
+		readers = append(readers, strings.NewReader(head))
+		length += int64(len(head))
+		if part.File != nil {
+			if part.File.Reader != nil {
+				readers = append(readers, part.File.Reader)
+				if closer, ok := part.File.Reader.(io.Closer); ok {
+					closers = append(closers, closer)
+				}
+			}
+			if part.File.Length < 0 || length < 0 {
+				length = -1
+			} else {
+				length += part.File.Length
+			}
+		} else {
+			readers = append(readers, strings.NewReader(part.Value))
+			if length >= 0 {
+				length += int64(len(part.Value))
+			}
+		}
+		readers = append(readers, strings.NewReader("\r\n"))
+		if length >= 0 {
+			length += 2
+		}
+	}
+	tail := fmt.Sprintf("--%s--\r\n", boundary)
+	readers = append(readers, strings.NewReader(tail))
+	if length >= 0 {
+		length += int64(len(tail))
+	}
+	closeAll = func() {
+		for _, closer := range closers {
+			_ = closer.Close()
+		}
+	}
+	return "multipart/form-data; boundary=" + boundary, io.MultiReader(readers...), length, closeAll
+}
 ''';
 
 const goUploadDefaultConverter = r'''
@@ -1483,11 +1549,8 @@ func (p *glProgressReader) Read(buffer []byte) (int, error) {
 	return n, err
 }
 
-// MultipartCall sends the GraphQL multipart request. The body is buffered so the
-// total size is known for progress reporting.
+// MultipartCall sends the GraphQL multipart request, streaming file parts.
 func (a *GraphLinkHttpAdapter) MultipartCall(ctx context.Context, parts map[string]any, onProgress UploadProgressCallback) (string, error) {
-	var body bytes.Buffer
-	writer := multipart.NewWriter(&body)
 	keys := make([]string, 0, len(parts))
 	for key := range parts {
 		if key != "operations" && key != "map" {
@@ -1496,6 +1559,7 @@ func (a *GraphLinkHttpAdapter) MultipartCall(ctx context.Context, parts map[stri
 	}
 	sort.Strings(keys)
 	ordered := append([]string{"operations", "map"}, keys...)
+	streamParts := make([]glMultipartPart, 0, len(ordered))
 	for _, key := range ordered {
 		value, ok := parts[key]
 		if !ok {
@@ -1503,33 +1567,16 @@ func (a *GraphLinkHttpAdapter) MultipartCall(ctx context.Context, parts map[stri
 		}
 		switch part := value.(type) {
 		case string:
-			if err := writer.WriteField(key, part); err != nil {
-				return "", err
-			}
+			streamParts = append(streamParts, glMultipartPart{Name: key, Value: part})
 		case GLUpload:
-			header := make(textproto.MIMEHeader)
-			header.Set("Content-Disposition", fmt.Sprintf(`form-data; name="%s"; filename="%s"`, key, part.Filename))
-			header.Set("Content-Type", part.MimeType)
-			field, err := writer.CreatePart(header)
-			if err != nil {
-				return "", err
-			}
-			_, err = io.Copy(field, part.Reader)
-			if closer, ok := part.Reader.(io.Closer); ok {
-				_ = closer.Close()
-			}
-			if err != nil {
-				return "", err
-			}
+			upload := part
+			streamParts = append(streamParts, glMultipartPart{Name: key, File: &upload})
 		default:
 			return "", fmt.Errorf("unsupported multipart value for %q: %T", key, value)
 		}
 	}
-	if err := writer.Close(); err != nil {
-		return "", err
-	}
-	total := int64(body.Len())
-	var reader io.Reader = bytes.NewReader(body.Bytes())
+	contentType, reader, total, closeAll := glMultipartStream(streamParts)
+	defer closeAll()
 	if onProgress != nil {
 		reader = &glProgressReader{reader: reader, total: total, callback: onProgress}
 	}
@@ -1538,7 +1585,7 @@ func (a *GraphLinkHttpAdapter) MultipartCall(ctx context.Context, parts map[stri
 		return "", err
 	}
 	request.ContentLength = total
-	request.Header.Set("Content-Type", writer.FormDataContentType())
+	request.Header.Set("Content-Type", contentType)
 	response, err := a.do(ctx, request)
 	if err != nil {
 		return "", err

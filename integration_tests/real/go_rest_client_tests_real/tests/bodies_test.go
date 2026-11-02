@@ -238,3 +238,17 @@ func TestRawBodyStreamedAndProgress(t *testing.T) {
 	isTrue(t, chunked.ContentLength == nil, "no content length")
 	eq(t, chunked.BodySha256, sha(pattern(250000)))
 }
+
+func TestMultipartStreamsWithAndWithoutLength(t *testing.T) {
+	ctx, client := setup(t)
+	data := pattern(300000)
+	known := upload(data, "k.bin", "")
+	withLength := must(client.Mutations.EMultipart(ctx, generated.EMultipartOptions{One: &known}))
+	isTrue(t, withLength.ContentLength != nil && !withLength.Chunked, "known lengths send Content-Length")
+	eq(t, part(t, withLength, "one").Sha256, sha(data))
+
+	unknown := generated.NewGLUpload(io.NopCloser(strings.NewReader(string(data))), "u.bin")
+	chunked := must(client.Mutations.EMultipart(ctx, generated.EMultipartOptions{One: &unknown}))
+	isTrue(t, chunked.Chunked && chunked.ContentLength == nil, "unknown length is chunked")
+	eq(t, part(t, chunked, "one").Sha256, sha(data))
+}
