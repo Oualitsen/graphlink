@@ -171,42 +171,6 @@ func restFormBody(fields []RestEntry) string {
 	return strings.Join(pairs, "&")
 }
 
-func restMultipart(parts []RestPart) (string, []byte, error) {
-	boundary := fmt.Sprintf("----graphlink%016x%x", rand.Int63(), time.Now().UnixNano())
-	quote := strings.NewReplacer(`"`, "%22", "\r", "%0D", "\n", "%0A")
-	var body bytes.Buffer
-	for _, part := range parts {
-		disposition := fmt.Sprintf(`form-data; name="%s"`, quote.Replace(part.Name))
-		mimeType := part.MimeType
-		if part.File != nil {
-			if part.File.Filename != "" {
-				disposition += fmt.Sprintf(`; filename="%s"`, quote.Replace(part.File.Filename))
-			}
-			mimeType = part.File.MimeType
-		}
-		fmt.Fprintf(&body, "--%s\r\nContent-Disposition: %s\r\n", boundary, disposition)
-		if mimeType != "" {
-			fmt.Fprintf(&body, "Content-Type: %s\r\n", mimeType)
-		}
-		body.WriteString("\r\n")
-		if part.File != nil {
-			data, err := io.ReadAll(part.File.Reader)
-			if closer, ok := part.File.Reader.(io.Closer); ok {
-				_ = closer.Close()
-			}
-			if err != nil {
-				return "", nil, err
-			}
-			body.Write(data)
-		} else {
-			body.WriteString(part.Value)
-		}
-		body.WriteString("\r\n")
-	}
-	fmt.Fprintf(&body, "--%s--\r\n", boundary)
-	return "multipart/form-data; boundary=" + boundary, body.Bytes(), nil
-}
-
 type restObject struct {
 	keys   []string
 	values map[string]any
@@ -674,15 +638,14 @@ func (a *GraphLinkRestHttpAdapter) Call(ctx context.Context, request RestRequest
 		encoded := restFormBody(b.Fields)
 		body, contentLength = strings.NewReader(encoded), int64(len(encoded))
 	case RestMultipartBody:
-		contentType, data, err := restMultipart(b.Parts)
-		if err != nil {
-			return nil, err
+		streamParts := make([]glMultipartPart, len(b.Parts))
+		for i, part := range b.Parts {
+			streamParts[i] = glMultipartPart(part)
 		}
+		contentType, stream, length, closeAll := glMultipartStream(streamParts)
+		defer closeAll()
 		headers["Content-Type"] = contentType
-		body, contentLength = bytes.NewReader(data), int64(len(data))
-		if request.OnSendProgress != nil {
-			body = restUploadReader(body, int64(len(data)), request.OnSendProgress)
-		}
+		body, contentLength = restUploadReader(stream, length, request.OnSendProgress), length
 	case RestRawBody:
 		body, contentLength = restUploadReader(b.Upload.Reader, b.Upload.Length, request.OnSendProgress), b.Upload.Length
 	}
