@@ -75,3 +75,13 @@ specs, and record each decision under "Decisions" below. Do not ask questions.
 ## Status
 - [x] TypeScript: done (22 unit, 24 mock, 132 real x fetch+axios)
 - [x] Kotlin: done (16 unit, 8 mock, 61 real)
+- [x] Python: done (16 unit, 22+1 mock, 111 real x default+COMMA/BRACKET, ports 9985/9986)
+- [x] Swift: done (22 unit, 22+1 mock, 104 real x default+COMMA/BRACKET, ports 9983/9984; needs Xcode)
+- [x] Go: done (unit, 9+1 mock, 30 real x default+COMMA/BRACKET, ports 9981/9982)
+
+## Decisions (Python, Swift, Go)
+- Python: `GraphLinkRestResolver(GraphLinkResolverBase)`, `rest_adapter` is a ctor kwarg; REST-only client drops `adapter`, ops get `gl_no_graphql__`. Decode errors are pydantic `ValidationError`s (missing field, unknown discriminator via the interface wrap validator) and `ValueError` for empty bodies. `GLUpload` streams (bytes, file path or (async) iterable; unknown length is chunked), REST raw and multipart stream; the GraphQL httpx multipart still reads into memory.
+- Swift: REST uses the regular `fromJson` (no REST-only throwing decoder; a schema violation traps like GraphQL, the schema is the contract); default adapter uses `URLSession.bytes` for streaming and `upload(for:from:delegate:)` for progress. Nested object keys are alphabetical (Swift dictionaries are unordered). `restHttpAdapter` reuses `SwiftWsAdapter` (urlsession|none).
+- Go: `GraphLinkRestResolver` embeds `GraphLinkResolverBase`; optional args and progress callbacks live in `<Op>Options`; REST methods use receiver `glSelf__` (argument names may clash). Values are flattened through an ordered JSON re-parse (`restNormalize`), so declaration order is kept. Required-field errors come from a generated `UnmarshalJSON`.
+- Variants: `comma/` output (COMMA lists, BRACKET nesting) reruns the same tests (Python env `REST_VARIANT=comma`, Swift/Go via a symlinked tests dir).
+- Remaining: Java target has no REST support.

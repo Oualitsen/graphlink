@@ -1,4 +1,4 @@
-.PHONY: persisted-queries dart typescript java kotlin swift python go dart-real dart-rest-real dart-rest-dio-real typescript-rest typescript-rest-real kotlin-rest kotlin-rest-real typescript-real java-real kotlin-real swift-real python-real go-real server upload-server all all-real kill-servers kill-ports start-server start-upload-server start-main-server start-servers generate-all clean-all
+.PHONY: persisted-queries dart typescript java kotlin swift python go dart-real dart-rest-real dart-rest-dio-real typescript-rest typescript-rest-real kotlin-rest kotlin-rest-real python-rest python-rest-real swift-rest swift-rest-real go-rest go-rest-real typescript-real java-real kotlin-real swift-real python-real go-real server upload-server all all-real kill-servers kill-ports start-server start-upload-server start-main-server start-servers generate-all clean-all
 
 # Delete every previously generated output dir across all client projects.
 # Prune node_modules/build/target/.gradle/.dart_tool so we only ever touch
@@ -39,11 +39,20 @@ kotlin-rest:
 swift:
 	$(MAKE) -C mock/swift_client_tests ci
 
+swift-rest:
+	$(MAKE) -C mock/swift_rest_tests ci
+
 python:
 	$(MAKE) -C mock/python_client_tests ci
 
+python-rest:
+	$(MAKE) -C mock/python_rest_tests ci
+
 go:
 	$(MAKE) -C mock/go_client_tests ci
+
+go-rest:
+	$(MAKE) -C mock/go_rest_tests ci
 
 persisted-queries:
 	$(MAKE) -C persisted_queries all
@@ -82,15 +91,24 @@ kotlin-rest-real:
 swift-real:
 	$(MAKE) -C real/swift_client_tests_real ci
 
+swift-rest-real:
+	$(MAKE) -C real/swift_rest_client_tests_real ci
+
 python-real:
 	$(MAKE) -C real/python_client_tests_real ci
+
+python-rest-real:
+	$(MAKE) -C real/python_rest_client_tests_real ci
 
 go-real:
 	$(MAKE) -C real/go_client_tests_real ci
 
-all: dart dart-rest typescript typescript-rest java kotlin kotlin-rest swift python go
+go-rest-real:
+	$(MAKE) -C real/go_rest_client_tests_real ci
 
-all-real: dart-real dart-rest-real dart-rest-dio-real typescript-real typescript-rest-real kotlin-rest-real java-real java-reactor-real kotlin-real swift-real python-real go-real
+all: dart dart-rest typescript typescript-rest java kotlin kotlin-rest swift swift-rest python python-rest go go-rest
+
+all-real: dart-real dart-rest-real dart-rest-dio-real typescript-real typescript-rest-real kotlin-rest-real java-real java-reactor-real kotlin-real swift-real swift-rest-real python-real python-rest-real go-real go-rest-real
 
 start-server:
 	curl -s -X POST http://localhost:9990/actuator/shutdown || true

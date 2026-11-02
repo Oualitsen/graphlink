@@ -27,6 +27,9 @@ Future<Set<String>> generateSwiftClientClasses(
     parser,
     serializer,
     withDefaultAdapters: swiftConfig.wsAdapter != SwiftWsAdapter.none,
+    restViaUrlSession: swiftConfig.effectiveRestHttpAdapter != SwiftWsAdapter.none,
+    commaQueryLists: swiftConfig.queryListStyle == RestQueryListStyle.comma,
+    bracketFormNesting: swiftConfig.formNesting == RestFormNesting.bracket,
   );
 
   final futures = <Future<File>>[];
@@ -114,9 +117,20 @@ Future<Set<String>> generateSwiftClientClasses(
 
   // ── Upload runtime (only if the schema has upload mutations) ───────────────
 
-  if (parser.hasUploadMutations) {
+  if (clientSerializer.usesUploadsRuntime) {
     clientFiles['GLUpload.swift'] = clientSerializer.generateUploadsFile();
     clientFiles['UploadProgressCallback.swift'] = clientSerializer.generateUploadProgressCallbackFile();
+  }
+
+  if (clientSerializer.hasRest) {
+    clientFiles['GraphLinkRest.swift'] = clientSerializer.generateRestFile();
+    clientFiles['GraphLinkRestResolver.swift'] = clientSerializer.generateRestResolverFile();
+    if (clientSerializer.generatesRestAdapter) {
+      clientFiles['DefaultGraphLinkRestAdapter.swift'] = clientSerializer.generateRestAdapterFile();
+    }
+  }
+
+  if (parser.hasUploadMutations) {
     clientFiles['GraphLinkMultipartAdapter.swift'] = clientSerializer.generateMultipartAdapterFile();
     clientFiles['DefaultGraphLinkURLSessionMultipartAdapter.swift'] = clientSerializer.generateDefaultMultipartAdapterFile();
   }

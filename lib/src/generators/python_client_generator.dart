@@ -24,6 +24,9 @@ Future<Set<String>> generatePythonClientClasses(GLParser parser, GeneratorConfig
     serializer,
     httpAdapter: pythonConfig.httpAdapter,
     wsAdapter: pythonConfig.wsAdapter,
+    restHttpAdapter: pythonConfig.effectiveRestHttpAdapter,
+    commaQueryLists: pythonConfig.queryListStyle == RestQueryListStyle.comma,
+    bracketFormNesting: pythonConfig.formNesting == RestFormNesting.bracket,
   );
   final destinationDir = config.outputDir;
   final files = <String, String>{};
@@ -85,11 +88,18 @@ Future<Set<String>> generatePythonClientClasses(GLParser parser, GeneratorConfig
     final model = clientSerializer.getClassForType(type);
     addClient(_operationFileName(type), model);
   }
-  if (parser.hasUploadMutations) {
+  if (clientSerializer.usesUploadsRuntime) {
     addClient('graph_link_uploads', clientSerializer.generateUploadsFile());
+  }
+  if (parser.hasUploadMutations) {
     addClient('graph_link_upload_converter', clientSerializer.generateUploadConverterFile());
   }
-  if (pythonConfig.httpAdapter == PythonHttpAdapter.httpx) {
+  if (clientSerializer.hasRest) {
+    addClient('graph_link_rest', clientSerializer.generateRestFile());
+    addClient('graph_link_rest_resolver', clientSerializer.generateRestResolverFile());
+    addClient('graph_link_rest_httpx_adapter', clientSerializer.generateRestHttpxAdapterFile());
+  }
+  if (clientSerializer.generatesHttpxAdapter) {
     addClient('graph_link_httpx_adapter', clientSerializer.generateHttpxAdapterFile());
   }
   if (parser.hasSubscriptions) {
