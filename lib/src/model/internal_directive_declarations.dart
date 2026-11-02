@@ -1,5 +1,6 @@
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
+import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 const internalDurationScalar = 'GLDuration';
@@ -85,7 +86,13 @@ class InternalDirectives {
   static final InternalDirectives instance = _load();
 
   static InternalDirectives _load() {
-    final parser = GLParser()..parse(internalDirectiveSdl, validate: false);
+    final collectionImports = GLType.collectionImportsConfig;
+    final GLParser parser;
+    try {
+      parser = GLParser()..parse(internalDirectiveSdl, validate: false);
+    } finally {
+      GLType.collectionImportsConfig = collectionImports;
+    }
     return InternalDirectives._(
       Map.unmodifiable(parser.directiveDefinitions),
       Map.unmodifiable(parser.enums),
