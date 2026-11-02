@@ -1,0 +1,26 @@
+{
+  "schemaPaths": ["../../schema_rest/rest.graphql"],
+  "mode": "client",
+  "typeMappings": {
+    "ID":      "string",
+    "String":  "string",
+    "Float":   "number",
+    "Int":     "number",
+    "Boolean": "boolean",
+    "Null":    "null"
+  },
+  "outputDir": "lib/generated",
+  "clientConfig": {
+    "typescript": {
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries":        true,
+      "httpAdapter":                "fetch",
+      "restHttpAdapter":            "axios",
+      "queryListStyle":             "COMMA",
+      "formNesting":                "BRACKET",
+      "immutableTypeFields":        true,
+      "optionalNullableInputFields": true,
+      "generateDefaultWsAdapter":   false
+    }
+  }
+}

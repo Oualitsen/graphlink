@@ -1,0 +1,14 @@
+name: graphlink_typescript_rest_real_tests_generator
+description: Generator runner for the TypeScript REST real-server tests.
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ">=2.19.0 <4.0.0"
+
+dependencies:
+  graphlink:
+    path: ../../../
+
+
+

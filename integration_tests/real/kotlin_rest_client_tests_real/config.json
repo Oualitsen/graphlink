@@ -1,0 +1,24 @@
+{
+  "schemaPaths": ["../schema_rest/rest.graphql"],
+  "mode": "client",
+  "typeMappings": {
+    "ID":      "String",
+    "String":  "String",
+    "Float":   "Double",
+    "Int":     "Int",
+    "Boolean": "Boolean"
+  },
+  "outputDir": "client-app/src/main/kotlin/dev/graphlink/rest/generated",
+  "clientConfig": {
+    "kotlin": {
+      "packageName":                "dev.graphlink.rest.generated",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries":        true,
+      "nullableFieldsRequired":     false,
+      "inputAsDataClass":           true,
+      "typeAsDataClass":            true,
+      "wsAdapter":                  "okhttp",
+      "captureErrors":              false
+    }
+  }
+}

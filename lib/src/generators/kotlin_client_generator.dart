@@ -26,6 +26,9 @@ Future<Set<String>> generateKotlinClientClasses(
     parser,
     serializer,
     wsAdapter: kotlinConfig.wsAdapter,
+    restHttpAdapter: kotlinConfig.effectiveRestHttpAdapter,
+    commaQueryLists: kotlinConfig.queryListStyle == RestQueryListStyle.comma,
+    bracketFormNesting: kotlinConfig.formNesting == RestFormNesting.bracket,
   );
 
   final futures = <Future<File>>[];
@@ -222,7 +225,24 @@ Future<Set<String>> generateKotlinClientClasses(
 
   // ── Upload files ───────────────────────────────────────────────────────────
 
-  if (parser.hasUploadMutations) {
+  if (clientSerializer.hasRest) {
+    for (final entry in {
+      'GraphLinkRest.kt': clientSerializer.generateRestFile(),
+      'GraphLinkRestResolver.kt': clientSerializer.generateRestResolverFile(),
+      if (clientSerializer.generatesRestAdapter) 'DefaultGraphLinkRestAdapter.kt': clientSerializer.generateRestAdapterFile(),
+    }.entries) {
+      futures.add(writeToFile(
+        data: serializer.serializeGlClass(entry.value),
+        fileName: entry.key,
+        subdir: 'client',
+        imports: [],
+        destinationDir: destinationDir,
+        packageName: packageName,
+      ));
+    }
+  }
+
+  if (parser.hasUploadMutations || clientSerializer.hasRest) {
     for (final entry in {
       'GLUpload.kt': clientSerializer.generateUploadsFile(),
       'UploadProgressCallback.kt': clientSerializer.generateUploadProgressCallbackFile(),

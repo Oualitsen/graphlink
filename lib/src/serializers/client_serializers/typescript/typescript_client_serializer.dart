@@ -6,6 +6,10 @@ import 'package:graphlink/src/model/gl_queries.dart';
 
 import 'package:graphlink/src/serializers/client_serializers/typescript/typescript_client_constants.dart';
 import 'package:graphlink/src/serializers/client_serializers/typescript/typescript_client_operation_serializer.dart';
+import 'package:graphlink/src/serializers/client_serializers/typescript/typescript_rest_constants.dart';
+import 'package:graphlink/src/serializers/client_serializers/typescript/typescript_rest_operation_serializer.dart';
+import 'package:graphlink/src/model/gl_rest_operation.dart';
+import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/serializers/client_serializers/typescript/typescript_client_vars.dart';
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/serializers/gl_client_serializer.dart';
@@ -22,20 +26,74 @@ class TypeScriptClientSerializer extends GLClientSerializer {
   final GLParser _parser;
   final bool generateDefaultWsAdapter;
   final bool observables;
+  final TypeScriptHttpAdapter restHttpAdapter;
   final _cg = TypeScriptCodeGenUtils();
 
   late final TypeScriptClientOperationSerializer _opSer;
+  late final TypeScriptRestOperationSerializer _restSer;
 
   TypeScriptClientSerializer(
     this._parser,
     GLSerializer tsSerializer, {
     this.generateDefaultWsAdapter = true,
     this.observables = false,
+    this.restHttpAdapter = TypeScriptHttpAdapter.fetch,
+    bool commaQueryLists = false,
+    bool bracketFormNesting = false,
   }) : super(tsSerializer, GLGraphqlSerializer(_parser, false)) {
     _opSer = TypeScriptClientOperationSerializer(
       _parser, _cg, gqlSerializer, serializer as TypeScriptSerializer,
       observables: observables,
     );
+    _restSer = TypeScriptRestOperationSerializer(
+      _parser, _cg, serializer as TypeScriptSerializer,
+      observables: observables,
+      commaLists: commaQueryLists,
+      bracketNesting: bracketFormNesting,
+    );
+  }
+
+  List<GLRestOperation> _restOperations(GLQueryType type) =>
+      _parser.restOperations.values.where((o) => o.type == type).toList();
+
+  bool _hasOperations(GLQueryType type) => _parser.hasQueryType(type) || _restOperations(type).isNotEmpty;
+
+  bool get _hasRest => _parser.restOperations.isNotEmpty;
+
+  bool get _hasGraphQL => GLQueryType.values.any(_parser.hasQueryType);
+
+  bool get hasRest => _hasRest;
+
+  List<String> _restImportsFor(GLQueryType type) {
+    final operations = _restOperations(type);
+    if (operations.isEmpty) return const [];
+    final uploads = _parser.uploadScalarNames;
+    final usesUploads =
+        operations.any((o) => o.arguments.any((a) => uploads.contains(a.argument.type.firstType.token)));
+    final tokens = <GLToken>[];
+    for (final operation in operations) {
+      final names = [
+        operation.field.type.firstType.token,
+        ...operation.arguments.map((a) => a.argument.type.firstType.token),
+      ];
+      for (final name in names) {
+        if (_parser.isEnum(name) ||
+            _parser.isInput(name) ||
+            _parser.types.containsKey(name) ||
+            _parser.interfaces.containsKey(name)) {
+          final token = _parser.getTokenByKey(name);
+          if (token != null) tokens.add(token);
+        }
+      }
+    }
+    return [
+      "import { GraphLinkRestResolver } from './graph-link-rest-resolver.js';",
+      "import { GLDownload, restEncode, restEntries, restSpreadEntries, restHeader, restHeaders, restParts } from './graph-link-rest.js';",
+      "import type { DownloadProgressCallback, RestBody, RestPart, RestRequest } from './graph-link-rest.js';",
+      if (!(type == GLQueryType.mutation && _parser.hasUploadMutations))
+        "import type { GLUpload, UploadProgressCallback } from './graph-link-uploads.js';",
+      ...tokens.map(serializer.serializeImportToken).where((e) => e.isNotEmpty),
+    ];
   }
 
   @override
@@ -223,7 +281,8 @@ class TypeScriptClientSerializer extends GLClientSerializer {
         "import type { GraphLinkLock } from './graph-link-lock.js';",
         "import { GraphLinkCacheEntry } from './graph-link-cache-entry.js';",
         "import { GraphLinkPartialQuery } from './graph-link-partial-query.js';",
-      ],
+        ..._restImportsFor(GLQueryType.query),
+      ].toSet().toList(),
       body: body,
     );
   }
@@ -242,7 +301,8 @@ class TypeScriptClientSerializer extends GLClientSerializer {
         "import type { $_adapterType } from './graph-link-adapter.js';",
         "import type { $_cacheStoreType } from './graph-link-cache-store.js';",
         "import type { GraphLinkLock } from './graph-link-lock.js';",
-      ],
+        ..._restImportsFor(GLQueryType.mutation),
+      ].toSet().toList(),
       body: body,
     );
   }
@@ -270,9 +330,13 @@ class TypeScriptClientSerializer extends GLClientSerializer {
       "import type { GraphLinkCacheStore } from './graph-link-cache-store.js';",
       "import { InMemoryGraphLinkCacheStore } from './graph-link-in-memory-cache-store.js';",
       "import { GraphLinkLock } from './graph-link-lock.js';",
-      if (_parser.hasQueries)
+      if (_hasRest) ...[
+        "import { glNoGraphQL__ } from './graph-link-rest.js';",
+        "import type { GLRestAdapter } from './graph-link-rest.js';",
+      ],
+      if (_hasOperations(GLQueryType.query))
         "import { GraphLinkQueries } from './graph-link-queries.js';",
-      if (_parser.hasMutations)
+      if (_hasOperations(GLQueryType.mutation))
         "import { GraphLinkMutations } from './graph-link-mutations.js';",
       if (_parser.hasSubscriptions) ...[
         "import { GraphLinkSubscriptions } from './graph-link-subscriptions.js';",
@@ -582,11 +646,16 @@ class TypeScriptClientSerializer extends GLClientSerializer {
   // ── Operation class builder ───────────────────────────────────────────────
 
   String? _buildClass(GLQueryType type) {
-    final methods = buildOperationMethods(type);
+    final restOperations = _restOperations(type);
+    final methods = [
+      ...buildOperationMethods(type),
+      ...restOperations.map(_restSer.operationToMethod),
+    ];
     if (methods.isEmpty) return null;
 
+    final base = restOperations.isEmpty ? 'GraphLinkResolverBase' : 'GraphLinkRestResolver';
     return _cg.createClass(
-      className: '${classNameFromType(type)} extends GraphLinkResolverBase',
+      className: '${classNameFromType(type)} extends $base',
       exported: true,
       statements: [
         if (type != GLQueryType.subscription) ...[
@@ -596,7 +665,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
           'private readonly $svHandler: GraphLinkSubscriptionHandler;',
         ],
         _buildConstructor(type),
-        if (type == GLQueryType.query) ...[
+        if (type == GLQueryType.query && _parser.hasQueryType(GLQueryType.query)) ...[
           _buildPayloadMethod(),
           _parseAndCacheMethod(),
         ],
@@ -723,8 +792,8 @@ class TypeScriptClientSerializer extends GLClientSerializer {
   // ── GraphLinkClient class ─────────────────────────────────────────────────
 
   String _graphLinkClientClass() {
-    final hasQueries = _parser.hasQueries;
-    final hasMutations = _parser.hasMutations;
+    final hasQueries = _hasOperations(GLQueryType.query);
+    final hasMutations = _hasOperations(GLQueryType.mutation);
     final hasSubs = _parser.hasSubscriptions;
     final allTags =
         _parser.getAllCacheTags().map((t) => "'$t'").join(', ');
@@ -758,13 +827,16 @@ class TypeScriptClientSerializer extends GLClientSerializer {
     required String allTags,
   }) {
     final args = [
-      'adapter: $_adapterType',
-      if (_parser.persistedQueriesUseGet) 'getAdapter: $_adapterType',
+      if (_hasGraphQL) 'adapter: $_adapterType',
+      if (_hasGraphQL && _parser.persistedQueriesUseGet) 'getAdapter: $_adapterType',
       if (hasSubs) 'wsAdapter: GraphLinkWsAdapter',
+      if (_hasRest) 'restAdapter: GLRestAdapter',
       if (hasMutations && _parser.hasUploadMutations)
         'multipartAdapter?: GLMultipartAdapter',
       'store?: $_cacheStoreType',
     ];
+    final adapterRef = _hasGraphQL ? 'adapter' : 'glNoGraphQL__';
+    final getAdapterRef = _hasGraphQL ? 'getAdapter' : 'glNoGraphQL__';
 
     final fragAssignments = _parser.usedFragments
         .where((f) => !oversizedFragmentNames.contains(f.tokenInfo.token))
@@ -783,12 +855,16 @@ class TypeScriptClientSerializer extends GLClientSerializer {
           iterable: '[$allTags]',
           statements: ['this.$svTagLocks.set(tag, new GraphLinkLock());'],
         ),
-        if (hasQueries)
-          'this.queries = new ${classNameFromType(GLQueryType.query)}(adapter,${_parser.persistedQueriesUseGet ? ' getAdapter,' : ''} this.$svFragMap, this.store, this.$svTagLocks);',
-        if (hasMutations)
+        if (hasQueries) ...[
+          'this.queries = new ${classNameFromType(GLQueryType.query)}($adapterRef,${_parser.persistedQueriesUseGet ? ' $getAdapterRef,' : ''} this.$svFragMap, this.store, this.$svTagLocks);',
+          if (_restOperations(GLQueryType.query).isNotEmpty) 'this.queries.restAdapter = restAdapter;',
+        ],
+        if (hasMutations) ...[
           _parser.hasUploadMutations
-            ? 'this.mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter,${_parser.persistedQueriesUseGet ? ' getAdapter,' : ''} multipartAdapter, this.$svFragMap, this.store, this.$svTagLocks);'
-            : 'this.mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter,${_parser.persistedQueriesUseGet ? ' getAdapter,' : ''} this.$svFragMap, this.store, this.$svTagLocks);',
+            ? 'this.mutations = new ${classNameFromType(GLQueryType.mutation)}($adapterRef,${_parser.persistedQueriesUseGet ? ' $getAdapterRef,' : ''} multipartAdapter, this.$svFragMap, this.store, this.$svTagLocks);'
+            : 'this.mutations = new ${classNameFromType(GLQueryType.mutation)}($adapterRef,${_parser.persistedQueriesUseGet ? ' $getAdapterRef,' : ''} this.$svFragMap, this.store, this.$svTagLocks);',
+          if (_restOperations(GLQueryType.mutation).isNotEmpty) 'this.mutations.restAdapter = restAdapter;',
+        ],
         if (hasSubs)
           'this.subscriptions = new ${classNameFromType(GLQueryType.subscription)}(wsAdapter, this.$svFragMap, this.store, this.$svTagLocks);',
       ],
@@ -825,6 +901,36 @@ class TypeScriptClientSerializer extends GLClientSerializer {
       if (_parser.persistedQueriesUseGet) buffer.writeln(tsAxiosGetAdapter(_parser.operationNameAsParameter));
     }
     return GLClassModel(body: buffer.toString());
+  }
+
+  // ── REST files ────────────────────────────────────────────────────────────
+
+  GLClassModel generateRestFile() => const GLClassModel(
+        imports: ["import type { GLUpload, UploadProgressCallback } from './graph-link-uploads.js';"],
+        body: tsRestFile,
+      );
+
+  GLClassModel generateRestResolverFile() => const GLClassModel(
+        imports: [
+          "import { GraphLinkResolverBase } from './graph-link-resolver-base.js';",
+          "import { GraphLinkCacheEntry } from './graph-link-cache-entry.js';",
+          "import { GraphLinkPartialQuery } from './graph-link-partial-query.js';",
+          "import { GLDownload, RestError, restNavigate } from './graph-link-rest.js';",
+          "import type { DownloadProgressCallback, GLRestAdapter, RestRequest, RestResponse } from './graph-link-rest.js';",
+        ],
+        body: tsRestResolver,
+      );
+
+  GLClassModel? generateRestAdaptersFile() {
+    if (!_hasRest || restHttpAdapter == TypeScriptHttpAdapter.none) return null;
+    final fetch = restHttpAdapter == TypeScriptHttpAdapter.fetch;
+    return GLClassModel(
+      imports: [
+        "import { RestResponse, restFormBody, restMultipart, restReadAll, restUrl${fetch ? ', restChunkedStream, restCountedStream' : ''} } from './graph-link-rest.js';",
+        "import type { GLRestAdapter, RestRequest } from './graph-link-rest.js';",
+      ],
+      body: fetch ? tsRestFetchAdapter : tsRestAxiosAdapter,
+    );
   }
 
   // ── Uploads file ──────────────────────────────────────────────────────────

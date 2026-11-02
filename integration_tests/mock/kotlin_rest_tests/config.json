@@ -1,0 +1,24 @@
+{
+  "schemaPaths": ["schema.graphql"],
+  "mode": "client",
+  "typeMappings": {
+    "ID":      "String",
+    "String":  "String",
+    "Float":   "Double",
+    "Int":     "Int",
+    "Boolean": "Boolean"
+  },
+  "outputDir": "client-app/src/main/kotlin/dev/graphlink/restmock/generated",
+  "clientConfig": {
+    "kotlin": {
+      "packageName":                "dev.graphlink.restmock.generated",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries":        true,
+      "nullableFieldsRequired":     false,
+      "inputAsDataClass":           true,
+      "typeAsDataClass":            true,
+      "wsAdapter":                  "none",
+      "captureErrors":              false
+    }
+  }
+}

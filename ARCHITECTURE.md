@@ -191,7 +191,9 @@ Under `serializers/client_serializers/`:
 | `dart/dart_client_serializer.dart` | `DartClientSerializer` | Dart adapter, queries, mutations, subscriptions |
 | `dart/dart_rest_operation_serializer.dart` | `DartRestOperationSerializer` | Dart methods for `GLRestOperation`s (request building, decoding, cache). Runtime types live in `dart_client_constants.dart` (`dartRestFile`, `dartRestResolver`, REST adapters) |
 | `java/java_client_serializer.dart` | `JavaClientSerializer` | Java adapter, OkHttp, WebSocket |
+| `kotlin/kotlin_rest_operation_serializer.dart` | `KotlinRestOperationSerializer` | Kotlin methods for `GLRestOperation`s. Runtime in `kotlin_rest_constants.dart` |
 | `kotlin/kotlin_client_serializer.dart` | `KotlinClientSerializer` | Kotlin coroutines adapter, OkHttp, WebSocket |
+| `typescript/typescript_rest_operation_serializer.dart` | `TypeScriptRestOperationSerializer` | TypeScript methods for `GLRestOperation`s. Runtime in `typescript_rest_constants.dart` |
 | `typescript/typescript_client_serializer.dart` | `TypeScriptClientSerializer` | TypeScript fetch adapter, observables |
 | `java/java_client_operation_serializer.dart` | `JavaClientOperationSerializer` | Per-operation Java classes |
 | `kotlin/kotlin_client_operation_serializer.dart` | `KotlinClientOperationSerializer` | Per-operation Kotlin classes |

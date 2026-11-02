@@ -94,7 +94,7 @@ void main() {
         throwsA(isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
-          contains('$glUpload is not allowed on type definitions'),
+          contains('$glUpload cannot be used on'),
         )),
       );
     });
@@ -111,7 +111,7 @@ void main() {
         throwsA(isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
-          contains('$glUpload is not allowed on input types'),
+          contains('$glUpload cannot be used on'),
         )),
       );
     });
@@ -130,7 +130,7 @@ void main() {
         throwsA(isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
-          contains('$glUpload is not allowed on fields'),
+          contains('$glUpload cannot be used on'),
         )),
       );
     });
@@ -151,7 +151,7 @@ void main() {
         throwsA(isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
-          contains('$glUpload is not allowed on field arguments'),
+          contains('$glUpload cannot be used on'),
         )),
       );
     });
@@ -170,7 +170,7 @@ void main() {
         throwsA(isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
-          contains('$glUpload is not allowed on input fields'),
+          contains('$glUpload cannot be used on'),
         )),
       );
     });
@@ -195,7 +195,7 @@ void main() {
         throwsA(isA<ParseException>().having(
           (e) => e.errorMessage,
           'errorMessage',
-          contains('$glUpload is not allowed on operations'),
+          contains('$glUpload cannot be used on'),
         )),
       );
     });

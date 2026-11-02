@@ -7,7 +7,9 @@ import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_input_mapping.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
+import 'package:graphlink/src/model/gl_rest_discriminator.dart';
 import 'package:graphlink/src/model/gl_token.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_rest_extension.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
@@ -388,7 +390,40 @@ class KotlinSerializer extends GLSerializer {
         name: def.codeName, body: body, superInterfaces: superIfaces.isEmpty ? null : superIfaces);
   }
 
+  String _discriminatedFromJson(String token, Set<GLTypeDefinition> subTypes, GLRestDiscriminator discriminator) {
+    String typeName(GLTypeDefinition t) => t.derivedFromType?.tokenInfo.token ?? t.tokenInfo.token;
+    final byTypename = codeGenUtils.switchStatement(
+      expression: 'map["__typename"]',
+      cases: [
+        for (final t in subTypes)
+          KotlinWhenBranch(caseValue: '"${typeName(t)}"', statement: 'return ${t.codeName}.fromJson(map)'),
+        KotlinWhenBranch(caseValue: 'else', statement: 'Unit'),
+      ],
+    );
+    final byValue = codeGenUtils.switchStatement(
+      expression: 'discriminator',
+      cases: [
+        for (final t in subTypes)
+          KotlinWhenBranch(
+              caseValue: '"${discriminator.valueByType[typeName(t)] ?? typeName(t)}"',
+              statement: 'return ${t.codeName}.fromJson(map)'),
+        KotlinWhenBranch(
+          caseValue: 'else',
+          statement:
+              'throw IllegalArgumentException("Cannot decode $token: unknown or missing \\"${discriminator.field}\\" value (\$discriminator)")',
+        ),
+      ],
+    );
+    return 'fun fromJson(map: $_mapType): $token ${codeGenUtils.block([
+      byTypename,
+      'val discriminator = map["${discriminator.field}"]',
+      byValue,
+    ])}';
+  }
+
   String _serializeFromJsonForInterface(String token, Set<GLTypeDefinition> subTypes) {
+    final discriminator = grammar.restDiscriminators[token];
+    if (discriminator != null) return _discriminatedFromJson(token, subTypes, discriminator);
     final cases = [
       ...subTypes.map((st) {
         final typeName = st.derivedFromType?.tokenInfo.token ?? st.tokenInfo.token;
@@ -445,12 +480,34 @@ class KotlinSerializer extends GLSerializer {
     final assignments = fields
         .map((f) => '${f.codeName} = ${_fromJsonExpr(f, f.type, 'map', 0, context)}')
         .toList();
-    return '@Suppress("UNCHECKED_CAST")\nfun fromJson(map: $_mapType): $token = ${codeGenUtils.constructorCall(token, assignments)}';
+    final checks = _requiredFieldChecks(fields, context);
+    final constructed = codeGenUtils.constructorCall(token, assignments);
+    if (checks.isEmpty) {
+      return '@Suppress("UNCHECKED_CAST")\nfun fromJson(map: $_mapType): $token = $constructed';
+    }
+    return '@Suppress("UNCHECKED_CAST")\nfun fromJson(map: $_mapType): $token ${codeGenUtils.block([...checks, 'return $constructed'])}';
   }
 
-  String _fromJsonExpr(GLField field, GLType type, String mapVar, int depth, GLToken context) {
-    final key = depth == 0 ? '["${field.name}"]' : '';
-    final access = '$mapVar$key';
+  List<String> _requiredFieldChecks(List<GLField> fields, GLToken context) {
+    final token = context.token;
+    if (!grammar.restReachableTypeNames.contains(token)) return const [];
+    return [
+      for (final field in fields)
+        if (!field.type.nullable && field.initialValue == null)
+          codeGenUtils.ifStatement(
+            condition: 'map["${field.name}"] == null',
+            ifBlockStatements: ['throw IllegalArgumentException("$token.${field.name} is missing or null in the response")'],
+          ),
+    ];
+  }
+
+  String fromJsonValueExpr(String valueExpr, GLType type) =>
+      _fromJsonExpr(null, type, valueExpr, 0, null, valueAccess: valueExpr);
+
+  String _fromJsonExpr(GLField? field, GLType type, String mapVar, int depth, GLToken? context,
+      {String? valueAccess}) {
+    final key = depth == 0 ? '["${field?.name}"]' : '';
+    final access = valueAccess ?? '$mapVar$key';
 
     if (type is GLListType) {
       final inner = type.inlineType;

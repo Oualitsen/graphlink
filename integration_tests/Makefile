@@ -1,4 +1,4 @@
-.PHONY: persisted-queries dart typescript java kotlin swift python go dart-real dart-rest-real dart-rest-dio-real typescript-real java-real kotlin-real swift-real python-real go-real server upload-server all all-real kill-servers kill-ports start-server start-upload-server start-main-server start-servers generate-all clean-all
+.PHONY: persisted-queries dart typescript java kotlin swift python go dart-real dart-rest-real dart-rest-dio-real typescript-rest typescript-rest-real kotlin-rest kotlin-rest-real typescript-real java-real kotlin-real swift-real python-real go-real server upload-server all all-real kill-servers kill-ports start-server start-upload-server start-main-server start-servers generate-all clean-all
 
 # Delete every previously generated output dir across all client projects.
 # Prune node_modules/build/target/.gradle/.dart_tool so we only ever touch
@@ -20,6 +20,9 @@ dart:
 dart-rest:
 	$(MAKE) -C mock/dart_rest_tests ci
 
+typescript-rest:
+	$(MAKE) -C mock/typescript_rest_tests ci
+
 typescript:
 	$(MAKE) -C mock/typescript_client_tests install
 	$(MAKE) -C mock/typescript_client_tests ci
@@ -29,6 +32,9 @@ java:
 
 kotlin:
 	$(MAKE) -C mock/kotlin_client_tests ci
+
+kotlin-rest:
+	$(MAKE) -C mock/kotlin_rest_tests ci
 
 swift:
 	$(MAKE) -C mock/swift_client_tests ci
@@ -57,6 +63,9 @@ dart-rest-real:
 dart-rest-dio-real:
 	$(MAKE) -C real/dart_rest_dio_client_tests_real ci
 
+typescript-rest-real:
+	$(MAKE) -C real/typescript_rest_client_tests_real ci
+
 typescript-real:
 	$(MAKE) -C real/typescript_client_tests_real install
 	$(MAKE) -C real/typescript_client_tests_real ci
@@ -67,6 +76,9 @@ java-real:
 kotlin-real:
 	$(MAKE) -C real/kotlin_client_tests_real ci
 
+kotlin-rest-real:
+	$(MAKE) -C real/kotlin_rest_client_tests_real ci
+
 swift-real:
 	$(MAKE) -C real/swift_client_tests_real ci
 
@@ -76,9 +88,9 @@ python-real:
 go-real:
 	$(MAKE) -C real/go_client_tests_real ci
 
-all: dart dart-rest typescript java kotlin swift python go
+all: dart dart-rest typescript typescript-rest java kotlin kotlin-rest swift python go
 
-all-real: dart-real dart-rest-real dart-rest-dio-real typescript-real java-real java-reactor-real kotlin-real swift-real python-real go-real
+all-real: dart-real dart-rest-real dart-rest-dio-real typescript-real typescript-rest-real kotlin-rest-real java-real java-reactor-real kotlin-real swift-real python-real go-real
 
 start-server:
 	curl -s -X POST http://localhost:9990/actuator/shutdown || true
