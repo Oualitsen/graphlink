@@ -8,6 +8,8 @@ import 'package:graphlink/src/model/gl_fragment.dart';
 import 'package:graphlink/src/model/gl_query_element.dart';
 import 'package:graphlink/src/model/gl_schema.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
+import 'package:graphlink/src/model/gl_rest_discriminator.dart';
+import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_input_definition.dart';
@@ -30,6 +32,9 @@ import 'package:logger/logger.dart';
 
 import 'package:graphlink/src/parser_extensions/gl_grammar_cache_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_rest_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_rest_validation_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_rest_discriminator_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_maps_to_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_mapped_to_type_extension.dart';
@@ -211,6 +216,8 @@ class GLParser {
   final Map<String, GLInterfaceDefinition> interfaces = {};
   final Map<String, GLRepository> repositories = {};
   final Map<GLOperationKey, GLQueryDefinition> queries = {};
+  final Map<GLOperationKey, GLRestOperation> restOperations = {};
+  final Map<String, GLRestDiscriminator> restDiscriminators = {};
   final Map<String, GLEnumDefinition> enums = {};
   final Map<String, GLTypeDefinition> projectedTypes = {};
   final Map<String, GLInterfaceDefinition> projectedInterfaces = {};
@@ -398,8 +405,13 @@ class GLParser {
       stripSkipOnClientMembers();
       handleRepositories(false);
       checkGLExpandDirectives();
-      if (generateAllFieldsFragments) {
+      resolveRestOperations();
+      validateRestOperations();
+      resolveRestDiscriminators();
+      if (generateAllFieldsFragments || restOperations.isNotEmpty) {
         forceCyclicEdgesNullable();
+      }
+      if (generateAllFieldsFragments) {
         createAllFieldsFragments();
         if (autoGenerateQueries || autoGenerateQueriesFor != null) {
           generateQueryDefinitions();
@@ -433,6 +445,7 @@ class GLParser {
       normalizeQueryNames();
       assignQueryCodeNamesEarly();
       createProjectedTypes();
+      registerRestResponseTypes();
       cleanProjectedInterfacesImplementations();
       fixProjectedInterfaceConflicts();
       addClientTypesToProjectedTypes();
@@ -677,7 +690,7 @@ class GLParser {
       nameDeclared: false,
       fields: fields,
       interfaceNames: interfaceNames,
-      directives: directives,
+      directives: pushRestPrefixToFields(directives, fields),
       derivedFromType: null,
       extension: isExtension,
       documentation: documentation,

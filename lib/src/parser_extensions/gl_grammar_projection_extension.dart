@@ -363,6 +363,11 @@ extension GLGrammarProjectionExtension on GLParser {
     }
   }
 
+  /// Registers the declared [type] and everything reachable from it as projected types,
+  /// for operations that return the full declared shape (REST).
+  void registerDeclaredTypeAsProjected(GLTypeDefinition type) =>
+      _registerAllFieldsBlind(type, <String>{});
+
   GLTypeDefinition createProjectedTypeForQuery(GLQueryElement element) {
     var type = element.returnType;
     var block = element.block!;
