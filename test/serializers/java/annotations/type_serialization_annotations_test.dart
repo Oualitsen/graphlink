@@ -215,7 +215,7 @@ void main() {
       glAnnotation: Boolean = true
       glApplyOnFields: Boolean = false
       )
- on FIELD_DEFINITION | FIELD
+ on OBJECT | FIELD_DEFINITION | FIELD
 
  directive @auth2(
       glClass: String = "Auth2",
@@ -224,7 +224,7 @@ void main() {
       glAnnotation: Boolean = true
       glApplyOnFields: Boolean = false
       )
- on FIELD_DEFINITION | FIELD
+ on OBJECT | FIELD_DEFINITION | FIELD
 
  type Query @auth(glApplyOnFields: true) {
   countUsers: Int ${glServiceName}(name: "MainService")

@@ -135,7 +135,7 @@ void main() async {
     glOnClient: Boolean = false
     glOnServer: Boolean = true
 
-) on OBJECT | INPUT_OBJECT | INTERFACE
+) on OBJECT | INPUT_OBJECT | INTERFACE | FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 
   input PersonInput @FieldNameConstants {
     name: String
@@ -159,7 +159,7 @@ void main() async {
     glOnClient: Boolean = false
     glOnServer: Boolean = true
 
-) on OBJECT | INPUT_OBJECT | INTERFACE
+) on OBJECT | INPUT_OBJECT | INTERFACE | FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 
   input PersonInput  {
     name: String @FieldNameConstants
@@ -183,7 +183,7 @@ void main() async {
     glOnClient: Boolean = false
     glOnServer: Boolean = true
 
-) on OBJECT | INPUT_OBJECT | INTERFACE
+) on OBJECT | INPUT_OBJECT | INTERFACE | FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 
   type Person @FieldNameConstants {
     name: String
@@ -207,7 +207,7 @@ void main() async {
     glOnClient: Boolean = false
     glOnServer: Boolean = true
 
-) on OBJECT | INPUT_OBJECT | INTERFACE
+) on OBJECT | INPUT_OBJECT | INTERFACE | FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 
   type Person  {
     name: String @FieldNameConstants
@@ -687,7 +687,7 @@ type Person  {
     glOnClient: Boolean = false
     glOnServer: Boolean = true
 
-) on OBJECT | INPUT_OBJECT | INTERFACE
+) on OBJECT | INPUT_OBJECT | INTERFACE | FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 
 type Person @FieldNameConstants  {
   id: String 
@@ -710,7 +710,7 @@ type Person @FieldNameConstants  {
     glImport: String = "lombok.experimental.FieldNameConstants"
     glOnClient: Boolean = false
     glOnServer: Boolean = true
-) on OBJECT | INPUT_OBJECT | INTERFACE
+) on OBJECT | INPUT_OBJECT | INTERFACE | FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 
 type Person @FieldNameConstants  {
   id: String 

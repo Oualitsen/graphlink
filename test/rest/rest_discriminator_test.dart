@@ -84,7 +84,7 @@ void main() {
     });
 
     test('only on interfaces and unions', () {
-      expectError('type Plain @glRestDiscriminator(field: "t") { id: ID }\ntype Query { p: Plain }', 'interface or union');
+      expectError('type Plain @glRestDiscriminator(field: "t") { id: ID }\ntype Query { p: Plain }', 'cannot be used on OBJECT (allowed: INTERFACE, UNION)');
     });
   });
 }

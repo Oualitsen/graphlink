@@ -21,8 +21,18 @@ extension GLGrammarDirectiveValidationExtension on GLParser {
             "Directive ${directive.token} is not declared: add 'directive ${directive.token} on ...' to your schema",
             info: directive.tokenInfo);
       }
+      _checkLocation(directive, definition);
       _checkArguments(directive, definition, internal);
     }
+  }
+
+  void _checkLocation(GLDirectiveValue directive, GLDirectiveDefinition definition) {
+    if (directive.locations.isEmpty || definition.scopes.isEmpty) return;
+    final location = directive.locations.first;
+    if (definition.scopes.contains(location)) return;
+    final allowed = definition.scopes.map((s) => s.name).join(', ');
+    throw ParseException('${directive.token} cannot be used on ${location.name} (allowed: $allowed)',
+        info: directive.tokenInfo);
   }
 
   void _checkRedeclarations(InternalDirectives internal) {

@@ -32,9 +32,9 @@ void main() {
   test("serialize directive definition with different argument types", () {
     final g = GLParser(generateAllFieldsFragments: true);
     g.parse('''
-    directive @myDirective(value: User!) on OBJECT
-    directive @myDirective2(value: [String!]!) on OBJECT
-    directive @myDirective3(value: [User!]!) on OBJECT
+    directive @myDirective(value: User!) on FIELD_DEFINITION
+    directive @myDirective2(value: [String!]!) on FIELD_DEFINITION
+    directive @myDirective3(value: [User!]!) on FIELD_DEFINITION
 
     type User {
       id: String @myDirective(value: {name: "ramdane", age: 12, id: "test"})
@@ -47,24 +47,24 @@ void main() {
     final serializer = GLGraphqlSerializer(g);
     var myDirective = serializer
         .serializeDirectiveDefinition(g.directiveDefinitions["@myDirective"]!);
-    expect(myDirective, "directive @myDirective(value: User!) on OBJECT");
+    expect(myDirective, "directive @myDirective(value: User!) on FIELD_DEFINITION");
 
     var myDirective2 = serializer
         .serializeDirectiveDefinition(g.directiveDefinitions["@myDirective2"]!);
     expect(
-        myDirective2, "directive @myDirective2(value: [String!]!) on OBJECT");
+        myDirective2, "directive @myDirective2(value: [String!]!) on FIELD_DEFINITION");
 
     var myDirective3 = serializer
         .serializeDirectiveDefinition(g.directiveDefinitions["@myDirective3"]!);
-    expect(myDirective3, "directive @myDirective3(value: [User!]!) on OBJECT");
+    expect(myDirective3, "directive @myDirective3(value: [User!]!) on FIELD_DEFINITION");
   });
 
   test("serialize directive values with different argument types", () {
     final g = GLParser(generateAllFieldsFragments: true);
     g.parse('''
-    directive @myDirective(value: User!) on OBJECT
-    directive @myDirective2(value: [String!]!) on OBJECT
-    directive @myDirective3(value: [User!]!) on OBJECT
+    directive @myDirective(value: User!) on FIELD_DEFINITION
+    directive @myDirective2(value: [String!]!) on FIELD_DEFINITION
+    directive @myDirective3(value: [User!]!) on FIELD_DEFINITION
 
     type User {
       id: String @myDirective(value: {name: "ramdane", age: 12, id: "test"})

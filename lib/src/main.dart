@@ -18,6 +18,7 @@ import 'package:graphlink/src/generators/typescript_client_generator.dart';
 import 'package:graphlink/src/gl_grammar_io.dart' as grammar_io;
 import 'package:graphlink/src/grammar_factory.dart';
 import 'package:graphlink/src/io_utils.dart';
+import 'package:graphlink/src/model/internal_directive_declarations.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/utils.dart';
 import 'package:yaml/yaml.dart';
@@ -68,6 +69,11 @@ Future<void> main(List<String> arguments) async {
       defaultsTo: '500',
     )
     ..addFlag(
+      'print-directives',
+      help: 'Print the declarations of every GraphLink directive (for your IDE) and exit',
+      negatable: false,
+    )
+    ..addFlag(
       'version',
       abbr: 'v',
       help: 'Print version',
@@ -87,6 +93,11 @@ Future<void> main(List<String> arguments) async {
   if (debounceMs == null || debounceMs < 0) {
     stderr.writeln('❌ --debounce must be a non-negative integer (milliseconds)');
     exit(1);
+  }
+
+  if (args['print-directives'] as bool) {
+    stdout.write(directiveDeclarationsForIde());
+    exit(0);
   }
 
   if (args['version'] as bool) {
