@@ -99,6 +99,7 @@ mapped inputs, etc.) so generators never duplicate derivation logic.
 | `GlField` | `model/gl_field.dart` | Field on a type or input |
 | `GlQueries` | `model/gl_queries.dart` | All queries, mutations, subscriptions |
 | `GlDirective` | `model/gl_directive.dart` | Directive instance on a field/type |
+| `GLRestOperation` | `model/gl_rest_operation.dart` | Resolved `@glRest` operation (see `rest-client-specs.md`); lives in `GLParser.restOperations`, not in `queries` |
 | `GlFragment` | `model/gl_fragment.dart` | GraphQL fragment |
 | `GlUnion` | `model/gl_union.dart` | Union type |
 | `GlEnumDefinition` | `model/gl_enum_definition.dart` | Enum definition |

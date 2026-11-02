@@ -100,6 +100,8 @@ All under `lib/src/model/`.
 | `gl_fragment.dart` | `GLFragmentDefinition`, `GLProjection` | Fragments & projections |
 | `gl_union.dart` | `GLUnionDefinition` | Union type |
 | `gl_directive.dart` | `GLDirectiveValue`, `GLDirectiveDefinition` | Directive instances |
+| `gl_rest_operation.dart` | `GLRestOperation`, `GLRestArgument`, `GLRestResponse` | A resolved REST operation (method, path, argument roles, body kind, response kind, cache) — held in `GLParser.restOperations`, never in `queries` |
+| `gl_rest_discriminator.dart` | `GLRestDiscriminator` | Resolved `@glRestDiscriminator` of an interface or union |
 | `gl_interface_definition.dart` | `GLInterfaceDefinition` | Interface type |
 | `gl_schema.dart` | `GLSchema` | Root `schema { }` block |
 | `gl_scalar_definition.dart` | `GlScalarDefinition` | Custom scalar |
@@ -124,6 +126,11 @@ These hang **lazy computed getters** off `GLParser` (or `GlSchema`).
 | `gl_grammar_projection_extension.dart` | Derives "projected types" — minimal types from query selection sets/fragments (not a directive) |
 | `gl_grammar_service_extension.dart` | Service/repository definitions for server mode |
 | `gl_grammar_upload_extension.dart` | File upload mutation detection |
+| `gl_grammar_rest_extension.dart` | `@glRest` / `@glRestPrefix`: prefix push at parse time, `resolveRestOperations()`, `registerRestResponseTypes()` into `projectedTypes` |
+| `gl_grammar_rest_arguments_extension.dart` | REST argument roles, encodings and spread fields |
+| `gl_grammar_rest_validation_extension.dart` | REST routes, cache placement, list depth, upload rules |
+| `gl_grammar_rest_response_extension.dart` | Response kind (`json`/`text`/`binary`/`none`), `responsePath`, `Download`/`Void` markers |
+| `gl_grammar_rest_discriminator_extension.dart` | `@glRestDiscriminator` → `GLParser.restDiscriminators` |
 | `gl_validation_extension.dart` | `validateSemantics()` — schema validation rules |
 
 ---
@@ -182,6 +189,7 @@ Under `serializers/client_serializers/`:
 | File | Class | Generates |
 |---|---|---|
 | `dart/dart_client_serializer.dart` | `DartClientSerializer` | Dart adapter, queries, mutations, subscriptions |
+| `dart/dart_rest_operation_serializer.dart` | `DartRestOperationSerializer` | Dart methods for `GLRestOperation`s (request building, decoding, cache). Runtime types live in `dart_client_constants.dart` (`dartRestFile`, `dartRestResolver`, REST adapters) |
 | `java/java_client_serializer.dart` | `JavaClientSerializer` | Java adapter, OkHttp, WebSocket |
 | `kotlin/kotlin_client_serializer.dart` | `KotlinClientSerializer` | Kotlin coroutines adapter, OkHttp, WebSocket |
 | `typescript/typescript_client_serializer.dart` | `TypeScriptClientSerializer` | TypeScript fetch adapter, observables |

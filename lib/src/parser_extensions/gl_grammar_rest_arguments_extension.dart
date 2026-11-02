@@ -101,6 +101,12 @@ extension GLGrammarRestArgumentsExtension on GLParser {
           info: arg.tokenInfo);
     }
     if (declared.isEmpty) {
+      if (!placeholders.contains(arg.bareName) && _isHeaderGroup(arg)) {
+        arg.addDirectiveIfAbsent(GLDirectiveValue(
+            arg.tokenInfo.ofNewName(glRestHeader), [GLDirectiveScope.ARGUMENT_DEFINITION], [],
+            generated: true));
+        return _headerArgument(field, arg, arg.getDirectiveByName(glRestHeader)!, _shapeOf(arg));
+      }
       if (!placeholders.contains(arg.bareName)) {
         throw ParseException("Argument '${arg.bareName}' of '${field.name.token}' needs a REST role: $_roleHint",
             info: arg.tokenInfo);
@@ -126,6 +132,11 @@ extension GLGrammarRestArgumentsExtension on GLParser {
       case RestArgRole.part:
         return _namedArgument(arg, RestArgRole.part, directive, shape, spreadsInputs: false);
     }
+  }
+
+  bool _isHeaderGroup(GLArgumentDefinition arg) {
+    final input = inputs[arg.type.firstType.token];
+    return input != null && !arg.type.isList && input.hasDirective(glRestHeader);
   }
 
   void _injectPathDirective(GLArgumentDefinition arg) {

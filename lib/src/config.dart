@@ -2,6 +2,18 @@ import 'package:graphlink/src/serializers/code_generation_mode.dart';
 
 enum DartHttpAdapter { http, dio, none }
 
+enum RestQueryListStyle { repeat, comma }
+
+enum RestFormNesting { dot, bracket }
+
+T _enumFromJson<T extends Enum>(List<T> values, Object? raw, T fallback) {
+  final text = raw?.toString().toLowerCase();
+  for (final value in values) {
+    if (value.name == text) return value;
+  }
+  return fallback;
+}
+
 enum TypeScriptHttpAdapter { fetch, axios, none }
 
 enum PersistedQueriesMode { off, apq }
@@ -508,7 +520,12 @@ class DartClientConfig extends ClientLanguageConfig {
   final bool immutableInputFields;
   final bool generateAdapters;
   final DartHttpAdapter httpAdapter;
+  final DartHttpAdapter? restHttpAdapter;
+  final RestQueryListStyle queryListStyle;
+  final RestFormNesting formNesting;
   @override final AutoGenerateQueriesFor? autoGenerateQueriesFor;
+
+  DartHttpAdapter get effectiveRestHttpAdapter => restHttpAdapter ?? httpAdapter;
 
   DartClientConfig({
     required this.generateAllFieldsFragments,
@@ -528,6 +545,9 @@ class DartClientConfig extends ClientLanguageConfig {
     this.immutableTypeFields = true,
     this.generateAdapters = true,
     this.httpAdapter = DartHttpAdapter.http,
+    this.restHttpAdapter,
+    this.queryListStyle = RestQueryListStyle.repeat,
+    this.formNesting = RestFormNesting.dot,
     this.autoGenerateQueriesFor,
     this.autoGenerateQueriesArgumentLimit = 200,
     this.maxFragmentBodySize = 8192,
@@ -557,6 +577,11 @@ class DartClientConfig extends ClientLanguageConfig {
         (e) => e.name == json['httpAdapter'],
         orElse: () => DartHttpAdapter.http,
       ),
+      restHttpAdapter: json['restHttpAdapter'] == null
+          ? null
+          : _enumFromJson(DartHttpAdapter.values, json['restHttpAdapter'], DartHttpAdapter.http),
+      queryListStyle: _enumFromJson(RestQueryListStyle.values, json['queryListStyle'], RestQueryListStyle.repeat),
+      formNesting: _enumFromJson(RestFormNesting.values, json['formNesting'], RestFormNesting.dot),
       autoGenerateQueriesFor: json['autoGenerateQueriesFor'] != null
           ? AutoGenerateQueriesFor.fromJson(json['autoGenerateQueriesFor'] as Map<String, dynamic>)
           : null,

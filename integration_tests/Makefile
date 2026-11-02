@@ -17,6 +17,9 @@ generate-all:
 dart:
 	$(MAKE) -C mock/dart_client_tests ci
 
+dart-rest:
+	$(MAKE) -C mock/dart_rest_tests ci
+
 typescript:
 	$(MAKE) -C mock/typescript_client_tests install
 	$(MAKE) -C mock/typescript_client_tests ci
@@ -67,7 +70,7 @@ python-real:
 go-real:
 	$(MAKE) -C real/go_client_tests_real ci
 
-all: dart typescript java kotlin swift python go
+all: dart dart-rest typescript java kotlin swift python go
 
 all-real: dart-real typescript-real java-real java-reactor-real kotlin-real swift-real python-real go-real
 

@@ -12,6 +12,9 @@ import 'package:graphlink/src/model/gl_queries.dart';
 
 import 'package:graphlink/src/serializers/client_serializers/dart/dart_client_constants.dart';
 import 'package:graphlink/src/serializers/client_serializers/dart/dart_client_operation_serializer.dart';
+import 'package:graphlink/src/serializers/client_serializers/dart/dart_rest_operation_serializer.dart';
+import 'package:graphlink/src/model/gl_rest_operation.dart';
+import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/serializers/client_serializers/dart/dart_client_vars.dart';
 import 'package:graphlink/src/serializers/gl_client_serializer.dart';
 
@@ -21,6 +24,7 @@ const _operationNameParam = "operationName";
 const _cacheStoreClassName = 'GraphLinkCacheStore';
 const _inMemorycacheStoreClassName = 'InMemoryGraphLinkCacheStore';
 const _resolverBaseClassName = 'GraphLinkResolverBase';
+const _restResolverMixinName = 'GraphLinkRestResolver';
 
 class DartClientSerializer extends GLClientSerializer {
   final GLParser _parser;
@@ -29,15 +33,46 @@ class DartClientSerializer extends GLClientSerializer {
   final codeGenUtils = DartCodeGenUtils();
 
   late final DartClientOperationSerializer _opSer;
+  late final DartRestOperationSerializer _restSer;
 
   DartClientSerializer(this._parser, GLSerializer dartSerializer,
-      {this.generateAdapters = true, this.httpAdapter = DartHttpAdapter.http})
-      : super(dartSerializer, _parser.serializer) {
+      {this.generateAdapters = true,
+      this.httpAdapter = DartHttpAdapter.http,
+      DartHttpAdapter? restHttpAdapter,
+      this.commaQueryLists = false,
+      this.bracketFormNesting = false})
+      : restHttpAdapter = restHttpAdapter ?? httpAdapter,
+        super(dartSerializer, _parser.serializer) {
     _opSer = DartClientOperationSerializer(
         _parser, codeGenUtils, gqlSerializer, serializer);
+    _restSer = DartRestOperationSerializer(_parser, codeGenUtils, serializer, _opSer.callToJson,
+        commaLists: commaQueryLists, bracketNesting: bracketFormNesting);
   }
 
+  final DartHttpAdapter restHttpAdapter;
+  final bool commaQueryLists;
+  final bool bracketFormNesting;
+
+  List<GLRestOperation> _restOperations(GLQueryType type) =>
+      _parser.restOperations.values.where((o) => o.type == type).toList();
+
+  bool _hasOperations(GLQueryType type) => _parser.hasQueryType(type) || _restOperations(type).isNotEmpty;
+
+  bool get _generatesWithHttp =>
+      generateAdapters &&
+      (httpAdapter != DartHttpAdapter.none || (!_hasGraphQL && restHttpAdapter != DartHttpAdapter.none));
+
+  bool get _hasRest => _parser.restOperations.isNotEmpty;
+
+  bool get _hasQueries => _hasOperations(GLQueryType.query);
+
+  bool get _hasMutations => _hasOperations(GLQueryType.mutation);
+
+  bool get _hasGraphQL => GLQueryType.values.any(_parser.hasQueryType);
+
   bool get _useDio => httpAdapter == DartHttpAdapter.dio;
+
+  bool get _useRestDio => restHttpAdapter == DartHttpAdapter.dio;
 
   // ── render*Method delegates ────────────────────────────────────────────────
 
@@ -64,16 +99,19 @@ class DartClientSerializer extends GLClientSerializer {
       "import 'dart:convert';",
       "import 'dart:async';",
       if (_parser.hasSubscriptions) "import 'dart:math';",
-      if (generateAdapters && httpAdapter != DartHttpAdapter.none)
+      if (_hasRest) "import 'dart:typed_data';",
+      if (generateAdapters && httpAdapter != DartHttpAdapter.none && _hasGraphQL)
         _useDio
             ? "import 'graph_link_dio_adapter.dart';"
             : "import 'graph_link_http_adapter.dart';",
+      if (_hasRest && generateAdapters && restHttpAdapter != DartHttpAdapter.none)
+        _useRestDio ? "import 'graph_link_rest_dio_adapter.dart';" : "import 'graph_link_rest_http_adapter.dart';",
       if (generateAdapters && _parser.hasSubscriptions)
         "import 'graph_link_websocket_adapter.dart';",
       ...serializeImports(_parser)
           .split('\n')
           .where((l) => l.trim().isNotEmpty),
-      if (_parser.hasMutations && _parser.hasUploadMutations)
+      if ((_parser.hasMutations && _parser.hasUploadMutations) || _hasRest)
         "import 'graph_link_uploads.dart';",
     ];
 
@@ -95,6 +133,13 @@ class DartClientSerializer extends GLClientSerializer {
     buffer.writeln();
     if (_parser.hasUploadMutations) {
       buffer.writeln(dartUploadDefaultConverter);
+      buffer.writeln();
+    }
+
+    if (_hasRest) {
+      buffer.writeln(dartRestFile);
+      buffer.writeln();
+      buffer.writeln(dartRestResolver);
       buffer.writeln();
     }
 
@@ -240,10 +285,13 @@ class DartClientSerializer extends GLClientSerializer {
       "import 'graph_link_cache_store.dart';",
       "import 'graph_link_in_memory_cache_store.dart';",
       "import 'graph_link_lock.dart';",
-      if (_parser.hasQueries) "import 'graph_link_queries.dart';",
-      if (_parser.hasMutations) "import 'graph_link_mutations.dart';",
+      if (_hasQueries) "import 'graph_link_queries.dart';",
+      if (_hasMutations) "import 'graph_link_mutations.dart';",
       if (_parser.hasSubscriptions) "import 'graph_link_subscriptions.dart';",
-      if (generateAdapters && httpAdapter != DartHttpAdapter.none)
+      if (_hasRest) "import 'graph_link_rest.dart';",
+      if (_hasRest && generateAdapters && restHttpAdapter != DartHttpAdapter.none)
+        _useRestDio ? "import 'graph_link_rest_dio_adapter.dart';" : "import 'graph_link_rest_http_adapter.dart';",
+      if (generateAdapters && httpAdapter != DartHttpAdapter.none && _hasGraphQL)
         _useDio
             ? "import 'graph_link_dio_adapter.dart';"
             : "import 'graph_link_http_adapter.dart';",
@@ -280,7 +328,39 @@ class DartClientSerializer extends GLClientSerializer {
         "import 'graph_link_subscription_handler.dart';",
         "import 'graph_link_websocket_adapter.dart';",
       ],
+      ..._restImportsFor(type),
       ...schemaImportsFor(type),
+    ].toSet().toList();
+  }
+
+  List<String> _restImportsFor(GLQueryType type) {
+    final operations = _restOperations(type);
+    if (operations.isEmpty) return const [];
+    final uploads = _parser.uploadScalarNames;
+    final usesUploads =
+        operations.any((o) => o.arguments.any((a) => uploads.contains(a.argument.type.firstType.token)));
+    final tokens = <GLToken>[];
+    for (final operation in operations) {
+      final names = [
+        operation.field.type.firstType.token,
+        ...operation.arguments.map((a) => a.argument.type.firstType.token),
+      ];
+      for (final name in names) {
+        if (_parser.isEnum(name) ||
+            _parser.isInput(name) ||
+            _parser.types.containsKey(name) ||
+            _parser.interfaces.containsKey(name)) {
+          final token = _parser.getTokenByKey(name);
+          if (token != null) tokens.add(token);
+        }
+      }
+    }
+    return [
+      "import 'graph_link_rest.dart';",
+      "import 'graph_link_rest_resolver.dart';",
+      if (usesUploads && !(type == GLQueryType.mutation && _parser.hasUploadMutations))
+        "import 'graph_link_uploads.dart';",
+      ...tokens.map(serializer.serializeImportToken).where((e) => e.isNotEmpty),
     ];
   }
 
@@ -743,11 +823,16 @@ class DartClientSerializer extends GLClientSerializer {
   }
 
   String? _buildOperationClass(GLQueryType type) {
-    final methods = buildOperationMethods(type);
+    final restOperations = _restOperations(type);
+    final methods = [
+      ...buildOperationMethods(type),
+      ...restOperations.map(_restSer.operationToMethod),
+    ];
     if (methods.isEmpty) return null;
 
     return codeGenUtils.createClass(
-        className: "${classNameFromType(type)} extends $_resolverBaseClassName",
+        className:
+            "${classNameFromType(type)} extends $_resolverBaseClassName${restOperations.isEmpty ? '' : ' with $_restResolverMixinName'}",
         statements: [
           _declareOperationFields(type),
           codeGenUtils.createConstructor(
@@ -772,9 +857,9 @@ class DartClientSerializer extends GLClientSerializer {
     return codeGenUtils.createClass(className: 'GraphLinkClient', statements: [
       codeGenUtils.constDecl(svFragMap, '<String, String>{}'),
       codeGenUtils.constDecl(svTagLocks, '<String, GraphLinkLock>{}'),
-      if (_parser.hasQueries)
+      if (_hasQueries)
         'late final ${classNameFromType(GLQueryType.query)} queries;',
-      if (_parser.hasMutations)
+      if (_hasMutations)
         'late final ${classNameFromType(GLQueryType.mutation)} mutations;',
       if (_parser.hasSubscriptions)
         'late final ${classNameFromType(GLQueryType.subscription)} subscriptions;',
@@ -782,13 +867,14 @@ class DartClientSerializer extends GLClientSerializer {
       codeGenUtils.createMethod(
         methodName: 'GraphLinkClient',
         arguments: [
-          'required ${_adapterDeclaration()}',
+          if (_hasGraphQL) 'required ${_adapterDeclaration()}' else '${_adapterDeclaration()} = glNoGraphQL__',
           if (_parser.persistedQueriesUseGet) 'required ${_getAdapterDeclaration()}',
           if (_parser.hasUploadMutations) ...[
             'GLUploadConverter uploadConverter = defaultUploadConverter',
             'GLMultipartAdapter? uploadAdapter',
           ],
           if (_parser.hasSubscriptions) 'required GraphLinkWebSocketAdapter wsAdapter',
+          if (_hasRest) 'required GLRestAdapter restAdapter',
           '$_cacheStoreClassName? store'
         ],
         namedArguments: true,
@@ -803,22 +889,24 @@ class DartClientSerializer extends GLClientSerializer {
               variable: 'tag',
               iterable: 'tags',
               statements: ['$svTagLocks[tag] = GraphLinkLock();']),
-          if (_parser.hasQueries)
+          if (_hasQueries)
             "queries = ${classNameFromType(GLQueryType.query)}(adapter, $_getArg$svFragMap, this.store, $svTagLocks);",
-          if (_parser.hasMutations)
+          if (_hasMutations)
             _parser.hasUploadMutations
                 ? "mutations = ${classNameFromType(GLQueryType.mutation)}(adapter, ${_getArg}uploadConverter, uploadAdapter, $svFragMap, this.store, $svTagLocks);"
                 : "mutations = ${classNameFromType(GLQueryType.mutation)}(adapter, $_getArg$svFragMap, this.store, $svTagLocks);",
           if (_parser.hasSubscriptions)
             "subscriptions = ${classNameFromType(GLQueryType.subscription)}(adapter, $_getArg${'wsAdapter'}, $svFragMap, this.store, $svTagLocks);",
+          for (final type in [GLQueryType.query, GLQueryType.mutation])
+            if (_restOperations(type).isNotEmpty)
+              '${type == GLQueryType.query ? 'queries' : 'mutations'}.restAdapter = restAdapter;',
         ],
       ),
       if (_parser.hasSubscriptions &&
           generateAdapters &&
           httpAdapter != DartHttpAdapter.none)
         _fromUrlConstructor(),
-      if (generateAdapters && httpAdapter != DartHttpAdapter.none)
-        _withHttpConstructor(),
+      if (_generatesWithHttp) _withHttpConstructor(),
     ]);
   }
 
@@ -881,11 +969,19 @@ class DartClientSerializer extends GLClientSerializer {
     final hasSubscriptions = _parser.hasSubscriptions;
     final adapterClass = _useDio ? 'GraphLinkDioAdapter' : 'GraphLinkHttpAdapter';
     const adapterArgs = 'url: url, headersProvider: headersProvider';
+    final restAdapterClass = _useRestDio ? 'GraphLinkRestDioAdapter' : 'GraphLinkRestHttpAdapter';
+    final generatesRestAdapter = restHttpAdapter != DartHttpAdapter.none;
+    final restArg = !_hasRest
+        ? null
+        : generatesRestAdapter
+            ? 'restAdapter: $restAdapterClass(baseUrl: restBaseUrl, headersProvider: headersProvider).call'
+            : 'restAdapter: restAdapter';
     final wsArgs = hasSubscriptions
         ? ['wsAdapter: DefaultGraphLinkWebSocketAdapter(url: wsUrl, headersProvider: wsHeadersProvider)']
         : <String>[];
     final constructorArgs = [
-      'required String url',
+      if (_hasGraphQL) 'required String url',
+      if (_hasRest) generatesRestAdapter ? 'required String restBaseUrl' : 'required GLRestAdapter restAdapter',
       if (hasSubscriptions) ...[
         'required String wsUrl',
         'Future<Map<String, String>?> Function()? wsHeadersProvider',
@@ -903,6 +999,7 @@ class DartClientSerializer extends GLClientSerializer {
           codeGenUtils.constDecl('_a', '$adapterClass($adapterArgs)'),
           'return ${codeGenUtils.callExpression('GraphLinkClient', [
             'adapter: _a.call',
+            if (restArg != null) restArg,
             if (_parser.persistedQueriesUseGet) 'getAdapter: _a.getCall',
             if (_parser.hasUploadMutations) ...[
               'uploadConverter: defaultUploadConverter',
@@ -920,7 +1017,8 @@ class DartClientSerializer extends GLClientSerializer {
       arguments: constructorArgs,
       initializers: [
         codeGenUtils.callExpression('this', [
-          'adapter: $adapterClass($adapterArgs).call',
+          if (_hasGraphQL) 'adapter: $adapterClass($adapterArgs).call',
+          if (restArg != null) restArg,
           ...wsArgs,
           'store: store',
         ]),
@@ -936,11 +1034,13 @@ class DartClientSerializer extends GLClientSerializer {
         if (_parser.persistedQueriesUseGet) 'required ${_getAdapterDeclaration()}',
         'required String wsUrl',
         'Future<Map<String, String>?> Function()? wsHeadersProvider',
+        if (_hasRest) 'required GLRestAdapter restAdapter',
         '$_cacheStoreClassName? store',
       ],
       initializers: [
         codeGenUtils.callExpression('this', [
           'adapter: adapter',
+          if (_hasRest) 'restAdapter: restAdapter',
           if (_parser.persistedQueriesUseGet) 'getAdapter: getAdapter',
           'wsAdapter: DefaultGraphLinkWebSocketAdapter(url: wsUrl, headersProvider: wsHeadersProvider)',
           'store: store',
@@ -1294,6 +1394,52 @@ class DartClientSerializer extends GLClientSerializer {
 
   @override
   GLClassModel generateUploadsFile() => const GLClassModel(body: dartUploadsFile);
+
+  GLClassModel generateRestResolverFile() {
+    return const GLClassModel(
+      imports: [
+        "import 'dart:convert';",
+        "import 'graph_link_cache_entry.dart';",
+        "import 'graph_link_partial_query.dart';",
+        "import 'graph_link_resolver_base.dart';",
+        "import 'graph_link_rest.dart';",
+      ],
+      body: dartRestResolver,
+    );
+  }
+
+  GLClassModel generateRestHttpAdapterFile() => const GLClassModel(
+        imports: [
+          "import 'dart:async';",
+          "import 'dart:typed_data';",
+          "import 'package:http/http.dart' as http;",
+          "import 'package:http_parser/http_parser.dart';",
+          "import 'graph_link_rest.dart';",
+          "import 'graph_link_uploads.dart';",
+        ],
+        body: dartRestHttpAdapter,
+      );
+
+  GLClassModel generateRestDioAdapterFile() => const GLClassModel(
+        imports: [
+          "import 'dart:async';",
+          "import 'dart:typed_data';",
+          "import 'package:dio/dio.dart';",
+          "import 'package:http_parser/http_parser.dart';",
+          "import 'graph_link_rest.dart';",
+        ],
+        body: dartRestDioAdapter,
+      );
+
+  GLClassModel generateRestFile() => const GLClassModel(
+        imports: [
+          "import 'dart:async';",
+          "import 'dart:convert';",
+          "import 'dart:typed_data';",
+          "import 'graph_link_uploads.dart';",
+        ],
+        body: dartRestFile,
+      );
 
   GLClassModel generateDefaultWebSocketAdapterFile() => const GLClassModel(
         imports: [
