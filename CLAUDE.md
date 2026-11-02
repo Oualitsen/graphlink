@@ -305,6 +305,12 @@ don't confuse them:
   `java_client_tests_real` (`.block()` appended) via `real/generate_reactor_tests.dart` into a
   git-ignored `src/test/generated/`; only the reactive-specific tests (adapters, subscriptions,
   default values) are hand-written there. Edit the blocking test, not the derived copy.
+- **REST operations** (`@glRest*`, Dart client): `mock/dart_rest_tests` (canned adapter) and
+  `real/dart_rest_client_tests_real` + `real/dart_rest_dio_client_tests_real` against `real/rest_server/server.py`
+  (stdlib Python; `/echo/**` reports what arrived on the wire, other routes are CRUD, counters, uploads/downloads,
+  status codes). Schema in `real/schema_rest/`. The Dio package runs the same tests (imported from the http package's
+  `test/`) with `REST_VARIANT=dio` (COMMA lists, BRACKET nesting) on port 9996; the http package uses 9995.
+  Run with `make -C integration_tests dart-rest-real dart-rest-dio-real` (needs `python3`).
 - **`integration_tests/persisted_queries/`** — the persisted-queries (APQ) suites, kept apart from the
   ones above: `mock/` (canned `ApqServer`), `real/` (against `spring_persisted_queries_server`, ports
   9997/9992) and a shared `schema/`. Own `Makefile` (`make -C integration_tests persisted-queries`) and

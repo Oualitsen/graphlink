@@ -64,8 +64,9 @@ class DartRestOperationSerializer {
   List<String> _signature(GLRestOperation op) {
     final args = op.arguments.map((a) {
       final arg = a.argument;
+      final nullSuffix = arg.type.nullable ? '?' : '';
       final type = _isUpload(a)
-          ? (arg.type.isList ? 'List<GLUpload>' : 'GLUpload')
+          ? '${arg.type.isList ? 'List<GLUpload>' : 'GLUpload'}$nullSuffix'
           : _serializer.serializeType(arg.type);
       if (arg.defaultValue != null) {
         final literal = _serializer.serializeDefaultLiteral(arg.type, arg.defaultValue!.value, needsConst: true);
@@ -79,6 +80,10 @@ class DartRestOperationSerializer {
   }
 
   String _value(GLRestArgument a) => _toJson(a.argument.codeName, a.argument.type);
+
+  String _presentValue(GLRestArgument a) => _toJson(a.argument.codeName, _nonNull(a.argument.type));
+
+  GLType _nonNull(GLType type) => type is GLListType ? GLListType(type.type, false) : GLType(type.tokenInfo, false);
 
   String _requestExpression(GLRestOperation op) {
     final query = _entries(op, RestArgRole.query);
@@ -163,7 +168,7 @@ class DartRestOperationSerializer {
       case RestEncoding.spread:
         return '...restSpreadEntries($value, ${_nameMap(a.spreadFields)}$_listOptions)';
       case RestEncoding.json:
-        final entry = "MapEntry('${a.wireName}', jsonEncode($value))";
+        final entry = "MapEntry('${a.wireName}', jsonEncode(${_presentValue(a)}))";
         return a.argument.type.nullable
             ? _cg.inlineIfStatement(condition: '${a.argument.codeName} != null', statement: entry)
             : entry;
@@ -184,7 +189,7 @@ class DartRestOperationSerializer {
         return const [];
       case RestBodyKind.json:
         final arg = op.arguments.firstWhere((a) => a.role == RestArgRole.body);
-        return [_cg.constDecl(_body, _nullGuard(arg, 'RestJsonBody(jsonEncode(${_value(arg)}))'))];
+        return [_cg.constDecl(_body, _nullGuard(arg, 'RestJsonBody(jsonEncode(${_presentValue(arg)}))'))];
       case RestBodyKind.raw:
         final arg = op.arguments.firstWhere((a) => a.role == RestArgRole.body);
         return [_cg.constDecl(_body, _nullGuard(arg, 'RestRawBody(${arg.argument.codeName})'))];
@@ -220,14 +225,14 @@ class DartRestOperationSerializer {
     final name = a.argument.codeName;
     if (_isUpload(a)) {
       if (a.argument.type.isList) {
-        final spread = '...$name${a.argument.type.nullable ? '!' : ''}.map((e) => RestPart.file(\'${a.wireName}\', e))';
+        final spread = "...$name.map((e) => RestPart.file('${a.wireName}', e))";
         return a.argument.type.nullable ? _cg.inlineIfStatement(condition: '$name != null', statement: spread) : spread;
       }
-      final part = "RestPart.file('${a.wireName}', $name${a.argument.type.nullable ? '!' : ''})";
+      final part = "RestPart.file('${a.wireName}', $name)";
       return a.argument.type.nullable ? _cg.inlineIfStatement(condition: '$name != null', statement: part) : part;
     }
     if (a.encoding == RestEncoding.json) {
-      final part = "RestPart.text('${a.wireName}', jsonEncode(${_value(a)}), mimeType: 'application/json')";
+      final part = "RestPart.text('${a.wireName}', jsonEncode(${_presentValue(a)}), mimeType: 'application/json')";
       return a.argument.type.nullable ? _cg.inlineIfStatement(condition: '$name != null', statement: part) : part;
     }
     return '...restParts(${_entry(a).replaceFirst('...', '')})';
@@ -241,7 +246,7 @@ class DartRestOperationSerializer {
         return ['await restVoid__($_request);', ...invalidation];
       case RestResponseKind.text:
         return [
-          _cg.constDecl(_result, 'await restText__($_request)'),
+          _cg.constDecl(_result, 'await ${op.allowsEmptyBody ? 'restTextOrNull__' : 'restText__'}($_request)'),
           ...invalidation,
           'return $_result;',
         ];

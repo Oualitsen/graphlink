@@ -1,0 +1,180 @@
+scalar Upload @glUpload
+scalar Void @glVoid
+scalar Download @glDownload
+
+enum Status { ACTIVE ARCHIVED }
+
+type Pair { name: String! value: String! }
+type Part { name: String! filename: String contentType: String size: Int! sha256: String! text: String }
+
+type Echo {
+  method: String!
+  path: String!
+  rawQuery: String!
+  query: [Pair!]!
+  headers: [Pair!]!
+  contentType: String
+  contentLength: Int
+  chunked: Boolean!
+  bodyText: String
+  bodySize: Int!
+  bodySha256: String!
+  form: [Pair!]!
+  parts: [Part!]!
+}
+
+type Product { id: ID! name: String! price: Float status: Status tags: [String!] related: [Product!] }
+type Owner { id: ID! name: String! }
+type Counter { name: String! n: Int! }
+type Who { user: String! tenant: String }
+
+interface Pet @glRestDiscriminator(field: "kind", values: {Dog: "dog", Cat: "cat"}) { id: ID! name: String! }
+type Dog implements Pet { id: ID! name: String! barks: Boolean! }
+type Cat implements Pet { id: ID! name: String! lives: Int! }
+union Hit @glRestDiscriminator(field: "type", values: {Product: "product", Owner: "owner"}) = Product | Owner
+
+input Geo { lat: Float lng: Float }
+input Address { city: String street: String geo: Geo }
+input Meta { name: String! tags: [String!] address: Address }
+input Filter { tag: String minPrice: Float status: Status }
+input Row { name: String! ids: [Int!] }
+input ProductIn { name: String! price: Float status: Status tags: [String!] }
+input Trace @glRestHeader { traceId: String @glRestHeader(name: "X-Trace-Id") spanId: String @glRestHeader(name: "X-Span-Id") }
+
+type Query {
+  getCount: Int!
+}
+
+type Mutation {
+  _unused: String
+}
+
+extend type Query @glRestPrefix(path: "/echo") {
+  eScalars(
+    id: ID!
+    s: String @glRestParam
+    i: Int @glRestParam
+    f: Float @glRestParam
+    b: Boolean @glRestParam
+    st: Status @glRestParam
+    dflt: Int = 5 @glRestParam
+    renamed: String @glRestParam(name: "x-ren")
+  ): Echo! @glRest(path: "/scalars/{id}")
+  eLists(
+    tags: [String!] @glRestParam
+    ids: [Int!] @glRestParam
+    empty: [String!] @glRestParam
+    matrix: [[Int!]!] @glRestParam
+    rows: [Row!] @glRestParam
+  ): Echo! @glRest(path: "/lists")
+  eObjects(
+    filter: Filter @glRestParam
+    meta: Meta @glRestParam(encoding: FLAT)
+    asJson: Meta @glRestParam(name: "j", encoding: JSON)
+  ): Echo! @glRest(path: "/objects")
+  eHeaders(
+    tenant: ID! @glRestHeader(name: "X-Tenant")
+    trace: Trace
+    roles: [String!] @glRestHeader(name: "X-Roles")
+    opt: String @glRestHeader(name: "X-Opt")
+  ): Echo! @glRest(path: "/headers")
+  eSpecial(segment: String!, q: String! @glRestParam, other: String @glRestParam): Echo! @glRest(path: "/special/{segment}/tail")
+  eAccept: Echo! @glRest(path: "/accept")
+  eAcceptOverride: Echo! @glRest(path: "/accept-override", accept: "application/vnd.test+json")
+  eDeleteQuery(id: ID!, force: Boolean @glRestParam): Echo! @glRest(path: "/delete/{id}", method: DELETE)
+}
+
+extend type Mutation @glRestPrefix(path: "/echo") {
+  eJson(body: ProductIn! @glRestBody): Echo! @glRest(path: "/json")
+  eJsonList(body: [ProductIn!]! @glRestBody): Echo! @glRest(path: "/json-list")
+  eJsonOptional(body: ProductIn @glRestBody): Echo! @glRest(path: "/json-optional")
+  eJsonType(body: ProductIn! @glRestBody): Echo! @glRest(path: "/json-type", contentType: "application/vnd.test+json")
+  ePut(id: ID!, body: ProductIn! @glRestBody): Echo! @glRest(path: "/put/{id}", method: PUT)
+  ePatch(id: ID!, body: ProductIn! @glRestBody): Echo! @glRest(path: "/patch/{id}", method: PATCH)
+  eForm(
+    name: String! @glRestField
+    n: Int @glRestField
+    tags: [String!] @glRestField
+    meta: Meta @glRestField
+    filter: Filter @glRestField(encoding: SPREAD)
+    asJson: Meta @glRestField(name: "j", encoding: JSON)
+  ): Echo! @glRest(path: "/form")
+  eFormEmpty(a: String @glRestField, b: Int @glRestField): Echo! @glRest(path: "/form-empty")
+  eMultipart(
+    title: String @glRestPart
+    meta: Meta @glRestPart
+    asJson: Meta @glRestPart(name: "j", encoding: JSON)
+    one: Upload @glRestPart
+    many: [Upload!] @glRestPart
+  ): Echo! @glRest(path: "/multipart")
+  eRaw(file: Upload! @glRestBody): Echo! @glRest(path: "/raw", method: PUT)
+  eRawType(file: Upload! @glRestBody): Echo! @glRest(path: "/raw-type", method: PUT, contentType: "application/x-custom")
+  eRawOptional(file: Upload @glRestBody): Echo! @glRest(path: "/raw-optional", method: PUT)
+  eHeaderBody(id: ID!, tenant: ID! @glRestHeader(name: "X-Tenant"), body: ProductIn! @glRestBody): Echo! @glRest(path: "/hb/{id}")
+}
+
+extend type Query @glRestPrefix(path: "") {
+  status(code: Int!): Product @glRest(path: "/status/{code}")
+  statusNonNull(code: Int!): Product! @glRest(path: "/status/{code}/nn")
+  blank: Product @glRest(path: "/blank")
+  blankNonNull: Product! @glRest(path: "/blank/nn")
+  noContent: Product @glRest(path: "/nocontent")
+  jsonNull: Product @glRest(path: "/null")
+  count: Int! @glRest(path: "/count")
+  flag: Boolean! @glRest(path: "/flag")
+  text: String! @glRest(path: "/text", response: TEXT)
+  textOptional: String @glRest(path: "/nocontent/text", response: TEXT)
+  wrapped: [Product!]! @glRest(path: "/wrapped", responsePath: "data.items")
+  deep: [Int!]! @glRest(path: "/deep", responsePath: "a.b.c")
+  unicode: Product! @glRest(path: "/unicode")
+  extraKeys: Product! @glRest(path: "/extra-keys")
+  missingField: Product! @glRest(path: "/missing-field")
+  pets: [Pet!]! @glRest(path: "/pets")
+  pet(id: ID!): Pet @glRest(path: "/pets/{id}")
+  petsUnknown: [Pet!]! @glRest(path: "/pets-unknown")
+  hits: [Hit!]! @glRest(path: "/hits")
+  authCheck(tenant: ID @glRestHeader(name: "X-Tenant")): Who! @glRest(path: "/auth/check")
+  blob(size: Int!): Download! @glRest(path: "/blob/{size}")
+  cachedStatus(code: Int!): Product @glRest(path: "/status/{code}/cached") @glCache(ttl: 60)
+  cachedBad: Product! @glRest(path: "/missing-field/cached") @glCache(ttl: 60)
+  gzipped: [Product!]! @glRest(path: "/gzip")
+  redirected: Int! @glRest(path: "/redirect")
+  big(n: Int! @glRestParam): [Product!]! @glRest(path: "/big")
+  invalidJson: Product @glRest(path: "/invalid-json")
+  htmlError: Product @glRest(path: "/html-error")
+}
+
+extend type Query @glRestPrefix(path: "/products") {
+  products(filter: Filter @glRestParam, ids: [ID!] @glRestParam): [Product!]! @glRest(path: "")
+  product(id: ID!): Product @glRest(path: "/{id}")
+  avatar(id: ID!): Download! @glRest(path: "/{id}/avatar")
+  avatarOrEmpty(id: ID!): Download @glRest(path: "/{id}/avatar-or-empty")
+}
+
+extend type Mutation @glRestPrefix(path: "/products") {
+  createProduct(input: ProductIn! @glRestBody): Product! @glRest(path: "", method: POST)
+  replaceProduct(id: ID!, input: ProductIn! @glRestBody): Product! @glRest(path: "/{id}", method: PUT)
+  patchProduct(id: ID!, input: ProductIn! @glRestBody): Product! @glRest(path: "/{id}", method: PATCH)
+  deleteProduct(id: ID!): Void @glRest(path: "/{id}", method: DELETE)
+  renameProduct(id: ID!, name: String! @glRestField, note: String @glRestField): Product! @glRest(path: "/{id}/rename")
+  uploadAvatar(id: ID!, file: Upload! @glRestBody): Void @glRest(path: "/{id}/avatar", method: PUT)
+  gallery(id: ID!, title: String @glRestPart, files: [Upload!]! @glRestPart): Product! @glRest(path: "/{id}/gallery")
+}
+
+extend type Query @glRestPrefix(path: "/counter") {
+  counter(name: String!): Counter! @glRest(path: "/{name}") @glCache(ttl: 60, tags: ["counters"])
+  counterOther(name: String!): Counter! @glRest(path: "/{name}/other") @glCache(ttl: 60, tags: ["other"])
+  counterUncached(name: String!): Counter! @glRest(path: "/{name}/uncached")
+  counterNoCache(name: String!): Counter! @glRest(path: "/{name}/nocache") @glNoCache
+  counterShort(name: String!): Counter! @glRest(path: "/{name}/short") @glCache(ttl: 1)
+  counterOffline(name: String!): Counter! @glRest(path: "/{name}/offline") @glCache(ttl: 1, staleIfOffline: true)
+}
+
+extend type Mutation @glRestPrefix(path: "/counter") {
+  bump(name: String!): Counter! @glRest(path: "/{name}/bump") @glCacheInvalidate(tags: ["counters"])
+  resetAll(name: String!): Counter! @glRest(path: "/{name}/reset") @glCacheInvalidate(all: true)
+}
+
+extend type Mutation @glRestPrefix(path: "") {
+  bumpFails(code: Int!): Product @glRest(path: "/status/{code}", method: POST) @glCacheInvalidate(tags: ["counters"])
+}

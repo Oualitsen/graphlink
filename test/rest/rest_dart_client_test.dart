@@ -30,6 +30,9 @@ extend type Mutation @glRestPrefix(path: "/p") {
   send(id: ID!, name: String @glRestField): String @glRest(path: "/{id}/s", method: POST, response: TEXT)
   put(id: ID!, file: Upload! @glRestBody): Void @glRest(path: "/{id}/f", method: PUT)
   dl(id: ID!): Download! @glRest(path: "/{id}/dl", method: POST)
+  opt(file: Upload @glRestBody, id: ID!): Product @glRest(path: "/opt/{id}", method: PUT)
+  optJson(body: In @glRestBody): Product @glRest(path: "/oj", method: POST)
+  optPart(j: In @glRestPart(encoding: JSON), m: [Upload!] @glRestPart): Product @glRest(path: "/op", method: POST)
   parts(files: [Upload!]! @glRestPart): Product @glRest(path: "/parts", method: POST)
 }
 ''';
@@ -74,7 +77,7 @@ void main() {
 
     test('response kinds', () {
       expect(mixed, contains('await restVoid__(glRequest__)'));
-      expect(mixed, contains('await restText__(glRequest__)'));
+      expect(mixed, contains('await restTextOrNull__(glRequest__)'));
       expect(mixed, contains('restJson__(glRequest__, [], true)'));
     });
 
@@ -87,6 +90,17 @@ void main() {
       expect(mixed, contains('Future<GLDownload> dl({'));
       expect(mixed, contains('DownloadProgressCallback? onReceiveProgress'));
       expect(mixed, contains('(await restDownload__(glRequest__, false, onReceiveProgress))!'));
+    });
+
+    test('optional uploads are nullable parameters', () {
+      expect(mixed, contains('GLUpload? file'));
+    });
+
+    test('values read after a null guard use no null-aware access', () {
+      expect(mixed, contains('RestJsonBody(jsonEncode(body.toJson()))'));
+      expect(mixed, isNot(contains('body?.toJson()')));
+      expect(mixed, contains('jsonEncode(j.toJson())'));
+      expect(mixed, contains('...m.map((e) => RestPart.file'));
     });
 
     test('upload operations get a progress callback', () {

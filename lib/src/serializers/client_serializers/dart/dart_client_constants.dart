@@ -805,6 +805,11 @@ mixin GraphLinkRestResolver on GraphLinkResolverBase {
 
   Future<String> restText__(RestRequest request) async => (await restCall__(request)).text();
 
+  Future<String?> restTextOrNull__(RestRequest request) async {
+    final text = await (await restCall__(request)).text();
+    return text.isEmpty ? null : text;
+  }
+
   Future<Object?> restJson__(RestRequest request, List<String> path, bool allowEmpty) async {
     final json = restNavigate(await (await restCall__(request)).json(), path);
     if (json == null && !allowEmpty) throw FormatException('Empty REST response for a non-null result of \${request.method} \${request.path}');
@@ -832,12 +837,13 @@ mixin GraphLinkRestResolver on GraphLinkResolverBase {
       if (cached != null) return decode(jsonDecode(cached.data));
       rethrow;
     }
+    final value = decode(json);
     if (json != null) {
       final entry = GraphLinkCacheEntry(jsonEncode(json), DateTime.now().millisecondsSinceEpoch + ttl * 1000);
       await glStore__.set(key, jsonEncode(entry.toJson()));
       if (tags.isNotEmpty) await addKeyToTags(key, tags);
     }
-    return decode(json);
+    return value;
   }
 }
 ''';
@@ -953,14 +959,14 @@ class GraphLinkRestDioAdapter {
     if (upload?.length != null) headers['Content-Length'] = '${upload!.length}';
     final response = await dio.request<ResponseBody>(
       _uri(request).toString(),
-      data: await _data(body),
+      data: await _data(body, request.onSendProgress),
       options: Options(
         method: request.method,
         headers: headers,
         responseType: ResponseType.stream,
         validateStatus: (_) => true,
       ),
-      onSendProgress: request.onSendProgress,
+      onSendProgress: body is RestMultipartBody ? request.onSendProgress : null,
     );
     return RestResponse(
       status: response.statusCode ?? 0,
@@ -976,14 +982,24 @@ class GraphLinkRestDioAdapter {
     return base.replace(path: '$path${request.path}', query: query.isEmpty ? null : query);
   }
 
-  Future<Object?> _data(RestBody? body) async {
+  Future<Object?> _data(RestBody? body, UploadProgressCallback? onProgress) async {
     if (body is RestJsonBody) return body.json;
     if (body is RestFormBody) {
       return body.fields.map((e) => '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}').join('&');
     }
-    if (body is RestRawBody) return body.upload.stream;
+    if (body is RestRawBody) return _counted(body.upload.stream, body.upload.length, onProgress);
     if (body is RestMultipartBody) return _form(body);
     return null;
+  }
+
+  Stream<List<int>> _counted(Stream<List<int>> source, int? total, UploadProgressCallback? onProgress) {
+    if (onProgress == null) return source;
+    var sent = 0;
+    return source.map((chunk) {
+      sent += chunk.length;
+      onProgress(sent, total ?? -1);
+      return chunk;
+    });
   }
 
   Future<FormData> _form(RestMultipartBody body) async {
