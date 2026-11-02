@@ -136,6 +136,39 @@ void main() {
       expect(auth.encoding, RestEncoding.spread);
     });
 
+    test('@glRestHeader on an input definition makes every argument of that type a header group', () {
+      final g = GLParser()
+        ..parse('''
+$_types
+input Auth @glRestHeader { token: String requestId: String @glRestHeader(name: "X-Request-Id") }
+input Tenant @glRestHeader { tenant: String }
+type Query { p(auth: Auth, tenant: Tenant): Product @glRest(path: "/p") }
+''');
+      final op = g.restOperations.values.single;
+      final auth = op.argument('auth')!;
+      expect(auth.role, RestArgRole.header);
+      expect(auth.encoding, RestEncoding.spread);
+      expect(auth.spreadFields, {'token': 'token', 'requestId': 'X-Request-Id'});
+      expect(op.argument('tenant')!.spreadFields, {'tenant': 'tenant'});
+    });
+
+    test('an explicit role on the argument wins over the input definition', () {
+      final g = GLParser()
+        ..parse('''
+$_types
+input Auth @glRestHeader { token: String }
+type Query { p(auth: Auth @glRestParam): Product @glRest(path: "/p") }
+''');
+      expect(g.restOperations.values.single.argument('auth')!.role, RestArgRole.query);
+    });
+
+    test('an input with the directive still needs a role when it is a list', () {
+      expectError('''
+input Auth @glRestHeader { token: String }
+type Query { p(auth: [Auth!]): Product @glRest(path: "/p") }
+''', 'REST role');
+    });
+
     test('a list of input objects cannot be a header group', () {
       expectError('type Query { p(auth: [Filter!] @glRestHeader): Product @glRest(path: "/p") }', 'header');
     });

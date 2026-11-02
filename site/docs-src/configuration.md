@@ -158,6 +158,9 @@ Used when `mode` is `"client"` and you want Dart/Flutter output.
 |---|---|---|---|
 | `packageName` | `string` | — | **Required.** The Dart package name used for import paths in generated files (e.g. `"my_app"` produces `import 'package:my_app/...'`). |
 | `httpAdapter` | `"http"` \| `"dio"` \| `"none"` | `"http"` | Which HTTP adapter file to generate. `"http"` uses `package:http`. `"dio"` uses Dio (supports interceptors, custom `BaseOptions`). `"none"` skips adapter generation — supply your own `Future<String> Function(String)`. |
+| `restHttpAdapter` | `"http"` \| `"dio"` \| `"none"` | same as `httpAdapter` | Which adapter to generate for [REST operations](rest-client.md). `"none"` skips it and `withHttp` then takes a `restAdapter` instead of `restBaseUrl`. |
+| `queryListStyle` | `"REPEAT"` \| `"COMMA"` | `"REPEAT"` | How a list of scalars is sent in a REST query string: repeated keys (`a=1&a=2`) or one comma-joined value (`a=1,2`). |
+| `formNesting` | `"DOT"` \| `"BRACKET"` | `"DOT"` | How nested input objects are keyed in REST query strings, forms and multipart: `a.b` or `a[b]`. |
 | `generateAdapters` | `boolean` | `true` | When `false`, skips generating the HTTP and WebSocket adapter files. Use this if you maintain your own adapter implementations and don't want them overwritten. |
 | `generateAllFieldsFragments` | `boolean` | `true` | Generates a `_all_fields_TypeName` named fragment for every type in the schema. Required for `autoGenerateQueries` to work. |
 | `autoGenerateQueries` | `boolean` | `true` | Automatically builds query strings for every operation using `_all_fields` fragments. When `true`, you do not need to write any query strings by hand. |

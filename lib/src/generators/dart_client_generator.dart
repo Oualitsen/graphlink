@@ -22,7 +22,10 @@ Future<Set<String>> generateDartClientClasses(
       typeMapOverrides: config.typeMappings ?? {}, importPrefix: importPrefix);
   final clientSerializer = DartClientSerializer(parser, serializer,
       generateAdapters: dartConfig.generateAdapters,
-      httpAdapter: dartConfig.httpAdapter);
+      httpAdapter: dartConfig.httpAdapter,
+      restHttpAdapter: dartConfig.effectiveRestHttpAdapter,
+      commaQueryLists: dartConfig.queryListStyle == RestQueryListStyle.comma,
+      bracketFormNesting: dartConfig.formNesting == RestFormNesting.bracket);
   final futures = <Future<File>>[];
   final destinationDir = config.outputDir;
 
@@ -303,6 +306,8 @@ Future<Set<String>> generateDartClientClasses(
     }
   }
 
+  final hasRest = parser.restOperations.isNotEmpty;
+
   // Main client class only
   final clientFileName = 'graph_link_client${clientSerializer.fileExtension}';
   clientFiles.add(clientFileName);
@@ -314,7 +319,23 @@ Future<Set<String>> generateDartClientClasses(
     destinationDir: destinationDir,
   ));
 
-  if (parser.hasUploadMutations) {
+  if (hasRest) {
+    for (final entry in {
+      'graph_link_rest${clientSerializer.fileExtension}': clientSerializer.generateRestFile(),
+      'graph_link_rest_resolver${clientSerializer.fileExtension}': clientSerializer.generateRestResolverFile(),
+    }.entries) {
+      clientFiles.add(entry.key);
+      futures.add(writeToFile(
+        data: serializer.serializeGlClass(entry.value),
+        fileName: entry.key,
+        subdir: 'client',
+        imports: [],
+        destinationDir: destinationDir,
+      ));
+    }
+  }
+
+  if (parser.hasUploadMutations || hasRest) {
     final uploadsFileName = 'graph_link_uploads${clientSerializer.fileExtension}';
     clientFiles.add(uploadsFileName);
     futures.add(writeToFile(
@@ -350,6 +371,22 @@ Future<Set<String>> generateDartClientClasses(
                 : clientSerializer.generateHttpAdapterFile(),
            ),
         fileName: adapterFileName,
+        subdir: 'client',
+        imports: [],
+        destinationDir: destinationDir,
+      ));
+    }
+    final restHttpAdapter = dartConfig.effectiveRestHttpAdapter;
+    if (hasRest && restHttpAdapter != DartHttpAdapter.none) {
+      final restAdapterFileName = restHttpAdapter == DartHttpAdapter.dio
+          ? 'graph_link_rest_dio_adapter${clientSerializer.fileExtension}'
+          : 'graph_link_rest_http_adapter${clientSerializer.fileExtension}';
+      clientFiles.add(restAdapterFileName);
+      futures.add(writeToFile(
+        data: serializer.serializeGlClass(restHttpAdapter == DartHttpAdapter.dio
+            ? clientSerializer.generateRestDioAdapterFile()
+            : clientSerializer.generateRestHttpAdapterFile()),
+        fileName: restAdapterFileName,
         subdir: 'client',
         imports: [],
         destinationDir: destinationDir,

@@ -570,3 +570,453 @@ class GraphLinkGetRequest {
   }
 }
 """;
+
+const dartRestFile = '''
+typedef GLRestAdapter = Future<RestResponse> Function(RestRequest request);
+
+abstract class RestBody {
+  const RestBody();
+}
+
+class RestJsonBody extends RestBody {
+  final String json;
+  const RestJsonBody(this.json);
+}
+
+class RestFormBody extends RestBody {
+  final List<MapEntry<String, String>> fields;
+  const RestFormBody(this.fields);
+}
+
+class RestPart {
+  final String name;
+  final String? value;
+  final GLUpload? file;
+  final String? mimeType;
+  const RestPart.text(this.name, String this.value, {this.mimeType}) : file = null;
+  const RestPart.file(this.name, GLUpload this.file) : value = null, mimeType = null;
+}
+
+class RestMultipartBody extends RestBody {
+  final List<RestPart> parts;
+  const RestMultipartBody(this.parts);
+}
+
+class RestRawBody extends RestBody {
+  final GLUpload upload;
+  const RestRawBody(this.upload);
+}
+
+class RestRequest {
+  final String method;
+  final String path;
+  final List<MapEntry<String, String>> query;
+  final Map<String, String> headers;
+  final RestBody? body;
+  final UploadProgressCallback? onSendProgress;
+
+  const RestRequest({
+    required this.method,
+    required this.path,
+    this.query = const [],
+    this.headers = const {},
+    this.body,
+    this.onSendProgress,
+  });
+}
+
+class RestResponse {
+  final int status;
+  final Map<String, String> headers;
+  final Stream<List<int>> stream;
+
+  const RestResponse({required this.status, required this.stream, this.headers = const {}});
+
+  bool get isSuccess => status >= 200 && status < 300;
+
+  Future<Uint8List> bytes() async {
+    final builder = BytesBuilder(copy: false);
+    await for (final chunk in stream) {
+      builder.add(chunk);
+    }
+    return builder.takeBytes();
+  }
+
+  Future<String> text() async => utf8.decode(await bytes());
+
+  Future<Object?> json() async {
+    final body = await text();
+    return body.isEmpty ? null : jsonDecode(body);
+  }
+}
+
+typedef DownloadProgressCallback = void Function(int received, int total);
+
+class GLDownload {
+  final Stream<List<int>> stream;
+  final String? filename;
+  final String? contentType;
+  final int? length;
+
+  const GLDownload({required this.stream, this.filename, this.contentType, this.length});
+
+  factory GLDownload.fromResponse(RestResponse response, [DownloadProgressCallback? onProgress]) {
+    String? header(String name) {
+      for (final entry in response.headers.entries) {
+        if (entry.key.toLowerCase() == name) return entry.value;
+      }
+      return null;
+    }
+
+    final length = int.tryParse(header('content-length') ?? '');
+    var received = 0;
+    final stream = onProgress == null
+        ? response.stream
+        : response.stream.map((chunk) {
+            received += chunk.length;
+            onProgress(received, length ?? -1);
+            return chunk;
+          });
+    final disposition = header('content-disposition');
+    final match = disposition == null ? null : RegExp(r'filename\*?=(?:UTF-8\'\')?"?([^";]+)"?', caseSensitive: false).firstMatch(disposition);
+    return GLDownload(
+      stream: stream,
+      filename: match == null ? null : Uri.decodeComponent(match.group(1)!),
+      contentType: header('content-type'),
+      length: length,
+    );
+  }
+
+  Future<Uint8List> bytes() async {
+    final builder = BytesBuilder(copy: false);
+    await for (final chunk in stream) {
+      builder.add(chunk);
+    }
+    return builder.takeBytes();
+  }
+}
+
+class RestError implements Exception {
+  final int status;
+  final Map<String, String> headers;
+  final String body;
+
+  const RestError({required this.status, required this.headers, required this.body});
+
+  static Future<RestError> from(RestResponse response) async =>
+      RestError(status: response.status, headers: response.headers, body: await response.text());
+
+  @override
+  String toString() => 'RestError(\$status): \$body';
+}
+
+Future<String> glNoGraphQL__(String payload, [String? operationName]) =>
+    throw StateError('This schema has no GraphQL operation: pass no GraphQL adapter');
+
+String _restText(Object value) => value is String ? value : value.toString();
+
+void _restCollect(List<MapEntry<String, String>> out, String key, Object? value, bool bracket, bool comma, bool inList) {
+  if (value == null) return;
+  if (value is Map) {
+    value.forEach((k, v) => _restCollect(out, bracket ? '\$key[\$k]' : '\$key.\$k', v, bracket, comma, false));
+  } else if (value is List) {
+    final items = value.where((e) => e != null).toList();
+    if (items.isEmpty) return;
+    if (!inList && items.every((e) => e is! Map && e is! List)) {
+      if (comma) {
+        out.add(MapEntry(key, items.map((e) => _restText(e!)).join(',')));
+      } else {
+        for (final e in items) {
+          out.add(MapEntry(key, _restText(e!)));
+        }
+      }
+    } else {
+      for (var i = 0; i < value.length; i++) {
+        _restCollect(out, bracket ? '\$key[\$i]' : '\$key.\$i', value[i], bracket, comma, true);
+      }
+    }
+  } else {
+    out.add(MapEntry(key, _restText(value)));
+  }
+}
+
+List<MapEntry<String, String>> restEntries(String key, Object? value, {bool bracket = false, bool comma = false}) {
+  final out = <MapEntry<String, String>>[];
+  _restCollect(out, key, value, bracket, comma, false);
+  return out;
+}
+
+List<MapEntry<String, String>> restSpreadEntries(Object? json, Map<String, String> names, {bool bracket = false, bool comma = false}) {
+  final out = <MapEntry<String, String>>[];
+  if (json is Map) {
+    names.forEach((field, wire) => _restCollect(out, wire, json[field], bracket, comma, false));
+  }
+  return out;
+}
+
+String restHeaderValue(Object value) => value is List ? value.where((e) => e != null).map((e) => _restText(e!)).join(',') : _restText(value);
+
+Map<String, String> restHeaders(Object? json, Map<String, String> names) {
+  final out = <String, String>{};
+  if (json is Map) {
+    names.forEach((field, header) {
+      final value = json[field];
+      if (value != null) out[header] = restHeaderValue(value);
+    });
+  }
+  return out;
+}
+
+List<RestPart> restParts(List<MapEntry<String, String>> entries) => entries.map((e) => RestPart.text(e.key, e.value)).toList();
+
+Object? restNavigate(Object? json, List<String> path) {
+  var current = json;
+  for (final segment in path) {
+    current = current is Map ? current[segment] : null;
+  }
+  return current;
+}
+''';
+
+const dartRestResolver = '''
+mixin GraphLinkRestResolver on GraphLinkResolverBase {
+  late final GLRestAdapter restAdapter;
+
+  Future<RestResponse> restCall__(RestRequest request) async {
+    final response = await restAdapter(request);
+    if (!response.isSuccess) throw await RestError.from(response);
+    return response;
+  }
+
+  Future<void> restVoid__(RestRequest request) async {
+    final response = await restCall__(request);
+    await response.stream.drain<void>();
+  }
+
+  Future<GLDownload?> restDownload__(RestRequest request, bool allowEmpty, DownloadProgressCallback? onProgress) async {
+    final response = await restCall__(request);
+    if (response.status == 204) {
+      await response.stream.drain<void>();
+      if (allowEmpty) return null;
+      throw FormatException('Empty REST response for a non-null download of \${request.method} \${request.path}');
+    }
+    return GLDownload.fromResponse(response, onProgress);
+  }
+
+  Future<String> restText__(RestRequest request) async => (await restCall__(request)).text();
+
+  Future<Object?> restJson__(RestRequest request, List<String> path, bool allowEmpty) async {
+    final json = restNavigate(await (await restCall__(request)).json(), path);
+    if (json == null && !allowEmpty) throw FormatException('Empty REST response for a non-null result of \${request.method} \${request.path}');
+    return json;
+  }
+
+  Future<T> restCached__<T>(
+    String name,
+    Map<String, dynamic> variables,
+    int ttl,
+    List<String> tags,
+    bool staleIfOffline,
+    Future<Object?> Function() fetch,
+    T Function(Object? json) decode,
+  ) async {
+    final key = GraphLinkPartialQuery.computeCacheKey(name, variables);
+    final cached = await getFromCache(key, tags, staleIfOffline);
+    if (cached != null && !cached.stale) return decode(jsonDecode(cached.data));
+    Object? json;
+    try {
+      json = await fetch();
+    } on RestError {
+      rethrow;
+    } catch (_) {
+      if (cached != null) return decode(jsonDecode(cached.data));
+      rethrow;
+    }
+    if (json != null) {
+      final entry = GraphLinkCacheEntry(jsonEncode(json), DateTime.now().millisecondsSinceEpoch + ttl * 1000);
+      await glStore__.set(key, jsonEncode(entry.toJson()));
+      if (tags.isNotEmpty) await addKeyToTags(key, tags);
+    }
+    return decode(json);
+  }
+}
+''';
+
+const dartRestHttpAdapter = r'''
+class GraphLinkRestHttpAdapter {
+  final String baseUrl;
+  final Future<Map<String, String>?> Function()? headersProvider;
+
+  GraphLinkRestHttpAdapter({required this.baseUrl, this.headersProvider});
+
+  Future<RestResponse> call(RestRequest request) async {
+    final headers = <String, String>{...?await headersProvider?.call(), ...request.headers};
+    final outgoing = await _build(request, _uri(request), headers);
+    final response = await outgoing.send();
+    return RestResponse(status: response.statusCode, headers: response.headers, stream: response.stream);
+  }
+
+  Uri _uri(RestRequest request) {
+    final base = Uri.parse(baseUrl);
+    final query = request.query.map((e) => '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}').join('&');
+    final path = base.path.endsWith('/') ? base.path.substring(0, base.path.length - 1) : base.path;
+    return base.replace(path: '$path${request.path}', query: query.isEmpty ? null : query);
+  }
+
+  Future<http.BaseRequest> _build(RestRequest request, Uri uri, Map<String, String> headers) async {
+    final body = request.body;
+    if (body is RestMultipartBody) return _multipart(request, body, uri, headers);
+    if (body is RestRawBody) return _raw(request, body, uri, headers);
+    final outgoing = http.Request(request.method, uri)..headers.addAll(headers);
+    if (body is RestJsonBody) outgoing.body = body.json;
+    if (body is RestFormBody) {
+      outgoing.body = body.fields.map((e) => '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}').join('&');
+    }
+    return outgoing;
+  }
+
+  Future<http.BaseRequest> _multipart(RestRequest request, RestMultipartBody body, Uri uri, Map<String, String> headers) async {
+    final outgoing = http.MultipartRequest(request.method, uri)..headers.addAll(headers);
+    for (final part in body.parts) {
+      final file = part.file;
+      if (file == null) {
+        final mimeType = part.mimeType;
+        outgoing.files.add(http.MultipartFile.fromString(part.name, part.value!,
+            contentType: mimeType == null ? null : MediaType.parse(mimeType)));
+      } else {
+        final length = file.length;
+        final contentType = MediaType.parse(file.mimeType);
+        outgoing.files.add(length == null
+            ? http.MultipartFile.fromBytes(part.name, await _readAll(file.stream), filename: file.filename, contentType: contentType)
+            : http.MultipartFile(part.name, file.stream, length, filename: file.filename, contentType: contentType));
+      }
+    }
+    final onProgress = request.onSendProgress;
+    if (onProgress == null) return outgoing;
+    final bytes = await outgoing.finalize().toBytes();
+    final counted = http.StreamedRequest(request.method, uri)
+      ..headers.addAll(headers)
+      ..headers['content-type'] = outgoing.headers['content-type']!
+      ..contentLength = bytes.length;
+    const chunkSize = 8192;
+    final chunks = [
+      for (var i = 0; i < bytes.length; i += chunkSize) bytes.sublist(i, i + chunkSize > bytes.length ? bytes.length : i + chunkSize),
+    ];
+    _pipe(counted, Stream.fromIterable(chunks), bytes.length, onProgress);
+    return counted;
+  }
+
+  http.BaseRequest _raw(RestRequest request, RestRawBody body, Uri uri, Map<String, String> headers) {
+    final outgoing = http.StreamedRequest(request.method, uri)..headers.addAll(headers);
+    final length = body.upload.length;
+    if (length != null) outgoing.contentLength = length;
+    _pipe(outgoing, body.upload.stream, length, request.onSendProgress);
+    return outgoing;
+  }
+
+  void _pipe(http.StreamedRequest outgoing, Stream<List<int>> source, int? total, UploadProgressCallback? onProgress) {
+    var sent = 0;
+    source.listen(
+      (chunk) {
+        sent += chunk.length;
+        outgoing.sink.add(chunk);
+        onProgress?.call(sent, total ?? -1);
+      },
+      onError: outgoing.sink.addError,
+      onDone: outgoing.sink.close,
+      cancelOnError: true,
+    );
+  }
+
+  Future<List<int>> _readAll(Stream<List<int>> stream) async {
+    final builder = BytesBuilder(copy: false);
+    await for (final chunk in stream) {
+      builder.add(chunk);
+    }
+    return builder.takeBytes();
+  }
+}
+''';
+
+const dartRestDioAdapter = r'''
+class GraphLinkRestDioAdapter {
+  final String baseUrl;
+  final Dio dio;
+  final Future<Map<String, String>?> Function()? headersProvider;
+
+  GraphLinkRestDioAdapter({required this.baseUrl, Dio? dio, this.headersProvider}) : dio = dio ?? Dio();
+
+  Future<RestResponse> call(RestRequest request) async {
+    final headers = <String, String>{...?await headersProvider?.call(), ...request.headers};
+    final body = request.body;
+    final upload = body is RestRawBody ? body.upload : null;
+    if (upload?.length != null) headers['Content-Length'] = '${upload!.length}';
+    final response = await dio.request<ResponseBody>(
+      _uri(request).toString(),
+      data: await _data(body),
+      options: Options(
+        method: request.method,
+        headers: headers,
+        responseType: ResponseType.stream,
+        validateStatus: (_) => true,
+      ),
+      onSendProgress: request.onSendProgress,
+    );
+    return RestResponse(
+      status: response.statusCode ?? 0,
+      headers: {for (final e in response.headers.map.entries) e.key: e.value.join(',')},
+      stream: response.data!.stream,
+    );
+  }
+
+  Uri _uri(RestRequest request) {
+    final base = Uri.parse(baseUrl);
+    final query = request.query.map((e) => '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}').join('&');
+    final path = base.path.endsWith('/') ? base.path.substring(0, base.path.length - 1) : base.path;
+    return base.replace(path: '$path${request.path}', query: query.isEmpty ? null : query);
+  }
+
+  Future<Object?> _data(RestBody? body) async {
+    if (body is RestJsonBody) return body.json;
+    if (body is RestFormBody) {
+      return body.fields.map((e) => '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}').join('&');
+    }
+    if (body is RestRawBody) return body.upload.stream;
+    if (body is RestMultipartBody) return _form(body);
+    return null;
+  }
+
+  Future<FormData> _form(RestMultipartBody body) async {
+    final form = FormData();
+    for (final part in body.parts) {
+      final file = part.file;
+      if (file == null) {
+        final mimeType = part.mimeType;
+        if (mimeType == null) {
+          form.fields.add(MapEntry(part.name, part.value!));
+        } else {
+          form.files.add(MapEntry(part.name, MultipartFile.fromString(part.value!, contentType: MediaType.parse(mimeType))));
+        }
+      } else {
+        final length = file.length;
+        final contentType = MediaType.parse(file.mimeType);
+        form.files.add(MapEntry(
+          part.name,
+          length == null
+              ? MultipartFile.fromBytes(await _readAll(file.stream), filename: file.filename, contentType: contentType)
+              : MultipartFile.fromStream(() => file.stream, length, filename: file.filename, contentType: contentType),
+        ));
+      }
+    }
+    return form;
+  }
+
+  Future<List<int>> _readAll(Stream<List<int>> stream) async {
+    final builder = BytesBuilder(copy: false);
+    await for (final chunk in stream) {
+      builder.add(chunk);
+    }
+    return builder.takeBytes();
+  }
+}
+''';
