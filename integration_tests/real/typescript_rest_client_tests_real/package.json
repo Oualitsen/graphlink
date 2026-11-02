@@ -1,0 +1,17 @@
+{
+  "name": "graphlink-typescript-client-integration-tests",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "ci": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "axios": "^1.7.9",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}

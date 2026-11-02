@@ -5,7 +5,9 @@ import 'package:graphlink/src/model/gl_enum_definition.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
+import 'package:graphlink/src/model/gl_rest_discriminator.dart';
 import 'package:graphlink/src/model/gl_token.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_rest_extension.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
@@ -281,7 +283,8 @@ class TypeScriptSerializer extends GLSerializer {
         namespaceName: def.codeName,
         statements: [
           _generateTypeToJson(def.codeName, fields, wireTypeName: wireTypeName),
-          _generateTypeFromJson(def.codeName, fields, wireTypeName: wireTypeName),
+          _generateTypeFromJson(def.codeName, fields,
+              wireTypeName: wireTypeName, requiredChecksFor: def.token),
         ],
       ));
     }
@@ -418,7 +421,19 @@ class TypeScriptSerializer extends GLSerializer {
     return 'export function $func';
   }
 
-  String _generateTypeFromJson(String typeName, List<GLField> fields, {String? wireTypeName}) {
+  List<String> _requiredFieldChecks(List<GLField> fields, String? token) {
+    if (token == null || !grammar.restReachableTypeNames.contains(token)) return const [];
+    return [
+      for (final field in fields)
+        if (!field.type.nullable && field.initialValue == null)
+          codeGenUtils.ifStatement(
+            condition: 'json["${field.name.token}"] == null',
+            ifBlockStatements: ["throw new Error('$token.${field.name.token} is missing or null in the response');"],
+          ),
+    ];
+  }
+
+  String _generateTypeFromJson(String typeName, List<GLField> fields, {String? wireTypeName, String? requiredChecksFor}) {
     final entries = [
       if (wireTypeName != null) "__typename: '$wireTypeName'",
       ...fields.map(_fieldFromJsonExpr),
@@ -427,7 +442,10 @@ class TypeScriptSerializer extends GLSerializer {
       methodName: 'fromJson',
       arguments: ['json: Record<string, unknown>'],
       returnType: typeName,
-      statements: ['return ${codeGenUtils.block(entries)};'],
+      statements: [
+        ..._requiredFieldChecks(fields, requiredChecksFor),
+        'return ${codeGenUtils.block(entries)};',
+      ],
     );
     return 'export function $func';
   }
@@ -452,8 +470,50 @@ class TypeScriptSerializer extends GLSerializer {
     return 'export function $func';
   }
 
+  List<String> _discriminatedFromJsonBody(
+    GLInterfaceDefinition def,
+    List<GLTypeDefinition> impls,
+    GLRestDiscriminator discriminator,
+  ) {
+    String typeName(GLTypeDefinition t) => t.derivedFromType?.tokenInfo.token ?? t.token;
+    final byTypename = codeGenUtils.switchStatement(
+      expression: 'typename',
+      cases: [
+        for (final t in impls)
+          TypeScriptCaseStatement(caseValue: '"${typeName(t)}"', statement: 'return ${t.codeName}.fromJson(json);'),
+      ],
+    );
+    final byValue = codeGenUtils.switchStatement(
+      expression: 'discriminator',
+      cases: [
+        for (final t in impls)
+          TypeScriptCaseStatement(
+              caseValue: '"${discriminator.valueByType[typeName(t)] ?? typeName(t)}"',
+              statement: 'return ${t.codeName}.fromJson(json);'),
+      ],
+      defaultStatements: [
+        'throw new Error(`Cannot decode ${def.token}: unknown or missing "${discriminator.field}" value (\${discriminator})`);',
+      ],
+    );
+    return [
+      'const typename = json["__typename"];',
+      byTypename,
+      'const discriminator = json["${discriminator.field}"];',
+      byValue,
+    ];
+  }
+
   String _serializeUnionFromJson(GLInterfaceDefinition def) {
     final impls = def.getSerializableImplementations(mode).toList();
+    final discriminator = grammar.restDiscriminators[def.token];
+    if (discriminator != null) {
+      return 'export function ${codeGenUtils.createMethod(
+        methodName: 'fromJson',
+        arguments: ['json: Record<string, unknown>'],
+        returnType: def.codeName,
+        statements: _discriminatedFromJsonBody(def, impls, discriminator),
+      )}';
+    }
     final cases = impls.map((t) => TypeScriptCaseStatement(
       caseValue: '"${t.token}"',
       statement: 'return ${t.codeName}.fromJson(json);',
@@ -486,6 +546,8 @@ class TypeScriptSerializer extends GLSerializer {
   }
 
   String callToJson(String varName, GLType type) => _callToJson(varName, type, 0);
+
+  String callFromJson(String jsonExpr, GLType type) => _callFromJson(jsonExpr, type, 0);
 
   String _callToJson(String varName, GLType type, int depth) {
     if (type is GLListType) {

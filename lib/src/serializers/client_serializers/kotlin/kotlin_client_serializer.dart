@@ -10,6 +10,10 @@ import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/client_serializers/kotlin/kotlin_client_constants.dart';
 import 'package:graphlink/src/serializers/client_serializers/kotlin/kotlin_client_context.dart';
 import 'package:graphlink/src/serializers/client_serializers/kotlin/kotlin_client_operation_serializer.dart';
+import 'package:graphlink/src/serializers/client_serializers/kotlin/kotlin_rest_constants.dart';
+import 'package:graphlink/src/serializers/client_serializers/kotlin/kotlin_rest_operation_serializer.dart';
+import 'package:graphlink/src/model/gl_rest_operation.dart';
+import 'package:graphlink/src/serializers/kotlin/kotlin_serializer.dart';
 import 'package:graphlink/src/serializers/gl_client_serializer.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
@@ -19,18 +23,62 @@ class KotlinClientSerializer extends GLClientSerializer {
   final GLParser _grammar;
   final KotlinCodeGenUtils codeGenUtils = KotlinCodeGenUtils();
   final KotlinWsAdapter wsAdapter;
+  final KotlinWsAdapter restHttpAdapter;
 
   late final KotlinClientContext _ctx;
   late final KotlinClientOperationSerializer _opSer;
+  late final KotlinRestOperationSerializer _restSer;
   GLImportContainer? _activeContainer;
 
   KotlinClientSerializer(
     this._grammar,
     GLSerializer serializer, {
     this.wsAdapter = KotlinWsAdapter.okhttp,
-  }) : super(serializer, GLGraphqlSerializer(_grammar, false)) {
+    KotlinWsAdapter? restHttpAdapter,
+    bool commaQueryLists = false,
+    bool bracketFormNesting = false,
+  })  : restHttpAdapter = restHttpAdapter ?? wsAdapter,
+        super(serializer, GLGraphqlSerializer(_grammar, false)) {
     _ctx = KotlinClientContext(_grammar, codeGenUtils, gqlSerializer, serializer);
     _opSer = KotlinClientOperationSerializer(_ctx);
+    _restSer = KotlinRestOperationSerializer(
+      _grammar,
+      codeGenUtils,
+      serializer as KotlinSerializer,
+      commaLists: commaQueryLists,
+      bracketNesting: bracketFormNesting,
+    );
+  }
+
+  List<GLRestOperation> _restOperations(GLQueryType type) =>
+      _grammar.restOperations.values.where((o) => o.type == type).toList();
+
+  bool _hasOperations(GLQueryType type) => _grammar.hasQueryType(type) || _restOperations(type).isNotEmpty;
+
+  bool get hasRest => _grammar.restOperations.isNotEmpty;
+
+  bool get _hasGraphQL => GLQueryType.values.any(_grammar.hasQueryType);
+
+  bool get generatesRestAdapter => hasRest && restHttpAdapter != KotlinWsAdapter.none;
+
+  List<GLToken> _restTokens(GLQueryType type) {
+    final tokens = <GLToken>[];
+    for (final operation in _restOperations(type)) {
+      final names = [
+        operation.field.type.firstType.token,
+        ...operation.arguments.map((a) => a.argument.type.firstType.token),
+      ];
+      for (final name in names) {
+        if (_grammar.isEnum(name) ||
+            _grammar.isInput(name) ||
+            _grammar.types.containsKey(name) ||
+            _grammar.interfaces.containsKey(name)) {
+          final token = _grammar.getTokenByKey(name);
+          if (token != null) tokens.add(token);
+        }
+      }
+    }
+    return tokens;
   }
 
   @override
@@ -62,19 +110,24 @@ class KotlinClientSerializer extends GLClientSerializer {
 
     final fields = <String>[
       'private val fragmentMap = mutableMapOf<String, String>()',
-      if (_grammar.hasQueries)
+      if (!_hasGraphQL) 'private val adapter: GraphLinkClientAdapter = GraphLinkNoGraphQL',
+      if (_hasOperations(GLQueryType.query))
         'val queries: ${_classNameFor(GLQueryType.query)}',
-      if (_grammar.hasMutations)
+      if (_hasOperations(GLQueryType.mutation))
         'val mutations: ${_classNameFor(GLQueryType.mutation)}',
       if (_grammar.hasSubscriptions)
         'val subscriptions: ${_classNameFor(GLQueryType.subscription)}',
     ];
 
     final initBody = <String>[
-      if (_grammar.hasQueries)
+      if (_hasOperations(GLQueryType.query)) ...[
         'queries = ${_classNameFor(GLQueryType.query)}(adapter, ${_getAdapterArg}fragmentMap, encoder, decoder, store)',
-      if (_grammar.hasMutations)
+        if (_restOperations(GLQueryType.query).isNotEmpty) 'queries.restAdapter = restAdapter',
+      ],
+      if (_hasOperations(GLQueryType.mutation)) ...[
         'mutations = ${_classNameFor(GLQueryType.mutation)}(adapter, $_getAdapterArg${_grammar.hasUploadMutations ? 'multipartAdapter, ' : ''}fragmentMap, encoder, decoder, store)',
+        if (_restOperations(GLQueryType.mutation).isNotEmpty) 'mutations.restAdapter = restAdapter',
+      ],
       if (_grammar.hasSubscriptions)
         'subscriptions = ${_classNameFor(GLQueryType.subscription)}(adapter, wsAdapter, fragmentMap, encoder, decoder, store)',
       ..._grammar.usedFragments
@@ -84,10 +137,11 @@ class KotlinClientSerializer extends GLClientSerializer {
     ];
 
     final primaryCtorArgs = [
-      'private val adapter: GraphLinkClientAdapter',
-      if (_grammar.persistedQueriesUseGet) 'private val getAdapter: GraphLinkClientAdapter',
+      if (_hasGraphQL) 'private val adapter: GraphLinkClientAdapter',
+      if (_hasGraphQL && _grammar.persistedQueriesUseGet) 'private val getAdapter: GraphLinkClientAdapter',
       if (_grammar.hasSubscriptions) 'private val wsAdapter: GraphLinkWebSocketAdapter',
       if (_grammar.hasUploadMutations) 'private val multipartAdapter: GraphLinkMultipartAdapter',
+      if (hasRest) 'private val restAdapter: GLRestAdapter',
       'private val encoder: GraphLinkJsonEncoder',
       'private val decoder: GraphLinkJsonDecoder',
       'private val store: GraphLinkCacheStore = InMemoryGraphLinkCacheStore()',
@@ -114,23 +168,31 @@ class KotlinClientSerializer extends GLClientSerializer {
 
   List<String> _convenienceFactories() {
     const codec = 'KotlinxSerializationGraphLinkJsonCodec()';
-    final hasSubs    = _grammar.hasSubscriptions;
+    final hasSubs = _grammar.hasSubscriptions;
     final hasUploads = _grammar.hasUploadMutations;
+    final hasGraphQL = _hasGraphQL;
+    final restDefault = generatesRestAdapter;
+    final urlParams = hasGraphQL ? ['url: String', if (hasSubs) 'wsUrl: String'] : <String>[];
+    final restParams = !hasRest ? <String>[] : restDefault ? ['restBaseUrl: String'] : ['restAdapter: GLRestAdapter'];
+    String restArg(bool withHeaders) => restDefault
+        ? 'DefaultGraphLinkRestAdapter(restBaseUrl${withHeaders ? ', headersProvider' : ''})'
+        : 'restAdapter';
 
-    // Builds the positional args for the primary constructor:
-    //   adapter [, wsAdapter] [, multipartAdapter] encoder decoder
-    // When uploads are present, DefaultGraphLinkClientAdapter implements both
-    // GraphLinkClientAdapter and GraphLinkMultipartAdapter, so we reuse one
-    // instance via a local val.
-    List<String> callArgs(String adapterExpr, String wsExpr, {String getArgs = ''}) {
-      final getExpr = _grammar.persistedQueriesUseGet ? ', DefaultGraphLinkGetAdapter(url$getArgs)' : '';
+    List<String> callArgs(String adapterExpr, String wsExpr, {String getArgs = '', bool headers = false}) {
+      final getExpr = hasGraphQL && _grammar.persistedQueriesUseGet ? ', DefaultGraphLinkGetAdapter(url$getArgs)' : '';
+      final rest = hasRest ? [restArg(headers)] : <String>[];
+      if (!hasGraphQL) {
+        return ['return ${codeGenUtils.callExpression(kotlinClientName, [...rest, 'encoder', 'decoder'])}'];
+      }
       if (hasUploads) {
         return [
-          codeGenUtils.constDecl('a', '$adapterExpr'),
-          'return ${codeGenUtils.callExpression('$kotlinClientName', ['a$getExpr${hasSubs ? ', $wsExpr' : ''}', 'a', 'encoder', 'decoder'])}',
+          codeGenUtils.constDecl('a', adapterExpr),
+          'return ${codeGenUtils.callExpression(kotlinClientName, ['a$getExpr${hasSubs ? ', $wsExpr' : ''}', 'a', ...rest, 'encoder', 'decoder'])}',
         ];
       }
-      return ['return ${codeGenUtils.callExpression('$kotlinClientName', ['$adapterExpr$getExpr${hasSubs ? ', $wsExpr' : ''}', 'encoder', 'decoder'])}'];
+      return [
+        'return ${codeGenUtils.callExpression(kotlinClientName, ['$adapterExpr$getExpr${hasSubs ? ', $wsExpr' : ''}', ...rest, 'encoder', 'decoder'])}'
+      ];
     }
 
     String factory(List<String> arguments, List<String> statements) => codeGenUtils.createMethod(
@@ -142,28 +204,28 @@ class KotlinClientSerializer extends GLClientSerializer {
 
     const codecArgs = ['encoder: GraphLinkJsonEncoder', 'decoder: GraphLinkJsonDecoder'];
     const headersArg = 'headersProvider: () -> Map<String, String>';
-
-    if (!hasSubs) {
-      return [
-        '',
-        codeGenUtils.companionObject([
-          factory(['url: String', ...codecArgs], callArgs('DefaultGraphLinkClientAdapter(url)', '')),
-          factory(['url: String', headersArg, ...codecArgs], callArgs('DefaultGraphLinkClientAdapter(url, headersProvider)', '', getArgs: ', headersProvider')),
-          factory(['url: String'], ['return ${codeGenUtils.callExpression('create', ['url', '$codec', '$codec'])}']),
-        ]),
-      ];
-    }
+    final adapterExpr = hasGraphQL ? 'DefaultGraphLinkClientAdapter(url)' : '';
+    final adapterWithHeaders = hasGraphQL ? 'DefaultGraphLinkClientAdapter(url, headersProvider)' : '';
+    final wsExpr = hasSubs ? 'DefaultGraphLinkWebSocketAdapter(wsUrl)' : '';
+    final wsWithHeaders = hasSubs ? 'DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider)' : '';
+    final forwarded = [
+      if (hasGraphQL) 'url',
+      if (hasSubs) 'ws',
+      if (hasRest) restDefault ? 'restBaseUrl' : 'restAdapter',
+    ];
 
     return [
       '',
       codeGenUtils.companionObject([
-        factory(['url: String', 'wsUrl: String', ...codecArgs],
-            callArgs('DefaultGraphLinkClientAdapter(url)', 'DefaultGraphLinkWebSocketAdapter(wsUrl)')),
-        factory(['url: String', 'wsUrl: String', headersArg, ...codecArgs],
-            callArgs('DefaultGraphLinkClientAdapter(url, headersProvider)', 'DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider)', getArgs: ', headersProvider')),
-        factory(['url: String'], [
-          codeGenUtils.constDecl('ws', 'url.replaceFirst("http", "ws")'),
-          'return ${codeGenUtils.callExpression('create', ['url', 'ws', '$codec', '$codec'])}',
+        factory([...urlParams, ...restParams, ...codecArgs], callArgs(adapterExpr, wsExpr)),
+        factory([...urlParams, ...restParams, headersArg, ...codecArgs],
+            callArgs(adapterWithHeaders, wsWithHeaders, getArgs: ', headersProvider', headers: true)),
+        factory([
+          if (hasGraphQL) 'url: String',
+          ...restParams,
+        ], [
+          if (hasSubs) codeGenUtils.constDecl('ws', 'url.replaceFirst("http", "ws")'),
+          'return ${codeGenUtils.callExpression('create', [...forwarded, codec, codec])}',
         ]),
       ]),
     ];
@@ -675,7 +737,11 @@ class KotlinClientSerializer extends GLClientSerializer {
       _grammar.getTypeByName('GraphLinkJsonDecoder')!,
     ]);
 
-    final methods = buildOperationMethods(type);
+    final restOperations = _restOperations(type);
+    final methods = [
+      ...buildOperationMethods(type),
+      ...restOperations.map(_restSer.operationToMethod),
+    ];
     if (methods.isEmpty) return null;
 
     final ctorParams = _ctorParams(type);
@@ -687,7 +753,7 @@ class KotlinClientSerializer extends GLClientSerializer {
     final body = codeGenUtils.openClass(
       name: _classNameFor(type),
       params: ctorParams,
-      interfaces: [_superCtorCall(type)],
+      interfaces: [_superCtorCall(type, restOperations.isNotEmpty)],
       body: [
         ...extraFields,
         '',
@@ -701,6 +767,7 @@ class KotlinClientSerializer extends GLClientSerializer {
     return GLClassModel(
       importDepencies: {
         ..._queryImports(type),
+        ..._restTokens(type),
         ...container.importDepencies,
       }.toList(),
       imports: [...container.imports],
@@ -723,8 +790,8 @@ class KotlinClientSerializer extends GLClientSerializer {
     ];
   }
 
-  String _superCtorCall(GLQueryType type) =>
-      codeGenUtils.callExpression('GraphLinkResolverBase', [
+  String _superCtorCall(GLQueryType type, [bool rest = false]) =>
+      codeGenUtils.callExpression(rest ? 'GraphLinkRestResolver' : 'GraphLinkResolverBase', [
         'adapter',
         'fragmentMap',
         'store',
@@ -829,6 +896,24 @@ class KotlinClientSerializer extends GLClientSerializer {
 
   Set<GLToken> _queryImports(GLQueryType type) =>
       schemaTokensFor(type).toSet();
+
+  // ── REST files ──────────────────────────────────────────────────────────────
+
+  GLClassModel generateRestFile() => GLClassModel(
+        importDepencies: [_grammar.getTokenByKey('GraphLinkClientAdapter')!],
+        body: '$kotlinRestFile\n${kotlinNoGraphQLAdapter(_grammar.operationNameAsParameter)}',
+      );
+
+  GLClassModel generateRestResolverFile() => GLClassModel(
+        importDepencies: [
+          _grammar.getTokenByKey('GraphLinkClientAdapter')!,
+          _grammar.getTokenByKey('GraphLinkJsonEncoder')!,
+          _grammar.getTokenByKey('GraphLinkJsonDecoder')!,
+        ],
+        body: kotlinRestResolver(withGetAdapter: _grammar.persistedQueriesUseGet),
+      );
+
+  GLClassModel generateRestAdapterFile() => const GLClassModel(body: kotlinRestOkHttpAdapter);
 
   // ── Boilerplate file models ─────────────────────────────────────────────────
 

@@ -1,0 +1,5 @@
+client-app/src/main/kotlin/dev/graphlink/restmock/generated/
+client-app/build/
+client-app/.gradle/
+client-app/.kotlin/
+pubspec.lock

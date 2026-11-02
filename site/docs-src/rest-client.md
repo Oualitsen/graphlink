@@ -10,7 +10,7 @@ types and the client are the same, so you can move an API from REST to GraphQL o
 and the call site does not change.
 
 !!! note
-    REST operations are generated for the **Dart** client. Other client targets ignore them for now.
+    REST operations are generated for the **Dart**, **TypeScript** and **Kotlin** clients. Other client targets ignore them for now.
 
 ```graphql
 scalar Void @glVoid
@@ -122,9 +122,53 @@ base URL, authentication, retries and timeouts.
 | `queryListStyle` | `"REPEAT"` | `"COMMA"` joins list values |
 | `formNesting` | `"DOT"` | `"BRACKET"` uses `a[b]` |
 
+## TypeScript
+
+Same schema, same directives. Methods take the usual single `args` object and return promises (or `Observable`s with
+`observables: true`):
+
+```typescript
+const client = new GraphLinkClient(
+  createFetchAdapter('https://api.example.com/graphql'),
+  createRestFetchAdapter('https://api.example.com', { headers: async () => ({ Authorization: `Bearer ${token}` }) }),
+);
+const product = await client.queries.product({ id: 'p1' });
+await client.mutations.avatar({ id: 'p1', file: glUploadFromBlob(blob) }, (sent, total) => {});
+```
+
+- The adapter is `GLRestAdapter = (request: RestRequest) => Promise<RestResponse>`. `restHttpAdapter` picks the generated one
+  (`createRestFetchAdapter` or `createRestAxiosAdapter(baseUrl, axios)`), or `"none"` to supply your own. A schema with only
+  REST operations takes just the REST adapter: `new GraphLinkClient(restAdapter)`.
+- Errors: `RestError` (`status`, `headers`, `body`); a missing non-null field or an empty body for a non-null result is a plain `Error`.
+- Downloads return a `GLDownload` whose `stream` is a web `ReadableStream`. The axios adapter buffers request and response bodies,
+  so it reports upload progress but does not stream; the fetch adapter streams.
+- Floats are formatted by JavaScript (`3`, not `3.0`).
+
+## Kotlin
+
+Methods are `suspend` functions with named, defaulted parameters:
+
+```kotlin
+val client = GraphLinkClient.create(
+    url = "https://api.example.com/graphql",
+    restBaseUrl = "https://api.example.com",
+    headersProvider = { mapOf("Authorization" to "Bearer $token") },
+    encoder, decoder,
+)
+val product = client.queries.product(id = "p1")
+client.mutations.avatar(id = "p1", file = GLUpload(stream, "image/png", length, "p1.png"))
+```
+
+- The generated `DefaultGraphLinkRestAdapter` uses OkHttp (`restHttpAdapter: "none"` skips it and the `create` factories take a
+  `restAdapter: GLRestAdapter`). A `GLUpload` with `length = -1` is streamed chunked.
+- Errors: `RestError` (`status`, `headers`, `body`); an empty body for a non-null result is an `IllegalStateException`, a missing
+  non-null field an `IllegalArgumentException` naming the type and field.
+- `GLDownload` wraps an `InputStream`; close it or call `bytes()`.
+- JSON goes through your `GraphLinkJsonEncoder` / `GraphLinkJsonDecoder`, so they must handle nested maps and lists.
+
 ## Known limitations
 
-- Dart client only.
+- Dart, TypeScript and Kotlin clients only.
 - An empty list and an absent list are indistinguishable on the wire.
 - Subscriptions are always GraphQL.
 - Void is not yet supported by the server generators.

@@ -1,0 +1,4 @@
+lib/generated/
+node_modules/
+dist/
+pubspec.lock

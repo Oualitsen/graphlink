@@ -700,7 +700,12 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
   final bool generateDefaultWsAdapter;
   final bool observables;
   final TypeScriptHttpAdapter httpAdapter;
+  final TypeScriptHttpAdapter? restHttpAdapter;
+  final RestQueryListStyle queryListStyle;
+  final RestFormNesting formNesting;
   @override final AutoGenerateQueriesFor? autoGenerateQueriesFor;
+
+  TypeScriptHttpAdapter get effectiveRestHttpAdapter => restHttpAdapter ?? httpAdapter;
 
   TypeScriptClientConfig({
     this.generateAllFieldsFragments = true,
@@ -715,6 +720,9 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
     this.generateDefaultWsAdapter = true,
     this.observables = false,
     this.httpAdapter = TypeScriptHttpAdapter.fetch,
+    this.restHttpAdapter,
+    this.queryListStyle = RestQueryListStyle.repeat,
+    this.formNesting = RestFormNesting.dot,
     this.defaultAlias,
     this.autoGenerateQueriesFor,
     this.autoGenerateQueriesArgumentLimit = 200,
@@ -738,6 +746,11 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
         (e) => e.name == json['httpAdapter'],
         orElse: () => TypeScriptHttpAdapter.fetch,
       ),
+      restHttpAdapter: json['restHttpAdapter'] == null
+          ? null
+          : _enumFromJson(TypeScriptHttpAdapter.values, json['restHttpAdapter'], TypeScriptHttpAdapter.fetch),
+      queryListStyle: _enumFromJson(RestQueryListStyle.values, json['queryListStyle'], RestQueryListStyle.repeat),
+      formNesting: _enumFromJson(RestFormNesting.values, json['formNesting'], RestFormNesting.dot),
       defaultAlias: json['defaultAlias'] as String?,
       autoGenerateQueriesFor: json['autoGenerateQueriesFor'] != null
           ? AutoGenerateQueriesFor.fromJson(json['autoGenerateQueriesFor'] as Map<String, dynamic>)
@@ -765,6 +778,11 @@ class KotlinClientConfig extends ClientLanguageConfig {
   final bool inputAsDataClass;
   final bool typeAsDataClass;
   final KotlinWsAdapter wsAdapter;
+  final KotlinWsAdapter? restHttpAdapter;
+  final RestQueryListStyle queryListStyle;
+  final RestFormNesting formNesting;
+
+  KotlinWsAdapter get effectiveRestHttpAdapter => restHttpAdapter ?? wsAdapter;
   @override final AutoGenerateQueriesFor? autoGenerateQueriesFor;
   @override final int? maxFragmentBodySize;
 
@@ -782,6 +800,9 @@ class KotlinClientConfig extends ClientLanguageConfig {
     this.inputAsDataClass = true,
     this.typeAsDataClass = true,
     this.wsAdapter = KotlinWsAdapter.okhttp,
+    this.restHttpAdapter,
+    this.queryListStyle = RestQueryListStyle.repeat,
+    this.formNesting = RestFormNesting.dot,
     this.defaultAlias,
     this.autoGenerateQueriesFor,
     this.autoGenerateQueriesArgumentLimit = 200,
@@ -807,6 +828,11 @@ class KotlinClientConfig extends ClientLanguageConfig {
         (e) => e.name == json['wsAdapter'],
         orElse: () => KotlinWsAdapter.okhttp,
       ),
+      restHttpAdapter: json['restHttpAdapter'] == null
+          ? null
+          : _enumFromJson(KotlinWsAdapter.values, json['restHttpAdapter'], KotlinWsAdapter.okhttp),
+      queryListStyle: _enumFromJson(RestQueryListStyle.values, json['queryListStyle'], RestQueryListStyle.repeat),
+      formNesting: _enumFromJson(RestFormNesting.values, json['formNesting'], RestFormNesting.dot),
       autoGenerateQueriesFor: json['autoGenerateQueriesFor'] != null
           ? AutoGenerateQueriesFor.fromJson(json['autoGenerateQueriesFor'] as Map<String, dynamic>)
           : null,

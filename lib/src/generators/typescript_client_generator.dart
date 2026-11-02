@@ -23,6 +23,9 @@ Future<Set<String>> generateTypeScriptClientClasses(
     serializer,
     generateDefaultWsAdapter: tsConfig.generateDefaultWsAdapter,
     observables: tsConfig.observables,
+    restHttpAdapter: tsConfig.effectiveRestHttpAdapter,
+    commaQueryLists: tsConfig.queryListStyle == RestQueryListStyle.comma,
+    bracketFormNesting: tsConfig.formNesting == RestFormNesting.bracket,
   );
   final futures = <Future<File>>[];
   final destinationDir = config.outputDir;
@@ -118,8 +121,14 @@ Future<Set<String>> generateTypeScriptClientClasses(
   addClient('graph-link-client$ext', cs.generateClientOnlyFile());
 
   // Uploads helper (conditional)
-  if (parser.hasUploadMutations) {
+  if (parser.hasUploadMutations || cs.hasRest) {
     addClient('graph-link-uploads$ext', cs.generateUploadsFile());
+  }
+
+  if (cs.hasRest) {
+    addClient('graph-link-rest$ext', cs.generateRestFile());
+    addClient('graph-link-rest-resolver$ext', cs.generateRestResolverFile());
+    addClient('graph-link-rest-adapters$ext', cs.generateRestAdaptersFile());
   }
 
   // HTTP adapters (conditional)

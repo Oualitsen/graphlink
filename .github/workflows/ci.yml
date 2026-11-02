@@ -85,6 +85,24 @@ jobs:
       - run: make install
       - run: make ci-no-generate
 
+  typescript-rest-client:
+    runs-on: ubuntu-latest
+    needs: generate
+    defaults:
+      run:
+        working-directory: integration_tests/mock/typescript_rest_tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: integration-tests-generated
+          path: integration_tests
+      - run: make ci-no-generate
+
   java-client:
     runs-on: ubuntu-latest
     needs: generate
@@ -117,6 +135,47 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - uses: actions/download-artifact@v4
+        with:
+          name: integration-tests-generated
+          path: integration_tests
+      - run: make ci-no-generate
+
+  kotlin-rest-client:
+    runs-on: ubuntu-latest
+    needs: generate
+    defaults:
+      run:
+        working-directory: integration_tests/mock/kotlin_rest_tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/download-artifact@v4
+        with:
+          name: integration-tests-generated
+          path: integration_tests
+      - run: make ci-no-generate
+
+  kotlin-rest-real:
+    runs-on: ubuntu-latest
+    needs: generate
+    defaults:
+      run:
+        working-directory: integration_tests/real/kotlin_rest_client_tests_real
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - uses: actions/download-artifact@v4
         with:
           name: integration-tests-generated
@@ -321,6 +380,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: integration-tests-generated
+          path: integration_tests
+      - run: make ci-no-generate
+
+  typescript-rest-real:
+    runs-on: ubuntu-latest
+    needs: generate
+    defaults:
+      run:
+        working-directory: integration_tests/real/typescript_rest_client_tests_real
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'

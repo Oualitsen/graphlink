@@ -382,6 +382,9 @@ Used when `mode` is `"client"` and you want TypeScript output.
 |---|---|---|---|
 | `httpAdapter` | `"fetch"` \| `"axios"` \| `"none"` | `"fetch"` | Which HTTP adapter to generate. `"fetch"` uses the native Fetch API (works in Angular, React, Vue, Svelte, Node 18+). `"axios"` uses Axios. `"none"` skips adapter generation. |
 | `generateDefaultWsAdapter` | `boolean` | `true` | When `true`, generates `DefaultGraphLinkWebSocketAdapter` implementing the graphql-ws protocol with exponential-backoff reconnect. Set to `false` if you have no subscriptions or supply your own adapter. |
+| `restHttpAdapter` | `"fetch"` \| `"axios"` \| `"none"` | same as `httpAdapter` | Which adapter to generate for [REST operations](rest-client.md). `"none"` skips it; pass your own `GLRestAdapter` to the client. |
+| `queryListStyle` | `"REPEAT"` \| `"COMMA"` | `"REPEAT"` | How a list of scalars is sent in a REST query string: repeated keys (`a=1&a=2`) or one comma-joined value (`a=1,2`). |
+| `formNesting` | `"DOT"` \| `"BRACKET"` | `"DOT"` | How nested input objects are keyed in REST query strings, forms and multipart: `a.b` or `a[b]`. |
 | `observables` | `boolean` | `false` | When `true`, query and mutation methods return `Observable<T>` (RxJS) instead of `Promise<T>`. Subscription methods also return `Observable<T>`. Recommended for Angular projects. |
 | `generateAllFieldsFragments` | `boolean` | `true` | Generates `_all_fields_TypeName` fragments for every type. Required for `autoGenerateQueries` and `autoGenerateQueriesFor`. |
 | `autoGenerateQueries` | `boolean` | `true` | Automatically builds query strings for every operation using `_all_fields` fragments. |
@@ -467,6 +470,9 @@ Used when `mode` is `"client"` and you want Kotlin output.
 | `persistedQueries` | `false` \| `"apq"` | `false` | `"apq"` sends a SHA-256 hash instead of long queries and retries once with the text on `PersistedQueryNotFound`. See [Persisted Queries](persisted-queries.md). |
 | `persistedQueriesUseGet` | `boolean` | `false` | Send hash-only queries over GET. Requires `persistedQueries: "apq"`. Mutations always use POST. |
 | `wsAdapter` | `"okhttp"` \| `"none"` | `"okhttp"` | WebSocket adapter to generate. `"okhttp"` emits `DefaultGraphLinkWebSocketAdapter` using OkHttp; `"none"` emits only the `GraphLinkWebSocketAdapter` interface. |
+| `restHttpAdapter` | `"okhttp"` \| `"none"` | same as `wsAdapter` | Whether to generate the OkHttp adapter for [REST operations](rest-client.md). `"none"` makes the `create` factories take a `restAdapter` instead of `restBaseUrl`. |
+| `queryListStyle` | `"REPEAT"` \| `"COMMA"` | `"REPEAT"` | How a list of scalars is sent in a REST query string: repeated keys (`a=1&a=2`) or one comma-joined value (`a=1,2`). |
+| `formNesting` | `"DOT"` \| `"BRACKET"` | `"DOT"` | How nested input objects are keyed in REST query strings, forms and multipart: `a.b` or `a[b]`. |
 | `defaultAlias` | `string?` | `null` | Default alias applied to all generated query fields globally. |
 
 ---

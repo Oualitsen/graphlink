@@ -112,7 +112,7 @@ data class GraphLinkPartialQuery(
     val cacheKey: String by lazy { computeCacheKey(operationName, variables, encoder) }
 
     companion object {
-        private fun computeCacheKey(operationName: String, variables: Map<String, Any?>, encoder: GraphLinkJsonEncoder): String {
+        fun computeCacheKey(operationName: String, variables: Map<String, Any?>, encoder: GraphLinkJsonEncoder): String {
             val raw = operationName + ":" + encoder.encode(java.util.TreeMap(variables))
             return fnv1a(raw)
         }

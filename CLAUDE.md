@@ -305,6 +305,11 @@ don't confuse them:
   `java_client_tests_real` (`.block()` appended) via `real/generate_reactor_tests.dart` into a
   git-ignored `src/test/generated/`; only the reactive-specific tests (adapters, subscriptions,
   default values) are hand-written there. Edit the blocking test, not the derived copy.
+- **REST operations** (`@glRest*`, Kotlin client): `mock/kotlin_rest_tests` and `real/kotlin_rest_client_tests_real` (OkHttp, port 9994,
+  Gradle `--offline` works with a warm cache). Run with `make -C integration_tests kotlin-rest kotlin-rest-real`.
+- **REST operations** (`@glRest*`, TypeScript client): `mock/typescript_rest_tests` and `real/typescript_rest_client_tests_real`
+  (fetch on port 9993; `REST_VARIANT=axios` reruns the same tests against `axios/` output on 9989). Run with
+  `make -C integration_tests typescript-rest typescript-rest-real`.
 - **REST operations** (`@glRest*`, Dart client): `mock/dart_rest_tests` (canned adapter) and
   `real/dart_rest_client_tests_real` + `real/dart_rest_dio_client_tests_real` against `real/rest_server/server.py`
   (stdlib Python; `/echo/**` reports what arrived on the wire, other routes are CRUD, counters, uploads/downloads,

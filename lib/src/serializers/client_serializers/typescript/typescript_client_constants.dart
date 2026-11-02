@@ -155,10 +155,10 @@ export class GraphLinkPartialQuery {
   ) {
     this.cacheKey = ttl === 0
       ? null
-      : GraphLinkPartialQuery._computeCacheKey(operationName, variables);
+      : GraphLinkPartialQuery.computeCacheKey(operationName, variables);
   }
 
-  private static _computeCacheKey(
+  static computeCacheKey(
     operationName: string,
     variables: Record<string, unknown>,
   ): string {
