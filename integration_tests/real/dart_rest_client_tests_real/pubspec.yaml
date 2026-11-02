@@ -1,0 +1,18 @@
+name: graphlink_rest_real_tests
+description: Real-server tests for the generated Dart REST operations (package:http adapter).
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ">=2.19.0 <4.0.0"
+
+dependencies:
+  graphlink:
+    path: ../../../
+  http: ^1.2.0
+  http_parser: ^4.0.0
+
+  crypto: ^3.0.0
+
+dev_dependencies:
+  test: ^1.24.0

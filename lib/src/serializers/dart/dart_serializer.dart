@@ -2,6 +2,7 @@ import 'package:graphlink/src/dart_code_gen_utils.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_input_mapping.dart';
+import 'package:graphlink/src/model/gl_rest_discriminator.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
 import 'package:graphlink/src/model/gl_field.dart';
@@ -605,7 +606,9 @@ class DartSerializer extends GLSerializer {
         arguments: [
           'Map<String, dynamic> json'
         ],
-        statements: [
+        statements: grammar.restDiscriminators.containsKey(token)
+            ? _discriminatedFromJsonBody(token, implementations, grammar.restDiscriminators[token]!)
+            : [
           "var typename = json['__typename'] as String;",
           codeGenUtils.switchStatement(
             expression: 'typename',
@@ -619,6 +622,39 @@ class DartSerializer extends GLSerializer {
                 ['throw ArgumentError("Invalid type \$typename. \$typename does not implement $token or not defined");'],
           ),
         ]);
+  }
+
+  List<String> _discriminatedFromJsonBody(
+    String token,
+    Set<GLTypeDefinition> implementations,
+    GLRestDiscriminator discriminator,
+  ) {
+    String typeName(GLTypeDefinition t) => t.derivedFromType?.tokenInfo.token ?? t.tokenInfo.token;
+    final byTypename = codeGenUtils.switchStatement(
+      expression: 'typename',
+      cases: [
+        for (final t in implementations)
+          DartCaseStatement(caseValue: "'${typeName(t)}'", statement: 'return ${t.codeName}.fromJson(json);'),
+      ],
+    );
+    final byValue = codeGenUtils.switchStatement(
+      expression: 'discriminator',
+      cases: [
+        for (final t in implementations)
+          DartCaseStatement(
+              caseValue: "'${discriminator.valueByType[typeName(t)] ?? typeName(t)}'",
+              statement: 'return ${t.codeName}.fromJson(json);'),
+      ],
+      defaultStatements: [
+        "throw ArgumentError('Cannot decode $token: unknown or missing \"${discriminator.field}\" value (\$discriminator)');",
+      ],
+    );
+    return [
+      "final typename = json['__typename'];",
+      byTypename,
+      "final discriminator = json['${discriminator.field}'];",
+      byValue,
+    ];
   }
 
   String serializeInterface(GLInterfaceDefinition interface) {

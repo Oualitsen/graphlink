@@ -1427,6 +1427,7 @@ class DartClientSerializer extends GLClientSerializer {
           "import 'package:dio/dio.dart';",
           "import 'package:http_parser/http_parser.dart';",
           "import 'graph_link_rest.dart';",
+          "import 'graph_link_uploads.dart';",
         ],
         body: dartRestDioAdapter,
       );
