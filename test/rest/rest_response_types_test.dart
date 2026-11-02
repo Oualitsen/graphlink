@@ -1,5 +1,6 @@
 import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_rest_extension.dart';
 import 'package:test/test.dart';
 
 List<String> _fieldNames(GLParser g, String type) =>
@@ -147,6 +148,27 @@ void main() {
           type Query { pet: Pet  other: String @glRest(path: "/o") }
         ''');
       expect(g.restDiscriminators, isEmpty);
+    });
+  });
+
+  group('reachable types', () {
+    test('are the return types, everything reachable through fields, and implementors of reached interfaces', () {
+      final g = GLParser()
+        ..parse('''
+          type Owner { name: String }
+          interface Pet @glRestDiscriminator(field: "kind") { id: ID! }
+          type Dog implements Pet { id: ID! owner: Owner }
+          type Cat implements Pet { id: ID! }
+          type Product { id: ID! pet: Pet }
+          type Unused { id: ID }
+          type Query { product: Product @glRest(path: "/p") }
+        ''');
+      expect(g.restReachableTypeNames, {'Product', 'Pet', 'Dog', 'Cat', 'Owner'});
+    });
+
+    test('are empty without REST operations', () {
+      final g = GLParser()..parse('type A { id: ID } type Query { a: A }');
+      expect(g.restReachableTypeNames, isEmpty);
     });
   });
 }

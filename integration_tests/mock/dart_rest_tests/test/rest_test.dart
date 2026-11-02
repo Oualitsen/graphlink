@@ -203,6 +203,11 @@ void main() {
       expect(received.last, 606);
     });
 
+    test('an RFC 5987 filename* is decoded', () async {
+      rest.on('GET', '/products/p1/export', text: 'x', headers: {'Content-Disposition': "attachment; filename*=UTF-8''p%201%C3%A9.csv"});
+      expect((await client.queries.export_(id: 'p1')).filename, 'p 1é.csv');
+    });
+
     test('a nullable download is null on 204', () async {
       rest.on('GET', '/products/p1/maybe', status: 204);
       expect(await client.queries.maybeExport(id: 'p1'), isNull);

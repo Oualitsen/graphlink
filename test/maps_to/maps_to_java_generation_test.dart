@@ -173,6 +173,7 @@ void main() {
 
 
 const _mappedToBool = '''
+directive @FieldNameConstants on OBJECT
 type MissionInfo implements Base @FieldNameConstants  {
     hourlyRate: Float
     lookingForFullTime: Boolean!

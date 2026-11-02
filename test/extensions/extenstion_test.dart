@@ -35,6 +35,8 @@ void main() {
   test("extend input test", () {
     final g = GLParser(generateAllFieldsFragments: true);
     g.parse('''
+  directive @gqHide on INPUT_FIELD_DEFINITION
+
     extend input UserInput @glServiceName(name: "TestService"){
       password: String
     }
@@ -60,6 +62,8 @@ void main() {
   test("extend type test", () {
     final g = GLParser(generateAllFieldsFragments: true);
     g.parse('''
+  directive @gqHide on INPUT_FIELD_DEFINITION
+
     extend type User @glServiceName(name: "TestService"){
       password: String
     }
@@ -85,6 +89,8 @@ void main() {
   test("extend interface test", () {
     final g = GLParser(generateAllFieldsFragments: true);
     g.parse('''
+  directive @gqHide on INPUT_FIELD_DEFINITION
+
     extend interface User @glServiceName(name: "TestService"){
       password: String
     }
@@ -138,6 +144,8 @@ void main() {
   test("extend schema test", () {
     final g = GLParser(generateAllFieldsFragments: true);
     g.parse('''
+    directive @auth(role: String!) on SCHEMA
+
     schema {
       query: TestQuery
     }

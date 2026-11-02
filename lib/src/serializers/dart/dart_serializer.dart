@@ -3,6 +3,7 @@ import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_input_mapping.dart';
 import 'package:graphlink/src/model/gl_rest_discriminator.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_rest_extension.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
 import 'package:graphlink/src/model/gl_field.dart';
@@ -381,12 +382,25 @@ class DartSerializer extends GLSerializer {
             'Map<String, dynamic> json'
           ],
           statements: [
+            ..._requiredFieldChecks(fields, token),
             'return ${token}(',
             ...fields.map((e) => fieldFromJson(e)).map((e) => "${e},".ident()),
             ');'
           ]),
     );
     return buffer.toString();
+  }
+
+  List<String> _requiredFieldChecks(List<GLField> fields, String token) {
+    if (!grammar.restReachableTypeNames.contains(token)) return const [];
+    return [
+      for (final field in fields)
+        if (!field.type.nullable && field.initialValue == null)
+          codeGenUtils.inlineIfStatement(
+            condition: "json['${field.name}'] == null",
+            statement: "throw FormatException('$token.${field.name} is missing or null in the response');",
+          ),
+    ];
   }
 
   String generateToJson(List<GLField> fields, {String? typeName}) {

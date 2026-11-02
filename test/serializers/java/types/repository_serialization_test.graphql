@@ -1,3 +1,5 @@
+directive @gqId on FIELD_DEFINITION
+directive @gqJpaQuery on INTERFACE
 
 directive @glRepository(
   glClass: String = "org.springframework.data.mongodb.repository.MongoRepository"
@@ -17,7 +19,7 @@ directive @gqQuery(
 ) on FIELD_DEFINITION
 
 directive @gqParam(
-  name: String!
+  value: String!
   glClass: String = "org.springframework.data.repository.query.Param",
   glAnnotation: Boolean = true
   glOnClient: Boolean = false

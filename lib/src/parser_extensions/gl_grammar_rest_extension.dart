@@ -114,24 +114,39 @@ extension GLGrammarRestExtension on GLParser {
 
   GLTypeDefinition? _declaredTypeNamed(String name) => interfaces[name] ?? types[name];
 
-  void _requireDiscriminators(Iterable<GLTypeDefinition> roots) {
+  Set<String> get restReachableTypeNames {
+    if (restOperations.isEmpty) return const {};
+    return _reachableCache[this] ??= _computeReachable();
+  }
+
+  Set<String> _computeReachable() {
     final visited = <String>{};
-    final pending = [...roots];
+    final pending = restOperations.values
+        .map((op) => _declaredTypeNamed(op.field.type.firstType.token))
+        .whereType<GLTypeDefinition>()
+        .toList();
     while (pending.isNotEmpty) {
       final type = pending.removeLast();
       if (!visited.add(type.token)) continue;
-      if (type is GLInterfaceDefinition) {
-        if (!restDiscriminators.containsKey(type.token)) {
-          throw ParseException(
-              "'${type.token}' is returned by a REST operation but has no discriminator: add $glRestDiscriminator(field: \"...\") to it",
-              info: type.tokenInfo);
-        }
-        pending.addAll(getTypesImplementing(type));
-      }
+      if (type is GLInterfaceDefinition) pending.addAll(getTypesImplementing(type));
       for (final field in type.fields) {
         final next = _declaredTypeNamed(field.type.firstType.token);
         if (next != null) pending.add(next);
       }
     }
+    return visited;
+  }
+
+  void _requireDiscriminators(Iterable<GLTypeDefinition> roots) {
+    for (final name in restReachableTypeNames) {
+      final type = interfaces[name];
+      if (type != null && !restDiscriminators.containsKey(name)) {
+        throw ParseException(
+            "'$name' is returned by a REST operation but has no discriminator: add $glRestDiscriminator(field: \"...\") to it",
+            info: type.tokenInfo);
+      }
+    }
   }
 }
+
+final _reachableCache = Expando<Set<String>>();

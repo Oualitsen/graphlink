@@ -36,7 +36,7 @@ directive @Json(
 
 
 directive @LoggedIn(
-    value: String!
+    value: String
     glOnClient: Boolean = false
     glOnServer: Boolean = true
     glAnnotation: Boolean = true

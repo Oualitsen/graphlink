@@ -678,7 +678,7 @@ class GLDownload {
             return chunk;
           });
     final disposition = header('content-disposition');
-    final match = disposition == null ? null : RegExp(r'filename\*?=(?:UTF-8\'\')?"?([^";]+)"?', caseSensitive: false).firstMatch(disposition);
+    final match = disposition == null ? null : RegExp(r'filename\\*?=(?:UTF-8\\x27\\x27)?"?([^";]+)"?', caseSensitive: false).firstMatch(disposition);
     return GLDownload(
       stream: stream,
       filename: match == null ? null : Uri.decodeComponent(match.group(1)!),
