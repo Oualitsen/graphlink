@@ -15,7 +15,7 @@ start-server:
 	curl -s -X POST http://localhost:9992/actuator/shutdown || true
 	sleep 2
 	java -jar $(SERVER_JAR) &
-	sleep 6
+	for i in $$(seq 1 120); do curl -sf http://localhost:9997/test/apq > /dev/null && exit 0; sleep 0.5; done; echo "persisted-queries server did not start"; exit 1
 
 stop-server:
 	curl -s -X POST http://localhost:9992/actuator/shutdown || true
