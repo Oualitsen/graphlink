@@ -146,11 +146,10 @@ class PythonClientSerializer extends GLClientSerializer {
         '    RestRawBody,',
         '    RestRequest,',
         '    RestResponse,',
-        '    rest_counted_stream,',
         '    rest_form_body,',
-        '    rest_multipart_stream,',
         '    rest_url,',
         ')',
+        'from .graph_link_uploads import gl_counted_stream, gl_multipart_stream',
       ],
       body: pythonRestHttpxAdapter,
     );
@@ -886,11 +885,11 @@ class PythonClientSerializer extends GLClientSerializer {
     return GLClassModel(
       imports: [
         'import inspect',
-        'from typing import Any, Awaitable, Callable, Dict, Optional',
+        'from typing import Any, Awaitable, Callable, Dict, List, Optional',
         '',
         'import httpx',
         '',
-        if (_parser.hasUploadMutations) 'from .graph_link_uploads import GLUpload, UploadProgressCallback',
+        if (_parser.hasUploadMutations) 'from .graph_link_uploads import GLMultipartPart, GLUpload, UploadProgressCallback, gl_multipart_stream',
         if (_parser.persistedQueriesUseGet) 'from .graph_link_persisted_queries import GraphLinkGetNotSupported, GraphLinkGetRequest',
       ],
       body: cg.createClass(className: 'GraphLinkHttpxAdapter', statements: [
@@ -967,24 +966,24 @@ class PythonClientSerializer extends GLClientSerializer {
             arguments: ['self', 'parts: Dict[str, Any]', 'on_progress: Optional[UploadProgressCallback] = None'],
             returnType: 'str',
             statements: [
-              cg.constDecl('fields', '{k: v for k, v in parts.items() if not isinstance(v, GLUpload)}'),
-              cg.constDecl(
-                'files',
-                '{k: (v.filename, v.content, v.mime_type) for k, v in parts.items() if isinstance(v, GLUpload)}',
-              ),
-              cg.constDecl('total', 'sum(len(v.content) for v in parts.values() if isinstance(v, GLUpload))'),
-              cg.ifStatement(condition: 'on_progress is not None', ifBlockStatements: ['on_progress(0, total)']),
-              cg.constDecl(
-                'response',
-                'await ${cg.callExpression('self.client.post', [
-                  'self.url',
-                  'data=fields',
-                  'files=files',
-                  'headers=await self._extra_headers()',
-                ])}',
-              ),
-              cg.ifStatement(condition: 'on_progress is not None', ifBlockStatements: ['on_progress(total, total)']),
+              cg.constDecl('multipart', 'self._multipart_parts(parts)'),
+              'content_type, total, content = gl_multipart_stream(multipart, on_progress)',
+              cg.constDecl('headers', '{**await self._extra_headers(), "Content-Type": content_type}'),
+              cg.ifStatement(condition: 'total is not None', ifBlockStatements: ['headers["Content-Length"] = str(total)']),
+              cg.constDecl('response', 'await self.client.post(self.url, content=content, headers=headers)'),
               'return response.text',
+            ],
+          ),
+        ],
+        if (_parser.hasUploadMutations) ...[
+          '',
+          cg.createMethod(
+            methodName: '_multipart_parts',
+            arguments: ['parts: Dict[str, Any]'],
+            returnType: 'List[GLMultipartPart]',
+            decorators: ['@staticmethod'],
+            statements: [
+              'return [GLMultipartPart(name=k, file=v) if isinstance(v, GLUpload) else GLMultipartPart(name=k, value=str(v)) for k, v in parts.items()]',
             ],
           ),
         ],

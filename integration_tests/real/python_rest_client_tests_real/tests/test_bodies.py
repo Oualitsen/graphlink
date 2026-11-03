@@ -227,16 +227,14 @@ class StreamedUploads(RestTestCase):
         self.assertIsNone(e.content_length)
         self.assertEqual(e.body_sha256, sha256_of(data))
 
-    async def test_unknown_length_progress_reports_minus_one_total(self) -> None:
+    async def test_progress_is_not_reported_when_the_length_is_unknown(self) -> None:
         from generated import GLUpload
 
         reports = []
         await self.client.mutations.e_raw(
             file=GLUpload.from_stream(_chunks(pattern(40000))), on_progress=lambda s, t: reports.append((s, t))
         )
-        self.assertTrue(reports)
-        self.assertTrue(all(r[1] == -1 for r in reports))
-        self.assertEqual(reports[-1][0], 40000)
+        self.assertEqual(reports, [])
 
     async def test_file_is_streamed_from_disk_with_a_known_length(self) -> None:
         import os
@@ -273,6 +271,44 @@ class StreamedUploads(RestTestCase):
         e = await self.client.mutations.e_multipart(one=GLUpload.from_stream(_chunks(data), filename="u.bin"))
         self.assertEqual(part(e, "one").sha256, sha256_of(data))
         self.assertTrue(e.chunked)
+
+    async def test_multipart_progress_is_not_reported_when_the_total_is_unknown(self) -> None:
+        from generated import GLUpload
+
+        reports = []
+        await self.client.mutations.e_multipart(
+            one=GLUpload.from_stream(_chunks(pattern(40000)), filename="u.bin"), on_progress=lambda s, t: reports.append((s, t))
+        )
+        self.assertEqual(reports, [])
+
+    async def test_multipart_file_is_not_read_in_full_before_the_first_progress_report(self) -> None:
+        import asyncio
+        from generated import GLUpload
+
+        data = pattern(6 * 1024 * 1024)
+        chunk = 65536
+        pulled = 0
+        pulled_at_first_report = -1
+
+        async def slow():
+            nonlocal pulled
+            for offset in range(0, len(data), chunk):
+                if offset % (256 * 1024) == 0:
+                    await asyncio.sleep(0.002)
+                pulled = offset + chunk
+                yield data[offset : offset + chunk]
+
+        def on_progress(sent: int, total: int) -> None:
+            nonlocal pulled_at_first_report
+            if pulled_at_first_report < 0:
+                pulled_at_first_report = pulled
+
+        e = await self.client.mutations.e_multipart(
+            one=GLUpload.from_stream(slow(), filename="big.bin", length=len(data)), on_progress=on_progress
+        )
+        self.assertEqual(part(e, "one").sha256, sha256_of(data))
+        self.assertGreaterEqual(pulled_at_first_report, 0)
+        self.assertLess(pulled_at_first_report, len(data))
 
     async def test_stream_that_fails_midway_fails_the_call_and_does_not_hang(self) -> None:
         from generated import GLUpload

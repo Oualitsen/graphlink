@@ -71,12 +71,10 @@ describe('raw body', () => {
     }
   });
 
-  it('progress with an unknown length reports -1 for the total', async () => {
+  it('progress is not reported when the length is unknown', async () => {
     const reports: Array<[number, number]> = [];
     await client.mutations.eRaw({ file: uploadOf(pattern(40000), { knownLength: false }) }, (s, t) => reports.push([s, t]));
-    expect(reports.length).toBeGreaterThan(0);
-    expect(reports.every((r) => r[1] === -1 || r[1] === 40000)).toBe(true);
-    expect(reports[reports.length - 1][0]).toBe(40000);
+    expect(reports).toHaveLength(0);
   });
 
   it('a stream that fails mid-way fails the call and does not hang', async () => {

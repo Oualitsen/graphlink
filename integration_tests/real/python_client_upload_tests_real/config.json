@@ -1,0 +1,16 @@
+{
+  "schemaPaths": ["../schema_real/upload.gql"],
+  "mode": "client",
+  "outputDir": "generated",
+  "clientConfig": {
+    "python": {
+      "httpAdapter": "httpx",
+      "wsAdapter": "none",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "nullableFieldsRequired": false,
+      "immutableTypeFields": true,
+      "captureErrors": false
+    }
+  }
+}
