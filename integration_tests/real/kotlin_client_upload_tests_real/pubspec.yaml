@@ -1,0 +1,10 @@
+name: graphlink_kotlin_upload_tests
+description: Real-socket tests for the generated Kotlin GraphQL multipart upload path.
+version: 1.0.0
+publish_to: none
+environment:
+  sdk: '>=2.19.0 <4.0.0'
+
+dependencies:
+  graphlink:
+    path: ../../../
