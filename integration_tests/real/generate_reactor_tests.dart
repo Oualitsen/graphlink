@@ -11,6 +11,7 @@ class _Suite {
 const _suites = [
   _Suite('java_client_tests_real', 'java_client_tests_reactor_real', 'dev/graphlink/test'),
   _Suite('java_rest_client_tests_real', 'java_rest_reactor_client_tests_real', 'dev/graphlink/rest'),
+  _Suite('java_client_upload_tests_real', 'java_client_upload_reactor_tests_real', 'dev/graphlink/upload'),
 ];
 
 // The reactive suite runs the same tests as the blocking one: every

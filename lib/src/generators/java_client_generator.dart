@@ -152,6 +152,7 @@ Future<Set<String>> generateJavaClientClasses(
   if (parser.hasUploadMutations || clientSerializer.hasRest) {
     for (final entry in {
       'GLUpload.java': clientSerializer.generateUploadsFile(),
+      'GLMultipartBody.java': clientSerializer.generateMultipartBodyFile(),
       'UploadProgressCallback.java': clientSerializer.generateUploadProgressCallbackFile(),
     }.entries) {
       futures.add(writeToFile(

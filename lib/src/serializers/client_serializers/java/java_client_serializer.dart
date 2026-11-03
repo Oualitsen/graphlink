@@ -138,6 +138,22 @@ class JavaClientSerializer extends GLClientSerializer {
         body: javaGLUpload,
       );
 
+  GLClassModel generateMultipartBodyFile() => const GLClassModel(
+        imports: [
+          JavaImports.inputStream,
+          JavaImports.byteArrayInputStream,
+          JavaImports.ioException,
+          JavaImports.list,
+          JavaImports.arrayList,
+          'java.io.SequenceInputStream',
+          'java.nio.charset.StandardCharsets',
+          'java.util.Collections',
+          'java.util.UUID',
+          JavaImports.map,
+        ],
+        body: javaGLMultipartBody,
+      );
+
 
   @override
   GLClassModel generateClient({bool hasDefaultAdapters = true}) {
@@ -1894,9 +1910,7 @@ class JavaClientSerializer extends GLClientSerializer {
 
   /// Native Spring WebClient reactive adapter (Reactor only). `execute` and
   /// `executeMultipart` return `Mono<String>` directly — no bridge. Multipart
-  /// uses `MultipartBodyBuilder` + `BodyInserters.fromMultipartData`; byte
-  /// progress is not wired for WebClient in this first cut (the `onProgress`
-  /// callback is accepted but not invoked).
+  /// streams a `GLMultipartBody` through `BodyInserters.fromResource`.
   GLClassModel generateWebClientDefaultClientAdapterFile() {
     final opNameUri = _grammar.operationNameAsParameter
         ? 'url + "?operationName=" + operationName'
@@ -1968,7 +1982,6 @@ class JavaClientSerializer extends GLClientSerializer {
         'org.springframework.http.MediaType',
         if (hasUploads)
           'org.springframework.web.reactive.function.BodyInserters',
-        if (hasUploads) 'org.springframework.http.client.MultipartBodyBuilder',
         if (hasUploads) 'org.springframework.core.io.InputStreamResource',
         JavaImports.map,
         JavaImports.supplier,
@@ -1980,6 +1993,7 @@ class JavaClientSerializer extends GLClientSerializer {
   }
 
   /// WebClient multipart `executeMultipart` body (GraphQL multipart spec).
+  /// The body is streamed lazily through an `InputStreamResource`.
   List<String> _webClientMultipartMembers() {
     final executeMultipartMethod = '@Override\n${codeGenUtils.createMethod(
       returnType: 'public Mono<String>',
@@ -1991,28 +2005,17 @@ class JavaClientSerializer extends GLClientSerializer {
         'UploadProgressCallback onProgress',
       ],
       statements: [
-        'MultipartBodyBuilder bodyBuilder = new MultipartBodyBuilder();',
-        'bodyBuilder.part("operations", operations).contentType(MediaType.APPLICATION_JSON);',
-        'bodyBuilder.part("map", mapJson).contentType(MediaType.APPLICATION_JSON);',
-        codeGenUtils.forEachLoop(
-          variable: 'entry',
-          iterable: 'files.entrySet()',
-          statements: [
-            'GLUpload upload = entry.getValue();',
-            'String filename = upload.getFilename() != null ? upload.getFilename() : entry.getKey();',
-            'bodyBuilder.part(entry.getKey(), new InputStreamResource(upload.getStream()) ${codeGenUtils.block([
-                  '@Override public String getFilename() { return filename; }',
-                  '@Override public long contentLength() { return upload.getLength(); }',
-                ])}).filename(filename).contentType(MediaType.parseMediaType(upload.getMimeType()));',
-          ],
-        ),
-        'WebClient.RequestBodySpec request = webClient.post()\n    .uri(url)\n    .contentType(MediaType.MULTIPART_FORM_DATA);',
+        'GLMultipartBody body = GLMultipartBody.ofGraphQL(operations, mapJson, files);',
+        'InputStreamResource resource = new InputStreamResource(body.getStream(onProgress)) ${codeGenUtils.block([
+              '@Override public long contentLength() { return body.getLength(); }',
+            ])};',
+        'WebClient.RequestBodySpec request = webClient.post()\n    .uri(url)\n    .contentType(MediaType.parseMediaType(body.getContentType()));',
         'Map<String, String> headers = headersProvider.get();',
         codeGenUtils.ifStatement(
           condition: 'headers != null',
           ifBlockStatements: ['headers.forEach(request::header);'],
         ),
-        'return request.body(BodyInserters.fromMultipartData(bodyBuilder.build())).retrieve().bodyToMono(String.class);',
+        'return request.body(BodyInserters.fromResource(resource)).retrieve().bodyToMono(String.class);',
       ],
     )}';
 
@@ -2020,8 +2023,7 @@ class JavaClientSerializer extends GLClientSerializer {
   }
 
   /// The reactive `executeMultipart` (GraphQL multipart spec over JDK
-  /// `sendAsync`, bridged to the flavor single, with full byte-progress) plus
-  /// the byte-body builder and counting publisher helpers.
+  /// `sendAsync`, bridged to the flavor single). The body is streamed lazily.
   List<String> _reactiveMultipartMembers(String ret) {
     const mpFuture =
         'httpClient.sendAsync(mpRequest, HttpResponse.BodyHandlers.ofString()).thenApply(HttpResponse::body)';
@@ -2036,16 +2038,14 @@ class JavaClientSerializer extends GLClientSerializer {
         'UploadProgressCallback onProgress',
       ],
       statements: [
-        'String boundary = "----GraphLinkBoundary" + java.util.UUID.randomUUID().toString().replace("-", "");',
-        'final byte[] mpBody;',
-        'try ${codeGenUtils.block([
-              'mpBody = buildMultipartBody(boundary, operations, mapJson, files);',
-            ])} catch (java.io.IOException e) ${codeGenUtils.block([
-              'return ${flavor.error('new RuntimeException(e)')};',
-            ])}',
-        'HttpRequest.BodyPublisher basePublisher = HttpRequest.BodyPublishers.ofByteArray(mpBody);',
-        'HttpRequest.BodyPublisher publisher = onProgress != null\n    ? new CountingBodyPublisher(basePublisher, mpBody.length, onProgress)\n    : basePublisher;',
-        'HttpRequest.Builder mpBuilder = HttpRequest.newBuilder()\n    .uri(URI.create(url))\n    .header("Content-Type", "multipart/form-data; boundary=" + boundary)\n    .POST(publisher);',
+        'GLMultipartBody mpBody = GLMultipartBody.ofGraphQL(operations, mapJson, files);',
+        'java.io.InputStream mpStream = mpBody.getStream(onProgress);',
+        'HttpRequest.BodyPublisher publisher = HttpRequest.BodyPublishers.ofInputStream(() -> mpStream);',
+        codeGenUtils.ifStatement(
+          condition: 'mpBody.getLength() >= 0',
+          ifBlockStatements: ['publisher = HttpRequest.BodyPublishers.fromPublisher(publisher, mpBody.getLength());'],
+        ),
+        'HttpRequest.Builder mpBuilder = HttpRequest.newBuilder()\n    .uri(URI.create(url))\n    .header("Content-Type", mpBody.getContentType())\n    .POST(publisher);',
         'Map<String, String> mpHeaders = headersProvider.get();',
         codeGenUtils.ifStatement(
           condition: 'mpHeaders != null',
@@ -2062,116 +2062,7 @@ class JavaClientSerializer extends GLClientSerializer {
       ],
     )}';
 
-    final buildMultipartBodyMethod =
-        'private byte[] buildMultipartBody(String boundary, String operations, String mapJson, Map<String, GLUpload> files) throws java.io.IOException ${codeGenUtils.block([
-              'java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();',
-              'writePart(out, boundary, "operations", "application/json", operations.getBytes(java.nio.charset.StandardCharsets.UTF_8));',
-              'writePart(out, boundary, "map", "application/json", mapJson.getBytes(java.nio.charset.StandardCharsets.UTF_8));',
-              codeGenUtils.forEachLoop(
-                variable: 'entry',
-                iterable: 'files.entrySet()',
-                statements: [
-                  'GLUpload upload = entry.getValue();',
-                  'String filename = upload.getFilename() != null ? upload.getFilename() : entry.getKey();',
-                  'out.write(("--" + boundary + "\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
-                  'out.write(("Content-Disposition: form-data; name=\\"" + entry.getKey() + "\\"; filename=\\"" + filename + "\\"\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
-                  'out.write(("Content-Type: " + upload.getMimeType() + "\\r\\n\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
-                  'upload.getStream().transferTo(out);',
-                  'out.write("\\r\\n".getBytes(java.nio.charset.StandardCharsets.UTF_8));',
-                ],
-              ),
-              'out.write(("--" + boundary + "--\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
-              'return out.toByteArray();',
-            ])}';
-
-    final writePartMethod =
-        'private void writePart(java.io.ByteArrayOutputStream out, String boundary, String name, String contentType, byte[] data) throws java.io.IOException ${codeGenUtils.block([
-              'out.write(("--" + boundary + "\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
-              'out.write(("Content-Disposition: form-data; name=\\"" + name + "\\"\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
-              'out.write(("Content-Type: " + contentType + "\\r\\n\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));',
-              'out.write(data);',
-              'out.write("\\r\\n".getBytes(java.nio.charset.StandardCharsets.UTF_8));',
-            ])}';
-
-    final subscribeMethod = '@Override\n${codeGenUtils.createMethod(
-      returnType: 'public void',
-      methodName: 'subscribe',
-      arguments: ['java.util.concurrent.Flow.Subscriber<? super java.nio.ByteBuffer> subscriber'],
-      statements: [
-        'delegate.subscribe(new java.util.concurrent.Flow.Subscriber<>() ${codeGenUtils.block([
-              'long sent = 0;',
-              codeGenUtils.createMethod(
-                returnType: '@Override public void',
-                methodName: 'onSubscribe',
-                arguments: ['java.util.concurrent.Flow.Subscription sub'],
-                statements: ['subscriber.onSubscribe(sub);'],
-              ),
-              codeGenUtils.createMethod(
-                returnType: '@Override public void',
-                methodName: 'onNext',
-                arguments: ['java.nio.ByteBuffer item'],
-                statements: [
-                  'sent += item.remaining();',
-                  'callback.onProgress(sent, total);',
-                  'subscriber.onNext(item);',
-                ],
-              ),
-              codeGenUtils.createMethod(
-                returnType: '@Override public void',
-                methodName: 'onError',
-                arguments: ['Throwable t'],
-                statements: ['subscriber.onError(t);'],
-              ),
-              codeGenUtils.createMethod(
-                returnType: '@Override public void',
-                methodName: 'onComplete',
-                arguments: [],
-                statements: ['subscriber.onComplete();'],
-              ),
-            ])});',
-      ],
-    )}';
-
-    final countingBodyPublisherClass =
-        'private static final class CountingBodyPublisher implements HttpRequest.BodyPublisher ${codeGenUtils.block([
-              'private final HttpRequest.BodyPublisher delegate;',
-              'private final long total;',
-              'private final UploadProgressCallback callback;',
-              '',
-              codeGenUtils.createMethod(
-                methodName: 'CountingBodyPublisher',
-                arguments: [
-                  'HttpRequest.BodyPublisher delegate',
-                  'long total',
-                  'UploadProgressCallback callback',
-                ],
-                statements: [
-                  'this.delegate = delegate;',
-                  'this.total = total;',
-                  'this.callback = callback;',
-                ],
-              ),
-              '',
-              codeGenUtils.createMethod(
-                returnType: '@Override public long',
-                methodName: 'contentLength',
-                arguments: [],
-                statements: ['return delegate.contentLength();'],
-              ),
-              '',
-              subscribeMethod,
-            ])}';
-
-    return [
-      '',
-      executeMultipartMethod,
-      '',
-      buildMultipartBodyMethod,
-      '',
-      writePartMethod,
-      '',
-      countingBodyPublisherClass,
-    ];
+    return ['', executeMultipartMethod];
   }
 
   GLClassModel generateDefaultWebSocketAdapterFile(

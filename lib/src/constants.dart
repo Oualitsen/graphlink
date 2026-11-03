@@ -332,6 +332,140 @@ public interface GraphLinkMultipartAdapter {
 }
 ''';
 
+const javaGLMultipartBody = '''
+public final class GLMultipartBody {
+
+    private static final byte[] CRLF = {13, 10};
+
+    public static final class Part {
+        private final String name;
+        private final String value;
+        private final String mimeType;
+        private final GLUpload file;
+
+        private Part(String name, String value, String mimeType, GLUpload file) {
+            this.name = name;
+            this.value = value;
+            this.mimeType = mimeType;
+            this.file = file;
+        }
+
+        public static Part text(String name, String value, String mimeType) { return new Part(name, value, mimeType, null); }
+
+        public static Part file(String name, GLUpload file) { return new Part(name, null, null, file); }
+    }
+
+    private final String contentType;
+    private final long length;
+    private final InputStream stream;
+
+    private GLMultipartBody(String contentType, long length, InputStream stream) {
+        this.contentType = contentType;
+        this.length = length;
+        this.stream = stream;
+    }
+
+    public static GLMultipartBody of(List<Part> parts) {
+        String boundary = "graphlink-" + UUID.randomUUID().toString().replace("-", "");
+        List<InputStream> streams = new ArrayList<>();
+        long length = 0;
+        for (Part part : parts) {
+            StringBuilder head = new StringBuilder("--").append(boundary)
+                .append("\\r\\nContent-Disposition: form-data; name=\\"").append(quote(part.name)).append('"');
+            if (part.file != null) {
+                String filename = part.file.getFilename() != null ? part.file.getFilename() : part.name;
+                head.append("; filename=\\"").append(quote(filename)).append("\\"\\r\\nContent-Type: ").append(part.file.getMimeType());
+            } else if (part.mimeType != null) {
+                head.append("\\r\\nContent-Type: ").append(part.mimeType);
+            }
+            head.append("\\r\\n\\r\\n");
+            byte[] headBytes = head.toString().getBytes(StandardCharsets.UTF_8);
+            streams.add(new ByteArrayInputStream(headBytes));
+            length = add(length, headBytes.length);
+            if (part.file != null) {
+                streams.add(part.file.getStream());
+                length = part.file.getLength() < 0 ? -1 : add(length, part.file.getLength());
+            } else {
+                byte[] valueBytes = part.value.getBytes(StandardCharsets.UTF_8);
+                streams.add(new ByteArrayInputStream(valueBytes));
+                length = add(length, valueBytes.length);
+            }
+            streams.add(new ByteArrayInputStream(CRLF));
+            length = add(length, CRLF.length);
+        }
+        byte[] tail = ("--" + boundary + "--\\r\\n").getBytes(StandardCharsets.UTF_8);
+        streams.add(new ByteArrayInputStream(tail));
+        length = add(length, tail.length);
+        return new GLMultipartBody("multipart/form-data; boundary=" + boundary, length,
+            new SequenceInputStream(Collections.enumeration(streams)));
+    }
+
+    public static GLMultipartBody ofGraphQL(String operations, String mapJson, Map<String, GLUpload> files) {
+        List<Part> parts = new ArrayList<>();
+        parts.add(Part.text("operations", operations, "application/json"));
+        parts.add(Part.text("map", mapJson, "application/json"));
+        for (Map.Entry<String, GLUpload> entry : files.entrySet()) {
+            parts.add(Part.file(entry.getKey(), entry.getValue()));
+        }
+        return of(parts);
+    }
+
+    public String getContentType() { return contentType; }
+
+    public long getLength() { return length; }
+
+    public InputStream getStream() { return stream; }
+
+    public InputStream getStream(UploadProgressCallback onProgress) { return withProgress(stream, length, onProgress); }
+
+    public static InputStream withProgress(InputStream source, long total, UploadProgressCallback onProgress) {
+        if (onProgress == null || total <= 0) return source;
+        return new ProgressInputStream(source, total, onProgress);
+    }
+
+    private static long add(long length, long bytes) { return length < 0 ? -1 : length + bytes; }
+
+    private static String quote(String value) {
+        return value.replace("\\"", "%22").replace("\\r", "%0D").replace("\\n", "%0A");
+    }
+
+    private static final class ProgressInputStream extends InputStream {
+        private final InputStream delegate;
+        private final long total;
+        private final UploadProgressCallback callback;
+        private long sent;
+
+        ProgressInputStream(InputStream delegate, long total, UploadProgressCallback callback) {
+            this.delegate = delegate;
+            this.total = total;
+            this.callback = callback;
+        }
+
+        @Override
+        public int read() throws IOException {
+            int value = delegate.read();
+            if (value >= 0) report(1);
+            return value;
+        }
+
+        @Override
+        public int read(byte[] buffer, int offset, int count) throws IOException {
+            int read = delegate.read(buffer, offset, count);
+            if (read > 0) report(read);
+            return read;
+        }
+
+        @Override
+        public void close() throws IOException { delegate.close(); }
+
+        private void report(long count) {
+            sent += count;
+            callback.onProgress(sent, total);
+        }
+    }
+}
+''';
+
 const javaGLUpload = '''
 public final class GLUpload {
 

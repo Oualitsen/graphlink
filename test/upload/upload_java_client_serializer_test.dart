@@ -169,8 +169,12 @@ void main() {
 
     test('implements GraphLinkMultipartAdapter', () => expect(out, contains('implements GraphLinkClientAdapter, GraphLinkMultipartAdapter')));
     test('has executeMultipart', () => expect(out, contains('executeMultipart')));
-    test('has CountingBodyPublisher inner class', () => expect(out, contains('CountingBodyPublisher')));
-    test('has buildMultipartBody helper', () => expect(out, contains('buildMultipartBody')));
+    test('streams a GLMultipartBody', () => expect(out, contains('GLMultipartBody.ofGraphQL(operations, mapJson, files)')));
+    test('never buffers the body', () {
+      expect(out, isNot(contains('ByteArrayOutputStream')));
+      expect(out, isNot(contains('ofByteArray')));
+      expect(out, isNot(contains('buildMultipartBody')));
+    });
     // Regression: HttpClient.newHttpClient() defaults to HTTP/2, which sends an h2c
     // cleartext preface that Node/Express (and other HTTP/1.1-only servers) reject
     // with "405 Invalid HTTP method". Every request must pin HTTP/1.1.
