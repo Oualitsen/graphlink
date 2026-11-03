@@ -307,6 +307,18 @@ don't confuse them:
   default values) are hand-written there. Edit the blocking test, not the derived copy.
 - **REST operations** (`@glRest*`, Kotlin client): `mock/kotlin_rest_tests` and `real/kotlin_rest_client_tests_real` (OkHttp, port 9994,
   Gradle `--offline` works with a warm cache). Run with `make -C integration_tests kotlin-rest kotlin-rest-real`.
+- **REST operations** (`@glRest*`, Java client): `mock/java_rest_tests` and `mock/java_rest_reactor_tests` (canned `GLRestAdapter`;
+  the reactive one uses Reactor `StepVerifier`), `real/java_rest_client_tests_real` (JDK `HttpClient`, port 9987) and
+  `real/java_rest_reactor_client_tests_real` (port 9980). Both real packages use `real/rest_server/server.py` and
+  `real/schema_rest/`; the reactive one derives most of its tests from the blocking package via `real/generate_reactor_tests.dart`
+  (only `ReactiveRestTest.java` is hand-written). Run with `make -C integration_tests java-rest java-rest-reactor java-rest-real java-rest-reactor-real`.
+- **Uploads** (GraphQL multipart and REST, streaming rules shared by every client): one `*_client_upload_tests_real` package per target
+  (`dart` and `dart_dio`, `java` with JDK/OkHttp variants, `java_reactor` with JDK/WebClient variants, `kotlin`, `typescript`, `python`,
+  `swift`, `go`). Each runs the same real-socket tests against an in-process recording server (6 MB sha256, Content-Length for known
+  lengths, chunked for unknown, progress ends at the total, no read-ahead, no progress when the length is unknown, two-file list) and,
+  when `UPLOAD_SERVER_URL` is set, against `real/spring_upload_server` (ports 9998/9991). Swift uses `recording_server.py` (port 9970).
+  Run with `make -C integration_tests <lang>-upload-real` (e.g. `go-upload-real`). When changing an upload runtime, change every target's
+  rules together and rerun these.
 - **REST operations** (`@glRest*`, Go client): `mock/go_rest_tests` and `real/go_rest_client_tests_real` (net/http, port 9981;
   `comma/` output reruns the same tests on 9982). Run with `make -C integration_tests go-rest go-rest-real`.
 - **REST operations** (`@glRest*`, Swift client): `mock/swift_rest_tests` and `real/swift_rest_client_tests_real` (URLSession, port 9983;
