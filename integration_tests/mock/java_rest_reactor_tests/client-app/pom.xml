@@ -24,17 +24,11 @@
             <version>2.17.0</version>
         </dependency>
 
-        <!-- Reactor (Mono/Flux) — the generated reactive client targets reactor -->
+        <!-- reactive library -->
         <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-core</artifactId>
             <version>3.6.6</version>
-        </dependency>
-        <dependency>
-            <groupId>io.projectreactor</groupId>
-            <artifactId>reactor-test</artifactId>
-            <version>3.6.6</version>
-            <scope>test</scope>
         </dependency>
 
         <!-- JUnit 5 -->
@@ -49,33 +43,28 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.2.5</version>
-                <configuration>
-                    <systemPropertyVariables>
-                        <rest.port>9980</rest.port>
-                    </systemPropertyVariables>
-                </configuration>
-            </plugin>
-            <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
                 <version>3.5.0</version>
                 <executions>
                     <execution>
-                        <id>add-derived-tests</id>
+                        <id>add-shared-tests</id>
                         <phase>generate-test-sources</phase>
                         <goals>
                             <goal>add-test-source</goal>
                         </goals>
                         <configuration>
                             <sources>
-                                <source>src/test/generated/java</source>
+                                <source>../../java_rest_reactive_shared/src/test/java</source>
                             </sources>
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
             </plugin>
         </plugins>
     </build>

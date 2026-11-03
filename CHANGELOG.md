@@ -676,6 +676,8 @@
 
 - **Go uploads (GraphQL and REST)** — `OnProgress` is no longer called when the total size is unknown (`Length: -1`); it used to report a total of `-1`. A multipart file part without a filename now defaults it to the part name, so the server sees a file rather than a plain form field.
 
+- **Java reactive REST: cached nullable queries** — a `@glCache` REST query with a nullable result no longer fails when the response is empty: with Reactor it threw `NullPointerException: The mapper returned a null value`, and with RxJava 3 the generated client did not compile (`Single<T>` returned where `Maybe<T>` was declared). They now go through a new `restCachedOrNull` and complete empty (or `null` with Mutiny) without caching anything. The blocking client is unchanged.
+
 ### New features
 
 - **Go client** — new `clientConfig.go` target. Types, inputs and enums are plain structs and string types with `json` tags, generated into one flat package (`packageName`); nullable scalars, enums and objects are pointers, interfaces and unions are Go interfaces decoded from `__typename`, and inputs with schema defaults get a `New<Input>()` constructor. The client is `context`-aware: every operation returns `(value, error)` (a `*GraphLinkException` for GraphQL errors), optional and defaulted arguments go in a trailing `<Operation>Options` struct, subscriptions are channels of `GraphLinkEvent[T]`, and the transport is an injectable function. Includes `@glCache` with tag invalidation and `staleIfOffline`, file uploads with exact progress reporting, `@glCaptureErrors`, and persisted queries (APQ, optional GET) with the same wire behaviour as the other clients. Default `net/http` adapter and `coder/websocket` subscription adapter with auto-reconnect (`httpAdapter` / `wsAdapter`: `"none"` to bring your own; with `wsAdapter: "none"` the package imports only the standard library). Requires Go 1.22+.
@@ -691,6 +693,8 @@
 - **REST operations (Swift client)** — `@glRest*` operations are generated for the Swift client: `GraphLinkRest.swift` (runtime types, helpers, `RestDecode`), `GraphLinkRestResolver`, a URLSession `DefaultGraphLinkRestAdapter` (`restHttpAdapter`, `queryListStyle`, `formNesting`), and discriminated interface/union dispatch through the regular `fromJson`. See [REST operations](rest-client.md#swift).
 
 - **REST operations (Go client)** — `@glRest*` operations are generated for the Go client: `graph_link_rest.go` (runtime types, ordered value collection), `GraphLinkRestResolver`, a `net/http` `GraphLinkRestHttpAdapter` (`restHttpAdapter`, `queryListStyle`, `formNesting`), per-operation `Options` structs, discriminated interface/union decoding and `UnmarshalJSON` required-field errors. See [REST operations](rest-client.md#go).
+
+- **REST operations (Java, WebClient)** — with `reactiveHttpClient: "webclient"` the generated `DefaultGraphLinkRestAdapter` now uses Spring `WebClient` (it used to be the JDK `HttpClient` whatever the setting). Uploads and downloads stream, redirects are followed, `gzip`/`deflate` responses are decoded, and non-2xx responses reach the client as `RestError`.
 
 - **`glink --print-directives`** writes the declarations of every GraphLink directive (generated from the same table the validator uses) so your IDE stops flagging them. The hand-written "copy-paste declarations" block in `directives.md` had wrong locations for several directives and is replaced by this output.
 

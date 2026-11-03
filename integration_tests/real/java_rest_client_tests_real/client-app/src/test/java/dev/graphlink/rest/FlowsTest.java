@@ -140,6 +140,15 @@ class FlowsTest {
     }
 
     @Test
+    void anEmptyResponseToACachedNullableQueryIsNullAndIsNotCached() {
+        CountingStore writes = new CountingStore();
+        GraphLinkClient c = newClient(writes);
+        assertNull(c.queries.cachedStatus(204));
+        assertNull(c.queries.cachedStatus(204));
+        assertEquals(0, writes.sets);
+    }
+
+    @Test
     void staleIfOfflineServesTheExpiredEntryOnTransportFailureOnly() throws Exception {
         client.queries.counterOffline("off");
         client.queries.counterShort("off2");

@@ -192,15 +192,25 @@ client.mutations.avatar("p1", GLUpload.fromFile(new File("p1.png")), (sent, tota
 
 ### Reactive
 
-With `asyncStyle` set (see [Java client](java-client.md#reactive-client-v500)), REST operations return `Mono<T>` instead, and
-`GLRestAdapter.execute` returns `Mono<RestResponse>`. The request is built identically to the blocking client.
+With `asyncStyle` set (see [Java client](java-client.md#reactive-client-v500)), REST operations return the library's deferred
+type instead and `GLRestAdapter.execute` returns the same type wrapping `RestResponse`. The request is built identically to the
+blocking client.
+
+| `asyncStyle` | Result | Nullable result | `Void` result |
+|---|---|---|---|
+| `"reactor"` | `Mono<T>` | `Mono<T>`, empty when there is no value | `Mono<Void>` |
+| `"rxjava3"` | `Single<T>` | `Maybe<T>` | `Completable` |
+| `"mutiny"` | `Uni<T>` | `Uni<T>`, `null` item when there is no value | `Uni<Void>` |
 
 - Nothing is sent until you subscribe.
-- A nullable result that comes back empty (`204`, or an empty body) completes without a value; for a non-null result it is an
-  `IllegalStateException` error signal. `RestError` is an error signal too, and `staleIfOffline` is served on a transport error signal only.
-- `void` operations return `Mono<Void>`.
-- The generated adapter uses the JDK `HttpClient.sendAsync` regardless of `reactiveHttpClient` (that option only affects the GraphQL adapter).
-- The test suites cover `reactor`; `rxjava3` and `mutiny` generate the same shapes but are not exercised against a server.
+- A nullable result that comes back empty (`204`, or an empty body) completes without a value (`null` with Mutiny); for a non-null
+  result it is an `IllegalStateException` error signal. `RestError` is an error signal too, and `staleIfOffline` is served on a
+  transport error signal only. A cached nullable query that comes back empty is not cached.
+- By default the generated adapter uses the JDK `HttpClient.sendAsync`, for every `asyncStyle`.
+- With `reactiveHttpClient: "webclient"` (`asyncStyle: "reactor"` only) the REST adapter uses Spring `WebClient` too. It streams
+  uploads (a `GLUpload` with a negative `length` is sent chunked) and downloads, follows redirects and decodes `gzip` and `deflate`
+  like the JDK adapter. It needs `spring-webflux` and `reactor-netty-http` on the classpath. Pass your own `WebClient` to the
+  three-argument constructor to configure timeouts, a proxy or another connector (then redirects are up to that `WebClient`).
 
 ## Python
 

@@ -32,6 +32,7 @@ class JavaClientSerializer extends GLClientSerializer {
   final JavaJsonCodec jsonCodec;
   final JavaReactiveFlavor flavor;
   final JavaRestHttpAdapter restHttpAdapter;
+  final JavaReactiveHttpClient reactiveHttpClient;
 
   late final JavaClientContext _ctx;
   late final JavaClientOperationSerializer _opSer;
@@ -42,6 +43,7 @@ class JavaClientSerializer extends GLClientSerializer {
       {this.jsonCodec = JavaJsonCodec.jackson,
       this.flavor = JavaReactiveFlavor.blocking,
       this.restHttpAdapter = JavaRestHttpAdapter.jdk,
+      this.reactiveHttpClient = JavaReactiveHttpClient.jdk,
       bool commaQueryLists = false,
       bool bracketFormNesting = false})
       : super(serializer, GLGraphqlSerializer(_grammar, false)) {
@@ -69,6 +71,9 @@ class JavaClientSerializer extends GLClientSerializer {
   bool get _hasGraphQL => GLQueryType.values.any(_grammar.hasQueryType);
 
   bool get generatesRestAdapter => hasRest && restHttpAdapter != JavaRestHttpAdapter.none;
+
+  bool get restAdapterUsesWebClient =>
+      generatesRestAdapter && flavor.isReactive && reactiveHttpClient == JavaReactiveHttpClient.webclient;
 
   bool get _restOnly => hasRest && !_hasGraphQL;
 
@@ -506,7 +511,35 @@ class JavaClientSerializer extends GLClientSerializer {
       ),
       if (generatesRestAdapter)
         'DefaultGraphLinkRestAdapter.java': GLClassModel(
-          imports: [
+          imports: restAdapterUsesWebClient
+              ? [
+                  'java.io.ByteArrayInputStream',
+                  'java.io.IOException',
+                  'java.io.InputStream',
+                  'java.io.UncheckedIOException',
+                  'java.net.URI',
+                  JavaImports.linkedHashMap,
+                  JavaImports.list,
+                  JavaImports.map,
+                  JavaImports.supplier,
+                  'java.util.Locale',
+                  'java.util.StringJoiner',
+                  'java.util.zip.GZIPInputStream',
+                  'java.util.zip.InflaterInputStream',
+                  'org.springframework.core.io.InputStreamResource',
+                  'org.springframework.core.io.buffer.DataBuffer',
+                  'org.springframework.core.io.buffer.DataBufferUtils',
+                  'org.springframework.http.HttpHeaders',
+                  'org.springframework.http.HttpMethod',
+                  'org.springframework.http.client.reactive.ClientHttpRequest',
+                  'org.springframework.http.client.reactive.ReactorClientHttpConnector',
+                  'org.springframework.web.reactive.function.BodyInserter',
+                  'org.springframework.web.reactive.function.BodyInserters',
+                  'org.springframework.web.reactive.function.client.WebClient',
+                  'reactor.core.scheduler.Schedulers',
+                  ...flavor.singleImports,
+                ]
+              : [
             'java.io.ByteArrayInputStream',
             'java.io.IOException',
             'java.io.InputStream',
@@ -531,7 +564,23 @@ class JavaClientSerializer extends GLClientSerializer {
             'java.util.zip.InflaterInputStream',
             ...flavor.singleImports,
           ],
-          body: javaRestJdkAdapter(flavor),
+          body: restAdapterUsesWebClient ? javaRestWebClientAdapter() : javaRestJdkAdapter(flavor),
+        ),
+      if (restAdapterUsesWebClient)
+        'GLDataBufferInputStream.java': GLClassModel(
+          imports: [
+            'java.io.IOException',
+            'java.io.InputStream',
+            'java.io.InterruptedIOException',
+            'java.util.concurrent.BlockingQueue',
+            'java.util.concurrent.LinkedBlockingQueue',
+            'org.reactivestreams.Subscription',
+            'org.springframework.core.io.buffer.DataBuffer',
+            'org.springframework.core.io.buffer.DataBufferUtils',
+            'reactor.core.publisher.BaseSubscriber',
+            'reactor.core.publisher.Flux',
+          ],
+          body: javaGLDataBufferInputStream(),
         ),
       if (!_hasGraphQL)
         'GraphLinkNoGraphQL.java': GLClassModel(

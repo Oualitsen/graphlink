@@ -88,6 +88,15 @@ String _decoded(String schema) {
 
 final _reactor = JavaReactiveFlavor.of(JavaAsyncStyle.reactor);
 
+Map<String, String> _restFiles({
+  JavaReactiveFlavor flavor = JavaReactiveFlavor.blocking,
+  JavaReactiveHttpClient http = JavaReactiveHttpClient.jdk,
+}) {
+  final g = _parser('$_graphql$_rest');
+  final client = JavaClientSerializer(g, JavaSerializer(g, importPrefix: ''), flavor: flavor, reactiveHttpClient: http);
+  return client.generateRestFiles().map((name, model) => MapEntry(name, model.toFileContent()));
+}
+
 void main() {
   final mixed = _generate('$_graphql$_rest');
   final reactive = _generate('$_graphql$_rest', flavor: _reactor);
@@ -168,6 +177,99 @@ void main() {
       final adapter = javaRestAdapterInterface(_reactor);
       expect(adapter, contains('Mono<RestResponse> execute(RestRequest request);'));
       expect(javaRestAdapterInterface(JavaReactiveFlavor.blocking), contains('RestResponse execute(RestRequest request);'));
+    });
+  });
+
+  group('reactive flavors', () {
+    final rxjava3 = _generate('$_graphql$_rest', flavor: JavaReactiveFlavor.of(JavaAsyncStyle.rxjava3));
+    final mutiny = _generate('$_graphql$_rest', flavor: JavaReactiveFlavor.of(JavaAsyncStyle.mutiny));
+
+    test('RxJava 3 returns Maybe for nullable results and Completable for void', () {
+      expect(rxjava3, contains('public Maybe<Product> product(String id, Filter filter, List<String> tags, String x) {'));
+      expect(rxjava3, contains('public Single<Product> create(In input) {'));
+      expect(rxjava3, contains('public Completable remove(String id) {'));
+      expect(rxjava3, contains('public Maybe<String> send(String id, String name) {'));
+      expect(rxjava3, contains('public Single<GLDownload> dl(String id) {'));
+    });
+
+    test('Mutiny returns Uni for every result', () {
+      expect(mutiny, contains('public Uni<Product> product(String id, Filter filter, List<String> tags, String x) {'));
+      expect(mutiny, contains('public Uni<Void> remove(String id) {'));
+      expect(mutiny, contains('public Uni<GLDownload> dl(String id) {'));
+    });
+
+    test('a nullable cached query returns the maybe type through restCachedOrNull in every reactive flavor', () {
+      expect(reactive, contains('public Mono<Product> cached(String id) {'));
+      expect(rxjava3, contains('public Maybe<Product> cached(String id) {'));
+      expect(mutiny, contains('public Uni<Product> cached(String id) {'));
+      for (final out in [reactive, rxjava3, mutiny]) {
+        expect(out, contains('return restCachedOrNull('));
+        expect(out, isNot(contains('return restCached(')));
+      }
+    });
+
+    test('the blocking client keeps a single restCached', () {
+      expect(mixed, contains('return restCached('));
+      expect(mixed, isNot(contains('restCachedOrNull')));
+    });
+
+    test('the resolver caches the optional and converts it, never mapping to null', () {
+      for (final style in [JavaAsyncStyle.reactor, JavaAsyncStyle.rxjava3, JavaAsyncStyle.mutiny]) {
+        final resolver = javaRestResolver(JavaReactiveFlavor.of(style), withGetAdapter: false);
+        expect(resolver, contains('restCachedOrNull('));
+        expect(resolver, contains('json -> Optional.ofNullable(decode.apply(json))'));
+      }
+      expect(javaRestResolver(JavaReactiveFlavor.blocking, withGetAdapter: false), isNot(contains('restCachedOrNull')));
+    });
+  });
+
+  group('WebClient REST adapter', () {
+    final webclient = _restFiles(flavor: _reactor, http: JavaReactiveHttpClient.webclient);
+    final adapter = webclient['DefaultGraphLinkRestAdapter.java']!;
+
+    test('is generated for a reactor client with reactiveHttpClient webclient', () {
+      expect(adapter, contains('private final WebClient webClient;'));
+      expect(adapter, contains('public Mono<RestResponse> execute(RestRequest request)'));
+      expect(adapter, isNot(contains('java.net.http')));
+      expect(webclient, contains('GLDataBufferInputStream.java'));
+    });
+
+    test('hands every status back as a response instead of throwing', () {
+      expect(adapter, contains('onStatus(status -> true, failure -> Mono.empty())'));
+    });
+
+    test('streams downloads off the event loop and joins buffered responses without the codec limit', () {
+      expect(adapter, contains('toEntityFlux(DataBuffer.class).publishOn(Schedulers.boundedElastic())'));
+      expect(adapter, contains('DataBufferUtils.join(entity.getBody())'));
+      expect(adapter, isNot(contains('toEntity(byte[].class)')));
+    });
+
+    test('uploads stream through an InputStreamResource with the known length', () {
+      expect(adapter, contains('new InputStreamResource(in)'));
+      expect(adapter, contains('public long contentLength() { return length; }'));
+      expect(adapter, contains('GLMultipartBody.withProgress(upload.getStream(), upload.getLength(), request.getOnSendProgress())'));
+    });
+
+    test('follows redirects by default and decodes gzip and deflate', () {
+      expect(adapter, contains('followRedirect(true)'));
+      expect(adapter, contains('new GZIPInputStream(body)'));
+      expect(adapter, contains('new InflaterInputStream(body)'));
+    });
+
+    test('the JDK adapter is kept for jdk, and for the blocking client whatever the setting', () {
+      final jdk = _restFiles(flavor: _reactor);
+      expect(jdk['DefaultGraphLinkRestAdapter.java'], contains('private final HttpClient httpClient;'));
+      expect(jdk, isNot(contains('GLDataBufferInputStream.java')));
+      final blocking = _restFiles(http: JavaReactiveHttpClient.webclient);
+      expect(blocking['DefaultGraphLinkRestAdapter.java'], contains('private final HttpClient httpClient;'));
+      expect(blocking, isNot(contains('GLDataBufferInputStream.java')));
+    });
+
+    test('the stream helper applies backpressure one buffer at a time and cancels on close', () {
+      final stream = webclient['GLDataBufferInputStream.java']!;
+      expect(stream, contains('subscription.request(1);'));
+      expect(stream, contains('subscriber.request(1);'));
+      expect(stream, contains('subscriber.dispose();'));
     });
   });
 

@@ -307,11 +307,16 @@ don't confuse them:
   default values) are hand-written there. Edit the blocking test, not the derived copy.
 - **REST operations** (`@glRest*`, Kotlin client): `mock/kotlin_rest_tests` and `real/kotlin_rest_client_tests_real` (OkHttp, port 9994,
   Gradle `--offline` works with a warm cache). Run with `make -C integration_tests kotlin-rest kotlin-rest-real`.
-- **REST operations** (`@glRest*`, Java client): `mock/java_rest_tests` and `mock/java_rest_reactor_tests` (canned `GLRestAdapter`;
-  the reactive one uses Reactor `StepVerifier`), `real/java_rest_client_tests_real` (JDK `HttpClient`, port 9987) and
-  `real/java_rest_reactor_client_tests_real` (port 9980). Both real packages use `real/rest_server/server.py` and
-  `real/schema_rest/`; the reactive one derives most of its tests from the blocking package via `real/generate_reactor_tests.dart`
-  (only `ReactiveRestTest.java` is hand-written). Run with `make -C integration_tests java-rest java-rest-reactor java-rest-real java-rest-reactor-real`.
+- **REST operations** (`@glRest*`, Java client): one mock and one real package per flavor, all against `real/schema_rest/`.
+  Blocking: `mock/java_rest_tests` (canned `GLRestAdapter`) and `real/java_rest_client_tests_real` (JDK `HttpClient`, port 9987).
+  Reactive: `mock/java_rest_{reactor,rxjava3,mutiny}_tests` and `real/java_rest_{reactor,rxjava3,mutiny}_client_tests_real`
+  (ports 9980, 9979, 9978; the real ones use `real/rest_server/server.py`). The three mock packages compile one shared
+  `mock/java_rest_reactive_shared` test source, and the three real ones share `real/java_rest_reactive_shared`; each package only
+  adds a small `Rx` helper (`block`, `failure`) and, for the mocks, a `MockRest`. The reactive real packages derive the rest of
+  their tests from the blocking package via `real/generate_reactor_tests.dart` (`.block()` for Reactor, `Rx.block(...)` for RxJava 3
+  and Mutiny, which return `Maybe`/`Completable`/`Uni`). Edit the blocking test, not the derived copy. `java_rest_reactor_client_tests_real`
+  also reruns its tests against the Spring `WebClient` REST adapter (`webclient/` variant, `make variants`). Run with
+  `make -C integration_tests java-rest java-rest-reactor java-rest-rxjava3 java-rest-mutiny` and the same names with `-real`.
 - **Uploads** (GraphQL multipart and REST, streaming rules shared by every client): one `*_client_upload_tests_real` package per target
   (`dart` and `dart_dio`, `java` with JDK/OkHttp variants, `java_reactor` with JDK/WebClient variants, `kotlin`, `typescript`, `python`,
   `swift`, `go`). Each runs the same real-socket tests against an in-process recording server (6 MB sha256, Content-Length for known

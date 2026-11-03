@@ -666,6 +666,12 @@ String javaRestResolver(JavaReactiveFlavor flavor, {required bool withGetAdapter
                   'return ${flavor.wrapValue(staleRead)};',
                 ])}',
           ]),
+          _method(cachedSignature(flavor.maybeType('T'), 'Supplier<$fetchType> fetch').replaceFirst('restCached', 'restCachedOrNull'), [
+            'return ${_lambdaBlock(
+              flavor.flatMapToMaybeOpen('restCached(name, variables, ttl, tags, staleIfOffline, fetch, json -> Optional.ofNullable(decode.apply(json)))', 'cached'),
+              ['return ${flavor.maybeOf('cached.orElse(null)')};'],
+            )}',
+          ]),
           _method('private <T> T restStore(String key, long ttl, List<String> tags, Optional<Object> fetched, Function<Object, T> decode)', storeBody),
         ].join('\n\n')
       : _method(cachedSignature('T', 'Supplier<Optional<Object>> fetch'), [
@@ -849,4 +855,174 @@ String javaRestJdkAdapter(JavaReactiveFlavor flavor) {
     convert,
   ].join('\n\n');
   return 'public class DefaultGraphLinkRestAdapter implements GLRestAdapter {\n${body.ident()}\n}\n';
+}
+
+String javaGLDataBufferInputStream() {
+  final constructor = _method('GLDataBufferInputStream(Flux<DataBuffer> body)', [
+    _braces('subscriber = new BaseSubscriber<DataBuffer>()', [
+      _method('@Override\nprotected void hookOnSubscribe(Subscription subscription)', ['subscription.request(1);']),
+      _method('@Override\nprotected void hookOnNext(DataBuffer buffer)', ['queue.add(bytesOf(buffer));']),
+      _method('@Override\nprotected void hookOnComplete()', ['queue.add(END);']),
+      _method('@Override\nprotected void hookOnError(Throwable failure)', ['queue.add(failure);']),
+    ]).replaceFirst(RegExp(r'\}$'), '};'),
+    'body.subscribe(subscriber);',
+  ]);
+
+  final read = _method('@Override\npublic int read(byte[] target, int offset, int length) throws IOException', [
+    _braces('if (length == 0)', ['return 0;']),
+    _braces('while (position >= current.length)', [
+      _braces('if (finished)', ['return -1;']),
+      'Object next = take();',
+      _braces('if (next == END)', ['finished = true;', 'return -1;']),
+      _braces('if (next instanceof Throwable)', ['finished = true;', 'throw new IOException((Throwable) next);']),
+      'current = (byte[]) next;',
+      'position = 0;',
+      'subscriber.request(1);',
+    ]),
+    'int count = Math.min(length, current.length - position);',
+    'System.arraycopy(current, position, target, offset, count);',
+    'position += count;',
+    'return count;',
+  ]);
+
+  final readByte = _method('@Override\npublic int read() throws IOException', [
+    'byte[] one = new byte[1];',
+    'return read(one, 0, 1) == -1 ? -1 : one[0] & 0xff;',
+  ]);
+
+  final take = _method('private Object take() throws IOException', [
+    [
+      _braces('try', ['return queue.take();']),
+      _braces('catch (InterruptedException e)', [
+        'Thread.currentThread().interrupt();',
+        'subscriber.dispose();',
+        'throw new InterruptedIOException();',
+      ]),
+    ].join(' '),
+  ]);
+
+  final close = _method('@Override\npublic void close()', [
+    'finished = true;',
+    'subscriber.dispose();',
+  ]);
+
+  final body = [
+    'private static final Object END = new Object();',
+    'private final BlockingQueue<Object> queue = new LinkedBlockingQueue<>();',
+    'private final BaseSubscriber<DataBuffer> subscriber;',
+    'private byte[] current = new byte[0];',
+    'private int position = 0;',
+    'private boolean finished = false;',
+    constructor,
+    _method('static byte[] bytesOf(DataBuffer buffer)', [
+      'byte[] bytes = new byte[buffer.readableByteCount()];',
+      'buffer.read(bytes);',
+      'DataBufferUtils.release(buffer);',
+      'return bytes;',
+    ]),
+    readByte,
+    read,
+    take,
+    close,
+  ].join('\n\n');
+  return 'final class GLDataBufferInputStream extends InputStream {\n${body.ident()}\n}\n';
+}
+
+String javaRestWebClientAdapter() {
+  final execute = [
+    _method('@Override\npublic Mono<RestResponse> execute(RestRequest request)', ['return Mono.defer(() -> send(request));']),
+    _method('private Mono<RestResponse> send(RestRequest request)', [
+      'Map<String, String> headers = new LinkedHashMap<>();',
+      'Map<String, String> provided = headersProvider.get();',
+      _braces('if (provided != null)', ['headers.putAll(provided);']),
+      'headers.putAll(request.getHeaders());',
+      'BodyInserter<?, ? super ClientHttpRequest> body = body(request, headers);',
+      'WebClient.RequestBodySpec spec = webClient.method(HttpMethod.valueOf(request.getMethod())).uri(URI.create(url(request)));',
+      'headers.forEach(spec::header);',
+      'WebClient.RequestHeadersSpec<?> ready = body == null ? spec : spec.body(body);',
+      'WebClient.ResponseSpec response = ready.retrieve().onStatus(status -> true, failure -> Mono.empty());',
+      _braces('if (request.isStreamResponse())', [
+        'return response.toEntityFlux(DataBuffer.class).publishOn(Schedulers.boundedElastic()).map(entity -> convert(entity.getStatusCode().value(), entity.getHeaders(), new GLDataBufferInputStream(entity.getBody())));',
+      ]),
+      'return response.toEntityFlux(DataBuffer.class).flatMap(entity -> DataBufferUtils.join(entity.getBody()).map(GLDataBufferInputStream::bytesOf).defaultIfEmpty(new byte[0]).map(bytes -> convert(entity.getStatusCode().value(), entity.getHeaders(), new ByteArrayInputStream(bytes))));',
+    ]),
+  ].join('\n\n');
+
+  final url = _method('private String url(RestRequest request)', [
+    'String base = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;',
+    'return base + request.getPath() + queryString(request.getQuery());',
+  ]);
+
+  final queryString = _method('private static String queryString(List<Map.Entry<String, String>> entries)', [
+    'StringJoiner joiner = new StringJoiner("&");',
+    _braces('for (Map.Entry<String, String> entry : entries)', [
+      'joiner.add(GraphLinkRestUtils.restEncodeQuery(entry.getKey()) + "=" + GraphLinkRestUtils.restEncodeQuery(entry.getValue()));',
+    ]),
+    'return joiner.length() == 0 ? "" : "?" + joiner;',
+  ]);
+
+  final body = _method('private BodyInserter<?, ? super ClientHttpRequest> body(RestRequest request, Map<String, String> headers)', [
+    'RestBody body = request.getBody();',
+    _braces('if (body == null)', ['return null;']),
+    _braces('if (body instanceof RestBody.Json)', ['return BodyInserters.fromValue(((RestBody.Json) body).getJson());']),
+    _braces('if (body instanceof RestBody.Form)', [
+      'String form = queryString(((RestBody.Form) body).getFields());',
+      'return BodyInserters.fromValue(form.isEmpty() ? "" : form.substring(1));',
+    ]),
+    _braces('if (body instanceof RestBody.Raw)', [
+      'GLUpload upload = ((RestBody.Raw) body).getUpload();',
+      'return resource(GLMultipartBody.withProgress(upload.getStream(), upload.getLength(), request.getOnSendProgress()), upload.getLength());',
+    ]),
+    'GLMultipartBody multipart = ((RestBody.Multipart) body).toBody();',
+    'headers.put("Content-Type", multipart.getContentType());',
+    'return resource(multipart.getStream(request.getOnSendProgress()), multipart.getLength());',
+  ]);
+
+  final resource = _method('private static BodyInserter<?, ? super ClientHttpRequest> resource(InputStream in, long length)', [
+    _braces('if (length == 0)', ['return BodyInserters.fromValue(new byte[0]);']),
+    'return BodyInserters.fromResource(new InputStreamResource(in) ${_braces('', ['@Override public long contentLength() { return length; }'])});',
+  ]);
+
+  final convert = _method('private static RestResponse convert(int status, HttpHeaders headers, InputStream body)', [
+    'Map<String, String> flat = new LinkedHashMap<>();',
+    'headers.forEach((name, values) -> flat.put(name.toLowerCase(Locale.ROOT), String.join(",", values)));',
+    'String encoding = flat.get("content-encoding");',
+    _braces('if (encoding != null)', [
+      'String coding = encoding.trim().toLowerCase(Locale.ROOT);',
+      [
+        _braces('try', [
+          _braces('if (coding.equals("gzip") || coding.equals("x-gzip"))', ['return new RestResponse(status, new GZIPInputStream(body), flat);']),
+          _braces('if (coding.equals("deflate"))', ['return new RestResponse(status, new InflaterInputStream(body), flat);']),
+        ]),
+        _braces('catch (IOException e)', ['throw new UncheckedIOException(e);']),
+      ].join(' '),
+    ]),
+    'return new RestResponse(status, body, flat);',
+  ]);
+
+  final constructors = [
+    _method('public DefaultGraphLinkRestAdapter(String baseUrl)', ['this(baseUrl, () -> null);']),
+    _method('public DefaultGraphLinkRestAdapter(String baseUrl, Supplier<Map<String, String>> headersProvider)', [
+      'this(baseUrl, headersProvider, WebClient.builder().clientConnector(new ReactorClientHttpConnector(reactor.netty.http.client.HttpClient.create().followRedirect(true))).build());',
+    ]),
+    _method('public DefaultGraphLinkRestAdapter(String baseUrl, Supplier<Map<String, String>> headersProvider, WebClient webClient)', [
+      'this.baseUrl = baseUrl;',
+      'this.headersProvider = headersProvider;',
+      'this.webClient = webClient;',
+    ]),
+  ].join('\n\n');
+
+  final members = [
+    'private final String baseUrl;',
+    'private final Supplier<Map<String, String>> headersProvider;',
+    'private final WebClient webClient;',
+    constructors,
+    execute,
+    url,
+    queryString,
+    body,
+    resource,
+    convert,
+  ].join('\n\n');
+  return 'public class DefaultGraphLinkRestAdapter implements GLRestAdapter {\n${members.ident()}\n}\n';
 }
